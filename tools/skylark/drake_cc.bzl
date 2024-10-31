@@ -3,6 +3,7 @@ load("//tools/skylark:cc.bzl", "cc_binary", "cc_library", "cc_test")
 load(
     "//tools/skylark:kwargs.bzl",
     "incorporate_allow_network",
+    "incorporate_display",
     "incorporate_num_threads",
 )
 load("//tools/workspace:generate_file.bzl", "generate_file")
@@ -820,7 +821,7 @@ def drake_cc_binary(
             flaky = test_rule_flaky,
             linkstatic = linkstatic,
             args = test_rule_args,
-            tags = (test_rule_tags or []) + ["nolint"],
+            tags = (test_rule_tags or []) + ["nolint", "no_kcov"],
             **kwargs
         )
 
@@ -834,6 +835,7 @@ def drake_cc_test(
         gcc_copts = [],
         clang_copts = [],
         allow_network = None,
+        display = False,
         num_threads = None,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
@@ -846,6 +848,9 @@ def drake_cc_test(
     @param allow_network (optional, default is ["meshcat"])
         See drake/tools/skylark/README.md for details.
 
+    @param display (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
     @param num_threads (optional, default is 1)
         See drake/tools/skylark/README.md for details.
     """
@@ -855,6 +860,7 @@ def drake_cc_test(
         srcs = ["test/%s.cc" % name]
     kwargs["testonly"] = 1
     kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
+    kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     new_copts = _platform_copts(copts, gcc_copts, clang_copts, cc_test = 1)
     new_srcs, add_deps = _maybe_add_pruned_private_hdrs_dep(
@@ -1003,6 +1009,7 @@ def drake_cc_googletest_linux_only(
         linkopts = [],
         tags = [],
         timeout = None,
+        display = False,
         visibility = ["//visibility:private"],
         enable_condition = "@drake//tools/skylark:linux"):
     """Declares a platform-specific drake_cc_googletest. When not building on
@@ -1053,5 +1060,6 @@ def drake_cc_googletest_linux_only(
             enable_condition: [":_{}_compile".format(name)],
             "//conditions:default": [],
         }),
+        display = display,
         visibility = visibility,
     )

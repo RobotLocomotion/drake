@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":composite_trajectory",
         ":derivative_trajectory",
         ":discrete_time_trajectory",
+        ":function_handle_trajectory",
         ":path_parameterized_trajectory",
         ":piecewise_polynomial",
         ":piecewise_pose",
@@ -94,6 +95,17 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//math:matrix_util",
+    ],
+)
+
+drake_cc_library(
+    name = "function_handle_trajectory",
+    srcs = ["function_handle_trajectory.cc"],
+    hdrs = ["function_handle_trajectory.h"],
+    deps = [
+        ":trajectory",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -240,6 +252,15 @@ drake_cc_googletest(
     name = "discrete_time_trajectory_test",
     deps = [
         ":discrete_time_trajectory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "function_handle_trajectory_test",
+    deps = [
+        ":function_handle_trajectory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

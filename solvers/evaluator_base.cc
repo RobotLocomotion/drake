@@ -14,6 +14,8 @@ using std::shared_ptr;
 namespace drake {
 namespace solvers {
 
+EvaluatorBase::~EvaluatorBase() = default;
+
 std::ostream& EvaluatorBase::Display(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   const int num_vars = this->num_vars();
@@ -71,7 +73,9 @@ std::string EvaluatorBase::DoToLatex(const VectorX<symbolic::Variable>& vars,
   ss << "\\text{" << NiceTypeName::RemoveNamespaces(NiceTypeName::Get(*this))
      << "}(";
   for (int i = 0; i < vars_rows; ++i) {
-    if (i > 0) { ss << ", "; }
+    if (i > 0) {
+      ss << ", ";
+    }
     ss << symbolic::ToLatex(vars(i));
   }
   ss << ")";

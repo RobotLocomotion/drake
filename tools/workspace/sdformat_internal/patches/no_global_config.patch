@@ -3,6 +3,8 @@ Change the global singleton into a bomb.
 Use the default config when parsing the built-in root.sdf, and
 in the gz_sdf command-line tool.
 
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
 --- src/ParserConfig.cc
 +++ src/ParserConfig.cc
 @@ -65,8 +65,7 @@
@@ -28,7 +30,7 @@ in the gz_sdf command-line tool.
    if (!readString(_sdf, _config, sdfParsed, errors))
 --- src/gz.cc
 +++ src/gz.cc
-@@ -43,7 +43,7 @@
+@@ -44,7 +44,7 @@ extern "C" SDFORMAT_VISIBLE int cmdCheck(const char *_path)
    int result = 0;
  
    sdf::Root root;
@@ -37,7 +39,7 @@ in the gz_sdf command-line tool.
    if (!errors.empty())
    {
      for (auto &error : errors)
-@@ -86,14 +86,18 @@
+@@ -87,14 +87,18 @@ extern "C" SDFORMAT_VISIBLE int cmdCheck(const char *_path)
  
    sdf::SDFPtr sdf(new sdf::SDF());
  
@@ -58,7 +60,7 @@ in the gz_sdf command-line tool.
      std::cerr << "Error: SDF parsing the xml failed.\n";
      return -1;
    }
-@@ -126,7 +130,7 @@
+@@ -127,7 +131,7 @@ extern "C" SDFORMAT_VISIBLE int cmdDescribe(const char *_version)
    {
      sdf->Version(_version);
    }
@@ -67,29 +69,16 @@ in the gz_sdf command-line tool.
    {
      std::cerr << "Error: SDF schema initialization failed.\n";
      return -1;
-@@ -149,14 +153,19 @@
- 
-   sdf::SDFPtr sdf(new sdf::SDF());
- 
--  if (!sdf::init(sdf))
-+  if (!sdf::init(sdf, sdf::ParserConfig{}))
-   {
-     std::cerr << "Error: SDF schema initialization failed.\n";
-     return -1;
+@@ -202,7 +206,7 @@ extern "C" SDFORMAT_VISIBLE int cmdGraph(
    }
  
--  if (!sdf::readFile(_path, sdf))
-+  sdf::Errors errors;
-+  if (!sdf::readFile(_path, sdf::ParserConfig{}, sdf, errors))
+   sdf::Root root;
+-  sdf::Errors errors = root.Load(_path);
++  sdf::Errors errors = root.Load(_path, sdf::ParserConfig{});
+   if (!errors.empty())
    {
-+    for (auto &error : errors)
-+    {
-+      std::cerr << error << std::endl;
-+    }
-     std::cerr << "Error: SDF parsing the xml failed.\n";
-     return -1;
-   }
-@@ -218,7 +227,7 @@
+     std::cerr << errors << std::endl;
+@@ -268,7 +272,7 @@ extern "C" SDFORMAT_VISIBLE int cmdInertialStats(
    }
  
    sdf::Root root;

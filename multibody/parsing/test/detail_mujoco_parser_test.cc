@@ -690,7 +690,8 @@ class BoxMeshTest : public MujocoParserTest {
     auto* mesh =
         dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
     EXPECT_NE(mesh, nullptr);
-    EXPECT_EQ(mesh->filename(), expected_filename);
+    DRAKE_DEMAND(mesh->source().is_path());
+    EXPECT_EQ(mesh->source().path(), expected_filename);
     EXPECT_EQ(mesh->scale(), expected_scale);
   }
 };
@@ -837,7 +838,8 @@ TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
       dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
 
   EXPECT_NE(mesh, nullptr);
-  EXPECT_EQ(mesh->filename(), box_obj_);
+  ASSERT_TRUE(mesh->source().is_path());
+  EXPECT_EQ(mesh->source().path(), box_obj_);
   EXPECT_EQ(mesh->scale(), 1.0);
 }
 
@@ -1576,6 +1578,18 @@ TEST_F(MujocoParserTest, Motor) {
     <body>
       <joint type="hinge" name="hinge3" axis="0 1 0"/>
     </body>
+    <body>
+      <joint type="hinge" name="hinge4" axis="0 1 0" armature="12"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge5" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge6" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge7" axis="0 1 0"/>
+    </body>
   </worldbody>
   <actuator>
     <motor joint="hinge0"/>
@@ -1586,6 +1600,13 @@ TEST_F(MujocoParserTest, Motor) {
     <!-- malformed limits will be ignored -->
     <motor name="motor3" joint="hinge3" ctrllimited="true" ctrlrange="2 1"
            forcelimited="true" forcerange="2 1"/>
+    <!-- gear ratio -->
+    <motor joint="hinge4" gear="2 0 0 0 0 0"/>
+    <!-- gear ratios with the wrong number of entries still work, but emit a warning -->
+    <motor joint="hinge5" gear="3 0 0"/>
+    <position name="position0" joint="hinge6"/>
+    <position name="position1" joint="hinge7" ctrllimited="true" ctrlrange="-2 2"
+           forcelimited="true" forcerange="-.4 .4" kp="4" kd="1"/>
   </actuator>
 </mujoco>
 )""";
@@ -1596,16 +1617,20 @@ TEST_F(MujocoParserTest, Motor) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*motor2.*forcerange.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*motor3.*ctrlrange.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*motor3.*forcerange.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*1 value or 6 values.*gear.*"));
 
   plant_.Finalize();
 
-  EXPECT_EQ(plant_.get_actuation_input_port().size(), 4);
+  EXPECT_EQ(plant_.get_actuation_input_port().size(), 8);
 
   const JointActuator<double>& motor0 =
       plant_.get_joint_actuator(JointActuatorIndex(0));
   EXPECT_EQ(motor0.name(), "motor0");
   EXPECT_EQ(motor0.joint().name(), "hinge0");
   EXPECT_EQ(motor0.effort_limit(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(motor0.default_gear_ratio(), 1);
+  EXPECT_EQ(motor0.default_rotor_inertia(), 0);
+  EXPECT_FALSE(motor0.has_controller());
 
   const JointActuator<double>& motor1 =
       plant_.get_joint_actuator(JointActuatorIndex(1));
@@ -1624,6 +1649,43 @@ TEST_F(MujocoParserTest, Motor) {
   EXPECT_EQ(motor3.name(), "motor3");
   EXPECT_EQ(motor3.joint().name(), "hinge3");
   EXPECT_EQ(motor3.effort_limit(), std::numeric_limits<double>::infinity());
+
+  const JointActuator<double>& motor4 =
+      plant_.get_joint_actuator(JointActuatorIndex(4));
+  EXPECT_EQ(motor4.name(), "motor4");
+  EXPECT_EQ(motor4.joint().name(), "hinge4");
+  EXPECT_EQ(motor4.effort_limit(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(motor4.default_gear_ratio(), 2);
+  EXPECT_NEAR(motor4.default_reflected_inertia(), 12, 1e-14);
+
+  const JointActuator<double>& motor5 =
+      plant_.get_joint_actuator(JointActuatorIndex(5));
+  EXPECT_EQ(motor5.name(), "motor5");
+  EXPECT_EQ(motor5.joint().name(), "hinge5");
+  EXPECT_EQ(motor5.effort_limit(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(motor5.default_gear_ratio(), 3);
+  EXPECT_EQ(motor5.default_rotor_inertia(), 0);
+
+  // Verify that omiting kp and kd for position tag results in the MuJoCo
+  // default controller gains.
+  const JointActuator<double>& position0 =
+      plant_.get_joint_actuator(JointActuatorIndex(6));
+  EXPECT_EQ(position0.name(), "position0");
+  EXPECT_EQ(position0.joint().name(), "hinge6");
+  EXPECT_EQ(position0.effort_limit(), std::numeric_limits<double>::infinity());
+  EXPECT_EQ(position0.get_controller_gains().p, 1);
+  EXPECT_EQ(position0.get_controller_gains().d, 0);
+
+  // Verify that the supported tags are parsed correctly (the effort limit is
+  // the mininum of the absolute value of the control range and the force
+  // range).
+  const JointActuator<double>& position1 =
+      plant_.get_joint_actuator(JointActuatorIndex(7));
+  EXPECT_EQ(position1.name(), "position1");
+  EXPECT_EQ(position1.joint().name(), "hinge7");
+  EXPECT_EQ(position1.effort_limit(), 0.4);
+  EXPECT_EQ(position1.get_controller_gains().p, 4);
+  EXPECT_EQ(position1.get_controller_gains().d, 1);
 }
 
 class ContactTest : public MujocoParserTest,
@@ -1773,6 +1835,92 @@ TEST_F(MujocoParserTest, ContactThrows) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AddModelFromString(fmt::format(xml_base, "body1", "QQQ"), "bad_body2"),
       ".*no RigidBody named 'QQQ' anywhere.*");
+}
+
+TEST_F(MujocoParserTest, EqualityTest) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="body1" pos="-1 0 0">
+      <geom type="box" size="0.1 0.2 0.3"/>
+      <joint type="hinge"/>
+    </body>
+    <body name="body2" pos="1 0 0">
+      <geom type="box" size="0.1 0.2 0.3"/>
+      <joint type="hinge"/>
+    </body>
+  </worldbody>
+  <equality>
+    <connect body1="body1" anchor="1 2 3" body2="body2"/>
+    <connect body1="body1" anchor="4 5 6"/>
+  </equality>
+</mujoco>
+)""";
+
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  AddModelFromString(xml, "test");
+  const auto constraint_ids = plant_.GetConstraintIds();
+  const auto& spec1 = plant_.get_ball_constraint_specs(constraint_ids[0]);
+  const auto& spec2 = plant_.get_ball_constraint_specs(constraint_ids[1]);
+  EXPECT_EQ(constraint_ids.size(), 2);
+  EXPECT_FALSE(spec1.p_BQ.has_value());
+  EXPECT_FALSE(spec2.p_BQ.has_value());
+
+  plant_.Finalize();
+
+  EXPECT_EQ(spec1.body_A, plant_.GetBodyByName("body1").index());
+  EXPECT_EQ(spec1.body_B, plant_.GetBodyByName("body2").index());
+  Vector3d p_AP(1, 2, 3);
+  EXPECT_TRUE(CompareMatrices(spec1.p_AP, p_AP));
+  RigidTransformd X_WA(Vector3d(-1, 0, 0)), X_WB(Vector3d(1, 0, 0));
+  Vector3d p_BQ = X_WB.inverse() * X_WA * p_AP;  // since Q == P.
+  ASSERT_TRUE(spec1.p_BQ.has_value());
+  EXPECT_TRUE(CompareMatrices(spec1.p_BQ.value(), p_BQ, 1e-14));
+
+  auto context = plant_.CreateDefaultContext();
+  EXPECT_EQ(spec2.body_A, plant_.GetBodyByName("body1").index());
+  EXPECT_EQ(spec2.body_B, plant_.world_body().index());
+  p_AP = Vector3d(4, 5, 6);
+  EXPECT_TRUE(CompareMatrices(spec2.p_AP, p_AP));
+  Vector3d p_WQ = X_WA * p_AP;
+  ASSERT_TRUE(spec2.p_BQ.has_value());
+  EXPECT_TRUE(CompareMatrices(spec2.p_BQ.value(), p_WQ, 1e-14));
+}
+
+TEST_F(MujocoParserTest, BadEqualityTest) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="body1">
+      <geom type="box" size="0.1 0.2 0.3"/>
+      <joint type="hinge" pos="-1 0 0"/>
+    </body>
+    <body name="body2">
+      <geom type="box" size="0.1 0.2 0.3"/>
+      <joint type="hinge" pos="1 0 0"/>
+    </body>
+  </worldbody>
+  <equality>
+    <connect body1="body1" body2="body2"/>
+    <connect/>
+    <connect site1="site1" site2="site2"/>
+    <connect body1="body1" site1="site1"/>
+    <connect body1="nonsense" anchor="1 2 3"/>
+    <connect body1="body1" anchor="1 2 3" body2="nonsense"/>
+  </equality>
+</mujoco>
+)""";
+
+  plant_.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*anchor.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*body1.*anchor.*site1.*site2.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*site1.*site2.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*body1.*site1.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*body1.*nonsense.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*body2.*nonsense.*"));
+  const auto constraint_ids = plant_.GetConstraintIds();
+  EXPECT_EQ(constraint_ids.size(), 0);
 }
 
 }  // namespace

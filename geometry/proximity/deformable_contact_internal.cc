@@ -16,6 +16,8 @@ namespace geometry {
 namespace internal {
 namespace deformable {
 
+Geometries::~Geometries() = default;
+
 void Geometries::RemoveGeometry(GeometryId id) {
   deformable_geometries_.erase(id);
   rigid_geometries_pending_.erase(id);

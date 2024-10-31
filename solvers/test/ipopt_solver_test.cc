@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
@@ -290,6 +291,41 @@ GTEST_TEST(IpoptSolverTest, SolverOptionsVerbosity) {
         solver.Solve(prog, {}, options);
       }
     }
+  }
+}
+
+GTEST_TEST(IpoptSolverTest, UnknownOptions) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1);
+  prog.AddLinearCost(x(0));
+  SolverOptions options_double;
+  options_double.SetOption(IpoptSolver::id(), "foobar_double", 2.5);
+  SolverOptions options_int;
+  options_int.SetOption(IpoptSolver::id(), "foobar_int", 3);
+  SolverOptions options_string;
+  options_string.SetOption(IpoptSolver::id(), "foobar_string", "four");
+  IpoptSolver solver;
+  if (solver.is_available()) {
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_double),
+                                ".*float.*foobar.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_int),
+                                ".*int.*foobar.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options_string),
+                                ".*string.*foobar.*");
+  }
+}
+
+GTEST_TEST(IpoptSolverTest, UnsupportedLinearSolver) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1);
+  prog.AddLinearCost(x(0));
+  SolverOptions options;
+  // This is a valid option name, but an invalid option value.
+  options.SetOption(IpoptSolver::id(), "linear_solver", "foobar");
+  IpoptSolver solver;
+  if (solver.is_available()) {
+    DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, options),
+                                ".*option.*linear_solver.*foobar.*");
   }
 }
 

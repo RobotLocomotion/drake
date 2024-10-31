@@ -57,6 +57,8 @@ Environment::Environment(map m) : map_{std::move(m)} {
   }
 }
 
+Environment::~Environment() = default;
+
 void Environment::insert(const key_type& key, const mapped_type& elem) {
   throw_if_nan(elem);
   map_.emplace(key, elem);

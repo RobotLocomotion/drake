@@ -67,7 +67,7 @@ class PolynomialBasisElement {
   PolynomialBasisElement(const Eigen::Ref<const VectorX<Variable>>& vars,
                          const Eigen::Ref<const Eigen::VectorXi>& degrees);
 
-  virtual ~PolynomialBasisElement() = default;
+  virtual ~PolynomialBasisElement();
 
   [[nodiscard]] const std::map<Variable, int>& var_to_degree_map() const {
     return var_to_degree_map_;

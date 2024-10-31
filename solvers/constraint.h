@@ -243,7 +243,7 @@ class QuadraticConstraint : public Constraint {
     DRAKE_THROW_UNLESS(Q_.cols() == b_.rows());
   }
 
-  ~QuadraticConstraint() override {}
+  ~QuadraticConstraint() override;
 
   /** The symmetric matrix Q, being the Hessian of this constraint.
    */
@@ -370,7 +370,7 @@ class LorentzConeConstraint : public Constraint {
                         const Eigen::Ref<const Eigen::VectorXd>& b,
                         EvalType eval_type = EvalType::kConvexSmooth);
 
-  ~LorentzConeConstraint() override {}
+  ~LorentzConeConstraint() override;
 
   /** Getter for A. */
   const Eigen::SparseMatrix<double>& A() const { return A_; }
@@ -470,7 +470,7 @@ class RotatedLorentzConeConstraint : public Constraint {
   /** Getter for b. */
   const Eigen::VectorXd& b() const { return b_; }
 
-  ~RotatedLorentzConeConstraint() override {}
+  ~RotatedLorentzConeConstraint() override;
 
   /**
    * Updates the coefficients, the updated constraint is z=new_A * x + new_b in
@@ -594,7 +594,7 @@ class PolynomialConstraint : public EvaluatorConstraint<PolynomialEvaluator> {
             std::make_shared<PolynomialEvaluator>(polynomials, poly_vars), lb,
             ub) {}
 
-  ~PolynomialConstraint() override {}
+  ~PolynomialConstraint() override;
 
   const VectorXPoly& polynomials() const { return evaluator().polynomials(); }
 
@@ -635,7 +635,7 @@ class LinearConstraint : public Constraint {
                    const Eigen::Ref<const Eigen::VectorXd>& lb,
                    const Eigen::Ref<const Eigen::VectorXd>& ub);
 
-  ~LinearConstraint() override {}
+  ~LinearConstraint() override;
 
   const Eigen::SparseMatrix<double>& get_sparse_A() const {
     return A_.get_as_sparse();
@@ -826,7 +826,7 @@ class BoundingBoxConstraint : public LinearConstraint {
   BoundingBoxConstraint(const Eigen::Ref<const Eigen::VectorXd>& lb,
                         const Eigen::Ref<const Eigen::VectorXd>& ub);
 
-  ~BoundingBoxConstraint() override {}
+  ~BoundingBoxConstraint() override;
 
  private:
   template <typename DerivedX, typename ScalarY>
@@ -883,7 +883,7 @@ class LinearComplementarityConstraint : public Constraint {
     set_is_thread_safe(true);
   }
 
-  ~LinearComplementarityConstraint() override {}
+  ~LinearComplementarityConstraint() override;
 
   const Eigen::MatrixXd& M() const { return M_; }
   const Eigen::VectorXd& q() const { return q_; }
@@ -997,7 +997,7 @@ class PositiveSemidefiniteConstraint : public Constraint {
    */
   explicit PositiveSemidefiniteConstraint(int rows);
 
-  ~PositiveSemidefiniteConstraint() override {}
+  ~PositiveSemidefiniteConstraint() override;
 
   int matrix_rows() const { return matrix_rows_; }
 
@@ -1062,7 +1062,7 @@ class LinearMatrixInequalityConstraint : public Constraint {
   LinearMatrixInequalityConstraint(std::vector<Eigen::MatrixXd> F,
                                    double symmetry_tolerance = 1E-10);
 
-  ~LinearMatrixInequalityConstraint() override {}
+  ~LinearMatrixInequalityConstraint() override;
 
   /* Getter for all given matrices F */
   const std::vector<Eigen::MatrixXd>& F() const { return F_; }
@@ -1190,7 +1190,7 @@ class ExponentialConeConstraint : public Constraint {
       const Eigen::Ref<const Eigen::SparseMatrix<double>>& A,
       const Eigen::Ref<const Eigen::Vector3d>& b);
 
-  ~ExponentialConeConstraint() override{};
+  ~ExponentialConeConstraint() override;
 
   /** Getter for matrix A. */
   const Eigen::SparseMatrix<double>& A() const { return A_; }

@@ -30,6 +30,17 @@ Note that this does not affect network sandboxing (i.e., Bazel's block-network
 tag). Code outside of Drake purview can still access the network in tests (e.g.,
 license servers for commercial solvers).
 
+**display**
+
+Can either be True or False (defaults to False).
+
+When True, provides access to the Xorg DISPLAY environment variable so that
+the test can use the X display.  When False, unsets DISPLAY to forbid access.
+
+Note that the X display in Jenkins CI tends to crash frequently, so any tests
+marked with `display = True` are a likely candidate for `flaky = True` so that
+X crashes don't lead to false positives in CI.
+
 **num_threads**
 
 Can either be None, or else an integer.

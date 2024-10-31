@@ -56,7 +56,7 @@ class LinearCost : public Cost {
     set_is_thread_safe(true);
   }
 
-  ~LinearCost() override {}
+  ~LinearCost() override;
 
   Eigen::SparseMatrix<double> GetSparseMatrix() const {
     // TODO(eric.cousineau): Consider storing or caching sparse matrix, such
@@ -143,7 +143,7 @@ class QuadraticCost : public Cost {
     }
   }
 
-  ~QuadraticCost() override {}
+  ~QuadraticCost() override;
 
   /// Returns the symmetric matrix Q, as the Hessian of the cost.
   const Eigen::MatrixXd& Q() const { return Q_; }
@@ -258,7 +258,7 @@ class L1NormCost : public Cost {
   L1NormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
              const Eigen::Ref<const Eigen::VectorXd>& b);
 
-  ~L1NormCost() override {}
+  ~L1NormCost() override;
 
   const Eigen::MatrixXd& A() const { return A_; }
 
@@ -321,7 +321,7 @@ class L2NormCost : public Cost {
   L2NormCost(const Eigen::SparseMatrix<double>& A,
              const Eigen::Ref<const Eigen::VectorXd>& b);
 
-  ~L2NormCost() override {}
+  ~L2NormCost() override;
 
   const Eigen::SparseMatrix<double>& get_sparse_A() const {
     return A_.get_as_sparse();
@@ -387,7 +387,7 @@ class LInfNormCost : public Cost {
   LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                const Eigen::Ref<const Eigen::VectorXd>& b);
 
-  ~LInfNormCost() override {}
+  ~LInfNormCost() override;
 
   const Eigen::MatrixXd& A() const { return A_; }
 
@@ -447,7 +447,7 @@ class PerspectiveQuadraticCost : public Cost {
   PerspectiveQuadraticCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
                            const Eigen::Ref<const Eigen::VectorXd>& b);
 
-  ~PerspectiveQuadraticCost() override {}
+  ~PerspectiveQuadraticCost() override;
 
   const Eigen::MatrixXd& A() const { return A_; }
 

@@ -1,0 +1,25 @@
+Disable the "optional binary relocatability" path hunting
+
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
+--- src/SDF.cc
++++ src/SDF.cc
+@@ -48,6 +48,10 @@ std::string SDF::version = SDF_VERSION;  // NOLINT(runtime/string)
+ 
+ std::string sdfSharePath()
+ {
++#if 1
++  // Drake doesn't want the "optional binary relocatability" feature.
++  return {};
++#else
+   std::string sharePath = sdf::getSharePath();
+   if (sharePath != "/")
+   {
+@@ -57,6 +61,7 @@ std::string sdfSharePath()
+   {
+     return "";
+   }
++#endif
+ }
+ 
+ /////////////////////////////////////////////////

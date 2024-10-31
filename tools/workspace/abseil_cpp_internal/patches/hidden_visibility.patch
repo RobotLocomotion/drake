@@ -2,6 +2,9 @@ Use hidden symbol visibility for Abseil's C++ code.
 
 This probably improves linker and loader throughput.
 
+Reasoning for not upstreaming this patch: would need too much surgery to
+gold-plate it for all of their supported build modes.
+
 --- absl/base/config.h.orig
 +++ absl/base/config.h
 @@ -153,7 +153,7 @@

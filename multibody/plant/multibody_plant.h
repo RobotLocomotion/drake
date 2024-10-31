@@ -1251,17 +1251,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// SceneGraph.
   const systems::OutputPort<T>& get_geometry_pose_output_port() const;
 
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "Use get_geometry_pose_output_port() instead (note no 's' plural). "
-      "If you were only using this port to connect it to a SceneGraph, "
-      "instead should you should use the AddMultibodyPlantSceneGraph() or "
-      "AddMultibodyPlant(MultibodyPlantConfig) to add the plant and scene "
-      "graph to a DiagramBuilder, already wired up correctly.")
-  const systems::OutputPort<T>& get_geometry_poses_output_port() const {
-    return get_geometry_pose_output_port();
-  }
-
   /// Returns the output port for vertex positions (configurations), measured
   /// and expressed in the World frame, of the deformable bodies in `this` plant
   /// as a GeometryConfigurationVector.
@@ -1927,7 +1916,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] body_A RigidBody to which point P is rigidly attached.
   /// @param[in] p_AP Position of point P in body A's frame.
   /// @param[in] body_B RigidBody to which point Q is rigidly attached.
-  /// @param[in] p_BQ Position of point Q in body B's frame.
+  /// @param[in] p_BQ (optional) Position of point Q in body B's frame. If p_BQ
+  /// is std::nullopt, then p_BQ will be computed so that the constraint is
+  /// satisfied for the default configuration at Finalize() time; subsequent
+  /// changes to the default configuration will not change the computed p_BQ.
   /// @returns the id of the newly added constraint.
   ///
   /// @throws std::exception if bodies A and B are the same body.
@@ -1937,10 +1929,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
   /// DiscreteContactSolver::kSap)
-  MultibodyConstraintId AddBallConstraint(const RigidBody<T>& body_A,
-                                          const Vector3<double>& p_AP,
-                                          const RigidBody<T>& body_B,
-                                          const Vector3<double>& p_BQ);
+  MultibodyConstraintId AddBallConstraint(
+      const RigidBody<T>& body_A, const Vector3<double>& p_AP,
+      const RigidBody<T>& body_B,
+      const std::optional<Vector3<double>>& p_BQ = {});
 
   /// Defines a constraint such that frame P affixed to body A is coincident at
   /// all times with frame Q affixed to body B, effectively modeling a weld
@@ -3354,23 +3346,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// once evaluated, successive calls to this method are inexpensive.
   const SpatialAcceleration<T>& EvalBodySpatialAccelerationInWorld(
       const systems::Context<T>& context, const RigidBody<T>& body_B) const;
-
-  /// Evaluates all point pairs of contact for a given state of the model stored
-  /// in `context`.
-  /// Each entry in the returned vector corresponds to a single point pair
-  /// corresponding to two interpenetrating bodies A and B. The size of the
-  /// returned vector corresponds to the total number of contact penetration
-  /// pairs. If no geometry was registered, the output vector is empty.
-  /// @see @ref mbp_geometry "Geometry" for geometry registration.
-  /// @see PenetrationAsPointPair for further details on the returned data.
-  /// @throws std::exception if called pre-finalize. See Finalize().
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "We anticipate that after the deprecation date, MultibodyPlant will no "
-      "longer provide public access access to its cached contact information. "
-      "To inquire about collisions, ask the SceneGraph's QueryObject directly.")
-  const std::vector<geometry::PenetrationAsPointPair<T>>&
-  EvalPointPairPenetrations(const systems::Context<T>& context) const;
 
   /// Calculates the rigid transform (pose) `X_AB` relating frame A and frame B.
   /// @param[in] context
@@ -5508,6 +5483,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // corresponds to the largest penalty parameter (smaller violation errors)
   // that still guarantees stability.
   void SetUpJointLimitsParameters();
+
+  // Some constraints support std::optional specs, which implies that the
+  // kinematics should be used to compute values such that the constraint is
+  // satisfied by the default context at the moment Finalize() is called. This
+  // method computes those values and stores them in the constraint specs.
+  void FinalizeConstraints();
 
   // Declares any input ports that haven't yet been declared.
   // This happens during Finalize().

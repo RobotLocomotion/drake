@@ -469,8 +469,7 @@ GTEST_TEST(TestOptions, StandaloneReproduction) {
   ClarabelSolver solver;
   if (solver.available()) {
     SolverOptions solver_options;
-    const std::string repro_file_name =
-        temp_directory() + "/reproduction.py";
+    const std::string repro_file_name = temp_directory() + "/reproduction.py";
     solver_options.SetOption(
         CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
     solver.Solve(prog, std::nullopt, solver_options);
@@ -506,8 +505,7 @@ GTEST_TEST(TestOptions, EmptyCones) {
   ClarabelSolver solver;
   if (solver.available()) {
     SolverOptions solver_options;
-    const std::string repro_file_name =
-        temp_directory() + "/reproduction.py";
+    const std::string repro_file_name = temp_directory() + "/reproduction.py";
     solver_options.SetOption(
         CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
     solver.Solve(prog, std::nullopt, solver_options);
@@ -537,7 +535,7 @@ GTEST_TEST(TestOptions, unrecognized) {
     solver_options.SetOption(solver.id(), "bad_unrecognized", 1);
     DRAKE_EXPECT_THROWS_MESSAGE(
         solver.Solve(dut.prog(), std::nullopt, solver_options),
-        ".*unrecognized solver options bad_unrecognized.*");
+        ".*not recognized.*bad_unrecognized.*");
   }
 }
 

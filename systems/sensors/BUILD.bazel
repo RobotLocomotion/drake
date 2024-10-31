@@ -355,6 +355,7 @@ drake_cc_library(
     hdrs = ["vtk_diagnostic_event_observer.h"],
     internal = True,
     visibility = [
+        "//geometry/proximity:__pkg__",
         "//geometry/render_vtk:__pkg__",
     ],
     deps = [
@@ -421,6 +422,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "camera_config_functions_test",
     allow_network = ["render_gltf_client"],
+    display = True,
     tags = vtk_test_tags(),
     deps = [
         ":camera_config_functions",
@@ -582,6 +584,7 @@ drake_cc_googletest_linux_only(
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",
         "@drake_models//:manipulation_station",
     ],
+    display = True,
     # TODO(#21420) This test is currently broken on Ubuntu 24.04 ("Noble").
     enable_condition = "//tools:ubuntu_jammy",
     tags = vtk_test_tags() + [

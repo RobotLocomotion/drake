@@ -77,7 +77,7 @@ class ShaderProgram {
 
   /* The destructor is currently superficial. The real work is done by Free()
    (see below for details).  */
-  virtual ~ShaderProgram() = default;
+  virtual ~ShaderProgram();
 
   std::unique_ptr<ShaderProgram> Clone() const { return DoClone(); }
 

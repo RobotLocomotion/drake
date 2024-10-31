@@ -10,7 +10,7 @@ def fcl_internal_repository(
         sha256 = "b055315cad3394b7bb1db8eead56a9063e95ed6cb0f43e12b244ab0bd2ce5be8",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/cassert.patch",
+            ":patches/upstream/cassert.patch",
         ],
         mirrors = mirrors,
     )

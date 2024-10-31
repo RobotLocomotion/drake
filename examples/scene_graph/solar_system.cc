@@ -7,9 +7,11 @@
 #include <vector>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/memory_file.h"
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/in_memory_mesh.h"
 #include "drake/geometry/kinematics_vector.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/discrete_values.h"
@@ -32,17 +34,18 @@ using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
-using geometry::SceneGraph;
+using geometry::InMemoryMesh;
 using geometry::Mesh;
+using geometry::SceneGraph;
 using geometry::SourceId;
 using geometry::Sphere;
 using math::RigidTransformd;
+using std::make_unique;
+using std::unique_ptr;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContinuousState;
 using systems::DiscreteValues;
-using std::make_unique;
-using std::unique_ptr;
 
 template <typename Shape, typename... ShapeArgs>
 unique_ptr<GeometryInstance> MakeShape(const RigidTransformd& pose,
@@ -155,15 +158,31 @@ void SolarSystem<T>::AllocateGeometry(SceneGraph<T>* scene_graph) {
   const double orrery_bottom = -1.5;
   const double pipe_radius = 0.05;
 
-  // Allocate the sun.
   // NOTE: we don't store the id of the sun geometry because we have no need
   // for subsequent access (the same is also true for dynamic geometries).
+
+  // Allocate the sun.
+  // We're explicitly using an in-memory mesh so that this can serve as an
+  // easy way to reality check the visualization of in-memory meshes.
+  // The sun should appear in both meldis and meshcat visualizer. Note that
+  // some of the supporting files are MemoryFiles and some are paths -- this is
+  // to exercise both representations.
   std::string sun_path =
       FindResourceOrThrow("drake/examples/scene_graph/sun.gltf");
+  string_map<FileSource> supporting_files{
+      {"sun.bin", MemoryFile::Make(FindResourceOrThrow(
+                      "drake/examples/scene_graph/sun.bin"))},
+      {"sun.png", std::filesystem::path(FindResourceOrThrow(
+                      "drake/examples/scene_graph/sun.png"))},
+      {"sun.ktx2", MemoryFile::Make(FindResourceOrThrow(
+                       "drake/examples/scene_graph/sun.ktx2"))}};
+
   scene_graph->RegisterAnchoredGeometry(
       source_id_,
-      MakeShape<Mesh>(RigidTransformd::Identity(), "Sun",
-                      std::nullopt /* diffuse */, sun_path, 1.0 /* scale */));
+      MakeShape<Mesh>(
+          RigidTransformd::Identity(), "Sun", std::nullopt /* diffuse */,
+          InMemoryMesh{MemoryFile::Make(sun_path), std::move(supporting_files)},
+          1.0 /* scale */));
 
   // The fixed post on which Sun sits and around which all planets rotate.
   const double post_height = 1;

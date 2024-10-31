@@ -61,19 +61,24 @@ When a glTF file has relative path URIs (i.e., unbundled files on disk), this
 loads the files into FileStorage so that we can serve them later, even if the
 original file has disappeared in the meantime.
 
-@param[in] gltf_filename The glTF filename, used to calculate relative paths.
+@param[in] mesh_source The MeshSource for the given glTF, used to resolve file
+  URIs used in the `gltf_contents`. The actual contents of
+  `source.in_memory().mesh_file` will _not_ be used; `gltf_contents` takes
+  precedence, but is expected to be a copy of the source's glTF file contents.
 
-@param[in,out] gltf_contents The contents of `gltf_filename`. It will be edited
-  in place to replace the URIs. (We assume that the caller has already read the
-  file into a string, so here we can just operate on that string as an [in,out]
-  parameter instead of re-reading the file and using an output-only parameter.)
+@param[in,out] gltf_contents The glTF data named in `mesh_source`. It will be
+  edited in place to replace the URIs. (We assume that the caller has created
+  this as a unique, editable copy of the glTF data, whether from on-disk or
+  in-memory, so here we can just operate on that string as an [in,out]
+  parameter.)
 
 @param[in,out] storage The database where assets should be stored.
 
 @returns The handles for all assets cited by `gltf_contents`. */
 [[nodiscard]] std::vector<std::shared_ptr<const MemoryFile>>
-UnbundleGltfAssets(const std::filesystem::path& gltf_filename,
-                   std::string* gltf_contents, FileStorage* storage);
+UnbundleGltfAssets(
+    const MeshSource& mesh_source, std::string* gltf_contents,
+    FileStorage* storage);
 
 /* Converts a geometry name into a meshcat path. So, a geometry named
 `my_scope::Mesh` becomes my_scope/Mesh.

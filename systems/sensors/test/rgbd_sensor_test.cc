@@ -445,6 +445,61 @@ TEST_F(RgbdSensorTest, Parameters) {
                       sensor_->GetX_PB(*other_context).GetAsMatrix4()));
 }
 
+TEST_F(RgbdSensorTest, ChangeImageSize) {
+  // Construct a sensor diagram with arbitrary values.
+  const Vector3d p_WB(1, 2, 3);
+  const RollPitchYawd rpy_WB(M_PI / 2, 0, 0);
+  const RigidTransformd X_WB(rpy_WB, p_WB);
+  auto make_sensor = [this, &X_WB](SceneGraph<double>*) {
+    return make_unique<RgbdSensor>(SceneGraph<double>::world_frame_id(), X_WB,
+                                   color_camera_, depth_camera_);
+  };
+  MakeCameraDiagram(make_sensor);
+
+  // Change the image size parameter in the context.
+  const int new_width = 404;
+  const int new_height = 202;
+  const ColorRenderCamera old_color_camera =
+      sensor_->GetColorRenderCamera(*sensor_context_);
+  const DepthRenderCamera old_depth_camera =
+      sensor_->GetDepthRenderCamera(*sensor_context_);
+  const ColorRenderCamera new_color_camera{
+      RenderCameraCore(old_color_camera.core().renderer_name(),
+                       CameraInfo{new_width, new_height,
+                                  old_color_camera.core().intrinsics().fov_y()},
+                       old_color_camera.core().clipping(),
+                       old_color_camera.core().sensor_pose_in_camera_body())};
+  const DepthRenderCamera new_depth_camera{
+      RenderCameraCore(old_depth_camera.core().renderer_name(),
+                       CameraInfo{new_width, new_height,
+                                  old_depth_camera.core().intrinsics().fov_y()},
+                       old_depth_camera.core().clipping(),
+                       old_depth_camera.core().sensor_pose_in_camera_body()),
+      old_depth_camera.depth_range()};
+  sensor_->SetColorRenderCamera(sensor_context_, new_color_camera);
+  sensor_->SetDepthRenderCamera(sensor_context_, new_depth_camera);
+
+  // Confirm that rendering uses the new image size.
+  const auto& color_image =
+      sensor_->color_image_output_port().Eval<ImageRgba8U>(*sensor_context_);
+  EXPECT_EQ(color_image.width(), new_width);
+  EXPECT_EQ(color_image.height(), new_height);
+  const auto& depth_image_32 =
+      sensor_->depth_image_32F_output_port().Eval<ImageDepth32F>(
+          *sensor_context_);
+  EXPECT_EQ(depth_image_32.width(), new_width);
+  EXPECT_EQ(depth_image_32.height(), new_height);
+  const auto& depth_image_16 =
+      sensor_->depth_image_16U_output_port().Eval<ImageDepth16U>(
+          *sensor_context_);
+  EXPECT_EQ(depth_image_16.width(), new_width);
+  EXPECT_EQ(depth_image_16.height(), new_height);
+  const auto& label_image =
+      sensor_->label_image_output_port().Eval<ImageLabel16I>(*sensor_context_);
+  EXPECT_EQ(label_image.width(), new_width);
+  EXPECT_EQ(label_image.height(), new_height);
+}
+
 TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
   const RigidTransformd X_BC{
       math::RotationMatrixd::MakeFromOrthonormalRows(Eigen::Vector3d(0, 0, 1),
@@ -502,10 +557,10 @@ TEST_F(RgbdSensorTest, DeprecatedMethods) {
 #pragma GCC diagnostic pop
 }
 
-// We don't explicitly test any of the image outputs. The image outputs simply
-// wrap the corresponding QueryObject call; the only calculations they do is to
-// produce the X_PC matrix (which is implicitly tested in the construction tests
-// above).
+// We don't explicitly test any of the image outputs (other than their size).
+// The image outputs simply wrap the corresponding QueryObject call; the only
+// calculations they do is to produce the X_PC matrix (which is implicitly
+// tested in the construction tests above).
 
 // TODO(jwnimmer-tri) The body_pose_in_world_output_port should have unit test
 // coverage of its output value, not just its name. It ends up being indirectly

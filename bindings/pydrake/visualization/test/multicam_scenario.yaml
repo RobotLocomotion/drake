@@ -68,7 +68,7 @@ Multicam:
     camera_1:
       name: gl_camera_front
       renderer_name: gl
-      renderer_class: !RenderEngineGlParams {}
+      renderer_class: !RenderEngineVtkParams {}
       width: 1000
       height: 1000
       depth: True

@@ -128,10 +128,9 @@ math::RigidTransform<T> ScrewMobilizer<T>::CalcAcrossMobilizerTransform(
 
 template <typename T>
 SpatialVelocity<T> ScrewMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
-    const systems::Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& v) const {
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
   DRAKE_ASSERT(v.size() == kNv);
-  return calc_V_FM(context, v.data());
+  return calc_V_FM(nullptr, v.data());
 }
 
 template <typename T>
@@ -140,19 +139,15 @@ ScrewMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
   DRAKE_ASSERT(vdot.size() == kNv);
-  Vector6<T> A_FM_vector;
-  A_FM_vector << (axis_ * vdot[0]),
-      (axis_ * GetScrewTranslationFromRotation(vdot[0], screw_pitch_));
-  return SpatialAcceleration<T>(A_FM_vector);
+  return calc_A_FM(nullptr, nullptr, vdot.data());
 }
 
 template <typename T>
 void ScrewMobilizer<T>::ProjectSpatialForce(const systems::Context<T>&,
-                                            const SpatialForce<T>& F_Mo_F,
+                                            const SpatialForce<T>& F_BMo_F,
                                             Eigen::Ref<VectorX<T>> tau) const {
   DRAKE_ASSERT(tau.size() == kNv);
-  tau[0] = F_Mo_F.rotational().dot(axis_) +
-           F_Mo_F.translational().dot(axis_) / (2 * M_PI) * screw_pitch_;
+  calc_tau(nullptr, F_BMo_F, tau.data());
 }
 
 template <typename T>

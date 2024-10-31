@@ -94,6 +94,8 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   explicit RenderEngineVtk(
       const RenderEngineVtkParams& parameters = RenderEngineVtkParams());
 
+  ~RenderEngineVtk() override;
+
   /* @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
 
@@ -126,9 +128,13 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   RenderEngineVtk(const RenderEngineVtk& other);
 
   /* The rendering pipeline for a single image type (color, depth, or label). */
-  struct RenderingPipeline {
+  struct RenderingPipeline final {
+    explicit RenderingPipeline(RenderEngineVtkBackend backend_in);
+    ~RenderingPipeline();
+
+    const RenderEngineVtkBackend backend;
     vtkNew<vtkRenderer> renderer;
-    vtkNew<vtkRenderWindow> window;
+    vtkSmartPointer<vtkRenderWindow> window;
     vtkNew<vtkWindowToImageFilter> filter;
     vtkNew<vtkImageExport> exporter;
   };
@@ -200,13 +206,11 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   // Adds an .obj to the scene for the id currently being reified (data->id).
   // Returns true if added, false if ignored (for whatever reason).
-  bool ImplementObj(const std::filesystem::path& file_name, double scale,
-                    const RegistrationData& data);
+  bool ImplementObj(const Mesh& mesh, const RegistrationData& data);
 
   // Adds a .gltf to the scene for the id currently being reified (data->id).
   // Returns true if added, false if ignored (for whatever reason).
-  bool ImplementGltf(const std::string& file_name, double scale,
-                     const RegistrationData& data);
+  bool ImplementGltf(const Mesh& mesh, const RegistrationData& data);
 
  private:
   friend class RenderEngineVtkTester;
@@ -237,6 +241,12 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // Note: this affects *all* objects, whether or not a model has been
   // introduced that explicitly declares PBR materials.
   void SetPbrMaterials();
+
+  // Setup a custom shader on the polydata mapper for rendering depth as the
+  // distance from the background plane
+  //
+  // @pre actor is not null.
+  static void SetDepthShader(vtkActor* actor);
 
   // A geometry is modeled with one or more "parts". A part maps to the actor
   // representing it in VTK and an optional transform mapping the actor's frame
@@ -295,7 +305,7 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
   // deformable and does *not* depend on the system's pose information.
   // (If there is deformable geometry, it will have to be handled differently.)
   // Having "shared geometry" means having shared vtkPolyDataAlgorithm and
-  // vtkOpenGLPolyDataMapper instances. The shader callback gets registered to
+  // vtkOpenGLShaderProperty instances. The shader callback gets registered to
   // the *mapper* instances, so they all, implicitly, share the same callback.
   // Making this member static facilitates that but it does preclude the
   // possibility of simultaneous renderings with different uniform parameters.

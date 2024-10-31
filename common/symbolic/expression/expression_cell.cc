@@ -244,6 +244,8 @@ UnaryExpressionCell::UnaryExpressionCell(const ExpressionKind k, Expression e,
                                          const bool is_expanded)
     : ExpressionCell{k, is_poly, is_expanded}, e_{std::move(e)} {}
 
+UnaryExpressionCell::~UnaryExpressionCell() = default;
+
 void UnaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
   using drake::hash_append;
@@ -280,6 +282,8 @@ BinaryExpressionCell::BinaryExpressionCell(const ExpressionKind k,
     : ExpressionCell{k, is_poly, is_expanded},
       e1_{std::move(e1)},
       e2_{std::move(e2)} {}
+
+BinaryExpressionCell::~BinaryExpressionCell() = default;
 
 void BinaryExpressionCell::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
@@ -327,6 +331,8 @@ ExpressionVar::ExpressionVar(Variable v)
   // expressions.
   DRAKE_DEMAND(var_.get_type() != Variable::Type::BOOLEAN);
 }
+
+ExpressionVar::~ExpressionVar() = default;
 
 void ExpressionVar::HashAppendDetail(DelegatingHasher* hasher) const {
   DRAKE_ASSERT(hasher != nullptr);
@@ -400,6 +406,8 @@ ostream& ExpressionVar::Display(ostream& os) const {
 ExpressionNaN::ExpressionNaN()
     : ExpressionCell{ExpressionKind::NaN, false, false} {}
 
+ExpressionNaN::~ExpressionNaN() = default;
+
 void ExpressionNaN::HashAppendDetail(DelegatingHasher*) const {}
 
 Variables ExpressionNaN::GetVariables() const {
@@ -450,6 +458,8 @@ ExpressionAdd::ExpressionAdd(const double constant,
       expr_to_coeff_map_(std::move(expr_to_coeff_map)) {
   DRAKE_ASSERT(!expr_to_coeff_map_.empty());
 }
+
+ExpressionAdd::~ExpressionAdd() = default;
 
 void ExpressionAdd::HashAppendDetail(DelegatingHasher* hasher) const {
   using drake::hash_append;
@@ -617,6 +627,8 @@ ExpressionAddFactory::ExpressionAddFactory(const ExpressionAdd& add)
   is_expanded_ = add.is_expanded();
 }
 
+ExpressionAddFactory::~ExpressionAddFactory() = default;
+
 void ExpressionAddFactory::AddExpression(const Expression& e) {
   if (is_constant(e)) {
     const double v{get_constant_value(e)};
@@ -731,6 +743,8 @@ ExpressionMul::ExpressionMul(const double constant,
       base_to_exponent_map_(std::move(base_to_exponent_map)) {
   DRAKE_ASSERT(!base_to_exponent_map_.empty());
 }
+
+ExpressionMul::~ExpressionMul() = default;
 
 void ExpressionMul::HashAppendDetail(DelegatingHasher* hasher) const {
   using drake::hash_append;
@@ -946,6 +960,8 @@ ExpressionMulFactory::ExpressionMulFactory(const ExpressionMul& mul)
   is_expanded_ = mul.is_expanded();
 }
 
+ExpressionMulFactory::~ExpressionMulFactory() = default;
+
 void ExpressionMulFactory::AddExpression(const Expression& e) {
   if (constant_ == 0.0) {
     return;  // Do nothing if it already represented 0.
@@ -1074,6 +1090,8 @@ void ExpressionMulFactory::AddMap(
 ExpressionDiv::ExpressionDiv(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Div, e1, e2,
                            e1.is_polynomial() && is_constant(e2), false} {}
+
+ExpressionDiv::~ExpressionDiv() = default;
 
 namespace {
 // Helper class to implement ExpressionDiv::Expand. Given a symbolic expression
@@ -1281,6 +1299,8 @@ double ExpressionDiv::DoEvaluate(const double v1, const double v2) const {
 ExpressionLog::ExpressionLog(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Log, e, false, e.is_expanded()} {}
 
+ExpressionLog::~ExpressionLog() = default;
+
 void ExpressionLog::check_domain(const double v) {
   if (!(v >= 0)) {
     ostringstream oss;
@@ -1321,6 +1341,8 @@ double ExpressionLog::DoEvaluate(const double v) const {
 ExpressionAbs::ExpressionAbs(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Abs, e, false, e.is_expanded()} {}
 
+ExpressionAbs::~ExpressionAbs() = default;
+
 Expression ExpressionAbs::Expand() const {
   const Expression& arg{get_argument()};
   return abs(arg.is_expanded() ? arg : arg.Expand());
@@ -1356,6 +1378,8 @@ double ExpressionAbs::DoEvaluate(const double v) const {
 ExpressionExp::ExpressionExp(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Exp, e, false, e.is_expanded()} {}
 
+ExpressionExp::~ExpressionExp() = default;
+
 Expression ExpressionExp::Expand() const {
   const Expression& arg{get_argument()};
   return exp(arg.is_expanded() ? arg : arg.Expand());
@@ -1385,6 +1409,8 @@ double ExpressionExp::DoEvaluate(const double v) const {
 
 ExpressionSqrt::ExpressionSqrt(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sqrt, e, false, e.is_expanded()} {}
+
+ExpressionSqrt::~ExpressionSqrt() = default;
 
 void ExpressionSqrt::check_domain(const double v) {
   if (!(v >= 0)) {
@@ -1427,6 +1453,8 @@ ExpressionPow::ExpressionPow(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Pow, e1, e2,
                            determine_polynomial(e1, e2),
                            IsLeafExpression(e1) && IsLeafExpression(e2)} {}
+
+ExpressionPow::~ExpressionPow() = default;
 
 void ExpressionPow::check_domain(const double v1, const double v2) {
   if (std::isfinite(v1) && (v1 < 0.0) && std::isfinite(v2) && !is_integer(v2)) {
@@ -1473,6 +1501,8 @@ double ExpressionPow::DoEvaluate(const double v1, const double v2) const {
 ExpressionSin::ExpressionSin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sin, e, false, e.is_expanded()} {}
 
+ExpressionSin::~ExpressionSin() = default;
+
 Expression ExpressionSin::Expand() const {
   const Expression& arg{get_argument()};
   return sin(arg.is_expanded() ? arg : arg.Expand());
@@ -1502,6 +1532,8 @@ double ExpressionSin::DoEvaluate(const double v) const {
 
 ExpressionCos::ExpressionCos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cos, e, false, e.is_expanded()} {}
+
+ExpressionCos::~ExpressionCos() = default;
 
 Expression ExpressionCos::Expand() const {
   const Expression& arg{get_argument()};
@@ -1533,6 +1565,8 @@ double ExpressionCos::DoEvaluate(const double v) const {
 ExpressionTan::ExpressionTan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tan, e, false, e.is_expanded()} {}
 
+ExpressionTan::~ExpressionTan() = default;
+
 Expression ExpressionTan::Expand() const {
   const Expression& arg{get_argument()};
   return tan(arg.is_expanded() ? arg : arg.Expand());
@@ -1562,6 +1596,8 @@ double ExpressionTan::DoEvaluate(const double v) const {
 
 ExpressionAsin::ExpressionAsin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Asin, e, false, e.is_expanded()} {}
+
+ExpressionAsin::~ExpressionAsin() = default;
 
 void ExpressionAsin::check_domain(const double v) {
   if (!((v >= -1.0) && (v <= 1.0))) {
@@ -1603,6 +1639,8 @@ double ExpressionAsin::DoEvaluate(const double v) const {
 ExpressionAcos::ExpressionAcos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Acos, e, false, e.is_expanded()} {}
 
+ExpressionAcos::~ExpressionAcos() = default;
+
 void ExpressionAcos::check_domain(const double v) {
   if (!((v >= -1.0) && (v <= 1.0))) {
     ostringstream oss;
@@ -1643,6 +1681,8 @@ double ExpressionAcos::DoEvaluate(const double v) const {
 ExpressionAtan::ExpressionAtan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Atan, e, false, e.is_expanded()} {}
 
+ExpressionAtan::~ExpressionAtan() = default;
+
 Expression ExpressionAtan::Expand() const {
   const Expression& arg{get_argument()};
   return atan(arg.is_expanded() ? arg : arg.Expand());
@@ -1673,6 +1713,8 @@ double ExpressionAtan::DoEvaluate(const double v) const {
 ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Atan2, e1, e2, false,
                            e1.is_expanded() && e2.is_expanded()} {}
+
+ExpressionAtan2::~ExpressionAtan2() = default;
 
 Expression ExpressionAtan2::Expand() const {
   const Expression& e1{get_first_argument()};
@@ -1711,6 +1753,8 @@ double ExpressionAtan2::DoEvaluate(const double v1, const double v2) const {
 ExpressionSinh::ExpressionSinh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sinh, e, false, e.is_expanded()} {}
 
+ExpressionSinh::~ExpressionSinh() = default;
+
 Expression ExpressionSinh::Expand() const {
   const Expression& arg{get_argument()};
   return sinh(arg.is_expanded() ? arg : arg.Expand());
@@ -1740,6 +1784,8 @@ double ExpressionSinh::DoEvaluate(const double v) const {
 
 ExpressionCosh::ExpressionCosh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cosh, e, false, e.is_expanded()} {}
+
+ExpressionCosh::~ExpressionCosh() = default;
 
 Expression ExpressionCosh::Expand() const {
   const Expression& arg{get_argument()};
@@ -1771,6 +1817,8 @@ double ExpressionCosh::DoEvaluate(const double v) const {
 ExpressionTanh::ExpressionTanh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tanh, e, false, e.is_expanded()} {}
 
+ExpressionTanh::~ExpressionTanh() = default;
+
 Expression ExpressionTanh::Expand() const {
   const Expression& arg{get_argument()};
   return tanh(arg.is_expanded() ? arg : arg.Expand());
@@ -1801,6 +1849,8 @@ double ExpressionTanh::DoEvaluate(const double v) const {
 ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Min, e1, e2, false,
                            e1.is_expanded() && e2.is_expanded()} {}
+
+ExpressionMin::~ExpressionMin() = default;
 
 Expression ExpressionMin::Expand() const {
   const Expression& e1{get_first_argument()};
@@ -1844,6 +1894,8 @@ ExpressionMax::ExpressionMax(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Max, e1, e2, false,
                            e1.is_expanded() && e2.is_expanded()} {}
 
+ExpressionMax::~ExpressionMax() = default;
+
 Expression ExpressionMax::Expand() const {
   const Expression& e1{get_first_argument()};
   const Expression& e2{get_second_argument()};
@@ -1885,6 +1937,8 @@ double ExpressionMax::DoEvaluate(const double v1, const double v2) const {
 ExpressionCeiling::ExpressionCeiling(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Ceil, e, false, e.is_expanded()} {}
 
+ExpressionCeiling::~ExpressionCeiling() = default;
+
 Expression ExpressionCeiling::Expand() const {
   const Expression& arg{get_argument()};
   return ceil(arg.is_expanded() ? arg : arg.Expand());
@@ -1919,6 +1973,8 @@ double ExpressionCeiling::DoEvaluate(const double v) const {
 
 ExpressionFloor::ExpressionFloor(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Floor, e, false, e.is_expanded()} {}
+
+ExpressionFloor::~ExpressionFloor() = default;
 
 Expression ExpressionFloor::Expand() const {
   const Expression& arg{get_argument()};
@@ -1960,6 +2016,8 @@ ExpressionIfThenElse::ExpressionIfThenElse(Formula f_cond, Expression e_then,
       f_cond_{std::move(f_cond)},
       e_then_{std::move(e_then)},
       e_else_{std::move(e_else)} {}
+
+ExpressionIfThenElse::~ExpressionIfThenElse() = default;
 
 void ExpressionIfThenElse::HashAppendDetail(DelegatingHasher* hasher) const {
   using drake::hash_append;
@@ -2077,6 +2135,8 @@ ExpressionUninterpretedFunction::ExpressionUninterpretedFunction(
                             })},
       name_{std::move(name)},
       arguments_{std::move(arguments)} {}
+
+ExpressionUninterpretedFunction::~ExpressionUninterpretedFunction() = default;
 
 void ExpressionUninterpretedFunction::HashAppendDetail(
     DelegatingHasher* hasher) const {

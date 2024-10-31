@@ -8,7 +8,6 @@
 #include <utility>
 #include <vector>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/trajectories/bezier_curve.h"
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -517,16 +516,6 @@ class GcsTrajectoryOptimization final {
     return gcs_.GetGraphvizString(result, options);
   }
 
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "result should be of type const solvers::MathematicalProgramResult*.")
-  std::string GetGraphvizString(
-      const std::optional<solvers::MathematicalProgramResult>& result,
-      const geometry::optimization::GcsGraphvizOptions& options = {}) const {
-    return GetGraphvizString(result ? std::addressof(result.value()) : nullptr,
-                             options);
-  }
-
   /** Creates a Subgraph with the given regions and indices.
   @param regions represent the valid set a control point can be in. We retain a
   copy of the regions since other functions may access them. If any of the
@@ -555,7 +544,8 @@ class GcsTrajectoryOptimization final {
   continuous revolute joint. This edge offset corresponds to the translation
   component of the affine map τ_uv in equation (11) of "Non-Euclidean Motion
   Planning with Graphs of Geodesically-Convex Sets", and per the discussion in
-  Subsection VI A, τ_uv has no rotation component.
+  Subsection VI A, τ_uv has no rotation component. If edge_offsets is nullptr,
+  it will instead be computed automatically.
   @throws std::exception if any index referenced in `edges_between_regions` is
   outside the range [0, ssize(regions)).
   */
@@ -564,19 +554,6 @@ class GcsTrajectoryOptimization final {
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
       double h_min = 0, double h_max = 20, std::string name = "",
       const std::vector<Eigen::VectorXd>* edge_offsets = nullptr);
-
-  DRAKE_DEPRECATED(
-      "2024-10-01",
-      "edge_offsets should be of type const std::vector<Eigen::VectorXd>*.")
-  Subgraph& AddRegions(
-      const geometry::optimization::ConvexSets& regions,
-      const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-      double h_min, double h_max, std::string name,
-      const std::optional<std::vector<Eigen::VectorXd>>& edge_offsets) {
-    return AddRegions(
-        regions, edges_between_regions, order, h_min, h_max, name,
-        edge_offsets ? std::addressof(edge_offsets.value()) : nullptr);
-  }
 
   /** Creates a Subgraph with the given regions.
   This function will compute the edges between the regions based on the set
@@ -639,7 +616,8 @@ class GcsTrajectoryOptimization final {
   continuous revolute joint. This edge offset corresponds to the translation
   component of the affine map τ_uv in equation (11) of "Non-Euclidean Motion
   Planning with Graphs of Geodesically-Convex Sets", and per the discussion in
-  Subsection VI A, τ_uv has no rotation component.
+  Subsection VI A, τ_uv has no rotation component. If edge_offsets is nullptr,
+  it will instead be computed automatically.
   @throws std::exception if `edge_offsets` is provided, but `edge_offsets.size()
   != edges_between_regions.size()`.
   */
@@ -648,24 +626,6 @@ class GcsTrajectoryOptimization final {
       const geometry::optimization::ConvexSet* subspace = nullptr,
       const std::vector<std::pair<int, int>>* edges_between_regions = nullptr,
       const std::vector<Eigen::VectorXd>* edge_offsets = nullptr);
-
-  DRAKE_DEPRECATED("2024-10-01",
-                   "edges_between_regions should be of type const "
-                   "std::vector<std::pair<int, int>>*, and edge_offsets should "
-                   "be of type const std::vector<Eigen::VectorXd>*.")
-  EdgesBetweenSubgraphs& AddEdges(
-      const Subgraph& from_subgraph, const Subgraph& to_subgraph,
-      const geometry::optimization::ConvexSet* subspace,
-      const std::optional<std::vector<std::pair<int, int>>>&
-          edges_between_regions,
-      const std::optional<std::vector<Eigen::VectorXd>>& edge_offsets =
-          std::nullopt) {
-    return AddEdges(
-        from_subgraph, to_subgraph, subspace,
-        edges_between_regions ? std::addressof(edges_between_regions.value())
-                              : nullptr,
-        edge_offsets ? std::addressof(edge_offsets.value()) : nullptr);
-  }
 
   /** Adds a minimum time cost to all regions in the whole graph. The cost is
   the sum of the time scaling variables.

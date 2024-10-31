@@ -60,6 +60,9 @@ MeshcatVisualizer<T>::MeshcatVisualizer(const MeshcatVisualizer<U>& other)
     : MeshcatVisualizer(other.meshcat_, other.params_) {}
 
 template <typename T>
+MeshcatVisualizer<T>::~MeshcatVisualizer() = default;
+
+template <typename T>
 void MeshcatVisualizer<T>::Delete() const {
   meshcat_->Delete(params_.prefix);
   version_ = std::nullopt;

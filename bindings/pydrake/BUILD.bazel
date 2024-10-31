@@ -392,6 +392,19 @@ drake_py_unittest(
     tags = ["lint"],
 )
 
+drake_py_unittest(
+    name = "memory_leak_test",
+    data = [
+        "@drake_models//:iiwa_description",
+        "@drake_models//:manipulation_station",
+        "@drake_models//:veggies",
+        "@drake_models//:wsg_50_description",
+    ],
+    deps = [
+        ":all_py",
+    ],
+)
+
 drake_py_binary(
     name = "stubgen",
     srcs = ["stubgen.py"],

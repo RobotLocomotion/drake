@@ -12,6 +12,7 @@
 #include "drake/solvers/solver_id.h"
 #include "drake/solvers/solver_interface.h"
 #include "drake/solvers/solver_options.h"
+#include "drake/solvers/specific_options.h"
 
 namespace drake {
 namespace solvers {
@@ -36,9 +37,7 @@ class SolverBase : public SolverInterface {
              MathematicalProgramResult*) const override;
   bool available() const override;
   bool enabled() const override;
-  SolverId solver_id() const final {
-    return solver_id_;
-  }
+  SolverId solver_id() const final { return solver_id_; }
   bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
   std::string ExplainUnsatisfiedProgramAttributes(
       const MathematicalProgram&) const override;
@@ -66,7 +65,21 @@ class SolverBase : public SolverInterface {
   virtual void DoSolve(const MathematicalProgram& prog,
                        const Eigen::VectorXd& initial_guess,
                        const SolverOptions& merged_options,
-                       MathematicalProgramResult* result) const = 0;
+                       MathematicalProgramResult* result) const;
+
+  /** (Internal use only) Like DoSolve() but using SpecificOptions instead of
+  SolverOptions. The "2" here means "version 2", to help disabiguate various
+  DoSolve overloads.
+
+  By default, DoSolve() will delegate to DoSolve2() and DoSolve2() will throw.
+  Subclasses should override exactly one of the various DoSolver methods.
+  Solvers wrapped inside Drake should override DoSolve2(); solvers wrapped in
+  downstream projects must override DoSolve() since this function is marked as
+  internal use only. */
+  virtual void DoSolve2(const MathematicalProgram& prog,
+                        const Eigen::VectorXd& initial_guess,
+                        internal::SpecificOptions* options,
+                        MathematicalProgramResult* result) const;
 
  private:
   SolverId solver_id_;

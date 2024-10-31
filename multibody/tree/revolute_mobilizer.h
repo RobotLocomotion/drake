@@ -32,6 +32,8 @@ namespace internal {
 // either frame F or M are constant. That is, `axis_F` and `axis_M` remain
 // unchanged w.r.t. both frames by this mobilizer's motion.
 //
+// H_FM₆ₓ₁=[axis_F 0₃]ᵀ     Hdot_FM₆ₓ₁ = 0₆
+//
 // @tparam_default_scalar
 template <typename T>
 class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
@@ -39,8 +41,12 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer);
   using MobilizerBase = MobilizerImpl<T, 1, 1>;
   using MobilizerBase::kNq, MobilizerBase::kNv, MobilizerBase::kNx;
-  using typename MobilizerBase::HMatrix;
-  using typename MobilizerBase::QVector, typename MobilizerBase::VVector;
+  template <typename U>
+  using QVector = typename MobilizerBase::template QVector<U>;
+  template <typename U>
+  using VVector = typename MobilizerBase::template VVector<U>;
+  template <typename U>
+  using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
   // Constructor for a %RevoluteMobilizer between the inboard frame F
   // `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
@@ -128,8 +134,21 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
   // frame M measured and expressed in frame F as a function of the input
   // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
-  SpatialVelocity<T> calc_V_FM(const systems::Context<T>&, const T* v) const {
+  SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
+  }
+
+  // Here H₆ₓ₁=[axis, 0₃]ᵀ so Hdot = 0 and
+  // A_FM = H⋅vdot + Hdot⋅v = [axis⋅vdot, 0₃]ᵀ
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
+    return SpatialAcceleration<T>(vdot[0] * axis_F_, Vector3<T>::Zero());
+  }
+
+  // Returns tau = H_FMᵀ⋅F, where H_FMᵀ = [axis_Fᵀ 0₃ᵀ].
+  void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const Vector3<T>& t_BMo_F = F_BMo_F.rotational();
+    tau[0] = axis_F_.dot(t_BMo_F);
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(

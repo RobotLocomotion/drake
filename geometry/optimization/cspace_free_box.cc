@@ -17,6 +17,14 @@ namespace {
 const double kInf = std::numeric_limits<double>::infinity();
 }  // namespace
 
+CspaceFreeBox::SeparatingPlaneLagrangians::~SeparatingPlaneLagrangians() =
+    default;
+
+CspaceFreeBox::SeparationCertificateResult::~SeparationCertificateResult() =
+    default;
+
+CspaceFreeBox::SeparationCertificate::~SeparationCertificate() = default;
+
 CspaceFreeBox::SeparationCertificateResult
 CspaceFreeBox::SeparationCertificate::GetSolution(
     int plane_index, const Vector3<symbolic::Polynomial>& a,
@@ -48,6 +56,9 @@ CspaceFreeBox::SeparationCertificate::GetSolution(
   ret.plane_decision_var_vals = result.GetSolution(plane_decision_vars);
   return ret;
 }
+
+CspaceFreeBox::SeparationCertificateProgram::~SeparationCertificateProgram() =
+    default;
 
 CspaceFreeBox::CspaceFreeBox(const multibody::MultibodyPlant<double>* plant,
                              const geometry::SceneGraph<double>* scene_graph,

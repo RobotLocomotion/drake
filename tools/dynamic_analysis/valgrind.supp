@@ -100,6 +100,17 @@
     obj:/lib/x86_64-linux-gnu/ld-2.23.so
 }
 
+# Sometimes occurs during dlopen of GL-related libraries (only in CI).
+{
+   <dlopen-strncmp>
+   Memcheck:Addr8
+   fun:strncmp
+   ...
+   fun:cache_rpath
+   ...
+   fun:_dl_open
+}
+
 {
    bash: definite leak in set_default_locale
    Memcheck:Leak

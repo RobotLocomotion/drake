@@ -2,6 +2,8 @@
 
 Our linter needs to read this file in order to compare it to our vendored copy.
 
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
 --- python/private/BUILD.bazel
 +++ python/private/BUILD.bazel
 @@ -80,4 +80,5 @@

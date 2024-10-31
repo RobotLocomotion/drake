@@ -123,6 +123,11 @@ def coin_cc_library(
             "-w",
             # On Clang 12, "-w" doesn't suppress this for some reason.
             "-Wno-register",
+            # The Coin family of software uses NDEBUG for gross things, not
+            # just controlling <cassert> but actually inserting huge swaths
+            # of debugging code, some of which is not thread-safe. Even in
+            # Drake's debug builds, we still don't want any of that stuff.
+            "-DNDEBUG",
         ],
         deps = deps + [":_config_private"],
     )

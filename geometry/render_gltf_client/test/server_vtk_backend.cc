@@ -39,6 +39,7 @@ programs for the glTF Render Client-Server integration test. */
 #include "drake/common/drake_assert.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
+#include "drake/geometry/render_vtk/internal_make_render_window.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 #include "drake/systems/sensors/image.h"
 
@@ -110,6 +111,8 @@ namespace render_gltf_client {
 namespace internal {
 namespace {
 
+using render_vtk::internal::MakeRenderWindow;
+using render_vtk::internal::RenderEngineVtkBackend;
 using render_vtk::internal::ShaderCallback;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageRgba8U;
@@ -199,7 +202,13 @@ int DoMain() {
   vtkNew<vtkRenderer> renderer;
   renderer->UseHiddenLineRemovalOn();
 
-  vtkNew<vtkRenderWindow> render_window;
+  vtkSmartPointer<vtkRenderWindow> render_window = MakeRenderWindow(
+#ifdef __APPLE__
+      RenderEngineVtkBackend::kCocoa
+#else
+      RenderEngineVtkBackend::kEgl
+#endif
+  );  // NOLINT(whitespace/parens)
   render_window->SetSize(FLAGS_width, FLAGS_height);
   render_window->AddRenderer(renderer);
   render_window->SetOffScreenRendering(true);

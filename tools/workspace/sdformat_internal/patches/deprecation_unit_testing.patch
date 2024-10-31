@@ -5,6 +5,8 @@ rely on any _actually_ deprecated elements, because they will disappear in
 a future upstream release. Therefore, we inject a Drake-specific element
 definition that will always be available.
 
+Reasoning for not upstreaming this patch: Drake-specific test tool.
+
 --- src/parser.cc.orig
 +++ src/parser.cc
 @@ -379,7 +379,12 @@

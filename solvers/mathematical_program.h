@@ -2111,8 +2111,8 @@ class MathematicalProgram {
   Binding<LorentzConeConstraint> AddLorentzConeConstraint(
       const symbolic::Formula& f,
       LorentzConeConstraint::EvalType eval_type =
-          LorentzConeConstraint::EvalType::kConvexSmooth, double psd_tol = 1e-8,
-                                    double coefficient_tol = 1e-8);
+          LorentzConeConstraint::EvalType::kConvexSmooth,
+      double psd_tol = 1e-8, double coefficient_tol = 1e-8);
 
   /**
    * Adds Lorentz cone constraint referencing potentially a subset of the
@@ -2620,16 +2620,7 @@ class MathematicalProgram {
    * @endcode
    */
   Binding<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(
-      const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
-    // TODO(jwnimmer-tri) Move this whole function definition into the cc file.
-    DRAKE_THROW_UNLESS(e.rows() == e.cols());
-    DRAKE_ASSERT(CheckStructuralEquality(e, e.transpose().eval()));
-    const MatrixXDecisionVariable M = NewSymmetricContinuousVariables(e.rows());
-    // Adds the linear equality constraint that M = e.
-    AddLinearEqualityConstraint(
-        e - M, Eigen::MatrixXd::Zero(e.rows(), e.rows()), true);
-    return AddPositiveSemidefiniteConstraint(M);
-  }
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& e);
 
   /**
    * Adds a constraint that the principal submatrix of a symmetric matrix

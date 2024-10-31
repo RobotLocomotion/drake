@@ -3,6 +3,10 @@
 load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load(
+    "@drake//tools/skylark:py.bzl",
+    "py_binary",
+)
+load(
     "@drake//tools/workspace/vtk_internal:rules.bzl",
     "compile_all_modules",
     "generate_common_core_sources",
@@ -15,6 +19,14 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
+# Necessary for @drake//tools/workspace/vtk_internal:data_to_header_test.
+exports_files(
+    [
+        "Rendering/OpenGL2/textures/BlueNoiseTexture64x64.jpg",
+        "Rendering/OpenGL2/glsl/vtkDepthOfFieldPassFS.glsl",
+    ],
+)
+
 # When the rules.bzl needs to declare an objc_library, it adds this to `deps`
 # to improve the error messages in case of a mis-configured build.
 cc_library(
@@ -22,6 +34,13 @@ cc_library(
     linkstatic = True,
     features = ["-supports_pic"],
     tags = ["manual"],
+)
+
+py_binary(
+    name = "data_to_header",
+    srcs = ["@drake//tools/workspace/vtk_internal:data_to_header.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
 )
 
 # Generate some source files on the fly, using Bazel re-implementations of
@@ -59,7 +78,7 @@ install(
         "Copyright.txt",
         "ThirdParty/doubleconversion/vtkdoubleconversion/COPYING",
         "ThirdParty/fast_float/vtkfast_float/LICENSE-MIT",
-        "ThirdParty/glew/vtkglew/LICENSE.txt",
+        "ThirdParty/glad/vtkglad/LICENSE",
         "ThirdParty/pugixml/vtkpugixml/LICENSE.md",
         "ThirdParty/token/vtktoken/license.md",
         "ThirdParty/utf8/vtkutf8/LICENSE",

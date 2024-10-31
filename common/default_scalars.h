@@ -73,6 +73,14 @@
 /// See also @ref system_scalar_conversion.
 /// @{
 
+namespace drake {
+// A constant that is true iff T is a default scalar type.
+template <typename T>
+constexpr bool is_default_scalar =
+    std::is_same_v<T, double> || std::is_same_v<T, drake::AutoDiffXd> ||
+    std::is_same_v<T, drake::symbolic::Expression>;
+}  // namespace drake
+
 // In support of the macros below, we define a struct template that provides
 // the per-phase typedef `scalar_phase_t<DRAKE_ONCE_PER_SCALAR_PHASE>::type`.
 // If more scalar types are added, also fix drake/tools/skylark/drake_cc.bzl

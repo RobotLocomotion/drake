@@ -1,0 +1,27 @@
+Disallow calls to vtkOpenGLRenderWindow::New
+
+By default this function probes all rendering backends one by one,
+spewing warnings as it goes for anything that doesn't work, and
+uses a process-wide environment variable to govern a preference.
+
+Both of those disqualify it from use in Drake, so we lobotomize it to
+prevent it from ever being accidentally used.
+
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
+--- Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx
++++ Rendering/OpenGL2/vtkOpenGLRenderWindow.cxx
+@@ -504,6 +504,13 @@ vtkOpenGLRenderWindow::~vtkOpenGLRenderWindow()
+ #if !(defined(__APPLE__) || defined(__ANDROID__) || defined(__EMSCRIPTEN__))
+ //------------------------------------------------------------------------------
+ vtkOpenGLRenderWindow* vtkOpenGLRenderWindow::New()
++{
++  // This function is too unreliable for Drake's purposes, so we'll nix it.
++  throw std::runtime_error("Internal error: Drake must not use vtkOpenGLRenderWindow::New()");
++}
++#endif
++#if 0
++vtkOpenGLRenderWindow* vtkOpenGLRenderWindow::New()
+ {
+   const char* backend = std::getenv("VTK_DEFAULT_OPENGL_WINDOW");
+ #if defined(_WIN32)

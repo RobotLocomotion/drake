@@ -63,19 +63,30 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 namespace {
-MathematicalProgramResult Solve(const MathematicalProgram& prog,
-                                const GraphOfConvexSetsOptions& options,
-                                bool preprocessing = false) {
+MathematicalProgramResult SolvePreprocessingProgram(
+    const MathematicalProgram& prog, const GraphOfConvexSetsOptions& options) {
   MathematicalProgramResult result;
-  if (preprocessing && options.preprocessing_solver &&
-      options.preprocessing_solver_options) {
-    options.preprocessing_solver->Solve(
-        prog, {}, options.preprocessing_solver_options, &result);
-  } else if (preprocessing && options.preprocessing_solver &&
-             !options.preprocessing_solver_options) {
-    options.preprocessing_solver->Solve(prog, {}, options.solver_options,
+  solvers::SolverOptions preprocessing_solver_options =
+      options.preprocessing_solver_options.value_or(options.solver_options);
+  if (options.preprocessing_solver) {
+    options.preprocessing_solver->Solve(prog, {}, preprocessing_solver_options,
                                         &result);
   } else if (options.solver) {
+    options.solver->Solve(prog, {}, preprocessing_solver_options, &result);
+  } else {
+    solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
+    auto solver = solvers::MakeSolver(solver_id);
+    DRAKE_DEMAND(solver != nullptr);
+    solver->Solve(prog, {}, preprocessing_solver_options, &result);
+  }
+  return result;
+}
+
+MathematicalProgramResult SolveMainProgram(
+    const MathematicalProgram& prog, const GraphOfConvexSetsOptions& options) {
+  MathematicalProgramResult result;
+  // Solving the main GCS program.
+  if (options.solver) {
     options.solver->Solve(prog, {}, options.solver_options, &result);
 
     // TODO(wrangelvid): Call the MixedIntegerBranchAndBound solver when
@@ -89,14 +100,15 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog,
       // We should only get here if the user is trying to solve the MIP.
       DRAKE_DEMAND(options.convex_relaxation == false);
 
-      // TODO(russt): Consider calling MixedIntegerBranchAndBound automatically
-      // here. The small trick is that we need to pass the SolverId into that
-      // constructor manually, and ChooseBestSolver doesn't make it easy to
-      // figure out what the best solver would be if we removed the integer
-      // variables.
+      // TODO(russt): Consider calling MixedIntegerBranchAndBound
+      // automatically here. The small trick is that we need to pass the
+      // SolverId into that constructor manually, and ChooseBestSolver doesn't
+      // make it easy to figure out what the best solver would be if we
+      // removed the integer variables.
 
       throw std::runtime_error(
-          "GraphOfConvexSets: There is no solver available that can solve the "
+          "GraphOfConvexSets: There is no solver available that can solve "
+          "the "
           "mixed-integer version of this problem. Please check "
           "https://drake.mit.edu/doxygen_cxx/group__solvers.html for more "
           "details about supported solvers and how to enable them.\n\n "
@@ -794,7 +806,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
 
     // Check if edge e = (u,v) could be on a path from start to goal.
-    auto result = Solve(prog, options, /* preprocessing= */ true);
+    auto result = SolvePreprocessingProgram(prog, options);
     if (!result.is_success()) {
       unusable_edges.insert(edge_id);
     }
@@ -1398,7 +1410,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
   }
 
-  MathematicalProgramResult result = Solve(prog, options);
+  MathematicalProgramResult result = SolveMainProgram(prog, options);
   log()->info(
       "Solved GCS shortest path using {} with convex_relaxation={} and "
       "preprocessing={}{}.",
@@ -1922,7 +1934,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
   }
 
   RewriteForConvexSolver(&prog);
-  MathematicalProgramResult result = Solve(prog, restriction_options);
+  MathematicalProgramResult result =
+      SolveMainProgram(prog, restriction_options);
 
   // TODO(russt): Add the dual variables back in for the rewritten costs.
 

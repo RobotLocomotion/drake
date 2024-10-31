@@ -123,6 +123,7 @@ drake_cc_binary(
     deps = [
         ":solar_system",
         "//geometry:drake_visualizer",
+        "//geometry:meshcat_visualizer",
         "//geometry:scene_graph",
         "//lcm",
         "//systems/analysis:simulator",

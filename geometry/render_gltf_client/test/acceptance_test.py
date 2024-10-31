@@ -1,5 +1,6 @@
 """Performs minimal smoke tests to run binaries in this test folder."""
 
+import json
 import os
 import subprocess
 import unittest
@@ -31,13 +32,30 @@ MINIMAL_GLTF = """\
       "byteLength" : 44
     }
   ],
+  "asset" : {
+    "version" : "2.0"
+  }
 }
-"""
+""".replace("# noqa", "")
 
 
 class TestGltfRenderBinary(unittest.TestCase):
     def setUp(self):
         self.runfiles = CreateRunfiles()
+        self.maxDiff = None
+
+    def _check_call(self, *args):
+        """Runs a subprocess and checks that it returns exitcode zero."""
+        result = subprocess.run(
+            *args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            encoding="utf-8",
+        )
+        if result.returncode != 0:
+            # This is just to print the stdout conveniently.
+            self.assertEqual(result.stdout, "")
+        result.check_returncode()
 
     def test_server_vtk_backend(self):
         """Renders each type of images by invoking the vtk backend with test
@@ -46,6 +64,9 @@ class TestGltfRenderBinary(unittest.TestCase):
         server_vtk_backend = self.runfiles.Rlocation(
             "drake/geometry/render_gltf_client/server_vtk_backend"
         )
+
+        # Fail-fast in case MINIMAL_GLTF has typos.
+        json.loads(MINIMAL_GLTF)
 
         # Note: `tmp_dir` will be cleaned up by bazel after running the test.
         tmp_dir = os.path.join(
@@ -91,8 +112,8 @@ class TestGltfRenderBinary(unittest.TestCase):
                 "24",
             ]
 
-            proc = subprocess.run(proc_args, capture_output=True)
-            self.assertTrue(proc.returncode == 0)
+            with self.subTest(image=f"{image_type}.{ext}"):
+                self._check_call(proc_args)
 
     def test_server_demo(self):
         """A minimal smoke test to ensure running the server demo won't crash,
@@ -106,19 +127,17 @@ class TestGltfRenderBinary(unittest.TestCase):
 
     def test_client_demo_client(self):
         """A minimal smoke test to run the client demo that launches a Drake
-        simulation and a RenderEngineGltfClient for a short period of time."""
+        simulation and a RenderEngineGltfClient. Since there is no server,
+        we can only instantiate the simulator, not advance it."""
         client_demo = self.runfiles.Rlocation(
             "drake/geometry/render_gltf_client/client_demo"
         )
-
-        # `client_demo` program defaults to instantiate RenderEngineGltfClient
-        # for rendering.
         proc_args = [
           client_demo,
-          "--simulation_time",
-          "0.1",
+          "--render_engine=client",
+          "--simulation_time=-1",  # N.B. Negative means don't call AdvanceTo.
         ]
-        subprocess.run(proc_args)
+        self._check_call(proc_args)
 
     def test_client_demo_vtk(self):
         """A minimal smoke test to run the client demo that launches a Drake
@@ -126,12 +145,9 @@ class TestGltfRenderBinary(unittest.TestCase):
         client_demo = self.runfiles.Rlocation(
             "drake/geometry/render_gltf_client/client_demo"
         )
-
         proc_args = [
           client_demo,
-          "--render_engine",
-          "vtk",
-          "--simulation_time",
-          "0.1",
+          "--render_engine=vtk",
+          "--simulation_time=0.1",
         ]
-        subprocess.run(proc_args)
+        self._check_call(proc_args)

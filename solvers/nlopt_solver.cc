@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/ranges.h>
 #include <nlopt.hpp>
 
 #include "drake/common/autodiff.h"
@@ -333,48 +334,82 @@ T GetOptionValueWithDefault(const std::unordered_map<std::string, T>& options,
   return it->second;
 }
 
-nlopt::algorithm GetNloptAlgorithm(const SolverOptions& merged_options) {
-  const auto& options_str = merged_options.GetOptionsStr(NloptSolver::id());
-  auto it = options_str.find(NloptSolver::AlgorithmName());
-  if (it == options_str.end()) {
-    // Use SLSQP for default;
+nlopt::algorithm ParseNloptAlgorithm(const std::string& algorithm_string) {
+  // Fast path for our default value.
+  if (algorithm_string == "LD_SLSQP") {
     return nlopt::algorithm::LD_SLSQP;
-  } else {
-    const std::string& requested_algorithm = it->second;
-    for (int i = 0; i < nlopt::algorithm::NUM_ALGORITHMS; ++i) {
-      if (requested_algorithm ==
-          nlopt_algorithm_to_string(static_cast<nlopt_algorithm>(i))) {
-        return static_cast<nlopt::algorithm>(i);
-      }
-    }
-    throw std::runtime_error(fmt::format(
-        "Unknown NLopt algorithm {}, please check "
-        "nlopt_algorithm_to_string() function "
-        "github.com/stevengj/nlopt/blob/master/src/api/general.c for "
-        "all supported algorithm names",
-        it->second));
   }
+
+  // Otherwise, scan for a match.
+  for (int i = 0; i < nlopt::algorithm::NUM_ALGORITHMS; ++i) {
+    auto c_enum = static_cast<nlopt_algorithm>(i);
+    auto cxx_enum = static_cast<nlopt::algorithm>(i);
+    if (algorithm_string == nlopt_algorithm_to_string(c_enum)) {
+      return cxx_enum;
+    }
+  }
+
+  // No match; throw a nice error message.
+  std::vector<std::string> known;
+  for (int i = 0; i < nlopt::algorithm::NUM_ALGORITHMS; ++i) {
+    auto c_enum = static_cast<nlopt_algorithm>(i);
+    known.push_back(nlopt_algorithm_to_string(c_enum));
+  }
+  throw std::logic_error(fmt::format(
+      "Unknown NLopt algorithm {}; valid choices are: {}",
+      algorithm_string, fmt::join(known, ", ")));
 }
+
+struct KnownOptions {
+  std::string algorithm{"LD_SLSQP"};
+  double constraint_tol{1e-6};
+  double xtol_rel{1e-6};
+  double xtol_abs{1e-6};
+  int max_eval{1000};
+};
+
+void Serialize(internal::SpecificOptions* archive,
+               // NOLINTNEXTLINE(runtime/references) to match Serialize concept.
+               KnownOptions& options) {
+  archive->Visit(MakeNameValue(NloptSolver::AlgorithmName().c_str(),  // BR
+                               &options.algorithm));
+  archive->Visit(MakeNameValue(NloptSolver::ConstraintToleranceName().c_str(),
+                               &options.constraint_tol));
+  archive->Visit(MakeNameValue(NloptSolver::XRelativeToleranceName().c_str(),
+                               &options.xtol_rel));
+  archive->Visit(MakeNameValue(NloptSolver::XAbsoluteToleranceName().c_str(),
+                               &options.xtol_abs));
+  archive->Visit(MakeNameValue(NloptSolver::MaxEvalName().c_str(),  // BR
+                               &options.max_eval));
+}
+
+KnownOptions ParseOptions(internal::SpecificOptions* options) {
+  KnownOptions result;
+  options->CopyToSerializableStruct(&result);
+  return result;
+}
+
 }  // namespace
 
 bool NloptSolver::is_available() {
   return true;
 }
 
-void NloptSolver::DoSolve(const MathematicalProgram& prog,
-                          const Eigen::VectorXd& initial_guess,
-                          const SolverOptions& merged_options,
-                          MathematicalProgramResult* result) const {
+void NloptSolver::DoSolve2(const MathematicalProgram& prog,
+                           const Eigen::VectorXd& initial_guess,
+                           internal::SpecificOptions* options,
+                           MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
         "NloptSolver doesn't support the feature of variable scaling.");
   }
+  const KnownOptions parsed_options = ParseOptions(options);
+  const double constraint_tol = parsed_options.constraint_tol;
 
   const int nx = prog.num_vars();
 
   // Load the algo to use and the size.
-  const nlopt::algorithm algorithm = GetNloptAlgorithm(merged_options);
-  nlopt::opt opt(algorithm, nx);
+  nlopt::opt opt(ParseNloptAlgorithm(parsed_options.algorithm), nx);
 
   std::vector<double> x(initial_guess.size());
   for (size_t i = 0; i < x.size(); i++) {
@@ -411,17 +446,6 @@ void NloptSolver::DoSolve(const MathematicalProgram& prog,
 
   opt.set_min_objective(EvaluateCosts, const_cast<MathematicalProgram*>(&prog));
 
-  const auto& nlopt_options_double = merged_options.GetOptionsDouble(id());
-  const auto& nlopt_options_int = merged_options.GetOptionsInt(id());
-  const double constraint_tol = GetOptionValueWithDefault(
-      nlopt_options_double, ConstraintToleranceName(), 1e-6);
-  const double xtol_rel = GetOptionValueWithDefault(
-      nlopt_options_double, XRelativeToleranceName(), 1e-6);
-  const double xtol_abs = GetOptionValueWithDefault(
-      nlopt_options_double, XAbsoluteToleranceName(), 1e-6);
-  const int max_eval =
-      GetOptionValueWithDefault(nlopt_options_int, MaxEvalName(), 1000);
-
   std::list<WrappedConstraint> wrapped_vector;
 
   // TODO(sam.creasey): Missing test coverage for generic constraints
@@ -452,9 +476,9 @@ void NloptSolver::DoSolve(const MathematicalProgram& prog,
     WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
 
-  opt.set_xtol_rel(xtol_rel);
-  opt.set_xtol_abs(xtol_abs);
-  opt.set_maxeval(max_eval);
+  opt.set_xtol_rel(parsed_options.xtol_rel);
+  opt.set_xtol_abs(parsed_options.xtol_abs);
+  opt.set_maxeval(parsed_options.max_eval);
 
   result->set_solution_result(SolutionResult::kSolutionFound);
 

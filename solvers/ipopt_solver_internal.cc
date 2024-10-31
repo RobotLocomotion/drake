@@ -363,6 +363,8 @@ IpoptSolver_NLP::IpoptSolver_NLP(const MathematicalProgram& problem,
                                  MathematicalProgramResult* result)
     : problem_(&problem), x_init_{x_init}, result_(result) {}
 
+IpoptSolver_NLP::~IpoptSolver_NLP() = default;
+
 bool IpoptSolver_NLP::get_nlp_info(
     // NOLINTNEXTLINE(runtime/references); this is built into ipopt's API.
     Index& n, Index& m, Index& nnz_jac_g,

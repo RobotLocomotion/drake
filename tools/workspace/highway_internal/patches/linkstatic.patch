@@ -3,8 +3,7 @@
 In general, setting -fvisibility on C++ source code is problematic, but hwy
 upstream has been specifically engineered to allow it.
 
-This situation is unique to Drake, so we do not plan to upstream this
-patch.
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
 
 --- BUILD
 +++ BUILD

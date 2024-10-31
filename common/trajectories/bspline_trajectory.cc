@@ -27,6 +27,9 @@ BsplineTrajectory<T>::BsplineTrajectory(BsplineBasis<T> basis,
 }
 
 template <typename T>
+BsplineTrajectory<T>::~BsplineTrajectory() = default;
+
+template <typename T>
 std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::Clone() const {
   return std::make_unique<BsplineTrajectory<T>>(*this);
 }

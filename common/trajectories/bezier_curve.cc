@@ -23,6 +23,9 @@ BezierCurve<T>::BezierCurve(double start_time, double end_time,
 }
 
 template <typename T>
+BezierCurve<T>::~BezierCurve() = default;
+
+template <typename T>
 T BezierCurve<T>::BernsteinBasis(int i, const T& time,
                                  std::optional<int> order) const {
   using std::pow;

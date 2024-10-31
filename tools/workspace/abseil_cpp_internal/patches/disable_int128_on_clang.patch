@@ -1,6 +1,9 @@
 Disable __int128 in Clang which triggers linker error under UBSan.
 See https://bugs.llvm.org/show_bug.cgi?id=16404
 
+Reasoning for not upstreaming this patch: would need too much surgery to
+gold-plate it for all of their supported build modes.
+
 --- absl/base/config.h
 +++ absl/base/config.h
 @@ -317,8 +317,7 @@ static_assert(ABSL_INTERNAL_INLINE_NAMESPACE_STR[0] != 'h' ||

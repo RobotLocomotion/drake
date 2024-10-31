@@ -115,7 +115,7 @@ class MinimumValueLowerBoundConstraint final : public solvers::Constraint {
                                     double)>
           value_function_double = {});
 
-  ~MinimumValueLowerBoundConstraint() override {}
+  ~MinimumValueLowerBoundConstraint() override;
 
   /** Getter for the lower bound on the minimum value. */
   double minimum_value_lower() const { return minimum_value_lower_; }
@@ -230,7 +230,7 @@ class MinimumValueUpperBoundConstraint final : public solvers::Constraint {
                                     double)>
           value_function_double = {});
 
-  ~MinimumValueUpperBoundConstraint() override {}
+  ~MinimumValueUpperBoundConstraint() override;
 
   /** Getter for the upper bound on the minimum value. */
   double minimum_value_upper() const { return minimum_value_upper_; }

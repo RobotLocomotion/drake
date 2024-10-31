@@ -586,7 +586,7 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
 template <typename T>
 MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
     const RigidBody<T>& body_A, const Vector3<double>& p_AP,
-    const RigidBody<T>& body_B, const Vector3<double>& p_BQ) {
+    const RigidBody<T>& body_B, const std::optional<Vector3<double>>& p_BQ) {
   // N.B. The manager is set up at Finalize() and therefore we must require
   // constraints to be added pre-finalize.
   DRAKE_MBP_THROW_IF_FINALIZED();
@@ -1380,6 +1380,21 @@ void MultibodyPlant<T>::SetUpJointLimitsParameters() {
 }
 
 template <typename T>
+void MultibodyPlant<T>::FinalizeConstraints() {
+  for (auto& [constraint_id, spec] : ball_constraints_specs_) {
+    if (!spec.p_BQ.has_value()) {
+      // Then compute p_BQ using the default context.
+      Vector3<T> p_BQ;
+      auto context = this->CreateDefaultContext();
+      CalcPointsPositions(*context, get_body(spec.body_A).body_frame(),
+                          spec.p_AP.template cast<T>(),
+                          get_body(spec.body_B).body_frame(), &p_BQ);
+      spec.p_BQ = ExtractDoubleOrThrow(p_BQ);
+    }
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::FinalizePlantOnly() {
   DeclareInputPorts();
   DeclareParameters();
@@ -1395,10 +1410,14 @@ void MultibodyPlant<T>::FinalizePlantOnly() {
     set_stiction_tolerance();
   SetUpJointLimitsParameters();
   if (use_sampled_output_ports_) {
-    zero_acceleration_kinematics_placeholder_ =
-        std::make_unique<AccelerationKinematicsCache<T>>(
-            internal_tree().get_topology());
+    auto cache = std::make_unique<AccelerationKinematicsCache<T>>(
+        internal_tree().get_topology());
+    for (SpatialAcceleration<T>& A_WB : cache->get_mutable_A_WB_pool()) {
+      A_WB.SetZero();
+    }
+    zero_acceleration_kinematics_placeholder_ = std::move(cache);
   }
+  FinalizeConstraints();
   scene_graph_ = nullptr;  // must not be used after Finalize().
 }
 
@@ -3277,17 +3296,6 @@ void MultibodyPlant<T>::DeclareOutputPorts() {
               {state_ticket, this->all_parameters_ticket()})
           .get_index();
 
-  // Output "spatial_velocities" (deprecated).
-  {
-    this->DeprecateOutputPort(
-        this->DeclareAbstractOutputPort(
-            "spatial_velocities", std::vector<SpatialVelocity<T>>(num_bodies()),
-            &MultibodyPlant<T>::CalcBodySpatialVelocitiesOutput,
-            {state_ticket, this->all_parameters_ticket()}),
-        "Use 'body_spatial_velocities' not 'spatial_velocities'. "
-        "The deprecated spelling will be removed on 2024-10-01.");
-  }
-
   // Output "body_spatial_accelerations".
   output_port_indices_.body_spatial_accelerations = DeclareSampledOutputPort(
       "body_spatial_accelerations",
@@ -3295,24 +3303,6 @@ void MultibodyPlant<T>::DeclareOutputPorts() {
       &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<true>,
       &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<false>,
       {this->acceleration_kinematics_cache_entry().ticket()});
-
-  // Output "spatial_accelerations" (deprecated).
-  {
-    this->DeprecateOutputPort(
-        this->DeclareAbstractOutputPort(
-            "spatial_accelerations",
-            std::vector<SpatialAcceleration<T>>(num_bodies()),
-            is_discrete() && use_sampled_output_ports_
-                ? &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<true>
-                : &MultibodyPlant<T>::CalcBodySpatialAccelerationsOutput<false>,
-            is_discrete() && use_sampled_output_ports_
-                ? std::set<DependencyTicket>({this->abstract_state_ticket(
-                      systems::AbstractStateIndex{0})})
-                : std::set<DependencyTicket>(
-                      {this->acceleration_kinematics_cache_entry().ticket()})),
-        "Use 'body_spatial_accelerations' not 'spatial_accelerations'. "
-        "The deprecated spelling will be removed on 2024-10-01.");
-  }
 
   // Output "generalized_acceleration".
   output_port_indices_.generalized_acceleration = DeclareSampledOutputPort(
@@ -3788,27 +3778,6 @@ MultibodyPlant<T>::EvalBodySpatialAccelerationInWorld(
   this->ValidateContext(context);
   const AccelerationKinematicsCache<T>& ac = this->EvalForwardDynamics(context);
   return ac.get_A_WB(body_B.mobod_index());
-}
-
-// Deprecated for removal on 2024-10-01.
-template <typename T>
-const std::vector<geometry::PenetrationAsPointPair<T>>&
-MultibodyPlant<T>::EvalPointPairPenetrations(
-    const systems::Context<T>& context) const {
-  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  this->ValidateContext(context);
-  switch (contact_model_) {
-    case ContactModel::kPoint:
-    case ContactModel::kHydroelasticWithFallback: {
-      return EvalGeometryContactData(context).get().point_pairs;
-    }
-    case ContactModel::kHydroelastic: {
-      throw std::logic_error(
-          "Attempting to evaluate point pair contact for contact model that "
-          "doesn't use it");
-    }
-  }
-  DRAKE_UNREACHABLE();
 }
 
 template <typename T>

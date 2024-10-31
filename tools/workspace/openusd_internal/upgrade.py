@@ -20,6 +20,7 @@ SUBDIRS = [
     "pxr/base/plug",
     "pxr/base/tf",
     "pxr/base/trace",
+    "pxr/base/ts",
     "pxr/base/vt",
     "pxr/base/work",
     "pxr/usd/ar",
@@ -44,6 +45,7 @@ PXR_LIBRARY_FUNCTION_STUB_EPILOG = """
       # This order of keys matches the traditional order of the Drake
       # lock file.
       message("NAME = ${NAME}")
+      message("INCLUDE_SCHEMA_FILES = ${args_INCLUDE_SCHEMA_FILES}")
       message("LIBRARIES = ${args_LIBRARIES}")
       message("PUBLIC_CLASSES = ${args_PUBLIC_CLASSES}")
       message("PUBLIC_HEADERS = ${args_PUBLIC_HEADERS}")
@@ -58,6 +60,7 @@ def _slurp_file_from_runfiles(path: str) -> str:
     """Returns the contents of a file from within the runfiles tree."""
     manifest = runfiles.Create()
     found = manifest.Rlocation(path)
+    assert found is not None, path
     return Path(found).read_text(encoding="utf-8")
 
 
@@ -128,6 +131,25 @@ def _interpret(cmake: str) -> dict[str, str | list[str]]:
     return result
 
 
+def _parse_generated_schema(classes_txt: str) -> list[str]:
+    """Given the contents of a generatedSchema.classes.txt file, returns the
+    list of 'Public Classes'.
+    """
+    content = {}
+    section = None
+    for line in classes_txt.splitlines():
+        if line.startswith("# "):
+            section = line[2:]
+            continue
+        if not section:
+            continue
+        if line:
+            items = content.get(section, [])
+            items.append(line)
+            content[section] = items
+    return content.get("Public Classes", [])
+
+
 def _extract(subdir: str) -> dict[str, str | list[str]]:
     """Extracts the pxr_library() call from the given subdir's CMakeLists.txt
     and returns its arguments as a more Pythonic data structure. (Refer to the
@@ -136,6 +158,17 @@ def _extract(subdir: str) -> dict[str, str | list[str]]:
     cmake = _slurp_file_from_runfiles(
         f"openusd_internal/{subdir}/CMakeLists.txt")
     result = _interpret(cmake)
+
+    # The CMakeLists.txt does not necessarily list all public classes. When it
+    # says INCLUDE_SCHEMA_FILES then there is a sidecar file with more classes.
+    has_schema_files = result.pop("INCLUDE_SCHEMA_FILES")[0] == 'TRUE'
+    if has_schema_files:
+        public_classes = result["PUBLIC_CLASSES"]
+        classes_txt = _slurp_file_from_runfiles(
+            f"openusd_internal/{subdir}/generatedSchema.classes.txt")
+        more_public_classes = _parse_generated_schema(classes_txt)
+        public_classes.extend(more_public_classes)
+        result["PUBLIC_CLASSES"] = sorted(public_classes)
 
     # Result dict must contain these keys.
     assert set(result.keys()) == {"NAME", "PUBLIC_CLASSES", "PUBLIC_HEADERS",
