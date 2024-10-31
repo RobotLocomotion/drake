@@ -9,7 +9,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/never_destroyed.h"
@@ -111,21 +110,6 @@ class VectorSystem : public LeafSystem<T> {
     this->DeclareForcedDiscreteUpdateEvent(
         &VectorSystem<T>::CalcDiscreteUpdate);
   }
-
-  DRAKE_DEPRECATED("2024-11-01",
-                   "The direct_feedthrough argument is now required.")
-  VectorSystem(int input_size, int output_size)
-      : VectorSystem(input_size, output_size, std::nullopt) {}
-
-  DRAKE_DEPRECATED(
-      "2024-11-01",
-      "The direct_feedthrough argument is now required. "
-      "To match the prior default, pass std::nullopt but beware that inferring "
-      "feedthrough from symbolic form is incredibly computationally expensive "
-      "and should generally be avoided.")
-  VectorSystem(SystemScalarConverter converter, int input_size, int output_size)
-      : VectorSystem(std::move(converter), input_size, output_size,
-                     std::nullopt) {}
 
   /// Causes the vector-valued input port to become up-to-date, and returns
   /// the port's value as an %Eigen vector.  If the system has zero inputs,

@@ -19,6 +19,7 @@
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/force_density_field.h"
+#include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/context.h"
 

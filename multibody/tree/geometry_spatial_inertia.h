@@ -1,6 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -51,13 +50,6 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
  @pydrake_mkdoc_identifier{mesh} */
 SpatialInertia<double> CalcSpatialInertia(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density);
-
-DRAKE_DEPRECATED(
-    "2024-11-01",
-    "In the function CalcSpatialInertia(), the density argument's default "
-    "value of 1.0 was removed. Provide a sensible density value.")
-SpatialInertia<double> CalcSpatialInertia(
-    const geometry::TriangleSurfaceMesh<double>& mesh);
 
 // TODO(SeanCurtis-TRI): Add CalcSpatialinertia(VolumeMesh).
 

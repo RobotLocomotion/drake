@@ -1054,14 +1054,6 @@ Note: The above is for the C++ documentation. For Python, use
           }),
               py::arg("input_size"), py::arg("output_size"),
               py::arg("direct_feedthrough"), doc.VectorSystem.ctor.doc_3args);
-      cls  // Deprecated 2024-11-01.
-          .def(py_init_deprecated(doc.VectorSystem.ctor.doc_deprecated_2args,
-                   [](int input_size, int output_size) {
-                     return std::make_unique<PyVectorSystem>(
-                         input_size, output_size, std::nullopt);
-                   }),
-              py::arg("input_size"), py::arg("output_size"),
-              doc.VectorSystem.ctor.doc_deprecated_2args);
     }
   }
 
