@@ -1,0 +1,22 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+cc_library(
+    name = "spgrid",
+    srcs = glob(["**/*.cpp"]),
+    hdrs = glob(["**/*.h"]),
+    include_prefix = "SPGrid/Core",
+    # TODO(xuchenhan-tri): Enable Haswell on builds that support it.
+    # TODO(xuchenhan-tri): Disable macOs.
+    includes = ["."],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["License"],  # BSD-2-Clause
+    visibility = ["//visibility:public"],
+)
