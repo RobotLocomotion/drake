@@ -138,6 +138,7 @@ filegroup(
     ] + glob([
         "test/meshes/*",
         "test/box.sdf",
+        "test/configure_visual_roles.sdf",
         "test/*.png",
     ]),
 )
