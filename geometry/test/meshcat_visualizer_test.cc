@@ -1,7 +1,5 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
-// Remove with deprecation 2024-11-01.
-#include <limits>
 #include <thread>
 
 #include <gmock/gmock.h>
@@ -695,14 +693,6 @@ GTEST_TEST(MeshcatVisualizerTest, RealtimeRate) {
   context->SetTime(kT);
   visualizer.ForcedPublish(vis_context);
   ASSERT_EQ(meshcat->GetSimulationTime(), kT);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // ResetRealtimeRateCalculator() re-initializes the last broadcast value.
-  visualizer.ResetRealtimeRateCalculator();
-  ASSERT_EQ(meshcat->GetSimulationTime(),
-            -std::numeric_limits<double>::infinity());
-#pragma GCC diagnostic pop
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, Graphviz) {
