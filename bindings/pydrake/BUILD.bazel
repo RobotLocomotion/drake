@@ -402,6 +402,7 @@ drake_py_unittest(
     ],
     deps = [
         ":all_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

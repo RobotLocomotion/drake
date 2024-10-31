@@ -520,6 +520,7 @@ drake_py_unittest(
     deps = [
         ":common",
         ":ref_cycle_test_util_py",
+        "//bindings/pydrake/common/test_utilities",
     ],
 )
 
