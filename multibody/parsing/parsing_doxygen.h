@@ -175,6 +175,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_hydroelastic_margin
 - @ref tag_drake_hydroelastic_modulus
 - @ref tag_drake_ignored_collision_filter_group
+- @ref tag_drake_illustration_properties
 - @ref tag_drake_joint
 - @ref tag_drake_linear_bushing_rpy
 - @ref tag_drake_member
@@ -184,12 +185,14 @@ Here is the full list of custom elements:
 - @ref tag_drake_mu_dynamic
 - @ref tag_drake_mu_static
 - @ref tag_drake_parent
+- @ref tag_drake_perception_properties
 - @ref tag_drake_point_contact_stiffness
 - @ref tag_drake_proximity_properties
 - @ref tag_drake_relaxation_time
 - @ref tag_drake_rigid_hydroelastic
 - @ref tag_drake_rotor_inertia
 - @ref tag_drake_screw_thread_pitch
+- @ref tag_drake_visual
 
 @subsection tag_drake_acceleration drake:acceleration
 
@@ -222,6 +225,11 @@ The tag serves as a list of renderers for which this visual is targeted.
     the list of targeted renderers.
 
 This feature is one way to provide multiple visual representations of a body.
+
+Specifying this tag for a visual whose perception role has been disabled will
+emit a warning.
+
+@see @ref tag_drake_perception_properties
 
 @subsection tag_drake_ball_constraint drake:ball_constraint
 
@@ -622,6 +630,32 @@ In SDFormat files only, the name may refer to a group within a nested model
 
 @see @ref tag_drake_collision_filter_group, @ref scoped_names
 
+@subsection tag_drake_illustration_properties drake:illustration_properties
+
+- SDFormat path: `//model/link/visual/drake:illustration_properties`
+- URDF path: n/a
+- Syntax: Single attribute: `enabled` (bool).
+
+@subsubsection tag_drake_illustration_properties_semantics Semantics
+
+`<visual>` geometries are assigned illustration roles by default. Their
+appearance in visualizers reflect the materials associated with the `<visual>`
+tag (or, as for meshes, the materials associated with the mesh). If no materials
+are defined, then they pick up whatever default materials the visualizers
+define. A `<visual>` tag can _opt out_ of the illustration role by setting the
+`enabled` attribute to `false`. Setting it to `true` is equivalent to omitting
+the tag completely.
+
+Note: if a `<visual>` tag has disabled both illustration properties _and_
+perception properties, a warning will be emitted. Essentially, the model
+defines a geometry that would be consumed by typical loaders, but it has been
+completely disabled for Drake. The definition for Drake should _refine_ the more
+generic model, but it shouldn't consist of an arbitrarily different set of
+visuals.
+
+@see @ref tag_drake_perception_properties
+@see @ref tag_drake_visual
+
 @subsection tag_drake_joint drake:joint
 
 - SDFormat path: `//model/drake:joint`
@@ -767,6 +801,32 @@ MultibodyPlant's constructor documentation for details.
 - URDF path: N/A
 - Syntax: String.
 
+@subsection tag_drake_perception_properties drake:perception_properties
+
+- SDFormat path: `//model/link/visual/drake:perception_properties`
+- URDF path: n/a
+- Syntax: Single attribute: `enabled` (bool).
+
+@subsubsection tag_drake_perception_properties_semantics Semantics
+
+`<visual>` geometries are assigned perception roles by default. Their appearance
+in renderers reflect the materials associated with the `<visual>` tag (or, as
+for meshes, the materials associated with the mesh). If no materials are
+defined, then they pick up whatever default materials the renderers define. A
+`<visual>` tag can _opt out_ of the perception role by setting the `enabled`
+attribute to `false`. Setting it to `true` is equivalent to omitting the tag
+completely.
+
+Note: if a `<visual>` tag has disabled both perception properties _and_
+illustration properties, a warning will be emitted. Essentially, the model
+defines a geometry that would be consumed by typical loaders, but it has been
+completely disabled for Drake. The definition for Drake should _refine_ the more
+generic model, but it shouldn't consist of an arbitrarily different set of
+visuals.
+
+@see @ref tag_drake_illustration_properties
+@see @ref tag_drake_visual
+
 @subsubsection tag_drake_parent_semantics Semantics
 
 The string names a frame (defined elsewhere in the model) that is associated
@@ -876,5 +936,48 @@ revolution of the joint. Units are m/revolution, with a positive value
 corresponding to a right-handed thread.
 
 @see drake::multibody::ScrewJoint
+
+@subsection tag_drake_visual drake:visual
+
+- SDFormat path: `//model/link`
+- URDF path: n/a
+- Syntax: Identical to SDFormat's `<visual>` tag, but with the `drake` namespace
+  prepended. All tags that can be found under the `<visual>` tag (e.g.,
+  `<pose>`, `<geometry>`, `<sphere>`, etc.) can be included under the
+  `<drake:visual>` tag, provided they have the `drake` namespace affixed (e.g.,
+  `<drake:pose>`, `<drake:geometry>`, `<drake:sphere>`, etc.).
+
+@subsubsection tag_drake_visual_semantics Semantics
+
+The `<drake:visual>` tag is provided for the purpose of defining visual elements
+that only Drake will consume. This could be used to do Drake-specific
+augmentation of a model. But the main intended use case is for associating
+_different_ geometries with a link based on its role. Use one geometry for the
+illustration role and another for the perception role. To use different
+geometries per role:
+
+  1. Choose the illustration and perception geometries.
+  2. Decide which geometry you want to serve as the default geometry in other
+     SDFormat loaders.
+  3. Use the SDFormat `<visual>` tag for that default geometry (including all
+     typical descendant tags).
+  4. In the `<visual>` tag, include the `<drake:??_properties>` tag of the
+     role this visual should *not* serve. Set its `enabled` attribute to
+     `false`. Remember, by default the visual would get both roles, so you have
+     to opt out of the role you don't want the geometry to have.
+  5. As a sibling to that main `<visual>`, add a `<drake:visual>` tag and define
+     its subtree as you normally would (making sure to prefix everything with
+     the `drake:` namespace).
+  6. Under the `<drake:visual>` tag, include the _other_ `<drake:??_properties>`
+     tag and set its `enabled` tag to `false`.
+
+This will allow Drake to use different visual representations for each visual
+role but still keep a more general SDFormat definition for other loaders.
+
+Note: disabling both visual roles on a `<drake:visual>` element will _not_
+emit a warning as it would for doing the same to a `<visual>` tag.
+
+@see @ref tag_drake_perception_properties
+@see @ref tag_drake_illustration_properties
 
 */
