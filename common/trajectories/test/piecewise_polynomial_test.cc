@@ -71,7 +71,7 @@ void testIntegralAndDerivative() {
 template <typename T>
 void testBasicFunctionality() {
   int max_num_coefficients = 6;
-  int num_tests = 3;
+  int num_tests = 100;
   default_random_engine generator;
   uniform_int_distribution<> int_distribution(1, max_num_coefficients);
 
