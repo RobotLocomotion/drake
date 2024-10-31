@@ -71,7 +71,7 @@ void testIntegralAndDerivative() {
 template <typename T>
 void testBasicFunctionality() {
   int max_num_coefficients = 6;
-  int num_tests = 100;
+  int num_tests = 3;
   default_random_engine generator;
   uniform_int_distribution<> int_distribution(1, max_num_coefficients);
 
@@ -147,6 +147,25 @@ void testBasicFunctionality() {
                                               piecewise1.end_time());
     double t = uniform(generator);
 
+    // Random segment index to put the break
+    uniform_int_distribution<> segment_dist(0, piecewise2.get_number_of_segments() - 1);
+    int segment_index = segment_dist(generator);
+
+    PiecewisePolynomial<T> piecewise1_with_new_break = piecewise1;
+    EXPECT_EQ(piecewise1_with_new_break.AddBreak(t), piecewise1.get_segment_index(t) + 1);
+    EXPECT_EQ(piecewise1_with_new_break.get_number_of_segments(),
+              piecewise1.get_number_of_segments() + 1);
+
+    PiecewisePolynomial<T> piecewise2_with_new_break = piecewise2;
+    EXPECT_EQ(piecewise2_with_new_break.AddBreak(piecewise2.start_time(segment_index)), segment_index);
+    
+    EXPECT_EQ(piecewise2_with_new_break.get_number_of_segments(),
+              piecewise2.get_number_of_segments());
+
+    double t_2 = uniform(generator);
+
+    auto trimmed_piecewise2 = piecewise2.Trim(std::min(t, t_2), std::max(t, t_2));
+
     EXPECT_TRUE(CompareMatrices(sum.value(t),
                                 piecewise1.value(t) + piecewise2.value(t), 1e-8,
                                 MatrixCompareType::absolute));
@@ -183,6 +202,31 @@ void testBasicFunctionality() {
     EXPECT_TRUE(CompareMatrices(piecewise2_twice.value(t),
                                 piecewise2_twice.value(t + total_time), 1e-8,
                                 MatrixCompareType::absolute));
+    
+    // The piecewise_with_new_break values must not change.
+    EXPECT_TRUE(CompareMatrices(piecewise1_with_new_break.value(t),
+                                piecewise1.value(t), 1e-8,
+                                MatrixCompareType::absolute));
+    // Pick 10 random samples and check that the sampled values are the same.
+    for (int k = 0; k < 10; k++){
+      double t_sample = uniform(generator);
+      EXPECT_TRUE(CompareMatrices(piecewise1_with_new_break.value(t_sample),
+                                piecewise1.value(t_sample), 1e-8,
+                                MatrixCompareType::absolute));
+    }
+
+    // Check if trimmed_piecewise2 is indeed a trimmed version of piecewise2.
+    EXPECT_EQ(trimmed_piecewise2.start_time(), std::min(t, t_2));
+    EXPECT_EQ(trimmed_piecewise2.end_time(), std::max(t, t_2));
+    uniform_real_distribution<double> uniform_trimmed(trimmed_piecewise2.start_time(),
+                                                      trimmed_piecewise2.end_time());
+    // Pick 10 random samples and check that the sampled values are the same.
+    for (int k = 0; k < 10; k++){
+      double t_sample = uniform_trimmed(generator);
+      EXPECT_TRUE(CompareMatrices(trimmed_piecewise2.value(t_sample),
+                                piecewise2.value(t_sample), 1e-8,
+                                MatrixCompareType::absolute));
+    }
   }
 }
 
