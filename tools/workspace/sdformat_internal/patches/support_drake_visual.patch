@@ -1,0 +1,71 @@
+We convert <drake:visual> to <visual> after SDF parsing. This means we're
+going to modify the sdf::Link instances in place, adding new sdf::Visual
+instances. To support this change, we needed the following:
+
+  1. sdf::Root did not give mutable access to its sdf::Model (only const). Now
+     it does.
+  2. The new <visual> elements need to have their "PoseRelativeToGraph" property
+     set. We've modified Link::AddVisual() to automatically update added
+     visual's graphs to the link's graph (this is what happens when we call
+     Link::SetPoseRelativeToGraph()). This should be otherwise benign.
+
+The mutable access to sdf::Model seems more consistent with how the other types
+work and should probably be upstreamed.
+
+The assignment of the pose-relative-to-graph to Visual seems benign and could
+be upstreamed. However, it's not clear if sdformat wants to encourage this kind
+of post-parse modification. If it does, then the same logic should be applied
+to the sdf::Link's other child elements: Collision, Light, Sensor, Emitter,
+and Projector.
+
+diff --git a/include/sdf/Root.hh b/include/sdf/Root.hh
+index 9ad5f163..197fd3e2 100644
+--- include/sdf/Root.hh
++++ include/sdf/Root.hh
+@@ -170,6 +170,11 @@ namespace sdf
+     /// \return A pointer to the model, nullptr if it doesn't exist
+     public: const sdf::Model *Model() const;
+ 
++    /// \brief Get the mutable model object if it exists.
++    ///
++    /// \return A pointer to the model; nullptr if it doesn't exist.
++    public: sdf::Model *Model();
++
+     /// \brief Set the model object. This will override any existing model,
+     /// actor, and light object.
+     /// \param[in] _model The model to use.
+diff --git a/src/Link.cc b/src/Link.cc
+index 19c3569f..610e5d40 100644
+--- src/Link.cc
++++ src/Link.cc
+@@ -940,6 +940,13 @@ bool Link::AddVisual(const Visual &_visual)
+   if (this->VisualNameExists(_visual.Name()))
+     return false;
+   this->dataPtr->visuals.push_back(_visual);
++
++  // Configure the visual's pose-relative-to graph in case the visual gets
++  // added *after* the Link has been configured.
++  auto& visual = this->dataPtr->visuals.back();
++  visual.SetXmlParentName(this->dataPtr->name);
++  visual.SetPoseRelativeToGraph(this->dataPtr->poseRelativeToGraph);
++
+   return true;
+ }
+ 
+diff --git a/src/Root.cc b/src/Root.cc
+index 03349d2a..c15cf8d5 100644
+--- src/Root.cc
++++ src/Root.cc
+@@ -475,6 +475,12 @@ const Model *Root::Model() const
+   return std::get_if<sdf::Model>(&this->dataPtr->modelLightOrActor);
+ }
+ 
++/////////////////////////////////////////////////
++Model *Root::Model()
++{
++  return std::get_if<sdf::Model>(&this->dataPtr->modelLightOrActor);
++}
++
+ /////////////////////////////////////////////////
+ void Root::SetModel(const sdf::Model &_model)
+ {
