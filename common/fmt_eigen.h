@@ -12,17 +12,20 @@ namespace internal {
 
 /* A tag type to be used in fmt::format("{}", fmt_eigen(...)) calls.
 Below we'll add a fmt::formatter<> specialization for this tag. */
-template <typename Derived>
+template <typename Scalar>
 struct fmt_eigen_ref {
-  const Eigen::MatrixBase<Derived>& matrix;
+  Eigen::Ref<const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>>
+      matrix;
 };
 
 /* Returns the string formatting of the given matrix.
 @tparam T must be either double, float, or string */
-template <typename T>
+template <typename Scalar>
 std::string FormatEigenMatrix(
-    const Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&
-        matrix);
+    const Eigen::Ref<
+        const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>>& matrix)
+  requires std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float> ||
+           std::is_same_v<Scalar, std::string>;
 
 }  // namespace internal
 
@@ -50,7 +53,7 @@ Drake is allowed to use Eigen's `operator<<`. Downstream code that calls into
 Drake is not required to use that option; it is only enforced by Drake's build
 system, not by Drake's headers. */
 template <typename Derived>
-internal::fmt_eigen_ref<Derived> fmt_eigen(
+internal::fmt_eigen_ref<typename Derived::Scalar> fmt_eigen(
     const Eigen::MatrixBase<Derived>& matrix) {
   return {matrix};
 }
@@ -60,14 +63,13 @@ internal::fmt_eigen_ref<Derived> fmt_eigen(
 #ifndef DRAKE_DOXYGEN_CXX
 // Formatter specialization for drake::fmt_eigen.
 namespace fmt {
-template <typename Derived>
-struct formatter<drake::internal::fmt_eigen_ref<Derived>>
+template <typename Scalar>
+struct formatter<drake::internal::fmt_eigen_ref<Scalar>>
     : formatter<std::string_view> {
   template <typename FormatContext>
-  auto format(const drake::internal::fmt_eigen_ref<Derived>& ref,
+  auto format(const drake::internal::fmt_eigen_ref<Scalar>& ref,
               // NOLINTNEXTLINE(runtime/references) To match fmt API.
-              FormatContext& ctx) DRAKE_FMT8_CONST -> decltype(ctx.out()) {
-    using Scalar = typename Derived::Scalar;
+              FormatContext& ctx) DRAKE_FMT8_CONST->decltype(ctx.out()) {
     const auto& matrix = ref.matrix;
     if constexpr (std::is_same_v<Scalar, double> ||
                   std::is_same_v<Scalar, float>) {
