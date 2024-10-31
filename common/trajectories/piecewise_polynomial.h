@@ -753,13 +753,14 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @warning If `new_break` is within PiecewiseTrajectory::kEpsilonTime from
    *         an existing break, the new break will be silently ignored. Returns
    *        the index of the existing break.
-   *        
+   *
    */
   int AddBreak(const T& new_break);
 
   /** Trims the trajectory within a specified time range.
    * q = p.Trim(t1, t2) returns a PiecewisePolynomial q such that
-   * q.start_time() == t1, q.end_time() == t2, and q(t) == p(t) for t1 <= t <= t2.
+   * q.start_time() == t1, q.end_time() == t2, and q(t) == p(t) for t1 <= t <=
+   * t2.
    * @throws std::exception if `start_time` or `end_time` is not within the
    *        trajectory's time range.
    */
