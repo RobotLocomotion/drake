@@ -25,11 +25,13 @@ void DefineVisualizationConfig(py::module m) {
   }
 
   m  // BR
+     // XXX probably needs annotation
       .def("ApplyVisualizationConfig", &ApplyVisualizationConfig,
           py::arg("config"), py::arg("builder"), py::arg("lcm_buses") = nullptr,
           py::arg("plant") = nullptr, py::arg("scene_graph") = nullptr,
           py::arg("meshcat") = nullptr, py::arg("lcm") = nullptr,
           doc.ApplyVisualizationConfig.doc)
+      // XXX probably needs annotation
       .def("AddDefaultVisualization", &AddDefaultVisualization,
           py::arg("builder"), py::arg("meshcat") = nullptr,
           doc.AddDefaultVisualization.doc);
