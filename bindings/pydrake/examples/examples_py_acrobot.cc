@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -161,8 +162,7 @@ void DefineExamplesAcrobot(py::module m) {
               geometry::SceneGraph<double>*>(&AcrobotGeometry::AddToBuilder),
           py::arg("builder"), py::arg("acrobot_state_port"),
           py::arg("acrobot_params"), py::arg("scene_graph"),
-          // Keep alive, ownership: `return` keeps `builder` alive.
-          py::keep_alive<0, 1>(),
+          internal::ref_cycle<0, 1>(),
           // See #11531 for why `py_rvp::reference` is needed.
           py_rvp::reference, doc.AcrobotGeometry.AddToBuilder.doc_4args)
       .def_static("AddToBuilder",
@@ -172,7 +172,7 @@ void DefineExamplesAcrobot(py::module m) {
           py::arg("builder"), py::arg("acrobot_state_port"),
           py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
-          py::keep_alive<0, 1>(),
+          internal::ref_cycle<0, 1>(),
           // See #11531 for why `py_rvp::reference` is needed.
           py_rvp::reference, doc.AcrobotGeometry.AddToBuilder.doc_3args);
 }
