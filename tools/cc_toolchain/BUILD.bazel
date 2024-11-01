@@ -8,12 +8,6 @@ config_setting(
 )
 
 config_setting(
-    name = "apple_debug",
-    constraint_values = ["@platforms//os:osx"],
-    values = {"compilation_mode": "dbg"},
-)
-
-config_setting(
     name = "debug",
     values = {"compilation_mode": "dbg"},
 )
