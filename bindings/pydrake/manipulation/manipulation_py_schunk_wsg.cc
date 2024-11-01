@@ -122,11 +122,13 @@ void DefineManipulationSchunkWsg(py::module m) {
   {
     using T = double;
 
+    // XXX probably needs annotations
     m.def("ApplyDriverConfig", &manipulation::schunk_wsg::ApplyDriverConfig,
         py::arg("driver_config"), py::arg("model_instance_name"),
         py::arg("sim_plant"), py::arg("models_from_directives"),
         py::arg("lcms"), py::arg("builder"), doc.ApplyDriverConfig.doc);
 
+    // XXX probably needs annotations
     m.def("BuildSchunkWsgControl",
         &manipulation::schunk_wsg::BuildSchunkWsgControl, py::arg("plant"),
         py::arg("wsg_instance"), py::arg("lcm"), py::arg("builder"),

@@ -26,6 +26,7 @@ void DefineManipulationUtil(py::module m) {
   }
 
   {
+    // XXX probably needs annotations
     m.def("ApplyDriverConfig", &ApplyDriverConfig, py::arg("driver_config"),
         py::arg("model_instance_name"), py::arg("sim_plant"),
         py::arg("models_from_directives"), py::arg("lcms"), py::arg("builder"),
