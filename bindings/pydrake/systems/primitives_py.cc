@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
@@ -434,6 +435,7 @@ PYBIND11_MODULE(primitives, m) {
           return std::make_unique<SharedPointerSystem<T>>(std::move(wrapped));
         }),
             py::arg("value_to_hold"), doc.SharedPointerSystem.ctor.doc)
+        // XXX probably needs annotation
         .def_static(
             "AddToBuilder",
             [](DiagramBuilder<T>* builder, py::object value_to_hold) {
@@ -557,7 +559,7 @@ PYBIND11_MODULE(primitives, m) {
             &LogVectorOutput<T>),
         py::arg("src"), py::arg("builder"), py::arg("publish_period") = 0.0,
         // Keep alive, ownership: `return` keeps `builder` alive.
-        py::keep_alive<0, 2>(),
+        internal::ref_cycle<0, 2>(),
         // See #11531 for why `py_rvp::reference` is needed.
         py_rvp::reference, doc.LogVectorOutput.doc_3args);
 
@@ -567,7 +569,7 @@ PYBIND11_MODULE(primitives, m) {
         py::arg("src"), py::arg("builder"), py::arg("publish_triggers"),
         py::arg("publish_period") = 0.0,
         // Keep alive, ownership: `return` keeps `builder` alive.
-        py::keep_alive<0, 2>(),
+        internal::ref_cycle<0, 2>(),
         // See #11531 for why `py_rvp::reference` is needed.
         py_rvp::reference, doc.LogVectorOutput.doc_4args);
 
@@ -749,6 +751,7 @@ PYBIND11_MODULE(primitives, m) {
           py::arg("num_outputs"), py::arg("sampling_interval_sec"),
           doc.RandomSource.ctor.doc);
 
+  // XXX annotate???
   m.def("AddRandomInputs", &AddRandomInputs<double>,
        py::arg("sampling_interval_sec"), py::arg("builder"),
        doc.AddRandomInputs.doc)
