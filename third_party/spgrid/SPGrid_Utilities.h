@@ -9,6 +9,7 @@
 #define __SPGrid_Utilities_h__
 
 #include <sstream>
+#include <cstdint>
 
 //#define HASWELL
 

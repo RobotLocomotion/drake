@@ -27,10 +27,10 @@ class SpGrid {
   /* PageMap keeps track of which blocks in the SPGrid are allocated. */
   using PageMap = SPGrid::SPGrid_Page_Map<kLog2Page>;
   /* Mask helps convert from offset (1D index) to 3D index and vice versa. */
-  using Mask = typename Allocator::Array_mask<GridData>;
+  using Mask = typename Allocator::template Array_mask<GridData>;
   /* Array type for GridData. */
-  using Array = typename Allocator::Array_type<GridData>;
-  using ConstArray = typename Allocator::Array_type<const GridData>;
+  using Array = typename Allocator::template Array_type<GridData>;
+  using ConstArray = typename Allocator::template Array_type<const GridData>;
   using Offset = uint64_t;
 
   explicit SpGrid(Scalar dx)

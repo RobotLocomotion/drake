@@ -84,7 +84,7 @@ load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
-load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_internal_repository") # noqa
+load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_internal_repository")  # noqa
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
 load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
