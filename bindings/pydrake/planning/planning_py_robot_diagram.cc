@@ -1,5 +1,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -21,8 +22,8 @@ void DefinePlanningRobotDiagram(py::module m) {
     {
       using Class = RobotDiagram<T>;
       constexpr auto& cls_doc = doc.RobotDiagram;
-      auto cls = DefineTemplateClassWithDefault<Class, systems::Diagram<T>>(
-          m, "RobotDiagram", GetPyParam<T>(), cls_doc.doc);
+      auto cls = DefineTemplateClassWithDefault<Class, systems::Diagram<T>>(m,
+          "RobotDiagram", GetPyParam<T>(), cls_doc.doc, {}, py::dynamic_attr());
       cls  // BR
           .def("plant", &Class::plant, py_rvp::reference_internal,
               cls_doc.plant.doc)
@@ -52,8 +53,8 @@ void DefinePlanningRobotDiagram(py::module m) {
     {
       using Class = RobotDiagramBuilder<T>;
       constexpr auto& cls_doc = doc.RobotDiagramBuilder;
-      auto cls = DefineTemplateClassWithDefault<Class>(
-          m, "RobotDiagramBuilder", GetPyParam<T>(), cls_doc.doc);
+      auto cls = DefineTemplateClassWithDefault<Class>(m, "RobotDiagramBuilder",
+          GetPyParam<T>(), cls_doc.doc, {}, py::dynamic_attr());
       cls  // BR
           .def(py::init<double>(), py::arg("time_step") = 0.001,
               cls_doc.ctor.doc)
@@ -79,13 +80,7 @@ void DefinePlanningRobotDiagram(py::module m) {
               cls_doc.scene_graph.doc_0args_nonconst)
           .def("IsDiagramBuilt", &Class::IsDiagramBuilt,
               cls_doc.IsDiagramBuilt.doc)
-          .def("Build", &Class::Build,
-              // Keep alive, ownership (tr.): `self` keeps `return` alive.
-              // Any prior reference access to our owned systems (e.g., plant())
-              // must remain valid, so the RobotDiagram cannot be destroyed
-              // until the builder (and all of its internal references) are
-              // finished.
-              py::keep_alive<1, 0>(), cls_doc.Build.doc);
+          .def("Build", &Class::Build, cls_doc.Build.doc);
     }
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
