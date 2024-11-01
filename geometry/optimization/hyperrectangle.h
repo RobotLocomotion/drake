@@ -71,6 +71,10 @@ class Hyperrectangle final : public ConvexSet {
     CheckInvariants();
   }
 
+  /** A Hyperrectangle is always bounded, since infinite lower and upper bounds
+  are prohibited. `parallelism` is ignored. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
@@ -79,7 +83,9 @@ class Hyperrectangle final : public ConvexSet {
   bool DoIsEmpty() const final { return false; }
 
   /** We only support finite hyperrectangles */
-  std::optional<bool> DoIsBoundedShortcut() const final { return true; }
+  std::optional<bool> DoIsBoundedShortcut(Parallelism) const final {
+    return true;
+  }
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 

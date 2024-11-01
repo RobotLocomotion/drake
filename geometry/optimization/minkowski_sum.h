@@ -63,10 +63,15 @@ class MinkowskiSum final : public ConvexSet {
   */
   using ConvexSet::PointInSet;
 
+  /** A MinkowskiSum is bounded if and only if each constituent set is
+  bounded. `parallelism` is passed through to each constituent set's IsEmpty
+  method call. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcut() const final;
+  std::optional<bool> DoIsBoundedShortcut(Parallelism parallelism) const final;
 
   bool DoIsEmpty() const final;
 

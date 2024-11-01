@@ -94,6 +94,7 @@ drake_cc_library(
         "//solvers:mosek_solver",
         "//solvers:scs_solver",
         "//solvers:solve",
+        "@common_robotics_utilities",
         "@qhull_internal//:qhull",
     ],
 )

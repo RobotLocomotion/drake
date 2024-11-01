@@ -132,10 +132,11 @@ std::unique_ptr<ConvexSet> CartesianProduct::DoClone() const {
   return std::make_unique<CartesianProduct>(*this);
 }
 
-std::optional<bool> CartesianProduct::DoIsBoundedShortcut() const {
+std::optional<bool> CartesianProduct::DoIsBoundedShortcut(
+    Parallelism parallelism) const {
   // Note: The constructor enforces that A_ is full column rank.
   for (const auto& s : sets_) {
-    if (!s->IsBounded()) {
+    if (!s->IsBounded(parallelism)) {
       return false;
     }
   }

@@ -75,7 +75,7 @@ class HPolyhedron final : public ConvexSet {
   finite lower and upper bound for the set.  For HPolyhedron, while there are
   some fast checks to confirm a set is unbounded, confirming boundedness
   requires solving a linear program (based on Stiemke’s theorem of
-  alternatives). */
+  alternatives). `parallelism` is ignored. */
   using ConvexSet::IsBounded;
 
   /** Returns true iff this HPolyhedron is entirely contained in the HPolyhedron
@@ -332,7 +332,7 @@ class HPolyhedron final : public ConvexSet {
 
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcut() const final;
+  std::optional<bool> DoIsBoundedShortcut(Parallelism parallelism) const final;
 
   bool DoIsEmpty() const final;
 

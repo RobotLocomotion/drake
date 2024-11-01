@@ -1,14 +1,19 @@
 #include "drake/geometry/optimization/convex_set.h"
 
 #include <algorithm>
+#include <atomic>
 #include <limits>
 #include <memory>
+
+#include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solve.h"
+#include "drake/solvers/solver_interface.h"
 
 namespace drake {
 namespace geometry {
@@ -59,20 +64,25 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
 }
 
 namespace {
-void ConstructBoundednessProgram(MathematicalProgram* prog, const ConvexSet& s,
-                                 int dimension_index, bool maximize) {
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
+
+void ConstructEmptyBoundednessProgram(MathematicalProgram* prog,
+                                      const ConvexSet& s) {
   const int n = s.ambient_dimension();
-  DRAKE_ASSERT(dimension_index >= 0 && dimension_index < n);
+
+  DRAKE_DEMAND(prog != nullptr);
+  DRAKE_DEMAND(prog->num_vars() == 0 && prog->GetAllCosts().empty() &&
+               prog->GetAllConstraints().empty());
 
   VectorXDecisionVariable x = prog->NewContinuousVariables(n, "x");
   s.AddPointInSetConstraints(prog, x);
   VectorXd objective_vector = VectorXd::Zero(n);
-  objective_vector[dimension_index] = maximize ? -1 : 1;
   prog->AddLinearCost(objective_vector, x);
 }
 
-inline bool ProgramResultImpliesUnbounded(
-    const MathematicalProgramResult& result) {
+bool ProgramResultImpliesUnbounded(const MathematicalProgramResult& result) {
   return result.get_solution_result() == solvers::SolutionResult::kUnbounded ||
          result.get_solution_result() ==
              solvers::SolutionResult::kInfeasibleOrUnbounded ||
@@ -84,68 +94,88 @@ bool IsBoundedSequential(const ConvexSet& s) {
   // Let a variable x be contained in the convex set. Iteratively try to
   // minimize or maximize x[i] for each dimension i. If any solves are
   // unbounded, the set is not bounded.
+  MathematicalProgram prog;
+  ConstructEmptyBoundednessProgram(&prog, s);
+
+  VectorXd objective_vector(s.ambient_dimension());
   for (int i = 0; i < s.ambient_dimension(); ++i) {
-    for (const bool maximize_i : {true, false}) {
-      MathematicalProgram prog;
-      ConstructBoundednessProgram(&prog, s, i, maximize_i /* maximize */);
-      MathematicalProgramResult result = solvers::Solve(prog);
+    for (bool maximize : {true, false}) {
+      objective_vector.setZero();
+      objective_vector[i] = maximize ? -1 : 1;
+      prog.linear_costs()[0].evaluator()->UpdateCoefficients(objective_vector);
+      const auto result = solvers::Solve(prog);
       if (ProgramResultImpliesUnbounded(result)) {
         return false;
       }
     }
   }
-  // All optimization problems were bounded, so we return true.
   return true;
 }
 
 bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
-  const int n = s.ambient_dimension();
-
-  // At the end of each batch, we check to see if we've identified an unbounded
-  // direction. If so, we immediately return. We use a large batch size to trade
-  // off the overhead of spinning up threads with the runtime of solving the
-  // possibly-redundant programs.
-  const int batch_size = 10 * parallelism.num_threads();
-
-  // Let a variable x be contained in the convex set. Iteratively try to
-  // minimize or maximize x[i] for each dimension i. If any solves are
-  // unbounded, the set is not bounded.
-  int num_batches = 1 + (n / batch_size);
-  for (int batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-    int batch_start = batch_idx * batch_size;
-    int batch_end = std::min((batch_idx + 1) * batch_size, n);
-    int this_batch_size = batch_end - batch_start;
-
-    std::vector<MathematicalProgram> progs(2 * this_batch_size);
-    for (int i = 0; i < this_batch_size; ++i) {
-      const int dimension_index = i + batch_start;
-      ConstructBoundednessProgram(&(progs[i]), s, dimension_index,
-                                  false /* maximize */);
-      ConstructBoundednessProgram(&(progs[i + this_batch_size]), s,
-                                  dimension_index, true /* maximize */);
-    }
-
-    std::vector<const MathematicalProgram*> prog_ptrs(progs.size());
-    for (int i = 0; i < ssize(progs); ++i) {
-      prog_ptrs[i] = &(progs[i]);
-    }
-
-    // All programs are the same size, so we use static scheduling.
-    std::vector<MathematicalProgramResult> results =
-        solvers::SolveInParallel(prog_ptrs, nullptr, nullptr, std::nullopt,
-                                 parallelism, false /* use_dynamic_schedule */);
-    for (const auto& result : results) {
-      if (result.get_solution_result() == solvers::SolutionResult::kUnbounded ||
-          result.get_solution_result() ==
-              solvers::SolutionResult::kInfeasibleOrUnbounded ||
-          result.get_solution_result() ==
-              solvers::SolutionResult::kDualInfeasible) {
-        return false;
-      }
-    }
+  // Pre-allocate programs (which will be updated and solved within the parallel
+  // loop).
+  std::vector<MathematicalProgram> progs(parallelism.num_threads());
+  for (int i = 0; i < ssize(progs); ++i) {
+    ConstructEmptyBoundednessProgram(&(progs[i]), s);
+    DRAKE_ASSERT(progs[i].linear_costs().size() == 0);
   }
-  // All optimization problems were bounded, so we return true.
-  return true;
+
+  // Pre-allocate empty MathematicalProgramResults for each thread.
+  std::vector<MathematicalProgramResult> results(parallelism.num_threads());
+
+  // Pre-allocate solver intances.
+  const solvers::SolverId solver_id = solvers::ChooseBestSolver(progs[0]);
+  std::vector<std::unique_ptr<solvers::SolverInterface>> solver_interfaces(
+      parallelism.num_threads());
+
+  // Pre-allocate the solver options.
+  std::vector<solvers::SolverOptions> options(parallelism.num_threads());
+
+  for (int i = 0; i < parallelism.num_threads(); ++i) {
+    solver_interfaces[i] = solvers::MakeSolver(solver_id);
+    options[i].SetOption(solvers::CommonSolverOption::kMaxThreads, 1);
+  }
+
+  std::atomic<bool> certified_unbounded = false;
+
+  // This worker lambda takes in a dimension and a direction, and tries to
+  // maximize or minimize a point in the set along that dimension. If
+  // unboundedness has already been verified, it just exits early. If
+  // unboundedness is verified in this iteration, certified_unbounded will be
+  // updated to reflect that fact. For a given index i, the dimension is
+  // int(i / 2), and if i % 2 == 0, then we maximize, otherwise, we minimize.
+  auto solve_ith = [&](const int thread_num, const int64_t i) {
+    if (certified_unbounded.load()) {
+      return;
+    }
+
+    const int dimension = i / 2;
+    bool maximize = i % 2 == 0;
+
+    VectorXd objective_vector(s.ambient_dimension());
+    objective_vector.setZero();
+    objective_vector[dimension] = maximize ? -1 : 1;
+
+    // By construction, each Mathematical program has one cost (the linear cost)
+    progs[thread_num].linear_costs()[0].evaluator()->UpdateCoefficients(
+        objective_vector);
+    solver_interfaces[thread_num]->Solve(progs[thread_num], std::nullopt,
+                                         options[thread_num],
+                                         &(results[thread_num]));
+    if (ProgramResultImpliesUnbounded(results[thread_num])) {
+      certified_unbounded.store(true);
+    }
+  };
+
+  // We run the loop from 0 to 2 * s.ambient_dimension(), since two programs are
+  // solved for each dimension (maximizing and minimizing). All programs are the
+  // same size, so static scheduling is appropriate.
+  StaticParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()), 0,
+                             2 * s.ambient_dimension(), solve_ith,
+                             ParallelForBackend::BEST_AVAILABLE);
+
+  return !certified_unbounded.load();
 }
 }  // namespace
 

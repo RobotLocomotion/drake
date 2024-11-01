@@ -64,10 +64,15 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
   /** @throws  Not implemented. */
   using ConvexSet::CalcVolume;
 
+  /** A CartesianProduct is bounded if and only if each constituent set is
+  bounded. `parallelism` is passed through to each constituent set's IsEmpty
+  method call. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcut() const final;
+  std::optional<bool> DoIsBoundedShortcut(Parallelism parallelism) const final;
 
   bool DoIsEmpty() const final;
 

@@ -93,16 +93,20 @@ class ConvexSet {
   finite lower and upper bound for the set.  Note: for some derived classes,
   this check is trivial, but for others it can require solving a number of
   (typically small) optimization problems. Check the derived class documentation
-  for any notes.
+  for any notes on how easy this computation is, and whether or not parallelism
+  can be used. Derived classes which do not have a specialized check will use
+  GenericDoIsBounded, which honors `parallelism`. Note that the overhead of
+  multithreading may lead to slower runtimes for simple, low-dimensional sets,
+  but can enable major speedups for more challenging problems.
 
-  @param parallelism specifies the number of cores to use when solving
-  mathematical programs to check boundedness, if the derived class does not
-  provide a more efficient boundedness check. */
+  @param parallelism requests the number of cores to use when solving
+  mathematical programs to check boundedness, for method that can support
+  parallelization. */
   bool IsBounded(Parallelism parallelism = Parallelism::None()) const {
     if (ambient_dimension() == 0) {
       return true;
     }
-    const auto shortcut_result = DoIsBoundedShortcut();
+    const auto shortcut_result = DoIsBoundedShortcut(parallelism);
     if (shortcut_result.has_value()) {
       return shortcut_result.value();
     }
@@ -319,7 +323,7 @@ class ConvexSet {
   returns std::nullopt. This allows a derived class to implement its own
   boundedness checks, to potentially avoid the more expensive base class checks.
   @pre ambient_dimension() >= 0 */
-  virtual std::optional<bool> DoIsBoundedShortcut() const {
+  virtual std::optional<bool> DoIsBoundedShortcut(Parallelism) const {
     return std::nullopt;
   }
 

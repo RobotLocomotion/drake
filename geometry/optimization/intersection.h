@@ -45,10 +45,16 @@ class Intersection final : public ConvexSet {
   /** @throws  Not implemented. */
   using ConvexSet::CalcVolume;
 
+  /** An Intersection is bounded if all its constituent sets are bounded. If any
+  are unbounded, the generic method for checking boundedness is used.
+  `parallelism` is passed through to each constituent set's IsEmpty method call,
+  and is used for the generic boundedness check if necessary. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcut() const final;
+  std::optional<bool> DoIsBoundedShortcut(Parallelism parallelism) const final;
 
   bool DoIsEmpty() const final;
 

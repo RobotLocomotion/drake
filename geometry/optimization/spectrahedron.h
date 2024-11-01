@@ -43,10 +43,14 @@ class Spectrahedron final : public ConvexSet {
   /** @throws  Not implemented. */
   using ConvexSet::CalcVolume;
 
+  /** Spectrahedron uses the generic method for boundedness checking, which uses
+  `parallelism`. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcut() const final;
+  std::optional<bool> DoIsBoundedShortcut(Parallelism parallelism) const final;
 
   // N.B. No need to override DoMaybeGetPoint here.
 
