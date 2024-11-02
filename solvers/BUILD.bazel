@@ -690,6 +690,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "degenerate_semidefinite_program_examples",
+    testonly = 1,
+    srcs = ["test/degenerate_semidefinite_program_examples.cc"],
+    hdrs = ["test/degenerate_semidefinite_program_examples.h"],
+    deps = [
+        ":mathematical_program_test_util",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:matrix_util",
+    ],
+)
+
+drake_cc_library(
     name = "sos_examples",
     testonly = 1,
     srcs = ["test/sos_examples.cc"],
@@ -1353,6 +1365,7 @@ drake_cc_googletest(
     deps = [
         ":csdp_solver",
         ":csdp_test_examples",
+        ":degenerate_semidefinite_program_examples",
         ":linear_program_examples",
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
@@ -1605,6 +1618,7 @@ drake_cc_googletest(
     tags = mosek_test_tags(),
     use_default_main = False,
     deps = [
+        ":degenerate_semidefinite_program_examples",
         ":exponential_cone_program_examples",
         ":l2norm_cost_examples",
         ":linear_program_examples",
@@ -1800,6 +1814,7 @@ drake_cc_googletest(
     name = "clarabel_solver_test",
     deps = [
         ":clarabel_solver",
+        ":degenerate_semidefinite_program_examples",
         ":exponential_cone_program_examples",
         ":l2norm_cost_examples",
         ":linear_program_examples",
@@ -1817,6 +1832,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "scs_solver_test",
     deps = [
+        ":degenerate_semidefinite_program_examples",
         ":exponential_cone_program_examples",
         ":l2norm_cost_examples",
         ":linear_program_examples",

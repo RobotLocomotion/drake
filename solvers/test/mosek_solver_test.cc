@@ -8,6 +8,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
+#include "drake/solvers/test/degenerate_semidefinite_program_examples.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
 #include "drake/solvers/test/l2norm_cost_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
@@ -523,6 +524,34 @@ GTEST_TEST(MosekTest, SolveSDPwithQuadraticCosts) {
   MosekSolver solver;
   if (solver.available()) {
     SolveSDPwithQuadraticCosts(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, TestTrivial1x1SDP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestTrivial1x1SDP(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, TestTrivial2x2SDP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestTrivial2x2SDP(solver, 1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, Test1x1with3x3SDP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    Test1x1with3x3SDP(solver, 1E-4);
+  }
+}
+
+GTEST_TEST(MosekTest, Test2x2with3x3SDP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    Test2x2with3x3SDP(solver, 1E-3);
   }
 }
 
