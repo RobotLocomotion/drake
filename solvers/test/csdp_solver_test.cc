@@ -5,6 +5,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/solvers/test/csdp_test_examples.h"
+#include "drake/solvers/test/degenerate_semidefinite_program_examples.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 #include "drake/solvers/test/semidefinite_program_examples.h"
@@ -75,6 +76,27 @@ TEST_F(TrivialSDP1, Solve) {
     EXPECT_NEAR(result.get_optimal_cost(), -2.0 / 3.0, tol);
     const Eigen::Matrix3d X1_expected = Eigen::Matrix3d::Constant(1.0 / 3);
     EXPECT_TRUE(CompareMatrices(result.GetSolution(X1_), X1_expected, tol));
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial2x2SDP) {
+  CsdpSolver solver;
+  if (solver.available()) {
+    TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/false);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test1x1with3x3SDP) {
+  CsdpSolver solver;
+  if (solver.available()) {
+    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/false);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
+  CsdpSolver solver;
+  if (solver.available()) {
+    Test2x2with3x3SDP(solver, 1E-2, /*check_dual=*/false);
   }
 }
 
