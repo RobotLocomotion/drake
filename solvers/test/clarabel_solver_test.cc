@@ -365,6 +365,83 @@ GTEST_TEST(TestL2NormCost, ShortestDistanceFromPlaneToTwoPoints) {
   tester.CheckSolution(solver, std::nullopt, 5E-4);
 }
 
+GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestTrivialSDP(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, CommonLyapunov) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    FindCommonLyapunov(solver, {}, kTol);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    FindOuterEllipsoid(solver, {}, kTol);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolveEigenvalueProblem(solver, {}, kTol);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample1) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolveSDPwithSecondOrderConeExample1(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithSecondOrderConeExample2) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolveSDPwithSecondOrderConeExample2(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolveSDPwithOverlappingVariables(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1SDP) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestTrivial1x1SDP(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-5);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial2x2SDP) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-5);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test1x1with3x3SDP) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/false, /*dual_tol=*/1E-4);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/false, /*dual_tol*/ 1E-2);
+  }
+}
+
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   ClarabelSolver solver;
   if (solver.available()) {
@@ -389,11 +466,12 @@ GTEST_TEST(TestExponentialConeProgram, MinimalEllipsoidConveringPoints) {
 }
 
 GTEST_TEST(TestExponentialConeProgram, MatrixLogDeterminantLower) {
-  ClarabelSolver scs_solver;
-  if (scs_solver.available()) {
-    MatrixLogDeterminantLower(scs_solver, kTol);
+  ClarabelSolver solver;
+  if (solver.available()) {
+    MatrixLogDeterminantLower(solver, kTol);
   }
 }
+
 GTEST_TEST(TestSos, UnivariateQuarticSos) {
   UnivariateQuarticSos dut;
   ClarabelSolver solver;
