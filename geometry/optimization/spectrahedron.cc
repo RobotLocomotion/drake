@@ -76,7 +76,7 @@ std::unique_ptr<ConvexSet> Spectrahedron::DoClone() const {
   return std::make_unique<Spectrahedron>(*this);
 }
 
-std::optional<bool> Spectrahedron::DoIsBoundedShortcut(Parallelism) const {
+std::optional<bool> Spectrahedron::DoIsBoundedShortcut() const {
   // CSDP cannot handle an unconstrained spectrahedron (i.e. a set whose only
   // constraints are positive semidefinite constraints), so we must check for
   // that case explicitly.

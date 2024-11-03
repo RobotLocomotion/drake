@@ -72,7 +72,8 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcut(Parallelism parallelism) const final;
+  std::optional<bool> DoIsBoundedShortcutParallel(
+      Parallelism parallelism) const final;
 
   bool DoIsEmpty() const final;
 

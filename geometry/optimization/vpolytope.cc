@@ -468,10 +468,6 @@ std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
   return std::make_unique<VPolytope>(*this);
 }
 
-std::optional<bool> VPolytope::DoIsBoundedShortcut(Parallelism) const {
-  return true;
-}
-
 bool VPolytope::DoIsEmpty() const {
   return vertices_.cols() == 0;
 }

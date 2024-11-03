@@ -189,7 +189,7 @@ std::unique_ptr<ConvexSet> AffineSubspace::DoClone() const {
   return std::make_unique<AffineSubspace>(*this);
 }
 
-std::optional<bool> AffineSubspace::DoIsBoundedShortcut(Parallelism) const {
+std::optional<bool> AffineSubspace::DoIsBoundedShortcut() const {
   return basis_.cols() == 0;
 }
 

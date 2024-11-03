@@ -152,7 +152,7 @@ class Hyperellipsoid final : public ConvexSet {
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcut(Parallelism parallelism) const final;
+  std::optional<bool> DoIsBoundedShortcut() const final;
 
   bool DoIsEmpty() const final;
 

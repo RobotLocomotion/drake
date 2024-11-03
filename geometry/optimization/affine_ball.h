@@ -125,9 +125,7 @@ class AffineBall final : public ConvexSet {
   std::unique_ptr<ConvexSet> DoClone() const final;
 
   /* AffineBall can only represent bounded sets. */
-  std::optional<bool> DoIsBoundedShortcut(Parallelism) const final {
-    return true;
-  };
+  std::optional<bool> DoIsBoundedShortcut() const final { return true; };
 
   /* AffineBall can only represent nonempty sets. */
   bool DoIsEmpty() const final { return false; };

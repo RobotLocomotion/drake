@@ -55,7 +55,7 @@ std::unique_ptr<ConvexSet> Intersection::DoClone() const {
   return std::make_unique<Intersection>(*this);
 }
 
-std::optional<bool> Intersection::DoIsBoundedShortcut(
+std::optional<bool> Intersection::DoIsBoundedShortcutParallel(
     Parallelism parallelism) const {
   for (const auto& s : sets_) {
     if (s->IsBounded(parallelism)) {
