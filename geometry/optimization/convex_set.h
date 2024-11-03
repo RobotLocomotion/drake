@@ -110,23 +110,14 @@ class ConvexSet {
     if (shortcut_result.has_value()) {
       return shortcut_result.value();
     }
-    return GenericDoIsBounded(parallelism);
-  }
-
-  /** Overload of IsBounded that uses no parallelization. */
-DRAKE_DEPRECATED("2024-02-01", "Instead use IsBounded(Parallelism::None()).")
-  bool IsBoundedNoParallelization() const {
-    if (ambient_dimension() == 0) {
-      return true;
-    }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    const auto shortcut_result = DoIsBoundedShortcut();
-#pragma GCC diagnostic pop
+    shortcut_result = DoIsBoundedShortcut();
     if (shortcut_result.has_value()) {
       return shortcut_result.value();
     }
-    return GenericDoIsBounded(Parallelism::None());
+#pragma GCC diagnostic pop
+    return GenericDoIsBounded(parallelism);
   }
 
   /** Returns true iff the set is empty. Note: for some derived classes, this

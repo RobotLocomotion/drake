@@ -51,10 +51,6 @@ class Intersection final : public ConvexSet {
   and is used for the generic boundedness check if necessary. */
   using ConvexSet::IsBounded;
 
- protected:
-// DRAKE_DEPRECATED("2024-02-01", "Instead use DoIsBoundedShortcut(Parallelism).")
-  using ConvexSet::DoIsBoundedShortcut;
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

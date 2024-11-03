@@ -321,10 +321,6 @@ class HPolyhedron final : public ConvexSet {
   /** @throws  Not implemented. */
   using ConvexSet::CalcVolume;
 
- protected:
-// DRAKE_DEPRECATED("2024-02-01", "Instead use DoIsBoundedShortcut(Parallelism).")
-  using ConvexSet::DoIsBoundedShortcut;
-
  private:
   /* @pre other.ambient_dimension() == this->ambient_dimension() */
   [[nodiscard]] HPolyhedron DoIntersectionNoChecks(

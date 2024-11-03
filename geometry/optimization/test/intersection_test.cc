@@ -149,13 +149,6 @@ GTEST_TEST(IntersectionTest, BoundedTest) {
   Intersection S2(H1, H1);
   EXPECT_FALSE(S2.IsBounded(Parallelism::None()));
   EXPECT_FALSE(S2.IsBounded(Parallelism::Max()));
-
-  // Deprecation tests.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_TRUE(S1.IsBoundedNoParallelization());
-  EXPECT_FALSE(S2.IsBoundedNoParallelization());
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(IntersectionTest, CloneTest) {
