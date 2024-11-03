@@ -95,6 +95,10 @@ class CartesianProduct final : public ConvexSet {
   method call. */
   using ConvexSet::IsBounded;
 
+ protected:
+// DRAKE_DEPRECATED("2024-02-01", "Instead use DoIsBoundedShortcut(Parallelism).")
+  using ConvexSet::DoIsBoundedShortcut;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

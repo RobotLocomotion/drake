@@ -102,6 +102,10 @@ class VPolytope final : public ConvexSet {
   /** Every VPolytope is bounded by construction. `parallelism` is ignored. */
   using ConvexSet::IsBounded;
 
+ protected:
+// DRAKE_DEPRECATED("2024-02-01", "Instead use DoIsBoundedShortcut(Parallelism).")
+  using ConvexSet::DoIsBoundedShortcut;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

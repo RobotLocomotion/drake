@@ -113,6 +113,22 @@ class ConvexSet {
     return GenericDoIsBounded(parallelism);
   }
 
+  /** Overload of IsBounded that uses no parallelization. */
+DRAKE_DEPRECATED("2024-02-01", "Instead use IsBounded(Parallelism::None()).")
+  bool IsBoundedNoParallelization() const {
+    if (ambient_dimension() == 0) {
+      return true;
+    }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    const auto shortcut_result = DoIsBoundedShortcut();
+#pragma GCC diagnostic pop
+    if (shortcut_result.has_value()) {
+      return shortcut_result.value();
+    }
+    return GenericDoIsBounded(Parallelism::None());
+  }
+
   /** Returns true iff the set is empty. Note: for some derived classes, this
   check is trivial, but for others, it can require solving a (typically small)
   optimization problem. Check the derived class documentation for any notes.
@@ -322,8 +338,21 @@ class ConvexSet {
   /** Non-virtual interface implementation for DoIsBoundedShortcut(). Trivially
   returns std::nullopt. This allows a derived class to implement its own
   boundedness checks, to potentially avoid the more expensive base class checks.
+  Derived classes should document if parallelism is used.
+
   @pre ambient_dimension() >= 0 */
   virtual std::optional<bool> DoIsBoundedShortcut(Parallelism) const {
+    return std::nullopt;
+  }
+
+  /** Deprecated overload of DoIsBoundedShortcut() that does not take in a
+  Parallelism object as an argument. Derived classes which do not leverage
+  parallelization should use the other overload, but document that parallelism
+  is not used.
+
+  @pre ambient_dimension() >= 0 */
+DRAKE_DEPRECATED("2024-02-01", "Instead use DoIsBoundedShortcut(Parallelism).")
+  virtual std::optional<bool> DoIsBoundedShortcut() const {
     return std::nullopt;
   }
 
