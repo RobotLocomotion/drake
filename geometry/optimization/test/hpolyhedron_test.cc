@@ -1755,6 +1755,19 @@ GTEST_TEST(HPolyhedronTest, MaximumVolumeInscribedAffineTransformationTest2) {
   EXPECT_GE(VPolytope(inbody).CalcVolume(),
             VPolytope(initial_polytope).CalcVolume());
 }
+
+GTEST_TEST(HPolyhedronTest, EmptyWithFewConstraints) {
+  // An empty HPolyhedron in R^5, defined by x1 <= -1 and x1 >= 0
+  MatrixXd A = MatrixXd::Zero(2, 3);
+  VectorXd b = VectorXd::Zero(2);
+  A(0,0) = 1;
+  A(1,0) = -1;
+  b(0) = -1;
+  HPolyhedron h(A, b);
+  ASSERT_TRUE(h.IsEmpty());
+  EXPECT_TRUE(h.IsBounded());
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
