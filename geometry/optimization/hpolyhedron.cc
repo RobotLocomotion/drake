@@ -680,7 +680,9 @@ HPolyhedron HPolyhedron::MakeL1Ball(const int dim) {
 
 std::optional<bool> HPolyhedron::DoIsBoundedShortcut() const {
   if (A_.rows() < A_.cols()) {
-    return false;
+    // If A_ has fewer rows than columns, then either the HPolyhedron is
+    // unbounded, or it's empty (and therefore bounded).
+    return IsEmpty();
   }
   Eigen::ColPivHouseholderQR<MatrixXd> qr(A_);
   if (qr.dimensionOfKernel() > 0) {
