@@ -6,8 +6,8 @@ def statsjs_repository(
     github_archive(
         name = name,
         repository = "mrdoob/stats.js",
-        commit = "b235d9c1e9c90c95b59d69bba53565c65bb2f694",
-        sha256 = "3ae5eaa7f8a2a52296a6f13e9b423a8e7bdf7354ae58f056b966c7359c3dbd4e",  # noqa
+        commit = "71e88f65280fd5c6e91d1f84f0f633d372ed7eae",
+        sha256 = "ae93155dba921f53174af038a4f5e2f4f1a4e8107b1996d58a5a50cf55234e8e",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
