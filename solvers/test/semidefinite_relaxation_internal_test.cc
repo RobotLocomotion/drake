@@ -186,18 +186,14 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
   // A non-convex quadratic cost
   prog_.AddQuadraticCost(y(0) * y(1), false);
 
-  // The preserve convex argument has no effect on the quadratic costs.
-  for (const auto& preserve_convex : {false, true}) {
-    ReinitializeRelaxation();
-    DoLinearizeQuadraticCostsAndConstraints(prog_, X_,
-                                            variables_to_sorted_indices_,
-                                            relaxation_.get(), preserve_convex);
-    EXPECT_EQ(relaxation_->linear_costs().size(), 2);
-    SetRelaxationInitialGuess(yd, relaxation_.get());
-    EXPECT_NEAR(relaxation_->EvalBindingAtInitialGuess(
-                    relaxation_->linear_costs()[0])[0],
-                0, 1e-12);
-  }
+  ReinitializeRelaxation();
+  DoLinearizeQuadraticCostsAndConstraints(
+      prog_, X_, variables_to_sorted_indices_, relaxation_.get());
+  EXPECT_EQ(relaxation_->linear_costs().size(), 2);
+  SetRelaxationInitialGuess(yd, relaxation_.get());
+  EXPECT_NEAR(
+      relaxation_->EvalBindingAtInitialGuess(relaxation_->linear_costs()[0])[0],
+      0, 1e-12);
 }
 
 TEST_F(MakeSemidefiniteRelaxationTestFixture,
@@ -209,33 +205,28 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
   const double lb = -0.4, ub = 0.5;
   prog_.AddQuadraticConstraint(Q, b, lb, ub, y);
 
-  // The preserve convex argument has no effect on non-convex quadratic
-  // constraints.
-  for (const auto& preserve_convex : {false, true}) {
-    ReinitializeRelaxation();
-    DoLinearizeQuadraticCostsAndConstraints(prog_, X_,
-                                            variables_to_sorted_indices_,
-                                            relaxation_.get(), preserve_convex);
+  ReinitializeRelaxation();
+  DoLinearizeQuadraticCostsAndConstraints(
+      prog_, X_, variables_to_sorted_indices_, relaxation_.get());
 
-    EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
-    // The constraint the "one" variable is equal to one.
-    EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 1);
-    EXPECT_EQ(relaxation_->linear_constraints().size(), 1);
-    EXPECT_EQ(relaxation_->GetAllConstraints().size(), 3);
+  EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
+  // The constraint the "one" variable is equal to one.
+  EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->linear_constraints().size(), 1);
+  EXPECT_EQ(relaxation_->GetAllConstraints().size(), 3);
 
-    const Vector2d y_test(1.3, 0.24);
-    SetRelaxationInitialGuess(y_test, relaxation_.get());
-    EXPECT_NEAR(
-        relaxation_->EvalBindingAtInitialGuess(
-            relaxation_->linear_constraints()[0])[0],
-        (0.5 * y_test.transpose() * Q * y_test + b.transpose() * y_test)[0],
-        1e-12);
+  const Vector2d y_test(1.3, 0.24);
+  SetRelaxationInitialGuess(y_test, relaxation_.get());
+  EXPECT_NEAR(
+      relaxation_->EvalBindingAtInitialGuess(
+          relaxation_->linear_constraints()[0])[0],
+      (0.5 * y_test.transpose() * Q * y_test + b.transpose() * y_test)[0],
+      1e-12);
 
-    EXPECT_EQ(
-        relaxation_->linear_constraints()[0].evaluator()->lower_bound()[0], lb);
-    EXPECT_EQ(
-        relaxation_->linear_constraints()[0].evaluator()->upper_bound()[0], ub);
-  }
+  EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->lower_bound()[0],
+            lb);
+  EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->upper_bound()[0],
+            ub);
 }
 
 // This test checks that repeated variables in a quadratic constraint are

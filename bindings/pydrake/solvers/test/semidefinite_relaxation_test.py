@@ -58,15 +58,12 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         options = SemidefiniteRelaxationOptions()
         options.add_implied_linear_equality_constraints = True
         options.add_implied_linear_constraints = True
-        options.preserve_convex_quadratic_constraints = True
         self.assertTrue(options.add_implied_linear_equality_constraints)
         self.assertTrue(options.add_implied_linear_constraints)
-        self.assertTrue(options.preserve_convex_quadratic_constraints)
 
         options.set_to_weakest()
         self.assertFalse(options.add_implied_linear_equality_constraints)
         self.assertFalse(options.add_implied_linear_constraints)
-        self.assertFalse(options.preserve_convex_quadratic_constraints)
 
         options.set_to_strongest()
         self.assertTrue(options.add_implied_linear_constraints)

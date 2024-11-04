@@ -30,13 +30,16 @@ struct SemidefiniteRelaxationOptions {
    * relaxation.*/
   bool add_implied_linear_constraints = true;
 
-  // TODO(Alexandre.Amice): change this to true by default.
-
-  /** Given a program with convex quadratic constraints, sets whether
-   * equivalent rotated second order cone constraints are enforced on the last
-   * column of X in the semidefinite relaxation. This ensures that the last
-   * column of X, which are a relaxation of the original program's variables
-   * satisfy the original progam's quadratic constraints.*/
+  /** No longer in use, hence this parameter does nothing. Given a convex
+   * quadratic constraint xᵀP x + xᵀq + r <= 0 it is always stronger to add the
+   * linearized constraint Tr(PX) + xᵀq + r <= 0 (as is already done for all
+   * convex and nonconvex quadratic constraints), rendering the original convex
+   * quadratic constraints unnecessary.
+   * */
+  DRAKE_DEPRECATED("2025-04-01",
+                   "Preserving convex quadratic constraints is looser than "
+                   "adding their linearized counterparts, and this "
+                   "functionality will therefore be removed.")
   bool preserve_convex_quadratic_constraints = false;
 
   /** Configure the semidefinite relaxation options to provide the strongest
@@ -46,7 +49,6 @@ struct SemidefiniteRelaxationOptions {
   void set_to_strongest() {
     add_implied_linear_equality_constraints = true;
     add_implied_linear_constraints = true;
-    preserve_convex_quadratic_constraints = true;
   }
 
   /** Configure the semidefinite relaxation options to provide the weakest
@@ -58,7 +60,6 @@ struct SemidefiniteRelaxationOptions {
   void set_to_weakest() {
     add_implied_linear_equality_constraints = false;
     add_implied_linear_constraints = false;
-    preserve_convex_quadratic_constraints = false;
   }
 };
 
