@@ -1760,8 +1760,8 @@ GTEST_TEST(HPolyhedronTest, EmptyWithFewConstraints) {
   // An empty HPolyhedron in R^5, defined by x1 <= -1 and x1 >= 0
   MatrixXd A = MatrixXd::Zero(2, 3);
   VectorXd b = VectorXd::Zero(2);
-  A(0,0) = 1;
-  A(1,0) = -1;
+  A(0, 0) = 1;
+  A(1, 0) = -1;
   b(0) = -1;
   HPolyhedron h(A, b);
   ASSERT_TRUE(h.IsEmpty());
