@@ -1,12 +1,58 @@
 ---
-title: Bazel build system
+title: Developing Drake using Bazel
 ---
+
+# New Users
+
+For first-time users, we strongly suggest using one of the pre-compiled binaries
+described on our [installation](/installation.html) page.
+
+This page describes how Drake Developers (and contributors making pull requests)
+should develop their changes locally.
+
+# Intro XXX
 
 Drake's primary build system is Bazel.  For more information about Bazel, see
 [https://bazel.build/](https://bazel.build/).
 
 Drake also offers a CMake build system wrapper that invokes Bazel under the
 hood.
+
+# Getting Drake
+
+Run:
+
+```
+git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git
+```
+
+Note: we suggest you keep the default clone directory name (``drake``) and not
+rename it (such as ``drake2``).  The CLion integration will suffer if the
+checkout directory is not named ``drake``.  (See [CLion IDE setup](clion.html) for details.)
+
+Note: the build process may encounter problems if you have unusual characters
+like parentheses in the absolute path to the drake directory
+(see [#394](https://github.com/RobotLocomotion/drake/issues/394)).
+
+## Using a fork of Drake
+
+The above ``git clone`` command will configure Drake's primary repository as a
+remote called ``origin``. If you plan to fork Drake for development, we
+recommend that you configure your fork of Drake's primary repository as the
+``origin`` remote and Drake's primary repository as the ``upstream``
+remote. This can be done by executing the following commands:
+
+```
+cd drake
+git remote set-url origin git@github.com:[your github user name]/drake.git
+git remote add upstream https://github.com/RobotLocomotion/drake.git
+git remote set-url --push upstream no_push
+```
+
+We recommend that you
+[setup SSH access to github.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
+to avoid needing to type your password each time you access it.
+
 
 # Bazel Installation
 
