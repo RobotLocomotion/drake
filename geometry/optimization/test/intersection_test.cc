@@ -299,7 +299,9 @@ GTEST_TEST(IntersectionTest, BoundedTest2) {
   // Put half of the rows in one HPolyhedron, and the other half in another.
   // Also make a variant where one row is skipped, to make it unbounded. Because
   // each of these three sets are unbounded, the shortcut boundedness check
-  // cannot be called, so the generic check has to be performed.
+  // cannot be called, so the generic check has to be performed. Note: we cannot
+  // guarantee that we've fallen back to the GenericDoIsBounded method, or that
+  // multiple threads are actually being used by that method.
   ASSERT_EQ(A.rows(), 200);
   HPolyhedron half1(A.topRows(100), b.head(100));
   HPolyhedron half2(A.bottomRows(100), b.tail(100));

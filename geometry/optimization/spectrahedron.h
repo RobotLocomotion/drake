@@ -50,6 +50,8 @@ class Spectrahedron final : public ConvexSet {
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
+  /* We only use DoIsBoundedShortcut here to avoid an edge case that causes an
+  error with the CSDP solver (#19927). */
   std::optional<bool> DoIsBoundedShortcut() const final;
 
   // N.B. No need to override DoMaybeGetPoint here.

@@ -83,7 +83,7 @@ class Hyperrectangle final : public ConvexSet {
   bool DoIsEmpty() const final { return false; }
 
   /** We only support finite hyperrectangles */
-  std::optional<bool> DoIsBoundedShortcut() const final { return true; }
+  std::optional<bool> DoIsBoundedShortcut() const final;
 
   std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
 

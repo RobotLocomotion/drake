@@ -92,16 +92,16 @@ class ConvexSet {
   /** Returns true iff the set is bounded, e.g., there exists an element-wise
   finite lower and upper bound for the set.  Note: for some derived classes,
   this check is trivial, but for others it can require solving a number of
-  (typically small) optimization problems. Check the derived class documentation
-  for any notes on how easy this computation is, and whether or not parallelism
-  can be used. Derived classes which do not have a specialized check will use
-  GenericDoIsBounded, which honors `parallelism`. Note that the overhead of
-  multithreading may lead to slower runtimes for simple, low-dimensional sets,
-  but can enable major speedups for more challenging problems.
+  (typically small) optimization problems. Each derived class documents the cost
+  of its boundedness test and whether it honors the request for parallelism.
+  (Derived classes which do not have a specialized check will, by default, honor
+  parallelism requests.) Note that the overhead of multithreading may lead to
+  slower runtimes for simple, low-dimensional sets, but can enable major
+  speedups for more challenging problems.
 
   @param parallelism requests the number of cores to use when solving
-  mathematical programs to check boundedness, for method that can support
-  parallelization. */
+  mathematical programs to check boundedness, subject to whether a particular
+  derived class honors parallelism. */
   bool IsBounded(Parallelism parallelism = Parallelism::None()) const {
     if (ambient_dimension() == 0) {
       return true;
@@ -326,7 +326,6 @@ class ConvexSet {
   /** Non-virtual interface implementation for DoIsBoundedShortcut(). Trivially
   returns std::nullopt. This allows a derived class to implement its own
   boundedness checks, to potentially avoid the more expensive base class checks.
-
   @pre ambient_dimension() >= 0 */
   virtual std::optional<bool> DoIsBoundedShortcut() const {
     return std::nullopt;
@@ -336,7 +335,6 @@ class ConvexSet {
   Trivially returns std::nullopt. This allows a derived class to implement its
   own boundedness checks that leverage parallelization, to potentially avoid the
   more expensive base class checks.
-
   @pre ambient_dimension() >= 0 */
   virtual std::optional<bool> DoIsBoundedShortcutParallel(Parallelism) const {
     return std::nullopt;

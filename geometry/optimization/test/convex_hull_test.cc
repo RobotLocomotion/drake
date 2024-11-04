@@ -243,6 +243,8 @@ GTEST_TEST(ConvexHullTest, BoundedTest) {
 
   EXPECT_TRUE(C3.IsBounded(Parallelism::Max()));
   EXPECT_FALSE(C4.IsBounded(Parallelism::Max()));
+
+  // See also intersection_test.cc for more extensive testing.
 }
 
 }  // namespace optimization

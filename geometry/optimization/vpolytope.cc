@@ -472,6 +472,10 @@ bool VPolytope::DoIsEmpty() const {
   return vertices_.cols() == 0;
 }
 
+std::optional<bool> VPolytope::DoIsBoundedShortcut() const {
+  return true;
+}
+
 std::optional<VectorXd> VPolytope::DoMaybeGetPoint() const {
   if (vertices_.cols() == 1) {
     return vertices_.col(0);

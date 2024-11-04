@@ -70,6 +70,10 @@ using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 
 void ConstructEmptyBoundednessProgram(MathematicalProgram* prog,
                                       const ConvexSet& s) {
+  // Create a MathematicalProgram that can be used to check if a ConvexSet is
+  // bounded along a certain direction. The direction should be specified after
+  // the program has been constructed, by modifying the coefficients of the
+  // (only) LinearCost in the program.
   const int n = s.ambient_dimension();
 
   DRAKE_DEMAND(prog != nullptr);
@@ -96,16 +100,16 @@ bool IsBoundedSequential(const ConvexSet& s) {
   MathematicalProgram prog;
   ConstructEmptyBoundednessProgram(&prog, s);
 
-  VectorXd objective_vector(s.ambient_dimension());
+  VectorXd objective_vector = VectorXd::Zero(s.ambient_dimension());
   for (int i = 0; i < s.ambient_dimension(); ++i) {
     for (bool maximize : {true, false}) {
-      objective_vector.setZero();
       objective_vector[i] = maximize ? -1 : 1;
       prog.linear_costs()[0].evaluator()->UpdateCoefficients(objective_vector);
       const auto result = solvers::Solve(prog);
       if (ProgramResultImpliesUnbounded(result)) {
         return false;
       }
+      objective_vector[i] = 0;
     }
   }
   return true;
@@ -117,13 +121,12 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
   std::vector<MathematicalProgram> progs(parallelism.num_threads());
   for (int i = 0; i < ssize(progs); ++i) {
     ConstructEmptyBoundednessProgram(&(progs[i]), s);
-    DRAKE_ASSERT(progs[i].linear_costs().size() == 1);
   }
 
   // Pre-allocate empty MathematicalProgramResults for each thread.
   std::vector<MathematicalProgramResult> results(parallelism.num_threads());
 
-  // Pre-allocate solver intances.
+  // Pre-allocate solver instances.
   const solvers::SolverId solver_id = solvers::ChooseBestSolver(progs[0]);
   std::vector<std::unique_ptr<solvers::SolverInterface>> solver_interfaces(
       parallelism.num_threads());
@@ -136,13 +139,10 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
   // std::atomic<bool>.
   std::vector<uint8_t> early_termination_flags(parallelism.num_threads(), 0);
 
-  // Pre-allocate the objective vectors, and the integers tracking which index
-  // is nonzero. If the integer is -1, that means the vector is all zeros.
+  // Pre-allocate the objective vectors, initially filling them with all zeros.
   std::vector<VectorXd> objective_vectors;
-  std::vector<int> objective_vector_nonzero_indices;
   for (int i = 0; i < parallelism.num_threads(); ++i) {
     objective_vectors.push_back(VectorXd::Zero(s.ambient_dimension()));
-    objective_vector_nonzero_indices.push_back(-1);
   }
 
   for (int i = 0; i < parallelism.num_threads(); ++i) {
@@ -170,15 +170,10 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
     const int dimension = i / 2;
     bool maximize = i % 2 == 0;
 
-    // Update the objective vector
-    if (objective_vector_nonzero_indices[thread_num] != -1) {
-      objective_vectors[thread_num]
-                       [objective_vector_nonzero_indices[thread_num]] = 0;
-    }
+    // Update the objective vector.
     objective_vectors[thread_num][dimension] = maximize ? -1 : 1;
-    objective_vector_nonzero_indices[thread_num] = dimension;
 
-    // By construction, each Mathematical program has one cost (the linear cost)
+    // By construction, each MathematicalProgram has one cost (the linear cost).
     progs[thread_num].linear_costs()[0].evaluator()->UpdateCoefficients(
         objective_vectors[thread_num]);
     solver_interfaces[thread_num]->Solve(progs[thread_num], std::nullopt,
@@ -187,6 +182,9 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
     if (ProgramResultImpliesUnbounded(results[thread_num])) {
       certified_unbounded.store(true);
     }
+
+    // Reset the objective vector.
+    objective_vectors[thread_num][dimension] = 0;
   };
 
   // We run the loop from 0 to 2 * s.ambient_dimension(), since two programs are

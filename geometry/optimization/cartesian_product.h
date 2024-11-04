@@ -91,8 +91,8 @@ class CartesianProduct final : public ConvexSet {
   using ConvexSet::CalcVolume;
 
   /** A CartesianProduct is bounded if and only if each constituent set is
-  bounded. `parallelism` is passed through to each constituent set's IsEmpty
-  method call. */
+  bounded. This class honors requests for parallelism only so far as its
+  constituent sets do. */
   using ConvexSet::IsBounded;
 
  private:
