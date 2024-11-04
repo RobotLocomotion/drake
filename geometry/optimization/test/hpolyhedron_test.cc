@@ -1756,15 +1756,23 @@ GTEST_TEST(HPolyhedronTest, MaximumVolumeInscribedAffineTransformationTest2) {
             VPolytope(initial_polytope).CalcVolume());
 }
 
-GTEST_TEST(HPolyhedronTest, EmptyWithFewConstraints) {
-  // An empty HPolyhedron in R^5, defined by x1 <= -1 and x1 >= 0
+GTEST_TEST(HPolyhedronTest, BoundednessCheckEmptyEdgeCases) {
+  // An empty HPolyhedron in R^3, defined by x1 <= -1 and x1 >= 0. This checks
+  // the special case when there are fewer rows than columns.
   MatrixXd A = MatrixXd::Zero(2, 3);
   VectorXd b = VectorXd::Zero(2);
   A(0, 0) = 1;
   A(1, 0) = -1;
   b(0) = -1;
   HPolyhedron h(A, b);
-  ASSERT_TRUE(h.IsEmpty());
+  EXPECT_TRUE(h.IsEmpty());
+  EXPECT_TRUE(h.IsBounded());
+
+  // An empty polyhedron in R^1, defined by the constraint 0x <= -1 and 0x <= 0.
+  // This checks the special case where the kernel has positive dimension.
+  A = MatrixXd::Zero(2, 1);
+  h = HPolyhedron{A, b};
+  EXPECT_TRUE(h.IsEmpty());
   EXPECT_TRUE(h.IsBounded());
 }
 
