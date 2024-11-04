@@ -681,12 +681,15 @@ HPolyhedron HPolyhedron::MakeL1Ball(const int dim) {
 std::optional<bool> HPolyhedron::DoIsBoundedShortcut() const {
   if (A_.rows() < A_.cols()) {
     // If A_ has fewer rows than columns, then either the HPolyhedron is
-    // unbounded, or it's empty (and therefore bounded).
+    // unbounded, or it's empty due to a subset of the inequalities being
+    // mutually exclusive (and therefore bounded).
     return IsEmpty();
   }
   Eigen::ColPivHouseholderQR<MatrixXd> qr(A_);
   if (qr.dimensionOfKernel() > 0) {
-    return false;
+    // A similar edge case to the above is possible, so once again, the
+    // HPolyhedron is bounded if and only if it is empty.
+    return IsEmpty();
   }
   // Stiemke's theorem of alternatives says that, given A with ker(A) = {0}, we
   // either have existence of x ≠ 0 such that Ax ≥ 0 or we have existence of y
