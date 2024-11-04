@@ -80,25 +80,3 @@ iterations it runs on each benchmark, which will skew the performance metrics
 you see in the profiler. [You may want to manually specify the number of
 iterations to run on each
 benchmark](https://stackoverflow.com/questions/61843343/how-to-special-case-the-number-of-iterations-in-google-benchmark).
-
-# Debugging and profiling on macOS
-
-On macOS, DWARF debug symbols are emitted to a ``.dSYM`` file.  The Bazel
-``cc_binary`` and ``cc_test`` rules do not natively generate or expose this
-file, so we have implemented a workaround in Drake, ``--config=apple_debug``.
-This config turns off sandboxing, which allows a ``genrule`` to access the
-``.o`` files and process them into a ``.dSYM``.  Use as follows:
-
-```
-bazel build --config=apple_debug path/to/my:binary_or_test_dsym
-lldb ./bazel-bin/path/to/my/binary_or_test
-```
-
-Profiling on macOS can be done by building with the debug symbols and then running
-```
-xcrun xctrace record -t "Time Profiler" --launch ./bazel-bin/path/to/my/binary_or_test
-```
-This will generate a `.trace` file that can be opened in the Instruments app:
-```
-open -a Instruments myfile.trace
-```

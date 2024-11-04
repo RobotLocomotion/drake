@@ -128,24 +128,6 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
         ],
     })
 
-def _dsym_command(name):
-    """Returns the command to produce .dSYM on macOS, or a no-op on Linux."""
-    return select({
-        "//tools/cc_toolchain:apple_debug": (
-            "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null"
-        ),
-        "//conditions:default": (
-            "touch $@"
-        ),
-    })
-
-def _dsym_srcs(name):
-    """Returns the input for making a .dSYM on macOS, or a no-op on Linux."""
-    return select({
-        "//tools/cc_toolchain:apple_debug": [":" + name],
-        "//conditions:default": [],
-    })
-
 def _check_library_deps_blacklist(name, deps):
     """Report an error if a library should not use something from deps."""
     if not deps:
@@ -792,19 +774,6 @@ def drake_cc_binary(
         **kwargs
     )
 
-    # Also generate the OS X debug symbol file for this binary.
-    tags = kwargs.pop("tags", [])
-    native.genrule(
-        name = name + "_dsym",
-        srcs = _dsym_srcs(name),
-        outs = [name + ".dSYM"],
-        output_to_bindir = 1,
-        testonly = testonly,
-        tags = tags + ["dsym"],
-        visibility = ["//visibility:private"],
-        cmd = _dsym_command(name),
-    )
-
     if "@gtest//:main" in deps:
         fail("Use drake_cc_googletest to declare %s as a test" % name)
 
@@ -883,18 +852,6 @@ def drake_cc_test(
             "-no_deduplicate",
         ],
         **kwargs
-    )
-
-    # Also generate the OS X debug symbol file for this test.
-    native.genrule(
-        name = name + "_dsym",
-        srcs = _dsym_srcs(name),
-        outs = [name + ".dSYM"],
-        output_to_bindir = 1,
-        testonly = kwargs["testonly"],
-        tags = ["dsym"],
-        visibility = ["//visibility:private"],
-        cmd = _dsym_command(name),
     )
 
 def drake_cc_googletest(
