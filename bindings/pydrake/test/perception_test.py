@@ -6,7 +6,7 @@ import numpy as np
 
 from pydrake.common.value import AbstractValue, Value
 from pydrake.systems.sensors import CameraInfo, PixelType
-from pydrake.systems.framework import InputPort, OutputPort
+from pydrake.systems.framework import InputPort, LeafSystem, OutputPort
 
 
 class TestPerception(unittest.TestCase):
@@ -143,3 +143,24 @@ class TestPerception(unittest.TestCase):
         dut = mut.PointCloudToLcm(frame_name="world")
         dut.get_input_port()
         dut.get_output_port()
+
+    def test_value_instantiations(self):
+        pc = AbstractValue.Make(mut.PointCloud(0))
+        self.assertIsInstance(pc, Value[mut.PointCloud])
+        pc_list = AbstractValue.Make([mut.PointCloud(0) for _ in range(3)])
+        self.assertIsInstance(pc_list, Value[list[mut.PointCloud]])
+
+        class TestSystem(LeafSystem):
+            def __init__(self):
+                LeafSystem.__init__(self)
+                pc = AbstractValue.Make(mut.PointCloud(0))
+                self.DeclareAbstractInputPort("cloud", pc)
+                pc_list = AbstractValue.Make(
+                    [mut.PointCloud(0) for _ in range(3)])
+                self.DeclareAbstractInputPort("cloud_list", pc_list)
+
+        sys = TestSystem()
+        context = sys.CreateDefaultContext()
+        sys.get_input_port(0).FixValue(context, mut.PointCloud(0))
+        sys.get_input_port(1).FixValue(context,
+                                       [mut.PointCloud(0) for _ in range(3)])

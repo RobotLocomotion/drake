@@ -132,6 +132,8 @@ void init_perception(py::module m) {
   }
 
   AddValueInstantiation<PointCloud>(m);
+  // Some ports need `Value<std::vector<PointCloud>>`.
+  AddValueInstantiation<std::vector<PointCloud>>(m);
 
   m.def("Concatenate", &Concatenate, py::arg("clouds"), doc.Concatenate.doc);
 
