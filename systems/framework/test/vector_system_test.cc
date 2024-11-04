@@ -571,30 +571,6 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
       ".*Output.*'output->size.. == 0.*failed.*");
 }
 
-// Remove 2024-11-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-class DeprecatedNoFeedthroughSpecified1 : public VectorSystem<double> {
- public:
-  DeprecatedNoFeedthroughSpecified1() : VectorSystem<double>(0, 0) {}
-};
-template <typename T>
-class DeprecatedNoFeedthroughSpecified2 : public VectorSystem<T> {
- public:
-  DeprecatedNoFeedthroughSpecified2()
-      : VectorSystem<T>(SystemTypeTag<DeprecatedNoFeedthroughSpecified2>(), 0,
-                        0) {}
-  template <typename U>
-  explicit DeprecatedNoFeedthroughSpecified2(
-      const DeprecatedNoFeedthroughSpecified2<U>& other)
-      : DeprecatedNoFeedthroughSpecified2<T>() {}
-};
-TEST_F(VectorSystemTest, DeprecatedNoFeedthroughSpecified) {
-  const DeprecatedNoFeedthroughSpecified1 dut1;
-  const DeprecatedNoFeedthroughSpecified2<double> dut2;
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
 }  // namespace systems
 }  // namespace drake

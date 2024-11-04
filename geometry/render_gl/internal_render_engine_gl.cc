@@ -983,10 +983,12 @@ bool RenderEngineGl::DoRegisterDeformableVisual(
 
 void RenderEngineGl::DoUpdateVisualPose(GeometryId id,
                                         const RigidTransformd& X_WG) {
-  const auto X_WG_f = X_WG.cast<float>();
+  const Eigen::Matrix4f X_WG_f = X_WG.GetAsMatrix4().template cast<float>();
+  const Eigen::Matrix3f R_WG_f =
+      X_WG.rotation().matrix().template cast<float>();
   for (auto& instance : visuals_.at(id).instances) {
-    instance.T_WN = X_WG_f.GetAsMatrix4() * instance.T_GN;
-    instance.N_WN = X_WG_f.rotation().matrix() * instance.N_GN;
+    instance.T_WN = X_WG_f * instance.T_GN;
+    instance.N_WN = R_WG_f * instance.N_GN;
   }
 }
 

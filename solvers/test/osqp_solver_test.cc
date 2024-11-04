@@ -167,9 +167,8 @@ GTEST_TEST(OsqpSolverTest, EqualityConstrainedQPDualSolution2) {
   TestEqualityConstrainedQPDualSolution2(solver);
 }
 
-void AddTestProgram(
-    MathematicalProgram* prog,
-    const MatrixDecisionVariable<3, 1>& x) {
+void AddTestProgram(MathematicalProgram* prog,
+                    const MatrixDecisionVariable<3, 1>& x) {
   prog->AddLinearConstraint(x(0) + 2 * x(1) - 3 * x(2) <= 3);
   prog->AddLinearConstraint(4 * x(0) - 2 * x(1) - 6 * x(2) >= -3);
   prog->AddQuadraticCost(x(0) * x(0) + 2 * x(1) * x(1) + 5 * x(2) * x(2) +
@@ -360,8 +359,8 @@ GTEST_TEST(OsqpSolverTest, WarmStartPrimalOnly) {
     const int half_iterations =
         result.get_solver_details<OsqpSolver>().iter / 2;
     SolverOptions solver_options;
-    solver_options.SetOption(
-        osqp_solver.solver_id(), "max_iter", half_iterations);
+    solver_options.SetOption(osqp_solver.solver_id(), "max_iter",
+                             half_iterations);
     const Eigen::VectorXd x_sol = result.get_x_val();
     osqp_solver.Solve(prog, x_sol, solver_options, &result);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);

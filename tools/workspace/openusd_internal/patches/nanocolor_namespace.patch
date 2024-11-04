@@ -1,0 +1,15 @@
+[openusd_internal] Use drake namespace for nanocolor
+
+Reasoning for not upstreaming this patch: Drake-specific tweak.
+
+--- pxr/base/gf/nc/nanocolor.h
++++ pxr/base/gf/nc/nanocolor.h
+@@ -18,7 +18,7 @@
+ // is a C++ only header; so the generated namespace prefixes can't be
+ // used here.
+ #ifndef NCNAMESPACE
+-#define NCNAMESPACE pxr_nc_1_0_
++#define NCNAMESPACE drake_vendor_pxr_nc_1_0_
+ #endif
+ 
+ // The NCCONCAT macro is used to apply a namespace to the symbols in the public

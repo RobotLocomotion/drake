@@ -2495,11 +2495,19 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     auto failed_result_2 = spp.SolveShortestPath(*source, *target, options);
     EXPECT_FALSE(failed_result_2.is_success());
 
-    // If preprocessing_solver is unspecified, preprocessing_solver_options
-    // should be ignored, so the optimization should succeed.
+    // If preprocessing_solver is unspecified, the user-specified solver is
+    // used. If we use ClarabelSolver, the Mosek option is not applied, so it
+    // succeeds. If we use MosekSolver, the Mosek option is applied, so it
+    // fails.
+    solvers::ClarabelSolver clarabel_solver;
     options.preprocessing_solver = nullptr;
+    options.solver = &clarabel_solver;
     auto successful_result_2 = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result_2.is_success());
+
+    options.solver = &mosek_solver;
+    auto failed_result_3 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_FALSE(failed_result_3.is_success());
 
     // If preprocessing_solver_options is not provided, solver_options is used
     // instead. We can solve the relaxation and convex restriction with
@@ -2508,15 +2516,14 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     // force the preprocessing to remove all edges, thus leading to a failed
     // solve, hence verifying that solver_options is being used by the
     // preprocessing.
-    solvers::ClarabelSolver clarabel_solver;
-    options.restriction_solver = &clarabel_solver;
     options.solver = &clarabel_solver;
+    options.restriction_solver = &clarabel_solver;
     options.preprocessing_solver = &mosek_solver;
     options.preprocessing_solver_options = std::nullopt;
     options.solver_options.SetOption(solvers::MosekSolver::id(),
                                      "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
-    auto failed_result_3 = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_FALSE(failed_result_3.is_success());
+    auto failed_result_4 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_FALSE(failed_result_4.is_success());
 
     // If we turn off preprocessing, it should succeed again.
     options.preprocessing = false;

@@ -209,43 +209,6 @@ drake_cc_library(
     ],
 )
 
-_CONTACT_INFO_LABEL_DEPRECATION = """
-To access this header file, change your deps to
- @drake//multibody/plant:contact_results
-or
- @drake//multibody/plant
-instead, to avoid this warning.
-This target will be removed from Drake on or after 2024-11-01.
-""".strip()
-
-alias(
-    name = "deformable_contact_info",
-    actual = ":contact_results",
-    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
-    tags = ["manual"],
-)
-
-alias(
-    name = "hydroelastic_contact_info",
-    actual = ":contact_results",
-    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
-    tags = ["manual"],
-)
-
-alias(
-    name = "hydroelastic_quadrature_point_data",
-    actual = ":contact_results",
-    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
-    tags = ["manual"],
-)
-
-alias(
-    name = "point_pair_contact_info",
-    actual = ":contact_results",
-    deprecation = _CONTACT_INFO_LABEL_DEPRECATION,
-    tags = ["manual"],
-)
-
 drake_cc_library(
     name = "contact_results_to_lcm",
     srcs = [
@@ -340,16 +303,6 @@ drake_cc_library(
         "//multibody/math",
         "//multibody/triangle_quadrature",
     ],
-)
-
-alias(
-    name = "hydroelastic_traction",
-    actual = ":hydroelastic_traction_calculator",
-    deprecation = """
-This library is for Drake internal use only. Don't list it as a dependency in
-your project. This target will be removed from Drake on or after 2024-11-01.
-""".strip(),
-    tags = ["manual"],
 )
 
 drake_cc_library(

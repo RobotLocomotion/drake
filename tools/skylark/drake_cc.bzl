@@ -3,6 +3,7 @@ load("//tools/skylark:cc.bzl", "cc_binary", "cc_library", "cc_test")
 load(
     "//tools/skylark:kwargs.bzl",
     "incorporate_allow_network",
+    "incorporate_display",
     "incorporate_num_threads",
 )
 load("//tools/workspace:generate_file.bzl", "generate_file")
@@ -125,24 +126,6 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
             x.replace("-Werror=", "-W")
             for x in result
         ],
-    })
-
-def _dsym_command(name):
-    """Returns the command to produce .dSYM on macOS, or a no-op on Linux."""
-    return select({
-        "//tools/cc_toolchain:apple_debug": (
-            "dsymutil -f $(location :" + name + ") -o $@ 2> /dev/null"
-        ),
-        "//conditions:default": (
-            "touch $@"
-        ),
-    })
-
-def _dsym_srcs(name):
-    """Returns the input for making a .dSYM on macOS, or a no-op on Linux."""
-    return select({
-        "//tools/cc_toolchain:apple_debug": [":" + name],
-        "//conditions:default": [],
     })
 
 def _check_library_deps_blacklist(name, deps):
@@ -791,19 +774,6 @@ def drake_cc_binary(
         **kwargs
     )
 
-    # Also generate the OS X debug symbol file for this binary.
-    tags = kwargs.pop("tags", [])
-    native.genrule(
-        name = name + "_dsym",
-        srcs = _dsym_srcs(name),
-        outs = [name + ".dSYM"],
-        output_to_bindir = 1,
-        testonly = testonly,
-        tags = tags + ["dsym"],
-        visibility = ["//visibility:private"],
-        cmd = _dsym_command(name),
-    )
-
     if "@gtest//:main" in deps:
         fail("Use drake_cc_googletest to declare %s as a test" % name)
 
@@ -834,6 +804,7 @@ def drake_cc_test(
         gcc_copts = [],
         clang_copts = [],
         allow_network = None,
+        display = False,
         num_threads = None,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
@@ -846,6 +817,9 @@ def drake_cc_test(
     @param allow_network (optional, default is ["meshcat"])
         See drake/tools/skylark/README.md for details.
 
+    @param display (optional, default is False)
+        See drake/tools/skylark/README.md for details.
+
     @param num_threads (optional, default is 1)
         See drake/tools/skylark/README.md for details.
     """
@@ -855,6 +829,7 @@ def drake_cc_test(
         srcs = ["test/%s.cc" % name]
     kwargs["testonly"] = 1
     kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
+    kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     new_copts = _platform_copts(copts, gcc_copts, clang_copts, cc_test = 1)
     new_srcs, add_deps = _maybe_add_pruned_private_hdrs_dep(
@@ -877,18 +852,6 @@ def drake_cc_test(
             "-no_deduplicate",
         ],
         **kwargs
-    )
-
-    # Also generate the OS X debug symbol file for this test.
-    native.genrule(
-        name = name + "_dsym",
-        srcs = _dsym_srcs(name),
-        outs = [name + ".dSYM"],
-        output_to_bindir = 1,
-        testonly = kwargs["testonly"],
-        tags = ["dsym"],
-        visibility = ["//visibility:private"],
-        cmd = _dsym_command(name),
     )
 
 def drake_cc_googletest(
@@ -1003,6 +966,7 @@ def drake_cc_googletest_linux_only(
         linkopts = [],
         tags = [],
         timeout = None,
+        display = False,
         visibility = ["//visibility:private"],
         enable_condition = "@drake//tools/skylark:linux"):
     """Declares a platform-specific drake_cc_googletest. When not building on
@@ -1053,5 +1017,6 @@ def drake_cc_googletest_linux_only(
             enable_condition: [":_{}_compile".format(name)],
             "//conditions:default": [],
         }),
+        display = display,
         visibility = visibility,
     )

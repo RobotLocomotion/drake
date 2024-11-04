@@ -12,7 +12,10 @@ package(default_visibility = ["//visibility:private"])
 
 filegroup(
     name = "cmakelists",
-    srcs = glob(["**/CMakeLists.txt"]),
+    srcs = glob([
+        "**/CMakeLists.txt",
+        "**/generatedSchema.classes.txt",
+    ]),
     visibility = ["//visibility:public"],
 )
 
@@ -34,6 +37,7 @@ cmake_configure_file(
         "PXR_PREFER_SAFETY_OVER_SPEED",
         # We don't need Python.
         "PXR_PYTHON_SUPPORT_ENABLED=0",
+        "PXR_USE_INTERNAL_BOOST_PYTHON=0",
         # Use Drake-specific namespaces.
         "PXR_USE_NAMESPACES=1",
         "PXR_EXTERNAL_NAMESPACE=drake_vendor_pxr",
