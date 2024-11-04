@@ -14,19 +14,9 @@ exports_files([
     "mac/source_distribution/requirements.txt",
     "mac/source_distribution/requirements-maintainer-only.txt",
     "mac/source_distribution/requirements-test-only.txt",
-    "ubuntu/binary_distribution/packages-jammy.txt",
-    "ubuntu/source_distribution/packages-jammy.txt",
-    "ubuntu/source_distribution/packages-jammy-clang.txt",
-    "ubuntu/source_distribution/packages-jammy-doc-only.txt",
-    "ubuntu/source_distribution/packages-jammy-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-jammy-test-only.txt",
-    "ubuntu/binary_distribution/packages-noble.txt",
-    "ubuntu/source_distribution/packages-noble.txt",
-    "ubuntu/source_distribution/packages-noble-clang.txt",
-    "ubuntu/source_distribution/packages-noble-doc-only.txt",
-    "ubuntu/source_distribution/packages-noble-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-noble-test-only.txt",
-])
+] + glob([
+    "ubuntu/*.txt",
+]))
 
 filegroup(
     name = "deepnote",
@@ -51,19 +41,20 @@ install_files(
             "deepnote/install_xvfb",
             "deepnote/nginx-meshcat-proxy.conf",
             "deepnote/xvfb",
-            "ubuntu/binary_distribution/install_prereqs.sh",
-            "ubuntu/binary_distribution/packages-jammy.txt",
-            "ubuntu/binary_distribution/packages-noble.txt",
+            "ubuntu/install_prereqs",
+            "ubuntu/packages-jammy-binary.txt",
+            "ubuntu/packages-noble-binary.txt",
         ],
         "//conditions:default": [],
     }),
     strip_prefix = [
         "mac/binary_distribution",
-        "ubuntu/binary_distribution",
+        "ubuntu",
     ],
-    rename = {
-        "share/drake/setup/install_prereqs.sh": "install_prereqs",
-    },
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "ubuntu/install_prereqs",
+    ],
+)

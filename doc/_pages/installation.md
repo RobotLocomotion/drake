@@ -104,11 +104,6 @@ following the instructions in [Source Installation](/from_source.html).
 Drake's binary releases do not support the Gurobi solver.
 To use Gurobi, you must build Drake from source.
 
-We're considering adding macOS support for Homebrew, i.e., ``brew install
-drake``.  Please upvote or comment on
-[#12782](https://github.com/RobotLocomotion/drake/issues/12782)
-if you are interested.
-
 # Quickstart
 
 For Python, refer to
