@@ -54,7 +54,7 @@ class Point final : public ConvexSet {
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcut() const final { return true; }
+  std::optional<bool> DoIsBoundedShortcut() const final;
 
   /** A Point is always nonempty, even in the zero-dimensional case. */
   bool DoIsEmpty() const final;

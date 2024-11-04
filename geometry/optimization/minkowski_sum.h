@@ -64,7 +64,7 @@ class MinkowskiSum final : public ConvexSet {
   using ConvexSet::PointInSet;
 
   /** A MinkowskiSum is bounded if and only if each constituent set is
-  bounded. `parallelism` is passed through to each constituent set's IsEmpty
+  bounded. `parallelism` is passed through to each constituent set's IsBounded
   method call. */
   using ConvexSet::IsBounded;
 

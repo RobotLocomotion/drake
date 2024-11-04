@@ -47,8 +47,8 @@ class Intersection final : public ConvexSet {
 
   /** An Intersection is bounded if all its constituent sets are bounded. If any
   are unbounded, the generic method for checking boundedness is used.
-  `parallelism` is passed through to each constituent set's IsEmpty method call,
-  and is used for the generic boundedness check if necessary. */
+  `parallelism` is passed through to each constituent set's IsBounded method
+  call, and is used for the generic boundedness check if necessary. */
   using ConvexSet::IsBounded;
 
  private:

@@ -73,8 +73,7 @@ void ConstructEmptyBoundednessProgram(MathematicalProgram* prog,
   const int n = s.ambient_dimension();
 
   DRAKE_DEMAND(prog != nullptr);
-  DRAKE_DEMAND(prog->num_vars() == 0 && prog->GetAllCosts().empty() &&
-               prog->GetAllConstraints().empty());
+  DRAKE_DEMAND(prog->num_vars() == 0);
 
   VectorXDecisionVariable x = prog->NewContinuousVariables(n, "x");
   s.AddPointInSetConstraints(prog, x);
@@ -132,6 +131,20 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
   // Pre-allocate the solver options.
   std::vector<solvers::SolverOptions> options(parallelism.num_threads());
 
+  // Pre-allocate the early termination flags. We use a per-thread early
+  // termination flag, to minimize the number of times we have to access the
+  // std::atomic<bool>.
+  std::vector<uint8_t> early_termination_flags(parallelism.num_threads(), 0);
+
+  // Pre-allocate the objective vectors, and the integers tracking which index
+  // is nonzero. If the integer is -1, that means the vector is all zeros.
+  std::vector<VectorXd> objective_vectors;
+  std::vector<int> objective_vector_nonzero_indices;
+  for (int i = 0; i < parallelism.num_threads(); ++i) {
+    objective_vectors.push_back(VectorXd::Zero(s.ambient_dimension()));
+    objective_vector_nonzero_indices.push_back(-1);
+  }
+
   for (int i = 0; i < parallelism.num_threads(); ++i) {
     solver_interfaces[i] = solvers::MakeSolver(solver_id);
     options[i].SetOption(solvers::CommonSolverOption::kMaxThreads, 1);
@@ -139,27 +152,35 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
 
   std::atomic<bool> certified_unbounded = false;
 
-  // This worker lambda takes in a dimension and a direction, and tries to
-  // maximize or minimize a point in the set along that dimension. If
-  // unboundedness has already been verified, it just exits early. If
-  // unboundedness is verified in this iteration, certified_unbounded will be
-  // updated to reflect that fact. For a given index i, the dimension is
+  // This worker lambda maps the index i to a dimension and direction to check
+  // boundedness. If unboundedness has already been verified, it just exits
+  // early. If unboundedness is verified in this iteration, certified_unbounded
+  // will be updated to reflect that fact. For a given index i, the dimension is
   // int(i / 2), and if i % 2 == 0, then we maximize, otherwise, we minimize.
   auto solve_ith = [&](const int thread_num, const int64_t i) {
-    if (certified_unbounded.load()) {
+    // First, we check the thread-local flag.
+    if (early_termination_flags[thread_num] == 1) {
+      return;
+    } else if (certified_unbounded.load()) {
+      // If the global flag has been set, we can update the thread-local flag.
+      early_termination_flags[thread_num] = 1;
       return;
     }
 
     const int dimension = i / 2;
     bool maximize = i % 2 == 0;
 
-    VectorXd objective_vector(s.ambient_dimension());
-    objective_vector.setZero();
-    objective_vector[dimension] = maximize ? -1 : 1;
+    // Update the objective vector
+    if (objective_vector_nonzero_indices[thread_num] != -1) {
+      objective_vectors[thread_num]
+                       [objective_vector_nonzero_indices[thread_num]] = 0;
+    }
+    objective_vectors[thread_num][dimension] = maximize ? -1 : 1;
+    objective_vector_nonzero_indices[thread_num] = dimension;
 
     // By construction, each Mathematical program has one cost (the linear cost)
     progs[thread_num].linear_costs()[0].evaluator()->UpdateCoefficients(
-        objective_vector);
+        objective_vectors[thread_num]);
     solver_interfaces[thread_num]->Solve(progs[thread_num], std::nullopt,
                                          options[thread_num],
                                          &(results[thread_num]));
