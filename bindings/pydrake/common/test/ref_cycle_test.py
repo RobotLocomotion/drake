@@ -7,7 +7,8 @@ import unittest
 import weakref
 
 from pydrake.common.ref_cycle_test_util import (
-    NotDynamic, IsDynamic, invalid_arg_index, free_function, ouroboros)
+    arbitrary_bad, arbitrary_ok, free_function,  invalid_arg_index, IsDynamic,
+    NotDynamic, ouroboros)
 from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 
 
@@ -56,11 +57,26 @@ class TestRefCycle(unittest.TestCase):
         self.assertEqual(len(dut._pydrake_internal_ref_cycle_peers), 1)
         self.check_is_collectable_cycle(returned, dut)
 
+    def test_arbitrary_ok(self):
+        got = arbitrary_ok()
+        self.assertTrue(hasattr(got, '_pydrake_internal_ref_cycle_peers'))
+
+    def test_arbitrary_bad(self):
+        with self.assertRaisesRegex(RuntimeError, ".*from arbitrary_bad.*"):
+            arbitrary_bad()
+
     def test_free_function(self):
         p0 = IsDynamic()
         p1 = IsDynamic()
         free_function(p0, p1)
         self.check_is_collectable_cycle(p0, p1)
+
+    def test_init_cycle(self):
+        # Cover the case where index 1 refers to the `self` of a py::init<>()
+        # binding.
+        other = IsDynamic()
+        dut = IsDynamic(other)
+        self.check_is_collectable_cycle(dut, other)
 
     def test_not_dynamic_add(self):
         dut = NotDynamic()
