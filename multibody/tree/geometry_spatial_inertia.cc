@@ -20,33 +20,44 @@ namespace {
 using Eigen::Vector3d;
 using geometry::Mesh;
 using geometry::Shape;
+using internal::CalcSpatialInertiaResult;
 
 // @tparam MeshType must be either geometry::Mesh or geometry::Convex
-SpatialInertia<double> CalcMeshSpatialInertia(const Mesh& mesh,
-                                              double density) {
+CalcSpatialInertiaResult CalcMeshSpatialInertia(const Mesh& mesh,
+                                                double density) {
   const auto& extension = mesh.extension();
   if (extension == ".obj") {
-    return CalcSpatialInertia(
+    return internal::CalcSpatialInertiaImpl(
         geometry::ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale()),
         density);
   }
   if (extension == ".vtk") {
-    return CalcSpatialInertia(
+    return internal::CalcSpatialInertiaImpl(
         geometry::ConvertVolumeToSurfaceMesh(
             geometry::internal::MakeVolumeMeshFromVtk<double>(mesh)),
         density);
   }
-  throw std::runtime_error(fmt::format(
-      "CalcSpatialInertia currently only supports .obj or tetrahedral-mesh"
+  return fmt::format(
+      "CalcSpatialInertia() currently only supports .obj or tetrahedral-mesh"
       " .vtk files for Mesh shapes but was given '{}'.",
-      mesh.source().description()));
+      mesh.source().description());
+}
+
+SpatialInertia<double> GetSpatialInertiaOrThrow(
+    CalcSpatialInertiaResult result) {
+  if (std::holds_alternative<std::string>(result)) {
+    throw std::invalid_argument(std::get<std::string>(result));
+  }
+  return std::get<SpatialInertia<double>>(result);
 }
 
 }  // namespace
 
-SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
-                                          double density) {
-  return shape.Visit<SpatialInertia<double>>(overloaded{
+namespace internal {
+
+CalcSpatialInertiaResult CalcSpatialInertiaImpl(const geometry::Shape& shape,
+                                                double density) {
+  return shape.Visit<CalcSpatialInertiaResult>(overloaded{
       [density](const geometry::Box& box) {
         return SpatialInertia<double>::SolidBoxWithDensity(
             density, box.width(), box.depth(), box.height());
@@ -59,7 +70,7 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
         // Note: if converting from poly to tri proves to be an unbearable cost,
         // we can skip the explicit conversion, and tessellate polygonal faces
         // implicitly as we compute spatial inertia.
-        return CalcSpatialInertia(
+        return CalcSpatialInertiaImpl(
             geometry::internal::MakeTriangleFromPolygonMesh(
                 convex.GetConvexHull()),
             density);
@@ -72,15 +83,15 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
         return SpatialInertia<double>::SolidEllipsoidWithDensity(
             density, ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
       },
-      [](const geometry::HalfSpace&) -> SpatialInertia<double> {
-        throw std::logic_error(
+      [](const geometry::HalfSpace&) -> CalcSpatialInertiaResult {
+        return std::string(
             "CalcSpatialInertia: Cannot compute mass of a HalfSpace");
       },
       [density](const geometry::Mesh& mesh) {
         return CalcMeshSpatialInertia(mesh, density);
       },
-      [](const geometry::MeshcatCone&) -> SpatialInertia<double> {
-        throw std::logic_error(
+      [](const geometry::MeshcatCone&) -> CalcSpatialInertiaResult {
+        return std::string(
             "CalcSpatialInertia: MeshcatCone is not yet supported");
       },
       [density](const geometry::Sphere& sphere) {
@@ -89,7 +100,7 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
       }});
 }
 
-SpatialInertia<double> CalcSpatialInertia(
+CalcSpatialInertiaResult CalcSpatialInertiaImpl(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density) {
   /* This algorithm is based on:
    - https://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
@@ -128,6 +139,43 @@ SpatialInertia<double> CalcSpatialInertia(
   }
 
   const double volume = vol_times_six / 6.0;
+
+  // TODO(SeanCurtis-TRI): this volume test is a proxy for an actual mesh
+  // validation test. If we validated the mesh prior to the calculation, it
+  // would no longer be necessary, because we would actually provide an error
+  // in terms of the actual observable properties of the mesh.
+
+  // This algorithm is predicated on the assumption that the mesh encloses a
+  // measurable volume. A zero (or negative) volume indicates the assumption is
+  // broken (possibly in a number of different ways). We must stop the
+  // calculation here because nothing that follows would be physically or
+  // possibly numerically valid (e.g., we divide by volume which precludes a
+  // zero measure and we define mass by scaling the volume -- a negative mass
+  // is physically meaningless).
+  // This "nearly zero" tolerance makes this test stricter than the test in
+  // SpatialInertia itself. Because we normalize by volume, as volume gets
+  // closer to zero, we could end up with a center of mass placed arbitrarily
+  // far away based on rounding noise. The tolerance limits the effect.
+  constexpr double kEpsilon = 1.0E-14;
+  if (volume <= kEpsilon) {
+    // TODO(Mitiguy) Consider changing the function signature to add an optional
+    //  mesh_name argument (e.g., mesh_name = someFilename.obj) and using
+    //  mesh_name in the following error_message. For a simulation involving
+    //  many meshes, this helps quickly identify an offending mesh.
+    // TODO(Mitiguy) Sean Curtis thought the following error message may not be
+    //  enough guidance, so he suggested adding a hyperlink in error_message to
+    //  https://drake.mit.edu/troubleshooting.html for a proper treatment of
+    //  the issue (ideally with Sean's input/expertise).
+    const std::string error_message = fmt::format(
+        "CalcSpatialInertia(): The calculated volume of a triangle surface "
+        "mesh is {} whereas a reasonable positive value of at least {} was "
+        "expected. The mesh may have bad geometry, e.g., it is an open mesh or "
+        "the winding (order of vertices) of at least one face does not produce "
+        "an outward normal.",
+        volume, kEpsilon);
+    return error_message;
+  }
+
   const double mass = density * volume;
   const Vector3d p_GoGcm = accum_com / (vol_times_six * 4);
   // We can compute I = C.trace * 1₃ - C. Two key points:
@@ -140,7 +188,31 @@ SpatialInertia<double> CalcSpatialInertia(
   const double trace_C = C.trace();
   const UnitInertia G_GGo_G(trace_C - C(0, 0), trace_C - C(1, 1),
                             trace_C - C(2, 2), -C(1, 0), -C(2, 0), -C(2, 1));
-  return SpatialInertia<double>{mass, p_GoGcm, G_GGo_G};
+
+  auto result = SpatialInertia<double>{mass, p_GoGcm, G_GGo_G,
+                                       /* skip_validity_check = */ true};
+  if (!result.IsPhysicallyValid()) {
+    std::string message = result.CriticizeNotPhysicallyValid();
+    if (!message.empty()) {
+      return message;
+    }
+    return result;
+  }
+  return result;
+}
+
+}  // namespace internal
+
+SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
+                                          double density) {
+  return GetSpatialInertiaOrThrow(
+      internal::CalcSpatialInertiaImpl(shape, density));
+}
+
+SpatialInertia<double> CalcSpatialInertia(
+    const geometry::TriangleSurfaceMesh<double>& mesh, double density) {
+  return GetSpatialInertiaOrThrow(
+      internal::CalcSpatialInertiaImpl(mesh, density));
 }
 
 }  // namespace multibody
