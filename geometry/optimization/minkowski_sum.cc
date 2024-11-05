@@ -101,6 +101,9 @@ std::unique_ptr<ConvexSet> MinkowskiSum::DoClone() const {
 
 std::optional<bool> MinkowskiSum::DoIsBoundedShortcutParallel(
     Parallelism parallelism) const {
+  if (IsEmpty()) {
+    return true;
+  }
   for (const auto& s : sets_) {
     if (!s->IsBounded(parallelism)) {
       return false;

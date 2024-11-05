@@ -63,8 +63,8 @@ class MinkowskiSum final : public ConvexSet {
   */
   using ConvexSet::PointInSet;
 
-  /** A MinkowskiSum is bounded if and only if all its constituent sets are
-  bounded. This class honors requests for parallelism only so far as its
+  /** A MinkowskiSum is bounded if all its constituent sets are bounded or if
+  any are empty. This class honors requests for parallelism only so far as its
   constituent sets do.
   @param parallelism The maximum number of threads to use.
   @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
