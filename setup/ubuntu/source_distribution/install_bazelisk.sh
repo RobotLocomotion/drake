@@ -54,10 +54,10 @@ if [[ $(arch) = "aarch64" ]]; then
   dpkg_install_from_wget \
     bazelisk 1.22.1 \
     https://github.com/bazelbuild/bazelisk/releases/download/v1.22.1/bazelisk-arm64.deb \
-    b6a67444325fcee119fcfa1ca4bbc6478a8b1f7937730bde4a52ad3347146d76
+    86b416e4664d4b4eef2ef44bb0256a4357f5e4e62e4838c45c036cb60b2b1334
 else
   dpkg_install_from_wget \
     bazelisk 1.22.1 \
     https://github.com/bazelbuild/bazelisk/releases/download/v1.22.1/bazelisk-amd64.deb \
-    f3a9dd15b08f3f1350f2b2055cfee8a9c412c2050966f635633aaf30dd7e979e
+    26723ac5cc5753717ba873281c9abf180ce355fe42aa3219472c24b17bfdd3d6
 fi
