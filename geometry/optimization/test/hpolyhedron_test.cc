@@ -1774,6 +1774,18 @@ GTEST_TEST(HPolyhedronTest, BoundednessCheckEmptyEdgeCases) {
   h = HPolyhedron{A, b};
   EXPECT_TRUE(h.IsEmpty());
   EXPECT_TRUE(h.IsBounded());
+
+  // An empty polyheron in R^2, defined by the constraints x1 <= -1, x1 >= 0,
+  // and x2 >= 0. This checks the special case where Stiemke's theorem of
+  // alternatives would otherwise suggest it to be unbounded.
+  A = MatrixXd::Zero(3, 2);
+  A(0, 0) = 1;
+  A(1, 0) = -1;
+  A(2, 1) = -1;
+  b = Vector3d(-1, 0, 0);
+  h = HPolyhedron(A, b);
+  EXPECT_TRUE(h.IsEmpty());
+  EXPECT_TRUE(h.IsBounded());
 }
 
 }  // namespace optimization
