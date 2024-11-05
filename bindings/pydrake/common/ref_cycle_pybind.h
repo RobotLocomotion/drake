@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 
 namespace drake {
@@ -50,6 +52,13 @@ struct ref_cycle {};
  index. */
 void ref_cycle_impl(size_t peer0, size_t peer1,
     const py::detail::function_call& call, py::handle ret);
+
+/* This function constructs a reference cycle from arbitrary handles. It may be
+ needed in special cases where the ordinary call-policy annotations won't work.
+ The `location_hint` will appear in any exception messages; it should help
+ developers locate where and why this function was called. */
+void make_arbitrary_ref_cycle(
+    py::handle p0, py::handle p1, const std::string& location_hint);
 
 }  // namespace internal
 }  // namespace pydrake
