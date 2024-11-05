@@ -192,7 +192,11 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
   auto result = SpatialInertia<double>{mass, p_GoGcm, G_GGo_G,
                                        /* skip_validity_check = */ true};
   if (!result.IsPhysicallyValid()) {
-    return result.CriticizeNotPhysicallyValid();
+    std::string message = result.CriticizeNotPhysicallyValid();
+    if (!message.empty()) {
+      return message;
+    }
+    return result;
   }
   return result;
 }
