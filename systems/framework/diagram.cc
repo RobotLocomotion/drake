@@ -1431,6 +1431,9 @@ Diagram<T>::ConvertScalarType() const {
   // Move the new systems into the blueprint.
   blueprint->systems = std::move(new_systems);
 
+  // TODO(rpoyner-tri): consider what to do with diagram_properties under
+  // scalar conversion. For now, do nothing.
+
   return blueprint;
 }
 
@@ -1551,6 +1554,7 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   connection_map_ = std::move(blueprint->connection_map);
   output_port_ids_ = std::move(blueprint->output_port_ids);
   registered_systems_ = std::move(blueprint->systems);
+  diagram_properties_ = std::move(blueprint->diagram_properties);
 
   // This cache entry just maintains temporary storage. It is only ever used
   // by DoCalcNextUpdateTime(). Since this declaration of the cache entry

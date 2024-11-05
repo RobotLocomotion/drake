@@ -681,6 +681,7 @@ std::unique_ptr<typename Diagram<T>::Blueprint> DiagramBuilder<T>::Compile() {
   blueprint->output_port_names = output_port_names_;
   blueprint->connection_map = connection_map_;
   blueprint->systems = std::move(registered_systems_);
+  blueprint->diagram_properties = std::move(diagram_properties_);
 
   already_built_ = true;
 
