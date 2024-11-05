@@ -6,8 +6,8 @@ def msgpack_internal_repository(
     github_archive(
         name = name,
         repository = "msgpack/msgpack-c",
-        commit = "cpp-6.1.1",
-        sha256 = "d7b119f292365d41403b41b40c2fefd82ebd81241e3c658fafe0e638fa54604a",  # noqa
+        commit = "cpp-7.0.0",
+        sha256 = "070881ebea9208cf7e731fd5a46a11404025b2f260ab9527e32dfcb7c689fbfc",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/vendor.patch",
