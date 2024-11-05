@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <functional>
 #include <map>
 #include <memory>
@@ -12,6 +13,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/pointer_cast.h"
+#include "drake/common/string_map.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/diagram_discrete_values.h"
@@ -59,6 +61,10 @@ class OwnedSystems {
  private:
   std::vector<std::unique_ptr<System<T>>> vec_;
 };
+
+// A type for arbitrary properties that can be attached to a diagram.
+// Duplicated here from diagram_builder.h to avoid a header dependency cycle.
+using DiagramProperties = string_map<std::any>;
 
 }  // namespace internal
 
@@ -528,6 +534,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     std::map<InputPortLocator, OutputPortLocator> connection_map;
     // All of the systems to be included in the diagram.
     internal::OwnedSystems<T> systems;
+
+    internal::DiagramProperties diagram_properties;
   };
 
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
@@ -588,6 +596,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // The Systems in this Diagram, which are owned by this Diagram, in the order
   // they were registered. Index by SubsystemIndex.
   internal::OwnedSystems<T> registered_systems_;
+
+  internal::DiagramProperties diagram_properties_;
 
   // Map to quickly satisfy "What is the subsystem index of the child system?"
   std::map<const System<T>*, SubsystemIndex> system_index_map_;
