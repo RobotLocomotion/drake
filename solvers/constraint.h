@@ -413,6 +413,9 @@ class LorentzConeConstraint : public Constraint {
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
 
+  // Updates the gradient sparsity pattern given A_.
+  void UpdateGradientSparsityPattern();
+
   Eigen::SparseMatrix<double> A_;
   // We need to store a dense matrix of A_, so that we can compute the gradient
   // using AutoDiffXd, and return the gradient as a dense matrix.
@@ -449,17 +452,7 @@ class RotatedLorentzConeConstraint : public Constraint {
    @throws std::exception if A.rows() < 3.
    */
   RotatedLorentzConeConstraint(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                               const Eigen::Ref<const Eigen::VectorXd>& b)
-      : Constraint(
-            3, A.cols(), Eigen::Vector3d::Constant(0.0),
-            Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
-        A_(A.sparseView()),
-        A_dense_(A),
-        b_(b) {
-    DRAKE_THROW_UNLESS(A_.rows() >= 3);
-    DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
-    set_is_thread_safe(true);
-  }
+                               const Eigen::Ref<const Eigen::VectorXd>& b);
 
   /** Getter for A. */
   const Eigen::SparseMatrix<double>& A() const { return A_; }
@@ -500,6 +493,9 @@ class RotatedLorentzConeConstraint : public Constraint {
                           const VectorX<symbolic::Variable>&) const override;
 
   std::string DoToLatex(const VectorX<symbolic::Variable>&, int) const override;
+
+  // Updates the gradient sparsity pattern given A_.
+  void UpdateGradientSparsityPattern();
 
   Eigen::SparseMatrix<double> A_;
   // We need to store a dense matrix of A_, so that we can compute the gradient
