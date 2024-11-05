@@ -3,19 +3,12 @@
 #include <memory>
 #include <utility>
 
-// Remove 2024-11-01 with deprecation.
-#include <vector>
-
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/contact_surface.h"
 #include "drake/multibody/math/spatial_algebra.h"
-
-// Remove 2024-11-01 with deprecation.
-#include "drake/common/unused.h"
-#include "drake/multibody/plant/hydroelastic_quadrature_point_data.h"
 
 namespace drake {
 namespace multibody {
@@ -84,26 +77,6 @@ class HydroelasticContactInfo {
                 /* stored pointer = */ contact_surface),
             F_Ac_W) {}
 
-  DRAKE_DEPRECATED("2024-11-01", "Do not pass quadrature_point_data.")
-  HydroelasticContactInfo(
-      const geometry::ContactSurface<T>* contact_surface,
-      const SpatialForce<T>& F_Ac_W,
-      std::vector<internal::HydroelasticQuadraturePointData<T>>&&
-          quadrature_point_data)
-      : HydroelasticContactInfo(contact_surface, F_Ac_W) {
-    unused(quadrature_point_data);
-  }
-
-  DRAKE_DEPRECATED("2024-11-01", "Do not pass quadrature_point_data.")
-  HydroelasticContactInfo(
-      std::unique_ptr<geometry::ContactSurface<T>> contact_surface,
-      const SpatialForce<T>& F_Ac_W,
-      std::vector<internal::HydroelasticQuadraturePointData<T>>&&
-          quadrature_point_data)
-      : HydroelasticContactInfo(std::move(contact_surface), F_Ac_W) {
-    unused(quadrature_point_data);
-  }
-
   /** @name Implements CopyConstructible, CopyAssignable */
   /** @{ */
   HydroelasticContactInfo(const HydroelasticContactInfo&);
@@ -119,15 +92,6 @@ class HydroelasticContactInfo {
   const geometry::ContactSurface<T>& contact_surface() const {
     return *contact_surface_;
   }
-
-  DRAKE_DEPRECATED(
-      "2024-11-01",
-      "This function is being removed. "
-      "This detailed information was too costly to report, so is effectively "
-      "no longer part of the ContactResults output port. The returned vector "
-      "will always be empty during the deprecation window.")
-  const std::vector<internal::HydroelasticQuadraturePointData<T>>&
-  quadrature_point_data() const;
 
   /** Gets the spatial force applied on body A, at the centroid point C of the
    surface mesh M, and expressed in the world frame W. The position `p_WC` of

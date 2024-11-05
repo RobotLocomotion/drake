@@ -590,6 +590,10 @@ class SpatialInertia {
   /// @see RotationalInertia::CouldBePhysicallyValid().
   boolean<T> IsPhysicallyValid() const;
 
+  /// Performs the same checks as the boolean typed IsPhysicallyValid().
+  /// @returns empty string if valid, otherwise, a detailed error message.
+  std::string CriticizeNotPhysicallyValid() const;
+
   /// @anchor spatial_inertia_equivalent_shapes
   /// @name Spatial inertia equivalent shapes
   /// Calculates principal semi-diameters (half-lengths), principal axes
@@ -911,7 +915,13 @@ class SpatialInertia {
   typename std::enable_if_t<!scalar_predicate<T1>::is_bool> CheckInvariants()
       const {}
 
+  // Throws an exception with a detailed error message.
+  // @pre !IsPhysicallyValid() (not checked).
   [[noreturn]] void ThrowNotPhysicallyValid() const;
+
+  // Returns a detailed error message.
+  // @pre !IsPhysicallyValid() (not checked).
+  std::string MakeNotPhysicallyValidErrorMessage() const;
 
   // Mass of the body or composite body.
   T mass_{nan()};

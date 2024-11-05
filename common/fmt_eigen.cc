@@ -13,8 +13,11 @@ template <typename T>
 using FormatterEigenRef =
     Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>;
 
-template <typename T>
-std::string FormatEigenMatrix(const FormatterEigenRef<T>& matrix) {
+template <typename Scalar>
+std::string FormatEigenMatrix(const FormatterEigenRef<Scalar>& matrix)
+  requires std::is_same_v<Scalar, double> || std::is_same_v<Scalar, float> ||
+           std::is_same_v<Scalar, std::string>
+{  // NOLINT(whitespace/braces)
   std::stringstream stream;
   // We'll print our matrix data using as much precision as we can, so that
   // console log output and/or error messages paint the full picture. Sadly,

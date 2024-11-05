@@ -59,5 +59,14 @@ GTEST_TEST(FmtEigenTest, Matrix3i) {
             "31 32 33");
 }
 
+GTEST_TEST(FmtEigenTest, MatrixString) {
+  Eigen::MatrixX<std::string> value(2, 3);
+  value << "hello", "world", "!",
+           "goodbye", "cruel", "world";
+  EXPECT_EQ(fmt::format("{}", fmt_eigen(value)),
+            "  hello   world       !\n"
+            "goodbye   cruel   world");
+}
+
 }  // namespace
 }  // namespace drake

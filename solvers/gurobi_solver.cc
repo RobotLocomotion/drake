@@ -954,9 +954,7 @@ void GurobiSolver::DoSolve2(const MathematicalProgram& prog,
 
   // Copy the remaining options into model_env.
   options->Respell([](const auto& common, auto* respelled) {
-    if (common.print_to_console) {
-      respelled->emplace("LogToConsole", 1);
-    }
+    respelled->emplace("LogToConsole", common.print_to_console ? 1 : 0);
     if (!common.print_file_name.empty()) {
       respelled->emplace("LogFile", common.print_file_name);
     }

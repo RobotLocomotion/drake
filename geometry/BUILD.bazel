@@ -808,6 +808,7 @@ filegroup(
     name = "test_obj_files",
     testonly = 1,
     srcs = [
+        "test/bad_geometry_volume_zero.obj",
         "test/convex.obj",
         "test/cube_corners.obj",
         "test/cube_with_hole.obj",

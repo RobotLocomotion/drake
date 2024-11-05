@@ -1,3 +1,6 @@
+#include <unistd.h>
+
+#include <cstdlib>
 #include <filesystem>
 
 #include <gflags/gflags.h>
@@ -37,6 +40,14 @@ int do_main(int argc, char* argv[]) {
   if (argc < 3) {
     drake::log()->error("missing output filename");
     return 1;
+  }
+
+  // Make cwd be what the user expected, not the runfiles tree.
+  if (const char* path = std::getenv("BUILD_WORKING_DIRECTORY")) {
+    const int error = ::chdir(path);
+    if (error != 0) {
+      log()->warn("Could not chdir to '{}'", path);
+    }
   }
 
   VolumeMesh<double> mesh =
