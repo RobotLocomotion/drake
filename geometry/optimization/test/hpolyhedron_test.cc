@@ -1757,7 +1757,7 @@ GTEST_TEST(HPolyhedronTest, MaximumVolumeInscribedAffineTransformationTest2) {
 }
 
 GTEST_TEST(HPolyhedronTest, BoundednessCheckEmptyEdgeCases) {
-  // An empty HPolyhedron in R^3, defined by x1 <= -1 and x1 >= 0. This checks
+  // An empty HPolyhedron in ℝ^3, defined by x1 <= -1 and x1 >= 0. This checks
   // the special case when there are fewer rows than columns.
   MatrixXd A = MatrixXd::Zero(2, 3);
   VectorXd b = VectorXd::Zero(2);
@@ -1768,14 +1768,15 @@ GTEST_TEST(HPolyhedronTest, BoundednessCheckEmptyEdgeCases) {
   EXPECT_TRUE(h.IsEmpty());
   EXPECT_TRUE(h.IsBounded());
 
-  // An empty polyhedron in R^1, defined by the constraint 0x <= -1 and 0x <= 0.
-  // This checks the special case where the kernel has positive dimension.
+  // An empty HPolyhedron in ℝ^1, defined by the constraint 0x <= -1 and
+  // 0x <= 0. This checks the special case where the kernel has positive
+  // dimension.
   A = MatrixXd::Zero(2, 1);
   h = HPolyhedron{A, b};
   EXPECT_TRUE(h.IsEmpty());
   EXPECT_TRUE(h.IsBounded());
 
-  // An empty polyheron in R^2, defined by the constraints x1 <= -1, x1 >= 0,
+  // An empty HPolyhedron in ℝ^2, defined by the constraints x1 <= -1, x1 >= 0,
   // and x2 >= 0. This checks the special case where Stiemke's theorem of
   // alternatives would otherwise suggest it to be unbounded.
   A = MatrixXd::Zero(3, 2);
