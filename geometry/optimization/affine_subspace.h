@@ -147,8 +147,8 @@ class AffineSubspace final : public ConvexSet {
   /** An AffineSubspace is bounded if and only if it is zero-dimensional (i.e.,
   a point).
   @param parallelism Ignored -- no parallelization is used.
-  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
-  appear here due to a limitation in doxygen. */
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
   using ConvexSet::IsBounded;
 
  private:

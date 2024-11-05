@@ -68,8 +68,8 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
   This class honors requests for parallelism only so far as its constituent sets
   do.
   @param parallelism The maximum number of threads to use.
-  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
-  appear here due to a limitation in doxygen. */
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
   using ConvexSet::IsBounded;
 
  private:

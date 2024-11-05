@@ -63,12 +63,12 @@ class MinkowskiSum final : public ConvexSet {
   */
   using ConvexSet::PointInSet;
 
-  /** A MinkowskiSum is bounded if all its constituent sets are bounded. If any
-  are unbounded, the generic method for checking boundedness is used. This class
-  honors requests for parallelism only so far as its constituent sets do.
+  /** A MinkowskiSum is bounded if and only if all its constituent sets are
+  bounded. This class honors requests for parallelism only so far as its
+  constituent sets do.
   @param parallelism The maximum number of threads to use.
-  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
-  appear here due to a limitation in doxygen. */
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
   using ConvexSet::IsBounded;
 
  private:

@@ -50,8 +50,8 @@ class Point final : public ConvexSet {
 
   /** Every Point is bounded by construction.
   @param parallelism Ignored -- no parallelization is used.
-  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
-  appear here due to a limitation in doxygen. */
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
   using ConvexSet::IsBounded;
 
  private:

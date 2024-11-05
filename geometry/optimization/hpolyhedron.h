@@ -78,8 +78,8 @@ class HPolyhedron final : public ConvexSet {
   alternatives).
   @param parallelism Ignored -- the linear program solver will determine the
   number of threads to use.
-  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
-  appear here due to a limitation in doxygen. */
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
   using ConvexSet::IsBounded;
 
   /** Returns true iff this HPolyhedron is entirely contained in the HPolyhedron
