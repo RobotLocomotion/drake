@@ -537,13 +537,13 @@ namespace {
 template <typename T>
 Polynomial<T> ShiftPoly(Polynomial<T> poly, const T& x) {
   if (poly.GetVariables().size() == 0) {
-    // constant polynomial
+    // Make constant polynomial.
     return poly;
   }
   using std::pow;
   // Given p(t) = a0 + a1*t + a2*t^2 + ... + an*t^n,
-  // We want to shift the parameter to p(t + x)
-  // = b0 + b1*t + b2*t^2 + ... + bn*t^n
+  // we want to shift the parameter to p(t + x)
+  // = b0 + b1*t + b2*t^2 + ... + bn*t^n.
   // We can expand the rhs to get the values in b.
   DRAKE_THROW_UNLESS(poly.GetVariables().size() == 1);
   int n = poly.GetDegree();
@@ -562,8 +562,8 @@ Polynomial<T> ShiftPoly(Polynomial<T> poly, const T& x) {
 template <typename T>
 int PiecewisePolynomial<T>::AddBreak(const T& new_break) {
   auto& breaks = this->get_mutable_breaks();
-  // Let's check if the new break is already within the kEpsilonTime of an
-  // existing break
+  // Check if the new break is already within the kEpsilonTime of an
+  // existing break.
   for (int k = 0; k < this->get_number_of_segments(); k++) {
     const T& break_time = breaks[k];
     if (abs(break_time - new_break) < PiecewiseTrajectory<T>::kEpsilonTime) {
