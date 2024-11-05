@@ -110,6 +110,7 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   Point p(Vector3d(1.0, 2.0, 3.0));
   Vertex* v = g.AddVertex(p, "point");
 
+  EXPECT_TRUE(g.IsValid(*v));
   EXPECT_EQ(v->ambient_dimension(), 3);
   EXPECT_EQ(v->name(), "point");
 
@@ -121,6 +122,7 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   p.set_x(Vector3d(4., 5., 6));
   EXPECT_FALSE(v->set().PointInSet(p.x()));
 
+  EXPECT_EQ(g.num_vertices(), 1);
   auto vertices = g.Vertices();
   EXPECT_EQ(vertices.size(), 1);
   EXPECT_EQ(vertices.at(0), v);
@@ -154,6 +156,8 @@ GTEST_TEST(GraphOfConvexSetsTest, AddEdge) {
   Vertex* v = g.AddVertex(pv, "v");
   Edge* e = g.AddEdge(u, v, "e");
 
+  EXPECT_TRUE(g.IsValid(*e));
+  EXPECT_EQ(g.num_edges(), 1);
   EXPECT_EQ(e->u().name(), u->name());
   EXPECT_EQ(e->v().name(), v->name());
 
@@ -170,6 +174,7 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
   Edge* e1 = g.AddEdge(u, v, "e1");
   Edge* e2 = g.AddEdge(v, u, "e2");
 
+  EXPECT_EQ(g.num_edges(), 2);
   EXPECT_EQ(g.Edges().size(), 2);
 
   EXPECT_EQ(u->incoming_edges().size(), 1);
@@ -183,6 +188,7 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
 
   g.RemoveEdge(e1);
   auto edges = g.Edges();
+  EXPECT_EQ(g.num_edges(), 1);
   EXPECT_EQ(edges.size(), 1);
   EXPECT_EQ(edges.at(0), e2);
   EXPECT_EQ(u->incoming_edges().size(), 1);
@@ -211,10 +217,12 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
   EXPECT_EQ(v1->incoming_edges().size(), 1);
   EXPECT_EQ(v1->outgoing_edges().size(), 2);
 
+  EXPECT_EQ(g.num_vertices(), 3);
   EXPECT_EQ(g.Vertices().size(), 3);
   EXPECT_EQ(g.Edges().size(), 3);
 
   g.RemoveVertex(v3);
+  EXPECT_EQ(g.num_vertices(), 2);
   EXPECT_EQ(g.Vertices().size(), 2);
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);

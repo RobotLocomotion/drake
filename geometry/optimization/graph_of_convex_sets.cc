@@ -557,6 +557,14 @@ std::vector<const Vertex*> GraphOfConvexSets::Vertices() const {
   return vertices;
 }
 
+bool GraphOfConvexSets::IsValid(const Vertex& v) const {
+  if (vertices_.contains(v.id())) {
+    DRAKE_DEMAND(vertices_.at(v.id()).get() == &v);
+    return true;
+  }
+  return false;
+}
+
 std::vector<Edge*> GraphOfConvexSets::Edges() {
   std::vector<Edge*> edges;
   edges.reserve(edges_.size());
@@ -574,6 +582,15 @@ std::vector<const Edge*> GraphOfConvexSets::Edges() const {
   }
   return edges;
 }
+
+bool GraphOfConvexSets::IsValid(const Edge& e) const {
+  if (edges_.contains(e.id())) {
+    DRAKE_DEMAND(edges_.at(e.id()).get() == &e);
+    return true;
+  }
+  return false;
+}
+
 void GraphOfConvexSets::ClearAllPhiConstraints() {
   for (const auto& e : edges_) {
     e.second->ClearPhiConstraints();
