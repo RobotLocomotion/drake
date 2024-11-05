@@ -66,7 +66,10 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
 
   /** A ConvexHull is bounded if and only if each constituent set is bounded.
   This class honors requests for parallelism only so far as its constituent sets
-  do. */
+  do.
+  @param parallelism The maximum number of threads to use.
+  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
+  appear here due to a limitation in doxygen. */
   using ConvexSet::IsBounded;
 
  private:

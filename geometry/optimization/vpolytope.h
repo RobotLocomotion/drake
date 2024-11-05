@@ -99,7 +99,10 @@ class VPolytope final : public ConvexSet {
   @note this function calls qhull to compute the volume. */
   using ConvexSet::CalcVolume;
 
-  /** Every VPolytope is bounded by construction. `parallelism` is ignored. */
+  /** Every VPolytope is bounded by construction.
+  @param parallelism Ignored -- no parallelization is used.
+  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
+  appear here due to a limitation in doxygen. */
   using ConvexSet::IsBounded;
 
  private:

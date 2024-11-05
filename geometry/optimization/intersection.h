@@ -46,9 +46,8 @@ class Intersection final : public ConvexSet {
   using ConvexSet::CalcVolume;
 
   /** An Intersection is bounded if all its constituent sets are bounded. If any
-  are unbounded, the generic method for checking boundedness is used.
-  `parallelism` is passed through to each constituent set's IsBounded method
-  call, and is used for the generic boundedness check if necessary.
+  are unbounded, the generic method for checking boundedness is used. This class
+  honors requests for parallelism only so far as its constituent sets do.
   @param parallelism The maximum number of threads to use.
   @note See ConvexSet::IsBounded for documentation of the docstring. It does not
   appear here due to a limitation in doxygen. */

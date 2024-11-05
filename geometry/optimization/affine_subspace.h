@@ -145,7 +145,10 @@ class AffineSubspace final : public ConvexSet {
   Eigen::MatrixXd OrthogonalComplementBasis() const;
 
   /** An AffineSubspace is bounded if and only if it is zero-dimensional (i.e.,
-  a point). `parallelism` is ignored. */
+  a point).
+  @param parallelism Ignored -- no parallelization is used.
+  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
+  appear here due to a limitation in doxygen. */
   using ConvexSet::IsBounded;
 
  private:

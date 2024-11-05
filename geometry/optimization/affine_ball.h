@@ -118,7 +118,10 @@ class AffineBall final : public ConvexSet {
     CheckInvariants();
   }
 
-  /** Every AffineBall is bounded by construction. `parallelism` is ignored. */
+  /** Every AffineBall is bounded by construction.
+  @param parallelism Ignored -- no parallelization is used.
+  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
+  appear here due to a limitation in doxygen. */
   using ConvexSet::IsBounded;
 
  private:

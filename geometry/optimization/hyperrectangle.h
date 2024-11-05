@@ -72,7 +72,10 @@ class Hyperrectangle final : public ConvexSet {
   }
 
   /** A Hyperrectangle is always bounded, since infinite lower and upper bounds
-  are prohibited. `parallelism` is ignored. */
+  are prohibited.
+  @param parallelism Ignored -- no parallelization is used.
+  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
+  appear here due to a limitation in doxygen. */
   using ConvexSet::IsBounded;
 
  private:

@@ -44,7 +44,10 @@ class Spectrahedron final : public ConvexSet {
   using ConvexSet::CalcVolume;
 
   /** Spectrahedron uses the generic method for boundedness checking, which uses
-  `parallelism`. */
+  `parallelism`.
+  @param parallelism The maximum number of threads to use.
+  @note See ConvexSet::IsBounded for documentation of the docstring. It does not
+  appear here due to a limitation in doxygen. */
   using ConvexSet::IsBounded;
 
  private:
