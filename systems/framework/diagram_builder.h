@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <map>
 #include <memory>
 #include <set>
@@ -19,6 +20,28 @@
 
 namespace drake {
 namespace systems {
+
+namespace internal {
+
+// A type for arbitrary properties that can be attached to a diagram.
+using DiagramProperties = string_map<std::any>;
+
+// Get a mutable reference to the diagram properties of `builder`.
+//
+// It is sometimes necessary in FFI programming situations to cause an
+// arbitrary object to have the same lifetime as a system added to a
+// builder. That is, the object should have a lifetime that is the union of the
+// builder and the resulting diagram.
+//
+// Objects stored in properties via this function will have their ownership
+// transferred (move semantics, not copy semantics) at Build() time.
+template <typename T>
+DiagramProperties&
+get_mutable_properties(DiagramBuilder<T>* builder) {
+  return builder->diagram_properties_;
+}
+
+}  // namespace internal
 
 /// DiagramBuilder is a factory class for Diagram.
 ///
@@ -468,6 +491,10 @@ class DiagramBuilder {
   int num_output_ports() const;
 
  private:
+  template <typename U>
+  friend internal::DiagramProperties& internal::get_mutable_properties(
+      DiagramBuilder<U>*);
+
   // Declares a new input to the entire Diagram, using @p model_input to
   // supply the data type. @p name is an optional name for the input port; if
   // it is unspecified, then a default name will be provided.
@@ -533,6 +560,8 @@ class DiagramBuilder {
   std::unordered_set<const System<T>*> systems_;
   // The Systems in this DiagramBuilder, in the order they were registered.
   internal::OwnedSystems<T> registered_systems_;
+
+  internal::DiagramProperties diagram_properties_;
 };
 
 }  // namespace systems
