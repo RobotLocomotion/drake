@@ -43,9 +43,18 @@ class Spectrahedron final : public ConvexSet {
   /** @throws  Not implemented. */
   using ConvexSet::CalcVolume;
 
+  /** Spectrahedron uses the generic method for boundedness checking, which uses
+  `parallelism`.
+  @param parallelism The maximum number of threads to use.
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
+  /* We only use DoIsBoundedShortcut here to avoid an edge case that causes an
+  error with the CSDP solver (#19927). */
   std::optional<bool> DoIsBoundedShortcut() const final;
 
   // N.B. No need to override DoMaybeGetPoint here.

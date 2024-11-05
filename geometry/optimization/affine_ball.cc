@@ -94,6 +94,10 @@ double AffineBall::DoCalcVolume() const {
          std::abs(B_.determinant());
 }
 
+std::optional<bool> AffineBall::DoIsBoundedShortcut() const {
+  return true;
+}
+
 AffineBall AffineBall::MakeAxisAligned(
     const Eigen::Ref<const VectorXd>& radius,
     const Eigen::Ref<const VectorXd>& center) {
