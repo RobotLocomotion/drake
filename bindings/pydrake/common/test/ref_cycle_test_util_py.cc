@@ -22,6 +22,7 @@ class TestDummyBase {
   TestDummyBase(const TestDummyBase&) = default;
   ~TestDummyBase() = default;
 
+  explicit TestDummyBase(IsDynamic*) {}
   void AddNot(NotDynamic*) {}
   NotDynamic* ReturnNot() { return new NotDynamic(); }
   NotDynamic* ReturnNullNot() { return nullptr; }
@@ -50,6 +51,7 @@ PYBIND11_MODULE(ref_cycle_test_util, m) {
     using Class = IsDynamic;
     py::class_<Class>(m, "IsDynamic", py::dynamic_attr())
         .def(py::init<>())
+        .def(py::init<IsDynamic*>(), py::arg("thing"), ref_cycle<1, 2>())
         .def("AddNot", &Class::AddNot)
         .def("AddNotCycle", &Class::AddNot, ref_cycle<1, 2>())
         .def("ReturnNot", &Class::ReturnNot)
@@ -71,6 +73,18 @@ PYBIND11_MODULE(ref_cycle_test_util, m) {
   // Returns its argument and creates a self-cycle.
   m.def(
       "ouroboros", [](IsDynamic* x) { return x; }, ref_cycle<0, 1>());
+  m.def("arbitrary_ok", []() {
+    auto d1 = py::cast(new IsDynamic);
+    auto d2 = py::cast(new IsDynamic);
+    internal::make_arbitrary_ref_cycle(d1, d2, "from arbitrary_ok");
+    return d1;
+  });
+  m.def("arbitrary_bad", []() {
+    auto dyn = py::cast(new IsDynamic);
+    auto bad = py::cast(new NotDynamic);
+    internal::make_arbitrary_ref_cycle(dyn, bad, "from arbitrary_bad");
+    return dyn;
+  });
 }
 
 }  // namespace pydrake
