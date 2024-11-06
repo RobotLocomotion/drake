@@ -1021,12 +1021,14 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
           a[0] = -lc->upper_bound()[i];
           a.tail(A.cols()) = A.row(i);
           prog->AddLinearConstraint(a, -inf, 0, vars);
-        } else if (lc->lower_bound()[i] > 0) {
+        } else if (lc->upper_bound()[i] < 0) {
           // If the upper bound is -inf, we cannot take the perspective of such
           // a constraint, so we throw an error.
           throw std::runtime_error(
               "Cannot take the perspective of a trivially-infeasible linear "
               "constraint of the form x <= -inf.");
+        } else {
+          // Do nothing for the constraint x <= inf.
         }
       }
     }
@@ -1058,6 +1060,8 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
           throw std::runtime_error(
               "Cannot take the perspective of a trivially-infeasible linear "
               "constraint of the form x >= +inf.");
+        } else {
+          // Do nothing for the constraint x >= -inf.
         }
       }
     }

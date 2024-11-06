@@ -1743,26 +1743,92 @@ TEST_F(ThreeBoxes, LinearConstraint3) {
 TEST_F(ThreeBoxes, InvalidLinearConstraintUpper) {
   const Matrix2d A = Matrix2d::Identity();
   const Vector2d b{.5, .3};
+  const Vector2d c_good{1.0, kInf};
+  const Vector2d c_bad{1.0, -kInf};
+
   e_on_->AddConstraint(CreateBinding(
-      std::make_shared<LinearConstraint>(A, b, Vector2d::Constant(-kInf)),
-      e_on_->xv()));
-  // b ≤ e_on_->xv() ≤ -∞. We can't take the perspective of such a constraint,
-  // so solving should throw an error.
+      std::make_shared<LinearConstraint>(A, b, c_good), e_on_->xv()));
+  // b ≤ e_on_->xv() ≤ c_good. No error on the upper bound -- the infinity
+  // component is trivially feasible.
+  DRAKE_EXPECT_NO_THROW(g_.SolveShortestPath(*source_, *target_, options_));
+
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b, c_bad), e_on_->xv()));
+  // b ≤ e_on_->xv() ≤ c_bad. We can't take the perspective of the
+  // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*x\\s<=\\s-inf.*");
+  // The latter portion of the regex is trying to match x <= -inf.
+}
+
+// Test the code path where the upper bounds are not all infinite or finite.
+TEST_F(ThreeBoxes, InvalidLinearConstraintUpper2) {
+  const Matrix2d A = Matrix2d::Identity();
+  const Vector2d b{.5, .3};
+  const Vector2d c_good{1.0, kInf};
+  const Vector2d c_bad{1.0, -kInf};
+
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b, c_good), e_on_->xv()));
+  // b ≤ e_on_->xv() ≤ c_good. No error on the upper bound -- the infinity
+  // component is trivially feasible.
+  DRAKE_EXPECT_NO_THROW(g_.SolveShortestPath(*source_, *target_, options_));
+
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b, c_bad), e_on_->xv()));
+  // b ≤ e_on_->xv() ≤ c_bad. We can't take the perspective of the
+  // trivially-infeasible constraint, so solving should throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*x\\s<=\\s-inf.*");
+  // The latter portion of the regex is trying to match x <= -inf.
 }
 
 // Test linear constraints with a lower bound of +inf.
 TEST_F(ThreeBoxes, InvalidLinearConstraintLower) {
   const Matrix2d A = Matrix2d::Identity();
-  const Vector2d b{.5, .3};
+  const Vector2d b_good{-1.0, -kInf};
+  const Vector2d b_bad{-1.0, kInf};
+  const Vector2d c{.5, .3};
+
   e_on_->AddConstraint(CreateBinding(
-      std::make_shared<LinearConstraint>(A, Vector2d::Constant(kInf), b),
-      e_on_->xv()));
-  // ∞ ≤ e_on_->xv() ≤ b. We can't take the perspective of such a constraint, so
-  // solving should throw an error.
+      std::make_shared<LinearConstraint>(A, b_good, c), e_on_->xv()));
+  // b_good ≤ e_on_->xv() ≤ c. No error on the upper bound -- the infinity
+  // component is trivially feasible.
+  DRAKE_EXPECT_NO_THROW(g_.SolveShortestPath(*source_, *target_, options_));
+
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b_bad, c), e_on_->xv()));
+  // b_bad ≤ e_on_->xv() ≤ c. We can't take the perspective of the
+  // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*x\\s>=\\s\\+inf.*");
+  // The latter portion of the regex is trying to match x >= +inf.
+}
+
+// Test the code path where the lower bounds are not all infinite or finite.
+TEST_F(ThreeBoxes, InvalidLinearConstraintLower2) {
+  const Matrix2d A = Matrix2d::Identity();
+  const Vector2d b_good{-1.0, -kInf};
+  const Vector2d b_bad{-1.0, kInf};
+  const Vector2d c{.5, .3};
+
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b_good, c), e_on_->xv()));
+  // b_good ≤ e_on_->xv() ≤ c. No error on the upper bound -- the infinity
+  // component is trivially feasible.
+  DRAKE_EXPECT_NO_THROW(g_.SolveShortestPath(*source_, *target_, options_));
+
+  e_on_->AddConstraint(CreateBinding(
+      std::make_shared<LinearConstraint>(A, b_bad, c), e_on_->xv()));
+  // b_bad ≤ e_on_->xv() ≤ c. We can't take the perspective of the
+  // trivially-infeasible constraint, so solving should throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*x\\s>=\\s\\+inf.*");
+  // The latter portion of the regex is trying to match x >= +inf.
 }
 
 TEST_F(ThreeBoxes, LorentzConeConstraint) {
