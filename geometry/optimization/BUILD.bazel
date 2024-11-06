@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":cspace_separating_plane",
         ":geodesic_convexity",
         ":graph_of_convex_sets",
+        ":implicit_graph_of_convex_sets",
         ":iris",
         ":iris_internal",
     ],
@@ -94,6 +95,7 @@ drake_cc_library(
         "//solvers:mosek_solver",
         "//solvers:scs_solver",
         "//solvers:solve",
+        "@common_robotics_utilities",
         "@qhull_internal//:qhull",
     ],
 )
@@ -200,6 +202,15 @@ drake_cc_library(
         "//solvers:mathematical_program_result",
         "//solvers:mosek_solver",
         "//solvers:solver_interface",
+    ],
+)
+
+drake_cc_library(
+    name = "implicit_graph_of_convex_sets",
+    srcs = ["implicit_graph_of_convex_sets.cc"],
+    hdrs = ["implicit_graph_of_convex_sets.h"],
+    deps = [
+        ":graph_of_convex_sets",
     ],
 )
 
@@ -479,6 +490,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "implicit_graph_of_convex_sets_test",
+    deps = [
+        ":implicit_graph_of_convex_sets",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "hpolyhedron_test",
     deps = [
         ":convex_set",
@@ -516,6 +537,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "intersection_test",
+    num_threads = 2,
     deps = [
         ":convex_set",
         ":test_utilities",
@@ -592,6 +614,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "spectrahedron_test",
+    num_threads = 2,
     deps = [
         ":convex_set",
         "//common/test_utilities:eigen_matrix_compare",

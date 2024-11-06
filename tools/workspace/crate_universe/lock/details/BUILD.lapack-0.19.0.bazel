@@ -104,7 +104,7 @@ rust_library(
     version = "0.19.0",
     deps = [
         "@crate__lapack-sys-0.14.0//:lapack_sys",
-        "@crate__libc-0.2.159//:libc",
+        "@crate__libc-0.2.161//:libc",
         "@crate__num-complex-0.4.6//:num_complex",
     ],
 )

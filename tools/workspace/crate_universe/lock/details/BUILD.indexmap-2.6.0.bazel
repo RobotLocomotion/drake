@@ -108,6 +108,6 @@ rust_library(
     version = "2.6.0",
     deps = [
         "@crate__equivalent-1.0.1//:equivalent",
-        "@crate__hashbrown-0.15.0//:hashbrown",
+        "@crate__hashbrown-0.15.1//:hashbrown",
     ],
 )

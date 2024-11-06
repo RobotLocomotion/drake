@@ -1,3 +1,4 @@
+import gc
 import math
 import unittest
 
@@ -276,6 +277,7 @@ class TestControllers(unittest.TestCase):
             return diagram
 
         diagram = make_diagram()
+        gc.collect()
         # N.B. Without the workaround for #14355, we get a segfault when
         # creating the context.
         context = diagram.CreateDefaultContext()

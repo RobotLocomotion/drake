@@ -306,7 +306,9 @@ class RigidTransform {
   /// %RigidTransform.  For example, Eigen currently allows cast from type
   /// double to AutoDiffXd, but not vice-versa.
   template <typename U>
-  RigidTransform<U> cast() const {
+  RigidTransform<U> cast() const
+    requires is_default_scalar<U>
+  {  // NOLINT(whitespace/braces)
     const RotationMatrix<U> R = R_AB_.template cast<U>();
     const Vector3<U> p = p_AoBo_A_.template cast<U>();
     return RigidTransform<U>(R, p);

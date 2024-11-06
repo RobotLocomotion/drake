@@ -124,12 +124,6 @@ class CustomVectorSystem(VectorSystem):
         self.has_called.append("discrete")
 
 
-# Remove 2024-11-01.
-class VectorSystemDeprecated(VectorSystem):
-    def __init__(self):
-        VectorSystem.__init__(self, 0, 0)
-
-
 # Wraps `Adder`.
 class CustomDiagram(Diagram):
     # N.B. The CustomDiagram is used to unit test the DiagramBuilder.BuildInto
@@ -741,11 +735,6 @@ class TestCustom(unittest.TestCase):
         xa_index = dut.DeclareAbstractState(Value(1))
         xa_port = dut.DeclareStateOutputPort(name="xa", state_index=xa_index)
         self.assertEqual(xa_port.get_name(), "xa")
-
-    def test_vector_system_deprecated(self):
-        # Remove 2024-11-01.
-        with catch_drake_warnings(expected_count=1):
-            VectorSystemDeprecated()
 
     def test_vector_system_overrides(self):
         dt = 0.5

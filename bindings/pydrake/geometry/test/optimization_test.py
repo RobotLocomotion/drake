@@ -6,7 +6,7 @@ import copy
 
 import numpy as np
 
-from pydrake.common import RandomGenerator, temp_directory
+from pydrake.common import RandomGenerator, temp_directory, Parallelism
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
@@ -456,6 +456,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertFalse(s.IsEmpty())
         self.assertFalse(s.MaybeGetFeasiblePoint() is None)
         self.assertTrue(s.PointInSet(s.MaybeGetFeasiblePoint()))
+        self.assertTrue(s.IsBounded(Parallelism.Max()))
 
     def test_v_polytope(self):
         mut.VPolytope()
@@ -810,7 +811,11 @@ class TestGeometryOptimization(unittest.TestCase):
         edge0_cost = edge0.AddCost(2.34)
         edge1 = spp.AddEdge(u=source, v=target, name="edge1")
         edge1.AddCost(3.45)
+        self.assertTrue(spp.IsValid(v=source))
+        self.assertEqual(spp.num_vertices(), 2)
         self.assertEqual(len(spp.Vertices()), 2)
+        self.assertTrue(spp.IsValid(e=edge0))
+        self.assertEqual(spp.num_edges(), 2)
         self.assertEqual(len(spp.Edges()), 2)
         result = spp.SolveShortestPath(
             source=source, target=target, options=options)
@@ -1046,6 +1051,38 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(len(spp.Vertices()), 1)
         spp.RemoveVertex(target)
         self.assertEqual(len(spp.Vertices()), 0)
+
+    def test_implicit_graph_of_convex_sets(self):
+        # A simple loop graph, a -> b -> c -> a, where the vertices are
+        # identified based on their string names.
+        class SimpleLoopGcs(mut.ImplicitGraphOfConvexSets):
+            def __init__(self):
+                mut.ImplicitGraphOfConvexSets.__init__(self)
+                self.vertex_cache_ = {}
+
+            def GetVertex(self, name):
+                if name in self.vertex_cache_:
+                    return self.vertex_cache_[name]
+                else:
+                    xv = 1.0 + (ord(name[0]) - ord("a"))
+                    vertex = self.mutable_gcs().AddVertex(
+                        set=mut.Point([xv]), name=name)
+                    self.vertex_cache_[name] = vertex
+                    return vertex
+
+            def Expand(self, v):
+                if v.name() == "c":
+                    self.mutable_gcs().AddEdge(v, self.GetVertex("a"))
+                else:
+                    next_vertex = chr(ord(v.name()[0]) + 1)
+                    self.mutable_gcs().AddEdge(v, self.GetVertex(next_vertex))
+
+        dut = SimpleLoopGcs()
+        a = dut.GetVertex("a")
+        self.assertEqual(len(dut.Successors(v=a)), 1)
+        dut.ExpandRecursively(start=dut.GetVertex("b"), max_successor_calls=10)
+        self.assertEqual(dut.gcs().num_vertices(), 3)
+        self.assertEqual(dut.gcs().num_edges(), 3)
 
 
 class TestCspaceFreePolytope(unittest.TestCase):

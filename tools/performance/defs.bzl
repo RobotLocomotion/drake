@@ -14,6 +14,7 @@ def drake_cc_googlebench_binary(
         test_size = "small",
         test_timeout = None,
         test_args = None,
+        test_display = False,
         test_tags = None):
     """Declares a testonly binary that uses google benchmark.  Automatically
     adds appropriate deps and ensures it either has an automated smoke test
@@ -49,6 +50,7 @@ def drake_cc_googlebench_binary(
             deps = new_deps,
             size = test_size,
             timeout = test_timeout,
+            display = test_display,
             args = [
                 # When running as a unit test, run each function only once to
                 # save time. (Once should be sufficient to prove the lack of

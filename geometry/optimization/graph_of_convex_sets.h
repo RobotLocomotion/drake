@@ -120,9 +120,8 @@ struct GraphOfConvexSetsOptions {
   /** Optional solver options to be used by preprocessing_solver in the
   preprocessing stage of GCS, which is used in SolveShortestPath. If
   preprocessing_solver is set but this parameter is not then solver_options is
-  used. If preprocessing_solver is not set, this parameter is ignored. For
-  instance, one might want to print solver logs for the main optimization, but
-  not from the many smaller preprocessing optimizations. */
+  used. For instance, one might want to print solver logs for the main
+  optimization, but not from the many smaller preprocessing optimizations. */
   std::optional<solvers::SolverOptions> preprocessing_solver_options{
       std::nullopt};
 };
@@ -215,6 +214,9 @@ solvable as a convex optimization to guide the non-convex rounding. This can be
 controlled by the Transcription enum in the AddConstraint method. We
 encourage users to provide a strong convex surrogate, when possible, to better
 approximate the original non-convex problem.
+
+Users can also specify a GCS implicitly, which can be important for very large
+or infinite graphs, by deriving from ImplicitGraphOfConvexSets.
 
 @ingroup geometry_optimization
 */
@@ -685,6 +687,9 @@ class GraphOfConvexSets {
   */
   void RemoveEdge(Edge* edge);
 
+  int num_vertices() const { return vertices_.size(); }
+  int num_edges() const { return edges_.size(); }
+
   /** Returns mutable pointers to the vertices stored in the graph. */
   std::vector<Vertex*> Vertices();
 
@@ -692,12 +697,24 @@ class GraphOfConvexSets {
   @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   std::vector<const Vertex*> Vertices() const;
 
+  /** Returns true iff `v` is registered as a vertex with `this`.
+
+  @pydrake_mkdoc_identifier{vertex}
+  */
+  bool IsValid(const Vertex& v) const;
+
   /** Returns mutable pointers to the edges stored in the graph. */
   std::vector<Edge*> Edges();
 
   /** Returns pointers to the edges stored in the graph.
   @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   std::vector<const Edge*> Edges() const;
+
+  /** Returns true iff `e` is registered as an edge with `this`.
+
+  @pydrake_mkdoc_identifier{edge}
+  */
+  bool IsValid(const Edge& e) const;
 
   /** Removes all constraints added to any edge with AddPhiConstraint. */
   void ClearAllPhiConstraints();

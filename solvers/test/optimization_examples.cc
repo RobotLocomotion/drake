@@ -6,6 +6,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/clp_solver.h"
+#include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/mosek_solver.h"
@@ -156,6 +157,9 @@ double OptimizationProgram::GetSolverSolutionDefaultCompareTolerance(
     return 1E-3;  // Scs is not very accurate.
   }
   if (solver_id == ClarabelSolver::id()) {
+    return 1E-5;
+  }
+  if (solver_id == CsdpSolver::id()) {
     return 1E-5;
   }
   throw std::runtime_error("Unsupported solver type.");

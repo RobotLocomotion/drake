@@ -217,6 +217,36 @@ GTEST_TEST(ConvexHullTest, AddPointInNonnegativeScalingConstraints2) {
   EXPECT_TRUE(CompareMatrices(t_sol, 0.2 / 3 * Eigen::Vector3d::Ones(), 1e-6));
 }
 
+GTEST_TEST(ConvexHullTest, BoundedTest) {
+  HPolyhedron H1 = HPolyhedron::MakeL1Ball(3);
+  HPolyhedron H2 =
+      HPolyhedron(-Eigen::Matrix3d::Identity(), Eigen::Vector3d{1, 1, 1});
+  ConvexHull C1(MakeConvexSets(H1, H2));
+
+  EXPECT_FALSE(C1.IsBounded(Parallelism::None()));
+  EXPECT_FALSE(C1.IsBounded(Parallelism::Max()));
+
+  ConvexHull C2(MakeConvexSets(H1, H1));
+  EXPECT_TRUE(C2.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(C2.IsBounded(Parallelism::Max()));
+
+  // Check a high dimensional example.
+  HPolyhedron H3 = HPolyhedron::MakeUnitBox(100);
+  Eigen::MatrixXd A = H3.A();
+  Eigen::VectorXd b = H3.b();
+
+  ASSERT_EQ(A.rows(), 200);
+  HPolyhedron H4(A.topRows(199), b.head(199));
+
+  ConvexHull C3(MakeConvexSets(H3, H3));  // bounded
+  ConvexHull C4(MakeConvexSets(H3, H4));  // unbounded
+
+  EXPECT_TRUE(C3.IsBounded(Parallelism::Max()));
+  EXPECT_FALSE(C4.IsBounded(Parallelism::Max()));
+
+  // See also intersection_test.cc for more extensive testing.
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

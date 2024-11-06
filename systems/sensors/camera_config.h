@@ -409,9 +409,10 @@ struct CameraConfig {
 
   /** Controls whether the rendered RGB and/or label images are displayed (in
    separate windows controlled by the thread in which the camera images are
-   rendered). As both image types are rendered from `ColorRenderCamera`, it
-   applies to both of them and depends on whether the RenderEngine instance
-   supports it.
+   rendered). Because both RGB and label images are configured from the same
+   `ColorRenderCamera`, this setting applies to both images. Even when set to
+   true, whether or not the image is able to be displayed depends on the
+   specific render engine and its configuration.
 
    Note: This flag is intended for quick debug use during development instead of
    serving as an image viewer. Currently, there are known issues, e.g.,

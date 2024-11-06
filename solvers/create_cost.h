@@ -42,7 +42,6 @@ Binding<L2NormCost> ParseL2NormCost(const symbolic::Expression& e,
  */
 Binding<Cost> ParseCost(const symbolic::Expression& e);
 
-
 // TODO(eric.cousineau): Remove this when functor cost is no longer exposed
 // externally, and must be explicitly called.
 

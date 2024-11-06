@@ -110,6 +110,7 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   Point p(Vector3d(1.0, 2.0, 3.0));
   Vertex* v = g.AddVertex(p, "point");
 
+  EXPECT_TRUE(g.IsValid(*v));
   EXPECT_EQ(v->ambient_dimension(), 3);
   EXPECT_EQ(v->name(), "point");
 
@@ -121,6 +122,7 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   p.set_x(Vector3d(4., 5., 6));
   EXPECT_FALSE(v->set().PointInSet(p.x()));
 
+  EXPECT_EQ(g.num_vertices(), 1);
   auto vertices = g.Vertices();
   EXPECT_EQ(vertices.size(), 1);
   EXPECT_EQ(vertices.at(0), v);
@@ -154,6 +156,8 @@ GTEST_TEST(GraphOfConvexSetsTest, AddEdge) {
   Vertex* v = g.AddVertex(pv, "v");
   Edge* e = g.AddEdge(u, v, "e");
 
+  EXPECT_TRUE(g.IsValid(*e));
+  EXPECT_EQ(g.num_edges(), 1);
   EXPECT_EQ(e->u().name(), u->name());
   EXPECT_EQ(e->v().name(), v->name());
 
@@ -170,6 +174,7 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
   Edge* e1 = g.AddEdge(u, v, "e1");
   Edge* e2 = g.AddEdge(v, u, "e2");
 
+  EXPECT_EQ(g.num_edges(), 2);
   EXPECT_EQ(g.Edges().size(), 2);
 
   EXPECT_EQ(u->incoming_edges().size(), 1);
@@ -183,6 +188,7 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
 
   g.RemoveEdge(e1);
   auto edges = g.Edges();
+  EXPECT_EQ(g.num_edges(), 1);
   EXPECT_EQ(edges.size(), 1);
   EXPECT_EQ(edges.at(0), e2);
   EXPECT_EQ(u->incoming_edges().size(), 1);
@@ -211,10 +217,12 @@ GTEST_TEST(GraphOfConvexSetsTest, RemoveVertex) {
   EXPECT_EQ(v1->incoming_edges().size(), 1);
   EXPECT_EQ(v1->outgoing_edges().size(), 2);
 
+  EXPECT_EQ(g.num_vertices(), 3);
   EXPECT_EQ(g.Vertices().size(), 3);
   EXPECT_EQ(g.Edges().size(), 3);
 
   g.RemoveVertex(v3);
+  EXPECT_EQ(g.num_vertices(), 2);
   EXPECT_EQ(g.Vertices().size(), 2);
   auto edges = g.Edges();
   EXPECT_EQ(edges.size(), 1);
@@ -1749,7 +1757,9 @@ TEST_F(ThreeBoxes, InvalidLinearConstraintUpper) {
   // b ≤ e_on_->xv() ≤ c_bad. We can't take the perspective of the
   // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*x\\s<=\\s-inf.*");
+  // The latter portion of the regex is trying to match x <= -inf.
 }
 
 // Test the code path where the upper bounds are not all infinite or finite.
@@ -1770,7 +1780,9 @@ TEST_F(ThreeBoxes, InvalidLinearConstraintUpper2) {
   // b ≤ e_on_->xv() ≤ c_bad. We can't take the perspective of the
   // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*x\\s<=\\s-inf.*");
+  // The latter portion of the regex is trying to match x <= -inf.
 }
 
 // Test linear constraints with a lower bound of +inf.
@@ -1791,7 +1803,9 @@ TEST_F(ThreeBoxes, InvalidLinearConstraintLower) {
   // b_bad ≤ e_on_->xv() ≤ c. We can't take the perspective of the
   // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*x\\s>=\\s\\+inf.*");
+  // The latter portion of the regex is trying to match x >= +inf.
 }
 
 // Test the code path where the lower bounds are not all infinite or finite.
@@ -1812,7 +1826,9 @@ TEST_F(ThreeBoxes, InvalidLinearConstraintLower2) {
   // b_bad ≤ e_on_->xv() ≤ c. We can't take the perspective of the
   // trivially-infeasible constraint, so solving should throw an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      g_.SolveShortestPath(*source_, *target_, options_), ".*inf.*");
+      g_.SolveShortestPath(*source_, *target_, options_),
+      ".*trivially-infeasible.*x\\s>=\\s\\+inf.*");
+  // The latter portion of the regex is trying to match x >= +inf.
 }
 
 TEST_F(ThreeBoxes, LorentzConeConstraint) {
@@ -2553,11 +2569,19 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     auto failed_result_2 = spp.SolveShortestPath(*source, *target, options);
     EXPECT_FALSE(failed_result_2.is_success());
 
-    // If preprocessing_solver is unspecified, preprocessing_solver_options
-    // should be ignored, so the optimization should succeed.
+    // If preprocessing_solver is unspecified, the user-specified solver is
+    // used. If we use ClarabelSolver, the Mosek option is not applied, so it
+    // succeeds. If we use MosekSolver, the Mosek option is applied, so it
+    // fails.
+    solvers::ClarabelSolver clarabel_solver;
     options.preprocessing_solver = nullptr;
+    options.solver = &clarabel_solver;
     auto successful_result_2 = spp.SolveShortestPath(*source, *target, options);
     EXPECT_TRUE(successful_result_2.is_success());
+
+    options.solver = &mosek_solver;
+    auto failed_result_3 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_FALSE(failed_result_3.is_success());
 
     // If preprocessing_solver_options is not provided, solver_options is used
     // instead. We can solve the relaxation and convex restriction with
@@ -2566,15 +2590,14 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     // force the preprocessing to remove all edges, thus leading to a failed
     // solve, hence verifying that solver_options is being used by the
     // preprocessing.
-    solvers::ClarabelSolver clarabel_solver;
-    options.restriction_solver = &clarabel_solver;
     options.solver = &clarabel_solver;
+    options.restriction_solver = &clarabel_solver;
     options.preprocessing_solver = &mosek_solver;
     options.preprocessing_solver_options = std::nullopt;
     options.solver_options.SetOption(solvers::MosekSolver::id(),
                                      "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
-    auto failed_result_3 = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_FALSE(failed_result_3.is_success());
+    auto failed_result_4 = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_FALSE(failed_result_4.is_success());
 
     // If we turn off preprocessing, it should succeed again.
     options.preprocessing = false;
