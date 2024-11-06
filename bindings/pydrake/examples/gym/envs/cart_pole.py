@@ -1,5 +1,4 @@
 import gymnasium as gym
-import matplotlib.pyplot as plt
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
@@ -125,6 +124,7 @@ def make_sim(meshcat=None,
         print("Actuation view: ", actuation_view(np.ones(na)), '\n')
 
         # Visualize the plant.
+        import matplotlib.pyplot as plt
         plt.figure()
         plot_graphviz(plant.GetTopologyGraphvizString())
         plt.plot(1)
