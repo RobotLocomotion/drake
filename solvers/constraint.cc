@@ -768,18 +768,6 @@ PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
                  Eigen::VectorXd::Constant(
                      rows, std::numeric_limits<double>::infinity())),
       matrix_rows_(rows) {
-  // TODO(hongkai.dai): remove the warning when we change the solver backend.
-  if (matrix_rows_ == 1) {
-    drake::log()->warn(
-        "PositiveSemidefiniteConstraint: rows==1, please consider "
-        "reformulating this as a linear inequality constraint for better "
-        "speed/numerics.");
-  } else if (matrix_rows_ == 2) {
-    drake::log()->warn(
-        "PositiveSemidefiniteConstraint: rows==2, please consider to "
-        "reformulating this as a rotated Lorentz cone constraint for better "
-        "speed/numerics.");
-  }
   set_is_thread_safe(true);
 }
 
@@ -823,6 +811,20 @@ std::string PositiveSemidefiniteConstraint::DoToLatex(
   return fmt::format("{} \\succeq 0", symbolic::ToLatex(S.eval(), precision));
 }
 
+void PositiveSemidefiniteConstraint::WarnOnSmallMatrixSize() const {
+  if (matrix_rows_ == 1) {
+    drake::log()->warn(
+        "PositiveSemidefiniteConstraint: rows==1, please consider "
+        "reformulating this as a linear inequality constraint for better "
+        "speed/numerics.");
+  } else if (matrix_rows_ == 2) {
+    drake::log()->warn(
+        "PositiveSemidefiniteConstraint: rows==2, please consider to "
+        "reformulating this as a rotated Lorentz cone constraint for better "
+        "speed/numerics.");
+  }
+}
+
 LinearMatrixInequalityConstraint::~LinearMatrixInequalityConstraint() = default;
 
 void LinearMatrixInequalityConstraint::DoEval(
@@ -858,20 +860,6 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
       F_{std::move(F)},
       matrix_rows_(F_.empty() ? 0 : F_.front().rows()) {
   DRAKE_THROW_UNLESS(!F_.empty());
-  // TODO(hongkai.dai): remove the warning when we change the solver backend.
-  if (matrix_rows_ == 1) {
-    drake::log()->warn(
-        "LinearMatrixInequalityConstraint: the matrix has size 1. Please "
-        "consider"
-        "reformulating this as a linear inequality constraint for better "
-        "speed/numerics.");
-  } else if (matrix_rows_ == 2) {
-    drake::log()->warn(
-        "LinearMatrixInequalityConstraint: the matrix has size 2. Please "
-        "consider "
-        "reformulating this as a rotated Lorentz cone constraint for better "
-        "speed/numerics.");
-  }
 
   set_bounds(Eigen::VectorXd::Zero(matrix_rows_),
              Eigen::VectorXd::Constant(
@@ -890,6 +878,23 @@ std::string LinearMatrixInequalityConstraint::DoToLatex(
     S += vars(i - 1) * F_[i];
   }
   return fmt::format("{} \\succeq 0", symbolic::ToLatex(S, precision));
+}
+
+void LinearMatrixInequalityConstraint::WarnOnSmallMatrixSize() const {
+  // TODO(hongkai.dai): remove the warning when we change the solver backend.
+  if (matrix_rows_ == 1) {
+    drake::log()->warn(
+        "LinearMatrixInequalityConstraint: the matrix has size 1. Please "
+        "consider"
+        "reformulating this as a linear inequality constraint for better "
+        "speed/numerics.");
+  } else if (matrix_rows_ == 2) {
+    drake::log()->warn(
+        "LinearMatrixInequalityConstraint: the matrix has size 2. Please "
+        "consider "
+        "reformulating this as a rotated Lorentz cone constraint for better "
+        "speed/numerics.");
+  }
 }
 
 ExpressionConstraint::ExpressionConstraint(
