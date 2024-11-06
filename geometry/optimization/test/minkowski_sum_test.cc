@@ -301,26 +301,6 @@ GTEST_TEST(MinkowskiSumTest, EmptyInput) {
   EXPECT_FALSE(S.MaybeGetFeasiblePoint().has_value());
 }
 
-GTEST_TEST(MinkowskiSumTest, EmptyAndUnboundedSets) {
-  // If a MinkowskiSum has a constituent set which is empty and another which is
-  // unbounded, the whole set is empty.
-
-  // Create a HPolyhedron in ℝ^1 with no inequalities (so it's unbounded).
-  Eigen::Matrix<double, 0, 1> A1;
-  Eigen::Vector<double, 0> b1;
-  HPolyhedron h1(A1, b1);
-
-  // Create an HPolyhedron in ℝ^1 with x1 <= -1 and -x1 <= 0 (so it's empty).
-  Eigen::Matrix<double, 2, 1> A2;
-  A2 << 1, -1;
-  Eigen::Vector2d b2(-1, 0);
-  HPolyhedron h2(A2, b2);
-
-  MinkowskiSum m(h1, h2);
-  EXPECT_TRUE(m.IsEmpty());
-  EXPECT_TRUE(m.IsBounded());
-}
-
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

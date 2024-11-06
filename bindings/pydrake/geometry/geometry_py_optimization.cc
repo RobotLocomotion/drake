@@ -109,9 +109,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
             cls_doc.ambient_dimension.doc)
         .def("IntersectsWith", &ConvexSet::IntersectsWith, py::arg("other"),
             cls_doc.IntersectsWith.doc)
-        .def("IsBounded", &ConvexSet::IsBounded,
-            py::arg("parallelism") = Parallelism::None(),
-            py::call_guard<py::gil_scoped_release>(), cls_doc.IsBounded.doc)
+        .def("IsBounded", &ConvexSet::IsBounded, cls_doc.IsBounded.doc)
         .def("IsEmpty", &ConvexSet::IsEmpty, cls_doc.IsEmpty.doc)
         .def("MaybeGetPoint", &ConvexSet::MaybeGetPoint,
             cls_doc.MaybeGetPoint.doc)

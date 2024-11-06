@@ -75,11 +75,7 @@ class HPolyhedron final : public ConvexSet {
   finite lower and upper bound for the set.  For HPolyhedron, while there are
   some fast checks to confirm a set is unbounded, confirming boundedness
   requires solving a linear program (based on Stiemke’s theorem of
-  alternatives).
-  @param parallelism Ignored -- the linear program solver will determine the
-  number of threads to use.
-  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
-  details. */
+  alternatives). */
   using ConvexSet::IsBounded;
 
   /** Returns true iff this HPolyhedron is entirely contained in the HPolyhedron

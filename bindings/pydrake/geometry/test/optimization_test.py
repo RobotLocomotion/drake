@@ -6,7 +6,7 @@ import copy
 
 import numpy as np
 
-from pydrake.common import RandomGenerator, temp_directory, Parallelism
+from pydrake.common import RandomGenerator, temp_directory
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
@@ -456,7 +456,6 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertFalse(s.IsEmpty())
         self.assertFalse(s.MaybeGetFeasiblePoint() is None)
         self.assertTrue(s.PointInSet(s.MaybeGetFeasiblePoint()))
-        self.assertTrue(s.IsBounded(Parallelism.Max()))
 
     def test_v_polytope(self):
         mut.VPolytope()

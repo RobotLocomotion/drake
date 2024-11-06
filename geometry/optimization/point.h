@@ -48,12 +48,6 @@ class Point final : public ConvexSet {
   @pre x must be of size ambient_dimension(). */
   void set_x(const Eigen::Ref<const Eigen::VectorXd>& x);
 
-  /** Every Point is bounded by construction.
-  @param parallelism Ignored -- no parallelization is used.
-  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
-  details. */
-  using ConvexSet::IsBounded;
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

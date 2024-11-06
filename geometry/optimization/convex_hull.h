@@ -64,19 +64,10 @@ class ConvexHull final : public ConvexSet, private ShapeReifier {
   /** @throws  Not implemented. */
   using ConvexSet::CalcVolume;
 
-  /** A ConvexHull is bounded if and only if each constituent set is bounded.
-  This class honors requests for parallelism only so far as its constituent sets
-  do.
-  @param parallelism The maximum number of threads to use.
-  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
-  details. */
-  using ConvexSet::IsBounded;
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcutParallel(
-      Parallelism parallelism) const final;
+  std::optional<bool> DoIsBoundedShortcut() const final;
 
   bool DoIsEmpty() const final;
 

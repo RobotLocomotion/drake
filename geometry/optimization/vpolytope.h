@@ -99,12 +99,6 @@ class VPolytope final : public ConvexSet {
   @note this function calls qhull to compute the volume. */
   using ConvexSet::CalcVolume;
 
-  /** Every VPolytope is bounded by construction.
-  @param parallelism Ignored -- no parallelization is used.
-  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
-  details. */
-  using ConvexSet::IsBounded;
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

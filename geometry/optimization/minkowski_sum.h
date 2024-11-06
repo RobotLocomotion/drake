@@ -63,19 +63,10 @@ class MinkowskiSum final : public ConvexSet {
   */
   using ConvexSet::PointInSet;
 
-  /** A MinkowskiSum is bounded if all its constituent sets are bounded or if
-  any are empty. This class honors requests for parallelism only so far as its
-  constituent sets do.
-  @param parallelism The maximum number of threads to use.
-  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
-  details. */
-  using ConvexSet::IsBounded;
-
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
-  std::optional<bool> DoIsBoundedShortcutParallel(
-      Parallelism parallelism) const final;
+  std::optional<bool> DoIsBoundedShortcut() const final;
 
   bool DoIsEmpty() const final;
 
