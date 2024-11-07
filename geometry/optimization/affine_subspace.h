@@ -144,6 +144,13 @@ class AffineSubspace final : public ConvexSet {
   to this AffineSubspace.*/
   Eigen::MatrixXd OrthogonalComplementBasis() const;
 
+  /** An AffineSubspace is bounded if and only if it is zero-dimensional (i.e.,
+  a point).
+  @param parallelism Ignored -- no parallelization is used.
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

@@ -15,10 +15,10 @@ struct EigenPrinter {
   static constexpr bool is_eigen_matrix =
       std::is_base_of_v<Eigen::MatrixBase<Derived>, Derived>;
 
-  // SFINAE on whether the type is an Eigen::Matrix of some kind.
-  // If not, gtest has a suite of other kinds of printers is will fall back on.
-  template <typename T, typename = std::enable_if_t<is_eigen_matrix<T>>>
-  static void PrintValue(const T& value, std::ostream* os) {
+  template <typename T>
+  static void PrintValue(const T& value, std::ostream* os)
+    requires is_eigen_matrix<T>  // NOLINTNEXTLINE(whitespace/braces)
+  {
     // If the printed representation has newlines, start it on a fresh line.
     std::string printed = fmt::to_string(fmt_eigen(value));
     for (const char ch : printed) {

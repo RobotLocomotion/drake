@@ -695,6 +695,7 @@ void ParsePositiveSemidefiniteConstraints(
   DRAKE_ASSERT(psd_cone_length->empty());
   const double sqrt2 = std::sqrt(2);
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
+    psd_constraint.evaluator()->WarnOnSmallMatrixSize();
     // PositiveSemidefiniteConstraint encodes the matrix X being psd.
     // We convert it to SCS/Clarabel form
     // A * x + s = 0
@@ -738,6 +739,7 @@ void ParsePositiveSemidefiniteConstraints(
   }
   for (const auto& lmi_constraint :
        prog.linear_matrix_inequality_constraints()) {
+    lmi_constraint.evaluator()->WarnOnSmallMatrixSize();
     // LinearMatrixInequalityConstraint encodes
     // F₀ + x₁*F₁ + x₂*F₂ + ... + xₙFₙ is p.s.d
     // We convert this to SCS/Clarabel form as

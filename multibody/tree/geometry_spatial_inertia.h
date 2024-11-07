@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <variant>
+
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -7,6 +10,18 @@
 
 namespace drake {
 namespace multibody {
+namespace internal {
+
+/* Versions of CalcSpatialInertia() that do not throw. If an error occurs, the
+ error message is returned instead of a SpatialInertia. */
+using CalcSpatialInertiaResult =
+    std::variant<SpatialInertia<double>, std::string>;
+CalcSpatialInertiaResult CalcSpatialInertiaImpl(
+    const geometry::TriangleSurfaceMesh<double>& mesh, double density);
+CalcSpatialInertiaResult CalcSpatialInertiaImpl(const geometry::Shape& shape,
+                                                double density);
+
+}  // namespace internal
 
 /** Computes the SpatialInertia of a body made up of a homogeneous material
  (of given `density` in kg/m³) uniformly distributed in the volume of the given
@@ -42,12 +57,18 @@ SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
  certain requirements:
 
    - The mesh must *fully* enclose a volume (no cracks, no open manifolds,
-     etc.)
+     etc.).
    - All triangles must be "wound" such that their normals point outward
      (according to the right-hand rule based on vertex winding).
 
- If these requirements are not met, a value *will* be returned, but its value
- is meaningless.
+ Drake currently doesn't validate these requirements on the mesh. Instead, it
+ does a best-faith effort to compute a spatial inertia. For some "bad" meshes,
+ the SpatialInertia will be objectively physically invalid. For others, the
+ SpatialInertia will appear physically valid, but be meaningless because it does
+ not accurately represent the mesh.
+
+ @throws std::exception if the resulting spatial inertia is obviously physically
+ invalid. See multibody::SpatialInertia::IsPhysicallyValid().
  @pydrake_mkdoc_identifier{mesh} */
 SpatialInertia<double> CalcSpatialInertia(
     const geometry::TriangleSurfaceMesh<double>& mesh, double density);

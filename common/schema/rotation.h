@@ -94,6 +94,10 @@ class Rotation {
   /// contain one or more random variables, based on the distributions in use.
   math::RotationMatrix<symbolic::Expression> ToSymbolic() const;
 
+  /// Samples this Rotation.  If this is deterministic, the result is the same
+  /// as GetDeterministicValue.
+  math::RotationMatrixd Sample(RandomGenerator* generator) const;
+
   /// Sets this value to the given deterministic RPY, in degrees.
   void set_rpy_deg(const Eigen::Vector3d& rpy_deg) {
     value.emplace<Rotation::Rpy>().deg = rpy_deg;

@@ -1,13 +1,10 @@
 #pragma once
 
-// Remove with deprecation 2024-11-01.
-#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
@@ -72,26 +69,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   explicit MeshcatVisualizer(const MeshcatVisualizer<U>& other);
 
   ~MeshcatVisualizer() final;
-
-  /** Resets the realtime rate calculator. Calculation will begin anew on the
-   _next_ periodic publish event. This is useful for correcting the realtime
-   rate after simulation is resumed from a paused state, etc.
-
-   Invocation of this method may lead to one or more erroneous rate
-   calculations (based on the amount of wall time elapsed between this call and
-   the next invocation of Meshcat::SetSimulationTime() -- e.g., when this
-   system next publishes).
-
-   %MeshcatVisualizer uses Meshcat::SetSimulationTime() to report realtime
-   rate in a *throttled* manner. See that method's documentation to understand
-   what to expect and how to configure it. */
-  DRAKE_DEPRECATED("2024-11-01",
-                   "Instead of explicitly resetting the calculator on this "
-                   "system, prefer to (re)set the Context's time value to an "
-                   "earlier time to implicitly reset the calculator.")
-  void ResetRealtimeRateCalculator() {
-    meshcat_->SetSimulationTime(-std::numeric_limits<double>::infinity());
-  }
 
   /** Calls Meshcat::Delete(std::string path), with the path set to
    MeshcatVisualizerParams::prefix.  Since this visualizer will only ever add

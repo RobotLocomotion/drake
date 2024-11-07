@@ -152,14 +152,6 @@ void DefineMeshcatVisualizer(py::module m, T) {
             py_rvp::reference,
             cls_doc.AddToBuilder
                 .doc_4args_builder_query_object_port_meshcat_params);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("ResetRealtimeRateCalculator",
-            WrapDeprecated(cls_doc.ResetRealtimeRateCalculator.doc_deprecated,
-                &Class::ResetRealtimeRateCalculator),
-            cls_doc.ResetRealtimeRateCalculator.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 }
 

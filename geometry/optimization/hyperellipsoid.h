@@ -145,6 +145,12 @@ class Hyperellipsoid final : public ConvexSet {
   /** Computes the volume for the hyperellipsoid set.*/
   double Volume() const { return CalcVolume(); }
 
+  /** A Hyperellipsoid is bounded if the kernel of A is rank-zero.
+  @param parallelism Ignored -- no parallelization is used.
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 

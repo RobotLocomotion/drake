@@ -99,9 +99,13 @@ std::unique_ptr<ConvexSet> MinkowskiSum::DoClone() const {
   return std::make_unique<MinkowskiSum>(*this);
 }
 
-std::optional<bool> MinkowskiSum::DoIsBoundedShortcut() const {
+std::optional<bool> MinkowskiSum::DoIsBoundedShortcutParallel(
+    Parallelism parallelism) const {
+  if (IsEmpty()) {
+    return true;
+  }
   for (const auto& s : sets_) {
-    if (!s->IsBounded()) {
+    if (!s->IsBounded(parallelism)) {
       return false;
     }
   }

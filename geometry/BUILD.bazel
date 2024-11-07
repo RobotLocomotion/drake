@@ -808,6 +808,7 @@ filegroup(
     name = "test_obj_files",
     testonly = 1,
     srcs = [
+        "test/bad_geometry_volume_zero.obj",
         "test/convex.obj",
         "test/cube_corners.obj",
         "test/cube_with_hole.obj",
@@ -958,6 +959,13 @@ drake_cc_googletest(
         ":geometry_properties",
         "//common/test_utilities",
         "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest(
+    name = "geometry_roles_test",
+    deps = [
+        ":geometry_roles",
     ],
 )
 

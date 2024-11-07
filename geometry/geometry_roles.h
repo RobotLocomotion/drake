@@ -142,6 +142,17 @@ namespace geometry {
  type of role that it depends on, and the properties (if any) associated with
  that role that it requires/prefers.
 
+ There are times where different roles may have common properties (e.g., when
+ visualizing proximity geometries, we can specify their appearance in the
+ visualizer, or the appearance of a geometry should be the same for both
+ perception and illustration roles). To ease the sharing of these property
+ values, one set of properties can be instantiated as a copy of any other
+ set of geometry properties -- regardless of role. Doing so indiscriminately
+ may introduce meaningless properties, so use this power judiciously. A
+ property would be meaningless if there is no consumer that would use it. This
+ isn't an error, but it does mean that property values would be copied and
+ persisted without value.
+
  Next topic: @ref proximity_queries  */
 
 /** The set of properties for geometry used in a _proximity_ role.
@@ -155,8 +166,8 @@ namespace geometry {
 class ProximityProperties final : public GeometryProperties {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ProximityProperties);
-  // TODO(SeanCurtis-TRI): Should this have the physical properties built in?
   ProximityProperties() = default;
+  explicit ProximityProperties(const GeometryProperties& other);
   ~ProximityProperties() final;
 };
 
@@ -168,8 +179,8 @@ class ProximityProperties final : public GeometryProperties {
 class PerceptionProperties final : public GeometryProperties {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PerceptionProperties);
-  // TODO(SeanCurtis-TRI): Should this have a render label built in?
   PerceptionProperties() = default;
+  explicit PerceptionProperties(const GeometryProperties& other);
   ~PerceptionProperties() final;
 };
 
@@ -182,6 +193,7 @@ class IllustrationProperties final : public GeometryProperties {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IllustrationProperties);
   IllustrationProperties() = default;
+  explicit IllustrationProperties(const GeometryProperties& other);
   ~IllustrationProperties() final;
 };
 

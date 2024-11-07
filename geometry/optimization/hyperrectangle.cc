@@ -98,6 +98,10 @@ std::optional<Eigen::VectorXd> Hyperrectangle::DoMaybeGetFeasiblePoint() const {
   return (ub_ + lb_) / 2.0;
 }
 
+std::optional<bool> Hyperrectangle::DoIsBoundedShortcut() const {
+  return true;
+}
+
 std::optional<bool> Hyperrectangle::DoPointInSetShortcut(
     const Eigen::Ref<const Eigen::VectorXd>& x, double tol) const {
   return (x.array() >= lb_.array() - tol).all() &&

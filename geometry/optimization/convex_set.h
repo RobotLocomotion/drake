@@ -8,6 +8,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
@@ -90,18 +91,30 @@ class ConvexSet {
 
   /** Returns true iff the set is bounded, e.g., there exists an element-wise
   finite lower and upper bound for the set.  Note: for some derived classes,
-  this check is trivial, but for others it can require solving an (typically
-  small) optimization problem. Check the derived class documentation for any
-  notes. */
-  bool IsBounded() const {
+  this check is trivial, but for others it can require solving a number of
+  (typically small) optimization problems. Each derived class documents the cost
+  of its boundedness test and whether it honors the request for parallelism.
+  (Derived classes which do not have a specialized check will, by default, honor
+  parallelism requests.) Note that the overhead of multithreading may lead to
+  slower runtimes for simple, low-dimensional sets, but can enable major
+  speedups for more challenging problems.
+
+  @param parallelism requests the number of cores to use when solving
+  mathematical programs to check boundedness, subject to whether a particular
+  derived class honors parallelism. */
+  bool IsBounded(Parallelism parallelism = Parallelism::None()) const {
     if (ambient_dimension() == 0) {
       return true;
     }
-    const auto shortcut_result = DoIsBoundedShortcut();
+    auto shortcut_result = DoIsBoundedShortcutParallel(parallelism);
     if (shortcut_result.has_value()) {
       return shortcut_result.value();
     }
-    return GenericDoIsBounded();
+    shortcut_result = DoIsBoundedShortcut();
+    if (shortcut_result.has_value()) {
+      return shortcut_result.value();
+    }
+    return GenericDoIsBounded(parallelism);
   }
 
   /** Returns true iff the set is empty. Note: for some derived classes, this
@@ -318,6 +331,15 @@ class ConvexSet {
     return std::nullopt;
   }
 
+  /** Non-virtual interface implementation for DoIsBoundedShortcutParallel().
+  Trivially returns std::nullopt. This allows a derived class to implement its
+  own boundedness checks that leverage parallelization, to potentially avoid the
+  more expensive base class checks.
+  @pre ambient_dimension() >= 0 */
+  virtual std::optional<bool> DoIsBoundedShortcutParallel(Parallelism) const {
+    return std::nullopt;
+  }
+
   /** Non-virtual interface implementation for DoProjectionShortcut().
 
   This allows a derived class to implement a method which computes the
@@ -472,7 +494,7 @@ class ConvexSet {
  private:
   /** Generic implementation for IsBounded() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */
-  bool GenericDoIsBounded() const;
+  bool GenericDoIsBounded(Parallelism parallelism) const;
 
   /** Generic implementation for PointInSet() -- applicable for all convex sets.
   @pre ambient_dimension() >= 0 */
