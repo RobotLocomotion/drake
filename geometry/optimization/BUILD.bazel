@@ -43,6 +43,7 @@ drake_cc_library(
     implementation_deps = [
         "//geometry/optimization:convex_set",
         "//solvers:solve",
+        "@common_robotics_utilities",
     ],
 )
 

@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/parallelism.hpp>
+
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/geometry/optimization/intersection.h"
@@ -31,6 +33,8 @@ std::pair<double, double> internal::GetMinimumAndMaximumValueAlongDimension(
       region, std::vector<int>{dimension})[0];
 }
 
+// TODO(cohnt): Find a way to reduce code reuse, since this function is
+// extremely similar to the Hyperrectangle constructor.
 std::vector<std::pair<double, double>>
 internal::GetMinimumAndMaximumValueAlongDimension(const ConvexSet& region,
                                                   std::vector<int> dimensions) {
@@ -237,6 +241,11 @@ ConvexSets PartitionConvexSet(
 }
 
 namespace {
+
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
+
 /* Check if two hyperrectangles intersect, when a given offset is applied to
 the first one. */
 bool HyperrectangleOffsetIntersection(const Hyperrectangle& h1,
@@ -255,33 +264,35 @@ value attained by the corresponding convex set along that dimension.
 Note that the entries of dimensions are expected to be unique and in increasing
 order, but we do not check for this. */
 std::vector<Hyperrectangle> BoundingBoxesForListOfSetsSomeDimensions(
-    const ConvexSets& sets, const std::vector<int>& dimensions) {
-  DRAKE_ASSERT(sets.size() > 0);
-  std::vector<Hyperrectangle> bboxes;
-  for (int i = 0; i < ssize(sets); ++i) {
-    if (ssize(dimensions) == sets[0]->ambient_dimension()) {
-      // Compute minimum and maximum value along all dimensions to store for
-      // the bounding box.
-      std::optional<Hyperrectangle> maybe_bbox =
-          Hyperrectangle::MaybeCalcAxisAlignedBoundingBox(*sets[i]);
-      DRAKE_THROW_UNLESS(maybe_bbox.has_value());
-      bboxes.emplace_back(maybe_bbox.value());
-    } else {
-      // Compute minimum and maximum value only along dimensions corresponding
-      // to continuous revolute joints. Other dimensions will be left with
-      // lower == upper == 0.
-      VectorXd lb = VectorXd::Zero(sets[0]->ambient_dimension());
-      VectorXd ub = VectorXd::Zero(sets[0]->ambient_dimension());
-      std::vector<std::pair<double, double>> bbox_values =
-          internal::GetMinimumAndMaximumValueAlongDimension(*sets[i],
-                                                            dimensions);
-      for (int j = 0; j < ssize(bbox_values); ++j) {
-        lb[dimensions[j]] = bbox_values[j].first;
-        ub[dimensions[j]] = bbox_values[j].second;
-      }
-      bboxes.emplace_back(Hyperrectangle(lb, ub));
-    }
+    const ConvexSets& sets, const std::vector<int>& dimensions,
+    Parallelism parallelism) {
+  DRAKE_DEMAND(sets.size() > 0);
+  int ambient_dimension = sets[0]->ambient_dimension();
+  for (int i = 1; i < ssize(sets); ++i) {
+    DRAKE_DEMAND(sets[i]->ambient_dimension() == ambient_dimension);
   }
+
+  std::vector<Hyperrectangle> bboxes(sets.size());
+
+  auto solve_ith = [&](const int thread_num, const int64_t i) {
+    unused(thread_num);
+    // Compute minimum and maximum value along the specified dimensions Other
+    // dimensions will be left with lower == upper == 0.
+    VectorXd lb = VectorXd::Zero(sets[0]->ambient_dimension());
+    VectorXd ub = VectorXd::Zero(sets[0]->ambient_dimension());
+    std::vector<std::pair<double, double>> bbox_values =
+        internal::GetMinimumAndMaximumValueAlongDimension(*sets[i], dimensions);
+    for (int j = 0; j < ssize(bbox_values); ++j) {
+      lb[dimensions[j]] = bbox_values[j].first;
+      ub[dimensions[j]] = bbox_values[j].second;
+    }
+    bboxes[i] = Hyperrectangle(lb, ub);
+  };
+
+  StaticParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()), 0,
+                             ssize(sets), solve_ith,
+                             ParallelForBackend::BEST_AVAILABLE);
+
   return bboxes;
 }
 
@@ -337,22 +348,22 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
 
   // Compute bounding boxes for convex_sets_A.
   if (preprocess_bbox) {
-    bboxes_A =
-        BoundingBoxesForListOfSetsSomeDimensions(convex_sets_A, all_joints);
+    bboxes_A = BoundingBoxesForListOfSetsSomeDimensions(
+        convex_sets_A, all_joints, parallelism);
   } else {
     bboxes_A = BoundingBoxesForListOfSetsSomeDimensions(
-        convex_sets_A, continuous_revolute_joints);
+        convex_sets_A, continuous_revolute_joints, parallelism);
   }
 
   // Compute bounding boxes for convex_sets_B if distinct from convex_sets_A.
   bool convex_sets_A_and_B_are_identical = convex_sets_A == convex_sets_B;
   if (!convex_sets_A_and_B_are_identical) {
     if (preprocess_bbox) {
-      bboxes_B =
-          BoundingBoxesForListOfSetsSomeDimensions(convex_sets_B, all_joints);
+      bboxes_B = BoundingBoxesForListOfSetsSomeDimensions(
+          convex_sets_B, all_joints, parallelism);
     } else {
       bboxes_B = BoundingBoxesForListOfSetsSomeDimensions(
-          convex_sets_B, continuous_revolute_joints);
+          convex_sets_B, continuous_revolute_joints, parallelism);
     }
   }
 
