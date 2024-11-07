@@ -28,23 +28,26 @@ using ResolveFilename = std::function<std::string (
 /* Given an sdf::Geometry object representing a <geometry> element from an SDF
  file, this method makes a new drake::geometry::Shape object from this
  specification.
- If no recognizable geometry is specified, nullptr is returned. If the geometry
- is recognized, but malformed, emits an error. When the error policy is set to
- not throw it returns std::nullopt. */
-std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
-    const SDFormatDiagnostic& diagnostic,
-    const sdf::Geometry& sdf_geometry,
+ If no recognizable geometry is specified or the geometry is recognized but
+ malformed, nullptr is returned. In the case of a malformed specification, an
+ error is also emitted on `diagnostic`. */
+std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
+    const SDFormatDiagnostic& diagnostic, const sdf::Geometry& sdf_geometry,
     ResolveFilename resolve_filename);
 
 /* Given an sdf::Visual object representing a <visual> element from an SDF
  file, this method makes a new drake::geometry::GeometryInstance object from
- this specification at a pose `X_LG` relatve to its parent link.
- This method returns nullptr when the given SDF specification corresponds
- to an uninterpreted geometry type:
- - `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
- - `sdf::GeometryType::HEIGHTMAP` (`<heightmap/>` SDF tag.)
- If the geometry is malformed, emits an error. When the error policy is not
- set to throw it returns an std::nullopt.
+ this specification at a pose `X_LG` relative to its parent link.
+
+ This method returns null when:
+   1. the given SDF specification corresponds to an uninterpreted geometry type:
+      - `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
+      - `sdf::GeometryType::HEIGHTMAP` (`<heightmap/>` SDF tag.)
+   2. the <visual> has had both of its Drake roles disabled.
+   3. the <visual> specification was in some way malformed.
+
+ In the case of a malformed specification, an error is also emitted to
+ `diagnostic`.
 
  <!-- TODO(SeanCurtis-TRI): Ultimately, a module for what we parse should be
   written outside of this _internal_ namespace. This should go there and
@@ -74,11 +77,10 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
 
  This feature is one way to provide multiple visual representations of a body.
  */
-std::optional<std::unique_ptr<geometry::GeometryInstance>>
-    MakeGeometryInstanceFromSdfVisual(
-        const SDFormatDiagnostic& diagnostic,
-        const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
-        const math::RigidTransformd& X_LG);
+std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
+    const SDFormatDiagnostic& diagnostic, const sdf::Visual& sdf_visual,
+    ResolveFilename resolve_filename, const math::RigidTransformd& X_LG);
+
 
 /* Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
