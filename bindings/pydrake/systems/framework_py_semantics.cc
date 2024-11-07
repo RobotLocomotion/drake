@@ -3,6 +3,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -588,38 +589,72 @@ void DefineEventAndEventSubclasses(py::module m) {
   }
 }
 
+// BuilderLifeSupport provides helper functions to implement a last-resort
+// defense against programs that add systems in python, and then issue a
+// Build() call from c++.
+//
+// The hazard is that lifetime annotations belonging to added systems get
+// deleted early, leaving invalid pointers (see #14355). If python calls
+// Build(), the diagram, builder, and systems are all joined by
+// garbage-collectible ref-cycles, and will remain alive until the next
+// collection after losing reachability. If c++ calls Build(), then the
+// builder-diagram cycle doesn't get added, and then builder, systems, and
+// their associates are at risk.
+//
+// BuilderLifeSupport helps by exposing the ability (via stash()) to place a
+// strong reference to the python builder in the ownership of the c++
+// builder. The c++ builder will automatically transfer that reference to the
+// diagram, so that a c++ Build() call will still result in a one-way reference
+// from the c++ diagram to the python builder and its associates.
+//
+// For mixed-language programs, the one-way reference is typically good
+// enough. However, for python programs, the Build() annotations are strictly
+// better. Using both is bad, since it leads to diagram immortality (see
+// #14387). Python Build() avoids immortality by calling abandon() to release
+// the extra strong reference.
+template <typename T>
+struct BuilderLifeSupport {
+  static constexpr char kKey[] = "_pydrake_internal_life_support";
+
+  // Store a strong reference to the python builder into the c++ builder's life
+  // support attributes.
+  static void stash(DiagramBuilder<T>* builder) {
+    BuilderLifeSupport<T>::attrs(builder).emplace(kKey, py::cast(builder));
+  }
+
+  // Delete a previously stored strong reference to the python builder from the
+  // c++ builder's life support attributes.
+  static void abandon(DiagramBuilder<T>* builder) {
+    BuilderLifeSupport<T>::attrs(builder).erase(kKey);
+  }
+
+  static auto& attrs(DiagramBuilder<T>* builder) {
+    return builder->get_mutable_life_support().attributes;
+  }
+};
+
 template <typename T>
 void DoDefineFrameworkDiagramBuilder(py::module m) {
-  DefineTemplateClassWithDefault<DiagramBuilder<T>>(
-      m, "DiagramBuilder", GetPyParam<T>(), doc.DiagramBuilder.doc)
+  DefineTemplateClassWithDefault<DiagramBuilder<T>>(m, "DiagramBuilder",
+      GetPyParam<T>(), doc.DiagramBuilder.doc, std::nullopt, py::dynamic_attr())
       .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
       .def(
           "AddSystem",
           [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
+            BuilderLifeSupport<T>::stash(self);
             return self->AddSystem(std::move(system));
           },
-          py::arg("system"),
-          // TODO(eric.cousineau): These two keep_alive's purposely form a
-          // reference cycle as a workaround for #14355. We should find a
-          // better way?
-          // Keep alive, reference: `self` keeps `return` alive.
-          py::keep_alive<1, 0>(),
-          // Keep alive, ownership: `system` keeps `self` alive.
-          py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
+          py::arg("system"), internal::ref_cycle<1, 2>(),
+          doc.DiagramBuilder.AddSystem.doc)
       .def(
           "AddNamedSystem",
           [](DiagramBuilder<T>* self, std::string& name,
               unique_ptr<System<T>> system) {
+            BuilderLifeSupport<T>::stash(self);
             return self->AddNamedSystem(name, std::move(system));
           },
-          py::arg("name"), py::arg("system"),
-          // TODO(eric.cousineau): These two keep_alive's purposely form a
-          // reference cycle as a workaround for #14355. We should find a
-          // better way?
-          // Keep alive, reference: `self` keeps `return` alive.
-          py::keep_alive<1, 0>(),
-          // Keep alive, ownership: `system` keeps `self` alive.
-          py::keep_alive<3, 1>(), doc.DiagramBuilder.AddNamedSystem.doc)
+          py::arg("name"), py::arg("system"), internal::ref_cycle<1, 3>(),
+          doc.DiagramBuilder.AddNamedSystem.doc)
       .def("RemoveSystem", &DiagramBuilder<T>::RemoveSystem, py::arg("system"),
           doc.DiagramBuilder.RemoveSystem.doc)
       .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
@@ -694,12 +729,21 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py::arg("output"),
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportOutput.doc)
-      .def("Build", &DiagramBuilder<T>::Build,
-          // Keep alive, ownership (tr.): `self` keeps `return` alive.
-          py::keep_alive<1, 0>(), doc.DiagramBuilder.Build.doc)
-      .def("BuildInto", &DiagramBuilder<T>::BuildInto, py::arg("target"),
-          // Keep alive, ownership (tr.): `target` keeps `self` alive.
-          py::keep_alive<2, 1>(), doc.DiagramBuilder.BuildInto.doc)
+      .def(
+          "Build",
+          [](DiagramBuilder<T>* self) {
+            BuilderLifeSupport<T>::abandon(self);
+            return self->Build();
+          },
+          internal::ref_cycle<0, 1>(), doc.DiagramBuilder.Build.doc)
+      .def(
+          "BuildInto",
+          [](DiagramBuilder<T>* self, Diagram<T>* target) {
+            BuilderLifeSupport<T>::abandon(self);
+            self->BuildInto(target);
+          },
+          internal::ref_cycle<1, 2>(), py::arg("target"),
+          doc.DiagramBuilder.BuildInto.doc)
       .def("IsConnectedOrExported", &DiagramBuilder<T>::IsConnectedOrExported,
           py::arg("port"), doc.DiagramBuilder.IsConnectedOrExported.doc)
       .def("num_input_ports", &DiagramBuilder<T>::num_input_ports,
