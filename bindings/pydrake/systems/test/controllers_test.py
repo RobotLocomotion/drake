@@ -31,6 +31,7 @@ from pydrake.systems.framework import (
     DiagramBuilder, InputPortSelection, InputPort, OutputPort,
 )
 from pydrake.systems.primitives import Integrator, LinearSystem
+from pydrake.systems.test.test_util import do_lifetime_oblivious_build_step
 from pydrake.trajectories import Trajectory
 
 
@@ -249,7 +250,7 @@ class TestControllers(unittest.TestCase):
         https://github.com/RobotLocomotion/drake/issues/14355
         """
 
-        def make_diagram():
+        def make_diagram(oblivious=False):
             # Use a nested function to ensure that all locals get garbage
             # collected quickly.
 
@@ -275,18 +276,22 @@ class TestControllers(unittest.TestCase):
             builder.ExportOutput(controller.get_output_port_control(), "u")
             builder.ExportOutput(
                 controller.get_output_port_generalized_force(), "tau")
-            diagram = builder.Build()
+            if oblivious:
+                diagram = do_lifetime_oblivious_build_step(builder)
+            else:
+                diagram = builder.Build()
             return diagram
 
-        diagram = make_diagram()
-        gc.collect()
-        # N.B. Without the workaround for #14355, we get a segfault when
-        # creating the context.
-        context = diagram.CreateDefaultContext()
-        diagram.GetInputPort("x_estimated").FixValue(context, [])
-        diagram.GetInputPort("x_desired").FixValue(context, [])
-        u = diagram.GetOutputPort("u").Eval(context)
-        np.testing.assert_equal(u, [])
+        for oblivious in [False, True]:
+            diagram = make_diagram(oblivious)
+            gc.collect()
+            # N.B. Without the workaround for #14355, we get a segfault when
+            # creating the context.
+            context = diagram.CreateDefaultContext()
+            diagram.GetInputPort("x_estimated").FixValue(context, [])
+            diagram.GetInputPort("x_desired").FixValue(context, [])
+            u = diagram.GetOutputPort("u").Eval(context)
+            np.testing.assert_equal(u, [])
 
     def test_pid_controlled_system(self):
         controllers = [

@@ -1,8 +1,11 @@
 import pydrake.geometry as mut
 
 import copy
+import gc
+import itertools
 import unittest
 import urllib.request
+import weakref
 
 import numpy as np
 import umsgpack
@@ -15,6 +18,7 @@ from pydrake.math import RigidTransform
 from pydrake.perception import PointCloud
 from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import DiagramBuilder_, InputPort_
+from pydrake.systems.test.test_util import do_lifetime_oblivious_build_step
 
 # TODO(mwoehlke-kitware): Remove this when Jammy's python3-u-msgpack has been
 # updated to 2.5.2 or later.
@@ -30,7 +34,6 @@ class TestGeometryVisualizers(unittest.TestCase):
         SceneGraph = mut.SceneGraph_[T]
         DiagramBuilder = DiagramBuilder_[T]
         Simulator = Simulator_[T]
-        lcm = DrakeLcm()
         role = mut.Role.kIllustration
         params = mut.DrakeVisualizerParams(
             publish_period=0.1, role=mut.Role.kIllustration,
@@ -41,39 +44,63 @@ class TestGeometryVisualizers(unittest.TestCase):
         copy.copy(params)
 
         # Add some subscribers to detect message broadcast.
-        load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
-        draw_channel = "DRAKE_VIEWER_DRAW"
-        load_subscriber = Subscriber(
-            lcm, load_channel, lcmt_viewer_load_robot)
-        draw_subscriber = Subscriber(
-            lcm, draw_channel, lcmt_viewer_draw)
+        def add_subscribers(lcm):
+            load_channel = "DRAKE_VIEWER_LOAD_ROBOT"
+            draw_channel = "DRAKE_VIEWER_DRAW"
+            load_subscriber = Subscriber(
+                lcm, load_channel, lcmt_viewer_load_robot)
+            draw_subscriber = Subscriber(
+                lcm, draw_channel, lcmt_viewer_draw)
+            return load_subscriber, draw_subscriber
 
         # There are three ways to configure DrakeVisualizer.
         def by_hand(builder, scene_graph, params):
+            lcm = DrakeLcm()
             visualizer = builder.AddSystem(
                 mut.DrakeVisualizer_[T](lcm=lcm, params=params))
             builder.Connect(scene_graph.get_query_output_port(),
                             visualizer.query_object_input_port())
+            return weakref.finalize(lcm, lambda: None)
 
         def auto_connect_to_system(builder, scene_graph, params):
+            lcm = DrakeLcm()
             mut.DrakeVisualizer_[T].AddToBuilder(builder=builder,
                                                  scene_graph=scene_graph,
                                                  lcm=lcm, params=params)
+            return weakref.finalize(lcm, lambda: None)
 
         def auto_connect_to_port(builder, scene_graph, params):
+            lcm = DrakeLcm()
             mut.DrakeVisualizer_[T].AddToBuilder(
                 builder=builder,
                 query_object_port=scene_graph.get_query_output_port(),
                 lcm=lcm, params=params)
+            return weakref.finalize(lcm, lambda: None)
 
-        for func in [by_hand, auto_connect_to_system, auto_connect_to_port]:
+        for func, oblivious in itertools.product(
+                [by_hand, auto_connect_to_system, auto_connect_to_port],
+                [False, True]):
             # Build the diagram.
             builder = DiagramBuilder()
             scene_graph = builder.AddSystem(SceneGraph())
-            func(builder, scene_graph, params)
+            lcm_spy = func(builder, scene_graph, params)
+
+            gc.collect()  # Provoke lifetime issues.
+
+            if oblivious:
+                diagram = do_lifetime_oblivious_build_step(builder)
+            else:
+                diagram = builder.Build()
+
+            gc.collect()  # Provoke lifetime issues.
+
+            # Check the lcm object is still alive, recover a reference, and set
+            # receivers.
+            assert lcm_spy.alive
+            lcm = lcm_spy.peek()[0]
+            load_subscriber, draw_subscriber = add_subscribers(lcm)
 
             # Simulate to t = 0 to send initial load and draw messages.
-            diagram = builder.Build()
             Simulator(diagram).AdvanceTo(0)
             lcm.HandleSubscriptions(0)
             self.assertEqual(load_subscriber.count, 1)
