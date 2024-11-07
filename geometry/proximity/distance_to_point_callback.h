@@ -45,7 +45,7 @@ struct CallbackData {
    @param threshold_in        The query threshold.
    @param p_WQ_W_in           The T-valued position of the query point.
    @param X_WGs_in            The T-valued poses. Aliased.
-   @param mesh_data_in        The mesh data for calculating signed distances.
+   @param mesh_boundaries_in  The mesh data for calculating signed distances.
                               Aliased.
    @param distances_in[out]   The output results. Aliased.
    */
@@ -53,17 +53,18 @@ struct CallbackData {
       fcl::CollisionObjectd* query_in, const double threshold_in,
       const Vector3<T>& p_WQ_W_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
-      const std::unordered_map<GeometryId, MeshDistanceBoundary>* mesh_data_in,
+      const std::unordered_map<GeometryId, MeshDistanceBoundary>*
+          mesh_boundaries_in,
       std::vector<SignedDistanceToPoint<T>>* distances_in)
       : query_point(*query_in),
         threshold(threshold_in),
         p_WQ_W(p_WQ_W_in),
         X_WGs(*X_WGs_in),
-        mesh_data(*mesh_data_in),
+        mesh_boundaries(*mesh_boundaries_in),
         distances(*distances_in) {
     DRAKE_DEMAND(query_in != nullptr);
     DRAKE_DEMAND(X_WGs_in != nullptr);
-    DRAKE_DEMAND(mesh_data_in != nullptr);
+    DRAKE_DEMAND(mesh_boundaries_in != nullptr);
     DRAKE_DEMAND(distances_in != nullptr);
   }
 
@@ -80,7 +81,7 @@ struct CallbackData {
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
   /* Data for calculating signed distances of every mesh geometry.  */
-  const std::unordered_map<GeometryId, MeshDistanceBoundary>& mesh_data;
+  const std::unordered_map<GeometryId, MeshDistanceBoundary>& mesh_boundaries;
 
   /* The accumulator for results.  */
   std::vector<SignedDistanceToPoint<T>>& distances;
