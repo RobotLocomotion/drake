@@ -4,6 +4,7 @@
 
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <string>
@@ -672,14 +673,15 @@ std::string GraphOfConvexSets::GetGraphvizString(
   return graphviz.str();
 }
 
-copyable_unique_ptr<MathematicalProgram>
+std::unique_ptr<MathematicalProgram>
 GraphOfConvexSets::ConstructPreprocessingProgram(
     EdgeId edge_id, const std::map<VertexId, std::vector<int>>& incoming_edges,
     const std::map<VertexId, std::vector<int>>& outgoing_edges,
     VertexId source_id, VertexId target_id) const {
   const auto& e = edges_.at(edge_id);
   int nE = edges_.size();
-  copyable_unique_ptr<MathematicalProgram> prog(MathematicalProgram{});
+  std::unique_ptr<MathematicalProgram> prog =
+      std::make_unique<MathematicalProgram>();
 
   // Flow for each edge is between 0 and 1 for both paths.
   VectorXDecisionVariable f = prog->NewContinuousVariables(nE, "flow_su");
@@ -831,14 +833,13 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
   // Given an edge (u,v) check if a path from source to u and another from v to
   // target exist without sharing edges.
 
-  int num_batches = 1 + (nE / options.preprocessing_parallel_batch_size);
+  int preprocessing_parallel_batch_size = 1000;
+  int num_batches = 1 + (nE / preprocessing_parallel_batch_size);
   for (int batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-    int this_batch_start =
-        batch_idx * options.preprocessing_parallel_batch_size;
-    int this_batch_end = std::min(
-        (batch_idx + 1) * options.preprocessing_parallel_batch_size, nE);
-    // TODO(cohnt): No longer use pointers here.
-    std::vector<copyable_unique_ptr<MathematicalProgram>> progs;
+    int this_batch_start = batch_idx * preprocessing_parallel_batch_size;
+    int this_batch_end =
+        std::min((batch_idx + 1) * preprocessing_parallel_batch_size, nE);
+    std::vector<std::unique_ptr<MathematicalProgram>> progs;
     std::vector<EdgeId> idx_to_edge_id;
 
     int this_batch_nE = this_batch_end - this_batch_start;
@@ -871,9 +872,9 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
       maybe_solver_id = std::nullopt;
     }
 
-    std::vector<MathematicalProgramResult> results = SolveInParallel(
-        prog_ptrs, nullptr, &preprocessing_solver_options, maybe_solver_id,
-        options.preprocessing_parallelism, false);
+    std::vector<MathematicalProgramResult> results =
+        SolveInParallel(prog_ptrs, nullptr, &preprocessing_solver_options,
+                        maybe_solver_id, options.parallelism, false);
 
     for (int i = 0; i < this_batch_nE; ++i) {
       const auto& result = results.at(i);
