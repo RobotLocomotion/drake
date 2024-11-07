@@ -18,6 +18,7 @@ using drake::geometry::optimization::HPolyhedron;
 using drake::geometry::optimization::Hyperrectangle;
 using drake::geometry::optimization::Intersection;
 using drake::solvers::MathematicalProgram;
+using drake::solvers::MathematicalProgramResult;
 using drake::solvers::Solve;
 using drake::solvers::VectorXDecisionVariable;
 using Eigen::VectorXd;
@@ -315,7 +316,7 @@ std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
                              const ConvexSets& convex_sets_B,
                              const std::vector<int>& continuous_revolute_joints,
-                             bool preprocess_bbox) {
+                             bool preprocess_bbox, Parallelism parallelism) {
   DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   const int dimension = convex_sets_A[0]->ambient_dimension();
@@ -357,7 +358,7 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
 
   return ComputePairwiseIntersections(
       convex_sets_A, convex_sets_B, continuous_revolute_joints, bboxes_A,
-      convex_sets_A_and_B_are_identical ? bboxes_A : bboxes_B);
+      convex_sets_A_and_B_are_identical ? bboxes_A : bboxes_B, parallelism);
 }
 
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
@@ -376,7 +377,8 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
                              const ConvexSets& convex_sets_B,
                              const std::vector<int>& continuous_revolute_joints,
                              const std::vector<Hyperrectangle>& bboxes_A,
-                             const std::vector<Hyperrectangle>& bboxes_B) {
+                             const std::vector<Hyperrectangle>& bboxes_B,
+                             Parallelism parallelism) {
   DRAKE_THROW_UNLESS(convex_sets_A.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_B.size() > 0);
   DRAKE_THROW_UNLESS(convex_sets_A.size() == bboxes_A.size());
@@ -399,10 +401,12 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
     }
   }
 
-  std::vector<std::pair<int, int>> edges;
-  std::vector<Eigen::VectorXd> edge_offsets;
-
-  // TODO(wrangelvid): This is O(n^2) and can be improved.
+  // This vector will include a list of (ordered) pairs of sets which need to be
+  // checked for intersection by solving a small optimization problem. We can
+  // eliminate duplicates (if convex_sets_A == convex_sets_B) and sets with
+  // non-overlapping bounding boxes.
+  std::vector<std::pair<int, int>> candidate_edges;
+  std::vector<VectorXd> candidate_edge_offsets;
   VectorXd offset = Eigen::VectorXd::Zero(dimension);
   for (int i = 0; i < ssize(convex_sets_A); ++i) {
     for (int j = 0; j < ssize(convex_sets_B); ++j) {
@@ -452,11 +456,10 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
         }
       }
 
-      // Now that we know the offset that is for each dimension, we actually
-      // check if the sets intersect. First, we perform the cheap axis-aligned
-      // bounding box intersection check, possibly confirming the sets are
-      // disjoint and skipping the rest of the steps for this iteration. Then,
-      // we run the actual intersection program to check if the sets intersect.
+      // Now that we know the offset for each dimension, we perform the cheap
+      // axis-aligned bounding box intersection check, and premptively drop the
+      // edge if that check fails. Otherwise, we need to use an optimization
+      // problem to check the edge.
 
       // Note: if the user called the variant of this method which doesn't take
       // in bounding boxes and set the preprocess_bbox argument to false, then
@@ -469,29 +472,48 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
         continue;
       }
 
-      MathematicalProgram prog;
-      VectorXDecisionVariable x = prog.NewContinuousVariables(dimension);
-      VectorXDecisionVariable y = prog.NewContinuousVariables(dimension);
-      Eigen::MatrixXd Aeq(dimension, 2 * dimension);
-      // Add x + offset == y by [-I, I][x; y] == [offset]
-      Aeq.leftCols(dimension) =
-          -Eigen::MatrixXd::Identity(dimension, dimension);
-      Aeq.rightCols(dimension) =
-          Eigen::MatrixXd::Identity(dimension, dimension);
-      prog.AddLinearEqualityConstraint(Aeq, offset, {x, y});
-      convex_sets_A.at(i)->AddPointInSetConstraints(&prog, x);
-      convex_sets_B.at(j)->AddPointInSetConstraints(&prog, y);
-      const auto result = Solve(prog);
-      if (result.is_success()) {
-        // Regions are overlapping, add edge (i, j). If we're adding edges
-        // within convex_sets_A, also add edge (j, i), since edges are
-        // considered bidirectional in that context.
-        edges.emplace_back(i, j);
-        edge_offsets.emplace_back(offset);
-        if (convex_sets_A_and_B_are_identical) {
-          edges.emplace_back(j, i);
-          edge_offsets.emplace_back(-offset);
-        }
+      candidate_edges.emplace_back(i, j);
+      candidate_edge_offsets.emplace_back(offset);
+    }
+  }
+
+  int n_candidates = ssize(candidate_edges);
+  Eigen::MatrixXd Aeq(dimension, 2 * dimension);  // Aeq = [-I, I]
+  Aeq.leftCols(dimension) = -Eigen::MatrixXd::Identity(dimension, dimension);
+  Aeq.rightCols(dimension) = Eigen::MatrixXd::Identity(dimension, dimension);
+  std::vector<MathematicalProgram> progs(n_candidates);
+  for (int i = 0; i < n_candidates; ++i) {
+    VectorXDecisionVariable x = progs[i].NewContinuousVariables(dimension);
+    VectorXDecisionVariable y = progs[i].NewContinuousVariables(dimension);
+    // Add x + offset == y by [-I, I][x; y] == [offset]
+    progs[i].AddLinearEqualityConstraint(Aeq, candidate_edge_offsets[i],
+                                         {x, y});
+    convex_sets_A.at(candidate_edges[i].first)
+        ->AddPointInSetConstraints(&(progs[i]), x);
+    convex_sets_B.at(candidate_edges[i].second)
+        ->AddPointInSetConstraints(&(progs[i]), y);
+  }
+
+  std::vector<const MathematicalProgram*> prog_ptrs;
+  prog_ptrs.reserve(n_candidates);
+  for (int i = 0; i < n_candidates; ++i) {
+    prog_ptrs.push_back(&(progs[i]));
+  }
+  std::vector<MathematicalProgramResult> results = SolveInParallel(
+      prog_ptrs, nullptr /* initial_guesses */, nullptr /* solver_options */,
+      std::nullopt /* solver_id */, parallelism, false /* dynamic_schedule */);
+
+  std::vector<std::pair<int, int>> edges;
+  std::vector<Eigen::VectorXd> edge_offsets;
+  for (int i = 0; i < n_candidates; ++i) {
+    if (results[i].is_success()) {
+      edges.emplace_back(candidate_edges[i]);
+      edge_offsets.emplace_back(candidate_edge_offsets[i]);
+      if (convex_sets_A_and_B_are_identical) {
+        // Add the edge pointing in the opposite direction, with the negative
+        // offset.
+        edges.emplace_back(candidate_edges[i].second, candidate_edges[i].first);
+        edge_offsets.emplace_back(-candidate_edge_offsets[i]);
       }
     }
   }
@@ -510,9 +532,10 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(const ConvexSets& convex_sets,
                              const std::vector<int>& continuous_revolute_joints,
-                             bool preprocess_bbox) {
-  return ComputePairwiseIntersections(
-      convex_sets, convex_sets, continuous_revolute_joints, preprocess_bbox);
+                             bool preprocess_bbox, Parallelism parallelism) {
+  return ComputePairwiseIntersections(convex_sets, convex_sets,
+                                      continuous_revolute_joints,
+                                      preprocess_bbox, parallelism);
 }
 
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
@@ -527,9 +550,11 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
 std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(const ConvexSets& convex_sets,
                              const std::vector<int>& continuous_revolute_joints,
-                             const std::vector<Hyperrectangle>& bboxes) {
-  return ComputePairwiseIntersections(
-      convex_sets, convex_sets, continuous_revolute_joints, bboxes, bboxes);
+                             const std::vector<Hyperrectangle>& bboxes,
+                             Parallelism parallelism) {
+  return ComputePairwiseIntersections(convex_sets, convex_sets,
+                                      continuous_revolute_joints, bboxes,
+                                      bboxes, parallelism);
 }
 
 }  // namespace optimization
