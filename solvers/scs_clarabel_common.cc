@@ -67,6 +67,8 @@ void SetDualSolution(
     const std::vector<int>& rotated_lorentz_cone_y_start_indices,
     const std::vector<std::optional<int>>& psd_y_start_indices,
     const std::vector<std::optional<int>>& lmi_y_start_indices,
+    const std::vector<std::optional<int>>& scalar_psd_y_indices,
+    const std::vector<std::optional<int>>& scalar_lmi_y_indices,
     bool upper_triangular_psd, MathematicalProgramResult* result) {
   for (int i = 0; i < ssize(prog.linear_constraints()); ++i) {
     Eigen::VectorXd lin_con_dual = Eigen::VectorXd::Zero(
@@ -156,6 +158,10 @@ void SetDualSolution(
       ScalePsdConeDualVariable(matrix_rows, upper_triangular_psd, &psd_dual);
       result->set_dual_solution(prog.positive_semidefinite_constraints()[i],
                                 psd_dual);
+    } else if (scalar_psd_y_indices[i].has_value()) {
+      result->set_dual_solution(
+          prog.positive_semidefinite_constraints()[i],
+          Vector1d(dual(scalar_psd_y_indices[i].value())));
     }
   }
   for (int i = 0; i < ssize(prog.linear_matrix_inequality_constraints()); ++i) {
@@ -168,6 +174,10 @@ void SetDualSolution(
       ScalePsdConeDualVariable(matrix_rows, upper_triangular_psd, &lmi_dual);
       result->set_dual_solution(prog.linear_matrix_inequality_constraints()[i],
                                 lmi_dual);
+    } else if (scalar_lmi_y_indices[i].has_value()) {
+      result->set_dual_solution(
+          prog.linear_matrix_inequality_constraints()[i],
+          Vector1d(dual(scalar_lmi_y_indices[i].value())));
     }
   }
 }

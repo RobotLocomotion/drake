@@ -1032,6 +1032,67 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestLmi) {
   check_lmi(true);
   check_lmi(false);
 }
+
+GTEST_TEST(ParseScalarPositiveSemidefiniteConstraints, Test) {
+  // The program contains both scalar PSD/LMI constraints and non-scalar PSD/LMI
+  // constraints.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddPositiveSemidefiniteConstraint(x);
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  auto y = prog.NewContinuousVariables<2>();
+  prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Ones(),
+       Eigen::Matrix3d::Identity()},
+      y);
+  auto scalar_lmi_con = prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix<double, 1, 1>(1), Eigen::Matrix<double, 1, 1>(2),
+       Eigen::Matrix<double, 1, 1>(-3)},
+      y);
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  std::vector<double> b;
+  int A_row_count = 0;
+  int new_positive_cone_length{};
+  std::vector<std::optional<int>> scalar_psd_dual_indices;
+  std::vector<std::optional<int>> scalar_lmi_dual_indices;
+  ParseScalarPositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &new_positive_cone_length,
+      &scalar_psd_dual_indices, &scalar_lmi_dual_indices);
+  EXPECT_EQ(A_triplets.size(), 3);
+  Eigen::SparseMatrix<double> A(2, prog.num_vars());
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  Eigen::MatrixXd A_expected(2, prog.num_vars());
+  A_expected.setZero();
+  A_expected(0, prog.FindDecisionVariableIndex(x(0))) = -1;
+  for (int i = 0; i < y.rows(); ++i) {
+    A_expected(1, prog.FindDecisionVariableIndex(y(i))) =
+        -scalar_lmi_con.evaluator()->F()[i + 1](0, 0);
+  }
+  EXPECT_TRUE(CompareMatrices(A.toDense(), A_expected));
+  const Eigen::Vector2d b_expected(0, scalar_lmi_con.evaluator()->F()[0](0, 0));
+  EXPECT_TRUE(
+      CompareMatrices(Eigen::Map<Eigen::Vector2d>(b.data()), b_expected));
+  EXPECT_EQ(A_row_count, 2);
+  EXPECT_EQ(new_positive_cone_length, 2);
+  EXPECT_FALSE(scalar_psd_dual_indices[1].has_value());
+  EXPECT_FALSE(scalar_lmi_dual_indices[0].has_value());
+
+  std::vector<std::optional<int>> psd_cone_length;
+  std::vector<std::optional<int>> lmi_cone_length;
+  std::vector<std::optional<int>> psd_y_start_indices;
+  std::vector<std::optional<int>> lmi_y_start_indices;
+  ParsePositiveSemidefiniteConstraints(
+      prog, /*upper_triangular=*/true, &A_triplets, &b, &A_row_count,
+      &psd_cone_length, &lmi_cone_length, &psd_y_start_indices,
+      &lmi_y_start_indices);
+  EXPECT_EQ(psd_cone_length,
+            std::vector<std::optional<int>>({{std::nullopt}, {3}}));
+  EXPECT_EQ(lmi_cone_length,
+            std::vector<std::optional<int>>({{3}, {std::nullopt}}));
+  EXPECT_FALSE(psd_y_start_indices[0].has_value());
+  EXPECT_FALSE(lmi_y_start_indices[1].has_value());
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
