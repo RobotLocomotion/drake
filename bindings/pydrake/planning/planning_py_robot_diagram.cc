@@ -79,13 +79,7 @@ void DefinePlanningRobotDiagram(py::module m) {
               cls_doc.scene_graph.doc_0args_nonconst)
           .def("IsDiagramBuilt", &Class::IsDiagramBuilt,
               cls_doc.IsDiagramBuilt.doc)
-          .def("Build", &Class::Build,
-              // Keep alive, ownership (tr.): `self` keeps `return` alive.
-              // Any prior reference access to our owned systems (e.g., plant())
-              // must remain valid, so the RobotDiagram cannot be destroyed
-              // until the builder (and all of its internal references) are
-              // finished.
-              py::keep_alive<1, 0>(), cls_doc.Build.doc);
+          .def("Build", &Class::Build, cls_doc.Build.doc);
     }
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
