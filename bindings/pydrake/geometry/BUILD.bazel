@@ -38,11 +38,13 @@ drake_pybind_library(
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:identifier_pybind",
+        "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:sorted_pair_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
+        "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_so_name = "__init__",
     cc_srcs = [
@@ -180,6 +182,7 @@ drake_py_unittest(
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:lcm_py",
+        "//bindings/pydrake/systems:test_util_py",
     ],
 )
 
