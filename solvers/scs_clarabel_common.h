@@ -58,6 +58,8 @@ void SetDualSolution(
     const std::vector<int>& rotated_lorentz_cone_y_start_indices,
     const std::vector<std::optional<int>>& psd_y_start_indices,
     const std::vector<std::optional<int>>& lmi_y_start_indices,
+    const std::vector<std::optional<int>>& scalar_psd_y_indices,
+    const std::vector<std::optional<int>>& scalar_lmi_y_indices,
     bool upper_triangular_psd, MathematicalProgramResult* result);
 }  // namespace internal
 }  // namespace solvers

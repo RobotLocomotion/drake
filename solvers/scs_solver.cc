@@ -457,6 +457,22 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
                                    &num_linear_constraint_rows);
   cone->l += num_linear_constraint_rows;
 
+  // Parse scalar PSD constraints as linear constraints.
+  // SCS requires ordering the cone with the positive orthant cone coming before
+  // the positive semidefinite cones. So we call
+  // ParseScalarPositiveSemidefiniteConstraints() next to
+  // ParseLinearConstraints(), and finally calling
+  // ParsePositiveSemidefiniteConstraints().
+  int scalar_psd_positive_cone_length{};
+  std::vector<std::optional<int>> scalar_psd_dual_indices;
+  std::vector<std::optional<int>> scalar_lmi_dual_indices;
+  internal::ParseScalarPositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &scalar_psd_positive_cone_length,
+      &scalar_psd_dual_indices, &scalar_lmi_dual_indices);
+  if (scalar_psd_positive_cone_length > 0) {
+    cone->l += scalar_psd_positive_cone_length;
+  }
+
   // Parse Lorentz cone and rotated Lorentz cone constraint
   std::vector<int> second_order_cone_length;
   // y[lorentz_cone_y_start_indices[i]:
@@ -607,7 +623,8 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
       prog, solver_details.y, linear_constraint_dual_indices,
       linear_eq_y_start_indices, lorentz_cone_y_start_indices,
       rotated_lorentz_cone_y_start_indices, psd_y_start_indices,
-      lmi_y_start_indices, /*upper_triangular_psd=*/false, result);
+      lmi_y_start_indices, scalar_psd_dual_indices, scalar_lmi_dual_indices,
+      /*upper_triangular_psd=*/false, result);
   // Set the solution_result enum and the optimal cost based on SCS status.
   if (solver_details.scs_status == SCS_SOLVED ||
       solver_details.scs_status == SCS_SOLVED_INACCURATE) {
