@@ -68,6 +68,23 @@ GTEST_TEST(MeshFieldLinearTest, EvaluateAtVertex) {
   EXPECT_EQ(mesh_field->EvaluateAtVertex(3), 3);
 }
 
+GTEST_TEST(MeshFieldLinearTest, EvaluateMinAndMaxAndMo) {
+  auto mesh = GenerateMesh<double>();
+  constexpr double kEps = std::numeric_limits<double>::epsilon();
+
+  // Arbitrary values such that min and max are unique on each element.
+  std::vector<double> e_values = {1., -2., 2., 3.};
+  auto mesh_field =
+      std::make_unique<MeshFieldLinear<double, TriangleSurfaceMesh<double>>>(
+          std::move(e_values), mesh.get());
+  EXPECT_EQ(mesh_field->EvaluateMin(0), -2);
+  EXPECT_EQ(mesh_field->EvaluateMin(1), 1);
+  EXPECT_EQ(mesh_field->EvaluateMax(0), 2);
+  EXPECT_EQ(mesh_field->EvaluateMax(1), 3);
+  EXPECT_NEAR(mesh_field->EvaluateAtMo(0), 1, kEps);
+  EXPECT_NEAR(mesh_field->EvaluateAtMo(1), 1, kEps);
+}
+
 // Tests CloneAndSetMesh(). We use `double` and TriangleSurfaceMesh<double> as
 // representative arguments for type parameters.
 GTEST_TEST(MeshFieldLinearTest, TestDoCloneWithMesh) {
