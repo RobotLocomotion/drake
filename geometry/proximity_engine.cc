@@ -392,8 +392,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     geometries_for_deformable_contact_.RemoveGeometry(id);
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
         geometry.shape(), id, new_properties, X_WG);
-
-    // TODO(DamrongGuoy): Update mesh_sdf_data_ for new properties.
   }
 
   // Returns true if the geometry with the given Id has been registered in
