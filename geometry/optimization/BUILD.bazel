@@ -195,14 +195,17 @@ drake_cc_library(
     hdrs = ["graph_of_convex_sets.h"],
     deps = [
         ":convex_set",
+        "//common:parallelism",
         "//common/symbolic:expression",
         "//solvers:choose_best_solver",
         "//solvers:create_cost",
         "//solvers:get_program_type",
         "//solvers:mathematical_program_result",
+        "//solvers:solver_interface",
+    ],
+    implementation_deps = [
         "//solvers:mosek_solver",
         "//solvers:solve",
-        "//solvers:solver_interface",
     ],
 )
 

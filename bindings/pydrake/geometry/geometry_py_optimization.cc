@@ -740,10 +740,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
                       std::move(preprocessing_solver_options);
                 }),
             cls_doc.preprocessing_solver_options.doc)
-        .def_readwrite("preprocessing_parallelism",
-            &GraphOfConvexSetsOptions::preprocessing_parallelism)
-        .def_readwrite("preprocessing_parallel_batch_size",
-            &GraphOfConvexSetsOptions::preprocessing_parallel_batch_size)
+        .def_readwrite("parallelism", &GraphOfConvexSetsOptions::parallelism)
         .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
           return py::str(
               "GraphOfConvexSetsOptions("
@@ -759,15 +756,13 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
               "solver_options={}, "
               "restriction_solver_options={}, "
               "preprocessing_solver_options={}, "
-              "preprocessing_parallel_batch_size={}, "
               ")")
               .format(self.convex_relaxation, self.preprocessing,
                   self.max_rounded_paths, self.max_rounding_trials,
                   self.flow_tolerance, self.rounding_seed, self.solver,
                   self.restriction_solver, self.preprocessing_solver,
                   self.solver_options, self.restriction_solver_options,
-                  self.preprocessing_solver_options,
-                  self.preprocessing_parallel_batch_size);
+                  self.preprocessing_solver_options);
         });
 
     DefReadWriteKeepAlive(&gcs_options, "solver",

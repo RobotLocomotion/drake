@@ -35,7 +35,6 @@ struct GraphOfConvexSetsOptions {
     a->Visit(DRAKE_NVP(max_rounding_trials));
     a->Visit(DRAKE_NVP(flow_tolerance));
     a->Visit(DRAKE_NVP(rounding_seed));
-    a->Visit(DRAKE_NVP(preprocessing_parallel_batch_size));
     // N.B. We skip the DRAKE_NVP(solver), DRAKE_NVP(restriction_solver), and
     // DRAKE_NVP(preprocessing_solver), because it cannot be serialized.
     // TODO(#20967) Serialize the DRAKE_NVP(solver_options).
@@ -127,12 +126,12 @@ struct GraphOfConvexSetsOptions {
   std::optional<solvers::SolverOptions> preprocessing_solver_options{
       std::nullopt};
 
-  /** Degree of parallelism to use when performing the preprocessing. */
-  Parallelism preprocessing_parallelism{Parallelism::Max()};
-
-  /** Set the maximum number of preprocessing programs that are constructed in
-   * memory at once. */
-  int preprocessing_parallel_batch_size{1000};
+  /** Some steps in GCS can be parallelized. This is the maximum number of
+  threads used in all places in the algorithm.
+  @note Some solvers will choose their own level of parallelization, independent
+  of this setting. To limit the number of threads, add
+  @ref solvers::CommonSolverOption::kMaxThreads to the solver_options. */
+  Parallelism parallelism{Parallelism::Max()};
 };
 
 struct GcsGraphvizOptions {
@@ -866,8 +865,7 @@ class GraphOfConvexSets {
 
   // Modify prog so that it contains the variables and constraints of the
   // preprocessing program for a given edge.
-  copyable_unique_ptr<solvers::MathematicalProgram>
-  ConstructPreprocessingProgram(
+  std::unique_ptr<solvers::MathematicalProgram> ConstructPreprocessingProgram(
       EdgeId edge_id,
       const std::map<VertexId, std::vector<int>>& incoming_edges,
 
