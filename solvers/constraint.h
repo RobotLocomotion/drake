@@ -997,6 +997,12 @@ class PositiveSemidefiniteConstraint : public Constraint {
 
   int matrix_rows() const { return matrix_rows_; }
 
+  /**
+   * Throw a warning if the matrix size is either 1x1 or 2x2.
+   */
+  // TODO(hongkai.dai): remove the warning when we change the solver backend.
+  void WarnOnSmallMatrixSize() const;
+
  protected:
   /**
    * Evaluate the eigen values of the symmetric matrix.
@@ -1066,6 +1072,12 @@ class LinearMatrixInequalityConstraint : public Constraint {
   /// Gets the number of rows in the matrix inequality constraint. Namely
   /// Fi are all matrix_rows() x matrix_rows() matrices.
   int matrix_rows() const { return matrix_rows_; }
+
+  /**
+   * Warn if the matrix size is 1x1 or 2x2.
+   */
+  // TODO(hongkai.dai): remove the warning when we change the solver backend.
+  void WarnOnSmallMatrixSize() const;
 
  protected:
   /**

@@ -839,6 +839,7 @@ MSKrescodee MosekSolverProgram::AddPositiveSemidefiniteConstraints(
   bar_var_dimension.reserve(prog.positive_semidefinite_constraints().size());
   int psd_count = 0;
   for (const auto& binding : prog.positive_semidefinite_constraints()) {
+    binding.evaluator()->WarnOnSmallMatrixSize();
     bar_var_dimension.push_back(binding.evaluator()->matrix_rows());
     psd_barvar_indices->emplace(binding, numbarvar + psd_count);
     psd_count++;
@@ -872,6 +873,7 @@ MSKrescodee MosekSolverProgram::AddLinearMatrixInequalityConstraint(
   // where A is a sparse matrix.
   std::vector<Eigen::Triplet<double>> A_triplets;
   for (const auto& binding : prog.linear_matrix_inequality_constraints()) {
+    binding.evaluator()->WarnOnSmallMatrixSize();
     // Allocate memory for A_triplets. We allocate the maximal memory by
     // assuming that A is dense.
     // TODO(hongkai.dai): change LinearMatrixInequalityConstraint::F() to return
