@@ -87,5 +87,12 @@ math::RotationMatrix<Expression> Rotation::ToSymbolic() const {
   }, value);
 }
 
+math::RotationMatrixd Rotation::Sample(RandomGenerator* generator) const {
+  const math::RotationMatrix<Expression> symbolic_rotation = this->ToSymbolic();
+  const math::RotationMatrixd concrete_rotation(
+      symbolic::Evaluate(symbolic_rotation.matrix(), {}, generator));
+  return concrete_rotation;
+}
+
 }  // namespace schema
 }  // namespace drake
