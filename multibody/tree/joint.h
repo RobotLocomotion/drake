@@ -567,7 +567,8 @@ class Joint : public MultibodyElement<T> {
   /// @see SetPosePair() for an alternative using a quaternion.
   void SetPose(systems::Context<T>* context,
                const math::RigidTransform<T>& X_FM) const {
-    SetPosePair(context, X_FM.rotation().ToQuaternion(), X_FM.translation());
+    SetPosePairImpl(context, X_FM.rotation().ToQuaternion(), X_FM.translation(),
+                    __func__);
   }
 
   /// Returns this joint's current pose using its position coordinates q taken
@@ -603,7 +604,9 @@ class Joint : public MultibodyElement<T> {
   /// @pre `context` is not null.
   /// @see GetVelocities() to see the resulting v after this call.
   void SetSpatialVelocity(systems::Context<T>* context,
-                          const SpatialVelocity<T>& V_FM) const;
+                          const SpatialVelocity<T>& V_FM) const {
+    SetSpatialVelocityImpl(&*context, V_FM, __func__);
+  }
 
   /// Given the generalized positions q and generalized velocities v for this
   /// joint in the given `context`, returns the cross-joint spatial velocity
@@ -667,7 +670,9 @@ class Joint : public MultibodyElement<T> {
   /// @pre `context` is not null.
   /// @see SetPose()
   void SetPosePair(systems::Context<T>* context, const Quaternion<T>& q_FM,
-                   const Vector3<T>& p_FM) const;
+                   const Vector3<T>& p_FM) const {
+    SetPosePairImpl(&*context, q_FM, p_FM, __func__);
+  }
 
   /// (Advanced) This is the same as GetPose() except it returns this joint's
   /// pose in the given `context` as a (quaternion, translation vector) pair.
@@ -1022,6 +1027,13 @@ class Joint : public MultibodyElement<T> {
         parameters->get_mutable_numeric_parameter(damping_parameter_index_);
     damping_parameter.set_value(VectorX<T>(damping_));
   }
+
+  void SetPosePairImpl(systems::Context<T>* context, const Quaternion<T>& q_FM,
+                       const Vector3<T>& p_FM, const char* func) const;
+
+  void SetSpatialVelocityImpl(systems::Context<T>* context,
+                              const SpatialVelocity<T>& V_FM,
+                              const char* func) const;
 
   std::string name_;
   const Frame<T>& frame_on_parent_;

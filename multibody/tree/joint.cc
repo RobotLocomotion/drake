@@ -74,13 +74,19 @@ Eigen::Ref<const VectorX<T>> Joint<T>::GetVelocities(
 }
 
 template <typename T>
-void Joint<T>::SetSpatialVelocity(systems::Context<T>* context,
-                                  const SpatialVelocity<T>& V_FM) const {
+void Joint<T>::SetSpatialVelocityImpl(systems::Context<T>* context,
+                                      const SpatialVelocity<T>& V_FM,
+                                      const char* func) const {
   DRAKE_THROW_UNLESS(context != nullptr);
   this->get_parent_tree().ThrowIfNotFinalized("Joint::SetSpatialVelocity");
   DRAKE_DEMAND(get_implementation().has_mobilizer());
-  get_implementation().mobilizer->SetSpatialVelocity(
-      *context, V_FM, &context->get_mutable_state());
+  if (!get_implementation().mobilizer->SetSpatialVelocity(
+          *context, V_FM, &context->get_mutable_state())) {
+    throw std::logic_error(
+        fmt::format("{}(): {} joint does not implement this function "
+                    "(joint {})",
+                    func, type_name(), name()));
+  }
 }
 
 template <typename T>
@@ -92,14 +98,19 @@ SpatialVelocity<T> Joint<T>::GetSpatialVelocity(
 }
 
 template <typename T>
-void Joint<T>::SetPosePair(systems::Context<T>* context,
-                           const Quaternion<T>& q_FM,
-                           const Vector3<T>& p_FM) const {
+void Joint<T>::SetPosePairImpl(systems::Context<T>* context,
+                               const Quaternion<T>& q_FM,
+                               const Vector3<T>& p_FM, const char* func) const {
   DRAKE_THROW_UNLESS(context != nullptr);
   this->get_parent_tree().ThrowIfNotFinalized("Joint::SetPosePair");
   DRAKE_DEMAND(get_implementation().has_mobilizer());
-  get_implementation().mobilizer->SetPosePair(*context, q_FM, p_FM,
-                                              &context->get_mutable_state());
+  if (!get_implementation().mobilizer->SetPosePair(
+          *context, q_FM, p_FM, &context->get_mutable_state())) {
+    throw std::logic_error(
+        fmt::format("{}(): {} joint does not implement this function "
+                    "(joint {})",
+                    func, type_name(), name()));
+  }
 }
 
 template <typename T>

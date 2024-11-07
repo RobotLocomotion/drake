@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -276,10 +277,11 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // q_FM is the identity quaternion).
   QVector<double> get_zero_position() const final;
 
-  QVector<T> DoPoseToPositions(const Eigen::Quaternion<T> orientation,
-                               const Vector3<T>& translation) const final;
+  std::optional<QVector<T>> DoPoseToPositions(
+      const Eigen::Quaternion<T> orientation,
+      const Vector3<T>& translation) const final;
 
-  VVector<T> DoSpatialVelocityToVelocities(
+  std::optional<VVector<T>> DoSpatialVelocityToVelocities(
       const SpatialVelocity<T>& velocity) const final {
     return velocity.get_coeffs();
   }

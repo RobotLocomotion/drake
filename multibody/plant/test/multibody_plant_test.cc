@@ -4174,11 +4174,13 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         weld_joint.SetPose(&*context, RigidTransformd::Identity()),
-        ".*SetPose.*not implemented for this joint type.*");
+        ".*SetPose\\(\\).*weld joint does not implement.*"
+        "joint DefaultBody.*");
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         weld_joint.SetSpatialVelocity(&*context, zero),
-        ".*SetSpatialVelocity.*not implemented for this joint type.*");
+        ".*SetSpatialVelocity\\(\\).*weld joint does not implement.*"
+        "joint DefaultBody.*");
   }
 }
 

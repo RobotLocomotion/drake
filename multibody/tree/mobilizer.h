@@ -396,9 +396,10 @@ class Mobilizer : public MultibodyElement<T> {
   // approximation of this pose. It's up to the concrete mobilizer to figure out
   // what to do. (Only QuaternionFloatingMobilizer can represent this pose
   // bit-exactly.)
+  // Returns false if this mobilizer doesn't implement this feature.
   // TODO(sherm1) Currently this is only implemented for 6dof mobilizers.
   //  It's still useful for other joints; broaden support.
-  virtual void SetPosePair(const systems::Context<T>& context,
+  virtual bool SetPosePair(const systems::Context<T>& context,
                            const Eigen::Quaternion<T> q_FM,
                            const Vector3<T>& p_FM,
                            systems::State<T>* state) const = 0;
@@ -420,9 +421,10 @@ class Mobilizer : public MultibodyElement<T> {
   // mobilizer to figure out what to do. 6-dof mobilizers can represent this
   // velocity exactly; others must project.
   // Note: there is no SetDefaultSpatialVelocity() because that is always zero.
+  // Returns false if this mobilizer doesn't implement this feature.
   // TODO(sherm1) Currently this is only implemented for 6dof mobilizers.
   //  It's still useful for other joints; broaden support.
-  virtual void SetSpatialVelocity(const systems::Context<T>& context,
+  virtual bool SetSpatialVelocity(const systems::Context<T>& context,
                                   const SpatialVelocity<T>& V_FM,
                                   systems::State<T>* state) const = 0;
 

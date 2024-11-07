@@ -237,7 +237,7 @@ auto QuaternionFloatingMobilizer<T>::get_zero_position() const
 template <typename T>
 auto QuaternionFloatingMobilizer<T>::DoPoseToPositions(
     const Eigen::Quaternion<T> orientation, const Vector3<T>& translation) const
-    -> QVector<T> {
+    -> std::optional<QVector<T>> {
   QVector<T> q;
   q[0] = orientation.w();
   q.template segment<3>(1) = orientation.vec();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "drake/common/default_scalars.h"
@@ -322,10 +323,11 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
                          EigenPtr<VectorX<T>> v) const final;
 
  protected:
-  QVector<T> DoPoseToPositions(const Eigen::Quaternion<T> orientation,
-                               const Vector3<T>& translation) const final;
+  std::optional<QVector<T>> DoPoseToPositions(
+      const Eigen::Quaternion<T> orientation,
+      const Vector3<T>& translation) const final;
 
-  VVector<T> DoSpatialVelocityToVelocities(
+  std::optional<VVector<T>> DoSpatialVelocityToVelocities(
       const SpatialVelocity<T>& velocity) const final {
     return velocity.get_coeffs();
   }

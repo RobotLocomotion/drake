@@ -205,7 +205,7 @@ void RpyFloatingMobilizer<T>::ProjectSpatialForce(
 template <typename T>
 auto RpyFloatingMobilizer<T>::DoPoseToPositions(
     const Eigen::Quaternion<T> orientation, const Vector3<T>& translation) const
-    -> QVector<T> {
+    -> std::optional<QVector<T>> {
   const math::RollPitchYaw rpy(orientation);
   QVector<T> q;
   q.template head<3>() = rpy.vector();
