@@ -86,15 +86,11 @@ the main body of the document:
 * Use exactly the same wording for the boilerplate items:
   * Every dependency upgrade line should be "Upgrade libfoobar to latest
     release 1.2.3" or "Upgrade funrepo to latest commit".
-  * Dependencies should be referred to by their workspace name.
+  * Dependencies should be referred to by their ``workspace`` name.
   * Only one dependency change per line. Even if both meshcat and meshcat-python
     were upgraded in the same pull request, they each should get their own
     line in the release notes.
 
-* Some features under development (eg, deformables as of this writing) may
-  have no-release-notes policies, as their APIs although public are not yet
-  fully supported.  Be sure to take note of which these are, or ask on
-  `#platform_review` slack.
 * Keep all bullet points to one line.
   * Using hard linebreaks to stay under 80 columns makes the bullet lists hard
     to maintain over time.
