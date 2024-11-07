@@ -1,12 +1,17 @@
 import pydrake.planning as mut
 
+import gc
 import unittest
+import weakref
+
+import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import SceneGraph_
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant_, MultibodyPlantConfig
+from pydrake.systems.controllers import InverseDynamicsController
 from pydrake.systems.framework import Context_, DiagramBuilder_
 
 
@@ -68,3 +73,59 @@ class TestRobotDiagram(unittest.TestCase):
         self.assertIsInstance(
             dut.scene_graph_context(root_context=root_context),
             Context_[T])
+
+    def test_lifetime_robot(self):
+        """Ensure that diagrams built using RobotDiagram/Builder neither become
+        immortal (leak memory forever), nor have unprotected object lifetimes,
+        leading to crashes.
+
+        For examples of crashes, see:
+        https://github.com/RobotLocomotion/drake/issues/14355
+        For examples of immortality, see:
+        https://github.com/RobotLocomotion/drake/issues/14387
+        """
+
+        def make_diagram():
+            # Use a nested function to ensure that all locals get garbage
+            # collected quickly.
+
+            # Construct a trivial plant and ID controller.
+            # N.B. We explicitly do *not* add this plant to the diagram.
+            controller_plant = MultibodyPlant_[float](time_step=0.002)
+            controller_plant.Finalize()
+            builder = mut.RobotDiagramBuilder()
+            controller = builder.builder().AddSystem(
+                InverseDynamicsController(
+                    controller_plant,
+                    kp=[],
+                    ki=[],
+                    kd=[],
+                    has_reference_acceleration=False,
+                )
+            )
+            # Forward ports for ease of testing.
+            builder.builder().ExportInput(
+                controller.get_input_port_estimated_state(), "x_estimated")
+            builder.builder().ExportInput(
+                controller.get_input_port_desired_state(), "x_desired")
+            builder.builder().ExportOutput(
+                controller.get_output_port_control(), "u")
+            diagram = builder.Build()
+            return diagram
+
+        diagram = make_diagram()
+        gc.collect()
+        # N.B. Without fixes for #14355, we get a segfault when
+        # creating the context.
+        context = diagram.CreateDefaultContext()
+        diagram.GetInputPort("x_estimated").FixValue(context, [])
+        diagram.GetInputPort("x_desired").FixValue(context, [])
+        u = diagram.GetOutputPort("u").Eval(context)
+        np.testing.assert_equal(u, [])
+
+        # N.B. Without fixes for #14387, the diagram survives all garbage
+        # collection attempts.
+        spy = weakref.finalize(diagram, lambda: None)
+        del diagram
+        gc.collect()
+        self.assertFalse(spy.alive)
