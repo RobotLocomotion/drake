@@ -246,6 +246,7 @@ class TestSensors(unittest.TestCase):
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         system_count = len(builder.GetSystems())
         lcm = DrakeLcm()
+        # XXX lcm annotations??
         mut.ApplyCameraConfig(config=config, plant=plant, builder=builder,
                               scene_graph=scene_graph, lcm=lcm)
         # Systems have been added.

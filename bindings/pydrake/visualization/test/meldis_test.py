@@ -95,6 +95,7 @@ class TestMeldis(unittest.TestCase):
         parser = Parser(plant=plant)
         parser.AddModels(url=f"package://{resource}")
         plant.Finalize()
+        # XXX lcm annotations??
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
                                      params=visualizer_params, lcm=lcm)
         diagram = builder.Build()
@@ -458,6 +459,7 @@ class TestMeldis(unittest.TestCase):
 </sdf>
 """, "sdf")
         plant.Finalize()
+        # XXX lcm annotations??
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
                                      params=DrakeVisualizerParams(), lcm=lcm)
         diagram = builder.Build()
@@ -516,6 +518,7 @@ Kd 1 1 0
         scene_graph.AssignRole(plant.get_source_id(), g_id,
                                IllustrationProperties())
         lcm = dut._lcm
+        # XXX lcm annotations??
         DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
                                      params=DrakeVisualizerParams(), lcm=lcm)
         plant.Finalize()
@@ -589,6 +592,7 @@ Kd 1 1 0
             name="sphere2_x", frame_on_parent=plant.world_body().body_frame(),
             frame_on_child=body2.body_frame(), axis=[1, 0, 0]))
         plant.Finalize()
+        # XXX lcm annotations??
         ConnectContactResultsToDrakeVisualizer(
             builder=builder, plant=plant, scene_graph=scene_graph, lcm=lcm)
         diagram = builder.Build()
@@ -632,6 +636,7 @@ Kd 1 1 0
             name="body2", frame_on_parent=plant.world_body().body_frame(),
             frame_on_child=body2.body_frame(), axis=[1, 0, 0]))
         plant.Finalize()
+        # XXX lcm annotations??
         ConnectContactResultsToDrakeVisualizer(
             builder=builder, plant=plant, scene_graph=scene_graph, lcm=lcm)
         diagram = builder.Build()

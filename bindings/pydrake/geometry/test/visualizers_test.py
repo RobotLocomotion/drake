@@ -56,6 +56,7 @@ class TestGeometryVisualizers(unittest.TestCase):
                             visualizer.query_object_input_port())
 
         def auto_connect_to_system(builder, scene_graph, params):
+            # XXX lcm annotations??
             mut.DrakeVisualizer_[T].AddToBuilder(builder=builder,
                                                  scene_graph=scene_graph,
                                                  lcm=lcm, params=params)

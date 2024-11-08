@@ -3095,6 +3095,7 @@ class TestPlant(unittest.TestCase):
                 [{}, {"publish_period": None}, {"publish_period": 1.0/32}]):
             kwargs = collections.ChainMap(*optional_args)
             with self.subTest(num_optional_args=len(kwargs), **kwargs):
+                # XXX lcm annotations??
                 publisher = ConnectContactResultsToDrakeVisualizer(
                     builder=builder, plant=plant, scene_graph=scene_graph,
                     **kwargs)
