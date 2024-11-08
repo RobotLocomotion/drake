@@ -754,7 +754,7 @@ symbolic::Variable Subgraph::GetTimeScaling(
   return v.x()(v.x().size() - 1);
 }
 
-template <typename T, typename>
+template <typename T>
 T Subgraph::SubstituteVertexPlaceholderVariables(T e,
                                                  const Vertex& vertex) const {
   int num_rows = num_positions();
@@ -787,7 +787,7 @@ T Subgraph::SubstituteVertexPlaceholderVariables(T e,
   return e;
 }
 
-template <typename T, typename>
+template <typename T>
 T Subgraph::SubstituteEdgePlaceholderVariables(T e, const Edge& edge) const {
   const Vertex& v1 = edge.u();
   const Vertex& v2 = edge.v();
