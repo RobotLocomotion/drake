@@ -23,8 +23,11 @@
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/rpy_floating_joint.h"
+#include "drake/multibody/tree/rpy_floating_mobilizer.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
+#include "drake/multibody/tree/weld_joint.h"
 #include "drake/multibody/tree/weld_mobilizer.h"
 
 namespace drake {
@@ -797,20 +800,18 @@ void MultibodyTree<T>::CreateJointImplementations() {
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>&
-MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(const RigidBody<T>& body) const {
+const Mobilizer<T>& MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
+    const RigidBody<T>& body) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
   const RigidBodyTopology& rigid_body_topology =
       get_topology().get_rigid_body(body.index());
-  const QuaternionFloatingMobilizer<T>* mobilizer =
-      dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
-          &get_mobilizer(rigid_body_topology.inboard_mobilizer));
-  if (mobilizer == nullptr) {
-    throw std::logic_error("Body '" + body.name() +
-                           "' is not a free floating body.");
+  const Mobilizer<T>& mobilizer =
+      get_mobilizer(rigid_body_topology.inboard_mobilizer);
+  if (!mobilizer.has_six_dofs()) {
+    throw std::logic_error("Body '" + body.name() + "' is not a free body.");
   }
-  return *mobilizer;
+  return mobilizer;
 }
 
 template <typename T>
@@ -933,7 +934,7 @@ void MultibodyTree<T>::Finalize() {
   required to build the model. Below, we will augment the MultibodyPlant
   elements to match, so that advanced users can use the familiar Plant API to
   access and control these ephemeral elements. */
-  link_joint_graph_.BuildForest();  // Default modeling options
+  link_joint_graph_.BuildForest();
   const LinkJointGraph& graph = link_joint_graph_;
 
   /* Add Links, Joints, and Constraints that were created during the modeling
@@ -941,16 +942,33 @@ void MultibodyTree<T>::Finalize() {
   "ephemeral" elements. */
 
   /* Add the ephemeral Joints. */
-  // TODO(sherm1) Handle ephemeral Rpy and Weld Joints also.
   for (JointOrdinal i(graph.num_user_joints()); i < ssize(graph.joints());
        ++i) {
     const LinkJointGraph::Joint& added_joint = graph.joints(i);
-    DRAKE_DEMAND(added_joint.traits_index() ==
-                 LinkJointGraph::quaternion_floating_joint_traits_index());
     DRAKE_DEMAND(added_joint.parent_link_index() == BodyIndex(0));
-    const Joint<T>& new_joint = AddEphemeralJoint<QuaternionFloatingJoint>(
-        added_joint.name(), world_body(),
-        get_body(added_joint.child_link_index()));
+
+    const Joint<T>& new_joint = [this, &added_joint]() -> const Joint<T>& {
+      if (added_joint.traits_index() ==
+          LinkJointGraph::quaternion_floating_joint_traits_index()) {
+        return AddEphemeralJoint<QuaternionFloatingJoint>(
+            added_joint.name(), world_body(),
+            get_body(added_joint.child_link_index()));
+      }
+      if (added_joint.traits_index() ==
+          LinkJointGraph::rpy_floating_joint_traits_index()) {
+        return AddEphemeralJoint<RpyFloatingJoint>(
+            added_joint.name(), world_body(),
+            get_body(added_joint.child_link_index()));
+      }
+      if (added_joint.traits_index() ==
+          LinkJointGraph::weld_joint_traits_index()) {
+        return AddEphemeralJoint<WeldJoint>(
+            added_joint.name(), world_body(),
+            get_body(added_joint.child_link_index()),
+            math::RigidTransform<double>());
+      }
+      DRAKE_UNREACHABLE();
+    }();
     DRAKE_DEMAND(new_joint.index() == added_joint.index());
   }
 
@@ -1095,10 +1113,8 @@ template <typename T>
 RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
     const systems::Context<T>& context, const RigidBody<T>& body) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  const QuaternionFloatingMobilizer<T>& mobilizer =
-      GetFreeBodyMobilizerOrThrow(body);
-  return RigidTransform<T>(mobilizer.get_quaternion(context),
-                           mobilizer.get_translation(context));
+  const Mobilizer<T>& mobilizer = GetFreeBodyMobilizerOrThrow(body);
+  return mobilizer.CalcAcrossMobilizerTransform(context);
 }
 
 template <typename T>
@@ -1114,12 +1130,7 @@ void MultibodyTree<T>::SetDefaultFreeBodyPose(
   }
   auto& joint = joints_.get_mutable_element(
       std::get<JointIndex>(default_body_poses_.at(body.index())));
-  auto* quaternion_floating_joint =
-      dynamic_cast<QuaternionFloatingJoint<T>*>(&joint);
-  DRAKE_DEMAND(quaternion_floating_joint != nullptr);
-  quaternion_floating_joint->set_default_quaternion(
-      X_WB.rotation().ToQuaternion());
-  quaternion_floating_joint->set_default_translation(X_WB.translation());
+  joint.SetDefaultPose(X_WB);
 }
 
 template <typename T>
@@ -1170,11 +1181,10 @@ void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     const RigidBody<T>& body, const RigidTransform<T>& X_WB,
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  const QuaternionFloatingMobilizer<T>& mobilizer =
-      GetFreeBodyMobilizerOrThrow(body);
+  const Mobilizer<T>& mobilizer = GetFreeBodyMobilizerOrThrow(body);
   const RotationMatrix<T>& R_WB = X_WB.rotation();
-  mobilizer.SetQuaternion(context, R_WB.ToQuaternion(), state);
-  mobilizer.SetTranslation(context, X_WB.translation(), state);
+  mobilizer.SetPosePair(context, R_WB.ToQuaternion(), X_WB.translation(),
+                        state);
 }
 
 template <typename T>
@@ -1182,10 +1192,8 @@ void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
     const RigidBody<T>& body, const SpatialVelocity<T>& V_WB,
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  const QuaternionFloatingMobilizer<T>& mobilizer =
-      GetFreeBodyMobilizerOrThrow(body);
-  mobilizer.SetAngularVelocity(context, V_WB.rotational(), state);
-  mobilizer.SetTranslationalVelocity(context, V_WB.translational(), state);
+  const Mobilizer<T>& mobilizer = GetFreeBodyMobilizerOrThrow(body);
+  mobilizer.SetSpatialVelocity(context, V_WB, state);
 }
 
 template <typename T>
@@ -1193,9 +1201,24 @@ void MultibodyTree<T>::SetFreeBodyRandomTranslationDistributionOrThrow(
     const RigidBody<T>& body,
     const Vector3<symbolic::Expression>& translation) {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  QuaternionFloatingMobilizer<T>& mobilizer =
+
+  Mobilizer<T>& mobilizer =
       get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
-  mobilizer.set_random_translation_distribution(translation);
+  QuaternionFloatingMobilizer<T>* maybe_quaternion_mobilizer =
+      dynamic_cast<QuaternionFloatingMobilizer<T>*>(&mobilizer);
+  if (maybe_quaternion_mobilizer != nullptr) {
+    maybe_quaternion_mobilizer->set_random_translation_distribution(
+        translation);
+    return;
+  }
+  RpyFloatingMobilizer<T>* maybe_rpy_mobilizer =
+      dynamic_cast<RpyFloatingMobilizer<T>*>(&mobilizer);
+  if (maybe_rpy_mobilizer != nullptr) {
+    maybe_rpy_mobilizer->set_random_translation_distribution(translation);
+    return;
+  }
+
+  DRAKE_UNREACHABLE();  // Only the two floating joints are possible.
 }
 
 template <typename T>
@@ -1203,9 +1226,43 @@ void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionOrThrow(
     const RigidBody<T>& body,
     const Eigen::Quaternion<symbolic::Expression>& rotation) {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  QuaternionFloatingMobilizer<T>& mobilizer =
+
+  Mobilizer<T>& mobilizer =
       get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
-  mobilizer.set_random_quaternion_distribution(rotation);
+  QuaternionFloatingMobilizer<T>* maybe_quaternion_mobilizer =
+      dynamic_cast<QuaternionFloatingMobilizer<T>*>(&mobilizer);
+  if (maybe_quaternion_mobilizer == nullptr) {
+    // Note the (likely reasonable) assumption that a free body uses either
+    // a quaternion floating joint or an rpy floating joint.
+    throw std::logic_error(fmt::format(
+        "{}(): Requires a {} joint but free body {} uses an {} joint. "
+        "Use SetFreeBodyRandomAnglesDistribution() instead.",
+        __func__, QuaternionFloatingJoint<T>::kTypeName, body.name(),
+        RpyFloatingJoint<T>::kTypeName));
+  }
+  maybe_quaternion_mobilizer->set_random_quaternion_distribution(rotation);
+}
+
+template <typename T>
+void MultibodyTree<T>::SetFreeBodyRandomAnglesDistributionOrThrow(
+    const RigidBody<T>& body,
+    const math::RollPitchYaw<symbolic::Expression>& angles) {
+  DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+
+  Mobilizer<T>& mobilizer =
+      get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
+  RpyFloatingMobilizer<T>* maybe_rpy_mobilizer =
+      dynamic_cast<RpyFloatingMobilizer<T>*>(&mobilizer);
+  if (maybe_rpy_mobilizer == nullptr) {
+    // Note the (likely reasonable) assumption that a free body uses either
+    // a quaternion floating joint or an rpy floating joint.
+    throw std::logic_error(fmt::format(
+        "{}(): Requires an {} joint but free body {} uses a {} joint. "
+        "Use SetFreeBodyRandomRotationDistribution() instead.",
+        __func__, RpyFloatingJoint<T>::kTypeName, body.name(),
+        QuaternionFloatingJoint<T>::kTypeName));
+  }
+  maybe_rpy_mobilizer->set_random_angles_distribution(angles.vector());
 }
 
 // Note that the result is indexed by BodyIndex, not MobodIndex.
