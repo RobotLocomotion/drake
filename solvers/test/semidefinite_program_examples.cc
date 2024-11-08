@@ -163,7 +163,7 @@ void FindOuterEllipsoid(const SolverInterface& solver,
 
 void SolveEigenvalueProblem(const SolverInterface& solver,
                             const std::optional<SolverOptions>& solver_options,
-                            double tol) {
+                            double tol, bool check_dual) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   Matrix3d F1;
@@ -177,7 +177,7 @@ void SolveEigenvalueProblem(const SolverInterface& solver,
       0.7, 0.1, 5;
   // clang-format on
   auto z = prog.NewContinuousVariables<1>("z");
-  prog.AddLinearMatrixInequalityConstraint(
+  auto lmi_constraint = prog.AddLinearMatrixInequalityConstraint(
       {Matrix3d::Zero(), Matrix3d::Identity(), -F1, -F2}, {z, x});
 
   const Vector2d x_lb(0.1, 1);
@@ -198,6 +198,21 @@ void SolveEigenvalueProblem(const SolverInterface& solver,
   EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), tol);
   EXPECT_TRUE(((x_value - x_lb).array() >= -tol).all());
   EXPECT_TRUE(((x_value - x_ub).array() <= tol).all());
+  if (check_dual) {
+    const Eigen::MatrixXd lmi_dual =
+        math::ToSymmetricMatrixFromLowerTriangularColumns(
+            result.GetDualSolution(lmi_constraint));
+    Eigen::MatrixXd lmi_sol = lmi_constraint.evaluator()->F()[0];
+    for (int i = 0; i < ssize(lmi_constraint.evaluator()->F()) - 1; ++i) {
+      lmi_sol += lmi_constraint.evaluator()->F()[1 + i] *
+                 result.GetSolution(lmi_constraint.variables()(i));
+    }
+    // Check complementary slackness.
+    EXPECT_NEAR((lmi_sol * lmi_dual).trace(), 0, tol);
+    // Check if the lmi dual is psd.
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es_lmi_dual(lmi_dual);
+    EXPECT_TRUE((es_lmi_dual.eigenvalues().array() >= -tol).all());
+  }
 }
 
 void SolveSDPwithSecondOrderConeExample1(const SolverInterface& solver,

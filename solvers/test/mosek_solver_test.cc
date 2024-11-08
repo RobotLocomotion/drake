@@ -218,7 +218,7 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    SolveEigenvalueProblem(mosek_solver, {}, 1E-7);
+    SolveEigenvalueProblem(mosek_solver, {}, 1E-7, /*check_dual=*/true);
   }
 }
 

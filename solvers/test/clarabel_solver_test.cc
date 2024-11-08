@@ -389,7 +389,7 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   ClarabelSolver solver;
   if (solver.available()) {
-    SolveEigenvalueProblem(solver, {}, kTol);
+    SolveEigenvalueProblem(solver, {}, kTol, /*check_dual=*/false);
   }
 }
 

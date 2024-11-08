@@ -199,8 +199,6 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
   // Add linear matrix inequality constraints.
   std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>
       lmi_acc_indices;
-  // TODO(hongkai.dai): use lmi_acc_indices to return the dual solution of LMI
-  // constraints.
   if (rescode == MSK_RES_OK) {
     rescode = impl.AddLinearMatrixInequalityConstraint(prog, &lmi_acc_indices);
   }
@@ -349,7 +347,7 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
         solution_type, prog, bb_con_dual_indices, linear_con_dual_indices,
         lin_eq_con_dual_indices, quadratic_constraint_dual_indices,
         lorentz_cone_acc_indices, rotated_lorentz_cone_acc_indices,
-        exp_cone_acc_indices, psd_barvar_indices, result);
+        lmi_acc_indices, exp_cone_acc_indices, psd_barvar_indices, result);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
   }
 
