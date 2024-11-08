@@ -442,6 +442,20 @@ GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1LMI) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestTrivial1x1LMI(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-7);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test2X2LMI) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    Test2x2LMI(solver, 1E-7, /*check_dual=*/false, /*dual_tol=*/1E-7);
+  }
+}
+
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   ClarabelSolver solver;
   if (solver.available()) {

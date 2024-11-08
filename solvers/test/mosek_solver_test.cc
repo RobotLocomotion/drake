@@ -554,6 +554,20 @@ GTEST_TEST(MosekTest, Test2x2with3x3SDP) {
   }
 }
 
+GTEST_TEST(MosekTest, TestTrivial1x1LMI) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestTrivial1x1LMI(solver, 1E-7, /*check_dual=*/false, /*dual_tol=*/1E-7);
+  }
+}
+
+GTEST_TEST(MosekTest, Test2X2LMI) {
+  MosekSolver solver;
+  if (solver.available()) {
+    Test2x2LMI(solver, 1E-7, /*check_dual=*/false, /*dual_tol=*/1E-7);
+  }
+}
+
 GTEST_TEST(MosekTest, LPDualSolution1) {
   MosekSolver solver;
   if (solver.available()) {
