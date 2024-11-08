@@ -175,6 +175,21 @@ void Test1x1with3x3SDP(const SolverInterface& solver, double primal_tol,
 // Notice that the psd matrices share variables.
 void Test2x2with3x3SDP(const SolverInterface& solver, double primal_tol,
                        bool check_dual = true, double dual_tol = 1E-5);
+
+// Test LMI constraints on 1x1 matrices (scalar).
+// min x(0) + x(1)
+// s.t [1] + x(0) * [2] + x(1) * [-3] is psd
+//     [-3] + x(0) * [-1] + x(1) * [-3] is psd
+//     [4] + x(0) * [1] + x(1) * [2] is psd
+void TestTrivial1x1LMI(const SolverInterface& solver, double primal_tol,
+                       bool check_dual, double dual_tol);
+
+// Test LMI constraints on 2x2 matrices.
+// min x(0)
+// s.t [1, 1] + [2, 2] * x(0) is psd.
+//     [1, -2]  [2, 8]
+void Test2x2LMI(const SolverInterface& solver, double primal_tol,
+                bool check_dual, double dual_tol);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
