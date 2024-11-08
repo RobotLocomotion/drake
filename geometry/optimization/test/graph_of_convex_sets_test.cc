@@ -2472,137 +2472,147 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     }
   }
 
-  GraphOfConvexSetsOptions options;
-  options.convex_relaxation = true;
-  options.preprocessing = false;
-  options.max_rounded_paths = 0;
-  auto relaxed_result = spp.SolveShortestPath(*source, *target, options);
-  ASSERT_TRUE(relaxed_result.is_success());
+  // Check that the test is being run with multiple threads.
+  DRAKE_DEMAND(Parallelism::Max().num_threads() > 1);
 
-  // We do not expect to find a path in the solution with zero tolerance.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      spp.GetSolutionPath(*source, *target, relaxed_result, 0 /* tolerance*/),
-      ".*No path.*");
-  // However, relaxing the tolerance (significantly) will find a path.
-  EXPECT_NO_THROW(spp.GetSolutionPath(*source, *target, relaxed_result,
-                                      0.9 /* tolerance*/));
-
-  options.preprocessing = true;
-  options.max_rounded_paths = 10;
-  auto rounded_result = spp.SolveShortestPath(*source, *target, options);
-  ASSERT_TRUE(rounded_result.is_success());
-
-  EXPECT_LT(relaxed_result.get_optimal_cost(),
-            rounded_result.get_optimal_cost());
-
-  const auto& edges = spp.Edges();
-  for (size_t ii = 0; ii < edges.size(); ++ii) {
-    if (ii < 6) {
-      // Some solvers do not balance the two paths as closely as other solvers.
-      // I am not sure why these solvers perform badly on this problem.
-      const double tol =
-          (relaxed_result.get_solver_id() == solvers::GurobiSolver::id()) ? 1e-1
-          : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id()) ? 1e-2
-          : (relaxed_result.get_solver_id() == solvers::ClarabelSolver::id())
-              ? 1e-3  // We tried to tighten the optimality/feasibility
-                      // tolerance of Clarabel but the optimal solution still
-                      // match with the balanced solution very precisely.
-              : 1e-5;
-      EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, tol);
-    } else if (ii < 10) {
-      EXPECT_LT(relaxed_result.GetSolution(edges[ii]->phi()), 0.5);
-      EXPECT_GT(relaxed_result.GetSolution(edges[ii]->phi()), 0);
-    } else {
-      EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0, 1e-6);
-    }
-    EXPECT_TRUE(rounded_result.GetSolution(edges[ii]->phi()) == 0 ||
-                rounded_result.GetSolution(edges[ii]->phi()) == 1);
-  }
-
-  if (!MixedIntegerSolverAvailable()) {
-    return;
-  }
-
-  options.convex_relaxation = false;
-  options.preprocessing = false;
-  options.max_rounded_paths = 0;
-  auto mip_result = spp.SolveShortestPath(*source, *target, options);
-  EXPECT_NEAR(rounded_result.get_optimal_cost(), mip_result.get_optimal_cost(),
-              2e-6);
-
-  if (solvers::MosekSolver::is_available() &&
-      solvers::MosekSolver::is_enabled()) {
-    // Test restriction_solver_options by setting the maximum iterations to 0,
-    // which is equivalent to not solving the rounding problem. Thus it should
-    // fail.
-    solvers::MosekSolver mosek_solver;
-    options.solver = &mosek_solver;
+  for (auto parallelism : {Parallelism::None(), Parallelism::Max()}) {
+    GraphOfConvexSetsOptions options;
     options.convex_relaxation = true;
     options.preprocessing = false;
-    options.max_rounded_paths = 10;
+    options.max_rounded_paths = 0;
+    auto relaxed_result = spp.SolveShortestPath(*source, *target, options);
+    ASSERT_TRUE(relaxed_result.is_success());
 
-    options.restriction_solver_options = SolverOptions();
-    options.restriction_solver_options->SetOption(
-        solvers::MosekSolver::id(), "MSK_IPAR_INTPNT_MAX_ITERATIONS", 0);
-
-    auto failed_result = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_FALSE(failed_result.is_success());
-
-    // Without the convex relaxation, the solver should ignore the
-    // restriction_solver_options and succeed.
-    options.convex_relaxation = false;
-    auto successful_result = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_TRUE(successful_result.is_success());
-
-    // Test preprocessing_solver_options by setting the time limit to 0. This
-    // will cause the preprocessing to fail on every edge, tagging those edges
-    // as unusable, and thus causing the solve to fail.
+    // We do not expect to find a path in the solution with zero tolerance.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        spp.GetSolutionPath(*source, *target, relaxed_result, 0 /* tolerance*/),
+        ".*No path.*");
+    // However, relaxing the tolerance (significantly) will find a path.
+    EXPECT_NO_THROW(spp.GetSolutionPath(*source, *target, relaxed_result,
+                                        0.9 /* tolerance*/));
+    options.parallelism = parallelism;
     options.preprocessing = true;
-    options.convex_relaxation = true;
-    options.restriction_solver_options = solvers::SolverOptions();
-    solvers::MosekSolver mosek_solver2;
-    options.preprocessing_solver = &mosek_solver2;
-    options.preprocessing_solver_options = solvers::SolverOptions();
-    options.preprocessing_solver_options->SetOption(
-        solvers::MosekSolver::id(), "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
+    options.max_rounded_paths = 10;
+    auto rounded_result = spp.SolveShortestPath(*source, *target, options);
+    ASSERT_TRUE(rounded_result.is_success());
 
-    auto failed_result_2 = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_FALSE(failed_result_2.is_success());
+    EXPECT_LT(relaxed_result.get_optimal_cost(),
+              rounded_result.get_optimal_cost());
 
-    // If preprocessing_solver is unspecified, the user-specified solver is
-    // used. If we use ClarabelSolver, the Mosek option is not applied, so it
-    // succeeds. If we use MosekSolver, the Mosek option is applied, so it
-    // fails.
-    solvers::ClarabelSolver clarabel_solver;
-    options.preprocessing_solver = nullptr;
-    options.solver = &clarabel_solver;
-    auto successful_result_2 = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_TRUE(successful_result_2.is_success());
+    const auto& edges = spp.Edges();
+    for (size_t ii = 0; ii < edges.size(); ++ii) {
+      if (ii < 6) {
+        // Some solvers do not balance the two paths as closely as other
+        // solvers. I am not sure why these solvers perform badly on this
+        // problem.
+        const double tol =
+            (relaxed_result.get_solver_id() == solvers::GurobiSolver::id())
+                ? 1e-1
+            : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id())
+                ? 1e-2
+            : (relaxed_result.get_solver_id() == solvers::ClarabelSolver::id())
+                ? 1e-3  // We tried to tighten the optimality/feasibility
+                        // tolerance of Clarabel but the optimal solution still
+                        // match with the balanced solution very precisely.
+                : 1e-5;
+        EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, tol);
+      } else if (ii < 10) {
+        EXPECT_LT(relaxed_result.GetSolution(edges[ii]->phi()), 0.5);
+        EXPECT_GT(relaxed_result.GetSolution(edges[ii]->phi()), 0);
+      } else {
+        EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0, 1e-6);
+      }
+      EXPECT_TRUE(rounded_result.GetSolution(edges[ii]->phi()) == 0 ||
+                  rounded_result.GetSolution(edges[ii]->phi()) == 1);
+    }
 
-    options.solver = &mosek_solver;
-    auto failed_result_3 = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_FALSE(failed_result_3.is_success());
+    if (!MixedIntegerSolverAvailable()) {
+      return;
+    }
 
-    // If preprocessing_solver_options is not provided, solver_options is used
-    // instead. We can solve the relaxation and convex restriction with
-    // Clarabel, but use Mosek to solve the preprocessing. We then include the
-    // time limit 0 option for the Mosek solver in solver_options. This will
-    // force the preprocessing to remove all edges, thus leading to a failed
-    // solve, hence verifying that solver_options is being used by the
-    // preprocessing.
-    options.solver = &clarabel_solver;
-    options.restriction_solver = &clarabel_solver;
-    options.preprocessing_solver = &mosek_solver;
-    options.preprocessing_solver_options = std::nullopt;
-    options.solver_options.SetOption(solvers::MosekSolver::id(),
-                                     "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
-    auto failed_result_4 = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_FALSE(failed_result_4.is_success());
-
-    // If we turn off preprocessing, it should succeed again.
+    options.convex_relaxation = false;
     options.preprocessing = false;
-    auto successful_result_3 = spp.SolveShortestPath(*source, *target, options);
-    EXPECT_TRUE(successful_result_3.is_success());
+    options.max_rounded_paths = 0;
+    auto mip_result = spp.SolveShortestPath(*source, *target, options);
+    EXPECT_NEAR(rounded_result.get_optimal_cost(),
+                mip_result.get_optimal_cost(), 2e-6);
+
+    if (solvers::MosekSolver::is_available() &&
+        solvers::MosekSolver::is_enabled()) {
+      // Test restriction_solver_options by setting the maximum iterations to 0,
+      // which is equivalent to not solving the rounding problem. Thus it should
+      // fail.
+      solvers::MosekSolver mosek_solver;
+      options.solver = &mosek_solver;
+      options.convex_relaxation = true;
+      options.preprocessing = false;
+      options.max_rounded_paths = 10;
+
+      options.restriction_solver_options = SolverOptions();
+      options.restriction_solver_options->SetOption(
+          solvers::MosekSolver::id(), "MSK_IPAR_INTPNT_MAX_ITERATIONS", 0);
+
+      auto failed_result = spp.SolveShortestPath(*source, *target, options);
+      EXPECT_FALSE(failed_result.is_success());
+
+      // Without the convex relaxation, the solver should ignore the
+      // restriction_solver_options and succeed.
+      options.convex_relaxation = false;
+      auto successful_result = spp.SolveShortestPath(*source, *target, options);
+      EXPECT_TRUE(successful_result.is_success());
+
+      // Test preprocessing_solver_options by setting the time limit to 0. This
+      // will cause the preprocessing to fail on every edge, tagging those edges
+      // as unusable, and thus causing the solve to fail.
+      options.preprocessing = true;
+      options.convex_relaxation = true;
+      options.restriction_solver_options = solvers::SolverOptions();
+      solvers::MosekSolver mosek_solver2;
+      options.preprocessing_solver = &mosek_solver2;
+      options.preprocessing_solver_options = solvers::SolverOptions();
+      options.preprocessing_solver_options->SetOption(
+          solvers::MosekSolver::id(), "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
+
+      auto failed_result_2 = spp.SolveShortestPath(*source, *target, options);
+      EXPECT_FALSE(failed_result_2.is_success());
+
+      // If preprocessing_solver is unspecified, the user-specified solver is
+      // used. If we use ClarabelSolver, the Mosek option is not applied, so it
+      // succeeds. If we use MosekSolver, the Mosek option is applied, so it
+      // fails.
+      solvers::ClarabelSolver clarabel_solver;
+      options.preprocessing_solver = nullptr;
+      options.solver = &clarabel_solver;
+      auto successful_result_2 =
+          spp.SolveShortestPath(*source, *target, options);
+      EXPECT_TRUE(successful_result_2.is_success());
+
+      options.solver = &mosek_solver;
+      auto failed_result_3 = spp.SolveShortestPath(*source, *target, options);
+      EXPECT_FALSE(failed_result_3.is_success());
+
+      // If preprocessing_solver_options is not provided, solver_options is used
+      // instead. We can solve the relaxation and convex restriction with
+      // Clarabel, but use Mosek to solve the preprocessing. We then include the
+      // time limit 0 option for the Mosek solver in solver_options. This will
+      // force the preprocessing to remove all edges, thus leading to a failed
+      // solve, hence verifying that solver_options is being used by the
+      // preprocessing.
+      options.solver = &clarabel_solver;
+      options.restriction_solver = &clarabel_solver;
+      options.preprocessing_solver = &mosek_solver;
+      options.preprocessing_solver_options = std::nullopt;
+      options.solver_options.SetOption(solvers::MosekSolver::id(),
+                                       "MSK_DPAR_OPTIMIZER_MAX_TIME", 0.0);
+      auto failed_result_4 = spp.SolveShortestPath(*source, *target, options);
+      EXPECT_FALSE(failed_result_4.is_success());
+
+      // If we turn off preprocessing, it should succeed again.
+      options.preprocessing = false;
+      auto successful_result_3 =
+          spp.SolveShortestPath(*source, *target, options);
+      EXPECT_TRUE(successful_result_3.is_success());
+    }
   }
 }
 

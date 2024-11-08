@@ -789,12 +789,12 @@ GraphOfConvexSets::ConstructPreprocessingProgram(
 std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     VertexId source_id, VertexId target_id,
     const GraphOfConvexSetsOptions& options) const {
-  if (vertices_.find(source_id) == vertices_.end()) {
+  if (!vertices_.contains(source_id)) {
     throw std::runtime_error(fmt::format(
         "Source vertex {} is not a vertex in this GraphOfConvexSets.",
         source_id));
   }
-  if (vertices_.find(target_id) == vertices_.end()) {
+  if (!vertices_.contains(target_id)) {
     throw std::runtime_error(fmt::format(
         "Target vertex {} is not a vertex in this GraphOfConvexSets.",
         target_id));
