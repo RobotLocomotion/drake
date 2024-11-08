@@ -440,17 +440,20 @@ class GcsTrajectoryOptimization final {
 
     /* Substitute any placeholder variables with the versions corresponding to
     a specific vertex. The return type will match the argument type. */
-    std::variant<symbolic::Expression, symbolic::Formula>
-    SubstituteVertexPlaceholderVariables(
-        const std::variant<symbolic::Expression, symbolic::Formula>& e,
-        const geometry::optimization::GraphOfConvexSets::Vertex* vertex) const;
+    template <typename T, typename = std::enable_if_t<
+                              std::is_same_v<T, symbolic::Expression> ||
+                              std::is_same_v<T, symbolic::Formula>>>
+    T SubstituteVertexPlaceholderVariables(
+        T e,
+        const geometry::optimization::GraphOfConvexSets::Vertex& vertex) const;
 
     /* Substitute any placeholder variables with the versions corresponding to
     a specific internal edge. The return type will match the argument type. */
-    std::variant<symbolic::Expression, symbolic::Formula>
-    SubstituteEdgePlaceholderVariables(
-        const std::variant<symbolic::Expression, symbolic::Formula>& e,
-        const geometry::optimization::GraphOfConvexSets::Edge* edge) const;
+    template <typename T, typename = std::enable_if_t<
+                              std::is_same_v<T, symbolic::Expression> ||
+                              std::is_same_v<T, symbolic::Formula>>>
+    T SubstituteEdgePlaceholderVariables(
+        T e, const geometry::optimization::GraphOfConvexSets::Edge& edge) const;
 
     const geometry::optimization::ConvexSets regions_;
     const int order_;

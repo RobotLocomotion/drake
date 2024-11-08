@@ -754,135 +754,87 @@ symbolic::Variable Subgraph::GetTimeScaling(
   return v.x()(v.x().size() - 1);
 }
 
-std::variant<Expression, Formula>
-Subgraph::SubstituteVertexPlaceholderVariables(
-    const std::variant<Expression, Formula>& e, const Vertex* vertex) const {
+template <typename T, typename>
+T Subgraph::SubstituteVertexPlaceholderVariables(T e,
+                                                 const Vertex& vertex) const {
   int num_rows = num_positions();
   int num_cols = order_ + 1;
-  MatrixXDecisionVariable control_points_vars(GetControlPoints(*vertex));
+  MatrixXDecisionVariable control_points_vars(GetControlPoints(vertex));
 
-  // Note: the logic is identical for symbolic::Expression and
-  // symbolic::Formula, but since there is no inheritance structure, we have to
-  // split into cases based on which type is actually used.
-  if (std::holds_alternative<Expression>(e)) {
-    Expression e_out = std::get<Expression>(e);
-    symbolic::Variables e_vars = e_out.GetVariables();
-
-    // Substitute the control point variables.
-    for (int i = 0; i < num_rows; ++i) {
-      for (int j = 0; j < num_cols; ++j) {
-        if (e_vars.include(placeholder_vertex_control_points_var_(i, j))) {
-          e_out = e_out.Substitute(placeholder_vertex_control_points_var_(i, j),
-                                   control_points_vars(i, j));
-        }
-      }
-    }
-    // Substitute the time scaling variable.
-    if (e_vars.include(placeholder_vertex_duration_var_)) {
-      e_out = e_out.Substitute(placeholder_vertex_duration_var_,
-                               GetTimeScaling(*vertex));
-    }
-    return e_out;
-  } else {
-    Formula e_out = std::get<Formula>(e);
-    symbolic::Variables e_vars = e_out.GetFreeVariables();
-
-    for (int i = 0; i < num_rows; ++i) {
-      for (int j = 0; j < num_cols; ++j) {
-        if (e_vars.include(placeholder_vertex_control_points_var_(i, j))) {
-          e_out = e_out.Substitute(placeholder_vertex_control_points_var_(i, j),
-                                   control_points_vars(i, j));
-        }
-      }
-    }
-    if (e_vars.include(placeholder_vertex_duration_var_)) {
-      e_out = e_out.Substitute(placeholder_vertex_duration_var_,
-                               GetTimeScaling(*vertex));
-    }
-    return e_out;
+  // Note: the logic is identical for Expression and Formula, except for one
+  // differing method name -- Expression::GetVariables versus
+  // Formula::GetFreeVariables.
+  symbolic::Variables e_vars;
+  if constexpr (std::is_same_v<T, Expression>) {
+    e_vars = e.GetVariables();
+  } else {  // std::is_same_v<T, Formula>
+    e_vars = e.GetFreeVariables();
   }
+
+  // Substitute the control point variables.
+  for (int i = 0; i < num_rows; ++i) {
+    for (int j = 0; j < num_cols; ++j) {
+      if (e_vars.include(placeholder_vertex_control_points_var_(i, j))) {
+        e = e.Substitute(placeholder_vertex_control_points_var_(i, j),
+                         control_points_vars(i, j));
+      }
+    }
+  }
+  // Substitute the time scaling variable.
+  if (e_vars.include(placeholder_vertex_duration_var_)) {
+    e = e.Substitute(placeholder_vertex_duration_var_, GetTimeScaling(vertex));
+  }
+  return e;
 }
 
-std::variant<Expression, Formula> Subgraph::SubstituteEdgePlaceholderVariables(
-    const std::variant<Expression, Formula>& e, const Edge* edge) const {
-  const Vertex& v1 = edge->u();
-  const Vertex& v2 = edge->v();
+template <typename T, typename>
+T Subgraph::SubstituteEdgePlaceholderVariables(T e, const Edge& edge) const {
+  const Vertex& v1 = edge.u();
+  const Vertex& v2 = edge.v();
 
   int num_rows = num_positions();
   int num_cols = order_ + 1;
   MatrixXDecisionVariable control_points_vars_1(GetControlPoints(v1));
   MatrixXDecisionVariable control_points_vars_2(GetControlPoints(v2));
 
-  // Note: the logic is identical for symbolic::Expression and
-  // symbolic::Formula, but since there is no inheritance structure, we have to
-  // split into cases based on which type is actually used.
-  if (std::holds_alternative<Expression>(e)) {
-    Expression e_out = std::get<Expression>(e);
-    symbolic::Variables e_vars = e_out.GetVariables();
-
-    // Substitute the control point variables for the first vertex.
-    for (int i = 0; i < num_rows; ++i) {
-      for (int j = 0; j < num_cols; ++j) {
-        if (e_vars.include(placeholder_edge_control_points_var_.first(i, j))) {
-          e_out =
-              e_out.Substitute(placeholder_edge_control_points_var_.first(i, j),
-                               control_points_vars_1(i, j));
-        }
-      }
-    }
-    // Substitute the control point variables for the second vertex.
-    for (int i = 0; i < num_rows; ++i) {
-      for (int j = 0; j < num_cols; ++j) {
-        if (e_vars.include(placeholder_edge_control_points_var_.second(i, j))) {
-          e_out = e_out.Substitute(
-              placeholder_edge_control_points_var_.second(i, j),
-              control_points_vars_2(i, j));
-        }
-      }
-    }
-    // Substitute the time scaling variable for the first vertex.
-    if (e_vars.include(placeholder_edge_durations_var_.first)) {
-      e_out = e_out.Substitute(placeholder_edge_durations_var_.first,
-                               GetTimeScaling(v1));
-    }
-    // Substitute the time scaling variable for the second vertex.
-    if (e_vars.include(placeholder_edge_durations_var_.second)) {
-      e_out = e_out.Substitute(placeholder_edge_durations_var_.second,
-                               GetTimeScaling(v2));
-    }
-    return e_out;
-  } else {
-    Formula e_out = std::get<Formula>(e);
-    symbolic::Variables e_vars = e_out.GetFreeVariables();
-
-    for (int i = 0; i < num_rows; ++i) {
-      for (int j = 0; j < num_cols; ++j) {
-        if (e_vars.include(placeholder_edge_control_points_var_.first(i, j))) {
-          e_out =
-              e_out.Substitute(placeholder_edge_control_points_var_.first(i, j),
-                               control_points_vars_1(i, j));
-        }
-      }
-    }
-    for (int i = 0; i < num_rows; ++i) {
-      for (int j = 0; j < num_cols; ++j) {
-        if (e_vars.include(placeholder_edge_control_points_var_.second(i, j))) {
-          e_out = e_out.Substitute(
-              placeholder_edge_control_points_var_.second(i, j),
-              control_points_vars_2(i, j));
-        }
-      }
-    }
-    if (e_vars.include(placeholder_edge_durations_var_.first)) {
-      e_out = e_out.Substitute(placeholder_edge_durations_var_.first,
-                               GetTimeScaling(v1));
-    }
-    if (e_vars.include(placeholder_edge_durations_var_.second)) {
-      e_out = e_out.Substitute(placeholder_edge_durations_var_.second,
-                               GetTimeScaling(v2));
-    }
-    return e_out;
+  // Note: the logic is identical for Expression and Formula, except for one
+  // differing method name -- Expression::GetVariables versus
+  // Formula::GetFreeVariables.
+  symbolic::Variables e_vars;
+  if constexpr (std::is_same_v<T, Expression>) {
+    e_vars = e.GetVariables();
+  } else {  // std::is_same_v<T, Formula>
+    e_vars = e.GetFreeVariables();
   }
+
+  // Substitute the control point variables for the first vertex.
+  for (int i = 0; i < num_rows; ++i) {
+    for (int j = 0; j < num_cols; ++j) {
+      if (e_vars.include(placeholder_edge_control_points_var_.first(i, j))) {
+        e = e.Substitute(placeholder_edge_control_points_var_.first(i, j),
+                         control_points_vars_1(i, j));
+      }
+    }
+  }
+  // Substitute the control point variables for the second vertex.
+  for (int i = 0; i < num_rows; ++i) {
+    for (int j = 0; j < num_cols; ++j) {
+      if (e_vars.include(placeholder_edge_control_points_var_.second(i, j))) {
+        e = e.Substitute(placeholder_edge_control_points_var_.second(i, j),
+                         control_points_vars_2(i, j));
+      }
+    }
+  }
+  // Substitute the time scaling variable for the first vertex.
+  if (e_vars.include(placeholder_edge_durations_var_.first)) {
+    e = e.Substitute(placeholder_edge_durations_var_.first, GetTimeScaling(v1));
+  }
+  // Substitute the time scaling variable for the second vertex.
+  if (e_vars.include(placeholder_edge_durations_var_.second)) {
+    e = e.Substitute(placeholder_edge_durations_var_.second,
+                     GetTimeScaling(v2));
+  }
+  return e;
 }
 
 void Subgraph::AddVertexCost(
@@ -890,7 +842,7 @@ void Subgraph::AddVertexCost(
     const std::unordered_set<Transcription>& used_in_transcription) {
   for (Vertex*& vertex : vertices_) {
     Expression post_substitution =
-        std::get<Expression>(SubstituteVertexPlaceholderVariables(e, vertex));
+        SubstituteVertexPlaceholderVariables(e, *vertex);
     vertex->AddCost(post_substitution, used_in_transcription);
   }
 }
@@ -900,7 +852,7 @@ void Subgraph::AddVertexConstraint(
     const std::unordered_set<Transcription>& used_in_transcription) {
   for (Vertex*& vertex : vertices_) {
     Formula post_substitution =
-        std::get<Formula>(SubstituteVertexPlaceholderVariables(e, vertex));
+        SubstituteVertexPlaceholderVariables(e, *vertex);
     vertex->AddConstraint(post_substitution, used_in_transcription);
   }
 }
@@ -909,8 +861,7 @@ void Subgraph::AddEdgeCost(
     const Expression& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   for (Edge*& edge : edges_) {
-    Expression post_substitution =
-        std::get<Expression>(SubstituteEdgePlaceholderVariables(e, edge));
+    Expression post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
     edge->AddCost(post_substitution, used_in_transcription);
   }
 }
@@ -919,8 +870,7 @@ void Subgraph::AddEdgeConstraint(
     const symbolic::Formula& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   for (Edge*& edge : edges_) {
-    Formula post_substitution =
-        std::get<Formula>(SubstituteEdgePlaceholderVariables(e, edge));
+    Formula post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
     edge->AddConstraint(post_substitution, used_in_transcription);
   }
 }
