@@ -29,10 +29,6 @@ namespace trajectory_optimization {
 using Subgraph = GcsTrajectoryOptimization::Subgraph;
 using EdgesBetweenSubgraphs = GcsTrajectoryOptimization::EdgesBetweenSubgraphs;
 
-using drake::solvers::MathematicalProgram;
-using drake::solvers::MatrixXDecisionVariable;
-using drake::solvers::Solve;
-using drake::solvers::VectorXDecisionVariable;
 using Eigen::MatrixXd;
 using Eigen::SparseMatrix;
 using Eigen::VectorXd;
@@ -66,12 +62,17 @@ using solvers::L2NormCost;
 using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
+using solvers::MathematicalProgram;
+using solvers::MatrixXDecisionVariable;
 using solvers::QuadraticCost;
+using solvers::Solve;
+using solvers::VectorXDecisionVariable;
 using symbolic::DecomposeLinearExpressions;
 using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::MakeMatrixContinuousVariable;
 using symbolic::MakeVectorContinuousVariable;
+using symbolic::Variable;
 using trajectories::BezierCurve;
 using trajectories::CompositeTrajectory;
 using trajectories::PiecewiseTrajectory;
@@ -754,12 +755,54 @@ symbolic::Variable Subgraph::GetTimeScaling(
   return v.x()(v.x().size() - 1);
 }
 
+namespace {
+
+std::vector<Variable> FlattenVariables(
+    const std::vector<Variable>& scalar_variables,
+    const std::vector<VectorXDecisionVariable>& vector_variables,
+    const std::vector<MatrixXDecisionVariable>& matrix_variables) {
+  std::vector<Variable> all_variables;
+
+  // Append scalar variables.
+  all_variables.insert(all_variables.end(), scalar_variables.begin(),
+                       scalar_variables.end());
+
+  // Flatten vector variables.
+  for (const auto& vector_variable : vector_variables) {
+    for (int i = 0; i < vector_variable.size(); ++i) {
+      all_variables.push_back(vector_variable(i));
+    }
+  }
+
+  // Flatten matrix variables.
+  for (const auto& matrix_variable : matrix_variables) {
+    for (int i = 0; i < matrix_variable.rows(); ++i) {
+      for (int j = 0; j < matrix_variable.cols(); ++j) {
+        all_variables.push_back(matrix_variable(i, j));
+      }
+    }
+  }
+
+  return all_variables;
+}
+
 template <typename T>
-T Subgraph::SubstituteVertexPlaceholderVariables(T e,
-                                                 const Vertex& vertex) const {
-  int num_rows = num_positions();
-  int num_cols = order_ + 1;
-  MatrixXDecisionVariable control_points_vars(GetControlPoints(vertex));
+T SubstituteAllVariables(
+    T e, std::vector<Variable> old_scalar_variables = {},
+    std::vector<Variable> new_scalar_variables = {},
+    std::vector<VectorXDecisionVariable> old_vector_variables = {},
+    std::vector<VectorXDecisionVariable> new_vector_variables = {},
+    std::vector<MatrixXDecisionVariable> old_matrix_variables = {},
+    std::vector<MatrixXDecisionVariable> new_matrix_variables = {}) {
+  DRAKE_DEMAND(old_scalar_variables.size() == new_scalar_variables.size());
+  DRAKE_DEMAND(old_vector_variables.size() == new_vector_variables.size());
+  DRAKE_DEMAND(old_matrix_variables.size() == new_matrix_variables.size());
+
+  std::vector<Variable> old_variables = FlattenVariables(
+      old_scalar_variables, old_vector_variables, old_matrix_variables);
+  std::vector<Variable> new_variables = FlattenVariables(
+      new_scalar_variables, new_vector_variables, new_matrix_variables);
+  DRAKE_DEMAND(old_variables.size() == new_variables.size());
 
   // Note: the logic is identical for Expression and Formula, except for one
   // differing method name -- Expression::GetVariables versus
@@ -771,20 +814,23 @@ T Subgraph::SubstituteVertexPlaceholderVariables(T e,
     e_vars = e.GetFreeVariables();
   }
 
-  // Substitute the control point variables.
-  for (int i = 0; i < num_rows; ++i) {
-    for (int j = 0; j < num_cols; ++j) {
-      if (e_vars.include(placeholder_vertex_control_points_var_(i, j))) {
-        e = e.Substitute(placeholder_vertex_control_points_var_(i, j),
-                         control_points_vars(i, j));
-      }
+  for (int i = 0; i < ssize(old_variables); ++i) {
+    if (e_vars.include(old_variables[i])) {
+      e = e.Substitute(old_variables[i], new_variables[i]);
     }
   }
-  // Substitute the time scaling variable.
-  if (e_vars.include(placeholder_vertex_duration_var_)) {
-    e = e.Substitute(placeholder_vertex_duration_var_, GetTimeScaling(vertex));
-  }
+
   return e;
+}
+
+}  // namespace
+
+template <typename T>
+T Subgraph::SubstituteVertexPlaceholderVariables(T e,
+                                                 const Vertex& vertex) const {
+  return SubstituteAllVariables(
+      e, {placeholder_vertex_duration_var_}, {GetTimeScaling(vertex)}, {}, {},
+      {placeholder_vertex_control_points_var_}, {GetControlPoints(vertex)});
 }
 
 template <typename T>
@@ -792,49 +838,14 @@ T Subgraph::SubstituteEdgePlaceholderVariables(T e, const Edge& edge) const {
   const Vertex& v1 = edge.u();
   const Vertex& v2 = edge.v();
 
-  int num_rows = num_positions();
-  int num_cols = order_ + 1;
-  MatrixXDecisionVariable control_points_vars_1(GetControlPoints(v1));
-  MatrixXDecisionVariable control_points_vars_2(GetControlPoints(v2));
-
-  // Note: the logic is identical for Expression and Formula, except for one
-  // differing method name -- Expression::GetVariables versus
-  // Formula::GetFreeVariables.
-  symbolic::Variables e_vars;
-  if constexpr (std::is_same_v<T, Expression>) {
-    e_vars = e.GetVariables();
-  } else {  // std::is_same_v<T, Formula>
-    e_vars = e.GetFreeVariables();
-  }
-
-  // Substitute the control point variables for the first vertex.
-  for (int i = 0; i < num_rows; ++i) {
-    for (int j = 0; j < num_cols; ++j) {
-      if (e_vars.include(placeholder_edge_control_points_var_.first(i, j))) {
-        e = e.Substitute(placeholder_edge_control_points_var_.first(i, j),
-                         control_points_vars_1(i, j));
-      }
-    }
-  }
-  // Substitute the control point variables for the second vertex.
-  for (int i = 0; i < num_rows; ++i) {
-    for (int j = 0; j < num_cols; ++j) {
-      if (e_vars.include(placeholder_edge_control_points_var_.second(i, j))) {
-        e = e.Substitute(placeholder_edge_control_points_var_.second(i, j),
-                         control_points_vars_2(i, j));
-      }
-    }
-  }
-  // Substitute the time scaling variable for the first vertex.
-  if (e_vars.include(placeholder_edge_durations_var_.first)) {
-    e = e.Substitute(placeholder_edge_durations_var_.first, GetTimeScaling(v1));
-  }
-  // Substitute the time scaling variable for the second vertex.
-  if (e_vars.include(placeholder_edge_durations_var_.second)) {
-    e = e.Substitute(placeholder_edge_durations_var_.second,
-                     GetTimeScaling(v2));
-  }
-  return e;
+  return SubstituteAllVariables(e,
+                                {placeholder_edge_durations_var_.first,
+                                 placeholder_edge_durations_var_.second},
+                                {GetTimeScaling(v1), GetTimeScaling(v2)}, {},
+                                {},
+                                {placeholder_edge_control_points_var_.first,
+                                 placeholder_edge_control_points_var_.second},
+                                {GetControlPoints(v1), GetControlPoints(v2)});
 }
 
 void Subgraph::AddVertexCost(

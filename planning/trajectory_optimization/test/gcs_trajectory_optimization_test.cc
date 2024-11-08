@@ -2665,6 +2665,19 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
     VectorXd x1 = segment.value(segment.end_time());
     EXPECT_LE(std::abs(x0[0] - x1[0]), 0.75);
   }
+
+  // Check that passing in a expression using an edge duration or control point
+  // throws.
+  Expression bad_expression_1 =
+      Expression((middle.edge_constituent_vertex_control_points().first)(0, 0));
+  Expression bad_expression_2 =
+      Expression(middle.edge_constituent_vertex_durations().second);
+  Formula bad_formula_1 = bad_expression_1 == Expression(0.0);
+  Formula bad_formula_2 = bad_expression_2 == Expression(0.0);
+  EXPECT_THROW(middle.AddVertexCost(bad_expression_1), std::exception);
+  EXPECT_THROW(middle.AddVertexCost(bad_expression_2), std::exception);
+  EXPECT_THROW(middle.AddVertexConstraint(bad_formula_1), std::exception);
+  EXPECT_THROW(middle.AddVertexConstraint(bad_formula_2), std::exception);
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
@@ -2753,6 +2766,18 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
 
   Vector1d key_point = traj.value(traj.segment(0).end_time());
   EXPECT_LE(key_point[0], 0.85);  // Control point constraint.
+
+  // Check that passing in a expression using a vertex duration or control point
+  // throws.
+  Expression bad_expression_1 =
+      Expression(middle.vertex_control_points()(0, 0));
+  Expression bad_expression_2 = Expression(middle.vertex_duration());
+  Formula bad_formula_1 = bad_expression_1 == Expression(0.0);
+  Formula bad_formula_2 = bad_expression_2 == Expression(0.0);
+  EXPECT_THROW(middle.AddEdgeCost(bad_expression_1), std::exception);
+  EXPECT_THROW(middle.AddEdgeCost(bad_expression_2), std::exception);
+  EXPECT_THROW(middle.AddEdgeConstraint(bad_formula_1), std::exception);
+  EXPECT_THROW(middle.AddEdgeConstraint(bad_formula_2), std::exception);
 }
 
 }  // namespace
