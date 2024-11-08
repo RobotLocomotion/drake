@@ -354,6 +354,8 @@ void DefineSymbolicMonolith(py::module m) {
           py::arg("env"), doc.Expression.EvaluatePartial.doc)
       .def("GetVariables", &Expression::GetVariables,
           doc.Expression.GetVariables.doc)
+      .def("GetFreeVariables", &Expression::GetFreeVariables,
+          doc.Expression.GetFreeVariables.doc)
       .def(
           "Substitute",
           [](const Expression& self, const Variable& var, const Expression& e) {
