@@ -169,7 +169,7 @@ void testBasicFunctionality() {
     double t_2 = uniform(generator);
 
     auto trimmed_piecewise2 =
-        piecewise2.Trim(std::min(t, t_2), std::max(t, t_2));
+        piecewise2.SliceByTime(std::min(t, t_2), std::max(t, t_2));
 
     EXPECT_TRUE(CompareMatrices(sum.value(t),
                                 piecewise1.value(t) + piecewise2.value(t), 1e-8,
@@ -212,12 +212,12 @@ void testBasicFunctionality() {
     EXPECT_TRUE(CompareMatrices(piecewise1_with_new_break.value(t),
                                 piecewise1.value(t), 1e-8,
                                 MatrixCompareType::absolute));
-    // Pick 10 random samples and check that the sampled values are the same.
-    for (int k = 0; k < 10; k++) {
-      double t_sample = uniform(generator);
-      EXPECT_TRUE(CompareMatrices(piecewise1_with_new_break.value(t_sample),
-                                  piecewise1.value(t_sample), 1e-8,
-                                  MatrixCompareType::absolute));
+    // Check the samples at the middle of every segment.
+    for (int k = 0; k < piecewise2.get_number_of_segments(); ++k) {
+      double t_middle = (piecewise2.start_time(k) + piecewise2.end_time(k)) / 2;
+      EXPECT_TRUE(CompareMatrices(piecewise2.value(t_middle),
+                                  piecewise2_with_new_break.value(t_middle),
+                                  1e-8, MatrixCompareType::absolute));
     }
 
     // Check if trimmed_piecewise2 is indeed a trimmed version of piecewise2.

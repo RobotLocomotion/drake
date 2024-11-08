@@ -591,8 +591,8 @@ int PiecewisePolynomial<T>::AddBreak(const T& new_break) {
 }
 
 template <typename T>
-PiecewisePolynomial<T> PiecewisePolynomial<T>::Trim(const T& start_time,
-                                                    const T& end_time) const {
+PiecewisePolynomial<T> PiecewisePolynomial<T>::SliceByTime(
+    const T& start_time, const T& end_time) const {
   DRAKE_THROW_UNLESS(start_time < end_time);
   DRAKE_THROW_UNLESS(this->is_time_in_range(start_time));
   DRAKE_THROW_UNLESS(this->is_time_in_range(end_time));
