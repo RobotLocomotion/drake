@@ -303,8 +303,8 @@ class GcsTrajectoryOptimization final {
     decision variables in methods like AddEdgeCost and AddEdgeConstraint.
     Passing this variable directly into objectives/constraints will result in an
     error. */
-    const std::pair<symbolic::Variable, symbolic::Variable>& edge_durations()
-        const {
+    const std::pair<symbolic::Variable, symbolic::Variable>&
+    edge_constituent_vertex_durations() const {
       return placeholder_edge_durations_var_;
     }
 
@@ -318,7 +318,7 @@ class GcsTrajectoryOptimization final {
     objectives/constraints will result in an error. */
     const std::pair<solvers::MatrixXDecisionVariable,
                     solvers::MatrixXDecisionVariable>&
-    edge_control_points() const {
+    edge_constituent_vertex_control_points() const {
       return placeholder_edge_control_points_var_;
     }
 

@@ -2681,12 +2681,12 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
   gcs.AddEdges(start, middle);
   gcs.AddEdges(middle, goal);
 
-  auto edge_control_points = middle.edge_control_points();
+  auto edge_control_points = middle.edge_constituent_vertex_control_points();
   ASSERT_EQ(edge_control_points.first.rows(), 1);
   ASSERT_EQ(edge_control_points.second.rows(), 1);
   ASSERT_EQ(edge_control_points.first.cols(), 2);
   ASSERT_EQ(edge_control_points.second.cols(), 2);
-  auto edge_durations = middle.edge_durations();
+  auto edge_durations = middle.edge_constituent_vertex_durations();
 
   // Requires that the time of the first set of an edge be lower bounded by 0.2.
   Formula outgoing_time_minimum =
