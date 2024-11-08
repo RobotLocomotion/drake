@@ -57,7 +57,8 @@ GTEST_TEST(IntersectionTest, BasicTest) {
   }
 
   // Test IsBounded.
-  EXPECT_TRUE(S.IsBounded());
+  EXPECT_TRUE(S.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(S.IsBounded(Parallelism::Max()));
 
   // Test IsEmpty
   EXPECT_FALSE(S.IsEmpty());
@@ -95,7 +96,8 @@ GTEST_TEST(IntersectionTest, DefaultCtor) {
   EXPECT_NO_THROW(dut.Clone());
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_TRUE(dut.IntersectsWith(dut));
-  EXPECT_TRUE(dut.IsBounded());
+  EXPECT_TRUE(dut.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(dut.IsBounded(Parallelism::Max()));
   EXPECT_FALSE(dut.IsEmpty());
   EXPECT_TRUE(dut.MaybeGetPoint().has_value());
   EXPECT_TRUE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
@@ -141,10 +143,12 @@ GTEST_TEST(IntersectionTest, BoundedTest) {
 
   EXPECT_FALSE(H1.IsBounded());
   EXPECT_FALSE(H2.IsBounded());
-  EXPECT_TRUE(S1.IsBounded());
+  EXPECT_TRUE(S1.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(S1.IsBounded(Parallelism::Max()));
 
   Intersection S2(H1, H1);
-  EXPECT_FALSE(S2.IsBounded());
+  EXPECT_FALSE(S2.IsBounded(Parallelism::None()));
+  EXPECT_FALSE(S2.IsBounded(Parallelism::Max()));
 }
 
 GTEST_TEST(IntersectionTest, CloneTest) {
@@ -281,6 +285,36 @@ GTEST_TEST(IntersectionTest, EmptyInput) {
   const VPolytope V = VPolytope(vertices);
   Intersection S(P, V);
   EXPECT_TRUE(S.IsEmpty());
+}
+
+GTEST_TEST(IntersectionTest, BoundedTest2) {
+  // A higher-dimensional, more complicated boundedness check that can't use the
+  // shortcut, since both constituent sets are unbounded. Note that this is
+  // implicitly testing ConvexSet::GenericDoIsBounded, since we can't easily
+  // test that functionality in convex_set_test.cc.
+  HPolyhedron l1 = HPolyhedron::MakeUnitBox(100);
+  Eigen::MatrixXd A = l1.A();
+  Eigen::VectorXd b = l1.b();
+
+  // Put half of the rows in one HPolyhedron, and the other half in another.
+  // Also make a variant where one row is skipped, to make it unbounded. Because
+  // each of these three sets are unbounded, the shortcut boundedness check
+  // cannot be called, so the generic check has to be performed. Note: we cannot
+  // guarantee that we've fallen back to the GenericDoIsBounded method, or that
+  // multiple threads are actually being used by that method.
+  ASSERT_EQ(A.rows(), 200);
+  HPolyhedron half1(A.topRows(100), b.head(100));
+  HPolyhedron half2(A.bottomRows(100), b.tail(100));
+  HPolyhedron half2_unbounded(A.bottomRows(99), b.tail(99));
+
+  // Cross-check that our BUILD file allows parallelism.
+  DRAKE_DEMAND(Parallelism::Max().num_threads() > 1);
+
+  Intersection bounded(half1, half2);
+  Intersection unbounded(half1, half2_unbounded);
+
+  EXPECT_TRUE(bounded.IsBounded(Parallelism::Max()));
+  EXPECT_FALSE(unbounded.IsBounded(Parallelism::Max()));
 }
 
 }  // namespace optimization

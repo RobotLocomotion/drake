@@ -526,6 +526,34 @@ GTEST_TEST(MosekTest, SolveSDPwithQuadraticCosts) {
   }
 }
 
+GTEST_TEST(MosekTest, TestTrivial1x1SDP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestTrivial1x1SDP(solver, 1E-8, /*check_dual=*/true, /*dual_tol=*/1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, TestTrivial2x2SDP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestTrivial2x2SDP(solver, 1E-8, /*check_dual=*/true, /*dual_tol=*/1E-8);
+  }
+}
+
+GTEST_TEST(MosekTest, Test1x1with3x3SDP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/true, /*dual_tol=*/1E-4);
+  }
+}
+
+GTEST_TEST(MosekTest, Test2x2with3x3SDP) {
+  MosekSolver solver;
+  if (solver.available()) {
+    Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/true, /*dual_tol=*/1E-3);
+  }
+}
+
 GTEST_TEST(MosekTest, LPDualSolution1) {
   MosekSolver solver;
   if (solver.available()) {

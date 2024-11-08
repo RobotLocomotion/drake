@@ -47,6 +47,35 @@ Environment BuildEnvironment(const VectorX<Variable>& vars,
   return env;
 }
 
+template <typename C>
+void CheckGradientSparsityPattern(
+    const C& constraint, const Eigen::Ref<const Eigen::VectorXd>& x_val) {
+  const std::optional<std::vector<std::pair<int, int>>>&
+      gradient_sparsity_pattern = constraint.gradient_sparsity_pattern();
+  if (gradient_sparsity_pattern.has_value()) {
+    // nonzero_gradient(i, j) = 1 if (i, j) is in gradient_sparsity_pattern.
+    Eigen::MatrixX<int> nonzero_gradient = Eigen::MatrixX<int>::Zero(
+        constraint.num_constraints(), constraint.num_vars());
+    for (const auto& [row, col] : gradient_sparsity_pattern.value()) {
+      // There should be no duplicated entries in gradient_sparsity_pattern,
+      // hence nonzero_gradient(row, col) should not have been set already.
+      ASSERT_EQ(nonzero_gradient(row, col), 0);
+      nonzero_gradient(row, col) = 1;
+    }
+    const auto x_ad = math::InitializeAutoDiff(x_val);
+    VectorX<AutoDiffXd> y_ad(constraint.num_constraints());
+    constraint.Eval(x_ad, &y_ad);
+    const Eigen::MatrixXd y_grad = math::ExtractGradient(y_ad);
+    Eigen::MatrixX<int> nonzero_gradient_expected(y_grad.rows(), y_grad.cols());
+    for (int i = 0; i < y_grad.rows(); ++i) {
+      for (int j = 0; j < y_grad.cols(); ++j) {
+        nonzero_gradient_expected(i, j) = (y_grad(i, j) != 0);
+      }
+    }
+    EXPECT_TRUE(CompareMatrices(nonzero_gradient, nonzero_gradient_expected));
+  }
+}
+
 GTEST_TEST(TestConstraint, BoundSizeCheck) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       LinearConstraint(Eigen::Matrix3d::Identity(), Eigen::Vector2d(1., 2),
@@ -557,6 +586,40 @@ GTEST_TEST(testConstraint, testLorentzConeConstraint) {
   TestLorentzConeEvalNonconvex(A4, b4, x4, false);
 }
 
+GTEST_TEST(TestConstraint, LorentzConeGradientSparsityPattern) {
+  for (const auto eval_type : {LorentzConeConstraint::EvalType::kConvex,
+                               LorentzConeConstraint::EvalType::kConvexSmooth,
+                               LorentzConeConstraint::EvalType::kNonconvex}) {
+    const Eigen::Vector3d b(10, 20, 30);
+    LorentzConeConstraint constraint1(Eigen::Matrix3d::Identity(), b,
+                                      eval_type);
+    CheckGradientSparsityPattern(constraint1, Eigen::Vector3d(1, 2, 3));
+
+    Eigen::Matrix3d new_A = Eigen::Matrix3d::Identity();
+    new_A.row(0).setZero();
+    constraint1.UpdateCoefficients(new_A, b);
+    CheckGradientSparsityPattern(constraint1, Eigen::Vector3d(1, 2, 3));
+
+    Eigen::Matrix3d A = Eigen::Matrix3d::Ones();
+    // Set each row of A to be zero.
+    for (int i = 0; i < 3; ++i) {
+      A.setOnes();
+      A.row(i).setZero();
+      LorentzConeConstraint constraint_i(A, b, eval_type);
+      CheckGradientSparsityPattern(constraint_i, Eigen::Vector3d(1, 2, 3));
+    }
+
+    // Set each column of A to be zero.
+    for (int i = 0; i < 3; ++i) {
+      A.setOnes();
+      A.col(i).setZero();
+      LorentzConeConstraint constraint_i(A, b, eval_type);
+      ASSERT_TRUE(constraint_i.gradient_sparsity_pattern().has_value());
+      CheckGradientSparsityPattern(constraint_i, Eigen::Vector3d(1, 2, 3));
+    }
+  }
+}
+
 GTEST_TEST(TestConstraint, LorentzConeConstraintIsThreadSafe) {
   Eigen::Matrix<double, 4, 2> A;
   // clang-format off
@@ -652,6 +715,36 @@ GTEST_TEST(testConstraint, testRotatedLorentzConeConstraint) {
   Eigen::Vector3d A4(1, 3, 2);
   Eigen::Vector3d b4 = Eigen::Vector3d(-1, -2, 1) - A4 * x4;
   TestRotatedLorentzConeEval(A4, b4, x4, false);
+}
+
+GTEST_TEST(testConstraint,
+           RotatedLorentzConeConstraintGradientSparsityPattern) {
+  RotatedLorentzConeConstraint constraint(Eigen::Matrix4d::Identity(),
+                                          Eigen::Vector4d(1, 2, 3, 4));
+  CheckGradientSparsityPattern(constraint, Eigen::Vector4d(4, 5, 6, 7));
+
+  Eigen::Matrix4d new_A = Eigen::Matrix4d::Identity();
+  new_A.row(0).setZero();
+  constraint.UpdateCoefficients(new_A, Eigen::Vector4d(1, 2, 3, 4));
+  CheckGradientSparsityPattern(constraint, Eigen::Vector4d(4, 5, 6, 7));
+
+  Eigen::Matrix4d A;
+  // Set each row of A to be zero.
+  for (int i = 0; i < 4; ++i) {
+    A.setOnes();
+    A.row(i).setZero();
+    RotatedLorentzConeConstraint constraint_i(A, Eigen::Vector4d(1, 2, 3, 4));
+    CheckGradientSparsityPattern(constraint_i, Eigen::Vector4d(4, 5, 6, 7));
+  }
+
+  // Set each column of A to be zero.
+  for (int i = 0; i < 4; ++i) {
+    A.setOnes();
+    A.col(i).setZero();
+    RotatedLorentzConeConstraint constraint_i(A, Eigen::Vector4d(1, 2, 3, 4));
+    ASSERT_TRUE(constraint_i.gradient_sparsity_pattern().has_value());
+    CheckGradientSparsityPattern(constraint_i, Eigen::Vector4d(4, 5, 6, 7));
+  }
 }
 
 GTEST_TEST(testConstraint, RotatedLorentzConeConstraintUpdateCoefficients) {

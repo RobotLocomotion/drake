@@ -118,11 +118,17 @@ class AffineBall final : public ConvexSet {
     CheckInvariants();
   }
 
+  /** Every AffineBall is bounded by construction.
+  @param parallelism Ignored -- no parallelization is used.
+  @note See @ref ConvexSet::IsBounded "parent class's documentation" for more
+  details. */
+  using ConvexSet::IsBounded;
+
  private:
   std::unique_ptr<ConvexSet> DoClone() const final;
 
   /* AffineBall can only represent bounded sets. */
-  std::optional<bool> DoIsBoundedShortcut() const final { return true; };
+  std::optional<bool> DoIsBoundedShortcut() const final;
 
   /* AffineBall can only represent nonempty sets. */
   bool DoIsEmpty() const final { return false; };

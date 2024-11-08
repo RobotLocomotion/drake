@@ -21,6 +21,7 @@ from pydrake.systems.primitives import ConstantVectorSource
 
 from pydrake.common import RandomGenerator
 from pydrake.common.schema import Rotation, Transform
+from pydrake.common.test_utilities.memory_test_util import actual_ref_count
 from pydrake.lcm import DrakeLcmParams
 from pydrake.geometry import Meshcat
 from pydrake.manipulation import ApplyDriverConfigs, IiwaDriver
@@ -96,6 +97,7 @@ def _report_sentinels(sentinels, message: str):
         finalizer = sentinel.finalizer
         print(f"sentinel alive? {finalizer.alive}")
         if finalizer.alive:
+            print(f"ref_count: {actual_ref_count(finalizer.peek()[0])}")
             o = finalizer.peek()[0]
             is_tracked = gc.is_tracked(o)
             print(f"is_tracked: {is_tracked}")

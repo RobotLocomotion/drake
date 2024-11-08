@@ -1,11 +1,6 @@
 #include "drake/bindings/pydrake/systems/lcm_py_bind_cpp_serializers.h"
 
 #include "drake/bindings/pydrake/systems/lcm_pybind.h"
-#include "drake/experimental_lcmt_deformable_tri.hpp"
-#include "drake/experimental_lcmt_deformable_tri_mesh_init.hpp"
-#include "drake/experimental_lcmt_deformable_tri_mesh_update.hpp"
-#include "drake/experimental_lcmt_deformable_tri_meshes_init.hpp"
-#include "drake/experimental_lcmt_deformable_tri_meshes_update.hpp"
 #include "drake/lcmt_acrobot_u.hpp"
 #include "drake/lcmt_acrobot_x.hpp"
 #include "drake/lcmt_acrobot_y.hpp"
@@ -59,14 +54,6 @@ namespace pylcm {
 
 void BindCppSerializers() {
   // N.B. These should be placed in the same order as the headers.
-  BindCppSerializer<drake::experimental_lcmt_deformable_tri>("drake");
-  BindCppSerializer<drake::experimental_lcmt_deformable_tri_mesh_init>("drake");
-  BindCppSerializer<drake::experimental_lcmt_deformable_tri_mesh_update>(
-      "drake");
-  BindCppSerializer<drake::experimental_lcmt_deformable_tri_meshes_init>(
-      "drake");
-  BindCppSerializer<drake::experimental_lcmt_deformable_tri_meshes_update>(
-      "drake");
   BindCppSerializer<drake::lcmt_acrobot_u>("drake");
   BindCppSerializer<drake::lcmt_acrobot_x>("drake");
   BindCppSerializer<drake::lcmt_acrobot_y>("drake");

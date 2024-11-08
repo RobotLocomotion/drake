@@ -977,6 +977,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("diffuse_color"),
             cls_doc.RegisterVisualGeometry
                 .doc_5args_body_X_BG_shape_name_diffuse_color)
+        .def("RegisterVisualGeometry",
+            py::overload_cast<const RigidBody<T>&,
+                std::unique_ptr<geometry::GeometryInstance>>(
+                &Class::RegisterVisualGeometry),
+            py::arg("body"), py::arg("geometry_instance"),
+            cls_doc.RegisterVisualGeometry.doc_2args_body_geometry_instance)
         .def("RegisterCollisionGeometry",
             py::overload_cast<const RigidBody<T>&,
                 const RigidTransform<double>&, const geometry::Shape&,
