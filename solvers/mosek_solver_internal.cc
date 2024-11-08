@@ -1569,6 +1569,8 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
         lorentz_cone_acc_indices,
     const std::unordered_map<Binding<RotatedLorentzConeConstraint>, MSKint64t>&
         rotated_lorentz_cone_acc_indices,
+    const std::unordered_map<Binding<LinearMatrixInequalityConstraint>,
+                             MSKint64t>& lmi_acc_indices,
     const std::unordered_map<Binding<ExponentialConeConstraint>, MSKint64t>&
         exp_cone_acc_indices,
     const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
@@ -1650,6 +1652,12 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
     rescode = SetAffineConeConstraintDualSolution(
         prog.rotated_lorentz_cone_constraints(), task_, which_sol,
         rotated_lorentz_cone_acc_indices, result);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = SetAffineConeConstraintDualSolution(
+        prog.linear_matrix_inequality_constraints(), task_, which_sol,
+        lmi_acc_indices, result);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }

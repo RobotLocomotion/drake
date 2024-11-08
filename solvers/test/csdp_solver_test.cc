@@ -368,7 +368,8 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
       SolverOptions solver_options;
       solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
                                static_cast<int>(method));
-      SolveEigenvalueProblem(solver, solver_options, 1E-6);
+      SolveEigenvalueProblem(solver, solver_options, 1E-6,
+                             /*check_dual=*/false);
     }
   }
 }
