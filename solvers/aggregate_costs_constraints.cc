@@ -681,7 +681,9 @@ void ParseExponentialConeConstraints(
 void ParsePositiveSemidefiniteConstraints(
     const MathematicalProgram& prog, bool upper_triangular,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
-    int* A_row_count, std::vector<int>* psd_cone_length) {
+    int* A_row_count, std::vector<int>* psd_cone_length,
+    std::vector<int>* lmi_cone_length, std::vector<int>* psd_y_start_indices,
+    std::vector<int>* lmi_y_start_indices) {
   DRAKE_ASSERT(ssize(*b) == *A_row_count);
   DRAKE_ASSERT(psd_cone_length != nullptr);
   // Make sure that each triplet in A_triplets has row no larger than
@@ -693,6 +695,9 @@ void ParsePositiveSemidefiniteConstraints(
     }
   }
   DRAKE_ASSERT(psd_cone_length->empty());
+  DRAKE_ASSERT(lmi_cone_length->empty());
+  DRAKE_ASSERT(psd_y_start_indices->empty());
+  DRAKE_ASSERT(lmi_y_start_indices->empty());
   const double sqrt2 = std::sqrt(2);
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
     psd_constraint.evaluator()->WarnOnSmallMatrixSize();
@@ -734,8 +739,9 @@ void ParsePositiveSemidefiniteConstraints(
         ++x_index_count;
       }
     }
-    (*A_row_count) += X_rows * (X_rows + 1) / 2;
     psd_cone_length->push_back(X_rows);
+    psd_y_start_indices->push_back(*A_row_count);
+    (*A_row_count) += X_rows * (X_rows + 1) / 2;
   }
   for (const auto& lmi_constraint :
        prog.linear_matrix_inequality_constraints()) {
@@ -796,8 +802,9 @@ void ParsePositiveSemidefiniteConstraints(
         ++A_cone_row_count;
       }
     }
+    lmi_cone_length->push_back(F_rows);
+    lmi_y_start_indices->push_back(*A_row_count);
     *A_row_count += F_rows * (F_rows + 1) / 2;
-    psd_cone_length->push_back(F_rows);
   }
 }
 
