@@ -61,6 +61,9 @@ void DefineSolversMosek(py::module m);
 /* Defines the NLOPT bindings. See solvers_py_nlopt.cc. */
 void DefineSolversNlopt(py::module m);
 
+/* Defines the SolverOptions bindings. See solvers_py_options.cc. */
+void DefineSolversOptions(py::module m);
+
 /* Defines the OSQP bindings. See solvers_py_osqp.cc. */
 void DefineSolversOsqp(py::module m);
 
