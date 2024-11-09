@@ -446,12 +446,23 @@ void ClarabelSolver::DoSolve2(const MathematicalProgram& prog,
     cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
   }
 
-  std::vector<int> psd_cone_length;
+  std::vector<std::optional<int>> psd_cone_length;
+  std::vector<std::optional<int>> lmi_cone_length;
+  std::vector<std::optional<int>> psd_y_start_indices;
+  std::vector<std::optional<int>> lmi_y_start_indices;
   internal::ParsePositiveSemidefiniteConstraints(
       prog, /* upper triangular = */ true, &A_triplets, &b, &A_row_count,
-      &psd_cone_length);
-  for (const int length : psd_cone_length) {
-    cones.push_back(clarabel::PSDTriangleConeT<double>(length));
+      &psd_cone_length, &lmi_cone_length, &psd_y_start_indices,
+      &lmi_y_start_indices);
+  for (const auto& length : psd_cone_length) {
+    if (length.has_value()) {
+      cones.push_back(clarabel::PSDTriangleConeT<double>(*length));
+    }
+  }
+  for (const auto& length : lmi_cone_length) {
+    if (length.has_value()) {
+      cones.push_back(clarabel::PSDTriangleConeT<double>(*length));
+    }
   }
 
   internal::ParseExponentialConeConstraints(prog, &A_triplets, &b,
@@ -497,10 +508,11 @@ void ClarabelSolver::DoSolve2(const MathematicalProgram& prog,
       Eigen::Map<Eigen::VectorXd>(solution.x.data(), prog.num_vars()));
 
   SetBoundingBoxDualSolution(prog, solution.z, bbcon_dual_indices, result);
-  internal::SetDualSolution(prog, solution.z, linear_constraint_dual_indices,
-                            linear_eq_y_start_indices,
-                            lorentz_cone_y_start_indices,
-                            rotated_lorentz_cone_y_start_indices, result);
+  internal::SetDualSolution(
+      prog, solution.z, linear_constraint_dual_indices,
+      linear_eq_y_start_indices, lorentz_cone_y_start_indices,
+      rotated_lorentz_cone_y_start_indices, psd_y_start_indices,
+      lmi_y_start_indices, /*upper_triangular_psd=*/true, result);
   if (solution.status == clarabel::SolverStatus::Solved ||
       solution.status == clarabel::SolverStatus::AlmostSolved) {
     solution_result = SolutionResult::kSolutionFound;

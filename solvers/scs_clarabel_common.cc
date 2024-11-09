@@ -5,6 +5,55 @@
 namespace drake {
 namespace solvers {
 namespace internal {
+namespace {
+// Return the index of S(i, j) in the flattened vector consisting of upper
+// triangular part os matrix S (using column major).
+int IndexInUpperTrianglePart(int i, int j) {
+  return (1 + j) * j / 2 + i;
+}
+
+// SCS and Clarabel takes the upper (or lower) triangular part of a symmetric
+// matrix, scale the off-diagonal term by sqrt(2), and then return the flattened
+// scaled triangular part as the dual. This function scales the off-diagonal
+// terms back. Also if upper_triangular_psd is true, we need to re-order `dual`
+// so that it stores the flattened lower triangular part (as
+// MathematicalProgram::GetDualSolution() returns the lower triangular part).
+void ScalePsdConeDualVariable(int matrix_rows, bool upper_triangular_psd,
+                              Eigen::VectorXd* dual) {
+  DRAKE_ASSERT(dual->rows() == matrix_rows * (matrix_rows + 1) / 2);
+  const double sqrt2 = std::sqrt(2);
+  int count = 0;
+  for (int j = 0; j < matrix_rows; ++j) {
+    for (int i = (upper_triangular_psd ? 0 : j);
+         i < (upper_triangular_psd ? j + 1 : matrix_rows); ++i) {
+      if (i != j) {
+        (*dual)(count) /= sqrt2;
+      }
+      count++;
+    }
+  }
+  if (upper_triangular_psd) {
+    // dual is the flattend upper triangular part. We need to re-order it to
+    // store the flatted lower triangular part.
+    Eigen::VectorXd dual_lower_triangular(dual->rows());
+    int lower_triangular_count = 0;
+    for (int j = 0; j < matrix_rows; ++j) {
+      for (int i = j; i < matrix_rows; ++i) {
+        // For a symmetric matrix S (the dual psd matrix), S(i, j) in the lower
+        // triangular part (with i >= j) is the same as S(j, i) in the upper
+        // triangular part, hence we compute the index of S(j, i) in the upper
+        // triangular flat vector.
+        dual_lower_triangular(lower_triangular_count++) =
+            (*dual)(IndexInUpperTrianglePart(j, i));
+      }
+    }
+    // Copy dual_lower_triangular to dual
+    for (int i = 0; i < dual->rows(); ++i) {
+      (*dual)(i) = dual_lower_triangular(i);
+    }
+  }
+}
+}  // namespace
 void SetDualSolution(
     const MathematicalProgram& prog,
     const Eigen::Ref<const Eigen::VectorXd>& dual,
@@ -13,7 +62,9 @@ void SetDualSolution(
     const std::vector<int>& linear_eq_y_start_indices,
     const std::vector<int>& lorentz_cone_y_start_indices,
     const std::vector<int>& rotated_lorentz_cone_y_start_indices,
-    MathematicalProgramResult* result) {
+    const std::vector<std::optional<int>>& psd_y_start_indices,
+    const std::vector<std::optional<int>>& lmi_y_start_indices,
+    bool upper_triangular_psd, MathematicalProgramResult* result) {
   for (int i = 0; i < ssize(prog.linear_constraints()); ++i) {
     Eigen::VectorXd lin_con_dual = Eigen::VectorXd::Zero(
         prog.linear_constraints()[i].evaluator()->num_constraints());
@@ -92,6 +143,29 @@ void SetDualSolution(
         (lorentz_cone_dual(0) - lorentz_cone_dual(1)) / 2;
     result->set_dual_solution(prog.rotated_lorentz_cone_constraints()[i],
                               rotated_lorentz_cone_dual);
+  }
+  for (int i = 0; i < ssize(prog.positive_semidefinite_constraints()); ++i) {
+    const int matrix_rows =
+        prog.positive_semidefinite_constraints()[i].evaluator()->matrix_rows();
+    if (psd_y_start_indices[i].has_value()) {
+      Eigen::VectorXd psd_dual = dual.segment(
+          *(psd_y_start_indices[i]), matrix_rows * (matrix_rows + 1) / 2);
+      ScalePsdConeDualVariable(matrix_rows, upper_triangular_psd, &psd_dual);
+      result->set_dual_solution(prog.positive_semidefinite_constraints()[i],
+                                psd_dual);
+    }
+  }
+  for (int i = 0; i < ssize(prog.linear_matrix_inequality_constraints()); ++i) {
+    const int matrix_rows = prog.linear_matrix_inequality_constraints()[i]
+                                .evaluator()
+                                ->matrix_rows();
+    if (lmi_y_start_indices[i].has_value()) {
+      Eigen::VectorXd lmi_dual = dual.segment(
+          *(lmi_y_start_indices[i]), matrix_rows * (matrix_rows + 1) / 2);
+      ScalePsdConeDualVariable(matrix_rows, upper_triangular_psd, &lmi_dual);
+      result->set_dual_solution(prog.linear_matrix_inequality_constraints()[i],
+                                lmi_dual);
+    }
   }
 }
 

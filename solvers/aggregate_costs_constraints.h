@@ -336,13 +336,33 @@ void ParseExponentialConeConstraints(
 // prog.linear_matrix_inequality_constraints() will be appended to b.
 // @param[in/out] A_row_count The number of rows in A before and after calling
 // this function.
-// @param[out] psd_cone_length The length of all the psd cones from
-// prog.positive_semidefinite_constraints() and
-// prog.linear_matrix_inequality_constraints().
+// @param[out] psd_cone_length psd_cone_length[i] is the length of the psd cones
+// from prog.positive_semidefinite_constraints()[i]. If this
+// PositiveSemidefiniteConstraint is not parsed as a psd cone constraint in the
+// solver (for example, it is parsed as a linear constraint or second order cone
+// constraint), then psd_cone_length[i] = std::nullopt.
+// @param[out] lmi_cone_length lmi_cone_length[i] is the length of the psd cones
+// from prog.linear_matrix_inequality_constraints()[i]. If this
+// LinearMatrixInequalityConstraint is not parsed as a psd cone constraint in
+// the solver (for example, it is parsed as a linear constraint or second order
+// cone constraint), then lmi_cone_length[i] = std::nullopt.
+// @param[out] psd_y_start_indices y[psd_y_start_indices[i]:
+// psd_y_start_indices[i] + psd_cone_length[i]] are the dual variable for
+// prog.positive_semidefinite_constraints()[i]. If
+// prog.positive_semidefinite_constraints()[i] is not parsed as a PSD cone
+// constraint in the solver, then psd_y_start_indices[i] is std::nullopt.
+// @param[out] lmi_y_start_indices y[lmi_y_start_indices[i]:
+// lmi_y_start_indices[i] + lmi_cone_length[i]] are the dual variable for
+// prog.linear_matrix_inequality_constraints()[i]. If
+// prog.linear_matrix_inequality_constraints()[i] is not parsed as a PSD cone
+// constraint in the solver, then lmi_y_start_indices[i] is std::nullopt.
 void ParsePositiveSemidefiniteConstraints(
     const MathematicalProgram& prog, bool upper_triangular,
     std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
-    int* A_row_count, std::vector<int>* psd_cone_length);
+    int* A_row_count, std::vector<std::optional<int>>* psd_cone_length,
+    std::vector<std::optional<int>>* lmi_cone_length,
+    std::vector<std::optional<int>>* psd_y_start_indices,
+    std::vector<std::optional<int>>* lmi_y_start_indices);
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
