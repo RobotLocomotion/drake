@@ -852,10 +852,19 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestPsd) {
     int A_row_count_old = 2;
     std::vector<double> b(A_row_count_old);
     int A_row_count = A_row_count_old;
-    std::vector<int> psd_cone_length;
-    ParsePositiveSemidefiniteConstraints(prog, upper_triangular, &A_triplets,
-                                         &b, &A_row_count, &psd_cone_length);
-    EXPECT_EQ(psd_cone_length, std::vector<int>({3, 2}));
+    std::vector<std::optional<int>> psd_cone_length;
+    std::vector<std::optional<int>> lmi_cone_length;
+    std::vector<std::optional<int>> psd_y_start_indices;
+    std::vector<std::optional<int>> lmi_y_start_indices;
+    ParsePositiveSemidefiniteConstraints(
+        prog, upper_triangular, &A_triplets, &b, &A_row_count, &psd_cone_length,
+        &lmi_cone_length, &psd_y_start_indices, &lmi_y_start_indices);
+    EXPECT_EQ(psd_cone_length, std::vector<std::optional<int>>({3, 2}));
+    EXPECT_TRUE(lmi_cone_length.empty());
+    EXPECT_EQ(psd_y_start_indices,
+              std::vector<std::optional<int>>(
+                  {A_row_count_old, A_row_count_old + 3 * (3 + 1) / 2}));
+    EXPECT_TRUE(lmi_y_start_indices.empty());
     // We add 3 * (3+1) / 2 = 6 rows in A for "X is psd", and 2 * (2+1) / 2 = 3
     // rows in A for "Y is psd".
     EXPECT_EQ(A_row_count, A_row_count_old + 3 * (3 + 1) / 2 + 2 * (2 + 1) / 2);
@@ -969,11 +978,19 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestLmi) {
     const int A_row_count_old = 2;
     std::vector<double> b(A_row_count_old, 0);
     int A_row_count = A_row_count_old;
-    std::vector<int> psd_cone_length;
-    ParsePositiveSemidefiniteConstraints(prog, upper_triangular, &A_triplets,
-                                         &b, &A_row_count, &psd_cone_length);
+    std::vector<std::optional<int>> psd_cone_length;
+    std::vector<std::optional<int>> lmi_cone_length;
+    std::vector<std::optional<int>> psd_y_start_indices;
+    std::vector<std::optional<int>> lmi_y_start_indices;
+    ParsePositiveSemidefiniteConstraints(
+        prog, upper_triangular, &A_triplets, &b, &A_row_count, &psd_cone_length,
+        &lmi_cone_length, &psd_y_start_indices, &lmi_y_start_indices);
     EXPECT_EQ(A_row_count, A_row_count_old + 3 * (3 + 1) / 2);
-    EXPECT_EQ(psd_cone_length, std::vector<int>({3}));
+    EXPECT_TRUE(psd_cone_length.empty());
+    EXPECT_EQ(lmi_cone_length, std::vector<std::optional<int>>({3}));
+    EXPECT_TRUE(psd_y_start_indices.empty());
+    EXPECT_EQ(lmi_y_start_indices,
+              std::vector<std::optional<int>>({A_row_count_old}));
     Eigen::SparseMatrix<double> A(A_row_count_old + 6, prog.num_vars());
     A.setFromTriplets(A_triplets.begin(), A_triplets.end());
     Eigen::MatrixXd A_expected(A_row_count_old + 6, prog.num_vars());
