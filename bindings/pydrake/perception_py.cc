@@ -129,6 +129,7 @@ void init_perception(py::module m) {
             py::arg("num_closest"), py::arg("parallelize") = false,
             py::call_guard<py::gil_scoped_release>(),
             cls_doc.EstimateNormals.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   AddValueInstantiation<PointCloud>(m);
