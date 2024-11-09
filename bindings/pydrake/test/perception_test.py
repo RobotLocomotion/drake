@@ -7,7 +7,7 @@ import numpy as np
 
 from pydrake.common.value import AbstractValue, Value
 from pydrake.systems.sensors import CameraInfo, PixelType
-from pydrake.systems.framework import InputPort, OutputPort
+from pydrake.systems.framework import InputPort, LeafSystem, OutputPort
 
 
 class TestPerception(unittest.TestCase):
@@ -145,3 +145,48 @@ class TestPerception(unittest.TestCase):
         dut = mut.PointCloudToLcm(frame_name="world")
         dut.get_input_port()
         dut.get_output_port()
+
+
+class HoldAndConcatPointCloudVectors(LeafSystem):
+    """A test system that operates on list[PointCloud].
+    x[n+1] = u1[n]
+    y[n] = u0[n] + x[n]
+    """
+
+    def __init__(self):
+        LeafSystem.__init__(self)
+        self.DeclareAbstractInputPort("u0", Value(list()))
+        self.DeclareAbstractInputPort("u1", Value(list()))
+
+        self.DeclareAbstractState(Value(list()))
+        self.DeclareForcedUnrestrictedUpdateEvent(self._update)
+
+        self.DeclareAbstractOutputPort("y", lambda: Value(list()), self._calc)
+
+    def _update(self, context, state):
+        u1 = self.GetInputPort("u1").Eval(context)
+        state.get_mutable_abstract_state().get_mutable_value(0).set_value(u1)
+
+    def _calc(self, context, output):
+        u0 = self.GetInputPort("u0").Eval(context)
+        x = context.get_abstract_state(0).get_value()
+        output.set_value(u0 + x)
+
+
+# https://stackoverflow.com/questions/79142422
+class Test79142422(unittest.TestCase):
+    def test_79142422(self):
+        PC = mut.PointCloud
+
+        dut = HoldAndConcatPointCloudVectors()
+        u0_port = dut.GetInputPort("u0")
+        u1_port = dut.GetInputPort("u1")
+        y_port = dut.GetOutputPort("y")
+
+        context = dut.CreateDefaultContext()
+        u0_port.FixValue(context, [PC(), PC()])
+        u1_port.FixValue(context, [PC(), PC(), PC()])
+        dut.CalcForcedUnrestrictedUpdate(context, context.get_mutable_state())
+
+        y = y_port.Eval(context)
+        self.assertEqual(len(y), 5)
