@@ -1291,47 +1291,47 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(
             len({ScsSolver().solver_id(), OsqpSolver().solver_id()}), 2)
 
+    def test_mathematical_program_solver_options(self):
+        # To cover all of the bindings, we'll check the program's set and get
+        # methods variously using either SolverId or SolverType.
+        for solver in [GurobiSolver().solver_id(), SolverType.kGurobi]:
+            prog = mp.MathematicalProgram()
+            prog.SetSolverOption(solver, "foxtrot", 1.0)
+            prog.SetSolverOption(solver, "india", 2)
+            prog.SetSolverOption(solver, "sierra", "3")
+            expected = {"foxtrot": 1.0, "india": 2, "sierra": "3"}
+            self.assertDictEqual(prog.GetSolverOptions(solver), expected)
+            old_options = prog.solver_options()
+            new_options = copy.deepcopy(old_options)
+            new_options.SetOption(GurobiSolver().solver_id(), "india", 4)
+            prog.SetSolverOptions(new_options)
+            expected["india"] = 4
+            self.assertDictEqual(prog.GetSolverOptions(solver), expected)
+
     def test_solver_options(self):
-        prog = mp.MathematicalProgram()
-
-        prog.SetSolverOption(SolverType.kGurobi, "double_key", 1.0)
-        prog.SetSolverOption(GurobiSolver().solver_id(), "int_key", 2)
-        prog.SetSolverOption(SolverType.kGurobi, "string_key", "3")
-
-        options = prog.GetSolverOptions(SolverType.kGurobi)
-        self.assertDictEqual(
-            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
-        options = prog.GetSolverOptions(GurobiSolver().solver_id())
-        self.assertDictEqual(
-            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
-
-        # For now, just make sure the constructor exists.  Once we bind more
-        # accessors, we can test them here.
-        options_object = SolverOptions()
+        CSO = mp.CommonSolverOption
+        dut = SolverOptions()
         solver_id = SolverId("dummy")
-        self.assertEqual(solver_id.name(), "dummy")
-        options_object.SetOption(solver_id, "double_key", 1.0)
-        options_object.SetOption(solver_id, "int_key", 2)
-        options_object.SetOption(solver_id, "string_key", "3")
-        options_object.SetOption(mp.CommonSolverOption.kPrintToConsole, 1)
-        options_object.SetOption(
-            mp.CommonSolverOption.kPrintFileName, "foo.txt")
-        options_object.SetOption(
-            mp.CommonSolverOption.kStandaloneReproductionFileName,
-            "reproduction.py")
-        options = options_object.GetOptions(solver_id)
-        self.assertDictEqual(
-            options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
-        self.assertEqual(options_object.get_print_to_console(), True)
-        self.assertEqual(options_object.get_print_file_name(), "foo.txt")
-        self.assertEqual(
-            options_object.get_standalone_reproduction_file_name(),
-            "reproduction.py")
-
-        prog.SetSolverOptions(options_object)
-        prog_options = prog.GetSolverOptions(solver_id)
-        self.assertDictEqual(
-            prog_options, {"double_key": 1.0, "int_key": 2, "string_key": "3"})
+        dut.SetOption(solver_id, "float_key", 1.0)
+        dut.SetOption(solver_id, "int_key", 2)
+        dut.SetOption(solver_id, "str_key", "3")
+        dut.SetOption(CSO.kPrintToConsole, True)
+        dut.SetOption(CSO.kPrintFileName, "print.log")
+        dut.SetOption(CSO.kStandaloneReproductionFileName, "repro.txt")
+        dut.SetOption(CSO.kMaxThreads, 4)
+        self.assertDictEqual(dut.GetOptions(solver_id),
+                             {"float_key": 1.0, "int_key": 2, "str_key": "3"})
+        self.assertEqual(dut.common_solver_options(),
+                         {CSO.kPrintToConsole: True,
+                          CSO.kPrintFileName: "print.log",
+                          CSO.kStandaloneReproductionFileName: "repro.txt",
+                          CSO.kMaxThreads: 4})
+        self.assertEqual(dut.get_print_to_console(), True)
+        self.assertEqual(dut.get_print_file_name(), "print.log")
+        self.assertEqual(dut.get_standalone_reproduction_file_name(),
+                         "repro.txt")
+        self.assertEqual(dut.get_max_threads(), 4)
+        copy.deepcopy(dut)
 
     def test_infeasible_constraints(self):
         prog = mp.MathematicalProgram()

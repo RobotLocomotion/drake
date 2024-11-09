@@ -1343,6 +1343,9 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.SetSolverOption.doc_string_option)
       .def("SetSolverOptions", &MathematicalProgram::SetSolverOptions,
           doc.MathematicalProgram.SetSolverOptions.doc)
+      .def("solver_options", &MathematicalProgram::solver_options,
+          py_rvp::reference_internal,
+          doc.MathematicalProgram.solver_options.doc)
       // TODO(m-chaturvedi) Add Pybind11 documentation.
       .def("GetSolverOptions",
           [](MathematicalProgram& prog, SolverId solver_id) {
