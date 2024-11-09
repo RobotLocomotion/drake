@@ -2,6 +2,7 @@
 
 #include <ostream>
 
+#include <fmt/args.h>
 #include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
@@ -76,6 +77,29 @@ GTEST_TEST(FmtTest, FloatingPoint) {
   EXPECT_EQ(fmt_floating_point(1.11f), "1.11");
   EXPECT_EQ(fmt_floating_point(1.1f), "1.1");
   EXPECT_EQ(fmt_floating_point(1.0f), "1.0");
+}
+
+GTEST_TEST(FmtTest, DebugString) {
+  // We'll use these named fmt args to help make our expected values clear.
+  fmt::dynamic_format_arg_store<fmt::format_context> args;
+  args.push_back(fmt::arg("bs", '\\'));  // backslash
+  args.push_back(fmt::arg("dq", '"'));   // double quote
+
+  // Plain string.
+  EXPECT_EQ(fmt_debug_string("Hello, world!"),
+            fmt::vformat("{dq}Hello, world!{dq}", args));
+
+  // Custom escape sequences.
+  EXPECT_EQ(fmt_debug_string("aa\nbb\rcc\tdd"),
+            fmt::vformat("{dq}aa{bs}nbb{bs}rcc{bs}tdd{dq}", args));
+
+  // Printable characters that require escaping.
+  EXPECT_EQ(fmt_debug_string("aa\"bb'cc\\dd"),
+            fmt::vformat("{dq}aa{bs}{dq}bb{bs}'cc{bs}{bs}dd{dq}", args));
+
+  // Non-printable characters.
+  EXPECT_EQ(fmt_debug_string("aa\x0e!\x7f_"),
+            fmt::vformat("{dq}aa{bs}x0e!{bs}x7f_{dq}", args));
 }
 
 }  // namespace

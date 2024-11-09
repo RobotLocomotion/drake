@@ -41,6 +41,14 @@ std::string fmt_floating_point(T x) {
   return result;
 }
 
+
+/** Returns `fmt::("{:?s}", x)`, i.e, using fmt's "debug string format"; see
+the fmt.dev docs for the '?' presentation type for details. We provide this
+wrapper because not all of our supported platforms have a new-enough fmt
+to rely on it. On platforms with older fmt, we use a Drake re-implementation
+of the feature that does NOT handle unicode correctly. */
+std::string fmt_debug_string(std::string_view x);
+
 namespace internal::formatter_as {
 
 /* The DRAKE_FORMATTER_AS macro specializes this for it's format_as types.
