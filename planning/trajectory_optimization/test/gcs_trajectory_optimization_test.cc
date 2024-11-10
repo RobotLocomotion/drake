@@ -2674,10 +2674,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
       Expression(middle.edge_constituent_vertex_durations().second);
   Formula bad_formula_1 = bad_expression_1 == Expression(0.0);
   Formula bad_formula_2 = bad_expression_2 == Expression(0.0);
-  EXPECT_THROW(middle.AddVertexCost(bad_expression_1), std::exception);
-  EXPECT_THROW(middle.AddVertexCost(bad_expression_2), std::exception);
-  EXPECT_THROW(middle.AddVertexConstraint(bad_formula_1), std::exception);
-  EXPECT_THROW(middle.AddVertexConstraint(bad_formula_2), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_1),
+                              ".*IsSubsetOf\\(Variables\\(placeholder_x_.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_2),
+                              ".*IsSubsetOf\\(Variables\\(placeholder_x_.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_1),
+                              ".*IsSubsetOf\\(Variables\\(placeholder_x_.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_2),
+                              ".*IsSubsetOf\\(Variables\\(placeholder_x_.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
@@ -2774,10 +2778,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
   Expression bad_expression_2 = Expression(middle.vertex_duration());
   Formula bad_formula_1 = bad_expression_1 == Expression(0.0);
   Formula bad_formula_2 = bad_expression_2 == Expression(0.0);
-  EXPECT_THROW(middle.AddEdgeCost(bad_expression_1), std::exception);
-  EXPECT_THROW(middle.AddEdgeCost(bad_expression_2), std::exception);
-  EXPECT_THROW(middle.AddEdgeConstraint(bad_formula_1), std::exception);
-  EXPECT_THROW(middle.AddEdgeConstraint(bad_formula_2), std::exception);
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(bad_expression_1),
+                              ".*IsSubsetOf\\(allowed_vars_\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(bad_expression_2),
+                              ".*IsSubsetOf\\(allowed_vars_\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeConstraint(bad_formula_1),
+                              ".*IsSubsetOf\\(allowed_vars_\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeConstraint(bad_formula_2),
+                              ".*IsSubsetOf\\(allowed_vars_\\).*");
 }
 
 }  // namespace

@@ -328,6 +328,9 @@ class GcsTrajectoryOptimization final {
     variable (obtained from vertex_time()). This enables greater modeling
     freedom, but we cannot guarantee a feasible solution for all possible costs.
 
+    @throws std::exception if any variables besides those from @ref
+    vertex_duration and @ref vertex_control_points are used.
+
     Costs which do not support the perspective operation cannot be used with
     Transcription::kMIP or Transcription::kRelaxation. Consider providing an
     appropriate "convex surrogate" that is supported within GraphOfConvexSets,
@@ -349,6 +352,9 @@ class GcsTrajectoryOptimization final {
     time scaling variable (obtained from vertex_time()). This enables greater
     modeling freedom, but we cannot guarantee a feasible solution for all
     possible costs.
+
+    @throws std::exception if any variables besides those from @ref
+    vertex_duration and @ref vertex_control_points are used.
 
     Constraints which do not support the perspective operation cannot be used
     with Transcription::kMIP or Transcription::kRelaxation. Consider providing
@@ -372,6 +378,10 @@ class GcsTrajectoryOptimization final {
     scaling variables (obtained from edge_time()). This enables greater modeling
     freedom, but we cannot guarantee a feasible solution for all possible costs.
 
+    @throws std::exception if any variables besides those from @ref
+    edge_constituent_vertex_durations and @ref
+    edge_constituent_vertex_control_points are used.
+
     Costs which do not support the perspective operation cannot be used with
     Transcription::kMIP or Transcription::kRelaxation. Consider providing an
     appropriate "convex surrogate" that is supported within GraphOfConvexSets,
@@ -393,6 +403,10 @@ class GcsTrajectoryOptimization final {
     time scaling variables (obtained from edge_time()). This enables greater
     modeling freedom, but we cannot guarantee a feasible solution for all
     possible costs.
+
+    @throws std::exception if any variables besides those from @ref
+    edge_constituent_vertex_durations and @ref
+    edge_constituent_vertex_control_points are used.
 
     Constraints which do not support the perspective operation cannot be used
     with Transcription::kMIP or Transcription::kRelaxation. Consider providing
