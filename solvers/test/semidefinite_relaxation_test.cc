@@ -263,10 +263,12 @@ TEST_F(MakeSemidefiniteRelaxationTest, VerifyLinearCostsAndConstraintsCloned) {
   EXPECT_EQ(indices.size(), y_.size());
 }
 
-TEST_F(MakeSemidefiniteRelaxationTest, LinearizeQuadraticCostsAndConstraints) {
+TEST_F(MakeSemidefiniteRelaxationTest,
+       LinearizeQuadraticCostsAndConstraintsPreserveFalse) {
   SemidefiniteRelaxationOptions options;
   // Don't add any implied constraints.
   options.set_to_weakest();
+  options.preserve_convex_quadratic_constraints = false;
   auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
 
   // The semidefinite program is initialized.
@@ -289,6 +291,42 @@ TEST_F(MakeSemidefiniteRelaxationTest, LinearizeQuadraticCostsAndConstraints) {
   // One extra constraint from "one" equals 1 and the semidefinite constraint.
   EXPECT_EQ(relaxation->GetAllConstraints().size(),
             prog_.GetAllConstraints().size() + 1 + 1);
+}
+
+TEST_F(MakeSemidefiniteRelaxationTest,
+       LinearizeQuadraticCostsAndConstraintsPreserveTrue) {
+  SemidefiniteRelaxationOptions options;
+  options.set_to_weakest();
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  options.preserve_convex_quadratic_constraints = true;
+#pragma GCC diagnostic pop
+  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
+
+  // The semidefinite program is initialized.
+  EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
+
+  // All the quadratic costs are linearized.
+  EXPECT_EQ(relaxation->quadratic_costs().size(), 0);
+  EXPECT_EQ(relaxation->linear_costs().size(),
+            prog_.linear_costs().size() + prog_.quadratic_costs().size());
+
+  // All the quadratic constraints are linearized.
+  EXPECT_EQ(relaxation->quadratic_constraints().size(), 0);
+  EXPECT_EQ(
+      relaxation->linear_constraints().size(),
+      prog_.linear_constraints().size() + prog_.quadratic_constraints().size());
+
+  // The convex quadratic should NOT be rewritten as a lorentz cone constraint
+  // (given that the SemidefiniteRelaxationOptions attribute
+  // `preserve_convex_quadratic_constraints` will soon be deprecated.
+  EXPECT_EQ(relaxation->rotated_lorentz_cone_constraints().size(), 0);
+
+  // One extra constraint from "one" equals 1, one from the semidefinite
+  // constraint, one from preserving the convex quadratic.
+  EXPECT_EQ(relaxation->GetAllConstraints().size(),
+            prog_.GetAllConstraints().size() + 1 + 1 + 1);
 }
 
 TEST_F(MakeSemidefiniteRelaxationTest, AddImpliedLinearConstraint) {

@@ -16,7 +16,11 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
     const auto& cls_doc = doc.SemidefiniteRelaxationOptions;
     py::class_<SemidefiniteRelaxationOptions> options(
         m, "SemidefiniteRelaxationOptions", cls_doc.doc);
-    options.def(ParamInit<SemidefiniteRelaxationOptions>())
+    options
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        .def(ParamInit<SemidefiniteRelaxationOptions>())
+#pragma GCC diagnostic pop
         .def_readwrite("add_implied_linear_equality_constraints",
             &SemidefiniteRelaxationOptions::
                 add_implied_linear_equality_constraints,
@@ -24,15 +28,20 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
         .def_readwrite("add_implied_linear_constraints",
             &SemidefiniteRelaxationOptions::add_implied_linear_constraints,
             cls_doc.add_implied_linear_constraints.doc)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         .def_readwrite("preserve_convex_quadratic_constraints",
             &SemidefiniteRelaxationOptions::
                 preserve_convex_quadratic_constraints,
-            cls_doc.preserve_convex_quadratic_constraints.doc)
+            cls_doc.preserve_convex_quadratic_constraints.doc_deprecated)
+#pragma GCC diagnostic pop
         .def("set_to_strongest",
             &SemidefiniteRelaxationOptions::set_to_strongest,
             cls_doc.set_to_strongest.doc)
         .def("set_to_weakest", &SemidefiniteRelaxationOptions::set_to_weakest,
             cls_doc.set_to_weakest.doc)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         .def("__repr__", [](const SemidefiniteRelaxationOptions& self) {
           return py::str(
               "SemidefiniteRelaxationOptions("
@@ -43,13 +52,18 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
                   self.add_implied_linear_constraints,
                   self.preserve_convex_quadratic_constraints);
         });
+#pragma GCC diagnostic pop
   }
 
   m.def("MakeSemidefiniteRelaxation",
       py::overload_cast<const MathematicalProgram&,
           const SemidefiniteRelaxationOptions&>(
           &solvers::MakeSemidefiniteRelaxation),
-      py::arg("prog"), py::arg("options") = SemidefiniteRelaxationOptions(),
+      py::arg("prog"),
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      py::arg("options") = SemidefiniteRelaxationOptions(),
+#pragma GCC diagnostic pop
       doc.MakeSemidefiniteRelaxation.doc_2args);
   m.def("MakeSemidefiniteRelaxation",
       py::overload_cast<const MathematicalProgram&,
@@ -57,7 +71,10 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
           const SemidefiniteRelaxationOptions&>(
           &solvers::MakeSemidefiniteRelaxation),
       py::arg("prog"), py::arg("variable_groups"),
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       py::arg("options") = SemidefiniteRelaxationOptions(),
+#pragma GCC diagnostic pop
       doc.MakeSemidefiniteRelaxation.doc_3args);
 }
 
