@@ -37,9 +37,10 @@ struct SemidefiniteRelaxationOptions {
    * quadratic constraints unnecessary.
    * */
   DRAKE_DEPRECATED("2025-04-01",
-                   "Preserving convex quadratic constraints is looser than "
-                   "adding their linearized counterparts, and this "
-                   "functionality will therefore be removed.")
+                   "The convex quadratics constraints are already implied by a "
+                   "linear constraint that is always added to the semidefinite "
+                   "relaxation. Therefore, this flag has no effect on the "
+                   "solution to the overall program and so will be removed.")
   bool preserve_convex_quadratic_constraints = false;
 
   /** Configure the semidefinite relaxation options to provide the strongest
