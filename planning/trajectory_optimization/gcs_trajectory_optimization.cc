@@ -804,7 +804,7 @@ T SubstituteAllVariables(
       new_scalar_variables, new_vector_variables, new_matrix_variables);
   DRAKE_DEMAND(old_variables.size() == new_variables.size());
 
-  e_vars = e.GetFreeVariables();
+  symbolic::Variables e_vars = e.GetFreeVariables();
   for (int i = 0; i < ssize(old_variables); ++i) {
     if (e_vars.include(old_variables[i])) {
       e = e.Substitute(old_variables[i], new_variables[i]);
@@ -813,11 +813,35 @@ T SubstituteAllVariables(
   return e;
 }
 
+template <typename T>
+void ThrowIfContainsVariables(const T& e, const std::vector<Variable>& vars,
+                              const std::string& error_message) {
+  symbolic::Variables e_vars = e.GetFreeVariables();
+  for (const auto& var : vars) {
+    if (e_vars.include(var)) {
+      throw(std::runtime_error(error_message));
+    }
+  }
+}
+
 }  // namespace
 
 template <typename T>
 T Subgraph::SubstituteVertexPlaceholderVariables(T e,
                                                  const Vertex& vertex) const {
+  // Check that a user hasn't used the edge placeholder variables.
+  const std::string error_message =
+      "Edge placeholder variables cannot be used to add vertex costs or "
+      "constraints.";
+  ThrowIfContainsVariables(
+      e,
+      FlattenVariables({placeholder_edge_durations_var_.first,
+                        placeholder_edge_durations_var_.second},
+                       {},
+                       {placeholder_edge_control_points_var_.first,
+                        placeholder_edge_control_points_var_.second}),
+      error_message);
+
   return SubstituteAllVariables(
       e, {placeholder_vertex_duration_var_}, {GetTimeScaling(vertex)}, {}, {},
       {placeholder_vertex_control_points_var_}, {GetControlPoints(vertex)});
@@ -825,6 +849,16 @@ T Subgraph::SubstituteVertexPlaceholderVariables(T e,
 
 template <typename T>
 T Subgraph::SubstituteEdgePlaceholderVariables(T e, const Edge& edge) const {
+  // Check that a user hasn't used the vertex placeholder variables.
+  const std::string error_message =
+      "Vertex placeholder variables cannot be used to add edge costs or "
+      "constraints.";
+  ThrowIfContainsVariables(
+      e,
+      FlattenVariables({placeholder_vertex_duration_var_}, {},
+                       {placeholder_vertex_control_points_var_}),
+      error_message);
+
   const Vertex& v1 = edge.u();
   const Vertex& v2 = edge.v();
 

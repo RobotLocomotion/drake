@@ -2668,20 +2668,27 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
 
   // Check that passing in a expression using an edge duration or control point
   // throws.
+  symbolic::Variable extra_var;
   Expression bad_expression_1 =
       Expression((middle.edge_constituent_vertex_control_points().first)(0, 0));
   Expression bad_expression_2 =
       Expression(middle.edge_constituent_vertex_durations().second);
+  Expression bad_expression_3 = Expression(extra_var);
   Formula bad_formula_1 = bad_expression_1 == Expression(0.0);
   Formula bad_formula_2 = bad_expression_2 == Expression(0.0);
+  Formula bad_formula_3 = bad_expression_3 == Expression(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_1),
-                              ".*IsSubsetOf\\(Variables\\(placeholder_x_.*");
+                              ".*Edge placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_2),
-                              ".*IsSubsetOf\\(Variables\\(placeholder_x_.*");
+                              ".*Edge placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_3),
+                              ".*.IsSubsetOf\\(Variables\\(placeholder_x_.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_1),
-                              ".*IsSubsetOf\\(Variables\\(placeholder_x_.*");
+                              ".*Edge placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_2),
-                              ".*IsSubsetOf\\(Variables\\(placeholder_x_.*");
+                              ".*Edge placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_3),
+                              ".*.IsSubsetOf\\(Variables\\(placeholder_x_.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
@@ -2773,18 +2780,29 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
 
   // Check that passing in a expression using a vertex duration or control point
   // throws.
+  symbolic::Variable extra_var;
   Expression bad_expression_1 =
       Expression(middle.vertex_control_points()(0, 0));
   Expression bad_expression_2 = Expression(middle.vertex_duration());
+  Expression bad_expression_3 = Expression(extra_var);
   Formula bad_formula_1 = bad_expression_1 == Expression(0.0);
   Formula bad_formula_2 = bad_expression_2 == Expression(0.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(bad_expression_1),
+  Formula bad_formula_3 = bad_expression_3 == Expression(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeCost(bad_expression_1),
+      ".*Vertex placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeCost(bad_expression_2),
+      ".*Vertex placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(bad_expression_3),
                               ".*IsSubsetOf\\(allowed_vars_\\).*");
-  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(bad_expression_2),
-                              ".*IsSubsetOf\\(allowed_vars_\\).*");
-  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeConstraint(bad_formula_1),
-                              ".*IsSubsetOf\\(allowed_vars_\\).*");
-  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeConstraint(bad_formula_2),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeConstraint(bad_formula_1),
+      ".*Vertex placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeConstraint(bad_formula_2),
+      ".*Vertex placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeConstraint(bad_formula_3),
                               ".*IsSubsetOf\\(allowed_vars_\\).*");
 }
 
