@@ -1,11 +1,6 @@
 # This is a list of all *.lcm files in this folder.
 # Our BUILD.bazel rules cross-check that it remains up-to-date.
 ALL_LCM_SRCS = [
-    "experimental_lcmt_deformable_tri.lcm",
-    "experimental_lcmt_deformable_tri_mesh_init.lcm",
-    "experimental_lcmt_deformable_tri_mesh_update.lcm",
-    "experimental_lcmt_deformable_tri_meshes_init.lcm",
-    "experimental_lcmt_deformable_tri_meshes_update.lcm",
     "lcmt_acrobot_u.lcm",
     "lcmt_acrobot_x.lcm",
     "lcmt_acrobot_y.lcm",

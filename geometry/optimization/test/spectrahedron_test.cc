@@ -64,8 +64,13 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
 
   Spectrahedron spect(prog);
   EXPECT_EQ(spect.ambient_dimension(), 3 * (3 + 1) / 2);
-  EXPECT_TRUE(spect.IsBounded());
   EXPECT_FALSE(spect.IsEmpty());
+
+  // Cross-check that our BUILD file allows parallelism.
+  DRAKE_DEMAND(Parallelism::Max().num_threads() > 1);
+
+  EXPECT_TRUE(spect.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(spect.IsBounded(Parallelism::Max()));
 
   const double kTol{1e-6};
   EXPECT_TRUE(spect.PointInSet(x_star, kTol));
@@ -327,31 +332,36 @@ GTEST_TEST(SpectrahedronTest, UnboundedTest) {
   auto X1 = prog.NewSymmetricContinuousVariables<2>();
   prog.AddPositiveSemidefiniteConstraint(X1);
   Spectrahedron spect(prog);
-  EXPECT_FALSE(spect.IsBounded());
+  EXPECT_FALSE(spect.IsBounded(Parallelism::None()));
+  EXPECT_FALSE(spect.IsBounded(Parallelism::Max()));
 
   // Construct an unbounded but constrained SDP, and check that IsBounded
   // notices.
   prog.AddLinearConstraint(X1(0, 0) >= 0);
   Spectrahedron spect2(prog);
-  EXPECT_FALSE(spect2.IsBounded());
+  EXPECT_FALSE(spect2.IsBounded(Parallelism::None()));
+  EXPECT_FALSE(spect2.IsBounded(Parallelism::Max()));
 
   // Add more constraints that keep the program unbounded
   prog.AddLinearConstraint(X1(0, 0) == X1(1, 1));
   prog.AddLinearConstraint(X1(0, 1) >= 1);
   Spectrahedron spect3(prog);
-  EXPECT_FALSE(spect3.IsBounded());
+  EXPECT_FALSE(spect3.IsBounded(Parallelism::None()));
+  EXPECT_FALSE(spect3.IsBounded(Parallelism::Max()));
 
   // Add a constraint that makes the program bounded
   prog.AddLinearConstraint(X1(0, 0) + X1(0, 1) + X1(1, 1) <= 43);
   Spectrahedron spect4(prog);
-  EXPECT_TRUE(spect4.IsBounded());
+  EXPECT_TRUE(spect4.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(spect4.IsBounded(Parallelism::Max()));
 
   // Add a constraint that makes the program infeasible (the empty
   // set is bounded)
   prog.AddLinearConstraint(X1(0, 0) >= 50);
   Spectrahedron spect5(prog);
   EXPECT_TRUE(spect5.IsEmpty());
-  EXPECT_TRUE(spect5.IsBounded());
+  EXPECT_TRUE(spect5.IsBounded(Parallelism::None()));
+  EXPECT_TRUE(spect5.IsBounded(Parallelism::Max()));
 }
 
 }  // namespace

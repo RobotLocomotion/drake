@@ -63,6 +63,22 @@
    ...
    obj:*/libmosek64.so.10.0
 }
+{
+   MOSEK possible leak #3
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:memalign
+   ...
+   fun:MSK_optimize
+}
+{
+   MOSEK possible leak #4
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   ...
+   fun:allocate_stack
+}
 
 # Started happening when Gurobi got updated to 7.0.2. PR 6332.
 {

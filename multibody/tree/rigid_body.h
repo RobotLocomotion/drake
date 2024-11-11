@@ -293,7 +293,7 @@ class RigidBody : public MultibodyElement<T> {
   /// @see MultibodyPlant::Finalize()
   bool is_floating() const {
     ThrowIfNotFinalized(__func__);
-    return topology_.is_floating;
+    return topology_.is_floating_base;
   }
 
   /// (Advanced) If `true`, this body's generalized position coordinates q

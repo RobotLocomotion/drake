@@ -82,8 +82,14 @@ std::unique_ptr<ConvexSet> ConvexHull::DoClone() const {
   return std::make_unique<ConvexHull>(*this);
 }
 
-std::optional<bool> ConvexHull::DoIsBoundedShortcut() const {
-  return std::nullopt;
+std::optional<bool> ConvexHull::DoIsBoundedShortcutParallel(
+    Parallelism parallelism) const {
+  for (const auto& s : sets_) {
+    if (!s->IsBounded(parallelism)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool ConvexHull::DoIsEmpty() const {

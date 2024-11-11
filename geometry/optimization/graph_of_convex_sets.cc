@@ -557,6 +557,14 @@ std::vector<const Vertex*> GraphOfConvexSets::Vertices() const {
   return vertices;
 }
 
+bool GraphOfConvexSets::IsValid(const Vertex& v) const {
+  if (vertices_.contains(v.id())) {
+    DRAKE_DEMAND(vertices_.at(v.id()).get() == &v);
+    return true;
+  }
+  return false;
+}
+
 std::vector<Edge*> GraphOfConvexSets::Edges() {
   std::vector<Edge*> edges;
   edges.reserve(edges_.size());
@@ -574,6 +582,15 @@ std::vector<const Edge*> GraphOfConvexSets::Edges() const {
   }
   return edges;
 }
+
+bool GraphOfConvexSets::IsValid(const Edge& e) const {
+  if (edges_.contains(e.id())) {
+    DRAKE_DEMAND(edges_.at(e.id()).get() == &e);
+    return true;
+  }
+  return false;
+}
+
 void GraphOfConvexSets::ClearAllPhiConstraints() {
   for (const auto& e : edges_) {
     e.second->ClearPhiConstraints();
@@ -1004,12 +1021,14 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
           a[0] = -lc->upper_bound()[i];
           a.tail(A.cols()) = A.row(i);
           prog->AddLinearConstraint(a, -inf, 0, vars);
-        } else if (lc->lower_bound()[i] > 0) {
+        } else if (lc->upper_bound()[i] < 0) {
           // If the upper bound is -inf, we cannot take the perspective of such
           // a constraint, so we throw an error.
           throw std::runtime_error(
               "Cannot take the perspective of a trivially-infeasible linear "
               "constraint of the form x <= -inf.");
+        } else {
+          // Do nothing for the constraint x <= inf.
         }
       }
     }
@@ -1041,6 +1060,8 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
           throw std::runtime_error(
               "Cannot take the perspective of a trivially-infeasible linear "
               "constraint of the form x >= +inf.");
+        } else {
+          // Do nothing for the constraint x >= -inf.
         }
       }
     }

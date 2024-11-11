@@ -468,12 +468,12 @@ std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
   return std::make_unique<VPolytope>(*this);
 }
 
-std::optional<bool> VPolytope::DoIsBoundedShortcut() const {
-  return true;
-}
-
 bool VPolytope::DoIsEmpty() const {
   return vertices_.cols() == 0;
+}
+
+std::optional<bool> VPolytope::DoIsBoundedShortcut() const {
+  return true;
 }
 
 std::optional<VectorXd> VPolytope::DoMaybeGetPoint() const {

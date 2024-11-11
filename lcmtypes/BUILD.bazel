@@ -89,18 +89,6 @@ drake_lcm_cc_library(
 )
 
 drake_lcm_cc_library(
-    name = "experimental_deformable_mesh",
-    lcm_package = "drake",
-    lcm_srcs = [
-        "experimental_lcmt_deformable_tri.lcm",
-        "experimental_lcmt_deformable_tri_mesh_init.lcm",
-        "experimental_lcmt_deformable_tri_meshes_init.lcm",
-        "experimental_lcmt_deformable_tri_mesh_update.lcm",
-        "experimental_lcmt_deformable_tri_meshes_update.lcm",
-    ],
-)
-
-drake_lcm_cc_library(
     name = "header",
     lcm_package = "drake",
     lcm_srcs = ["lcmt_header.lcm"],
@@ -297,7 +285,6 @@ LCMTYPES_CC = [
     ":acrobot",
     ":allegro",
     ":call_python",
-    ":experimental_deformable_mesh",
     ":point",
     ":point_cloud",
     ":header",
