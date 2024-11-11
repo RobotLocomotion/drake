@@ -193,6 +193,10 @@ class Expression {
   /** Collects variables in expression. */
   [[nodiscard]] Variables GetVariables() const;
 
+  /** Same as GetVariables(); we provide this overload for compatibility with
+   * Formula. */
+  [[nodiscard]] Variables GetFreeVariables() const { return GetVariables(); }
+
   /** Checks structural equality.
    *
    * Two expressions e1 and e2 are structurally equal when they have the same

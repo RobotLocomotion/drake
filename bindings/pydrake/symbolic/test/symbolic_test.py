@@ -691,6 +691,8 @@ class TestSymbolicExpression(unittest.TestCase):
         vars = e_x.GetVariables()
         self.assertEqual(len(vars), 1)
         self.assertTrue(list(vars)[0].EqualTo(x))
+        vars2 = e_x.GetFreeVariables()
+        self.assertTrue(vars2.EqualTo(vars))
 
     def test_get_variable_vector(self):
         vars_ = sym.GetVariableVector([e_x, e_y])
