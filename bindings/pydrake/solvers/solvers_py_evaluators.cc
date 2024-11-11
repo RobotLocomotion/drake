@@ -355,6 +355,15 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.UpdateCoefficients(Aeq, beq);
           },
           py::arg("Aeq"), py::arg("beq"),
+          doc.LinearEqualityConstraint.UpdateCoefficients.doc)
+      .def(
+          "UpdateCoefficients",
+          [](LinearEqualityConstraint& self,  // BR
+              const Eigen::SparseMatrix<double>& Aeq,
+              const Eigen::VectorXd& beq) {
+            self.UpdateCoefficients(Aeq, beq);
+          },
+          py::arg("Aeq"), py::arg("beq"),
           doc.LinearEqualityConstraint.UpdateCoefficients.doc);
 
   py::class_<BoundingBoxConstraint, LinearConstraint,
