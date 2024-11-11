@@ -2744,7 +2744,6 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
                      {GraphOfConvexSets::Transcription::kRestriction});
   middle.AddEdgeConstraint(outgoing_time_minimum && equal_time_constraint &&
                            control_point_limit);
-  // middle.AddEdgeConstraint(outgoing_time_minimum && equal_time_constraint);
 
   // All costs and constraints are convex, so the relaxation should be solvable.
   GraphOfConvexSetsOptions options;
