@@ -317,9 +317,9 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> ReorganizeEdgesAndOffsets(
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
-  auto [edges, edge_offsets] =
-      ComputePairwiseIntersections(convex_sets_A, convex_sets_B,
-                                   continuous_revolute_joints, preprocess_bbox);
+  auto [edges, edge_offsets] = ComputePairwiseIntersections(
+      convex_sets_A, convex_sets_B, continuous_revolute_joints, preprocess_bbox,
+      Parallelism::None());
   return ReorganizeEdgesAndOffsets(edges, edge_offsets);
 }
 
@@ -379,7 +379,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const std::vector<Hyperrectangle>& bboxes_B) {
   auto [edges, edge_offsets] = ComputePairwiseIntersections(
       convex_sets_A, convex_sets_B, continuous_revolute_joints, bboxes_A,
-      bboxes_B);
+      bboxes_B, Parallelism::None());
   return ReorganizeEdgesAndOffsets(edges, edge_offsets);
 }
 
@@ -535,8 +535,9 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
 std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints, bool preprocess_bbox) {
-  auto [edges, edge_offsets] = ComputePairwiseIntersections(
-      convex_sets, continuous_revolute_joints, preprocess_bbox);
+  auto [edges, edge_offsets] =
+      ComputePairwiseIntersections(convex_sets, continuous_revolute_joints,
+                                   preprocess_bbox, Parallelism::None());
   return ReorganizeEdgesAndOffsets(edges, edge_offsets);
 }
 
@@ -554,7 +555,7 @@ std::vector<std::tuple<int, int, Eigen::VectorXd>> CalcPairwiseIntersections(
     const std::vector<int>& continuous_revolute_joints,
     const std::vector<Hyperrectangle>& bboxes) {
   auto [edges, edge_offsets] = ComputePairwiseIntersections(
-      convex_sets, continuous_revolute_joints, bboxes);
+      convex_sets, continuous_revolute_joints, bboxes, Parallelism::None());
   return ReorganizeEdgesAndOffsets(edges, edge_offsets);
 }
 
