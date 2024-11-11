@@ -495,7 +495,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("edges_between_regions"), py::arg("order"),
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
             py::arg("name") = "", py::arg("edge_offsets") = py::none(),
-            cls_doc.AddRegions.doc_7args)
+            cls_doc.AddRegions.doc_7args,
+            py::call_guard<py::gil_scoped_release>())
         .def(
             "AddRegions",
             [](Class& self,
@@ -507,7 +508,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             },
             py_rvp::reference_internal, py::arg("regions"), py::arg("order"),
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
-            py::arg("name") = "", cls_doc.AddRegions.doc_5args)
+            py::arg("name") = "", cls_doc.AddRegions.doc_5args,
+            py::call_guard<py::gil_scoped_release>())
         .def("RemoveSubgraph", &Class::RemoveSubgraph, py::arg("subgraph"),
             cls_doc.RemoveSubgraph.doc)
         .def(
@@ -532,7 +534,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py_rvp::reference_internal, py::arg("from_subgraph"),
             py::arg("to_subgraph"), py::arg("subspace") = py::none(),
             py::arg("edges_between_regions") = py::none(),
-            py::arg("edge_offsets") = py::none(), cls_doc.AddEdges.doc)
+            py::arg("edge_offsets") = py::none(), cls_doc.AddEdges.doc,
+            py::call_guard<py::gil_scoped_release>())
         .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
             cls_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",
