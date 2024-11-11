@@ -401,9 +401,6 @@ def main(args):
         '--actions', type=str, required=True,
         help='file path to installer actions')
     parser.add_argument(
-        '--color', action='store_true', default=False,
-        help='colorize the output')
-    parser.add_argument(
         '--install_name_tool', type=str, default='install_name_tool',
         help='install_name_tool program')
     parser.add_argument(
@@ -444,13 +441,6 @@ def main(args):
             "Install prefix must be an absolute path"
             f" (got '{installer.prefix}')\n")
 
-    if args.color:
-        ansi_color_escape = "\x1b[36m"
-        ansi_reset_escape = "\x1b[0m"
-    else:
-        ansi_color_escape = ""
-        ansi_reset_escape = ""
-
     if pre_clean:
         if os.path.isdir(installer.prefix):
             print(f"Remove previous directory: {installer.prefix}")
@@ -459,14 +449,10 @@ def main(args):
     if installer.strip:
         # Match the output of the CMake install/strip target
         # (https://git.io/fpdzK).
-        print(ansi_color_escape,
-              "Installing the project stripped...",
-              ansi_reset_escape, sep="")
+        print("Installing the project stripped...", sep="")
     else:
         # Match the output of the CMake install target (https://git.io/fpdzo).
-        print(ansi_color_escape,
-              "Install the project...",
-              ansi_reset_escape, sep="")
+        print("Install the project...", sep="")
 
     # Execute the install actions.
     # TODO(jwnimmer-tri) Executing arbitrary Python code from the actions file
