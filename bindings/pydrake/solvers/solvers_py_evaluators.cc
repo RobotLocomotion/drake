@@ -627,7 +627,12 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.UpdateCoefficients(new_a, new_b);
           },
           py::arg("new_a"), py::arg("new_b") = 0,
-          doc.LinearCost.UpdateCoefficients.doc);
+          doc.LinearCost.UpdateCoefficients.doc)
+      .def("update_coefficient_entry", &LinearCost::update_coefficient_entry,
+          py::arg("i"), py::arg("val"),
+          doc.LinearCost.update_coefficient_entry.doc)
+      .def("update_constant_term", &LinearCost::update_constant_term,
+          py::arg("new_b"), doc.LinearCost.update_constant_term.doc);
 
   py::class_<QuadraticCost, Cost, std::shared_ptr<QuadraticCost>>(
       m, "QuadraticCost", doc.QuadraticCost.doc)
@@ -651,7 +656,16 @@ void BindEvaluatorsAndBindings(py::module m) {
           },
           py::arg("new_Q"), py::arg("new_b"), py::arg("new_c") = 0,
           py::arg("is_convex") = py::none(),
-          doc.QuadraticCost.UpdateCoefficients.doc);
+          doc.QuadraticCost.UpdateCoefficients.doc)
+      .def("UpdateHessianEntry", &QuadraticCost::UpdateHessianEntry,
+          py::arg("i"), py::arg("j"), py::arg("val"),
+          py::arg("is_hessian_psd") = py::none(),
+          doc.QuadraticCost.UpdateHessianEntry.doc)
+      .def("update_linear_coefficient_entry",
+          &QuadraticCost::update_linear_coefficient_entry, py::arg("i"),
+          py::arg("val"), doc.QuadraticCost.update_linear_coefficient_entry.doc)
+      .def("update_constant_term", &QuadraticCost::update_constant_term,
+          py::arg("new_c"), doc.QuadraticCost.update_constant_term.doc);
 
   py::class_<L1NormCost, Cost, std::shared_ptr<L1NormCost>>(
       m, "L1NormCost", doc.L1NormCost.doc)
