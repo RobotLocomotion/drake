@@ -2,10 +2,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include "drake/solvers/semidefinite_relaxation.h"
-#pragma GCC diagnostic pop
 
 namespace drake {
 namespace pydrake {
@@ -17,8 +14,6 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
 
   {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     const auto& cls_doc = doc.SemidefiniteRelaxationOptions;
     py::class_<SemidefiniteRelaxationOptions> options(
         m, "SemidefiniteRelaxationOptions", cls_doc.doc);
@@ -29,11 +24,14 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
             cls_doc.add_implied_linear_equality_constraints.doc)
         .def_readwrite("add_implied_linear_constraints",
             &SemidefiniteRelaxationOptions::add_implied_linear_constraints,
-            cls_doc.add_implied_linear_constraints.doc)
-        .def_readwrite("preserve_convex_quadratic_constraints",
-            &SemidefiniteRelaxationOptions::
-                preserve_convex_quadratic_constraints,
-            cls_doc.preserve_convex_quadratic_constraints.doc_deprecated)
+            cls_doc.add_implied_linear_constraints.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    options.def_readwrite("preserve_convex_quadratic_constraints",
+        &SemidefiniteRelaxationOptions::preserve_convex_quadratic_constraints,
+        cls_doc.preserve_convex_quadratic_constraints.doc_deprecated);
+#pragma GCC diagnostic pop
+    options
         .def("set_to_strongest",
             &SemidefiniteRelaxationOptions::set_to_strongest,
             cls_doc.set_to_strongest.doc)
@@ -43,24 +41,19 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
           return py::str(
               "SemidefiniteRelaxationOptions("
               "add_implied_linear_equality_constraints={}, "
-              "add_implied_linear_constraints={}, "
-              "preserve_convex_quadratic_constraints={})")
+              "add_implied_linear_constraints={})")
               .format(self.add_implied_linear_equality_constraints,
-                  self.add_implied_linear_constraints,
-                  self.preserve_convex_quadratic_constraints);
+                  self.add_implied_linear_constraints);
         });
-#pragma GCC diagnostic pop
     DeprecateAttribute(options, "preserve_convex_quadratic_constraints",
         cls_doc.preserve_convex_quadratic_constraints.doc_deprecated);
   }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   m.def("MakeSemidefiniteRelaxation",
       py::overload_cast<const MathematicalProgram&,
           const SemidefiniteRelaxationOptions&>(
           &solvers::MakeSemidefiniteRelaxation),
-      py::arg("prog"), py::arg("options") = SemidefiniteRelaxationOptions(),
+      py::arg("prog"), py::arg("options") = SemidefiniteRelaxationOptions{},
       doc.MakeSemidefiniteRelaxation.doc_2args);
   m.def("MakeSemidefiniteRelaxation",
       py::overload_cast<const MathematicalProgram&,
@@ -68,9 +61,8 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
           const SemidefiniteRelaxationOptions&>(
           &solvers::MakeSemidefiniteRelaxation),
       py::arg("prog"), py::arg("variable_groups"),
-      py::arg("options") = SemidefiniteRelaxationOptions(),
+      py::arg("options") = SemidefiniteRelaxationOptions{},
       doc.MakeSemidefiniteRelaxation.doc_3args);
-#pragma GCC diagnostic pop
 }
 
 }  // namespace internal
