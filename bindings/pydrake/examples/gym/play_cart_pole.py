@@ -35,7 +35,7 @@ def _run_playing(args):
         check_env(env)
 
     rate = 1.0 if not args.test else 0.0
-    env.simulator.set_target_realtime_rate(rate)
+    env.unwrapped.simulator.set_target_realtime_rate(rate)
     max_steps = 1e5 if not args.test else 5e1
 
     if not args.test:
