@@ -63,8 +63,10 @@ build:asan --auto_output_filter=all
 
 ### ASan everything build. Clang only. ###
 build:asan_everything --build_tests_only
-build:asan_everything --define=WITH_GUROBI=ON
-build:asan_everything --define=WITH_MOSEK=ON
+# We cannot reasonably use binary-only GUROBI and MOSEK libraries,
+# since they lack the sanitizer instrumentation.
+build:asan_everything --define=WITH_GUROBI=OFF
+build:asan_everything --define=WITH_MOSEK=OFF
 build:asan_everything --define=WITH_SNOPT=ON
 build:asan_everything --copt=-g
 # https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
@@ -77,7 +79,7 @@ build:asan_everything --copt=-fno-omit-frame-pointer
 build:asan_everything --linkopt=-fsanitize=address
 build:asan_everything --linkopt=-fsanitize-address-use-after-scope
 # LSan is run with ASan by default
-build:asan_everything --test_tag_filters=-no_asan,-no_lsan
+build:asan_everything --test_tag_filters=-gurobi,-mosek,-no_asan,-no_lsan
 build:asan_everything --run_under=//tools/dynamic_analysis:asan
 build:asan_everything --test_env=ASAN_OPTIONS
 build:asan_everything --test_env=LSAN_OPTIONS
@@ -112,8 +114,10 @@ build:lsan --define=USING_SANITIZER=ON
 
 ### LSan everything build. Clang only. ###
 build:lsan_everything --build_tests_only
-build:lsan_everything --define=WITH_GUROBI=ON
-build:lsan_everything --define=WITH_MOSEK=ON
+# We cannot reasonably use binary-only GUROBI and MOSEK libraries,
+# since they lack the sanitizer instrumentation.
+build:lsan_everything --define=WITH_GUROBI=OFF
+build:lsan_everything --define=WITH_MOSEK=OFF
 build:lsan_everything --define=WITH_SNOPT=ON
 build:lsan_everything --copt=-g
 build:lsan_everything --copt=-fno-common
@@ -122,7 +126,7 @@ build:lsan_everything --copt=-fstandalone-debug
 build:lsan_everything --copt=-O0
 build:lsan_everything --copt=-fno-omit-frame-pointer
 build:lsan_everything --linkopt=-fsanitize=leak
-build:lsan_everything --test_tag_filters=-no_lsan
+build:lsan_everything --test_tag_filters=-gurobi,-mosek,-no_lsan
 build:lsan_everything --run_under=//tools/dynamic_analysis:lsan
 build:lsan_everything --test_env=LSAN_OPTIONS
 build:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
@@ -153,8 +157,10 @@ build:tsan --define=USING_SANITIZER=ON
 
 ### TSan everything build. ###
 build:tsan_everything --build_tests_only
-build:tsan_everything --define=WITH_GUROBI=ON
-build:tsan_everything --define=WITH_MOSEK=ON
+# We cannot reasonably use binary-only GUROBI and MOSEK libraries,
+# since they lack the sanitizer instrumentation.
+build:tsan_everything --define=WITH_GUROBI=OFF
+build:tsan_everything --define=WITH_MOSEK=OFF
 build:tsan_everything --define=WITH_SNOPT=ON
 build:tsan_everything --copt -g
 build:tsan_everything --copt -fsanitize=thread
@@ -167,7 +173,7 @@ build:tsan_everything --copt -fno-omit-frame-pointer
 # Bug in GCC: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=67308
 build:tsan_everything --noforce_pic
 build:tsan_everything --linkopt -fsanitize=thread
-build:tsan_everything --test_tag_filters=-no_tsan
+build:tsan_everything --test_tag_filters=-gurobi,-mosek,-no_tsan
 build:tsan_everything --run_under=//tools/dynamic_analysis:tsan
 build:tsan_everything --test_env=TSAN_OPTIONS
 build:tsan_everything --test_lang_filters=-sh,-py
@@ -201,8 +207,10 @@ build:ubsan --define=USING_SANITIZER=ON
 
 ### UBSan everything build. ###
 build:ubsan_everything --build_tests_only
-build:ubsan_everything --define=WITH_GUROBI=ON
-build:ubsan_everything --define=WITH_MOSEK=ON
+# We cannot reasonably use binary-only GUROBI and MOSEK libraries,
+# since they lack the sanitizer instrumentation.
+build:ubsan_everything --define=WITH_GUROBI=OFF
+build:ubsan_everything --define=WITH_MOSEK=OFF
 build:ubsan_everything --define=WITH_SNOPT=ON
 build:ubsan_everything --copt -g
 build:ubsan_everything --copt -fsanitize=undefined
@@ -216,7 +224,7 @@ build:ubsan_everything --copt -fno-omit-frame-pointer
 # build:ubsan_everything --copt -fsanitize-blacklist=tools/dynamic_analysis/ubsan.blacklist
 build:ubsan_everything --linkopt -fsanitize=undefined
 build:ubsan_everything --linkopt -Wl,--gc-sections  # Claw back some disk space for CI.
-build:ubsan_everything --test_tag_filters=-no_ubsan
+build:ubsan_everything --test_tag_filters=-mosek,-gurobi,-no_ubsan
 build:ubsan_everything --run_under=//tools/dynamic_analysis:ubsan
 build:ubsan_everything --test_env=UBSAN_OPTIONS
 build:ubsan_everything --test_lang_filters=-sh,-py
@@ -246,15 +254,17 @@ build:memcheck --define=USING_MEMCHECK=ON
 
 ### Memcheck everything build. ###
 build:memcheck_everything --build_tests_only
-build:memcheck_everything --define=WITH_GUROBI=ON
-build:memcheck_everything --define=WITH_MOSEK=ON
+# We cannot reasonably use binary-only GUROBI and MOSEK libraries,
+# since they lack the sanitizer instrumentation.
+build:memcheck_everything --define=WITH_GUROBI=OFF
+build:memcheck_everything --define=WITH_MOSEK=OFF
 build:memcheck_everything --define=WITH_SNOPT=ON
 build:memcheck_everything --copt -gdwarf-4
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck_everything --copt -O2
 build:memcheck_everything --copt=-DNDEBUG                # Disable third-party asserts.
 build:memcheck_everything --copt=-DDRAKE_ENABLE_ASSERTS  # ...but keep Drake's asserts.
-build:memcheck_everything --test_tag_filters=-no_memcheck,-no_valgrind_tools
+build:memcheck_everything --test_tag_filters=-mosek,-gurobi,-no_memcheck,-no_valgrind_tools
 build:memcheck_everything --run_under=//tools/dynamic_analysis:valgrind
 build:memcheck_everything --test_lang_filters=-sh,-py
 # Slowdown factor can range from 5-100.
@@ -289,13 +299,13 @@ build:_drd --test_env=VALGRIND_OPTS
 build:_drd --test_timeout=600,3000,10800,36000  # 10x
 
 build:drd --config=_drd
-build:drd --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_drd,-no_valgrind_tools
+build:drd --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_drd,-no_valgrind_tools
 
 build:drd_everything --config=_drd
-build:drd_everything --define=WITH_GUROBI=ON
-build:drd_everything --define=WITH_MOSEK=ON
+build:drd_everything --define=WITH_GUROBI=OFF
+build:drd_everything --define=WITH_MOSEK=OFF
 build:drd_everything --define=WITH_SNOPT=ON
-build:drd_everything --test_tag_filters=-lint,-no_drd,-no_valgrind_tools
+build:drd_everything --test_tag_filters=-lint,-gurobi,-mosek,-no_drd,-no_valgrind_tools
 
 ### Helgrind: A Valgrind thread error detector ###
 # Not tested in continuous integration so may fail, even on master.
@@ -311,7 +321,7 @@ build:helgrind --config=_helgrind
 build:helgrind --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_helgrind,-no_valgrind_tools
 
 build:helgrind_everything --config=_helgrind
-build:helgrind_everything --define=WITH_GUROBI=ON
-build:helgrind_everything --define=WITH_MOSEK=ON
+build:helgrind_everything --define=WITH_GUROBI=OFF
+build:helgrind_everything --define=WITH_MOSEK=OFF
 build:helgrind_everything --define=WITH_SNOPT=ON
-build:helgrind_everything --test_tag_filters=-lint,-no_helgrind,-no_valgrind_tools
+build:helgrind_everything --test_tag_filters=-lint,-gurobi,-mosek,-no_helgrind,-no_valgrind_tools
