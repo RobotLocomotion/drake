@@ -1,6 +1,7 @@
 import numpy as np
 import unittest
 
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.solvers import (
     MakeSemidefiniteRelaxation,
     SemidefiniteRelaxationOptions,
@@ -60,6 +61,9 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         options.add_implied_linear_constraints = True
         self.assertTrue(options.add_implied_linear_equality_constraints)
         self.assertTrue(options.add_implied_linear_constraints)
+        with catch_drake_warnings(expected_count=2) as w:
+            options.preserve_convex_quadratic_constraints = True
+            self.assertTrue(options.preserve_convex_quadratic_constraints)
 
         options.set_to_weakest()
         self.assertFalse(options.add_implied_linear_equality_constraints)
