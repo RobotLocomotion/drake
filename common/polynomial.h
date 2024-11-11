@@ -175,6 +175,12 @@ class Polynomial {
 
   const std::vector<Monomial>& GetMonomials() const;
 
+  /** Returns the vector of the coefficients of the polynomial in the order
+   * of powers of the variable - the [i]th element is the coefficient of the
+   * variable raised to the ith power.
+   *
+   * @throws std::runtime_error if this Polynomial is not univariate.
+   */
   VectorX<T> GetCoefficients() const;
 
   /// Returns a set of all of the variables present in this Polynomial.

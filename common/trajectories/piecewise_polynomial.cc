@@ -11,6 +11,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/unused.h"
+#include "drake/math/binomial_coefficient.h"
 #include "drake/math/matrix_util.h"
 
 using Eigen::VectorXd;
@@ -530,6 +531,83 @@ void PiecewisePolynomial<T>::shiftRight(const T& offset) {
   for (auto it = breaks.begin(); it != breaks.end(); ++it) {
     *it += offset;
   }
+}
+
+namespace {
+template <typename T>
+Polynomial<T> ShiftPoly(Polynomial<T> poly, const T& x) {
+  if (poly.GetVariables().size() == 0) {
+    // Make constant polynomial.
+    return poly;
+  }
+  using std::pow;
+  // Given p(t) = a0 + a1*t + a2*t^2 + ... + an*t^n,
+  // we want to shift the parameter to p(t + x)
+  // = b0 + b1*t + b2*t^2 + ... + bn*t^n.
+  // We can expand the rhs to get the values in b.
+  DRAKE_THROW_UNLESS(poly.GetVariables().size() == 1);
+  int n = poly.GetDegree();
+  const auto& a = poly.GetCoefficients();
+  Eigen::Matrix<T, Eigen::Dynamic, 1> b =
+      Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(n + 1);
+  for (int i = 0; i <= n; i++) {
+    for (int j = 0; j <= i; j++) {
+      b(j) += a(i) * drake::math::BinomialCoefficient(i, j) * pow(x, i - j);
+    }
+  }
+  return Polynomial<T>(b);
+}
+}  // namespace
+
+template <typename T>
+int PiecewisePolynomial<T>::AddBreak(const T& new_break) {
+  auto& breaks = this->get_mutable_breaks();
+  // Check if the new break is already within the kEpsilonTime of an
+  // existing break.
+  for (int k = 0; k < this->get_number_of_segments(); k++) {
+    const T& break_time = breaks[k];
+    if (abs(break_time - new_break) < PiecewiseTrajectory<T>::kEpsilonTime) {
+      // No need to add a new break.
+      return k;
+    }
+  }
+  DRAKE_THROW_UNLESS(this->is_time_in_range(new_break));
+  const auto value = this->value(new_break);
+  int i = this->get_segment_index(new_break);
+  const T last_break_before_new = this->start_time(i);
+  const T shift = new_break - last_break_before_new;
+  breaks.insert(breaks.begin() + i + 1, new_break);
+  // New polynomial matrix to be added at index i.
+  const auto& broken_polynomial = polynomials_[i];
+  PolynomialMatrix new_polynomial = broken_polynomial;
+  for (int row = 0; row < rows(); row++) {
+    for (int col = 0; col < cols(); col++) {
+      new_polynomial(row, col) = ShiftPoly(new_polynomial(row, col), shift);
+    }
+  }
+  // The i+1'th polynomial should become the new_polynomial.
+  polynomials_.insert(polynomials_.begin() + i + 1, new_polynomial);
+  return i + 1;
+}
+
+template <typename T>
+PiecewisePolynomial<T> PiecewisePolynomial<T>::SliceByTime(
+    const T& start_time, const T& end_time) const {
+  DRAKE_THROW_UNLESS(start_time < end_time);
+  DRAKE_THROW_UNLESS(this->is_time_in_range(start_time));
+  DRAKE_THROW_UNLESS(this->is_time_in_range(end_time));
+  PiecewisePolynomial<T> result{*this};
+  int i = result.AddBreak(start_time);
+  int j = result.AddBreak(end_time);
+  std::vector<PolynomialMatrix> polynomials;
+  std::vector<T> breaks;
+  for (int k = i; k < j; k++) {
+    polynomials.push_back(result.getPolynomialMatrix(k));
+    breaks.push_back(result.get_segment_times()[k]);
+  }
+  // Add the last break
+  breaks.push_back(result.get_segment_times()[j]);
+  return PiecewisePolynomial<T>(polynomials, breaks);
 }
 
 template <typename T>
