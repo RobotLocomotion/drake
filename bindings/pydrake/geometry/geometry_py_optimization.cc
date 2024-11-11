@@ -1493,8 +1493,7 @@ void DefineGeodesicConvexity(py::module m) {
       py::arg("convex_sets_A"), py::arg("convex_sets_B"),
       py::arg("continuous_revolute_joints"), py::arg("preprocess_bbox") = true,
       doc.CalcPairwiseIntersections
-          .doc_deprecated_deprecated_4args_convex_sets_A_convex_sets_B_continuous_revolute_joints_preprocess_bbox,
-      py::call_guard<py::gil_scoped_release>());
+          .doc_deprecated_deprecated_4args_convex_sets_A_convex_sets_B_continuous_revolute_joints_preprocess_bbox);
 #pragma GCC diagnostic pop
   m.def(
       "ComputePairwiseIntersections",
@@ -1533,8 +1532,7 @@ void DefineGeodesicConvexity(py::module m) {
       py::arg("continuous_revolute_joints"), py::arg("bboxes_A"),
       py::arg("bboxes_B"),
       doc.CalcPairwiseIntersections
-          .doc_deprecated_deprecated_5args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B,
-      py::call_guard<py::gil_scoped_release>());
+          .doc_deprecated_deprecated_5args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B);
 #pragma GCC diagnostic pop
   m.def(
       "ComputePairwiseIntersections",
@@ -1565,8 +1563,7 @@ void DefineGeodesicConvexity(py::module m) {
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
       py::arg("preprocess_bbox") = true,
       doc.CalcPairwiseIntersections
-          .doc_deprecated_deprecated_3args_convex_sets_continuous_revolute_joints_preprocess_bbox,
-      py::call_guard<py::gil_scoped_release>());
+          .doc_deprecated_deprecated_3args_convex_sets_continuous_revolute_joints_preprocess_bbox);
 #pragma GCC diagnostic pop
   m.def(
       "ComputePairwiseIntersections",
@@ -1597,8 +1594,7 @@ void DefineGeodesicConvexity(py::module m) {
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
       py::arg("bboxes") = std::vector<Hyperrectangle>{},
       doc.CalcPairwiseIntersections
-          .doc_deprecated_deprecated_3args_convex_sets_continuous_revolute_joints_bboxes,
-      py::call_guard<py::gil_scoped_release>());
+          .doc_deprecated_deprecated_3args_convex_sets_continuous_revolute_joints_bboxes);
 #pragma GCC diagnostic pop
 }
 
