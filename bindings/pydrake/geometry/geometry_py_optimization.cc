@@ -1053,7 +1053,9 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
                 &GraphOfConvexSets::SolveShortestPath),
             py::arg("source"), py::arg("target"),
             py::arg("options") = GraphOfConvexSetsOptions(),
-            cls_doc.SolveShortestPath.doc)
+            cls_doc.SolveShortestPath.doc,
+            // Parallelism may be used when solving, so we must release the GIL.
+            py::call_guard<py::gil_scoped_release>())
         .def("GetSolutionPath", &GraphOfConvexSets::GetSolutionPath,
             py::arg("source"), py::arg("target"), py::arg("result"),
             py::arg("tolerance") = 1e-3, py_rvp::reference_internal,

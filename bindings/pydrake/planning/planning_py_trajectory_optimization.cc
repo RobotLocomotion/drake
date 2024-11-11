@@ -566,7 +566,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("target"),
             py::arg("options") =
                 geometry::optimization::GraphOfConvexSetsOptions(),
-            cls_doc.SolvePath.doc)
+            cls_doc.SolvePath.doc,
+            // Parallelism may be used when solving, so we must release the GIL.
+            py::call_guard<py::gil_scoped_release>())
         .def("SolveConvexRestriction", &Class::SolveConvexRestriction,
             py::arg("active_vertices"),
             py::arg("options") =
