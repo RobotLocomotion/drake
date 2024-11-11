@@ -804,22 +804,12 @@ T SubstituteAllVariables(
       new_scalar_variables, new_vector_variables, new_matrix_variables);
   DRAKE_DEMAND(old_variables.size() == new_variables.size());
 
-  // Note: the logic is identical for Expression and Formula, except for one
-  // differing method name -- Expression::GetVariables versus
-  // Formula::GetFreeVariables.
-  symbolic::Variables e_vars;
-  if constexpr (std::is_same_v<T, Expression>) {
-    e_vars = e.GetVariables();
-  } else {  // std::is_same_v<T, Formula>
-    e_vars = e.GetFreeVariables();
-  }
-
+  e_vars = e.GetFreeVariables();
   for (int i = 0; i < ssize(old_variables); ++i) {
     if (e_vars.include(old_variables[i])) {
       e = e.Substitute(old_variables[i], new_variables[i]);
     }
   }
-
   return e;
 }
 
