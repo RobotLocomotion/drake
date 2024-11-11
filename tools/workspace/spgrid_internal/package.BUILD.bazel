@@ -1,0 +1,28 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+# TODO(xuchenhan-tri): Fix SPGrid so that it builds with macOS too.
+cc_library(
+    name = "spgrid_internal",
+    srcs = select({
+        "@drake//tools/skylark:linux": glob(["**/*.cpp"]),
+        "//conditions:default": [],
+    }),
+    hdrs = select({
+        "@drake//tools/skylark:linux": glob(["**/*.h"]),
+        "//conditions:default": [],
+    }),
+    include_prefix = "SPGrid/Core",
+    # TODO(xuchenhan-tri): Enable Haswell on builds that support it.
+    includes = ["."],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["License"],  # BSD-2-Clause
+    visibility = ["//visibility:public"],
+)
