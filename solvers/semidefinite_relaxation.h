@@ -23,12 +23,12 @@ struct SemidefiniteRelaxationOptions {
   /** Given a program with the linear constraints Ay ≤ b, sets whether to add
    * the implied linear constraints [A,-b]X[A,-b]ᵀ ≤ 0 to the semidefinite
    * relaxation.*/
-  bool add_implied_linear_equality_constraints = true;
+  bool add_implied_linear_equality_constraints{true};
 
   /** Given a program with the linear equality constraints Ay = b, sets whether
    * to add the implied linear constraints [A, -b]X = 0 to the semidefinite
    * relaxation.*/
-  bool add_implied_linear_constraints = true;
+  bool add_implied_linear_constraints{true};
 
   /** No longer in use, hence this parameter does nothing. Given a convex
    * quadratic constraint xᵀP x + xᵀq + r <= 0 it is always stronger to add the
@@ -41,7 +41,7 @@ struct SemidefiniteRelaxationOptions {
                    "linear constraint that is always added to the semidefinite "
                    "relaxation. Therefore, this flag has no effect on the "
                    "solution to the overall program and so will be removed.")
-  bool preserve_convex_quadratic_constraints = false;
+  bool preserve_convex_quadratic_constraints{false};
 
   /** Configure the semidefinite relaxation options to provide the strongest
    * possible semidefinite relaxation that we currently support. This in general

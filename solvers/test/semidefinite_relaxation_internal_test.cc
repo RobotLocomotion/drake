@@ -178,7 +178,7 @@ class MakeSemidefiniteRelaxationTestFixture : public ::testing::Test {
 };
 
 TEST_F(MakeSemidefiniteRelaxationTestFixture,
-       DoLinearizeQuadraticCostsAndConstraintsQuadraticCost) {
+       DoLinearizeQuadraticCostsAndConstraintsCaseQuadraticCost) {
   const auto y = prog_.NewContinuousVariables<2>("y");
   const Vector2d yd(0.5, 0.7);
   // A convex quadratic cost
@@ -196,8 +196,9 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
       0, 1e-12);
 }
 
-TEST_F(MakeSemidefiniteRelaxationTestFixture,
-       DoLinearizeQuadraticCostsAndConstraintsNonConvexQuadraticConstraint) {
+TEST_F(
+    MakeSemidefiniteRelaxationTestFixture,
+    DoLinearizeQuadraticCostsAndConstraintsCaseNonConvexQuadraticConstraint) {
   const auto y = prog_.NewContinuousVariables<2>("y");
   Matrix2d Q;
   Q << 1, 2, 3, 4;
@@ -231,9 +232,8 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
 
 // This test checks that repeated variables in a quadratic constraint are
 // handled correctly.
-TEST_F(
-    MakeSemidefiniteRelaxationTestFixture,
-    DoLinearizeQuadraticCostsAndConstraintsCasePositiveDefiniteDontPreserve) {
+TEST_F(MakeSemidefiniteRelaxationTestFixture,
+       DoLinearizeQuadraticCostsAndConstraintsCaseConvexQuadratic) {
   const auto y = prog_.NewContinuousVariables<1>("y");
   // This is a convex quadratic.
   Eigen::Matrix2d Q{{2, 1}, {1, 1}};
@@ -243,7 +243,7 @@ TEST_F(
 
   ReinitializeRelaxation();
   DoLinearizeQuadraticCostsAndConstraints(
-      prog_, X_, variables_to_sorted_indices_, relaxation_.get(), false);
+      prog_, X_, variables_to_sorted_indices_, relaxation_.get());
 
   EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
   EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 1);
@@ -259,100 +259,6 @@ TEST_F(
             -kInf);
   EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->upper_bound()[0],
             1.0);
-}
-
-TEST_F(MakeSemidefiniteRelaxationTestFixture,
-       DoLinearizeQuadraticCostsAndConstraintsCasePositiveDefinitePreserve) {
-  const auto y = prog_.NewContinuousVariables<1>("y");
-  // This is a convex quadratic.
-  const Eigen::Matrix2d Q{{2, 1}, {1, 1}};
-  prog_.AddQuadraticConstraint(Q, Eigen::Vector2d::Ones(), -kInf, 1,
-                               Vector2<Variable>(y(0), y(0)));
-  EXPECT_TRUE(prog_.quadratic_constraints()[0].evaluator()->is_convex());
-
-  ReinitializeRelaxation();
-  DoLinearizeQuadraticCostsAndConstraints(
-      prog_, X_, variables_to_sorted_indices_, relaxation_.get(), true);
-
-  EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 1);
-  EXPECT_EQ(relaxation_->linear_constraints().size(), 1);
-  // The rotated lorentz cone comes from preserving the convex quadratic
-  // constraint.
-  EXPECT_EQ(relaxation_->rotated_lorentz_cone_constraints().size(), 1);
-  EXPECT_EQ(relaxation_->GetAllConstraints().size(), 4);
-
-  const Vector1d y_test(1.3);
-  prog_.SetInitialGuess(y, y_test);
-  SetRelaxationInitialGuess(y_test, relaxation_.get());
-  EXPECT_NEAR(relaxation_->EvalBindingAtInitialGuess(
-                  relaxation_->linear_constraints()[0])[0],
-              5.0 / 2.0 * y_test(0) * y_test(0) + 2 * y_test(0), 1e-12);
-  EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->lower_bound()[0],
-            -kInf);
-  EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->upper_bound()[0],
-            1.0);
-
-  // Expect the rotated lorentz cone to implement the same constraint as the
-  // quadratic constraint.
-  const VectorXd rotated_lorentz_eval = relaxation_->EvalBindingAtInitialGuess(
-      relaxation_->rotated_lorentz_cone_constraints()[0]);
-  // The last entry of the rotate lorentz cone constraint evaluation is
-  // -0.5xᵀQx - bᵀx - ub, while the quadratic constraint evaluation is
-  // 0.5xᵀQx + bᵀx. So we expect the following two expressions to be the same.
-  EXPECT_NEAR(
-      -rotated_lorentz_eval(2) +
-          prog_.quadratic_constraints()[0].evaluator()->upper_bound()[0],
-      prog_.EvalBindingAtInitialGuess(prog_.quadratic_constraints()[0])[0],
-      1e-12);
-}
-
-TEST_F(MakeSemidefiniteRelaxationTestFixture,
-       DoLinearizeQuadraticCostsAndConstraintsCaseNegativeDefinitePreserve) {
-  const auto y = prog_.NewContinuousVariables<2>("y");
-  // This is a convex negative-definite quadratic.
-  const Eigen::Matrix2d Q{{-2, -1}, {-1, -1}};
-  const Eigen::Vector2d b{1, 2};
-  prog_.AddQuadraticConstraint(Q, b, -1, kInf, Vector2<Variable>(y(0), y(1)));
-  EXPECT_TRUE(prog_.quadratic_constraints()[0].evaluator()->is_convex());
-
-  ReinitializeRelaxation();
-  DoLinearizeQuadraticCostsAndConstraints(
-      prog_, X_, variables_to_sorted_indices_, relaxation_.get(), true);
-
-  EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 1);
-  EXPECT_EQ(relaxation_->linear_constraints().size(), 1);
-  // The rotated lorentz cone comes from preserving the convex quadratic
-  // constraint.
-  EXPECT_EQ(relaxation_->rotated_lorentz_cone_constraints().size(), 1);
-  EXPECT_EQ(relaxation_->GetAllConstraints().size(), 4);
-
-  const Vector2d y_test(1.3, -2.3);
-  prog_.SetInitialGuess(y, y_test);
-  SetRelaxationInitialGuess(y_test, relaxation_.get());
-  EXPECT_NEAR(
-      relaxation_->EvalBindingAtInitialGuess(
-          relaxation_->linear_constraints()[0])[0],
-      (0.5 * y_test.transpose() * Q * y_test + b.transpose() * y_test)(0),
-      1e-12);
-  EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->lower_bound()[0],
-            -1);
-  EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->upper_bound()[0],
-            kInf);
-
-  // Expect the rotated lorentz cone to implement the same constraint as the
-  // quadratic constraint.
-  const VectorXd rotated_lorentz_eval = relaxation_->EvalBindingAtInitialGuess(
-      relaxation_->rotated_lorentz_cone_constraints()[0]);
-  // The last entry of the rotate lorentz cone constraint evaluation is
-  // 0.5xᵀQx + bᵀx - lb, while the quadratic constraint evaluation is
-  // 0.5xᵀQx + bᵀx. So we expect the following two expressions to be the same.
-  EXPECT_NEAR(
-      rotated_lorentz_eval(2) +
-          prog_.quadratic_constraints()[0].evaluator()->lower_bound()[0],
-      prog_.EvalBindingAtInitialGuess(prog_.quadratic_constraints()[0])[0],
-      1e-12);
 }
 
 TEST_F(MakeSemidefiniteRelaxationTestFixture,
