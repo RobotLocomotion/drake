@@ -125,12 +125,22 @@ GTEST_TEST(testCost, testLinearCost) {
   EXPECT_PRED2(ExprEqual, y_sym[0], 1 * x_sym[0] + 2 * x_sym[1]);
 
   // Update with a constant term.
-  const double b = 100;
+  double b = 100;
   cost->UpdateCoefficients(a, b);
   cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + b, tol);
+  b = 200;
+  cost->UpdateConstantTerm(b);
+  cost->Eval(x0, &y);
+  EXPECT_NEAR(y(0), obj_expected + b, tol);
+
   EXPECT_THROW(cost->UpdateCoefficients(Eigen::Vector3d::Ones(), b),
                runtime_error);
+
+  // Update one entry in a.
+  cost->UpdateCoefficientEntry(0, 10);
+  cost->Eval(x0, &y);
+  EXPECT_NEAR(y(0), 10 * x0(0) + a(1) * x0(1) + b, tol);
 
   // Reconstruct the same cost with the constant term.
   auto new_cost = make_shared<LinearCost>(a, b);
@@ -140,7 +150,7 @@ GTEST_TEST(testCost, testLinearCost) {
   new_cost->set_description("simple linear cost");
   EXPECT_EQ(
       fmt::format("{}", *new_cost),
-      "LinearCost (100 + $(0) + 2 * $(1)) described as 'simple linear cost'");
+      "LinearCost (200 + $(0) + 2 * $(1)) described as 'simple linear cost'");
 
   EXPECT_TRUE(cost->is_thread_safe());
 }
@@ -218,11 +228,36 @@ GTEST_TEST(TestQuadraticCost, NonconvexCost) {
                               MatrixCompareType::absolute));
   EXPECT_FALSE(cost->is_convex());
 
+  // Updates the Hessian to make it convex.
+  cost->UpdateHessianEntry(0, 1, 1, /*is_hessian_psd=*/std::nullopt);
+  Eigen::Matrix2d Q_expected = (Eigen::Matrix2d() << 2, 1, 1, 8).finished();
+  EXPECT_TRUE(CompareMatrices(cost->Q(), Q_expected, 1E-10));
+  EXPECT_TRUE(cost->is_convex());
+
+  // Update the Hessian to make it non-convex
+  cost->UpdateHessianEntry(0, 1, 5, /*is_hessian_psd=*/std::nullopt);
+  Q_expected << 2, 5, 5, 8;
+  EXPECT_TRUE(CompareMatrices(cost->Q(), Q_expected, 1E-10));
+  EXPECT_FALSE(cost->is_convex());
+
+  // Update the diagonal entry of the Hessian.
+  cost->UpdateHessianEntry(0, 0, 1, /*is_hessian_psd=*/std::nullopt);
+  Q_expected << 1, 5, 5, 8;
+  EXPECT_TRUE(CompareMatrices(cost->Q(), Q_expected, 1E-10));
+  EXPECT_FALSE(cost->is_convex());
+
+  // Update an entry in the linear coefficient.
+  cost->UpdateLinearCoefficientEntry(0, 10);
+  cost->UpdateLinearCoefficientEntry(1, 3);
+  EXPECT_TRUE(CompareMatrices(cost->b(), Eigen::Vector2d(10, 3)));
+
   // Update with a constant term.
   const double c = 100;
   cost->UpdateCoefficients(Q, b, c);
   cost->Eval(x0, &y);
   EXPECT_NEAR(y(0), obj_expected + c, tol);
+  cost->UpdateConstantTerm(200);
+  EXPECT_EQ(cost->c(), 200);
 
   EXPECT_THROW(cost->UpdateCoefficients(Eigen::Matrix3d::Identity(), b, c),
                runtime_error);

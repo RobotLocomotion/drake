@@ -17,6 +17,16 @@ class TestCost(unittest.TestCase):
         cost = mp.LinearCost(a, b)
         np.testing.assert_allclose(cost.a(), a)
         self.assertEqual(cost.b(), b)
+        cost.UpdateCoefficients(new_a=[2, 3.], new_b=1)
+        np.testing.assert_allclose(cost.a(), [2, 3.])
+        self.assertEqual(cost.b(), 1)
+
+        cost.UpdateCoefficientEntry(i=0, val=4)
+        np.testing.assert_allclose(cost.a(), [4, 3])
+        self.assertEqual(cost.b(), 1)
+
+        cost.UpdateConstantTerm(new_b=2)
+        self.assertEqual(cost.b(), 2)
 
     def test_quadratic_cost(self):
         Q = np.array([[1., 2.], [2., 3.]])
@@ -33,6 +43,24 @@ class TestCost(unittest.TestCase):
 
         cost = mp.QuadraticCost(np.array([[1., 2.], [2., 6.]]), b, c)
         self.assertTrue(cost.is_convex())
+
+        cost.UpdateCoefficients(
+            new_Q=np.array([[1, 3], [3, 6.]]),
+            new_b=np.array([2, 4.]),
+            new_c=1,
+            is_convex=False
+        )
+        np.testing.assert_allclose(cost.Q(), np.array([[1, 3], [3, 6]]))
+        np.testing.assert_allclose(cost.b(), np.array([2, 4.]))
+        self.assertEqual(cost.c(), 1)
+
+        cost.UpdateHessianEntry(i=0, j=1, val=1, is_hessian_psd=None)
+        np.testing.assert_allclose(cost.Q(), np.array([[1, 1], [1, 6]]))
+        self.assertTrue(cost.is_convex())
+        cost.UpdateLinearCoefficientEntry(i=1, val=5)
+        np.testing.assert_allclose(cost.b(), np.array([2, 5.]))
+        cost.UpdateConstantTerm(new_c=2)
+        self.assertEqual(cost.c(), 2)
 
     def test_l1norm_cost(self):
         A = np.array([[1., 2.], [-.4, .7]])

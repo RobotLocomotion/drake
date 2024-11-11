@@ -49,6 +49,24 @@ std::string ToLatexCost(const Cost& cost,
 
 LinearCost::~LinearCost() = default;
 
+void LinearCost::UpdateCoefficients(
+    const Eigen::Ref<const Eigen::VectorXd>& new_a, double new_b) {
+  if (new_a.rows() != a_.rows()) {
+    throw std::runtime_error("Can't change the number of decision variables");
+  }
+
+  a_ = new_a;
+  b_ = new_b;
+}
+
+void LinearCost::UpdateCoefficientEntry(int i, double val) {
+  a_[i] = val;
+}
+
+void LinearCost::UpdateConstantTerm(double new_b) {
+  b_ = new_b;
+}
+
 template <typename DerivedX, typename U>
 void LinearCost::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                VectorX<U>* y) const {
@@ -81,6 +99,27 @@ std::string LinearCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
 }
 
 QuadraticCost::~QuadraticCost() = default;
+
+void QuadraticCost::UpdateHessianEntry(int i, int j, double val,
+                                       std::optional<bool> is_hessian_psd) {
+  Q_(i, j) = val;
+  if (i != j) {
+    Q_(j, i) = val;
+  }
+  if (is_hessian_psd.has_value()) {
+    is_convex_ = is_hessian_psd.value();
+  } else {
+    is_convex_ = CheckHessianPsd();
+  }
+}
+
+void QuadraticCost::UpdateLinearCoefficientEntry(int i, double val) {
+  b_(i) = val;
+}
+
+void QuadraticCost::UpdateConstantTerm(double new_c) {
+  c_ = new_c;
+}
 
 template <typename DerivedX, typename U>
 void QuadraticCost::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
