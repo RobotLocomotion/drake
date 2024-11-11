@@ -69,10 +69,7 @@ GTEST_TEST(SemidefiniteRelaxationOptions, DefaultOptionsTest) {
   SemidefiniteRelaxationOptions options{};
   EXPECT_TRUE(options.add_implied_linear_equality_constraints);
   EXPECT_TRUE(options.add_implied_linear_constraints);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
-#pragma GCC diagnostic pop
 }
 
 GTEST_TEST(SemidefiniteRelaxationOptions, SetWeakestTest) {
@@ -292,8 +289,6 @@ TEST_F(MakeSemidefiniteRelaxationTest, LinearizeQuadraticCostsAndConstraints) {
             prog_.GetAllConstraints().size() + 1 + 1);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(MakeSemidefiniteRelaxationTest,
        LinearizeQuadraticCostsAndConstraintsPreserveFalse) {
   SemidefiniteRelaxationOptions options{};
@@ -323,10 +318,6 @@ TEST_F(MakeSemidefiniteRelaxationTest,
   EXPECT_EQ(relaxation->GetAllConstraints().size(),
             prog_.GetAllConstraints().size() + 1 + 1);
 }
-#pragma GCC diagnostic pop
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 TEST_F(MakeSemidefiniteRelaxationTest,
        LinearizeQuadraticCostsAndConstraintsPreserveTrue) {
   SemidefiniteRelaxationOptions options{};
@@ -359,7 +350,6 @@ TEST_F(MakeSemidefiniteRelaxationTest,
   EXPECT_EQ(relaxation->GetAllConstraints().size(),
             prog_.GetAllConstraints().size() + 1 + 1);
 }
-#pragma GCC diagnostic pop
 
 TEST_F(MakeSemidefiniteRelaxationTest, AddImpliedLinearConstraint) {
   SemidefiniteRelaxationOptions options{};

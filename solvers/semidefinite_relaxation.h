@@ -30,17 +30,16 @@ struct SemidefiniteRelaxationOptions {
    * relaxation.*/
   bool add_implied_linear_constraints{true};
 
-  /** No longer in use, hence this parameter does nothing. Given a convex
-   * quadratic constraint xᵀP x + xᵀq + r <= 0 it is always stronger to add the
-   * linearized constraint Tr(PX) + xᵀq + r <= 0 (as is already done for all
-   * convex and nonconvex quadratic constraints), rendering the original convex
-   * quadratic constraints unnecessary.
+  /** 2025-04-01 DEPRECATION NOTICE: The convex quadratic constraints are
+   * already implied by a linear constraint that is always added to the
+   * semidefinite relaxation. Therefore, this flag has no effect on the solution
+   * to the overall program and will be deprecated on April 1st, 2025.
+   *
+   * Given a convex quadratic constraint xᵀP x + xᵀq + r <= 0 it is always
+   * stronger to add the linearized constraint Tr(PX) + xᵀq + r <= 0 (as is
+   * already done for all convex and nonconvex quadratic constraints), rendering
+   * the original convex quadratic constraints unnecessary.
    * */
-  DRAKE_DEPRECATED("2025-04-01",
-                   "The convex quadratics constraints are already implied by a "
-                   "linear constraint that is always added to the semidefinite "
-                   "relaxation. Therefore, this flag has no effect on the "
-                   "solution to the overall program and so will be removed.")
   bool preserve_convex_quadratic_constraints{false};
 
   /** Configure the semidefinite relaxation options to provide the strongest
