@@ -44,6 +44,32 @@ void make_ref_cycle(handle p0, handle p1) {
   make_link(p1, p0);
 }
 
+void check_and_make_ref_cycle(size_t peer0, handle p0, size_t peer1, handle p1,
+    std::function<std::string(size_t)> not_gc_message_function) {
+  // Returns false if the handle's value is None. Throws if the handle's value
+  // is not of a garbage-collectable type.
+  auto check_handle = [&](size_t n, handle p) -> bool {
+    if (p.is_none()) {
+      return false;
+    }
+    // Among the reasons the following check may fail is that one of the
+    // participating pybind11::class_ types does not declare
+    // pybind11::dynamic_attr().
+    if (!PyType_IS_GC(Py_TYPE(p.ptr()))) {
+      py::pybind11_fail(not_gc_message_function(n));
+    }
+    return true;
+  };
+  if (!check_handle(peer0, p0) || !check_handle(peer1, p1)) {
+    // At least one of the handles is None. We can't construct a ref-cycle, but
+    // neither should we complain. None variable values happen for any number of
+    // legitimate reasons; appearance of None doesn't imply a defective use of
+    // the ref_cycle policy.
+    return;
+  }
+  make_ref_cycle(p0, p1);
+}
+
 }  // namespace
 
 void ref_cycle_impl(
@@ -67,32 +93,27 @@ void ref_cycle_impl(
   handle p0 = get_arg(peer0);
   handle p1 = get_arg(peer1);
 
-  // Returns false if the handle's value is None. Throws if the handle's value
-  // is not of a garbage-collectable type.
-  auto check_handle = [&](size_t n, handle p) -> bool {
-    if (p.is_none()) {
-      return false;
-    }
-    // Among the reasons the following check may fail is that one of the
-    // participating pybind11::class_ types does not declare
-    // pybind11::dynamic_attr().
-    if (!PyType_IS_GC(Py_TYPE(p.ptr()))) {
-      py::pybind11_fail(fmt::format(
-          "Could not activate ref_cycle: object type at index {} for "
-          "function '{}' is not tracked by garbage collection. Was the object "
-          "defined with `pybind11::class_<...>(... pybind11::dynamic_attr())`?",
-          n, call.func.name));
-    }
-    return true;
+  auto not_gc_error = [&call](size_t n) -> std::string {
+    return fmt::format(
+        "Could not activate ref_cycle: object type at index {} for "
+        "function '{}' is not tracked by garbage collection.  Was the object "
+        "defined with `pybind11::class_<...>(... pybind11::dynamic_attr())`?",
+        n, call.func.name);
   };
-  if (!check_handle(peer0, p0) || !check_handle(peer1, p1)) {
-    // At least one of the handles is None. We can't construct a ref-cycle, but
-    // neither should we complain. A None variable value could happen for any
-    // number of legitimate reasons, and does not mean that the ref_cycle call
-    // policy is defective.
-    return;
-  }
-  make_ref_cycle(p0, p1);
+  check_and_make_ref_cycle(peer0, p0, peer1, p1, not_gc_error);
+}
+
+void make_arbitrary_ref_cycle(
+    handle p0, handle p1, const std::string& location_hint) {
+  auto not_gc_error = [&location_hint](size_t n) -> std::string {
+    return fmt::format(
+        "Could not activate arbitrary ref_cycle: object type at argument {} "
+        "for binding at '{}' is not tracked by garbage collection.  Was the "
+        "object defined with `pybind11::class_<...>(... "
+        "pybind11::dynamic_attr())`?",
+        n, location_hint);
+  };
+  check_and_make_ref_cycle(0, p0, 1, p1, not_gc_error);
 }
 
 }  // namespace internal
