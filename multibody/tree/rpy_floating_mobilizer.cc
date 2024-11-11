@@ -203,6 +203,17 @@ void RpyFloatingMobilizer<T>::ProjectSpatialForce(
 }
 
 template <typename T>
+auto RpyFloatingMobilizer<T>::DoPoseToPositions(
+    const Eigen::Quaternion<T> orientation, const Vector3<T>& translation) const
+    -> std::optional<QVector<T>> {
+  const math::RollPitchYaw rpy(orientation);
+  QVector<T> q;
+  q.template head<3>() = rpy.vector();
+  q.template tail<3>() = translation;
+  return q;
+}
+
+template <typename T>
 void RpyFloatingMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
                                             EigenPtr<MatrixX<T>> N) const {
   using std::abs;

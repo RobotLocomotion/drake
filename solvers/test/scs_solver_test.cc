@@ -411,6 +411,35 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1SDP) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    TestTrivial1x1SDP(scs_solver, 1E-5, /*check_dual=*/false);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial2x2SDP) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    TestTrivial2x2SDP(scs_solver, 1E-5, /*check_dual=*/false);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test1x1with3x3SDP) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    Test1x1with3x3SDP(scs_solver, 1E-5, /*check_dual=*/false);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
+  ScsSolver scs_solver;
+  if (scs_solver.available()) {
+    Test2x2with3x3SDP(scs_solver, 1E-2, /*check_dual=*/false,
+                      /*dual_tol=*/1E-5);
+  }
+}
+
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   ScsSolver solver;
   if (solver.available()) {

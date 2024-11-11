@@ -78,6 +78,27 @@ TEST_F(TrivialSDP1, Solve) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial2x2SDP) {
+  CsdpSolver solver;
+  if (solver.available()) {
+    TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-5);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test1x1with3x3SDP) {
+  CsdpSolver solver;
+  if (solver.available()) {
+    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/false, /*dual_tol=*/1E-5);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
+  CsdpSolver solver;
+  if (solver.available()) {
+    Test2x2with3x3SDP(solver, 1E-2, /*check_dual=*/false, /*dual_tol=*/1E-5);
+  }
+}
+
 std::vector<RemoveFreeVariableMethod> GetRemoveFreeVariableMethods() {
   return {RemoveFreeVariableMethod::kNullspace,
           RemoveFreeVariableMethod::kTwoSlackVariables,

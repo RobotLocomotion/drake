@@ -97,6 +97,25 @@ GTEST_TEST(RotationTest, RpyToYaml) {
             "root:\n  value: !Rpy\n    deg: [1.0, 2.0, 3.0]\n");
 }
 
+GTEST_TEST(RotationTest, Sample) {
+  constexpr const char* const yaml_data = R"""(
+  value: !Rpy { deg: !UniformVector { min: [0, 10, 20], max: [30, 40, 50] } }
+  )""";
+  const auto rotation = LoadYamlString<Rotation>(yaml_data);
+  drake::RandomGenerator generator(0);
+  const RollPitchYawd sample{rotation.Sample(&generator)};
+  const Vector3d rpy = sample.vector() * 180 / M_PI;
+  EXPECT_GE(rpy[0], 0);
+  EXPECT_GE(rpy[1], 10);
+  EXPECT_GE(rpy[2], 20);
+  EXPECT_LE(rpy[0], 30);
+  EXPECT_LE(rpy[1], 40);
+  EXPECT_LE(rpy[2], 50);
+
+  const RollPitchYawd sample2{rotation.Sample(&generator)};
+  EXPECT_NE(sample.vector(), sample2.vector());
+}
+
 }  // namespace
 }  // namespace schema
 }  // namespace drake

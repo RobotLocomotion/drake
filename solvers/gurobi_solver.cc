@@ -952,7 +952,7 @@ void GurobiSolver::DoSolve2(const MathematicalProgram& prog,
   const std::optional<std::string> grb_write =
       options->template Pop<std::string>("GRBwrite");
 
-  // Copy the remaining options into model_env.
+  // Convert the common options into their Gurobi flavor.
   options->Respell([](const auto& common, auto* respelled) {
     respelled->emplace("LogToConsole", common.print_to_console ? 1 : 0);
     if (!common.print_file_name.empty()) {
@@ -986,6 +986,11 @@ void GurobiSolver::DoSolve2(const MathematicalProgram& prog,
     DRAKE_DEMAND(num_threads.has_value());
     respelled->emplace("Threads", *num_threads);
   });
+
+  // Copy the remaining options into model_env. Set the logging level first, so
+  // that changes to any of the other options are uniformly logged (or not).
+  SetOptionOrThrow(model_env, "LogToConsole",
+                   options->Pop<int>("LogToConsole").value_or(0));
   options->CopyToCallbacks(
       [&model_env](const std::string& key, double value) {
         SetOptionOrThrow(model_env, key, value);

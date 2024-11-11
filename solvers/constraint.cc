@@ -251,6 +251,9 @@ LorentzConeConstraint::LorentzConeConstraint(
   set_is_thread_safe(true);
   DRAKE_THROW_UNLESS(A_.rows() >= 2);
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
+
+  // Set the gradient sparsity pattern.
+  UpdateGradientSparsityPattern();
 }
 
 LorentzConeConstraint::~LorentzConeConstraint() = default;
@@ -274,6 +277,9 @@ void LorentzConeConstraint::UpdateCoefficients(
   // bounds only depend on EvalType. When EvalType=kNonconvex, the lower/upper
   // bound is [0, 0]/[inf, inf] respectively; otherwise, the lower/upper bound
   // is 0/inf respectively.
+
+  // Update the gradient sparsity pattern.
+  UpdateGradientSparsityPattern();
 }
 
 namespace {
@@ -354,6 +360,65 @@ std::string LorentzConeConstraint::DoToLatex(
                      symbolic::ToLatex(z(0), precision));
 }
 
+void LorentzConeConstraint::UpdateGradientSparsityPattern() {
+  std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+  switch (eval_type_) {
+    case EvalType::kConvex:
+    case EvalType::kConvexSmooth: {
+      // For both kConvex and kConvexSmooth, we evaluate
+      // y=z(0) - sqrt(z(1)²+z(2)²+...+z(n-1)²) where z = A*x+b
+      // So dy/dx(i) is non-zero if A.col(i) is non-zero.
+      for (int i = 0; i < A_.outerSize(); ++i) {
+        for (Eigen::SparseMatrix<double>::InnerIterator it(A_, i); it; ++it) {
+          if (it.value() != 0) {
+            gradient_sparsity_pattern.emplace_back(0, i);
+            break;
+          }
+        }
+      }
+      break;
+    }
+    case EvalType::kNonconvex: {
+      // We evaluate
+      // y(0) = z(0)
+      // y(1) = z(0)² -(z(1)²+...+z(n-1)²)
+      // z = A*x+b.
+      // so dy(0)/dx(i) is non-zero if A(0, i) is non-zero.
+      // dy(1)/dx(i) is non-zero if A.col(i) is non-zero.
+      for (int i = 0; i < A_.outerSize(); ++i) {
+        bool is_column_zero = true;
+        for (Eigen::SparseMatrix<double>::InnerIterator it(A_, i); it; ++it) {
+          if (it.value() != 0) {
+            is_column_zero = false;
+            if (it.row() == 0) {
+              gradient_sparsity_pattern.emplace_back(0, i);
+            }
+          }
+        }
+        if (!is_column_zero) {
+          gradient_sparsity_pattern.emplace_back(1, i);
+        }
+      }
+    }
+  }
+  this->SetGradientSparsityPattern(gradient_sparsity_pattern);
+}
+
+RotatedLorentzConeConstraint::RotatedLorentzConeConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& A,
+    const Eigen::Ref<const Eigen::VectorXd>& b)
+    : Constraint(
+          3, A.cols(), Eigen::Vector3d::Constant(0.0),
+          Eigen::Vector3d::Constant(std::numeric_limits<double>::infinity())),
+      A_(A.sparseView()),
+      A_dense_(A),
+      b_(b) {
+  DRAKE_THROW_UNLESS(A_.rows() >= 3);
+  DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
+  set_is_thread_safe(true);
+  UpdateGradientSparsityPattern();
+}
+
 RotatedLorentzConeConstraint::~RotatedLorentzConeConstraint() = default;
 
 void RotatedLorentzConeConstraint::UpdateCoefficients(
@@ -372,6 +437,8 @@ void RotatedLorentzConeConstraint::UpdateCoefficients(
   DRAKE_THROW_UNLESS(A_.rows() == b_.rows());
   // Note that we don't need to update the lower and upper bounds as the
   // constraints lower/upper bounds are fixed (independent of A and b).
+
+  UpdateGradientSparsityPattern();
 }
 
 template <typename DerivedX, typename ScalarY>
@@ -414,6 +481,36 @@ std::string RotatedLorentzConeConstraint::DoToLatex(
       symbolic::ToLatex(z(0), precision), symbolic::ToLatex(z(1), precision),
       symbolic::ToLatex(z.tail(z.size() - 2).eval(), precision),
       symbolic::ToLatex(z(0) * z(1), precision));
+}
+
+void RotatedLorentzConeConstraint::UpdateGradientSparsityPattern() {
+  // Set the sparsity pattern.
+  // We evaluate
+  // y(0) = z(0)
+  // y(1) = z(1)
+  // y(2) = z(0)*z(1)-z(2)²-...-z(n-1)²
+  // where z = A*x+b.
+  // dy(0)/dx(i) is non-zero if A(0, i) is non-zero
+  // dy(1)/dx(i) is non-zero if A(1, i) is non-zero
+  // dy(2)/dx(i) is non-zero if A.col(i) is non-zero
+  std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+  for (int i = 0; i < A_.outerSize(); ++i) {
+    bool is_column_zero = true;
+    for (Eigen::SparseMatrix<double>::InnerIterator it(A_, i); it; ++it) {
+      if (it.value() != 0) {
+        is_column_zero = false;
+        if (it.row() == 0) {
+          gradient_sparsity_pattern.emplace_back(0, i);
+        } else if (it.row() == 1) {
+          gradient_sparsity_pattern.emplace_back(1, i);
+        }
+      }
+    }
+    if (!is_column_zero) {
+      gradient_sparsity_pattern.emplace_back(2, i);
+    }
+  }
+  this->SetGradientSparsityPattern(gradient_sparsity_pattern);
 }
 
 PolynomialConstraint::~PolynomialConstraint() = default;
@@ -671,18 +768,6 @@ PositiveSemidefiniteConstraint::PositiveSemidefiniteConstraint(int rows)
                  Eigen::VectorXd::Constant(
                      rows, std::numeric_limits<double>::infinity())),
       matrix_rows_(rows) {
-  // TODO(hongkai.dai): remove the warning when we change the solver backend.
-  if (matrix_rows_ == 1) {
-    drake::log()->warn(
-        "PositiveSemidefiniteConstraint: rows==1, please consider "
-        "reformulating this as a linear inequality constraint for better "
-        "speed/numerics.");
-  } else if (matrix_rows_ == 2) {
-    drake::log()->warn(
-        "PositiveSemidefiniteConstraint: rows==2, please consider to "
-        "reformulating this as a rotated Lorentz cone constraint for better "
-        "speed/numerics.");
-  }
   set_is_thread_safe(true);
 }
 
@@ -726,6 +811,20 @@ std::string PositiveSemidefiniteConstraint::DoToLatex(
   return fmt::format("{} \\succeq 0", symbolic::ToLatex(S.eval(), precision));
 }
 
+void PositiveSemidefiniteConstraint::WarnOnSmallMatrixSize() const {
+  if (matrix_rows_ == 1) {
+    drake::log()->warn(
+        "PositiveSemidefiniteConstraint: rows==1, please consider "
+        "reformulating this as a linear inequality constraint for better "
+        "speed/numerics.");
+  } else if (matrix_rows_ == 2) {
+    drake::log()->warn(
+        "PositiveSemidefiniteConstraint: rows==2, please consider "
+        "reformulating this as a rotated Lorentz cone constraint for better "
+        "speed/numerics.");
+  }
+}
+
 LinearMatrixInequalityConstraint::~LinearMatrixInequalityConstraint() = default;
 
 void LinearMatrixInequalityConstraint::DoEval(
@@ -761,20 +860,6 @@ LinearMatrixInequalityConstraint::LinearMatrixInequalityConstraint(
       F_{std::move(F)},
       matrix_rows_(F_.empty() ? 0 : F_.front().rows()) {
   DRAKE_THROW_UNLESS(!F_.empty());
-  // TODO(hongkai.dai): remove the warning when we change the solver backend.
-  if (matrix_rows_ == 1) {
-    drake::log()->warn(
-        "LinearMatrixInequalityConstraint: the matrix has size 1. Please "
-        "consider"
-        "reformulating this as a linear inequality constraint for better "
-        "speed/numerics.");
-  } else if (matrix_rows_ == 2) {
-    drake::log()->warn(
-        "LinearMatrixInequalityConstraint: the matrix has size 2. Please "
-        "consider "
-        "reformulating this as a rotated Lorentz cone constraint for better "
-        "speed/numerics.");
-  }
 
   set_bounds(Eigen::VectorXd::Zero(matrix_rows_),
              Eigen::VectorXd::Constant(
@@ -793,6 +878,22 @@ std::string LinearMatrixInequalityConstraint::DoToLatex(
     S += vars(i - 1) * F_[i];
   }
   return fmt::format("{} \\succeq 0", symbolic::ToLatex(S, precision));
+}
+
+void LinearMatrixInequalityConstraint::WarnOnSmallMatrixSize() const {
+  // TODO(hongkai.dai): remove the warning when we change the solver backend.
+  if (matrix_rows_ == 1) {
+    drake::log()->warn(
+        "LinearMatrixInequalityConstraint: the matrix has size 1. Please "
+        "consider"
+        "reformulating this as a linear inequality constraint for better "
+        "speed/numerics.");
+  } else if (matrix_rows_ == 2) {
+    drake::log()->warn(
+        "LinearMatrixInequalityConstraint: the matrix has size 2. Please "
+        "consider reformulating this as a rotated Lorentz cone constraint for "
+        "better speed/numerics.");
+  }
 }
 
 ExpressionConstraint::ExpressionConstraint(

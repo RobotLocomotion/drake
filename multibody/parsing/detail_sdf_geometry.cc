@@ -35,6 +35,7 @@ using std::string;
 using drake::internal::DiagnosticPolicy;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
+using geometry::PerceptionProperties;
 using geometry::ProximityProperties;
 using math::RigidTransformd;
 
@@ -67,9 +68,8 @@ std::optional<T> GetChildElementValue(const SDFormatDiagnostic& diagnostic,
 
 }  // namespace
 
-std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
-    const SDFormatDiagnostic& diagnostic,
-    const sdf::Geometry& sdf_geometry,
+std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
+    const SDFormatDiagnostic& diagnostic, const sdf::Geometry& sdf_geometry,
     ResolveFilename resolve_filename) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
   const std::set<std::string> supported_geometry_elements{
@@ -104,10 +104,10 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
             diagnostic, capsule_element, {"radius", "length"});
         std::optional<const double> radius =
             GetChildElementValue<double>(diagnostic, capsule_element, "radius");
-        if (!radius.has_value()) return std::nullopt;
+        if (!radius.has_value()) return nullptr;
         std::optional<const double> length =
             GetChildElementValue<double>(diagnostic, capsule_element, "length");
-        if (!length.has_value()) return std::nullopt;
+        if (!length.has_value()) return nullptr;
         return make_unique<geometry::Capsule>(*radius, *length);
       } else if (sdf_geometry.Element()->HasElement("drake:ellipsoid")) {
         const sdf::ElementPtr ellipsoid_element =
@@ -116,17 +116,17 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
             diagnostic, ellipsoid_element, {"a", "b", "c"});
         std::optional<const double> a =
             GetChildElementValue<double>(diagnostic, ellipsoid_element, "a");
-        if (!a.has_value()) return std::nullopt;
+        if (!a.has_value()) return nullptr;
         std::optional<const double> b =
             GetChildElementValue<double>(diagnostic, ellipsoid_element, "b");
-        if (!b.has_value()) return std::nullopt;
+        if (!b.has_value()) return nullptr;
         std::optional<const double> c =
             GetChildElementValue<double>(diagnostic, ellipsoid_element, "c");
-        if (!c.has_value()) return std::nullopt;
+        if (!c.has_value()) return nullptr;
         return make_unique<geometry::Ellipsoid>(*a, *b, *c);
       }
 
-      return std::unique_ptr<geometry::Shape>(nullptr);
+      return nullptr;
     }
     case sdf::GeometryType::BOX: {
       const sdf::Box& shape = *sdf_geometry.BoxShape();
@@ -160,14 +160,17 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
       DRAKE_DEMAND(mesh_element != nullptr);
       std::optional<std::string> mesh_uri =
         GetChildElementValue<std::string>(diagnostic, mesh_element, "uri");
-      if (!mesh_uri.has_value()) return std::nullopt;
+      // We don't register an error; this is a required element and the sdformat
+      // parsing should handle the case of this missing.
+      DRAKE_DEMAND(mesh_uri.has_value());
+      if (!mesh_uri.has_value()) return nullptr;
       const std::string file_name = resolve_filename(diagnostic, *mesh_uri);
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
         std::optional<gz::math::Vector3d> scale_vector =
             GetChildElementValue<gz::math::Vector3d>(
                 diagnostic, mesh_element, "scale");
-        if (!scale_vector.has_value()) return std::nullopt;
+        if (!scale_vector.has_value()) return nullptr;
         // geometry::Mesh only supports isotropic scaling and therefore we
         // enforce it.
         if (!(scale_vector->X() == scale_vector->Y() &&
@@ -176,7 +179,7 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
               "Drake meshes only support isotropic scaling. Therefore all "
               "three scaling factors must be exactly equal.";
           diagnostic.Error(mesh_element, std::move(message));
-          return std::nullopt;
+          return nullptr;
         }
         scale = scale_vector->X();
       }
@@ -212,11 +215,9 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
 
 static constexpr char kAcceptingTag[] = "drake:accepting_renderer";
 
-std::optional<std::unique_ptr<GeometryInstance>>
-    MakeGeometryInstanceFromSdfVisual(
-        const SDFormatDiagnostic& diagnostic,
-        const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
-        const math::RigidTransformd& X_LG) {
+std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
+    const SDFormatDiagnostic& diagnostic, const sdf::Visual& sdf_visual,
+    ResolveFilename resolve_filename, const math::RigidTransformd& X_LG) {
   const std::set<std::string> supported_visual_elements{
     "geometry",
     "material",
@@ -232,7 +233,7 @@ std::optional<std::unique_ptr<GeometryInstance>>
     // drake:capsule, before we can decide to return a null geometry.
     if (!sdf_geometry.Element()->HasElement("drake:capsule") &&
         !sdf_geometry.Element()->HasElement("drake:ellipsoid")) {
-      return std::unique_ptr<GeometryInstance>(nullptr);
+      return nullptr;
     }
   }
 
@@ -283,19 +284,25 @@ std::optional<std::unique_ptr<GeometryInstance>>
     }
   }
 
-  auto shape = MakeShapeFromSdfGeometry(
+  std::unique_ptr<geometry::Shape> shape = MakeShapeFromSdfGeometry(
       diagnostic, sdf_geometry, resolve_filename);
-  if (!shape.has_value()) return std::nullopt;
-  if (*shape == nullptr) {
-    return nullptr;
-  }
+  if (shape == nullptr) return nullptr;
+
   auto instance =
       make_unique<GeometryInstance>(X_LC, std::move(*shape), sdf_visual.Name());
   std::optional<IllustrationProperties> illustration_properties =
       MakeVisualPropertiesFromSdfVisual(
           diagnostic, sdf_visual, resolve_filename);
-  if (!illustration_properties.has_value()) return std::nullopt;
-  instance->set_illustration_properties(*illustration_properties);
+  if (!illustration_properties.has_value()) return nullptr;
+  instance->set_perception_properties(
+      PerceptionProperties(*illustration_properties));
+  if (illustration_properties->HasProperty("renderer", "accepting")) {
+    // We stashed the perception property in the illustration properties. It has
+    // been copied into the perception properties, so we can remove it from here
+    // now.
+    illustration_properties->RemoveProperty("renderer", "accepting");
+  }
+  instance->set_illustration_properties(*std::move(illustration_properties));
   return instance;
 }
 
@@ -371,11 +378,10 @@ std::optional<IllustrationProperties> MakeVisualPropertiesFromSdfVisual(
     add_property("emissive", &properties);
   }
 
-  // TODO(SeanCurtis-TRI): Including this property in illustration properties is
-  //  a bit misleading; it isn't used by illustration, but we're not currently
-  //  parsing illustration and perception properties separately. So, we stash
-  //  them in the illustration properties relying on it to be ignored by
-  //  illustration consumers but copied over to the perception properties.
+  // We're putting this perception property into the illustration properties.
+  // We'll create the PerceptionProperties from these illustration properties
+  // and simply remove this property from the illustration properties as clean
+  // up.
   if (visual_element->HasElement(kAcceptingTag)) {
     set<string> accepting_names;
     sdf::ElementPtr accepting = visual_element->GetElement(kAcceptingTag);
