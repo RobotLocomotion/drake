@@ -10,22 +10,25 @@ import os
 import re
 import subprocess
 import sys
+from pathlib import Path
 from subprocess import Popen, PIPE, STDOUT
 
-from tools.lint.find_data import find_data
-from tools.lint.util import find_all_sources
+from python import runfiles
 
-# These match data=[] in our BUILD.bazel file.
-_BUILDIFIER = "external/buildifier/buildifier"
-_TABLES = "tools/lint/buildifier-tables.json"
+from tools.lint.util import find_all_sources
 
 
 def _make_buildifier_command():
     """Returns a list starting with the buildifier executable, followed by any
     required default arguments."""
-    return [
-        find_data(_BUILDIFIER),
-        "-add_tables={}".format(find_data(_TABLES))]
+    manifest = runfiles.Create()
+    buildifier = manifest.Rlocation("buildifier/buildifier")
+    tables = manifest.Rlocation("drake/tools/lint/buildifier-tables.json")
+    assert buildifier is not None
+    assert tables is not None
+    buildifier = Path(buildifier).absolute()
+    tables = Path(tables).absolute()
+    return [buildifier, f"-add_tables={tables}"]
 
 
 def _help(command):

@@ -24,6 +24,9 @@ drake_py_unittest(
         "@ipopt_internal_fromsource//:src/Makefile.am",
     ],
     tags = ["lint"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
 )
 
 add_lint_tests()

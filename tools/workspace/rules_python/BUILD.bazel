@@ -8,6 +8,9 @@ drake_py_unittest(
         "@rules_python//python/private:internal_config_repo_bzl",
     ],
     tags = ["lint"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
 )
 
 add_lint_tests()

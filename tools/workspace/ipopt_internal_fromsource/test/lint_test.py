@@ -1,13 +1,17 @@
 import json
 import unittest
+from pathlib import Path
+
+from python import runfiles
 
 
 class IpoptLintTest(unittest.TestCase):
 
-    def _read(self, filename):
-        """Returns the contents of the given filename."""
-        with open(filename, encoding="utf-8") as f:
-            return f.read()
+    def _read(self, respath):
+        """Returns the contents of the given resource path."""
+        manifest = runfiles.Create()
+        path = Path(manifest.Rlocation(respath))
+        return path.read_text(encoding="utf-8")
 
     def _parse_build(self, varname):
         """Parses a constant list of filenames from a BUILD file.
@@ -20,7 +24,8 @@ class IpoptLintTest(unittest.TestCase):
         """
         result = []
         contents = self._read(
-            "tools/workspace/ipopt_internal_fromsource/package.BUILD.bazel")
+            "drake/tools/workspace/ipopt_internal_fromsource/"
+            + "package.BUILD.bazel")
         lines = contents.splitlines()
         start_line = f"{varname} = ["
         end_line = "]"
@@ -52,8 +57,7 @@ class IpoptLintTest(unittest.TestCase):
           path/to/file2
         """
         result = []
-        contents = self._read(
-            "external/ipopt_internal_fromsource/src/Makefile.am")
+        contents = self._read("ipopt_internal_fromsource/src/Makefile.am")
         lines = contents.splitlines()
         if guard_line is None:
             start_line = f"{varname} = \\"
@@ -102,7 +106,7 @@ class IpoptLintTest(unittest.TestCase):
         """
         # Parse the Bazel version.
         commit = json.loads(self._read(
-            "external/ipopt_internal_fromsource/"
+            "ipopt_internal_fromsource/"
             "drake_repository_metadata.json"))["commit"]
         prefix = "releases/"
         self.assertTrue(commit.startswith(prefix), commit)
@@ -110,7 +114,7 @@ class IpoptLintTest(unittest.TestCase):
 
         # Parse the Wheel version from the line `set(ipopt_version #.#.#)`.
         projects = self._read(
-            "tools/wheel/image/dependencies/projects.cmake")
+            "drake/tools/wheel/image/dependencies/projects.cmake")
         prefix = "set(ipopt_version "
         start = projects.index(prefix) + len(prefix)
         end = projects.index(")", start)
