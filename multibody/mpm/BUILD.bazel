@@ -19,6 +19,7 @@ drake_cc_library_linux_only(
         "spgrid.h",
     ],
     deps = [
+        "//common:essential",
         "@spgrid_internal",
     ],
 )
