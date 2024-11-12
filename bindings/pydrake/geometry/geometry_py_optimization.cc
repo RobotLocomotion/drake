@@ -1465,15 +1465,17 @@ void DefineGeodesicConvexity(py::module m) {
       [](const std::vector<ConvexSet*>& convex_sets_A,
           const std::vector<ConvexSet*>& convex_sets_B,
           const std::vector<int>& continuous_revolute_joints,
-          bool preprocess_bbox) {
+          bool preprocess_bbox, Parallelism parallelism) {
         return ComputePairwiseIntersections(CloneConvexSets(convex_sets_A),
             CloneConvexSets(convex_sets_B), continuous_revolute_joints,
-            preprocess_bbox);
+            preprocess_bbox, parallelism);
       },
       py::arg("convex_sets_A"), py::arg("convex_sets_B"),
       py::arg("continuous_revolute_joints"), py::arg("preprocess_bbox") = true,
+      py::arg("parallelism") = Parallelism::Max(),
       doc.ComputePairwiseIntersections
-          .doc_4args_convex_sets_A_convex_sets_B_continuous_revolute_joints_preprocess_bbox);
+          .doc_5args_convex_sets_A_convex_sets_B_continuous_revolute_joints_preprocess_bbox_parallelism,
+      py::call_guard<py::gil_scoped_release>());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   m.def("CalcPairwiseIntersections",
@@ -1499,16 +1501,18 @@ void DefineGeodesicConvexity(py::module m) {
           const std::vector<ConvexSet*>& convex_sets_B,
           const std::vector<int>& continuous_revolute_joints,
           const std::vector<Hyperrectangle>& bboxes_A,
-          const std::vector<Hyperrectangle>& bboxes_B) {
+          const std::vector<Hyperrectangle>& bboxes_B,
+          Parallelism parallelism) {
         return ComputePairwiseIntersections(CloneConvexSets(convex_sets_A),
             CloneConvexSets(convex_sets_B), continuous_revolute_joints,
-            bboxes_A, bboxes_B);
+            bboxes_A, bboxes_B, parallelism);
       },
       py::arg("convex_sets_A"), py::arg("convex_sets_B"),
       py::arg("continuous_revolute_joints"), py::arg("bboxes_A"),
-      py::arg("bboxes_B"),
+      py::arg("bboxes_B"), py::arg("parallelism") = Parallelism::Max(),
       doc.ComputePairwiseIntersections
-          .doc_5args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B);
+          .doc_6args_convex_sets_A_convex_sets_B_continuous_revolute_joints_bboxes_A_bboxes_B_parallelism,
+      py::call_guard<py::gil_scoped_release>());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   m.def("CalcPairwiseIntersections",
@@ -1534,14 +1538,16 @@ void DefineGeodesicConvexity(py::module m) {
       "ComputePairwiseIntersections",
       [](const std::vector<ConvexSet*>& convex_sets,
           const std::vector<int>& continuous_revolute_joints,
-          bool preprocess_bbox) {
+          bool preprocess_bbox, Parallelism parallelism) {
         return ComputePairwiseIntersections(CloneConvexSets(convex_sets),
-            continuous_revolute_joints, preprocess_bbox);
+            continuous_revolute_joints, preprocess_bbox, parallelism);
       },
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
       py::arg("preprocess_bbox") = true,
+      py::arg("parallelism") = Parallelism::Max(),
       doc.ComputePairwiseIntersections
-          .doc_3args_convex_sets_continuous_revolute_joints_preprocess_bbox);
+          .doc_4args_convex_sets_continuous_revolute_joints_preprocess_bbox_parallelism,
+      py::call_guard<py::gil_scoped_release>());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   m.def("CalcPairwiseIntersections",
@@ -1563,14 +1569,16 @@ void DefineGeodesicConvexity(py::module m) {
       "ComputePairwiseIntersections",
       [](const std::vector<ConvexSet*>& convex_sets,
           const std::vector<int>& continuous_revolute_joints,
-          const std::vector<Hyperrectangle>& bboxes) {
-        return ComputePairwiseIntersections(
-            CloneConvexSets(convex_sets), continuous_revolute_joints, bboxes);
+          const std::vector<Hyperrectangle>& bboxes, Parallelism parallelism) {
+        return ComputePairwiseIntersections(CloneConvexSets(convex_sets),
+            continuous_revolute_joints, bboxes, parallelism);
       },
       py::arg("convex_sets"), py::arg("continuous_revolute_joints"),
       py::arg("bboxes") = std::vector<Hyperrectangle>{},
+      py::arg("parallelism") = Parallelism::Max(),
       doc.ComputePairwiseIntersections
-          .doc_3args_convex_sets_continuous_revolute_joints_bboxes);
+          .doc_4args_convex_sets_continuous_revolute_joints_bboxes_parallelism,
+      py::call_guard<py::gil_scoped_release>());
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   m.def("CalcPairwiseIntersections",

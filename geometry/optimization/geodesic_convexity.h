@@ -153,6 +153,7 @@ axis-aligned bounding boxes (AABBs) for every set. This can speed up the
 pairwise intersection checks, by determining some sets to be disjoint without
 needing to solve an optimization problem. However, it does require some overhead
 to compute those bounding boxes.
+@param parallelism specifies the number of threads to use.
 
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
@@ -163,7 +164,8 @@ std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
                              const ConvexSets& convex_sets_B,
                              const std::vector<int>& continuous_revolute_joints,
-                             bool preprocess_bbox = true);
+                             bool preprocess_bbox = true,
+                             Parallelism parallelism = Parallelism::Max());
 
 /** Computes the pairwise intersections between two lists of convex sets,
 returning a list of edges. Each edge is a tuple in the form [index_A, index_B,
@@ -220,7 +222,8 @@ ComputePairwiseIntersections(
     const ConvexSets& convex_sets_A, const ConvexSets& convex_sets_B,
     const std::vector<int>& continuous_revolute_joints,
     const std::vector<geometry::optimization::Hyperrectangle>& bboxes_A,
-    const std::vector<geometry::optimization::Hyperrectangle>& bboxes_B);
+    const std::vector<geometry::optimization::Hyperrectangle>& bboxes_B,
+    Parallelism parallelism = Parallelism::Max());
 
 /** Overload of `CalcPairwiseIntersections` allowing the user to supply axis-
 aligned bounding boxes if they're known a priori, to save on computation time.
@@ -259,6 +262,7 @@ continuous revolute joints.
 axis-aligned bounding boxes for every set. This can speed up the pairwise
 intersection checks, by determining some sets to be disjoint without needing
 to solve an optimization problem.
+@param parallelism specifies the number of threads to use.
 
 @throws if `continuous_revolute_joints` has repeated entries, or if any entry
 is outside the interval [0, ambient_dimension), where ambient_dimension is the
@@ -268,7 +272,8 @@ ambient dimension of the convex sets in `convex_sets`.
 std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(const ConvexSets& convex_sets,
                              const std::vector<int>& continuous_revolute_joints,
-                             bool preprocess_bbox = true);
+                             bool preprocess_bbox = true,
+                             Parallelism parallelism = Parallelism::Max());
 
 /** Convenience overload to compute pairwise intersections within a list of
 convex sets. Equivalent to calling CalcPairwiseIntersections(convex_sets,
@@ -312,7 +317,8 @@ std::pair<std::vector<std::pair<int, int>>, std::vector<Eigen::VectorXd>>
 ComputePairwiseIntersections(
     const ConvexSets& convex_sets,
     const std::vector<int>& continuous_revolute_joints,
-    const std::vector<geometry::optimization::Hyperrectangle>& bboxes);
+    const std::vector<geometry::optimization::Hyperrectangle>& bboxes,
+    Parallelism parallelism = Parallelism::Max());
 
 /** Overload of `CalcPairwiseIntersections` allowing the user to supply axis-
 aligned bounding boxes if they're known a priori, to save on computation time.

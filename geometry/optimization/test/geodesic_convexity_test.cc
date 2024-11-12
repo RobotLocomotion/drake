@@ -340,109 +340,119 @@ GTEST_TEST(GeodesicConvexityTest, ComputePairwiseIntersections1) {
   // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2π
   // h2 <--> h4: would intersect if h2 is translated by (1, -5) * 2π
 
-  auto [edges_none, offsets_none] =
-      ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{});
-  auto [edges_zero, offsets_zero] =
-      ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{0});
-  auto [edges_one, offsets_one] =
-      ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{1});
-  auto [edges_both, offsets_both] =
-      ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1});
+  // Cross-check that our BUILD file allows parallelism.
+  DRAKE_DEMAND(Parallelism::Max().num_threads() > 1);
 
-  EXPECT_EQ(edges_none.size(), offsets_none.size());
-  EXPECT_EQ(edges_zero.size(), offsets_zero.size());
-  EXPECT_EQ(edges_one.size(), offsets_one.size());
-  EXPECT_EQ(edges_both.size(), offsets_both.size());
+  for (auto parallelism : {Parallelism::None(), Parallelism::Max()}) {
+    auto [edges_none, offsets_none] =
+        ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{},
+                                     true /* preprocess_bbox */, parallelism);
+    auto [edges_zero, offsets_zero] =
+        ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{0},
+                                     true /* preprocess_bbox */, parallelism);
+    auto [edges_one, offsets_one] =
+        ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{1},
+                                     true /* preprocess_bbox */, parallelism);
+    auto [edges_both, offsets_both] =
+        ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1},
+                                     true /* preprocess_bbox */, parallelism);
 
-  // Without continuous revolute joints, the intersection is empty.
-  EXPECT_EQ(edges_none.size(), 0);
-  // With only first joint continuous, the only intersection is h1 <--> h3.
-  EXPECT_EQ(edges_zero.size(), 1);
-  // With only second joint continuous, the intersection is empty.
-  EXPECT_EQ(edges_one.size(), 0);
-  // With all joints continuous, all possible pairs exist.
-  EXPECT_EQ(edges_both.size(), 4);
+    EXPECT_EQ(edges_none.size(), offsets_none.size());
+    EXPECT_EQ(edges_zero.size(), offsets_zero.size());
+    EXPECT_EQ(edges_one.size(), offsets_one.size());
+    EXPECT_EQ(edges_both.size(), offsets_both.size());
 
-  // All results should be the same if the bounding boxes are provided.
-  std::vector<Hyperrectangle> bboxes_A = {h1, h2};
-  std::vector<Hyperrectangle> bboxes_B = {h3, h4};
-  EXPECT_EQ(ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{},
-                                         bboxes_A, bboxes_B)
-                .first.size(),
-            0);
-  EXPECT_EQ(ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{0},
-                                         bboxes_A, bboxes_B)
-                .first.size(),
-            1);
-  EXPECT_EQ(ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{1},
-                                         bboxes_A, bboxes_B)
-                .first.size(),
-            0);
-  const auto [other_intersection_edges, other_intersection_edge_offsets] =
-      ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1},
-                                   bboxes_A, bboxes_B);
-  ASSERT_EQ(other_intersection_edges.size(),
-            other_intersection_edge_offsets.size());
-  ASSERT_EQ(other_intersection_edges.size(), 4);
-  const auto& intersection_edges = edges_both;
-  const auto& intersection_edge_offsets = offsets_both;
-  // We use assert because we need the lengths of intersection_edges and
-  // other_intersection_edges to be the same for this next check.
-  for (int i = 0; i < ssize(intersection_edges); ++i) {
-    // Check that each entry is the same. The first two elements of the tuple
-    // are integers, so we can compare directly. The last entry is an
-    // Eigen::VectorXd, so we have to use CompareMatrices.
-    EXPECT_EQ(intersection_edges[i].first, other_intersection_edges[i].first);
-    EXPECT_EQ(intersection_edges[i].second, other_intersection_edges[i].second);
-    EXPECT_TRUE(CompareMatrices(intersection_edge_offsets[i],
-                                other_intersection_edge_offsets[i], 1e-15));
-  }
+    // Without continuous revolute joints, the intersection is empty.
+    EXPECT_EQ(edges_none.size(), 0);
+    // With only first joint continuous, the only intersection is h1 <--> h3.
+    EXPECT_EQ(edges_zero.size(), 1);
+    // With only second joint continuous, the intersection is empty.
+    EXPECT_EQ(edges_one.size(), 0);
+    // With all joints continuous, all possible pairs exist.
+    EXPECT_EQ(edges_both.size(), 4);
 
-  for (int i = 0; i < ssize(intersection_edges); ++i) {
-    const int index_a = intersection_edges[i].first;
-    const int index_b = intersection_edges[i].second;
-    const Eigen::VectorXd& offset = intersection_edge_offsets[i];
-
-    // Verify all centers are integer multiples of 2π apart.
-    const auto offset_mod_2π = offset.array() / (2 * M_PI);
-    for (int j = 0; j < offset_mod_2π.size(); ++j) {
-      EXPECT_NEAR(offset_mod_2π[j], std::round(offset_mod_2π[j]), 1e-9);
+    // All results should be the same if the bounding boxes are provided.
+    std::vector<Hyperrectangle> bboxes_A = {h1, h2};
+    std::vector<Hyperrectangle> bboxes_B = {h3, h4};
+    EXPECT_EQ(ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{},
+                                           bboxes_A, bboxes_B, parallelism)
+                  .first.size(),
+              0);
+    EXPECT_EQ(ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{0},
+                                           bboxes_A, bboxes_B, parallelism)
+                  .first.size(),
+              1);
+    EXPECT_EQ(ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{1},
+                                           bboxes_A, bboxes_B, parallelism)
+                  .first.size(),
+              0);
+    const auto [other_intersection_edges, other_intersection_edge_offsets] =
+        ComputePairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1},
+                                     bboxes_A, bboxes_B);
+    ASSERT_EQ(other_intersection_edges.size(),
+              other_intersection_edge_offsets.size());
+    ASSERT_EQ(other_intersection_edges.size(), 4);
+    const auto& intersection_edges = edges_both;
+    const auto& intersection_edge_offsets = offsets_both;
+    // We use assert because we need the lengths of intersection_edges and
+    // other_intersection_edges to be the same for this next check.
+    for (int i = 0; i < ssize(intersection_edges); ++i) {
+      // Check that each entry is the same. The first two elements of the tuple
+      // are integers, so we can compare directly. The last entry is an
+      // Eigen::VectorXd, so we have to use CompareMatrices.
+      EXPECT_EQ(intersection_edges[i].first, other_intersection_edges[i].first);
+      EXPECT_EQ(intersection_edges[i].second,
+                other_intersection_edges[i].second);
+      EXPECT_TRUE(CompareMatrices(intersection_edge_offsets[i],
+                                  other_intersection_edge_offsets[i], 1e-15));
     }
-    // The center of the first rectangle + offset should be inside the second
-    // rectangle.
-    const auto* h_a =
-        dynamic_cast<const Hyperrectangle*>(sets_A[index_a].get());
-    DRAKE_DEMAND(h_a != nullptr);
-    EXPECT_TRUE(sets_B[index_b]->PointInSet(h_a->Center() + offset, 1e-6));
-  }
 
-  // Deprecation tests.
+    for (int i = 0; i < ssize(intersection_edges); ++i) {
+      const int index_a = intersection_edges[i].first;
+      const int index_b = intersection_edges[i].second;
+      const Eigen::VectorXd& offset = intersection_edge_offsets[i];
+
+      // Verify all centers are integer multiples of 2π apart.
+      const auto offset_mod_2π = offset.array() / (2 * M_PI);
+      for (int j = 0; j < offset_mod_2π.size(); ++j) {
+        EXPECT_NEAR(offset_mod_2π[j], std::round(offset_mod_2π[j]), 1e-9);
+      }
+      // The center of the first rectangle + offset should be inside the second
+      // rectangle.
+      const auto* h_a =
+          dynamic_cast<const Hyperrectangle*>(sets_A[index_a].get());
+      DRAKE_DEMAND(h_a != nullptr);
+      EXPECT_TRUE(sets_B[index_b]->PointInSet(h_a->Center() + offset, 1e-6));
+    }
+
+    // Deprecation tests.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  ASSERT_NO_THROW(CalcPairwiseIntersections(
-      sets_A, sets_B, std::vector<int>{0, 1}, bboxes_A, bboxes_B));
-  auto edges_both_old = CalcPairwiseIntersections(
-      sets_A, sets_B, std::vector<int>{0, 1}, bboxes_A, bboxes_B);
-  ASSERT_EQ(edges_both_old.size(), edges_both.size());
-  for (int i = 0; i < ssize(edges_both); ++i) {
-    EXPECT_EQ(std::get<0>(edges_both_old[i]), edges_both[i].first);
-    EXPECT_EQ(std::get<1>(edges_both_old[i]), edges_both[i].second);
-    EXPECT_TRUE(CompareMatrices(std::get<2>(edges_both_old[i]), offsets_both[i],
-                                1e-15));
-  }
+    ASSERT_NO_THROW(CalcPairwiseIntersections(
+        sets_A, sets_B, std::vector<int>{0, 1}, bboxes_A, bboxes_B));
+    auto edges_both_old = CalcPairwiseIntersections(
+        sets_A, sets_B, std::vector<int>{0, 1}, bboxes_A, bboxes_B);
+    ASSERT_EQ(edges_both_old.size(), edges_both.size());
+    for (int i = 0; i < ssize(edges_both); ++i) {
+      EXPECT_EQ(std::get<0>(edges_both_old[i]), edges_both[i].first);
+      EXPECT_EQ(std::get<1>(edges_both_old[i]), edges_both[i].second);
+      EXPECT_TRUE(CompareMatrices(std::get<2>(edges_both_old[i]),
+                                  offsets_both[i], 1e-15));
+    }
 
-  ASSERT_NO_THROW(
-      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1}, true));
-  edges_both_old =
-      CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1}, true);
-  ASSERT_EQ(edges_both_old.size(), edges_both.size());
-  for (int i = 0; i < ssize(edges_both); ++i) {
-    EXPECT_EQ(std::get<0>(edges_both_old[i]), edges_both[i].first);
-    EXPECT_EQ(std::get<1>(edges_both_old[i]), edges_both[i].second);
-    EXPECT_TRUE(CompareMatrices(std::get<2>(edges_both_old[i]), offsets_both[i],
-                                1e-15));
-  }
+    ASSERT_NO_THROW(CalcPairwiseIntersections(sets_A, sets_B,
+                                              std::vector<int>{0, 1}, true));
+    edges_both_old =
+        CalcPairwiseIntersections(sets_A, sets_B, std::vector<int>{0, 1}, true);
+    ASSERT_EQ(edges_both_old.size(), edges_both.size());
+    for (int i = 0; i < ssize(edges_both); ++i) {
+      EXPECT_EQ(std::get<0>(edges_both_old[i]), edges_both[i].first);
+      EXPECT_EQ(std::get<1>(edges_both_old[i]), edges_both[i].second);
+      EXPECT_TRUE(CompareMatrices(std::get<2>(edges_both_old[i]),
+                                  offsets_both[i], 1e-15));
+    }
 #pragma GCC diagnostic pop
+  }
 }
 
 GTEST_TEST(GeodesicConvexityTest, ComputePairwiseIntersections2) {
@@ -453,82 +463,88 @@ GTEST_TEST(GeodesicConvexityTest, ComputePairwiseIntersections2) {
   Hyperrectangle h3(Eigen::Vector2d(8 * M_PI, 0.0),
                     Eigen::Vector2d(1.0 + 8 * M_PI, 1.0));
   ConvexSets sets = MakeConvexSets(h1, h2, h3);
-  // Let's check the expected value of each pair of intersections.
-  // h1 <--> h2: would intersect if h1 is translated by (0, 1) * 2π
-  // h1 <--> h3: would intersect if h1 is translated by (4, 0) * 2π
-  // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2π
-  // Without continuous revolute joints, the intersection is empty.
-  auto [intersections_none, offsets_none] =
-      ComputePairwiseIntersections(sets, std::vector<int>{});
-  EXPECT_EQ(intersections_none.size(), offsets_none.size());
-  EXPECT_EQ(intersections_none.size(), 0);
-  // With only first joint continuous, the only intersection is h1 <--> h3.
-  auto [intersections_zero, offsets_zero] =
-      ComputePairwiseIntersections(sets, std::vector<int>{0});
-  EXPECT_EQ(intersections_zero.size(), offsets_zero.size());
-  EXPECT_EQ(intersections_zero.size(), 2);
-  EXPECT_EQ(intersections_zero[0].first, 0);
-  EXPECT_EQ(intersections_zero[0].second, 2);
-  EXPECT_TRUE(
-      CompareMatrices(offsets_zero[0], Eigen::Vector2d(8 * M_PI, 0.0), 1e-9));
-  // With all joints continuous, all pairs of intersections are non-empty.
-  auto [intersections_both, offsets_both] =
-      ComputePairwiseIntersections(sets, std::vector<int>{0, 1});
-  EXPECT_EQ(intersections_both.size(), offsets_both.size());
-  EXPECT_EQ(intersections_both.size(), 6);
-  for (int i = 0; i < ssize(intersections_both); ++i) {
-    const int index_a = intersections_both[i].first;
-    const int index_b = intersections_both[i].second;
-    const Eigen::VectorXd& offset = offsets_both[i];
-    // Verify all centers are integer multiples of 2π apart.
-    const auto offset_mod_2π = offset.array() / (2 * M_PI);
-    for (int j = 0; j < offset_mod_2π.size(); ++j) {
-      EXPECT_NEAR(offset_mod_2π[j], std::round(offset_mod_2π[j]), 1e-9);
-    }
-    // The center of the first rectangle + offset should be inside the second
-    // rectangle.
-    const auto* h_first =
-        dynamic_cast<const Hyperrectangle*>(sets[index_a].get());
-    DRAKE_DEMAND(h_first != nullptr);
-    EXPECT_TRUE(sets[index_b]->PointInSet(h_first->Center() + offset, 1e-6));
-  }
 
-// Deprecation tests.
+  // Cross-check that our BUILD file allows parallelism.
+  DRAKE_DEMAND(Parallelism::Max().num_threads() > 1);
+
+  for (auto parallelism : {Parallelism::None(), Parallelism::Max()}) {
+    // Let's check the expected value of each pair of intersections.
+    // h1 <--> h2: would intersect if h1 is translated by (0, 1) * 2π
+    // h1 <--> h3: would intersect if h1 is translated by (4, 0) * 2π
+    // h2 <--> h3: would intersect if h2 is translated by (4, -1) * 2π
+    // Without continuous revolute joints, the intersection is empty.
+    auto [intersections_none, offsets_none] = ComputePairwiseIntersections(
+        sets, std::vector<int>{}, true /* preprocess_bbox */, parallelism);
+    EXPECT_EQ(intersections_none.size(), offsets_none.size());
+    EXPECT_EQ(intersections_none.size(), 0);
+    // With only first joint continuous, the only intersection is h1 <--> h3.
+    auto [intersections_zero, offsets_zero] = ComputePairwiseIntersections(
+        sets, std::vector<int>{0}, true /* preprocess_bbox */, parallelism);
+    EXPECT_EQ(intersections_zero.size(), offsets_zero.size());
+    EXPECT_EQ(intersections_zero.size(), 2);
+    EXPECT_EQ(intersections_zero[0].first, 0);
+    EXPECT_EQ(intersections_zero[0].second, 2);
+    EXPECT_TRUE(
+        CompareMatrices(offsets_zero[0], Eigen::Vector2d(8 * M_PI, 0.0), 1e-9));
+    // With all joints continuous, all pairs of intersections are non-empty.
+    auto [intersections_both, offsets_both] = ComputePairwiseIntersections(
+        sets, std::vector<int>{0, 1}, true /* preprocess_bbox */, parallelism);
+    EXPECT_EQ(intersections_both.size(), offsets_both.size());
+    EXPECT_EQ(intersections_both.size(), 6);
+    for (int i = 0; i < ssize(intersections_both); ++i) {
+      const int index_a = intersections_both[i].first;
+      const int index_b = intersections_both[i].second;
+      const Eigen::VectorXd& offset = offsets_both[i];
+      // Verify all centers are integer multiples of 2π apart.
+      const auto offset_mod_2π = offset.array() / (2 * M_PI);
+      for (int j = 0; j < offset_mod_2π.size(); ++j) {
+        EXPECT_NEAR(offset_mod_2π[j], std::round(offset_mod_2π[j]), 1e-9);
+      }
+      // The center of the first rectangle + offset should be inside the second
+      // rectangle.
+      const auto* h_first =
+          dynamic_cast<const Hyperrectangle*>(sets[index_a].get());
+      DRAKE_DEMAND(h_first != nullptr);
+      EXPECT_TRUE(sets[index_b]->PointInSet(h_first->Center() + offset, 1e-6));
+    }
+
+    // Deprecation tests.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  std::vector<Hyperrectangle> bboxes;
-  bboxes.emplace_back(h1);
-  bboxes.emplace_back(h2);
-  bboxes.emplace_back(h3);
+    std::vector<Hyperrectangle> bboxes;
+    bboxes.emplace_back(h1);
+    bboxes.emplace_back(h2);
+    bboxes.emplace_back(h3);
 
-  ASSERT_NO_THROW(
-      CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, bboxes));
-  auto intersections_both_old =
-      CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, bboxes);
-  ASSERT_EQ(intersections_both_old.size(), intersections_both.size());
-  for (int i = 0; i < ssize(intersections_both); ++i) {
-    EXPECT_EQ(std::get<0>(intersections_both_old[i]),
-              intersections_both[i].first);
-    EXPECT_EQ(std::get<1>(intersections_both_old[i]),
-              intersections_both[i].second);
-    EXPECT_TRUE(CompareMatrices(std::get<2>(intersections_both_old[i]),
-                                offsets_both[i], 1e-15));
-  }
+    ASSERT_NO_THROW(
+        CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, bboxes));
+    auto intersections_both_old =
+        CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, bboxes);
+    ASSERT_EQ(intersections_both_old.size(), intersections_both.size());
+    for (int i = 0; i < ssize(intersections_both); ++i) {
+      EXPECT_EQ(std::get<0>(intersections_both_old[i]),
+                intersections_both[i].first);
+      EXPECT_EQ(std::get<1>(intersections_both_old[i]),
+                intersections_both[i].second);
+      EXPECT_TRUE(CompareMatrices(std::get<2>(intersections_both_old[i]),
+                                  offsets_both[i], 1e-15));
+    }
 
-  ASSERT_NO_THROW(
-      CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, true));
-  intersections_both_old =
-      CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, true);
-  ASSERT_EQ(intersections_both_old.size(), intersections_both.size());
-  for (int i = 0; i < ssize(intersections_both); ++i) {
-    EXPECT_EQ(std::get<0>(intersections_both_old[i]),
-              intersections_both[i].first);
-    EXPECT_EQ(std::get<1>(intersections_both_old[i]),
-              intersections_both[i].second);
-    EXPECT_TRUE(CompareMatrices(std::get<2>(intersections_both_old[i]),
-                                offsets_both[i], 1e-15));
-  }
+    ASSERT_NO_THROW(
+        CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, true));
+    intersections_both_old =
+        CalcPairwiseIntersections(sets, std::vector<int>{0, 1}, true);
+    ASSERT_EQ(intersections_both_old.size(), intersections_both.size());
+    for (int i = 0; i < ssize(intersections_both); ++i) {
+      EXPECT_EQ(std::get<0>(intersections_both_old[i]),
+                intersections_both[i].first);
+      EXPECT_EQ(std::get<1>(intersections_both_old[i]),
+                intersections_both[i].second);
+      EXPECT_TRUE(CompareMatrices(std::get<2>(intersections_both_old[i]),
+                                  offsets_both[i], 1e-15));
+    }
 #pragma GCC diagnostic pop
+  }
 }
 
 }  // namespace optimization
