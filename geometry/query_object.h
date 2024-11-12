@@ -766,16 +766,14 @@ class QueryObject {
    holds. The open mesh, which has no true concept of "inside", will
    nevertheless report some query points as being inside.
 
-   @pre The %Mesh of a tetrahedral volume mesh is a simplicial complex
-   (https://en.wikipedia.org/wiki/Simplicial_complex) whose tetrahedra have
-   positive volumes (or positive orientation). Therefore, it has no duplicate
-   vertices, no self-intersection, and any two tetrahedra intersect in a common
-   triangular face, edge, or vertex or not at all; there is no "partial
-   overlap" between two tetrahedra. A "tetrahedron soup" is, in general, not
-   a simplicial complex. Violated meshes will introduce areas inside the
-   volumes that are incorrectly treated as boundary surfaces. The query
-   points near such problematic areas will report the wrong nearest points,
-   distances, and gradients.
+   @pre The %Mesh of a tetrahedral volume mesh has positive-volume tetrahedra,
+   no duplicate vertices, no self-intersection, and any two tetrahedra
+   intersect in a common triangular face, edge, or vertex or not at all.
+   A "tetrahedron soup" is, in general, non-compliant to this condition.
+   Violating meshes will introduce areas inside the volumes that are
+   incorrectly treated as boundary surfaces. The query points near such
+   problematic areas will report the wrong nearest points, distances,
+   and gradients.
 
    @note For a sphere G, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
