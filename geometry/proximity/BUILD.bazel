@@ -1243,6 +1243,7 @@ drake_cc_googletest(
     deps = [
         ":characterization_utilities",
         ":distance_to_point_callback",
+        ":make_box_mesh",
     ],
 )
 
