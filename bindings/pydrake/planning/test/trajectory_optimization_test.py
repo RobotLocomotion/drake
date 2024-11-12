@@ -331,6 +331,55 @@ class TestTrajectoryOptimization(unittest.TestCase):
         np.testing.assert_allclose(restricted_traj_start, start, atol=1e-6)
         np.testing.assert_allclose(restricted_traj_end, end, atol=1e-6)
 
+        # We can add additional costs and constraints with the placeholder
+        # variables.
+        vertex_duration = regions.vertex_duration()
+        vertex_control_points = regions.vertex_control_points()
+        edge_constituent_vertex_durations = (
+            regions.edge_constituent_vertex_durations()
+        )
+        edge_constituent_vertex_control_points = (
+            regions.edge_constituent_vertex_control_points()
+        )
+
+        vertex_cost = sum([
+            vertex_duration,
+            vertex_control_points[0, 0],
+            vertex_control_points[0, 1],
+        ])
+        edge_cost = sum([
+            edge_constituent_vertex_durations[0],
+            edge_constituent_vertex_durations[1],
+            edge_constituent_vertex_control_points[0][0, 0],
+            edge_constituent_vertex_control_points[0][0, 1],
+            edge_constituent_vertex_control_points[1][0, 0],
+            edge_constituent_vertex_control_points[1][0, 1]
+        ])
+        vertex_constraint = vertex_cost >= 0
+        edge_constraint = edge_cost >= 0
+
+        regions.AddVertexCost(e=vertex_cost)
+        regions.AddVertexConstraint(e=vertex_constraint)
+        regions.AddEdgeCost(e=edge_cost)
+        regions.AddEdgeConstraint(e=edge_constraint)
+
+        all_transcriptions = {
+            GraphOfConvexSets.Transcription.kMIP,
+            GraphOfConvexSets.Transcription.kRelaxation,
+            GraphOfConvexSets.Transcription.kRestriction
+        }
+        regions.AddVertexCost(e=vertex_cost,
+                              use_in_transcription=all_transcriptions)
+        regions.AddVertexConstraint(e=vertex_constraint,
+                                    use_in_transcription=all_transcriptions)
+        regions.AddEdgeCost(e=edge_cost,
+                            use_in_transcription=all_transcriptions)
+        regions.AddEdgeConstraint(e=edge_constraint,
+                                  use_in_transcription=all_transcriptions)
+
+        traj, result = gcs.SolvePath(source, target)
+        self.assertTrue(result.is_success())
+
         # Test that removing all subgraphs, removes all vertices and edges.
         self.assertEqual(len(gcs.graph_of_convex_sets().Vertices()),
                          len(source.Vertices())
