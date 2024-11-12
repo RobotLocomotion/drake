@@ -17,7 +17,7 @@ _TBB_MAJMIN_GLOB = glob([
     "bin/libtbb_debug.so.*.*",
     # This is the spelling for osxaarch64 and osx64x86.
     "bin/libtbb.*.*.dylib",
-])
+], allow_empty = True)
 
 len(_TBB_MAJMIN_GLOB) == 1 or fail("Glob failure: " + str(glob(["**"])))
 
@@ -30,7 +30,7 @@ _TBB_MAJ_GLOB = glob([
     "bin/libtbb_debug.so.*",
     # This is the spelling for osxaarch64 and osx64x86.
     "bin/libtbb.*.dylib",
-], exclude = _TBB_MAJMIN_GLOB)
+], exclude = _TBB_MAJMIN_GLOB, allow_empty = True)
 
 len(_TBB_MAJ_GLOB) == 1 or fail("Glob failure: " + str(glob(["**"])))
 
@@ -59,7 +59,7 @@ cc_library(
 _MOSEK_MAJMIN_GLOB = glob([
     "bin/libmosek64.so.*.*",
     "bin/libmosek64.*.*.dylib",
-])
+], allow_empty = True)
 
 len(_MOSEK_MAJMIN_GLOB) == 1 or fail("Glob failure: " + str(glob(["**"])))
 

@@ -30,12 +30,12 @@ drake_cc_library(
 
 filegroup(
     name = "models",
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
+    srcs = [
+        "acrobot.sdf",
+        "acrobot.urdf",
+        "acrobot.xml",
+        "double_pendulum.urdf",
+    ],
 )
 
 drake_cc_library(

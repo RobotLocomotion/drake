@@ -79,17 +79,17 @@ drake_cc_binary(
 
 filegroup(
     name = "models",
-    srcs = glob([
-        "**/*.bin",
-        "**/*.gltf",
-        "**/*.ktx2",
-        "**/*.mtl",
-        "**/*.obj",
-        "**/*.png",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
+    srcs = [
+        "cuboctahedron_with_hole.mtl",
+        "cuboctahedron_with_hole.obj",
+        "planet_rings.obj",
+        "rainbow_checker.png",
+        "sun.bin",
+        "sun.gltf",
+        "sun.ktx2",
+        "sun.png",
+        "sun.sdf",
+    ],
     visibility = [
         "//:__pkg__",
         "//geometry:__pkg__",
