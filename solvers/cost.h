@@ -75,14 +75,20 @@ class LinearCost : public Cost {
    * @param new_b (optional) New constant term.
    */
   void UpdateCoefficients(const Eigen::Ref<const Eigen::VectorXd>& new_a,
-                          double new_b = 0.) {
-    if (new_a.rows() != a_.rows()) {
-      throw std::runtime_error("Can't change the number of decision variables");
-    }
+                          double new_b = 0.);
 
-    a_ = new_a;
-    b_ = new_b;
-  }
+  /**
+   * Updates one entry in the coefficient of the cost.
+   * a[i] = val.
+   * @param i The index of the coefficient to be updated.
+   * @param val The value of that updated entry.
+   */
+  void update_coefficient_entry(int i, double val);
+
+  /**
+   * Updates the constant term in the cost to `new_b`.
+   */
+  void update_constant_term(double new_b);
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -194,6 +200,31 @@ class QuadraticCost : public Cost {
       is_convex_ = CheckHessianPsd();
     }
   }
+
+  /**
+   * Updates both Q(i, j) and Q(j, i) to val
+   * @param is_hessian_psd If this is `nullopt`, the new Hessian is
+   * checked (possibly expensively) for PSD-ness.  If this is
+   * set true/false, the cost's convexity is updated to that
+   * value without checking (it is the user's responsibility to make sure the
+   * flag is set correctly).
+   * @note If you have multiple entries in the Hessian matrix to update, and you
+   * don't specify is_hessian_psd, then it is much faster to call
+   * UpdateCoefficients(new_A, new_b) where new_A contains all the updated
+   * entries.
+   */
+  void UpdateHessianEntry(int i, int j, double val,
+                          std::optional<bool> is_hessian_psd = std::nullopt);
+
+  /**
+   * Updates b(i)=val.
+   */
+  void update_linear_coefficient_entry(int i, double val);
+
+  /**
+   * Updates the constant term to `new_c`.
+   */
+  void update_constant_term(double new_c);
 
  private:
   template <typename DerivedX, typename U>
