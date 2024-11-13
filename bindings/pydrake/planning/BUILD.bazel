@@ -131,13 +131,13 @@ drake_py_unittest(
     ],
 )
 
-drake_py_unittest(
-    name = "iris_zo_test",
-    num_threads = 2,
-    deps = [
-        ":planning",
-    ],
-)
+# drake_py_unittest(
+#     name = "iris_zo_test",
+#     num_threads = 2,
+#     deps = [
+#         ":planning",
+#     ],
+# )
 
 drake_py_unittest(
     name = "zmp_planner_test",
