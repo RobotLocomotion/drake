@@ -22,7 +22,9 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         relaxation = MakeSemidefiniteRelaxation(prog=prog, options=options)
 
         self.assertEqual(relaxation.num_vars(), 6)
-        self.assertEqual(len(relaxation.positive_semidefinite_constraints()), 1)
+        self.assertEqual(
+            len(relaxation.positive_semidefinite_constraints()), 1
+        )
         self.assertEqual(len(relaxation.linear_equality_constraints()), 1)
         self.assertEqual(len(relaxation.linear_constraints()), 2)
 
@@ -48,7 +50,9 @@ class TestSemidefiniteRelaxation(unittest.TestCase):
         # with the "1" variable double counted. Therefore, there are
         # 5 choose 2 + 4 choose 2 - 1 variables.
         self.assertEqual(relaxation.num_vars(), 10 + 6 - 1)
-        self.assertEqual(len(relaxation.positive_semidefinite_constraints()), 2)
+        self.assertEqual(
+            len(relaxation.positive_semidefinite_constraints()), 2
+        )
         self.assertEqual(len(relaxation.linear_equality_constraints()), 1)
         self.assertEqual(len(relaxation.linear_constraints()), 2 + 1)
 
