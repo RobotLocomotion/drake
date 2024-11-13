@@ -740,6 +740,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
                       std::move(preprocessing_solver_options);
                 }),
             cls_doc.preprocessing_solver_options.doc)
+        .def_readwrite("parallelism", &GraphOfConvexSetsOptions::parallelism)
         .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
           return py::str(
               "GraphOfConvexSetsOptions("
@@ -1052,7 +1053,9 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
                 &GraphOfConvexSets::SolveShortestPath),
             py::arg("source"), py::arg("target"),
             py::arg("options") = GraphOfConvexSetsOptions(),
-            cls_doc.SolveShortestPath.doc)
+            cls_doc.SolveShortestPath.doc,
+            // Parallelism may be used when solving, so we must release the GIL.
+            py::call_guard<py::gil_scoped_release>())
         .def("GetSolutionPath", &GraphOfConvexSets::GetSolutionPath,
             py::arg("source"), py::arg("target"), py::arg("result"),
             py::arg("tolerance") = 1e-3, py_rvp::reference_internal,

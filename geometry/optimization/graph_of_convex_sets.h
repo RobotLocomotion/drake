@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -124,6 +125,13 @@ struct GraphOfConvexSetsOptions {
   optimization, but not from the many smaller preprocessing optimizations. */
   std::optional<solvers::SolverOptions> preprocessing_solver_options{
       std::nullopt};
+
+  /** Some steps in GCS can be parallelized. This is the maximum number of
+  threads used in all places in the algorithm.
+  @note Some solvers will choose their own level of parallelization, independent
+  of this setting. To limit the number of threads, add
+  @ref solvers::CommonSolverOption::kMaxThreads to the solver_options. */
+  Parallelism parallelism{Parallelism::Max()};
 };
 
 struct GcsGraphvizOptions {
@@ -854,6 +862,15 @@ class GraphOfConvexSets {
 
  private: /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
+
+  // Modify prog so that it contains the variables and constraints of the
+  // preprocessing program for a given edge.
+  std::unique_ptr<solvers::MathematicalProgram> ConstructPreprocessingProgram(
+      EdgeId edge_id,
+      const std::map<VertexId, std::vector<int>>& incoming_edges,
+
+      const std::map<VertexId, std::vector<int>>& outgoing_edges,
+      VertexId source_id, VertexId target_id) const;
 
   std::set<EdgeId> PreprocessShortestPath(
       VertexId source_id, VertexId target_id,

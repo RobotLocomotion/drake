@@ -4,6 +4,7 @@
 
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 
+#include <algorithm>
 #include <limits>
 #include <memory>
 #include <string>
@@ -13,12 +14,14 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/parallelism.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/create_constraint.h"
 #include "drake/solvers/create_cost.h"
 #include "drake/solvers/get_program_type.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/solve.h"
 
 namespace drake {
 namespace geometry {
@@ -55,6 +58,7 @@ using solvers::ProgramType;
 using solvers::QuadraticCost;
 using solvers::RotatedLorentzConeConstraint;
 using solvers::SolutionResult;
+using solvers::SolveInParallel;
 using solvers::VariableRefList;
 using solvers::VectorXDecisionVariable;
 using solvers::internal::CreateBinding;
@@ -63,25 +67,6 @@ using symbolic::Variable;
 using symbolic::Variables;
 
 namespace {
-MathematicalProgramResult SolvePreprocessingProgram(
-    const MathematicalProgram& prog, const GraphOfConvexSetsOptions& options) {
-  MathematicalProgramResult result;
-  solvers::SolverOptions preprocessing_solver_options =
-      options.preprocessing_solver_options.value_or(options.solver_options);
-  if (options.preprocessing_solver) {
-    options.preprocessing_solver->Solve(prog, {}, preprocessing_solver_options,
-                                        &result);
-  } else if (options.solver) {
-    options.solver->Solve(prog, {}, preprocessing_solver_options, &result);
-  } else {
-    solvers::SolverId solver_id = solvers::ChooseBestSolver(prog);
-    auto solver = solvers::MakeSolver(solver_id);
-    DRAKE_DEMAND(solver != nullptr);
-    solver->Solve(prog, {}, preprocessing_solver_options, &result);
-  }
-  return result;
-}
-
 MathematicalProgramResult SolveMainProgram(
     const MathematicalProgram& prog, const GraphOfConvexSetsOptions& options) {
   MathematicalProgramResult result;
@@ -688,60 +673,36 @@ std::string GraphOfConvexSets::GetGraphvizString(
   return graphviz.str();
 }
 
-// Implements the preprocessing scheme put forth in Appendix A.2 of
-// "Motion Planning around Obstacles with Convex Optimization":
-// https://arxiv.org/abs/2205.04422
-std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
-    VertexId source_id, VertexId target_id,
-    const GraphOfConvexSetsOptions& options) const {
-  if (vertices_.find(source_id) == vertices_.end()) {
-    throw std::runtime_error(fmt::format(
-        "Source vertex {} is not a vertex in this GraphOfConvexSets.",
-        source_id));
-  }
-  if (vertices_.find(target_id) == vertices_.end()) {
-    throw std::runtime_error(fmt::format(
-        "Target vertex {} is not a vertex in this GraphOfConvexSets.",
-        target_id));
-  }
-
-  std::map<VertexId, std::vector<int>> incoming_edges;
-  std::map<VertexId, std::vector<int>> outgoing_edges;
-  std::set<EdgeId> unusable_edges;
-
-  int edge_count = 0;
-  for (const auto& [edge_id, e] : edges_) {
-    // Turn off edges into source or out of target
-    if (e->v().id() == source_id || e->u().id() == target_id) {
-      unusable_edges.insert(edge_id);
-    } else {
-      outgoing_edges[e->u().id()].push_back(edge_count);
-      incoming_edges[e->v().id()].push_back(edge_count);
-    }
-
-    edge_count++;
-  }
-
+std::unique_ptr<MathematicalProgram>
+GraphOfConvexSets::ConstructPreprocessingProgram(
+    EdgeId edge_id, const std::map<VertexId, std::vector<int>>& incoming_edges,
+    const std::map<VertexId, std::vector<int>>& outgoing_edges,
+    VertexId source_id, VertexId target_id) const {
+  const auto& e = edges_.at(edge_id);
   int nE = edges_.size();
-
-  // Given an edge (u,v) check if a path from source to u and another from v to
-  // target exist without sharing edges.
-  MathematicalProgram prog;
+  std::unique_ptr<MathematicalProgram> prog =
+      std::make_unique<MathematicalProgram>();
 
   // Flow for each edge is between 0 and 1 for both paths.
-  VectorXDecisionVariable f = prog.NewContinuousVariables(nE, "flow_su");
+  VectorXDecisionVariable f = prog->NewContinuousVariables(nE, "flow_su");
   Binding<solvers::BoundingBoxConstraint> f_limits =
-      prog.AddBoundingBoxConstraint(0, 1, f);
-  VectorXDecisionVariable g = prog.NewContinuousVariables(nE, "flow_vt");
+      prog->AddBoundingBoxConstraint(0, 1, f);
+  VectorXDecisionVariable g = prog->NewContinuousVariables(nE, "flow_vt");
   Binding<solvers::BoundingBoxConstraint> g_limits =
-      prog.AddBoundingBoxConstraint(0, 1, g);
+      prog->AddBoundingBoxConstraint(0, 1, g);
 
   std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_f;
   std::map<VertexId, Binding<LinearEqualityConstraint>> conservation_g;
   std::map<VertexId, Binding<LinearConstraint>> degree;
   for (const auto& [vertex_id, v] : vertices_) {
-    std::vector<int> Ev_in = incoming_edges[vertex_id];
-    std::vector<int> Ev_out = outgoing_edges[vertex_id];
+    auto maybe_Ev_in = incoming_edges.find(vertex_id);
+    std::vector<int> Ev_in = maybe_Ev_in != incoming_edges.end()
+                                 ? maybe_Ev_in->second
+                                 : std::vector<int>{};
+    auto maybe_Ev_out = outgoing_edges.find(vertex_id);
+    std::vector<int> Ev_out = maybe_Ev_out != outgoing_edges.end()
+                                  ? maybe_Ev_out->second
+                                  : std::vector<int>{};
     std::vector<int> Ev = Ev_in;
     Ev.insert(Ev.end(), Ev_out.begin(), Ev_out.end());
 
@@ -759,19 +720,19 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
       // Conservation of flow for f: ∑ f_in - ∑ f_out = -δ(is_source).
       if (vertex_id == source_id) {
         conservation_f.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, -1, fv)});
+            {vertex_id, prog->AddLinearEqualityConstraint(A_flow, -1, fv)});
       } else {
         conservation_f.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, fv)});
+            {vertex_id, prog->AddLinearEqualityConstraint(A_flow, 0, fv)});
       }
 
       // Conservation of flow for g: ∑ g_in - ∑ g_out = δ(is_target).
       if (vertex_id == target_id) {
         conservation_g.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 1, gv)});
+            {vertex_id, prog->AddLinearEqualityConstraint(A_flow, 1, gv)});
       } else {
         conservation_g.insert(
-            {vertex_id, prog.AddLinearEqualityConstraint(A_flow, 0, gv)});
+            {vertex_id, prog->AddLinearEqualityConstraint(A_flow, 0, gv)});
       }
     }
 
@@ -785,72 +746,144 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
         fgin(Ev_in.size() + ii) = g(Ev_in[ii]);
       }
       degree.insert(
-          {vertex_id, prog.AddLinearConstraint(A_degree, 0, 1, fgin)});
+          {vertex_id, prog->AddLinearConstraint(A_degree, 0, 1, fgin)});
     }
   }
 
-  for (const auto& [edge_id, e] : edges_) {
-    if (unusable_edges.contains(edge_id)) {
-      continue;
-    }
+  // Update bounds of conservation of flow:
+  // ∑ f_in,u - ∑ f_out,u = 1 - δ(is_source).
+  if (e->u().id() == source_id) {
+    f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
+    conservation_f.at(e->u().id())
+        .evaluator()
+        ->set_bounds(Vector1d(0), Vector1d(0));
+  } else {
+    conservation_f.at(e->u().id())
+        .evaluator()
+        ->set_bounds(Vector1d(1), Vector1d(1));
+  }
+  // ∑ g_in,v - ∑ f_out,v = δ(is_target) - 1.
+  if (e->v().id() == target_id) {
+    g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
+    conservation_g.at(e->v().id())
+        .evaluator()
+        ->set_bounds(Vector1d(0), Vector1d(0));
+  } else {
+    conservation_g.at(e->v().id())
+        .evaluator()
+        ->set_bounds(Vector1d(-1), Vector1d(-1));
+  }
 
-    // Update bounds of conservation of flow:
-    // ∑ f_in,u - ∑ f_out,u = 1 - δ(is_source).
-    if (e->u().id() == source_id) {
-      f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    } else {
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(1), Vector1d(1));
-    }
-    // ∑ g_in,v - ∑ f_out,v = δ(is_target) - 1.
-    if (e->v().id() == target_id) {
-      g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Zero(nE));
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    } else {
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(-1), Vector1d(-1));
-    }
-
-    // Update bounds of degree constraints:
-    // ∑ f_in,v + ∑ g_in,v = 0.
+  // Update bounds of degree constraints:
+  // ∑ f_in,v + ∑ g_in,v = 0.
+  if (degree.contains(e->v().id())) {
     degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
+  }
+
+  return prog;
+}
+
+// Implements the preprocessing scheme put forth in Appendix A.2 of
+// "Motion Planning around Obstacles with Convex Optimization":
+// https://arxiv.org/abs/2205.04422
+std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
+    VertexId source_id, VertexId target_id,
+    const GraphOfConvexSetsOptions& options) const {
+  if (!vertices_.contains(source_id)) {
+    throw std::runtime_error(fmt::format(
+        "Source vertex {} is not a vertex in this GraphOfConvexSets.",
+        source_id));
+  }
+  if (!vertices_.contains(target_id)) {
+    throw std::runtime_error(fmt::format(
+        "Target vertex {} is not a vertex in this GraphOfConvexSets.",
+        target_id));
+  }
+
+  std::vector<EdgeId> edge_id_list;
+  std::map<VertexId, std::vector<int>> incoming_edges;
+  std::map<VertexId, std::vector<int>> outgoing_edges;
+  std::set<EdgeId> unusable_edges;
+
+  int edge_count = 0;
+  for (const auto& [edge_id, e] : edges_) {
+    // Turn off edges into source or out of target
+    if (e->v().id() == source_id || e->u().id() == target_id) {
+      unusable_edges.insert(edge_id);
+    } else {
+      outgoing_edges[e->u().id()].push_back(edge_count);
+      incoming_edges[e->v().id()].push_back(edge_count);
+
+      // Note: we only add the edge id to this list if we still need to check
+      // it.
+      edge_id_list.push_back(edge_id);
+    }
+
+    edge_count++;
+  }
+
+  // edge_id_list is now the canonical list of edges we will check in the
+  // remainder of the function.
+  int nE = edge_id_list.size();
+
+  // TODO(cohnt): Rewrite with a parallel for loop where each thread creates and
+  // solves the preprocessing program, to avoid having to use batching together
+  // with SolveInParallel.
+
+  // Given an edge (u,v) check if a path from source to u and another from v to
+  // target exist without sharing edges.
+
+  int preprocessing_parallel_batch_size = 1000;
+  int num_batches = 1 + (nE / preprocessing_parallel_batch_size);
+  for (int batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    int this_batch_start = batch_idx * preprocessing_parallel_batch_size;
+    int this_batch_end =
+        std::min((batch_idx + 1) * preprocessing_parallel_batch_size, nE);
+    std::vector<std::unique_ptr<MathematicalProgram>> progs;
+    std::vector<EdgeId> idx_to_edge_id;
+
+    int this_batch_nE = this_batch_end - this_batch_start;
+    progs.reserve(this_batch_nE);
+    idx_to_edge_id.reserve(this_batch_nE);
+
+    for (int i = this_batch_start; i < this_batch_end; ++i) {
+      idx_to_edge_id.push_back(edge_id_list.at(i));
+    }
+
+    for (int i = 0; i < this_batch_nE; ++i) {
+      EdgeId edge_id = idx_to_edge_id.at(i);
+      progs.emplace_back(ConstructPreprocessingProgram(
+          edge_id, incoming_edges, outgoing_edges, source_id, target_id));
+    }
 
     // Check if edge e = (u,v) could be on a path from start to goal.
-    auto result = SolvePreprocessingProgram(prog, options);
-    if (!result.is_success()) {
-      unusable_edges.insert(edge_id);
+    std::vector<const MathematicalProgram*> prog_ptrs(progs.size());
+    for (int i = 0; i < ssize(progs); ++i) {
+      prog_ptrs[i] = progs[i].get();
+    }
+    std::optional<solvers::SolverId> maybe_solver_id;
+    solvers::SolverOptions preprocessing_solver_options =
+        options.preprocessing_solver_options.value_or(options.solver_options);
+    if (options.preprocessing_solver) {
+      maybe_solver_id = options.preprocessing_solver->solver_id();
+    } else if (options.solver) {
+      maybe_solver_id = options.solver->solver_id();
+    } else {
+      maybe_solver_id = std::nullopt;
     }
 
-    // Reset constraint bounds.
-    if (e->u().id() == source_id) {
-      f_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(-1), Vector1d(-1));
-    } else {
-      conservation_f.at(e->u().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
+    std::vector<MathematicalProgramResult> results =
+        SolveInParallel(prog_ptrs, nullptr, &preprocessing_solver_options,
+                        maybe_solver_id, options.parallelism, false);
+
+    for (int i = 0; i < this_batch_nE; ++i) {
+      const auto& result = results.at(i);
+      if (!result.is_success()) {
+        unusable_edges.insert(idx_to_edge_id.at(i));
+      }
     }
-    if (e->v().id() == target_id) {
-      g_limits.evaluator()->set_bounds(VectorXd::Zero(nE), VectorXd::Ones(nE));
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(1), Vector1d(1));
-    } else {
-      conservation_g.at(e->v().id())
-          .evaluator()
-          ->set_bounds(Vector1d(0), Vector1d(0));
-    }
-    degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(1));
   }
+
   return unusable_edges;
 }
 
