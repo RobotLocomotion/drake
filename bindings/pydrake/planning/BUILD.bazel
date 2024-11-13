@@ -41,6 +41,7 @@ drake_pybind_library(
         "planning_py_trajectory_optimization.cc",
         "planning_py_visibility_graph.cc",
         "planning_py_iris_from_clique_cover.cc",
+        "planning_py_iris_zo.cc",
         "planning_py_zmp_planner.cc",
     ],
     package_info = PACKAGE_INFO,
