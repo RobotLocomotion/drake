@@ -49,11 +49,12 @@ Eigen::VectorXd compute_face_tangent_to_dist_cvxh(
     const VPolytope& cvxh_vpoly) {
   Eigen::VectorXd a_face = E.A().transpose() * E.A() * (point - E.center());
   double b_face = a_face.transpose() * point;
-  double worst_case =
-      (a_face.transpose() * cvxh_vpoly.vertices()).maxCoeff() - b_face;
-  // Return standard iris face if either the face does not chopp off any
-  // containment points or collision is in convex hull.
-  if (cvxh_vpoly.PointInSet(point) || worst_case <= 0) {
+
+  // Return standard iris face if either the face does not chop off any
+  // containment points or collision lies inside of the convex hull of the
+  // containment points.
+  if (cvxh_vpoly.PointInSet(point) ||
+      (a_face.transpose() * cvxh_vpoly.vertices()).maxCoeff() - b_face <= 0) {
     return a_face;
   } else {
     MathematicalProgram prog;
@@ -64,17 +65,16 @@ Eigen::VectorXd compute_face_tangent_to_dist_cvxh(
     cvxh_vpoly.AddPointInSetConstraints(&prog, x);
     Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(dim, dim);
     prog.AddQuadraticErrorCost(identity, point, x);
-    auto solver = solvers::MakeFirstAvailableSolver(preferred_solvers);
-    solvers::MathematicalProgramResult result;
-    solver->Solve(prog, std::nullopt, std::nullopt, &result);
+    auto result = solvers::Solve(prog);
     DRAKE_THROW_UNLESS(result.is_success());
     a_face = point - result.GetSolution(x);
     return a_face;
   }
 }
 
-int unadaptive_test_samples(double p, double delta, double tau) {
-  return static_cast<int>(-2 * std::log(delta) / (tau * tau * p) + 0.5);
+// See Definition 1 in the paper.
+int unadaptive_test_samples(double epsilon, double delta, double tau) {
+  return static_cast<int>(-2 * std::log(delta) / (tau * tau * epsilon) + 0.5);
 }
 
 }  // namespace
@@ -94,6 +94,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   Hyperellipsoid current_ellipsoid = starting_ellipsoid;
   Eigen::VectorXd current_ellipsoid_center = starting_ellipsoid.center();
   Eigen::MatrixXd current_ellipsoid_A = starting_ellipsoid.A();
+
+  // Prevent directly terminating if the ellipsoid is too large.
   double previous_volume = 0;
 
   const int dim = starting_ellipsoid.ambient_dimension();
