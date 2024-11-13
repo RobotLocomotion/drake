@@ -732,7 +732,7 @@ class QueryObject {
 
    |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
    | :--------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   |   double   |  2e-15  |   4e-15  |  4e-15  |   3e-15   |    3e-5ᵇ   |    5e-15   | 4e-15ᶜ  |  4e-15  |
+   |   double   |  2e-15  |   4e-15  |  5e-15  |   3e-15   |    3e-5ᵇ   |    5e-15   | 5e-15ᶜ  |  4e-15  |
    | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
    | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
    __*Table 8*__: Worst observed error (in m) for 2mm penetration/separation
