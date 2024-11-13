@@ -89,8 +89,7 @@ void DefinePlanningIrisZo(py::module m) {
       });
 
   m.def("IrisZo", &IrisZo, py::arg("checker"), py::arg("starting_ellipsoid"),
-      py::arg("doma din"), py::arg("options") = IrisZoOptions(),
-      doc.IrisZo.doc);
+      py::arg("domain"), py::arg("options") = IrisZoOptions(), doc.IrisZo.doc);
 }
 
 }  // namespace internal
