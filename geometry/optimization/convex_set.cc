@@ -100,18 +100,15 @@ bool IsBoundedSequential(const ConvexSet& s) {
   MathematicalProgram prog;
   ConstructEmptyBoundednessProgram(&prog, s);
 
-  VectorXd objective_vector = VectorXd::Zero(s.ambient_dimension());
   for (int i = 0; i < s.ambient_dimension(); ++i) {
     for (bool maximize : {true, false}) {
-      objective_vector[i] = maximize ? -1 : 1;
-      prog.linear_costs()[0].evaluator()->UpdateCoefficients(objective_vector);
-      // TODO(cohnt): Directly modify the cost's internally held coefficients,
-      // once that functionality is available. (#22131)
+      prog.linear_costs()[0].evaluator()->update_coefficient_entry(
+          i, maximize ? -1 : 1);
       const auto result = solvers::Solve(prog);
       if (ProgramResultImpliesUnbounded(result)) {
         return false;
       }
-      objective_vector[i] = 0;
+      prog.linear_costs()[0].evaluator()->update_coefficient_entry(i, 0);
     }
   }
   return true;
@@ -136,10 +133,6 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
   // Pre-allocate the solver options.
   std::vector<solvers::SolverOptions> options(parallelism.num_threads());
 
-  // Pre-allocate the objective vectors, initially filling them with all zeros.
-  std::vector<VectorXd> objective_vectors(
-      parallelism.num_threads(), VectorXd::Zero(s.ambient_dimension()));
-
   for (int i = 0; i < parallelism.num_threads(); ++i) {
     solver_interfaces[i] = solvers::MakeSolver(solver_id);
     options[i].SetOption(solvers::CommonSolverOption::kMaxThreads, 1);
@@ -160,14 +153,10 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
     const int dimension = i / 2;
     bool maximize = i % 2 == 0;
 
-    // Update the objective vector.
-    objective_vectors[thread_num][dimension] = maximize ? -1 : 1;
-
-    // By construction, each MathematicalProgram has one cost (the linear cost).
-    progs[thread_num].linear_costs()[0].evaluator()->UpdateCoefficients(
-        objective_vectors[thread_num]);
-    // TODO(cohnt): Directly modify the cost's internally held coefficients,
-    // once that functionality is available. (#22131)
+    // Update the objective vector. By construction, each MathematicalProgram
+    // has one cost (the linear cost).
+    progs[thread_num].linear_costs()[0].evaluator()->update_coefficient_entry(
+        dimension, maximize ? -1 : 1);
     solver_interfaces[thread_num]->Solve(progs[thread_num], std::nullopt,
                                          options[thread_num],
                                          &(results[thread_num]));
@@ -176,7 +165,8 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
     }
 
     // Reset the objective vector.
-    objective_vectors[thread_num][dimension] = 0;
+    progs[thread_num].linear_costs()[0].evaluator()->update_coefficient_entry(
+        dimension, 0);
   };
 
   // We run the loop from 0 to 2 * s.ambient_dimension(), since two programs are
