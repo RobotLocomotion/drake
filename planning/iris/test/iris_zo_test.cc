@@ -54,11 +54,10 @@ HPolyhedron IrisZoFromUrdf(const std::string urdf,
       plant_ptr->GetPositionLowerLimits(), plant_ptr->GetPositionUpperLimits());
 
   planning::SceneGraphCollisionChecker checker(std::move(params));
-  // plant.SetPositions(&plant.GetMyMutableContextFromRoot(context.get()),
-  // sample);
   return IrisZo(checker, starting_ellipsoid, domain, options);
 }
 
+// Reproduced from the IrisInConfigurationSpace unit tests.
 // One prismatic link with joint limits.  Iris should return the joint limits.
 GTEST_TEST(IrisZoTest, JointLimits) {
   const std::string limits_urdf = R"(
@@ -94,6 +93,7 @@ GTEST_TEST(IrisZoTest, JointLimits) {
   EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
 }
 
+// Reproduced from the IrisInConfigurationSpace unit tests.
 // A simple double pendulum with link lengths `l1` and `l2` with a sphere at the
 // tip of radius `r` between two (fixed) walls at `w` from the origin.  The
 // true configuration space is - w + r ≤ l₁s₁ + l₂s₁₊₂ ≤ w - r.  These regions
@@ -236,6 +236,7 @@ const char block_urdf[] = R"(
 </robot>
 )";
 
+// Reproduced from the IrisInConfigurationSpace unit tests.
 // A block on a vertical track, free to rotate (in the plane) with width `w` of
 // 2 and height `h` of 1, plus a ground plane at z=0.  The true configuration
 // space is min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the
@@ -290,6 +291,7 @@ GTEST_TEST(IrisZoTest, BlockOnGround) {
   }
 }
 
+// Reproduced from the IrisInConfigurationSpace unit tests.
 // A (somewhat contrived) example of a concave configuration-space obstacle
 // (resulting in a convex configuration-space, which we approximate with
 // polytopes):  A simple pendulum of length `l` with a sphere at the tip of
@@ -377,17 +379,12 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   options.verbose = true;
   Hyperellipsoid starting_ellipsoid =
       Hyperellipsoid::MakeHypersphere(1e-2, sample);
-  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
   HPolyhedron region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
-  // TODO(russt): Expecting the test point to be outside the verified region is
-  // too strong of a requirement right now. If we can improve the algorithm then
-  // we should make this EXPECT_FALSE.
   if (!region.PointInSet(Vector2d{z_test, theta_test})) {
     log()->info("Our test point is not in the set");
   }
 
   EXPECT_EQ(region.ambient_dimension(), 2);
-  // Confirm that we've found a substantial region.
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
 
   {

@@ -32,7 +32,7 @@ struct IrisZoOptions {
     a->Visit(DRAKE_NVP(max_iterations_separating_planes));
     a->Visit(DRAKE_NVP(max_separating_planes_per_iteration));
     a->Visit(DRAKE_NVP(bisection_steps));
-    a->Visit(DRAKE_NVP(parallelism));
+    // a->Visit(DRAKE_NVP(parallelism));
     a->Visit(DRAKE_NVP(verbose));
     a->Visit(DRAKE_NVP(require_sample_point_is_contained));
     a->Visit(DRAKE_NVP(configuration_space_margin));

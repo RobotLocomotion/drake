@@ -34,7 +34,7 @@ void DefinePlanningIrisZo(py::module m) {
       .def_readwrite("bisection_steps", &IrisZoOptions::bisection_steps,
           cls_doc.bisection_steps.doc)
       .def_readwrite(
-          "parallelize", &IrisZoOptions::parallelize, cls_doc.parallelize.doc)
+          "parallelism", &IrisZoOptions::parallelism, cls_doc.parallelism.doc)
       .def_readwrite("verbose", &IrisZoOptions::verbose, cls_doc.verbose.doc)
       .def_readwrite("require_sample_point_is_contained",
           &IrisZoOptions::require_sample_point_is_contained,
@@ -59,13 +59,11 @@ void DefinePlanningIrisZo(py::module m) {
             "tau={}, "
             "delta={}, "
             "epsilon={}, "
-            "force_containment_points={}, "
-            "num_consecutive_failures={}, "
             "max_iterations={}, "
             "max_iterations_separating_planes={}, "
             "max_separating_planes_per_iteration={}, "
             "bisection_steps={}, "
-            "parallelize={}, "
+            // "parallelism={}, "
             "verbose={}, "
             "require_sample_point_is_contained={}, "
             "configuration_space_margin={}, "
@@ -75,17 +73,18 @@ void DefinePlanningIrisZo(py::module m) {
             "mixing_steps={}, "
             ")")
             .format(self.num_particles, self.tau, self.delta, self.epsilon,
-                self.containment_points, self.max_iterations, self.max_iterations_separating_planes,
+                self.max_iterations, self.max_iterations_separating_planes,
                 self.max_separating_planes_per_iteration, self.bisection_steps,
-                self.parallelize, self.verbose,
-                self.require_sample_point_is_contained,
+                // self.parallelism,
+                self.verbose, self.require_sample_point_is_contained,
                 self.configuration_space_margin, self.termination_threshold,
                 self.relative_termination_threshold, self.random_seed,
                 self.mixing_steps);
       });
 
   m.def("IrisZo", &IrisZo, py::arg("checker"), py::arg("starting_ellipsoid"),
-      py::arg("domain"), py::arg("options") = IrisZoOptions(), doc.IrisZo.doc);
+      py::arg("domain"), py::arg("options") = IrisZoOptions(),
+      py::call_guard<py::gil_scoped_release>(), doc.IrisZo.doc);
 }
 
 }  // namespace internal
