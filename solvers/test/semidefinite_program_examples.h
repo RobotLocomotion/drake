@@ -67,7 +67,7 @@ void FindOuterEllipsoid(const SolverInterface& solver,
 //     C * x = d
 void SolveEigenvalueProblem(const SolverInterface& solver,
                             const std::optional<SolverOptions>& solver_options,
-                            double tol);
+                            double tol, bool check_dual);
 
 /// Solve an SDP with a second order cone constraint. This example is taken from
 /// https://docs.mosek.com/10.1/capi/tutorial-sdo-shared.html

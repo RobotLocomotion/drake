@@ -386,7 +386,7 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveEigenvalueProblem(scs_solver, {}, kTol);
+    SolveEigenvalueProblem(scs_solver, {}, kTol, /*check_dual*/ false);
   }
 }
 
