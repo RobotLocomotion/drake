@@ -65,6 +65,10 @@ void VolumeMeshTopology::Initialize(
   }
 }
 
+bool VolumeMeshTopology::Equal(const VolumeMeshTopology& topology) const {
+  return tetrahedra_neighbors_ == topology.tetrahedra_neighbors_;
+}
+
 }  // namespace internal
 }  // namespace geometry
 }  // namespace drake
