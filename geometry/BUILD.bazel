@@ -963,6 +963,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "geometry_roles_test",
+    deps = [
+        ":geometry_roles",
+    ],
+)
+
+drake_cc_googletest(
     name = "geometry_version_test",
     deps = [
         ":geometry_version",

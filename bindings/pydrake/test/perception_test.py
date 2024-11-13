@@ -1,5 +1,6 @@
 import pydrake.perception as mut
 
+import copy
 import unittest
 
 import numpy as np
@@ -45,6 +46,7 @@ class TestPerception(unittest.TestCase):
 
         fields = mut.Fields(mut.BaseField.kXYZs)
         pc = mut.PointCloud(new_size=0, fields=fields)
+        copy.deepcopy(pc)
         self.assertEqual(pc.fields(), fields)
         self.assertEqual(pc.size(), 0)
         pc.resize(new_size=2)

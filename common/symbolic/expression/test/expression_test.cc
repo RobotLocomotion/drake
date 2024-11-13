@@ -1925,13 +1925,14 @@ TEST_F(SymbolicExpressionTest, GetVariables) {
   EXPECT_FALSE(vars1.include(var_z_));
   EXPECT_EQ(vars1.size(), 2u);
 
-  const Variables vars2{(x_ * x_ * z_ - y_ * abs(x_) * log(x_ + y_) + cosh(x_) +
-                         cosh(y_) + atan2(x_, y_))
-                            .GetVariables()};
+  const Expression e = x_ * x_ * z_ - y_ * abs(x_) * log(x_ + y_) + cosh(x_) +
+                       cosh(y_) + atan2(x_, y_);
+  const Variables vars2{e.GetVariables()};
   EXPECT_TRUE(vars2.include(var_x_));
   EXPECT_TRUE(vars2.include(var_y_));
   EXPECT_TRUE(vars2.include(var_z_));
   EXPECT_EQ(vars2.size(), 3u);
+  EXPECT_TRUE(e.GetFreeVariables() == vars2);
 }
 
 TEST_F(SymbolicExpressionTest, Swap) {

@@ -520,6 +520,7 @@ class TestMathematicalProgram(unittest.TestCase):
         constraint = mp.LinearEqualityConstraint(Aeq=Aeq, beq=beq)
         np.testing.assert_array_equal(constraint.GetDenseA(), Aeq)
         np.testing.assert_array_equal(constraint.upper_bound(), beq)
+        constraint.UpdateCoefficients(Aeq=Aeq, beq=beq)
 
         constraint = mp.LinearEqualityConstraint(
             a=np.array([1., 2., 3.]), beq=1)
@@ -533,6 +534,9 @@ class TestMathematicalProgram(unittest.TestCase):
         dut = mp.LinearEqualityConstraint(Aeq=A_sparse, beq=np.array([1, 2.]))
         np.testing.assert_array_equal(
             dut.get_sparse_A().todense(), A_sparse.todense())
+
+        dut.UpdateCoefficients(A_sparse, beq=np.array([1, 2.]))
+        self.assertFalse(dut.is_dense_A_constructed())
 
     def test_sdp(self):
         prog = mp.MathematicalProgram()

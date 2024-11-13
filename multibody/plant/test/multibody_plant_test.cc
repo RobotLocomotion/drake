@@ -61,12 +61,15 @@ using Eigen::VectorXd;
 using geometry::FrameId;
 using geometry::FramePoseVector;
 using geometry::GeometryId;
+using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::PenetrationAsPointPair;
+using geometry::PerceptionProperties;
 using geometry::QueryObject;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
 using geometry::internal::DummyRenderEngine;
+using geometry::render::RenderLabel;
 using math::RigidTransform;
 using math::RigidTransformd;
 using math::RollPitchYawd;
@@ -1975,9 +1978,11 @@ GTEST_TEST(MultibodyPlantTest, CollisionGeometryRegistration) {
                   geometry::internal::kFriction) == ground_friction);
 }
 
-// Verifies the process of visual geometry registration with a SceneGraph.
-// We build a model with two spheres and a ground plane. The ground plane is
-// located at y = 0 with normal in the y-axis direction.
+// Verifies the process of visual geometry registration with a SceneGraph. We
+// have multiple APIs, so we register multiple geometries, one with each
+// distinct API invocation. We build a model with multiple spheres and a ground
+// plane. The ground plane is located at y = 0 with normal in the y-axis
+// direction.
 GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   // Parameters of the setup.
   const double radius = 0.5;
@@ -1999,42 +2004,97 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   EXPECT_EQ(render_engine.num_registered(), 0);
 
-  // A half-space for the ground geometry -- uses default visual material
-  GeometryId ground_id = plant.RegisterVisualGeometry(
+  const std::string model("test_model");
+  const ModelInstanceIndex model_instance = plant.AddModelInstance(model);
+
+  // A half-space for the ground geometry. The ground shape defines no visual
+  // properties at all. It should get both roles and have the ("label", "id")
+  // perception property.
+  const GeometryId ground_id = plant.RegisterVisualGeometry(
       plant.world_body(),
       // A half-space passing through the origin in the x-z plane.
       geometry::HalfSpace::MakePose(Vector3d::UnitY(), Vector3d::Zero()),
       geometry::HalfSpace(), "ground");
   EXPECT_EQ(render_engine.num_registered(), 1);
 
-  // Add two spherical bodies.
-  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  // Add the spherical bodies.
+  // We just need a non-zero spatial inertia.
+  const auto M_BBo = SpatialInertia<double>::MakeUnitary();
+  const geometry::Sphere sphere(radius);
+  const RigidTransformd X_BG = RigidTransformd::Identity();
+
+  // Sphere1 defines a diffuse color. It should get both roles. It should have
+  // the ("phong", "diffuse") property in both roles and the ("label", "id")
+  // perception property.
   const RigidBody<double>& sphere1 =
-      plant.AddRigidBody("Sphere1", SpatialInertia<double>::MakeUnitary());
-  Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
-  GeometryId sphere1_id = plant.RegisterVisualGeometry(
-      sphere1, RigidTransformd::Identity(), geometry::Sphere(radius), "visual",
-      sphere1_diffuse);
+      plant.AddRigidBody("Sphere1", model_instance, M_BBo);
+  const Vector4<double> sphere1_diffuse{0.9, 0.1, 0.1, 0.5};
+  // Turns the diffuse color into illustration and perception properties.
+  const GeometryId sphere1_id = plant.RegisterVisualGeometry(
+      sphere1, X_BG, sphere, "visual1", sphere1_diffuse);
   EXPECT_EQ(render_engine.num_registered(), 2);
+
+  // Sphere2 defines illustration properties. It should get both roles with the
+  // perception properties including all illustration properties and with the
+  // ("label", "id") perception property.
   const RigidBody<double>& sphere2 =
-      plant.AddRigidBody("Sphere2", SpatialInertia<double>::MakeUnitary());
+      plant.AddRigidBody("Sphere2", model_instance, M_BBo);
   IllustrationProperties sphere2_props;
   const Vector4<double> sphere2_diffuse{0.1, 0.9, 0.1, 0.5};
   sphere2_props.AddProperty("phong", "diffuse", sphere2_diffuse);
   sphere2_props.AddProperty("phong", "diffuse_map", "empty.png");
+  // This property prevents MbP from attempting to copy properties by hand. It
+  // must rely on GeometryProperties copying abilities instead.
+  sphere2_props.AddProperty("test_only", "dummy", true);
   sphere2_props.AddProperty("renderer", "accepting",
                             std::set<std::string>{"not_dummy"});
-  GeometryId sphere2_id = plant.RegisterVisualGeometry(
-      sphere2, RigidTransformd::Identity(), geometry::Sphere(radius), "visual",
-      sphere2_props);
-  // Because sphere 2 white listed a *different* renderer, it didn't get added
-  // to render_engine.
+  // Uses illustration properties for both illustration and perception
+  // properties.
+  const GeometryId sphere2_id = plant.RegisterVisualGeometry(
+      sphere2, X_BG, sphere, "visual2", sphere2_props);
+  // Sphere2's accepting renderer is *not* `render_engine`; it will not be
+  // added to it.
   EXPECT_EQ(render_engine.num_registered(), 2);
+
+  // Sphere3 defines *only* perception properties for a geometry instance. It
+  // should only get the perception role, but should have the ("label", "id")
+  // property added.
+  const RigidBody<double>& sphere3 =
+      plant.AddRigidBody("Sphere3", model_instance, M_BBo);
+  auto sphere3_instance =
+      std::make_unique<GeometryInstance>(X_BG, sphere, "visual3");
+  PerceptionProperties perception_props;
+  sphere3_instance->set_perception_properties(perception_props);
+  const GeometryId sphere3_id =
+      plant.RegisterVisualGeometry(sphere3, std::move(sphere3_instance));
+  EXPECT_EQ(render_engine.num_registered(), 3);
+
+  // Sphere4 defines perception properties with a ("label", "id") property. It
+  // will not change when added.
+  const RigidBody<double>& sphere4 =
+      plant.AddRigidBody("Sphere4", model_instance, M_BBo);
+  auto sphere4_instance =
+      std::make_unique<GeometryInstance>(X_BG, sphere, "visual4");
+  perception_props.AddProperty("label", "id", RenderLabel(1234));
+  sphere4_instance->set_perception_properties(perception_props);
+  const GeometryId sphere4_id =
+      plant.RegisterVisualGeometry(sphere4, std::move(sphere4_instance));
+  EXPECT_EQ(render_engine.num_registered(), 4);
+
+  // Sphere5 provides a geometry instance with no properties assigned. It will
+  // be registered with "defaulted" properties for both visual roles.
+  const RigidBody<double>& sphere5 =
+      plant.AddRigidBody("Sphere5", model_instance, M_BBo);
+  auto sphere5_instance =
+      std::make_unique<GeometryInstance>(X_BG, sphere, "visual5");
+  const GeometryId sphere5_id =
+      plant.RegisterVisualGeometry(sphere3, std::move(sphere5_instance));
+  EXPECT_EQ(render_engine.num_registered(), 5);
 
   // We are done defining the model.
   plant.Finalize();
 
-  EXPECT_EQ(plant.num_visual_geometries(), 3);
+  EXPECT_EQ(plant.num_visual_geometries(), 6);
   EXPECT_EQ(plant.num_collision_geometries(), 0);
   EXPECT_TRUE(plant.geometry_source_is_registered());
   EXPECT_TRUE(plant.get_source_id());
@@ -2048,25 +2108,64 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   scene_graph.get_query_output_port().Calc(*context, state_value.get());
 
   const SceneGraphInspector<double>& inspector = query_object.inspector();
-  {
-    const IllustrationProperties* material =
-        inspector.GetIllustrationProperties(ground_id);
-    ASSERT_NE(material, nullptr);
-    // Undefined property value indicates use of default value.
-    EXPECT_FALSE(material->HasProperty("phong", "diffuse"));
-  }
 
-  // This implicitly assumes that there *is* a "phong"|"diffuse" material. An
+  // This implicitly assumes that there *is* a ("phong", "diffuse") material. An
   // exception will be thrown otherwise.
   auto get_diffuse_color = [&inspector](GeometryId id) -> Vector4<double> {
     const IllustrationProperties* material =
         inspector.GetIllustrationProperties(id);
     return material->GetProperty<Vector4<double>>("phong", "diffuse");
   };
+
+  // Get the render label property from the geometry's perception properties.
+  auto get_render_label = [&inspector](GeometryId id) {
+    const PerceptionProperties* material =
+        inspector.GetPerceptionProperties(id);
+    return material->GetProperty<RenderLabel>("label", "id");
+  };
+
+  // Confirms that every illustration property is also in the perception
+  // properties.
+  auto illustration_in_perception = [&inspector](GeometryId id) {
+    const IllustrationProperties* illus =
+        inspector.GetIllustrationProperties(id);
+    if (illus == nullptr) return true;
+
+    const PerceptionProperties* percep = inspector.GetPerceptionProperties(id);
+    if (percep == nullptr) return false;
+
+    for (const auto& group_name : illus->GetGroupNames()) {
+      if (!percep->HasGroup(group_name)) return false;
+      for (const auto& [name, val] : illus->GetPropertiesInGroup(group_name)) {
+        // We're not going to worry about values. We'll assume if all of the
+        // properties were copied, the values were well. We just need evidence
+        // that copying took place.
+        if (!percep->HasProperty(group_name, name)) return false;
+      }
+    }
+    return true;
+  };
+
+  {
+    const IllustrationProperties* material =
+        inspector.GetIllustrationProperties(ground_id);
+    ASSERT_NE(material, nullptr);
+    // Undefined property value indicates use of default value.
+    EXPECT_FALSE(material->HasProperty("phong", "diffuse"));
+    EXPECT_EQ(get_render_label(ground_id),
+              RenderLabel(plant.world_body().index()));
+    EXPECT_TRUE(illustration_in_perception(ground_id));
+    // Ground belongs to default model instance - no name scoping.
+    EXPECT_EQ(inspector.GetName(ground_id), "ground");
+  }
+
   {
     const Vector4<double>& test_diffuse = get_diffuse_color(sphere1_id);
     EXPECT_TRUE(CompareMatrices(test_diffuse, sphere1_diffuse, 0.0,
                                 MatrixCompareType::absolute));
+    EXPECT_EQ(get_render_label(sphere1_id), RenderLabel(sphere1.index()));
+    EXPECT_TRUE(illustration_in_perception(sphere1_id));
+    EXPECT_EQ(inspector.GetName(sphere1_id), "test_model::visual1");
   }
 
   {
@@ -2078,6 +2177,32 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
     ASSERT_TRUE(material->HasProperty("phong", "diffuse_map"));
     EXPECT_EQ(material->GetProperty<std::string>("phong", "diffuse_map"),
               "empty.png");
+    EXPECT_EQ(get_render_label(sphere2_id), RenderLabel(sphere2.index()));
+    EXPECT_TRUE(illustration_in_perception(sphere2_id));
+    EXPECT_EQ(inspector.GetName(sphere2_id), "test_model::visual2");
+  }
+
+  {
+    EXPECT_EQ(inspector.GetIllustrationProperties(sphere3_id), nullptr);
+    EXPECT_NE(inspector.GetPerceptionProperties(sphere3_id), nullptr);
+    EXPECT_EQ(get_render_label(sphere3_id), RenderLabel(sphere3.index()));
+    EXPECT_EQ(inspector.GetName(sphere3_id), "test_model::visual3");
+  }
+
+  {
+    EXPECT_EQ(inspector.GetIllustrationProperties(sphere4_id), nullptr);
+    EXPECT_NE(inspector.GetPerceptionProperties(sphere4_id), nullptr);
+    EXPECT_NE(get_render_label(sphere4_id), RenderLabel(sphere4.index()));
+    EXPECT_EQ(get_render_label(sphere4_id), RenderLabel(1234));
+    EXPECT_EQ(inspector.GetName(sphere4_id), "test_model::visual4");
+  }
+
+  {
+    EXPECT_NE(inspector.GetIllustrationProperties(sphere5_id), nullptr);
+    EXPECT_NE(inspector.GetPerceptionProperties(sphere5_id), nullptr);
+    EXPECT_NE(get_render_label(sphere5_id), RenderLabel(sphere5.index()));
+    EXPECT_EQ(inspector.GetName(sphere5_id), "test_model::visual5");
+    EXPECT_TRUE(illustration_in_perception(sphere5_id));
   }
 }
 
@@ -3883,7 +4008,209 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance));
 }
 
-GTEST_TEST(SetRandomTest, FloatingBodies) {
+// Verify that we can control what kind of joint is used to connect an
+// unconnected body to World, globally or per-model instance. The default
+// should be QuaternionFloatingJoint, with RpyFloating and Weld as options.
+//
+// We'll also verify that we can set state (q & v), pose, and velocity using the
+// generic Joint API applied to the floating joints. We'll also check that we
+// get reasonable messages when we misuse the API on a non-floating joint.
+// Note: Set/GetPose() are just calls to Set/GetPosePair() so the latter aren't
+// tested separately except to verify for a QuaternionFloatingJoint that
+// the quaternion and translation are preserved bit-identically.
+GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
+  // Plant will contain a free body in the default model instance and one
+  // in a specific model instance. We need fresh plants for each case below.
+  std::unique_ptr<MultibodyPlant<double>> plant;
+  ModelInstanceIndex model_instance;
+  const RigidBody<double>* default_body{};
+  const RigidBody<double>* instance_body{};
+  const auto make_plant = [&]() {
+    plant = std::make_unique<MultibodyPlant<double>>(0.0);
+    model_instance = plant->AddModelInstance("instance");
+    default_body = &plant->AddRigidBody("DefaultBody", default_model_instance(),
+                                        SpatialInertia<double>::MakeUnitary());
+    instance_body = &plant->AddRigidBody("InstanceBody", model_instance,
+                                         SpatialInertia<double>::MakeUnitary());
+  };
+
+  {  // Case 1: all defaults.
+    make_plant();
+
+    // Check the default global and model instance setting.
+    EXPECT_EQ(plant->GetBaseBodyJointType(),
+              BaseBodyJointType::kQuaternionFloatingJoint);
+    EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
+              BaseBodyJointType::kQuaternionFloatingJoint);
+
+    plant->Finalize();  // Two quaternion floating joints.
+    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->has_quaternion_dofs());
+    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->has_quaternion_dofs());
+    EXPECT_EQ(plant->num_joints(), 2);
+    EXPECT_EQ(plant->num_positions(), 14);
+    EXPECT_EQ(plant->num_velocities(), 12);
+
+    // When base joints are added they are named after the base body.
+    const Joint<double>& quaternion_joint =
+        plant->GetJointByName("InstanceBody");
+    auto context = plant->CreateDefaultContext();
+    Eigen::Vector<double, 7> set_q;
+    set_q << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
+    Vector6d set_v;
+    set_v << 1.1, 1.2, 1.3, 1.4, 1.5, 1.6;
+    quaternion_joint.SetPositions(&*context, set_q);
+    quaternion_joint.SetVelocities(&*context, set_v);
+    EXPECT_EQ(quaternion_joint.GetPositions(*context), set_q);
+    EXPECT_EQ(quaternion_joint.GetVelocities(*context), set_v);
+
+    EXPECT_FALSE(quaternion_joint.GetPose(*context).IsNearlyIdentity(1e-8));
+    quaternion_joint.SetPose(&*context, RigidTransformd::Identity());
+    EXPECT_TRUE(quaternion_joint.GetPose(*context).IsNearlyIdentity(1e-14));
+
+    // Check that a quaternion floating joint preserves given
+    // (quaternion, translation) bit-identically.
+    const Eigen::Quaternion<double> set_quaternion(
+        RollPitchYawd(0.01, 0.02, 0.03).ToQuaternion());
+    const Vector3d set_translation(1.0, 2.0, 3.0);
+    const RigidTransformd set_pose(set_quaternion, set_translation);
+    quaternion_joint.SetPosePair(&*context, set_quaternion, set_translation);
+    const std::pair<Eigen::Quaternion<double>, Vector3d> actual_pose =
+        quaternion_joint.GetPosePair(*context);
+    EXPECT_EQ(actual_pose.first.coeffs(), set_quaternion.coeffs());
+    EXPECT_EQ(actual_pose.second, set_translation);
+
+    const SpatialVelocity<double> zero(Vector6d::Zero());
+    EXPECT_NE(quaternion_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+    quaternion_joint.SetSpatialVelocity(&*context, zero);
+    EXPECT_EQ(quaternion_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+  }
+
+  {  // Case 2: globally choose RpyFloating.
+    make_plant();
+    plant->SetBaseBodyJointType(BaseBodyJointType::kRpyFloatingJoint);
+    plant->Finalize();  // Two rpy floating joints.
+
+    // Check the default global and model instance setting. (Post finalize
+    // here for a sanity check -- doesn't change anything.)
+    EXPECT_EQ(plant->GetBaseBodyJointType(),
+              BaseBodyJointType::kRpyFloatingJoint);
+    EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
+              BaseBodyJointType::kRpyFloatingJoint);
+
+    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_FALSE(default_body->has_quaternion_dofs());
+    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_FALSE(instance_body->has_quaternion_dofs());
+    EXPECT_EQ(plant->num_joints(), 2);
+    EXPECT_EQ(plant->num_positions(), 12);
+    EXPECT_EQ(plant->num_velocities(), 12);
+
+    // When base joints are added they are named after the base body.
+    const Joint<double>& instance_joint = plant->GetJointByName("InstanceBody");
+    auto context = plant->CreateDefaultContext();
+    Vector6d set_q;
+    set_q << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+    Vector6d set_v;
+    set_v << 1.1, 1.2, 1.3, 1.4, 1.5, 1.6;
+    instance_joint.SetPositions(&*context, set_q);
+    instance_joint.SetVelocities(&*context, set_v);
+    EXPECT_EQ(instance_joint.GetPositions(*context), set_q);
+    EXPECT_EQ(instance_joint.GetVelocities(*context), set_v);
+
+    EXPECT_FALSE(instance_joint.GetPose(*context).IsNearlyIdentity(1e-8));
+    instance_joint.SetPose(&*context, RigidTransformd::Identity());
+    EXPECT_TRUE(instance_joint.GetPose(*context).IsNearlyIdentity(1e-14));
+
+    const SpatialVelocity<double> zero(Vector6d::Zero());
+    EXPECT_NE(instance_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+    instance_joint.SetSpatialVelocity(&*context, zero);
+    EXPECT_EQ(instance_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+  }
+
+  {  // Case 3: choose RpyFloating only for model_instance.
+    make_plant();
+    plant->SetBaseBodyJointType(BaseBodyJointType::kRpyFloatingJoint,
+                                model_instance);
+
+    EXPECT_EQ(plant->GetBaseBodyJointType(),
+              BaseBodyJointType::kQuaternionFloatingJoint);
+    EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
+              BaseBodyJointType::kRpyFloatingJoint);
+
+    plant->Finalize();  // One quaternion and one rpy floating joint.
+    EXPECT_TRUE(default_body->is_floating());
+    EXPECT_TRUE(default_body->has_quaternion_dofs());
+    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_FALSE(instance_body->has_quaternion_dofs());
+    EXPECT_EQ(plant->num_joints(), 2);
+    EXPECT_EQ(plant->num_positions(), 13);
+    EXPECT_EQ(plant->num_velocities(), 12);
+  }
+
+  {  // Case 4: choose Weld globally but override with QuaternionFloating for
+     // model_instance.
+    make_plant();
+    plant->SetBaseBodyJointType(BaseBodyJointType::kWeldJoint);
+    plant->SetBaseBodyJointType(BaseBodyJointType::kQuaternionFloatingJoint,
+                                model_instance);
+
+    EXPECT_EQ(plant->GetBaseBodyJointType(), BaseBodyJointType::kWeldJoint);
+    EXPECT_EQ(plant->GetBaseBodyJointType(model_instance),
+              BaseBodyJointType::kQuaternionFloatingJoint);
+
+    plant->Finalize();  // One weld and one quaternion floating joint.
+    EXPECT_FALSE(default_body->is_floating());
+    EXPECT_FALSE(default_body->has_quaternion_dofs());
+    EXPECT_TRUE(instance_body->is_floating());
+    EXPECT_TRUE(instance_body->has_quaternion_dofs());
+    EXPECT_EQ(plant->num_joints(), 2);
+    EXPECT_EQ(plant->num_positions(), 7);
+    EXPECT_EQ(plant->num_velocities(), 6);
+
+    // We'll use the weld joint to generate some Joint API errors.
+    const Joint<double>& weld_joint = plant->GetJointByName("DefaultBody");
+    EXPECT_EQ(weld_joint.type_name(), "weld");
+    auto context = plant->CreateDefaultContext();
+
+    // SetPositions() and SetVelocities() should work for every joint as
+    // long as the given vector is the right size (0 for Welds). They should
+    // fail with a reasonable message for a wrong-sized vector.
+    const Eigen::Vector<double, 0> nothing;
+    EXPECT_NO_THROW(weld_joint.SetPositions(&*context, nothing));
+    EXPECT_NO_THROW(weld_joint.SetVelocities(&*context, nothing));
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        weld_joint.SetPositions(&*context, Vector3d(1.0, 2.0, 3.0)),
+        ".*SetPositions.*positions.size.*num_positions.*failed.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        weld_joint.SetVelocities(&*context, Vector3d(1.0, 2.0, 3.0)),
+        ".*SetVelocities.*velocities.size.*num_velocities.*failed.*");
+
+    // GetPose() and GetSpatialVelocity() should work, but currently the
+    // Sets are only for floating joints.
+    const SpatialVelocity<double> zero(Vector6d::Zero());
+    EXPECT_TRUE(weld_joint.GetPose(*context).IsExactlyIdentity());
+    EXPECT_EQ(weld_joint.GetSpatialVelocity(*context).get_coeffs(),
+              zero.get_coeffs());
+
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        weld_joint.SetPose(&*context, RigidTransformd::Identity()),
+        ".*SetPose\\(\\).*weld joint does not implement.*"
+        "joint 'DefaultBody'.*");
+
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        weld_joint.SetSpatialVelocity(&*context, zero),
+        ".*SetSpatialVelocity\\(\\).*weld joint does not implement.*"
+        "joint 'DefaultBody'.*");
+  }
+}
+
+GTEST_TEST(SetRandomTest, QuaternionFloatingBody) {
   // Create a model that contains a single body B.
   MultibodyPlant<double> plant(0.0);
 
@@ -3901,6 +4228,11 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
   plant.SetFreeBodyRandomTranslationDistribution(body, xyz);
   plant.SetFreeBodyRandomRotationDistributionToUniform(body);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.SetFreeBodyRandomAnglesDistribution(
+          body, math::RollPitchYaw<symbolic::Expression>(1.0, 2.0, 3.0)),
+      ".*Requires an rpy.*but free body LoneBody uses a quaternion.*");
 
   auto context = plant.CreateDefaultContext();
 
@@ -3931,16 +4263,83 @@ GTEST_TEST(SetRandomTest, FloatingBodies) {
 
   // Check that we can set the rotation to a specific distribution (in this
   // case it's just constant).
-  const math::RotationMatrix<double> X_WB_new(RollPitchYawd(0.3, 0.4, 0.5));
+  const math::RotationMatrix<double> R_WB_new(RollPitchYawd(0.3, 0.4, 0.5));
   plant.SetFreeBodyRandomRotationDistribution(
-      body, X_WB_new.cast<symbolic::Expression>().ToQuaternion());
+      body, R_WB_new.cast<symbolic::Expression>().ToQuaternion());
 
   plant.SetRandomContext(context.get(), &generator);
   X_WB = plant.GetFreeBodyPose(*context, body);
 
   const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(X_WB_new.matrix(), X_WB.rotation().matrix(),
+  EXPECT_TRUE(CompareMatrices(R_WB_new.matrix(), X_WB.rotation().matrix(),
                               kTolerance, MatrixCompareType::relative));
+}
+
+// Repeat the above test but with an RpyFloatingJoint rather than a
+// QuaternionFloatingJoint. Translation is the same but orientation must
+// be handled differently.
+GTEST_TEST(SetRandomTest, RpyFloatingBody) {
+  // Create a model that contains a single body B.
+  MultibodyPlant<double> plant(0.0);
+
+  // To avoid unnecessary warnings/errors, use a non-zero spatial inertia.
+  const RigidBody<double>& body =
+      plant.AddRigidBody("LoneBody", SpatialInertia<double>::MakeUnitary());
+  plant.SetBaseBodyJointType(BaseBodyJointType::kRpyFloatingJoint);
+  plant.Finalize();
+
+  RandomGenerator generator;
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+  Vector3<symbolic::Expression> xyz(1.0 + uniform(generator),
+                                    2.0 + uniform(generator),
+                                    3.0 + uniform(generator));
+
+  plant.SetFreeBodyRandomTranslationDistribution(body, xyz);
+  plant.SetFreeBodyRandomAnglesDistribution(
+      body, math::RollPitchYaw<symbolic::Expression>(xyz));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.SetFreeBodyRandomRotationDistribution(
+          body, math::RollPitchYaw<symbolic::Expression>(xyz).ToQuaternion()),
+      ".*Requires a quaternion.*but free body LoneBody uses an rpy.*");
+
+  auto context = plant.CreateDefaultContext();
+
+  const math::RigidTransform<double> X_WB_default =
+      plant.GetFreeBodyPose(*context, body);
+
+  plant.SetRandomContext(context.get(), &generator);
+  math::RigidTransform<double> X_WB = plant.GetFreeBodyPose(*context, body);
+
+  // Just make sure that the rotation matrices have changed.
+  EXPECT_FALSE(CompareMatrices(X_WB_default.rotation().matrix(),
+                               X_WB.rotation().matrix()));
+
+  // x is drawn from [1, 2).
+  EXPECT_GE(X_WB.translation()[0], 1.0);
+  EXPECT_LT(X_WB.translation()[0], 2.0);
+
+  // y is drawn from [2, 3).
+  EXPECT_GE(X_WB.translation()[1], 2.0);
+  EXPECT_LT(X_WB.translation()[1], 3.0);
+
+  // z is drawn from [3, 4).
+  EXPECT_GE(X_WB.translation()[2], 3.0);
+  EXPECT_LT(X_WB.translation()[2], 4.0);
+
+  // Check that we can set the rotation to a specific distribution (in this
+  // case it's just constant).
+  const RollPitchYawd dist(0.3, 0.4, 0.5);
+  const math::RollPitchYaw<symbolic::Expression> dist_symbolic(dist.vector());
+  plant.SetFreeBodyRandomAnglesDistribution(body, dist_symbolic);
+
+  plant.SetRandomContext(context.get(), &generator);
+  X_WB = plant.GetFreeBodyPose(*context, body);
+
+  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(X_WB.rotation().matrix(),
+                              dist.ToRotationMatrix().matrix(), kTolerance,
+                              MatrixCompareType::relative));
 }
 
 // The random positions generated by MbP should fall back to the default

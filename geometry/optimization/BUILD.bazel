@@ -43,6 +43,7 @@ drake_cc_library(
     implementation_deps = [
         "//geometry/optimization:convex_set",
         "//solvers:solve",
+        "@common_robotics_utilities",
     ],
 )
 
@@ -458,6 +459,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "geodesic_convexity_test",
+    num_threads = 2,
     deps = [
         ":convex_set",
         ":geodesic_convexity",

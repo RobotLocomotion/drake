@@ -938,45 +938,57 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
     const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
     const geometry::Shape& shape, const std::string& name,
     const geometry::IllustrationProperties& properties) {
-  // TODO(SeanCurtis-TRI): Consider simply adding an interface that takes a
-  // unique pointer to an already instantiated GeometryInstance. This will
-  // require shuffling around a fair amount of code and should ultimately be
-  // supplanted by providing a cleaner interface between parsing MBP and SG
-  // elements.
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
 
-  // TODO(amcastro-tri): Consider doing this after finalize so that we can
-  // register geometry that has a fixed path to world to the world body (i.e.,
-  // as anchored geometry).
-  GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
-  scene_graph_->AssignRole(*source_id_, id, properties);
+  // Note: the geometry name will be scoped in the subsequent call to
+  // RegisterVisualGeometry().
+  auto instance =
+      std::make_unique<geometry::GeometryInstance>(X_BG, shape, name);
+  instance->set_illustration_properties(properties);
+  instance->set_perception_properties(
+      geometry::PerceptionProperties(properties));
 
-  // TODO(SeanCurtis-TRI): Eliminate the automatic assignment of perception
-  //  and illustration in favor of a protocol that allows definition.
-  geometry::PerceptionProperties perception_props;
-  perception_props.AddProperty("label", "id", RenderLabel(body.index()));
-  if (properties.HasProperty("phong", "diffuse")) {
-    perception_props.AddProperty(
-        "phong", "diffuse",
-        properties.GetProperty<geometry::Rgba>("phong", "diffuse"));
+  const std::optional<geometry::GeometryId> id =
+      RegisterVisualGeometry(body, std::move(instance));
+  // We assigned properties, so this must be defined.
+  DRAKE_DEMAND(id.has_value());
+
+  return *id;
+}
+
+template <typename T>
+geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
+    const RigidBody<T>& body,
+    std::unique_ptr<geometry::GeometryInstance> geometry) {
+  DRAKE_THROW_UNLESS(geometry != nullptr);
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(geometry_source_is_registered());
+
+  if (geometry->perception_properties() == nullptr &&
+      geometry->illustration_properties() == nullptr) {
+    geometry->set_illustration_properties(geometry::IllustrationProperties());
+    geometry->set_perception_properties(geometry::PerceptionProperties());
   }
-  if (properties.HasProperty("phong", "diffuse_map")) {
-    perception_props.AddProperty(
-        "phong", "diffuse_map",
-        properties.GetProperty<std::string>("phong", "diffuse_map"));
+
+  // Map ("label", "id") to body index as necessary.
+  geometry::PerceptionProperties* percep =
+      geometry->mutable_perception_properties();
+  if (percep != nullptr) {
+    if (!percep->HasProperty("label", "id")) {
+      percep->AddProperty("label", "id", RenderLabel(body.index()));
+    }
   }
-  if (properties.HasProperty("renderer", "accepting")) {
-    perception_props.AddProperty(
-        "renderer", "accepting",
-        properties.GetProperty<std::set<std::string>>("renderer", "accepting"));
-  }
-  scene_graph_->AssignRole(*source_id_, id, perception_props);
+
+  geometry->set_name(
+      GetScopedName(*this, body.model_instance(), geometry->name()));
+
+  const geometry::GeometryId id = RegisterGeometry(body, std::move(geometry));
 
   DRAKE_ASSERT(ssize(visual_geometries_) == num_bodies());
   visual_geometries_[body.index()].push_back(id);
   ++num_visual_geometries_;
+
   return id;
 }
 
@@ -1000,7 +1012,9 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
   GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
+      body,
+      std::make_unique<geometry::GeometryInstance>(
+          X_BG, shape, GetScopedName(*this, body.model_instance(), name)));
 
   scene_graph_->AssignRole(*source_id_, id, std::move(properties));
   DRAKE_ASSERT(ssize(collision_geometries_) == num_bodies());
@@ -1103,18 +1117,16 @@ std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
 
 template <typename T>
 geometry::GeometryId MultibodyPlant<T>::RegisterGeometry(
-    const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
-    const geometry::Shape& shape, const std::string& name) {
+    const RigidBody<T>& body,
+    std::unique_ptr<geometry::GeometryInstance> instance) {
   DRAKE_ASSERT(!is_finalized());
   DRAKE_ASSERT(geometry_source_is_registered());
   DRAKE_ASSERT(body_has_registered_frame(body));
 
   // Register geometry in the body frame.
-  std::unique_ptr<geometry::GeometryInstance> geometry_instance =
-      std::make_unique<GeometryInstance>(X_BG, shape.Clone(), name);
   GeometryId geometry_id = scene_graph_->RegisterGeometry(
       source_id_.value(), body_index_to_frame_id_[body.index()],
-      std::move(geometry_instance));
+      std::move(instance));
   geometry_id_to_body_index_[geometry_id] = body.index();
   return geometry_id;
 }
@@ -1175,7 +1187,7 @@ void MultibodyPlant<T>::SetFreeBodyPoseInAnchoredFrame(
   }
 
   // Pose of frame F in its parent body frame P.
-  const RigidTransform<T> X_PF = frame_F.GetFixedPoseInBodyFrame();
+  const RigidTransform<T>& X_PF = frame_F.EvalPoseInBodyFrame(*context);
   // Pose of frame F's parent body P in the world.
   const RigidTransform<T>& X_WP = EvalBodyPoseInWorld(*context, frame_F.body());
   // Pose of "body" B in the world frame.
@@ -1264,6 +1276,49 @@ void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
       }
     }
   }
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetBaseBodyJointType(
+    BaseBodyJointType joint_type,
+    std::optional<ModelInstanceIndex> model_instance) {
+  std::optional<internal::ForestBuildingOptions> options;
+  switch (joint_type) {
+    case BaseBodyJointType::kQuaternionFloatingJoint:
+      options = internal::ForestBuildingOptions::kDefault;
+      break;
+    case BaseBodyJointType::kRpyFloatingJoint:
+      options = internal::ForestBuildingOptions::kUseRpyFloatingJoints;
+      break;
+    case BaseBodyJointType::kWeldJoint:
+      options = internal::ForestBuildingOptions::kUseFixedBase;
+      break;
+  }
+  DRAKE_DEMAND(options.has_value());
+  DRAKE_THROW_UNLESS(!is_finalized());
+  internal::LinkJointGraph& graph = mutable_tree().mutable_graph();
+  if (model_instance.has_value()) {
+    graph.SetForestBuildingOptions(*model_instance, *options);
+  } else {
+    graph.SetGlobalForestBuildingOptions(*options);
+  }
+}
+
+template <typename T>
+BaseBodyJointType MultibodyPlant<T>::GetBaseBodyJointType(
+    std::optional<ModelInstanceIndex> model_instance) const {
+  const internal::LinkJointGraph& graph = internal_tree().graph();
+  const internal::ForestBuildingOptions options =
+      model_instance.has_value()
+          ? graph.get_forest_building_options_in_use(*model_instance)
+          : graph.get_global_forest_building_options();
+  if (static_cast<bool>(options &
+                        internal::ForestBuildingOptions::kUseRpyFloatingJoints))
+    return BaseBodyJointType::kRpyFloatingJoint;
+  if (static_cast<bool>(options &
+                        internal::ForestBuildingOptions::kUseFixedBase))
+    return BaseBodyJointType::kWeldJoint;
+  return BaseBodyJointType::kQuaternionFloatingJoint;
 }
 
 template <typename T>

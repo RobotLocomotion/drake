@@ -5,7 +5,9 @@
 #include <optional>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/trajectories/bezier_curve.h"
@@ -273,6 +275,156 @@ class GcsTrajectoryOptimization final {
     */
     void AddContinuityConstraints(int continuity_order);
 
+    /** Returns a placeholder decision variable (not actually declared as a
+    decision variable in the MathematicalProgram) associated with the time
+    scaling of the trajectory in a set within this subgraph. This variable will
+    be substituted for real decision variables in methods like AddVertexCost and
+    AddVertexConstraint. Passing this variable directly into
+    objectives/constraints will result in an error. */
+    const symbolic::Variable& vertex_duration() const {
+      return placeholder_vertex_duration_var_;
+    }
+
+    /** Returns a placeholder decision variable (not actually declared as a
+    decision variable in the MathematicalProgram) associated with the control
+    points of the trajectory in a set within this subgraph. The variable will be
+    of shape (num_positions(), order+1), where the ith column is the ith control
+    point. This variable will be substituted for real decision variables in
+    methods like AddVertexCost and AddVertexConstraint. Passing this variable
+    directly into objectives/constraints will result in an error. */
+    const solvers::MatrixXDecisionVariable& vertex_control_points() const {
+      return placeholder_vertex_control_points_var_;
+    }
+
+    /** Returns a pair of placeholder decision variables (not actually declared
+    as decision variables in the MathematicalProgram) associated with the time
+    scaling of the trajectory in two sets within this subgraph that are
+    connected by an internal edge. This variable will be substituted for real
+    decision variables in methods like AddEdgeCost and AddEdgeConstraint.
+    Passing this variable directly into objectives/constraints will result in an
+    error. */
+    const std::pair<symbolic::Variable, symbolic::Variable>&
+    edge_constituent_vertex_durations() const {
+      return placeholder_edge_durations_var_;
+    }
+
+    /** Returns a pair of placeholder decision variables (not actually declared
+    as decision variables in the MathematicalProgram) associated with the
+    control points of the trajectory in two sets within this subgraph that are
+    connected by an internal edge. Each variable will be of shape
+    (num_positions(), order+1), where the ith column is the ith control point.
+    This variable will be substituted for real decision variables in methods
+    like AddEdgeCost and AddEdgeConstraint. Passing this variable directly into
+    objectives/constraints will result in an error. */
+    const std::pair<solvers::MatrixXDecisionVariable,
+                    solvers::MatrixXDecisionVariable>&
+    edge_constituent_vertex_control_points() const {
+      return placeholder_edge_control_points_var_;
+    }
+
+    /** Adds an arbitrary user-defined cost to every vertex in the subgraph. The
+    cost should be defined using the placeholder control point variables
+    (obtained from vertex_control_points()) and the placeholder time scaling
+    variable (obtained from vertex_time()). This enables greater modeling
+    freedom, but we cannot guarantee a feasible solution for all possible costs.
+
+    @throws std::exception if any variables besides those from @ref
+    vertex_duration and @ref vertex_control_points are used.
+
+    Costs which do not support the perspective operation cannot be used with
+    Transcription::kMIP or Transcription::kRelaxation. Consider providing an
+    appropriate "convex surrogate" that is supported within GraphOfConvexSets,
+    or exclusively using the SolveConvexRestriction method. */
+    void AddVertexCost(
+        const symbolic::Expression& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            used_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
+    /** Adds an arbitrary user-defined constraint to every vertex in the
+    subgraph. The constraint should be defined using the placeholder control
+    point variables (obtained from vertex_control_points()) and the placeholder
+    time scaling variable (obtained from vertex_time()). This enables greater
+    modeling freedom, but we cannot guarantee a feasible solution for all
+    possible constraints.
+
+    @throws std::exception if any variables besides those from @ref
+    vertex_duration and @ref vertex_control_points are used.
+
+    Constraints which do not support the perspective operation cannot be used
+    with Transcription::kMIP or Transcription::kRelaxation. Consider providing
+    an appropriate "convex surrogate" that is supported within
+    GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
+    */
+    void AddVertexConstraint(
+        const symbolic::Formula& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            used_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
+    /** Adds an arbitrary user-defined cost to every internal edge within the
+    subgraph. The cost should be defined using the placeholder control point
+    variables (obtained from edge_constituent_vertex_control_points()) and the
+    placeholder time scaling variables (obtained from
+    edge_constituent_vertex_durations()). This enables greater modeling freedom,
+    but we cannot guarantee a feasible solution for all possible costs.
+
+    @throws std::exception if any variables besides those from @ref
+    edge_constituent_vertex_durations and @ref
+    edge_constituent_vertex_control_points are used.
+
+    Costs which do not support the perspective operation cannot be used with
+    Transcription::kMIP or Transcription::kRelaxation. Consider providing an
+    appropriate "convex surrogate" that is supported within GraphOfConvexSets,
+    or exclusively using the SolveConvexRestriction method. */
+    void AddEdgeCost(
+        const symbolic::Expression& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            used_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
+    /** Adds an arbitrary user-defined constraint to every internal edge within
+    the subgraph. The constraint should be defined using the placeholder control
+    point variables (obtained from edge_constituent_vertex_control_points()) and
+    the placeholder time scaling variables (obtained from
+    edge_constituent_vertex_durations()). This enables greater modeling freedom,
+    but we cannot guarantee a feasible solution for all possible constraints.
+
+    @throws std::exception if any variables besides those from @ref
+    edge_constituent_vertex_durations and @ref
+    edge_constituent_vertex_control_points are used.
+
+    Constraints which do not support the perspective operation cannot be used
+    with Transcription::kMIP or Transcription::kRelaxation. Consider providing
+    an appropriate "convex surrogate" that is supported within
+    GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
+    */
+    void AddEdgeConstraint(
+        const symbolic::Formula& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            used_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
    private:
     /* Constructs a new subgraph and copies the regions. */
     Subgraph(const geometry::optimization::ConvexSets& regions,
@@ -301,6 +453,19 @@ class GcsTrajectoryOptimization final {
     symbolic::Variable GetTimeScaling(
         const geometry::optimization::GraphOfConvexSets::Vertex& v) const;
 
+    /* Substitute any placeholder variables with the versions corresponding to
+    a specific vertex. The return type will match the argument type. */
+    template <typename T>
+    T SubstituteVertexPlaceholderVariables(
+        T e,
+        const geometry::optimization::GraphOfConvexSets::Vertex& vertex) const;
+
+    /* Substitute any placeholder variables with the versions corresponding to
+    a specific internal edge. The return type will match the argument type. */
+    template <typename T>
+    T SubstituteEdgePlaceholderVariables(
+        T e, const geometry::optimization::GraphOfConvexSets::Edge& edge) const;
+
     const geometry::optimization::ConvexSets regions_;
     const int order_;
     const double h_min_;
@@ -313,6 +478,15 @@ class GcsTrajectoryOptimization final {
     // r(s) is a BezierCurve of the right shape and order, which can be used to
     // design costs and constraints for the underlying vertices and edges.
     trajectories::BezierCurve<double> r_trajectory_;
+
+    symbolic::Variable placeholder_vertex_duration_var_;
+    solvers::MatrixXDecisionVariable placeholder_vertex_control_points_var_;
+
+    std::pair<symbolic::Variable, symbolic::Variable>
+        placeholder_edge_durations_var_;
+    std::pair<solvers::MatrixXDecisionVariable,
+              solvers::MatrixXDecisionVariable>
+        placeholder_edge_control_points_var_;
 
     friend class GcsTrajectoryOptimization;
   };

@@ -1,0 +1,34 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest_linux_only",
+    "drake_cc_library_linux_only",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+# TODO(xuchenhan-tri): when we enable SPGrid in our releases, we also need to
+# install its license file in drake/tools/workspace/BUILD.bazel.
+
+drake_cc_library_linux_only(
+    name = "spgrid",
+    srcs = [
+        "spgrid.cc",
+    ],
+    hdrs = [
+        "spgrid.h",
+    ],
+    deps = [
+        "@spgrid_internal",
+    ],
+)
+
+drake_cc_googletest_linux_only(
+    name = "spgrid_test",
+    deps = [
+        ":spgrid",
+        "//common/test_utilities:limit_malloc",
+    ],
+)
+
+add_lint_tests()
