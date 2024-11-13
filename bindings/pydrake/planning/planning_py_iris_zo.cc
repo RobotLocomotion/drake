@@ -63,7 +63,7 @@ void DefinePlanningIrisZo(py::module m) {
             "max_iterations_separating_planes={}, "
             "max_separating_planes_per_iteration={}, "
             "bisection_steps={}, "
-            // "parallelism={}, "
+            "parallelism={}, "
             "verbose={}, "
             "require_sample_point_is_contained={}, "
             "configuration_space_margin={}, "
@@ -75,8 +75,8 @@ void DefinePlanningIrisZo(py::module m) {
             .format(self.num_particles, self.tau, self.delta, self.epsilon,
                 self.max_iterations, self.max_iterations_separating_planes,
                 self.max_separating_planes_per_iteration, self.bisection_steps,
-                // self.parallelism,
-                self.verbose, self.require_sample_point_is_contained,
+                self.parallelism, self.verbose,
+                self.require_sample_point_is_contained,
                 self.configuration_space_margin, self.termination_threshold,
                 self.relative_termination_threshold, self.random_seed,
                 self.mixing_steps);
