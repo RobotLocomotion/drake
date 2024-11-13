@@ -103,6 +103,7 @@ struct RenderEngineVtkParams {
     a->Visit(DRAKE_NVP(exposure));
     a->Visit(DRAKE_NVP(cast_shadows));
     a->Visit(DRAKE_NVP(shadow_map_size));
+    a->Visit(DRAKE_NVP(force_to_pbr));
     a->Visit(DRAKE_NVP(gltf_extensions));
     a->Visit(DRAKE_NVP(backend));
   }
@@ -211,6 +212,20 @@ struct RenderEngineVtkParams {
    See the note on `cast_shadows` for the warning on directional lights and
    shadow maps. */
   int shadow_map_size{256};
+
+  /** RenderEngineVtk can use one of two illumination models: Phong or
+   Physically based rendering (PBR). It defaults to Phong. However, it
+   automatically switches to PBR if:
+
+       - an environment map is added, or
+       - a glTF mesh is added.
+
+   If `force_to_pbr` is set to true, it switches the engine to use PBR
+   regardless of the scene's contents.
+
+   Be aware, switching to PBR will lead to a qualitative change in rendered
+   images even if literally nothing else changes. */
+  bool force_to_pbr{false};
 
   /** Map from the name of a glTF extension (e.g., "KHR_materials_sheen") to
    render engine settings related to that extension. */
