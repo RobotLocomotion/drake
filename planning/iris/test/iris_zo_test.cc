@@ -30,8 +30,6 @@ using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::VPolytope;
 using symbolic::Variable;
 
-const double kInf = std::numeric_limits<double>::infinity();
-
 // Helper method for testing FastIris from a urdf string.
 HPolyhedron IrisZoFromUrdf(const std::string urdf,
                            const Hyperellipsoid& starting_ellipsoid,
