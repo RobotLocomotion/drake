@@ -83,12 +83,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                    const Hyperellipsoid& starting_ellipsoid,
                    const HPolyhedron& domain, const IrisZoOptions& options) {
   auto start = std::chrono::high_resolution_clock::now();
-  const auto parallelism = Parallelism::Max();
-  const int num_threads_to_use =
-      checker.SupportsParallelChecking() && options.parallelize
-          ? std::min(parallelism.num_threads(),
-                     checker.num_allocated_contexts())
-          : 1;
+  const int num_threads_to_use = checker.SupportsParallelChecking() &&
+                                 std::min(options.parallelism.num_threads(),
+                                          checker.num_allocated_contexts());
 
   RandomGenerator generator(options.random_seed);
 
@@ -107,22 +104,23 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   DRAKE_THROW_UNLESS(domain.IsBounded());
   DRAKE_THROW_UNLESS(domain.PointInSet(current_ellipsoid_center));
 
-  VPolytope cvxh_vpoly(options.containment_points);
-  if (options.force_containment_points) {
+  VPolytope cvxh_vpoly;
+  if (options.containment_points.has_value()) {
+    cvxh_vpoly = VPolytope(options.containment_points.value());
     DRAKE_THROW_UNLESS(domain.ambient_dimension() ==
-                       options.containment_points.rows());
+                       options.containment_points->rows());
     cvxh_vpoly = cvxh_vpoly.GetMinimalRepresentation();
 
     std::vector<Eigen::VectorXd> cont_vec;
-    cont_vec.reserve((options.containment_points.cols()));
+    cont_vec.reserve((options.containment_points->cols()));
 
-    for (int col = 0; col < options.containment_points.cols(); ++col) {
-      Eigen::VectorXd conf = options.containment_points.col(col);
+    for (int col = 0; col < options.containment_points->cols(); ++col) {
+      Eigen::VectorXd conf = options.containment_points->col(col);
       cont_vec.emplace_back(conf);
     }
 
     std::vector<uint8_t> containment_point_col_free =
-        checker.CheckConfigsCollisionFree(cont_vec, parallelism);
+        checker.CheckConfigsCollisionFree(cont_vec, options.parallelism);
     for (const auto col_free : containment_point_col_free) {
       if (!col_free) {
         throw std::runtime_error(
@@ -231,7 +229,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
       // Find all particles in collision
       std::vector<uint8_t> particle_col_free =
-          checker.CheckConfigsCollisionFree(particles_step, parallelism);
+          checker.CheckConfigsCollisionFree(particles_step,
+                                            options.parallelism);
       std::vector<Eigen::VectorXd> particles_in_collision;
       int number_particles_in_collision_unadaptive_test = 0;
       int number_particles_in_collision = 0;
@@ -352,8 +351,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         if (!particle_is_redundant[i]) {
           // compute face
           Eigen::VectorXd a_face;
-          if (options.force_containment_points &&
-              options.containment_points.size()) {
+          if (options.containment_points.has_value()) {
             a_face = compute_face_tangent_to_dist_cvxh(
                 current_ellipsoid, nearest_particle, cvxh_vpoly);
             // std::cout<<fmt::format("qp \n{} old \n{} old ",fmt_eigen(a_face),
@@ -368,9 +366,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                           options.configuration_space_margin;
 
           // relax cspace margin to contain points
-          if (options.force_containment_points) {
+          if (options.containment_points.has_value()) {
             Eigen::VectorXd result =
-                a_face.transpose() * options.containment_points;
+                a_face.transpose() * options.containment_points.value();
             double relaxation = result.maxCoeff() - b_face;
             if (relaxation > 0) {
               b_face += relaxation;
