@@ -1,7 +1,6 @@
 #include "drake/planning/iris/iris_zo.h"
 
 #include <algorithm>
-#include <iostream>
 #include <string>
 
 #include <common_robotics_utilities/parallelism.hpp>
@@ -140,9 +139,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     options.meshcat->SetTransform(path, RigidTransform<double>(point_to_draw));
   }
 
-  std::vector<Eigen::VectorXd> particles;
-
-  // upper bound on number of particles required if we hit max iterations
+  // Upper bound on number of particles required if we hit max iterations.
   double outer_delta_min =
       options.delta * 6 /
       (M_PI * M_PI * options.max_iterations * options.max_iterations);
@@ -161,43 +158,33 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     log()->info("IrisZo worst case test requires {} samples.", N_max);
   }
 
-  particles.reserve(N_max);
-  for (int i = 0; i < N_max; ++i) {
-    particles.emplace_back(Eigen::VectorXd::Zero(dim));
-  }
+  std::vector<Eigen::VectorXd> particles(N_max, Eigen::VectorXd::Zero(dim));
 
   int iteration = 0;
   HPolyhedron P = domain;
   HPolyhedron P_prev = domain;
 
-  // pre-allocate memory for the polyhedron we are going to construct
+  // Pre-allocate memory for the polyhedron we are going to construct.
   // TODO(wernerpe): find better solution than hardcoding 300
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
       P.A().rows() + 300, dim);
   Eigen::VectorXd b(P.A().rows() + 300);
 
-  //   if (options.verbose) {
-  //     log()->info("IrisZo requires {}/{} particles to be collision free ",
-  //                 bernoulli_threshold, options.num_particles);
-  //   }
-
   while (true) {
-    log()->info("IrisZo iteration {}", iteration);
+    log()->info("IrisZo outer iteration {}", iteration);
 
     Eigen::MatrixXd ATA = current_ellipsoid_A.transpose() * current_ellipsoid_A;
-    // rescaling makes max step computations more stable
-    ATA = (dim / ATA.trace()) * ATA;
 
-    // initialize polytope with domain
+    // Initialize polytope with domain.
     A.topRows(domain.A().rows()) = domain.A();
     b.head(domain.A().rows()) = domain.b();
 
-    // Separating Planes Step
     int num_iterations_separating_planes = 0;
 
-    // track maximum relaxation of cspace margin if containment of points is
-    // requested
+    // Track maximum relaxation of cspace margin if containment_points are
+    // requested.
     double max_relaxation = 0;
+
     double outer_delta =
         options.delta * 6 / (M_PI * M_PI * (iteration + 1) * (iteration + 1));
 
@@ -208,6 +195,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       outer_delta = options.delta;
     }
 
+    // Separating Planes Step.
     while (num_iterations_separating_planes <
            options.max_iterations_separating_planes) {
       int k_squared = num_iterations_separating_planes + 1;
@@ -266,7 +254,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           options.max_iterations_separating_planes - 1) {
         log()->warn(
             "IrisZo WARNING, separating planes hit max iterations without "
-            "passing the bernoulli test, this voids the probabilistic "
+            "passing the unadaptive test, this voids the probabilistic "
             "guarantees!");
       }
 
@@ -277,6 +265,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         particles_in_collision_updated.emplace_back(p);
       }
 
+      // For each particle in collision, we run a bisection search to find a
+      // configuration on the boundary of the obstacle.
       const auto particle_update_work =
           [&checker, &particles_in_collision_updated, &particles_in_collision,
            &current_ellipsoid_center,
@@ -312,7 +302,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                 }
               }
             }
-            //}
+
             particles_in_collision_updated[point_idx] = current_point;
           };
       // update all particles in parallel
@@ -321,10 +311,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                                   particle_update_work,
                                   ParallelForBackend::BEST_AVAILABLE);
 
-      // Resampling particles around found collisions
-      // TODO(wernerpe): implement optional resampling step
+      // Resampling particles around found collisions.
+      // TODO(wernerpe): Implement optional resampling step.
 
-      // Place Hyperplanes
+      // Place Hyperplanes.
       std::vector<double> particle_distances;
       particle_distances.reserve(number_particles_in_collision);
 
@@ -334,31 +324,26 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             (particle - current_ellipsoid_center));
       }
 
-      // returned in ascending order
+      // The indices are returned in ascending order.
       auto indices_sorted = argsort(particle_distances);
 
-      // bools are not threadsafe - using uint8_t instead to accomondate for
-      // parallel checking
+      // Bools are not threadsafe - using uint8_t instead to accomondate for
+      // parallel checking.
       std::vector<uint8_t> particle_is_redundant;
 
       for (int i = 0; i < number_particles_in_collision; ++i) {
         particle_is_redundant.push_back(0);
       }
 
-      // add separating planes step
+      // Add separating planes.
       int hyperplanes_added = 0;
       for (auto i : indices_sorted) {
-        // add nearest face
         auto nearest_particle = particles_in_collision_updated[i];
         if (!particle_is_redundant[i]) {
-          // compute face
           Eigen::VectorXd a_face;
           if (options.containment_points.has_value()) {
             a_face = compute_face_tangent_to_dist_cvxh(
                 current_ellipsoid, nearest_particle, cvxh_vpoly);
-            // std::cout<<fmt::format("qp \n{} old \n{} old ",fmt_eigen(a_face),
-            // fmt_eigen(a_face_test))<< std::endl;
-
           } else {
             a_face = ATA * (nearest_particle - current_ellipsoid_center);
           }
@@ -367,7 +352,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           double b_face = a_face.transpose() * nearest_particle -
                           options.configuration_space_margin;
 
-          // relax cspace margin to contain points
+          // Relax cspace margin to contain points.
           if (options.containment_points.has_value()) {
             Eigen::VectorXd result =
                 a_face.transpose() * options.containment_points.value();
@@ -446,6 +431,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             P.UniformSample(&generator, particles[j - 1], options.mixing_steps);
       }
       ++num_iterations_separating_planes;
+
+      // Log updates at 20-percent intervals of
+      // max_iterations_separating_planes.
       if (num_iterations_separating_planes -
                   1 % static_cast<int>(
                           0.2 * options.max_iterations_separating_planes) ==
