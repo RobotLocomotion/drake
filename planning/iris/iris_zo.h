@@ -63,7 +63,9 @@ struct IrisZoOptions {
   double epsilon = 1e-2;
 
   /** Points that are guaranteed to be contained in the final region
-   * provided their convex hull is collision free. */
+   * provided their convex hull is collision free. Note that if the containment
+   * points are closer than configuration_margin to an obstacle we will relax
+   * the margin in favor of including the containment points.*/
   std::optional<Eigen::MatrixXd> containment_points{std::nullopt};
 
   /** Maximum number of alternations between the ellipsoid and the separating
