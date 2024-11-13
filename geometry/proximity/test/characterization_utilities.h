@@ -243,7 +243,7 @@ class DRAKE_NO_EXPORT MakeFclShape : public ShapeReifier {
 };
 
 /* Reports if the Mesh shape is represented as a Convex shape under the hood. */
-::testing::AssertionResult MeshIsConvex();
+::testing::AssertionResult MeshIsConvexInFcl();
 
 /* Creates a transform to align two planes. The planes are defined by a
  (point, normal) pair -- the point lies on the plane and the normal is

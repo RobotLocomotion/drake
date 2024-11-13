@@ -4,6 +4,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/distance_to_point_callback.h"
+#include "drake/geometry/proximity/make_box_mesh.h"
+#include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity/test/characterization_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/math/rigid_transform.h"
@@ -33,8 +35,15 @@ class PointDistanceCallback : public DistanceCallback<T> {
     DRAKE_DEMAND(obj_A->collisionGeometry()->getNodeType() == fcl::GEOM_SPHERE);
     const GeometryId point_id = EncodedData(*obj_A).id();
     const Vector3<T> p_WQ = X_WGs->at(point_id).translation();
+    std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_data;
+    // Both drake::Convex and drake::Mesh are represented as fcl::GEOM_CONVEX.
+    if (obj_B->collisionGeometry().get()->getNodeType() == fcl::GEOM_CONVEX) {
+      mesh_data.emplace(EncodedData(*obj_B).id(),
+                        MeshDistanceBoundary(MakeBoxVolumeMeshWithMa<double>(
+                            CharacterizeResultTest<T>::box())));
+    }
     CallbackData<T> data(obj_A, std::numeric_limits<double>::infinity(), p_WQ,
-                         X_WGs, &results_);
+                         X_WGs, &mesh_data, &results_);
     double max_distance = std::numeric_limits<double>::infinity();
     return Callback<T>(obj_A, obj_B, &data, max_distance);
   }
@@ -104,7 +113,7 @@ class CharacterizePointDistanceResultTest : public CharacterizeResultTest<T> {
  However, this single test will detect when that condition is no longer true
  and call for implementation of *-Mesh tests. */
 GTEST_TEST(CharacterizePointDistanceResultTest, MeshMesh) {
-  ASSERT_TRUE(MeshIsConvex());
+  ASSERT_TRUE(MeshIsConvexInFcl());
 }
 
 class DoubleTest : public CharacterizePointDistanceResultTest<double>,
@@ -116,10 +125,11 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         QueryInstance(kPoint, kBox, 2e-15),
         QueryInstance(kPoint, kCapsule, 4e-15),
-        QueryInstance(kPoint, kConvex, kIgnores),
+        QueryInstance(kPoint, kConvex, 4e-15),
         QueryInstance(kPoint, kCylinder, 3e-15),
         QueryInstance(kPoint, kEllipsoid, 3e-5),
         QueryInstance(kPoint, kHalfSpace, 5e-15),
+        QueryInstance(kPoint, kMesh, 4e-15),
         QueryInstance(kPoint, kSphere, 4e-15)),
     QueryInstanceName);
 // clang-format on

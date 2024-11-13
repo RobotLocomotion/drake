@@ -1,7 +1,11 @@
 #include "drake/geometry/proximity/distance_to_point_callback.h"
 
+#include <string>
+#include <variant>
+
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_bool.h"
+#include "drake/geometry/proximity/calc_signed_distance_to_surface_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -153,22 +157,6 @@ void ComputeDistanceToPrimitive(const fcl::Capsuled& capsule,
     *grad_W = X_WG.rotation() * grad_G;
   }
 }
-
-// clang-format off
-#define INSTANTIATE_DISTANCE_TO_PRIMITIVE(Shape, S)                         \
-template void ComputeDistanceToPrimitive<S>(                                \
-    const fcl::Shape&, const math::RigidTransform<S>&, const Vector3<S>&,   \
-    Vector3<S>*, S*, Vector3<S>*)
-// clang-format on
-
-// INSTANTIATE_DISTANCE_TO_PRIMITIVE(Sphered, double);
-// INSTANTIATE_DISTANCE_TO_PRIMITIVE(Sphered, AutoDiffXd);
-// INSTANTIATE_DISTANCE_TO_PRIMITIVE(Halfspaced, double);
-// INSTANTIATE_DISTANCE_TO_PRIMITIVE(Halfspaced, AutoDiffXd);
-// INSTANTIATE_DISTANCE_TO_PRIMITIVE(Capsuled, double);
-// INSTANTIATE_DISTANCE_TO_PRIMITIVE(Capsuled, AutoDiffXd);
-
-#undef INSTANTIATE_DISTANCE_TO_PRIMITIVE
 
 template <typename T>
 SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(const fcl::Boxd& box) {
@@ -381,6 +369,22 @@ SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
 }
 
 template <typename T>
+SignedDistanceToPoint<T> DistanceToPoint<T>::operator()(
+    const MeshDistanceBoundary& mesh_G) {
+  const Vector3<double> p_GQ = ExtractDoubleOrThrow(X_WG_.inverse() * p_WQ_);
+  if (!std::holds_alternative<FeatureNormalSet>(mesh_G.feature_normal())) {
+    throw std::runtime_error("DistanceToPoint from meshes: " +
+                             std::get<std::string>(mesh_G.feature_normal()));
+  }
+  const SignedDistanceToSurfaceMesh d = CalcSignedDistanceToSurfaceMesh(
+      p_GQ, mesh_G.tri_mesh(), mesh_G.tri_bvh(),
+      std::get<FeatureNormalSet>(mesh_G.feature_normal()));
+  return SignedDistanceToPoint<T>{geometry_id_, d.nearest_point,
+                                  d.signed_distance,
+                                  X_WG_.rotation() * Vector3<T>(d.gradient)};
+}
+
+template <typename T>
 template <int dim, typename U>
 int DistanceToPoint<T>::ExtremalAxis(const Vector<U, dim>& p,
                                      const Vector<double, dim>& bounds) {
@@ -489,30 +493,16 @@ DistanceToPoint<T>::ComputeDistanceToBox(const Vector<double, dim>& h,
   return std::make_tuple(p_GN_G, grad_G, is_Q_on_edge_or_vertex);
 }
 
-bool ScalarSupport<double>::is_supported(fcl::NODE_TYPE node_type) {
-  switch (node_type) {
-    case fcl::GEOM_BOX:
-    case fcl::GEOM_CAPSULE:
-    case fcl::GEOM_CYLINDER:
-    case fcl::GEOM_ELLIPSOID:
-    case fcl::GEOM_HALFSPACE:
-    case fcl::GEOM_SPHERE:
-      return true;
-    default:
-      return false;
-  }
-}
-
 template <typename T>
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
               fcl::CollisionObjectd* object_B_ptr,
               // NOLINTNEXTLINE
-              void* callback_data, double& threshold) {
+              void* callback_data, double& threshold_out) {
   auto& data = *static_cast<CallbackData<T>*>(callback_data);
 
   // Three things:
-  //   1. We repeatedly set max_distance in each call to the callback because we
-  //   can't initialize it. The cost is negligible but maximizes any culling
+  //   1. We repeatedly set `threshold_out` in each call to the callback because
+  //   we can't initialize it. The cost is negligible but maximizes any culling
   //   benefit.
   //   2. Due to how FCL is implemented, passing a value <= 0 will cause results
   //   to be omitted because the bounding box test only considers *separating*
@@ -524,7 +514,7 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   //   bounding box test in which this is used doesn't produce a code via
   //   calculation; it is a perfect, hard-coded zero.
   const double kEps = std::numeric_limits<double>::epsilon() / 10;
-  threshold = std::max(data.threshold, kEps);
+  threshold_out = std::max(data.threshold, kEps);
 
   // We use `const` to prevent modification of the collision objects.
   const fcl::CollisionObjectd* geometry_object =
@@ -549,6 +539,16 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         distance = distance_to_point(
             *static_cast<const fcl::Capsuled*>(collision_geometry));
         break;
+      // Both drake::geometry::Mesh and Convex use fcl::GEOM_CONVEX.
+      case fcl::GEOM_CONVEX:
+        if (data.mesh_boundaries.contains(geometry_id)) {
+          distance = distance_to_point(data.mesh_boundaries.at(geometry_id));
+        } else {
+          // Unsupported mesh types. Returning false tells fcl to continue
+          // to other objects.
+          return false;
+        }
+        break;
       case fcl::GEOM_CYLINDER:
         distance = distance_to_point(
             *static_cast<const fcl::Cylinderd*>(collision_geometry));
@@ -566,7 +566,8 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
             *static_cast<const fcl::Sphered*>(collision_geometry));
         break;
       default:
-        // Returning false tells fcl to continue to other objects.
+        // Unsupported shapes.  Returning false tells fcl to continue to
+        // other objects.
         return false;
     }
 

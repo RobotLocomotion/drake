@@ -1,7 +1,9 @@
 #pragma once
 
 #include <limits>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -35,31 +37,32 @@ namespace internal {
 
  J.A. Baerentzen; H. Aanaes. Signed distance computation using the angle
  weighted pseudonormal. IEEE Transactions on Visualization and Computer
- Graphics (Volume: 11, Issue: 3, May-June 2005).
-
- @throws std::exception if the mesh has very sharp features.
- They make calculation of the vertex normals and edge normals too sensitive
- to numerical rounding.
-     Think of the simplest possible knife model of two adjacent triangles
- sharing a single edge. The two triangles would have a small angle between
- them, creating a "sharp edge".  If the edge is too sharp, the mesh will be
- rejected.  We have a generous tolerance -- the angle can be less than a
- degree -- but it would be better to stay well away from impractically sharp
- edges.
-     There is an analogous situation with vertices, where a vertex
- creates a pointy, needle-like region on the mesh. The skinny "needles"
- have the same problem as the thin knife edges. Presence of these
- "needles" may lead to the mesh being rejected.  */
+ Graphics (Volume: 11, Issue: 3, May-June 2005).  */
 class FeatureNormalSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FeatureNormalSet);
 
-  // Computes and stores the normals at the vertices and the edges of the given
-  // surface mesh expressed in frame M.
+  // Computes the normals at the vertices and the edges of the given surface
+  // mesh expressed in frame M.
   //
   // @pre  The mesh is watertight and a closed manifold. Otherwise, the
   //       computed normals are incorrect.
-  explicit FeatureNormalSet(const TriangleSurfaceMesh<double>& mesh_M);
+  //
+  // @returns the computed feature normals or an error message if the mesh has
+  // extremely sharp features. They make calculation of the vertex normals and
+  // edge normals too sensitive to numerical rounding.
+  //     Think of the simplest possible knife model of two adjacent triangles
+  // sharing a single edge. The two triangles would have a small angle between
+  // them, creating a "sharp edge".  If the edge is too sharp, the mesh will be
+  // rejected.  We have a generous tolerance -- the angle can be less than a
+  // degree -- but it would be better to stay well away from impractically sharp
+  // edges.
+  //     There is an analogous situation with vertices, where a vertex
+  // creates a pointy, needle-like region on the mesh. The skinny "needles"
+  // have the same problem as the thin knife edges. Presence of these
+  // "needles" may lead to the mesh being rejected.
+  static std::variant<FeatureNormalSet, std::string> MaybeCreate(
+      const TriangleSurfaceMesh<double>& mesh_M);
 
   // Returns the normal at a vertex `v` as the angle-weighted average of face
   // normals of triangles sharing the vertex. The weight of a triangle is the
@@ -91,6 +94,12 @@ class FeatureNormalSet {
   }
 
  private:
+  FeatureNormalSet(
+      std::vector<Vector3<double>>&& vertex_normals,
+      std::unordered_map<SortedPair<int>, Vector3<double>>&& edge_normals)
+      : vertex_normals_(std::move(vertex_normals)),
+        edge_normals_(std::move(edge_normals)) {}
+
   std::vector<Vector3<double>> vertex_normals_{};
   std::unordered_map<SortedPair<int>, Vector3<double>> edge_normals_{};
 };

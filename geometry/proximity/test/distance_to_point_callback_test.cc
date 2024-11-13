@@ -21,10 +21,13 @@ namespace {
 // TODO(SeanCurtis-TRI): Run through proximity_engine_test and pull the tests
 // from there that better belong here.
 
+using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;
+using math::RollPitchYawd;
 using math::RotationMatrix;
+using math::RotationMatrixd;
 using std::make_shared;
 
 // Performs a point-to-shape signed-distance query and tests the result. This
@@ -461,6 +464,55 @@ GTEST_TEST(DistanceToPoint, Halfspace) {
   EXPECT_TRUE(tester.Test(p_GN_G, -0.1 * phat_NQ_G, true /* is inside */));
 }
 
+// Test the DistanceToPoint functor interacting with MeshDistanceBoundary.
+// 1. If the VolumeMeshBoundary doesn't have feature normals, it should throw
+//    with whatever message is there.
+// 2. It calls CalcSignedDistanceToSurfaceMesh() and packages the results
+//    correctly (copies most values, but re-expresses gradient).
+GTEST_TEST(DistanceToPoint, MeshDistanceBoundary) {
+  const GeometryId mesh_geometry_id = GeometryId::get_new_id();
+  // A generic pose of frame G of the mesh in World frame.
+  const RigidTransformd X_WG(RollPitchYawd(M_PI_4, M_PI / 3, M_PI / 2),
+                             Vector3d(0.5, 1.25, -2));
+  // The query point Q in frame G of the mesh is at 10 meters above the origin.
+  const Vector3d p_GQ{0, 0, 10};
+  const Vector3d p_WQ = X_WG * p_GQ;
+  DistanceToPoint<double> distance_to_point(mesh_geometry_id, X_WG, p_WQ);
+
+  // Throw if there is no feature normals.
+  {
+    // This mesh has zero-degree knife edges prohibiting the feature normals
+    // at the edges because all vertices are on the X-Y plane.
+    const VolumeMesh<double> one_flat_tetrahedron_G(
+        {VolumeElement(0, 1, 2, 3)}, {Vector3d::Zero(), Vector3d::UnitX(),
+                                      Vector3d::UnitY(), Vector3d(1, 1, 0)});
+    MeshDistanceBoundary no_feature_normals(one_flat_tetrahedron_G);
+    ASSERT_FALSE(std::holds_alternative<FeatureNormalSet>(
+        no_feature_normals.feature_normal()));
+    DRAKE_EXPECT_THROWS_MESSAGE(distance_to_point(no_feature_normals),
+                                "DistanceToPoint from meshes:.*");
+  }
+
+  // Package the results with re-expressed gradients.
+  {
+    // This mesh consists of a standard tetrahedron. The query point (0,0,10)
+    // is 9 meters above the top vertex (0,0,1), which is the nearest point.
+    const VolumeMesh<double> standard_tetrahedron_G(
+        {VolumeElement{0, 1, 2, 3}}, {Vector3d::Zero(), Vector3d::UnitX(),
+                                      Vector3d::UnitY(), Vector3d::UnitZ()});
+    MeshDistanceBoundary mesh_boundary_G(standard_tetrahedron_G);
+
+    const SignedDistanceToPoint<double> result =
+        distance_to_point(mesh_boundary_G);
+    const double kTolerance = 1e-14;
+    EXPECT_EQ(result.id_G, mesh_geometry_id);
+    EXPECT_NEAR(result.distance, 9, kTolerance);
+    EXPECT_EQ(result.p_GN, Vector3d::UnitZ());
+    EXPECT_TRUE(CompareMatrices(
+        result.grad_W, X_WG.rotation() * Vector3d::UnitZ(), kTolerance));
+  }
+}
+
 // Simple smoke test for signed distance to Sphere. It does the following:
 //   Perform test of three different points w.r.t. a sphere: outside, on
 //     surface, and inside.
@@ -616,7 +668,7 @@ int ExpectedResult() {
     return 1;
   }
   if constexpr (std::is_same_v<T, AutoDiffXd>) {
-    if (std::is_same_v<S, fcl::Cylinderd> ||
+    if (std::is_same_v<S, fcl::Convexd> || std::is_same_v<S, fcl::Cylinderd> ||
         std::is_same_v<S, fcl::Ellipsoidd>) {
       return 0;
     }
@@ -644,10 +696,13 @@ void TestScalarShapeSupport() {
   const GeometryId other_id = GeometryId::get_new_id();
   std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
       {point_id, X_WQ}, {other_id, RigidTransform<T>::Identity()}};
-  CallbackData<T> data{&query_point, threshold, p_WQ, &X_WGs, &distances};
-
-  // The Drake-supported geometries (minus Mesh which isn't supported by
-  // ProximityEngine yet).
+  std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_data{
+      {other_id, MeshDistanceBoundary(VolumeMesh<double>(
+                     std::vector<VolumeElement>{{0, 1, 2, 3}},
+                     std::vector<Vector3d>{
+                         {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}}))}};
+  CallbackData<T> data{&query_point, threshold,  p_WQ,
+                       &X_WGs,       &mesh_data, &distances};
 
   auto run_callback = [&query_point, &threshold, &distances, &data,
                        other_id](auto geometry_shared_ptr) {
@@ -673,6 +728,18 @@ void TestScalarShapeSupport() {
     EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Capsuled>()));
   }
 
+  // Convex and Mesh. Both drake::geometry::Mesh and Convex use fcl::Convexd.
+  {
+    // This test is independent of the content of the fcl::Convexd because
+    // the mesh data is in the point_distance::CallbackData<T>, not the
+    // fcl::CollisionObjectd's. For simplicity, we use a minimally valid
+    // convex shape: a single vertex.
+    run_callback(make_shared<fcl::Convexd>(
+        make_shared<const std::vector<Vector3d>>(1, Vector3d{0, 0, 0}), 0,
+        make_shared<const std::vector<int>>()));
+    EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Convexd>()));
+  }
+
   // Cylinder
   {
     run_callback(make_shared<fcl::Cylinderd>(1.0, 2.0));
@@ -696,10 +763,6 @@ void TestScalarShapeSupport() {
     run_callback(make_shared<fcl::Sphered>(1.0));
     EXPECT_EQ(distances.size(), (ExpectedResult<T, fcl::Sphered>()));
   }
-
-  // Convex
-  // TODO(SeanCurtis-TRI): Add convex that is *not* supported; create a small
-  // utility test to generate a tetrahedron.
 }
 
 // This test simply confirms which scalar-shape combinations produce answers
@@ -717,6 +780,77 @@ GTEST_TEST(DistanceToPoint, ScalarShapeSupportAutoDiff) {
 
 GTEST_TEST(DistanceToPoint, ScalarShapeSupportExpression) {
   TestScalarShapeSupport<symbolic::Expression>();
+}
+
+// Test point_distance::Callback() for meshes (Mesh and Convex).
+// If the fcl representation is fcl::GEOM_CONVEX, check to see if it has
+// the corresponding MeshDistanceBoundary in the CallbackData.
+// 1. If so, dispatch it to the DistanceToPoint functor.
+// 2. Otherwise, it's a no-op.
+GTEST_TEST(Callback, MeshAndConvex) {
+  const Vector3d p_WQ{0, 1, 2};
+  fcl::CollisionObjectd query_point(make_shared<fcl::Sphered>(0),
+                                    RotationMatrixd().matrix(), p_WQ);
+
+  // Both drake::geometry::Mesh and Convex use fcl::Convexd. Its content
+  // is irrelevant for this test because the mesh data is in CallbackData.
+  // For simplicity, we use a minimally valid convex shape: a single vertex.
+  auto mesh_fcl_geometry = make_shared<fcl::Convexd>(
+      make_shared<const std::vector<Vector3d>>(1, Vector3d{0, 0, 0}), 0,
+      make_shared<const std::vector<int>>());
+  const GeometryId mesh_id = GeometryId::get_new_id();
+  // The pose of the mesh's frame M in World frame.
+  const RigidTransformd X_WM{Vector3d{1, 2, 3}};
+  // For completeness, we set the pose of the mesh in the CollisionObject
+  // even though we don't need it for this test. For calculation in drake, we
+  // use the pose in CallbackData. For calculation in FCL, it uses the pose
+  // in CollisionObject.
+  fcl::CollisionObjectd mesh_collision_object(
+      mesh_fcl_geometry, X_WM.rotation().matrix(), X_WM.translation());
+  EncodedData(mesh_id, true).write_to(&mesh_collision_object);
+
+  // Remaining components of CallbackData other than the mesh_boundaries.
+  const double kThreshold100Meters = 100;
+  const std::unordered_map<GeometryId, RigidTransformd> X_WGs{{mesh_id, X_WM}};
+
+  // There is MeshDistanceBoundary.
+  {
+    const std::unordered_map<GeometryId, MeshDistanceBoundary> mesh_boundaries{
+        {mesh_id, MeshDistanceBoundary(VolumeMesh<double>(
+                      {VolumeElement{0, 1, 2, 3}},
+                      {Vector3d::Zero(), Vector3d::UnitX(), Vector3d::UnitY(),
+                       Vector3d::UnitZ()}))}};
+    std::vector<SignedDistanceToPoint<double>> distances;
+    CallbackData<double> callback_data{
+        &query_point, kThreshold100Meters, p_WQ,
+        &X_WGs,       &mesh_boundaries,    &distances};
+
+    double threshold_out = 0;
+    // Expect Callback() to return false, so the broad-phase fcl will continue
+    // to other objects.
+    EXPECT_FALSE(Callback<double>(&query_point, &mesh_collision_object,
+                                  &callback_data, threshold_out));
+    EXPECT_EQ(distances.size(), 1);
+    EXPECT_EQ(threshold_out, kThreshold100Meters);
+  }
+
+  // No MeshDistanceBoundary.
+  {
+    const std::unordered_map<GeometryId, MeshDistanceBoundary>
+        no_mesh_boundaries;
+    std::vector<SignedDistanceToPoint<double>> distances;
+    CallbackData<double> callback_data{
+        &query_point, kThreshold100Meters, p_WQ,
+        &X_WGs,       &no_mesh_boundaries, &distances};
+
+    double threshold_out = 0;
+    // Expect Callback() to return false, so the broad-phase fcl will continue
+    // to other objects.
+    EXPECT_FALSE(Callback<double>(&query_point, &mesh_collision_object,
+                                  &callback_data, threshold_out));
+    EXPECT_EQ(distances.size(), 0);
+    EXPECT_EQ(threshold_out, kThreshold100Meters);
+  }
 }
 
 }  // namespace

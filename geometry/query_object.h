@@ -696,7 +696,6 @@ class QueryObject {
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
   // Distance Queries. Update documentation as we add more functionality.
-  // Right now it only supports spheres and boxes.
   /**
    Computes the signed distances and gradients to a query point from each
    geometry in the scene.
@@ -733,7 +732,7 @@ class QueryObject {
 
    |   Scalar   |   %Box  | %Capsule | %Convex | %Cylinder | %Ellipsoid | %HalfSpace |  %Mesh  | %Sphere |
    | :--------: | :-----: | :------: | :-----: | :-------: | :--------: | :--------: | :-----: | :-----: |
-   |   double   |  2e-15  |   4e-15  |    ᵃ    |   3e-15   |    3e-5ᵇ   |    5e-15   |    ᵃ    |  4e-15  |
+   |   double   |  2e-15  |   4e-15  |  4e-15  |   3e-15   |    3e-5ᵇ   |    5e-15   | 4e-15ᶜ  |  4e-15  |
    | AutoDiffXd |  1e-15  |   4e-15  |    ᵃ    |     ᵃ     |      ᵃ     |    5e-15   |    ᵃ    |  3e-15  |
    | Expression |   ᵃ     |    ᵃ     |    ᵃ    |     ᵃ     |      ᵃ     |      ᵃ     |    ᵃ    |    ᵃ    |
    __*Table 8*__: Worst observed error (in m) for 2mm penetration/separation
@@ -747,6 +746,34 @@ class QueryObject {
        the projection of the query point on the ellipsoid; the closer that point
        is to the high curvature area, the bigger the effect. It is not
        immediately clear how much worse the answer will get.
+   - ᶜ Only supports OBJ and tetrahedral VTK meshes. Unsupported meshes are
+       simply ignored; no results are reported for that geometry. For OBJ meshes
+       the surface mesh must satisfy specific requirements (see below). Unlike
+       the other Shapes, witness points and gradients can be discontinuous on a
+       mesh's exterior if it is non-convex.
+
+   @pre The %Mesh of a triangular surface mesh must be a closed manifold
+   without duplicate vertices or self-intersection, and every triangle's face
+   winding gives an outward-pointing face normal.  Drake does not currently
+   validate the input mesh with respect to these properties. Instead, it does a
+   good-faith computation assuming the properties, possibly returning incorrect
+   results. Non-compliant meshes will introduce regions in which the query
+   point will report the wrong sign (and, therefore, the wrong gradient) due
+   to a misclassification of being inside or outside. This leads to
+   discontinuities in the distance field across the boundaries of these
+   regions; the distance sign will flip while the magnitude of the distance
+   value is arbitrarily far away from zero. For open meshes, the same principle
+   holds. The open mesh, which has no true concept of "inside", will
+   nevertheless report some query points as being inside.
+
+   @pre The %Mesh of a tetrahedral volume mesh has positive-volume tetrahedra,
+   no duplicate vertices, no self-intersection, and any two tetrahedra
+   intersect in a common triangular face, edge, or vertex or not at all.
+   A "tetrahedron soup" is, in general, non-compliant to this condition.
+   Violating meshes will introduce areas inside the volumes that are
+   incorrectly treated as boundary surfaces. The query points near such
+   problematic areas will report the wrong nearest points, distances,
+   and gradients.
 
    @note For a sphere G, the signed distance function φᵢ(p) has an undefined
    gradient vector at the center of the sphere--every point on the sphere's
@@ -788,7 +815,10 @@ class QueryObject {
                               SignedDistanceToPoint. The ordering of the
                               results is guaranteed to be consistent -- for
                               fixed geometry poses, the results will remain the
-                              same. */
+                              same.
+
+   @throws std::exception if there are meshes with extremely sharp features
+   where the calculation of feature normals become unstable. */
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
       const double threshold = std::numeric_limits<double>::infinity()) const;

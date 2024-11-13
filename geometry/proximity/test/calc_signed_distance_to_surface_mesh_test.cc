@@ -46,7 +46,8 @@ class FeatureNormalSetTest : public ::testing::Test {
 };
 
 TEST_F(FeatureNormalSetTest, EdgeNormalIsAverageFaceNormal) {
-  const FeatureNormalSet dut(mesh_M_);
+  const auto dut =
+      std::get<FeatureNormalSet>(FeatureNormalSet::MaybeCreate(mesh_M_));
   // Edge v1v2 is shared by face 0 (v0,v2,v1) and face 3 (v1, v2,v3).
   const Vector3d kExpectEdgeNormal =
       (mesh_M_.face_normal(0) + mesh_M_.face_normal(3)).normalized();
@@ -55,7 +56,8 @@ TEST_F(FeatureNormalSetTest, EdgeNormalIsAverageFaceNormal) {
 }
 
 TEST_F(FeatureNormalSetTest, VertexNormalIsAngleWeightedAverage) {
-  const FeatureNormalSet dut(mesh_M_);
+  const auto dut =
+      std::get<FeatureNormalSet>(FeatureNormalSet::MaybeCreate(mesh_M_));
   // Vertex v1 is shared by face 0 (v0,v2,v1), face 1 (v0,v1,v3), and
   // face 3 (v1,v2,v3).  We expect vertex_normal() of v1 to be their
   // angle-weighted average normal.
@@ -71,9 +73,9 @@ TEST_F(FeatureNormalSetTest, VertexNormalIsAngleWeightedAverage) {
   EXPECT_TRUE(CompareMatrices(dut.vertex_normal(1), kExpectVertexNormal, kEps));
 }
 
-// Test the exception when the mesh has two triangles that make a "sharp knife"
-// with a very small dihedral angle.
-GTEST_TEST(FeatureNormalSet, ThrowSharpKnife) {
+// Test the error message when the mesh has two triangles that make a "sharp
+// knife" with a very small dihedral angle.
+GTEST_TEST(FeatureNormalSet, ErrorSharpKnife) {
   // This is a "flatten" tetrahedron with all four vertices on the same plane.
   // Its surface mesh has zero dihedral angle.
   //
@@ -93,13 +95,15 @@ GTEST_TEST(FeatureNormalSet, ThrowSharpKnife) {
   const TriangleSurfaceMesh<double> mesh_M =
       ConvertVolumeToSurfaceMesh(one_flat_tetrahedron_M);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      FeatureNormalSet{mesh_M},
-      "FeatureNormalSet: Cannot compute an edge normal.*");
+  auto dut = FeatureNormalSet::MaybeCreate(mesh_M);
+  ASSERT_TRUE(std::holds_alternative<std::string>(dut));
+  EXPECT_EQ(std::get<std::string>(dut),
+            "FeatureNormalSet: Cannot compute an edge normal because "
+            "the two triangles sharing the edge make a very sharp edge.");
 }
 
-// Test the exception when the mesh has a "pointy, needle-like" vertex.
-GTEST_TEST(FeatureNormalSet, ThrowPointyNeedleVertex) {
+// Test the error message when the mesh has a "pointy, needle-like" vertex.
+GTEST_TEST(FeatureNormalSet, ErrorPointyNeedleVertex) {
   // This scaling factor will creat a "needle" with aspect ratio 1:100.
   const double kSmallBase = 1e-2;
   // The apex vertex v3 becomes very pointy as the base triangle v0v1v2
@@ -126,9 +130,11 @@ GTEST_TEST(FeatureNormalSet, ThrowPointyNeedleVertex) {
   const TriangleSurfaceMesh<double> mesh_M =
       ConvertVolumeToSurfaceMesh(needle_tetrahedron_M);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      FeatureNormalSet{mesh_M},
-      "FeatureNormalSet: Cannot compute a vertex normal.*");
+  auto dut = FeatureNormalSet::MaybeCreate(mesh_M);
+  ASSERT_TRUE(std::holds_alternative<std::string>(dut));
+  EXPECT_EQ(std::get<std::string>(dut),
+            "FeatureNormalSet: Cannot compute a vertex normal because "
+            "the triangles sharing the vertex form a very pointy needle.");
 }
 
 class CalcSquaredDistanceToTriangleTest : public ::testing::Test {
@@ -160,7 +166,8 @@ class CalcSquaredDistanceToTriangleTest : public ::testing::Test {
             std::vector<SurfaceTriangle>{
                 {0, 2, 1}, {0, 1, 3}, {0, 3, 2}, {1, 2, 3}},
             {X_MF_ * p_FV0_, X_MF_ * p_FV1_, X_MF_ * p_FV2_, X_MF_ * p_FV3_}),
-        normal_set_M_{mesh_M_} {}
+        normal_set_M_{std::get<FeatureNormalSet>(
+            FeatureNormalSet::MaybeCreate(mesh_M_))} {}
 
  protected:
   const Vector3d p_FV0_;
@@ -316,7 +323,8 @@ class CalcSignedDistanceToSurfaceMeshTest : public ::testing::Test {
             {VolumeElement{0, 1, 3, 4}, VolumeElement{0, 3, 2, 4}},
             {p_MV0_, p_MV1_, p_MV2_, p_MV3_, p_MV4_}))),
         bvh_M_(mesh_M_),
-        mesh_normal_M_(mesh_M_) {}
+        mesh_normal_M_(std::get<FeatureNormalSet>(
+            FeatureNormalSet::MaybeCreate(mesh_M_))) {}
 
  protected:
   const Vector3d p_MV0_;

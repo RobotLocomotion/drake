@@ -156,24 +156,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "calc_signed_distance_to_surface_mesh",
-    srcs = ["calc_signed_distance_to_surface_mesh.cc"],
-    hdrs = ["calc_signed_distance_to_surface_mesh.h"],
-    internal = True,
-    visibility = ["//geometry:__pkg__"],
-    deps = [
-        ":bv",
-        ":bvh",
-        ":triangle_surface_mesh",
-        "//common:essential",
-    ],
-    implementation_deps = [
-        ":distance_to_point_callback",
-        "//math:geometric_transform",
-    ],
-)
-
-drake_cc_library(
     name = "collision_filter",
     srcs = ["collision_filter.cc"],
     hdrs = ["collision_filter.h"],
@@ -288,14 +270,27 @@ drake_cc_library(
 
 drake_cc_library(
     name = "distance_to_point_callback",
-    srcs = ["distance_to_point_callback.cc"],
-    hdrs = ["distance_to_point_callback.h"],
+    srcs = [
+        "calc_signed_distance_to_surface_mesh.cc",
+        "distance_to_point_callback.cc",
+        "mesh_distance_boundary.cc",
+    ],
+    hdrs = [
+        "calc_signed_distance_to_surface_mesh.h",
+        "distance_to_point_callback.h",
+        "mesh_distance_boundary.h",
+    ],
     internal = True,
     visibility = [
         "//geometry:__pkg__",
     ],
     deps = [
+        ":bv",
+        ":bvh",
         ":proximity_utilities",
+        ":triangle_surface_mesh",
+        ":volume_mesh",
+        ":volume_to_surface_mesh",
         "//common:default_scalars",
         "//common:drake_export",
         "//common:essential",
@@ -1100,7 +1095,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "calc_signed_distance_to_surface_mesh_test",
     deps = [
-        ":calc_signed_distance_to_surface_mesh",
+        ":distance_to_point_callback",
         ":volume_mesh",
         ":volume_to_surface_mesh",
         "//common/test_utilities:eigen_matrix_compare",
@@ -1248,6 +1243,7 @@ drake_cc_googletest(
     deps = [
         ":characterization_utilities",
         ":distance_to_point_callback",
+        ":make_box_mesh",
     ],
 )
 
@@ -1524,6 +1520,13 @@ drake_cc_googletest(
         ":volume_mesh",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "mesh_distance_boundary_test",
+    deps = [
+        "distance_to_point_callback",
     ],
 )
 
