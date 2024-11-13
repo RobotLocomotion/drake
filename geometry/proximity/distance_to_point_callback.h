@@ -12,6 +12,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
+#include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
 #include "drake/geometry/query_results/signed_distance_to_point.h"
 #include "drake/math/rigid_transform.h"
@@ -23,14 +24,15 @@ namespace point_distance DRAKE_NO_EXPORT {
 
 /* Supporting data for the distance-to-point callback (see Callback below).
  It includes:
-    - The query point Q, measured and expressed in the world frame, `p_WQ_W`.
     - The fcl collision object representing the query point, Q.
     - A distance threshold beyond which distances will not be reported.
-    - The pose of the geometry being queried against.
+    - The query point Q, measured and expressed in the world frame, `p_WQ_W`.
     - The T-valued poses of _all_ geometries in the corresponding SceneGraph
       keyed on their GeometryId.
+    - The mesh data for calculating signed distances of _all_ mesh geometries
+      in the corresponding SceneGraph keyed on their GeometryId.
     - A vector of distance results -- one instance of SignedDistanceToPoint for
-      every supported geometry which lies with the threshold.
+      every supported geometry which lies within the threshold.
  */
 template <typename T>
 struct CallbackData {
@@ -43,20 +45,26 @@ struct CallbackData {
    @param threshold_in        The query threshold.
    @param p_WQ_W_in           The T-valued position of the query point.
    @param X_WGs_in            The T-valued poses. Aliased.
+   @param mesh_boundaries_in  The mesh data for calculating signed distances.
+                              Aliased.
    @param distances_in[out]   The output results. Aliased.
    */
   CallbackData(
       fcl::CollisionObjectd* query_in, const double threshold_in,
       const Vector3<T>& p_WQ_W_in,
       const std::unordered_map<GeometryId, math::RigidTransform<T>>* X_WGs_in,
+      const std::unordered_map<GeometryId, MeshDistanceBoundary>*
+          mesh_boundaries_in,
       std::vector<SignedDistanceToPoint<T>>* distances_in)
       : query_point(*query_in),
         threshold(threshold_in),
         p_WQ_W(p_WQ_W_in),
         X_WGs(*X_WGs_in),
+        mesh_boundaries(*mesh_boundaries_in),
         distances(*distances_in) {
     DRAKE_DEMAND(query_in != nullptr);
     DRAKE_DEMAND(X_WGs_in != nullptr);
+    DRAKE_DEMAND(mesh_boundaries_in != nullptr);
     DRAKE_DEMAND(distances_in != nullptr);
   }
 
@@ -71,6 +79,9 @@ struct CallbackData {
 
   /* The T-valued pose of every geometry.  */
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
+
+  /* Data for calculating signed distances of every mesh geometry.  */
+  const std::unordered_map<GeometryId, MeshDistanceBoundary>& mesh_boundaries;
 
   /* The accumulator for results.  */
   std::vector<SignedDistanceToPoint<T>>& distances;
@@ -167,6 +178,10 @@ class DistanceToPoint {
   /* Overload to compute distance to a sphere.  */
   SignedDistanceToPoint<T> operator()(const fcl::Sphered& sphere);
 
+  /* Overload to compute distance to a mesh represented as a
+   water-tight boundary surface enclosing a volume.  */
+  SignedDistanceToPoint<T> operator()(const MeshDistanceBoundary& mesh);
+
   /* Reports the "sign" of x with a small modification; Sign(0) --> 1.
    @tparam U  Templated to allow DistanceToPoint<AutoDiffXd> to still compute
               Sign<double> or Sign<AutoDiffXd> as needed.  */
@@ -237,7 +252,21 @@ struct ScalarSupport {
 /* Primitive support for double-valued query.  */
 template <>
 struct ScalarSupport<double> {
-  static bool is_supported(fcl::NODE_TYPE node_type);
+  static bool is_supported(fcl::NODE_TYPE node_type) {
+    switch (node_type) {
+      case fcl::GEOM_BOX:
+      case fcl::GEOM_CAPSULE:
+      // drake::geometry::{Mesh, Convex} use fcl::GEOM_CONVEX.
+      case fcl::GEOM_CONVEX:
+      case fcl::GEOM_CYLINDER:
+      case fcl::GEOM_ELLIPSOID:
+      case fcl::GEOM_HALFSPACE:
+      case fcl::GEOM_SPHERE:
+        return true;
+      default:
+        return false;
+    }
+  }
 };
 
 /* Primitive support for AutoDiff-valued query.  */
@@ -245,10 +274,10 @@ template <>
 struct ScalarSupport<AutoDiffXd> {
   static bool is_supported(fcl::NODE_TYPE node_type) {
     switch (node_type) {
-      case fcl::GEOM_SPHERE:
       case fcl::GEOM_BOX:
-      case fcl::GEOM_HALFSPACE:
       case fcl::GEOM_CAPSULE:
+      case fcl::GEOM_HALFSPACE:
+      case fcl::GEOM_SPHERE:
         return true;
       default:
         return false;
@@ -262,6 +291,15 @@ struct ScalarSupport<AutoDiffXd> {
  a supported shape. Intended to be invoked as a result of broadphase culling
  of candidate geometry pairs for the pair (`object_A_ptr`, `object_B_ptr`).
 
+ @param[in,out] callback_data  An instance of CallbackData, whose const members
+                               are input, and `CallbackData::distances`
+                               is the output.
+
+ @param[out] threshold_out  An output parameter (pass-by-reference) back to
+                            FCL's BVH culling. It will be set to the
+                            CallbackData::threshold (or an internal lower
+                            bound proportional to the machine epsilon).
+
  @pre The `callback_data` is an instance of point_distance::CallbackData.
  @pre One of the two fcl objects matches the CallbackData.query_point object.
  */
@@ -269,7 +307,7 @@ template <typename T>
 bool Callback(fcl::CollisionObjectd* object_A_ptr,
               fcl::CollisionObjectd* object_B_ptr,
               // NOLINTNEXTLINE
-              void* callback_data, double& threshold);
+              void* callback_data, double& threshold_out);
 
 // clang-format off
 }  // namespace point_distance
