@@ -23,9 +23,6 @@ void DefinePlanningIrisZo(py::module m) {
       .def_readwrite("epsilon", &IrisZoOptions::epsilon, cls_doc.epsilon.doc)
       .def_readwrite("containment_points", &IrisZoOptions::containment_points,
           cls_doc.containment_points.doc)
-      .def_readwrite("force_containment_points",
-          &IrisZoOptions::force_containment_points,
-          cls_doc.force_containment_points.doc)
       .def_readwrite("max_iterations", &IrisZoOptions::max_iterations,
           cls_doc.max_iterations.doc)
       .def_readwrite("max_iterations_separating_planes",
@@ -78,8 +75,7 @@ void DefinePlanningIrisZo(py::module m) {
             "mixing_steps={}, "
             ")")
             .format(self.num_particles, self.tau, self.delta, self.epsilon,
-                self.containment_points, self.force_containment_points,
-                self.max_iterations, self.max_iterations_separating_planes,
+                self.containment_points, self.max_iterations, self.max_iterations_separating_planes,
                 self.max_separating_planes_per_iteration, self.bisection_steps,
                 self.parallelize, self.verbose,
                 self.require_sample_point_is_contained,

@@ -516,7 +516,6 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
   options.meshcat = meshcat;
   options.configuration_space_margin = 0.04;
   options.containment_points = cont_points.topRows(2);
-  options.force_containment_points = true;
   HPolyhedron region =
       IrisZoFromUrdf(boxes_in_corners_urdf, starting_ellipsoid, options);
   EXPECT_EQ(region.ambient_dimension(), 2);
