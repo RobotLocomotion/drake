@@ -1956,17 +1956,19 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
   }
 }
 
-// RenderEngineVtk promotes all materials to be PBR materials on two conditions:
+// RenderEngineVtk promotes all materials to be PBR materials on either of
+// several conditions:
 //
 //  1. Any geometry with intrinsic PBR materials is introduced (e.g., a glTF)
 //  2. An environment map is introduced.
+//  3. RenderEngineVtkParams::force_to_pbr is set to `true`.
 //
-// (1) has been shown in TEST_F(RenderEngineVtkTest, EnvironmentMap). The
+// (1) is confirmed by this test.
+// (2) is confirmed by TEST_F(RenderEngineVtkTest, EnvironmentMap). The
 // sphere there has a typical phong material and the fact that it gets
 // illuminated based on the environment shows PBR promotion.
-//
-// This test we'll simply confirm that the introduction of a glTF shows an
-// illumination change without any other step (indicating material promotion).
+// (3) is confirmed in TEST_F(RenderEngineVtkTest,
+// PbrMaterialSettingSurvivesCloning).
 TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
   auto test_sphere_color = [this](int caller_line_number,
                                   const TestColor expected_color,
@@ -2028,6 +2030,108 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     const TestColor pbr_texture_color(66, 152, 68, 255);
     test_sphere_color(__LINE__, pbr_texture_color, renderer_.get());
   }
+}
+
+// Materials get promoted from Phong to PBR based on various conditions. When
+// a source engine gets promoted and then cloned, the clone should retain that
+// logic that subsequent geometries added to the clone should also use a PBR
+// material.
+// This test also serves as the test for RenderEngineVtkParams::force_to_pbr as
+// a promotion criterion.
+TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
+  // TODO(SeanCurtis-TRI) Inexplicably, the full size (640x480) camera causes
+  // failures in CI. The images saved by the test in test output logs are
+  // not preserved in CI yet and the megabyte-sized images are too large to
+  // be dumped out to the console in base64. So, we can't see why the 640x480
+  // images fail in CI. When the test outputs are preserved, we can revisit
+  // this.
+
+  // We'll use the same camera as the default camera for the tests, but with
+  // smaller image.
+  const int w = kWidth / 2;
+  const int h = kHeight / 2;
+  const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
+  const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
+  const DepthRenderCamera camera(
+      {"unused", intrinsics, depth_camera_.core().clipping(),
+       depth_camera_.core().sensor_pose_in_camera_body()},
+      depth_camera_.depth_range());
+
+  ImageDepth32F depth(w, h);
+  ImageLabel16I label(w, h);
+
+  // First test the efficacy of `force_to_pbr`.
+  // Two otherwise identical engines with the same geometries should have
+  // images that don't match if one is PBR and the other is phong.
+  RenderEngineVtk phong_renderer(RenderEngineVtkParams{});
+  RenderEngineVtk pbr_renderer(RenderEngineVtkParams{.force_to_pbr = true});
+  // TODO(20002) There is known conflict when we alternate renderings between
+  // a RenderEngine and its clone. So, we're setting up this "back up" render
+  // engine that should be identical to pbr_renderer. When the issue is
+  // resolved, we'll be able to use pbr_renderer in place of this one to
+  // create the reference images.
+  RenderEngineVtk renderer_20002(RenderEngineVtkParams{.force_to_pbr = true});
+
+  // Pose the camera so we can see three sides of the cubes.
+  const RotationMatrixd R_WR(math::RollPitchYawd(-0.75 * M_PI, 0, M_PI_4));
+  const RigidTransformd X_WR(R_WR,
+                             R_WR * -Vector3d(0, 0, 1.5 * kDefaultDistance));
+
+  InitializeRenderer(X_WR, /* add_terrain = */ true, &phong_renderer);
+  InitializeRenderer(X_WR, /* add_terrain = */ true, &pbr_renderer);
+  InitializeRenderer(X_WR, /* add_terrain = */ true, &renderer_20002);
+
+  const fs::path obj_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj");
+  const Mesh cube(obj_path);
+  PerceptionProperties props;
+  props.AddProperty("label", "id", RenderLabel(17));
+  const GeometryId id = GeometryId::get_new_id();
+
+  phong_renderer.RegisterVisual(id, cube, props, RigidTransformd(), false);
+  pbr_renderer.RegisterVisual(id, cube, props, RigidTransformd(), false);
+  renderer_20002.RegisterVisual(id, cube, props, RigidTransformd(), false);
+
+  ImageRgba8U reference_image(w, h);
+  Render(__LINE__, "phong", &phong_renderer, &camera, &reference_image, &depth,
+         &label);
+  ImageRgba8U pbr_image(w, h);
+  Render(__LINE__, "pbr", &pbr_renderer, &camera, &pbr_image, &depth, &label);
+
+  // The images don't match because the `force_to_pbr` changed the light model.
+  EXPECT_NE(reference_image, pbr_image);
+
+  // Make sure the back up renderer matches.
+  Render(0, "", &renderer_20002, &camera, &reference_image, &depth, &label);
+  EXPECT_EQ(reference_image, pbr_image);
+
+  // Test post-cloning logic.
+  unique_ptr<RenderEngine> clone_base = pbr_renderer.Clone();
+  RenderEngineVtk* clone = static_cast<RenderEngineVtk*>(clone_base.get());
+  ImageRgba8U clone_image(w, h);
+  // TODO(20002): The known issue of clone vs source render engine fighting
+  // can be *mitigated* by performing a throw-away rendering. So, we'll do an
+  // extra rendering and then do one for real.
+  Render(0, "", clone, &camera, &clone_image, &depth, &label);
+  Render(__LINE__, "clone", clone, &camera, &clone_image, &depth, &label);
+
+  // The cloned engine still renders images with PBR materials.
+  EXPECT_EQ(clone_image, pbr_image);
+
+  // Now, we'll add a new geometry and confirm that the new geometry gets
+  // promoted to PBR in both images.
+  const GeometryId ball_id = GeometryId::get_new_id();
+  const Sphere sphere(0.5);
+  const RigidTransformd X_WS(Vector3d(0, 0, 1));
+  props.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+  renderer_20002.RegisterVisual(ball_id, sphere, props, X_WS, false);
+  clone->RegisterVisual(ball_id, sphere, props, X_WS, false);
+
+  Render(__LINE__, "pbr with ball", &renderer_20002, &camera, &pbr_image,
+         &depth, &label);
+  Render(__LINE__, "clone with ball", clone, &camera, &clone_image, &depth,
+         &label);
+  EXPECT_EQ(clone_image, pbr_image);
 }
 
 namespace {
