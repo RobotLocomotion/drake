@@ -516,17 +516,42 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
   }
 
   // Parse PositiveSemidefiniteConstraint and LinearMatrixInequalityConstraint.
-  std::vector<int> psd_cone_length;
+  std::vector<std::optional<int>> psd_cone_length;
+  std::vector<std::optional<int>> lmi_cone_length;
+  std::vector<std::optional<int>> psd_y_start_indices;
+  std::vector<std::optional<int>> lmi_y_start_indices;
   internal::ParsePositiveSemidefiniteConstraints(
       prog, /* upper_triangular = */ false, &A_triplets, &b, &A_row_count,
-      &psd_cone_length);
+      &psd_cone_length, &lmi_cone_length, &psd_y_start_indices,
+      &lmi_y_start_indices);
   // Set the psd cone length in the SCS cone.
-  cone->ssize = psd_cone_length.size();
+  // Note that when psd_cone_length[i] = std::nullopt or lmi_cone_length[i] =
+  // std::nullopt, the constraint will not be parsed as PSD cone in SCS. So we
+  // should filter out these entries with value std::nullopt.
+  cone->ssize = 0;
+  for (const auto& length : psd_cone_length) {
+    if (length.has_value()) {
+      ++(cone->ssize);
+    }
+  }
+  for (const auto& length : lmi_cone_length) {
+    if (length.has_value()) {
+      cone->ssize++;
+    }
+  }
   // This scs_calloc doesn't need to accompany a ScopeExit since cone->s will be
   // cleaned up recursively by freeing up cone in scs_free_data()
   cone->s = static_cast<scs_int*>(scs_calloc(cone->ssize, sizeof(scs_int)));
-  for (int i = 0; i < cone->ssize; ++i) {
-    cone->s[i] = psd_cone_length[i];
+  int scs_psd_cone_count = 0;
+  for (int i = 0; i < ssize(psd_cone_length); ++i) {
+    if (psd_cone_length[i].has_value()) {
+      cone->s[scs_psd_cone_count++] = *(psd_cone_length[i]);
+    }
+  }
+  for (int i = 0; i < ssize(lmi_cone_length); ++i) {
+    if (lmi_cone_length[i].has_value()) {
+      cone->s[scs_psd_cone_count++] = *(lmi_cone_length[i]);
+    }
   }
 
   // Parse ExponentialConeConstraint.
@@ -581,7 +606,8 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
   internal::SetDualSolution(
       prog, solver_details.y, linear_constraint_dual_indices,
       linear_eq_y_start_indices, lorentz_cone_y_start_indices,
-      rotated_lorentz_cone_y_start_indices, result);
+      rotated_lorentz_cone_y_start_indices, psd_y_start_indices,
+      lmi_y_start_indices, /*upper_triangular_psd=*/false, result);
   // Set the solution_result enum and the optimal cost based on SCS status.
   if (solver_details.scs_status == SCS_SOLVED ||
       solver_details.scs_status == SCS_SOLVED_INACCURATE) {
