@@ -386,7 +386,7 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   ScsSolver scs_solver;
   if (scs_solver.available()) {
-    SolveEigenvalueProblem(scs_solver, {}, kTol);
+    SolveEigenvalueProblem(scs_solver, {}, kTol, /*check_dual*/ false);
   }
 }
 
@@ -437,6 +437,20 @@ GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
   if (scs_solver.available()) {
     Test2x2with3x3SDP(scs_solver, 1E-2, /*check_dual=*/false,
                       /*dual_tol=*/1E-5);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1LMI) {
+  ScsSolver solver;
+  if (solver.available()) {
+    TestTrivial1x1LMI(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-7);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test2X2LMI) {
+  ScsSolver solver;
+  if (solver.available()) {
+    Test2x2LMI(solver, 1E-7, /*check_dual=*/false, /*dual_tol=*/1E-7);
   }
 }
 

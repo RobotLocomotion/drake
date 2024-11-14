@@ -218,7 +218,7 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
-    SolveEigenvalueProblem(mosek_solver, {}, 1E-7);
+    SolveEigenvalueProblem(mosek_solver, {}, 1E-7, /*check_dual=*/true);
   }
 }
 
@@ -551,6 +551,20 @@ GTEST_TEST(MosekTest, Test2x2with3x3SDP) {
   MosekSolver solver;
   if (solver.available()) {
     Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/true, /*dual_tol=*/1E-3);
+  }
+}
+
+GTEST_TEST(MosekTest, TestTrivial1x1LMI) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestTrivial1x1LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
+  }
+}
+
+GTEST_TEST(MosekTest, Test2X2LMI) {
+  MosekSolver solver;
+  if (solver.available()) {
+    Test2x2LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
   }
 }
 

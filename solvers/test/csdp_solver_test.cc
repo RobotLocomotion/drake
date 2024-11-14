@@ -99,6 +99,20 @@ GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1LMI) {
+  CsdpSolver solver;
+  if (solver.available()) {
+    TestTrivial1x1LMI(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-7);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, Test2X2LMI) {
+  CsdpSolver solver;
+  if (solver.available()) {
+    Test2x2LMI(solver, 1E-7, /*check_dual=*/false, /*dual_tol=*/1E-7);
+  }
+}
+
 std::vector<RemoveFreeVariableMethod> GetRemoveFreeVariableMethods() {
   return {RemoveFreeVariableMethod::kNullspace,
           RemoveFreeVariableMethod::kTwoSlackVariables,
@@ -368,7 +382,8 @@ GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
       SolverOptions solver_options;
       solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
                                static_cast<int>(method));
-      SolveEigenvalueProblem(solver, solver_options, 1E-6);
+      SolveEigenvalueProblem(solver, solver_options, 1E-6,
+                             /*check_dual=*/false);
     }
   }
 }

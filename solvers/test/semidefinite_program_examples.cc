@@ -163,7 +163,7 @@ void FindOuterEllipsoid(const SolverInterface& solver,
 
 void SolveEigenvalueProblem(const SolverInterface& solver,
                             const std::optional<SolverOptions>& solver_options,
-                            double tol) {
+                            double tol, bool check_dual) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   Matrix3d F1;
@@ -177,7 +177,7 @@ void SolveEigenvalueProblem(const SolverInterface& solver,
       0.7, 0.1, 5;
   // clang-format on
   auto z = prog.NewContinuousVariables<1>("z");
-  prog.AddLinearMatrixInequalityConstraint(
+  auto lmi_constraint = prog.AddLinearMatrixInequalityConstraint(
       {Matrix3d::Zero(), Matrix3d::Identity(), -F1, -F2}, {z, x});
 
   const Vector2d x_lb(0.1, 1);
@@ -198,6 +198,21 @@ void SolveEigenvalueProblem(const SolverInterface& solver,
   EXPECT_NEAR(z_value, eigen_solver_xF.eigenvalues().maxCoeff(), tol);
   EXPECT_TRUE(((x_value - x_lb).array() >= -tol).all());
   EXPECT_TRUE(((x_value - x_ub).array() <= tol).all());
+  if (check_dual) {
+    const Eigen::MatrixXd lmi_dual =
+        math::ToSymmetricMatrixFromLowerTriangularColumns(
+            result.GetDualSolution(lmi_constraint));
+    Eigen::MatrixXd lmi_sol = lmi_constraint.evaluator()->F()[0];
+    for (int i = 0; i < ssize(lmi_constraint.evaluator()->F()) - 1; ++i) {
+      lmi_sol += lmi_constraint.evaluator()->F()[1 + i] *
+                 result.GetSolution(lmi_constraint.variables()(i));
+    }
+    // Check complementary slackness.
+    EXPECT_NEAR((lmi_sol * lmi_dual).trace(), 0, tol);
+    // Check if the lmi dual is psd.
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es_lmi_dual(lmi_dual);
+    EXPECT_TRUE((es_lmi_dual.eigenvalues().array() >= -tol).all());
+  }
 }
 
 void SolveSDPwithSecondOrderConeExample1(const SolverInterface& solver,
@@ -559,6 +574,59 @@ void Test2x2with3x3SDP(const SolverInterface& solver, double primal_tol,
     // Check complementarity slackness.
     EXPECT_NEAR((psd_2x2_dual * psd_2x2_sol).trace(), 0, dual_tol);
     EXPECT_NEAR((psd_3x3_dual * psd_3x3_sol).trace(), 0, dual_tol);
+  }
+}
+
+void TestTrivial1x1LMI(const SolverInterface& solver, double primal_tol,
+                       bool check_dual, double dual_tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddLinearCost(x[0] + x[1]);
+  auto lmi_con1 = prog.AddLinearMatrixInequalityConstraint(
+      {Vector1d(1), Vector1d(2), Vector1d(-3)}, x);
+  auto lmi_con2 = prog.AddLinearMatrixInequalityConstraint(
+      {Vector1d(-3), Vector1d(-1), Vector1d(-3)}, x);
+  auto lmi_con3 = prog.AddLinearMatrixInequalityConstraint(
+      {Vector1d(4), Vector1d(1), Vector1d(2)}, x);
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  ASSERT_TRUE(result.is_success());
+  const Eigen::Vector2d x_sol = result.GetSolution(x);
+  EXPECT_TRUE(CompareMatrices(x_sol, Eigen::Vector2d(-2, -1), primal_tol));
+  if (check_dual) {
+    auto lmi_dual1 = result.GetDualSolution(lmi_con1);
+    auto lmi_dual2 = result.GetDualSolution(lmi_con2);
+    auto lmi_dual3 = result.GetDualSolution(lmi_con3);
+    EXPECT_TRUE(CompareMatrices(lmi_dual1, Vector1d(1.0 / 7), dual_tol));
+    EXPECT_TRUE(CompareMatrices(lmi_dual2, Vector1d(0), dual_tol));
+    EXPECT_TRUE(CompareMatrices(lmi_dual3, Vector1d(5.0 / 7), dual_tol));
+  }
+}
+
+void Test2x2LMI(const SolverInterface& solver, double primal_tol,
+                bool check_dual, double dual_tol) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(1);
+  auto lmi_con = prog.AddLinearMatrixInequalityConstraint(
+      {(Eigen::Matrix2d() << 1, 1, 1, -2).finished(),
+       (Eigen::Matrix2d() << 2, 2, 2, 8).finished()},
+      x);
+  prog.AddLinearCost(x(0));
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  ASSERT_TRUE(result.is_success());
+  const auto x_sol = result.GetSolution(x);
+  EXPECT_TRUE(CompareMatrices(x_sol, Vector1d(0.5), primal_tol));
+  EXPECT_NEAR(result.get_optimal_cost(), 0.5, primal_tol);
+  if (check_dual) {
+    const Eigen::Matrix2d lmi_dual =
+        math::ToSymmetricMatrixFromLowerTriangularColumns(
+            result.GetDualSolution(lmi_con));
+    const Eigen::Matrix2d lmi_sol =
+        lmi_con.evaluator()->F()[0] + lmi_con.evaluator()->F()[1] * x_sol(0);
+    EXPECT_NEAR((lmi_dual * lmi_sol).trace(), 0, dual_tol);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> es(lmi_dual);
+    EXPECT_TRUE((es.eigenvalues().array() >= -dual_tol).all());
   }
 }
 
