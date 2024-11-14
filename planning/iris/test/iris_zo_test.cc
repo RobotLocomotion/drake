@@ -513,10 +513,8 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
   options.meshcat = meshcat;
   options.configuration_space_margin = 0.04;
   options.containment_points = cont_points.topRows(2);
-  std::cout << "pre iris zo call \n";
   HPolyhedron region =
       IrisZoFromUrdf(boxes_in_corners_urdf, starting_ellipsoid, options);
-  std::cout << "post iris zo call \n";
   EXPECT_EQ(region.ambient_dimension(), 2);
   {
     for (int pt_to_draw = 0; pt_to_draw < cont_points.cols(); ++pt_to_draw) {
@@ -524,7 +522,8 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
       std::string path = fmt::format("cont_pt/{}", pt_to_draw);
       options.meshcat->SetObject(path, Sphere(0.04),
                                  geometry::Rgba(1, 0, 0.0, 1.0));
-      point_to_draw.head(2) = cont_points.col(pt_to_draw);
+      point_to_draw(0) = cont_points(0, pt_to_draw);
+      point_to_draw(1) = cont_points(1, pt_to_draw);
       options.meshcat->SetTransform(
           path, math::RigidTransform<double>(point_to_draw));
       EXPECT_TRUE(region.PointInSet(point_to_draw.head(2)));
@@ -532,12 +531,10 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
     Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 20);
 
     VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-    std::cout << "drawing region \n";
     points.resize(3, vregion.vertices().cols() + 1);
     points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
     points.topRightCorner(2, 1) = vregion.vertices().col(0);
     points.bottomRows<1>().setZero();
-    std::cout << "drawing region2 \n";
     meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
 
     MaybePauseForUser();

@@ -109,7 +109,7 @@ struct IrisZoOptions {
   This termination condition can be disabled by setting to a negative value. */
   double relative_termination_threshold{1e-3};
 
-  /** This option to sets the random seed for random sampling throughout the
+  /** This option sets the random seed for random sampling throughout the
    * algorithm. */
   int random_seed{1234};
 
@@ -128,7 +128,7 @@ Order) algorithm, as described in
 P. Werner, T. Cohn\*, R. H. Jiang\*, T. Seyde, M. Simchowitz, R. Tedrake, and D.
 Rus, "Faster Algorithms for Growing Collision-Free Convex Polytopes in Robot
 Configuration Space,"
-\* Denotes equal contribution.
+&nbsp;* Denotes equal contribution.
 
 https://groups.csail.mit.edu/robotics-center/public_papers/Werner24.pdf
 
