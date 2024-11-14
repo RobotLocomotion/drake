@@ -82,9 +82,11 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                    const Hyperellipsoid& starting_ellipsoid,
                    const HPolyhedron& domain, const IrisZoOptions& options) {
   auto start = std::chrono::high_resolution_clock::now();
-  const int num_threads_to_use = checker.SupportsParallelChecking() &&
-                                 std::min(options.parallelism.num_threads(),
-                                          checker.num_allocated_contexts());
+  const int num_threads_to_use =
+      checker.SupportsParallelChecking()
+          ? std::min(options.parallelism.num_threads(),
+                     checker.num_allocated_contexts())
+          : 1;
 
   RandomGenerator generator(options.random_seed);
 
@@ -396,11 +398,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           // set used particle to redundant
           particle_is_redundant.at(i) = true;
 
-// loop over remaining non-redundant particles and check for
-// redundancy
-#if defined(_OPENMP)
-#pragma omp parallel for num_threads(num_threads_to_use)
-#endif
+          // loop over remaining non-redundant particles and check for
+          // redundancy
+          // TODO(cohnt): Revert this back to parallel but with CRU
           for (int particle_index = 0;
                particle_index < number_particles_in_collision;
                ++particle_index) {
