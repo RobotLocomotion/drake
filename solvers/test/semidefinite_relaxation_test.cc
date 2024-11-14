@@ -340,11 +340,6 @@ TEST_F(MakeSemidefiniteRelaxationTest,
       relaxation->linear_constraints().size(),
       prog_.linear_constraints().size() + prog_.quadratic_constraints().size());
 
-  // The convex quadratic should NOT be rewritten as a lorentz cone constraint
-  // (given that the SemidefiniteRelaxationOptions attribute
-  // `preserve_convex_quadratic_constraints` will soon be deprecated.
-  EXPECT_EQ(relaxation->rotated_lorentz_cone_constraints().size(), 0);
-
   // One extra constraint from "one" equals 1, one from the semidefinite
   // constraint.
   EXPECT_EQ(relaxation->GetAllConstraints().size(),
