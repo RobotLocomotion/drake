@@ -376,7 +376,8 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
-    /** Adds an arbitrary user-defined cost to every internal edge within the
+    /** Adds an arbitrary user-defined cost (in the form of a Expression or
+    Binding<Cost>) to every internal edge within the
     subgraph. The cost should be defined using the placeholder control point
     variables (obtained from edge_constituent_vertex_control_points()) and the
     placeholder time scaling variables (obtained from
@@ -391,8 +392,9 @@ class GcsTrajectoryOptimization final {
     Transcription::kMIP or Transcription::kRelaxation. Consider providing an
     appropriate "convex surrogate" that is supported within GraphOfConvexSets,
     or exclusively using the SolveConvexRestriction method. */
+    template <typename T>
     void AddEdgeCost(
-        const symbolic::Expression& e,
+        const T& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             used_in_transcription = {

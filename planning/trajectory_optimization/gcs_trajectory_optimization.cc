@@ -891,6 +891,7 @@ T Subgraph::SubstituteVertexPlaceholderVariables(T e,
       {placeholder_vertex_control_points_var_}, {GetControlPoints(vertex)});
 }
 
+// Compatible with Expression, Formula, Binding<Cost>, and Binding<Constraint>.
 template <typename T>
 T Subgraph::SubstituteEdgePlaceholderVariables(T e, const Edge& edge) const {
   // Check that a user hasn't used the vertex placeholder variables.
@@ -951,14 +952,23 @@ template void Subgraph::AddVertexConstraint<Binding<Constraint>>(
     const Binding<Constraint>& e,
     const std::unordered_set<Transcription>& transcriptions);
 
+// Compatible with Expression and Binding<Cost>.
+template <typename T>
 void Subgraph::AddEdgeCost(
-    const Expression& e,
+    const T& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   for (Edge*& edge : edges_) {
-    Expression post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
+    T post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
     edge->AddCost(post_substitution, used_in_transcription);
   }
 }
+
+template void Subgraph::AddEdgeCost<Expression>(
+    const Expression& e,
+    const std::unordered_set<Transcription>& transcriptions);
+template void Subgraph::AddEdgeCost<Binding<Cost>>(
+    const Binding<Cost>& e,
+    const std::unordered_set<Transcription>& transcriptions);
 
 void Subgraph::AddEdgeConstraint(
     const symbolic::Formula& e,
