@@ -1,6 +1,7 @@
 #include "drake/planning/iris/iris_zo.h"
 
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -151,8 +152,10 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   options.meshcat = meshcat;
   Hyperellipsoid starting_ellipsoid =
       Hyperellipsoid::MakeHypersphere(1e-2, sample);
+  std::cout << "pre iris zo call \n";
   HPolyhedron region =
       IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options);
+  std::cout << "post iris zo call \n";
 
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
@@ -495,7 +498,6 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
   const Vector2d sample{0.0, 0.0};
   Hyperellipsoid starting_ellipsoid =
       Hyperellipsoid::MakeHypersphere(1e-2, sample);
-  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   Eigen::Matrix3Xd cont_points(3, 4);
   double xw, yw;
@@ -511,8 +513,10 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
   options.meshcat = meshcat;
   options.configuration_space_margin = 0.04;
   options.containment_points = cont_points.topRows(2);
+  std::cout << "pre iris zo call \n";
   HPolyhedron region =
       IrisZoFromUrdf(boxes_in_corners_urdf, starting_ellipsoid, options);
+  std::cout << "post iris zo call \n";
   EXPECT_EQ(region.ambient_dimension(), 2);
   {
     for (int pt_to_draw = 0; pt_to_draw < cont_points.cols(); ++pt_to_draw) {
@@ -528,10 +532,12 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
     Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 20);
 
     VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    std::cout << "drawing region \n";
     points.resize(3, vregion.vertices().cols() + 1);
     points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
     points.topRightCorner(2, 1) = vregion.vertices().col(0);
     points.bottomRows<1>().setZero();
+    std::cout << "drawing region2 \n";
     meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
 
     MaybePauseForUser();
