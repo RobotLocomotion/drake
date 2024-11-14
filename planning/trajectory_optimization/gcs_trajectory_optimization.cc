@@ -1,5 +1,6 @@
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 
+#include <algorithm>
 #include <limits>
 #include <tuple>
 #include <unordered_map>
@@ -786,6 +787,7 @@ std::vector<Variable> FlattenVariables(
   return all_variables;
 }
 
+// Compatible with Expression and Formula.
 template <typename T>
 T SubstituteAllVariables(
     T e, std::vector<Variable> old_scalar_variables = {},
@@ -813,10 +815,51 @@ T SubstituteAllVariables(
   return e;
 }
 
+// Compatible with Binding<Cost> and Binding<Constraint>.
+template <typename T>
+Binding<T> SubstituteAllVariables(
+    const Binding<T>& binding, std::vector<Variable> old_scalar_variables = {},
+    std::vector<Variable> new_scalar_variables = {},
+    std::vector<VectorXDecisionVariable> old_vector_variables = {},
+    std::vector<VectorXDecisionVariable> new_vector_variables = {},
+    std::vector<MatrixXDecisionVariable> old_matrix_variables = {},
+    std::vector<MatrixXDecisionVariable> new_matrix_variables = {}) {
+  DRAKE_DEMAND(old_scalar_variables.size() == new_scalar_variables.size());
+  DRAKE_DEMAND(old_vector_variables.size() == new_vector_variables.size());
+  DRAKE_DEMAND(old_matrix_variables.size() == new_matrix_variables.size());
+
+  std::vector<Variable> old_variables = FlattenVariables(
+      old_scalar_variables, old_vector_variables, old_matrix_variables);
+  std::vector<Variable> new_variables = FlattenVariables(
+      new_scalar_variables, new_vector_variables, new_matrix_variables);
+  DRAKE_DEMAND(old_variables.size() == new_variables.size());
+
+  VectorXDecisionVariable new_binding_variables(binding.variables());
+  for (int i = 0; i < new_binding_variables.size(); ++i) {
+    // For the current placeholder variable, find its index in old_variables,
+    // and grab the corresponding entry in new_variables.
+    auto iterator = std::find_if(
+        old_variables.begin(), old_variables.end(), [&](const Variable& var) {
+          return var.equal_to(new_binding_variables[i]);
+        });
+    size_t index = std::distance(std::begin(old_variables), iterator);
+    new_binding_variables[i] = new_variables[index];
+  }
+
+  return Binding<T>{binding.evaluator(), new_binding_variables};
+}
+
+// Compatible with Expression, Formula, Binding<Cost>, and Binding<Constraint>.
 template <typename T>
 void ThrowIfContainsVariables(const T& e, const std::vector<Variable>& vars,
                               const std::string& error_message) {
-  symbolic::Variables e_vars = e.GetFreeVariables();
+  symbolic::Variables e_vars;
+  if constexpr (std::disjunction_v<std::is_same<T, Formula>,
+                                   std::is_same<T, Expression>>) {
+    e_vars = e.GetFreeVariables();
+  } else {
+    e_vars = symbolic::Variables(e.variables());
+  }
   for (const auto& var : vars) {
     if (e_vars.include(var)) {
       throw(std::runtime_error(error_message));
@@ -826,6 +869,7 @@ void ThrowIfContainsVariables(const T& e, const std::vector<Variable>& vars,
 
 }  // namespace
 
+// Compatible with Expression, Formula, Binding<Cost>, and Binding<Constraint>.
 template <typename T>
 T Subgraph::SubstituteVertexPlaceholderVariables(T e,
                                                  const Vertex& vertex) const {
@@ -878,6 +922,16 @@ void Subgraph::AddVertexCost(
   for (Vertex*& vertex : vertices_) {
     Expression post_substitution =
         SubstituteVertexPlaceholderVariables(e, *vertex);
+    vertex->AddCost(post_substitution, used_in_transcription);
+  }
+}
+
+void Subgraph::AddVertexCost(
+    const Binding<Cost>& binding,
+    const std::unordered_set<Transcription>& used_in_transcription) {
+  for (Vertex*& vertex : vertices_) {
+    Binding<Cost> post_substitution =
+        SubstituteVertexPlaceholderVariables(binding, *vertex);
     vertex->AddCost(post_substitution, used_in_transcription);
   }
 }
