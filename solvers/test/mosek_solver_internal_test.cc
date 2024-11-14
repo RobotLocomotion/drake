@@ -853,6 +853,256 @@ GTEST_TEST(AddLinearMatrixInequalityConstraint, LMIandPSD) {
   }
   MSK_deleteenv(&env);
 }
+
+GTEST_TEST(PositiveSemidefiniteConstraint, Hankel) {
+  // Test the Hankel matrix being PSD. A Hankel matrix has a lot of repeated
+  // entries, so this test emphasize adding equality constraint between repeated
+  // entries in the bar variable.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<5>("x");
+  Matrix3<symbolic::Variable> X;
+  // clang-format off
+  X << x(0), x(1), x(2),
+       x(1), x(2), x(3),
+       x(2), x(3), x(4);
+  // clang-format on
+  auto psd_con = prog.AddPositiveSemidefiniteConstraint(X);
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  MosekSolverProgram dut(prog, env);
+
+  EXPECT_TRUE(dut.decision_variable_to_mosek_nonmatrix_variable().empty());
+  EXPECT_EQ(dut.decision_variable_to_mosek_matrix_variable().size(),
+            prog.num_vars());
+  std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>
+      psd_barvar_indices;
+  dut.AddPositiveSemidefiniteConstraints(prog, &psd_barvar_indices);
+  // There is only one bar variable.
+  EXPECT_EQ(psd_barvar_indices.size(), 1);
+  EXPECT_EQ(psd_barvar_indices.at(psd_con), 0);
+
+  // x(2) is repeated in X.
+  dut.AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable();
+  MSKint32t numcon;
+  MSK_getnumcon(dut.task(), &numcon);
+  EXPECT_EQ(numcon, 1);
+  // Get the barA matrix info
+  {
+    MSKint64t A_triplet_num;
+    std::array<MSKint32t, 2> A_triplet_subi;
+    std::array<MSKint32t, 2> A_triplet_subj;
+    std::array<MSKint32t, 2> A_triplet_subk;
+    std::array<MSKint32t, 2> A_triplet_subl;
+    std::array<MSKrealt, 2> A_triplet_valijkl;
+    MSK_getbarablocktriplet(dut.task(), 2, &A_triplet_num,
+                            A_triplet_subi.data(), A_triplet_subj.data(),
+                            A_triplet_subk.data(), A_triplet_subl.data(),
+                            A_triplet_valijkl.data());
+    EXPECT_EQ(A_triplet_num, 2);
+    // Only one constraint, so the constraint indices are all 0.
+    EXPECT_EQ(A_triplet_subi[0], 0);
+    EXPECT_EQ(A_triplet_subi[1], 0);
+    // Only one bar variable, so the matrix variable indices are all 0.
+    EXPECT_EQ(A_triplet_subj[0], 0);
+    EXPECT_EQ(A_triplet_subj[1], 0);
+    // The barA matrix is
+    // [0, 0, 0.5]
+    // [0, -1, 0 ]
+    // [0.5, 0, 0]
+    // or the negation of this matrix.
+    Eigen::Matrix3d barA = Eigen::Matrix3d::Zero();
+    for (int i = 0; i < 2; ++i) {
+      barA(A_triplet_subk[i], A_triplet_subl[i]) = A_triplet_valijkl[i];
+    }
+    Eigen::Matrix3d barA_expected;
+    // Mosek only records the lower triangular part of the matrix.
+    // clang-format off
+    barA_expected << 0, 0, 0,
+                     0, -1, 0,
+                     0.5, 0, 0;
+    // clang-format on
+    if (barA(1, 1) >= 0) {
+      barA_expected *= -1;
+    }
+    EXPECT_TRUE(CompareMatrices(barA, barA_expected));
+  }
+
+  MSK_deleteenv(&env);
+}
+
+GTEST_TEST(PositiveSemidefiniteConstraint, OffDiagonalRepeatedEntry) {
+  // Test a PSD constraint on a matrix whose off-diagonal terms contain repeated
+  // variables.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<5>("x");
+  Matrix3<symbolic::Variable> X;
+  // clang-format off
+  X << x(0), x(1), x(2),
+       x(1), x(3), x(1),
+       x(2), x(1), x(4);
+  // clang-format on
+  auto psd_con = prog.AddPositiveSemidefiniteConstraint(X);
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  MosekSolverProgram dut(prog, env);
+
+  EXPECT_TRUE(dut.decision_variable_to_mosek_nonmatrix_variable().empty());
+  EXPECT_EQ(dut.decision_variable_to_mosek_matrix_variable().size(),
+            prog.num_vars());
+  std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>
+      psd_barvar_indices;
+  dut.AddPositiveSemidefiniteConstraints(prog, &psd_barvar_indices);
+  // There is only one bar variable.
+  EXPECT_EQ(psd_barvar_indices.size(), 1);
+  EXPECT_EQ(psd_barvar_indices.at(psd_con), 0);
+
+  // x(1) is repeated in X.
+  dut.AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable();
+  MSKint32t numcon;
+  MSK_getnumcon(dut.task(), &numcon);
+  EXPECT_EQ(numcon, 1);
+  // Get the barA matrix info
+  {
+    MSKint64t A_triplet_num;
+    std::array<MSKint32t, 2> A_triplet_subi;
+    std::array<MSKint32t, 2> A_triplet_subj;
+    std::array<MSKint32t, 2> A_triplet_subk;
+    std::array<MSKint32t, 2> A_triplet_subl;
+    std::array<MSKrealt, 2> A_triplet_valijkl;
+    MSK_getbarablocktriplet(dut.task(), 2, &A_triplet_num,
+                            A_triplet_subi.data(), A_triplet_subj.data(),
+                            A_triplet_subk.data(), A_triplet_subl.data(),
+                            A_triplet_valijkl.data());
+    EXPECT_EQ(A_triplet_num, 2);
+    // Only one constraint, so the constraint indices are all 0.
+    EXPECT_EQ(A_triplet_subi[0], 0);
+    EXPECT_EQ(A_triplet_subi[1], 0);
+    // Only one bar variable, so the matrix variable indices are all 0.
+    EXPECT_EQ(A_triplet_subj[0], 0);
+    EXPECT_EQ(A_triplet_subj[1], 0);
+    // The barA matrix is
+    // [  0, 0.5,    0]
+    // [0.5,   0, -0.5]
+    // [  0, -0.5,   0]
+    // or the negation of this matrix.
+    Eigen::Matrix3d barA = Eigen::Matrix3d::Zero();
+    for (int i = 0; i < 2; ++i) {
+      barA(A_triplet_subk[i], A_triplet_subl[i]) = A_triplet_valijkl[i];
+    }
+    Eigen::Matrix3d barA_expected;
+    // Mosek only records the lower triangular part of the matrix.
+    // clang-format off
+    barA_expected << 0, 0, 0,
+                     0.5, 0, 0,
+                     0, -0.5, 0;
+    // clang-format on
+    if (barA(2, 1) >= 0) {
+      barA_expected *= -1;
+    }
+    EXPECT_TRUE(CompareMatrices(barA, barA_expected));
+  }
+
+  MSK_deleteenv(&env);
+}
+
+GTEST_TEST(PositiveSemidefiniteConstraint, RepeatedVariableDifferentMatrices) {
+  // Test PSD constraints on two matrices, these two matrices share a repeated
+  // variable.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<11>("x");
+  Matrix3<symbolic::Variable> X1;
+  Matrix3<symbolic::Variable> X2;
+  // clang-format off
+  X1 << x(0), x(1), x(2),
+        x(1), x(3), x(4),
+        x(2), x(4), x(5);
+  X2 << x(6), x(7), x(8),
+        x(7), x(1), x(9),
+        x(8), x(9), x(10);
+  // clang-format on
+  auto psd_con1 = prog.AddPositiveSemidefiniteConstraint(X1);
+  auto psd_con2 = prog.AddPositiveSemidefiniteConstraint(X2);
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  MosekSolverProgram dut(prog, env);
+
+  EXPECT_TRUE(dut.decision_variable_to_mosek_nonmatrix_variable().empty());
+  EXPECT_EQ(dut.decision_variable_to_mosek_matrix_variable().size(),
+            prog.num_vars());
+  std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>
+      psd_barvar_indices;
+  dut.AddPositiveSemidefiniteConstraints(prog, &psd_barvar_indices);
+  // There is only one bar variable.
+  EXPECT_EQ(psd_barvar_indices.size(), 2);
+
+  // x(1) is repeated in X1 and X2.
+  dut.AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable();
+  MSKint32t numcon;
+  MSK_getnumcon(dut.task(), &numcon);
+  EXPECT_EQ(numcon, 1);
+  // Get the barA matrix info
+  {
+    MSKint64t A_triplet_num;
+    std::array<MSKint32t, 2> A_triplet_subi;
+    std::array<MSKint32t, 2> A_triplet_subj;
+    std::array<MSKint32t, 2> A_triplet_subk;
+    std::array<MSKint32t, 2> A_triplet_subl;
+    std::array<MSKrealt, 2> A_triplet_valijkl;
+    MSK_getbarablocktriplet(dut.task(), 2, &A_triplet_num,
+                            A_triplet_subi.data(), A_triplet_subj.data(),
+                            A_triplet_subk.data(), A_triplet_subl.data(),
+                            A_triplet_valijkl.data());
+    EXPECT_EQ(A_triplet_num, 2);
+    // Only one constraint, so the constraint indices are all 0.
+    EXPECT_EQ(A_triplet_subi[0], 0);
+    EXPECT_EQ(A_triplet_subi[1], 0);
+    // Two bar variable, so the matrix variable indices are all 0.
+    if (A_triplet_subj[0] == 0) {
+      EXPECT_EQ(A_triplet_subj[1], 1);
+    } else {
+      EXPECT_EQ(A_triplet_subj[0], 1);
+      EXPECT_EQ(A_triplet_subj[1], 0);
+    }
+    // The barA matrix for X1 is
+    // [  0, 0.5, 0]
+    // [0.5,   0, 0]
+    // [  0,   0, 0]
+    // The barA matrix for X2 is
+    // [0 0 0]
+    // [0 -1 0]
+    // [0 0 0]
+    // or the negation of this matrix.
+    std::array<Eigen::Matrix3d, 2> barA;
+    for (int i = 0; i < 2; ++i) {
+      barA[i].setZero();
+    }
+    for (int i = 0; i < 2; ++i) {
+      barA[A_triplet_subj[i]](A_triplet_subk[i], A_triplet_subl[i]) =
+          A_triplet_valijkl[i];
+    }
+    Eigen::Matrix3d barA_for_X1 = barA[psd_barvar_indices[psd_con1]];
+    Eigen::Matrix3d barA_for_X2 = barA[psd_barvar_indices[psd_con2]];
+    Eigen::Matrix3d barA_for_X1_expected;
+    Eigen::Matrix3d barA_for_X2_expected;
+    // Mosek only records the lower triangular part of the matrix.
+    // clang-format off
+    barA_for_X1_expected<< 0, 0, 0,
+                           0.5, 0, 0,
+                           0, 0, 0;
+    barA_for_X2_expected << 0, 0, 0,
+                            0, -1, 0,
+                            0, 0, 0;
+    // clang-format on
+    if (barA_for_X1(1, 0) < 0) {
+      barA_for_X1_expected *= -1;
+      barA_for_X2_expected *= -1;
+    }
+    EXPECT_TRUE(CompareMatrices(barA_for_X1, barA_for_X1_expected));
+    EXPECT_TRUE(CompareMatrices(barA_for_X2, barA_for_X2_expected));
+  }
+
+  MSK_deleteenv(&env);
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
