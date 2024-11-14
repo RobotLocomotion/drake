@@ -125,6 +125,13 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
 }
 
 template <typename T>
+const GeometryContactData<T>& DiscreteUpdateManager<T>::EvalGeometryContactData(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::EvalGeometryContactData(plant(), context);
+}
+
+template <typename T>
 systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
     std::string description, systems::ValueProducer value_producer,
     std::set<DependencyTicket> prerequisites_of_calc) {
@@ -148,10 +155,10 @@ double DiscreteUpdateManager<T>::default_contact_dissipation() const {
 }
 
 template <typename T>
-const std::unordered_map<geometry::GeometryId, BodyIndex>&
-DiscreteUpdateManager<T>::geometry_id_to_body_index() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::geometry_id_to_body_index(*plant_);
+BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
+    geometry::GeometryId geometry_id) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
+      plant(), geometry_id);
 }
 
 template <typename T>
@@ -243,13 +250,6 @@ DiscreteUpdateManager<T>::EvalContactSolverResults(
 }
 
 template <typename T>
-const GeometryContactData<T>& DiscreteUpdateManager<T>::EvalGeometryContactData(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::EvalGeometryContactData(plant(), context);
-}
-
-template <typename T>
 void DiscreteUpdateManager<T>::AddJointLimitsPenaltyForces(
     const systems::Context<T>& context, MultibodyForces<T>* forces) const {
   MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddJointLimitsPenaltyForces(
@@ -320,13 +320,6 @@ DiscreteUpdateManager<T>::GetConstraintActiveStatus(
     const systems::Context<T>& context) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::GetConstraintActiveStatus(context, *plant_);
-}
-
-template <typename T>
-BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
-    geometry::GeometryId geometry_id) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
-      plant(), geometry_id);
 }
 
 template <typename T>
@@ -651,9 +644,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForPointContact(
   for (int point_pair_index = 0; point_pair_index < num_point_contacts;
        ++point_pair_index) {
     const PenetrationAsPointPair<T>& pair = point_pairs[point_pair_index];
-    const BodyIndex body_A_index = geometry_id_to_body_index().at(pair.id_A);
+    const BodyIndex body_A_index = FindBodyByGeometryId(pair.id_A);
     const RigidBody<T>& body_A = plant().get_body(body_A_index);
-    const BodyIndex body_B_index = geometry_id_to_body_index().at(pair.id_B);
+    const BodyIndex body_B_index = FindBodyByGeometryId(pair.id_B);
     const RigidBody<T>& body_B = plant().get_body(body_B_index);
 
     const TreeIndex treeA_index = topology.body_to_tree_index(body_A_index);
@@ -825,9 +818,9 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
 
     // We always call the body associated with geometry M, A, and the body
     // associated with geometry N, B.
-    const BodyIndex body_A_index = geometry_id_to_body_index().at(s.id_M());
+    const BodyIndex body_A_index = FindBodyByGeometryId(s.id_M());
     const RigidBody<T>& body_A = plant().get_body(body_A_index);
-    const BodyIndex body_B_index = geometry_id_to_body_index().at(s.id_N());
+    const BodyIndex body_B_index = FindBodyByGeometryId(s.id_N());
     const RigidBody<T>& body_B = plant().get_body(body_B_index);
 
     const TreeIndex& tree_A_index = topology.body_to_tree_index(body_A_index);
