@@ -467,6 +467,14 @@ class DiagramBuilder {
   /// as more ports are exported.
   int num_output_ports() const;
 
+  /// (Internal use only). Returns a mutable reference to life support data for
+  /// the diagram. The data will be moved to the diagram at Build() time. Data
+  /// stored here will have a life-cycle that is the union of the builder and
+  /// the diagram.
+  internal::DiagramLifeSupport& get_mutable_life_support() {
+    return life_support_;
+  }
+
  private:
   // Declares a new input to the entire Diagram, using @p model_input to
   // supply the data type. @p name is an optional name for the input port; if
@@ -533,6 +541,8 @@ class DiagramBuilder {
   std::unordered_set<const System<T>*> systems_;
   // The Systems in this DiagramBuilder, in the order they were registered.
   internal::OwnedSystems<T> registered_systems_;
+
+  internal::DiagramLifeSupport life_support_;
 };
 
 }  // namespace systems

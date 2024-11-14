@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <functional>
 #include <map>
 #include <memory>
@@ -12,6 +13,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/pointer_cast.h"
+#include "drake/common/string_map.h"
 #include "drake/systems/framework/diagram_context.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
 #include "drake/systems/framework/diagram_discrete_values.h"
@@ -27,9 +29,9 @@ namespace systems {
 
 namespace internal {
 
-/// Destroys owned systems in the reverse order they were added; this enables
-/// Systems to refer to each other during destruction, in the usual "undo"
-/// resource order one would expect for C++.
+// Destroys owned systems in the reverse order they were added; this enables
+// Systems to refer to each other during destruction, in the usual "undo"
+// resource order one would expect for C++.
 template <typename T>
 class OwnedSystems {
  public:
@@ -58,6 +60,17 @@ class OwnedSystems {
 
  private:
   std::vector<std::unique_ptr<System<T>>> vec_;
+};
+
+// External life support data for the diagram. The data will be moved to the
+// diagram at Build() time. Data stored here will have a life-cycle that is the
+// union of the builder and the diagram.
+//
+// This mechanism is particularly useful for the Python FFI. It can be used to
+// extend the lifetime of Python-wrapped systems, when the Build() call occurs
+// in C++ that is not exposed to the Python bindings.
+struct DiagramLifeSupport {
+  string_map<std::any> attributes;
 };
 
 }  // namespace internal
@@ -528,6 +541,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
     std::map<InputPortLocator, OutputPortLocator> connection_map;
     // All of the systems to be included in the diagram.
     internal::OwnedSystems<T> systems;
+
+    internal::DiagramLifeSupport life_support;
   };
 
   // Constructs a Diagram from the Blueprint that a DiagramBuilder produces.
@@ -602,6 +617,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // managing events. It is only used in DoCalcNextUpdateTime(), but is
   // allocated as a cache entry to avoid heap operations during simulation.
   CacheIndex event_times_buffer_cache_index_{};
+
+  internal::DiagramLifeSupport life_support_;
 
   // For all T, Diagram<T> considers DiagramBuilder<T> a friend, so that the
   // builder can set the internal state correctly.
