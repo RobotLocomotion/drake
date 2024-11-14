@@ -970,14 +970,22 @@ template void Subgraph::AddEdgeCost<Binding<Cost>>(
     const Binding<Cost>& e,
     const std::unordered_set<Transcription>& transcriptions);
 
+// Compatible with Formula and Binding<Constraint>.
+template <typename T>
 void Subgraph::AddEdgeConstraint(
-    const symbolic::Formula& e,
+    const T& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   for (Edge*& edge : edges_) {
-    Formula post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
+    T post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
     edge->AddConstraint(post_substitution, used_in_transcription);
   }
 }
+
+template void Subgraph::AddEdgeConstraint<Formula>(
+    const Formula& e, const std::unordered_set<Transcription>& transcriptions);
+template void Subgraph::AddEdgeConstraint<Binding<Constraint>>(
+    const Binding<Constraint>& e,
+    const std::unordered_set<Transcription>& transcriptions);
 
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,

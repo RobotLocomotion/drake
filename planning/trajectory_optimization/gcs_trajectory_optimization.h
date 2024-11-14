@@ -349,12 +349,11 @@ class GcsTrajectoryOptimization final {
                     kRestriction});
 
     /** Adds an arbitrary user-defined constraint (in the form of a Formula or
-    Binding<Constraint>) to every vertex in the
-    subgraph. The constraint should be defined using the placeholder control
-    point variables (obtained from vertex_control_points()) and the placeholder
-    time scaling variable (obtained from vertex_duration()). This enables
-    greater modeling freedom, but we cannot guarantee a feasible solution for
-    all possible constraints.
+    Binding<Constraint>) to every vertex in the subgraph. The constraint should
+    be defined using the placeholder control point variables (obtained from
+    vertex_control_points()) and the placeholder time scaling variable (obtained
+    from vertex_duration()). This enables greater modeling freedom, but we
+    cannot guarantee a feasible solution for all possible constraints.
 
     @throws std::exception if any variables besides those from @ref
     vertex_duration and @ref vertex_control_points are used.
@@ -377,12 +376,12 @@ class GcsTrajectoryOptimization final {
                     kRestriction});
 
     /** Adds an arbitrary user-defined cost (in the form of a Expression or
-    Binding<Cost>) to every internal edge within the
-    subgraph. The cost should be defined using the placeholder control point
-    variables (obtained from edge_constituent_vertex_control_points()) and the
-    placeholder time scaling variables (obtained from
-    edge_constituent_vertex_durations()). This enables greater modeling freedom,
-    but we cannot guarantee a feasible solution for all possible costs.
+    Binding<Cost>) to every internal edge within the subgraph. The cost should
+    be defined using the placeholder control point variables (obtained from
+    edge_constituent_vertex_control_points()) and the placeholder time scaling
+    variables (obtained from edge_constituent_vertex_durations()). This enables
+    greater modeling freedom, but we cannot guarantee a feasible solution for
+    all possible costs.
 
     @throws std::exception if any variables besides those from @ref
     edge_constituent_vertex_durations and @ref
@@ -404,12 +403,13 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
-    /** Adds an arbitrary user-defined constraint to every internal edge within
-    the subgraph. The constraint should be defined using the placeholder control
-    point variables (obtained from edge_constituent_vertex_control_points()) and
-    the placeholder time scaling variables (obtained from
-    edge_constituent_vertex_durations()). This enables greater modeling freedom,
-    but we cannot guarantee a feasible solution for all possible constraints.
+    /** Adds an arbitrary user-defined constraint (in the form of a Formula or
+    Binding<Constraint>) to every internal edge within the subgraph. The
+    constraint should be defined using the placeholder control point variables
+    (obtained from edge_constituent_vertex_control_points()) and the placeholder
+    time scaling variables (obtained from edge_constituent_vertex_durations()).
+    This enables greater modeling freedom, but we cannot guarantee a feasible
+    solution for all possible constraints.
 
     @throws std::exception if any variables besides those from @ref
     edge_constituent_vertex_durations and @ref
@@ -420,8 +420,9 @@ class GcsTrajectoryOptimization final {
     an appropriate "convex surrogate" that is supported within
     GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
     */
+    template <typename T>
     void AddEdgeConstraint(
-        const symbolic::Formula& e,
+        const T& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             used_in_transcription = {
