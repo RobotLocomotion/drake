@@ -25,9 +25,6 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
         .def_readwrite("add_implied_linear_constraints",
             &SemidefiniteRelaxationOptions::add_implied_linear_constraints,
             cls_doc.add_implied_linear_constraints.doc);
-    options.def_readwrite("preserve_convex_quadratic_constraints",
-        &SemidefiniteRelaxationOptions::preserve_convex_quadratic_constraints,
-        cls_doc.preserve_convex_quadratic_constraints.doc);
     options
         .def("set_to_strongest",
             &SemidefiniteRelaxationOptions::set_to_strongest,
@@ -42,6 +39,9 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
               .format(self.add_implied_linear_equality_constraints,
                   self.add_implied_linear_constraints);
         });
+    options.def_readwrite("preserve_convex_quadratic_constraints",
+        &SemidefiniteRelaxationOptions::preserve_convex_quadratic_constraints,
+        cls_doc.preserve_convex_quadratic_constraints.doc);
     DeprecateAttribute(options, "preserve_convex_quadratic_constraints",
         cls_doc.preserve_convex_quadratic_constraints.doc);
   }
