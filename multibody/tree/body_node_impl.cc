@@ -51,6 +51,41 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
                                                       pc);
 }
 
+// Calculate and save X_FM, X_MpM, X_WM
+template <typename T, template <typename> class ConcreteMobilizer>
+void BodyNodeImpl<T, ConcreteMobilizer>::
+    CalcPositionKinematicsCacheInM_BaseToTip(
+        const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+        PositionKinematicsCacheInM<T>* pcm) const {
+  DRAKE_ASSERT(pcm != nullptr);
+  const MobodIndex index = mobod_index();
+  DRAKE_ASSERT(index != world_mobod_index());
+
+  const T* q = get_q(positions);
+
+  // Calculate and store X_FM.
+  math::RigidTransform<T>& X_FM = pcm->get_mutable_X_FM(mobod_index());
+  X_FM = mobilizer_->calc_X_FM(q);
+
+  // Get precalculated frame info.
+  // This mobilizer's inboard frame, fixed on inboard (parent) body.
+  const FrameIndex index_F = inboard_frame().index();
+  const bool X_MpF_is_identity =
+      frame_body_pose_cache.is_X_MbF_identity(index_F);
+  const math::RigidTransform<T>& X_MpF =
+      frame_body_pose_cache.get_X_MbF(index_F);
+
+  // Calculate and store X_MpM.
+  math::RigidTransform<T>& X_MpM = pcm->get_mutable_X_MpM(mobod_index());
+  X_MpM = X_MpF_is_identity ? X_FM : X_MpF * X_FM;  // 0 or 63 flops
+
+  // Calculate and store X_WM.
+  // Inboard's M frame (Mp) pose is known since we're going base to tip.
+  const math::RigidTransform<T>& X_WMp = pcm->get_X_WM(inboard_mobod_index());
+  math::RigidTransform<T>& X_WM = pcm->get_mutable_X_WM(mobod_index());
+  X_WM = X_WMp * X_MpM;  // 63 flops
+}
+
 // TODO(sherm1) Consider combining this with VelocityCache computation
 //  so that we don't have to make a separate pass. Or better, get rid of this
 //  computation altogether by working in better frames.
@@ -214,6 +249,43 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   get_mutable_V_WB(vc) = V_WP.ComposeWithMovingFrameVelocity(p_PB_W, V_PB_W);
 }
 
+// Calculate V_FM_M and V_WM_M.
+template <typename T, template <typename> class ConcreteMobilizer>
+void BodyNodeImpl<T, ConcreteMobilizer>::
+    CalcVelocityKinematicsCacheInM_BaseToTip(
+        const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+        const T* velocities, VelocityKinematicsCacheInM<T>* vcm) const {
+  DRAKE_ASSERT(vcm != nullptr);
+  const MobodIndex index = mobod_index();
+  DRAKE_ASSERT(index != world_mobod_index());
+
+  // Generalized coordinates local to this node's mobilizer.
+  const T* q = get_q(positions);
+  const T* v = get_v(velocities);
+
+  const math::RigidTransform<T>& X_FM = pcm.get_X_FM(index);
+
+  SpatialVelocity<T>& V_FM_M = vcm->get_mutable_V_FM_M(index);
+  V_FM_M = mobilizer_->calc_V_FM_M(X_FM, q, v);  // 3 flops: revolute/prismatic
+                                                 // 30 flops: floating
+
+  const math::RigidTransform<T>& X_MpM = pcm.get_X_MpM(index);
+  const Vector3<T>& p_MpM_Mp = X_MpM.translation();  // Shift vector
+  const math::RotationMatrix<T> R_MMp = X_MpM.rotation().inverse();
+
+  // We're going base to tip so we know the inboard body's M-frame velocity.
+  const SpatialVelocity<T>& V_WMp_Mp = vcm->get_V_WM_M(inboard_mobod_index());
+
+  // Let Mc be a frame fixed to parent body P but coincident with the child
+  // body's M frame. Then this is the spatial velocity of P, shifted to Mc,
+  // but expressed in the Mp frame.
+  const SpatialVelocity<T> V_WMc_Mp = V_WMp_Mp.Shift(p_MpM_Mp);  // 15 flops
+
+  SpatialVelocity<T>& V_WM_M = vcm->get_mutable_V_WM_M(index);
+  V_WM_M = R_MMp * V_WMc_Mp  // 6 SIMD flops
+           + V_FM_M;         // 6 flops
+}
+
 // As a guideline for developers, a summary of the computations performed in
 // this method is provided:
 // Notation:
@@ -320,7 +392,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
   // N.B. It is possible for positions & velocities to be null here if
   // the system consists only of welds (one of our unit tests does that).
 
-  // Operator A_FM = H_FM * vmdot + Hdot_FM * vm
+  // Operator A_FM = H_FM(qₘ)⋅v̇ₘ + Ḣ_FM(qₘ,vₘ)⋅vₘ
   const SpatialAcceleration<T> A_FM = mobilizer_->calc_A_FM(
       get_q(positions), get_v(velocities), get_v(accelerations));
 
@@ -341,6 +413,60 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
   // Velocities are non-zero.
   A_WB = A_WP.ComposeWithMovingFrameAcceleration(p_PB_W, V_WP.rotational(),
                                                  V_PB_W, A_PB_W);
+}
+
+template <typename T, template <typename> class ConcreteMobilizer>
+void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationInM_BaseToTip(
+    const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+    const T* velocities, const VelocityKinematicsCacheInM<T>& vcm,
+    const T* accelerations,
+    std::vector<SpatialAcceleration<T>>* A_WM_M_array) const {
+  const MobodIndex index = mobod_index();  // mobod B
+
+  // Collect the inputs.
+  const math::RigidTransform<T>& X_MpM = pcm.get_X_MpM(index);
+  const SpatialVelocity<T>& V_WM_M = vcm.get_V_WM_M(index);
+  const T* q = get_q(positions);
+  const T* v = get_v(velocities);
+  const T* vdot = get_v(accelerations);
+  // Inboard (parent) body's M frame spatial velocity and spatial acceleration
+  // in World (already computed in base-to-tip ordering).
+  const SpatialVelocity<T>& V_WMp_Mp = vcm.get_V_WM_M(inboard_mobod_index());
+  const SpatialAcceleration<T>& A_WMp_Mp =
+      (*A_WM_M_array)[inboard_mobod_index()];
+
+  // This is going to be the output.
+  SpatialAcceleration<T>& A_WM_M = (*A_WM_M_array)[index];
+
+  // Shift and re-express parent contribution.
+  const Vector3<T>& p_MpM_Mp = X_MpM.translation();
+  const math::RotationMatrix<T> R_MMp = X_MpM.rotation().inverse();
+  const Vector3<T>& w_WP_Mp = V_WMp_Mp.rotational();  // all frames on P same ω
+
+  // Start with parent contribution. shift: 33 flops, reexpress: 6 SIMD flops
+  A_WM_M = R_MMp * A_WMp_Mp.Shift(p_MpM_Mp, w_WP_Mp);  // parent contribution
+
+  // Next add in the velocity-dependent bias acceleration:
+  // Ab_M =     ω_WP x ω_FM        note: ω_WF == ω_WP
+  //        2 * ω_WP x v_FM
+  const SpatialVelocity<T>& V_FM_M = vcm.get_V_FM_M(index);
+  const Vector3<T>& w_FM_M = V_FM_M.rotational();
+  const Vector3<T>& v_FM_M = V_FM_M.translational();
+  const Vector3<T>& w_WM_M = V_WM_M.rotational();
+
+  // To avoid re-expressing w_WP_Mp in M, we can use this identity:
+  //   w_WM = w_WP + w_FM, so w_WP = w_WM - w_FM.
+  const Vector3<T> w_WP_M = w_WM_M - w_FM_M;                       // 3 flops
+  const SpatialAcceleration<T> Ab_WM_M(w_WP_M.cross(w_FM_M),       // 12 flops
+                                       2 * w_WP_M.cross(v_FM_M));  // 15 flops
+  A_WM_M += Ab_WM_M;                                               // 6 flops
+
+  // Calculate cross-mobilizer spatial acceleration.
+  const math::RigidTransform<T>& X_FM = pcm.get_X_FM(index);
+  const SpatialAcceleration<T> A_FM_M =
+      mobilizer_->calc_A_FM_M(X_FM, q, v, vdot);  // 3 flops revolute/prismatic
+                                                  // 30 flops floating
+  A_WM_M += A_FM_M;                               // 6 flops
 }
 
 // As a guideline for developers, a summary of the computations performed in
@@ -422,11 +548,11 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   //   Ftot_BBo = M_B * A_WB + Fb_Bo
   const SpatialInertia<T>& M_B_W = M_B_W_cache[mobod_index()];
   const SpatialAcceleration<T>& A_WB = A_WB_array[mobod_index()];
-  SpatialForce<T> Ftot_BBo_W = M_B_W * A_WB;
+  SpatialForce<T> Ftot_BBo_W = M_B_W * A_WB;  // 66 flops
   if (Fb_Bo_W_cache != nullptr) {
-    // Dynamic bias for body B.
+    // Dynamic bias for body B (these cost 57 flops elsewhere).
     const SpatialForce<T>& Fb_Bo_W = (*Fb_Bo_W_cache)[mobod_index()];
-    Ftot_BBo_W += Fb_Bo_W;
+    Ftot_BBo_W += Fb_Bo_W;  // 6 flops
   }
 
   // We're looking for forces due to the mobilizer, so remove the applied
@@ -434,7 +560,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   if (is_Fapplied) {
     // Use the applied force before it gets overwritten below.
     const SpatialForce<T>& Fapp_Bo_W = Fapplied_Bo_W_array[mobod_index()];
-    Ftot_BBo_W -= Fapp_Bo_W;
+    Ftot_BBo_W -= Fapp_Bo_W;  // 6 flops
   }
 
   // Compute shift vector from Bo to Mo expressed in the world frame W.
@@ -442,14 +568,14 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
       outboard_frame().get_X_BF(frame_body_pose_cache);  // F==M
   const Vector3<T>& p_BoMo_B = X_BM.translation();
   const math::RotationMatrix<T>& R_WB = get_X_WB(pc).rotation();
-  const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;
+  const Vector3<T> p_BoMo_W = R_WB * p_BoMo_B;  // 15 flops
 
   // Output spatial force that would need to be exerted by this node's
   // mobilizer in order to attain the prescribed acceleration A_WB.
   SpatialForce<T>& F_BMo_W = (*F_BMo_W_array)[mobod_index()];
-  F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);  // May override Fapplied.
+  F_BMo_W = Ftot_BBo_W.Shift(p_BoMo_W);  // May override Fapplied (12 flops).
 
-  // Add in contribution to F_B_Mo_W from outboard nodes.
+  // Add in contribution to F_B_Mo_W from outboard nodes. (39 flops per)
   for (const BodyNode<T>* child_node : child_nodes()) {
     const MobodIndex child_node_index = child_node->mobod_index();
 
@@ -461,13 +587,13 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
     const math::RotationMatrix<T>& R_WC =
         pc.get_X_WB(child_node_index).rotation();
     const math::RigidTransform<T>& X_CMc =
-        frame_Mc.get_X_BF(frame_body_pose_cache);  // B==C, F==Mc
-    const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();
+        frame_Mc.get_X_BF(frame_body_pose_cache);             // B==C, F==Mc
+    const Vector3<T>& p_CoMc_W = R_WC * X_CMc.translation();  // 15 flops
 
     // Shift position vector from child C outboard mobilizer frame Mc to body
     // B outboard mobilizer Mc. p_MoMc_W:
     // Since p_BoMo = p_BoCo + p_CoMc + p_McMo, we have:
-    const Vector3<T> p_McMo_W = p_BoMo_W - p_BoCo_W - p_CoMc_W;
+    const Vector3<T> p_McMo_W = p_BoMo_W - p_BoCo_W - p_CoMc_W;  // 6 flops
 
     // Spatial force on the child body C at the origin Mc of the outboard
     // mobilizer frame for the child body.
@@ -482,10 +608,10 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
 
     // Shift to this node's mobilizer origin Mo (still, F_CMo is the force
     // acting on the child body C):
-    const SpatialForce<T> F_CMo_W = F_CMc_W.Shift(p_McMo_W);
+    const SpatialForce<T> F_CMo_W = F_CMc_W.Shift(p_McMo_W);  // 12 flops
     // From Eq. (3), this force is added (with positive sign) to the force
     // applied by this body's mobilizer:
-    F_BMo_W += F_CMo_W;
+    F_BMo_W += F_CMo_W;  // 6 flops
   }
 
   // Re-express F_BMo_W in the inboard frame F before projecting it onto the
@@ -496,8 +622,8 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
   // TODO(amcastro-tri): consider caching R_WF since also used in position and
   //  velocity kinematics.
-  const math::RotationMatrix<T> R_WF = R_WP * R_PF;
-  const SpatialForce<T> F_BMo_F = R_WF.inverse() * F_BMo_W;
+  const math::RotationMatrix<T> R_WF = R_WP * R_PF;          // 45 flops
+  const SpatialForce<T> F_BMo_F = R_WF.inverse() * F_BMo_W;  // 30 flops
 
   // The generalized forces on the mobilizer correspond to the active
   // components of the spatial force performing work. Therefore we need to
@@ -516,6 +642,79 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   } else {
     mobilizer_->calc_tau(get_q(positions), F_BMo_F, tau.data());
   }
+}
+
+template <typename T, template <typename> class ConcreteMobilizer>
+void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamicsInM_TipToBase(
+    const FrameBodyPoseCache<T>& frame_body_pose_cache,  // M_BMo_M, X_BM
+    const T* positions,
+    const PositionKinematicsCacheInM<T>& pcm,  // X_MpM, X_WM
+    const VelocityKinematicsCacheInM<T>& vcm,  // V_WM_M
+    const std::vector<SpatialAcceleration<T>>& A_WM_M_array,
+    const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,  // Bo, W !
+    const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+    std::vector<SpatialForce<T>>* F_BMo_M_array,
+    EigenPtr<VectorX<T>> tau_array) const {
+  const MobodIndex index = mobod_index();  // mobod B
+
+  // Model parameters: mass properties, frame locations.
+  const SpatialInertia<T>& M_BMo_M = frame_body_pose_cache.get_M_BMo_M(index);
+  const T& mass = M_BMo_M.get_mass();
+  const Vector3<T>& p_MoBcm_M = M_BMo_M.get_com();
+  const UnitInertia<T>& G_BMo_M = M_BMo_M.get_unit_inertia();
+
+  const math::RigidTransform<T>& X_MB =
+      outboard_frame().get_X_FB(frame_body_pose_cache);  // F==M
+  const Vector3<T>& p_MoBo_M = X_MB.translation();
+
+  // Kinematics.
+  const math::RotationMatrix<T> R_MW = pcm.get_X_WM(index).rotation().inverse();
+  const SpatialVelocity<T>& V_WM_M = vcm.get_V_WM_M(index);
+  const Vector3<T>& w_WM_M = V_WM_M.rotational();
+  const SpatialAcceleration<T>& A_WM_M = A_WM_M_array[index];
+
+  // Unfortunately the applied force is given at Bo and expressed in W. We
+  // need it applied at Mo and expressed in M.
+  const SpatialForce<T>& Fapp_BBo_W = Fapplied_Bo_W_array[index];
+  const SpatialForce<T> Fapp_BBo_M = R_MW * Fapp_BBo_W;  // 6 SIMD flops
+  const SpatialForce<T> Fapp_BMo_M = Fapp_BBo_M.Shift(-p_MoBo_M);  // 15 flops
+
+  // Calculate the velocity-dependent bias force on B (48 flops).
+  const SpatialForce<T> Fbias_BMo_M(
+      mass * w_WM_M.cross(G_BMo_M * w_WM_M),          // bias moment, 27 flops
+      mass * w_WM_M.cross(w_WM_M.cross(p_MoBcm_M)));  // bias force, 21 flops
+
+  // F_BMo_M is an output and will be the total force on B.
+  SpatialForce<T>& F_BMo_M = (*F_BMo_M_array)[index];
+  F_BMo_M = M_BMo_M * A_WM_M             // 45 flops
+            + Fbias_BMo_M - Fapp_BMo_M;  // 12 flops
+
+  // Next, account for forces applied to B through its outboard joints, treated
+  // as though they were locked. Since we're going tip to base we already have
+  // the total force F_CMc_Mc on each outboard body C. 51 flops per
+  for (const BodyNode<T>* outboard_node : child_nodes()) {
+    const MobodIndex outboard_index = outboard_node->mobod_index();
+
+    // Outboard body's kinematics.
+    const math::RigidTransform<T>& X_MMc = pcm.get_X_MpM(outboard_index);
+    const math::RotationMatrix<T>& R_MMc = X_MMc.rotation();
+    const Vector3<T>& p_MoMc_M = X_MMc.translation();
+
+    const SpatialForce<T>& F_CMc_Mc = (*F_BMo_M_array)[outboard_index];
+    const SpatialForce<T> F_CMc_M = R_MMc * F_CMc_Mc;          // 6 SIMD flops
+    const SpatialForce<T> F_CMo_M = F_CMc_M.Shift(-p_MoMc_M);  // 15 flops
+    F_BMo_M += F_CMo_M;                                        // 6 flops
+  }
+
+  // tau is the primary output.
+  Eigen::Map<VVector<T>> tau(get_mutable_v(tau_array->data()));
+  const Eigen::Map<const VVector<T>> tau_app(get_v(tau_applied_array.data()));
+  VVector<T> tau_projection;  // = Hᵀ_FM_M ⋅ F_BMo_M
+  const math::RigidTransform<T>& X_FM = pcm.get_X_FM(index);
+  // Next line is 5 flops for revolute/prismatic, 30 flops for floating
+  mobilizer_->calc_tau_from_M(X_FM, get_q(positions), F_BMo_M,
+                              tau_projection.data());
+  tau = tau_projection - tau_app;  // 1-6 flops
 }
 
 template <typename T, template <typename> class ConcreteMobilizer>
