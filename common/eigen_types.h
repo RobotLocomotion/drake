@@ -19,6 +19,7 @@ static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 5),
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_eigen.h"  // Clang-16 workaround; see #22061.
 
 namespace drake {
 
