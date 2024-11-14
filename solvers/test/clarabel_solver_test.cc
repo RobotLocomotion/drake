@@ -389,7 +389,21 @@ GTEST_TEST(TestSemidefiniteProgram, OuterEllipsoid) {
 GTEST_TEST(TestSemidefiniteProgram, EigenvalueProblem) {
   ClarabelSolver solver;
   if (solver.available()) {
-    SolveEigenvalueProblem(solver, {}, kTol, /*check_dual=*/false);
+    SolveEigenvalueProblem(solver, {}, kTol, /*check_dual=*/true);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithQuadraticCosts) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    SolveSDPwithQuadraticCosts(solver, kTol);
+  }
+}
+
+GTEST_TEST(TestSemidefiniteProgram, TestSDPDualSolution1) {
+  ClarabelSolver solver;
+  if (solver.available()) {
+    TestSDPDualSolution1(solver, kTol, /*complemantarity_tol=*/1E-5);
   }
 }
 
@@ -417,42 +431,42 @@ GTEST_TEST(TestSemidefiniteProgram, SolveSDPwithOverlappingVariables) {
 GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1SDP) {
   ClarabelSolver solver;
   if (solver.available()) {
-    TestTrivial1x1SDP(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-5);
+    TestTrivial1x1SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TestTrivial2x2SDP) {
   ClarabelSolver solver;
   if (solver.available()) {
-    TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-5);
+    TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, Test1x1with3x3SDP) {
   ClarabelSolver solver;
   if (solver.available()) {
-    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/false, /*dual_tol=*/1E-4);
+    Test1x1with3x3SDP(solver, 1E-4, /*check_dual=*/true, /*dual_tol=*/1E-4);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, Test2x2with3x3SDP) {
   ClarabelSolver solver;
   if (solver.available()) {
-    Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/false, /*dual_tol*/ 1E-2);
+    Test2x2with3x3SDP(solver, 1E-3, /*check_dual=*/true, /*dual_tol*/ 1E-2);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1LMI) {
   ClarabelSolver solver;
   if (solver.available()) {
-    TestTrivial1x1LMI(solver, 1E-5, /*check_dual=*/false, /*dual_tol=*/1E-7);
+    TestTrivial1x1LMI(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-7);
   }
 }
 
 GTEST_TEST(TestSemidefiniteProgram, Test2X2LMI) {
   ClarabelSolver solver;
   if (solver.available()) {
-    Test2x2LMI(solver, 1E-7, /*check_dual=*/false, /*dual_tol=*/1E-7);
+    Test2x2LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
   }
 }
 
