@@ -322,11 +322,12 @@ class GcsTrajectoryOptimization final {
       return placeholder_edge_control_points_var_;
     }
 
-    /** Adds an arbitrary user-defined cost to every vertex in the subgraph. The
-    cost should be defined using the placeholder control point variables
-    (obtained from vertex_control_points()) and the placeholder time scaling
-    variable (obtained from vertex_duration()). This enables greater modeling
-    freedom, but we cannot guarantee a feasible solution for all possible costs.
+    /** Adds an arbitrary user-defined cost (in the form of a Expression or
+    Binding<Cost>) to every vertex in the subgraph. The cost should be defined
+    using the placeholder control point variables (obtained from
+    vertex_control_points()) and the placeholder time scaling variable (obtained
+    from vertex_duration()). This enables greater modeling freedom, but we
+    cannot guarantee a feasible solution for all possible costs.
 
     @throws std::exception if any variables besides those from @ref
     vertex_duration and @ref vertex_control_points are used.
@@ -335,29 +336,9 @@ class GcsTrajectoryOptimization final {
     Transcription::kMIP or Transcription::kRelaxation. Consider providing an
     appropriate "convex surrogate" that is supported within GraphOfConvexSets,
     or exclusively using the SolveConvexRestriction method. */
+    template <typename T>
     void AddVertexCost(
-        const symbolic::Expression& e,
-        const std::unordered_set<
-            geometry::optimization::GraphOfConvexSets::Transcription>&
-            used_in_transcription = {
-                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
-                geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRelaxation,
-                geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction});
-
-    /** Overload that takes in a solvers::Cost, bound to the placeholder
-    variables obtained from vertex_duration() and vertex_control_points().
-
-    @throws std::exception if any variables besides those from @ref
-    vertex_duration and @ref vertex_control_points are used.
-
-    Costs which do not support the perspective operation cannot be used with
-    Transcription::kMIP or Transcription::kRelaxation. Consider providing an
-    appropriate "convex surrogate" that is supported within GraphOfConvexSets,
-    or exclusively using the SolveConvexRestriction method. */
-    void AddVertexCost(
-        const solvers::Binding<solvers::Cost>& binding,
+        const T& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             used_in_transcription = {
