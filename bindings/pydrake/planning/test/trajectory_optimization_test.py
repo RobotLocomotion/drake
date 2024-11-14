@@ -331,8 +331,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         np.testing.assert_allclose(restricted_traj_start, start, atol=1e-6)
         np.testing.assert_allclose(restricted_traj_end, end, atol=1e-6)
 
-        # We can add additional costs and constraints with the placeholder
-        # variables.
+        # We can add additional costs and constraints to Subgraphs with the
+        # placeholder variables.
         vertex_duration = regions.vertex_duration()
         vertex_control_points = regions.vertex_control_points()
         edge_constituent_vertex_durations = (
@@ -376,6 +376,31 @@ class TestTrajectoryOptimization(unittest.TestCase):
                             use_in_transcription=all_transcriptions)
         regions.AddEdgeConstraint(e=edge_constraint,
                                   use_in_transcription=all_transcriptions)
+
+        # We can add additional costs and constraints to EdgesBetweenSubgraphs
+        # with the placeholder variables.
+        edge_constituent_vertex_durations = (
+            edges.edge_constituent_vertex_durations()
+        )
+        edge_constituent_vertex_control_points = (
+            edges.edge_constituent_vertex_control_points()
+        )
+        edge_cost = sum([
+            edge_constituent_vertex_durations[0],
+            edge_constituent_vertex_durations[1],
+            edge_constituent_vertex_control_points[0][0, 0],
+            edge_constituent_vertex_control_points[1][0, 0],
+            edge_constituent_vertex_control_points[1][0, 1]
+        ])
+        edge_constraint = edge_cost >= 0
+
+        edges.AddEdgeCost(e=edge_cost)
+        edges.AddEdgeConstraint(e=edge_constraint)
+
+        edges.AddEdgeCost(e=edge_cost,
+                          use_in_transcription=all_transcriptions)
+        edges.AddEdgeConstraint(e=edge_constraint,
+                                use_in_transcription=all_transcriptions)
 
         traj, result = gcs.SolvePath(source, target)
         self.assertTrue(result.is_success())
