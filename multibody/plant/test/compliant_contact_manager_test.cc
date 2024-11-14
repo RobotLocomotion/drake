@@ -337,9 +337,9 @@ TEST_F(SpheresStackTest, CalcDiscreteContactPairs) {
 
     // Verify configuration.
     const BodyIndex body_A_index =
-        contact_manager_->geometry_id_to_body_index().at(contact_pairs[0].id_A);
+        contact_manager_->FindBodyByGeometryId(contact_pairs[0].id_A);
     const BodyIndex body_B_index =
-        contact_manager_->geometry_id_to_body_index().at(contact_pairs[0].id_B);
+        contact_manager_->FindBodyByGeometryId(contact_pairs[0].id_B);
     EXPECT_EQ(BodyIndex(contact_pairs[0].object_A), body_A_index);
     EXPECT_EQ(BodyIndex(contact_pairs[0].object_B), body_B_index);
     const Vector3d p_AoC_W =
@@ -369,11 +369,9 @@ TEST_F(SpheresStackTest, CalcDiscreteContactPairs) {
 
       // Verify configuration.
       const BodyIndex body_A_index =
-          contact_manager_->geometry_id_to_body_index().at(
-              contact_pairs[q].id_A);
+          contact_manager_->FindBodyByGeometryId(contact_pairs[q].id_A);
       const BodyIndex body_B_index =
-          contact_manager_->geometry_id_to_body_index().at(
-              contact_pairs[q].id_B);
+          contact_manager_->FindBodyByGeometryId(contact_pairs[q].id_B);
       EXPECT_EQ(BodyIndex(contact_pairs[q].object_A), body_A_index);
       EXPECT_EQ(BodyIndex(contact_pairs[q].object_B), body_B_index);
       const Vector3d p_AoC_W =

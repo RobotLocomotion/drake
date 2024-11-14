@@ -227,9 +227,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   double default_contact_stiffness() const;
   double default_contact_dissipation() const;
 
-  const std::unordered_map<geometry::GeometryId, BodyIndex>&
-  geometry_id_to_body_index() const;
-
   /* @} */
 
   const MultibodyTreeTopology& tree_topology() const {
@@ -245,6 +242,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   /* Private MultibodyPlant method, made public here. */
   const GeometryContactData<T>& EvalGeometryContactData(
       const systems::Context<T>& context) const;
+
+  /* Private MultibodyPlant method, made public here. */
+  BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
 
  protected:
   /* Derived classes that support making a clone that uses double as a scalar
@@ -302,6 +302,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same. */
 
   // Note that EvalGeometryContactData is in our public section, above.
+  // Note that FindBodyByGeometryId is in our public section, above.
 
   void AddJointLimitsPenaltyForces(const systems::Context<T>& context,
                                    MultibodyForces<T>* forces) const;
@@ -332,7 +333,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::map<MultibodyConstraintId, bool>& GetConstraintActiveStatus(
       const systems::Context<T>& context) const;
 
-  BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
   /* @} */
 
   /* Concrete DiscreteUpdateManagers must override these NVI Calc methods to

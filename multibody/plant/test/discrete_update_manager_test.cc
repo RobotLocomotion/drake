@@ -2,6 +2,8 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/examples/quadrotor/quadrotor_geometry.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
@@ -11,8 +13,10 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
+
 namespace drake {
 namespace multibody {
 
@@ -37,7 +41,14 @@ using contact_solvers::internal::ContactSolverResults;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using examples::quadrotor::QuadrotorGeometry;
+using geometry::AddContactMaterial;
+using geometry::ProximityProperties;
+using geometry::Sphere;
+using math::RigidTransformd;
+using multibody::CoulombFriction;
 using systems::BasicVector;
+using systems::ConstantVectorSource;
 using systems::Context;
 using systems::ContextBase;
 using systems::DiscreteStateIndex;
@@ -408,6 +419,42 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
   const Vector3d expected_actuation_wo_pd(1.0, 0.0, 3.0);
   EXPECT_TRUE(
       CompareMatrices(forces.generalized_forces(), expected_actuation_wo_pd));
+}
+
+/* Tests that the discrete contact computation doesn't choke on contact pairs
+ that involve geometries outside of MbP. */
+GTEST_TEST(DiscreteUpdateManagerGeometryTest, NonMbPContactPair) {
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = 0.01;
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
+
+  /* Pick a state so that the quadrotor geometry is in contact with the rigid
+   body we add to the MbP. */
+  const VectorXd quadrotor_state_value = VectorXd::Zero(12);
+  auto quadrotor_state_source =
+      builder.AddSystem<ConstantVectorSource>(quadrotor_state_value);
+  /* Add a QuadrotoryGeoemtry system that has a collision geometry. */
+  QuadrotorGeometry::AddToBuilder(
+      &builder, quadrotor_state_source->get_output_port(), &scene_graph);
+
+  /* Add a rigid body with a collision geometry to MbP. */
+  const Body<double>& body =
+      plant.AddRigidBody("rigid body", SpatialInertia<double>::MakeUnitary());
+  ProximityProperties proximity_properties;
+  const CoulombFriction<double> surface_friction(1.0, 1.0);
+  AddContactMaterial({}, {}, surface_friction, &proximity_properties);
+  plant.RegisterCollisionGeometry(body, RigidTransformd(), Sphere(1.0),
+                                  "mbp body", proximity_properties);
+  plant.Finalize();
+  auto diagram = builder.Build();
+  std::unique_ptr<Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+
+  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      simulator.AdvanceTo(0.1),
+      ".*FindBodyByGeometryId received GeometryId.*not known.*");
 }
 
 }  // namespace

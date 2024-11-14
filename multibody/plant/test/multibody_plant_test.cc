@@ -562,11 +562,11 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldContactErrors) {
   MultibodyPlant<double> plant(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(
       MultibodyPlantTester::FindBodyByGeometryId(plant, GeometryId{}),
-      ".* contact results for a null GeometryId.*");
+      ".*FindBodyByGeometryId.*invalid.*");
   const GeometryId unknown_id = GeometryId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
       MultibodyPlantTester::FindBodyByGeometryId(plant, unknown_id),
-      ".* contact results for GeometryId .* but that ID is not known.*");
+      ".*FindBodyByGeometryId.*not known.*");
 }
 
 GTEST_TEST(ActuationPortsTest, CheckActuation) {
