@@ -120,10 +120,10 @@ void ParseModelDirectivesImpl(
   auto& [options, package_map, diagnostic, plant,
          collision_resolver, parser_selector] = workspace;
   DRAKE_DEMAND(plant != nullptr);
-  auto get_scoped_frame = [plant = plant, &model_namespace](
+  auto get_scoped_frame = [_plant = plant, &model_namespace](
                               const std::string& name) -> const Frame<double>& {
     return GetScopedFrameByName(
-        *plant, DmdScopedNameJoin(model_namespace, name).to_string());
+        *_plant, DmdScopedNameJoin(model_namespace, name).to_string());
   };
 
   for (auto& directive : directives.directives) {
