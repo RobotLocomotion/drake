@@ -146,6 +146,17 @@ class Cassie : public benchmark::Fixture {
     }
   }
 
+  // Runs the InverseDynamicsInM benchmark.
+  // NOLINTNEXTLINE(runtime/references)
+  void DoInverseDynamicsInM(benchmark::State& state) {
+    DRAKE_DEMAND(want_grad_u(state) == false);
+    for (auto _ : state) {
+      InvalidateState();
+      plant_->CalcInverseDynamicsInM(*context_, desired_vdot_,
+                                     external_forces_);
+    }
+  }
+
   // Runs the ForwardDynamics benchmark.
   // NOLINTNEXTLINE(runtime/references)
   void DoForwardDynamics(benchmark::State& state) {
@@ -328,6 +339,14 @@ BENCHMARK_REGISTER_F(CassieDouble, InverseDynamics)
   ->Arg(kWantNoGrad);
 
 // NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieDouble, InverseDynamicsInM)(benchmark::State& state) {
+  DoInverseDynamicsInM(state);
+}
+BENCHMARK_REGISTER_F(CassieDouble, InverseDynamicsInM)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad);
+
+// NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieDouble, ForwardDynamics)(benchmark::State& state) {
   DoForwardDynamics(state);
 }
@@ -382,6 +401,22 @@ BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamics)
   ->Arg(kWantGradQ|kWantGradVdot)
   ->Arg(kWantGradV|kWantGradVdot)
   ->Arg(kWantGradX|kWantGradVdot);
+
+// NOLINTNEXTLINE(runtime/references)
+BENCHMARK_DEFINE_F(CassieAutoDiff,
+                   InverseDynamicsInM)(benchmark::State& state) {
+  DoInverseDynamicsInM(state);
+}
+BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamicsInM)
+    ->Unit(benchmark::kMicrosecond)
+    ->Arg(kWantNoGrad)
+    ->Arg(kWantGradQ)
+    ->Arg(kWantGradV)
+    ->Arg(kWantGradX)
+    ->Arg(kWantGradVdot)
+    ->Arg(kWantGradQ|kWantGradVdot)
+    ->Arg(kWantGradV|kWantGradVdot)
+    ->Arg(kWantGradX|kWantGradVdot);
 
 // NOLINTNEXTLINE(runtime/references)
 BENCHMARK_DEFINE_F(CassieAutoDiff, ForwardDynamics)(benchmark::State& state) {

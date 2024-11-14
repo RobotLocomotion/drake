@@ -111,6 +111,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
         .template Eval<PositionKinematicsCache<T>>(context);
   }
 
+  const PositionKinematicsCacheInM<T>& EvalPositionKinematicsInM(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return position_kinematics_in_m_cache_entry()
+        .template Eval<PositionKinematicsCacheInM<T>>(context);
+  }
+
   /* Returns a reference to the up-to-date VelocityKinematicsCache in the
   given Context, recalculating it first if necessary. Also if necessary, the
   PositionKinematicsCache will be recalculated as well. */
@@ -119,6 +126,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     this->ValidateContext(context);
     return velocity_kinematics_cache_entry()
         .template Eval<VelocityKinematicsCache<T>>(context);
+  }
+
+  const VelocityKinematicsCacheInM<T>& EvalVelocityKinematicsInM(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return velocity_kinematics_in_m_cache_entry()
+        .template Eval<VelocityKinematicsCacheInM<T>>(context);
   }
 
   /* Returns a reference to the up-to-date AccelerationKinematicsCache in the
@@ -259,9 +273,17 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     return this->get_cache_entry(cache_indexes_.position_kinematics);
   }
 
+  const systems::CacheEntry& position_kinematics_in_m_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.position_kinematics_in_m);
+  }
+
   /* Returns the cache entry that holds velocity kinematics results. */
   const systems::CacheEntry& velocity_kinematics_cache_entry() const {
     return this->get_cache_entry(cache_indexes_.velocity_kinematics);
+  }
+
+  const systems::CacheEntry& velocity_kinematics_in_m_cache_entry() const {
+    return this->get_cache_entry(cache_indexes_.velocity_kinematics_in_m);
   }
 
   /* Returns the cache entry that holds acceleration kinematics results. */
@@ -404,6 +426,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     internal_tree().CalcPositionKinematicsCache(context, position_cache);
   }
 
+  void CalcPositionKinematicsCacheInM(
+      const systems::Context<T>& context,
+      PositionKinematicsCacheInM<T>* position_cache_in_m) const {
+    internal_tree().CalcPositionKinematicsCacheInM(context,
+                                                   position_cache_in_m);
+  }
+
   void CalcSpatialInertiasInWorld(
       const systems::Context<T>& context,
       std::vector<SpatialInertia<T>>* spatial_inertias) const {
@@ -453,6 +482,13 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
       VelocityKinematicsCache<T>* velocity_cache) const {
     internal_tree().CalcVelocityKinematicsCache(
         context, EvalPositionKinematics(context), velocity_cache);
+  }
+
+  void CalcVelocityKinematicsCacheInM(
+      const systems::Context<T>& context,
+      VelocityKinematicsCacheInM<T>* velocity_cache_in_m) const {
+    internal_tree().CalcVelocityKinematicsCacheInM(
+        context, EvalPositionKinematicsInM(context), velocity_cache_in_m);
   }
 
   void CalcDynamicBiasForces(
@@ -546,10 +582,12 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex articulated_body_force_bias;
     systems::CacheIndex dynamic_bias;
     systems::CacheIndex position_kinematics;
+    systems::CacheIndex position_kinematics_in_m;
     systems::CacheIndex spatial_inertia_in_world;
     systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;
+    systems::CacheIndex velocity_kinematics_in_m;
   };
 
   // This is the one real constructor. From the public API, a null tree is

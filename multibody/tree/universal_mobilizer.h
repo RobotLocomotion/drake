@@ -43,13 +43,13 @@ namespace internal {
 // aligned in the direction of their respective axes. The generalized
 // velocities for this mobilizer are the rate of change of the angles, v = q̇.
 //
-//    H_FM₆ₓ₂ = [Hw_FM₃ₓ₂]        Hw_FM = [ 1   0   ]        Hv_FM = 0₃ₓ₂
-//              [Hv_FM₃ₓ₂]                [ 0 c(q₀) ]
-//                                        [ 0 s(q₀) ]
+//    H_FM_F₆ₓ₂ = [Hw_FM₃ₓ₂]        Hw_FM_F = [ 1   0   ]       Hv_FM_F = 0₃ₓ₂
+//                [Hv_FM₃ₓ₂]                  [ 0 c(q₀) ]
+//                                            [ 0 s(q₀) ]
 //
-// Hdot_FM₆ₓ₂ = [Hwdot_FM₃ₓ₂]  Hwdot_FM = [ 0    0     ]  Hvdot_FM = 0₃ₓ₂
-//              [Hvdot_FM₃ₓ₂]             [ 0 -v₀s(q₀) ]
-//                                        [ 0  v₀c(q₀) ]
+// Hdot_FM_F₆ₓ₂ = [Hwdot_FM₃ₓ₂]  Hwdot_FM_F = [ 0    0     ]  Hvdot_FM_F = 0₃ₓ₂
+//                [Hvdot_FM₃ₓ₂]               [ 0 -v₀s(q₀) ]
+//                                            [ 0  v₀c(q₀) ]
 //
 // @tparam_default_scalar
 template <typename T>
@@ -128,13 +128,13 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
   // frame F and the outboard frame M as a function of the angles (θ₀, θ₁)
   // stored in `context`.
   math::RigidTransform<T> calc_X_FM(const T* q) const {
-    const T s1 = sin(q[0]), c1 = cos(q[0]);
-    const T s2 = sin(q[1]), c2 = cos(q[1]);
+    const T s0 = sin(q[0]), c0 = cos(q[0]);
+    const T s1 = sin(q[1]), c1 = cos(q[1]);
     Matrix3<T> R_FM_matrix;
     // clang-format off
-    R_FM_matrix <<   c2,    0.0,  s2,
-                   s1 * s2, c1,  -s1 * c2,
-                  -c1 * s2, s1,   c1 * c2;
+    R_FM_matrix <<   c1,    0.0,  s1,
+                   s0 * s1, c0,  -s0 * c1,
+                  -c0 * s1, s0,   c0 * c1;
     // clang-format on
     return math::RigidTransform<T>(
         math::RotationMatrix<T>::MakeUnchecked(R_FM_matrix),
@@ -152,6 +152,15 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
     return SpatialVelocity<T>(Hw * w, Vector3<T>::Zero());
   }
 
+  // TODO(sherm1) Could do better than this if anyone cares.
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>& X_FM,
+                                 const T* q, const T* v) const {
+    const SpatialVelocity<T> V_FM_F = calc_V_FM(q, v);
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const SpatialVelocity<T> V_FM_M = R_FM.inverse() * V_FM_F;  // 30 flops
+    return V_FM_M;
+  }
+
   //                 Hwᵀ        Hvᵀ                 Hw_dotᵀ        Hv_dotᵀ
   // Here H₆ₓ₂=[1   0     0   | 0₃]ᵀ  Hdot = [         0₃         |  0₃  ]
   //           [0 c(q₀) s(q₀) | 0₃]          [ 0 -v₀s(q₀) v₀c(q₀) |  0₃  ]
@@ -166,13 +175,33 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
                                   Vector3<T>::Zero());
   }
 
-  // Returns tau = H_FMᵀ⋅F. See above for the structure of H.
+  // TODO(sherm1) Could do better than this if anyone cares.
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>& X_FM,
+                                     const T* q, const T* v,
+                                     const T* vdot) const {
+    const SpatialAcceleration<T> A_FM_F = calc_A_FM(q, v, vdot);
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const SpatialAcceleration<T> A_FM_M = R_FM.inverse() * A_FM_F;
+    return A_FM_M;
+  }
+
+  // Returns tau = H_FM_Fᵀ⋅F_F. See above for the structure of H.
   void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const {
-    DRAKE_ASSERT(tau != nullptr);
+    DRAKE_ASSERT(q != nullptr && tau != nullptr);
     Eigen::Map<VVector<T>> tau_as_vector(tau);
     const Vector3<T>& t_B_F = F_BMo_F.rotational();  // torque
     const Eigen::Matrix<T, 3, 2> Hw_FM = this->CalcHwMatrix(q);
     tau_as_vector = Hw_FM.transpose() * t_B_F;
+  }
+
+  // Returns tau = H_FM_Mᵀ⋅F_M.
+  // TODO(sherm1) Just re-expressing here; could likely do better.
+  void calc_tau_from_M(const math::RigidTransform<T>& X_FM, const T* q,
+                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(q != nullptr && tau != nullptr);
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const SpatialForce<T> F_BMo_F = R_FM * F_BMo_M;
+    return calc_tau(q, F_BMo_F, &*tau);
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
