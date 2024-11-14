@@ -400,7 +400,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
           // loop over remaining non-redundant particles and check for
           // redundancy
-          // TODO(cohnt): Revert this back to parallel but with CRU
+          // TODO(cohnt): Revert this back to parallel but with CRU.
           for (int particle_index = 0;
                particle_index < number_particles_in_collision;
                ++particle_index) {
