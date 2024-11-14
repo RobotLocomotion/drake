@@ -122,7 +122,7 @@ the main body of the document:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 2. Launch the staging builds for that git commit sha:
    1. Open the following Jenkins jobs (e.g., each in its own
-      new browser tab):
+      new window, so you can copy-and-paste sha1 and version easily):
       - [Linux Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-wheel-staging-release/)
       - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-unprovisioned-clang-wheel-staging-release/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
@@ -131,14 +131,14 @@ the main body of the document:
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
-   4. Change "sha1" to the full **git sha** corresponding to ``v1.N.0`` and
-      "release_version" to ``1.N.0`` (no "v").
+   4. Change "sha1" (not "ci_sha1") to the full **git sha** corresponding to 
+      ``v1.N.0`` and "release_version" to ``1.N.0`` (no "v").
       - If you mistakenly provide the "v" in "release_version", your build will
         appear to work, but actually fail 5-6 minutes later.
    5. Click "Build"; each build will take around an hour, give or take.
    6. Wait for all staging jobs to succeed.  It's OK to work on release notes
       finishing touches in the meantime, but do not merge the release notes nor
-      tag the release until all four builds have succeeded.
+      tag the release until all five builds have succeeded.
 3. Update the release notes to have the ``YYYY-MM-DD`` we choose.
    1. There is a dummy date 2099-12-31 nearby that should likewise be changed.
    2. Make sure that the nightly build git sha from the prior steps matches the
