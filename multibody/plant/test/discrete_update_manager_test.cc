@@ -2,6 +2,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/kinematics_vector.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
@@ -13,6 +14,7 @@
 #include "drake/systems/framework/abstract_value_cloner.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/zero_order_hold.h"
+
 namespace drake {
 namespace multibody {
 
@@ -37,6 +39,9 @@ using contact_solvers::internal::ContactSolverResults;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::FramePoseVector;
+using geometry::Sphere;
+using math::RigidTransformd;
 using systems::BasicVector;
 using systems::Context;
 using systems::ContextBase;
@@ -408,6 +413,68 @@ TEST_F(MultibodyPlantRemodeling, RemoveJointActuator) {
   const Vector3d expected_actuation_wo_pd(1.0, 0.0, 3.0);
   EXPECT_TRUE(
       CompareMatrices(forces.generalized_forces(), expected_actuation_wo_pd));
+}
+
+/* Helper class that sets the pose of geometries in SceneGraph. */
+class PoseSource : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PoseSource);
+  PoseSource() {
+    this->DeclareAbstractOutputPort(systems::kUseDefaultName,
+                                    FramePoseVector<double>(),
+                                    &PoseSource::ReadPoses);
+  }
+
+  void SetPoses(FramePoseVector<double> poses) { poses_ = std::move(poses); }
+
+ private:
+  void ReadPoses(const Context<double>&, FramePoseVector<double>* poses) const {
+    *poses = poses_;
+  }
+
+  FramePoseVector<double> poses_;
+};
+
+/* Tests that the discrete contact computation doesn't choke on contact pairs
+ that involve geometries outside of MbP. */
+GTEST_TEST(DiscreteUpdateManagerGeometryTest, NonMbPContactPair) {
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = 0.01;
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
+
+  Parser parser(&plant, &scene_graph);
+  parser.AddModelsFromUrl("package://drake_models/skydio_2/quadrotor.urdf");
+  plant.Finalize();
+
+  /* Add another proximity geometry (that doesn't belong to the existing plant)
+   to SceneGraph. */
+  MultibodyPlant<double> other_plant(0.0);
+  Parser other_parser(&other_plant, &scene_graph);
+  const auto model_instance_indices = other_parser.AddModelsFromUrl(
+      "package://drake_models/skydio_2/quadrotor.urdf");
+  other_plant.Finalize();
+  const auto body_indices =
+      other_plant.GetBodyIndices(model_instance_indices[0]);
+  ASSERT_EQ(body_indices.size(), 1);
+  const BodyIndex body_index = body_indices[0];
+  const auto frame_id = other_plant.GetBodyFrameIdOrThrow(body_index);
+  const auto source_id = other_plant.get_source_id().value();
+  auto pose_source = builder.template AddSystem<PoseSource>();
+  /* Set the pose of the new geometry so that it's in contact with the geometry
+   in the plant. */
+  pose_source->SetPoses({{frame_id, RigidTransformd()}});
+  builder.Connect(pose_source->get_output_port(0),
+                  scene_graph.get_source_pose_port(source_id));
+
+  auto diagram = builder.Build();
+  std::unique_ptr<Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+
+  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      simulator.AdvanceTo(0.1),
+      ".*FindBodyByGeometryId received GeometryId.*not known.*");
 }
 
 }  // namespace

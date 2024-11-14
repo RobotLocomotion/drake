@@ -105,11 +105,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.penalty_method_contact_parameters_.dissipation;
   }
 
-  static const std::unordered_map<geometry::GeometryId, BodyIndex>&
-  geometry_id_to_body_index(const MultibodyPlant<T>& plant) {
-    return plant.geometry_id_to_body_index_;
-  }
-
   static const internal::JointLockingCacheData<T>& EvalJointLocking(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.EvalJointLocking(context);

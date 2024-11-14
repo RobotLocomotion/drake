@@ -341,8 +341,7 @@ DeformableDriver<T>::ComputeContactDataForRigid(
   ContactData result;
   /* Rigid geometry is guaranteed to be body B in a deformable rigid contact. */
   const geometry::GeometryId geometry_id = surface.id_B();
-  const BodyIndex body_index =
-      manager_->geometry_id_to_body_index().at(geometry_id);
+  const BodyIndex body_index = manager_->FindBodyByGeometryId(geometry_id);
   const RigidBody<T>& rigid_body = manager_->plant().get_body(body_index);
   result.name = rigid_body.name();
   /* For rigid body, we use the origin of the body frame as the relative-to
@@ -428,7 +427,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
         surface.is_B_deformable()
             ? static_cast<int>(deformable_model_->GetBodyIndex(
                   deformable_model_->GetBodyId(id_B)))
-            : static_cast<int>(manager_->geometry_id_to_body_index().at(id_B));
+            : static_cast<int>(manager_->FindBodyByGeometryId(id_B));
     /* By convention, the object index of a rigid body is just its body index.
      All deformable bodies come after all rigid bodies, and the object index of
      a deformable body is its deformable body index + the number of rigid bodies
