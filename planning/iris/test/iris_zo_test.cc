@@ -1,7 +1,6 @@
 #include "drake/planning/iris/iris_zo.h"
 
 #include <chrono>
-#include <iostream>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -152,10 +151,9 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   options.meshcat = meshcat;
   Hyperellipsoid starting_ellipsoid =
       Hyperellipsoid::MakeHypersphere(1e-2, sample);
-  std::cout << "pre iris zo call \n";
+
   HPolyhedron region =
       IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options);
-  std::cout << "post iris zo call \n";
 
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
