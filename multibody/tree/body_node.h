@@ -241,6 +241,10 @@ class BodyNode : public MultibodyElement<T> {
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       PositionKinematicsCache<T>* pc) const = 0;
 
+  virtual void CalcPositionKinematicsCache2_BaseToTip(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      PositionKinematicsCache2<T>* pc2) const = 0;
+
   // Calculates the hinge matrix H_PB_W, the `6 x nm` hinge matrix that relates
   // V_PB_W`(body B's spatial velocity in its parent body P, expressed in world
   // W) to this node's nm generalized velocities (or mobilities) v_B as
@@ -289,6 +293,10 @@ class BodyNode : public MultibodyElement<T> {
       const T* positions, const PositionKinematicsCache<T>& pc,
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const = 0;
+
+  virtual void CalcVelocityKinematicsCache2_BaseToTip(
+      const T* positions, const PositionKinematicsCache2<T>& pc2,
+      const T* velocities, VelocityKinematicsCache2<T>* vc2) const = 0;
 
   // The CalcMassMatrix() algorithm invokes this on each body k, serving
   // as the composite body R(k) in the outer loop of Jain's algorithm 9.3.
@@ -373,6 +381,12 @@ class BodyNode : public MultibodyElement<T> {
       const VelocityKinematicsCache<T>* vc, const T* accelerations,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const = 0;
 
+  virtual void CalcSpatialAcceleration2_BaseToTip(
+      const T* positions, const PositionKinematicsCache2<T>& pc2,
+      const T* velocities, const VelocityKinematicsCache2<T>& vc2,
+      const T* accelerations,
+      std::vector<SpatialAcceleration<T>>* A_WM_M_array) const = 0;
+
   // Computes the generalized forces `tau` for a single BodyNode.
   // This method is used by MultibodyTree within a tip-to-base loop to compute
   // the vector of generalized forces `tau` that would correspond with a known
@@ -430,6 +444,17 @@ class BodyNode : public MultibodyElement<T> {
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
       const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
+      EigenPtr<VectorX<T>> tau_array) const = 0;
+
+  virtual void CalcInverseDynamics2_TipToBase(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,  // M_BMo_M, X_BM
+      const T* positions,
+      const PositionKinematicsCache2<T>& pc,  // X_MpM, X_WB
+      const VelocityKinematicsCache2<T>& vc,  // V_WM_M
+      const std::vector<SpatialAcceleration<T>>& A_WM_M_array,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,  // Bo, W !
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+      std::vector<SpatialForce<T>>* F_BMo_M_array,
       EigenPtr<VectorX<T>> tau_array) const = 0;
 
   // This method is used by MultibodyTree within a tip-to-base loop to compute

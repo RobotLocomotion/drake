@@ -76,6 +76,9 @@ SpatialInertia<T> ToSpatialInertia(
       Vector3<T>(spatial_inertia_vector[SpatialInertiaIndex::k_com_x],
                  spatial_inertia_vector[SpatialInertiaIndex::k_com_y],
                  spatial_inertia_vector[SpatialInertiaIndex::k_com_z]),
+      // TODO(sherm1) Despite the `true` (don't check validity) below, this
+      //  blows up in Debug mode due to the underlying RotationMatrix
+      //  constructor that gets called from here. Fix.
       UnitInertia<T>(spatial_inertia_vector[SpatialInertiaIndex::k_Gxx],
                      spatial_inertia_vector[SpatialInertiaIndex::k_Gyy],
                      spatial_inertia_vector[SpatialInertiaIndex::k_Gzz],

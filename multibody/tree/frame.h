@@ -542,6 +542,50 @@ class Frame : public MultibodyElement<T> {
       const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
     return frame_body_poses.get_X_FB(body_pose_index_in_cache_);
   }
+
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// returns whether X_BF is exactly identity. This is precomputed in the
+  /// cache so is very fast to check.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @see get_X_BF()
+  bool is_X_BF_identity(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) {
+    return frame_body_poses.is_X_BF_identity(body_pose_index_in_cache_);
+  }
+
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// extract X_MbF for this %Frame from it.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @retval X_MbF pose of this frame in its body's inboard mobilizer's
+  ///         outboard frame M.
+  const math::RigidTransform<T>& get_X_MbF(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
+    return frame_body_poses.get_X_MbF(this->index());
+  }
+
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// extract X_FMb (=X_MbF⁻¹) for this %Frame from it.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @retval X_FMb inverse of this frame's pose in its body's inboard
+  ///         mobilizer's outboard frame M.
+  const math::RigidTransform<T>& get_X_FMb(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
+    return frame_body_poses.get_X_FMb(this->index());
+  }
+
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// returns whether X_MbF is exactly identity. This is precomputed in the
+  /// cache so is very fast to check.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @see get_X_MbF()
+  bool is_X_MbF_identity(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) {
+    return frame_body_poses.is_X_MbF_identity(this->index());
+  }
   //@}
 
  protected:

@@ -31,6 +31,12 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
+  void CalcPositionKinematicsCache2_BaseToTip(
+      const FrameBodyPoseCache<T>&, const T*,
+      PositionKinematicsCache2<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const FrameBodyPoseCache<T>&, const T*, const PositionKinematicsCache<T>&,
       std::vector<Vector6<T>>*) const final {
@@ -41,6 +47,12 @@ class BodyNodeWorld final : public BodyNode<T> {
       const T*, const PositionKinematicsCache<T>&,
       const std::vector<Vector6<T>>&, const T*,
       VelocityKinematicsCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcVelocityKinematicsCache2_BaseToTip(
+      const T*, const PositionKinematicsCache2<T>&, const T*,
+      VelocityKinematicsCache2<T>*) const final {
     DRAKE_UNREACHABLE();
   }
 
@@ -73,6 +85,13 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
+  void CalcSpatialAcceleration2_BaseToTip(
+      const T*, const PositionKinematicsCache2<T>&, const T*,
+      const VelocityKinematicsCache2<T>&, const T*,
+      std::vector<SpatialAcceleration<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
   void CalcInverseDynamics_TipToBase(const FrameBodyPoseCache<T>&, const T*,
                                      const PositionKinematicsCache<T>&,
                                      const std::vector<SpatialInertia<T>>&,
@@ -82,6 +101,15 @@ class BodyNodeWorld final : public BodyNode<T> {
                                      const Eigen::Ref<const VectorX<T>>&,
                                      std::vector<SpatialForce<T>>*,
                                      EigenPtr<VectorX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcInverseDynamics2_TipToBase(
+      const FrameBodyPoseCache<T>&, const T*,
+      const PositionKinematicsCache2<T>&, const VelocityKinematicsCache2<T>&,
+      const std::vector<SpatialAcceleration<T>>&,
+      const std::vector<SpatialForce<T>>&, const Eigen::Ref<const VectorX<T>>&,
+      std::vector<SpatialForce<T>>*, EigenPtr<VectorX<T>>) const final {
     DRAKE_UNREACHABLE();
   }
 
