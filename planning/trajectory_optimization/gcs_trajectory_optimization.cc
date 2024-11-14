@@ -934,15 +934,22 @@ template void Subgraph::AddVertexCost<Binding<Cost>>(
     const Binding<Cost>& e,
     const std::unordered_set<Transcription>& transcriptions);
 
+// Compatible with Formula and Binding<Constraint>.
+template <typename T>
 void Subgraph::AddVertexConstraint(
-    const Formula& e,
+    const T& e,
     const std::unordered_set<Transcription>& used_in_transcription) {
   for (Vertex*& vertex : vertices_) {
-    Formula post_substitution =
-        SubstituteVertexPlaceholderVariables(e, *vertex);
+    T post_substitution = SubstituteVertexPlaceholderVariables(e, *vertex);
     vertex->AddConstraint(post_substitution, used_in_transcription);
   }
 }
+
+template void Subgraph::AddVertexConstraint<Formula>(
+    const Formula& e, const std::unordered_set<Transcription>& transcriptions);
+template void Subgraph::AddVertexConstraint<Binding<Constraint>>(
+    const Binding<Constraint>& e,
+    const std::unordered_set<Transcription>& transcriptions);
 
 void Subgraph::AddEdgeCost(
     const Expression& e,

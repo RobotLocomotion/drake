@@ -348,7 +348,8 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
-    /** Adds an arbitrary user-defined constraint to every vertex in the
+    /** Adds an arbitrary user-defined constraint (in the form of a Formula or
+    Binding<Constraint>) to every vertex in the
     subgraph. The constraint should be defined using the placeholder control
     point variables (obtained from vertex_control_points()) and the placeholder
     time scaling variable (obtained from vertex_duration()). This enables
@@ -363,8 +364,9 @@ class GcsTrajectoryOptimization final {
     an appropriate "convex surrogate" that is supported within
     GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
     */
+    template <typename T>
     void AddVertexConstraint(
-        const symbolic::Formula& e,
+        const T& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             used_in_transcription = {
