@@ -49,7 +49,7 @@ struct IrisZoOptions {
   /** Descision threshold for the unadaptive test. Chosing a small value
    * increases both the cost and the power statistical test. Increasing the
    * value of `tau` makes running an individual test cheaper but decreases its
-   * power to accept a polytope. We chosing a value of 0.5 is a good
+   * power to accept a polytope. We find chosing a value of 0.5 a good
    * trade-off.
    */
   double tau = 0.5;
@@ -64,7 +64,9 @@ struct IrisZoOptions {
   /** Points that are guaranteed to be contained in the final region
    * provided their convex hull is collision free. Note that if the containment
    * points are closer than configuration_margin to an obstacle we will relax
-   * the margin in favor of including the containment points.*/
+   * the margin in favor of including the containment points. The matrix
+   * `containment_points` is expected to be of the shape dimension times number
+   * of points.*/
   std::optional<Eigen::MatrixXd> containment_points{std::nullopt};
 
   /** Maximum number of alternations between the ellipsoid and the separating
