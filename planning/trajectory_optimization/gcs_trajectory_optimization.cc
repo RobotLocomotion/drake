@@ -1087,6 +1087,15 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       }
     }
   }
+
+  // Construct placeholder variables.
+  placeholder_edge_durations_var_ =
+      std::make_pair(symbolic::Variable("tu"), symbolic::Variable("tv"));
+  placeholder_edge_control_points_var_ =
+      std::make_pair(MakeMatrixContinuousVariable(
+                         num_positions(), from_subgraph_.order() + 1, "xu"),
+                     MakeMatrixContinuousVariable(
+                         num_positions(), to_subgraph_.order() + 1, "xv"));
 }
 
 EdgesBetweenSubgraphs::~EdgesBetweenSubgraphs() = default;
@@ -1574,6 +1583,37 @@ std::vector<const GraphOfConvexSets::Edge*> EdgesBetweenSubgraphs::Edges()
     edges.push_back(e);
   }
   return edges;
+}
+
+template <typename T>
+T EdgesBetweenSubgraphs::SubstituteEdgePlaceholderVariables(
+    T e, const Edge& edge) const {
+  return SubstituteAllVariables(
+      e,
+      {placeholder_edge_durations_var_.first,
+       placeholder_edge_durations_var_.second},
+      {GetTimeScalingU(edge), GetTimeScalingV(edge)}, {}, {},
+      {placeholder_edge_control_points_var_.first,
+       placeholder_edge_control_points_var_.second},
+      {GetControlPointsU(edge), GetControlPointsV(edge)});
+}
+
+void EdgesBetweenSubgraphs::AddEdgeCost(
+    const Expression& e,
+    const std::unordered_set<Transcription>& used_in_transcription) {
+  for (Edge*& edge : edges_) {
+    Expression post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
+    edge->AddCost(post_substitution, used_in_transcription);
+  }
+}
+
+void EdgesBetweenSubgraphs::AddEdgeConstraint(
+    const symbolic::Formula& e,
+    const std::unordered_set<Transcription>& used_in_transcription) {
+  for (Edge*& edge : edges_) {
+    Formula post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
+    edge->AddConstraint(post_substitution, used_in_transcription);
+  }
 }
 
 Eigen::Map<const MatrixX<symbolic::Variable>>
