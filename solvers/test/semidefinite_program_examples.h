@@ -190,6 +190,16 @@ void TestTrivial1x1LMI(const SolverInterface& solver, double primal_tol,
 //     [1, -2]  [2, 8]
 void Test2x2LMI(const SolverInterface& solver, double primal_tol,
                 bool check_dual, double dual_tol);
+
+// min trace(X)
+// s.t X[0, 1] >= 1
+//     X is psd
+//     X is hankel.
+// Since X is hankel, some of its entries contain repeated variables. This test
+// is reported from github issue
+// https://github.com/RobotLocomotion/drake/issues/22158
+void TestHankel(const SolverInterface& solver, double primal_tol,
+                bool check_dual, double dual_tol);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

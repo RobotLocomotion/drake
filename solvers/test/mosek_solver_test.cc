@@ -568,6 +568,13 @@ GTEST_TEST(MosekTest, Test2X2LMI) {
   }
 }
 
+GTEST_TEST(MosekTest, TestHankel) {
+  MosekSolver solver;
+  if (solver.available()) {
+    TestHankel(solver, 1E-5, true, 1E-6);
+  }
+}
+
 GTEST_TEST(MosekTest, LPDualSolution1) {
   MosekSolver solver;
   if (solver.available()) {

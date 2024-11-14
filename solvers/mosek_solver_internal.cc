@@ -1384,6 +1384,10 @@ MSKrescodee MosekSolverProgram::
         // <A, X̅ᵢ> = 0, where
         // A(m, n) = 1 if m == n else 0.5
         // A(p, q) = -1 if p == q else -0.5
+        // Hence A is the difference between the E matrix (The entry coefficient
+        // matrix) for the (m, n) entry and (p, q) entry.
+        // <E_indices[0], X̅ᵢ> = X̅ᵢ(m, n)
+        // <E_indices[1], X̅ᵢ> = X̅ᵢ(p, q)
         std::array<MSKint64t, 2> E_indices{};
         rescode = AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
             matrix_variable_entries[0], &(E_indices[0]));
@@ -1396,16 +1400,7 @@ MSKrescodee MosekSolverProgram::
           return rescode;
         }
 
-        // weights[0] = A(m, n), weights[1] = A(p, q).
-        std::array<MSKrealt, 2> weights{};
-        weights[0] = matrix_variable_entries[0].row_index() ==
-                             matrix_variable_entries[0].col_index()
-                         ? 1.0
-                         : 0.5;
-        weights[1] = matrix_variable_entries[i].row_index() ==
-                             matrix_variable_entries[i].col_index()
-                         ? -1.0
-                         : -0.5;
+        std::array<MSKrealt, 2> weights{1, -1};
 
         rescode = MSK_putbaraij(task_, linear_constraint_index,
                                 matrix_variable_entries[0].bar_matrix_index(),
