@@ -1344,6 +1344,9 @@ class MultibodyTree {
   void CalcPositionKinematicsCache(const systems::Context<T>& context,
                                    PositionKinematicsCache<T>* pc) const;
 
+  void CalcPositionKinematicsCache2(const systems::Context<T>& context,
+                                    PositionKinematicsCache2<T>* pc2) const;
+
   // Computes all the kinematic quantities that depend on the generalized
   // velocities and stores them in the velocity kinematics cache `vc`.
   // These include:
@@ -1359,6 +1362,10 @@ class MultibodyTree {
   void CalcVelocityKinematicsCache(const systems::Context<T>& context,
                                    const PositionKinematicsCache<T>& pc,
                                    VelocityKinematicsCache<T>* vc) const;
+
+  void CalcVelocityKinematicsCache2(const systems::Context<T>& context,
+                                    const PositionKinematicsCache2<T>& pc2,
+                                    VelocityKinematicsCache2<T>* vc2) const;
 
   // Computes the spatial inertia M_B_W(q) for each body B in the model about
   // its frame origin Bo and expressed in the world frame W.
@@ -1470,8 +1477,19 @@ class MultibodyTree {
       const VelocityKinematicsCache<T>& vc, const VectorX<T>& known_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const;
 
+  void CalcSpatialAccelerationsInMFromVdot(
+      const T* positions, const PositionKinematicsCache2<T>& pc2,
+      const T* velocities, const VelocityKinematicsCache2<T>& vc2,
+      const T* accelerations,
+      std::vector<SpatialAcceleration<T>>* A_WM_M_array) const;
+
   // See MultibodyPlant method.
   VectorX<T> CalcInverseDynamics(
+      const systems::Context<T>& context, const VectorX<T>& known_vdot,
+      const MultibodyForces<T>& external_forces) const;
+
+  // Uses M frame instead of W.
+  VectorX<T> CalcInverseDynamics2(
       const systems::Context<T>& context, const VectorX<T>& known_vdot,
       const MultibodyForces<T>& external_forces) const;
 
@@ -2235,6 +2253,12 @@ class MultibodyTree {
     return tree_system_->EvalPositionKinematics(context);
   }
 
+  const PositionKinematicsCache2<T>& EvalPositionKinematics2(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalPositionKinematics2(context);
+  }
+
   // Evaluates velocity kinematics cached in context. This will also
   // force position kinematics to be updated if it hasn't already.
   // @param context A Context whose velocity kinematics cache will be
@@ -2244,6 +2268,12 @@ class MultibodyTree {
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->EvalVelocityKinematics(context);
+  }
+
+  const VelocityKinematicsCache2<T>& EvalVelocityKinematics2(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalVelocityKinematics2(context);
   }
 
   // Evaluates acceleration kinematics cached in context. This will also

@@ -101,20 +101,14 @@ class RotationMatrix {
   /// @throws std::exception in debug builds if the rotation matrix
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
-  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
-    using std::cos;
-    using std::sin;
-    // TODO(mitiguy) Consider adding an optional second argument if lambda is
-    // known to be normalized apriori or the caller does not want normalization.
-    const T& theta = theta_lambda.angle();
-    const Vector3<T>& lambda = theta_lambda.axis();
-    // We won't use AngleAxis<T>::toRotationMatrix because somtimes it is
-    // miscompiled by Clang 15. Instead, we'll follow the derivation here:
-    // https://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/index.htm
-    const T norm = lambda.norm();
-    const T x = lambda.x() / norm;
-    const T y = lambda.y() / norm;
-    const T z = lambda.z() / norm;
+  explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda)
+      : RotationMatrix(theta_lambda.angle(), theta_lambda.axis().normalized()) {
+  }
+
+  RotationMatrix(const T& theta, const Eigen::Vector3<T>& unit_lambda) {
+    const T x = unit_lambda.x();
+    const T y = unit_lambda.y();
+    const T z = unit_lambda.z();
     const T s = sin(theta);
     const T c = cos(theta);
     const T t = 1 - c;     // 1 - cos(θ)
@@ -131,15 +125,15 @@ class RotationMatrix {
     const T txz = tx * z;  // (1 - cos(θ)) x z
     const T tyz = ty * z;  // (1 - cos(θ)) y z
     Matrix3<T> R;
-    R.coeffRef(0, 0) = txx + c;   // (1 - cos(θ)) x² + cos(θ)
-    R.coeffRef(1, 1) = tyy + c;   // (1 - cos(θ)) y² + cos(θ)
-    R.coeffRef(2, 2) = tzz + c;   // (1 - cos(θ)) z² + cos(θ)
-    R.coeffRef(0, 1) = txy - sz;  // (1 - cos(θ)) x y - sin(θ) z
-    R.coeffRef(1, 0) = txy + sz;  // (1 - cos(θ)) x y + sin(θ) z
-    R.coeffRef(0, 2) = txz + sy;  // (1 - cos(θ)) x z + sin(θ) y
-    R.coeffRef(2, 0) = txz - sy;  // (1 - cos(θ)) x z - sin(θ) y
-    R.coeffRef(1, 2) = tyz - sx;  // (1 - cos(θ)) y z - sin(θ) x
-    R.coeffRef(2, 1) = tyz + sx;  // (1 - cos(θ)) y z + sin(θ) x
+    R(0, 0) = txx + c;   // (1 - cos(θ)) x² + cos(θ)
+    R(1, 1) = tyy + c;   // (1 - cos(θ)) y² + cos(θ)
+    R(2, 2) = tzz + c;   // (1 - cos(θ)) z² + cos(θ)
+    R(0, 1) = txy - sz;  // (1 - cos(θ)) x y - sin(θ) z
+    R(1, 0) = txy + sz;  // (1 - cos(θ)) x y + sin(θ) z
+    R(0, 2) = txz + sy;  // (1 - cos(θ)) x z + sin(θ) y
+    R(2, 0) = txz - sy;  // (1 - cos(θ)) x z - sin(θ) y
+    R(1, 2) = tyz - sx;  // (1 - cos(θ)) y z - sin(θ) x
+    R(2, 1) = tyz + sx;  // (1 - cos(θ)) y z + sin(θ) x
     set(R);
   }
 

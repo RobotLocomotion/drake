@@ -174,6 +174,47 @@ class PositionKinematicsCache {
   Vector3PoolType p_PoBo_W_pool_;
 };
 
+template <typename T>
+class PositionKinematicsCache2 {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PositionKinematicsCache2);
+
+  explicit PositionKinematicsCache2(int num_mobods)
+      : X_FM_pool_(num_mobods),
+        X_MpM_pool_(num_mobods),
+        X_WM_pool_(num_mobods) {}
+
+  const math::RigidTransform<T>& get_X_FM(MobodIndex index) const {
+    return X_FM_pool_[index];
+  }
+
+  const math::RigidTransform<T>& get_X_MpM(MobodIndex index) const {
+    return X_MpM_pool_[index];
+  }
+
+  const math::RigidTransform<T>& get_X_WM(MobodIndex index) const {
+    return X_WM_pool_[index];
+  }
+
+  math::RigidTransform<T>& get_mutable_X_FM(MobodIndex index) {
+    return X_FM_pool_[index];
+  }
+
+  math::RigidTransform<T>& get_mutable_X_MpM(MobodIndex index) {
+    return X_MpM_pool_[index];
+  }
+
+  math::RigidTransform<T>& get_mutable_X_WM(MobodIndex index) {
+    return X_WM_pool_[index];
+  }
+
+ private:
+  // Index by MobodIndex.
+  std::vector<math::RigidTransform<T>> X_FM_pool_;
+  std::vector<math::RigidTransform<T>> X_MpM_pool_;
+  std::vector<math::RigidTransform<T>> X_WM_pool_;
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

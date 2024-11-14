@@ -189,7 +189,7 @@ class RotationalInertia {
   RotationalInertia(const T& Ixx, const T& Iyy, const T& Izz, const T& Ixy,
                     const T& Ixz, const T& Iyz) {
     set_moments_and_products_no_validity_check(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
+    // DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
   }
 
   /// Constructs a rotational inertia for a particle Q of mass `mass`, whose

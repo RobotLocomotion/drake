@@ -23,14 +23,18 @@ namespace internal {
 // rotation between the inboard and outboard frames, just translation.
 // To fully specify this mobilizer, a user must provide the inboard frame F,
 // the outboard (or "mobilized") frame M and the axis `axis_F` (expressed in
-// frame F) along which frame M translates with respect to frame F.
+// frame F or equivalently in frame M) along which frame M translates with
+// respect to frame F.
 // The single generalized coordinate q introduced by this mobilizer
 // corresponds to the translation distance (in meters) of the origin `Mo` of
 // frame M with respect to frame F along `axis_F`. When `q = 0`, frames F and M
 // are coincident. The translation distance is defined to be positive in the
 // direction of `axis_F`.
 //
-// H_FM₆ₓ₁=[0₃, axis_F]ᵀ     Hdot_FM₆ₓ₁ = 0
+// The measure numbers of axis_F and axis_M are identical and constant.
+//
+// H_FM_F₆ₓ₁=[0₃, axis_F]ᵀ     Hdot_FM_F₆ₓ₁ = 0
+// H_FM_M₆ₓ₁=[0₃, axis_M]ᵀ     Hdot_FM_M₆ₓ₁ = 0
 //
 // @tparam_default_scalar
 template <typename T>
@@ -135,16 +139,37 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
     return SpatialVelocity<T>(Vector3<T>::Zero(), v[0] * translation_axis());
   }
 
-  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
-    return SpatialAcceleration<T>(Vector3<T>::Zero(),
-                                  vdot[0] * translation_axis());
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T* v) const {
+    // axis_M == axis_F so this is the same as V_FM_F.
+    return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
   }
 
-  // Returns tau = H_FMᵀ⋅F, where H_FMᵀ = [0₃ᵀ axis_Fᵀ].
+  SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
+    return SpatialAcceleration<T>(Vector3<T>::Zero(),
+                                  vdot[0] * translation_axis());  // axis_F
+  }
+
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T* vdot) const {
+    return SpatialAcceleration<T>(Vector3<T>::Zero(),
+                                  vdot[0] * translation_axis());  // axis_M
+  }
+
+  // Returns tau = H_FM_Fᵀ⋅F_F, where H_FM_Fᵀ = [0₃ᵀ axis_Fᵀ].
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     const Vector3<T>& f_BMo_F = F_BMo_F.translational();
     tau[0] = axis_F_.dot(f_BMo_F);
+  }
+
+  // Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [0₃ᵀ axis_Mᵀ], and
+  // axis_M == axis_F (see class comments).
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const Vector3<T>& f_BMo_M = F_BMo_M.translational();
+    tau[0] = axis_F_.dot(f_BMo_M);  // This is axis_M.
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
@@ -215,7 +240,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 
   // Default axis expressed in the inboard frame F. It is a unit vector.
-  Vector3<double> axis_F_;
+  Vector3<double> axis_F_;  // This is also axis_M.
 };
 
 }  // namespace internal
