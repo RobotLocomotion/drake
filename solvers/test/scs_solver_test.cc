@@ -454,6 +454,13 @@ GTEST_TEST(TestSemidefiniteProgram, Test2X2LMI) {
   }
 }
 
+GTEST_TEST(TestSemidefiniteProgram, TestHankel) {
+  ScsSolver solver;
+  if (solver.available()) {
+    TestHankel(solver, 1E-5, false, 1E-6);
+  }
+}
+
 GTEST_TEST(TestExponentialConeProgram, ExponentialConeTrivialExample) {
   ScsSolver solver;
   if (solver.available()) {

@@ -630,6 +630,63 @@ void Test2x2LMI(const SolverInterface& solver, double primal_tol,
   }
 }
 
+namespace {
+MatrixX<symbolic::Variable> Hankel(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& c,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& r) {
+  MatrixX<symbolic::Variable> ret(c.rows(), r.rows());
+  for (int i = 0; i < ret.rows(); ++i) {
+    for (int j = 0; j < ret.cols(); ++j) {
+      if (i + j < ret.rows()) {
+        ret(i, j) = c(i + j);
+      } else {
+        ret(i, j) = r(i + j - ret.rows() + 1);
+      }
+    }
+  }
+  return ret;
+}
+}  // namespace
+void TestHankel(const SolverInterface& solver, double primal_tol,
+                bool check_dual, double dual_tol) {
+  int n = 3;
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables(2 * n - 1, "x");
+  auto X = Hankel(x.head(n), x.tail(n));
+  auto psd_con = prog.AddPositiveSemidefiniteConstraint(X);
+  prog.AddBoundingBoxConstraint(1, kInf, x(1));
+  prog.AddLinearCost(X.cast<symbolic::Expression>().trace());
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  ASSERT_TRUE(result.is_success());
+
+  const auto X_sol = result.GetSolution(X);
+  // We can compute the optimal solution by hand.
+  const double x2_expected = std::sqrt((std::sqrt(13) - 1) / 6);
+  const double x0_expected = 1 / x2_expected;
+  const double x3_expected = x2_expected * x2_expected;
+  const double x4_expected = x3_expected * x3_expected / x2_expected;
+  Vector6<double> x_expected;
+  x_expected << x0_expected, 1, x2_expected, x3_expected, x4_expected;
+  Eigen::Matrix3d X_expected;
+  // clang-format off
+  X_expected << x0_expected, 1, x2_expected,
+                1, x2_expected, x3_expected,
+                x2_expected, x3_expected, x4_expected;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(X_sol, X_expected, primal_tol));
+  if (check_dual) {
+    const Eigen::Matrix3d psd_dual =
+        math::ToSymmetricMatrixFromLowerTriangularColumns(
+            result.GetDualSolution(psd_con));
+    EXPECT_NEAR((psd_dual * X_sol).trace(), 0, dual_tol);
+    EXPECT_NEAR(psd_dual(0, 0), 1, dual_tol);
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es(psd_dual);
+    EXPECT_TRUE((es.eigenvalues().array() >= -dual_tol).all());
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
