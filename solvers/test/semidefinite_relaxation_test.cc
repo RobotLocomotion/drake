@@ -66,26 +66,24 @@ GTEST_TEST(SemidefiniteRelaxationOptions, DefaultOptionsTest) {
   // the solve time and tightness of semidefinite relaxations. If the default
   // options are changed, please ensure that the commit message specifically
   // highlights this change for downstream developers.
-  SemidefiniteRelaxationOptions options;
+  SemidefiniteRelaxationOptions options{};
   EXPECT_TRUE(options.add_implied_linear_equality_constraints);
   EXPECT_TRUE(options.add_implied_linear_constraints);
   EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
 }
 
 GTEST_TEST(SemidefiniteRelaxationOptions, SetWeakestTest) {
-  SemidefiniteRelaxationOptions options;
+  SemidefiniteRelaxationOptions options{};
   options.set_to_weakest();
   EXPECT_FALSE(options.add_implied_linear_equality_constraints);
   EXPECT_FALSE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
 }
 
 GTEST_TEST(SemidefiniteRelaxationOptions, SetStrongestTest) {
-  SemidefiniteRelaxationOptions options;
+  SemidefiniteRelaxationOptions options{};
   options.set_to_strongest();
   EXPECT_TRUE(options.add_implied_linear_equality_constraints);
   EXPECT_TRUE(options.add_implied_linear_constraints);
-  EXPECT_TRUE(options.preserve_convex_quadratic_constraints);
 }
 
 class MakeSemidefiniteRelaxationTest : public ::testing::Test {
@@ -166,7 +164,7 @@ class MakeSemidefiniteRelaxationTest : public ::testing::Test {
 };
 
 TEST_F(MakeSemidefiniteRelaxationTest, EnsureProgramsAreValidated) {
-  SemidefiniteRelaxationOptions options;
+  SemidefiniteRelaxationOptions options{};
   prog_.AddCost(sin(y_[0]));
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeSemidefiniteRelaxation(prog_, options),
@@ -188,7 +186,7 @@ TEST_F(MakeSemidefiniteRelaxationTest, VerifyLinearCostsAndConstraintsCloned) {
     prog_.RemoveConstraint(constraint);
   }
 
-  SemidefiniteRelaxationOptions options;
+  SemidefiniteRelaxationOptions options{};
   // Don't add any implied constraints.
   options.set_to_weakest();
   auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
@@ -266,12 +264,37 @@ TEST_F(MakeSemidefiniteRelaxationTest, VerifyLinearCostsAndConstraintsCloned) {
   EXPECT_EQ(indices.size(), y_.size());
 }
 
+TEST_F(MakeSemidefiniteRelaxationTest, LinearizeQuadraticCostsAndConstraints) {
+  SemidefiniteRelaxationOptions options{};
+  options.set_to_weakest();
+  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
+
+  // The semidefinite program is initialized.
+  EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
+
+  // All the quadratic costs are linearized.
+  EXPECT_EQ(relaxation->quadratic_costs().size(), 0);
+  EXPECT_EQ(relaxation->linear_costs().size(),
+            prog_.linear_costs().size() + prog_.quadratic_costs().size());
+
+  // All the quadratic constraints are linearized.
+  EXPECT_EQ(relaxation->quadratic_constraints().size(), 0);
+  EXPECT_EQ(
+      relaxation->linear_constraints().size(),
+      prog_.linear_constraints().size() + prog_.quadratic_constraints().size());
+
+  // One extra constraint from "one" equals 1, one from the semidefinite
+  // constraint.
+  EXPECT_EQ(relaxation->GetAllConstraints().size(),
+            prog_.GetAllConstraints().size() + 1 + 1);
+}
+
 TEST_F(MakeSemidefiniteRelaxationTest,
        LinearizeQuadraticCostsAndConstraintsPreserveFalse) {
-  SemidefiniteRelaxationOptions options;
-  // Don't add any implied constraints. This also sets
-  // preserve_convex_quadratic_constraints to false.
+  SemidefiniteRelaxationOptions options{};
+  // Don't add any implied constraints.
   options.set_to_weakest();
+  options.preserve_convex_quadratic_constraints = false;
   auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
 
   // The semidefinite program is initialized.
@@ -295,11 +318,11 @@ TEST_F(MakeSemidefiniteRelaxationTest,
   EXPECT_EQ(relaxation->GetAllConstraints().size(),
             prog_.GetAllConstraints().size() + 1 + 1);
 }
-
 TEST_F(MakeSemidefiniteRelaxationTest,
        LinearizeQuadraticCostsAndConstraintsPreserveTrue) {
-  SemidefiniteRelaxationOptions options;
+  SemidefiniteRelaxationOptions options{};
   options.set_to_weakest();
+
   options.preserve_convex_quadratic_constraints = true;
   auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
 
@@ -316,17 +339,15 @@ TEST_F(MakeSemidefiniteRelaxationTest,
   EXPECT_EQ(
       relaxation->linear_constraints().size(),
       prog_.linear_constraints().size() + prog_.quadratic_constraints().size());
-  // The convex quadratic is rewritten as a lorentz cone constraint.
-  EXPECT_EQ(relaxation->rotated_lorentz_cone_constraints().size(), 1);
 
   // One extra constraint from "one" equals 1, one from the semidefinite
-  // constraint, one from preserving the convex quadratic.
+  // constraint.
   EXPECT_EQ(relaxation->GetAllConstraints().size(),
-            prog_.GetAllConstraints().size() + 1 + 1 + 1);
+            prog_.GetAllConstraints().size() + 1 + 1);
 }
 
 TEST_F(MakeSemidefiniteRelaxationTest, AddImpliedLinearConstraint) {
-  SemidefiniteRelaxationOptions options;
+  SemidefiniteRelaxationOptions options{};
   options.set_to_weakest();
   options.add_implied_linear_constraints = true;
   auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
@@ -347,7 +368,7 @@ TEST_F(MakeSemidefiniteRelaxationTest, AddImpliedLinearConstraint) {
 }
 
 TEST_F(MakeSemidefiniteRelaxationTest, AddImpliedLinearEqualityConstraint) {
-  SemidefiniteRelaxationOptions options;
+  SemidefiniteRelaxationOptions options{};
   options.set_to_weakest();
   options.add_implied_linear_equality_constraints = true;
   auto relaxation = MakeSemidefiniteRelaxation(prog_, options);

@@ -119,8 +119,7 @@ void InitializeSemidefiniteRelaxationForProg(
 void DoLinearizeQuadraticCostsAndConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation,
-    bool preserve_convex_quadratic_constraints) {
+    MathematicalProgram* relaxation) {
   DRAKE_DEMAND(relaxation != nullptr);
   // Returns the {a, vars} in relaxation, such that a' vars = 0.5*tr(QY). This
   // assumes Q=Q', which is ensured by QuadraticCost and QuadraticConstraint.
@@ -168,36 +167,6 @@ void DoLinearizeQuadraticCostsAndConstraints(
   // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
   for (const auto& binding : prog.quadratic_constraints()) {
     relaxation->RemoveConstraint(binding);
-    // If the preserve_convex_quadratic_constraints flag is true, we replace
-    // convex quadratics with their conic form.
-    if (preserve_convex_quadratic_constraints &&
-        binding.evaluator()->is_convex()) {
-      switch (binding.evaluator()->hessian_type()) {
-        case QuadraticConstraint::HessianType::kPositiveSemidefinite: {
-          relaxation->AddQuadraticAsRotatedLorentzConeConstraint(
-              binding.evaluator()->Q(), binding.evaluator()->b(),
-              -binding.evaluator()->upper_bound()[0], binding.variables(),
-              // set the PSD tolerance check to infinity since Q is already
-              // known to be PSD
-              kInf);
-          break;
-        }
-        case QuadraticConstraint::HessianType::kNegativeSemidefinite: {
-          relaxation->AddQuadraticAsRotatedLorentzConeConstraint(
-              -binding.evaluator()->Q(), -binding.evaluator()->b(),
-              binding.evaluator()->lower_bound()[0], binding.variables(),
-              // Set the PSD tolerance check to infinity since -Q is already
-              // known to be PSD
-              kInf);
-          break;
-        }
-        case QuadraticConstraint::HessianType::kIndefinite: {
-          // binding.evaluator()->is_convex() and therefore the hessian type
-          // cannot be indefinite.
-          DRAKE_UNREACHABLE();
-        }
-      }
-    }
     const int N = binding.variables().size();
     const int num_vars = N + (N * (N + 1) / 2);
     std::pair<VectorXd, VectorX<Variable>> quadratic_terms =

@@ -41,17 +41,14 @@ void InitializeSemidefiniteRelaxationForProg(
 
 // Iterates over the quadratic costs and constraints in prog, remove them if
 // present in the relaxation, and add an equivalent linear cost or constraint on
-// the semidefinite variable X. If the cost or constraint is convex, and
-// preserve_convex_quadratic_constraints is true, then the cost/constraint is
-// not removed. The map variables_to_sorted_indices maps the decision variables
-// in prog to their index in the last column of X.
-// [in/out] relaxation A pointer to a mathematical program to which the
-// linearized costs and constraints are added. It cannot be null.
+// the semidefinite variable X. The map variables_to_sorted_indices maps the
+// decision variables in prog to their index in the last column of X. [in/out]
+// relaxation A pointer to a mathematical program to which the linearized costs
+// and constraints are added. It cannot be null.
 void DoLinearizeQuadraticCostsAndConstraints(
     const MathematicalProgram& prog, const MatrixXDecisionVariable& X,
     const std::map<symbolic::Variable, int>& variables_to_sorted_indices,
-    MathematicalProgram* relaxation,
-    bool preserve_convex_quadratic_constraints = false);
+    MathematicalProgram* relaxation);
 
 // Aggregates all the finite linear constraints in the program into a single
 // expression Ay ≤ b, which can be expressed as [A, -b][y; 1] ≤ 0.

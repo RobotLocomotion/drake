@@ -31,18 +31,18 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0):
+[v1.35.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.35.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.34.0/drake-1.34.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.34.0/drake-1.34.0-jammy.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.34.0/drake-1.34.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.34.0/drake-1.34.0-noble.tar.gz)
-* https://github.com/RobotLocomotion/drake/releases/download/v1.34.0/drake-1.34.0-mac-arm64.tar.gz (for arm64)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-noble.tar.gz)
+* https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-mac-arm64.tar.gz (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious
 software. For example:
 
 ```
-curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.34.0/drake-1.34.0-mac-arm64.tar.gz
+curl -fsSLO https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-mac-arm64.tar.gz
 ```
 
 ### Use as a C++ library

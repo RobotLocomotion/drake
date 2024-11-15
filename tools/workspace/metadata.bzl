@@ -7,9 +7,9 @@ def generate_repository_metadata(repository_ctx, **kwargs):
     """
     repository_ctx.file(
         "drake_repository_metadata.json",
-        content = struct(
+        content = json.encode(struct(
             name = repository_ctx.name,
             **kwargs
-        ).to_json(),
+        )),
         executable = False,
     )
