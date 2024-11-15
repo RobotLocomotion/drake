@@ -7,8 +7,6 @@ import install_test_helper
 
 class TestVisualizationInstalled(unittest.TestCase):
 
-    # TODO(#21023) This test is a bit too tricky in CI.
-    @unittest.skipIf(sys.platform == "darwin", "Skipped for tricky macOS CI")
     def test_meldis_help(self):
         """Ensures we can call `./bin/meldis --help` from install."""
         # Get install directory.
@@ -19,8 +17,6 @@ class TestVisualizationInstalled(unittest.TestCase):
         text = install_test_helper.check_output([bin_path, "--help"])
         self.assertIn("usage: meldis ", text)
 
-    # TODO(#21023) This test is a bit too tricky in CI.
-    @unittest.skipIf(sys.platform == "darwin", "Skipped for tricky macOS CI")
     def test_model_visualizer_help(self):
         """Ensures we can call `./bin/model_visualizer --help` from install."""
         # Get install directory.
@@ -31,8 +27,6 @@ class TestVisualizationInstalled(unittest.TestCase):
         text = install_test_helper.check_output([bin_path, "--help"])
         self.assertIn("usage: model_visualizer ", text)
 
-    # TODO(#21023) This test is a bit too tricky in CI.
-    @unittest.skipIf(sys.platform == "darwin", "Skipped for tricky macOS CI")
     def test_drake_models_meshes(self):
         """Ensures that the package://drake_models/... can be found by testing
         a model that uses a meshfile from that location.
