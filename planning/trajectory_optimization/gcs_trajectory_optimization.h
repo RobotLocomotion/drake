@@ -394,7 +394,7 @@ class GcsTrajectoryOptimization final {
     }
 
     /** Convenience overload of AddVertexConstraint to take in a
-     * Binding<Constraint>. */
+    Binding<Constraint>. */
     void AddVertexConstraint(
         const solvers::Binding<solvers::Constraint>& binding,
         const std::unordered_set<

@@ -2702,7 +2702,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_3),
                               ".*.IsSubsetOf\\(Variables\\(placeholder_x_.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(ParseCost(bad_expression_3)),
-                              ".*.IsSubsetOf\\(Variables\\(placeholder_x_.*");
+                              ".*Unknown variable.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_1),
                               ".*Edge placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -2717,7 +2717,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
                               ".*.IsSubsetOf\\(Variables\\(placeholder_x_.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       middle.AddVertexConstraint(ParseConstraint(bad_formula_3)),
-      ".*.IsSubsetOf\\(Variables\\(placeholder_x_.*");
+      ".*Unknown variable.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
@@ -2842,7 +2842,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(bad_expression_3),
                               ".*IsSubsetOf\\(allowed_vars_\\).*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(ParseCost(bad_expression_3)),
-                              ".*IsSubsetOf\\(allowed_vars_\\).*");
+                              ".*Unknown variable.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       middle.AddEdgeConstraint(bad_formula_1),
       ".*Vertex placeholder variables cannot be used.*");
@@ -2859,7 +2859,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
                               ".*IsSubsetOf\\(allowed_vars_\\).*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       middle.AddEdgeConstraint(ParseConstraint(bad_formula_3)),
-      ".*IsSubsetOf\\(allowed_vars_\\).*");
+      ".*Unknown variable.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest,

@@ -842,6 +842,12 @@ Binding<T> SubstituteAllVariables(
         old_variables.begin(), old_variables.end(), [&](const Variable& var) {
           return var.equal_to(new_binding_variables[i]);
         });
+    if (iterator == old_variables.end()) {
+      // We throw an error if the user gave an unknown variable.
+      throw std::runtime_error(
+          fmt::format("Unknown variable with name {} provided.",
+                      new_binding_variables[i].get_name()));
+    }
     size_t index = std::distance(std::begin(old_variables), iterator);
     new_binding_variables[i] = new_variables[index];
   }
