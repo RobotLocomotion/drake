@@ -33,8 +33,8 @@ Mac are available to download as attachments from Drake's GitHub
 The most recent release is
 [v1.35.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.35.0):
 
-* https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-jammy.tar.gz
-* https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-noble.tar.gz
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-noble.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-noble.tar.gz)
 * https://github.com/RobotLocomotion/drake/releases/download/v1.35.0/drake-1.35.0-mac-arm64.tar.gz (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
