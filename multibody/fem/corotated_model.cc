@@ -44,19 +44,16 @@ void CorotatedModel<T>::CalcFirstPiolaStressImpl(const Data& data,
 
 template <typename T>
 void CorotatedModel<T>::CalcFirstPiolaStressDerivativeImpl(
-    const Data& data, Eigen::Matrix<T, 9, 9>* dPdF) const {
+    const Data& data, math::internal::FourthOrderTensor<T>* dPdF) const {
   const T& Jm1 = data.Jm1();
   const Matrix3<T>& F = data.deformation_gradient();
   const Matrix3<T>& R = data.R();
   const Matrix3<T>& S = data.S();
   const Matrix3<T>& JFinvT = data.JFinvT();
-  const Vector<T, 3 * 3>& flat_JFinvT =
-      Eigen::Map<const Vector<T, 3 * 3>>(JFinvT.data(), 3 * 3);
   auto& local_dPdF = (*dPdF);
-  /* The contribution from derivatives of Jm1. */
-  local_dPdF.noalias() = lambda_ * flat_JFinvT * flat_JFinvT.transpose();
+  local_dPdF.SetAsOuterProduct(lambda_ * JFinvT, JFinvT);
   /* The contribution from derivatives of F. */
-  local_dPdF.diagonal().array() += 2.0 * mu_;
+  local_dPdF.mutable_data().diagonal().array() += 2.0 * mu_;
   /* The contribution from derivatives of R. */
   internal::AddScaledRotationalDerivative<T>(R, S, -2.0 * mu_, &local_dPdF);
   /* The contribution from derivatives of JFinvT. */
