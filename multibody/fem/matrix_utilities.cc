@@ -52,7 +52,7 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
 template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
-    EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dRdF) {
+    math::internal::FourthOrderTensor<T>* scaled_dRdF) {
   /* Some notes on derivation on the derivative of the rotation matrix from
    polar decomposition: we start with the result from section 2 of [McAdams,
    2011] about the differential of the rotation matrix, which states that δR =
@@ -118,7 +118,7 @@ void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor) {
 template <typename T>
 void AddScaledCofactorMatrixDerivative(
     const Matrix3<T>& M, const T& scale,
-    EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dCdM) {
+    math::internal::FourthOrderTensor<T>* scaled_dCdM) {
   /* See the convention for ordering the 9-by-9 derivatives at the top of the
    header file. */
   const Matrix3<T> A = scale * M;

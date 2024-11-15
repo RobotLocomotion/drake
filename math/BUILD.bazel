@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":discrete_lyapunov_equation",
         ":eigen_sparse_triplet",
         ":evenly_distributed_pts_on_sphere",
+        ":fourth_order_tensor",
         ":geometric_transform",
         ":gradient",
         ":gray_code",
@@ -131,6 +132,16 @@ drake_cc_library(
     hdrs = ["discrete_lyapunov_equation.h"],
     deps = [
         "//common:is_approx_equal_abstol",
+    ],
+)
+
+drake_cc_library(
+    name = "fourth_order_tensor",
+    srcs = ["fourth_order_tensor.cc"],
+    hdrs = ["fourth_order_tensor.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -429,6 +440,14 @@ drake_cc_googletest(
     name = "eigen_sparse_triplet_test",
     deps = [
         ":eigen_sparse_triplet",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fourth_order_tensor_test",
+    deps = [
+        ":fourth_order_tensor",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )

@@ -68,8 +68,7 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledRotationalDerivative) {
   const Matrix3<AutoDiffXd> F = MakeAutoDiffMatrix(3, 3);
   Matrix3<AutoDiffXd> R, S;
   PolarDecompose<AutoDiffXd>(F, &R, &S);
-  Eigen::Matrix<AutoDiffXd, 9, 9> scaled_dRdF =
-      Eigen::Matrix<AutoDiffXd, 9, 9>::Zero();
+  math::internal::FourthOrderTensor<AutoDiffXd> scaled_dRdF;
   AutoDiffXd scale = 1.23;
   AddScaledRotationalDerivative<AutoDiffXd>(R, S, scale, &scaled_dRdF);
   for (int i = 0; i < 3; ++i) {
@@ -100,8 +99,7 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledCofactorMatrixDerivative) {
   const Matrix3<AutoDiffXd> A = MakeAutoDiffMatrix(3, 3);
   Matrix3<AutoDiffXd> C;
   CalcCofactorMatrix<AutoDiffXd>(A, &C);
-  Eigen::Matrix<AutoDiffXd, 9, 9> scaled_dCdA =
-      Eigen::Matrix<AutoDiffXd, 9, 9>::Zero();
+  math::internal::FourthOrderTensor<AutoDiffXd> scaled_dCdA;
   AutoDiffXd scale = 1.23;
   AddScaledCofactorMatrixDerivative<AutoDiffXd>(A, scale, &scaled_dCdA);
   for (int i = 0; i < 3; ++i) {
