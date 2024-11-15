@@ -87,7 +87,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           ? std::min(options.parallelism.num_threads(),
                      checker.num_allocated_contexts())
           : 1;
-
+  log()->info(
+        "IrisZo using {} threads.",
+        num_threads_to_use);
   RandomGenerator generator(options.random_seed);
 
   const Eigen::VectorXd starting_ellipsoid_center = starting_ellipsoid.center();
@@ -278,14 +280,13 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
             Eigen::VectorXd current_point = start_point;
 
-            // update particles via gradient descent and bisection
-            // find newton descent direction
-            Eigen::VectorXd grad = (current_point - current_ellipsoid_center);
-            double max_distance = grad.norm();
-            grad.normalize();
+            // update particles via bisection
+            Eigen::VectorXd curr_pt_lower = current_ellipsoid_center;
 
-            Eigen::VectorXd curr_pt_lower = current_point - max_distance * grad;
             // update current point using bisection
+            if(checker.num_allocated_contexts()<=thread_num){
+                throw std::runtime_error(fmt::format("number of threads exceeds maximum {}, {}", thread_num, checker.num_allocated_contexts()));
+            }
             if (!checker.CheckConfigCollisionFree(curr_pt_lower, thread_num)) {
               // directly set to lowerbound
               current_point = curr_pt_lower;
@@ -307,6 +308,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
             particles_in_collision_updated[point_idx] = current_point;
           };
+
       // update all particles in parallel
       DynamicParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
                                   number_particles_in_collision,
