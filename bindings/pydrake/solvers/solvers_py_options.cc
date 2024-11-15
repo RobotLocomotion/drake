@@ -22,12 +22,15 @@ void DefineSolversOptions(py::module m) {
             doc.CommonSolverOption.kPrintToConsole.doc)
         .value("kStandaloneReproductionFileName",
             CommonSolverOption::kStandaloneReproductionFileName,
-            doc.CommonSolverOption.kStandaloneReproductionFileName.doc);
+            doc.CommonSolverOption.kStandaloneReproductionFileName.doc)
+        .value("kMaxThreads", CommonSolverOption::kMaxThreads,
+            doc.CommonSolverOption.kMaxThreads.doc);
   }
 
   {
     // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
-    py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
+    py::class_<SolverOptions> cls(m, "SolverOptions", doc.SolverOptions.doc);
+    cls  // BR
         .def(py::init<>(), doc.SolverOptions.ctor.doc)
         .def("SetOption",
             py::overload_cast<const SolverId&, const std::string&, double>(
@@ -70,12 +73,15 @@ void DefineSolversOptions(py::module m) {
         .def("get_standalone_reproduction_file_name",
             &SolverOptions::get_standalone_reproduction_file_name,
             doc.SolverOptions.get_standalone_reproduction_file_name.doc)
+        .def("get_max_threads", &SolverOptions::get_max_threads,
+            doc.SolverOptions.get_max_threads.doc)
         .def("__repr__", [](const SolverOptions&) -> std::string {
           // This is a minimal implementation that serves to avoid displaying
           // memory addresses in pydrake docs and help strings. In the future,
           // we should enhance this to provide more details.
           return "<SolverOptions>";
         });
+    DefCopyAndDeepCopy(&cls);
   }
 }
 
