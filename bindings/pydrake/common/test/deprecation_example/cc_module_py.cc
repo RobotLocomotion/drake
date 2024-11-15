@@ -87,6 +87,15 @@ PYBIND11_MODULE(cc_module, m) {
         py::arg("x"), cls_doc.overload.doc_deprecated);
 #pragma GCC diagnostic pop
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("ParallelWork",
+        WrapDeprecated(
+            cls_doc.ParallelWork.doc_deprecated, &Class::ParallelWork),
+        py::call_guard<py::gil_scoped_release>(),
+        cls_doc.ParallelWork.doc_deprecated);
+#pragma GCC diagnostic pop
+
     // Example: A C++ function with an argument name that has been renamed.
     // In C++, we simply change the function signature name with no ill effect
     // on the public API. However, in Python, the argument name is part of the

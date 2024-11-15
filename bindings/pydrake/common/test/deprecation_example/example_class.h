@@ -1,6 +1,7 @@
 #pragma once
 
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -53,6 +54,9 @@ class ExampleCppClass {
     // names.
     unused(x);
   }
+
+  DRAKE_DEPRECATED("2038-01-19", "Do not use ParallelWork.")
+  void ParallelWork(Parallelism) {}
 
   // This will be bound with two spellings in Python:
   // - FunctionWithArgumentName(new_name) - not deprecated
