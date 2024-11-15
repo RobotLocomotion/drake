@@ -10,7 +10,10 @@ def rules_cc_repository(
     github_archive(
         name = name,
         repository = "bazelbuild/rules_cc",  # License: Apache-2.0,
-        commit = "0.0.9",
-        sha256 = "2037875b9a4456dce4a79d112a8ae885bbc4aad968e6587dca6e64f3a0900cdf",  # noqa
+        commit = "0.0.16",
+        sha256 = "bbf1ae2f83305b7053b11e4467d317a7ba3517a12cef608543c1b1c5bf48a4df",  # noqa
+        patches = [
+            ":patches/rm_protobuf.patch",
+        ],
         mirrors = mirrors,
     )
