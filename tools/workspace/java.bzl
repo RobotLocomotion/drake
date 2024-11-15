@@ -11,6 +11,7 @@ def _impl(repo_ctx):
 
     # Create the /jar/BUILD.bazel file.
     build_content = """\
+load("@drake//tools/skylark:java.bzl", "java_import")
 package(default_visibility = ["//visibility:public"])
 """
     if os_name in repo_ctx.attr.local_os_targets:
