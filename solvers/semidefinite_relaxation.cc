@@ -58,8 +58,7 @@ MatrixXDecisionVariable DoMakeSemidefiniteRelaxation(
       group_number);
 
   internal::DoLinearizeQuadraticCostsAndConstraints(
-      sub_prog, X, variables_to_sorted_indices, relaxation,
-      options.preserve_convex_quadratic_constraints);
+      sub_prog, X, variables_to_sorted_indices, relaxation);
 
   if (options.add_implied_linear_constraints) {
     internal::DoAddImpliedLinearConstraints(

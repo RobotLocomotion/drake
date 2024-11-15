@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
@@ -23,11 +24,8 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
             cls_doc.add_implied_linear_equality_constraints.doc)
         .def_readwrite("add_implied_linear_constraints",
             &SemidefiniteRelaxationOptions::add_implied_linear_constraints,
-            cls_doc.add_implied_linear_constraints.doc)
-        .def_readwrite("preserve_convex_quadratic_constraints",
-            &SemidefiniteRelaxationOptions::
-                preserve_convex_quadratic_constraints,
-            cls_doc.preserve_convex_quadratic_constraints.doc)
+            cls_doc.add_implied_linear_constraints.doc);
+    options
         .def("set_to_strongest",
             &SemidefiniteRelaxationOptions::set_to_strongest,
             cls_doc.set_to_strongest.doc)
@@ -37,19 +35,22 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
           return py::str(
               "SemidefiniteRelaxationOptions("
               "add_implied_linear_equality_constraints={}, "
-              "add_implied_linear_constraints={}, "
-              "preserve_convex_quadratic_constraints={})")
+              "add_implied_linear_constraints={})")
               .format(self.add_implied_linear_equality_constraints,
-                  self.add_implied_linear_constraints,
-                  self.preserve_convex_quadratic_constraints);
+                  self.add_implied_linear_constraints);
         });
+    options.def_readwrite("preserve_convex_quadratic_constraints",
+        &SemidefiniteRelaxationOptions::preserve_convex_quadratic_constraints,
+        cls_doc.preserve_convex_quadratic_constraints.doc);
+    DeprecateAttribute(options, "preserve_convex_quadratic_constraints",
+        cls_doc.preserve_convex_quadratic_constraints.doc);
   }
 
   m.def("MakeSemidefiniteRelaxation",
       py::overload_cast<const MathematicalProgram&,
           const SemidefiniteRelaxationOptions&>(
           &solvers::MakeSemidefiniteRelaxation),
-      py::arg("prog"), py::arg("options") = SemidefiniteRelaxationOptions(),
+      py::arg("prog"), py::arg("options") = SemidefiniteRelaxationOptions{},
       doc.MakeSemidefiniteRelaxation.doc_2args);
   m.def("MakeSemidefiniteRelaxation",
       py::overload_cast<const MathematicalProgram&,
@@ -57,7 +58,7 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
           const SemidefiniteRelaxationOptions&>(
           &solvers::MakeSemidefiniteRelaxation),
       py::arg("prog"), py::arg("variable_groups"),
-      py::arg("options") = SemidefiniteRelaxationOptions(),
+      py::arg("options") = SemidefiniteRelaxationOptions{},
       doc.MakeSemidefiniteRelaxation.doc_3args);
 }
 

@@ -23,21 +23,24 @@ struct SemidefiniteRelaxationOptions {
   /** Given a program with the linear constraints Ay ≤ b, sets whether to add
    * the implied linear constraints [A,-b]X[A,-b]ᵀ ≤ 0 to the semidefinite
    * relaxation.*/
-  bool add_implied_linear_equality_constraints = true;
+  bool add_implied_linear_equality_constraints{true};
 
   /** Given a program with the linear equality constraints Ay = b, sets whether
    * to add the implied linear constraints [A, -b]X = 0 to the semidefinite
    * relaxation.*/
-  bool add_implied_linear_constraints = true;
+  bool add_implied_linear_constraints{true};
 
-  // TODO(Alexandre.Amice): change this to true by default.
-
-  /** Given a program with convex quadratic constraints, sets whether
-   * equivalent rotated second order cone constraints are enforced on the last
-   * column of X in the semidefinite relaxation. This ensures that the last
-   * column of X, which are a relaxation of the original program's variables
-   * satisfy the original progam's quadratic constraints.*/
-  bool preserve_convex_quadratic_constraints = false;
+  /** 2025-04-01 DEPRECATION NOTICE: The convex quadratic constraints are
+   * already implied by a linear constraint that is always added to the
+   * semidefinite relaxation. Therefore, this flag has no effect on the solution
+   * to the overall program and will be deprecated on April 1st, 2025.
+   *
+   * Given a convex quadratic constraint xᵀP x + xᵀq + r <= 0 it is always
+   * stronger to add the linearized constraint Tr(PX) + xᵀq + r <= 0 (as is
+   * already done for all convex and nonconvex quadratic constraints), rendering
+   * the original convex quadratic constraints unnecessary.
+   * */
+  bool preserve_convex_quadratic_constraints{false};
 
   /** Configure the semidefinite relaxation options to provide the strongest
    * possible semidefinite relaxation that we currently support. This in general
@@ -46,7 +49,6 @@ struct SemidefiniteRelaxationOptions {
   void set_to_strongest() {
     add_implied_linear_equality_constraints = true;
     add_implied_linear_constraints = true;
-    preserve_convex_quadratic_constraints = true;
   }
 
   /** Configure the semidefinite relaxation options to provide the weakest
@@ -58,7 +60,6 @@ struct SemidefiniteRelaxationOptions {
   void set_to_weakest() {
     add_implied_linear_equality_constraints = false;
     add_implied_linear_constraints = false;
-    preserve_convex_quadratic_constraints = false;
   }
 };
 
