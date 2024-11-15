@@ -15,6 +15,9 @@
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/solvers/binding.h"
+#include "drake/solvers/constraint.h"
+#include "drake/solvers/cost.h"
 
 namespace drake {
 namespace planning {
@@ -322,12 +325,11 @@ class GcsTrajectoryOptimization final {
       return placeholder_edge_control_points_var_;
     }
 
-    /** Adds an arbitrary user-defined cost (in the form of a Expression or
-    Binding<Cost>) to every vertex in the subgraph. The cost should be defined
-    using the placeholder control point variables (obtained from
-    vertex_control_points()) and the placeholder time scaling variable (obtained
-    from vertex_duration()). This enables greater modeling freedom, but we
-    cannot guarantee a feasible solution for all possible costs.
+    /** Adds an arbitrary user-defined cost to every vertex in the subgraph. The
+    cost should be defined using the placeholder control point variables
+    (obtained from vertex_control_points()) and the placeholder time scaling
+    variable (obtained from vertex_duration()). This enables greater modeling
+    freedom, but we cannot guarantee a feasible solution for all possible costs.
 
     @throws std::exception if any variables besides those from @ref
     vertex_duration and @ref vertex_control_points are used.
@@ -336,24 +338,39 @@ class GcsTrajectoryOptimization final {
     Transcription::kMIP or Transcription::kRelaxation. Consider providing an
     appropriate "convex surrogate" that is supported within GraphOfConvexSets,
     or exclusively using the SolveConvexRestriction method. */
-    template <typename T>
     void AddVertexCost(
-        const T& e,
+        const symbolic::Expression& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
-            used_in_transcription = {
+            use_in_transcription = {
                 geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction});
+                    kRestriction}) {
+      DoAddVertexCost(e, use_in_transcription);
+    }
 
-    /** Adds an arbitrary user-defined constraint (in the form of a Formula or
-    Binding<Constraint>) to every vertex in the subgraph. The constraint should
-    be defined using the placeholder control point variables (obtained from
-    vertex_control_points()) and the placeholder time scaling variable (obtained
-    from vertex_duration()). This enables greater modeling freedom, but we
-    cannot guarantee a feasible solution for all possible constraints.
+    /** Convenience overload of AddVertexCost to take in a Binding<Cost>. */
+    void AddVertexCost(
+        const solvers::Binding<solvers::Cost>& binding,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction}) {
+      DoAddVertexCost(binding, use_in_transcription);
+    }
+
+    /** Adds an arbitrary user-defined constraint to every vertex in the
+    subgraph. The constraint should be defined using the placeholder control
+    point variables (obtained from vertex_control_points()) and the placeholder
+    time scaling variable (obtained from vertex_duration()). This enables
+    greater modeling freedom, but we cannot guarantee a feasible solution for
+    all possible constraints.
 
     @throws std::exception if any variables besides those from @ref
     vertex_duration and @ref vertex_control_points are used.
@@ -363,25 +380,40 @@ class GcsTrajectoryOptimization final {
     an appropriate "convex surrogate" that is supported within
     GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
     */
-    template <typename T>
     void AddVertexConstraint(
-        const T& e,
+        const symbolic::Formula& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
-            used_in_transcription = {
+            use_in_transcription = {
                 geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction});
+                    kRestriction}) {
+      DoAddVertexConstraint(e, use_in_transcription);
+    }
 
-    /** Adds an arbitrary user-defined cost (in the form of a Expression or
-    Binding<Cost>) to every internal edge within the subgraph. The cost should
-    be defined using the placeholder control point variables (obtained from
-    edge_constituent_vertex_control_points()) and the placeholder time scaling
-    variables (obtained from edge_constituent_vertex_durations()). This enables
-    greater modeling freedom, but we cannot guarantee a feasible solution for
-    all possible costs.
+    /** Convenience overload of AddVertexConstraint to take in a
+     * Binding<Constraint>. */
+    void AddVertexConstraint(
+        const solvers::Binding<solvers::Constraint>& binding,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction}) {
+      DoAddVertexConstraint(binding, use_in_transcription);
+    }
+
+    /** Adds an arbitrary user-defined cost to every internal edge within the
+    subgraph. The cost should be defined using the placeholder control point
+    variables (obtained from edge_constituent_vertex_control_points()) and the
+    placeholder time scaling variables (obtained from
+    edge_constituent_vertex_durations()). This enables greater modeling freedom,
+    but we cannot guarantee a feasible solution for all possible costs.
 
     @throws std::exception if any variables besides those from @ref
     edge_constituent_vertex_durations and @ref
@@ -391,17 +423,32 @@ class GcsTrajectoryOptimization final {
     Transcription::kMIP or Transcription::kRelaxation. Consider providing an
     appropriate "convex surrogate" that is supported within GraphOfConvexSets,
     or exclusively using the SolveConvexRestriction method. */
-    template <typename T>
     void AddEdgeCost(
-        const T& e,
+        const symbolic::Expression& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
-            used_in_transcription = {
+            use_in_transcription = {
                 geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction});
+                    kRestriction}) {
+      DoAddEdgeCost(e, use_in_transcription);
+    }
+
+    /** Convenience overload of AddEdgeCost to take in a Binding<Cost>. */
+    void AddEdgeCost(
+        const solvers::Binding<solvers::Cost>& binding,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction}) {
+      DoAddEdgeCost(binding, use_in_transcription);
+    }
 
     /** Adds an arbitrary user-defined constraint (in the form of a Formula or
     Binding<Constraint>) to every internal edge within the subgraph. The
@@ -420,17 +467,32 @@ class GcsTrajectoryOptimization final {
     an appropriate "convex surrogate" that is supported within
     GraphOfConvexSets, or exclusively using the SolveConvexRestriction method.
     */
-    template <typename T>
     void AddEdgeConstraint(
-        const T& e,
+        const symbolic::Formula& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
-            used_in_transcription = {
+            use_in_transcription = {
                 geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction});
+                    kRestriction}) {
+      DoAddEdgeConstraint(e, use_in_transcription);
+    }
+
+    /** Convenience overload of AddEdgeCost to take in a Binding<Constraint>. */
+    void AddEdgeConstraint(
+        const solvers::Binding<solvers::Constraint>& binding,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction}) {
+      DoAddEdgeConstraint(binding, use_in_transcription);
+    }
 
    private:
     /* Constructs a new subgraph and copies the regions. */
@@ -472,6 +534,38 @@ class GcsTrajectoryOptimization final {
     template <typename T>
     T SubstituteEdgePlaceholderVariables(
         T e, const geometry::optimization::GraphOfConvexSets::Edge& edge) const;
+
+    // Compatible with Expression and Binding<Cost>.
+    template <typename T>
+    void DoAddVertexCost(
+        const T& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription);
+
+    // Compatible with Formula and Binding<Constraint>.
+    template <typename T>
+    void DoAddVertexConstraint(
+        const T& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription);
+
+    // Compatible with Eexpression and Binding<Cost>.
+    template <typename T>
+    void DoAddEdgeCost(
+        const T& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription);
+
+    // Compatible with Formula and Binding<Constraint>.
+    template <typename T>
+    void DoAddEdgeConstraint(
+        const T& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription);
 
     const geometry::optimization::ConvexSets regions_;
     const int order_;
@@ -670,7 +764,7 @@ class GcsTrajectoryOptimization final {
         const symbolic::Expression& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
-            used_in_transcription = {
+            use_in_transcription = {
                 geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
@@ -698,7 +792,7 @@ class GcsTrajectoryOptimization final {
         const symbolic::Formula& e,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
-            used_in_transcription = {
+            use_in_transcription = {
                 geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
