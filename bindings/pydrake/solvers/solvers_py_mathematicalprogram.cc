@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -1345,27 +1346,36 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.SetSolverOptions.doc)
       .def("solver_options", &MathematicalProgram::solver_options,
           py_rvp::reference_internal,
-          doc.MathematicalProgram.solver_options.doc)
-      // TODO(m-chaturvedi) Add Pybind11 documentation.
+          doc.MathematicalProgram.solver_options.doc);
+// Deprecated 2025-05.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  prog_cls  // BR
       .def("GetSolverOptions",
-          [](MathematicalProgram& prog, SolverId solver_id) {
-            py::dict out;
-            py::object update = out.attr("update");
-            update(prog.GetSolverOptionsDouble(solver_id));
-            update(prog.GetSolverOptionsInt(solver_id));
-            update(prog.GetSolverOptionsStr(solver_id));
-            return out;
-          })
+          WrapDeprecated(
+              doc.MathematicalProgram.GetSolverOptionsDouble.doc_deprecated,
+              [](MathematicalProgram& prog, SolverId solver_id) {
+                py::dict out;
+                py::object update = out.attr("update");
+                update(prog.GetSolverOptionsDouble(solver_id));
+                update(prog.GetSolverOptionsInt(solver_id));
+                update(prog.GetSolverOptionsStr(solver_id));
+                return out;
+              }))
       .def("GetSolverOptions",
-          [](MathematicalProgram& prog, SolverType solver_type) {
-            py::dict out;
-            py::object update = out.attr("update");
-            const SolverId id = SolverTypeConverter::TypeToId(solver_type);
-            update(prog.GetSolverOptionsDouble(id));
-            update(prog.GetSolverOptionsInt(id));
-            update(prog.GetSolverOptionsStr(id));
-            return out;
-          })
+          WrapDeprecated(
+              doc.MathematicalProgram.GetSolverOptionsDouble.doc_deprecated,
+              [](MathematicalProgram& prog, SolverType solver_type) {
+                py::dict out;
+                py::object update = out.attr("update");
+                const SolverId id = SolverTypeConverter::TypeToId(solver_type);
+                update(prog.GetSolverOptionsDouble(id));
+                update(prog.GetSolverOptionsInt(id));
+                update(prog.GetSolverOptionsStr(id));
+                return out;
+              }));
+#pragma GCC diagnostic pop
+  prog_cls  // BR
       .def("generic_costs", &MathematicalProgram::generic_costs,
           doc.MathematicalProgram.generic_costs.doc)
       .def("generic_constraints", &MathematicalProgram::generic_constraints,

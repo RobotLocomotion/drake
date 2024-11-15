@@ -312,6 +312,10 @@ drake_cc_library(
     ],
     deps = [
         ":solver_id",
+        "//common:string_container",
+    ],
+    implementation_deps = [
+        "//common:overloaded",
     ],
 )
 

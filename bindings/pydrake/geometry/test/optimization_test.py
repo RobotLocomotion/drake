@@ -798,10 +798,10 @@ class TestGeometryOptimization(unittest.TestCase):
             ClpSolver.id(), "log_level", 3)
         options.parallelism = True
         self.assertIn("scaling",
-                      options.solver_options.GetOptions(ClpSolver.id()))
+                      options.solver_options.options[ClpSolver().id().name()])
         self.assertIn("log_level",
-                      options.restriction_solver_options.GetOptions(
-                          ClpSolver.id()))
+                      options.restriction_solver_options.options[
+                          ClpSolver().id().name()])
         self.assertIn("convex_relaxation", repr(options))
 
         spp = mut.GraphOfConvexSets()
@@ -1157,8 +1157,9 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertEqual(find_separation_options.solver_id, ScsSolver.id())
         self.assertFalse(find_separation_options.terminate_at_failure)
         self.assertEqual(
-            find_separation_options.solver_options.common_solver_options()[
-                CommonSolverOption.kPrintToConsole], 1)
+            find_separation_options.solver_options.options[
+                "Drake"]["kPrintToConsole"],
+            1)
 
         # FindSeparationCertificateGivenPolytopeOptions
         lagrangian_options = \
@@ -1191,8 +1192,9 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertFalse(
             lagrangian_options.terminate_at_failure)
         self.assertEqual(
-            lagrangian_options.solver_options.common_solver_options()[
-                CommonSolverOption.kPrintToConsole], 1)
+            lagrangian_options.solver_options.options[
+                "Drake"]["kPrintToConsole"],
+            1)
         self.assertTrue(
             lagrangian_options.ignore_redundant_C)
 
@@ -1230,8 +1232,9 @@ class TestCspaceFreePolytope(unittest.TestCase):
             polytope_options.solver_id,
             ScsSolver.id())
         self.assertEqual(
-            polytope_options.solver_options.common_solver_options()[
-                CommonSolverOption.kPrintToConsole], 1)
+            polytope_options.solver_options.options[
+                "Drake"]["kPrintToConsole"],
+            1)
         np.testing.assert_array_almost_equal(
             polytope_options.s_inner_pts, np.zeros(
                 (2, 1)), 1e-5)
