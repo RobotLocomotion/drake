@@ -1,4 +1,5 @@
 load("//tools/skylark:cc.bzl", "cc_library")
+load("//tools/skylark:java.bzl", "java_library")
 load("//tools/skylark:pathutils.bzl", "basename", "dirname", "join_paths")
 load("//tools/skylark:py.bzl", "py_library")
 load(
@@ -320,7 +321,7 @@ def lcm_java_library(
     if "@lcm//:lcm-java" not in deps:
         deps = deps + ["@lcm//:lcm-java"]
 
-    native.java_library(
+    java_library(
         name = name,
         srcs = outs,
         deps = deps,

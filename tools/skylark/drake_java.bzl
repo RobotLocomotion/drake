@@ -1,3 +1,5 @@
+load("//tools/skylark:java.bzl", "java_binary")
+
 MainClassInfo = provider()
 
 # Generate a launcher file to run installed java binaries
@@ -48,7 +50,7 @@ def drake_java_binary(
         for key, value in kwargs.items()
         if key == "visibility" or key == "jvm_flags"
     }
-    native.java_binary(
+    java_binary(
         name = name,
         main_class = main_class,
         **kwargs
