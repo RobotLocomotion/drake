@@ -548,13 +548,39 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
               return self.edge_constituent_vertex_control_points();
             },
             subgraph_edges_doc.edge_constituent_vertex_control_points.doc)
-        .def("AddEdgeCost", &Class::EdgesBetweenSubgraphs::AddEdgeCost,
+        .def("AddEdgeCost",
+            py::overload_cast<const symbolic::Expression&,
+                const std::unordered_set<
+                    geometry::optimization::GraphOfConvexSets::Transcription>&>(
+                &Class::EdgesBetweenSubgraphs::AddEdgeCost),
             py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
-            subgraph_edges_doc.AddEdgeCost.doc)
-        .def("AddEdgeConstraint",
-            &Class::EdgesBetweenSubgraphs::AddEdgeConstraint, py::arg("e"),
+            subgraph_edges_doc.AddEdgeCost.doc_2args_e_use_in_transcription)
+        .def("AddEdgeCost",
+            py::overload_cast<const solvers::Binding<solvers::Cost>&,
+                const std::unordered_set<
+                    geometry::optimization::GraphOfConvexSets::Transcription>&>(
+                &Class::EdgesBetweenSubgraphs::AddEdgeCost),
+            py::arg("binding"),
             py::arg("use_in_transcription") = all_transcriptions,
-            subgraph_edges_doc.AddEdgeConstraint.doc);
+            subgraph_edges_doc.AddEdgeCost
+                .doc_2args_binding_use_in_transcription)
+        .def("AddEdgeConstraint",
+            py::overload_cast<const symbolic::Formula&,
+                const std::unordered_set<
+                    geometry::optimization::GraphOfConvexSets::Transcription>&>(
+                &Class::EdgesBetweenSubgraphs::AddEdgeConstraint),
+            py::arg("e"), py::arg("use_in_transcription") = all_transcriptions,
+            subgraph_edges_doc.AddEdgeConstraint
+                .doc_2args_e_use_in_transcription)
+        .def("AddEdgeConstraint",
+            py::overload_cast<const solvers::Binding<solvers::Constraint>&,
+                const std::unordered_set<
+                    geometry::optimization::GraphOfConvexSets::Transcription>&>(
+                &Class::EdgesBetweenSubgraphs::AddEdgeConstraint),
+            py::arg("binding"),
+            py::arg("use_in_transcription") = all_transcriptions,
+            subgraph_edges_doc.AddEdgeConstraint
+                .doc_2args_binding_use_in_transcription);
 
     gcs_traj_opt  // BR
         .def(py::init<int, const std::vector<int>&>(), py::arg("num_positions"),

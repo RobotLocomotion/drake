@@ -769,7 +769,23 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction});
+                    kRestriction}) {
+      return DoAddEdgeCost(e, use_in_transcription);
+    }
+
+    /** Convenience overload of AddEdgeCost to take in a Binding<Cost>. */
+    void AddEdgeCost(
+        const solvers::Binding<solvers::Cost>& binding,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction}) {
+      return DoAddEdgeCost(binding, use_in_transcription);
+    }
 
     /** Adds an arbitrary user-defined constraint to every edge within the
     EdgesBetweenSubgraphs. The constraint should be defined using the
@@ -797,7 +813,24 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction});
+                    kRestriction}) {
+      DoAddEdgeConstraint(e, use_in_transcription);
+    }
+
+    /** Convenience overload of AddEdgeConstraint to take in a
+     * Binding<Constraint>. */
+    void AddEdgeConstraint(
+        const solvers::Binding<solvers::Constraint>& binding,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction}) {
+      DoAddEdgeConstraint(binding, use_in_transcription);
+    }
 
    private:
     EdgesBetweenSubgraphs(
@@ -841,6 +874,20 @@ class GcsTrajectoryOptimization final {
     template <typename T>
     T SubstituteEdgePlaceholderVariables(
         T e, const geometry::optimization::GraphOfConvexSets::Edge& edge) const;
+
+    template <typename T>
+    void DoAddEdgeCost(
+        const T& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription);
+
+    template <typename T>
+    void DoAddEdgeConstraint(
+        const T& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription);
 
     GcsTrajectoryOptimization& traj_opt_;
     const Subgraph& from_subgraph_;
