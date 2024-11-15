@@ -293,7 +293,12 @@ def _gather_transitive_hdrs_impl(ctx):
         )
     ])
 
-    return struct(files = result)
+    return [
+        DefaultInfo(
+            files = result,
+            runfiles = ctx.runfiles(transitive_files = result),
+        ),
+    ]
 
 _gather_transitive_hdrs = rule(
     attrs = {
