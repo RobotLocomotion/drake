@@ -995,6 +995,29 @@ class Joint : public MultibodyElement<T> {
                : std::make_pair(&frame_on_parent(), &frame_on_child());
   }
 
+  /// (Internal use only) Returns the mobilizer implementing this joint,
+  /// downcast to its specific type.
+  ///
+  /// @pre get_implementation().has_mobilizer() is true
+  /// @pre ConcreteMobilizer must exactly match the dynamic type of the
+  /// mobilizer associated with this Joint. This requirement is (only) checked
+  /// in Debug builds.
+  template <template <typename> class ConcreteMobilizer>
+  const ConcreteMobilizer<T>& get_mobilizer_downcast() const {
+    const internal::Mobilizer<T>* result = this->get_implementation().mobilizer;
+    DRAKE_DEMAND(result != nullptr);
+    DRAKE_ASSERT(typeid(*result) == typeid(ConcreteMobilizer<T>));
+    return static_cast<const ConcreteMobilizer<T>&>(*result);
+  }
+
+  template <template <typename> class ConcreteMobilizer>
+  ConcreteMobilizer<T>& get_mutable_mobilizer_downcast() {
+    internal::Mobilizer<T>* result = this->get_implementation().mobilizer;
+    DRAKE_DEMAND(result != nullptr);
+    DRAKE_ASSERT(typeid(*result) == typeid(ConcreteMobilizer<T>));
+    return static_cast<ConcreteMobilizer<T>&>(*result);
+  }
+
  private:
   // Make all other Joint<U> objects a friend of Joint<T> so they can make
   // Joint<ToScalar>::JointImplementation from CloneToScalar<ToScalar>().

@@ -133,7 +133,7 @@ class PrismaticJoint final : public Joint<T> {
   ///   The context of the MultibodyTree this joint belongs to.
   /// @returns The translation coordinate of `this` joint read from `context`.
   const T& get_translation(const Context<T>& context) const {
-    return get_mobilizer()->get_translation(context);
+    return get_mobilizer().get_translation(context);
   }
 
   /// Sets `context` so that the generalized coordinate corresponding to the
@@ -145,7 +145,7 @@ class PrismaticJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PrismaticJoint<T>& set_translation(Context<T>* context,
                                            const T& translation) const {
-    get_mobilizer()->SetTranslation(context, translation);
+    get_mobilizer().SetTranslation(context, translation);
     return *this;
   }
 
@@ -156,7 +156,7 @@ class PrismaticJoint final : public Joint<T> {
   /// @returns The rate of change of `this` joint's translation read from
   /// `context`.
   const T& get_translation_rate(const Context<T>& context) const {
-    return get_mobilizer()->get_translation_rate(context);
+    return get_mobilizer().get_translation_rate(context);
   }
 
   /// Sets the rate of change, in meters per second, of `this` joint's
@@ -170,7 +170,7 @@ class PrismaticJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PrismaticJoint<T>& set_translation_rate(
       Context<T>* context, const T& translation_dot) const {
-    get_mobilizer()->SetTranslationRate(context, translation_dot);
+    get_mobilizer().SetTranslationRate(context, translation_dot);
     return *this;
   }
 
@@ -212,7 +212,7 @@ class PrismaticJoint final : public Joint<T> {
 
   void set_random_translation_distribution(
       const symbolic::Expression& translation) {
-    get_mutable_mobilizer()->set_random_position_distribution(
+    get_mutable_mobilizer().set_random_position_distribution(
         Vector1<symbolic::Expression>{translation});
   }
 
@@ -244,7 +244,7 @@ class PrismaticJoint final : public Joint<T> {
     // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
     Eigen::Ref<VectorX<T>> tau_mob =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
   }
@@ -263,29 +263,29 @@ class PrismaticJoint final : public Joint<T> {
 
  private:
   int do_get_velocity_start() const override {
-    return get_mobilizer()->velocity_start_in_v();
+    return get_mobilizer().velocity_start_in_v();
   }
 
   int do_get_num_velocities() const override { return 1; }
 
   int do_get_position_start() const override {
-    return get_mobilizer()->position_start_in_q();
+    return get_mobilizer().position_start_in_q();
   }
 
   int do_get_num_positions() const override { return 1; }
 
   std::string do_get_position_suffix(int index) const override {
-    return get_mobilizer()->position_suffix(index);
+    return get_mobilizer().position_suffix(index);
   }
 
   std::string do_get_velocity_suffix(int index) const override {
-    return get_mobilizer()->velocity_suffix(index);
+    return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) override {
     if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(default_positions);
+      get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
@@ -330,23 +330,14 @@ class PrismaticJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::PrismaticMobilizer<T>* get_mobilizer() const {
-    // This implementation should always use a mobilizer.
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::PrismaticMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::PrismaticMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  const internal::PrismaticMobilizer<T>& get_mobilizer() const {
+    return this->template get_mobilizer_downcast<  // BR
+        internal::PrismaticMobilizer>();
   }
 
-  internal::PrismaticMobilizer<T>* get_mutable_mobilizer() {
-    // This implementation should always use a mobilizer.
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::PrismaticMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  internal::PrismaticMobilizer<T>& get_mutable_mobilizer() {
+    return this->template get_mutable_mobilizer_downcast<
+        internal::PrismaticMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.
