@@ -3,30 +3,13 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-# Make our package requirements (but not manual scripts) available to
-# downstream projects.
-exports_files([
-    "mac/binary_distribution/Brewfile",
-    "mac/binary_distribution/requirements.txt",
-    "mac/source_distribution/Brewfile",
-    "mac/source_distribution/Brewfile-doc-only",
-    "mac/source_distribution/Brewfile-maintainer-only",
-    "mac/source_distribution/requirements.txt",
-    "mac/source_distribution/requirements-maintainer-only.txt",
-    "mac/source_distribution/requirements-test-only.txt",
-    "ubuntu/binary_distribution/packages-jammy.txt",
-    "ubuntu/source_distribution/packages-jammy.txt",
-    "ubuntu/source_distribution/packages-jammy-clang.txt",
-    "ubuntu/source_distribution/packages-jammy-doc-only.txt",
-    "ubuntu/source_distribution/packages-jammy-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-jammy-test-only.txt",
-    "ubuntu/binary_distribution/packages-noble.txt",
-    "ubuntu/source_distribution/packages-noble.txt",
-    "ubuntu/source_distribution/packages-noble-clang.txt",
-    "ubuntu/source_distribution/packages-noble-doc-only.txt",
-    "ubuntu/source_distribution/packages-noble-maintainer-only.txt",
-    "ubuntu/source_distribution/packages-noble-test-only.txt",
-])
+# Make our prerequisites data (but not scripts) available to downstream
+# projects.
+exports_files(glob([
+    "**/Brewfile*",
+    "**/*.json",
+    "**/*.txt",
+]))
 
 filegroup(
     name = "deepnote",
@@ -51,19 +34,25 @@ install_files(
             "deepnote/install_xvfb",
             "deepnote/nginx-meshcat-proxy.conf",
             "deepnote/xvfb",
-            "ubuntu/binary_distribution/install_prereqs.sh",
-            "ubuntu/binary_distribution/packages-jammy.txt",
-            "ubuntu/binary_distribution/packages-noble.txt",
+            "ubuntu/install_prereqs",
+            "ubuntu/packages-jammy-binary.txt",
+            "ubuntu/packages-noble-binary.txt",
         ],
         "//conditions:default": [],
     }),
     strip_prefix = [
         "mac/binary_distribution",
-        "ubuntu/binary_distribution",
+        "ubuntu",
     ],
     rename = {
+        # TODO(jwnimmer-tri) This is only for macOS; once we rewrite macOS to
+        # also not be a bash script, we can remove this.
         "share/drake/setup/install_prereqs.sh": "install_prereqs",
     },
 )
 
-add_lint_tests()
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "ubuntu/install_prereqs",
+    ],
+)
