@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -57,6 +58,13 @@ map_var_to_index both as the input and as the output.
 involves repeated heap memory allocation. Consider using
 ExtractVariablesFromExpression.
 */
+void ExtractAndAppendVariablesFromExpression(
+    const symbolic::Expression& e, std::vector<Variable>* vars,
+    std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index);
+
+DRAKE_DEPRECATED("2024-05-01",
+                 "Use the overloaded function with std::vector<Variable> "
+                 "instead of VectorX<Variable>")
 void ExtractAndAppendVariablesFromExpression(
     const symbolic::Expression& e, VectorX<Variable>* vars,
     std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index);
