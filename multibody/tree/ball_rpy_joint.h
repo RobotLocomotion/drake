@@ -117,7 +117,7 @@ class BallRpyJoint final : public Joint<T> {
   /// @returns The angle coordinates of `this` joint stored in the `context`
   ///          ordered as θr, θp, θy.
   Vector3<T> get_angles(const Context<T>& context) const {
-    return get_mobilizer()->get_angles(context);
+    return get_mobilizer().get_angles(context);
   }
 
   /// Sets the `context` so that the generalized coordinates corresponding to
@@ -130,7 +130,7 @@ class BallRpyJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const BallRpyJoint<T>& set_angles(Context<T>* context,
                                     const Vector3<T>& angles) const {
-    get_mobilizer()->SetAngles(context, angles);
+    get_mobilizer().SetAngles(context, angles);
     return *this;
   }
 
@@ -138,7 +138,7 @@ class BallRpyJoint final : public Joint<T> {
   /// sampled from. See get_angles() for details on the angle representation.
   void set_random_angles_distribution(
       const Vector3<symbolic::Expression>& angles) {
-    get_mutable_mobilizer()->set_random_position_distribution(
+    get_mutable_mobilizer().set_random_position_distribution(
         Vector3<symbolic::Expression>{angles});
   }
 
@@ -152,7 +152,7 @@ class BallRpyJoint final : public Joint<T> {
   ///   parent frame F, expressed in F. Refer to this class's documentation for
   ///   further details and definitions of these frames.
   Vector3<T> get_angular_velocity(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_angular_velocity(context);
+    return get_mobilizer().get_angular_velocity(context);
   }
 
   /// Sets in `context` the state for `this` joint so that the angular velocity
@@ -166,7 +166,7 @@ class BallRpyJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const BallRpyJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                               const Vector3<T>& w_FM) const {
-    get_mobilizer()->SetAngularVelocity(context, w_FM);
+    get_mobilizer().SetAngularVelocity(context, w_FM);
     return *this;
   }
 
@@ -205,7 +205,7 @@ class BallRpyJoint final : public Joint<T> {
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const override {
     Eigen::Ref<VectorX<T>> t_BMo_F =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector3<T>& w_FM = get_angular_velocity(context);
     t_BMo_F = -this->GetDampingVector(context)[0] * w_FM;
@@ -213,29 +213,29 @@ class BallRpyJoint final : public Joint<T> {
 
  private:
   int do_get_velocity_start() const override {
-    return get_mobilizer()->velocity_start_in_v();
+    return get_mobilizer().velocity_start_in_v();
   }
 
   int do_get_num_velocities() const override { return 3; }
 
   int do_get_position_start() const override {
-    return get_mobilizer()->position_start_in_q();
+    return get_mobilizer().position_start_in_q();
   }
 
   int do_get_num_positions() const override { return 3; }
 
   std::string do_get_position_suffix(int index) const override {
-    return get_mobilizer()->position_suffix(index);
+    return get_mobilizer().position_suffix(index);
   }
 
   std::string do_get_velocity_suffix(int index) const override {
-    return get_mobilizer()->velocity_suffix(index);
+    return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) override {
     if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(default_positions);
+      get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
@@ -261,21 +261,13 @@ class BallRpyJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::RpyBallMobilizer<T>* get_mobilizer() const {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::RpyBallMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::RpyBallMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  const internal::RpyBallMobilizer<T>& get_mobilizer() const {
+    return this->template get_mobilizer_downcast<internal::RpyBallMobilizer>();
   }
 
-  internal::RpyBallMobilizer<T>* get_mutable_mobilizer() {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::RpyBallMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  internal::RpyBallMobilizer<T>& get_mutable_mobilizer() {
+    return this
+        ->template get_mutable_mobilizer_downcast<internal::RpyBallMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.

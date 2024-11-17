@@ -282,7 +282,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// See get_translation() for details on the translation representation.
   void set_random_translation_distribution(
       const Vector3<symbolic::Expression>& p_FM) {
-    get_mutable_mobilizer()->set_random_translation_distribution(p_FM);
+    get_mutable_mobilizer().set_random_translation_distribution(p_FM);
   }
 
   /// (Advanced) Sets the random distribution that the orientation of this joint
@@ -296,7 +296,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// common case of uniformly sampling rotations.
   void set_random_quaternion_distribution(
       const Eigen::Quaternion<symbolic::Expression>& q_FM) {
-    get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
+    get_mutable_mobilizer().set_random_quaternion_distribution(q_FM);
   }
 
   /// Sets the random distribution such that the orientation of this joint will
@@ -305,7 +305,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
     RandomGenerator generator;
     auto q_FM =
         math::UniformlyRandomQuaternion<symbolic::Expression>(&generator);
-    get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
+    get_mutable_mobilizer().set_random_quaternion_distribution(q_FM);
   }
 
   /// @}
@@ -398,7 +398,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   void do_set_default_positions(
       const VectorX<double>& default_positions) override {
     if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(default_positions);
+      get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
@@ -439,20 +439,13 @@ class QuaternionFloatingJoint final : public Joint<T> {
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
   const internal::QuaternionFloatingMobilizer<T>& get_mobilizer() const {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::QuaternionFloatingMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::QuaternionFloatingMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return *mobilizer;
+    return this->template get_mobilizer_downcast<
+        internal::QuaternionFloatingMobilizer>();
   }
 
-  internal::QuaternionFloatingMobilizer<T>* get_mutable_mobilizer() {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::QuaternionFloatingMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  internal::QuaternionFloatingMobilizer<T>& get_mutable_mobilizer() {
+    return this->template get_mutable_mobilizer_downcast<
+        internal::QuaternionFloatingMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.
