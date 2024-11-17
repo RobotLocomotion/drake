@@ -65,7 +65,7 @@ class WeldJoint final : public Joint<T> {
     // Since WeldJoint has no state, the start index has no meaning. However,
     // we let its decide the return value for this case (this has to do with
     // allowing zero sized Eigen blocks).
-    return get_mobilizer()->velocity_start_in_v();
+    return get_mobilizer().velocity_start_in_v();
   }
 
   int do_get_num_velocities() const override { return 0; }
@@ -74,17 +74,17 @@ class WeldJoint final : public Joint<T> {
     // Since WeldJoint has no state, the start index has no meaning. However,
     // we let it decide the return value for this case (this has to do with
     // allowing zero sized Eigen blocks).
-    return get_mobilizer()->position_start_in_q();
+    return get_mobilizer().position_start_in_q();
   }
 
   int do_get_num_positions() const override { return 0; }
 
   std::string do_get_position_suffix(int index) const override {
-    return get_mobilizer()->position_suffix(index);
+    return get_mobilizer().position_suffix(index);
   }
 
   std::string do_get_velocity_suffix(int index) const override {
-    return get_mobilizer()->velocity_suffix(index);
+    return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(const VectorX<double>&) override { return; }
@@ -111,21 +111,13 @@ class WeldJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::WeldMobilizer<T>* get_mobilizer() const {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::WeldMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::WeldMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  const internal::WeldMobilizer<T>& get_mobilizer() const {
+    return this->template get_mobilizer_downcast<internal::WeldMobilizer>();
   }
 
-  internal::WeldMobilizer<T>* get_mutable_mobilizer() {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::WeldMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  internal::WeldMobilizer<T>& get_mutable_mobilizer() {
+    return this
+        ->template get_mutable_mobilizer_downcast<internal::WeldMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.

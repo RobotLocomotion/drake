@@ -447,20 +447,13 @@ class RpyFloatingJoint final : public Joint<T> {
 
   // Returns the mobilizer implementing this joint.
   const internal::RpyFloatingMobilizer<T>& get_mobilizer() const {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const auto* mobilizer =
-        dynamic_cast<const internal::RpyFloatingMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return *mobilizer;
+    return this
+        ->template get_mobilizer_downcast<internal::RpyFloatingMobilizer>();
   }
 
   internal::RpyFloatingMobilizer<T>& get_mutable_mobilizer() {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::RpyFloatingMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return *mobilizer;
+    return this->template get_mutable_mobilizer_downcast<
+        internal::RpyFloatingMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.

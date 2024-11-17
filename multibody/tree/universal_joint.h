@@ -111,7 +111,7 @@ class UniversalJoint final : public Joint<T> {
   /// @returns The angle coordinates of `this` joint stored in the `context`
   ///          ordered as (θ₁, θ₂).
   Vector2<T> get_angles(const Context<T>& context) const {
-    return get_mobilizer()->get_angles(context);
+    return get_mobilizer().get_angles(context);
   }
 
   /// Sets the `context` so that the generalized coordinates corresponding to
@@ -123,7 +123,7 @@ class UniversalJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const UniversalJoint<T>& set_angles(Context<T>* context,
                                       const Vector2<T>& angles) const {
-    get_mobilizer()->SetAngles(context, angles);
+    get_mobilizer().SetAngles(context, angles);
     return *this;
   }
 
@@ -133,7 +133,7 @@ class UniversalJoint final : public Joint<T> {
   /// @returns The rates of change of `this` joint's angles as stored in the
   ///          `context`.
   Vector2<T> get_angular_rates(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_angular_rates(context);
+    return get_mobilizer().get_angular_rates(context);
   }
 
   /// Sets the rates of change, in radians per second, of this `this` joint's
@@ -145,7 +145,7 @@ class UniversalJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const UniversalJoint<T>& set_angular_rates(
       systems::Context<T>* context, const Vector2<T>& theta_dot) const {
-    get_mobilizer()->SetAngularRates(context, theta_dot);
+    get_mobilizer().SetAngularRates(context, theta_dot);
     return *this;
   }
 
@@ -169,7 +169,7 @@ class UniversalJoint final : public Joint<T> {
   /// angles.
   void set_random_angles_distribution(
       const Vector2<symbolic::Expression>& angles) {
-    get_mutable_mobilizer()->set_random_position_distribution(
+    get_mutable_mobilizer().set_random_position_distribution(
         Vector2<symbolic::Expression>{angles});
   }
 
@@ -192,7 +192,7 @@ class UniversalJoint final : public Joint<T> {
                        MultibodyForces<T>* forces) const override {
     DRAKE_DEMAND(joint_dof < 2);
     Eigen::Ref<VectorX<T>> tau_mob =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
   }
@@ -205,7 +205,7 @@ class UniversalJoint final : public Joint<T> {
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const override {
     Eigen::Ref<VectorX<T>> tau =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector2<T>& theta_dot = get_angular_rates(context);
     tau = -this->GetDampingVector(context)[0] * theta_dot;
@@ -213,29 +213,29 @@ class UniversalJoint final : public Joint<T> {
 
  private:
   int do_get_velocity_start() const override {
-    return get_mobilizer()->velocity_start_in_v();
+    return get_mobilizer().velocity_start_in_v();
   }
 
   int do_get_num_velocities() const override { return 2; }
 
   int do_get_position_start() const override {
-    return get_mobilizer()->position_start_in_q();
+    return get_mobilizer().position_start_in_q();
   }
 
   int do_get_num_positions() const override { return 2; }
 
   std::string do_get_position_suffix(int index) const override {
-    return get_mobilizer()->position_suffix(index);
+    return get_mobilizer().position_suffix(index);
   }
 
   std::string do_get_velocity_suffix(int index) const override {
-    return get_mobilizer()->velocity_suffix(index);
+    return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) override {
     if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(default_positions);
+      get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
@@ -261,21 +261,14 @@ class UniversalJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::UniversalMobilizer<T>* get_mobilizer() const {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::UniversalMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::UniversalMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  const internal::UniversalMobilizer<T>& get_mobilizer() const {
+    return this
+        ->template get_mobilizer_downcast<internal::UniversalMobilizer>();
   }
 
-  internal::UniversalMobilizer<T>* get_mutable_mobilizer() {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::UniversalMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  internal::UniversalMobilizer<T>& get_mutable_mobilizer() {
+    return this->template get_mutable_mobilizer_downcast<
+        internal::UniversalMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.
