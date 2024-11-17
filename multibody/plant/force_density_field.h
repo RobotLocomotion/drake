@@ -81,21 +81,10 @@ class ForceDensityField {
          invokes this function; force_density_field.h cannot do that for you.
    @pre tree_system != nullptr. */
   template <typename MultibodyPlantDeferred = MultibodyPlant<T>>
-  void DeclareSystemResources(internal::MultibodyTreeSystem<T>* tree_system) {
-    DRAKE_DEMAND(tree_system != nullptr);
-    /* `this` force field isn't already associated with a system. */
-    DRAKE_DEMAND(tree_system_ == nullptr);
-    tree_system_ = tree_system;
-    auto plant = dynamic_cast<MultibodyPlantDeferred*>(tree_system);
-    if (plant == nullptr) {
-      throw std::logic_error(
-          "The given MultibodyTreeSystem does not belong to a MultibodyPlant.");
-    }
-    /* Only cache entries and input ports are supported for now. More system
-     resources (e.g. parameters) can be declared if needed in the future. */
-    DeclareCacheEntries(plant);
-    DeclareInputPorts(plant);
-  }
+  void DeclareSystemResources(internal::MultibodyTreeSystem<T>* tree_system);
+  // N.B. The implementation of DeclareSystemResources is provided as part of
+  // the plant library in force_density_field_declare_system_resources.cc, to
+  // avoid a dependency cycle.
 #endif
 
  protected:

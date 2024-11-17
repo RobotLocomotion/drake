@@ -342,6 +342,11 @@ class MultibodyTree {
   const ForceElementType<T>& AddForceElement(
       std::unique_ptr<ForceElementType<T>> force_element);
 
+  // Helper function for AddForceElement that handles setting the gravity field.
+  // If the `force_element` is a UniformGravityFieldElement it is processed as
+  // such; if not, then this function is a no-op.
+  void MaybeSetUniformGravityFieldElement(ForceElement<T>* force_element);
+
   // Adds a new force element model of type `ForceElementType` to `this`
   // %MultibodyTree.  The arguments to this method `args` are forwarded to
   // `ForceElementType`'s constructor.
@@ -2104,44 +2109,61 @@ class MultibodyTree {
   // method is invoked.
   // @{
 
-  // SFINAE overload for Frame<T> elements.
-  template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<Frame<T>, MultibodyElement<T>>,
-                   const MultibodyElement<T>&>
-  get_variant(const MultibodyElement<Scalar>& element) const {
-    return get_frame_variant(element);
+  // Overload for Frame<T> elements.
+  template <typename Scalar>
+  const Frame<T>& get_variant(const Frame<Scalar>& element) const {
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    const FrameIndex frame_index = element.index();
+    return frames_.get_element(frame_index);
   }
 
-  // SFINAE overload for RigidBody<T> elements.
-  template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<RigidBody<T>, MultibodyElement<T>>,
-                   const MultibodyElement<T>&>
-  get_variant(const MultibodyElement<Scalar>& element) const {
-    return get_body_variant(element);
+  // Overload for RigidBody<T> elements.
+  template <typename Scalar>
+  const RigidBody<T>& get_variant(const RigidBody<Scalar>& element) const {
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    const BodyIndex body_index = element.index();
+    return rigid_bodies_.get_element(body_index);
   }
 
-  // SFINAE overload for Mobilizer<T> elements.
-  template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<Mobilizer<T>, MultibodyElement<T>>,
-                   const MultibodyElement<T>&>
-  get_variant(const MultibodyElement<Scalar>& element) const {
-    return get_mobilizer_variant(element);
+  // Overload for Mobilizer<T> elements.
+  template <typename Scalar>
+  const Mobilizer<T>& get_variant(const Mobilizer<Scalar>& element) const {
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    MobodIndex mobilizer_index = element.index();
+    DRAKE_DEMAND(mobilizer_index < num_mobilizers());
+    const Mobilizer<T>* result = mobilizers_[mobilizer_index].get();
+    DRAKE_DEMAND(result != nullptr);
+    return *result;
   }
 
-  // SFINAE overload for Mobilizer<T> elements.
-  template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<Mobilizer<T>, MultibodyElement<T>>,
-                   MultibodyElement<T>&>
-  get_mutable_variant(const MultibodyElement<Scalar>& element) {
-    return get_mutable_mobilizer_variant(element);
+  // Overload for Mobilizer<T> elements (mutable).
+  // TODO(russt): Add mutable accessors for other variants as needed.
+  template <typename Scalar>
+  Mobilizer<T>& get_mutable_variant(const Mobilizer<Scalar>& element) {
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    MobodIndex mobilizer_index = element.index();
+    DRAKE_DEMAND(mobilizer_index < num_mobilizers());
+    Mobilizer<T>* result = mobilizers_[mobilizer_index].get();
+    DRAKE_DEMAND(result != nullptr);
+    return *result;
   }
 
-  // SFINAE overload for Joint<T> elements.
-  template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<Joint<T>, MultibodyElement<T>>,
-                   const MultibodyElement<T>&>
-  get_variant(const MultibodyElement<Scalar>& element) const {
-    return get_joint_variant(element);
+  // Overload for Joint<T> elements.
+  template <typename Scalar>
+  const Joint<T>& get_variant(const Joint<Scalar>& element) const {
+    // TODO(amcastro-tri):
+    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
+    //   MultibodyTree. That will require the tree to have some sort of id.
+    const JointIndex joint_index = element.index();
+    return joints_.get_element(joint_index);
   }
   // @}
 
@@ -2913,93 +2935,6 @@ class MultibodyTree {
   // FromScalar) and add it to `this` tree (templated on T).
   template <typename FromScalar>
   void CloneActuatorAndAdd(const JointActuator<FromScalar>& actuator);
-
-  // Helper method to retrieve the corresponding Frame<T> variant to a Frame in
-  // a MultibodyTree variant templated on Scalar.
-  template <template <typename> class FrameType, typename Scalar>
-  const FrameType<T>& get_frame_variant(const FrameType<Scalar>& frame) const {
-    static_assert(std::is_base_of_v<Frame<T>, FrameType<T>>,
-                  "FrameType<T> must be a sub-class of Frame<T>.");
-    // TODO(amcastro-tri):
-    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
-    //   MultibodyTree. That will require the tree to have some sort of id.
-    const FrameIndex frame_index = frame.index();
-    const Frame<T>& my_frame = frames_.get_element(frame_index);
-    const FrameType<T>* frame_variant =
-        dynamic_cast<const FrameType<T>*>(&my_frame);
-    DRAKE_DEMAND(frame_variant != nullptr);
-    return *frame_variant;
-  }
-
-  // Helper method to retrieve the corresponding RigidBody<T> variant to a
-  // RigidBody in a MultibodyTree variant templated on Scalar.
-  template <template <typename> class BodyType, typename Scalar>
-  const BodyType<T>& get_body_variant(const BodyType<Scalar>& body) const {
-    static_assert(std::is_base_of_v<RigidBody<T>, BodyType<T>>,
-                  "BodyType<T> must be a sub-class of RigidBody<T>.");
-    // TODO(amcastro-tri):
-    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
-    //   MultibodyTree. That will require the tree to have some sort of id.
-    const BodyIndex body_index = body.index();
-    const RigidBody<T>& my_body = rigid_bodies_.get_element(body_index);
-    const BodyType<T>* body_variant =
-        dynamic_cast<const BodyType<T>*>(&my_body);
-    DRAKE_DEMAND(body_variant != nullptr);
-    return *body_variant;
-  }
-
-  // Helper method to retrieve the corresponding Mobilizer<T> variant to a
-  // Mobilizer in a MultibodyTree variant templated on Scalar.
-  template <template <typename> class MobilizerType, typename Scalar>
-  const MobilizerType<T>& get_mobilizer_variant(
-      const MobilizerType<Scalar>& mobilizer) const {
-    static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
-                  "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
-    // TODO(amcastro-tri):
-    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
-    //   MultibodyTree. That will require the tree to have some sort of id.
-    MobodIndex mobilizer_index = mobilizer.index();
-    DRAKE_DEMAND(mobilizer_index < num_mobilizers());
-    const MobilizerType<T>* mobilizer_variant =
-        dynamic_cast<const MobilizerType<T>*>(
-            mobilizers_[mobilizer_index].get());
-    DRAKE_DEMAND(mobilizer_variant != nullptr);
-    return *mobilizer_variant;
-  }
-
-  // TODO(russt): Add mutable accessors for other variants as needed.
-  template <template <typename> class MobilizerType, typename Scalar>
-  MobilizerType<T>& get_mutable_mobilizer_variant(
-      const MobilizerType<Scalar>& mobilizer) {
-    static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
-                  "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
-    // TODO(amcastro-tri):
-    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
-    //   MultibodyTree. That will require the tree to have some sort of id.
-    MobodIndex mobilizer_index = mobilizer.index();
-    DRAKE_DEMAND(mobilizer_index < num_mobilizers());
-    MobilizerType<T>* mobilizer_variant =
-        dynamic_cast<MobilizerType<T>*>(mobilizers_[mobilizer_index].get());
-    DRAKE_DEMAND(mobilizer_variant != nullptr);
-    return *mobilizer_variant;
-  }
-
-  // Helper method to retrieve the corresponding Joint<T> variant to a Joint
-  // in a MultibodyTree variant templated on Scalar.
-  template <template <typename> class JointType, typename Scalar>
-  const JointType<T>& get_joint_variant(const JointType<Scalar>& joint) const {
-    static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-    // TODO(amcastro-tri):
-    //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
-    //   MultibodyTree. That will require the tree to have some sort of id.
-    const JointIndex joint_index = joint.index();
-    const Joint<T>& my_joint = joints_.get_element(joint_index);
-    const JointType<T>* joint_variant =
-        dynamic_cast<const JointType<T>*>(&my_joint);
-    DRAKE_DEMAND(joint_variant != nullptr);
-    return *joint_variant;
-  }
 
   // If there exists a unique base body (a body whose parent is the world body)
   // in the model given by `model_instance`, return the index of that body.

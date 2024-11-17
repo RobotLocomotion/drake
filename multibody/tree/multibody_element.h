@@ -47,19 +47,9 @@ class MultibodyElement {
   ///
   /// @throws std::exception if there is no %MultibodyPlant owner.
   template <typename MultibodyPlantDeferred = MultibodyPlant<T>>
-  const MultibodyPlantDeferred& GetParentPlant() const {
-    HasParentTreeOrThrow();
-
-    const auto plant = dynamic_cast<const MultibodyPlantDeferred*>(
-        &get_parent_tree().tree_system());
-
-    if (plant == nullptr) {
-      throw std::logic_error(
-          "This multibody element was not owned by a MultibodyPlant.");
-    }
-
-    return *plant;
-  }
+  const MultibodyPlantDeferred& GetParentPlant() const;
+  // N.B. The implementation of GetParentPlant is provided as part of the plant
+  // library in multibody_element_getter.cc, to avoid a dependency cycle.
 
   /// Declares MultibodyTreeSystem Parameters at MultibodyTreeSystem::Finalize()
   /// time. NVI to the virtual method DoDeclareParameters().

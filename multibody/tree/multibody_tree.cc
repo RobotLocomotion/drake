@@ -150,6 +150,20 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
 }
 
 template <typename T>
+void MultibodyTree<T>::MaybeSetUniformGravityFieldElement(
+    ForceElement<T>* force_element) {
+  if (auto gravity_element =
+          dynamic_cast<UniformGravityFieldElement<T>*>(force_element)) {
+    if (gravity_field_ != nullptr) {
+      throw std::runtime_error(
+          "This model already contains a gravity field element. "
+          "Only one gravity field element is allowed per model.");
+    }
+    gravity_field_ = gravity_element;
+  }
+}
+
+template <typename T>
 void MultibodyTree<T>::RemoveJoint(const Joint<T>& joint) {
   DRAKE_MBT_THROW_IF_FINALIZED();
   joint.HasThisParentTreeOrThrow(this);

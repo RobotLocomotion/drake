@@ -35,10 +35,12 @@ class PlanarMobilizerTest : public MobilizerTester {
         std::make_unique<PlanarJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame(),
             Vector3d::Zero()));
+    mutable_mobilizer_ = const_cast<PlanarMobilizer<double>*>(mobilizer_);
   }
 
  protected:
   const PlanarMobilizer<double>* mobilizer_{nullptr};
+  PlanarMobilizer<double>* mutable_mobilizer_{nullptr};
 };
 
 TEST_F(PlanarMobilizerTest, CanRotateOrTranslate) {
@@ -99,14 +101,11 @@ TEST_F(PlanarMobilizerTest, ZeroState) {
 }
 
 TEST_F(PlanarMobilizerTest, DefaultPosition) {
-  PlanarMobilizer<double>* mutable_mobilizer =
-      &mutable_tree().get_mutable_variant(*mobilizer_);
-
   EXPECT_EQ(mobilizer_->get_translations(*context_), Vector2d::Zero());
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0.0);
 
   Vector3d new_default(.4, .5, .6);
-  mutable_mobilizer->set_default_position(new_default);
+  mutable_mobilizer_->set_default_position(new_default);
   mobilizer_->set_default_state(*context_, &context_->get_mutable_state());
 
   EXPECT_EQ(mobilizer_->get_translations(*context_), new_default.head(2));
@@ -117,24 +116,21 @@ TEST_F(PlanarMobilizerTest, RandomState) {
   RandomGenerator generator;
   std::uniform_real_distribution<symbolic::Expression> uniform;
 
-  PlanarMobilizer<double>* mutable_mobilizer =
-      &mutable_tree().get_mutable_variant(*mobilizer_);
-
   // Default behavior is to set to zero.
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_EQ(mobilizer_->get_translations(*context_), Vector2d::Zero());
   EXPECT_EQ(mobilizer_->get_translation_rates(*context_), Vector2d::Zero());
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0.0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0.0);
 
   // Set position to be random, but not velocity (yet).
-  mutable_mobilizer->set_random_position_distribution(
+  mutable_mobilizer_->set_random_position_distribution(
       Vector3<symbolic::Expression>(uniform(generator) + 1.0,
                                     uniform(generator) + 2.0,
                                     uniform(generator) + 3.0));
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_GE(mobilizer_->get_translations(*context_)[0], 1.0);
   EXPECT_LE(mobilizer_->get_translations(*context_)[0], 2.0);
   EXPECT_GE(mobilizer_->get_translations(*context_)[1], 2.0);
@@ -145,12 +141,12 @@ TEST_F(PlanarMobilizerTest, RandomState) {
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0.0);
 
   // Set the velocity distribution.  Now both should be random.
-  mutable_mobilizer->set_random_velocity_distribution(
+  mutable_mobilizer_->set_random_velocity_distribution(
       Vector3<symbolic::Expression>(uniform(generator) - 2.0,
                                     uniform(generator) - 3.0,
                                     uniform(generator) - 4.0));
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_GE(mobilizer_->get_translations(*context_)[0], 1.0);
   EXPECT_LE(mobilizer_->get_translations(*context_)[0], 2.0);
   EXPECT_GE(mobilizer_->get_translations(*context_)[1], 2.0);
@@ -170,8 +166,8 @@ TEST_F(PlanarMobilizerTest, RandomState) {
       mobilizer_->get_translation_rates(*context_);
   const double last_angle = mobilizer_->get_angle(*context_);
   const double last_angular_rates = mobilizer_->get_angular_rate(*context_);
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_NE(mobilizer_->get_translations(*context_), last_translations);
   EXPECT_NE(mobilizer_->get_translation_rates(*context_),
             last_translational_rates);

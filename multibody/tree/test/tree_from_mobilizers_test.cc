@@ -1119,10 +1119,12 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
   const MultibodyTree<AutoDiffXd>& tree_autodiff = *model_autodiff.get();
 
   const RevoluteMobilizer<AutoDiffXd>& shoulder_mobilizer_autodiff =
-      model_autodiff->get_variant(*shoulder_mobilizer_);
+      dynamic_cast<const RevoluteMobilizer<AutoDiffXd>&>(
+          model_autodiff->get_variant(*shoulder_mobilizer_));
 
   const RevoluteJoint<AutoDiffXd>& elbow_joint_autodiff =
-      model_autodiff->get_variant(*elbow_joint_);
+      dynamic_cast<const RevoluteJoint<AutoDiffXd>&>(
+          model_autodiff->get_variant(*elbow_joint_));
 
   const RigidBody<AutoDiffXd>& upper_link_autodiff =
       model_autodiff->get_variant(*upper_link_);
