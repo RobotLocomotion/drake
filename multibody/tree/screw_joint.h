@@ -136,7 +136,7 @@ class ScrewJoint final : public Joint<T> {
   /// @retval z The translation of `this` joint stored in the `context` as (z).
   ///           See class documentation for details.
   T get_translation(const Context<T>& context) const {
-    return get_mobilizer()->get_translation(context);
+    return get_mobilizer().get_translation(context);
   }
 
   /// Sets the `context` so that the translation of `this` joint equals to (z).
@@ -146,7 +146,7 @@ class ScrewJoint final : public Joint<T> {
   ///              as (z). See class documentation for details.
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translation(Context<T>* context, const T& z) const {
-    get_mobilizer()->SetTranslation(context, z);
+    get_mobilizer().SetTranslation(context, z);
     return *this;
   }
 
@@ -156,7 +156,7 @@ class ScrewJoint final : public Joint<T> {
   /// @retval theta The angle of `this` joint stored in the `context`. See class
   ///               documentation for details.
   const T& get_rotation(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_angle(context);
+    return get_mobilizer().get_angle(context);
   }
 
   /// Sets the `context` so that the angle θ of `this` joint equals `theta`.
@@ -167,7 +167,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_rotation(systems::Context<T>* context,
                                     const T& theta) const {
-    get_mobilizer()->SetAngle(context, theta);
+    get_mobilizer().SetAngle(context, theta);
     return *this;
   }
 
@@ -177,7 +177,7 @@ class ScrewJoint final : public Joint<T> {
   /// @retval vz The translational velocity of `this` joint as stored in the
   ///            `context`.
   T get_translational_velocity(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_translation_rate(context);
+    return get_mobilizer().get_translation_rate(context);
   }
 
   /// Sets the translational velocity, in meters per second, of this `this`
@@ -189,7 +189,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_translational_velocity(systems::Context<T>* context,
                                                   const T& vz) const {
-    get_mobilizer()->SetTranslationRate(context, vz);
+    get_mobilizer().SetTranslationRate(context, vz);
     return *this;
   }
 
@@ -201,7 +201,7 @@ class ScrewJoint final : public Joint<T> {
   /// @retval theta_dot The rate of change of `this` joint's angle θ as
   ///                   stored in the `context`.
   const T& get_angular_velocity(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_angular_rate(context);
+    return get_mobilizer().get_angular_rate(context);
   }
 
   /// Sets the rate of change, in radians per second, of `this` joint's angle
@@ -214,7 +214,7 @@ class ScrewJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const ScrewJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                             const T& theta_dot) const {
-    get_mobilizer()->SetAngularRate(context, theta_dot);
+    get_mobilizer().SetAngularRate(context, theta_dot);
     return *this;
   }
 
@@ -273,7 +273,7 @@ class ScrewJoint final : public Joint<T> {
   /// on the definition of the position and angle.
   void set_random_pose_distribution(
       const Vector1<symbolic::Expression>& theta) {
-    get_mutable_mobilizer()->set_random_position_distribution(theta);
+    get_mutable_mobilizer().set_random_position_distribution(theta);
   }
 
  private:
@@ -294,7 +294,7 @@ class ScrewJoint final : public Joint<T> {
                        MultibodyForces<T>* forces) const final {
     DRAKE_DEMAND(joint_dof < 1);
     Eigen::Ref<VectorX<T>> tau_mob =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
   }
@@ -307,36 +307,36 @@ class ScrewJoint final : public Joint<T> {
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const final {
     Eigen::Ref<VectorX<T>> tau =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const T& v_angular = get_angular_velocity(context);
     tau[0] -= this->GetDamping(context) * v_angular;
   }
 
   int do_get_velocity_start() const final {
-    return get_mobilizer()->velocity_start_in_v();
+    return get_mobilizer().velocity_start_in_v();
   }
 
   int do_get_num_velocities() const final { return 1; }
 
   int do_get_position_start() const final {
-    return get_mobilizer()->position_start_in_q();
+    return get_mobilizer().position_start_in_q();
   }
 
   int do_get_num_positions() const final { return 1; }
 
   std::string do_get_position_suffix(int index) const override {
-    return get_mobilizer()->position_suffix(index);
+    return get_mobilizer().position_suffix(index);
   }
 
   std::string do_get_velocity_suffix(int index) const override {
-    return get_mobilizer()->velocity_suffix(index);
+    return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) final {
     if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(default_positions);
+      get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
@@ -370,21 +370,13 @@ class ScrewJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::ScrewMobilizer<T>* get_mobilizer() const {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::ScrewMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::ScrewMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  const internal::ScrewMobilizer<T>& get_mobilizer() const {
+    return this->template get_mobilizer_downcast<internal::ScrewMobilizer>();
   }
 
-  internal::ScrewMobilizer<T>* get_mutable_mobilizer() {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::ScrewMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  internal::ScrewMobilizer<T>& get_mutable_mobilizer() {
+    return this
+        ->template get_mutable_mobilizer_downcast<internal::ScrewMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.
