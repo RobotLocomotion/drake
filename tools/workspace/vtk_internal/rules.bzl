@@ -89,7 +89,7 @@ def _vtk_cc_module_impl(
         subdir + "/**/*.txx.in",
     ], exclude = [
         "**/test*",
-    ] + hdrs_glob_exclude)
+    ] + hdrs_glob_exclude, allow_empty = True)
     gen_hdrs = [
         # We want to start from, e.g., "Common/Core/vtkDebug.h.in" and generate
         # "gen/Common/Core/vtkDebug.h" with CMake substitutions applied, which
