@@ -1708,28 +1708,174 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
                               ".*No joint with index.*registered.*removed.");
 }
 
-// Weld a body to World but with the body as the parent and World as the
-// child. This is fine but must be implemented with a reversed Weld
-// mobilizer that specifies World as the inboard body. Drake doesn't support
-// that yet.
-// TODO(sherm1) Remove this restriction and fix the test.
+// Weld a body to World, but with the body as the parent and World as the child.
+// This is simple for a Drake user, but for Drake internal developers, this body
+// (parent)-to-World (child) weld is implemented with a reversed Weld mobilizer
+// that specifies inboard-to-outboard order as World-to-body. We'll do several
+// tests here, in increasing difficulty of hand-computing the right answers, and
+// we'll include a forward (World as parent) case that shows how the results
+// must change between that and the reverse case. Reaction forces are the tricky
+// part since we are required to report them in the _joint's_ child frame (in
+// this case a frame on World) but internally they are calculated on the
+// outboard body of the mobilizer.
 GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
-  // This test expects that the following model has a world body and a pair of
-  // welded-together bodies.
+  // We'll be looking for large changes: sign reversal, shift by a meter,
+  // rotate 90°. Just need to avoid roundoff troubles.
+  constexpr double kTolerance = 16 * std::numeric_limits<double>::epsilon();
+  const double g = UniformGravityFieldElement<double>::kDefaultStrength;
+
+  // We need a plant to start with but we aren't using anything that depends
+  // on this one specifically. We'll add some bodies and joints that reflect
+  // the conditions we want to test.
   const std::string sdf_url =
       "package://drake/multibody/plant/test/split_pendulum.sdf";
   MultibodyPlant<double> plant(0.0);
   Parser(&plant).AddModelsFromUrl(sdf_url);
 
-  // Add a new body, and weld it in the wrong direction using `WeldFrames`.
-  const RigidBody<double>& extra = plant.AddRigidBody(
-      "extra", default_model_instance(), SpatialInertia<double>::NaN());
-  plant.WeldFrames(extra.body_frame(), plant.world_frame());
+  // Coincident frames test: We expect the sign of the reaction force to account
+  // for the possibility that a Drake user may create a "weird" weld joint with
+  // parent=body, child=World (or in general, any case where the parent ends up
+  // more-outboard than the child after toplogical analysis). Internally, the
+  // mobilizer stores this with more sensible topological order, i.e.,
+  // inboard=World and outboard=body.
+  const RigidBody<double>& parent_body_coincident =
+      plant.AddRigidBody("parent_body_coincident", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  // Create a reverse weld (parent=body, child=World) in which the all the
+  // transforms are identity, i.e., X_PJp, X_CJc, X_JpJc are all identity.
+  const RigidTransform<double> X_Identity;
+  const Joint<double>& reverse_weld_coincident = plant.AddJoint<WeldJoint>(
+      "reverse_weld_coincident", parent_body_coincident, X_Identity,
+      plant.world_body(), X_Identity, X_Identity);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.Finalize(),
-                              ".*Finalize.*: parent/child ordering.*"
-                              "Joint extra_welds_to_world.*WorldModelInstance.*"
-                              "would have to be reversed.*");
+  // General test: Uses all non-identity rotations and non-zero shifts to ensure
+  // reaction torque/forces get properly re-expressed and shifted for the
+  // reverse case. See multibody_plant_test_reverse_weld.png in this test
+  // directory for the 2D schematic for this test. The 2D schematic has (from
+  // left-to-right) parent body frame P, joint frame Jp, joint frame Jc, child
+  // body frame C. Each of the frame origins are 1 meter apart along a
+  // horizontal line that is parallel to the unit vector Px (fixed in frame P).
+  // Hence, the position vectors locating the frame origins are p_PJp = Px,
+  // p_JpJc = Px, p_JcC = Px. The orientation of frame Jp in frame P is
+  // characterized by a right-hand rotation of π/4 about Py (fixed in frame P).
+  // Similarly frame Jc in Jp is π/4 about Py, and frame C in Jc is π/2 about
+  // Py. Hence the "y" basis vector of each frame is in the same direction (Py =
+  // Jpy = Jcy = Cy). Note: Frames translate in the Px direction whereas frames
+  // rotate about Py to simplify by-hand calculations, but not to so simple
+  // (e.g., with both translation and rotation in the Px direction) so as to
+  // hide frame problems. The 2D schematic shows the unit vector Pz (fixed in
+  // frame P) as vertically upward, which is opposite gravity when P=World
+  // (typical case). However, Pz is in the gravity direction when P=child
+  // (reverse case).
+
+  // Rotation matrix relating frames.
+  const RotationMatrixd R_PJp(RollPitchYawd(0, M_PI / 4, 0));
+  const RotationMatrixd R_JpJc(RollPitchYawd(0, M_PI / 4, 0));
+  const RotationMatrixd R_JcC(RollPitchYawd(0, M_PI / 2, 0));
+
+  // Position vectors relating frame origins are a unit vector apart.
+  const Vector3d Px_P(1, 0, 0);  // Px unit vector (expressed in frame P).
+  const RotationMatrixd R_JpP = R_PJp.inverse();
+  const Vector3d Px_Jp = R_JpP * Px_P;  // Px unit vector (expressed in Jp).
+  const RotationMatrixd R_JcJp = R_JpJc.inverse();
+  const Vector3d Px_Jc = R_JcJp * Px_Jp;  // Px unit vector, expressed in Jc.
+
+  // Rigid transforms relating frames.
+  const RigidTransformd X_PJp(R_PJp, Px_P);
+  const RigidTransformd X_JpJc(R_JpJc, Px_Jp);
+  const RigidTransformd X_JcC(R_JcC, Px_Jc);
+  const RigidTransformd X_CJc = X_JcC.inverse();
+
+  // Weld a body with parent=World, child=child_body_general. Mobilizer
+  // inboard/outboard ordering will match (inboard=World, outboard=child). Joint
+  // reaction torque/force is reported on child body at Jc, expressed in Jc.
+  const RigidBody<double>& child_body_general =
+      plant.AddRigidBody("child_body_general", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  auto& typical_weld_general =
+      plant.AddJoint<WeldJoint>("typical_weld_general", plant.world_body(),
+                                X_PJp, child_body_general, X_CJc, X_JpJc);
+
+  // Weld a body with parent=parent_body_general, child=World. Mobilizer
+  // inboard/outboard ordering is reversed (inboard=parent, outboard=World).
+  // Joint reaction torque/force is reported on World at Jc (fixed to World).
+  const RigidBody<double>& reverse_body_general =
+      plant.AddRigidBody("reverse_body_general", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  auto& reverse_weld_general =
+      plant.AddJoint<WeldJoint>("reverse_weld_general", reverse_body_general,
+                                X_PJp, plant.world_body(), X_CJc, X_JpJc);
+
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+
+  // This port returns F_CJc_Jc reactions on each joint's child body, indexed
+  // by joint ordinal.
+  const std::vector<SpatialForce<double>>& reaction_forces =
+      plant.get_reaction_forces_output_port()
+          .Eval<std::vector<SpatialForce<double>>>(*context);
+
+  // Coincident test case with reversed weld: Since child = World, the force on
+  // World at Jc (which is coincident will all other frames), expressed in Jc
+  // is a downward force of m*g (with mass m = 1 kg).
+  Vector3d torque_expected(0, 0, 0), force_expected(0, 0, -g);
+  EXPECT_TRUE(CompareMatrices(
+      reaction_forces[reverse_weld_coincident.ordinal()].get_coeffs(),
+      SpatialForce<double>(torque_expected, force_expected).get_coeffs(),
+      kTolerance));
+
+  // General test with typical weld (parent = World, child = body). After
+  // drawing the 2D schematic (see system description above), it is clear that
+  // Jc's +x unit vector points in the World's -z direction. The joint reaction
+  // force on the child body is m*g in the direction of Jc's -x unit vector.
+  // The joint reaction torque on the child body at Jc is calculated in view of
+  // the gravity force m*g (with mass m = 1 kg) acting at Co (child body C's
+  // center of mass), which is 1 meter from Jc.
+  torque_expected = Vector3d(0, -g, 0);
+  force_expected = Vector3d(-g, 0, 0);
+  EXPECT_TRUE(CompareMatrices(
+      reaction_forces[typical_weld_general.ordinal()].get_coeffs(),
+      SpatialForce<double>(torque_expected, force_expected).get_coeffs(),
+      kTolerance));
+
+  // General test with reversed weld (parent = body, child = World). After
+  // viewing the 2D schematic (see description above), it is clear that Jc's +x
+  // unit vector points in the World's +z direction. To calculate the joint
+  // force on child=World at Jc, it helps to see that the child's force on joint
+  // & parent=body at Jc is m*g in Jc's +x direction. By action/reaction the
+  // joint force on the child=World at Jc is m*g in Jc's -x direction. To
+  // calculate the joint torque on the child=World at Jc, it helps to see that
+  // the child's torque on joint & parent=body at Jc arises from a 2 meter
+  // moment arm that yields 2*m*g in Jc's -y direction. By action/reaction, the
+  // joint torque on the child=World at Jc is 2*m*g in Jc's +y direction.
+  torque_expected = Vector3d(0, 2 * g, 0);
+  force_expected = Vector3d(-g, 0, 0);
+  EXPECT_TRUE(CompareMatrices(
+      reaction_forces[reverse_weld_general.ordinal()].get_coeffs(),
+      SpatialForce<double>(torque_expected, force_expected).get_coeffs(),
+      kTolerance));
+}
+
+GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
+  // We need a plant to start with but we aren't using anything that depends
+  // on this one specifically.
+  const std::string sdf_url =
+      "package://drake/multibody/plant/test/split_pendulum.sdf";
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelsFromUrl(sdf_url);
+
+  // Add a body with parent=reverse_body, child=world. This is only allowed
+  // for Weld joints currently.
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  plant.AddJoint<RevoluteJoint>("reverse_revolute", reverse_body, {},
+                                plant.world_body(), {}, Vector3d(1, 0, 0));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.Finalize(),
+      ".*Finalize.*parent/child ordering.*revolute joint reverse_revolute"
+      ".*reversed.*");
 }
 
 // Verifies exact set of output ports we expect to be a direct feedthrough of
