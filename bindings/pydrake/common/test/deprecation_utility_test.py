@@ -12,6 +12,7 @@ For more details, please review the following documentation:
 
 import unittest
 
+from pydrake.common import Parallelism
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 import deprecation_example.cc_module as mut_cc
@@ -55,6 +56,11 @@ class TestDeprecationExample(unittest.TestCase):
         with catch_drake_warnings(expected_count=1) as w:
             obj.overload(0)
             self.assertIn("Do not use overload(int)", str(w[0].message))
+
+    def test_cc_wrap_deprecated_for_parallelism(self):
+        obj = mut_cc.ExampleCppClass()
+        with catch_drake_warnings(expected_count=1) as w:
+            obj.ParallelWork(Parallelism.Max())
 
     def test_cc_wrap_deprecated_for_old_kwarg(self):
         obj = mut_cc.ExampleCppClass()
