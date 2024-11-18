@@ -1008,12 +1008,6 @@ void Subgraph::DoAddEdgeConstraint(
   }
 }
 
-template void Subgraph::DoAddEdgeConstraint<Formula>(
-    const Formula& e, const std::unordered_set<Transcription>& transcriptions);
-template void Subgraph::DoAddEdgeConstraint<Binding<Constraint>>(
-    const Binding<Constraint>& e,
-    const std::unordered_set<Transcription>& transcriptions);
-
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace, GcsTrajectoryOptimization* traj_opt,
