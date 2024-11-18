@@ -1,6 +1,7 @@
 default-jre
 jupyter-notebook
 libblas-dev
+libegl1
 libeigen3-dev
 libgfortran5
 libglib2.0-0

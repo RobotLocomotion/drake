@@ -48,9 +48,7 @@ install_files(
         ],
         "//tools/cc_toolchain:linux": [
             "deepnote/install_nginx",
-            "deepnote/install_xvfb",
             "deepnote/nginx-meshcat-proxy.conf",
-            "deepnote/xvfb",
             "ubuntu/binary_distribution/install_prereqs.sh",
             "ubuntu/binary_distribution/packages-jammy.txt",
             "ubuntu/binary_distribution/packages-noble.txt",
