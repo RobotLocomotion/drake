@@ -20,17 +20,6 @@ drake_py_library(
     deps = ["//tools:module_py"],
 )
 
-# TODO(jwnimmer-tri) This probably deserves to live in drake/common, since it
-# should probably be widely used, but we'll wait until we have more evidence
-# before promoting it.
-drake_py_library(
-    name = "find_data",
-    srcs = ["find_data.py"],
-    deps = [
-        ":module_py",
-    ],
-)
-
 drake_py_library(
     name = "util",
     srcs = ["util.py"],
@@ -49,9 +38,9 @@ drake_py_binary(
         "@buildifier",
     ],
     deps = [
-        ":find_data",
         ":module_py",
         ":util",
+        "@rules_python//python/runfiles",
     ],
 )
 
@@ -137,12 +126,6 @@ drake_py_binary(
 drake_py_unittest(
     name = "buildifier_test",
     data = [":buildifier"],
-)
-
-drake_py_unittest(
-    name = "find_data_test",
-    data = ["test/find_data_test.txt"],
-    deps = [":find_data"],
 )
 
 drake_py_unittest(
