@@ -61,6 +61,10 @@ class IpoptSolver final : public SolverBase {
   IpoptSolver();
   ~IpoptSolver() final;
 
+  /// Changes the default value for the "linerar_solver" solver option.
+  /// @experimental
+  void SetDefaultLinearSolver(std::string linear_solver);
+
   /// @name Static versions of the instance methods with similar names.
   //@{
   static SolverId id();
@@ -76,6 +80,8 @@ class IpoptSolver final : public SolverBase {
   void DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
                 internal::SpecificOptions*,
                 MathematicalProgramResult*) const final;
+
+  std::string default_linear_solver_;
 };
 
 }  // namespace solvers

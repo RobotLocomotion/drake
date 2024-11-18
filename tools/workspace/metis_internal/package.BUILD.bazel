@@ -1,0 +1,32 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "metis",
+    srcs = glob(["libmetis/*.c"], allow_empty = False),
+    hdrs = glob(["libmetis/*.h"], allow_empty = False) + ["include/metis.h"],
+    includes = ["include"],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+    copts = [
+        "-fno-openmp",
+        "-fvisibility=hidden",
+        "-w",
+    ],
+    deps = [
+        "@gklib_internal//:gklib",
+    ],
+)
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    visibility = ["//visibility:public"],
+)

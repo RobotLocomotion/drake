@@ -11,6 +11,7 @@ load(
     "//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
+load("//tools/skylark:drake_sh.bzl", "drake_sh_test")
 load(
     "//tools/skylark:test_tags.bzl",
     "gurobi_test_tags",
@@ -1513,6 +1514,27 @@ drake_cc_googletest(
         "//tools:no_ipopt": [
         ],
     }),
+)
+
+config_setting(
+    name = "osx",
+    constraint_values = ["@platforms//os:osx"],
+)
+
+# Re-run ipopt_solver_test, but with the SPRAL linear solver.
+drake_sh_test(
+    name = "ipopt_solver_spral_test",
+    srcs = [":ipopt_solver_test"],
+    args = select({
+        ":osx": [
+            # SPRAL is a Linux-only feature.
+            "--gtest_filter=-*",
+        ],
+        "//conditions:default": [
+            "--linear_solver=spral",
+        ],
+    }),
+    data = [":ipopt_solver_test"],
 )
 
 drake_cc_googletest(
