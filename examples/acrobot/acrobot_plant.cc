@@ -140,8 +140,9 @@ void AcrobotPlant<T>::DoCalcImplicitTimeDerivativesResidual(
 template <typename T>
 T AcrobotPlant<T>::DoCalcKineticEnergy(
     const systems::Context<T>& context) const {
-  const AcrobotState<T>& state = dynamic_cast<const AcrobotState<T>&>(
-      context.get_continuous_state_vector());
+  const auto& state_vec = context.get_continuous_state_vector();
+  DRAKE_ASSERT(typeid(state_vec) == typeid(const AcrobotState<T>));
+  const auto& state = static_cast<const AcrobotState<T>&>(state_vec);
 
   Matrix2<T> M = MassMatrix(context);
   Vector2<T> qdot(state.theta1dot(), state.theta2dot());

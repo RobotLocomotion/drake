@@ -771,8 +771,10 @@ template <typename T>
 EventStatus LeafSystem<T>::DispatchPublishHandler(
     const Context<T>& context,
     const EventCollection<PublishEvent<T>>& events) const {
-  const LeafEventCollection<PublishEvent<T>>& leaf_events =
-     dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
+  DRAKE_ASSERT(typeid(events) ==
+               typeid(const LeafEventCollection<PublishEvent<T>>));
+  auto& leaf_events =
+      static_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
   // This function shouldn't have been called if no publish events.
   DRAKE_DEMAND(leaf_events.HasEvents());
 
