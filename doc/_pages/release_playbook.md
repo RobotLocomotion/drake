@@ -230,11 +230,9 @@ the email address associated with your github account.
       with your github account; otherwise, the file is read-only).
       1. For reference, the typical content is thus:
          ```
-         FROM robotlocomotion/drake:jammy-20230518
+         FROM robotlocomotion/drake:jammy-20241114
 
-         RUN apt-get -q update && apt-get -q install -y --no-install-recommends nginx-light xvfb && apt-get -q clean
-
-         ENV DISPLAY=:1
+         RUN apt-get -q update && apt-get -q install -y --no-install-recommends nginx-light && apt-get -q clean
 
          ENV PATH="/opt/drake/bin:${PATH}" \
            PYTHONPATH="/opt/drake/lib/python3.10/site-packages:${PYTHONPATH}"
@@ -258,9 +256,7 @@ the email address associated with your github account.
    ```
    %%bash
    /opt/drake/share/drake/setup/deepnote/install_nginx
-   /opt/drake/share/drake/setup/deepnote/install_xvfb
    ```
-   In case the display server is not working later on, this might be a good place to double-check.
    For Jammy we also needed to add ``cd /work`` atop the stanza that checks for
    ``requirements.txt`` to get it working again.
 5. Copy the updated tutorials from the pinned Dockerfile release
