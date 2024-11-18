@@ -176,6 +176,7 @@ drake_cc_googletest(
         "//systems/sensors:image_io",
         "//systems/sensors/test_utilities:image_compare",
         "//visualization:colorize_depth_image",
+        "@common_robotics_utilities",
         "@vtk_internal//:vtkRenderingCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
     ],
