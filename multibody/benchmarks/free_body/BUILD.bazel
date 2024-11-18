@@ -11,12 +11,9 @@ package(default_visibility = ["//visibility:private"])
 filegroup(
     name = "models",
     testonly = 1,
-    srcs = glob([
-        "**/*.obj",
-        "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
-    ]),
+    srcs = [
+        "uniform_solid_cylinder.urdf",
+    ],
     visibility = ["//visibility:public"],
 )
 

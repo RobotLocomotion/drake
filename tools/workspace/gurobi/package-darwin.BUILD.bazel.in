@@ -15,12 +15,12 @@ genrule(
 
 GUROBI_C_HDRS = glob([
     "gurobi-distro/include/gurobi_c.h",
-]) or [":error-message.h"]
+], allow_empty = True) or [":error-message.h"]
 
 GUROBI_CXX_HDRS = glob([
     "gurobi-distro/include/gurobi_c.h",
     "gurobi-distro/include/gurobi_c++.h",
-]) or [":error-message.h"]
+], allow_empty = True) or [":error-message.h"]
 
 cc_library(
     name = "gurobi_c",

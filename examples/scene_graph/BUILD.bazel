@@ -87,8 +87,6 @@ filegroup(
         "**/*.obj",
         "**/*.png",
         "**/*.sdf",
-        "**/*.urdf",
-        "**/*.xml",
     ]),
     visibility = [
         "//:__pkg__",
