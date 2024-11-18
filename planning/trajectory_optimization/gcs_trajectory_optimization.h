@@ -347,9 +347,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddVertexCost(e, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Convenience overload of AddVertexCost to take in a Binding<Cost>. */
     void AddVertexCost(
@@ -361,9 +359,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddVertexCost(binding, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Adds an arbitrary user-defined constraint to every vertex in the
     subgraph. The constraint should be defined using the placeholder control
@@ -389,9 +385,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddVertexConstraint(e, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Convenience overload of AddVertexConstraint to take in a
     Binding<Constraint>. */
@@ -404,9 +398,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddVertexConstraint(binding, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Adds an arbitrary user-defined cost to every internal edge within the
     subgraph. The cost should be defined using the placeholder control point
@@ -432,9 +424,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddEdgeCost(e, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Convenience overload of AddEdgeCost to take in a Binding<Cost>. */
     void AddEdgeCost(
@@ -446,9 +436,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddEdgeCost(binding, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Adds an arbitrary user-defined constraint (in the form of a Formula or
     Binding<Constraint>) to every internal edge within the subgraph. The
@@ -476,9 +464,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddEdgeConstraint(e, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Convenience overload of AddEdgeCost to take in a Binding<Constraint>. */
     void AddEdgeConstraint(
@@ -490,9 +476,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddEdgeConstraint(binding, use_in_transcription);
-    }
+                    kRestriction});
 
    private:
     /* Constructs a new subgraph and copies the regions. */
@@ -551,7 +535,7 @@ class GcsTrajectoryOptimization final {
             geometry::optimization::GraphOfConvexSets::Transcription>&
             use_in_transcription);
 
-    // Compatible with Eexpression and Binding<Cost>.
+    // Compatible with Expression and Binding<Cost>.
     template <typename T>
     void DoAddEdgeCost(
         const T& e,

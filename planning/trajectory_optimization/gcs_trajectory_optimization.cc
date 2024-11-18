@@ -923,6 +923,17 @@ T Subgraph::SubstituteEdgePlaceholderVariables(T e, const Edge& edge) const {
                                 {GetControlPoints(v1), GetControlPoints(v2)});
 }
 
+void Subgraph::AddVertexCost(
+    const Expression& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddVertexCost(e, use_in_transcription);
+}
+void Subgraph::AddVertexCost(
+    const Binding<Cost>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddVertexCost(binding, use_in_transcription);
+}
+
 // Compatible with Expression and Binding<Cost>.
 template <typename T>
 void Subgraph::DoAddVertexCost(
@@ -933,12 +944,16 @@ void Subgraph::DoAddVertexCost(
   }
 }
 
-template void Subgraph::DoAddVertexCost<Expression>(
-    const Expression& e,
-    const std::unordered_set<Transcription>& transcriptions);
-template void Subgraph::DoAddVertexCost<Binding<Cost>>(
-    const Binding<Cost>& e,
-    const std::unordered_set<Transcription>& transcriptions);
+void Subgraph::AddVertexConstraint(
+    const Formula& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddVertexConstraint(e, use_in_transcription);
+}
+void Subgraph::AddVertexConstraint(
+    const Binding<Constraint>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddVertexConstraint(binding, use_in_transcription);
+}
 
 // Compatible with Formula and Binding<Constraint>.
 template <typename T>
@@ -949,12 +964,17 @@ void Subgraph::DoAddVertexConstraint(
     vertex->AddConstraint(post_substitution, use_in_transcription);
   }
 }
+void Subgraph::AddEdgeCost(
+    const Expression& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeCost(e, use_in_transcription);
+}
 
-template void Subgraph::DoAddVertexConstraint<Formula>(
-    const Formula& e, const std::unordered_set<Transcription>& transcriptions);
-template void Subgraph::DoAddVertexConstraint<Binding<Constraint>>(
-    const Binding<Constraint>& e,
-    const std::unordered_set<Transcription>& transcriptions);
+void Subgraph::AddEdgeCost(
+    const Binding<Cost>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeCost(binding, use_in_transcription);
+}
 
 // Compatible with Expression and Binding<Cost>.
 template <typename T>
@@ -966,12 +986,17 @@ void Subgraph::DoAddEdgeCost(
   }
 }
 
-template void Subgraph::DoAddEdgeCost<Expression>(
-    const Expression& e,
-    const std::unordered_set<Transcription>& transcriptions);
-template void Subgraph::DoAddEdgeCost<Binding<Cost>>(
-    const Binding<Cost>& e,
-    const std::unordered_set<Transcription>& transcriptions);
+void Subgraph::AddEdgeConstraint(
+    const Formula& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeConstraint(e, use_in_transcription);
+}
+
+void Subgraph::AddEdgeConstraint(
+    const Binding<Constraint>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeConstraint(binding, use_in_transcription);
+}
 
 // Compatible with Formula and Binding<Constraint>.
 template <typename T>
