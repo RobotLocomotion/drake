@@ -3965,6 +3965,187 @@ VectorX<double> MultibodyTree<T>::GetEffortUpperLimits() const {
 }
 
 template <typename T>
+template <typename ToScalar>
+std::unique_ptr<MultibodyTree<ToScalar>> MultibodyTree<T>::CloneToScalar()
+    const {
+  if (!topology_is_valid()) {
+    throw std::logic_error(
+        "Attempting to clone a MultibodyTree with an invalid topology. "
+        "MultibodyTree::Finalize() must be called before attempting to clone"
+        " a MultibodyTree.");
+  }
+  auto tree_clone = std::make_unique<MultibodyTree<ToScalar>>();
+
+  // The graph and its forest model are scalar type-independent.
+  tree_clone->link_joint_graph_ = this->link_joint_graph_;
+
+  // Fill the `frame_` collection with nulls. We'll be cloning the frames out
+  // of order, so we can't just append them to the end like we do with the
+  // other kinds of elements.
+  tree_clone->frames_.ResizeToMatch(frames_);
+
+  // Skipping the world body at body_index = 0.
+  for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
+    const RigidBody<T>& body = get_body(body_index);
+    tree_clone->CloneBodyAndAdd(body);
+  }
+
+  // Skip the world (0) and default (1) instances.
+  for (ModelInstanceIndex index(2); index < num_model_instances(); ++index) {
+    tree_clone->AddModelInstance(model_instances_.get_element(index).name());
+  }
+
+  // Frames are cloned in their index order, that is, in the exact same order
+  // they were added to the original tree. Since the Frame API enforces the
+  // creation of the parent frame first, this traversal guarantees that parent
+  // body frames are created before their child frames.
+  for (const Frame<T>* frame : frames_.elements()) {
+    // If the frame was a RigidBodyFrame then it will already have been set
+    // in `frames_`. We should only clone frames that don't exist yet.
+    if (!tree_clone->frames_.has_element(frame->index())) {
+      tree_clone->CloneFrameAndAdd(*frame);
+    }
+  }
+
+  for (const auto& mobilizer : mobilizers_) {
+    // This call assumes that tree_clone already contains all the cloned
+    // frames.
+    tree_clone->CloneMobilizerAndAdd(*mobilizer);
+  }
+
+  // Throw away the default constructed gravity element.
+  tree_clone->force_elements_.clear();
+  tree_clone->gravity_field_ = nullptr;
+  for (const auto& force_element : force_elements_) {
+    tree_clone->CloneForceElementAndAdd(*force_element);
+  }
+
+  DRAKE_DEMAND(tree_clone->num_force_elements() > 0);
+  tree_clone->gravity_field_ =
+      dynamic_cast<UniformGravityFieldElement<ToScalar>*>(
+          tree_clone->force_elements_[0].get());
+  DRAKE_DEMAND(tree_clone->gravity_field_ != nullptr);
+
+  // Fill the `joints_` collection with nulls. This is to preserve the
+  // removed index structure of the ElementCollection when adding the clone's
+  // joints.
+  tree_clone->joints_.ResizeToMatch(joints_);
+
+  // Since Joint<T> objects are implemented from basic element objects like
+  // RigidBody, Mobilizer, ForceElement and Constraint, they are cloned last
+  // so that the clones of their dependencies are guaranteed to be available.
+  // DO NOT change this order!!!
+  for (const Joint<T>* joint : joints_.elements()) {
+    tree_clone->CloneJointAndAdd(*joint);
+  }
+
+  // Fill the `actuators_` collection with nulls. This is to preserve the
+  // removed index structure of the ElementCollection when adding the cloned
+  // actuators.
+  tree_clone->actuators_.ResizeToMatch(actuators_);
+
+  for (const JointActuator<T>* actuator : actuators_.elements()) {
+    tree_clone->CloneActuatorAndAdd(*actuator);
+  }
+
+  // We can safely make a deep copy here since the original multibody tree is
+  // required to be finalized.
+  tree_clone->topology_ = this->topology_;
+  tree_clone->joint_to_mobilizer_ = this->joint_to_mobilizer_;
+  tree_clone->discrete_state_index_ = this->discrete_state_index_;
+
+  // All other internals templated on T are created with the following call to
+  // FinalizeInternals().
+  tree_clone->FinalizeInternals();
+  return tree_clone;
+}
+
+template <typename T>
+template <typename FromScalar>
+Frame<T>* MultibodyTree<T>::CloneFrameAndAdd(const Frame<FromScalar>& frame) {
+  const FrameIndex frame_index = frame.index();
+
+  auto frame_clone = frame.CloneToScalar(*this);
+  frame_clone->set_parent_tree(this, frame_index);
+  frame_clone->set_model_instance(frame.model_instance());
+  Frame<T>* result = frame_clone.get();
+  frames_.Add(std::move(frame_clone));
+  return result;
+}
+
+template <typename T>
+template <typename FromScalar>
+RigidBody<T>* MultibodyTree<T>::CloneBodyAndAdd(
+    const RigidBody<FromScalar>& body) {
+  const BodyIndex body_index = body.index();
+  const FrameIndex body_frame_index = body.body_frame().index();
+
+  auto body_clone = body.CloneToScalar(*this);
+  body_clone->set_parent_tree(this, body_index);
+  body_clone->set_model_instance(body.model_instance());
+  // MultibodyTree can access selected private methods in RigidBody through its
+  // RigidBodyAttorney.
+  Frame<T>* body_frame_clone =
+      &internal::RigidBodyAttorney<T>::get_mutable_body_frame(body_clone.get());
+  body_frame_clone->set_parent_tree(this, body_frame_index);
+  body_frame_clone->set_model_instance(body.model_instance());
+
+  // The order in which frames are added into frames_ is important to keep the
+  // topology invariant. Therefore we index new clones according to the
+  // original body_frame_index.
+  frames_.AddBorrowed(body_frame_clone);
+  // The order in which bodies are added into owned_bodies_ is important to keep
+  // the topology invariant. Therefore this method is called from
+  // MultibodyTree::CloneToScalar() within a loop by original body_index.
+  return &rigid_bodies_.Add(std::move(body_clone));
+}
+
+template <typename T>
+template <typename FromScalar>
+Mobilizer<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
+    const Mobilizer<FromScalar>& mobilizer) {
+  const MobodIndex mobilizer_index = mobilizer.index();
+  auto mobilizer_clone = mobilizer.CloneToScalar(*this);
+  mobilizer_clone->set_parent_tree(this, mobilizer_index);
+  mobilizer_clone->set_model_instance(mobilizer.model_instance());
+  Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
+  mobilizers_.push_back(std::move(mobilizer_clone));
+  return raw_mobilizer_clone_ptr;
+}
+
+template <typename T>
+template <typename FromScalar>
+void MultibodyTree<T>::CloneForceElementAndAdd(
+    const ForceElement<FromScalar>& force_element) {
+  const ForceElementIndex force_element_index = force_element.index();
+  auto force_element_clone = force_element.CloneToScalar(*this);
+  force_element_clone->set_parent_tree(this, force_element_index);
+  force_element_clone->set_model_instance(force_element.model_instance());
+  force_elements_.push_back(std::move(force_element_clone));
+}
+
+template <typename T>
+template <typename FromScalar>
+Joint<T>* MultibodyTree<T>::CloneJointAndAdd(const Joint<FromScalar>& joint) {
+  auto joint_clone = joint.CloneToScalar(this);
+  joint_clone->set_parent_tree(this, joint.index());
+  joint_clone->set_ordinal(joint.ordinal());
+  joint_clone->set_model_instance(joint.model_instance());
+  return &joints_.Add(std::move(joint_clone));
+}
+
+template <typename T>
+template <typename FromScalar>
+void MultibodyTree<T>::CloneActuatorAndAdd(
+    const JointActuator<FromScalar>& actuator) {
+  std::unique_ptr<JointActuator<T>> actuator_clone =
+      actuator.CloneToScalar(*this);
+  actuator_clone->set_parent_tree(this, actuator.index());
+  actuator_clone->set_model_instance(actuator.model_instance());
+  actuators_.Add(std::move(actuator_clone));
+}
+
+template <typename T>
 std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instances_.has_element(model_instance));
@@ -3985,6 +4166,13 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
   }
   return base_body_index;
 }
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &MultibodyTree<T>::template CloneToScalar<U>
+));
+// clang-format on
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
