@@ -753,9 +753,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      return DoAddEdgeCost(e, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Convenience overload of AddEdgeCost to take in a Binding<Cost>. */
     void AddEdgeCost(
@@ -767,9 +765,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      return DoAddEdgeCost(binding, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Adds an arbitrary user-defined constraint to every edge within the
     EdgesBetweenSubgraphs. The constraint should be defined using the
@@ -797,12 +793,10 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddEdgeConstraint(e, use_in_transcription);
-    }
+                    kRestriction});
 
     /** Convenience overload of AddEdgeConstraint to take in a
-     * Binding<Constraint>. */
+    Binding<Constraint>. */
     void AddEdgeConstraint(
         const solvers::Binding<solvers::Constraint>& binding,
         const std::unordered_set<
@@ -812,9 +806,7 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRelaxation,
                 geometry::optimization::GraphOfConvexSets::Transcription::
-                    kRestriction}) {
-      DoAddEdgeConstraint(binding, use_in_transcription);
-    }
+                    kRestriction});
 
    private:
     EdgesBetweenSubgraphs(

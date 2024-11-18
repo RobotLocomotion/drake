@@ -1702,6 +1702,18 @@ T EdgesBetweenSubgraphs::SubstituteEdgePlaceholderVariables(
       {GetControlPointsU(edge), GetControlPointsV(edge)});
 }
 
+void EdgesBetweenSubgraphs::AddEdgeCost(
+    const Expression& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  return DoAddEdgeCost(e, use_in_transcription);
+}
+
+void EdgesBetweenSubgraphs::AddEdgeCost(
+    const Binding<Cost>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  return DoAddEdgeCost(binding, use_in_transcription);
+}
+
 // Compatible with Expression and Binding<Cost>.
 template <typename T>
 void EdgesBetweenSubgraphs::DoAddEdgeCost(
@@ -1712,13 +1724,17 @@ void EdgesBetweenSubgraphs::DoAddEdgeCost(
   }
 }
 
-template void EdgesBetweenSubgraphs::DoAddEdgeCost<Expression>(
-    const Expression& e,
-    const std::unordered_set<Transcription>& transcriptions);
-template void EdgesBetweenSubgraphs::DoAddEdgeCost<Binding<Cost>>(
-    const Binding<Cost>& e,
-    const std::unordered_set<Transcription>& transcriptions);
+void EdgesBetweenSubgraphs::AddEdgeConstraint(
+    const Formula& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeConstraint(e, use_in_transcription);
+}
 
+void EdgesBetweenSubgraphs::AddEdgeConstraint(
+    const Binding<Constraint>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeConstraint(binding, use_in_transcription);
+}
 // Compatible with Formula and Binding<Constraint>.
 template <typename T>
 void EdgesBetweenSubgraphs::DoAddEdgeConstraint(
@@ -1728,12 +1744,6 @@ void EdgesBetweenSubgraphs::DoAddEdgeConstraint(
     edge->AddConstraint(post_substitution, use_in_transcription);
   }
 }
-
-template void EdgesBetweenSubgraphs::DoAddEdgeConstraint<Formula>(
-    const Formula& e, const std::unordered_set<Transcription>& transcriptions);
-template void EdgesBetweenSubgraphs::DoAddEdgeConstraint<Binding<Constraint>>(
-    const Binding<Constraint>& e,
-    const std::unordered_set<Transcription>& transcriptions);
 
 Eigen::Map<const MatrixX<symbolic::Variable>>
 EdgesBetweenSubgraphs::GetControlPointsU(
