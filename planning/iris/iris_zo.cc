@@ -87,9 +87,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           ? std::min(options.parallelism.num_threads(),
                      checker.num_allocated_contexts())
           : 1;
-  log()->info(
-        "IrisZo using {} threads.",
-        num_threads_to_use);
+  log()->info("IrisZo using {} threads.", num_threads_to_use);
   RandomGenerator generator(options.random_seed);
 
   const Eigen::VectorXd starting_ellipsoid_center = starting_ellipsoid.center();
@@ -284,8 +282,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             Eigen::VectorXd curr_pt_lower = current_ellipsoid_center;
 
             // update current point using bisection
-            if(checker.num_allocated_contexts()<=thread_num){
-                throw std::runtime_error(fmt::format("number of threads exceeds maximum {}, {}", thread_num, checker.num_allocated_contexts()));
+            if (checker.num_allocated_contexts() <= thread_num) {
+              throw std::runtime_error(
+                  fmt::format("number of threads exceeds maximum {}, {}",
+                              thread_num, checker.num_allocated_contexts()));
             }
             if (!checker.CheckConfigCollisionFree(curr_pt_lower, thread_num)) {
               // directly set to lowerbound

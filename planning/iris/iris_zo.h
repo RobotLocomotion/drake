@@ -84,7 +84,9 @@ struct IrisZoOptions {
   /** Maximum number of bisection steps. */
   int bisection_steps{10};
 
-  /** Parallelize the updates of the particles. */
+  /** Number of threads to use when updating the particles. If the user requests
+   * more threads than the CollisionChecker supports, that number of threads
+   * will be used instead. */
   Parallelism parallelism{Parallelism::Max()};
 
   /** Enables print statements indicating the progress of IrisZo. */
