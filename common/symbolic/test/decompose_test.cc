@@ -220,13 +220,42 @@ TEST_F(SymbolicDecomposeTest,
 }
 
 // Check expected invariance
-void ExpectValidMapVarToIndex(const VectorX<Variable>& vars,
+void ExpectValidMapVarToIndex(const Eigen::Ref<const VectorX<Variable>>& vars,
                               const MapVarToIndex& map_var_to_index) {
   EXPECT_EQ(vars.size(), map_var_to_index.size());
   for (int i = 0; i < vars.size(); ++i) {
     const auto& var = vars(i);
     EXPECT_EQ(i, map_var_to_index.at(var.get_id()));
   }
+}
+
+GTEST_TEST(SymbolicExtraction, ExtractAndAppendVariablesFromExpression) {
+  const Variable x("x");
+  const Variable y("y");
+  const Expression e1 = x + y;
+
+  std::vector<Variable> vars;
+  MapVarToIndex map_var_to_index;
+  ExtractAndAppendVariablesFromExpression(e1, &vars, &map_var_to_index);
+  EXPECT_EQ(map_var_to_index.size(), 2);
+  for (const auto& var : {x, y}) {
+    EXPECT_TRUE(map_var_to_index.contains(var.get_id()));
+  }
+  ExpectValidMapVarToIndex(
+      Eigen::Map<VectorX<symbolic::Variable>>(vars.data(), vars.size()),
+      map_var_to_index);
+
+  const Variable z("z");
+  const symbolic::Expression e2 = z * z;
+
+  ExtractAndAppendVariablesFromExpression(e2, &vars, &map_var_to_index);
+  EXPECT_EQ(map_var_to_index.size(), 3);
+  for (const auto& var : {x, y, z}) {
+    EXPECT_TRUE(map_var_to_index.contains(var.get_id()));
+  }
+  ExpectValidMapVarToIndex(
+      Eigen::Map<VectorX<symbolic::Variable>>(vars.data(), vars.size()),
+      map_var_to_index);
 }
 
 GTEST_TEST(SymbolicExtraction, ExtractVariables1) {
@@ -249,7 +278,10 @@ GTEST_TEST(SymbolicExtraction, ExtractVariables1) {
   vars_expected.conservativeResize(vars_size + 1, Eigen::NoChange);
   vars_expected(vars_size) = z;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   ExtractAndAppendVariablesFromExpression(e, &vars, &map_var_to_index);
+#pragma GCC diagnostic pop
   EXPECT_EQ(vars_expected, vars);
   ExpectValidMapVarToIndex(vars, map_var_to_index);
 }

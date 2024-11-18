@@ -4,7 +4,9 @@
 #include <tuple>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -43,7 +45,7 @@ void DecomposeAffineExpressions(
     const Eigen::Ref<const VectorX<Variable>>& vars,
     EigenPtr<Eigen::MatrixXd> M, EigenPtr<Eigen::VectorXd> v);
 
-/** Given an expression `e`, extract all variables inside `e`, append these
+/** Given an expression `e`, extracts all variables inside `e`, appends these
 variables to `vars` if they are not included in `vars` yet.
 
 @param[in] e  A symbolic expression.
@@ -53,10 +55,14 @@ included in `vars`, will be appended to the end of `vars`.
 @param[in,out] map_var_to_index. map_var_to_index is of the same size as
 `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds for
 map_var_to_index both as the input and as the output.
-@note This function is very slow if you call this function within a loop as it
-involves repeated heap memory allocation. Consider using
-ExtractVariablesFromExpression.
 */
+void ExtractAndAppendVariablesFromExpression(
+    const symbolic::Expression& e, std::vector<Variable>* vars,
+    std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index);
+
+DRAKE_DEPRECATED("2024-05-01",
+                 "Use the overloaded function with std::vector<Variable> "
+                 "instead of VectorX<Variable>")
 void ExtractAndAppendVariablesFromExpression(
     const symbolic::Expression& e, VectorX<Variable>* vars,
     std::unordered_map<symbolic::Variable::Id, int>* map_var_to_index);
