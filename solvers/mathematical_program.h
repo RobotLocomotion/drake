@@ -2676,6 +2676,20 @@ class MathematicalProgram {
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
 
   /**
+   * Adds a linear matrix inequality constraint on a symmetric matrix of
+   * symbolic expressions `X`, namely `X` is positive semidefinite, and each
+   * entry in `X` is a linear (affine) expression of decision variables.
+   *
+   * @param X Imposes constraint "X is positive semidefinite".
+   * @pre {1. X is symmetric.
+   *       2. X(i, j) is linear (affine) for all i, j
+   *       }
+   * @return The newly added linear matrix inequality constraint.
+   */
+  Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
+
+  /**
    * Adds the constraint that a symmetric matrix is diagonally dominant with
    * non-negative diagonal entries.
    * A symmetric matrix X is diagonally dominant with non-negative diagonal

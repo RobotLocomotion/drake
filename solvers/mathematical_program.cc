@@ -1229,6 +1229,40 @@ MathematicalProgram::AddLinearMatrixInequalityConstraint(
   return AddConstraint(constraint, vars);
 }
 
+Binding<LinearMatrixInequalityConstraint>
+MathematicalProgram::AddLinearMatrixInequalityConstraint(
+    const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+  DRAKE_THROW_UNLESS(X.rows() == X.cols());
+  DRAKE_ASSERT(CheckStructuralEquality(X, X.transpose().eval()));
+  std::vector<symbolic::Variable> vars_vec;
+  std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
+  for (int j = 0; j < X.cols(); ++j) {
+    for (int i = j; i < X.rows(); ++i) {
+      symbolic::ExtractAndAppendVariablesFromExpression(X(i, j), &vars_vec,
+                                                        &map_var_to_index);
+    }
+  }
+  std::vector<Eigen::MatrixXd> F(vars_vec.size() + 1,
+                                 Eigen::MatrixXd::Zero(X.rows(), X.rows()));
+  Eigen::RowVectorXd coeffs(vars_vec.size());
+  double constant_term{};
+  for (int j = 0; j < X.cols(); ++j) {
+    for (int i = j; i < X.rows(); ++i) {
+      DecomposeAffineExpression(X(i, j), map_var_to_index, &coeffs,
+                                &constant_term);
+      F[0](i, j) = constant_term;
+      F[0](j, i) = F[0](i, j);
+      for (int k = 0; k < static_cast<int>(vars_vec.size()); ++k) {
+        F[1 + k](i, j) = coeffs(k);
+        F[1 + k](j, i) = F[1 + k](i, j);
+      }
+    }
+  }
+  return AddLinearMatrixInequalityConstraint(
+      F, Eigen::Map<VectorX<symbolic::Variable>>(vars_vec.data(),
+                                                 vars_vec.size()));
+}
+
 MatrixX<symbolic::Expression>
 MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {

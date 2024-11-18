@@ -3095,6 +3095,27 @@ GTEST_TEST(TestMathematicalProgram,
       prog_manual.linear_equality_constraints()[0].evaluator()->lower_bound()));
 }
 
+GTEST_TEST(TestMathematicalProgram, AddLinearMatrixInequalityConstraint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  Matrix3<symbolic::Expression> X;
+  // clang-format off
+  X << 1, 2 + x(0) - 3 * x(1), 0,
+       2 + x(0) - 3 * x(1), 2 * x(2), -3,
+       0,  -3,  1 + 2 * x(1);
+  // clang-format on
+  const auto lmi_binding = prog.AddLinearMatrixInequalityConstraint(X);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kPositiveSemidefiniteConstraint),
+            0);
+  Matrix3<symbolic::Expression> X_expected = lmi_binding.evaluator()->F()[0];
+  for (int i = 0; i < lmi_binding.variables().rows(); ++i) {
+    X_expected +=
+        lmi_binding.evaluator()->F()[1 + i] * lmi_binding.variables()(i);
+  }
+  EXPECT_TRUE(MatrixExprAllEqual(X, X_expected));
+}
+
 GTEST_TEST(TestMathematicalProgram, TestExponentialConeConstraint) {
   MathematicalProgram prog;
   EXPECT_EQ(prog.required_capabilities().count(
