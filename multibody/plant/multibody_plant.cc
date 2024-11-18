@@ -1657,16 +1657,18 @@ BodyIndex MultibodyPlant<T>::FindBodyByGeometryId(
     GeometryId geometry_id) const {
   if (!geometry_id.is_valid()) {
     throw std::logic_error(
-        "MultibodyPlant received contact results for a null GeometryId");
+        "MultibodyPlant: geometry_query input port receives contact results "
+        "from SceneGraph that involve invalid GeometryId.");
   }
   const auto iter = geometry_id_to_body_index_.find(geometry_id);
   if (iter != geometry_id_to_body_index_.end()) {
     return iter->second;
   }
-  throw std::logic_error(fmt::format(
-      "MultibodyPlant received contact results for GeometryId {}, but that"
-      " ID is not known to this plant",
-      geometry_id));
+  throw std::logic_error(
+      fmt::format("MultibodyPlant: geometry_query input port receives contact "
+                  "results from SceneGraph that involve GeometryId {}, but "
+                  "that ID is not known to this plant",
+                  geometry_id));
 }
 
 template <typename T>
