@@ -353,6 +353,16 @@ class PrismaticJoint final : public Joint<T> {
 template <typename T>
 const char PrismaticJoint<T>::kTypeName[] = "prismatic";
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<PrismaticJoint> {
+  template <typename T>
+  static const PrismaticJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

@@ -382,6 +382,11 @@ TEST_F(RpyFloatingJointTest, RandomState) {
   EXPECT_TRUE(joint_->GetPose(*context_).IsExactlyIdentity());
 }
 
+TEST_F(RpyFloatingJointTest, DynamicCast) {
+  const Joint<double>* base = joint_;
+  EXPECT_EQ(internal::DynamicCastJoint<RpyFloatingJoint>::cast(base), joint_);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

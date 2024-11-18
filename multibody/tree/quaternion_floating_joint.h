@@ -457,6 +457,16 @@ class QuaternionFloatingJoint final : public Joint<T> {
 template <typename T>
 const char QuaternionFloatingJoint<T>::kTypeName[] = "quaternion_floating";
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<QuaternionFloatingJoint> {
+  template <typename T>
+  static const QuaternionFloatingJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

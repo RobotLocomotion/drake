@@ -322,6 +322,11 @@ TEST_F(PlanarJointTest, RandomState) {
   EXPECT_NE(mutable_joint_->get_rotation(*context_), last_rotation);
 }
 
+TEST_F(PlanarJointTest, DynamicCast) {
+  const Joint<double>* base = joint_;
+  EXPECT_EQ(internal::DynamicCastJoint<PlanarJoint>::cast(base), joint_);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

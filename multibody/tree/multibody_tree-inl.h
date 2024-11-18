@@ -361,6 +361,47 @@ void MultibodyTree<T>::RenameModelInstance(ModelInstanceIndex model_instance,
 }
 
 template <typename T>
+template <template <typename> class ForceElementType>
+const ForceElementType<T>& MultibodyTree<T>::GetForceElement(
+    ForceElementIndex force_element_index) const {
+  static_assert(std::is_base_of_v<ForceElement<T>, ForceElementType<T>>,
+                "ForceElementType<T> must be a sub-class of ForceElement<T>.");
+  const ForceElement<T>& force_element = get_force_element(force_element_index);
+  if constexpr (std::is_same_v<ForceElementType<T>, ForceElement<T>>) {
+    return force_element;
+  } else {
+    const ForceElementType<T>* downcast =
+        DynamicCastForceElement<ForceElementType>::template cast<T>(
+            &force_element);
+    if (downcast == nullptr) {
+      ThrowForceElementSubtypeMismatch(force_element,
+                                       typeid(ForceElementType<T>));
+    }
+    return *downcast;
+  }
+}
+
+template <typename T>
+template <template <typename> class JointType>
+const JointType<T>& MultibodyTree<T>::GetJointByName(
+    std::string_view name,
+    std::optional<ModelInstanceIndex> model_instance) const {
+  static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
+                "JointType<T> must be a sub-class of Joint<T>.");
+  const Joint<T>& joint = GetJointByNameImpl(name, model_instance);
+  if constexpr (std::is_same_v<JointType<T>, Joint<T>>) {
+    return joint;
+  } else {
+    const JointType<T>* downcast =
+        DynamicCastJoint<JointType>::template cast<T>(&joint);
+    if (downcast == nullptr) {
+      ThrowJointSubtypeMismatch(joint, typeid(JointType<T>));
+    }
+    return *downcast;
+  }
+}
+
+template <typename T>
 Eigen::VectorBlock<const VectorX<T>>
 MultibodyTree<T>::get_positions_and_velocities(
     const systems::Context<T>& context) const {

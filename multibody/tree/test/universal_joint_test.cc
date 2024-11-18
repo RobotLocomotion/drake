@@ -293,6 +293,11 @@ TEST_F(UniversalJointTest, DefaultAngles) {
       mutable_joint_->set_default_angles(out_of_bounds_high_angles));
 }
 
+TEST_F(UniversalJointTest, DynamicCast) {
+  const Joint<double>* base = joint_;
+  EXPECT_EQ(internal::DynamicCastJoint<UniversalJoint>::cast(base), joint_);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

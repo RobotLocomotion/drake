@@ -608,13 +608,22 @@ const Joint<T>& MultibodyTree<T>::GetJointByNameImpl(
 }
 
 template <typename T>
+void MultibodyTree<T>::ThrowForceElementSubtypeMismatch(
+    const ForceElement<T>& force_element,
+    const std::type_info& desired_type) const {
+  throw std::logic_error(fmt::format(
+      "GetForceElement(): ForceElement is not of type '{}' but of type '{}'.",
+      NiceTypeName::Get(desired_type), NiceTypeName::Get(force_element)));
+}
+
+template <typename T>
 void MultibodyTree<T>::ThrowJointSubtypeMismatch(
-    const Joint<T>& joint, std::string_view desired_type) const {
+    const Joint<T>& joint, const std::type_info& desired_type) const {
   throw std::logic_error(fmt::format(
       "GetJointByName(): Joint '{}' in model instance '{}' is not of type {} "
       "but of type {}.",
       joint.name(), model_instances_.get_element(joint.model_instance()).name(),
-      desired_type, NiceTypeName::Get(joint)));
+      NiceTypeName::Get(desired_type), NiceTypeName::Get(joint)));
 }
 
 template <typename T>

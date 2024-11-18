@@ -297,6 +297,11 @@ TEST_F(ScrewJointTest, RandomState) {
   EXPECT_NE(joint_->get_rotation(*context_), last_rotation);
 }
 
+TEST_F(ScrewJointTest, DynamicCast) {
+  const Joint<double>* base = joint_;
+  EXPECT_EQ(internal::DynamicCastJoint<ScrewJoint>::cast(base), joint_);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

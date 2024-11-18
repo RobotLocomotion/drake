@@ -375,6 +375,22 @@ LinearBushingRollPitchYaw<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+namespace internal {
+
+template <typename T>
+const LinearBushingRollPitchYaw<T>*
+DynamicCastForceElement<LinearBushingRollPitchYaw>::cast(
+    const ForceElement<T>* element) {
+  return dynamic_cast<const LinearBushingRollPitchYaw<T>*>(element);
+}
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &DynamicCastForceElement<LinearBushingRollPitchYaw>::template cast<T>
+));
+// clang-format on
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

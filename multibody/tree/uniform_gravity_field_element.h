@@ -136,6 +136,17 @@ class UniformGravityFieldElement : public ForceElement<T> {
   std::set<ModelInstanceIndex> disabled_model_instances_;
 };
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastForceElement<UniformGravityFieldElement> {
+  template <typename T>
+  static const UniformGravityFieldElement<T>* cast(
+      const ForceElement<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

@@ -102,6 +102,11 @@ TEST_F(WeldJointTest, JointLocking) {
   DRAKE_EXPECT_NO_THROW(joint_->Lock(context.get()));
 }
 
+TEST_F(WeldJointTest, DynamicCast) {
+  const Joint<double>* base = joint_;
+  EXPECT_EQ(internal::DynamicCastJoint<WeldJoint>::cast(base), joint_);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

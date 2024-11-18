@@ -179,6 +179,12 @@ TEST_F(SpringTester, Clone) {
   EXPECT_EQ(spring_->nominal_position(), spring_clone->nominal_position());
 }
 
+TEST_F(SpringTester, DynamicCast) {
+  const ForceElement<double>* base = spring_;
+  EXPECT_EQ(internal::DynamicCastForceElement<PrismaticSpring>::cast(base),
+            spring_);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

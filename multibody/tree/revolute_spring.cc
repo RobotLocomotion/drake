@@ -112,6 +112,21 @@ RevoluteSpring<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+namespace internal {
+
+template <typename T>
+const RevoluteSpring<T>* DynamicCastForceElement<RevoluteSpring>::cast(
+    const ForceElement<T>* element) {
+  return dynamic_cast<const RevoluteSpring<T>*>(element);
+}
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &DynamicCastForceElement<RevoluteSpring>::template cast<T>
+));
+// clang-format on
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

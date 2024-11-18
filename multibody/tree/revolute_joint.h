@@ -375,6 +375,16 @@ class RevoluteJoint final : public Joint<T> {
 template <typename T>
 const char RevoluteJoint<T>::kTypeName[] = "revolute";
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<RevoluteJoint> {
+  template <typename T>
+  static const RevoluteJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

@@ -148,6 +148,16 @@ class LinearSpringDamper final : public ForceElement<T> {
   double damping_;
 };
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastForceElement<LinearSpringDamper> {
+  template <typename T>
+  static const LinearSpringDamper<T>* cast(const ForceElement<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

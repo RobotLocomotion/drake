@@ -357,6 +357,16 @@ class PlanarJoint final : public Joint<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 };
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<PlanarJoint> {
+  template <typename T>
+  static const PlanarJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

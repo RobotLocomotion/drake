@@ -132,6 +132,16 @@ class WeldJoint final : public Joint<T> {
 template <typename T>
 const char WeldJoint<T>::kTypeName[] = "weld";
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<WeldJoint> {
+  template <typename T>
+  static const WeldJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

@@ -278,6 +278,11 @@ TEST_F(PrismaticJointTest, DefaultTranslation) {
       mutable_joint1_->set_default_translation(out_of_bounds_high_translation));
 }
 
+TEST_F(PrismaticJointTest, DynamicCast) {
+  const Joint<double>* base = joint1_;
+  EXPECT_EQ(internal::DynamicCastJoint<PrismaticJoint>::cast(base), joint1_);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

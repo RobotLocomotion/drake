@@ -673,24 +673,7 @@ class MultibodyTree {
   // See MultibodyPlant method.
   template <template <typename> class ForceElementType = ForceElement>
   const ForceElementType<T>& GetForceElement(
-      ForceElementIndex force_element_index) const {
-    static_assert(
-        std::is_base_of_v<ForceElement<T>, ForceElementType<T>>,
-        "ForceElementType<T> must be a sub-class of ForceElement<T>.");
-    const ForceElement<T>* force_element =
-        &get_force_element(force_element_index);
-
-    const ForceElementType<T>* typed_force_element =
-        dynamic_cast<const ForceElementType<T>*>(force_element);
-    if (typed_force_element == nullptr) {
-      throw std::logic_error(
-          fmt::format("ForceElement is not of type '{}' but of type '{}'.",
-                      NiceTypeName::Get<ForceElementType<T>>(),
-                      NiceTypeName::Get(*force_element)));
-    }
-
-    return *typed_force_element;
-  }
+      ForceElementIndex force_element_index) const;
 
   const ForceElement<T>& get_force_element(
       ForceElementIndex force_element_index) const {
@@ -826,17 +809,7 @@ class MultibodyTree {
   template <template <typename> class JointType = Joint>
   const JointType<T>& GetJointByName(
       std::string_view name,
-      std::optional<ModelInstanceIndex> model_instance = std::nullopt) const {
-    static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
-                  "JointType<T> must be a sub-class of Joint<T>.");
-    const Joint<T>& joint = GetJointByNameImpl(name, model_instance);
-    const JointType<T>* const typed_joint =
-        dynamic_cast<const JointType<T>*>(&joint);
-    if (typed_joint == nullptr) {
-      ThrowJointSubtypeMismatch(joint, NiceTypeName::Get<JointType<T>>());
-    }
-    return *typed_joint;
-  }
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt) const;
 
   // See MultibodyPlant method.
   template <template <typename> class JointType = Joint>
@@ -2536,8 +2509,11 @@ class MultibodyTree {
   const Joint<T>& GetJointByNameImpl(std::string_view,
                                      std::optional<ModelInstanceIndex>) const;
 
+  [[noreturn]] void ThrowForceElementSubtypeMismatch(
+      const ForceElement<T>&, const std::type_info&) const;
+
   [[noreturn]] void ThrowJointSubtypeMismatch(const Joint<T>&,
-                                              std::string_view) const;
+                                              const std::type_info&) const;
 
   // If X_BF is nullopt, returns the body frame of `body`. Otherwise, adds a
   // FixedOffsetFrame (named based on the joint_name and frame_suffix) to `body`

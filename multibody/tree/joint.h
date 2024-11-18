@@ -1090,5 +1090,21 @@ class Joint : public MultibodyElement<T> {
   systems::NumericParameterIndex damping_parameter_index_;
 };
 
+namespace internal {
+
+// This helper exists so that concrete joint types can specialize it with
+// non-inline definitions. MbT code (on behalf of MbP) needs to perform
+// dynamic casting, but we want to avoid doing that inline, so MbT calls
+// this helper, which then (if the ToType is a Drake joint) is non-inline.
+// This is the fallback implementation for non-Drake joint types.
+template <template <typename> class ToType>
+struct DynamicCastJoint {
+  template <typename T>
+  static const ToType<T>* cast(const Joint<T>* element) {
+    return dynamic_cast<const ToType<T>*>(element);
+  }
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

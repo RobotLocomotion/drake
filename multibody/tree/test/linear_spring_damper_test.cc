@@ -283,6 +283,12 @@ TEST_F(SpringDamperTester, Power) {
   EXPECT_EQ(plant_.EvalNonConservativePower(*context_), non_conservative_power);
 }
 
+TEST_F(SpringDamperTester, DynamicCast) {
+  const ForceElement<double>* base = spring_damper_;
+  EXPECT_EQ(internal::DynamicCastForceElement<LinearSpringDamper>::cast(base),
+            spring_damper_);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

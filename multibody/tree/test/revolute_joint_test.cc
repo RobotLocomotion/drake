@@ -297,6 +297,11 @@ TEST_F(RevoluteJointTest, DefaultAngle) {
   EXPECT_NO_THROW(mutable_joint1_->set_default_angle(out_of_bounds_high_angle));
 }
 
+TEST_F(RevoluteJointTest, DynamicCast) {
+  const Joint<double>* base = joint1_;
+  EXPECT_EQ(internal::DynamicCastJoint<RevoluteJoint>::cast(base), joint1_);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

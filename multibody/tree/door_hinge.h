@@ -232,6 +232,16 @@ class DoorHinge final : public ForceElement<T> {
   const DoorHingeConfig config_;
 };
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastForceElement<DoorHinge> {
+  template <typename T>
+  static const DoorHinge<T>* cast(const ForceElement<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
