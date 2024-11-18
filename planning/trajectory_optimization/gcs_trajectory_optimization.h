@@ -466,7 +466,8 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
-    /** Convenience overload of AddEdgeCost to take in a Binding<Constraint>. */
+    /** Convenience overload of AddEdgeConstraint to take in a
+     * Binding<Constraint>. */
     void AddEdgeConstraint(
         const solvers::Binding<solvers::Constraint>& binding,
         const std::unordered_set<
