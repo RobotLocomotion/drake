@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <fmt/format.h>
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
@@ -2039,9 +2040,23 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
 // This test also serves as the test for RenderEngineVtkParams::force_to_pbr as
 // a promotion criterion.
 TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
+  // We'll use the same camera as the default camera for the tests, but shrink
+  // the image size so they're not as big in the repository.
+  const int w = 120;
+  const int h = 90;
+  const CameraInfo& source_intrinsics = depth_camera_.core().intrinsics();
+  const CameraInfo intrinsics(w, h, source_intrinsics.fov_y());
+  const DepthRenderCamera camera(
+      {"unused", intrinsics, depth_camera_.core().clipping(),
+       depth_camera_.core().sensor_pose_in_camera_body()},
+      depth_camera_.depth_range());
+
+  ImageDepth32F depth(w, h);
+  ImageLabel16I label(w, h);
+
   // First test the efficacy of `force_to_pbr`.
-  // Two otherwise identical engines with the same geometries should have images
-  // that don't match if one is PBR and the other is phong.
+  // Two otherwise identical engines with the same geometries should have
+  // images that don't match if one is PBR and the other is phong.
   RenderEngineVtk phong_renderer(RenderEngineVtkParams{});
   RenderEngineVtk pbr_renderer(RenderEngineVtkParams{.force_to_pbr = true});
   // TODO(20002) There is known conflict when we alternate renderings between
@@ -2071,28 +2086,28 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
   pbr_renderer.RegisterVisual(id, cube, props, RigidTransformd(), false);
   renderer_20002.RegisterVisual(id, cube, props, RigidTransformd(), false);
 
-  ImageRgba8U reference_image(kWidth, kHeight);
-  Render(__LINE__, "phong", &phong_renderer, nullptr, &reference_image, nullptr,
-         nullptr);
-  ImageRgba8U pbr_image(kWidth, kHeight);
-  Render(__LINE__, "pbr", &pbr_renderer, nullptr, &pbr_image, nullptr, nullptr);
+  ImageRgba8U reference_image(w, h);
+  Render(__LINE__, "phong", &phong_renderer, &camera, &reference_image, &depth,
+         &label);
+  ImageRgba8U pbr_image(w, h);
+  Render(__LINE__, "pbr", &pbr_renderer, &camera, &pbr_image, &depth, &label);
 
   // The images don't match because the `force_to_pbr` changed the light model.
   EXPECT_NE(reference_image, pbr_image);
 
   // Make sure the back up renderer matches.
-  Render(0, "", &renderer_20002, nullptr, &reference_image, nullptr, nullptr);
+  Render(0, "", &renderer_20002, &camera, &reference_image, &depth, &label);
   EXPECT_EQ(reference_image, pbr_image);
 
   // Test post-cloning logic.
   unique_ptr<RenderEngine> clone_base = pbr_renderer.Clone();
   RenderEngineVtk* clone = static_cast<RenderEngineVtk*>(clone_base.get());
-  ImageRgba8U clone_image(kWidth, kHeight);
+  ImageRgba8U clone_image(w, h);
   // TODO(20002): The known issue of clone vs source render engine fighting
   // can be *mitigated* by performing a throw-away rendering. So, we'll do an
   // extra rendering and then do one for real.
-  Render(0, "", clone, nullptr, &clone_image, nullptr, nullptr);
-  Render(__LINE__, "clone", clone, nullptr, &clone_image, nullptr, nullptr);
+  Render(0, "", clone, &camera, &clone_image, &depth, &label);
+  Render(__LINE__, "clone", clone, &camera, &clone_image, &depth, &label);
 
   // The cloned engine still renders images with PBR materials.
   EXPECT_EQ(clone_image, pbr_image);
@@ -2106,11 +2121,22 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
   renderer_20002.RegisterVisual(ball_id, sphere, props, X_WS, false);
   clone->RegisterVisual(ball_id, sphere, props, X_WS, false);
 
-  Render(__LINE__, "pbr with ball", &renderer_20002, nullptr, &pbr_image,
-         nullptr, nullptr);
-  Render(__LINE__, "clone with ball", clone, nullptr, &clone_image, nullptr,
-         nullptr);
-  EXPECT_EQ(clone_image, pbr_image);
+  Render(__LINE__, "pbr with ball", &renderer_20002, &camera, &pbr_image,
+         &depth, &label);
+  Render(__LINE__, "clone with ball", clone, &camera, &clone_image, &depth,
+         &label);
+  auto image_bytes = [](const ImageRgba8U& image) {
+    const auto* data = image.at(0, 0);
+    return fmt::format(
+        "ImageRgba8U({}, {}), 'data::application/octet-binary;base64,{}'\n",
+        image.width(), image.height(),
+        common_robotics_utilities::base64_helpers::Encode(
+            std::vector<uint8_t>(data, data + image.size())));
+  };
+  EXPECT_EQ(clone_image, pbr_image)
+      << "Clone image\n"
+      << image_bytes(clone_image) << "\nRef image\n"
+      << image_bytes(pbr_image) << "\n";
 }
 
 namespace {
