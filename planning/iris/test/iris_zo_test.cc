@@ -1,7 +1,6 @@
 #include "drake/planning/iris/iris_zo.h"
 
 #include <chrono>
-#include <iostream>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -48,12 +47,9 @@ HPolyhedron IrisZoFromUrdf(const std::string urdf,
 
   params.model = builder.Build();
   params.edge_step_size = 0.01;
-  std::cout << "plant built \n";
   HPolyhedron domain = HPolyhedron::MakeBox(
       plant_ptr->GetPositionLowerLimits(), plant_ptr->GetPositionUpperLimits());
-  std::cout << "constructing checker \n";
   planning::SceneGraphCollisionChecker checker(std::move(params));
-  std::cout << "Calling iris zo \n";
   return IrisZo(checker, starting_ellipsoid, domain, options);
 }
 
@@ -458,7 +454,6 @@ const char boxes_in_corners_urdf[] = R"(
 </robot>
 )";
 GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
-  std::cout << "starting test \n";
   std::shared_ptr<Meshcat> meshcat;
   meshcat = geometry::GetTestEnvironmentMeshcat();
   meshcat->Delete("face_pt");
@@ -515,7 +510,6 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
   options.meshcat = meshcat;
   options.configuration_space_margin = 0.04;
   options.containment_points = cont_points.topRows(2);
-  std::cout << "calling fn \n";
   HPolyhedron region =
       IrisZoFromUrdf(boxes_in_corners_urdf, starting_ellipsoid, options);
   EXPECT_EQ(region.ambient_dimension(), 2);
