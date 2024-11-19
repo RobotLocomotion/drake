@@ -94,7 +94,7 @@ drake_cc_googletest(
     name = "iris_zo_test",
     timeout = "moderate",
     data = ["//multibody/parsing:test_models"],
-    num_threads = 4,
+    num_threads = 2,
     shard_count = 4,
     # Most of these tests take an exceptionally long time under
     # instrumentation, resulting in timeouts, and so are excluded.
