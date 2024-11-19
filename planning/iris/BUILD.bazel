@@ -100,6 +100,7 @@ drake_cc_googletest(
     # instrumentation, resulting in timeouts, and so are excluded.
     tags = [
         "no_asan",
+        "no_lsan",
         "no_memcheck",
     ],
     deps = [
