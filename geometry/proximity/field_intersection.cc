@@ -1,6 +1,5 @@
 #include "drake/geometry/proximity/field_intersection.h"
 
-#include <chrono>
 #include <iostream>
 #include <memory>
 #include <queue>
@@ -223,15 +222,9 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
     return BvttCallbackResult::Continue;
   };
 
-  using std::chrono::duration;
-  using std::chrono::high_resolution_clock;
-  using std::chrono::microseconds;
 
-  auto t1 = high_resolution_clock::now();
   bvh0_M.Collide(bvh1_N, convert_to_double(X_MN), callback);
-  auto t2 = high_resolution_clock::now();
 
-  auto t3 = high_resolution_clock::now();
   MeshBuilder builder_M;
   const math::RotationMatrix<T> R_NM = X_MN.rotation().inverse();
   int valid_pairs = 0;
@@ -246,15 +239,6 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
       ++valid_pairs;
     }
   }
-  auto t4 = high_resolution_clock::now();
-
-  duration<double, std::micro> bvh_time = t2 - t1;
-  duration<double, std::micro> surface_time = t4 - t3;
-  duration<double, std::micro> total = bvh_time + surface_time;
-  std::cout << fmt::format("BVH {}% Surface {}%\n", 100 * bvh_time / total,
-                           100 * surface_time / total);
-  std::cout << fmt::format("{} valid pairs {} candidates\n", valid_pairs,
-                           candidate_tetrahedra.size());
 
   if (builder_M.num_faces() == 0) return;
 
@@ -296,13 +280,9 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
   using std::chrono::high_resolution_clock;
   using std::chrono::microseconds;
 
-  auto t1 = high_resolution_clock::now();
   bvh0_M.Collide(bvh1_N, X_MNd, callback);
-  auto t2 = high_resolution_clock::now();
 
   if (candidate_tetrahedra.empty()) return;
-
-  auto t3 = high_resolution_clock::now();
 
   auto pair_hash = [](const std::pair<int, int>& p) -> std::size_t {
     return std::hash<int>()(p.first) ^ std::hash<int>()(p.second);
@@ -372,15 +352,6 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
       }
     }
   }
-  auto t4 = high_resolution_clock::now();
-
-  duration<double, std::micro> bvh_time = t2 - t1;
-  duration<double, std::micro> surface_time = t4 - t3;
-  duration<double, std::micro> total = bvh_time + surface_time;
-  std::cout << fmt::format("BVH {}% Surface {}%\n", 100 * bvh_time / total,
-                           100 * surface_time / total);
-  std::cout << fmt::format("{} valid pairs {} candidates\n", valid_pairs,
-                           total_pairs);
 
   if (builder_M.num_faces() == 0) return;
 
@@ -454,12 +425,20 @@ void HydroelasticVolumeIntersector<MeshBuilder>::IntersectCompliantVolumes(
   std::unique_ptr<typename MeshBuilder::FieldType> field01_M;
   VolumeIntersector<MeshBuilder, Obb> volume_intersector;
 
-  volume_intersector.IntersectFields(
-      compliant_M.pressure(), compliant_M.surface_mesh_bvh(),
-      compliant_M.tri_to_tet(), compliant_M.mesh_topology(),
-      compliant_N.pressure(), compliant_M.surface_mesh_bvh(),
-      compliant_N.tri_to_tet(), compliant_N.mesh_topology(), X_MN, &surface01_M,
-      &field01_M);
+  constexpr bool use_topology = false;
+
+  if (use_topology) {
+    volume_intersector.IntersectFields(
+        compliant_M.pressure(), compliant_M.surface_mesh_bvh(),
+        compliant_M.tri_to_tet(), compliant_M.mesh_topology(),
+        compliant_N.pressure(), compliant_N.surface_mesh_bvh(),
+        compliant_N.tri_to_tet(), compliant_N.mesh_topology(), X_MN,
+        &surface01_M, &field01_M);
+  } else {
+    volume_intersector.IntersectFields(
+        compliant_M.pressure(), compliant_M.bvh(), compliant_N.pressure(),
+        compliant_N.bvh(), X_MN, &surface01_M, &field01_M);
+  }
 
   if (surface01_M == nullptr) return;
 
