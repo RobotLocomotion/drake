@@ -466,7 +466,10 @@ class HalfSpace final : public Shape {
  queries for more details. The notable cases where the actual mesh topology is
  used includes:
 
-   - Specifying the %Mesh as rigid hydroelastic.
+   - Computing signed distances from the %Mesh to query points (when it
+     references a .obj file or a tetrahedral .vtk file).
+   - Specifying the %Mesh as rigid hydroelastic (when it references a triangle
+     .obj file or a tetrahedral .vtk file).
    - Specifying the %Mesh as compliant hydroelastic (when it references a
      tetrahedral .vtk file).
    - Specifying the %Mesh as deformable (when it references a tetrahedral .vtk
