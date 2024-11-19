@@ -36,7 +36,8 @@ inline void DeprecateAttribute(py::object cls, py::str name, py::str message,
 /// `DeprecateAttribute` so that the warning is issued immediately when
 /// accessed, not only when it is called.
 inline void WarnDeprecated(
-    py::str message, std::optional<std::string> date = {}) {
+    const std::string& message, std::optional<std::string> date = {}) {
+  py::gil_scoped_acquire guard;
   py::object warn_deprecated =
       py::module::import("pydrake.common.deprecation").attr("_warn_deprecated");
   warn_deprecated(message, py::arg("date") = date);
@@ -45,10 +46,10 @@ inline void WarnDeprecated(
 namespace internal {
 
 template <typename Func, typename Return, typename... Args>
-auto WrapDeprecatedImpl(py::str message,
+auto WrapDeprecatedImpl(std::string message,
     function_info<Func, Return, Args...>&& info,
     std::enable_if_t<std::is_same_v<Return, void>, void*> = {}) {
-  return [info = std::move(info), message](Args... args) {
+  return [info = std::move(info), message = std::move(message)](Args... args) {
     WarnDeprecated(message);
     info.func(std::forward<Args>(args)...);
   };
@@ -57,10 +58,11 @@ auto WrapDeprecatedImpl(py::str message,
 // N.B. `decltype(auto)` is used in both places to (easily) achieve perfect
 // forwarding of the return type.
 template <typename Func, typename Return, typename... Args>
-decltype(auto) WrapDeprecatedImpl(py::str message,
+decltype(auto) WrapDeprecatedImpl(std::string message,
     function_info<Func, Return, Args...>&& info,
     std::enable_if_t<!std::is_same_v<Return, void>, void*> = {}) {
-  return [info = std::move(info), message](Args... args) -> decltype(auto) {
+  return [info = std::move(info), message = std::move(message)](
+             Args... args) -> decltype(auto) {
     WarnDeprecated(message);
     return info.func(std::forward<Args>(args)...);
   };
@@ -71,19 +73,19 @@ decltype(auto) WrapDeprecatedImpl(py::str message,
 /// Wraps any callable (function pointer, method pointer, lambda, etc.) to emit
 /// a deprecation message.
 template <typename Func>
-auto WrapDeprecated(py::str message, Func&& func) {
-  return internal::WrapDeprecatedImpl(
-      message, internal::infer_function_info(std::forward<Func>(func)));
+auto WrapDeprecated(std::string message, Func&& func) {
+  return internal::WrapDeprecatedImpl(std::move(message),
+      internal::infer_function_info(std::forward<Func>(func)));
 }
 
 /// Deprecated wrapping of `py::init<>`.
 /// @note Only for `unique_ptr` holders. If using `shared_ptr`, talk to Eric.
 template <typename Class, typename... Args>
-auto py_init_deprecated(py::str message) {
+auto py_init_deprecated(std::string message) {
   // N.B. For simplicity, require that Class be passed up front, rather than
   // trying to figure out how to pipe code into / mock `py::detail::initimpl`
   // classes.
-  return py::init([message](Args... args) {
+  return py::init([message = std::move(message)](Args... args) {
     WarnDeprecated(message);
     return std::make_unique<Class>(std::forward<Args>(args)...);
   });
@@ -91,14 +93,14 @@ auto py_init_deprecated(py::str message) {
 
 /// Deprecated wrapping of `py::init(factory)`.
 template <typename Func>
-auto py_init_deprecated(py::str message, Func&& func) {
-  return py::init(WrapDeprecated(message, std::forward<Func>(func)));
+auto py_init_deprecated(std::string message, Func&& func) {
+  return py::init(WrapDeprecated(std::move(message), std::forward<Func>(func)));
 }
 
 /// The deprecated flavor of ParamInit<>.
 template <typename Class>
-auto DeprecatedParamInit(py::str message) {
-  return py::init(WrapDeprecated(message, [](py::kwargs kwargs) {
+auto DeprecatedParamInit(std::string message) {
+  return py::init(WrapDeprecated(std::move(message), [](py::kwargs kwargs) {
     // N.B. We use `Class` here because `pybind11` strongly requires that we
     // return the instance itself, not just `py::object`.
     // TODO(eric.cousineau): This may hurt `keep_alive` behavior, as this
