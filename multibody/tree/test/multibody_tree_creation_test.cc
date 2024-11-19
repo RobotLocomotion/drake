@@ -45,7 +45,7 @@ class JointTester {
   JointTester() = delete;
   static const internal::RevoluteMobilizer<double>* get_mobilizer(
       const RevoluteJoint<double>& joint) {
-    return joint.get_mobilizer();
+    return &joint.get_mobilizer();
   }
 };
 

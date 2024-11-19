@@ -1657,16 +1657,18 @@ BodyIndex MultibodyPlant<T>::FindBodyByGeometryId(
     GeometryId geometry_id) const {
   if (!geometry_id.is_valid()) {
     throw std::logic_error(
-        "MultibodyPlant received contact results for a null GeometryId");
+        "MultibodyPlant: geometry_query input port receives contact results "
+        "from SceneGraph that involve invalid GeometryId.");
   }
   const auto iter = geometry_id_to_body_index_.find(geometry_id);
   if (iter != geometry_id_to_body_index_.end()) {
     return iter->second;
   }
-  throw std::logic_error(fmt::format(
-      "MultibodyPlant received contact results for GeometryId {}, but that"
-      " ID is not known to this plant",
-      geometry_id));
+  throw std::logic_error(
+      fmt::format("MultibodyPlant: geometry_query input port receives contact "
+                  "results from SceneGraph that involve GeometryId {}, but "
+                  "that ID is not known to this plant",
+                  geometry_id));
 }
 
 template <typename T>
@@ -3955,11 +3957,11 @@ void MultibodyPlant<T>::CalcReactionForces(
         internal_tree().get_mobilizer(mobilizer_index);
     const internal::MobodIndex mobod_index = mobilizer.mobod().index();
 
-    // Force on mobilized body B at mobilized frame's origin Mo, expressed in
-    // world frame.
+    // F_BMo_W is the mobilizer reaction force on mobilized body B at the origin
+    // Mo of the mobilizer's outboard frame M, expressed in the world frame W.
     const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[mobod_index];
 
-    // Frames:
+    // Frames of interest:
     const Frame<T>& frame_Jp = joint.frame_on_parent();
     const Frame<T>& frame_Jc = joint.frame_on_child();
     const FrameIndex F_index = mobilizer.inboard_frame().index();
@@ -3967,43 +3969,47 @@ void MultibodyPlant<T>::CalcReactionForces(
     const FrameIndex Jp_index = frame_Jp.index();
     const FrameIndex Jc_index = frame_Jc.index();
 
-    // In Drake we have either:
+    // In Drake we must have either:
     //  - Jp == F and Jc == M (typical case)
-    //  - Jp == M and Jc == F (mobilizer was inverted)
-    // We verify this:
+    //  - Jp == M and Jc == F (mobilizer is reversed from joint)
     DRAKE_DEMAND((Jp_index == F_index && Jc_index == M_index) ||
                  (Jp_index == M_index && Jc_index == F_index));
 
-    SpatialForce<T> F_CJc_W;
-    if (Jc_index == M_index) {
-      // Given we now Mo == Jc and B == C.
-      F_CJc_W = F_BMo_W;
-    } else if (joint.frame_on_child().index() ==
-               mobilizer.inboard_frame().index()) {
-      // Given we now Mo == Jc and B == C.
-      const SpatialForce<T>& F_PJp_W = F_BMo_W;
+    // Mobilizer is reversed if the joint's parent frame Jp is the mobilizer's
+    // outboard frame M.
+    const bool is_reversed = (Jp_index == M_index);
 
-      // Newton's third law allows to find the reaction on the child body as
-      // required.
+    // We'll need this in both cases below since we're required to report
+    // the reaction force expressed in the joint's child frame Jc.
+    const RotationMatrix<T> R_JcW =
+        frame_Jc.CalcRotationMatrixInWorld(context).inverse();
+
+    // The quantity of interest, F_CJc_Jc, is the joint's reaction force on the
+    // joint's child body C at the joint's child frame Jc, expressed in Jc.
+    SpatialForce<T>& F_CJc_Jc = output->at(joint.ordinal());
+    if (!is_reversed) {
+      F_CJc_Jc = R_JcW * F_BMo_W;  // The typical case: Mo==Jc and B==C.
+    } else {
+      // For this reversed case, F_BMo_W is the reaction on the joint's _parent_
+      // body at Jp, expressed in W.
+      const SpatialForce<T>& F_PJp_W = F_BMo_W;  // Reversed: Mo==Jp and B==P.
+
+      // Newton's 3ʳᵈ law (action/reaction) (and knowing Drake's joints are
+      // massless) says the force on the child _at Jp_ is equal and opposite to
+      // the force on the parent at Jp.
       const SpatialForce<T> F_CJp_W = -F_PJp_W;
+      const SpatialForce<T> F_CJp_Jc = R_JcW * F_CJp_W;  // Reexpress in Jc.
 
-      // Now we need to shift the application point from Jp to Jc.
-      // First we need to find the position vector p_JpJc_W.
-      const RotationMatrix<T> R_WJp =
-          frame_Jp.CalcRotationMatrixInWorld(context);
-      const RigidTransform<T> X_JpJc = frame_Jc.CalcPose(context, frame_Jp);
-      const Vector3<T> p_JpJc_Jp = X_JpJc.translation();
-      const Vector3<T> p_JpJc_W = R_WJp * p_JpJc_Jp;
+      // However, the reaction force we want to report on the child is at Jc,
+      // not Jp. We need to shift the application point from Jp to Jc.
 
-      // Finally, we shift the spatial force at Jp.
-      F_CJc_W = F_CJp_W.Shift(p_JpJc_W);
+      // Find the shift vector p_JpJc_Jc (= -p_JcJp_Jc).
+      const RigidTransform<T> X_JcJp = frame_Jp.CalcPose(context, frame_Jc);
+      const Vector3<T> p_JpJc_Jc = -X_JcJp.translation();
+
+      // Perform  the Jp->Jc shift.
+      F_CJc_Jc = F_CJp_Jc.Shift(p_JpJc_Jc);
     }
-
-    // Re-express in the joint's child frame Jc.
-    const RotationMatrix<T> R_WJc = frame_Jc.CalcRotationMatrixInWorld(context);
-    const RotationMatrix<T> R_JcW = R_WJc.inverse();
-    const SpatialForce<T> F_CJc_Jc = R_JcW * F_CJc_W;
-    output->at(joint.ordinal()) = F_CJc_Jc;
   }
 }
 

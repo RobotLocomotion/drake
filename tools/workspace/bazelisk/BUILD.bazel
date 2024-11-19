@@ -10,6 +10,9 @@ drake_py_unittest(
         "@bazelisk//:bazelisk.py",
     ],
     tags = ["lint"],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
 )
 
 add_lint_tests()

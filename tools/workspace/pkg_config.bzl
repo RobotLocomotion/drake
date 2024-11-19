@@ -248,7 +248,7 @@ cc_library(
             hdrs_path.get_child(symlink_dest),
         )
         includes += ["include/" + symlink_dest]
-    hdrs_prologue = "glob([\"include/**\"]) + "
+    hdrs_prologue = "glob([\"include/**\"], allow_empty = True) + "
 
     extra_deprecation = getattr(
         repository_ctx.attr,

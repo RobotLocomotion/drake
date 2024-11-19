@@ -1194,6 +1194,9 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "discrete_update_manager_test",
+    data = [
+        "//multibody:models",
+    ],
     deps = [
         ":multibody_plant_config_functions",
         ":multibody_plant_core",

@@ -184,6 +184,21 @@ void DecomposeAffineExpressions(
 }
 
 void ExtractAndAppendVariablesFromExpression(
+    const Expression& e, std::vector<Variable>* vars,
+    std::unordered_map<Variable::Id, int>* map_var_to_index) {
+  DRAKE_THROW_UNLESS(vars != nullptr);
+  DRAKE_THROW_UNLESS(map_var_to_index != nullptr);
+  DRAKE_THROW_UNLESS(map_var_to_index->size() == vars->size());
+  for (const Variable& var : e.GetVariables()) {
+    const auto [_, emplace_success] =
+        map_var_to_index->try_emplace(var.get_id(), vars->size());
+    if (emplace_success) {
+      vars->push_back(var);
+    }
+  }
+}
+
+void ExtractAndAppendVariablesFromExpression(
     const Expression& e, VectorX<Variable>* vars,
     std::unordered_map<Variable::Id, int>* map_var_to_index) {
   DRAKE_DEMAND(static_cast<int>(map_var_to_index->size()) == vars->size());

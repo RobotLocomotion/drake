@@ -70,13 +70,17 @@ def bazel_lint(
 
     _bazel_lint(
         name = name,
-        files = native.glob([
-            "*.bzl",
-            "*.BUILD",
-            "*.BUILD.bazel",
-            "BUILD",
-            "BUILD.bazel",
-            "WORKSPACE",
-        ], exclude = exclude) + extra_srcs,
+        files = native.glob(
+            [
+                "*.bzl",
+                "*.BUILD",
+                "*.BUILD.bazel",
+                "BUILD",
+                "BUILD.bazel",
+                "WORKSPACE",
+            ],
+            exclude = exclude,
+            allow_empty = True,
+        ) + extra_srcs,
         ignore = ignore,
     )

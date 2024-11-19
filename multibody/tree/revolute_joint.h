@@ -164,7 +164,7 @@ class RevoluteJoint final : public Joint<T> {
   ///   The context of the MultibodyTree this joint belongs to.
   /// @returns The angle coordinate of `this` joint stored in the `context`.
   const T& get_angle(const Context<T>& context) const {
-    return get_mobilizer()->get_angle(context);
+    return get_mobilizer().get_angle(context);
   }
 
   /// Sets the `context` so that the generalized coordinate corresponding to the
@@ -175,12 +175,12 @@ class RevoluteJoint final : public Joint<T> {
   ///   The desired angle in radians to be stored in `context`.
   /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angle(Context<T>* context, const T& angle) const {
-    get_mobilizer()->SetAngle(context, angle);
+    get_mobilizer().SetAngle(context, angle);
     return *this;
   }
 
   void set_random_angle_distribution(const symbolic::Expression& angle) {
-    get_mutable_mobilizer()->set_random_position_distribution(
+    get_mutable_mobilizer().set_random_position_distribution(
         Vector1<symbolic::Expression>{angle});
   }
 
@@ -191,7 +191,7 @@ class RevoluteJoint final : public Joint<T> {
   /// @returns The rate of change of `this` joint's angle as stored in the
   /// `context`.
   const T& get_angular_rate(const Context<T>& context) const {
-    return get_mobilizer()->get_angular_rate(context);
+    return get_mobilizer().get_angular_rate(context);
   }
 
   /// Sets the rate of change, in radians per second, of this `this` joint's
@@ -205,7 +205,7 @@ class RevoluteJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angular_rate(Context<T>* context,
                                            const T& angle) const {
-    get_mobilizer()->SetAngularRate(context, angle);
+    get_mobilizer().SetAngularRate(context, angle);
     return *this;
   }
 
@@ -276,7 +276,7 @@ class RevoluteJoint final : public Joint<T> {
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);
     Eigen::Ref<VectorX<T>> tau_mob =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
   }
@@ -295,29 +295,29 @@ class RevoluteJoint final : public Joint<T> {
 
  private:
   int do_get_velocity_start() const override {
-    return get_mobilizer()->velocity_start_in_v();
+    return get_mobilizer().velocity_start_in_v();
   }
 
   int do_get_num_velocities() const override { return 1; }
 
   int do_get_position_start() const override {
-    return get_mobilizer()->position_start_in_q();
+    return get_mobilizer().position_start_in_q();
   }
 
   int do_get_num_positions() const override { return 1; }
 
   std::string do_get_position_suffix(int index) const override {
-    return get_mobilizer()->position_suffix(index);
+    return get_mobilizer().position_suffix(index);
   }
 
   std::string do_get_velocity_suffix(int index) const override {
-    return get_mobilizer()->velocity_suffix(index);
+    return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) override {
     if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(default_positions);
+      get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
@@ -354,23 +354,13 @@ class RevoluteJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::RevoluteMobilizer<T>* get_mobilizer() const {
-    // This implementation should always use a mobilizer.
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::RevoluteMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::RevoluteMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  const internal::RevoluteMobilizer<T>& get_mobilizer() const {
+    return this->template get_mobilizer_downcast<internal::RevoluteMobilizer>();
   }
 
-  internal::RevoluteMobilizer<T>* get_mutable_mobilizer() {
-    // This implementation should always use a mobilizer.
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::RevoluteMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  internal::RevoluteMobilizer<T>& get_mutable_mobilizer() {
+    return this->template get_mutable_mobilizer_downcast<
+        internal::RevoluteMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.

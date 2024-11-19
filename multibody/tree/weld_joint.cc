@@ -61,9 +61,18 @@ WeldJoint<T>::MakeImplementationBlueprint(
   auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
   const auto [inboard_frame, outboard_frame] =
       this->tree_frames(mobod.is_reversed());
-  // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
+
+  // This quirk is unique to Weld joints.
+  const math::RigidTransform<double> X_FM =
+      mobod.is_reversed() ? X_JpJc_.inverse() : X_JpJc_;
+
+  // The only other requirement for a reversed weld is that the reported
+  // reaction forces (on the joint's child link) must be those acting on
+  // the mobilizer's inboard body rather than the usual outboard reaction.
+  // That's handled when reporting (see MultibodyPlant::CalcReactionForces()),
+  // not locally by the mobilizer.
   blue_print->mobilizer = std::make_unique<internal::WeldMobilizer<T>>(
-      mobod, *inboard_frame, *outboard_frame, X_FM_);
+      mobod, *inboard_frame, *outboard_frame, X_FM);
   return blue_print;
 }
 

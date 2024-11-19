@@ -101,7 +101,7 @@ class PlanarJoint final : public Joint<T> {
   /// @retval p_FoMo_F The position of `this` joint stored in the `context`
   ///                  ordered as (x, y). See class documentation for details.
   Vector2<T> get_translation(const Context<T>& context) const {
-    return get_mobilizer()->get_translations(context);
+    return get_mobilizer().get_translations(context);
   }
 
   /// Sets the `context` so that the position of `this` joint equals `p_FoMo_F`.
@@ -113,7 +113,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_translation(Context<T>* context,
                                         const Vector2<T>& p_FoMo_F) const {
-    get_mobilizer()->set_translations(context, p_FoMo_F);
+    get_mobilizer().set_translations(context, p_FoMo_F);
     return *this;
   }
 
@@ -123,7 +123,7 @@ class PlanarJoint final : public Joint<T> {
   /// @retval theta The angle of `this` joint stored in the `context`. See class
   ///               documentation for details.
   const T& get_rotation(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_angle(context);
+    return get_mobilizer().get_angle(context);
   }
 
   /// Sets the `context` so that the angle θ of `this` joint equals `theta`.
@@ -134,7 +134,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_rotation(systems::Context<T>* context,
                                      const T& theta) const {
-    get_mobilizer()->SetAngle(context, theta);
+    get_mobilizer().SetAngle(context, theta);
     return *this;
   }
 
@@ -151,8 +151,8 @@ class PlanarJoint final : public Joint<T> {
   const PlanarJoint<T>& set_pose(systems::Context<T>* context,
                                  const Vector2<T>& p_FoMo_F,
                                  const T& theta) const {
-    get_mobilizer()->set_translations(context, p_FoMo_F);
-    get_mobilizer()->SetAngle(context, theta);
+    get_mobilizer().set_translations(context, p_FoMo_F);
+    get_mobilizer().SetAngle(context, theta);
     return *this;
   }
 
@@ -163,7 +163,7 @@ class PlanarJoint final : public Joint<T> {
   ///                  the `context`.
   Vector2<T> get_translational_velocity(
       const systems::Context<T>& context) const {
-    return get_mobilizer()->get_translation_rates(context);
+    return get_mobilizer().get_translation_rates(context);
   }
 
   /// Sets the translational velocity, in meters per second, of this `this`
@@ -175,7 +175,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const Vector2<T>& v_FoMo_F) const {
-    get_mobilizer()->SetTranslationRates(context, v_FoMo_F);
+    get_mobilizer().SetTranslationRates(context, v_FoMo_F);
     return *this;
   }
 
@@ -187,7 +187,7 @@ class PlanarJoint final : public Joint<T> {
   /// @retval theta_dot The rate of change of `this` joint's angle θ as
   ///                   stored in the `context`.
   const T& get_angular_velocity(const systems::Context<T>& context) const {
-    return get_mobilizer()->get_angular_rate(context);
+    return get_mobilizer().get_angular_rate(context);
   }
 
   /// Sets the rate of change, in radians per second, of `this` joint's angle
@@ -200,7 +200,7 @@ class PlanarJoint final : public Joint<T> {
   /// @returns a constant reference to `this` joint.
   const PlanarJoint<T>& set_angular_velocity(systems::Context<T>* context,
                                              const T& theta_dot) const {
-    get_mobilizer()->SetAngularRate(context, theta_dot);
+    get_mobilizer().SetAngularRate(context, theta_dot);
     return *this;
   }
 
@@ -247,7 +247,7 @@ class PlanarJoint final : public Joint<T> {
       const Vector2<symbolic::Expression>& p_FoMo_F,
       const symbolic::Expression& theta) {
     Vector3<symbolic::Expression> state(p_FoMo_F[0], p_FoMo_F[1], theta);
-    get_mutable_mobilizer()->set_random_position_distribution(state);
+    get_mutable_mobilizer().set_random_position_distribution(state);
   }
 
  private:
@@ -270,7 +270,7 @@ class PlanarJoint final : public Joint<T> {
                        MultibodyForces<T>* forces) const final {
     DRAKE_DEMAND(joint_dof < 3);
     Eigen::Ref<VectorX<T>> tau_mob =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     tau_mob(joint_dof) += joint_tau;
   }
@@ -283,7 +283,7 @@ class PlanarJoint final : public Joint<T> {
   void DoAddInDamping(const systems::Context<T>& context,
                       MultibodyForces<T>* forces) const final {
     Eigen::Ref<VectorX<T>> tau =
-        get_mobilizer()->get_mutable_generalized_forces_from_array(
+        get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
     const Vector2<T>& v_translation = get_translational_velocity(context);
     const T& v_angular = get_angular_velocity(context);
@@ -294,29 +294,29 @@ class PlanarJoint final : public Joint<T> {
   }
 
   int do_get_velocity_start() const final {
-    return get_mobilizer()->velocity_start_in_v();
+    return get_mobilizer().velocity_start_in_v();
   }
 
   int do_get_num_velocities() const final { return 3; }
 
   int do_get_position_start() const final {
-    return get_mobilizer()->position_start_in_q();
+    return get_mobilizer().position_start_in_q();
   }
 
   int do_get_num_positions() const final { return 3; }
 
   std::string do_get_position_suffix(int index) const override {
-    return get_mobilizer()->position_suffix(index);
+    return get_mobilizer().position_suffix(index);
   }
 
   std::string do_get_velocity_suffix(int index) const override {
-    return get_mobilizer()->velocity_suffix(index);
+    return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) final {
     if (this->has_implementation()) {
-      get_mutable_mobilizer()->set_default_position(default_positions);
+      get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
@@ -342,21 +342,13 @@ class PlanarJoint final : public Joint<T> {
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::PlanarMobilizer<T>* get_mobilizer() const {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    const internal::PlanarMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::PlanarMobilizer<T>*>(
-            this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  const internal::PlanarMobilizer<T>& get_mobilizer() const {
+    return this->template get_mobilizer_downcast<internal::PlanarMobilizer>();
   }
 
-  internal::PlanarMobilizer<T>* get_mutable_mobilizer() {
-    DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-    auto* mobilizer = dynamic_cast<internal::PlanarMobilizer<T>*>(
-        this->get_implementation().mobilizer);
-    DRAKE_DEMAND(mobilizer != nullptr);
-    return mobilizer;
+  internal::PlanarMobilizer<T>& get_mutable_mobilizer() {
+    return this
+        ->template get_mutable_mobilizer_downcast<internal::PlanarMobilizer>();
   }
 
   // Helper method to make a clone templated on ToScalar.

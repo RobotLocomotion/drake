@@ -254,9 +254,8 @@ void ShapeConfigurations<T>::ImplementGeometry(const HalfSpace&, void*) {
 
 template <typename T>
 void ShapeConfigurations<T>::ImplementGeometry(const Mesh&, void*) {
-  throw std::logic_error(
-      "We're assuming that Mesh is Convex; implement this when Mesh is "
-      "represented as its own thing");
+  const Box box = CharacterizeResultTest<double>::box();
+  ImplementGeometry(box, nullptr);
 }
 
 template <typename T>
@@ -350,9 +349,9 @@ void MakeFclShape::ImplementGeometry(const HalfSpace&, void*) {
 }
 
 void MakeFclShape::ImplementGeometry(const Mesh&, void*) {
-  throw std::logic_error(
-      "We're assuming that Mesh is Convex; implement this when Mesh is "
-      "represented as its own thing");
+  // For these tests, we use the same box mesh for Mesh and Convex. Therefore,
+  // the fcl representation of the Mesh type is simply that of the Convex type.
+  ImplementGeometry(Convex("ignored for this test", 1.0), nullptr);
 }
 
 void MakeFclShape::ImplementGeometry(const Sphere& sphere, void*) {
@@ -369,7 +368,7 @@ class ProximityEngineTester {
   }
 };
 
-::testing::AssertionResult MeshIsConvex() {
+::testing::AssertionResult MeshIsConvexInFcl() {
   // Create a small obj in a temp directory.
   const std::string obj_path = temp_directory() + "/tri.obj";
   {
@@ -390,7 +389,7 @@ class ProximityEngineTester {
   // fcl::Convex.
   ProximityEngine<double> engine;
   const GeometryId id = GeometryId::get_new_id();
-  engine.AddDynamicGeometry(Convex(obj_path, 1.0), {}, id);
+  engine.AddDynamicGeometry(Mesh(obj_path, 1.0), {}, id);
   if (ProximityEngineTester::IsFclConvexType(engine, id)) {
     return ::testing::AssertionSuccess();
   }
@@ -704,8 +703,7 @@ HalfSpace CharacterizeResultTest<T>::half_space(bool) {
 
 template <typename T>
 Mesh CharacterizeResultTest<T>::mesh(bool) {
-  throw std::logic_error(
-      "Mesh will be supported when it is no longer represented as a Convex");
+  return Mesh("ignored for this test", 1.0);
 }
 
 template <typename T>

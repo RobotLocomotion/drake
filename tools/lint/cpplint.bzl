@@ -61,7 +61,10 @@ def _add_linter_rules(
     # alias Drake's config file into their top-level BUILD.bazel file.)
     cpplint_data = list(data)
     cpplint_cfgs = ["//:CPPLINT.cfg"]
-    for x in native.glob(["CPPLINT.cfg", "test/CPPLINT.cfg"]):
+    for x in native.glob(
+        ["CPPLINT.cfg", "test/CPPLINT.cfg"],
+        allow_empty = True,
+    ):
         cpplint_cfgs.append("//" + native.package_name() + ":" + x)
     for item in cpplint_cfgs:
         if item not in cpplint_data:
