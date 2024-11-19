@@ -1,5 +1,6 @@
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 
+#include <algorithm>
 #include <limits>
 #include <tuple>
 #include <unordered_map>
@@ -786,6 +787,7 @@ std::vector<Variable> FlattenVariables(
   return all_variables;
 }
 
+// Compatible with Expression and Formula.
 template <typename T>
 T SubstituteAllVariables(
     T e, std::vector<Variable> old_scalar_variables = {},
@@ -813,10 +815,57 @@ T SubstituteAllVariables(
   return e;
 }
 
+// Compatible with Binding<Cost> and Binding<Constraint>.
+template <typename T>
+Binding<T> SubstituteAllVariables(
+    const Binding<T>& binding, std::vector<Variable> old_scalar_variables = {},
+    std::vector<Variable> new_scalar_variables = {},
+    std::vector<VectorXDecisionVariable> old_vector_variables = {},
+    std::vector<VectorXDecisionVariable> new_vector_variables = {},
+    std::vector<MatrixXDecisionVariable> old_matrix_variables = {},
+    std::vector<MatrixXDecisionVariable> new_matrix_variables = {}) {
+  DRAKE_DEMAND(old_scalar_variables.size() == new_scalar_variables.size());
+  DRAKE_DEMAND(old_vector_variables.size() == new_vector_variables.size());
+  DRAKE_DEMAND(old_matrix_variables.size() == new_matrix_variables.size());
+
+  std::vector<Variable> old_variables = FlattenVariables(
+      old_scalar_variables, old_vector_variables, old_matrix_variables);
+  std::vector<Variable> new_variables = FlattenVariables(
+      new_scalar_variables, new_vector_variables, new_matrix_variables);
+  DRAKE_DEMAND(old_variables.size() == new_variables.size());
+
+  VectorXDecisionVariable new_binding_variables(binding.variables());
+  for (int i = 0; i < new_binding_variables.size(); ++i) {
+    // For the current placeholder variable, find its index in old_variables,
+    // and grab the corresponding entry in new_variables.
+    auto iterator = std::find_if(
+        old_variables.begin(), old_variables.end(), [&](const Variable& var) {
+          return var.equal_to(new_binding_variables[i]);
+        });
+    if (iterator == old_variables.end()) {
+      // We throw an error if the user gave an unknown variable.
+      throw std::runtime_error(
+          fmt::format("Unknown variable with name {} provided.",
+                      new_binding_variables[i].get_name()));
+    }
+    size_t index = std::distance(std::begin(old_variables), iterator);
+    new_binding_variables[i] = new_variables[index];
+  }
+
+  return Binding<T>{binding.evaluator(), new_binding_variables};
+}
+
+// Compatible with Expression, Formula, Binding<Cost>, and Binding<Constraint>.
 template <typename T>
 void ThrowIfContainsVariables(const T& e, const std::vector<Variable>& vars,
                               const std::string& error_message) {
-  symbolic::Variables e_vars = e.GetFreeVariables();
+  symbolic::Variables e_vars;
+  if constexpr (std::disjunction_v<std::is_same<T, Formula>,
+                                   std::is_same<T, Expression>>) {
+    e_vars = e.GetFreeVariables();
+  } else {
+    e_vars = symbolic::Variables(e.variables());
+  }
   for (const auto& var : vars) {
     if (e_vars.include(var)) {
       throw(std::runtime_error(error_message));
@@ -826,6 +875,7 @@ void ThrowIfContainsVariables(const T& e, const std::vector<Variable>& vars,
 
 }  // namespace
 
+// Compatible with Expression, Formula, Binding<Cost>, and Binding<Constraint>.
 template <typename T>
 T Subgraph::SubstituteVertexPlaceholderVariables(T e,
                                                  const Vertex& vertex) const {
@@ -847,6 +897,7 @@ T Subgraph::SubstituteVertexPlaceholderVariables(T e,
       {placeholder_vertex_control_points_var_}, {GetControlPoints(vertex)});
 }
 
+// Compatible with Expression, Formula, Binding<Cost>, and Binding<Constraint>.
 template <typename T>
 T Subgraph::SubstituteEdgePlaceholderVariables(T e, const Edge& edge) const {
   // Check that a user hasn't used the vertex placeholder variables.
@@ -874,39 +925,86 @@ T Subgraph::SubstituteEdgePlaceholderVariables(T e, const Edge& edge) const {
 
 void Subgraph::AddVertexCost(
     const Expression& e,
-    const std::unordered_set<Transcription>& used_in_transcription) {
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddVertexCost(e, use_in_transcription);
+}
+void Subgraph::AddVertexCost(
+    const Binding<Cost>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddVertexCost(binding, use_in_transcription);
+}
+
+// Compatible with Expression and Binding<Cost>.
+template <typename T>
+void Subgraph::DoAddVertexCost(
+    const T& e, const std::unordered_set<Transcription>& use_in_transcription) {
   for (Vertex*& vertex : vertices_) {
-    Expression post_substitution =
-        SubstituteVertexPlaceholderVariables(e, *vertex);
-    vertex->AddCost(post_substitution, used_in_transcription);
+    T post_substitution = SubstituteVertexPlaceholderVariables(e, *vertex);
+    vertex->AddCost(post_substitution, use_in_transcription);
   }
 }
 
 void Subgraph::AddVertexConstraint(
     const Formula& e,
-    const std::unordered_set<Transcription>& used_in_transcription) {
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddVertexConstraint(e, use_in_transcription);
+}
+void Subgraph::AddVertexConstraint(
+    const Binding<Constraint>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddVertexConstraint(binding, use_in_transcription);
+}
+
+// Compatible with Formula and Binding<Constraint>.
+template <typename T>
+void Subgraph::DoAddVertexConstraint(
+    const T& e, const std::unordered_set<Transcription>& use_in_transcription) {
   for (Vertex*& vertex : vertices_) {
-    Formula post_substitution =
-        SubstituteVertexPlaceholderVariables(e, *vertex);
-    vertex->AddConstraint(post_substitution, used_in_transcription);
+    T post_substitution = SubstituteVertexPlaceholderVariables(e, *vertex);
+    vertex->AddConstraint(post_substitution, use_in_transcription);
   }
+}
+void Subgraph::AddEdgeCost(
+    const Expression& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeCost(e, use_in_transcription);
 }
 
 void Subgraph::AddEdgeCost(
-    const Expression& e,
-    const std::unordered_set<Transcription>& used_in_transcription) {
+    const Binding<Cost>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeCost(binding, use_in_transcription);
+}
+
+// Compatible with Expression and Binding<Cost>.
+template <typename T>
+void Subgraph::DoAddEdgeCost(
+    const T& e, const std::unordered_set<Transcription>& use_in_transcription) {
   for (Edge*& edge : edges_) {
-    Expression post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
-    edge->AddCost(post_substitution, used_in_transcription);
+    T post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
+    edge->AddCost(post_substitution, use_in_transcription);
   }
 }
 
 void Subgraph::AddEdgeConstraint(
-    const symbolic::Formula& e,
-    const std::unordered_set<Transcription>& used_in_transcription) {
+    const Formula& e,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeConstraint(e, use_in_transcription);
+}
+
+void Subgraph::AddEdgeConstraint(
+    const Binding<Constraint>& binding,
+    const std::unordered_set<Transcription>& use_in_transcription) {
+  DoAddEdgeConstraint(binding, use_in_transcription);
+}
+
+// Compatible with Formula and Binding<Constraint>.
+template <typename T>
+void Subgraph::DoAddEdgeConstraint(
+    const T& e, const std::unordered_set<Transcription>& use_in_transcription) {
   for (Edge*& edge : edges_) {
-    Formula post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
-    edge->AddConstraint(post_substitution, used_in_transcription);
+    T post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
+    edge->AddConstraint(post_substitution, use_in_transcription);
   }
 }
 
@@ -1600,19 +1698,19 @@ T EdgesBetweenSubgraphs::SubstituteEdgePlaceholderVariables(
 
 void EdgesBetweenSubgraphs::AddEdgeCost(
     const Expression& e,
-    const std::unordered_set<Transcription>& used_in_transcription) {
+    const std::unordered_set<Transcription>& use_in_transcription) {
   for (Edge*& edge : edges_) {
     Expression post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
-    edge->AddCost(post_substitution, used_in_transcription);
+    edge->AddCost(post_substitution, use_in_transcription);
   }
 }
 
 void EdgesBetweenSubgraphs::AddEdgeConstraint(
     const symbolic::Formula& e,
-    const std::unordered_set<Transcription>& used_in_transcription) {
+    const std::unordered_set<Transcription>& use_in_transcription) {
   for (Edge*& edge : edges_) {
     Formula post_substitution = SubstituteEdgePlaceholderVariables(e, *edge);
-    edge->AddConstraint(post_substitution, used_in_transcription);
+    edge->AddConstraint(post_substitution, use_in_transcription);
   }
 }
 

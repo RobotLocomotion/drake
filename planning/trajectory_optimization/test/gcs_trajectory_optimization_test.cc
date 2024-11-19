@@ -51,6 +51,8 @@ using multibody::RevoluteJoint;
 using multibody::RigidBody;
 using multibody::RpyFloatingJoint;
 using solvers::MathematicalProgram;
+using solvers::internal::ParseConstraint;
+using solvers::internal::ParseCost;
 using symbolic::Expression;
 using symbolic::Formula;
 
@@ -2624,22 +2626,32 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
   // path length cost cannot.
   middle.AddVertexCost(whole_cost,
                        {GraphOfConvexSets::Transcription::kRestriction});
+  middle.AddVertexCost(ParseCost(whole_cost),
+                       {GraphOfConvexSets::Transcription::kRestriction});
+
   middle.AddVertexCost(time_cost,
+                       {GraphOfConvexSets::Transcription::kMIP,
+                        GraphOfConvexSets::Transcription::kRelaxation});
+  middle.AddVertexCost(ParseCost(time_cost),
                        {GraphOfConvexSets::Transcription::kMIP,
                         GraphOfConvexSets::Transcription::kRelaxation});
 
   // Add a constant cost for each vertex we pass through.
   middle.AddVertexCost(Expression(1.0));
+  middle.AddVertexCost(ParseCost(Expression(1.0)));
 
   // Manually construct a duration constraint, forcing the trajectory to spend
   // more than kMinimumDuration in each set.
   Formula time_constraint = vertex_duration >= Expression(2 * kMinimumDuration);
   middle.AddVertexConstraint(time_constraint);
+  middle.AddVertexConstraint(ParseConstraint(time_constraint));
 
   // Manually construct a segment length constraint, forcing each segment to be
   // at most 0.75 in length.
   Formula segment_length = l1_path_length_cost <= Expression(0.75);
   middle.AddVertexConstraint(segment_length,
+                             {GraphOfConvexSets::Transcription::kRestriction});
+  middle.AddVertexConstraint(ParseConstraint(segment_length),
                              {GraphOfConvexSets::Transcription::kRestriction});
 
   // All costs and constraints are convex, so the relaxation should be solvable.
@@ -2656,6 +2668,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
                 // through three sets due to the segment length constraint.)
   cost +=
       1.0 * 3;  // Constant cost (1.0 per set, and we pass through three sets.)
+  cost *= 2;  // Each cost is added twice, once as an Expression, and once as a
+              // Binding<Cost>.
 
   EXPECT_NEAR(result.get_optimal_cost(), cost, kTol);
   EXPECT_EQ(traj.get_number_of_segments(), 3);
@@ -2679,16 +2693,31 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
   Formula bad_formula_3 = bad_expression_3 == Expression(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_1),
                               ".*Edge placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(ParseCost(bad_expression_1)),
+                              ".*Edge placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_2),
+                              ".*Edge placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(ParseCost(bad_expression_2)),
                               ".*Edge placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(bad_expression_3),
                               ".*.IsSubsetOf\\(Variables\\(placeholder_x_.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexCost(ParseCost(bad_expression_3)),
+                              ".*Unknown variable.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_1),
                               ".*Edge placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddVertexConstraint(ParseConstraint(bad_formula_1)),
+      ".*Edge placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_2),
                               ".*Edge placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddVertexConstraint(ParseConstraint(bad_formula_2)),
+      ".*Edge placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddVertexConstraint(bad_formula_3),
                               ".*.IsSubsetOf\\(Variables\\(placeholder_x_.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddVertexConstraint(ParseConstraint(bad_formula_3)),
+      ".*Unknown variable.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
@@ -2716,34 +2745,43 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
   Formula outgoing_time_minimum =
       Expression(edge_durations.first) >= Expression(2 * kMinimumDuration);
   middle.AddEdgeConstraint(outgoing_time_minimum);
+  middle.AddEdgeConstraint(ParseConstraint(outgoing_time_minimum));
 
   // Require that the time of the first and second sets of an edge be equal.
   Formula equal_time_constraint =
       Expression(edge_durations.first) == Expression(edge_durations.second);
   middle.AddEdgeConstraint(equal_time_constraint);
+  middle.AddEdgeConstraint(ParseConstraint(equal_time_constraint));
 
   // Add a cost to the time of the second set of an edge.
   Expression incoming_time_cost = Expression(edge_durations.second);
   middle.AddEdgeCost(incoming_time_cost);
+  middle.AddEdgeCost(ParseCost(incoming_time_cost));
 
   // Require that the second control point of the first set of an edge be at
   // most 0.85.
   Formula control_point_limit =
       Expression(edge_control_points.first(0, 1)) <= Expression(0.85);
   middle.AddEdgeConstraint(control_point_limit);
+  middle.AddEdgeConstraint(ParseConstraint(control_point_limit));
 
   // Add a cost to maximize the first control point of the second set of an
   // edge.
   Expression control_point_cost =
       -1 * Expression(edge_control_points.second(0, 0));
   middle.AddEdgeCost(control_point_cost);
+  middle.AddEdgeCost(ParseCost(control_point_cost));
 
   // Also add the summed costs and logical conjunction of the constraints, but
   // just to the restriction (due to parsing limitations).
   middle.AddEdgeCost(incoming_time_cost + control_point_cost,
                      {GraphOfConvexSets::Transcription::kRestriction});
+  middle.AddEdgeCost(ParseCost(incoming_time_cost + control_point_cost),
+                     {GraphOfConvexSets::Transcription::kRestriction});
   middle.AddEdgeConstraint(outgoing_time_minimum && equal_time_constraint &&
                            control_point_limit);
+  middle.AddEdgeConstraint(ParseConstraint(
+      outgoing_time_minimum && equal_time_constraint && control_point_limit));
 
   // All costs and constraints are convex, so the relaxation should be solvable.
   GraphOfConvexSetsOptions options;
@@ -2764,6 +2802,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
               // continuity constraints) has been limited to be at most 0.85.
   cost *= 2;  // We double the cost due to the additional constraint on the
               // restriction.
+  cost *= 2;  // Each cost is added twice, once as an Expression, and once as a
+              // Binding<Cost>.
   EXPECT_NEAR(result.get_optimal_cost(), cost, kTol);
 
   // Check the constraints.
@@ -2791,18 +2831,35 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphEdgeCostConstraint) {
       middle.AddEdgeCost(bad_expression_1),
       ".*Vertex placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeCost(ParseCost(bad_expression_1)),
+      ".*Vertex placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       middle.AddEdgeCost(bad_expression_2),
+      ".*Vertex placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeCost(ParseCost(bad_expression_2)),
       ".*Vertex placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(bad_expression_3),
                               ".*IsSubsetOf\\(allowed_vars_\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeCost(ParseCost(bad_expression_3)),
+                              ".*Unknown variable.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       middle.AddEdgeConstraint(bad_formula_1),
       ".*Vertex placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeConstraint(ParseConstraint(bad_formula_1)),
+      ".*Vertex placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       middle.AddEdgeConstraint(bad_formula_2),
+      ".*Vertex placeholder variables cannot be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeConstraint(ParseConstraint(bad_formula_2)),
       ".*Vertex placeholder variables cannot be used.*");
   DRAKE_EXPECT_THROWS_MESSAGE(middle.AddEdgeConstraint(bad_formula_3),
                               ".*IsSubsetOf\\(allowed_vars_\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      middle.AddEdgeConstraint(ParseConstraint(bad_formula_3)),
+      ".*Unknown variable.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest,
