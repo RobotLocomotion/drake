@@ -479,7 +479,8 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
                     0, 0,  0,  0;
   // clang-format on
   Eigen::Matrix3Xd obs_points(3, 5);
-  // approximating offset due to sphere radius with fixed offset
+  // Adding 0.01 offset to obstacles to acommodate for the radius of the
+  // spherical robot.
   double s = 0.7 + 0.01;
   // clang-format off
         obs_points << -s, s,  s, -s, -s,
