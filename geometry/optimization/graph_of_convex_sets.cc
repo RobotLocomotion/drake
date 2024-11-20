@@ -1599,31 +1599,35 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
           "the solution to the relaxation instead.");
     }
 
-    MathematicalProgramResult best_rounded_result;
+    std::vector<MathematicalProgramResult> rounded_results(
+        candidate_paths.size());
 
-    for (auto new_path : candidate_paths) {
-      // Optimize path.
-      MathematicalProgramResult rounded_result =
-          SolveConvexRestriction(new_path, options, &result);
+    for (int i = 0; i < ssize(candidate_paths); ++i) {
+      rounded_results[i] =
+          SolveConvexRestriction(candidate_paths[i], options, &result);
+    }
 
-      // Check path quality.
-      if (rounded_result.is_success() &&
-          (!best_rounded_result.is_success() ||
-           rounded_result.get_optimal_cost() <
-               best_rounded_result.get_optimal_cost())) {
-        best_rounded_result = rounded_result;
-      } else {
-        // In the event that all rounded results are infeasible, we still want
-        // to propagate the solver id for logging.
-        best_rounded_result.set_solver_id(rounded_result.get_solver_id());
+    constexpr double kInf = std::numeric_limits<double>::infinity();
+    double best_cost = kInf;
+    int best_result_idx = -1;
+    for (int i = 0; i < ssize(rounded_results); ++i) {
+      if (rounded_results[i].is_success() &&
+          rounded_results[i].get_optimal_cost() < best_cost) {
+        best_result_idx = i;
+        best_cost = rounded_results[i].get_optimal_cost();
       }
     }
-    if (best_rounded_result.is_success()) {
-      result = best_rounded_result;
+
+    if (best_cost < kInf) {
+      // We found at least one valid result.
+      result = rounded_results[best_result_idx];
     } else {
+      // In the event that all rounded results are infeasible, we still want
+      // to propagate the solver id for logging.
       result.set_solution_result(SolutionResult::kIterationLimit);
-      result.set_solver_id(best_rounded_result.get_solver_id());
+      result.set_solver_id(rounded_results.back().get_solver_id());
     }
+
     log()->info("Finished {} rounding solutions with {}.",
                 candidate_paths.size(), result.get_solver_id().name());
   }
