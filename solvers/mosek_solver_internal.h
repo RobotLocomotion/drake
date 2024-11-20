@@ -229,15 +229,20 @@ class MosekSolverProgram {
                          ConstraintDualIndices>* lin_eq_con_dual_indices);
 
   // Add the bounds on the decision variables in @p prog. Note that if a
-  // decision variable in positive definite matrix has a bound, we need to add
-  // new linear constraint to Mosek to bound that variable.
-  // @param[out] dual_indices Map each bounding box constraint to its dual
+  // decision variable in positive definite matrix (with >= 2 rows) has a bound,
+  // we need to add new linear constraint to Mosek to bound that variable.
+  // @param[out] bbcon_dual_indices Map each bounding box constraint to its dual
   // variable indices.
-  MSKrescodee AddBoundingBoxConstraints(
+  // @param[out] scalar_psd_dual_indices Map each 1x1
+  // PositiveSemidefiniteConstraint to its dual variable index.
+  MSKrescodee AddVariableBounds(
       const MathematicalProgram& prog,
       std::unordered_map<Binding<BoundingBoxConstraint>,
                          std::pair<ConstraintDualIndices,
-                                   ConstraintDualIndices>>* dual_indices);
+                                   ConstraintDualIndices>>* bbcon_dual_indices,
+      std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                         std::pair<ConstraintDualIndex, ConstraintDualIndex>>*
+          scalar_psd_dual_indices);
 
   // Add the quadratic constraints in @p prog.
   // @param[out] dual_indices Map each quadratic constraint to its dual variable
@@ -280,6 +285,11 @@ class MosekSolverProgram {
       const std::vector<Binding<C>>& cone_constraints,
       std::unordered_map<Binding<C>, MSKint64t>* acc_indices);
 
+  // Add positive semidefinite constraints to Mosek.
+  // Normally (for psd matrix with >= 2 rows), we use Mosek's "bar variable"
+  // which is constrained to be positive semidefinite;
+  // for a psd matrix with 1 row (namely a scalar >= 0), we just impose a lower
+  // bound on that scalar (in AddVariableBounds).
   // @param[out] psd_barvar_indices maps each psd constraint to Mosek matrix
   // variable
   MSKrescodee AddPositiveSemidefiniteConstraints(
@@ -356,6 +366,10 @@ class MosekSolverProgram {
           exp_cone_acc_indices,
       const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
                                MSKint32t>& psd_barvar_indices,
+      const std::unordered_map<
+          Binding<PositiveSemidefiniteConstraint>,
+          std::pair<ConstraintDualIndex, ConstraintDualIndex>>&
+          scalar_psd_dual_indices,
       MathematicalProgramResult* result) const;
 
   // @param[in] options The options to copy into our task. It is mutable so
@@ -514,14 +528,19 @@ MSKrescodee MosekSolverProgram::AddConeConstraints(
 // https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getslc
 // @param suc Mosek dual variables for linear constraint upper bound. See
 // https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsuc
-void SetBoundingBoxDualSolution(
-    const std::vector<Binding<BoundingBoxConstraint>>& constraints,
+void SetVariableBoundsDualSolution(
+    const std::vector<Binding<BoundingBoxConstraint>>& bb_constraints,
+    const std::vector<Binding<PositiveSemidefiniteConstraint>>& psd_constraints,
     const std::vector<MSKrealt>& slx, const std::vector<MSKrealt>& sux,
     const std::vector<MSKrealt>& slc, const std::vector<MSKrealt>& suc,
     const std::unordered_map<
         Binding<BoundingBoxConstraint>,
         std::pair<ConstraintDualIndices, ConstraintDualIndices>>&
         bb_con_dual_indices,
+    const std::unordered_map<
+        Binding<PositiveSemidefiniteConstraint>,
+        std::pair<ConstraintDualIndex, ConstraintDualIndex>>&
+        scalar_psd_con_dual_indices,
     MathematicalProgramResult* result);
 
 template <typename C>
