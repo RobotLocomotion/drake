@@ -383,22 +383,18 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
 VPolytope VPolytope::GetMinimalRepresentation(double tol) const {
   if (ambient_dimension() == 0) {
     return VPolytope();
-  } else if (vertices_.cols() <= 1) {
+  }
+  if (vertices_.cols() <= 1) {
     // If there are zero columns, the VPolytope is empty. If there is one
     // column, the VPolytope is a point. Either way, the current representation
     // is already minimal.
     return *this;
-  } else if (ambient_dimension() == 1) {
-    // If the ambient dimension is one, and we know we have at least two points,
-    // we iterate over all the points, keeping track of the lowest and highest
-    // values.
-    constexpr double kInf = std::numeric_limits<double>::infinity();
-    double min = kInf;
-    double max = -kInf;
-    for (int i = 0; i < vertices_.cols(); ++i) {
-      min = std::min(min, vertices_(0, i));
-      max = std::max(max, vertices_(0, i));
-    }
+  }
+  if (ambient_dimension() == 1) {
+    // If the ambient dimension is one, we can just take the lowest and highest
+    // points.
+    const double min = vertices_.row(0).minCoeff();
+    const double max = vertices_.row(0).maxCoeff();
     Eigen::Matrix<double, 1, 2> out;
     out << min, max;
     return VPolytope(out);

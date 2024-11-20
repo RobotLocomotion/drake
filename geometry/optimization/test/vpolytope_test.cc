@@ -864,7 +864,7 @@ GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation1) {
 GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation2) {
   // One dimensional instance with one point.
   Matrix<double, 1, 1> degenerate;
-  degenerate << 0;
+  degenerate << 43;
 
   VPolytope v(degenerate);
   EXPECT_NO_THROW(v.GetMinimalRepresentation());
@@ -873,7 +873,7 @@ GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation2) {
   const double kTol{1E-15};
   ASSERT_EQ(v_minimal.vertices().rows(), 1);
   ASSERT_EQ(v_minimal.vertices().cols(), 1);
-  EXPECT_NEAR(v_minimal.vertices()(0, 0), 0, kTol);
+  EXPECT_NEAR(v_minimal.vertices()(0, 0), 43, kTol);
 }
 
 GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation3) {
@@ -888,12 +888,8 @@ GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation3) {
   const double kTol{1E-15};
   ASSERT_EQ(v_minimal.vertices().rows(), 1);
   ASSERT_EQ(v_minimal.vertices().cols(), 2);
-  double lower, upper;
-  lower = v_minimal.vertices()(0, 0);
-  upper = v_minimal.vertices()(0, 1);
-  if (lower > upper) {
-    std::swap(lower, upper);
-  }
+  double lower = v_minimal.vertices().row(0).minCoeff();
+  double upper = v_minimal.vertices().row(0).maxCoeff();
   EXPECT_NEAR(lower, 0, kTol);
   EXPECT_NEAR(upper, 4, kTol);
 }
