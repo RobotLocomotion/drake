@@ -388,6 +388,20 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
     // column, the VPolytope is a point. Either way, the current representation
     // is already minimal.
     return *this;
+  } else if (ambient_dimension() == 1) {
+    // If the ambient dimension is one, and we know we have at least two points,
+    // we iterate over all the points, keeping track of the lowest and highest
+    // values.
+    constexpr double kInf = std::numeric_limits<double>::infinity();
+    double min = kInf;
+    double max = -kInf;
+    for (int i = 0; i < vertices_.cols(); ++i) {
+      min = std::min(min, vertices_(0, i));
+      max = std::max(max, vertices_(0, i));
+    }
+    Eigen::Matrix<double, 1, 2> out;
+    out << min, max;
+    return VPolytope(out);
   }
 
   orgQhull::Qhull qhull;
