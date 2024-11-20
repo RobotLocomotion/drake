@@ -320,7 +320,9 @@ void ParseExponentialConeConstraints(
 // prog.linear_matrix_inequality_constraints() into SCS/Clarabel format.
 // A * x + s = b
 // s in K
-// Note that the SCS/Clarabel solver defines its PSD cone with a √2 scaling on
+// We handle the SDP or LMI constraints when the PSD matrix has >= 3 rows. For
+// PSD matrices with 1 or 2 rows, we handle them separately.
+// Note that the SCS/Clarabel solver defines its psd cone with a √2 scaling on
 // the off-diagonal terms in the positive semidefinite matrix. Refer to
 // https://www.cvxgrp.org/scs/api/cones.html#semidefinite-cones and
 // https://oxfordcontrol.github.io/ClarabelDocs/stable/examples/example_sdp/ for
@@ -367,6 +369,22 @@ void ParsePositiveSemidefiniteConstraints(
     std::vector<std::optional<int>>* lmi_cone_length,
     std::vector<std::optional<int>>* psd_y_start_indices,
     std::vector<std::optional<int>>* lmi_y_start_indices);
+
+// Similar to ParsePositiveSemidefiniteConstraints, but only parses the scalar
+// PSD constraint in prog.positive_semidefinite_constraint() and
+// prog.linear_matrix_inequality_constraints().
+// @param[out] scalar_psd_dual_indices scalar_psd_dual_indices[i] is the dual
+// variable index for prog.positive_semidefinite_constraints()[i]. It is
+// std::nullopt if the psd constraint is not on a scalar.
+// @param[out] scalar_lmi_dual_indices scalar_lmi_dual_indices[i] is the dual
+// variable index for prog.linear_matrix_inequality_constraints()[i]. It is
+// std::nullopt if the psd matrix is not a scalar.
+void ParseScalarPositiveSemidefiniteConstraints(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+    int* A_row_count, int* new_positive_cone_length,
+    std::vector<std::optional<int>>* scalar_psd_dual_indices,
+    std::vector<std::optional<int>>* scalar_lmi_dual_indices);
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
