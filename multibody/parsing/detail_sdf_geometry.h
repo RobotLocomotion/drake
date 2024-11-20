@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include <sdf/Collision.hh>
 #include <sdf/Geometry.hh>
@@ -20,6 +21,12 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+// We convert <drake:visual> to <visual> but want to record its unique origin.
+// We do so by adding an attribute to the <visual>. If present, it came from a
+// drake-namespaced element, originally. (The value of the attribute is
+// irrelevant.)
+constexpr char kIsDrakeNamespaceAttr[] = "drake-namespaced";
 
 /* Used for resolving URIs / filenames.  */
 using ResolveFilename = std::function<std::string (
@@ -53,6 +60,14 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
   written outside of this _internal_ namespace. This should go there and
   merely reference it.  -->
 
+ <h2>Controlling Drake visual roles</h2>
+
+ SDFormat <visual> tags get illustration and perception roles by default. We
+ can opt out of those roles and even use different geometries for different
+ roles. See, @ref tag_drake_perception_properties,
+ @ref tag_drake_illustration_properties, and @ref tag_drake_visual in
+ parsing_doxygen.h for more details.
+
  <h2>Targeting Renderers</h2>
 
  In addition to the standard SDF <visual> hierarchy, Drake offers an additional
@@ -81,6 +96,12 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const SDFormatDiagnostic& diagnostic, const sdf::Visual& sdf_visual,
     ResolveFilename resolve_filename, const math::RigidTransformd& X_LG);
 
+/* The visual properties implied by the <visual> tag. It is possible that zero,
+ one, or two sets of properties are defined. */
+struct VisualProperties {
+  std::optional<geometry::IllustrationProperties> illustration;
+  std::optional<geometry::PerceptionProperties> perception;
+};
 
 /* Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
@@ -132,10 +153,9 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
  property tags, the property set will be empty. If the material is malformed
  an error will be emitted. If the error policy is not set to throw, an
  std::nullopt will be returned. */
-std::optional<geometry::IllustrationProperties>
-    MakeVisualPropertiesFromSdfVisual(
-        const SDFormatDiagnostic& diagnostic,
-        const sdf::Visual& sdf_visual, ResolveFilename resolve_filename);
+VisualProperties MakeVisualPropertiesFromSdfVisual(
+    const SDFormatDiagnostic& diagnostic, const sdf::Visual& sdf_visual,
+    ResolveFilename resolve_filename);
 
 /* Computes the pose `X_LC` of frame C (the "canonical frame" of the geometry)
  relative to the link L containing the collision, given an `sdf_collision`
