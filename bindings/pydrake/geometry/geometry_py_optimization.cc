@@ -527,7 +527,7 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
             py::arg("reference_frame") = std::nullopt,
             cls_doc.ctor.doc_scenegraph)
         .def("GetMinimalRepresentation", &VPolytope::GetMinimalRepresentation,
-            cls_doc.GetMinimalRepresentation.doc)
+            py::arg("tol") = 1e-9, cls_doc.GetMinimalRepresentation.doc)
         .def("vertices", &VPolytope::vertices, cls_doc.vertices.doc)
         .def_static("MakeBox", &VPolytope::MakeBox, py::arg("lb"),
             py::arg("ub"), cls_doc.MakeBox.doc)
