@@ -503,7 +503,8 @@ class TestGeometryOptimization(unittest.TestCase):
             [r/2, r/3, r/4, r/5]
         ])
 
-        vpoly = mut.VPolytope(vertices=vertices).GetMinimalRepresentation(tol=1e-9)
+        vpoly = mut.VPolytope(vertices=vertices)
+        vpoly = vpoly.GetMinimalRepresentation(tol=1e-9)
         self.assertAlmostEqual(vpoly.CalcVolume(), np.pi * r * r, delta=1e-3)
         self.assertEqual(vpoly.vertices().shape[1], n)
         # Calculate the length of the path that visits all the vertices
