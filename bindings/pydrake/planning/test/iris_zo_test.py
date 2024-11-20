@@ -67,11 +67,30 @@ class TestIrisZo(unittest.TestCase):
         params["model"] = builder.Build()
         plant = params["model"].plant()
         checker = SceneGraphCollisionChecker(**params)
-        options = mut.IrisZoOptions()
         seed_point = np.zeros((2,))
+        options = mut.IrisZoOptions()
+        options.num_particles = 1000
+        options.tau = 0.5
+        options.delta = 5e-2
+        options.epsilon = 1e-2
+        options.containment_points = None
+        options.max_iterations = 3
+        options.max_iterations_separating_planes = 20
+        options.max_separating_planes_per_iteration = -1
+        options.bisection_steps = 10
+        options.parallelism = Parallelism(True)
+        options.verbose = False
+        options.configuration_space_margin = 1e-2
+        options.termination_threshold = 1e-2
+        options.relative_termination_threshold = 1e-3
+        options.random_seed = 1337
+        options.mixing_steps = 50
         starting_ellipsoid = Hyperellipsoid.MakeHypersphere(0.01, seed_point)
         domain = HPolyhedron.MakeBox(plant.GetPositionLowerLimits(),
                                      plant.GetPositionUpperLimits())
-        region = mut.IrisZo(checker, starting_ellipsoid, domain, options)
+        region = mut.IrisZo(checker=checker,
+                            starting_ellipsoid=starting_ellipsoid,
+                            domain=domain,
+                            options=options)
         test_point = np.array([0.0, 0.5])
         self.assertTrue(region.PointInSet(test_point))

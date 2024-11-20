@@ -82,6 +82,7 @@ void DefinePlanningIrisZo(py::module m) {
                 self.mixing_steps);
       });
 
+  // The `options` contains a `Parallelism`; we must release the GIL.
   m.def("IrisZo", &IrisZo, py::arg("checker"), py::arg("starting_ellipsoid"),
       py::arg("domain"), py::arg("options") = IrisZoOptions(),
       py::call_guard<py::gil_scoped_release>(), doc.IrisZo.doc);

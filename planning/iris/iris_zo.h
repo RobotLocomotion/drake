@@ -16,7 +16,12 @@
 
 namespace drake {
 namespace planning {
-
+/**
+ * IrisZoOptions collects all parameters for the IRIS-ZO algorithm.
+ *
+ * @experimental
+ * @see IrisZo for more details.
+ **/
 struct IrisZoOptions {
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
@@ -46,10 +51,10 @@ struct IrisZoOptions {
   /** Number of particles used to estimate the closest collision. */
   int num_particles = 1e3;
 
-  /** Descision threshold for the unadaptive test. Chosing a small value
+  /** Decision threshold for the unadaptive test. Choosing a small value
    * increases both the cost and the power statistical test. Increasing the
    * value of `tau` makes running an individual test cheaper but decreases its
-   * power to accept a polytope. We find chosing a value of 0.5 a good
+   * power to accept a polytope. We find choosing a value of 0.5 a good
    * trade-off.
    */
   double tau = 0.5;

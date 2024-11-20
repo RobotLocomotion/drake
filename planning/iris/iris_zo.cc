@@ -167,10 +167,11 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   HPolyhedron P_prev = domain;
 
   // Pre-allocate memory for the polyhedron we are going to construct.
-  // TODO(wernerpe): find better solution than hardcoding 300
+  // TODO(wernerpe): Find a better solution than hardcoding 300.
+  constexpr int kNumFacesToPreAllocate = 300;
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
-      P.A().rows() + 300, dim);
-  Eigen::VectorXd b(P.A().rows() + 300);
+      P.A().rows() + kNumFacesToPreAllocate, dim);
+  Eigen::VectorXd b(P.A().rows() + kNumFacesToPreAllocate);
 
   while (true) {
     log()->info("IrisZo outer iteration {}", iteration);
@@ -207,7 +208,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
       particles.at(0) = P.UniformSample(&generator, current_ellipsoid_center,
                                         options.mixing_steps);
-      // populate particles by uniform sampling
+      // Populate particles by uniform sampling.
       for (int i = 1; i < N_k; ++i) {
         particles.at(i) = P.UniformSample(&generator, particles.at(i - 1),
                                           options.mixing_steps);
@@ -228,11 +229,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       int number_particles_in_collision = 0;
       for (size_t i = 0; i < particle_col_free.size(); ++i) {
         if (particle_col_free[i] == 0) {
-          // only push back a maximum of num_particles for optimization of the
-          // faces
+          // Only push back a maximum of num_particles for optimization of the
+          // faces.
           if (options.num_particles > number_particles_in_collision) {
-            // starting index is always 0, therefore particles[i+start]
-            // =particles[i]
             particles_in_collision.push_back(particles[i]);
             ++number_particles_in_collision;
           }
@@ -245,13 +244,11 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                     (1 - options.tau) * options.epsilon * N_k);
       }
 
-      // break if threshold is passed
       if (number_particles_in_collision_unadaptive_test <=
           (1 - options.tau) * options.epsilon * N_k) {
         break;
       }
 
-      // warn user if test fails on last iteration
       if (num_iterations_separating_planes ==
           options.max_iterations_separating_planes - 1) {
         log()->warn(
@@ -260,7 +257,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             "guarantees!");
       }
 
-      // Update particle positions
+      // Update particle positions.
       std::vector<Eigen::VectorXd> particles_in_collision_updated;
       particles_in_collision_updated.reserve(particles_in_collision.size());
       for (auto p : particles_in_collision) {
@@ -277,24 +274,18 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             auto start_point = particles_in_collision[point_idx];
 
             Eigen::VectorXd current_point = start_point;
-
-            // update particles via bisection
             Eigen::VectorXd curr_pt_lower = current_ellipsoid_center;
 
-            // update current point using bisection
+            // Update current point using a fixed number of bisection steps.
             if (!checker.CheckConfigCollisionFree(curr_pt_lower, thread_num)) {
-              // directly set to lowerbound
               current_point = curr_pt_lower;
             } else {
-              // bisect to find closest point in collision
               Eigen::VectorXd curr_pt_upper = current_point;
               for (int i = 0; i < options.bisection_steps; ++i) {
                 Eigen::VectorXd query = 0.5 * (curr_pt_upper + curr_pt_lower);
                 if (checker.CheckConfigCollisionFree(query, thread_num)) {
-                  // config is collision free, increase lower bound
                   curr_pt_lower = query;
                 } else {
-                  // config is in collision, decrease upper bound
                   curr_pt_upper = query;
                   current_point = query;
                 }
@@ -304,7 +295,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
             particles_in_collision_updated[point_idx] = current_point;
           };
 
-      // update all particles in parallel
+      // Update all particles in parallel.
       DynamicParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
                                   number_particles_in_collision,
                                   particle_update_work,
@@ -326,8 +317,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       // The indices are returned in ascending order.
       auto indices_sorted = argsort(particle_distances);
 
-      // Bools are not threadsafe - using uint8_t instead to accomondate for
-      // parallel checking.
+      // Type std::vector<Bool> is not threadsafe - using uint8_t instead to
+      // accommodate for parallel checking.
       std::vector<uint8_t> particle_is_redundant;
 
       for (int i = 0; i < number_particles_in_collision; ++i) {
@@ -366,13 +357,13 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           ++current_num_faces;
           ++hyperplanes_added;
 
-          // resize A matrix if we need more faces
+          // Resize A matrix if we need more faces.
           if (A.rows() <= current_num_faces) {
             A.conservativeResize(A.rows() * 2, A.cols());
             b.conservativeResize(b.rows() * 2);
           }
 
-          // debugging visualization
+          // Fill in meshcat if added for debugging.
           if (options.meshcat && dim <= 3) {
             for (int pt_to_draw = 0; pt_to_draw < number_particles_in_collision;
                  ++pt_to_draw) {
@@ -392,11 +383,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
               options.max_separating_planes_per_iteration > 0)
             break;
 
-          // set used particle to redundant
           particle_is_redundant.at(i) = true;
 
-          // loop over remaining non-redundant particles and check for
-          // redundancy
+          // Loop over remaining non-redundant particles and check for
+          // redundancy.
           // TODO(cohnt): Revert this back to parallel but with CRU.
           for (int particle_index = 0;
                particle_index < number_particles_in_collision;
@@ -413,7 +403,6 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         }
       }
 
-      // update current polyhedron
       P = HPolyhedron(A.topRows(current_num_faces), b.head(current_num_faces));
       if (max_relaxation > 0) {
         log()->info(
@@ -421,7 +410,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                         "ensure point containment",
                         max_relaxation));
       }
-      // resampling particles in current polyhedron for next iteration
+      // Resampling particles in current polyhedron for next iteration.
       particles[0] = P.UniformSample(&generator, options.mixing_steps);
       for (int j = 1; j < options.num_particles; ++j) {
         particles[j] =
@@ -473,7 +462,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       }
     }
     previous_volume = volume;
-    // reset polytope to domain, store previous iteration
+    // Reset polytope to domain, store previous iteration.
     P_prev = P;
     P = domain;
     current_num_faces = P.A().rows();
