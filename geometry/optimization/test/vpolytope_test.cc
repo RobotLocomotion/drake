@@ -849,6 +849,109 @@ GTEST_TEST(VPolytopeTest, EmptyTest) {
   EXPECT_FALSE(V.PointInSet(Eigen::VectorXd::Zero(3)));
 }
 
+GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation1) {
+  // Empty VPolytope.
+  Matrix<double, 3, 0> degenerate;
+
+  VPolytope v(degenerate);
+  EXPECT_NO_THROW(v.GetMinimalRepresentation());
+  VPolytope v_minimal = v.GetMinimalRepresentation();
+
+  EXPECT_EQ(v_minimal.vertices().rows(), 3);
+  EXPECT_EQ(v_minimal.vertices().cols(), 0);
+}
+
+GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation2) {
+  // One dimensional instance with one point.
+  Matrix<double, 1, 1> degenerate;
+  degenerate << 0;
+
+  VPolytope v(degenerate);
+  EXPECT_NO_THROW(v.GetMinimalRepresentation());
+  VPolytope v_minimal = v.GetMinimalRepresentation();
+
+  const double kTol{1E-15};
+  ASSERT_EQ(v_minimal.vertices().rows(), 1);
+  ASSERT_EQ(v_minimal.vertices().cols(), 1);
+  EXPECT_NEAR(v_minimal.vertices()(0, 0), 0, kTol);
+}
+
+GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation3) {
+  // One dimensional instance with more than one point.
+  Matrix<double, 1, 5> degenerate;
+  degenerate << 0, 1, 2, 3, 4;
+
+  VPolytope v(degenerate);
+  EXPECT_NO_THROW(v.GetMinimalRepresentation());
+  VPolytope v_minimal = v.GetMinimalRepresentation();
+
+  const double kTol{1E-15};
+  ASSERT_EQ(v_minimal.vertices().rows(), 1);
+  ASSERT_EQ(v_minimal.vertices().cols(), 2);
+  double lower, upper;
+  lower = v_minimal.vertices()(0, 0);
+  upper = v_minimal.vertices()(0, 1);
+  if (lower > upper) {
+    std::swap(lower, upper);
+  }
+  EXPECT_NEAR(lower, 0, kTol);
+  EXPECT_NEAR(upper, 4, kTol);
+}
+
+GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation4) {
+  // Two dimensional instance with only two points.
+  Matrix<double, 2, 2> degenerate;
+  // clang-format off
+  degenerate << 0, 1,
+                0, 1;
+  // clang-format on
+
+  VPolytope v(degenerate);
+  EXPECT_NO_THROW(v.GetMinimalRepresentation());
+  VPolytope v_minimal = v.GetMinimalRepresentation();
+
+  const double kTol{1E-15};
+  ASSERT_EQ(v_minimal.vertices().rows(), 2);
+  ASSERT_EQ(v_minimal.vertices().cols(), 2);
+  Eigen::Vector2d lower, upper;
+  lower = v_minimal.vertices().col(0);
+  upper = v_minimal.vertices().col(1);
+  if (lower[0] > upper[0]) {
+    std::swap(lower, upper);
+  }
+  EXPECT_NEAR(lower[0], 0, kTol);
+  EXPECT_NEAR(lower[1], 0, kTol);
+  EXPECT_NEAR(upper[0], 1, kTol);
+  EXPECT_NEAR(upper[1], 1, kTol);
+}
+
+GTEST_TEST(VPolytopeTest, DegenerateMinimalRepresentation5) {
+  // Two dimensional instance with three points along a proper affine subspace.
+  Matrix<double, 2, 3> degenerate;
+  // clang-format off
+  degenerate << 0, 1, 2,
+                0, 1, 2;
+  // clang-format on
+
+  VPolytope v(degenerate);
+  EXPECT_NO_THROW(v.GetMinimalRepresentation());
+  VPolytope v_minimal = v.GetMinimalRepresentation();
+
+  const double kTol{1E-15};
+  ASSERT_EQ(v_minimal.vertices().rows(), 2);
+  ASSERT_EQ(v_minimal.vertices().cols(), 2);
+  Eigen::Vector2d lower, upper;
+  lower = v_minimal.vertices().col(0);
+  upper = v_minimal.vertices().col(1);
+  if (lower[0] > upper[0]) {
+    std::swap(lower, upper);
+  }
+  EXPECT_NEAR(lower[0], 0, kTol);
+  EXPECT_NEAR(lower[1], 0, kTol);
+  EXPECT_NEAR(upper[0], 2, kTol);
+  EXPECT_NEAR(upper[1], 2, kTol);
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
