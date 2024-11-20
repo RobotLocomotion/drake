@@ -395,9 +395,7 @@ VPolytope VPolytope::GetMinimalRepresentation(double tol) const {
     // points.
     const double min = vertices_.row(0).minCoeff();
     const double max = vertices_.row(0).maxCoeff();
-    Eigen::Matrix<double, 1, 2> out;
-    out << min, max;
-    return VPolytope(out);
+    return VPolytope(Eigen::Matrix<double, 1, 2>(min, max));
   }
 
   // Next, compute the affine hull to see if the VPolytope is not full
