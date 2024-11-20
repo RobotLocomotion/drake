@@ -140,7 +140,7 @@ Configuration Space,"
 
 https://groups.csail.mit.edu/robotics-center/public_papers/Werner24.pdf
 
-This algorithm constructs probabilistically collision-free polytopes, in robot
+This algorithm constructs probabilistically collision-free polytopes in robot
 configuration space while only relying on a collision checker. The sets are
 constructed using a simple parallel zero-order optimization strategy. The
 produced polytope P is probabilistically collision-free in the sense that one
