@@ -380,7 +380,7 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
   return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
 }
 
-VPolytope VPolytope::GetMinimalRepresentation() const {
+VPolytope VPolytope::GetMinimalRepresentation(double tol) const {
   if (ambient_dimension() == 0) {
     return VPolytope();
   } else if (vertices_.cols() <= 1) {
@@ -402,6 +402,20 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
     Eigen::Matrix<double, 1, 2> out;
     out << min, max;
     return VPolytope(out);
+  }
+
+  // Next, compute the affine hull to see if the VPolytope is not full
+  // dimensional.
+  const AffineSubspace affine_hull(*this, tol);
+  if (affine_hull.AffineDimension() < affine_hull.ambient_dimension()) {
+    // Project the points onto the local coordinate system of the affine hull,
+    // compute the minimal representation there, and then lift back to the
+    // ambient space.
+    MatrixXd points_local = affine_hull.ToLocalCoordinates(vertices_);
+    VPolytope vpoly_local(points_local);
+    MatrixXd minimal_points_local =
+        vpoly_local.GetMinimalRepresentation().vertices();
+    return VPolytope(affine_hull.ToGlobalCoordinates(minimal_points_local));
   }
 
   orgQhull::Qhull qhull;
