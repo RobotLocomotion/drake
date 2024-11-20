@@ -60,6 +60,8 @@ void SetDualSolution(
     const std::vector<std::optional<int>>& lmi_y_start_indices,
     const std::vector<std::optional<int>>& scalar_psd_y_indices,
     const std::vector<std::optional<int>>& scalar_lmi_y_indices,
+    const std::vector<std::optional<int>>& twobytwo_psd_y_start_indices,
+    const std::vector<std::optional<int>>& twobytwo_lmi_y_start_indices,
     bool upper_triangular_psd, MathematicalProgramResult* result);
 }  // namespace internal
 }  // namespace solvers

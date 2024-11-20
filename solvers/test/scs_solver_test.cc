@@ -464,7 +464,7 @@ GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1LMI) {
 GTEST_TEST(TestSemidefiniteProgram, Test2X2LMI) {
   ScsSolver solver;
   if (solver.available()) {
-    Test2x2LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
+    Test2x2LMI(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
   }
 }
 

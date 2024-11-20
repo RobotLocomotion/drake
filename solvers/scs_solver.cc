@@ -493,6 +493,19 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
       prog, &A_triplets, &b, &A_row_count, &second_order_cone_length,
       &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices);
 
+  // Add PSD or LMI constraint on 2x2 matrices. This should be called with the
+  // other second order cone constraint parsing code, as the 2x2 PSD/LMI
+  // constraints are formulated as second order cones.
+  int num_second_order_cones_from_psd{};
+  std::vector<std::optional<int>> twobytwo_psd_dual_start_indices;
+  std::vector<std::optional<int>> twobytwo_lmi_dual_start_indices;
+  internal::Parse2x2PositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &num_second_order_cones_from_psd,
+      &twobytwo_psd_dual_start_indices, &twobytwo_lmi_dual_start_indices);
+  for (int i = 0; i < num_second_order_cones_from_psd; ++i) {
+    second_order_cone_length.push_back(3);
+  }
+
   // Add L2NormCost. L2NormCost should be parsed together with the other second
   // order cone constraints, since we introduce new second order cone
   // constraints to formulate the L2 norm cost.
@@ -624,6 +637,7 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
       linear_eq_y_start_indices, lorentz_cone_y_start_indices,
       rotated_lorentz_cone_y_start_indices, psd_y_start_indices,
       lmi_y_start_indices, scalar_psd_dual_indices, scalar_lmi_dual_indices,
+      twobytwo_psd_dual_start_indices, twobytwo_lmi_dual_start_indices,
       /*upper_triangular_psd=*/false, result);
   // Set the solution_result enum and the optimal cost based on SCS status.
   if (solver_details.scs_status == SCS_SOLVED ||

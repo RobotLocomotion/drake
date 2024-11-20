@@ -458,6 +458,16 @@ void ClarabelSolver::DoSolve2(const MathematicalProgram& prog,
   for (const int soc_length : second_order_cone_length) {
     cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
   }
+  // Parse PSD/LMI constraints on 2x2 matrices as second order cone constraints.
+  int num_second_order_cones_from_psd{};
+  std::vector<std::optional<int>> twobytwo_psd_y_start_indices;
+  std::vector<std::optional<int>> twobytwo_lmi_y_start_indices;
+  internal::Parse2x2PositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &num_second_order_cones_from_psd,
+      &twobytwo_psd_y_start_indices, &twobytwo_lmi_y_start_indices);
+  for (int i = 0; i < num_second_order_cones_from_psd; ++i) {
+    cones.push_back(clarabel::SecondOrderConeT<double>(3));
+  }
 
   std::vector<std::optional<int>> psd_cone_length;
   std::vector<std::optional<int>> lmi_cone_length;
@@ -526,6 +536,7 @@ void ClarabelSolver::DoSolve2(const MathematicalProgram& prog,
       linear_eq_y_start_indices, lorentz_cone_y_start_indices,
       rotated_lorentz_cone_y_start_indices, psd_y_start_indices,
       lmi_y_start_indices, scalar_psd_dual_indices, scalar_lmi_dual_indices,
+      twobytwo_psd_y_start_indices, twobytwo_lmi_y_start_indices,
       /*upper_triangular_psd=*/true, result);
   if (solution.status == clarabel::SolverStatus::Solved ||
       solution.status == clarabel::SolverStatus::AlmostSolved) {
