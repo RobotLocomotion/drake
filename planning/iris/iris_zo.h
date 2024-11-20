@@ -71,7 +71,8 @@ struct IrisZoOptions {
    * points are closer than configuration_margin to an obstacle we will relax
    * the margin in favor of including the containment points. The matrix
    * `containment_points` is expected to be of the shape dimension times number
-   * of points.*/
+   * of points. IrisZo throws if the center of the starting ellipsoid is
+   * not contained int he convex hull of these containment points. */
   std::optional<Eigen::MatrixXd> containment_points{std::nullopt};
 
   /** Maximum number of alternations between the ellipsoid and the separating
@@ -163,6 +164,7 @@ ambient dimension as the configuration space of the robot.
 @return A HPolyhedron representing the computed collision-free region in
 configuration space.
 @ingroup robot_planning
+@experimental
 */
 
 geometry::optimization::HPolyhedron IrisZo(

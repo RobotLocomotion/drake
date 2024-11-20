@@ -497,6 +497,60 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
   Hyperellipsoid starting_ellipsoid =
       Hyperellipsoid::MakeHypersphere(1e-2, sample);
 
+  // Test if we can force the containment of a two points. This test is
+  // explicitly added to ensure that the procedure works when using fewer points
+  // than a simplex are given.
+  // First, we verify that IrisZo throws when a single containment point is
+  // passed. In this case, the convex hull of the containment points does not
+  // containt center of the starting ellipsoid.
+  Eigen::Matrix2Xd single_containment_point(2, 1);
+  single_containment_point << 0, 1;
+
+  IrisZoOptions options;
+  options.verbose = true;
+  options.meshcat = meshcat;
+  options.configuration_space_margin = 0.04;
+  options.containment_points = single_containment_point;
+
+  EXPECT_THROW(
+      IrisZoFromUrdf(boxes_in_corners_urdf, starting_ellipsoid, options),
+      std::runtime_error);
+
+  // Now we test that it works for a two point VPolytope.
+  Eigen::Matrix3Xd single_containment_point_and_ellipsoid_center(3, 2);
+  // clang-format off
+        single_containment_point_and_ellipsoid_center << 0, sample.x(),
+                                                         1, sample.y(),
+                                                         0, 0;
+  // clang-format on
+  options.containment_points =
+      single_containment_point_and_ellipsoid_center.topRows(2);
+  HPolyhedron region =
+      IrisZoFromUrdf(boxes_in_corners_urdf, starting_ellipsoid, options);
+  {
+    Eigen::Vector3d point_to_draw = Eigen::Vector3d::Zero();
+    std::string path = "cont_pt/0";
+    options.meshcat->SetObject(path, Sphere(0.04),
+                               geometry::Rgba(1, 0, 0.0, 1.0));
+    point_to_draw(0) = single_containment_point(0, 0);
+    point_to_draw(1) = single_containment_point(1, 0);
+    options.meshcat->SetTransform(path,
+                                  math::RigidTransform<double>(point_to_draw));
+    EXPECT_TRUE(region.PointInSet(single_containment_point.col(0).head(2)));
+    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 20);
+
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    MaybePauseForUser();
+    meshcat->Delete("face_pt");
+    meshcat->Delete(path);
+  }
+
   Eigen::Matrix3Xd cont_points(3, 4);
   double xw, yw;
   xw = 0.4;
@@ -506,13 +560,10 @@ GTEST_TEST(IrisZoTest, ForceContainmentPointsTest) {
                         yw, yw, -yw, -yw,
                         0,  0,  0,  0;
   // clang-format on
-  IrisZoOptions options;
-  options.verbose = true;
-  options.meshcat = meshcat;
-  options.configuration_space_margin = 0.04;
   options.containment_points = cont_points.topRows(2);
-  HPolyhedron region =
-      IrisZoFromUrdf(boxes_in_corners_urdf, starting_ellipsoid, options);
+  options.max_iterations_separating_planes = 100;
+  options.max_iterations = -1;
+  region = IrisZoFromUrdf(boxes_in_corners_urdf, starting_ellipsoid, options);
   EXPECT_EQ(region.ambient_dimension(), 2);
   {
     for (int pt_to_draw = 0; pt_to_draw < cont_points.cols(); ++pt_to_draw) {
