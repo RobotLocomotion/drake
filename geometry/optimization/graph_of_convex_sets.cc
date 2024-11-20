@@ -1614,12 +1614,69 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
     using common_robotics_utilities::parallelism::ParallelForBackend;
 
+    // If any costs or constraints aren't thread-safe, we can't parallelize.
+    bool is_thread_safe = true;
+
+    // Iterate over vertices to look for non-thread-safe costs and constraints.
+    for (const auto& [_, vertex_ptr] : vertices_) {
+      DRAKE_ASSERT(vertex_ptr != nullptr);
+      std::vector<Binding<Cost>> restriction_costs =
+          vertex_ptr->GetCosts({Transcription::kRestriction});
+      for (const auto& binding : restriction_costs) {
+        if (!binding.evaluator()->is_thread_safe()) {
+          is_thread_safe = false;
+          break;
+        }
+      }
+      if (!is_thread_safe) {
+        break;
+      }
+      std::vector<Binding<Constraint>> restriction_constraints =
+          vertex_ptr->GetConstraints({Transcription::kRestriction});
+      for (const auto& binding : restriction_constraints) {
+        if (!binding.evaluator()->is_thread_safe()) {
+          is_thread_safe = false;
+          break;
+        }
+      }
+      if (!is_thread_safe) {
+        break;
+      }
+    }
+    // Iterate over edges to look for non-thread-safe costs and constraints.
+    for (const auto& [_, edge_ptr] : edges_) {
+      DRAKE_ASSERT(edge_ptr != nullptr);
+      std::vector<Binding<Cost>> restriction_costs =
+          edge_ptr->GetCosts({Transcription::kRestriction});
+      for (const auto& binding : restriction_costs) {
+        if (!binding.evaluator()->is_thread_safe()) {
+          is_thread_safe = false;
+          break;
+        }
+      }
+      if (!is_thread_safe) {
+        break;
+      }
+      std::vector<Binding<Constraint>> restriction_constraints =
+          edge_ptr->GetConstraints({Transcription::kRestriction});
+      for (const auto& binding : restriction_constraints) {
+        if (!binding.evaluator()->is_thread_safe()) {
+          is_thread_safe = false;
+          break;
+        }
+      }
+      if (!is_thread_safe) {
+        break;
+      }
+    }
+    int n_threads_to_use =
+        is_thread_safe ? options.parallelism.num_threads() : 1;
+
     // Different paths may have different numbers of sets, leading to variable
     // solve times. Thus, we use dynamic scheduling.
     DynamicParallelForIndexLoop(
-        DegreeOfParallelism(options.parallelism.num_threads()), 0,
-        ssize(candidate_paths), solve_ith_convex_restriction,
-        ParallelForBackend::BEST_AVAILABLE);
+        DegreeOfParallelism(n_threads_to_use), 0, ssize(candidate_paths),
+        solve_ith_convex_restriction, ParallelForBackend::BEST_AVAILABLE);
 
     constexpr double kInf = std::numeric_limits<double>::infinity();
     double best_cost = kInf;
