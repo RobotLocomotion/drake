@@ -385,6 +385,29 @@ void ParseScalarPositiveSemidefiniteConstraints(
     int* A_row_count, int* new_positive_cone_length,
     std::vector<std::optional<int>>* scalar_psd_dual_indices,
     std::vector<std::optional<int>>* scalar_lmi_dual_indices);
+
+// Similar to ParsePositiveSemidefiniteConstraints(), but ony parses the 2x2 PSD
+// constraints in prog.positive_semidefinite_constraints() and
+// prog.linear_matrix_inequality_constraints(). They are treated as second order
+// cone constraints.
+// @param[out] num_new_second_order_cones The number of new second order cones
+// to be imposed by all the 2x2 psd matrices in the
+// prog.positive_semidefinite_constraints() and
+// prog.linear_matrix_inequality_constraints().
+// @param[out] twobytwo_psd_dual_start_indices
+// twobytwo_psd_dual_start_indices[i] is the starting dual variable index for
+// prog.positive_semidefinite_constraints()[i]. It is std::nullopt if the psd
+// constraint is not on a 2x2 matrix.
+// @param[out] twobytwo_lmi_dual_start_indices
+// twobytwo_lmi_dual_start_indices[i] is the starting dual variable index for
+// prog.linear_matrix_inequality_constraints()[i]. It is std::nullopt if the psd
+// matrix is not a 2x2 matrix.
+void Parse2x2PositiveSemidefiniteConstraints(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+    int* A_row_count, int* num_new_second_order_cones,
+    std::vector<std::optional<int>>* twobytwo_psd_dual_start_indices,
+    std::vector<std::optional<int>>* twobytwo_lmi_dual_start_indices);
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

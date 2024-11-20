@@ -576,7 +576,7 @@ GTEST_TEST(TestOptions, StandaloneReproduction) {
   prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(x(0), x(1)));
   prog.AddExponentialConeConstraint(
       Vector3<symbolic::Expression>(x(2), x(0), x(1)));
-  const auto Y = prog.NewSymmetricContinuousVariables<2>("Y");
+  const auto Y = prog.NewSymmetricContinuousVariables<3>("Y");
   prog.AddPositiveSemidefiniteConstraint(Y);
 
   ClarabelSolver solver;
@@ -612,7 +612,7 @@ GTEST_TEST(TestOptions, EmptyCones) {
   prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(x(0), x(1)));
   prog.AddExponentialConeConstraint(
       Vector3<symbolic::Expression>(x(2), x(0), x(1)));
-  const auto Y = prog.NewSymmetricContinuousVariables<2>("Y");
+  const auto Y = prog.NewSymmetricContinuousVariables<3>("Y");
   prog.AddPositiveSemidefiniteConstraint(Y);
 
   ClarabelSolver solver;
