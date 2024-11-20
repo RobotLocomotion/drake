@@ -194,7 +194,7 @@ void RotationalInertia<T>::ThrowNotPhysicallyValid(
     if (!IsNaN()) {
       const Vector3<double> p = CalcPrincipalMomentsOfInertia();
       if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-              p(0), p(1), p(2), /* epsilon = */ 0.0)) {
+              p(0), p(1), p(2))) {
         error_message += fmt::format(
             "\nThe associated principal moments of inertia:"
             "\n{}  {}  {}",

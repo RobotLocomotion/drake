@@ -587,25 +587,13 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
-    // To check the validity of `this` rotational inertia, use an epsilon value
-    // related to machine precision multiplied by the largest possible element
-    // that can appear in a valid `this` rotational inertia.  Note: The
-    // largest product of inertia is at most half the largest moment of inertia.
-    using std::max;
-    const double precision = 16 * std::numeric_limits<double>::epsilon();
-    const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
-
-    // To avoid false negatives for inertias close to zero, we also use
-    // an absolute tolerance equal to "1.0 * precision".
-    const T epsilon = precision * max(1.0, max_possible_inertia_moment);
-
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.
     const Vector3<double> p = CalcPrincipalMomentsOfInertia();
 
     return !IsNaN() &&
            AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-               p(0), p(1), p(2), epsilon);
+               p(0), p(1), p(2));
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` in place to `I_BP_A`.
@@ -958,21 +946,33 @@ class RotationalInertia {
   // triangle-inequality test requires `epsilon` when the sum of two moments are
   // nearly equal to the third one. Example: Ixx = Iyy = 50, Izz = 100.00000001,
   // or Ixx = -0.0001 (negative),  Ixx = 49.9999,  Iyy = 50.
-  // A positive (non-zero) epsilon accounts for round-off errors, e.g., from
-  // re-expressing inertia in another frame.
+  // The positive (non-zero) `epsilon` accounts for round-off errors, e.g., from
+  // re-expressing inertia in another frame and is typically much smaller than
+  // the largest possible principal moment of inertia in the rotational inertia.
   // @param Ixx, Iyy, Izz moments of inertia for a generic rotational inertia,
   //        (i.e., not necessarily principal moments of inertia).
-  // @param epsilon Real positive number that is much smaller than the largest
-  //        possible element in a valid rotational inertia.  Heuristically,
-  //       `epsilon` should probably be a small multiplier of Trace() / 2.
   // @note Denoting Imin and Imax as the smallest and largest possible moments
   //       of inertia in a valid rotational inertia, denoting Imed as the
   //       intermediate moment of inertia, and denoting tr as the trace of the
   //       rotational inertia (e.g., Ixx + Iyy + Izz), one can prove:
   //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
   //       If Imin == 0, then Imed == Imax == tr / 2.
+  //       Heuristically, `epsilon` is a small multiplier of Trace() / 2.
   static boolean<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-      const T& Ixx, const T& Iyy, const T& Izz, const T& epsilon) {
+      const T& Ixx, const T& Iyy, const T& Izz) {
+    // To check the validity of `this` rotational inertia, use an epsilon value
+    // related to machine precision multiplied by the largest possible element
+    // that can appear in a valid `this` rotational inertia. Note: The largest
+    // product of inertia is at most half the largest moment of inertia.
+    using std::abs;
+    const double precision = 16 * std::numeric_limits<double>::epsilon();
+    const T max_possible_inertia_moment = 0.5 * abs(Ixx + Iyy + Izz);
+
+    // To avoid false negatives for inertias close to zero, we also use
+    // an absolute tolerance equal to "1.0 * precision".
+    using std::max;
+    const T epsilon = precision * max(1.0, max_possible_inertia_moment);
+
     const auto are_moments_near_positive =
         AreMomentsOfInertiaNearPositive(Ixx, Iyy, Izz, epsilon);
     const auto is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
