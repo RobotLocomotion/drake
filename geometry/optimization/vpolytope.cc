@@ -383,7 +383,13 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
 VPolytope VPolytope::GetMinimalRepresentation() const {
   if (ambient_dimension() == 0) {
     return VPolytope();
+  } else if (vertices_.cols() <= 1) {
+    // If there are zero columns, the VPolytope is empty. If there is one
+    // column, the VPolytope is a point. Either way, the current representation
+    // is already minimal.
+    return *this;
   }
+
   orgQhull::Qhull qhull;
   qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(), "");
   if (qhull.qhullStatus() != 0) {
