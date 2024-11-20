@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/parallelism.hpp>
 #include <fmt/format.h>
 
 #include "drake/common/parallelism.h"
@@ -1602,10 +1603,23 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     std::vector<MathematicalProgramResult> rounded_results(
         candidate_paths.size());
 
-    for (int i = 0; i < ssize(candidate_paths); ++i) {
+    auto solve_ith_convex_restriction = [&](const int thread_num,
+                                            const int64_t i) {
+      unused(thread_num);
       rounded_results[i] =
           SolveConvexRestriction(candidate_paths[i], options, &result);
-    }
+    };
+
+    using common_robotics_utilities::parallelism::DegreeOfParallelism;
+    using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
+    using common_robotics_utilities::parallelism::ParallelForBackend;
+
+    // Different paths may have different numbers of sets, leading to variable
+    // solve times. Thus, we use dynamic scheduling.
+    DynamicParallelForIndexLoop(
+        DegreeOfParallelism(options.parallelism.num_threads()), 0,
+        ssize(candidate_paths), solve_ith_convex_restriction,
+        ParallelForBackend::BEST_AVAILABLE);
 
     constexpr double kInf = std::numeric_limits<double>::infinity();
     double best_cost = kInf;
