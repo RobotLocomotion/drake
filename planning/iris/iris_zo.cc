@@ -112,7 +112,18 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     cvxh_vpoly = VPolytope(options.containment_points.value());
     DRAKE_THROW_UNLESS(domain.ambient_dimension() ==
                        options.containment_points->rows());
-    cvxh_vpoly = cvxh_vpoly.GetMinimalRepresentation();
+
+    constexpr float kPointInSetTol = 1e-5;
+    if (!cvxh_vpoly.PointInSet(starting_ellipsoid.center(), kPointInSetTol)) {
+      log()->info("throwing");
+      throw std::runtime_error(
+          "The center of the starting ellipsoid lies outside of the convex "
+          "hull of the containment points.");
+    }
+
+    if (options.containment_points->cols() >= domain.ambient_dimension() + 1) {
+      cvxh_vpoly = cvxh_vpoly.GetMinimalRepresentation();
+    }
 
     std::vector<Eigen::VectorXd> cont_vec;
     cont_vec.reserve((options.containment_points->cols()));
@@ -420,10 +431,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
       // Log updates at 20-percent intervals of
       // max_iterations_separating_planes.
-      if (num_iterations_separating_planes -
-                  1 % static_cast<int>(
-                          0.2 * options.max_iterations_separating_planes) ==
-              0 &&
+      int divisor =
+          static_cast<int>(0.2 * options.max_iterations_separating_planes);
+      if (divisor > 0 &&
+          (num_iterations_separating_planes - 1) % divisor == 0 &&
           options.verbose) {
         log()->info("SeparatingPlanes iteration: {} faces: {}",
                     num_iterations_separating_planes, current_num_faces);

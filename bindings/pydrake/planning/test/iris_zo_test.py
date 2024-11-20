@@ -73,7 +73,7 @@ class TestIrisZo(unittest.TestCase):
         options.tau = 0.5
         options.delta = 5e-2
         options.epsilon = 1e-2
-        options.containment_points = None
+        options.containment_points = np.array([[0, 0], [1, 0]])
         options.max_iterations = 3
         options.max_iterations_separating_planes = 20
         options.max_separating_planes_per_iteration = -1
@@ -94,3 +94,5 @@ class TestIrisZo(unittest.TestCase):
                             options=options)
         test_point = np.array([0.0, 0.5])
         self.assertTrue(region.PointInSet(test_point))
+        test_point2 = np.array([0.0, 1])
+        self.assertTrue(region.PointInSet(test_point2))
