@@ -1111,7 +1111,15 @@ void BindMathematicalProgram(py::module m) {
                 std::move(F), vars);
           },
           py::arg("F"), py::arg("vars"),
-          doc.MathematicalProgram.AddLinearMatrixInequalityConstraint.doc)
+          doc.MathematicalProgram.AddLinearMatrixInequalityConstraint.doc_2args)
+      .def(
+          "AddLinearMatrixInequalityConstraint",
+          [](MathematicalProgram* self,
+              const Eigen::Ref<const MatrixX<symbolic::Expression>>& X) {
+            return self->AddLinearMatrixInequalityConstraint(X);
+          },
+          py::arg("X"),
+          doc.MathematicalProgram.AddLinearMatrixInequalityConstraint.doc_1args)
       .def("AddPositiveDiagonallyDominantMatrixConstraint",
           &MathematicalProgram::AddPositiveDiagonallyDominantMatrixConstraint,
           py::arg("X"),

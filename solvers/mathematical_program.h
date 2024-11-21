@@ -2599,9 +2599,9 @@ class MathematicalProgram {
    * expressions @p e. We create a new symmetric matrix of variables M being
    * positive semidefinite, with the linear equality constraint e == M.
    * @param e Imposes constraint "e is positive semidefinite".
-   * @pre{1. e is symmetric.
-   *      2. e(i, j) is linear for all i, j
-   *      }
+   * @pre e is symmetric.
+   * @pre e(i, j) is linear for all i, j
+   *
    * @return The newly added positive semidefinite constraint, with the bound
    * variable M that are also newly added.
    *
@@ -2674,6 +2674,20 @@ class MathematicalProgram {
   Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
       std::vector<Eigen::MatrixXd> F,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a linear matrix inequality constraint on a symmetric matrix of
+   * symbolic expressions `X`, namely `X` is positive semidefinite, and each
+   * entry in `X` is a linear (affine) expression of decision variables.
+   *
+   * @param X Imposes constraint "X is positive semidefinite".
+   * @pre X is symmetric.
+   * @pre X(i, j) is linear (affine) for all i, j
+   *
+   * @return The newly added linear matrix inequality constraint.
+   */
+  Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
    * Adds the constraint that a symmetric matrix is diagonally dominant with
