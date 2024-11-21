@@ -1,5 +1,6 @@
 #include "drake/solvers/scs_solver.h"
 
+#include <fstream>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -302,6 +303,85 @@ void SetBoundingBoxDualSolution(
   }
 }
 
+void WriteScsReproduction(std::string filename,
+                          const Eigen::SparseMatrix<double>& P,
+                          const Eigen::Map<Eigen::VectorXd>& c_vec,
+                          const Eigen::SparseMatrix<double>& A,
+                          const Eigen::Map<Eigen::VectorXd>& b_vec,
+                          const ScsCone& cone) {
+  std::ofstream out_file(filename);
+  if (!out_file.is_open()) {
+    log()->error(
+        "Failed to open kStandaloneReproductionFileName {} for writing; no "
+        "reproduction will be generated.");
+    return;
+  }
+  auto write_csc = [&](const Eigen::SparseMatrix<double>& mat,
+                       const std::string& name) {
+    if (mat.nonZeros() == 0) {
+      out_file << fmt::format("{} = sparse.csc_matrix(({}, {}))", name,
+                              mat.rows(), mat.cols())
+               << std::endl;
+      return;
+    }
+    std::vector<double> data;
+    std::vector<int> rows;
+    std::vector<int> cols;
+    data.reserve(mat.nonZeros());
+    rows.reserve(mat.nonZeros());
+    cols.reserve(mat.nonZeros());
+    for (int k = 0; k < mat.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(mat, k); it; ++it) {
+        data.push_back(it.value());
+        rows.push_back(it.row());
+        cols.push_back(it.col());
+      }
+    }
+    out_file << fmt::format(R"""(
+data = np.array([{}], dtype=np.float64)
+rows = [{}]
+cols = [{}]
+{} = sparse.csc_matrix((data, (rows, cols)), shape=({}, {}))
+)""",
+                            fmt::join(data, ", "), fmt::join(rows, ", "),
+                            fmt::join(cols, ", "), name, mat.rows(),
+                            mat.cols());
+  };
+  out_file << fmt::format(
+      R"""(
+import scs
+import numpy as np
+from scipy import sparse
+
+c = np.array([{}], dtype=np.float64)
+b = np.array([{}], dtype=np.float64)
+)""",
+      fmt::join(c_vec.data(), c_vec.data() + c_vec.size(), ", "),
+      fmt::join(b_vec.data(), b_vec.data() + b_vec.size(), ", "));
+
+  write_csc(P, "P");
+  write_csc(A, "A");
+
+  out_file << "data=dict(P=P, A=A, b=b, c=c)\n";
+
+  out_file << fmt::format(
+      R"""(cone=dict(z={}, l={}, bu=[{}], bl=[{}], q=[{}], s=[{}], ep={}, ed={}, p=[{}]))""",
+      cone.z, cone.l, fmt::join(cone.bu, cone.bu + cone.bsize, ","),
+      fmt::join(cone.bl, cone.bl + cone.bsize, ","),
+      fmt::join(cone.q, cone.q + cone.qsize, ","),
+      fmt::join(cone.s, cone.s + cone.ssize, ","), cone.ep, cone.ed,
+      fmt::join(cone.p, cone.p + cone.psize, ","));
+
+  // TODO(hongkai.dai): write solver options.
+  out_file << R"""(
+
+solver = scs.SCS(data, cone)
+sol = solver.solve()
+)""";
+  log()->info("SCS reproduction successfully written to {}.", filename);
+
+  out_file.close();
+}
 }  // namespace
 
 bool ScsSolver::is_available() {
@@ -384,27 +464,6 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
     SCS(free_data)(scs_problem_data);
     scs_free(scs_stgs);
   });
-
-  // Set the parameters to default values.
-  scs_set_default_settings(scs_stgs);
-  // Customize the defaults for Drake:
-  // - SCS 3.0 uses 1E-4 as the default value, see
-  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
-  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
-  //   accuracy.
-  scs_stgs->eps_abs = 1E-5;
-  // - SCS 3.0 uses 1E-4 as the default value, see
-  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
-  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
-  //   accuracy.
-  scs_stgs->eps_rel = 1E-5;
-  // Apply the user's additional custom options (if any).
-  options->Respell([](const auto& common, auto* respelled) {
-    respelled->emplace("verbose", common.print_to_console ? 1 : 0);
-    // SCS does not support setting the number of threads so we ignore the
-    // kMaxThreads option.
-  });
-  options->CopyToSerializableStruct(scs_stgs);
 
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
@@ -578,6 +637,36 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
   Eigen::SparseMatrix<double> A(A_row_count, num_x);
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
+
+  // Set the parameters to default values.
+  scs_set_default_settings(scs_stgs);
+  // Customize the defaults for Drake:
+  // - SCS 3.0 uses 1E-4 as the default value, see
+  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
+  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
+  //   accuracy.
+  scs_stgs->eps_abs = 1E-5;
+  // - SCS 3.0 uses 1E-4 as the default value, see
+  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
+  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
+  //   accuracy.
+  scs_stgs->eps_rel = 1E-5;
+  // Apply the user's additional custom options (if any).
+  options->Respell([&](const auto& common, auto* respelled) {
+    respelled->emplace("verbose", common.print_to_console ? 1 : 0);
+    // TODO(jwnimmer-tri) Handle common.print_file_name.
+    if (!common.standalone_reproduction_file_name.empty()) {
+      Eigen::SparseMatrix<double> P(num_x, num_x);
+      P.setFromTriplets(P_upper_triplets.begin(), P_upper_triplets.end());
+      WriteScsReproduction(common.standalone_reproduction_file_name, P,
+                           Eigen::Map<Eigen::VectorXd>(c.data(), num_x), A,
+                           Eigen::Map<Eigen::VectorXd>(b.data(), b.size()),
+                           *cone);
+    }
+    // SCS does not support setting the number of threads so we ignore the
+    // kMaxThreads option.
+  });
+  options->CopyToSerializableStruct(scs_stgs);
 
   SetScsProblemData(A_row_count, num_x, A, b, P_upper_triplets, c,
                     scs_problem_data);

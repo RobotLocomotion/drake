@@ -218,7 +218,7 @@ void WriteClarabelReproduction(
                        const std::string& name) {
     if (mat.nonZeros() == 0) {
       out_file << fmt::format("{} = sparse.csc_matrix(({}, {}))", name,
-                              P.rows(), P.cols())
+                              mat.rows(), mat.cols())
                << std::endl;
       return;
     }
@@ -239,10 +239,11 @@ void WriteClarabelReproduction(
 data = [{}]
 rows = [{}]
 cols = [{}]
-{} = sparse.csc_matrix((data, (rows, cols)))
+{} = sparse.csc_matrix((data, (rows, cols)), shape=({}, {}))
 )""",
                             fmt::join(data, ", "), fmt::join(rows, ", "),
-                            fmt::join(cols, ", "), name);
+                            fmt::join(cols, ", "), name, mat.rows(),
+                            mat.cols());
   };
 
   out_file << fmt::format(

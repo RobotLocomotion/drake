@@ -1827,6 +1827,7 @@ drake_cc_googletest(
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
         ":sos_examples",
+        "//common:temp_directory",
     ],
 )
 
