@@ -1,0 +1,2 @@
+# https://github.com/RobotLocomotion/drake/issues/22204
+build:clang --copt=-fno-assume-unique-vtables
