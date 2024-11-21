@@ -444,7 +444,7 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   // Replace the role, removing a non-defaulted property. The property gets
   // removed, because it is not set in the context's scene graph config, and
   // reapplication during AssignRole() does not affect it.
-  ASSERT_FALSE(scene_graph_.get_config(*context_)
+  ASSERT_TRUE(scene_graph_.get_config(*context_)
               .default_proximity_properties.point_stiffness.has_value());
   edit_props = *query_object().inspector().GetProximityProperties(g_id);
   edit_props.RemoveProperty(kHydroGroup, kPointStiffness);

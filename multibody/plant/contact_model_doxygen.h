@@ -1092,4 +1092,7 @@ range. Even for this case, estimating the amplitude of these vibrations with
 /**
   @defgroup hydro_params Estimation of Hydroelastic Parameters
   @ingroup drake_contacts
+
+  @defgroup contact_defaults Default Contact Parameters
+  @ingroup drake_contacts
 */
