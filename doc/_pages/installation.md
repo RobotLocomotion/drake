@@ -65,8 +65,8 @@ compiler as our releases:
 |------------------------------------|--------------------------|-------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | GCC 13                   | C++20 |
-| macOS Sonoma (14)                  | Apple LLVM 14 (Xcode 15) | C++20 |
-| macOS Sequoia (15)                 | TBD                      | TBD   |
+| macOS Sonoma (14)                  | Apple LLVM 16 (Xcode 16) | C++20 |
+| macOS Sequoia (15)                 | Apple LLVM 16 (Xcode 16) | C++20 |
 
 ## Available Versions
 
