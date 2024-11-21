@@ -131,6 +131,8 @@ GTEST_TEST(RgbdSensorAsyncGlTest, CompareAsyncToDiscrete) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
   RenderEngineGlParams render_params;
   scene_graph.AddRenderer(kRendererName, MakeRenderEngineGl(render_params));
+  plant.set_discrete_contact_approximation(
+      multibody::DiscreteContactApproximation::kLagged);
 
   // Load some models.
   Parser(&plant).AddModelsFromUrl(

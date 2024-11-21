@@ -111,14 +111,27 @@ struct DefaultProximityProperties {
   /** @see dynamic_friction. */
   std::optional<double> static_friction{0.5};
 
-  /** Controls energy damping from contact, for contact models *other than*
-  multibody::DiscreteContactApproximation::kSap. Units are seconds per
-  meter. */
-  std::optional<double> hunt_crossley_dissipation;
+  /** Controls energy dissipation from contact, for contact approximations
+  *other than* multibody::DiscreteContactApproximation::kSap. Units are seconds
+  per meter.
+
+  If set to std::nullopt (or simply empty {}), MultibodyPlant uses an estimate
+  based on MultibodyPlantConfig::penetration_allowance. However, keep in mind
+  that penetration allowance will no longer be supported in future releases.
+  Either specify dissipation for each of your geometries or use this default.
+
+  @note Please refer to @ref contact_defaults "Default Contact Parameters" for
+  more details on Drake's defaults along with guidelines on how to estimate
+  parameters specific to your model.
+
+  @warning This value is also used for contact with deformable bodies. If set to
+  std::nullopt, dissipation defaults to zero for contact with deformable bodies.
+  */
+  std::optional<double> hunt_crossley_dissipation{50.0};
 
   /** Controls energy damping from contact, *only for*
   multibody::DiscreteContactApproximation::kSap. Units are seconds. */
-  std::optional<double> relaxation_time;
+  std::optional<double> relaxation_time{0.1};
   /// @}
 
   /** @name Point Contact Properties
@@ -128,8 +141,26 @@ struct DefaultProximityProperties {
   @ref point_forces_modeling "Compliant Point Contact Forces",
   geometry::AddContactMaterial. */
   /// @{
-  /** A measure of material stiffness, in units of Newtons per meter. */
-  std::optional<double> point_stiffness;
+
+  /** A measure of material stiffness, in units of Newtons per meter.
+
+   If set to std::nullopt (or simply empty {}), MultibodyPlant uses an estimate
+   based on MultibodyPlantConfig::penetration_allowance. However, keep in mind
+   that penetration allowance will no longer be supported in future releases.
+   Either specify dissipation for each of your geometries or use this default.
+
+   @note Please refer to @ref contact_defaults "Default Contact Parameters" for
+   more details on Drake's defaults along with guidelines on how to estimate
+   parameters specific to your model.
+
+   @warning This also affects the default for rigid geometries interacting with
+   deformables. If not provided, stiffness for rigid geometries defaults to
+   infinity when they interact with a deformable body.
+  */
+  // TODO(amcastro-tri): This also affects the default for rigid geometries
+  // interacting with deformables. We might consider making this infinity for
+  // rigid bodies interacting with deformables.
+  std::optional<double> point_stiffness{1e6};
   /// @}
 
   /** Throws if the values are inconsistent. */

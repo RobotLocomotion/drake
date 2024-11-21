@@ -81,6 +81,7 @@ struct ConstraintActiveStatusMap {
 
 // This struct contains the parameters to compute forces to enforce
 // no-interpenetration between bodies by a penalty method.
+// TODO(amcastro-tri): remove this struct along with penetration allowance.
 struct ContactByPenaltyMethodParameters {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactByPenaltyMethodParameters);
 
@@ -2515,19 +2516,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return *model;
   }
 
-  // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
-  // deprecate/remove this method altogether or at least promote to proper
-  // camel case per GSG.
-  /// Sets the penetration allowance used to estimate the coefficients in the
-  /// penalty method used to impose non-penetration among bodies. Refer to the
+  // TODO(amcastro-tri): deprecate. Defaults should always come from
+  // DefaultProximityProperties.
+  /// Sets a penetration allowance used to estimate the point contact stiffness
+  /// and Hunt & Crossley dissipation parameters. Refer to the
   /// section @ref point_contact_defaults "Point Contact Default Parameters"
   /// for further details.
+  ///
+  /// @warning This will be deprecated. Prefer using defaults specified in
+  /// geometry::DefaultProximityProperties.
+  ///
+  /// @warning Values provided in geometry::DefaultProximityProperties have
+  /// precedence. If values estimated based on penetration allowance are
+  /// desired, set defaults in geometry::DefaultProximityProperties to
+  /// std::nullopt.
   ///
   /// @throws std::exception if penetration_allowance is not positive.
   void set_penetration_allowance(
       double penetration_allowance =
           MultibodyPlantConfig{}.penetration_allowance);
 
+  // TODO(amcastro-tri): deprecate. Defaults should always come from
+  // DefaultProximityProperties.
   /// Returns a time-scale estimate `tc` based on the requested penetration
   /// allowance δ set with set_penetration_allowance().
   /// For the compliant contact model to enforce non-penetration, this time
