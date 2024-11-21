@@ -72,7 +72,7 @@ struct IrisZoOptions {
    * the margin in favor of including the containment points. The matrix
    * `containment_points` is expected to be of the shape dimension times number
    * of points. IrisZo throws if the center of the starting ellipsoid is
-   * not contained int he convex hull of these containment points. */
+   * not contained in the convex hull of these containment points. */
   std::optional<Eigen::MatrixXd> containment_points{std::nullopt};
 
   /** Maximum number of alternations between the ellipsoid and the separating
