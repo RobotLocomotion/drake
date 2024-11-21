@@ -101,7 +101,6 @@ drake_cc_googletest(
     tags = [
         "no_asan",
         "no_lsan",
-        "no_memcheck",
     ],
     deps = [
         ":iris_zo",
