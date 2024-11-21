@@ -37,6 +37,130 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "iris_interface_options",
+    srcs = ["iris_interface_options.cc"],
+    hdrs = ["iris_interface_options.h"],
+    deps = [
+        "//geometry/optimization:convex_set",
+        "//solvers:solver_options",
+        "//geometry:meshcat",
+        "//common:random"
+    ],
+    implementation_deps = [
+    ],
+)
+
+
+drake_cc_library(
+    name = "iris_via_collisions_and_ellipsoid_interface_options",
+    srcs = ["iris_via_collisions_and_ellipsoid_interface_options.cc"],
+    hdrs = ["iris_via_collisions_and_ellipsoid_interface_options.h"],
+    deps = [
+        "//planning/iris:iris_interface",
+        "//planning/iris:iris_interface_options"
+    ],
+)
+
+drake_cc_library(
+    name = "iris_via_collisions_and_ellipsoid_interface",
+    srcs = ["iris_via_collisions_and_ellipsoid_interface.cc"],
+    hdrs = ["iris_via_collisions_and_ellipsoid_interface.h"],
+    deps = [
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface_options",
+        "//planning/iris:iris_interface",
+        "//planning:collision_checker",
+        "//planning/iris:iris_interface_options"
+    ],
+)
+
+drake_cc_library(
+    name = "iris_interface",
+    srcs = ["iris_interface.cc"],
+    hdrs = ["iris_interface.h"],
+    deps = [
+        "//planning:collision_checker",
+        ":iris_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "iris_np",
+    srcs = ["iris_np.cc"],
+    hdrs = ["iris_np.h"],
+    deps = [
+        "//planning:scene_graph_collision_checker",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "iris_np2",
+    srcs = ["iris_np2.cc"],
+    hdrs = ["iris_np2.h"],
+    deps = [
+        "//planning:scene_graph_collision_checker",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "iris_zo",
+    srcs = ["iris_zo.cc"],
+    hdrs = ["iris_zo.h"],
+    deps = [
+        "//planning:collision_checker",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
+
+drake_cc_library(
+    name = "c_iris",
+    srcs = ["c_iris.cc"],
+    hdrs = ["c_iris.h"],
+    deps = [
+        "//planning:scene_graph_collision_checker",
+        "//planning/iris:iris_interface",
+        "//planning/iris:iris_interface_options",
+        "//geometry/optimization:convex_set",
+        "//geometry/optimization:cspace_free_polytope",
+        "//geometry/optimization:cspace_free_polytope_base",
+        "//geometry/optimization:cspace_free_structs",
+    ],
+    implementation_deps = [
+    ],
+)
+
+drake_cc_library(
+    name = "vanilla_iris",
+    srcs = ["vanilla_iris.cc"],
+    hdrs = ["vanilla_iris.h"],
+    deps = [
+        "//planning:collision_checker",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface",
+        "//planning/iris:iris_via_collisions_and_ellipsoid_interface_options",
+        "//geometry/optimization:convex_set",
+    ],
+    implementation_deps = [
+    ],
+)
+
 drake_cc_googletest(
     name = "iris_from_clique_cover_test",
     timeout = "moderate",
