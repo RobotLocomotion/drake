@@ -941,29 +941,26 @@ class RotationalInertia {
     return moment_max <= epsilon && product_max <= epsilon;
   }
 
-  // Tests whether each moment of inertia is non-negative (to within `epsilon`)
-  // and tests whether moments of inertia satisfy triangle-inequality.  The
-  // triangle-inequality test requires `epsilon` when the sum of two moments are
-  // nearly equal to the third one. Example: Ixx = Iyy = 50, Izz = 100.00000001,
-  // or Ixx = -0.0001 (negative),  Ixx = 49.9999,  Iyy = 50.
-  // The positive (non-zero) `epsilon` accounts for round-off errors, e.g., from
+  // Tests whether each moment of inertia is non-negative (to within ε) and
+  // tests whether moments of inertia satisfy the triangle-inequality.
+  // The triangle-inequality test requires ε when the sum of two moments are
+  // nearly equal to the third one. Example: Ixx = Iyy = 50, Izz = 100.00000001.
+  // The positive (non-zero) ε accounts for round-off errors, e.g., from
   // re-expressing inertia in another frame and is typically much smaller than
   // the largest possible principal moment of inertia in the rotational inertia.
   // @param Ixx, Iyy, Izz moments of inertia for a generic rotational inertia,
   //        (i.e., not necessarily principal moments of inertia).
-  // @note Denoting Imin and Imax as the smallest and largest possible moments
-  //       of inertia in a valid rotational inertia, denoting Imed as the
-  //       intermediate moment of inertia, and denoting tr as the trace of the
-  //       rotational inertia (e.g., Ixx + Iyy + Izz), one can prove:
-  //       0 <= Imin <= tr/3,   tr/3 <= Imed <= tr/2,   tr/3 <= Imax <= tr/2.
-  //       If Imin == 0, then Imed == Imax == tr / 2.
-  //       Heuristically, `epsilon` is a small multiplier of Trace() / 2.
   static boolean<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
       const T& Ixx, const T& Iyy, const T& Izz) {
-    // To check the validity of `this` rotational inertia, use an epsilon value
-    // related to machine precision multiplied by the largest possible element
-    // that can appear in a valid `this` rotational inertia. Note: The largest
-    // product of inertia is at most half the largest moment of inertia.
+    // Denoting Imin and Imax as the smallest and largest possible moments of
+    // inertia in a rotational inertia, denoting Imed as the intermediate moment
+    // inertia, and denoting tr = Ixx + Iyy + Izz as the trace of the rotational
+    // inertia, one can prove that if Imin == 0, then Imed == Imax == tr / 2 and
+    // in all cases  0 ≤ Imin ≤ tr/3,  tr/3 ≤ Imed ≤ tr/2,  tr/3 ≤ Imax ≤ tr/2.
+    // Hence: to check the validity of `this` rotational inertia, use an ε value
+    // related to machine precision multiplied by Imax = tr/2.
+    // Tangent: The product of inertia Iᵢⱼ with the largest absolute value is at
+    // most half the largest moment of inertia, i.e., |Iᵢⱼ| ≤ Imax/2.
     using std::abs;
     const double precision = 16 * std::numeric_limits<double>::epsilon();
     const T max_possible_inertia_moment = 0.5 * abs(Ixx + Iyy + Izz);
