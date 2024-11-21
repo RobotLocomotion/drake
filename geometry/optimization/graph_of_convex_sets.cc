@@ -1600,20 +1600,6 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
           "the solution to the relaxation instead.");
     }
 
-    std::vector<MathematicalProgramResult> rounded_results(
-        candidate_paths.size());
-
-    auto solve_ith_convex_restriction = [&](const int thread_num,
-                                            const int64_t i) {
-      unused(thread_num);
-      rounded_results[i] =
-          SolveConvexRestriction(candidate_paths[i], options, &result);
-    };
-
-    using common_robotics_utilities::parallelism::DegreeOfParallelism;
-    using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
-    using common_robotics_utilities::parallelism::ParallelForBackend;
-
     // If any costs or constraints aren't thread-safe, we can't parallelize.
     bool is_thread_safe = true;
 
@@ -1671,6 +1657,37 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
     int n_threads_to_use =
         is_thread_safe ? options.parallelism.num_threads() : 1;
+    if (n_threads_to_use < options.parallelism.num_threads()) {
+      log()->warn(
+          "GCS restriction has costs or constraints which are not thread-safe, "
+          "so only one thread will be used for the rounding stage.");
+    }
+
+    GraphOfConvexSetsOptions modified_options(options);
+    if (n_threads_to_use > 1) {
+      // Because we're multithreading, we should only use one thread per solver.
+      if (modified_options.restriction_solver_options) {
+        modified_options.restriction_solver_options->SetOption(
+            solvers::CommonSolverOption::kMaxThreads, 1);
+      } else {
+        modified_options.solver_options.SetOption(
+            solvers::CommonSolverOption::kMaxThreads, 1);
+      }
+    }
+
+    std::vector<MathematicalProgramResult> rounded_results(
+        candidate_paths.size());
+
+    auto solve_ith_convex_restriction = [&](const int thread_num,
+                                            const int64_t i) {
+      unused(thread_num);
+      rounded_results[i] =
+          SolveConvexRestriction(candidate_paths[i], modified_options, &result);
+    };
+
+    using common_robotics_utilities::parallelism::DegreeOfParallelism;
+    using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
+    using common_robotics_utilities::parallelism::ParallelForBackend;
 
     // Different paths may have different numbers of sets, leading to variable
     // solve times. Thus, we use dynamic scheduling.
