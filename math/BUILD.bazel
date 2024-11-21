@@ -479,6 +479,7 @@ drake_cc_googletest(
     name = "matrix_util_test",
     deps = [
         ":matrix_util",
+        "//common:temp_directory",
         "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
     ],

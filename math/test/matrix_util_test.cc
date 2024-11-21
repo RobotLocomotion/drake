@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/expression.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -241,6 +242,38 @@ GTEST_TEST(TestMatrixUtil, ExtractPrincipalSubmatrixSquareMatrixErrors) {
   EXPECT_ANY_THROW(ExtractPrincipalSubmatrix(X, indices));
 }
 
+GTEST_TEST(GeneratePythonCsc, TestNonEmpty) {
+  Eigen::Matrix<double, 2, 3> A;
+  // clang-format off
+  A << 1.5, 0.5, 1,
+        0,  0.5, 0;
+  // clang-format on
+  const Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+  const std::string python_filename = temp_directory() + "/foo.py";
+  std::ofstream python_stream{python_filename};
+  GeneratePythonCsc(A_sparse, "A", &python_stream);
+  python_stream.close();
+  std::ifstream file(python_filename);
+  std::string line;
+  std::getline(file, line);
+  file.close();
+  EXPECT_EQ(line,
+            "A = sparse.csc_matrix((np.array([1.5, 0.5, 0.5, 1], "
+            "dtype=np.float64), ([0, 0, 1, 0], [0, 1, 1, 2])), shape=(2, 3))");
+}
+
+GTEST_TEST(GeneratePythonCsc, TestEmpty) {
+  const Eigen::SparseMatrix<double> A_sparse(2, 3);
+  const std::string python_filename = temp_directory() + "/foo.py";
+  std::ofstream python_stream{python_filename};
+  GeneratePythonCsc(A_sparse, "A", &python_stream);
+  python_stream.close();
+  std::ifstream file(python_filename);
+  std::string line;
+  std::getline(file, line);
+  file.close();
+  EXPECT_EQ(line, "A = sparse.csc_matrix((2, 3))");
+}
 }  // namespace test
 }  // namespace math
 }  // namespace drake

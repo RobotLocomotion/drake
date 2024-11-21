@@ -14,6 +14,7 @@
 #include "drake/common/name_value.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/scs_clarabel_common.h"
 #include "drake/tools/workspace/clarabel_cpp_internal/serialize.h"
@@ -214,37 +215,6 @@ void WriteClarabelReproduction(
     return;
   }
 
-  auto write_csc = [&](const Eigen::SparseMatrix<double>& mat,
-                       const std::string& name) {
-    if (mat.nonZeros() == 0) {
-      out_file << fmt::format("{} = sparse.csc_matrix(({}, {}))", name,
-                              P.rows(), P.cols())
-               << std::endl;
-      return;
-    }
-    std::vector<double> data;
-    std::vector<int> rows;
-    std::vector<int> cols;
-    data.reserve(mat.nonZeros());
-    rows.reserve(mat.nonZeros());
-    cols.reserve(mat.nonZeros());
-    for (int k = 0; k < mat.outerSize(); ++k) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(mat, k); it; ++it) {
-        data.push_back(it.value());
-        rows.push_back(it.row());
-        cols.push_back(it.col());
-      }
-    }
-    out_file << fmt::format(R"""(
-data = [{}]
-rows = [{}]
-cols = [{}]
-{} = sparse.csc_matrix((data, (rows, cols)))
-)""",
-                            fmt::join(data, ", "), fmt::join(rows, ", "),
-                            fmt::join(cols, ", "), name);
-  };
-
   out_file << fmt::format(
       R"""(
 import clarabel
@@ -256,8 +226,8 @@ b = [{}]
 )""",
       fmt::join(q_vec.data(), q_vec.data() + q_vec.size(), ", "),
       fmt::join(b_vec.data(), b_vec.data() + b_vec.size(), ", "));
-  write_csc(P, "P");
-  write_csc(A, "A");
+  math::GeneratePythonCsc(P, "P", &out_file);
+  math::GeneratePythonCsc(A, "A", &out_file);
   out_file << "cones = [" << std::endl;
 
   for (const clarabel::SupportedConeT<double>& cone : cones) {

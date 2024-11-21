@@ -1032,6 +1032,7 @@ drake_cc_variant_library(
     implementation_deps_enabled = [
         ":scs_clarabel_common",
         "//math:eigen_sparse_triplet",
+        "//math:matrix_util",
         "//tools/workspace/clarabel_cpp_internal:serialize",
         "@clarabel_cpp_internal//:clarabel_cpp",
     ],
@@ -1067,6 +1068,7 @@ drake_cc_variant_library(
         ":scs_clarabel_common",
         "//common:scope_exit",
         "//math:eigen_sparse_triplet",
+        "//math:matrix_util",
         "@scs_internal//:scsdir",
     ],
 )
@@ -1827,6 +1829,7 @@ drake_cc_googletest(
         ":second_order_cone_program_examples",
         ":semidefinite_program_examples",
         ":sos_examples",
+        "//common:temp_directory",
     ],
 )
 
