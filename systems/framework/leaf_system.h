@@ -195,11 +195,11 @@ class LeafSystem : public System<T> {
     static_assert(std::is_base_of_v<BasicVector<T>, U<T>>,
                   "U must be a subclass of BasicVector.");
     const auto& leaf_context =
-        dynamic_cast<const systems::LeafContext<T>&>(context);
-    const auto* const params =
-        dynamic_cast<const U<T>*>(&leaf_context.get_numeric_parameter(index));
-    DRAKE_ASSERT(params != nullptr);
-    return *params;
+        static_cast<const systems::LeafContext<T>&>(context);
+    const auto& uncast_params = leaf_context.get_numeric_parameter(index);
+    DRAKE_ASSERT(typeid(uncast_params) == typeid(const U<T>&));
+    const auto& params = static_cast<const U<T>&>(uncast_params);
+    return params;
   }
 
   /** Extracts the numeric parameters of type U from the @p context at @p index.
@@ -210,12 +210,11 @@ class LeafSystem : public System<T> {
     this->ValidateContext(context);
     static_assert(std::is_base_of_v<BasicVector<T>, U<T>>,
                   "U must be a subclass of BasicVector.");
-    auto* leaf_context = dynamic_cast<systems::LeafContext<T>*>(context);
-    DRAKE_ASSERT(leaf_context != nullptr);
-    auto* const params = dynamic_cast<U<T>*>(
-        &leaf_context->get_mutable_numeric_parameter(index));
-    DRAKE_ASSERT(params != nullptr);
-    return *params;
+    auto* leaf_context = static_cast<systems::LeafContext<T>*>(context);
+    auto& uncast_params = leaf_context->get_mutable_numeric_parameter(index);
+    DRAKE_ASSERT(typeid(uncast_params) == typeid(U<T>));
+    auto& params = static_cast<U<T>&>(uncast_params);
+    return params;
   }
 
   /** Declares an abstract parameter using the given @p model_value.
