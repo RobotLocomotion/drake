@@ -16,6 +16,13 @@ namespace drake {
    <li> @subpage algorithms </li>
    <li> @ref drake::examples "Examples" </li>
    <li> @subpage technical_notes </li>
+   <li> @subpage drake_contacts "Contact Modeling in Drake" </li>
+   <ul>
+     <li> @ref compliant_contact "Modeling Compliant Contact". Drake's contact models </li>
+     <li> @ref contact_defaults "Default Contact Parameters" </li>
+     <li> @ref friction_model "Modeling of Dry Friction" </li>
+     <li> @ref hydro_margin "Margin for Hydroelastic Contact" </li>
+   </ul>
  </ul>
 
  <p>For more general information, you can also visit the <a
