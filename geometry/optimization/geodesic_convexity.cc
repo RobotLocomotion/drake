@@ -45,6 +45,10 @@ internal::GetMinimumAndMaximumValueAlongDimension(const ConvexSet& region,
   region.AddPointInSetConstraints(&prog, y);
   VectorXd objective_vector = VectorXd::Zero(region.ambient_dimension());
   auto objective = prog.AddLinearCost(objective_vector, y);
+
+  // This method is sometimes called in parallel, so we assert thread-safety.
+  DRAKE_ASSERT(prog.IsThreadSafe());
+
   for (const auto& dimension : dimensions) {
     DRAKE_THROW_UNLESS(dimension >= 0 &&
                        dimension < region.ambient_dimension());
