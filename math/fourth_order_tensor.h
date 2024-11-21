@@ -8,25 +8,7 @@ namespace math {
 namespace internal {
 
 /* This class provides functionalities related to 4th-order tensors of
- dimension 3*3*3*3. The tensor is represented using a a 9*9 matrix that is
- organized as following
-
-                  l = 1       l = 2       l = 3
-              -------------------------------------
-              |           |           |           |
-    j = 1     |   Aᵢ₁ₖ₁   |   Aᵢ₁ₖ₂   |   Aᵢ₁ₖ₃   |
-              |           |           |           |
-              -------------------------------------
-              |           |           |           |
-    j = 2     |   Aᵢ₂ₖ₁   |   Aᵢ₂ₖ₂   |   Aᵢ₂ₖ₃   |
-              |           |           |           |
-              -------------------------------------
-              |           |           |           |
-    j = 3     |   Aᵢ₃ₖ₁   |   Aᵢ₃ₖ₂   |   Aᵢ₃ₖ₃   |
-              |           |           |           |
-              -------------------------------------
- Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ.
- @tparam float, double, AutoDiffXd. */
+ dimension 3*3*3*3.  @tparam float, double, AutoDiffXd. */
 template <typename T>
 class FourthOrderTensor {
  public:
@@ -47,12 +29,45 @@ class FourthOrderTensor {
                            const Eigen::Ref<const Vector3<T>>& v,
                            EigenPtr<Matrix3<T>> B) const;
 
-  /* Returns this 4th-order tensor encoded as a matrix according to the class
-   documentation. */
+  /* Sets this 4th-order tensor as the outer product of the matrices (2nd-order
+   tensor) M and N. More specifically, in Einstein notion, sets Aᵢⱼₖₗ = MᵢⱼNₖₗ.
+   @warn This function assumes the input matrices are aliasing the data in this
+   4th-order tensor. */
+  void SetAsOuterProduct(const Eigen::Ref<const Matrix3<T>>& M,
+                         const Eigen::Ref<const Matrix3<T>>& N);
+
+  /* Returns a a scaled symmetric identity 4th-order tensor. In Einstein
+   notation, the result is scale * 1/2 * (δᵢₖδⱼₗ + δᵢₗδⱼₖ).  */
+  static FourthOrderTensor<T> MakeSymmetricIdentity(T scale);
+
+  /* Returns a a scaled major identity 4th-order tensor. In Einstein
+   notation, the result is scale * δᵢₖδⱼₗ.  */
+  static FourthOrderTensor<T> MakeMajorIdentity(T scale);
+
+  FourthOrderTensor<T>& operator+=(const FourthOrderTensor<T>& other);
+
+  /* Returns this 4th-order tensor encoded as a 2D matrix.
+   The tensor is represented using a a 9*9 matrix organized as following
+
+                  l = 1       l = 2       l = 3
+              -------------------------------------
+              |           |           |           |
+    j = 1     |   Aᵢ₁ₖ₁   |   Aᵢ₁ₖ₂   |   Aᵢ₁ₖ₃   |
+              |           |           |           |
+              -------------------------------------
+              |           |           |           |
+    j = 2     |   Aᵢ₂ₖ₁   |   Aᵢ₂ₖ₂   |   Aᵢ₂ₖ₃   |
+              |           |           |           |
+              -------------------------------------
+              |           |           |           |
+    j = 3     |   Aᵢ₃ₖ₁   |   Aᵢ₃ₖ₂   |   Aᵢ₃ₖ₃   |
+              |           |           |           |
+              -------------------------------------
+  Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ. */
   const MatrixType& data() const { return data_; }
 
-  /* Returns this 4th-order tensor encoded as a mutable matrix according to the
-   class documentation. */
+  /* Returns this 4th-order tensor encoded as a mutable 2D matrix.
+   @see data() for the layout of the matrix. */
   MatrixType& mutable_data() { return data_; }
 
   /* Returns the value of the 4th-order tensor at the given indices.
@@ -75,26 +90,6 @@ class FourthOrderTensor {
     return data_(3 * j + i, 3 * l + k);
   }
 
-  /* Returns the value of the 4th-order tensor at the given indices,
-   interpreted as indices into the 9x9 matrix, using the convention layed out in
-   the class documentation.
-   @pre 0 <= i, j < 9. */
-  const T& operator()(int i, int j) const {
-    DRAKE_ASSERT(0 <= i && i < 9);
-    DRAKE_ASSERT(0 <= j && j < 9);
-    return data_(i, j);
-  }
-
-  /* Returns the value of the 4th-order tensor at the given indices,
-   interpreted as indices into the 9x9 matrix, using the convention layed out in
-   the class documentation.
-   @pre 0 <= i, j < 9. */
-  T& operator()(int i, int j) {
-    DRAKE_ASSERT(0 <= i && i < 9);
-    DRAKE_ASSERT(0 <= j && j < 9);
-    return data_(i, j);
-  }
-
   /* Sets the data of this 4th-order tensor to the given matrix, using the
    convention layed out in the class documentation. */
   void set_data(const MatrixType& data) { data_ = data; }
@@ -102,6 +97,12 @@ class FourthOrderTensor {
  private:
   MatrixType data_{MatrixType::Zero()};
 };
+
+template <typename T>
+FourthOrderTensor<T> operator+(const FourthOrderTensor<T>& t1,
+                               const FourthOrderTensor<T>& t2) {
+  return FourthOrderTensor<T>(t1) += t2;
+}
 
 }  // namespace internal
 }  // namespace math

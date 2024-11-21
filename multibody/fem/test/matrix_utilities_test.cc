@@ -76,7 +76,8 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledRotationalDerivative) {
       Matrix3<double> scaled_dRijdF;
       for (int k = 0; k < 3; ++k) {
         for (int l = 0; l < 3; ++l) {
-          scaled_dRijdF(k, l) = scaled_dRdF(3 * j + i, 3 * l + k).value();
+          scaled_dRijdF(k, l) =
+              scaled_dRdF.data()(3 * j + i, 3 * l + k).value();
         }
       }
       EXPECT_TRUE(
@@ -107,7 +108,8 @@ GTEST_TEST(MatrixUtilitiesTest, AddScaledCofactorMatrixDerivative) {
       Matrix3<double> scaled_dCijdA;
       for (int k = 0; k < 3; ++k) {
         for (int l = 0; l < 3; ++l) {
-          scaled_dCijdA(k, l) = scaled_dCdA(3 * j + i, 3 * l + k).value();
+          scaled_dCijdA(k, l) =
+              scaled_dCdA.data()(3 * j + i, 3 * l + k).value();
         }
       }
       EXPECT_TRUE(

@@ -24,6 +24,43 @@ void FourthOrderTensor<T>::ContractWithVectors(
   }
 }
 
+template <typename T>
+void FourthOrderTensor<T>::SetAsOuterProduct(
+    const Eigen::Ref<const Matrix3<T>>& M,
+    const Eigen::Ref<const Matrix3<T>>& N) {
+  const auto M_vec = Eigen::Map<const Vector<T, 9>>(M.data(), 9);
+  const auto N_vec = Eigen::Map<const Vector<T, 9>>(N.data(), 9);
+  data_.noalias() = M_vec * N_vec.transpose();
+}
+
+template <typename T>
+FourthOrderTensor<T> FourthOrderTensor<T>::MakeSymmetricIdentity(T scale) {
+  T half_scale = 0.5 * scale;
+  FourthOrderTensor<T> result;
+  result.data_ = half_scale * Eigen::Matrix<T, 9, 9>::Identity();
+  for (int k = 0; k < 3; ++k) {
+    /* Second term. */
+    for (int l = 0; l < 3; ++l) {
+      const int i = l;
+      const int j = k;
+      result.data_(3 * j + i, 3 * l + k) += half_scale;
+    }
+  }
+  return result;
+}
+
+template <typename T>
+FourthOrderTensor<T> FourthOrderTensor<T>::MakeMajorIdentity(T scale) {
+  return FourthOrderTensor<T>(scale * Eigen::Matrix<T, 9, 9>::Identity());
+}
+
+template <typename T>
+FourthOrderTensor<T>& FourthOrderTensor<T>::operator+=(
+    const FourthOrderTensor<T>& other) {
+  data_.noalias() += other.data_;
+  return *this;
+}
+
 }  // namespace internal
 }  // namespace math
 }  // namespace drake

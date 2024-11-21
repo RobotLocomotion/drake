@@ -50,12 +50,8 @@ void CorotatedModel<T>::CalcFirstPiolaStressDerivativeImpl(
   const Matrix3<T>& R = data.R();
   const Matrix3<T>& S = data.S();
   const Matrix3<T>& JFinvT = data.JFinvT();
-  const Vector<T, 3 * 3>& flat_JFinvT =
-      Eigen::Map<const Vector<T, 3 * 3>>(JFinvT.data(), 3 * 3);
   auto& local_dPdF = (*dPdF);
-  /* The contribution from derivatives of Jm1. */
-  local_dPdF.mutable_data().noalias() =
-      lambda_ * flat_JFinvT * flat_JFinvT.transpose();
+  local_dPdF.SetAsOuterProduct(lambda_ * JFinvT, JFinvT);
   /* The contribution from derivatives of F. */
   local_dPdF.mutable_data().diagonal().array() += 2.0 * mu_;
   /* The contribution from derivatives of R. */
