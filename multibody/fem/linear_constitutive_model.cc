@@ -29,21 +29,10 @@ LinearConstitutiveModel<T>::LinearConstitutiveModel(const T& youngs_modulus,
     Keep in mind that the indices are laid out such that the ik-th entry in
     the jl-th block corresponds to the value dPᵢⱼ/dFₖₗ.  */
   /* First term. */
-  dPdF_.set_data(mu_ * Eigen::Matrix<T, 9, 9>::Identity());
-  for (int k = 0; k < 3; ++k) {
-    /* Second term. */
-    for (int l = 0; l < 3; ++l) {
-      const int i = l;
-      const int j = k;
-      dPdF_(3 * j + i, 3 * l + k) += mu_;
-    }
-    /* Third term. */
-    for (int i = 0; i < 3; ++i) {
-      const int l = k;
-      const int j = i;
-      dPdF_(3 * j + i, 3 * l + k) += lambda_;
-    }
-  }
+  dPdF_.SetAsOuterProduct(Matrix3<T>::Identity(),
+                          lambda_ * Matrix3<T>::Identity());
+  dPdF_ +=
+      math::internal::FourthOrderTensor<T>::MakeSymmetricIdentity(2.0 * mu_);
 }
 
 template <typename T>
