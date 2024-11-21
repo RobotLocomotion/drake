@@ -14,6 +14,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":iris_from_clique_cover",
+        ":iris_zo",
     ],
 )
 
@@ -31,6 +32,26 @@ drake_cc_library(
         "//planning/graph_algorithms:max_clique_solver_via_greedy",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_zo",
+    srcs = ["iris_zo.cc"],
+    hdrs = ["iris_zo.h"],
+    deps = [
+        "//common:parallelism",
+        "//geometry:meshcat",
+        "//geometry/optimization:convex_set",
+        "//planning:collision_checker",
+        "//solvers:choose_best_solver",
+        "//solvers:clarabel_solver",
+        "//solvers:mathematical_program",
+        "//solvers:mosek_solver",
+        "//solvers:solve",
     ],
     implementation_deps = [
         "@common_robotics_utilities",
@@ -66,6 +87,28 @@ drake_cc_googletest(
         "//planning:scene_graph_collision_checker",
         "//planning/graph_algorithms:max_clique_solver_via_mip",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_zo_test",
+    timeout = "moderate",
+    data = ["//multibody/parsing:test_models"],
+    num_threads = 2,
+    shard_count = 4,
+    tags = [
+        "no_asan",
+        "no_lsan",
+    ],
+    deps = [
+        ":iris_zo",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:maybe_pause_for_user",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/inverse_kinematics",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
     ],
 )
 
