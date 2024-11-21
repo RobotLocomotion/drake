@@ -7,6 +7,7 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -60,8 +61,16 @@ class DeformableIntegrationTest : public ::testing::Test {
  protected:
   /* Sets up a scene with a deformable cube sitting on the ground. */
   void SetUp() override {
+    const multibody::MultibodyPlantConfig plant_config{.time_step = kDt};
+    /* Default proximity properties affect rigid geometry, even when they
+     * interact with deformables. In this test, we want no compliance. */
+    const geometry::SceneGraphConfig scene_graph_config{
+        .default_proximity_properties = {
+            .relaxation_time = kDt,
+            .point_stiffness = std::numeric_limits<double>::infinity()}};
     systems::DiagramBuilder<double> builder;
-    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
+    std::tie(plant_, scene_graph_) = multibody::AddMultibodyPlant(
+        plant_config, scene_graph_config, &builder);
 
     DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
@@ -240,9 +249,11 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   }
   const double kTol = 16.0 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(contact_info.F_Ac_W().translational(),
-                              F_Ac_W_expected.translational(), kTol));
+                              F_Ac_W_expected.translational(), kTol,
+                              MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(contact_info.F_Ac_W().rotational(),
-                              F_Ac_W_expected.rotational(), kTol));
+                              F_Ac_W_expected.rotational(), kTol,
+                              MatrixCompareType::relative));
   /* Verify that adding deformable contact didn't mess up the generalized
    contact force port for rigid bodies. */
   EXPECT_NO_THROW(

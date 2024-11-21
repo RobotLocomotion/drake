@@ -8,6 +8,8 @@
 namespace drake {
 namespace geometry {
 
+// TODO(amcastro-tri): Consider removing the std::optional(s) in this struct, so
+// that values are always required.
 /** These properties will be used as defaults when the geometry as
 added via API calls or parsed from model files doesn't say anything more
 specific.  @see @ref compliant_contact, @ref hydroelastic_user_guide,
@@ -66,6 +68,7 @@ struct DefaultProximityProperties {
   of meters. */
   std::optional<double> slab_thickness;
 
+  // TODO(amcastro-tri): make this required, i.e. remove std::optional.
   /** (Advanced) Specifies a thin layer of thickness "margin" (in meters) around
   each geometry. Two bodies with margins δ₁ and δ₂ are considered for contact
   resolution whenever their distance is within δ₁ + δ₂. That is, (speculative)
@@ -111,14 +114,24 @@ struct DefaultProximityProperties {
   /** @see dynamic_friction. */
   std::optional<double> static_friction{0.5};
 
+  // TODO(amcastro-tri): make this required, i.e. remove std::optional.
   /** Controls energy damping from contact, for contact models *other than*
-  multibody::DiscreteContactApproximation::kSap. Units are seconds per
-  meter. */
-  std::optional<double> hunt_crossley_dissipation;
+  multibody::DiscreteContactApproximation::kSap. Units are seconds per meter.
+
+  If set to std::nullopt (or simply empty {}), MultibodyPlant uses an estimate
+  based on MultibodyPlantConfig::penetration_allowance. However, keep in mind
+  that penetration allowance will no longer be supported in future releases.
+  Either specify point contact stiffness for each of your geometries or use this
+  default.
+
+  @warning This value is also used for contact with deformable bodies. If set to
+  std::nullopt, dissipation defaults to zero for contact with deformable bodies.
+  */
+  std::optional<double> hunt_crossley_dissipation{50.0};
 
   /** Controls energy damping from contact, *only for*
   multibody::DiscreteContactApproximation::kSap. Units are seconds. */
-  std::optional<double> relaxation_time;
+  std::optional<double> relaxation_time{0.1};
   /// @}
 
   /** @name Point Contact Properties
@@ -128,8 +141,23 @@ struct DefaultProximityProperties {
   @ref point_forces_modeling "Compliant Point Contact Forces",
   geometry::AddContactMaterial. */
   /// @{
-  /** A measure of material stiffness, in units of Newtons per meter. */
-  std::optional<double> point_stiffness;
+
+  // TODO(amcastro-tri): make this required, i.e. remove std::optional.
+  /** A measure of material stiffness, in units of Newtons per meter.
+
+   If set to std::nullopt (or simply empty {}), MultibodyPlant uses an estimate
+   based on MultibodyPlantConfig::penetration_allowance. However, keep in mind
+   that penetration allowance will no longer be supported in future releases.
+   Either specify dissipation for each of your geometries or use this default.
+
+   @warning This also affects the default for rigid geometries interacting with
+   deformables. If not provided, stiffness for rigid geometries defaults to
+   infinity when they interact with a deformable body.
+  */
+  // TODO(amcastro-tri): This also affects the default for rigid geometries
+  // interacting with deformables. We might consider making this infinity for
+  // rigid bodies interacting with deformables.
+  std::optional<double> point_stiffness{1e6};
   /// @}
 
   /** Throws if the values are inconsistent. */
