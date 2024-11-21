@@ -120,6 +120,7 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
   std::vector<MathematicalProgram> progs(parallelism.num_threads());
   for (int i = 0; i < ssize(progs); ++i) {
     ConstructEmptyBoundednessProgram(&(progs[i]), s);
+    DRAKE_ASSERT(progs[i].IsThreadSafe());
   }
 
   // Pre-allocate empty MathematicalProgramResults for each thread.

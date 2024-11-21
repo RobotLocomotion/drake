@@ -854,6 +854,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
       EdgeId edge_id = idx_to_edge_id.at(i);
       progs.emplace_back(ConstructPreprocessingProgram(
           edge_id, incoming_edges, outgoing_edges, source_id, target_id));
+      DRAKE_ASSERT(progs.back()->IsThreadSafe());
     }
 
     // Check if edge e = (u,v) could be on a path from start to goal.
