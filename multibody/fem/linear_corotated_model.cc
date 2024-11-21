@@ -86,13 +86,13 @@ void LinearCorotatedModel<T>::CalcFirstPiolaStressDerivativeImpl(
   const Matrix3<T>& R0 = data.R0();
   auto& local_dPdF = (*dPdF);
   /* Add in μ * δₐᵢδⱼᵦ. */
-  local_dPdF.set_data(mu_ * Eigen::Matrix<T, 9, 9>::Identity());
+  local_dPdF = math::internal::FourthOrderTensor<T>::MakeMajorIdentity(mu_);
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
       for (int alpha = 0; alpha < 3; ++alpha) {
         for (int beta = 0; beta < 3; ++beta) {
           /* Add in  μ *  Rᵢᵦ Rₐⱼ +   λ * Rₐᵦ * Rᵢⱼ. */
-          local_dPdF(3 * j + i, 3 * beta + alpha) +=
+          local_dPdF.mutable_data()(3 * j + i, 3 * beta + alpha) +=
               mu_ * R0(i, beta) * R0(alpha, j) +
               lambda_ * R0(alpha, beta) * R0(i, j);
         }
