@@ -202,7 +202,8 @@ TEST_F(RevoluteJointTest, AddInDampingForces) {
 
 TEST_F(RevoluteJointTest, Clone) {
   auto model_clone = tree().CloneToScalar<AutoDiffXd>();
-  const auto& joint1_clone = model_clone->get_variant(*joint1_);
+  const auto& joint1_clone = dynamic_cast<const RevoluteJoint<AutoDiffXd>&>(
+      model_clone->get_variant(*joint1_));
 
   EXPECT_EQ(joint1_clone.name(), joint1_->name());
   EXPECT_EQ(joint1_clone.frame_on_parent().index(),

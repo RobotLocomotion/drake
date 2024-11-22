@@ -34,10 +34,13 @@ class QuaternionFloatingMobilizerTest : public MobilizerTester {
                                       QuaternionFloatingMobilizer>(
         std::make_unique<QuaternionFloatingJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame()));
+    mutable_mobilizer_ =
+        const_cast<QuaternionFloatingMobilizer<double>*>(mobilizer_);
   }
 
  protected:
   const QuaternionFloatingMobilizer<double>* mobilizer_{nullptr};
+  QuaternionFloatingMobilizer<double>* mutable_mobilizer_{nullptr};
 };
 
 TEST_F(QuaternionFloatingMobilizerTest, CanRotateOrTranslate) {
@@ -129,12 +132,9 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   RandomGenerator generator;
   std::uniform_real_distribution<symbolic::Expression> uniform;
 
-  QuaternionFloatingMobilizer<double>* mutable_mobilizer =
-      &mutable_tree().get_mutable_variant(*mobilizer_);
-
   // Default behavior is to set to zero.
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_TRUE(
       RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
           .IsExactlyIdentity());
@@ -148,12 +148,12 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   }
 
   // Set position to be random, but not velocity (yet).
-  mutable_mobilizer->set_random_quaternion_distribution(
+  mutable_mobilizer_->set_random_quaternion_distribution(
       math::UniformlyRandomQuaternion<symbolic::Expression>(&generator));
-  mutable_mobilizer->set_random_translation_distribution(
+  mutable_mobilizer_->set_random_translation_distribution(
       translation_distribution);
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_FALSE(
       RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
           .IsExactlyIdentity());
@@ -166,9 +166,9 @@ TEST_F(QuaternionFloatingMobilizerTest, RandomState) {
   for (int i = 0; i < 6; i++) {
     velocity_distribution[i] = uniform(generator) - i - 1.0;
   }
-  mutable_mobilizer->set_random_velocity_distribution(velocity_distribution);
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_velocity_distribution(velocity_distribution);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_FALSE(
       RigidTransformd(mobilizer_->CalcAcrossMobilizerTransform(*context_))
           .IsExactlyIdentity());

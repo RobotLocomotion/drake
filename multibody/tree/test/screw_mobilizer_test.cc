@@ -37,10 +37,12 @@ class ScrewMobilizerTest : public MobilizerTester {
         std::make_unique<ScrewJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame(),
             kScrewAxis, kScrewPitch, 0.0));
+    mutable_mobilizer_ = const_cast<ScrewMobilizer<double>*>(mobilizer_);
   }
 
  protected:
   const ScrewMobilizer<double>* mobilizer_{nullptr};
+  ScrewMobilizer<double>* mutable_mobilizer_{nullptr};
 };
 
 TEST_F(ScrewMobilizerTest, CanRotateOrTranslate) {
@@ -139,14 +141,11 @@ TEST_F(ScrewMobilizerTest, ZeroState) {
 }
 
 TEST_F(ScrewMobilizerTest, DefaultPosition) {
-  ScrewMobilizer<double>* mutable_mobilizer =
-      &mutable_tree().get_mutable_variant(*mobilizer_);
-
   EXPECT_EQ(mobilizer_->get_translation(*context_), 0.0);
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0.0);
 
   const Vector1d new_default(0.4);
-  mutable_mobilizer->set_default_position(new_default);
+  mutable_mobilizer_->set_default_position(new_default);
   mobilizer_->set_default_state(*context_, &context_->get_mutable_state());
 
   EXPECT_EQ(mobilizer_->get_angle(*context_), new_default(0));
@@ -158,9 +157,6 @@ TEST_F(ScrewMobilizerTest, RandomState) {
   RandomGenerator generator;
   std::uniform_real_distribution<symbolic::Expression> uniform;
 
-  ScrewMobilizer<double>* mutable_mobilizer =
-      &mutable_tree().get_mutable_variant(*mobilizer_);
-
   // Default behavior is to set to zero.
   mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
                                &generator);
@@ -168,7 +164,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0.0);
 
   // Set position to be random, but not velocity (yet).
-  mutable_mobilizer->set_random_position_distribution(
+  mutable_mobilizer_->set_random_position_distribution(
       Vector1<symbolic::Expression>(uniform(generator) + 1.0));
   mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
                                &generator);
@@ -176,7 +172,7 @@ TEST_F(ScrewMobilizerTest, RandomState) {
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0.0);
 
   // Set the velocity distribution.  Now both should be random.
-  mutable_mobilizer->set_random_velocity_distribution(
+  mutable_mobilizer_->set_random_velocity_distribution(
       Vector1<symbolic::Expression>(uniform(generator) - 1.0));
   mobilizer_->set_random_state(*context_, &context_->get_mutable_state(),
                                &generator);
