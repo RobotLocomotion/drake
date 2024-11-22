@@ -1,0 +1,357 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/workspace/snopt:fortran.bzl", "fortran_module")
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(default_visibility = ["//visibility:private"])
+
+# These default copts are used for all targets in this package. (Specific
+# targets can add more options, as needed.)
+_COPTS = [
+    "-fno-openmp",
+    "-w",
+]
+
+cc_library(
+    name = "compat",
+    hdrs = ["src/compat.hxx"],
+    includes = ["src"],
+    copts = _COPTS,
+    linkstatic = True,
+)
+
+cc_library(
+    name = "contrib",
+    hdrs = ["src/ssids/contrib.h"],
+    includes = ["src"],
+    copts = _COPTS,
+    linkstatic = True,
+    deps = [
+        ":spral_ssids_contrib",
+    ],
+)
+
+cc_library(
+    name = "cpu_kernels",
+    srcs = glob(["src/ssids/cpu/**/*.cxx"], allow_empty = False) + [
+        # SPRAL has modules where C calls Fortran calls C. The only way we can
+        # denote that to a single-pass linker is by listing the object code as
+        # a source file.
+        "src/ssids/contrib_free.f90.pic.o",
+    ],
+    hdrs = glob(["src/ssids/cpu/**/*.hxx"], allow_empty = False),
+    includes = ["src"],
+    copts = _COPTS + ["-fvisibility=hidden"],
+    linkstatic = True,
+    deps = [
+        ":contrib",
+        ":profile",
+        ":spral_ssids_cpu_iface",
+    ],
+)
+
+cc_library(
+    name = "guess_topology",
+    srcs = [
+        "src/hw_topology/guess_topology.cxx",
+        "src/hw_topology/hwloc_wrapper.hxx",
+    ],
+    hdrs = [
+        "src/hw_topology/guess_topology.hxx",
+    ],
+    includes = ["src"],
+    copts = _COPTS,
+    linkstatic = True,
+    deps = [
+        ":compat",
+    ],
+)
+
+cc_library(
+    name = "omp",
+    srcs = ["src/omp.cxx"],
+    hdrs = ["src/omp.hxx"],
+    includes = ["src"],
+    copts = _COPTS,
+    linkstatic = True,
+)
+
+cc_library(
+    name = "profile",
+    hdrs = ["src/ssids/profile.hxx"],
+    # Note that there is a profile.cxx upstream, but we don't compile it here.
+    # The patches/no_fortran_profiling.patch removes the Fortran callers, so
+    # we can omit it (so that it doesn't leak global symbols into our library).
+    includes = ["src"],
+    copts = _COPTS,
+    deps = [
+        ":guess_topology",
+        ":omp",
+    ],
+)
+
+# For the definitive guide to the fortran_module deps written in this BUILD
+# file, refer to the upstream Makefile.am at "# Fortran 90 dependencies".
+
+fortran_module(
+    src = "src/blas_iface.f90",
+    name = "spral_blas_iface",
+)
+
+fortran_module(
+    src = "src/core_analyse.f90",
+    name = "spral_core_analyse",
+)
+
+fortran_module(
+    name = "spral_cuda",
+    src = "src/cuda/cuda_nocuda.f90",
+)
+
+fortran_module(
+    name = "spral_hw_topology",
+    src = "src/hw_topology/hw_topology.f90",
+    deps = [
+        ":guess_topology",
+    ],
+)
+
+fortran_module(
+    name = "spral_lapack_iface",
+    src = "src/lapack_iface.f90",
+)
+
+fortran_module(
+    name = "spral_match_order",
+    src = "src/match_order.f90",
+    uses = [
+        "spral_metis_wrapper",
+        "spral_scaling",
+    ],
+)
+
+fortran_module(
+    name = "spral_matrix_util",
+    src = "src/matrix_util.f90",
+)
+
+fortran_module(
+    name = "spral_metis_wrapper",
+    src = "src/metis5_wrapper.F90",
+    deps = [
+        "@metis_internal//:metis",
+    ],
+)
+
+fortran_module(
+    name = "spral_pgm",
+    src = "src/pgm.f90",
+)
+
+fortran_module(
+    name = "spral_random",
+    src = "src/random.f90",
+)
+
+fortran_module(
+    name = "spral_rutherford_boeing",
+    src = "src/rutherford_boeing.f90",
+    uses = [
+        "spral_matrix_util",
+        "spral_random",
+    ],
+)
+
+fortran_module(
+    name = "spral_scaling",
+    src = "src/scaling.f90",
+    uses = [
+        "spral_matrix_util",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids",
+    src = "src/ssids/ssids.f90",
+    uses = [
+        "spral_hw_topology",
+        "spral_match_order",
+        "spral_matrix_util",
+        "spral_metis_wrapper",
+        "spral_rutherford_boeing",
+        "spral_scaling",
+        "spral_ssids_akeep",
+        "spral_ssids_anal",
+        "spral_ssids_datatypes",
+        "spral_ssids_fkeep",
+        "spral_ssids_inform",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_akeep",
+    src = "src/ssids/akeep.f90",
+    uses = [
+        "spral_hw_topology",
+        "spral_ssids_datatypes",
+        "spral_ssids_inform",
+        "spral_ssids_subtree",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_ciface",
+    src = "interfaces/C/ssids.f90",
+    uses = [
+        "spral_ssids",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_cpu_iface",
+    src = "src/ssids/cpu/cpu_iface.f90",
+    uses = [
+        "spral_blas_iface",
+        "spral_lapack_iface",
+        "spral_ssids_datatypes",
+        "spral_ssids_inform",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_cpu_subtree",
+    src = "src/ssids/cpu/subtree.f90",
+    uses = [
+        "spral_ssids_contrib",
+        "spral_ssids_cpu_iface",
+        "spral_ssids_datatypes",
+        "spral_ssids_inform",
+        "spral_ssids_subtree",
+    ],
+    deps = [
+        ":cpu_kernels",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_profile",
+    src = "src/ssids/profile_iface.f90",
+    uses = [
+        "spral_hw_topology",
+    ],
+    deps = [
+        ":profile",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_anal",
+    src = "src/ssids/anal.F90",
+    uses = [
+        "spral_core_analyse",
+        "spral_cuda",
+        "spral_hw_topology",
+        "spral_pgm",
+        "spral_ssids_akeep",
+        "spral_ssids_cpu_subtree",
+        "spral_ssids_datatypes",
+        "spral_ssids_gpu_subtree",
+        "spral_ssids_inform",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_contrib",
+    src = "src/ssids/contrib.f90",
+    uses = [
+        "spral_ssids_datatypes",
+    ],
+)
+
+fortran_module(
+    name = "drake_vendor_spral_ssids_contrib_free",
+    src = "src/ssids/contrib_free.f90",
+    uses = [
+        "spral_ssids_contrib",
+        "spral_ssids_cpu_subtree",
+        "spral_ssids_gpu_subtree",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_datatypes",
+    src = "src/ssids/datatypes.f90",
+    uses = [
+        "spral_scaling",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_fkeep",
+    src = "src/ssids/fkeep.F90",
+    uses = [
+        "spral_ssids_akeep",
+        "spral_ssids_contrib",
+        "spral_ssids_datatypes",
+        "spral_ssids_inform",
+        "spral_ssids_profile",
+        "spral_ssids_subtree",
+        "spral_ssids_cpu_subtree",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_gpu_subtree",
+    src = "src/ssids/gpu/subtree_no_cuda.f90",
+    uses = [
+        "spral_ssids_contrib",
+        "spral_ssids_datatypes",
+        "spral_ssids_inform",
+        "spral_ssids_subtree",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_inform",
+    src = "src/ssids/inform.f90",
+    uses = [
+        "spral_cuda",
+        "spral_scaling",
+        "spral_ssids_datatypes",
+    ],
+)
+
+fortran_module(
+    name = "spral_ssids_subtree",
+    src = "src/ssids/subtree.f90",
+    uses = [
+        "spral_ssids_contrib",
+        "spral_ssids_datatypes",
+        "spral_ssids_inform",
+    ],
+)
+
+# The ":spral" target only provides the subset of SPRAL used by IPOPT, i.e.,
+# only the Sparse Symmetric Indefinite Direct Solver ("SSIDS").
+
+cc_library(
+    name = "spral",
+    hdrs = ["include/spral_ssids.h"],
+    includes = ["include"],
+    copts = _COPTS,
+    linkstatic = True,
+    deps = [
+        # TODO(jwnimer-tri) Prune away the transitive hdrs here.
+        ":spral_ssids_ciface",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENCE"],
+    visibility = ["//visibility:public"],
+)

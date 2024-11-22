@@ -213,10 +213,9 @@ _SRCS_INITIAL = [
 ]
 
 # In addition to _SRCS_INITIAL, we also add extra sources for certain solvers.
-#
-# Mumps is our preferred linear solver.
-_SRCS_SOLVER_MUMPS = [
+_SRCS_SOLVER_MUMPS_SPRAL = [
     "src/Algorithm/LinearSolvers/IpMumpsSolverInterface.cpp",
+    "src/Algorithm/LinearSolvers/IpSpralSolverInterface.cpp",
 ]
 
 # In addition to _SRCS_INITIAL, we also add extra sources for certain solvers.
@@ -235,7 +234,7 @@ _SRCS_SOLVER_INT32 = [
 ]
 
 # All of the sources together (baseline + extra).
-_SRCS = _SRCS_INITIAL + _SRCS_SOLVER_MUMPS + _SRCS_SOLVER_INT32
+_SRCS = _SRCS_INITIAL + _SRCS_SOLVER_MUMPS_SPRAL + _SRCS_SOLVER_INT32
 
 # When compiling the sources, we'll provide access to _HDRS_PRIVATE, which is
 # all of the headers that live in the same directories as the sources. These
@@ -277,6 +276,7 @@ _AUTOCONF_DEFINES = [
     # Optional dependencies that we do actually want to use.
     "IPOPT_HAS_LAPACK=1",
     "IPOPT_HAS_MUMPS=1",
+    "IPOPT_HAS_SPRAL=1",
     # No debug self-checks (the default).
     "IPOPT_CHECKLEVEL=0",
     "IPOPT_VERBOSITY=0",
@@ -314,7 +314,6 @@ _AUTOCONF_UNDEFINES = [
     "IPOPT_HAS_HSL",
     "IPOPT_HAS_LINEARSOLVERLOADER",
     "IPOPT_HAS_PARDISO_MKL",
-    "IPOPT_HAS_SPRAL",
     "IPOPT_HAS_WSMP",
     "IPOPT_HSL_FUNC",
     "IPOPT_HSL_FUNC_",
@@ -363,6 +362,7 @@ coin_cc_library(
         "@blas",
         "@lapack",
         "@mumps_internal//:dmumps_seq",
+        "@spral_internal//:spral",
     ],
     visibility = ["//visibility:public"],
 )
