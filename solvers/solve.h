@@ -120,7 +120,8 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  * solver_ids can be nullptr or std::optional.
  *
  * @note Please ensure that all generators are thread safe.
- * @return
+ * @return A vector of size range_end with range_start to range_end populated
+ * with the results of solving prog_generator(*, range_start-range_end)
  */
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::function<std::unique_ptr<MathematicalProgram>(int64_t, int64_t)>&
@@ -143,13 +144,14 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  * The input to the generator is an integer i and the output is the ith program.
  *
  * The output of prog_generator cannot be a nullptr.
- * @return
  */
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::function<std::unique_ptr<MathematicalProgram>(int64_t, int64_t)>&
         prog_generator,
-    const const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
-        initial_guesses_generatorconst SolverOptions* solver_options = nullptr,
+    const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
+        initial_guesses_generator,
+    const int64_t range_start, const int64_t range_end,
+    const SolverOptions* solver_options = nullptr,
     const std::optional<SolverId>& solver_id = std::nullopt,
     Parallelism parallelism = Parallelism::Max(),
     bool dynamic_schedule = false);
