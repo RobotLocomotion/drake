@@ -960,6 +960,10 @@ class RotationalInertia {
     // We use a tiny multiple of max_possible_inertia_moment to guide the value
     // of ε. To avoid false negatives when max_possible_inertia_moment ≈ 0,
     // we also use a tiny absolute tolerance.
+    // Note: A side effect of ε is that some inertias are incorrectly classified
+    // as valid. We prefer to include some ever-so-slightly invalid inertias
+    // rather than exclude ones that were definitely valid but were penalized by
+    // finite precision during valid mathematical operations.
     using std::abs;
     using std::max;
     const double precision = 16 * std::numeric_limits<double>::epsilon();
