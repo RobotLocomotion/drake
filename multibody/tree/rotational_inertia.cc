@@ -192,9 +192,9 @@ void RotationalInertia<T>::ThrowNotPhysicallyValid(
   // or if moments of inertia do not satisfy the triangle inequality.
   if constexpr (scalar_predicate<T>::is_bool) {
     if (!IsNaN()) {
-      const Vector3<double> p = CalcPrincipalMomentsOfInertia();
       if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-              p(0), p(1), p(2))) {
+              /* is_test_principal_moments_of_inertia = */ true)) {
+        const Vector3<double> p = CalcPrincipalMomentsOfInertia();
         error_message += fmt::format(
             "\nThe associated principal moments of inertia:"
             "\n{}  {}  {}",

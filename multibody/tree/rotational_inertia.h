@@ -563,15 +563,15 @@ class RotationalInertia {
     return std::pair(Imoment, R_EA);
   }
 
-  /// Performs several necessary checks to verify whether `this` rotational
-  /// inertia *could* be physically valid, including:
+  /// Performs several checks to verify whether `this` rotational inertia
+  /// *could* be physically valid, including:
   ///
   /// - No NaN moments or products of inertia.
   /// - Ixx, Iyy, Izz and principal moments are all non-negative.
   /// - Ixx, Iyy  Izz and principal moments satisfy the triangle inequality:
-  ///   - `Ixx + Iyy >= Izz`
-  ///   - `Ixx + Izz >= Iyy`
-  ///   - `Iyy + Izz >= Ixx`
+  ///   - `Ixx + Iyy ≥ Izz`
+  ///   - `Ixx + Izz ≥ Iyy`
+  ///   - `Iyy + Izz ≥ Ixx`
   ///
   /// @warning These checks are necessary (but NOT sufficient) conditions for a
   /// rotational inertia to be physically valid.  The sufficient condition
@@ -589,11 +589,16 @@ class RotationalInertia {
   boolean<T> CouldBePhysicallyValid() const {
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.
-    const Vector3<double> p = CalcPrincipalMomentsOfInertia();
-
+    // Note: An inertia matrix that passes the triangle inequality test is
+    // InertiaMatrix = ⌈  1    -0.2   0   ⌉    Ixx + Iyy ≥ Izz
+    //                 | -0.2   2    -0.2 |    Ixx + Izz ≥ Iyy
+    //                 ⌊  0    -0.2   3   ⌋    Iyy + Izz ≥ Ixx
+    // However, the principal moments of inertia for this matrix
+    //    Imin ≈ 0.961    Imed ≈ 2   Imax ≈ 3.04
+    // violate the triangle inequality since Imin + Imed < Imax.
     return !IsNaN() &&
            AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-               p(0), p(1), p(2));
+               /* is_test_principal_moments_of_inertia = */ true);
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` in place to `I_BP_A`.
@@ -945,37 +950,34 @@ class RotationalInertia {
   // tests whether moments of inertia satisfy the triangle-inequality.
   // The triangle-inequality test requires ε when the sum of two moments are
   // nearly equal to the third one. Example: Ixx = Iyy = 50, Izz = 100.00000001.
-  // The positive (non-zero) ε accounts for round-off errors, e.g., from
-  // re-expressing inertia in another frame and is typically much smaller than
-  // the largest possible principal moment of inertia in the rotational inertia.
-  // @param Ixx, Iyy, Izz moments of inertia for a generic rotational inertia,
-  //        (i.e., not necessarily principal moments of inertia).
-  static boolean<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-      const T& Ixx, const T& Iyy, const T& Izz) {
-    // Denoting Imin and Imax as the smallest and largest possible moments of
-    // inertia in a rotational inertia, denoting Imed as the intermediate moment
-    // inertia, and denoting tr = Ixx + Iyy + Izz as the trace of the rotational
-    // inertia, one can prove that if Imin == 0, then Imed == Imax == tr / 2 and
-    // in all cases  0 ≤ Imin ≤ tr/3,  tr/3 ≤ Imed ≤ tr/2,  tr/3 ≤ Imax ≤ tr/2.
-    // Hence: to check the validity of `this` rotational inertia, use an ε value
-    // related to machine precision multiplied by Imax = tr/2.
-    // Tangent: The product of inertia Iᵢⱼ with the largest absolute value is at
-    // most half the largest moment of inertia, i.e., |Iᵢⱼ| ≤ Imax/2.
+  // The positive (near-zero) ε accounts for round-off errors, e.g., from
+  // re-expressing inertia in another frame.
+  // @param is_test_principal_moments_of_inertia determines whether this test is
+  // performed for `this` rotational inertia's principal moments of inertia or
+  // for `this` rotational inertia's diagonal moments of inertia.
+  boolean<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+      bool is_test_principal_moments_of_inertia) const {
+    // We use a tiny multiple of max_possible_inertia_moment to guide the value
+    // of ε. To avoid false negatives when max_possible_inertia_moment ≈ 0,
+    // we also use a tiny absolute tolerance.
     using std::abs;
-    const double precision = 16 * std::numeric_limits<double>::epsilon();
-    const T max_possible_inertia_moment = 0.5 * abs(Ixx + Iyy + Izz);
-
-    // To avoid false negatives for inertias close to zero, we also use
-    // an absolute tolerance equal to "1.0 * precision".
     using std::max;
+    const double precision = 16 * std::numeric_limits<double>::epsilon();
+    const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
     const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
+    const Vector3<double> moments = is_test_principal_moments_of_inertia
+                                        ? CalcPrincipalMomentsOfInertia()
+                                        : ExtractDoubleOrThrow(get_moments());
+    const double Ixx = moments.x();
+    const double Iyy = moments.y();
+    const double Izz = moments.z();
     const auto are_moments_near_positive =
         AreMomentsOfInertiaNearPositive(Ixx, Iyy, Izz, epsilon);
-    const auto is_triangle_inequality_satisified = Ixx + Iyy + epsilon >= Izz &&
-                                                   Ixx + Iyy + epsilon >= Iyy &&
-                                                   Iyy + Izz + epsilon >= Ixx;
-    return are_moments_near_positive && is_triangle_inequality_satisified;
+    const auto is_triangle_inequality_satisfied = Ixx + Iyy + epsilon >= Izz &&
+                                                  Ixx + Iyy + epsilon >= Iyy &&
+                                                  Iyy + Izz + epsilon >= Ixx;
+    return are_moments_near_positive && is_triangle_inequality_satisfied;
   }
 
   // Tests whether each moment of inertia is non-negative (to within epsilon).
