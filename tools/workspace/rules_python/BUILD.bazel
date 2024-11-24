@@ -1,6 +1,8 @@
+load("@rules_python_drake_constants//:defs.bzl", "CONSTANTS")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_unittest")
 
+# This test is only relevant when @rules_python is using Drake's pinned copy.
 drake_py_unittest(
     name = "rules_python_internal_test",
     data = [
@@ -11,6 +13,6 @@ drake_py_unittest(
     deps = [
         "@rules_python//python/runfiles",
     ],
-)
+) if CONSTANTS["USE_DRAKE_PIN"] else None
 
 add_lint_tests()
