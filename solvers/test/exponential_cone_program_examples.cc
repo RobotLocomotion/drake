@@ -94,7 +94,7 @@ void MinimalEllipsoidCoveringPoints(const SolverInterface& solver, double tol) {
   Matrix3<symbolic::Expression> ellipsoid_psd;
   ellipsoid_psd << S, b.cast<symbolic::Expression>() / 2,
       b.cast<symbolic::Expression>().transpose() / 2, c;
-  prog.AddPositiveSemidefiniteConstraint(ellipsoid_psd);
+  prog.AddLinearMatrixInequalityConstraint(ellipsoid_psd);
   const auto [linear_cost, log_det_t, log_det_Z] =
       prog.AddMaximizeLogDeterminantCost(S.cast<symbolic::Expression>());
   for (int i = 0; i < 4; ++i) {
