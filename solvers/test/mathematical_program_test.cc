@@ -3058,41 +3058,35 @@ GTEST_TEST(TestMathematicalProgram,
                   X(3, 0), X(3, 1), X(3, 3);
   // clang-format on
 
-  auto psd_cnstr = prog.AddPrincipalSubmatrixIsPsdConstraint(
+  auto lmi_cnstr = prog.AddPrincipalSubmatrixIsPsdConstraint(
                            2 * Matrix4d::Identity() * X, minor_indices)
                        .evaluator();
 
-  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
-  EXPECT_EQ(prog.GetAllConstraints().size(), 2);
+  EXPECT_EQ(prog.linear_matrix_inequality_constraints().size(), 1);
+  EXPECT_EQ(prog.GetAllConstraints().size(), 1);
 
-  const auto& new_psd_cnstr = prog.positive_semidefinite_constraints().back();
-  EXPECT_EQ(psd_cnstr.get(), new_psd_cnstr.evaluator().get());
+  const auto& new_lmi_cnstr =
+      prog.linear_matrix_inequality_constraints().back();
+  EXPECT_EQ(lmi_cnstr.get(), new_lmi_cnstr.evaluator().get());
 
   MathematicalProgram prog_manual;
   prog_manual.AddDecisionVariables(minor_manual);
-  auto psd_cnstr_manual = prog_manual
-                              .AddPositiveSemidefiniteConstraint(
+  auto lmi_cnstr_manual = prog_manual
+                              .AddLinearMatrixInequalityConstraint(
                                   2 * Matrix3d::Identity() * minor_manual)
                               .evaluator();
-  const auto& new_psd_cnstr_manual =
-      prog.positive_semidefinite_constraints().back();
+  const auto& new_lmi_cnstr_manual =
+      prog.linear_matrix_inequality_constraints().back();
 
-  EXPECT_TRUE(CheckStructuralEquality(new_psd_cnstr_manual.variables(),
-                                      new_psd_cnstr.variables()));
-  EXPECT_EQ(prog.positive_semidefinite_constraints().size(),
-            prog_manual.positive_semidefinite_constraints().size());
+  EXPECT_TRUE(CheckStructuralEquality(new_lmi_cnstr_manual.variables(),
+                                      new_lmi_cnstr.variables()));
+  EXPECT_EQ(prog.linear_matrix_inequality_constraints().size(),
+            prog_manual.linear_matrix_inequality_constraints().size());
   EXPECT_EQ(prog.linear_equality_constraints().size(),
             prog_manual.linear_equality_constraints().size());
-  EXPECT_EQ(prog.linear_equality_constraints().size(), 1);
+  EXPECT_TRUE(prog.linear_equality_constraints().empty());
   EXPECT_EQ(prog.GetAllConstraints().size(),
             prog_manual.GetAllConstraints().size());
-
-  EXPECT_TRUE(CompareMatrices(
-      prog.linear_equality_constraints()[0].evaluator()->upper_bound(),
-      prog_manual.linear_equality_constraints()[0].evaluator()->upper_bound()));
-  EXPECT_TRUE(CompareMatrices(
-      prog.linear_equality_constraints()[0].evaluator()->lower_bound(),
-      prog_manual.linear_equality_constraints()[0].evaluator()->lower_bound()));
 }
 
 GTEST_TEST(TestMathematicalProgram, AddLinearMatrixInequalityConstraint) {
@@ -3678,7 +3672,7 @@ GTEST_TEST(TestMathematicalProgram, TestClone) {
   prog.AddRotatedLorentzConeConstraint(
       Vector4<symbolic::Expression>(x(0) + x(1), x(1) + x(2), +x(0), +x(1)));
   prog.AddPositiveSemidefiniteConstraint(X);
-  prog.AddPositiveSemidefiniteConstraint(X - Eigen::Matrix3d::Ones());
+  prog.AddLinearMatrixInequalityConstraint(X - Eigen::Matrix3d::Ones());
   int num_all_constraints = prog.GetAllConstraints().size();
   prog.AddLinearMatrixInequalityConstraint(
       {Eigen::Matrix2d::Identity(), Eigen::Matrix2d::Ones(),
@@ -4914,7 +4908,7 @@ GTEST_TEST(MathematicalProgramTest, AddLogDeterminantLowerBoundConstraint) {
     EXPECT_TRUE(constraint.variables()(i).equal_to(t(i)));
   }
   EXPECT_EQ(prog.exponential_cone_constraints().size(), 3);
-  EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+  EXPECT_EQ(prog.linear_matrix_inequality_constraints().size(), 1);
 }
 
 class EmptyCost final : public Cost {
