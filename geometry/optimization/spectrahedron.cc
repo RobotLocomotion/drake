@@ -279,7 +279,7 @@ Spectrahedron::DoAddPointInNonnegativeScalingConstraints(
     VectorX<Expression> Axplusb = this_A * x + this_b;
     const int num_rows = binding.evaluator()->matrix_rows();
     Map<MatrixX<Expression>> S(Axplusb.data(), num_rows, num_rows);
-    constraints.emplace_back(prog->AddPositiveSemidefiniteConstraint(S));
+    constraints.emplace_back(prog->AddLinearMatrixInequalityConstraint(S));
   }
   return constraints;
 }

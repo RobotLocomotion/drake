@@ -60,8 +60,8 @@ GTEST_TEST(GetProgramTypeTest, SOCP) {
   EXPECT_NE(GetProgramType(prog), ProgramType::kSOCP);
   prog.RemoveCost(quadratic_cost);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kSOCP);
-  prog.AddPositiveSemidefiniteConstraint(x[0] * Eigen::Matrix2d::Identity() +
-                                         x[1] * Eigen::Matrix2d::Ones());
+  prog.AddLinearMatrixInequalityConstraint(x[0] * Eigen::Matrix2d::Identity() +
+                                           x[1] * Eigen::Matrix2d::Ones());
   EXPECT_NE(GetProgramType(prog), ProgramType::kSOCP);
 }
 
@@ -190,8 +190,8 @@ GTEST_TEST(GetProgramTypeTest, MISOCP) {
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
   prog.AddLinearCost(x[0] + x[1]);
   EXPECT_EQ(GetProgramType(prog), ProgramType::kMISOCP);
-  prog.AddPositiveSemidefiniteConstraint(x[0] * Eigen::Matrix2d::Identity() +
-                                         b[0] * Eigen::Matrix2d::Ones());
+  prog.AddLinearMatrixInequalityConstraint(x[0] * Eigen::Matrix2d::Identity() +
+                                           b[0] * Eigen::Matrix2d::Ones());
   EXPECT_NE(GetProgramType(prog), ProgramType::kMISOCP);
 }
 

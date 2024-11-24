@@ -22,6 +22,7 @@
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/latex.h"
 #include "drake/common/symbolic/monomial_util.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/decision_variable.h"
@@ -620,7 +621,7 @@ void CreateLogDetermiant(
   psd_mat << X,             *Z,
              Z->transpose(), diag_Z;
   // clang-format on
-  prog->AddPositiveSemidefiniteConstraint(psd_mat);
+  prog->AddLinearMatrixInequalityConstraint(psd_mat);
   // Now introduce the slack variable t.
   *t = prog->NewContinuousVariables(X_rows);
   // Introduce the constraint log(Z(i, i)) >= t(i).
@@ -1179,6 +1180,11 @@ MathematicalProgram::AddPositiveSemidefiniteConstraint(
 Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPositiveSemidefiniteConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& e) {
+  // Calling AddLinearMatrixInequalityConstraint() doesn't introduce additional
+  // PSD matrix variables or linear equality constraints.
+  drake::log()->warn(
+      "Consider using AddLinearMatrixInequalityConstraint(X) for X being a "
+      "matrix of symbolic expressions.");
   DRAKE_THROW_UNLESS(e.rows() == e.cols());
   DRAKE_ASSERT(CheckStructuralEquality(e, e.transpose().eval()));
   const MatrixXDecisionVariable M = NewSymmetricContinuousVariables(e.rows());
@@ -1192,19 +1198,19 @@ Binding<PositiveSemidefiniteConstraint>
 MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
     const std::set<int>& minor_indices) {
-  // This function relies on AddPositiveSemidefiniteConstraint to validate the
+  // This function relies on AddLinearMatrixInequalityConstraint to validate the
   // documented symmetry prerequisite.
   return AddPositiveSemidefiniteConstraint(
       math::ExtractPrincipalSubmatrix(symmetric_matrix_var, minor_indices));
 }
 
-Binding<PositiveSemidefiniteConstraint>
+Binding<LinearMatrixInequalityConstraint>
 MathematicalProgram::AddPrincipalSubmatrixIsPsdConstraint(
     const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
     const std::set<int>& minor_indices) {
   // This function relies on AddPositiveSemidefiniteConstraint to validate the
   // documented symmetry prerequisite.
-  return AddPositiveSemidefiniteConstraint(
+  return AddLinearMatrixInequalityConstraint(
       math::ExtractPrincipalSubmatrix(e, minor_indices));
 }
 

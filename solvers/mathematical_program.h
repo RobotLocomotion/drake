@@ -2630,7 +2630,7 @@ class MathematicalProgram {
    * @pre All values in  `minor_indices` lie in the range [0,
    * symmetric_matrix_var.rows() - 1].
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
-   * @see AddPositiveSemidefiniteConstraint.
+   * @see AddPositiveSemidefiniteConstraint
    */
   Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
@@ -2645,9 +2645,10 @@ class MathematicalProgram {
    * @pre All values in  `minor_indices` lie in the range [0,
    * symmetric_matrix_var.rows() - 1].
    * @param e Imposes constraint "e is positive semidefinite".
-   * @see AddPositiveSemidefiniteConstraint.
+   * @see AddLinearMatrixInequalityConstraint.
    */
-  Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
+  Binding<LinearMatrixInequalityConstraint>
+  AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
       const std::set<int>& minor_indices);
 

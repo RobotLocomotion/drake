@@ -90,7 +90,7 @@ void AddRotationMatrixSpectrahedralSdpConstraint(
     R(1, 2) + R(2, 1), R(0, 1) + R(1, 0), R(2, 0) - R(0, 2), 1 - R(0, 0) + R(1, 1) - R(2, 2); // #NOLINT
   // clang-format on
 
-  prog->AddPositiveSemidefiniteConstraint(M);
+  prog->AddLinearMatrixInequalityConstraint(M);
 }
 
 namespace {
