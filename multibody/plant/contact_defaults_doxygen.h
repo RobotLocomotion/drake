@@ -161,8 +161,8 @@ of penetration under the influence of their own weight is:
 where g is the acceleration of gravity.
 
 As examples, we consider an object of radius 0.05 m, a typical household object
-of about a pound, and an object of radius 0.30 m, that with the density of
-water, weighs about 250 pounds (the weight of a typical humanoid robot).
+of about half a kilogram, and an object of radius 0.30 m, that with the density
+of water, has about 110 kilograms (the mass of a typical humanoid robot).
 
 For point contact, the table below shows the amount of penetration (in meters)
 for point contact stiffness k = 10⁶ N/m (Drake's default) and k = 10⁷ N/m (in

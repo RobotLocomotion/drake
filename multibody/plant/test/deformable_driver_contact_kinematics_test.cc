@@ -324,7 +324,7 @@ class DeformableDriverContactKinematicsTest
                                       // is the expected stiffness.
       EXPECT_DOUBLE_EQ(contact_pair.stiffness, expected_k);
       EXPECT_EQ(contact_pair.damping, 0.0);
-      EXPECT_EQ(contact_pair.dissipation_time_scale, 0.02 /* 2 * dt*/);
+      EXPECT_EQ(contact_pair.dissipation_time_scale, 0.01 /* dt*/);
       EXPECT_EQ(contact_pair.friction_coefficient, kMu);
       /* Test normal force and velocity. */
       EXPECT_NEAR(contact_pair.vn0, expected_v_D1D2_C(2), kTolerance);
