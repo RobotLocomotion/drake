@@ -288,6 +288,33 @@ CacheEntry& SystemBase::DeclareCacheEntryWithKnownTicket(
   return new_entry;
 }
 
+bool SystemBase::IsObviouslyNotInputDependent(
+    DependencyTicket dependency_ticket) const {
+  // Everything `<= ceiling` is known to be non-input-dependent; this is
+  // promised by the framework_common.h documentation.
+  const auto ceiling = internal::kAllSourcesExceptInputPortsTicket;
+  static_assert(internal::kAllInputPortsTicket > ceiling);
+  static_assert(internal::kAllSourcesTicket > ceiling);
+  static_assert(internal::kConfigurationTicket > ceiling);
+  static_assert(internal::kKinematicsTicket > ceiling);
+  return (dependency_ticket <= ceiling) ||
+         std::any_of(discrete_state_tickets_.begin(),
+                     discrete_state_tickets_.end(),
+                     [&dependency_ticket](const auto& info) {
+                       return info.ticket == dependency_ticket;
+                     }) ||
+         std::any_of(abstract_state_tickets_.begin(),
+                     abstract_state_tickets_.end(),
+                     [&dependency_ticket](const auto& info) {
+                       return info.ticket == dependency_ticket;
+                     });
+  // We could also plausibly scan {numeric,abstract}_parameter_tickets_ to
+  // return true, but we don't believe the cost is worth it. Usually there
+  // are many parameters (so the scan would need to check many items), but
+  // output ports usually depend on all_parameters_ticket() not each small
+  // parameter one by one.
+}
+
 void SystemBase::InitializeContextBase(ContextBase* context_ptr) const {
   DRAKE_DEMAND(context_ptr != nullptr);
   ContextBase& context = *context_ptr;

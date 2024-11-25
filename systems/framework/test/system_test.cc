@@ -213,8 +213,11 @@ class TestSystem : public TestSystemBase<double> {
 
   ~TestSystem() override {}
 
-  using System::AddConstraint;  // allow access to protected method.
+  // Allow access to protected methods.
+  using System::AddConstraint;
   using System::DeclareInputPort;
+  using SystemBase::AddDiscreteStateGroup;
+  using SystemBase::IsObviouslyNotInputDependent;
 
   const InputPort<double>& AddAbstractInputPort() {
     return this->DeclareInputPort(kUseDefaultName, kAbstractValued, 0);
@@ -1237,6 +1240,58 @@ TEST_F(ComputationTest, Eval) {
   test_sys_.EvalTimeDerivatives(*context_);
   EXPECT_NE(entry.get_cache_entry_value(*context_).serial_number(),
             serial_number);
+}
+
+TEST_F(SystemTest, TicketInterrogation) {
+  system_.AddAbstractInputPort();
+  system_.AddDiscreteStateGroup(DiscreteStateIndex{0});
+  const std::vector<std::pair<DependencyTicket, bool /* expected */>> cases{{
+      // These are NOT input-dependent.
+      {system_.nothing_ticket(), true},
+      {system_.time_ticket(), true},
+      {system_.accuracy_ticket(), true},
+      {system_.q_ticket(), true},
+      {system_.v_ticket(), true},
+      {system_.z_ticket(), true},
+      {system_.xc_ticket(), true},
+      {system_.discrete_state_ticket(DiscreteStateIndex{0}), true},
+      {system_.xd_ticket(), true},
+      {system_.xa_ticket(), true},
+      {system_.all_state_ticket(), true},
+      {system_.pn_ticket(), true},
+      {system_.pa_ticket(), true},
+      {system_.all_parameters_ticket(), true},
+      {system_.all_sources_except_input_ports_ticket(), true},
+      // These ARE input-dependent.
+      {system_.input_port_ticket(InputPortIndex{0}), false},
+      {system_.all_input_ports_ticket(), false},
+      {system_.all_sources_ticket(), false},
+      // There are four more kinds of tickets that we don't bother to test here:
+      //
+      // - Parameters never depend on input, but IsObviouslyNotInputDependent
+      //   chooses not to scan for them, so there is no value in adding test
+      //   coverage here.
+      //
+      // - Output ports might depend on input; IsObviouslyNotInputDependent
+      //   can't trivially discover the answer, so doesn't check for them,
+      //   so there is no value in adding test coverage here.
+      //
+      // - Well-known cache entries (e.g., xcdot, xd_unique_periodic_update,
+      //   etc.) are ignored by IsObviouslyNotInputDependent, so there is no
+      //   value in adding test coverage here.
+      //
+      // - Tickets for modeling mechanical systems (configuration, kinematics,
+      //   pe, ke, pc, pnc, etc.) might or might not depend on input, but
+      //   IsObviouslyNotInputDependent doesn't bother to try to reason it out,
+      //   so there is no value in adding test coverage here. Formally, some of
+      //   these really shouldn't depend on input, but the code is confusing
+      //   enough that we've decdied not to risk it.
+  }};
+
+  for (const auto& [ticket, expected] : cases) {
+    SCOPED_TRACE(fmt::format("ticket = {}", ticket));
+    EXPECT_EQ(system_.IsObviouslyNotInputDependent(ticket), expected);
+  }
 }
 
 }  // namespace
