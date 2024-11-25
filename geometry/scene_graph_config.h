@@ -122,11 +122,7 @@ struct DefaultProximityProperties {
 
   @note Please refer to @ref contact_defaults "Default Contact Parameters" for
   more details on Drake's defaults along with guidelines on how to estimate
-  parameters specific to your model.
-
-  @warning This value is also used for contact with deformable bodies. If set to
-  std::nullopt, dissipation defaults to zero for contact with deformable bodies.
-  */
+  parameters specific to your model. */
   std::optional<double> hunt_crossley_dissipation{50.0};
 
   /** Controls energy damping from contact, *only for*
@@ -151,15 +147,7 @@ struct DefaultProximityProperties {
 
    @note Please refer to @ref contact_defaults "Default Contact Parameters" for
    more details on Drake's defaults along with guidelines on how to estimate
-   parameters specific to your model.
-
-   @warning This also affects the default for rigid geometries interacting with
-   deformables. If not provided, stiffness for rigid geometries defaults to
-   infinity when they interact with a deformable body.
-  */
-  // TODO(amcastro-tri): This also affects the default for rigid geometries
-  // interacting with deformables. We might consider making this infinity for
-  // rigid bodies interacting with deformables.
+   parameters specific to your model. */
   std::optional<double> point_stiffness{1e6};
   /// @}
 
