@@ -175,6 +175,127 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, BoxConfigurationSpaceTest) {
   EXPECT_EQ(vpoly.CalcVolume(), 16.0);
 }
 
+/* A movable sphere in a box.
+┌───────────────┐
+│               │
+│               │
+│    ┌─────┐    │
+│    |  o  |    │
+│    └─────┘    │
+│               │
+│               │
+└───────────────┘ */
+const char box_in_box[] = R"""(
+<robot name="boxes">
+  <link name="fixed">
+    <collision name="top_left">
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry><box size="2 2 1"/></geometry>
+    </collision>
+  </link>
+  <joint name="fixed_link_weld" type="fixed">
+    <parent link="world"/>
+    <child link="fixed"/>
+  </joint>
+  <link name="movable">
+    <collision name="sphere">
+      <geometry><sphere radius="0.01"/></geometry>
+    </collision>
+  </link>
+  <link name="for_joint"/>
+  
+  <joint name="x" type="prismatic">
+    <axis xyz="1 0 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="world"/>
+    <child link="for_joint"/>
+  </joint>
+  <joint name="y" type="prismatic">
+    <axis xyz="0 1 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="for_joint"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)""";
+// Tests that if the ellipsoid center is in collision, we still get a region.
+GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
+           EllipsoidCenterInCollision) {
+  std::shared_ptr<Meshcat> meshcat;
+  meshcat = geometry::GetTestEnvironmentMeshcat();
+  meshcat->Delete("/drake");
+  meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
+                           -3.25, 3.25, -3.25, 3.25);
+  meshcat->SetProperty("/Grid", "visible", true);
+  Eigen::Matrix3Xd env_points(3, 5);
+  // clang-format off
+  env_points << -2, 2,  2, -2, -2,
+                  2, 2, -2, -2,  2,
+                  0, 0,  0,  0,  0;
+  // clang-format on
+  meshcat->SetLine("Domain", env_points, 8.0, Rgba(0, 0, 0));
+
+  Eigen::Matrix3Xd obstacle_points(3, 5);
+  // clang-format off
+  obstacle_points << -1, 1,  1, -1, -1,
+                  1, 1, -1, -1,  1,
+                  0, 0,  0,  0,  0;
+  // clang-format on
+  meshcat->SetLine("Obstacle", obstacle_points, 8.0, Rgba(0, 0, 0));
+  CollisionCheckerParams params;
+  params.implicit_context_parallelism = Parallelism{1};
+  RobotDiagramBuilder<double> builder(0.0);
+  params.robot_model_instances =
+      builder.parser().AddModelsFromString(box_in_box, "urdf");
+  // Choose ridiculous edge size to get fully connected visibility graph.
+  // This will ensure the collision of the ellipsoid center.
+  params.edge_step_size = 10.0;
+  params.model = builder.Build();
+  auto checker =
+      std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+  Eigen::VectorXd config(2);
+  config << 0, 0;
+  EXPECT_FALSE(checker->CheckConfigCollisionFree(config));
+  config << 1.5, 0;
+  EXPECT_TRUE(checker->CheckConfigCollisionFree(config));
+
+  IrisFromCliqueCoverOptions options;
+
+  options.num_points_per_coverage_check = 100;
+  options.num_points_per_visibility_round = 20;
+  options.iteration_limit = 1;
+  // Set a large bounding region to test the path where this is set in the
+  // IrisOptions.
+  options.iris_options.bounding_region =
+      HPolyhedron::MakeBox(Eigen::Vector2d{-2, -2}, Eigen::Vector2d{2, 2});
+  // Run this test without parallelism to test that no bugs occur in the
+  // non-parallel version.
+  options.parallelism = Parallelism{1};
+  options.iris_options.meshcat = meshcat;
+  std::vector<HPolyhedron> sets;
+
+  RandomGenerator generator(0);
+
+  IrisInConfigurationSpaceFromCliqueCover(*checker, options, &generator, &sets,
+                                          nullptr);
+
+  EXPECT_EQ(ssize(sets), 1);
+  Eigen::VectorXd color = Eigen::VectorXd::Zero(3);
+  std::normal_distribution<double> gaussian;
+  // Show the IrisFromCliqueCoverDecomposition
+  for (int i = 0; i < ssize(sets); ++i) {
+    // Choose a random color.
+    for (int j = 0; j < color.size(); ++j) {
+      color[j] = abs(gaussian(generator));
+    }
+    color.normalize();
+    VPolytope vregion = VPolytope(sets.at(i)).GetMinimalRepresentation();
+    Draw2dVPolytope(vregion, fmt::format("iris_from_clique_cover{}", i), color,
+                    meshcat);
+  }
+  MaybePauseForUser();
+}
+
 // Plants that don't have joint limits get a reasonable error message.
 GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover, NoJointLimits) {
   CollisionCheckerParams params;
