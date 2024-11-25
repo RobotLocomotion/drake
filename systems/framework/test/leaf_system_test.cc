@@ -1800,6 +1800,13 @@ class DefaultFeedthroughSystem : public LeafSystem<double> {
     }
   }
 
+  const CacheEntry& AddCacheEntry(
+      std::set<DependencyTicket> prerequisites_of_calc) {
+    return this->DeclareCacheEntry(
+        "", ValueProducer{std::string{}, &ValueProducer::NoopCalc},
+        std::move(prerequisites_of_calc));
+  }
+
   // Elevate helper methods to be public.
   using LeafSystem<double>::accuracy_ticket;
   using LeafSystem<double>::all_input_ports_ticket;
@@ -1907,6 +1914,18 @@ GTEST_TEST(FeedthroughTest, DefaultWithMultipleIoPorts) {
   // No sparsity matrix means all inputs feedthrough to all outputs.
   auto feedthrough_pairs = system.GetDirectFeedthroughs();
   EXPECT_EQ(feedthrough_pairs, expected);
+}
+
+GTEST_TEST(FeedthroughTest, DefaultWithIntermediateCacheEntry) {
+  DefaultFeedthroughSystem system;
+  const auto input_index = system.AddAbstractInputPort();
+  const auto& cache_entry =
+      system.AddCacheEntry({system.input_port_ticket(input_index)});
+  const auto output_index =
+      system.AddAbstractOutputPort({{cache_entry.ticket()}});
+  std::multimap<int, int> expected;
+  expected.emplace(input_index, output_index);
+  EXPECT_EQ(system.GetDirectFeedthroughs(), expected);
 }
 
 // SymbolicSparsitySystem has the same sparsity matrix as ManualSparsitySystem,
