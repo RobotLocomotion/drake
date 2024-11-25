@@ -854,6 +854,10 @@ MSKrescodee MosekSolverProgram::AddAffineConeConstraint(
       rescode = MSK_appendsvecpsdconedomain(task_, afe_dim, &dom_idx);
       break;
     }
+    case MSK_DOMAIN_RPLUS: {
+      rescode = MSK_appendrplusdomain(task_, afe_dim, &dom_idx);
+      break;
+    }
     default: {
       throw std::runtime_error("MosekSolverProgram: unsupported cone type.");
     }
@@ -929,41 +933,87 @@ MSKrescodee MosekSolverProgram::AddLinearMatrixInequalityConstraint(
   // where A is a sparse matrix.
   std::vector<Eigen::Triplet<double>> A_triplets;
   for (const auto& binding : prog.linear_matrix_inequality_constraints()) {
-    binding.evaluator()->WarnOnSmallMatrixSize();
-    // Allocate memory for A_triplets. We allocate the maximal memory by
-    // assuming that A is dense.
-    // TODO(hongkai.dai): change LinearMatrixInequalityConstraint::F() to return
-    // a vector of sparse matrices, and call std::vector::reserve here to
-    // reserve the right amount of memory.
-    A_triplets.reserve((binding.evaluator()->matrix_rows() + 1) *
-                       binding.evaluator()->matrix_rows() *
-                       binding.variables().rows());
-    int A_row_index = 0;
-    Eigen::VectorXd c(binding.evaluator()->matrix_rows() *
-                      (binding.evaluator()->matrix_rows() + 1) / 2);
-    for (int j = 0; j < binding.evaluator()->matrix_rows(); ++j) {
-      for (int i = j; i < binding.evaluator()->matrix_rows(); ++i) {
-        const double scaling_factor = i == j ? 1 : sqrt2;
-        c(A_row_index) = binding.evaluator()->F().at(0)(i, j) * scaling_factor;
-        for (int k = 1; k < ssize(binding.evaluator()->F()); ++k) {
-          if (binding.evaluator()->F()[k](i, j) != 0) {
-            A_triplets.emplace_back(
-                A_row_index, k - 1,
-                binding.evaluator()->F()[k](i, j) * scaling_factor);
-          }
+    const int matrix_rows = binding.evaluator()->matrix_rows();
+    const auto& F = binding.evaluator()->F();
+    MSKint64t acc_index{};
+    if (matrix_rows == 1) {
+      // Impose as a linear constraint.
+      const Vector1d c(F[0](0, 0));
+      A_triplets.reserve(binding.variables().rows());
+      for (int i = 0; i < binding.variables().rows(); ++i) {
+        if (F[1 + i](0, 0) != 0) {
+          A_triplets.emplace_back(0, i, F[1 + i](0, 0));
         }
-        ++A_row_index;
       }
-    }
-    Eigen::SparseMatrix<double> A(c.rows(),
-                                  binding.evaluator()->F().size() - 1);
-    A.setFromTriplets(A_triplets.begin(), A_triplets.end());
-    MSKint64t acc_index;
-    rescode = this->AddAffineConeConstraint(
-        prog, A, Eigen::SparseMatrix<double>(A.rows(), 0), binding.variables(),
-        {}, c, MSK_DOMAIN_SVEC_PSD_CONE, &acc_index);
-    if (rescode != MSK_RES_OK) {
-      return rescode;
+      Eigen::SparseMatrix<double> A(1, binding.variables().rows());
+      A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+      const MSKdomaintypee domain_type = MSK_DOMAIN_RPLUS;
+      rescode = this->AddAffineConeConstraint(
+          prog, A, Eigen::SparseMatrix<double>(A.rows(), 0),
+          binding.variables(), {}, c, domain_type, &acc_index);
+    } else if (matrix_rows == 2) {
+      // For PSD constraint on a 2x2 matrix
+      // [y0, y1] = F0 + F1*x0 + ... + Fk*xk
+      // [y1, y2]
+      // We impose it as a rotated Lorentz cone constraint, namely
+      // [y0/2, y2, y1] is in Mosek's rotated Quadratic cone.
+      const Eigen::Vector3d c(F[0](0, 0) / 2, F[0](1, 1), F[0](0, 1));
+      for (int i = 0; i < binding.variables().rows(); ++i) {
+        if (F[1 + i](0, 0) != 0) {
+          A_triplets.emplace_back(0, i, F[1 + i](0, 0) / 2);
+        }
+        if (F[1 + i](1, 1) != 0) {
+          A_triplets.emplace_back(1, i, F[1 + i](1, 1));
+        }
+        if (F[1 + i](0, 1) != 0) {
+          A_triplets.emplace_back(2, i, F[1 + i](0, 1));
+        }
+      }
+      Eigen::SparseMatrix<double> A(3, binding.variables().rows());
+      A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+      rescode = this->AddAffineConeConstraint(
+          prog, A, Eigen::SparseMatrix<double>(3, 0), binding.variables(), {},
+          c, MSK_DOMAIN_RQUADRATIC_CONE, &acc_index);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+    } else {
+      // Allocate memory for A_triplets. We allocate the maximal memory by
+      // assuming that A is dense.
+      // TODO(hongkai.dai): change LinearMatrixInequalityConstraint::F() to
+      // return a vector of sparse matrices, and call std::vector::reserve here
+      // to reserve the right amount of memory.
+      A_triplets.reserve((binding.evaluator()->matrix_rows() + 1) *
+                         binding.evaluator()->matrix_rows() *
+                         binding.variables().rows());
+      int A_row_index = 0;
+      Eigen::VectorXd c(binding.evaluator()->matrix_rows() *
+                        (binding.evaluator()->matrix_rows() + 1) / 2);
+      for (int j = 0; j < binding.evaluator()->matrix_rows(); ++j) {
+        for (int i = j; i < binding.evaluator()->matrix_rows(); ++i) {
+          const double scaling_factor = i == j ? 1 : sqrt2;
+          c(A_row_index) =
+              binding.evaluator()->F().at(0)(i, j) * scaling_factor;
+          for (int k = 1; k < ssize(binding.evaluator()->F()); ++k) {
+            if (binding.evaluator()->F()[k](i, j) != 0) {
+              A_triplets.emplace_back(
+                  A_row_index, k - 1,
+                  binding.evaluator()->F()[k](i, j) * scaling_factor);
+            }
+          }
+          ++A_row_index;
+        }
+      }
+      Eigen::SparseMatrix<double> A(c.rows(),
+                                    binding.evaluator()->F().size() - 1);
+      A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+      MSKdomaintypee domain_type = MSK_DOMAIN_SVEC_PSD_CONE;
+      rescode = this->AddAffineConeConstraint(
+          prog, A, Eigen::SparseMatrix<double>(A.rows(), 0),
+          binding.variables(), {}, c, domain_type, &acc_index);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
     }
     acc_indices->emplace(binding, acc_index);
     A_triplets.clear();
