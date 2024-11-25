@@ -264,7 +264,9 @@ class SystemParentServiceInterface {
 // entries are allocated beginning with kNextAvailableTicket defined below.
 enum BuiltInTicketNumbers {
   // This set of tickets represents independent source values in a Context,
-  // and groupings of such source values.
+  // and groupings of such source values. These MUST NOT depend on input
+  // ports -- in system_base.cc we assume kAllSourcesExceptInputPortsTicket
+  // and lesses are not input-dependent.
   kNothingTicket        =  0,  // Indicates "not dependent on anything".
   kTimeTicket           =  1,  // Time.
   kAccuracyTicket       =  2,  // Accuracy.
@@ -279,6 +281,9 @@ enum BuiltInTicketNumbers {
   kPaTicket             = 11,  // All abstract parameters.
   kAllParametersTicket  = 12,  // All parameters p = {pn, pa}.
   kAllSourcesExceptInputPortsTicket = 13,  // Everything except input ports.
+
+  // This set of tickets represents additional groupings source values that MAY
+  // depend on input ports.
   kAllInputPortsTicket  = 14,  // All input ports u.
   kAllSourcesTicket     = 15,  // All of the above.
   kConfigurationTicket  = 16,  // All values that may affect configuration.
