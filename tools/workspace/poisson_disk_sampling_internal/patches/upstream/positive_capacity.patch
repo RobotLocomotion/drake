@@ -13,8 +13,8 @@ Ensure capacity is positive when reserving for point allocations.
 +  ptrdiff_t capacity = (ctx.grid_linear_size / 4) * (ptrdiff_t)sizeof(tph_poisson_real) * ctx.ndims;
 +  /* Ensure capacity is at least 1 to guard against overflow and zero capacity. */
 +  if (capacity < (ptrdiff_t)1) { capacity = (ptrdiff_t)1; }
-+    ret = tph_poisson_vec_reserve(&internal->samples,
-+      &internal->alloc, capacity, (ptrdiff_t)alignof(tph_poisson_real));
++  ret = tph_poisson_vec_reserve(&internal->samples,
++    &internal->alloc, capacity, (ptrdiff_t)alignof(tph_poisson_real));
    if (ret != TPH_POISSON_SUCCESS) {
      tph_poisson_context_destroy(&ctx, &internal->alloc);
      tph_poisson_destroy(sampling);

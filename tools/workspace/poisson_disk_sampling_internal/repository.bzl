@@ -10,7 +10,7 @@ def poisson_disk_sampling_internal_repository(
         sha256 = "a1bae19286d2037f7dd23e554e37f3f44095bc2a1be961261a665d37fd1473ba",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/positive_capacity.patch",
+            ":patches/upstream/positive_capacity.patch",
         ],
         mirrors = mirrors,
     )
