@@ -248,6 +248,83 @@ GTEST_TEST(SolveInParallel, TestDiversePrograms) {
   }
 }
 
+//namespace {
+//
+//bool ProgramResultImpliesUnbounded(const MathematicalProgramResult& result) {
+//  return result.get_solution_result() == solvers::SolutionResult::kUnbounded ||
+//         result.get_solution_result() ==
+//             solvers::SolutionResult::kInfeasibleOrUnbounded ||
+//         result.get_solution_result() ==
+//             solvers::SolutionResult::kDualInfeasible;
+//}
+//}  // namespace
+//
+//GTEST_TEST(SolveInParallel, TestGeneratorsImplementation) {
+//  // Checks if a bounding box is bounded using the generator form of
+//  // SolveInParallel.
+//  const Parallelism parallelism = Parallelism::Max();
+//  // Make the dimension large enough that it is likely for multiple threads to
+//  // be solving in parallel.
+//  const int box_dim = 20;
+//  Eigen::MatrixXd A(2 * box_dim, box_dim);
+//  A << Eigen::MatrixXd::Identity(box_dim, box_dim),
+//      -Eigen::MatrixXd::Identity(box_dim, box_dim);
+//  const Eigen::VectorXd ub = Eigen::VectorXd::Ones(2 * box_dim);
+//  const Eigen::VectorXd lb = Eigen::VectorXd::Constant(
+//      2 * box_dim, -std::numeric_limits<double>::infinity());
+//  const Eigen::VectorXd objective_vector = Eigen::VectorXd ::Zero(box_dim);
+//
+//  std::vector<MathematicalProgram> progs(parallelism.num_threads());
+//  for (int i = 0; i < ssize(progs); ++i) {
+//    VectorXDecisionVariable x = progs[i].NewContinuousVariables(box_dim, "x");
+//    progs[i].AddLinearConstraint(A, lb, ub, x);
+//    progs[i].AddLinearCost(objective_vector, x);
+//  }
+//
+//  std::atomic<bool> certified_unbounded = false;
+//
+//  auto index_to_dimension = [&](const int64_t i) -> int {
+//    return i / 2;
+//  };
+//
+//  // This worker lambda maps the index i to a dimension and direction to check
+//  // boundedness. If unboundedness has already been verified, it just produces
+//  // an empty program. If unboundedness is verified in this iteration,
+//  // certified_unbounded will be updated to reflect that fact. For a given index
+//  // i, the dimension is int(i / 2), and if i % 2 == 0, then we maximize,
+//  // otherwise, we minimize.
+//  auto make_ith = [&](const int thread_num,
+//                      const int64_t i) -> std::unique_ptr<MathematicalProgram> {
+//    if (certified_unbounded.load()) {
+//      return std::make_unique<MathematicalProgram>();
+//    }
+//
+//    const int dimension = index_to_dimension(i);
+//    bool maximize = i % 2 == 0;
+//
+//    // Update the objective vector. By construction, each MathematicalProgram
+//    // has one cost (the linear cost).
+//    progs[thread_num].linear_costs()[0].evaluator()->update_coefficient_entry(
+//        dimension, maximize ? -1 : 1);
+//    return progs[thread_num].Clone();
+//  };
+//
+//  auto teardown_ith = [&](MathematicalProgram* prog_i,
+//                          MathematicalProgramResult result_i,
+//                          const int thread_num, const int i) {
+//    const int dimension = index_to_dimension(i);
+//    progs[thread_num].linear_costs()[0].evaluator()->update_coefficient_entry(
+//        dimension, 0);
+//    if (ProgramResultImpliesUnbounded(result_i)) {
+//      certified_unbounded.store(true);
+//    }
+//  };
+//
+//  MathematicalProgramResult result = SolveInParallel(
+//      make_ith, teardown_ith, Parallelism::Max());
+//
+//}
+
 /* Test fixture that runs SolveInParallel against a specific solver_id. When run
 with Drake CI's sanitizers and memory checkers, this would flag memory or thread
 errors seen during the parallel solves. */

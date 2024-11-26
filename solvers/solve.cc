@@ -43,7 +43,7 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog) {
 }
 
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<const MathematicalProgram*>& progs,
+    const std::vector<MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const std::vector<const SolverOptions*>* solver_options,
     const std::vector<std::optional<SolverId>>* solver_ids,
@@ -62,9 +62,8 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   }
 
   // TODO(Alexandre.Amice) is there a way around this clone?
-  auto prog_generator = [&progs](const int thread_num, const int64_t i) {
-    unused(thread_num);
-    return progs[i]->Clone();
+  auto prog_generator = [&progs](const int, const int64_t i) {
+    return progs[i];
   };
 
   auto initial_guess_generator =
@@ -79,9 +78,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   };
 
   auto solver_options_generator =
-      [&solver_options](int64_t thread_num,
-                        int64_t i) -> std::optional<SolverOptions> {
-    unused(thread_num);
+      [&solver_options](int64_t, int64_t i) -> std::optional<SolverOptions> {
     if (solver_options != nullptr) {
       return *(solver_options->at(i));
     } else {
@@ -90,8 +87,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   };
 
   auto solver_ids_generator =
-      [&solver_ids](int64_t thread_num, int64_t i) -> std::optional<SolverId> {
-    unused(thread_num);
+      [&solver_ids](int64_t, int64_t i) -> std::optional<SolverId> {
     if (solver_ids != nullptr && solver_ids->at(i).has_value()) {
       return solver_ids->at(i);
     } else {
@@ -99,22 +95,21 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     }
   };
 
-  return SolveInParallel(
-      prog_generator, initial_guess_generator, solver_options_generator,
-      solver_ids_generator, static_cast<int64_t>(0),
-      static_cast<int64_t>(progs.size()), parallelism, dynamic_schedule);
+  return SolveInParallel(prog_generator, static_cast<int64_t>(0),
+                         static_cast<int64_t>(progs.size()),
+                         initial_guess_generator, solver_options_generator,
+                         solver_ids_generator, parallelism, dynamic_schedule,
+                         nullptr);
 }
 
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<const MathematicalProgram*>& progs,
+    const std::vector<MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const SolverOptions* solver_options,
     const std::optional<SolverId>& solver_id, const Parallelism parallelism,
     const bool dynamic_schedule) {
-  // TODO(Alexandre.Amice) is there a way around this clone?
-  auto prog_generator = [&progs](const int thread_num, const int64_t i) {
-    unused(thread_num);
-    return progs[i]->Clone();
+  auto prog_generator = [&progs](const int, const int64_t i) {
+    return progs[i];
   };
 
   auto initial_guess_generator =
@@ -128,23 +123,24 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     }
   };
 
-  return SolveInParallel(prog_generator, initial_guess_generator,
-                         static_cast<int64_t>(0),
-                         static_cast<int64_t>(progs.size()), solver_options,
-                         solver_id, parallelism, dynamic_schedule);
+  return SolveInParallel(prog_generator, static_cast<int64_t>(0),
+                         static_cast<int64_t>(progs.size()),
+                         initial_guess_generator, solver_options, solver_id,
+                         parallelism, dynamic_schedule, nullptr);
 }
 
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::function<std::unique_ptr<MathematicalProgram>(int64_t, int64_t)>&
-        prog_generator,
+    const std::function<MathematicalProgram*(int64_t, int64_t)>& prog_generator,
+    const int64_t range_start, const int64_t range_end,
     const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
         initial_guesses_generator,
     const std::function<std::optional<SolverOptions>(int64_t, int64_t)>&
         solver_options_generator,
     const std::function<std::optional<SolverId>(int64_t, int64_t)>&
         solver_ids_generator,
-    const int64_t range_start, const int64_t range_end, Parallelism parallelism,
-    bool dynamic_schedule) {
+    Parallelism parallelism, bool dynamic_schedule,
+    const std::function<void(MathematicalProgram*, MathematicalProgramResult,
+                             int64_t, int64_t)>* prog_teardown) {
   // Pre-allocate the results (i.e., don't use push_back) so that we can safely
   // write to the vector on multiple threads concurrently.
   std::vector<MathematicalProgramResult> results{
@@ -164,7 +160,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
 
   // This caches programs which are skipped in the parallel for loop because
   // they are not threadsafe. This avoids having to create the program twice.
-  std::vector<std::unique_ptr<MathematicalProgram>> cached_progs(
+  std::vector<MathematicalProgram*> cached_progs(
       static_cast<std::size_t>(range_end));
 
   // The worker lambda behaves slightly differently depending on whether we are
@@ -172,9 +168,9 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   // This is the worker callback for the i'th program.
   auto solve_ith = [&](const bool in_parallel, const int thread_num,
                        const int64_t i) {
-    std::unique_ptr<MathematicalProgram> prog =
-        cached_progs[i] == nullptr ? prog_generator(thread_num, i)
-                                   : std::move(cached_progs[i]);
+    MathematicalProgram* prog = cached_progs[i] == nullptr
+                                    ? prog_generator(thread_num, i)
+                                    : std::move(cached_progs[i]);
     // If this program is not thread safe, then skip it and save it for
     // later.
     if (in_parallel && !prog->IsThreadSafe()) {
@@ -229,6 +225,10 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     // Solve the program.
     solver.Solve(*prog, initial_guess, new_options, &(results[i]));
     result_is_populated[i] = true;
+
+    if (prog_teardown != nullptr) {
+      (*prog_teardown)(prog, results[i], thread_num, i);
+    }
   };
   const auto solve_ith_parallel = [&](const int thread_num, const int64_t i) {
     solve_ith(/* in parallel */ true, thread_num, i);
@@ -269,28 +269,76 @@ std::vector<MathematicalProgramResult> SolveInParallel(
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::function<std::unique_ptr<MathematicalProgram>(int64_t, int64_t)>&
         prog_generator,
+    const int64_t range_start, const int64_t range_end,
     const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
         initial_guesses_generator,
+    const std::function<std::optional<SolverOptions>(int64_t, int64_t)>&
+        solver_options_generator,
+    const std::function<std::optional<SolverId>(int64_t, int64_t)>&
+        solver_ids_generator,
+    Parallelism parallelism, bool dynamic_schedule,
+    const std::function<void(MathematicalProgram*, MathematicalProgramResult,
+                             int64_t, int64_t)>* prog_teardown) {
+  auto make_ith = [&prog_generator](int64_t thread_num, int64_t i) {
+    return prog_generator(thread_num, i).get();
+  };
+  return SolveInParallel(make_ith, range_start, range_end,
+                         initial_guesses_generator, solver_options_generator,
+                         solver_ids_generator, parallelism, dynamic_schedule,
+                         prog_teardown);
+}
+
+std::vector<MathematicalProgramResult> SolveInParallel(
+    const std::function<MathematicalProgram*(int64_t, int64_t)>& prog_generator,
     const int64_t range_start, const int64_t range_end,
+    const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
+        initial_guesses_generator,
     const SolverOptions* solver_options,
     const std::optional<SolverId>& solver_id, Parallelism parallelism,
-    bool dynamic_schedule) {
+    bool dynamic_schedule,
+    const std::function<void(MathematicalProgram*, MathematicalProgramResult,
+                             int64_t, int64_t)>* prog_teardown) {
   auto solver_options_generator =
-      [&solver_options](int64_t thread_num,
-                        int64_t i) -> std::optional<SolverOptions> {
-    unused(thread_num, i);
+      [&solver_options](int64_t, int64_t) -> std::optional<SolverOptions> {
     return solver_options == nullptr
                ? std::nullopt
                : std::optional<SolverOptions>{*solver_options};
   };
-  auto solver_id_generator =
-      [&solver_id](int64_t thread_num, int64_t i) -> std::optional<SolverId> {
-    unused(thread_num, i);
+  auto solver_id_generator = [&solver_id](int64_t,
+                                          int64_t) -> std::optional<SolverId> {
     return solver_id;
   };
-  return SolveInParallel(prog_generator, initial_guesses_generator,
-                         solver_options_generator, solver_id_generator,
-                         range_start, range_end, parallelism, dynamic_schedule);
+  return SolveInParallel(prog_generator, range_start, range_end,
+                         initial_guesses_generator, solver_options_generator,
+                         solver_id_generator, parallelism, dynamic_schedule,
+                         prog_teardown);
+}
+
+std::vector<MathematicalProgramResult> SolveInParallel(
+    const std::function<std::unique_ptr<MathematicalProgram>(int64_t, int64_t)>&
+        prog_generator,
+    const int64_t range_start, const int64_t range_end,
+    const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
+        initial_guesses_generator,
+    const SolverOptions* solver_options,
+    const std::optional<SolverId>& solver_id, Parallelism parallelism,
+    bool dynamic_schedule,
+    const std::function<void(MathematicalProgram*, MathematicalProgramResult,
+                             int64_t, int64_t)>* prog_teardown) {
+  auto solver_options_generator =
+      [&solver_options](int64_t, int64_t) -> std::optional<SolverOptions> {
+    return solver_options == nullptr
+               ? std::nullopt
+               : std::optional<SolverOptions>{*solver_options};
+  };
+  auto solver_id_generator = [&solver_id](int64_t,
+                                          int64_t) -> std::optional<SolverId> {
+    return solver_id;
+  };
+  return SolveInParallel(prog_generator, range_start, range_end,
+                         initial_guesses_generator, solver_options_generator,
+                         solver_id_generator, parallelism, dynamic_schedule,
+                         prog_teardown);
 }
 
 }  // namespace solvers
