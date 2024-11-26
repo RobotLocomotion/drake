@@ -50,16 +50,17 @@ void FindCommonLyapunov(const SolverInterface& solver,
   MathematicalProgram prog;
   auto P = prog.NewSymmetricContinuousVariables<3>("P");
   const double psd_epsilon{1E-3};
-  prog.AddPositiveSemidefiniteConstraint(P -
-                                         psd_epsilon * Matrix3d::Identity());
+  prog.AddLinearMatrixInequalityConstraint(P -
+                                           psd_epsilon * Matrix3d::Identity());
   Eigen::Matrix3d A1;
   // clang-format off
   A1 << -1, -1, -2,
          0, -1, -3,
          0, 0, -1;
   // clang-format on
-  auto binding1 = prog.AddPositiveSemidefiniteConstraint(
-      -A1.transpose() * P - P * A1 - psd_epsilon * Matrix3d::Identity());
+  const Matrix3<symbolic::Expression> Q1 =
+      -A1.transpose() * P - P * A1 - psd_epsilon * Matrix3d::Identity();
+  auto binding1 = prog.AddLinearMatrixInequalityConstraint(Q1);
 
   Eigen::Matrix3d A2;
   // clang-format off
@@ -67,17 +68,27 @@ void FindCommonLyapunov(const SolverInterface& solver,
       0, -0.7, -2,
       0, 0, -0.4;
   // clang-format on
-  auto binding2 = prog.AddPositiveSemidefiniteConstraint(
-      -A2.transpose() * P - P * A2 - psd_epsilon * Matrix3d::Identity());
+  const Matrix3<symbolic::Expression> Q2 =
+      -A2.transpose() * P - P * A2 - psd_epsilon * Matrix3d::Identity();
+  auto binding2 = prog.AddLinearMatrixInequalityConstraint(Q2);
 
   const MathematicalProgramResult result =
       RunSolver(prog, solver, {}, solver_options);
 
+  ASSERT_TRUE(result.is_success());
+
   const Matrix3d P_value = result.GetSolution(P);
-  const auto Q1_flat_value = result.GetSolution(binding1.variables());
-  const auto Q2_flat_value = result.GetSolution(binding2.variables());
-  const Eigen::Map<const Matrix3d> Q1_value(&Q1_flat_value(0));
-  const Eigen::Map<const Matrix3d> Q2_value(&Q2_flat_value(0));
+
+  Eigen::Matrix3d Q1_value = binding1.evaluator()->F()[0];
+  for (int i = 0; i < binding1.variables().rows(); ++i) {
+    Q1_value += binding1.evaluator()->F()[1 + i] *
+                result.GetSolution(binding1.variables()(i));
+  }
+  Eigen::Matrix3d Q2_value = binding2.evaluator()->F()[0];
+  for (int i = 0; i < binding2.variables().rows(); ++i) {
+    Q2_value += binding2.evaluator()->F()[1 + i] *
+                result.GetSolution(binding2.variables()(i));
+  }
   Eigen::SelfAdjointEigenSolver<Matrix3d> eigen_solver_P(P_value);
 
   // The comparison tolerance is set as 1E-8, to match the Mosek default
@@ -128,7 +139,7 @@ void FindOuterEllipsoid(const SolverInterface& solver,
     M << s(i) * Q[i] - P, s(i) * b[i] - c,
         s(i) * b[i].transpose() - c.transpose(), 1 - s(i);
     // clang-format on
-    prog.AddPositiveSemidefiniteConstraint(M);
+    prog.AddLinearMatrixInequalityConstraint(M);
   }
 
   prog.AddLinearCost(-P.cast<symbolic::Expression>().trace());

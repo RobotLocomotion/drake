@@ -2618,6 +2618,9 @@ class MathematicalProgram {
    *      x+y,     0,   x;
    * prog.AddPositiveSemidefiniteConstraint(e);
    * @endcode
+   * @note This function will add additional variables and linear equality
+   * constraints. Consider calling AddLinearMatrixInequalityConstraint(e), which
+   * doesn't introduce new variables or linear equality constraints.
    */
   Binding<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e);
@@ -2630,7 +2633,7 @@ class MathematicalProgram {
    * @pre All values in  `minor_indices` lie in the range [0,
    * symmetric_matrix_var.rows() - 1].
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
-   * @see AddPositiveSemidefiniteConstraint.
+   * @see AddPositiveSemidefiniteConstraint
    */
   Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
@@ -2645,9 +2648,14 @@ class MathematicalProgram {
    * @pre All values in  `minor_indices` lie in the range [0,
    * symmetric_matrix_var.rows() - 1].
    * @param e Imposes constraint "e is positive semidefinite".
-   * @see AddPositiveSemidefiniteConstraint.
+   * @see AddLinearMatrixInequalityConstraint.
+   * @note the return type is Binding<LinearMatrixInequalityConstraint>,
+   * different from the overloaded function above which returns
+   * Binding<PositiveSemidefiniteConstraint>. We impose the constraint as an LMI
+   * so as to add fewer additional variables and constraints.
    */
-  Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
+  Binding<LinearMatrixInequalityConstraint>
+  AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
       const std::set<int>& minor_indices);
 
