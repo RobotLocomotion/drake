@@ -230,16 +230,16 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
   Eigen::Matrix3Xd env_points(3, 5);
   // clang-format off
   env_points << -2, 2,  2, -2, -2,
-                  2, 2, -2, -2,  2,
-                  0, 0,  0,  0,  0;
+                 2, 2, -2, -2,  2,
+                 0, 0,  0,  0,  0;
   // clang-format on
   meshcat->SetLine("Domain", env_points, 8.0, Rgba(0, 0, 0));
 
   Eigen::Matrix3Xd obstacle_points(3, 5);
   // clang-format off
   obstacle_points << -1, 1,  1, -1, -1,
-                  1, 1, -1, -1,  1,
-                  0, 0,  0,  0,  0;
+                      1, 1, -1, -1,  1,
+                      0, 0,  0,  0,  0;
   // clang-format on
   meshcat->SetLine("Obstacle", obstacle_points, 8.0, Rgba(0, 0, 0));
   CollisionCheckerParams params;
