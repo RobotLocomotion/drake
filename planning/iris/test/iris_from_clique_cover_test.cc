@@ -249,6 +249,8 @@ GTEST_TEST(IrisInConfigurationSpaceFromCliqueCover,
       builder.parser().AddModelsFromString(box_in_box, "urdf");
   // Choose ridiculous edge size to get fully connected visibility graph.
   // This will ensure the collision of the ellipsoid center.
+  // TODO(Alexandre.Amice): Clean up this test when the modular version of
+  // IrisInConfigurationSpaceFromCliqueCover lands.
   params.edge_step_size = 10.0;
   params.model = builder.Build();
   auto checker =
