@@ -80,7 +80,7 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  * @throws std::exception if any of the programs cannot be solved.
  */
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<MathematicalProgram*>& progs,
+    const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const std::vector<const SolverOptions*>* solver_options,
     const std::vector<std::optional<SolverId>>* solver_ids,
@@ -99,7 +99,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  * @throws std::exception if any of the progs are nullptr.
  */
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<MathematicalProgram*>& progs,
+    const std::vector<const MathematicalProgram*>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
     const SolverOptions* solver_options = nullptr,
     const std::optional<SolverId>& solver_id = std::nullopt,
@@ -127,8 +127,12 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  * @return A vector of size range_end with range_start to range_end populated
  * with the results of solving prog_generator(*, range_start-range_end)
  */
+template <typename T, typename = std::enable_if_t<
+    std::is_same_v<T, std::unique_ptr<MathematicalProgram>> ||
+    std::is_same_v<T, MathematicalProgram*> ||
+    std::is_same_v<T, const MathematicalProgram*>>>
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::function<MathematicalProgram*(int64_t, int64_t)>& prog_generator,
+    const std::function<T(int64_t, int64_t)>& prog_generator,
     const int64_t range_start, const int64_t range_end,
     const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
         initial_guesses_generator,
