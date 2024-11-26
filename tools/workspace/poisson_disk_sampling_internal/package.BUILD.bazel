@@ -1,0 +1,34 @@
+# -*- bazel -*-
+
+load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+licenses(["notice"])  # MIT
+
+package(default_visibility = ["//visibility:public"])
+
+copy_file(
+    name = "implementation",
+    src = "include/thinks/tph_poisson.h",
+    out = "implementation.cc",
+    allow_symlink = True,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "poisson_disk_sampling",
+    hdrs = ["include/thinks/tph_poisson.h"],
+    srcs = [":implementation"],
+    strip_include_prefix = "include/thinks",
+    linkstatic = 1,
+    copts = [
+        "-fvisibility=hidden",
+        "-DTPH_POISSON_IMPLEMENTATION",
+    ],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE.txt"],
+)

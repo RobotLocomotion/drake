@@ -44,6 +44,7 @@ drake_cc_package_library(
         ":meshcat_point_cloud_visualizer",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
+        ":poisson_disk",
         ":proximity_engine",
         ":proximity_properties",
         ":read_gltf_to_memory",
@@ -284,6 +285,22 @@ drake_cc_library(
         "//common:file_source",
         "//common:memory_file",
         "//common:string_container",
+    ],
+)
+
+drake_cc_library(
+    name = "poisson_disk",
+    srcs = ["poisson_disk.cc"],
+    hdrs = ["poisson_disk.h"],
+    deps = [
+        ":scene_graph",
+        ":shape_specification",
+        "//common:essential",
+        "//geometry/proximity:bv",
+        "//math:geometric_transform",
+    ],
+    implementation_deps = [
+        "@poisson_disk_sampling_internal//:poisson_disk_sampling",
     ],
 )
 
@@ -1037,6 +1054,13 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_sphere_mesh",
+    ],
+)
+
+drake_cc_googletest(
+    name = "poisson_disk_test",
+    deps = [
+        ":poisson_disk",
     ],
 )
 
