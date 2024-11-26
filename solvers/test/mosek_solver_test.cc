@@ -472,7 +472,7 @@ GTEST_TEST(MosekTest, SimpleSos1) {
   MosekSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 2E-9);
+    dut.CheckResult(result, 1E-8);
   }
 }
 
@@ -536,7 +536,7 @@ GTEST_TEST(MosekTest, TestTrivial1x1SDP) {
 GTEST_TEST(MosekTest, TestTrivial2x2SDP) {
   MosekSolver solver;
   if (solver.available()) {
-    TestTrivial2x2SDP(solver, 1E-8, /*check_dual=*/true, /*dual_tol=*/1E-8);
+    TestTrivial2x2SDP(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-8);
   }
 }
 

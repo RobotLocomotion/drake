@@ -174,10 +174,11 @@ GTEST_TEST(ParseLinearExpression, Test2) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  std::vector<MSKint32t> bar_var_dimension = {2, 3, 4};
-  MSK_appendbarvars(dut.task(), 3, bar_var_dimension.data());
+  std::vector<MSKint32t> bar_var_dimension = {3, 4};
+  MSK_appendbarvars(dut.task(), 2, bar_var_dimension.data());
+  MSK_appendvars(dut.task(), 3);
 
-  Vector3<symbolic::Variable> decision_vars(X2(0, 1), X3(1, 1), X3(1, 2));
+  Vector3<symbolic::Variable> decision_vars(X1(0, 1), X3(1, 1), X3(1, 2));
   std::vector<MSKint32t> F_subi;
   std::vector<MSKint32t> F_subj;
   std::vector<MSKrealt> F_valij;
@@ -185,9 +186,9 @@ GTEST_TEST(ParseLinearExpression, Test2) {
   const auto rescode = dut.ParseLinearExpression(
       prog, A_sparse, B, decision_vars, {}, &F_subi, &F_subj, &F_valij, &bar_F);
   ASSERT_EQ(rescode, MSK_RES_OK);
-  EXPECT_TRUE(F_subi.empty());
-  EXPECT_TRUE(F_subj.empty());
-  EXPECT_TRUE(F_valij.empty());
+  EXPECT_FALSE(F_subi.empty());
+  EXPECT_FALSE(F_subj.empty());
+  EXPECT_FALSE(F_valij.empty());
   EXPECT_FALSE(bar_F.empty());
   CheckParseLinearExpression(dut, prog, A_sparse, B, decision_vars, {}, F_subi,
                              F_subj, F_valij, bar_F);
@@ -215,8 +216,8 @@ GTEST_TEST(ParseLinearExpression, Test3) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  std::vector<MSKint32t> bar_var_dimension = {2, 3, 4};
-  MSK_appendbarvars(dut.task(), 3, bar_var_dimension.data());
+  std::vector<MSKint32t> bar_var_dimension = {3};
+  MSK_appendbarvars(dut.task(), 1, bar_var_dimension.data());
   const int num_slack_vars = 3;
   AppendFreeVariable(
       dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size() +
