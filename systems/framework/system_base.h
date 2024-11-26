@@ -1091,6 +1091,12 @@ class SystemBase : public internal::SystemMessageInterface {
     return next_available_ticket_++;
   }
 
+  /** (Internal use only) Checks if a ticket depends on (any) input port. When
+  this returns "true" the ticket MUST NOT depend on input. When this returns
+  "false", it just means that we're not sure. This is intended to be an
+  inexpensive check, withough searching the entire graph. */
+  bool IsObviouslyNotInputDependent(DependencyTicket dependency_ticket) const;
+
   /** (Internal use only) Declares that `parent_service` is the service
   interface of the Diagram that owns this subsystem. Aborts if the parent
   service has already been set to something else. */
