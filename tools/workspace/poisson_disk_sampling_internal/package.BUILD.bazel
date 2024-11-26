@@ -1,0 +1,32 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+licenses(["notice"])  # MIT
+
+package(default_visibility = ["//visibility:public"])
+
+genrule(
+    name = "generate_cc",
+    outs = ["poisson_disk_sampling.cc"],
+    cmd = """
+        echo '#define TPH_POISSON_IMPLEMENTATION' > $@
+        echo '#include "include/thinks/tph_poisson.h"' >> $@
+    """,
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "poisson_disk_sampling",
+    hdrs = ["include/thinks/tph_poisson.h"],
+    srcs = [":generate_cc"],
+    strip_include_prefix = "include/thinks",
+    linkstatic = 1,
+    copts = ["-fvisibility=hidden"],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE.txt"],
+)
