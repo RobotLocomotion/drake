@@ -208,7 +208,8 @@ TEST_F(PlanarJointTest, AddInDampingForces) {
 
 TEST_F(PlanarJointTest, Clone) {
   auto model_clone = tree().CloneToScalar<AutoDiffXd>();
-  const auto& joint_clone = model_clone->get_variant(*joint_);
+  const auto& joint_clone = dynamic_cast<const PlanarJoint<AutoDiffXd>&>(
+      model_clone->get_variant(*joint_));
 
   EXPECT_EQ(joint_clone.name(), joint_->name());
   EXPECT_EQ(joint_clone.frame_on_parent().index(),

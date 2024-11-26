@@ -162,16 +162,9 @@ const ForceElementType<T>& MultibodyTree<T>::AddForceElement(
     throw std::logic_error("Input force element is a nullptr.");
   }
 
-  auto gravity_element =
-      dynamic_cast<UniformGravityFieldElement<T>*>(force_element.get());
-  if (gravity_element) {
-    if (gravity_field_) {
-      throw std::runtime_error(
-          "This model already contains a gravity field element. "
-          "Only one gravity field element is allowed per model.");
-    }
-    gravity_field_ = gravity_element;
-  }
+  // This can throw in case it was already set. Keep this line ahead of any
+  // changes to this class (i.e., the push_back).
+  MaybeSetUniformGravityFieldElement(force_element.get());
 
   const ForceElementIndex force_element_index(num_force_elements());
   DRAKE_DEMAND(force_element->model_instance().is_valid());
