@@ -299,6 +299,10 @@ class MosekSolverProgram {
 
   // Add linear matrix inequality (LMI) constraints as affine cone constraints
   // (acc), return the indices of the added affine cone constraints.
+  // Note that when the LMI constraint is on a 1x1 matrix (a scalar), then we
+  // impose it as a linear inequality constraint; when the LMI constraint is on
+  // a 2x2 matrix, then we impose it as a rotated Lorentz cone constraint; when
+  // the matrix size is >= 3, then we impose it as a PSD cone constraint.
   MSKrescodee AddLinearMatrixInequalityConstraint(
       const MathematicalProgram& prog,
       std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>*
@@ -624,17 +628,40 @@ MSKrescodee SetAffineConeConstraintDualSolution(
       dual_sol(0) *= 0.5;
     }
     if constexpr (std::is_same_v<C, LinearMatrixInequalityConstraint>) {
-      // The dual solution returned by Mosek is the lower triangular part of the
-      // psd matrix, but the off-diagonal terms are scaled by sqrt(2). We need
-      // to scale the off-diagonal terms back.
-      int dual_sol_entry_count = 0;
-      const double sqrt2 = std::sqrt(2);
-      for (int j = 0; j < binding.evaluator()->matrix_rows(); ++j) {
-        for (int i = j; i < binding.evaluator()->matrix_rows(); ++i) {
-          if (i != j) {
-            dual_sol(dual_sol_entry_count) /= sqrt2;
+      const int matrix_rows = binding.evaluator()->matrix_rows();
+      if (matrix_rows == 2) {
+        // We impose the LMI constraint as a rotated Quadratic cone constraint
+        // in Mosek. For a constraint that
+        // [y0 y1]
+        // [y1 y2]
+        // is in psd, this is equivalent to
+        // [y0/2, y2, y1] in Mosek's rotated quadratic cone.
+        // If we denote the dual solution of the Mosek's rotated quadratic cone
+        // as [z0, z2, z1], then by the duality theory, the complementary
+        // slackness (namely the inner product between the primal and the dual)
+        // should be the same for both the PSD cone and the rotated quadratic
+        // cone, hence the dual solution for the PSD constraint is
+        // [z0/2 z1/2]
+        // [z1/2   z2]
+        // We store the lower triangular part of the dual PSD matrix as the dual
+        // solution, namely [z0/2, z1/2, z2]
+        dual_sol(0) *= 0.5;
+        const double tmp = dual_sol(1);
+        dual_sol(1) = dual_sol(2) / 2;
+        dual_sol(2) = tmp;
+      } else {
+        // The dual solution returned by Mosek is the lower triangular part of
+        // the psd matrix, but the off-diagonal terms are scaled by sqrt(2). We
+        // need to scale the off-diagonal terms back.
+        int dual_sol_entry_count = 0;
+        const double sqrt2 = std::sqrt(2);
+        for (int j = 0; j < binding.evaluator()->matrix_rows(); ++j) {
+          for (int i = j; i < binding.evaluator()->matrix_rows(); ++i) {
+            if (i != j) {
+              dual_sol(dual_sol_entry_count) /= sqrt2;
+            }
+            ++dual_sol_entry_count;
           }
-          ++dual_sol_entry_count;
         }
       }
     }
