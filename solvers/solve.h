@@ -114,8 +114,8 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  * the output is the ith program, guess, option and solver id respectively. The
  * index i is iterated from range_start to range_end.
  *
- * The output of prog_generator cannot be a nullptr. The user is responsible for
- * ensuring that the pointer is not dangling.
+ * If thehe output of prog_generator is nullptr, then the program is skipped.
+ * The user is responsible for ensuring that the pointer is not dangling.
  *
  * The output of the initial_guesses_generator, solver_options_generator and
  * solver_ids can be std::nullopt
@@ -127,10 +127,11 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  * @return A vector of size range_end with range_start to range_end populated
  * with the results of solving prog_generator(*, range_start-range_end)
  */
-template <typename T, typename = std::enable_if_t<
-    std::is_same_v<T, std::unique_ptr<MathematicalProgram>> ||
-    std::is_same_v<T, MathematicalProgram*> ||
-    std::is_same_v<T, const MathematicalProgram*>>>
+template <typename T,
+          typename = std::enable_if_t<
+              std::is_same_v<T, std::unique_ptr<MathematicalProgram>> ||
+              std::is_same_v<T, MathematicalProgram*> ||
+              std::is_same_v<T, const MathematicalProgram*>>>
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::function<T(int64_t, int64_t)>& prog_generator,
     const int64_t range_start, const int64_t range_end,
@@ -176,15 +177,14 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     const std::function<void(MathematicalProgram*, MathematicalProgramResult,
                              int64_t, int64_t)>* prog_teardown = nullptr);
 
-/**
- * Provides the same functionality as SolveInParallel, but the programs and
- * initial guesses are created using a generator. The same solver option, and
- * solver ids are used when solving all the programs.
- *
- * The output of prog_generator cannot be a nullptr and should not be dangling.
- */
+template <typename T,
+          typename = std::enable_if_t<
+              std::is_same_v<T, std::unique_ptr<MathematicalProgram>> ||
+              std::is_same_v<T, MathematicalProgram*> ||
+              std::is_same_v<T, const MathematicalProgram*>>>
+
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::function<MathematicalProgram*(int64_t, int64_t)>& prog_generator,
+    const std::function<T(int64_t, int64_t)>& prog_generator,
     const int64_t range_start, const int64_t range_end,
     const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
         initial_guesses_generator =
@@ -197,27 +197,52 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     const std::function<void(MathematicalProgram*, MathematicalProgramResult,
                              int64_t, int64_t)>* prog_teardown = nullptr);
 
-/**
- * Provides the same functionality as SolveInParallel, but the programs and
- * initial guesses are created using a generator. The same solver option, and
- * solver ids are used when solving all the programs.
- *
- * The output of prog_generator cannot be a nullptr.
- */
-std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::function<std::unique_ptr<MathematicalProgram>(int64_t, int64_t)>&
-        prog_generator,
-    const int64_t range_start, const int64_t range_end,
-    const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
-        initial_guesses_generator =
-            [](int64_t, int64_t) {
-              return std::nullopt;
-            },
-    const SolverOptions* solver_options = nullptr,
-    const std::optional<SolverId>& solver_id = std::nullopt,
-    Parallelism parallelism = Parallelism::Max(), bool dynamic_schedule = false,
-    const std::function<void(MathematicalProgram*, MathematicalProgramResult,
-                             int64_t, int64_t)>* prog_teardown = nullptr);
+///**
+// * Provides the same functionality as SolveInParallel, but the programs and
+// * initial guesses are created using a generator. The same solver option, and
+// * solver ids are used when solving all the programs.
+// *
+// * The output of prog_generator cannot be a nullptr and should not be
+// dangling.
+// */
+// std::vector<MathematicalProgramResult> SolveInParallel(
+//    const std::function<MathematicalProgram*(int64_t, int64_t)>&
+//    prog_generator, const int64_t range_start, const int64_t range_end, const
+//    std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
+//        initial_guesses_generator =
+//            [](int64_t, int64_t) {
+//              return std::nullopt;
+//            },
+//    const SolverOptions* solver_options = nullptr,
+//    const std::optional<SolverId>& solver_id = std::nullopt,
+//    Parallelism parallelism = Parallelism::Max(), bool dynamic_schedule =
+//    false, const std::function<void(MathematicalProgram*,
+//    MathematicalProgramResult,
+//                             int64_t, int64_t)>* prog_teardown = nullptr);
+//
+///**
+// * Provides the same functionality as SolveInParallel, but the programs and
+// * initial guesses are created using a generator. The same solver option, and
+// * solver ids are used when solving all the programs.
+// *
+// * The output of prog_generator cannot be a nullptr.
+// */
+// std::vector<MathematicalProgramResult> SolveInParallel(
+//    const std::function<std::unique_ptr<MathematicalProgram>(int64_t,
+//    int64_t)>&
+//        prog_generator,
+//    const int64_t range_start, const int64_t range_end,
+//    const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
+//        initial_guesses_generator =
+//            [](int64_t, int64_t) {
+//              return std::nullopt;
+//            },
+//    const SolverOptions* solver_options = nullptr,
+//    const std::optional<SolverId>& solver_id = std::nullopt,
+//    Parallelism parallelism = Parallelism::Max(), bool dynamic_schedule =
+//    false, const std::function<void(MathematicalProgram*,
+//    MathematicalProgramResult,
+//                             int64_t, int64_t)>* prog_teardown = nullptr);
 
 }  // namespace solvers
 }  // namespace drake
