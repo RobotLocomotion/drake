@@ -117,7 +117,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
           1.0, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
       expected_message);
 
-  // Ensure no exception is thrown even though the rotational inertia is invalid
+  // Ensure no exception is thrown for this _invalid_ rotational inertia
   // because it is close enough to valid to pass the triangle inequality test.
   constexpr double Jxx = 2, Jyy = 4, Jzz = 6;
   const double trace = Jxx + Jyy + Jzz;
