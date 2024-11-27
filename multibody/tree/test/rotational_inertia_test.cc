@@ -77,7 +77,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
           0, 0, 0, 0, 0, 0, /* skip_validity_check = */ false);
   EXPECT_TRUE(I.CouldBePhysicallyValid());
 
-  // Check that a _invalid_ rotational inertia with tiny negative moments of
+  // Check that an _invalid_ rotational inertia with tiny negative moments of
   // inertia does _not_ throw an exception (ensure test is not too fussy).
   constexpr double kTiny = 8 * kEpsilon;
   I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
