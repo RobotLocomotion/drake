@@ -223,7 +223,7 @@ std::queue<HPolyhedron> IrisWorker(
     } else {
       // Find the nearest clique member to the center that is not in collision.
       Eigen::Index nearest_point_col;
-      (clique_points - clique_ellipse.center())
+      (clique_points.colwise() - clique_ellipse.center())
           .colwise()
           .norm()
           .minCoeff(&nearest_point_col);
