@@ -182,6 +182,37 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
 }
 
 template <typename T>
+boolean<T> RotationalInertia<T>::
+    AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
+        bool use_principal_moments) const {
+  // We use a tiny multiple of max_possible_inertia_moment to guide the value
+  // of ε. To avoid false negatives when max_possible_inertia_moment ≈ 0,
+  // we also use a tiny absolute tolerance.
+  // Note: A side effect of ε is that some inertias are incorrectly classified
+  // as valid. We prefer to include some ever-so-slightly invalid inertias
+  // rather than exclude ones that were definitely valid but were penalized by
+  // finite precision during valid mathematical operations.
+  using std::abs;
+  using std::max;
+  const double precision = 16 * std::numeric_limits<double>::epsilon();
+  const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
+  const T epsilon = precision * max(1.0, max_possible_inertia_moment);
+
+  const Vector3<double> moments = use_principal_moments
+                                      ? CalcPrincipalMomentsOfInertia()
+                                      : ExtractDoubleOrThrow(get_moments());
+  const double Ixx = moments.x();
+  const double Iyy = moments.y();
+  const double Izz = moments.z();
+  const auto are_moments_near_positive =
+      AreMomentsOfInertiaNearPositive(Ixx, Iyy, Izz, epsilon);
+  const auto is_triangle_inequality_satisfied = Ixx + Iyy + epsilon >= Izz &&
+                                                Ixx + Iyy + epsilon >= Iyy &&
+                                                Iyy + Izz + epsilon >= Ixx;
+  return are_moments_near_positive && is_triangle_inequality_satisfied;
+}
+
+template <typename T>
 void RotationalInertia<T>::ThrowNotPhysicallyValid(
     const char* func_name) const {
   std::string error_message = fmt::format(
@@ -193,7 +224,7 @@ void RotationalInertia<T>::ThrowNotPhysicallyValid(
   if constexpr (scalar_predicate<T>::is_bool) {
     if (!IsNaN()) {
       if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-              /* is_test_principal_moments_of_inertia = */ true)) {
+              /* use_principal_moments = */ true)) {
         const Vector3<double> p = CalcPrincipalMomentsOfInertia();
         error_message += fmt::format(
             "\nThe associated principal moments of inertia:"

@@ -117,6 +117,36 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
           1.0, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
       expected_message);
 
+  // Ensure no exception is thrown even though the rotational inertia is invalid
+  // because it is close enough to valid to pass the triangle inequality test.
+  constexpr double Jxx = 2, Jyy = 4, Jzz = 6;
+  const double trace = Jxx + Jyy + Jzz;
+  double extra = 8 * kEpsilon * trace / 2.0;
+  DRAKE_EXPECT_NO_THROW(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          Jxx, Jyy, Jzz + extra, /* Ixy = */ 0, /* Ixz = */ 0, /* Iyz = */ 0,
+          /* skip_validity_check = */ false));
+
+  // Check for a thrown exception with proper error message when creating a
+  // simple rotational inertia that violates the triangle inequality.
+  extra = 64 * kEpsilon * trace / 2.0;
+  expected_message =
+      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
+      "\\[2  0  0\\]\n"
+      "\\[0  4  0\\]\n"
+      "\\[0  0  6\\]\n"
+      "did not pass the test CouldBePhysicallyValid\\(\\)\\.";
+  // TODO(Mitiguy) It is unnecessary (and confusing) to append information about
+  //  associated principal moments of inertia when the moments of inertia for
+  //  the original matrix do not pass the triangle-inequality test.
+  expected_message +=
+      fmt::format("\nThe associated principal moments of inertia:[^]*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          Jxx, Jyy, Jzz + extra, /* Ixy = */ 0, /* Ixz = */ 0, /* Iyz = */ 0,
+          /* skip_validity_check = */ false),
+      expected_message);
+
   // Check for a thrown exception with proper error message when creating a
   // rotational inertia that violates the triangle inequality.
   expected_message =
