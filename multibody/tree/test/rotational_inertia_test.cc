@@ -71,13 +71,32 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
 
 // Test rotational inertia factory method set via a 3x3 matrix.
 GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
+  // Ensure a zero rotational inertia is valid.
+  RotationalInertia<double> I =
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          0, 0, 0, 0, 0, 0, /* skip_validity_check = */ false);
+  EXPECT_TRUE(I.CouldBePhysicallyValid());
+
+  // Check that a _invalid_ rotational inertia with tiny negative moments of
+  // inertia does _not_ throw an exception (ensure test is not too fussy).
+  constexpr double kTiny = 8 * kEpsilon;
+  I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+      -kTiny, 0, -kTiny, 0, 0, 0, /* skip_validity_check = */ false);
+  EXPECT_TRUE(I.CouldBePhysicallyValid());
+
+  // Ensure an _invalid_ rotational inertia with very small negative moments of
+  // inertia throws an exception (ensure test is fussy enough for robotics).
+  constexpr double kSmall = 32 * kEpsilon;
+  EXPECT_THROW(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          -kSmall, 0, -kSmall, 0, 0, 0, /* skip_validity_check = */ false),
+      std::exception);
+
   // Form an arbitrary (but valid) rotational inertia.
   const double Ixx = 17, Iyy = 13, Izz = 10;
   const double Ixy = -3, Ixz = -3, Iyz = -6;
-
-  RotationalInertia<double> I =
-      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
+  I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+      Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
   EXPECT_TRUE(I.CouldBePhysicallyValid());
 
   // Ensure an invalid rotational inertia always throws an exception if the
@@ -124,7 +143,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
   double extra = 8 * kEpsilon * trace / 2.0;
   DRAKE_EXPECT_NO_THROW(
       RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          Jxx, Jyy, Jzz + extra, /* Ixy = */ 0, /* Ixz = */ 0, /* Iyz = */ 0,
+          Jxx, Jyy, Jzz + extra, /* Jxy = */ 0, /* Jxz = */ 0, /* Jyz = */ 0,
           /* skip_validity_check = */ false));
 
   // Check for a thrown exception with proper error message when creating a
@@ -143,7 +162,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
       fmt::format("\nThe associated principal moments of inertia:[^]*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          Jxx, Jyy, Jzz + extra, /* Ixy = */ 0, /* Ixz = */ 0, /* Iyz = */ 0,
+          Jxx, Jyy, Jzz + extra, /* Jxy = */ 0, /* Jxz = */ 0, /* Jyz = */ 0,
           /* skip_validity_check = */ false),
       expected_message);
 
