@@ -78,8 +78,8 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp, TestAnalytical) {
         Vector3d(-kappa * sin(l * kappa), kappa * cos(l * kappa), 0));
 
     auto actual_pose = trajectory.GetPose(l);
-    auto actual_velocity = trajectory.GetVelocity(l);
-    auto actual_acceleration = trajectory.GetAcceleration(l);
+    auto actual_velocity = trajectory.CalcSpatialVelocity(l);
+    auto actual_acceleration = trajectory.CalcSpatialAcceleration(l);
 
     EXPECT_TRUE(actual_pose.IsNearlyEqualTo(expected_pose, kTolerance));
     EXPECT_TRUE(actual_velocity.IsApprox(expected_velocity, kTolerance));
@@ -128,11 +128,11 @@ GTEST_TEST(TestPiecewiseConstantCuravatureTrajectory,
     auto curve_rotation = curve_pose.rotation();
     auto curve_position = curve_pose.translation();
 
-    auto curve_velocity = curve_spline.GetVelocity(l);
+    auto curve_velocity = curve_spline.CalcSpatialVelocity(l);
     auto translational_velocity = curve_velocity.translational();
     auto rotational_velocity = curve_velocity.rotational();
 
-    auto curve_acceleration = curve_spline.GetAcceleration(l);
+    auto curve_acceleration = curve_spline.CalcSpatialAcceleration(l);
     auto translational_acceleration = curve_acceleration.translational();
     auto rotational_acceleration = curve_acceleration.rotational();
 
@@ -204,11 +204,10 @@ GTEST_TEST(TestPiecewiseConstantCuravatureTrajectory, TestScalarConversion) {
   Vector3d curve_tangent = Vector3d::UnitX();
   PiecewiseConstantCurvatureTrajectory<double> double_trajectory(
       times, curavtures, curve_tangent, plane_normal);
-  PiecewiseConstantCurvatureTrajectory<AutoDiffXd> autodiff_trajectory =
-      double_trajectory.template CloneToScalar<AutoDiffXd>();
+  PiecewiseConstantCurvatureTrajectory<AutoDiffXd> autodiff_trajectory(
+      double_trajectory);
   PiecewiseConstantCurvatureTrajectory<symbolic::Expression>
-      expression_trajectory =
-          double_trajectory.template CloneToScalar<symbolic::Expression>();
+      expression_trajectory(double_trajectory);
 
   for (double l = times.front(); l < times.back(); l += 0.01) {
     math::RigidTransform<double> double_pose = double_trajectory.GetPose(l);
@@ -218,7 +217,7 @@ GTEST_TEST(TestPiecewiseConstantCuravatureTrajectory, TestScalarConversion) {
         double_pose.template cast<symbolic::Expression>();
 
     multibody::SpatialVelocity<double> double_velocity =
-        double_trajectory.GetVelocity(l);
+        double_trajectory.CalcSpatialVelocity(l);
     multibody::SpatialVelocity<AutoDiffXd> autodiff_velocity(
         double_velocity.rotational().template cast<AutoDiffXd>(),
         double_velocity.translational().template cast<AutoDiffXd>());
@@ -227,7 +226,7 @@ GTEST_TEST(TestPiecewiseConstantCuravatureTrajectory, TestScalarConversion) {
         double_velocity.translational().template cast<symbolic::Expression>());
 
     multibody::SpatialAcceleration<double> double_acceleration =
-        double_trajectory.GetAcceleration(l);
+        double_trajectory.CalcSpatialAcceleration(l);
     multibody::SpatialAcceleration<AutoDiffXd> autodiff_acceleration(
         double_acceleration.rotational().template cast<AutoDiffXd>(),
         double_acceleration.translational().template cast<AutoDiffXd>());
@@ -242,15 +241,15 @@ GTEST_TEST(TestPiecewiseConstantCuravatureTrajectory, TestScalarConversion) {
     EXPECT_TRUE(expression_pose.IsNearlyEqualTo(
         expression_trajectory.GetPose(l), kTolerance));
 
-    EXPECT_TRUE(autodiff_velocity.IsApprox(autodiff_trajectory.GetVelocity(l),
-                                           kTolerance));
+    EXPECT_TRUE(autodiff_velocity.IsApprox(
+        autodiff_trajectory.CalcSpatialVelocity(l), kTolerance));
     EXPECT_TRUE(expression_velocity.IsApprox(
-        expression_trajectory.GetVelocity(l), kTolerance));
+        expression_trajectory.CalcSpatialVelocity(l), kTolerance));
 
     EXPECT_TRUE(autodiff_acceleration.IsApprox(
-        autodiff_trajectory.GetAcceleration(l), kTolerance));
+        autodiff_trajectory.CalcSpatialAcceleration(l), kTolerance));
     EXPECT_TRUE(expression_acceleration.IsApprox(
-        expression_trajectory.GetAcceleration(l), kTolerance));
+        expression_trajectory.CalcSpatialAcceleration(l), kTolerance));
   }
 }
 

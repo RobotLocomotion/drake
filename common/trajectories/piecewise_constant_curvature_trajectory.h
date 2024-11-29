@@ -14,16 +14,60 @@ namespace drake {
 namespace trajectories {
 
 /**
- * Represents a piecewise constant-curvature trajectory within a plane embdedded
- * in 3D space.
+ * Represents a piecewise-constant-curvature, continuously-differentiable
+ * trajectory within a 2D plane embedded in 3D space, i.e. a trajectory composed
+ * of circular arcs and line segments.
  *
- * This class defines a trajectory composed of segments with constant curvature:
- * circular arcs and line segments. It provides methods to calcualte poses,
- * velocities, and accelerations along the trajectory based on the distance
- * traveled.
+ * This class tracks X_AF(t), a pose F relative to a reference frame A as a
+ * funciton of time t [s], with position r(t) = p_AoFo_A and R(t) = R_AF. The
+ * initial position r(t₀) is assumed to be equal to the zero vector. r(t) is the
+ * nominal value of the trajectory, and the full pose and its derivatives are
+ * available through CalcPose(), CalcSpatialVelocity(), and
+ * CalcSpatialAcceleration().
  *
- * The curve is path-length paramaterized; as such the linear velocity is always
- * a unit vector.
+ * The trajectory is arclength-parameterized; this means velocity along the
+ * curve tangent is always 1 [m/s], and t̂(t) = dr(t)/dt is the curve's tangent
+ * unit vector (in the Frenet-Serrat sence).
+ *
+ * The plane has a normal axis p̂. The curvatures are defined piecewise
+ * leveraging the "segment times" concept from PiecewiseTrajectory. The segment
+ * break times t₀ [s] < t₁ [s] < ... < tₙ [s] define the finite list of
+ * points at which the curvature instantly changes. Like all PiecewiseTrajectory
+ * types, tᵢ - tᵢ₋₁ must be at least PiecewiseTrajectory::kEpsilonTime. On
+ * "segment" i, defined as [tᵢ₋₁, tᵢ], the curvature is parameterized by a
+ * constant "turning rate" kᵢ [1/m], setting the angular velocity of F in W
+ * (equivalently the Darboux vector) as w_AF = kᵢ * p̂, and the curvature is
+ * equal to the magnitude of the turning rate abs(k). Thus,
+ *
+ *   * kᵢ > 0 corresponds to a counterclockwise turn along a circular arc of
+ *     radius 1/kᵢ [m].
+ *   * kᵢ = 0 corresponds to a straight line segment.
+ *   * kᵢ < 0 corresponds to a clockwise turn along a circular arc of radius
+ * -1/kᵢ [m].
+ *
+ * The angular velocity w_AF is finite and constant within the segments. Thus
+ * the angular acceleration alpha_AF is zero within the segments and undefined
+ * at the segment endpoints. R(t) is continuous.
+ *
+ * For brevity, we refer to the pose at the start of each segment as Fᵢ, and
+ * the associated transfrom X_AF(tᵢ) as X_AFᵢ.
+ *
+ * Before t₀ and after tₙ, the pose, velocity, and acceleration are
+ * continuously extrapolated with constant curvatures k_1 and k_N respectively.
+ *
+ * The orientation of the curve R(t) = [x̂_F_A(t), ŷ_F_A(t), ẑ_F_A(t)] rotates
+ * with the direction of the curve, similar to but distinct from the
+ * Frenet-Serret/tangent-normal-binormal (TNB) frame [t̂, n̂, b̂]:
+ *
+ *   * x̂_F_A(t) = dr(t)/dt = t̂ is the curve tangent at time t
+ *   * ẑ_F_A(t) = ẑ_F_A(0) = p̂, the plane normal. ẑ = sign(kᵢ) * b̂.
+ *   * ŷ_F_A(t) = ẑ_F_A x x̂_F_A = sign(k) * n̂.
+ *
+ * From the Frenet-Serret formulas, we know:
+ *
+ *   * dx̂_F_A(t)/dt =  kᵢ * ŷ_F_A(t)
+ *   * dŷ_F_A(t)/dt = -kᵢ * x̂_F_A(t)
+ *   * dẑ_F_A(t)/dt =  0
  *
  * @tparam_default_scalar
  */
@@ -36,72 +80,90 @@ class PiecewiseConstantCurvatureTrajectory final
   /**
    * Constructs an empty piecewise constant curvature trajectory.
    */
-  PiecewiseConstantCurvatureTrajectory() {}
-
-  /**
-   * Clones this trajectory to a trajectory with a different scalar type.
-   *
-   * @tparam ToScalar The scalar type to which to clone the trajectory.
-   * @return The cloned trajectory.
-   */
-  template <typename ToScalar>
-  PiecewiseConstantCurvatureTrajectory<ToScalar> CloneToScalar() const {
-    std::vector<ToScalar> segment_curvatures;
-    std::vector<ToScalar> segment_breaks;
-    systems::scalar_conversion::ValueConverter<ToScalar, T> converter;
-    for (const T& curvature : segment_curvatures_) {
-      segment_curvatures.push_back(converter(curvature));
-    }
-    for (const T& segment_break : this->breaks()) {
-      segment_breaks.push_back(converter(segment_break));
-    }
-    return PiecewiseConstantCurvatureTrajectory<ToScalar>(
-        segment_breaks, segment_curvatures,
-        base_frame_.col(kCurveTangentDimension).template cast<ToScalar>(),
-        base_frame_.col(kPlaneNormalDimension).template cast<ToScalar>());
-  }
+  PiecewiseConstantCurvatureTrajectory() = default;
 
   /**
    * Constructs a piecewise constant curvature trajectory.
    *
-   * @param segment_breaks A vector of distance break points between segments.
-   * @param segment_curvatures A vector of curvatures for each segment.
-   * @param curve_tangent_axis The tangent of the curve at path length 0.
-   * @param plane_normal_axis The normal axis of the 2D plane in which the curve
-   * lies.
+   * Endpoints of each constant-curvature segments are defined by break times
+   * t₀ [s] < t₁ [s] < ... < tₙ [s] passed through `breaks`. N is the
+   * number of segments. The turning rates k₁ [1/m], ... kₙ [1/m] are passed
+   * through `turning_rates`. There must be exactly 1 turning rate provided per
+   * segment (len(turning_rates) = len(breaks) -1).
+   *
+   * The parent class, PiecewiseTrajectory, will internally enforce that the
+   * break times increase by at least PiecewiseTrajectory::kEpsilonTime.
+   *
+   * The initial rotation in the reference frame R_AF(t₀) is set with
+   * initial_curve_tangent as x̂_F_A(t₀); and plane_normal as the ŷ_F_A(t); and
+   * ŷ_F_A(0) set by right-hand rule. Thus if the axis are not unit-norm and
+   * orthogonal, construction of R_AF may fail; see MakeBaseFrame for details.
+   *
+   * @param breaks A vector of time break points between segments.
+   * @param turning_rates A vector of curvatures for each segment.
+   * @param initial_curve_tangent The initial tangent of the curve expressed in
+   * the parent frame, [t̂(t₀)]_A.
+   * @param plane_normal The normal axis of the 2D plane in which the curve
+   * lies, expressed in the parent frame, [p̂]_A. lies,
+   *
+   * @throws std::invalid_argument if the number of turning rates does not
+   * match the number of segments.
    */
-  PiecewiseConstantCurvatureTrajectory(const std::vector<T>& segment_breaks,
-                                       const std::vector<T>& segment_curvatures,
-                                       const Vector3<T>& curve_tangent_axis,
-                                       const Vector3<T>& plane_normal_axis);
+  PiecewiseConstantCurvatureTrajectory(const std::vector<T>& breaks,
+                                       const std::vector<T>& turning_rates,
+                                       const Vector3<T>& initial_curve_tangent,
+                                       const Vector3<T>& plane_normal);
+
+  /**
+   * Constructs a PiecewiseConstantCurvatureTrajectory from another scalar
+   * type.
+   *
+   * @tparam_default_scalar
+   * @return The cloned trajectory.
+   */
+  template <typename U>
+  explicit PiecewiseConstantCurvatureTrajectory(
+      const PiecewiseConstantCurvatureTrajectory<U> other)
+      : PiecewiseConstantCurvatureTrajectory(
+            CloneSegmentDataFromScalar<U>(other.get_segment_times()),
+            CloneSegmentDataFromScalar<U>(other.segment_turning_rates_),
+            other.segment_start_poses_[0]
+                .rotation()
+                .col(kCurveTangentIndex)
+                .template cast<U>(),
+            other.segment_start_poses_[0]
+                .rotation()
+                .col(kPlaneNormalIndex)
+                .template cast<U>()) {}
 
   /**
    * @return The number of rows in the trajectory's output.
    */
-  Eigen::Index rows() const override { return 4; }
+  Eigen::Index rows() const override { return 3; }
 
   /**
    * @return The number of columns in the trajectory's output.
    */
-  Eigen::Index cols() const override { return 4; }
+  Eigen::Index cols() const override { return 1; }
 
   /**
-   * Returns the interpolated pose at the given distance along the trajectory.
+   * Returns the trajectory's pose X_AF(t) at the given time t [s]
+   * (equivalently, arclength [m]).
    *
-   * @param distance The distance along the trajectory.
-   * @return The interpolated pose as a RigidTransform.
+   * @param t The query time in seconds (equivalently, arclenth in meters).
+   * @return The corresponding pose X_AF(t) as a RigidTransform.
    */
-  math::RigidTransform<T> GetPose(const T& distance) const;
+  math::RigidTransform<T> GetPose(const T& t) const;
 
   /**
-   * Returns the interpolated pose at the given distance along the trajectory as
-   * an Eigen matrix.
+   * Returns the trajectory position p_AoFo_A(t) at the given time t [s]
+   * (equivalently, arclength [m]).
    *
-   * @param t The distance along the trajectory.
-   * @return The 4x4 homogeneous transform matrix representing the pose.
+   * @param t The query time in seconds (equivalently, arclenth in meters).
+   * @return The 3x1 position vector.
    */
   MatrixX<T> value(const T& t) const override {
-    return GetPose(t).GetAsMatrix4();
+    return GetPose(t).translation();
   }
 
   /**
@@ -112,28 +174,29 @@ class PiecewiseConstantCurvatureTrajectory final
   std::unique_ptr<Trajectory<T>> Clone() const override;
 
   /**
-   * Returns the interpolated spatial velocity at the given distance along the
-   * trajectory.
+   * Returns the spatial velocity V_AF_A(t) at the given time t [s]
+   * (equivalently, arclength [m]).
    *
-   * @param distance The distance along the trajectory.
-   * @return The interpolated spatial velocity.
+   * @param t The query time in seconds (equivalently, arclenth in meters).
+   * @return The correponding spatial velocity V_AF_A(t).
    */
-  multibody::SpatialVelocity<T> GetVelocity(const T& distance) const;
+  multibody::SpatialVelocity<T> CalcSpatialVelocity(const T& t) const;
 
   /**
-   * Returns the interpolated spatial acceleration at the given distance along
-   * the trajectory.
+   * Returns the spatial acceleration A_AF_A(t) at the given time t [s]
+   * (equivalently, arclength [m]).
    *
-   * @param distance The distance along the trajectory.
-   * @return The interpolated spatial acceleration.
+   * @param t The query time in seconds (equivalently, arclenth in meters).
+   * @return The correponding spatial acceleration A_AF_A(t).
    */
-  multibody::SpatialAcceleration<T> GetAcceleration(const T& distance) const;
+  multibody::SpatialAcceleration<T> CalcSpatialAcceleration(const T& t) const;
 
   /**
    * Checks if the trajectory is nearly periodic within the given tolerance.
    *
-   * Periodicity is defined as the beginning and end poses being equal up to the
-   * same tolerance.
+   * Periodicity is defined as the beginning and end poses X_AF(t₀) and
+   * X_AF(tₙ) being equal up to the same tolerance, checked via
+   * RigidTransform::IsNearlyEqualTo with the same tolerance.
    *
    * @param tolerance The tolerance for periodicity check.
    * @return True if the trajectory is nearly periodic, false otherwise.
@@ -141,67 +204,103 @@ class PiecewiseConstantCurvatureTrajectory final
   boolean<T> IsNearlyPeriodic(double tolerance) const;
 
   /**
-   * Returns the frame of the trajectory at distance zero, which defines
-   * the orientation of the plane in the embedded 3D space.
+   * Gives the intial orientation of the trajectory in its reference frame,
+   * R_AF(t₀).
    *
    * @return The base frame as a RotationMatrix.
    */
-  const math::RotationMatrix<T>& get_base_frame() const { return base_frame_; }
+  const math::RotationMatrix<T>& get_base_frame() const {
+    return segment_start_poses_[0].rotation();
+  }
 
   /**
-   * Returns the normal axis of the plane in which the curve lies
+   * Gives the normal axis of the plane in which the curve lies, [p̂]_A.
    *
-   * @return The plane normal axis.
+   * @return The plane normal axis, [p̂]_A.
    */
   const Eigen::Ref<const Vector3<T>> get_plane_normal_axis() const {
-    return base_frame_.col(kPlaneNormalDimension);
+    return segment_start_poses_[0].rotation().col(kPlaneNormalIndex);
   }
 
  private:
-  /**
-   * Calculates the relative transform between the start of a constant-curavtue
-   * segment and the pose at a given length of travel within the segment.
-   *
-   * @param curvature The curvature of the segment.
-   * @param length The length of travel in the segment.
-   * @return The pose relative to length 0 along the curve.
-   */
-  static math::RigidTransform<T> CalcPoseInLocalFrame(const T& curvature,
-                                                      const T& length);
+  template <typename U>
+  friend class PiecewiseConstantCurvatureTrajectory;
 
   /**
-   * Builds the base frame from the given tangent and plane axes.
+   * Helper function to convert segment data (break times, turning rates) scalar
+   * types, to aid conversion of the trajectory to different scalar types.
    *
-   * @param curve_tangent_axis The tangent of the curve at distance 0.
-   * @param plane_normal_axis The normal axis of the plane.
+   * @param segment_data The vector of segment data to be converted.
+   * @return The segment data converted to new scalar type.
+   * @tparam_default_scalar
+   */
+  template <typename U>
+  static std::vector<T> CloneSegmentDataFromScalar(
+      const std::vector<U>& segment_data) {
+    std::vector<T> converted_segment_data;
+    systems::scalar_conversion::ValueConverter<U, T> converter;
+    for (const U& segment : segment_data) {
+      converted_segment_data.push_back(converter(segment));
+    }
+    return converted_segment_data;
+  }
+  /**
+   * Calculates the relative transform between the start of a constant-curvature
+   * segment tᵢ [s] and the pose after a given duration Δt [s] (equivalently,
+   * arclength [s]) within the segment.
+   *
+   * This transform is equal to X_AFᵢ⁻¹ * X_AF(tᵢ + Δt). As X_AF(t)
+   * defines the normal of the plane as the z axis of F, this displacement
+   * consists of a circular arc or line segment in the x-y plane, and a
+   * corresponding z-axis rotation.
+   *
+   * @param k_i The turning rate of the segment.
+   * @param dt The duration [s] within the segment.
+   * @return The pose relative to to the start of the segment.
+   */
+  static math::RigidTransform<T> CalcRelativePoseInSegment(const T& k_i,
+                                                           const T& dt);
+
+  /**
+   * Builds the base frame, R_AF(t₀), from the given tangent and plane axes.
+   *
+   * The plane normal p̂ is defined as the z axis ẑ_F_A; the initial heading is
+   * the x axis x̂_F_A; and the y axis is determined by cross product. R_AF is
+   * constructed by passing normalized versions of these vectors to
+   * RotationMatrix::MakeFromOrthonormalColumns, which may fail if the provided
+   * axes are not unit norm and orthogonal.
+   *
+   * @param initial_curve_tangent The tangent of the curve at time t₀.
+   * @param plane_normal The normal axis of the plane.
    *
    * @return The base frame as a RotationMatrix.
    */
   static math::RotationMatrix<T> MakeBaseFrame(
-      const Vector3<T>& curve_tangent_axis,
-      const Vector3<T>& plane_normal_axis);
+      const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal);
 
   /**
-   * Builds the curve from the given curvatures and segment breaks.
+   * Calculates the curve's pose at the beginning of each segment.
+   *
+   * For each segment i, the returned vector's i-th element contains the
+   * relative transform X_AFᵢ = X_AF(tᵢ).
    *
    * @param base_frame The base frame of the trajectory.
-   * @param segment_curvatures A vector of curvatures for each segment.
-   * @param segment_breaks A vector of break points between segments.
+   * @param turning_rates THe vector of turning rates [1/m] for each segment.
+   * @param breaks The vector of break points [s] between segments tᵢ.
    *
-   * @return The local frames of each segment.
+   * @return Vector (of length num_segments) of poses at the beggining of each
+   * segment.
    */
-  static std::vector<math::RigidTransform<T>> MakeSegmentLocalFrames(
+  static std::vector<math::RigidTransform<T>> MakeSegmentStartPoses(
       const math::RotationMatrix<T>& base_frame,
-      const std::vector<T>& segment_curvatures,
-      const std::vector<T>& segment_breaks);
+      const std::vector<T>& turning_rates, const std::vector<T>& breaks);
 
-  math::RotationMatrix<T> base_frame_;
-  std::vector<T> segment_curvatures_;
-  std::vector<math::RigidTransform<T>> segment_local_frames_;
+  std::vector<T> segment_turning_rates_;
+  std::vector<math::RigidTransform<T>> segment_start_poses_;
 
-  static inline constexpr size_t kCurveTangentDimension = 0;
-  static inline constexpr size_t kCurveNormalDimension = 1;
-  static inline constexpr size_t kPlaneNormalDimension = 2;
+  static inline constexpr size_t kCurveTangentIndex = 0;
+  static inline constexpr size_t kCurveNormalIndex = 1;
+  static inline constexpr size_t kPlaneNormalIndex = 2;
 };
 
 }  // namespace trajectories
