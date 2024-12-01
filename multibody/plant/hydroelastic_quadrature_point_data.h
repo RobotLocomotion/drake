@@ -62,16 +62,5 @@ template <typename T>
 using DeformableContactPointData = HydroelasticQuadraturePointData<T>;
 
 }  // namespace internal
-
-template <typename T>
-using HydroelasticQuadraturePointData DRAKE_DEPRECATED(
-    "2024-12-01", "Removed with no replacement.") =
-    internal::HydroelasticQuadraturePointData<T>;
-
-template <typename T>
-using DeformableContactPointData DRAKE_DEPRECATED(
-    "2024-12-01",
-    "Removed with no replacement.") = internal::DeformableContactPointData<T>;
-
 }  // namespace multibody
 }  // namespace drake
