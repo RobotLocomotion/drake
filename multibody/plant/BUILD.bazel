@@ -195,9 +195,6 @@ drake_cc_library(
         "deformable_contact_info.h",
         "hydroelastic_contact_info.h",
         "point_pair_contact_info.h",
-        # Upon 2024-12-01 deprecation removal, this next header can possibly
-        # move to a better home, e.g., the traction_calculator?
-        "hydroelastic_quadrature_point_data.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -293,6 +290,7 @@ drake_cc_library(
         "hydroelastic_traction_calculator.cc",
     ],
     hdrs = [
+        "hydroelastic_quadrature_point_data.h",
         "hydroelastic_traction_calculator.h",
     ],
     internal = True,
