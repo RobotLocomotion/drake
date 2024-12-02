@@ -207,7 +207,6 @@ drake_cc_library(
     implementation_deps = [
         "//solvers:mosek_solver",
         "//solvers:solve",
-        "@common_robotics_utilities",
     ],
 )
 

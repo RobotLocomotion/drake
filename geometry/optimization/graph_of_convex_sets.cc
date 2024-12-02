@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include <common_robotics_utilities/parallelism.hpp>
 #include <fmt/format.h>
 
 #include "drake/common/parallelism.h"
