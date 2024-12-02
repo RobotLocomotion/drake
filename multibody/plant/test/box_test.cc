@@ -196,12 +196,13 @@ class SlidingBoxTest : public ::testing::Test {
   const double stiction_tolerance_{1.0e-4};     // in meters per second.
   const double applied_force_{5.0};             // Force in Newtons.
 
-  // Tolerance used to verify the results.
-  // Since the contact solver uses a continuous ODE to model Coulomb friction
-  // (a modified Stribeck model), we simulate for a long enough time to reach
-  // a "steady state". Therefore the precision of the results in these tests
-  // is dominated for "how well we reached steady state".
-  const double kTolerance{1.0e-12};
+  // Tolerance used to verify the results. With regularized friction and
+  // compliance, the precision of the results in these tests will depend on "how
+  // well we reached steady state". However, a more accurate steady state would
+  // also require longer simulation times and thus a more expensive test.
+  // Therefore we determined this value as a trade-off between the the accuracy
+  // of the steady state and computational cost.
+  const double kTolerance{4.0e-12};
 };
 
 TEST_F(SlidingBoxTest, DiscreteModel) {

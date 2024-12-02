@@ -445,7 +445,7 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   // removed, because it is not set in the context's scene graph config, and
   // reapplication during AssignRole() does not affect it.
   ASSERT_FALSE(scene_graph_.get_config(*context_)
-              .default_proximity_properties.point_stiffness.has_value());
+                   .default_proximity_properties.slab_thickness.has_value());
   edit_props = *query_object().inspector().GetProximityProperties(g_id);
   edit_props.RemoveProperty(kHydroGroup, kPointStiffness);
   scene_graph_.AssignRole(context_.get(), s_id, g_id, edit_props,
