@@ -5,6 +5,8 @@
 
 /** @addtogroup hydro_params Estimation of Hydroelastic Parameters
 
+@brief  <a><!-- no brief line please --></a>
+
 Similarly to Hertz theory of contact mechanics, in this section we derive
 analytical formulas to estimate the elastic force that establishes between two
 bodies in contact. As in Hertz theory, we assume small deformations, allowing

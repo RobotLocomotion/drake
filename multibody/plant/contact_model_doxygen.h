@@ -624,6 +624,8 @@ convergence guarantees.
 
 /** @addtogroup hydro_margin Margin for Hydroelastic Contact
 
+@brief  <a><!-- no brief line please --></a>
+
 In Drake, multibody systems with frictional contact are simulated via a discrete
 approximation, see @ref mbp_discrete "Discrete Models for Simulation" (while
 Drake also offers @ref mbp_continuous "Continuous Models for Simulation",
@@ -1091,5 +1093,8 @@ range. Even for this case, estimating the amplitude of these vibrations with
 
 /**
   @defgroup hydro_params Estimation of Hydroelastic Parameters
+  @ingroup drake_contacts
+
+  @defgroup contact_defaults Default Contact Parameters
   @ingroup drake_contacts
 */

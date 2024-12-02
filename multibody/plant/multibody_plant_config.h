@@ -39,11 +39,13 @@ struct MultibodyPlantConfig {
   /// Ignored when the time_step is zero.
   bool use_sampled_output_ports{true};
 
+  // TODO(amcastro-tri): deprecate. Defaults should always come from
+  // DefaultProximityProperties.
   /// Configures the MultibodyPlant::set_penetration_allowance().
   double penetration_allowance{0.001};
 
   /// Configures the MultibodyPlant::set_stiction_tolerance().
-  double stiction_tolerance{0.001};
+  double stiction_tolerance{1.0e-4};
 
   /// Configures the MultibodyPlant::set_contact_model().
   /// Refer to drake::multibody::ContactModel for details.
