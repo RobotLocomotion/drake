@@ -111,14 +111,25 @@ struct DefaultProximityProperties {
   /** @see dynamic_friction. */
   std::optional<double> static_friction{0.5};
 
-  /** Controls energy damping from contact, for contact models *other than*
-  multibody::DiscreteContactApproximation::kSap. Units are seconds per
-  meter. */
-  std::optional<double> hunt_crossley_dissipation;
+  /** Controls energy dissipation from contact, for contact approximations
+  *other than* multibody::DiscreteContactApproximation::kSap. Units are seconds
+  per meter.
+
+  If a non-deformable geometry is missing a value for dissipation,
+  MultibodyPlant will generate a default value (based on
+  multibody::MultibodyPlantConfig::penetration_allowance). However, this
+  behavior will be going away. Therefore, we recommend guaranteeing that every
+  geometry has a dissipation value either by assigning the property directly to
+  the geometry or by providing a non-null value here.
+
+  Please refer to @ref contact_defaults "Default Contact Parameters" for more
+  details on Drake's defaults along with guidelines on how to estimate
+  parameters specific to your model. */
+  std::optional<double> hunt_crossley_dissipation{50.0};
 
   /** Controls energy damping from contact, *only for*
   multibody::DiscreteContactApproximation::kSap. Units are seconds. */
-  std::optional<double> relaxation_time;
+  std::optional<double> relaxation_time{0.1};
   /// @}
 
   /** @name Point Contact Properties
@@ -128,8 +139,20 @@ struct DefaultProximityProperties {
   @ref point_forces_modeling "Compliant Point Contact Forces",
   geometry::AddContactMaterial. */
   /// @{
-  /** A measure of material stiffness, in units of Newtons per meter. */
-  std::optional<double> point_stiffness;
+
+  /** A measure of material stiffness, in units of Newtons per meter.
+
+  If a non-deformable geometry is missing a value for stiffness,
+  MultibodyPlant will generate a default value (based on
+  multibody::MultibodyPlantConfig::penetration_allowance). However, this
+  behavior will be going away. Therefore, we recommend guaranteeing that every
+  geometry has a stiffness value either by assigning the property directly to
+  the geometry or by providing a non-null value here.
+
+  Please refer to @ref contact_defaults "Default Contact Parameters" for more
+  details on Drake's defaults along with guidelines on how to estimate
+  parameters specific to your model. */
+  std::optional<double> point_stiffness{1e6};
   /// @}
 
   /** Throws if the values are inconsistent. */

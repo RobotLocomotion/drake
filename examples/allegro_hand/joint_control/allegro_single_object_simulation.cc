@@ -86,6 +86,8 @@ void DoMain() {
 
   auto [plant, scene_graph] = multibody::AddMultibodyPlantSceneGraph(
       &builder, FLAGS_mbp_discrete_update_period);
+  plant.set_discrete_contact_approximation(
+      multibody::DiscreteContactApproximation::kLagged);
 
   std::string hand_model_url;
   if (FLAGS_use_right_hand) {
