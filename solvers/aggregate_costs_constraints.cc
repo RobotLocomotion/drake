@@ -204,6 +204,13 @@ void AggregateBoundingBoxConstraintsImpl(const MathematicalProgram& prog,
   }
 }
 
+void EmplaceNonzeroTriplet(int row, int col, double val,
+                           std::vector<Eigen::Triplet<double>>* triplets) {
+  if (val != 0) {
+    triplets->emplace_back(row, col, val);
+  }
+}
+
 }  // namespace
 
 void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
@@ -801,9 +808,9 @@ void ParsePositiveSemidefiniteConstraints(
         for (int i = i_start; i < i_end; ++i) {
           const double scale_factor = i == j ? 1 : sqrt2;
           for (int k = 1; k < static_cast<int>(F.size()); ++k) {
-            A_triplets->emplace_back(*A_row_count + A_cone_row_count,
-                                     x_indices[k - 1],
-                                     -scale_factor * F[k](i, j));
+            EmplaceNonzeroTriplet(*A_row_count + A_cone_row_count,
+                                  x_indices[k - 1], -scale_factor * F[k](i, j),
+                                  A_triplets);
           }
           b->push_back(scale_factor * F[0](i, j));
           ++A_cone_row_count;
@@ -861,10 +868,10 @@ void ParseScalarPositiveSemidefiniteConstraints(
       // -x₁*F₁[0, 0] - x₂*F₂[0, 0] - ... - xₙFₙ[0, 0] + s  = F₀[0, 0]
       // s in positive orthant cone.
       for (int i = 0; i < ssize(lmi_constraint.evaluator()->F()) - 1; ++i) {
-        A_triplets->emplace_back(
+        EmplaceNonzeroTriplet(
             *A_row_count,
             prog.FindDecisionVariableIndex(lmi_constraint.variables()[i]),
-            -lmi_constraint.evaluator()->F()[i + 1](0, 0));
+            -lmi_constraint.evaluator()->F()[i + 1](0, 0), A_triplets);
       }
       b->push_back(lmi_constraint.evaluator()->F()[0](0, 0));
       (*new_positive_cone_length) += 1;
@@ -953,12 +960,12 @@ void Parse2x2PositiveSemidefiniteConstraints(
       for (int i = 0; i < lmi_constraint.variables().rows(); ++i) {
         const int var_index =
             prog.FindDecisionVariableIndex(lmi_constraint.variables()(i));
-        A_triplets->emplace_back(*A_row_count, var_index,
-                                 -F[1 + i](0, 0) - F[1 + i](1, 1));
-        A_triplets->emplace_back(*A_row_count + 1, var_index,
-                                 -F[1 + i](0, 0) + F[1 + i](1, 1));
-        A_triplets->emplace_back(*A_row_count + 2, var_index,
-                                 -2 * F[1 + i](0, 1));
+        EmplaceNonzeroTriplet(*A_row_count, var_index,
+                              -F[1 + i](0, 0) - F[1 + i](1, 1), A_triplets);
+        EmplaceNonzeroTriplet(*A_row_count + 1, var_index,
+                              -F[1 + i](0, 0) + F[1 + i](1, 1), A_triplets);
+        EmplaceNonzeroTriplet(*A_row_count + 2, var_index, -2 * F[1 + i](0, 1),
+                              A_triplets);
       }
       b->push_back(F[0](0, 0) + F[0](1, 1));
       b->push_back(F[0](0, 0) - F[0](1, 1));
