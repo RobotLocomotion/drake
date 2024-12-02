@@ -16,6 +16,7 @@ namespace drake {
    <li> @subpage algorithms </li>
    <li> @ref drake::examples "Examples" </li>
    <li> @subpage technical_notes </li>
+   <li> @subpage drake_contacts "Contact Modeling in Drake" </li>
  </ul>
 
  <p>For more general information, you can also visit the <a

@@ -12,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
+#include "drake/geometry/proximity_properties.h"
 #include "drake/lcmt_allegro_command.hpp"
 #include "drake/lcmt_allegro_status.hpp"
 #include "drake/math/rotation_matrix.h"
@@ -37,6 +38,7 @@ namespace examples {
 namespace allegro_hand {
 namespace {
 
+using geometry::ProximityProperties;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using multibody::JointActuator;
@@ -64,6 +66,10 @@ DEFINE_double(
 DEFINE_double(
     pid_frequency, 10.0,
     "This frequency determines the time scale of the PID controller.");
+DEFINE_double(point_contact_stiffness, 1.0e4,
+              "Point contact stiffness at the finger tips, in [N/m].");
+DEFINE_double(hunt_crossley_dissipation, 1.0,
+              "Hunt & Crossley dissipation at the finger tips, in [s/m].");
 
 // Modeling the Allegro hand with and without reflected inertia.
 // The default command line parameters are set to model an Allegro hand that
@@ -86,6 +92,8 @@ void DoMain() {
 
   auto [plant, scene_graph] = multibody::AddMultibodyPlantSceneGraph(
       &builder, FLAGS_mbp_discrete_update_period);
+  plant.set_discrete_contact_approximation(
+      multibody::DiscreteContactApproximation::kLagged);
 
   std::string hand_model_url;
   if (FLAGS_use_right_hand) {
@@ -106,11 +114,28 @@ void DoMain() {
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
-  plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(),
-                                       std::nullopt,
-                                       joint_hand_root,
-                                       std::nullopt,
-                                       RigidTransformd::Identity());
+  plant.AddJoint<multibody::WeldJoint>(
+      "weld_hand", plant.world_body(), std::nullopt, joint_hand_root,
+      std::nullopt, RigidTransformd::Identity());
+
+  // Make the fingers compliant, since they are made out of rubber.
+  std::vector<std::string> finger_links = {"link_3", "link_7", "link_11",
+                                           "link_15"};
+  for (auto& name : finger_links) {
+    for (auto geometry_id :
+         plant.GetCollisionGeometriesForBody(plant.GetBodyByName(name))) {
+      const ProximityProperties* old_props =
+          scene_graph.model_inspector().GetProximityProperties(geometry_id);
+      DRAKE_DEMAND(old_props != nullptr);
+
+      ProximityProperties new_props(*old_props);
+      geometry::AddContactMaterial(FLAGS_hunt_crossley_dissipation,
+                                   FLAGS_point_contact_stiffness, {},
+                                   &new_props);
+      scene_graph.AssignRole(*plant.get_source_id(), geometry_id, new_props,
+                             geometry::RoleAssign::kReplace);
+    }
+  }
 
   // Model gear ratio and rotor inertia at each finger. In order to model the
   // effect of reflected inertia, we need to have the gear ratio and rotor
@@ -173,8 +198,7 @@ void DoMain() {
   }
 
   if (!FLAGS_add_gravity) {
-    plant.mutable_gravity_field().set_gravity_vector(
-        Eigen::Vector3d::Zero());
+    plant.mutable_gravity_field().set_gravity_vector(Eigen::Vector3d::Zero());
   }
 
   // Finished building the plant
@@ -198,8 +222,9 @@ void DoMain() {
   MatrixX<double> Sx, Sy;
   GetControlPortMapping(plant, &Sx, &Sy);
   SetPositionControlledGains(FLAGS_pid_frequency, Ieff, &kp, &ki, &kd);
-  auto& hand_controller = *builder.AddSystem<
-      systems::controllers::PidController>(Sx, Sy, kp, ki, kd);
+  auto& hand_controller =
+      *builder.AddSystem<systems::controllers::PidController>(Sx, Sy, kp, ki,
+                                                              kd);
   builder.Connect(plant.get_state_output_port(),
                   hand_controller.get_input_port_estimated_state());
   builder.Connect(hand_controller.get_output_port_control(),
@@ -264,9 +289,8 @@ void DoMain() {
   const multibody::RigidBody<double>& mug = plant.GetBodyByName("simple_mug");
   const Eigen::Vector3d& p_WHand =
       plant.EvalBodyPoseInWorld(plant_context, hand).translation();
-  RigidTransformd X_WM(
-      RollPitchYawd(M_PI / 2, 0, 0),
-      p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095));
+  RigidTransformd X_WM(RollPitchYawd(M_PI / 2, 0, 0),
+                       p_WHand + Eigen::Vector3d(0.095, 0.062, 0.095));
   plant.SetFreeBodyPose(&plant_context, mug, X_WM);
 
   // set the initial command for the hand

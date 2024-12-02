@@ -479,28 +479,27 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        density of water, a reasonably small penetration. */
       const T kA = surface.contact_mesh_W().area(i) * 1e8;
       const T default_rigid_k = std::numeric_limits<T>::infinity();
-      const T kB =
-          surface.is_B_deformable()
-              ? kA
-              : GetPointContactStiffness(id_B, default_rigid_k, inspector);
+      const T kB = surface.is_B_deformable() ? kA : default_rigid_k;
       /* Combine stiffnesses k₁ (of geometry A) and k₂ (of geometry B) to get k
        according to the rule: 1/k = 1/k₁ + 1/k₂. */
       const T k = GetCombinedPointContactStiffness(kA, kB);
-      /* Hunt & Crossley dissipation. Ignored, for instance, by the Sap model of
-       contact approximation. See multibody::DiscreteContactApproximation for
-       details about these contact models. */
-      const T d = GetCombinedHuntCrossleyDissipation(
-          surface.id_A(), surface.id_B(), kA, kB, 0.0 /* Default value */,
-          inspector);
+
+      /* While in Drake we provide constraints to model Hunt & Crossley or
+      linear Kelvin–Voigt dissipation, for deformable objects all we want is to
+      enforce the non-penetration constraint. We do this using the high
+      stiffness value specified above. Since compliant contact time scales
+      cannot be resolved at such high stiffness values, dissipation should be
+      irrelevant. Therefore we use zero Hunt & Crossley dissipation and the
+      "near rigid regime" time scale for the linear dissipation. */
+      const T d = 0.0;
 
       /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
        contact approximation. See multibody::DiscreteContactApproximation for
        details about these contact models. We use dt as the default dissipation
        constant so that the contact is in near-rigid regime and the compliance
        is only used as stabilization. */
-      const T tau = GetCombinedDissipationTimeConstant(
-          id_A, id_B, manager_->plant().time_step(), contact_data_A.name,
-          contact_data_B.name, inspector);
+      const T tau = manager_->plant().time_step();
+
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 
