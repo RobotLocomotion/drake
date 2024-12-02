@@ -1145,6 +1145,50 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
   }
 }
 
+namespace {
+
+bool GcsIsThreadsafe(const GraphOfConvexSets& gcs) {
+  // Iterate over vertices to look for non-thread-safe costs and constraints.
+  for (const auto& vertex_ptr : gcs.Vertices()) {
+    DRAKE_ASSERT(vertex_ptr != nullptr);
+    std::vector<Binding<Cost>> restriction_costs =
+        vertex_ptr->GetCosts({Transcription::kRestriction});
+    for (const auto& binding : restriction_costs) {
+      if (!binding.evaluator()->is_thread_safe()) {
+        return false;
+      }
+    }
+    std::vector<Binding<Constraint>> restriction_constraints =
+        vertex_ptr->GetConstraints({Transcription::kRestriction});
+    for (const auto& binding : restriction_constraints) {
+      if (!binding.evaluator()->is_thread_safe()) {
+        return false;
+      }
+    }
+  }
+  // Iterate over edges to look for non-thread-safe costs and constraints.
+  for (const auto& edge_ptr : gcs.Edges()) {
+    DRAKE_ASSERT(edge_ptr != nullptr);
+    std::vector<Binding<Cost>> restriction_costs =
+        edge_ptr->GetCosts({Transcription::kRestriction});
+    for (const auto& binding : restriction_costs) {
+      if (!binding.evaluator()->is_thread_safe()) {
+        return false;
+      }
+    }
+    std::vector<Binding<Constraint>> restriction_constraints =
+        edge_ptr->GetConstraints({Transcription::kRestriction});
+    for (const auto& binding : restriction_constraints) {
+      if (!binding.evaluator()->is_thread_safe()) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+}  // namespace
+
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     const Vertex& source, const Vertex& target,
     const GraphOfConvexSetsOptions& specified_options) const {
@@ -1601,100 +1645,41 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
 
     // If any costs or constraints aren't thread-safe, we can't parallelize.
-    bool is_thread_safe = true;
-
-    // Iterate over vertices to look for non-thread-safe costs and constraints.
-    for (const auto& [_, vertex_ptr] : vertices_) {
-      DRAKE_ASSERT(vertex_ptr != nullptr);
-      std::vector<Binding<Cost>> restriction_costs =
-          vertex_ptr->GetCosts({Transcription::kRestriction});
-      for (const auto& binding : restriction_costs) {
-        if (!binding.evaluator()->is_thread_safe()) {
-          is_thread_safe = false;
-          break;
-        }
-      }
-      if (!is_thread_safe) {
-        break;
-      }
-      std::vector<Binding<Constraint>> restriction_constraints =
-          vertex_ptr->GetConstraints({Transcription::kRestriction});
-      for (const auto& binding : restriction_constraints) {
-        if (!binding.evaluator()->is_thread_safe()) {
-          is_thread_safe = false;
-          break;
-        }
-      }
-      if (!is_thread_safe) {
-        break;
-      }
-    }
-    // Iterate over edges to look for non-thread-safe costs and constraints.
-    for (const auto& [_, edge_ptr] : edges_) {
-      DRAKE_ASSERT(edge_ptr != nullptr);
-      std::vector<Binding<Cost>> restriction_costs =
-          edge_ptr->GetCosts({Transcription::kRestriction});
-      for (const auto& binding : restriction_costs) {
-        if (!binding.evaluator()->is_thread_safe()) {
-          is_thread_safe = false;
-          break;
-        }
-      }
-      if (!is_thread_safe) {
-        break;
-      }
-      std::vector<Binding<Constraint>> restriction_constraints =
-          edge_ptr->GetConstraints({Transcription::kRestriction});
-      for (const auto& binding : restriction_constraints) {
-        if (!binding.evaluator()->is_thread_safe()) {
-          is_thread_safe = false;
-          break;
-        }
-      }
-      if (!is_thread_safe) {
-        break;
-      }
-    }
-    int n_threads_to_use =
-        is_thread_safe ? options.parallelism.num_threads() : 1;
-    if (n_threads_to_use < options.parallelism.num_threads()) {
+    bool is_thread_safe = GcsIsThreadsafe(*this);
+    if (!is_thread_safe) {
       log()->warn(
           "GCS restriction has costs or constraints which are not declared "
-          "thread-safe, so only one thread will be used for the rounding "
-          "stage.");
+          "thread-safe. Any paths being considered in the rounding process "
+          "that contain these constraints will be solved sequentially.");
     }
 
-    GraphOfConvexSetsOptions modified_options(options);
-    if (n_threads_to_use > 1) {
-      // Because we're multithreading, we should only use one thread per solver.
-      if (modified_options.restriction_solver_options) {
-        modified_options.restriction_solver_options->SetOption(
-            solvers::CommonSolverOption::kMaxThreads, 1);
-      } else {
-        modified_options.solver_options.SetOption(
-            solvers::CommonSolverOption::kMaxThreads, 1);
-      }
+    std::vector<std::unique_ptr<MathematicalProgram>> progs;
+    std::vector<const MathematicalProgram*> prog_ptrs;
+    for (int i = 0; i < ssize(candidate_paths); ++i) {
+      progs.push_back(ConstructRestrictionProgram(candidate_paths[i], &result));
+      prog_ptrs.push_back(progs[i].get());
     }
 
-    std::vector<MathematicalProgramResult> rounded_results(
-        candidate_paths.size());
+    std::optional<solvers::SolverId> maybe_solver_id = std::nullopt;
+    if (options.restriction_solver) {
+      maybe_solver_id = options.restriction_solver->solver_id();
+    } else if (options.solver) {
+      maybe_solver_id = options.solver->solver_id();
+    }
 
-    auto solve_ith_convex_restriction = [&](const int thread_num,
-                                            const int64_t i) {
-      unused(thread_num);
-      rounded_results[i] =
-          SolveConvexRestriction(candidate_paths[i], modified_options, &result);
-    };
+    const solvers::SolverOptions* maybe_options =
+        options.restriction_solver_options
+            ? &(options.restriction_solver_options.value())
+            : &(options.solver_options);
 
-    using common_robotics_utilities::parallelism::DegreeOfParallelism;
-    using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
-    using common_robotics_utilities::parallelism::ParallelForBackend;
-
-    // Different paths may have different numbers of sets, leading to variable
-    // solve times. Thus, we use dynamic scheduling.
-    DynamicParallelForIndexLoop(
-        DegreeOfParallelism(n_threads_to_use), 0, ssize(candidate_paths),
-        solve_ith_convex_restriction, ParallelForBackend::BEST_AVAILABLE);
+    // We use nullptr for the initial guesses, since ConstructRestrictionProgram
+    // prepopulates the initial guesses. We use dynamic scheduling, since
+    // individual restriction solves may vary in the number of variables and
+    // constraints.
+    std::vector<MathematicalProgramResult> rounded_results =
+        SolveInParallel(prog_ptrs, nullptr /* initial_guesses */,
+                        maybe_options /* solver_options */, maybe_solver_id,
+                        options.parallelism, true /* dynamic_schedule */);
 
     constexpr double kInf = std::numeric_limits<double>::infinity();
     double best_cost = kInf;
@@ -1710,6 +1695,8 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     if (best_cost < kInf) {
       // We found at least one valid result.
       result = rounded_results[best_result_idx];
+      SubstituteAdditionalVariables(*(prog_ptrs[best_result_idx]), &result,
+                                    candidate_paths[best_result_idx]);
     } else {
       // In the event that all rounded results are infeasible, we still want
       // to propagate the solver id for logging.
