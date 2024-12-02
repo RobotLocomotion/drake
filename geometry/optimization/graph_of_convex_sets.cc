@@ -2164,21 +2164,24 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
     const std::vector<const Edge*>& active_edges,
     const GraphOfConvexSetsOptions& options,
     const MathematicalProgramResult* initial_guess) const {
-  // Use the restriction solver and options if they are provided.
-  GraphOfConvexSetsOptions restriction_options = options;
-  if (restriction_options.restriction_solver) {
-    restriction_options.solver = restriction_options.restriction_solver;
-  }
-  if (restriction_options.restriction_solver_options) {
-    restriction_options.solver_options =
-        *restriction_options.restriction_solver_options;
-  }
-
   std::unique_ptr<MathematicalProgram> prog =
       ConstructRestrictionProgram(active_edges, initial_guess);
   DRAKE_ASSERT(prog != nullptr);
-  MathematicalProgramResult result =
-      SolveMainProgram(*prog, restriction_options);
+
+  // Use the restriction solver and options if they are provided.
+  const solvers::SolverInterface* solver;
+  std::unique_ptr<solvers::SolverInterface> default_solver;
+  if (options.restriction_solver) {
+    solver = options.restriction_solver;
+  } else {
+    default_solver = solvers::MakeSolver(solvers::ChooseBestSolver(*prog));
+    solver = default_solver.get();
+  }
+  solvers::SolverOptions solver_options =
+      options.restriction_solver_options.value_or(options.solver_options);
+
+  MathematicalProgramResult result;
+  solver->Solve(*prog, {}, solver_options, &result);
   SubstituteAdditionalVariables(*prog, &result, active_edges);
 
   return result;
