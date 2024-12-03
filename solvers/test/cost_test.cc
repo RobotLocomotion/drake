@@ -466,6 +466,13 @@ GTEST_TEST(TestL1NormCost, UpdateCoefficients) {
   // A and b must have the same number of rows.
   EXPECT_THROW(cost.UpdateCoefficients(Matrix3d::Identity(), Vector4d::Zero()),
                std::exception);
+
+  cost.update_A_entry(0, 1, 0.5);
+  EXPECT_TRUE(CompareMatrices(cost.A(),
+                              (Eigen::Matrix2d() << 1, 0.5, 0, 1).finished()));
+
+  cost.update_b_entry(0, 1.5);
+  EXPECT_TRUE(CompareMatrices(cost.b(), Eigen::Vector2d(1.5, 0)));
 }
 
 GTEST_TEST(TestL1NormCost, Display) {
@@ -625,6 +632,13 @@ GTEST_TEST(TestLInfNormCost, UpdateCoefficients) {
   // A and b must have the same number of rows.
   EXPECT_THROW(cost.UpdateCoefficients(Matrix3d::Identity(), Vector4d::Zero()),
                std::exception);
+
+  cost.update_A_entry(0, 1, 0.5);
+  EXPECT_TRUE(CompareMatrices(cost.A(),
+                              (Eigen::Matrix2d() << 1, 0.5, 0, 1).finished()));
+
+  cost.update_b_entry(0, 1.5);
+  EXPECT_TRUE(CompareMatrices(cost.b(), Eigen::Vector2d(1.5, 0)));
 }
 
 GTEST_TEST(TestLInfNormCost, Display) {
@@ -694,6 +708,13 @@ GTEST_TEST(TestPerspectiveQuadraticCost, UpdateCoefficients) {
   // A and b must have the same number of rows.
   EXPECT_THROW(cost.UpdateCoefficients(Matrix3d::Identity(), Vector4d::Zero()),
                std::exception);
+
+  cost.update_A_entry(0, 1, 0.5);
+  EXPECT_TRUE(CompareMatrices(cost.A(),
+                              (Eigen::Matrix2d() << 1, 0.5, 0, 1).finished()));
+
+  cost.update_b_entry(0, 1.5);
+  EXPECT_TRUE(CompareMatrices(cost.b(), Eigen::Vector2d(1.5, 0)));
 }
 
 GTEST_TEST(TestPerspectiveQuadraticCost, Display) {

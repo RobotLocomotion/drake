@@ -304,6 +304,12 @@ class L1NormCost : public Cost {
   void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
                           const Eigen::Ref<const Eigen::VectorXd>& new_b);
 
+  /** Updates A(i, j) = val */
+  void update_A_entry(int i, int j, double val);
+
+  /** Updates b(i) = val. */
+  void update_b_entry(int i, double val);
+
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
@@ -433,6 +439,12 @@ class LInfNormCost : public Cost {
   void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
                           const Eigen::Ref<const Eigen::VectorXd>& new_b);
 
+  /** Updates A(i, j) = val. */
+  void update_A_entry(int i, int j, double val);
+
+  /** Updates b(i) = val. */
+  void update_b_entry(int i, double val);
+
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
@@ -492,6 +504,12 @@ class PerspectiveQuadraticCost : public Cost {
    */
   void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,
                           const Eigen::Ref<const Eigen::VectorXd>& new_b);
+
+  /** Updates A(i, j) = val. */
+  void update_A_entry(int i, int j, double val);
+
+  /** Updates b(i) = val. */
+  void update_b_entry(int i, double val);
 
  protected:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
