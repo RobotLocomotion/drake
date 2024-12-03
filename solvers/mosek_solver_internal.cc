@@ -894,19 +894,56 @@ MSKrescodee MosekSolverProgram::AddPositiveSemidefiniteConstraints(
   bar_var_dimension.reserve(prog.positive_semidefinite_constraints().size());
   int psd_count = 0;
   for (const auto& binding : prog.positive_semidefinite_constraints()) {
-    if (binding.evaluator()->matrix_rows() >= 2) {
+    if (binding.evaluator()->matrix_rows() > 2) {
       binding.evaluator()->WarnOnSmallMatrixSize();
       bar_var_dimension.push_back(binding.evaluator()->matrix_rows());
       psd_barvar_indices->emplace(binding, numbarvar + psd_count);
       psd_count++;
-    } else if (binding.evaluator()->matrix_rows() == 1) {
-      // Do nothing here, we will add the constraint as a bound on the variable
-      // through AddVariableBounds().
+    } else {
+      // Do nothing here, for PSD on a scalar variable, we will add the
+      // constraint as a bound on the variable through AddVariableBounds().
+      // For PSD on a 2x2 matrix, we will call
+      // Add2x2PositiveSemidefiniteConstraints to add rotated Lorentz cone
+      // constraint.
     }
   }
 
   rescode = MSK_appendbarvars(task_, bar_var_dimension.size(),
                               bar_var_dimension.data());
+  return rescode;
+}
+
+MSKrescodee MosekSolverProgram::Add2x2PositiveSemidefiniteConstraints(
+    const MathematicalProgram& prog,
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint64t>*
+        acc_indices) {
+  MSKrescodee rescode{MSK_RES_OK};
+  for (const auto& binding : prog.positive_semidefinite_constraints()) {
+    if (binding.evaluator()->matrix_rows() == 2) {
+      // Add the affine cone constraint that
+      // [0.5 * x(0), x(2), x(1)] is in Mosek RQUADRATIC cone.
+      // Note that there is a 0.5 in front of x(0) because Mosek's definition of
+      // rotated Lorentz cone is different from Drake.
+      std::array<Eigen::Triplet<double>, 3> A_triplets;
+      A_triplets[0] = Eigen::Triplet<double>(0, 0, 0.5);
+      A_triplets[1] = Eigen::Triplet<double>(1, 2, 1);
+      A_triplets[2] = Eigen::Triplet<double>(2, 1, 1);
+      Eigen::SparseMatrix<double> A(3, 3);
+      A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+      MSKint64t acc_index;
+      rescode = this->AddAffineConeConstraint(
+          prog, A, Eigen::SparseMatrix<double>(3, 0),
+          // binding.variables() contains the stacked columns of the PSD matrix.
+          Vector3<symbolic::Variable>(binding.variables()(0),
+                                      binding.variables()(1),
+                                      binding.variables()(3)),
+          {}, Eigen::Vector3d::Zero(), MSK_DOMAIN_RQUADRATIC_CONE, &acc_index);
+      if (rescode != MSK_RES_OK) {
+        return rescode;
+      }
+      acc_indices->emplace(binding, acc_index);
+    }
+  }
   return rescode;
 }
 
@@ -1393,19 +1430,15 @@ MSKrescodee MosekSolverProgram::SpecifyVariableType(
 
 MapDecisionVariableToMosekVariable::MapDecisionVariableToMosekVariable(
     const MathematicalProgram& prog) {
-  // Each PositiveSemidefiniteConstraint (with >= 2 rows in its psd matrix) will
+  // Each PositiveSemidefiniteConstraint (with > 2 rows in its psd matrix) will
   // add one matrix variable to Mosek.
-  // TODO(hongkai.dai): do not add the psd variable with 2 rows, use second
-  // order cone constraint instead.
   int psd_constraint_count = 0;
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
     // The bounded variables of a psd constraint is the "flat" version of the
     // symmetrix matrix variables, stacked column by column. We only need to
     // store the lower triangular part of this symmetric matrix in Mosek.
     const int matrix_rows = psd_constraint.evaluator()->matrix_rows();
-    if (matrix_rows > 1) {
-      // TODO(hongkai.dai): also handle matrix_rows == 2, by imposing a second
-      // order cone constraint instead of a PSD constraint.
+    if (matrix_rows > 2) {
       for (int j = 0; j < matrix_rows; ++j) {
         for (int i = j; i < matrix_rows; ++i) {
           const MatrixVariableEntry matrix_variable_entry(psd_constraint_count,
@@ -1540,7 +1573,7 @@ MSKrescodee MosekSolverProgram::SetPositiveSemidefiniteConstraintDualSolution(
     MSKsoltypee whichsol, MathematicalProgramResult* result) const {
   MSKrescodee rescode = MSK_RES_OK;
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
-    if (psd_constraint.evaluator()->matrix_rows() > 1) {
+    if (psd_constraint.evaluator()->matrix_rows() > 2) {
       // Get the bar index of the Mosek matrix var.
       const auto it = psd_barvar_indices.find(psd_constraint);
       if (it == psd_barvar_indices.end()) {
@@ -1690,6 +1723,9 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
         Binding<PositiveSemidefiniteConstraint>,
         std::pair<ConstraintDualIndex, ConstraintDualIndex>>&
         scalar_psd_dual_indices,
+    const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                             MSKint64t>&
+        twobytwo_psd_constraint_cone_acc_indices,
     MathematicalProgramResult* result) const {
   // TODO(hongkai.dai): support other types of constraints, like linear
   // constraint, second order cone constraint, etc.
@@ -1780,6 +1816,12 @@ MSKrescodee MosekSolverProgram::SetDualSolution(
     rescode = SetAffineConeConstraintDualSolution(
         prog.exponential_cone_constraints(), task_, which_sol,
         exp_cone_acc_indices, result);
+    if (rescode != MSK_RES_OK) {
+      return rescode;
+    }
+    rescode = SetAffineConeConstraintDualSolution(
+        prog.positive_semidefinite_constraints(), task_, which_sol,
+        twobytwo_psd_constraint_cone_acc_indices, result);
     if (rescode != MSK_RES_OK) {
       return rescode;
     }
