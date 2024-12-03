@@ -1357,16 +1357,8 @@ class TestPlant(unittest.TestCase):
         # Set pose for the base.
         X_WB_desired = RigidTransform.Identity()
         X_WB = plant.CalcRelativeTransform(context, world_frame, base_frame)
-
-        # After 2024-12-01 deprecation is complete, we can remove this because
-        # we don't have to confirm which overload gets defaulted without
-        # parameters.
-        plant.SetFreeBodyPose(context, base, X_WB_desired)
         plant.SetFreeBodyPose(
             context=context, body=base, X_PB=X_WB_desired)
-        with catch_drake_warnings(expected_count=1):
-            plant.SetFreeBodyPose(
-                context=context, body=base, X_WB=X_WB_desired)
         numpy_compare.assert_float_equal(
             X_WB.GetAsMatrix4(),
             numpy_compare.to_float(X_WB_desired.GetAsMatrix4()))
@@ -1388,31 +1380,14 @@ class TestPlant(unittest.TestCase):
 
         # Set a spatial velocity for the base.
         v_WB = SpatialVelocity(w=[1, 2, 3], v=[4, 5, 6])
-        v_I = SpatialVelocity(w=[0, 0, 0], v=[0, 0, 0])
-
-        def validate_spatial_velocity(context, body, v_WB_ref):
-            v_body = plant.EvalBodySpatialVelocityInWorld(context, body)
-            numpy_compare.assert_float_equal(
-                v_body.rotational(),
-                numpy_compare.to_float(v_WB_ref.rotational()))
-            numpy_compare.assert_float_equal(
-                v_body.translational(),
-                numpy_compare.to_float(v_WB_ref.translational()))
-
-        # After 2024-12-01 deprecation is complete, we can remove this because
-        # we don't have to confirm which overload gets defaulted without
-        # parameters.
-        plant.SetFreeBodySpatialVelocity(base, v_WB, context)
-        validate_spatial_velocity(context, base, v_WB)
-
         plant.SetFreeBodySpatialVelocity(
-            context=context, body=base, V_PB=v_I)
-        validate_spatial_velocity(context, base, v_I)
-
-        with catch_drake_warnings(expected_count=1):
-            plant.SetFreeBodySpatialVelocity(
-                context=context, body=base, V_WB=v_WB)
-            validate_spatial_velocity(context, base, v_WB)
+            context=context, body=base, V_PB=v_WB)
+        v_base = plant.EvalBodySpatialVelocityInWorld(context, base)
+        numpy_compare.assert_float_equal(
+                v_base.rotational(), numpy_compare.to_float(v_WB.rotational()))
+        numpy_compare.assert_float_equal(
+                v_base.translational(),
+                numpy_compare.to_float(v_WB.translational()))
 
         # Compute accelerations.
         vdot = np.zeros(nv)
@@ -1548,25 +1523,8 @@ class TestPlant(unittest.TestCase):
         plant = MultibodyPlant_[T](0.0)
         body = plant.AddRigidBody("body")
         plant.Finalize()
-        # Test existence of default free body pose setting.
         X_WB_default = RigidTransform_[float]([1, 2, 3])
-        Identity = RigidTransform_[float]()
-
-        # After 2024-12-01 deprecation is complete, we can remove this because
-        # we don't have to confirm which overload gets defaulted without
-        # parameters.
-        plant.SetDefaultFreeBodyPose(body, X_WB_default)
-        numpy_compare.assert_float_equal(
-            plant.GetDefaultFreeBodyPose(body=body).GetAsMatrix4(),
-            X_WB_default.GetAsMatrix4())
-
-        plant.SetDefaultFreeBodyPose(body=body, X_PB=Identity)
-        numpy_compare.assert_float_equal(
-            plant.GetDefaultFreeBodyPose(body=body).GetAsMatrix4(),
-            Identity.GetAsMatrix4())
-
-        with catch_drake_warnings(expected_count=1):
-            plant.SetDefaultFreeBodyPose(body=body, X_WB=X_WB_default)
+        plant.SetDefaultFreeBodyPose(body=body, X_PB=X_WB_default)
         numpy_compare.assert_float_equal(
             plant.GetDefaultFreeBodyPose(body=body).GetAsMatrix4(),
             X_WB_default.GetAsMatrix4())
