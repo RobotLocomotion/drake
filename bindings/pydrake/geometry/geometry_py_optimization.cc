@@ -186,7 +186,11 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
         .def_static("MakeHypersphere", &AffineBall::MakeHypersphere,
             py::arg("radius"), py::arg("center"), cls_doc.MakeHypersphere.doc)
         .def_static("MakeUnitBall", &AffineBall::MakeUnitBall, py::arg("dim"),
-            cls_doc.MakeUnitBall.doc);
+            cls_doc.MakeUnitBall.doc)
+        .def_static("MakeAffineBallFromLineSegment",
+            &AffineBall::MakeAffineBallFromLineSegment, py::arg("x_1"),
+            py::arg("x_2"), py::arg("epsilon") = 1e-3,
+            cls_doc.MakeAffineBallFromLineSegment.doc);
     DefClone(&cls);
   }
 
