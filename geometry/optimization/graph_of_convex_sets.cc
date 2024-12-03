@@ -1646,7 +1646,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     // If any costs or constraints aren't thread-safe, we can't parallelize.
     bool is_thread_safe = GcsIsThreadsafe(*this);
     if (!is_thread_safe) {
-      log()->warn(
+      static const logging::Warn log_once(
           "GCS restriction has costs or constraints which are not declared "
           "thread-safe. Any paths being considered in the rounding process "
           "that contain these constraints will be solved sequentially.");
