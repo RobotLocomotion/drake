@@ -1,0 +1,14 @@
+diff --git nlopt_config.h.in nlopt_config.h.in
+index 6a93853..65d0312 100644
+--- nlopt_config.h.in
++++ nlopt_config.h.in
+@@ -129,6 +129,9 @@
+ /* Define if compiled including C++-based routines */
+ #cmakedefine NLOPT_CXX
+ 
++/* Define if using LGPL Luksan solvers */
++#cmakedefine NLOPT_LUKSAN
++
+ /* Define to empty if `const' does not conform to ANSI C. */
+ #undef const
+ 
