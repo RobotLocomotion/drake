@@ -1,5 +1,7 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 
+#include <optional>
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -153,6 +155,56 @@ TEST_P(YamlReadArchiveTest, DoubleMissing) {
   EXPECT_EQ(x.value, kNominalDouble);
 }
 
+TEST_P(YamlReadArchiveTest, Path) {
+  const auto test = [](const std::string& value,
+                       const std::optional<std::string>& maybe_expected =
+                           std::nullopt) {
+    const auto& x = AcceptNoThrow<PathStruct>(LoadSingleValue(value));
+    const std::string& expected = maybe_expected ? *maybe_expected : value;
+    EXPECT_EQ(x.value, expected);
+  };
+
+  test("no_directory.txt");
+  test("/absolute/path/file.txt");
+  test("\"\"", "");
+  test("!!str", "");
+  test(".");
+  test("/non_lexical//path", "/non_lexical/path");
+  test("/quoted\"/path");
+
+  // General compatibility. Pyyaml aggressively converts the parsed string into
+  // whatever data type succeeds. A filename that looks like an int will be
+  // converted to an int before our code sees it. The yaml needs to signal
+  // "string" by adding double quotes or applying the !!str tag.
+  // (Note: Drake's serialization will not write paths with surrounding double
+  // quotes; it uses the !!str tag.)
+  test("\"1234\"", "1234");
+  test("'1234'", "1234");
+  test("!!str 1234", "1234");
+  test("\"1234.5\"", "1234.5");
+  test("'1234.5'", "1234.5");
+  test("!!str 1234.5", "1234.5");
+  test("\"true\"", "true");
+  test("'true'", "true");
+  test("!!str true", "true");
+
+  // In contrast to pyyaml parsing, C++ parsing is lazy in determining the type.
+  // The string only gets converted to type when parsing the string for a
+  // *specific* target type. So, these strings don't get aggressively converted
+  // into other scalar types. This isn't a documented feature, but it is an
+  // implicit feature and we should notify users if we make changes that breaks
+  // it.
+  test("1234");
+  test("1234.5");
+  test("true");
+}
+
+TEST_P(YamlReadArchiveTest, PathMissing) {
+  const PathStruct default_path;
+  const auto& x = AcceptEmptyDoc<PathStruct>();
+  EXPECT_EQ(x.value, default_path.value);
+}
+
 TEST_P(YamlReadArchiveTest, AllScalars) {
   const std::string doc = R"""(
 doc:
@@ -164,6 +216,7 @@ doc:
   some_int64: 104
   some_uint64: 105
   some_string: foo
+  some_path: "/alternative/path"
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
@@ -174,6 +227,7 @@ doc:
   EXPECT_EQ(x.some_int64, 104);
   EXPECT_EQ(x.some_uint64, 105);
   EXPECT_EQ(x.some_string, "foo");
+  EXPECT_EQ(x.some_path, "/alternative/path");
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {

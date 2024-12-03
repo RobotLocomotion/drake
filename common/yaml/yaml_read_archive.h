@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -516,6 +517,7 @@ class YamlReadArchive final {
   void ParseScalar(const std::string& value, int64_t* result);
   void ParseScalar(const std::string& value, uint64_t* result);
   void ParseScalar(const std::string& value, std::string* result);
+  void ParseScalar(const std::string& value, std::filesystem::path* result);
 
   template <typename T>
   void ParseScalarImpl(const std::string& value, T* result);

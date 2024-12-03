@@ -5,6 +5,7 @@ import math
 import functools
 import types
 import typing
+from pathlib import Path
 
 import numpy as np
 import yaml
@@ -313,6 +314,12 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         _merge_yaml_dict_item_into_target(
             options=options, name=name, yaml_value=yaml_value, target=target,
             value_schema=nested_optional_type)
+        return
+
+    # Handle pathlib.Path.
+    if value_schema == Path:
+        new_value = Path(yaml_value)
+        setter(new_value)
         return
 
     # Handle NumPy types.
@@ -664,6 +671,10 @@ def _yaml_dump_typed_item(*, obj, schema):
                 class_name = class_name_with_args.split("[", 1)[0]
                 result["_tag"] = "!" + class_name
         return result
+
+    # Handle pathlib.Path types.
+    if schema == Path:
+        return str(obj)
 
     # Handle NumPy types.
     if schema == np.ndarray:

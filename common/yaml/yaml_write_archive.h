@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -217,6 +218,11 @@ class YamlWriteArchive final {
     root_.Add(nvp.name(), std::move(sub_archive.root_));
   }
 
+  // Paths need special treatment. If the path has a string value that can be
+  // interpreted as a basic scalar value (e.g., bool, double, etc.) it needs to
+  // be conditioned so it doesn't get misinterpreted when read.
+  void VisitPathScalar(const char* name, std::filesystem::path value);
+
   // This is used for simple types that can be converted to a string.
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
@@ -232,6 +238,12 @@ class YamlWriteArchive final {
       root_.Add(nvp.name(), std::move(scalar));
       return;
     }
+
+    if constexpr (std::is_same_v<T, std::filesystem::path>) {
+      VisitPathScalar(nvp.name(), std::move(value));
+      return;
+    }
+
     auto scalar = internal::Node::MakeScalar(fmt::format("{}", value));
     if constexpr (std::is_same_v<T, bool>) {
       scalar.SetTag(internal::JsonSchemaTag::kBool);
