@@ -6,8 +6,8 @@ def nlopt_internal_repository(
     github_archive(
         name = name,
         repository = "stevengj/nlopt",
-        commit = "v2.8.0",
-        sha256 = "e02a4956a69d323775d79fdaec7ba7a23ed912c7d45e439bc933d991ea3193fd",  # noqa
+        commit = "v2.9.1",
+        sha256 = "1e6c33f8cbdc4138d525f3326c231f14ed50d99345561e85285638c49b64ee93",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/remove_luksan.patch",
