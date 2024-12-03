@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -169,6 +170,12 @@ class YamlReadArchive final {
     this->VisitVector(nvp);
   }
 
+  // For std::vector<uint8_t>. This is the encoding of a byte string.
+  template <typename NVP>
+  void DoVisit(const NVP& nvp, const std::vector<uint8_t>&, int32_t) {
+    this->VisitScalar(nvp);
+  }
+
   // For std::array.
   template <typename NVP, typename T, std::size_t N>
   void DoVisit(const NVP& nvp, const std::array<T, N>&, int32_t) {
@@ -244,7 +251,7 @@ class YamlReadArchive final {
     if (sub_node == nullptr) {
       return;
     }
-    ParseScalar(sub_node->GetScalar(), nvp.value());
+    ParseScalar(sub_node->GetScalar(), sub_node->GetTag(), nvp.value());
   }
 
   template <typename NVP>
@@ -508,14 +515,26 @@ class YamlReadArchive final {
 
   // These are the only scalar types that Drake supports.
   // Users cannot add de-string-ification functions for custom scalars.
-  void ParseScalar(const std::string& value, bool* result);
-  void ParseScalar(const std::string& value, float* result);
-  void ParseScalar(const std::string& value, double* result);
-  void ParseScalar(const std::string& value, int32_t* result);
-  void ParseScalar(const std::string& value, uint32_t* result);
-  void ParseScalar(const std::string& value, int64_t* result);
-  void ParseScalar(const std::string& value, uint64_t* result);
-  void ParseScalar(const std::string& value, std::string* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   bool* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   float* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   double* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   int32_t* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   uint32_t* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   int64_t* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   uint64_t* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   std::string* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   std::filesystem::path* result);
+  void ParseScalar(const std::string& value, std::string_view tag,
+                   std::vector<uint8_t>* result);
 
   template <typename T>
   void ParseScalarImpl(const std::string& value, T* result);

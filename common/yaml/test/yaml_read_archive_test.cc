@@ -164,6 +164,7 @@ doc:
   some_int64: 104
   some_uint64: 105
   some_string: foo
+  some_path: "/path/to/nowhere"
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
@@ -174,6 +175,7 @@ doc:
   EXPECT_EQ(x.some_int64, 104);
   EXPECT_EQ(x.some_uint64, 105);
   EXPECT_EQ(x.some_string, "foo");
+  EXPECT_EQ(x.some_path, "/path/to/nowhere");
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {
@@ -201,6 +203,26 @@ TEST_P(YamlReadArchiveTest, StdVector) {
   };
 
   test("[1.0, 2.0, 3.0]", {1.0, 2.0, 3.0});
+}
+
+TEST_P(YamlReadArchiveTest, ByteString) {
+  const auto test = [](const std::string& value,
+                       const std::vector<uint8_t>& expected) {
+    const auto& x = AcceptNoThrow<ByteStringStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected);
+  };
+
+  auto to_bytes = [](std::string_view s) {
+    return std::vector<uint8_t>(s.begin(), s.end());
+  };
+
+  // The global tag (!!) decodes from base64.
+  test("!!binary dGUCdA==", to_bytes("te\x02t"));
+  // The local tag (!) doesn't decode. This should probably be an error because
+  // there is no constructor for the local `!binary` tag. It's what python does.
+  test("!binary dGUCdA==", to_bytes("dGUCdA=="));
+  // Forgetting ! entirely makes it part of the string.
+  test("binary dGUCdA==", to_bytes("binary dGUCdA=="));
 }
 
 TEST_P(YamlReadArchiveTest, StdVectorMissing) {

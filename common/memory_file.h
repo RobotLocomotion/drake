@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt.h"
+#include "drake/common/name_value.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/common/sha256.h"
 
@@ -66,6 +69,50 @@ class MemoryFile final {
    to `contents_limit` number of characters. To include the full contents, pass
    any number less than or equal to zero. */
   std::string to_string(int contents_limit = 100) const;
+
+  /** Passes this object to an Archive.
+
+   When used in yaml, it is important to specify _all_ fields. Applications may
+   depend on the `extension` value to determine what to do with the file
+   contents. Omitting `extension` would make it unusable in those cases.
+
+   Omitting `filename_hint` is less dangerous; error messages would lack a
+   helpful identifier, but things would otherwise function.
+
+   The contents should be specified in one of two ways, depending on the nature
+   of the file contents.
+
+     1. If the contents are all printable bytes:
+
+        ```yaml
+          contents: Simply include the text.
+           It can be over multiple lines.
+        ```
+
+     2. If the contents include non-printable bytes:
+
+        ```yaml
+          contents: !!binary U2ltcGx5IGluY2x1ZGUgdGhlIHRleHQuIEl0IG
+           NhbiBiZSBvdmVyIG11bHRpcGxlIGxpbmVz
+        ```
+
+        The contents get base64 encoded and prefixed by the tag `!!binary`. Make
+        sure that you use the double bang (!!) as part of the binary tag. The
+        encoded bytes can be spread over multiple lines as well. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    // std::string encoded = EncodeContents();
+    // a->Visit(MakeNameValue("contents", &encoded));
+    // DecodeContents(encoded);
+    // a->Visit(MakeNameValue("contents", &contents_.value()));
+    std::vector<uint8_t> encoded(contents_.value().begin(),
+                                 contents_.value().end());
+    a->Visit(MakeNameValue("contents", &encoded));
+    contents_ = std::string(reinterpret_cast<const char*>(encoded.data()),
+                            encoded.size());
+    a->Visit(MakeNameValue("extension", &extension_.value()));
+    a->Visit(MakeNameValue("filename_hint", &filename_hint_.value()));
+  }
 
  private:
   reset_after_move<std::string> contents_;

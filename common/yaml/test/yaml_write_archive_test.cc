@@ -1,5 +1,6 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
+#include <filesystem>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -77,6 +78,17 @@ TEST_F(YamlWriteArchiveTest, String) {
   test("1", "1");
 }
 
+TEST_F(YamlWriteArchiveTest, Path) {
+  const auto test = [](const std::filesystem::path& value,
+                       const std::filesystem::path& expected) {
+    const PathStruct x{value};
+    EXPECT_EQ(Save(x), WrapDoc(expected));
+  };
+
+  test("/absolute/path", "/absolute/path");
+  test("relative/path", "relative/path");
+}
+
 TEST_F(YamlWriteArchiveTest, StdArray) {
   const auto test = [](const std::array<double, 3>& value,
                        const std::string& expected) {
@@ -117,6 +129,33 @@ TEST_F(YamlWriteArchiveTest, StdVector) {
   value:
     - value: foo
     - value: bar
+)""");
+}
+
+TEST_F(YamlWriteArchiveTest, ByteString) {
+  const auto test = [](const std::vector<uint8_t>& value,
+                       const std::string& expected) {
+    const ByteStringStruct x{value};
+    EXPECT_EQ(Save(x), expected);
+  };
+
+  auto to_bytes = [](std::string_view s) {
+    return std::vector<uint8_t>(s.begin(), s.end());
+  };
+
+  // Empty strings have no non-printable characters. That means no !!binary.
+  test(to_bytes(""), R"""(doc:
+  value: ""
+)""");
+
+  // Non-empty string with no non-printable characters.
+  test(to_bytes("this is a test"), R"""(doc:
+  value: this is a test
+)""");
+
+  // Non-printable characters requires binary encoding.
+  test(to_bytes("te\x02t"), R"""(doc:
+  value: !!binary dGUCdA==
 )""");
 }
 

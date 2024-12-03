@@ -2,11 +2,14 @@
 
 #include <fstream>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace {
@@ -107,6 +110,85 @@ GTEST_TEST(MemoryFileTest, ToString) {
   EXPECT_THAT(file.to_string(5), testing::HasSubstr("\"<01234...>\""));
 
   EXPECT_THAT(fmt::to_string(file), testing::HasSubstr("\"0123456789\""));
+}
+
+// Independently reproduce the expected memory file content URL. This is, by
+// design, an independent, redundant implementation of what we think happens
+// inside MemoryFile.
+std::string ToBase64(const std::string& s) {
+  return fmt::format("!!binary {}",
+                     common_robotics_utilities::base64_helpers::Encode(
+                         std::vector<uint8_t>(s.begin(), s.end())));
+}
+
+/** Confirm that this can be serialized appropriately. */
+GTEST_TEST(MemoryFileTest, Serialization) {
+  // Emtpy file.
+  {
+    const std::string content("");
+    const MemoryFile dut(content, ".ext", "hint");
+    const std::string y = yaml::SaveYamlString(dut);
+    EXPECT_EQ(
+        y, "contents: !!binary \"\"\nextension: .ext\nfilename_hint: hint\n");
+    const auto from_yaml = yaml::LoadYamlString<MemoryFile>(y);
+    EXPECT_EQ(from_yaml.contents(), dut.contents());
+    EXPECT_EQ(from_yaml.extension(), dut.extension());
+    EXPECT_EQ(from_yaml.filename_hint(), dut.filename_hint());
+  }
+
+  // Contents are all ASCII friendly.
+  {
+    const std::string content("012346");
+    const MemoryFile dut(content, ".ext", "hint");
+    const std::string y = yaml::SaveYamlString(dut);
+    EXPECT_EQ(
+        y, fmt::format("contents: {}\nextension: .ext\nfilename_hint: hint\n",
+                       ToBase64(content)));
+    const auto from_yaml = yaml::LoadYamlString<MemoryFile>(y);
+    EXPECT_EQ(from_yaml.contents(), dut.contents());
+    EXPECT_EQ(from_yaml.extension(), dut.extension());
+    EXPECT_EQ(from_yaml.filename_hint(), dut.filename_hint());
+  }
+
+  // Contents have non-ASCII bytes (e.g., \x03 and \xFF)
+  {
+    const std::string content("0123\x03\xff");
+    const MemoryFile dut(content, ".ext", "hint");
+    const std::string y = yaml::SaveYamlString(dut);
+    EXPECT_EQ(
+        y, fmt::format("contents: {}\nextension: .ext\nfilename_hint: hint\n",
+                       ToBase64(content)));
+    const auto from_yaml = yaml::LoadYamlString<MemoryFile>(y);
+    EXPECT_EQ(from_yaml.contents(), dut.contents());
+    EXPECT_EQ(from_yaml.extension(), dut.extension());
+    EXPECT_EQ(from_yaml.filename_hint(), dut.filename_hint());
+  }
+
+  // Contents without the !!binary tag are treated verbatim. This includes the
+  // local !binary tag.
+  {
+    auto file1 = yaml::LoadYamlString<MemoryFile>(
+        "contents: MDEyMzQ2\nextension: .ext\nfilename_hint: hint\n");
+    EXPECT_EQ(file1.contents(), "MDEyMzQ2");
+
+    auto file2 = yaml::LoadYamlString<MemoryFile>(
+        "contents: !binary MDEyMzQ2\nextension: .ext\nfilename_hint: hint\n");
+    EXPECT_EQ(file2.contents(), "MDEyMzQ2");
+  }
+
+  // Invalid characters in base64 are not ignored; they become zeros in the
+  // decoding. We'll put *four* invalid characters in; that leads to exactly
+  // five null bytes before we get back into the expected string.
+  {
+    const std::string content("\x01\x02test\xFF");
+    auto file = yaml::LoadYamlString<MemoryFile>(fmt::format(
+        "contents: {}^^^^MDEyMzQ2\nextension: .ext\nfilename_hint: hint\n",
+        ToBase64(content)));
+    // We'll swap _ to \x00 but can't use \x00 for initialization.
+    std::string suffix("_____012346");
+    for (int i = 0; i < 5; ++i) suffix[i] = '\x00';
+    EXPECT_EQ(file.contents(), fmt::format("{}{}", content, suffix));
+  }
 }
 
 }  // namespace

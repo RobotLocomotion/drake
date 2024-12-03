@@ -53,6 +53,9 @@ drake_cc_library(
         "//common:unused",
         "@yaml_cpp_internal//:yaml_cpp",
     ],
+    implementation_deps = [
+        "@common_robotics_utilities",
+    ],
 )
 
 drake_cc_library(
@@ -67,6 +70,9 @@ drake_cc_library(
         "//common:overloaded",
         "//common:unused",
         "@yaml_cpp_internal//:yaml_cpp",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities",
     ],
 )
 

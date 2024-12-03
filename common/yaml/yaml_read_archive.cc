@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstring>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <fmt/ranges.h>
@@ -231,38 +232,63 @@ void YamlReadArchive::ParseScalarImpl(const std::string& value, T* result) {
   }
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, bool* result) {
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
+                                  bool* result) {
   ParseScalarImpl<bool>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, float* result) {
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
+                                  float* result) {
   ParseScalarImpl<float>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, double* result) {
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
+                                  double* result) {
   ParseScalarImpl<double>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, int32_t* result) {
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
+                                  int32_t* result) {
   ParseScalarImpl<int32_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, uint32_t* result) {
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
+                                  uint32_t* result) {
   ParseScalarImpl<uint32_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, int64_t* result) {
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
+                                  int64_t* result) {
   ParseScalarImpl<int64_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value, uint64_t* result) {
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
+                                  uint64_t* result) {
   ParseScalarImpl<uint64_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const std::string& value,
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
                                   std::string* result) {
   DRAKE_DEMAND(result != nullptr);
   *result = value;
+}
+
+void YamlReadArchive::ParseScalar(const std::string& value, std::string_view,
+                                  std::filesystem::path* result) {
+  DRAKE_DEMAND(result != nullptr);
+  *result = value;
+}
+
+void YamlReadArchive::ParseScalar(const std::string& value,
+                                  std::string_view tag,
+                                  std::vector<uint8_t>* result) {
+  DRAKE_DEMAND(result != nullptr);
+  if (tag == internal::Node::kTagBinary) {
+    // We only decode if the string has been declared as !!binary.
+    *result = common_robotics_utilities::base64_helpers::Decode(value);
+  } else {
+    *result = std::vector<uint8_t>(value.begin(), value.end());
+  }
 }
 
 const internal::Node* YamlReadArchive::MaybeGetSubNode(const char* name) const {
