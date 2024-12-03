@@ -1591,18 +1591,31 @@ TEST_F(ThreeBoxes, NonConvexRounding) {
   options_.restriction_solver = &ipopt;
   options_.convex_relaxation = true;
   options_.max_rounded_paths = 2;
+  options_.parallelism = Parallelism::Max();
   auto result = g_.SolveShortestPath(*source_, *target_, options_);
   ASSERT_TRUE(result.is_success());
   // Make sure it used the correct solver.
   EXPECT_EQ(result.get_solver_id(), solvers::IpoptSolver::id());
 
   const double kExpectedDistance = 0.2;
-  const double distance = (source_->GetSolution(result).value() -
-                           target_->GetSolution(result).value())
-                              .norm();
+  double distance = (source_->GetSolution(result).value() -
+                     target_->GetSolution(result).value())
+                        .norm();
   EXPECT_NEAR(distance, kExpectedDistance, 1e-6);
 
   // Verify that the solution includes source to target.
+  EXPECT_FALSE(sink_->GetSolution(result).has_value());
+
+  // Retest with no parallelism to verify that parallel rounding doesn't change
+  // behavior.
+  options_.parallelism = Parallelism::None();
+  result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+  EXPECT_EQ(result.get_solver_id(), solvers::IpoptSolver::id());
+  distance = (source_->GetSolution(result).value() -
+              target_->GetSolution(result).value())
+                 .norm();
+  EXPECT_NEAR(distance, kExpectedDistance, 1e-6);
   EXPECT_FALSE(sink_->GetSolution(result).has_value());
 }
 
