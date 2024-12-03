@@ -265,6 +265,14 @@ void YamlReadArchive::ParseScalar(const std::string& value,
   *result = value;
 }
 
+void YamlReadArchive::ParseScalar(const std::string& value,
+                                  std::filesystem::path* result) {
+  DRAKE_DEMAND(result != nullptr);
+  // Python deserialization normalizes paths (i.e., a//b becomes a/b). We'll
+  // mirror that behavior for consistency's sake.
+  *result = std::filesystem::path(value).lexically_normal();
+}
+
 const internal::Node* YamlReadArchive::MaybeGetSubNode(const char* name) const {
   DRAKE_DEMAND(name != nullptr);
   if (mapish_item_key_ != nullptr) {

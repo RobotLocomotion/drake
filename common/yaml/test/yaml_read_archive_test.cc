@@ -1,5 +1,8 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 
+#include <filesystem>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -23,6 +26,7 @@ namespace yaml {
 namespace test {
 namespace {
 
+namespace fs = std::filesystem;
 using internal::YamlReadArchive;
 
 // TODO(jwnimmer-tri) Add a test case for reading NonPodVectorStruct.
@@ -165,6 +169,56 @@ TEST_P(YamlReadArchiveTest, DoubleMissing) {
   EXPECT_EQ(x.value, kNominalDouble);
 }
 
+TEST_P(YamlReadArchiveTest, Path) {
+  const auto test_valid = [](const std::string& value,
+                             const std::string& expected) {
+    const auto& x = AcceptNoThrow<PathStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value.string(), expected);
+  };
+  // These plain strings are unchanged by parsing them into a fs::path.
+  test_valid(".", ".");
+  test_valid("no_directory.txt", "no_directory.txt");
+  test_valid("/absolute/path/file.txt", "/absolute/path/file.txt");
+  test_valid("/quoted\"/path", "/quoted\"/path");
+  // These strings end up changing to a greater or lesser degree.
+  test_valid("\"\"", "");
+  test_valid("!!str", "");
+  test_valid("/non_lexical//path", "/non_lexical/path");
+
+  // Values that *might* have been plain scalars of other types explicitly
+  // declared as strings (via various mechanisms) all become paths.
+  test_valid("'1234'", "1234");
+  test_valid("\"1234\"", "1234");
+  test_valid("!!str 1234", "1234");
+
+  // C++ parsing is lazy in determining the type. Rather than aggressively
+  // parsing plain types into primitives, it defers until it sees the type it
+  // is being written to. This make's Drake's YAML parsing more permissive.
+  // This tests tracks the permissive behavior so when we fix it up (and make
+  // it stricter), we'll be reminded to say something in release notes.
+  test_valid("1234", "1234");
+
+  // The following should all throw.
+  const auto test_throw = [](const std::string& value) {
+    SCOPED_TRACE(fmt::format("Should throw for {}\n", value));
+    // TODO(SeanCurtis-TRI) Fix the code so that these throw and change this to
+    // EXPECT_THROW.
+    EXPECT_NO_THROW(AcceptIntoDummy<PathStruct>(LoadSingleValue(value)));
+  };
+  test_throw("!!float 1234.5");
+  test_throw("1234.5");
+  test_throw("1234");
+  test_throw("!!int 1234");
+  test_throw("!!bool true");
+  test_throw("true");
+}
+
+TEST_P(YamlReadArchiveTest, PathMissing) {
+  const PathStruct default_path;
+  const auto& x = AcceptEmptyDoc<PathStruct>();
+  EXPECT_EQ(x.value, default_path.value);
+}
+
 TEST_P(YamlReadArchiveTest, AllScalars) {
   const std::string doc = R"""(
 doc:
@@ -176,6 +230,7 @@ doc:
   some_int64: 104
   some_uint64: 105
   some_string: foo
+  some_path: /alternative/path
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
@@ -186,6 +241,7 @@ doc:
   EXPECT_EQ(x.some_int64, 104);
   EXPECT_EQ(x.some_uint64, 105);
   EXPECT_EQ(x.some_string, "foo");
+  EXPECT_EQ(x.some_path, "/alternative/path");
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {
