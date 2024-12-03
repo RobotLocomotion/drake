@@ -216,6 +216,17 @@ void L1NormCost::UpdateCoefficients(
   b_ = new_b;
 }
 
+void L1NormCost::update_A_entry(int i, int j, double val) {
+  DRAKE_DEMAND(i >= 0 && i < A_.rows());
+  DRAKE_DEMAND(j >= 0 && j < A_.cols());
+  A_(i, j) = val;
+}
+
+void L1NormCost::update_b_entry(int i, double val) {
+  DRAKE_DEMAND(i >= 0 && i < b_.rows());
+  b_(i) = val;
+}
+
 void L1NormCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                         Eigen::VectorXd* y) const {
   y->resize(1);
@@ -340,6 +351,17 @@ void LInfNormCost::UpdateCoefficients(
   b_ = new_b;
 }
 
+void LInfNormCost::update_A_entry(int i, int j, double val) {
+  DRAKE_DEMAND(i >= 0 && i < A_.rows());
+  DRAKE_DEMAND(j >= 0 && j < A_.cols());
+  A_(i, j) = val;
+}
+
+void LInfNormCost::update_b_entry(int i, double val) {
+  DRAKE_DEMAND(i >= 0 && i < b_.rows());
+  b_(i) = val;
+}
+
 void LInfNormCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                           Eigen::VectorXd* y) const {
   y->resize(1);
@@ -393,6 +415,17 @@ void PerspectiveQuadraticCost::UpdateCoefficients(
 
   A_ = new_A;
   b_ = new_b;
+}
+
+void PerspectiveQuadraticCost::update_A_entry(int i, int j, double val) {
+  DRAKE_DEMAND(i >= 0 && i < A_.rows());
+  DRAKE_DEMAND(j >= 0 && j < A_.cols());
+  A_(i, j) = val;
+}
+
+void PerspectiveQuadraticCost::update_b_entry(int i, double val) {
+  DRAKE_DEMAND(i >= 0 && i < b_.rows());
+  b_(i) = val;
 }
 
 template <typename DerivedX, typename U>
