@@ -86,10 +86,14 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(E.PointInSet(E.MaybeGetFeasiblePoint()))
         self.assertTrue(E.IntersectsWith(E))
 
-        mut.AffineBall.MakeAxisAligned(
-            radius=np.ones(3), center=np.zeros(3))
-        mut.AffineBall.MakeHypersphere(radius=2, center=np.zeros(3))
-        mut.AffineBall.MakeUnitBall(dim=2)
+        self.assertIsInstance(mut.AffineBall.MakeAxisAligned(
+            radius=np.ones(3), center=np.zeros(3)), mut.AffineBall)
+        self.assertIsInstance(mut.AffineBall.MakeHypersphere(
+            radius=2, center=np.zeros(3)), mut.AffineBall)
+        self.assertIsInstance(
+            mut.AffineBall.MakeUnitBall(dim=2), mut.AffineBall)
+        self.assertIsInstance(mut.AffineBall.MakeAffineBallFromLineSegment(
+            x_1=[0, 0], x_2=[1, 1], epsilon=1e-2), mut.AffineBall)
 
         mut.AffineBall(ellipsoid=mut.Hyperellipsoid.MakeUnitBall(dim=1))
 
