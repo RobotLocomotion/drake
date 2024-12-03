@@ -1694,8 +1694,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     if (best_cost < kInf) {
       // We found at least one valid result.
       result = rounded_results[best_result_idx];
-      SubstituteAdditionalVariables(*(prog_ptrs[best_result_idx]), &result,
-                                    candidate_paths[best_result_idx]);
+      MakeRestrictionResultLookLikeMixedInteger(
+          *(prog_ptrs[best_result_idx]), &result,
+          candidate_paths[best_result_idx]);
     } else {
       // In the event that all rounded results are infeasible, we still want
       // to propagate the solver id for logging.
@@ -2063,7 +2064,7 @@ GraphOfConvexSets::ConstructRestrictionProgram(
   return prog;
 }
 
-void GraphOfConvexSets::SubstituteAdditionalVariables(
+void GraphOfConvexSets::MakeRestrictionResultLookLikeMixedInteger(
     const MathematicalProgram& prog, MathematicalProgramResult* result,
     const std::vector<const Edge*>& active_edges) const {
   DRAKE_DEMAND(result != nullptr);
@@ -2168,7 +2169,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
 
   MathematicalProgramResult result;
   solver->Solve(*prog, {}, solver_options, &result);
-  SubstituteAdditionalVariables(*prog, &result, active_edges);
+  MakeRestrictionResultLookLikeMixedInteger(*prog, &result, active_edges);
 
   return result;
 }

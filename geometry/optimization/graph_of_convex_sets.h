@@ -880,7 +880,7 @@ class GraphOfConvexSets {
 
   // Add results for additional variables in `result` to make it comparable with
   // other transcriptions.
-  void SubstituteAdditionalVariables(
+  void MakeRestrictionResultLookLikeMixedInteger(
       const solvers::MathematicalProgram& prog,
       solvers::MathematicalProgramResult* result,
       const std::vector<const Edge*>& active_edges) const;
