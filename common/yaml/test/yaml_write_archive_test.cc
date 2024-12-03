@@ -1,5 +1,6 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
+#include <filesystem>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -75,6 +76,17 @@ TEST_F(YamlWriteArchiveTest, String) {
 
   test("a", "a");
   test("1", "1");
+}
+
+TEST_F(YamlWriteArchiveTest, Path) {
+  const auto test = [](const std::filesystem::path& value,
+                       const std::filesystem::path& expected) {
+    const PathStruct x{value};
+    EXPECT_EQ(Save(x), WrapDoc(expected));
+  };
+
+  test("/absolute/path", "/absolute/path");
+  test("relative/path", "relative/path");
 }
 
 TEST_F(YamlWriteArchiveTest, StdArray) {

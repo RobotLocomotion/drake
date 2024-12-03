@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -232,7 +233,19 @@ class YamlWriteArchive final {
       root_.Add(nvp.name(), std::move(scalar));
       return;
     }
-    auto scalar = internal::Node::MakeScalar(fmt::format("{}", value));
+    auto make_scalar = [](const T& v) {
+      std::string value_str;
+      if constexpr (std::is_same_v<T, std::filesystem::path>) {
+        // We want a simple path: /path/stuff. No extra decorations.
+        value_str = v.string();
+      } else {
+        value_str = fmt::to_string(v);
+      }
+
+      return internal::Node::MakeScalar(value_str);
+    };
+
+    auto scalar = make_scalar(value);
     if constexpr (std::is_same_v<T, bool>) {
       scalar.SetTag(internal::JsonSchemaTag::kBool);
     }
