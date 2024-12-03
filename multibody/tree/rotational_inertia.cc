@@ -186,7 +186,10 @@ boolean<T> RotationalInertia<T>::
     AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
         bool use_principal_moments) const {
   // We use a tiny multiple of max_possible_inertia_moment to guide the value
-  // of ε. To avoid false negatives when max_possible_inertia_moment ≈ 0,
+  // of ε. We scale ε by max_possible_inertia_moment regardless of whether or
+  // not we are using principle moments of inertia so that ε is similar across
+  // similar inertias and independent of how this function is invoked.
+  // To avoid false negatives when max_possible_inertia_moment ≈ 0,
   // we also use a tiny absolute tolerance.
   // Note: A side effect of ε is that some inertias are incorrectly classified
   // as valid. We prefer to include some ever-so-slightly invalid inertias
