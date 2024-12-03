@@ -324,6 +324,36 @@ void YamlWriteArchive::EraseMatchingMaps(const YamlWriteArchive& other) {
   DoEraseMatchingMaps(&(this->root_), &(other.root_));
 }
 
+namespace {
+
+template <typename T>
+bool ParseAs(const std::string& s) {
+  T junk;
+  return YAML::convert<T>::decode(YAML::Node(s), junk);
+}
+
+}  // namespace
+
+void YamlWriteArchive::VisitPathScalar(const char* name,
+                                       std::filesystem::path value) {
+  std::string path_str = value.string();
+  // We need to know if the path can be interpreted as a primitive (e.g.,
+  // the file 1234.5).
+  const bool is_primitive = [&path_str]() {
+    return (ParseAs<bool>(path_str) || ParseAs<double>(path_str) ||
+            ParseAs<int64_t>(path_str) || ParseAs<uint64_t>(path_str));
+  }();
+
+  // Empty paths should become ".".
+  std::string prepped = value.empty() ? std::string(".") : std::move(path_str);
+
+  auto scalar = internal::Node::MakeScalar(std::move(prepped));
+  if (is_primitive) {
+    scalar.SetTag(internal::JsonSchemaTag::kStr, /* important */ true);
+  }
+  root_.Add(name, std::move(scalar));
+}
+
 }  // namespace internal
 }  // namespace yaml
 }  // namespace drake
