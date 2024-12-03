@@ -170,6 +170,24 @@ TYPED_TEST(FemStateTest, Clone) {
   }
 }
 
+TYPED_TEST(FemStateTest, CopyFrom) {
+  using T = TypeParam;
+
+  FemState<T> state(this->fem_state_system_.get());
+  state.SetPositions(-1.23 * q<T>());
+  state.SetVelocities(3.14 * v<T>());
+  state.SetAccelerations(-1.29 * a<T>());
+
+  FemState<T> target(this->fem_state_system_.get());
+  target.CopyFrom(state);
+
+  EXPECT_EQ(state.num_dofs(), target.num_dofs());
+  EXPECT_EQ(state.num_nodes(), target.num_nodes());
+  EXPECT_EQ(state.GetPositions(), target.GetPositions());
+  EXPECT_EQ(state.GetVelocities(), target.GetVelocities());
+  EXPECT_EQ(state.GetAccelerations(), target.GetAccelerations());
+}
+
 }  // namespace
 }  // namespace fem
 }  // namespace multibody

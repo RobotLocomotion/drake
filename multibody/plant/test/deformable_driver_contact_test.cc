@@ -377,6 +377,32 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrix) {
                       plant_->time_step());
 }
 
+TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixLocked) {
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  std::vector<MatrixXd> A;
+  DeformableBodyIndex body_index1(1);
+
+  /* With body0 locked, ensure that the dynamics matrix only has a row for
+  body1. */
+  model_->Lock(body_id0_, context_.get());
+
+  A.clear();
+  driver_->AppendLinearDynamicsMatrix(plant_context, &A);
+  ASSERT_EQ(A.size(), 1);
+  EXPECT_EQ(A[0], EvalFreeMotionTangentMatrixSchurComplement(plant_context,
+                                                             body_index1)
+                          .get_D_complement() *
+                      plant_->time_step());
+
+  /* With all bodies locked, ensure the dynamics matrix is empty. */
+  model_->Lock(body_id1_, context_.get());
+
+  A.clear();
+  driver_->AppendLinearDynamicsMatrix(plant_context, &A);
+  ASSERT_EQ(A.size(), 0);
+}
+
 TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);

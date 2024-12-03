@@ -13,6 +13,7 @@ namespace internal {
 namespace {
 
 using Eigen::Vector3d;
+using Eigen::VectorBlock;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
@@ -554,6 +555,41 @@ TEST_F(DeformableModelTest, RegistrationNotAllowedForNonDoubleModel) {
           std::make_unique<GravityForceField<AutoDiffXd>>(Vector3d(0, 0, -10),
                                                           1.0)),
       ".*AddExternalForce.*T != double.*not allowed.*");
+}
+
+TEST_F(DeformableModelTest, LockUnlock) {
+  auto model_id = RegisterSphere(0.5);
+
+  plant_->Finalize();
+  const int num_dofs = deformable_model_ptr_->GetFemModel(model_id).num_dofs();
+
+  systems::DiscreteStateIndex state_index =
+      deformable_model_ptr_->GetDiscreteStateIndex(model_id);
+  auto context = plant_->CreateDefaultContext();
+  VectorBlock<VectorX<double>> discrete_state =
+      context->get_mutable_discrete_state(state_index).get_mutable_value();
+
+  /* Assign some position, velocity, and acceleration values. */
+  discrete_state.setRandom();
+  VectorX<double> q0 = discrete_state.head(num_dofs);
+
+  deformable_model_ptr_->Lock(model_id, &*context);
+  EXPECT_TRUE(deformable_model_ptr_->is_locked(model_id, *context));
+  /* Verify that the position values are unchanged upon locking. */
+  EXPECT_EQ(discrete_state.head(num_dofs), q0);
+  /* Verify that the velocity and acceleration values are set to zero upon
+  locking. */
+  EXPECT_EQ(discrete_state.tail(2 * num_dofs),
+            VectorX<double>::Zero(2 * num_dofs));
+
+  deformable_model_ptr_->Unlock(model_id, &*context);
+  EXPECT_FALSE(deformable_model_ptr_->is_locked(model_id, *context));
+  /* Verify that the position values are unchanged after unlocking. */
+  EXPECT_EQ(discrete_state.head(num_dofs), q0);
+  /* Verify that the velocity and acceleration values remain zero after
+  unlocking. */
+  EXPECT_EQ(discrete_state.tail(2 * num_dofs),
+            VectorX<double>::Zero(2 * num_dofs));
 }
 
 }  // namespace

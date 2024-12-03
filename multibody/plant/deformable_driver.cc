@@ -198,7 +198,6 @@ void DeformableDriver<T>::DeclareCacheEntries(
       constraint_participation_tickets;
   constraint_participation_and_xd_tickets.insert(
       systems::System<T>::xd_ticket());
-
   const auto& participating_velocities_cache_entry = manager->DeclareCacheEntry(
       "participating velocities for all bodies",
       systems::ValueProducer(this,

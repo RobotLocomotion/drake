@@ -224,8 +224,8 @@ int do_main() {
   teddy_illustration_props.AddProperty("phong", "diffuse",
                                        Rgba(0.82, 0.71, 0.55, 1.0));
   teddy_instance->set_illustration_properties(teddy_illustration_props);
-  DeformableBodyId teddy_id = deformable_model.RegisterDeformableBody(
-      std::move(teddy_instance), teddy_config, 1.0);
+  deformable_model.RegisterDeformableBody(std::move(teddy_instance),
+                                          teddy_config, 1.0);
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();
@@ -285,7 +285,6 @@ int do_main() {
       plant.GetMutableJointByName<PrismaticJoint>("right_finger_sliding_joint");
   const PrismaticJoint<double>& left_joint =
       plant.GetMutableJointByName<PrismaticJoint>("left_finger_sliding_joint");
-  plant.deformable_model().Lock(teddy_id, &plant_context);
   left_joint.set_translation(&plant_context, -open_width / 2.0);
   right_joint.set_translation(&plant_context, open_width / 2.0);
 
