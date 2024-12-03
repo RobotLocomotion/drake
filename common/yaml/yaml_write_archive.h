@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -227,6 +228,10 @@ class YamlWriteArchive final {
     if constexpr (std::is_same_v<T, std::string>) {
       text = value;
       tag = internal::JsonSchemaTag::kStr;
+    } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
+      // We'll treat fs::path exactly like a std::string.
+      text = value.string();
+      tag = internal::JsonSchemaTag::kStr;
     } else if constexpr (std::is_same_v<T, bool>) {
       text = value ? "true" : "false";
       tag = internal::JsonSchemaTag::kBool;
@@ -243,7 +248,7 @@ class YamlWriteArchive final {
       text = fmt::format("{}", value);
       tag = internal::JsonSchemaTag::kStr;
     }
-    auto scalar = internal::Node::MakeScalar(std::move(text));
+    internal::Node scalar = internal::Node::MakeScalar(std::move(text));
     scalar.SetTag(tag);
     root_.Add(nvp.name(), std::move(scalar));
   }

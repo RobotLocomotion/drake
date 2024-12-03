@@ -265,6 +265,12 @@ void YamlReadArchive::ParseScalar(const std::string& value,
   *result = value;
 }
 
+void YamlReadArchive::ParseScalar(const std::string& value,
+                                  std::filesystem::path* result) {
+  DRAKE_DEMAND(result != nullptr);
+  *result = std::filesystem::path(value).lexically_normal();
+}
+
 const internal::Node* YamlReadArchive::MaybeGetSubNode(const char* name) const {
   DRAKE_DEMAND(name != nullptr);
   if (mapish_item_key_ != nullptr) {
