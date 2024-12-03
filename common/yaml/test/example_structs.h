@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -60,6 +61,20 @@ bool operator==(const StringStruct& a, const StringStruct& b) {
   return a.value == b.value;
 }
 
+struct PathStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  std::filesystem::path value{"/path/to/nowhere"};
+};
+
+// This is used only for EXPECT_EQ, not by any YAML operations.
+bool operator==(const PathStruct& a, const PathStruct& b) {
+  return a.value == b.value;
+}
+
 struct AllScalarsStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -71,6 +86,7 @@ struct AllScalarsStruct {
     a->Visit(DRAKE_NVP(some_int64));
     a->Visit(DRAKE_NVP(some_uint64));
     a->Visit(DRAKE_NVP(some_string));
+    a->Visit(DRAKE_NVP(some_path));
   }
 
   bool some_bool = false;
@@ -81,6 +97,7 @@ struct AllScalarsStruct {
   int64_t some_int64 = 14;
   uint64_t some_uint64 = 15;
   std::string some_string = "kNominalString";
+  std::filesystem::path some_path{"/path/to/nowhere"};
 };
 
 struct ArrayStruct {

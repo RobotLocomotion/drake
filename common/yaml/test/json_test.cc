@@ -19,6 +19,7 @@ GTEST_TEST(YamlJsonTest, WriteScalars) {
                                   R"""("some_float":1.2345,)"""
                                   R"""("some_int32":12,)"""
                                   R"""("some_int64":14,)"""
+                                  R"""("some_path":"/path/to/nowhere",)"""
                                   R"""("some_string":"kNominalString",)"""
                                   R"""("some_uint32":12,)"""
                                   R"""("some_uint64":15})""");
