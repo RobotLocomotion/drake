@@ -1,5 +1,6 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
+#include <filesystem>
 #include <vector>
 
 #include <fmt/args.h>
@@ -115,6 +116,7 @@ TEST_F(YamlWriteArchiveTest, AllScalars) {
   x.some_int64 = 104;
   x.some_uint64 = 105;
   x.some_string = "foo";
+  x.some_path = "/test/path";
   EXPECT_EQ(Save(x), R"""(doc:
   some_bool: true
   some_float: 100.0
@@ -124,7 +126,23 @@ TEST_F(YamlWriteArchiveTest, AllScalars) {
   some_int64: 104
   some_uint64: 105
   some_string: foo
+  some_path: /test/path
 )""");
+}
+
+TEST_F(YamlWriteArchiveTest, Path) {
+  const auto test = [](const std::filesystem::path& value,
+                       const std::string& expected) {
+    const PathStruct x{value};
+    EXPECT_EQ(Save(x), WrapDoc(expected));
+  };
+
+  test("", "''");
+  test("/absolute/path", "/absolute/path");
+  test("relative/path", "relative/path");
+  // Some representative value that looks like a primitive; we're simply looking
+  // for some evidence that path is treated as a string.
+  test("1234", "'1234'");
 }
 
 TEST_F(YamlWriteArchiveTest, StdArray) {
