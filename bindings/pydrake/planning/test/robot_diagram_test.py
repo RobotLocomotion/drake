@@ -83,6 +83,11 @@ class TestRobotDiagram(unittest.TestCase):
         https://github.com/RobotLocomotion/drake/issues/14355
         For examples of immortality, see:
         https://github.com/RobotLocomotion/drake/issues/14387
+
+        Owing, in part, to the immortality problems, there is now the
+        expectation that any system reference will keep the diagram
+        alive. Ensure that either a system reference or a diagram reference
+        will work.
         """
 
         def make_diagram():
@@ -105,27 +110,48 @@ class TestRobotDiagram(unittest.TestCase):
             )
             # Forward ports for ease of testing.
             builder.builder().ExportInput(
-                controller.get_input_port_estimated_state(), "x_estimated")
+                controller.get_input_port_estimated_state(), "estimated_state")
             builder.builder().ExportInput(
-                controller.get_input_port_desired_state(), "x_desired")
+                controller.get_input_port_desired_state(), "desired_state")
             builder.builder().ExportOutput(
-                controller.get_output_port_control(), "u")
+                controller.get_output_port_control(), "generalized_force")
             diagram = builder.Build()
-            return diagram
+            return diagram, controller
 
-        diagram = make_diagram()
+        # Manage lifetime via diagram reference.
+        diagram, controller = make_diagram()
+        del controller
         gc.collect()
         # N.B. Without fixes for #14355, we get a segfault when
         # creating the context.
         context = diagram.CreateDefaultContext()
-        diagram.GetInputPort("x_estimated").FixValue(context, [])
-        diagram.GetInputPort("x_desired").FixValue(context, [])
-        u = diagram.GetOutputPort("u").Eval(context)
+        diagram.GetInputPort("estimated_state").FixValue(context, [])
+        diagram.GetInputPort("desired_state").FixValue(context, [])
+        u = diagram.GetOutputPort("generalized_force").Eval(context)
         np.testing.assert_equal(u, [])
 
         # N.B. Without fixes for #14387, the diagram survives all garbage
         # collection attempts.
         spy = weakref.finalize(diagram, lambda: None)
         del diagram
+        gc.collect()
+        self.assertFalse(spy.alive)
+
+        # Manage lifetime via controller reference
+        diagram, controller = make_diagram()
+        del diagram
+        gc.collect()
+        # N.B. Without fixes for #14355, we get a segfault when
+        # creating the context.
+        context = controller.CreateDefaultContext()
+        controller.GetInputPort("estimated_state").FixValue(context, [])
+        controller.GetInputPort("desired_state").FixValue(context, [])
+        u = controller.GetOutputPort("generalized_force").Eval(context)
+        np.testing.assert_equal(u, [])
+
+        # N.B. Without fixes for #14387, the controller survives all garbage
+        # collection attempts.
+        spy = weakref.finalize(controller, lambda: None)
+        del controller
         gc.collect()
         self.assertFalse(spy.alive)
