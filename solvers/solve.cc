@@ -11,6 +11,7 @@
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/solver_interface.h"
+
 namespace drake {
 namespace solvers {
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
@@ -187,12 +188,11 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     bool dynamic_schedule,
     const std::function<void(T*, const MathematicalProgramResult&, int64_t,
                              int64_t)>* prog_teardown) {
+  const std::optional<SolverOptions> returned_options =
+      solver_options == nullptr ? std::nullopt
+                                : std::optional<SolverOptions>{*solver_options};
   auto solver_options_generator =
-      [&solver_options](int64_t, int64_t) -> std::optional<SolverOptions> {
-    static const std::optional<SolverOptions> returned_options =
-        solver_options == nullptr
-            ? std::nullopt
-            : std::optional<SolverOptions>{*solver_options};
+      [&returned_options](int64_t, int64_t) -> std::optional<SolverOptions> {
     return returned_options;
   };
   auto solver_id_generator = [&solver_id](int64_t,
@@ -289,6 +289,14 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     const SolverOptions* solver_options,
     const std::optional<SolverId>& solver_id, Parallelism parallelism,
     bool dynamic_schedule) {
+  DRAKE_THROW_UNLESS(
+      std::all_of(progs.begin(), progs.end(), [](const auto& prog) {
+        return prog != nullptr;
+      }));
+  if (initial_guesses != nullptr) {
+    DRAKE_THROW_UNLESS(initial_guesses->size() == progs.size());
+  }
+
   auto prog_generator =
       [&progs](const int, const int64_t i) -> const MathematicalProgram* {
     return GetRawPointer(progs[i]);

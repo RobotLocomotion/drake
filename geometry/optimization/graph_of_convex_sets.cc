@@ -826,13 +826,9 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
   // remainder of the function.
   int nE = edge_id_list.size();
 
-  // TODO(cohnt): Rewrite with a parallel for loop where each thread creates and
-  // solves the preprocessing program, to avoid having to use batching together
-  // with SolveInParallel.
-
+  // TODO(cohnt): Rewrite using generators to avoid batching.
   // Given an edge (u,v) check if a path from source to u and another from v to
   // target exist without sharing edges.
-
   int preprocessing_parallel_batch_size = 1000;
   int num_batches = 1 + (nE / preprocessing_parallel_batch_size);
   for (int batch_idx = 0; batch_idx < num_batches; ++batch_idx) {

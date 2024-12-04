@@ -1637,7 +1637,7 @@ void BindFreeFunctions(py::module m) {
           // Inside of the lambda we'll demote nullopts back to nullptrs. Note
           // that SolverOptions is not necessarily cheap to copy, so we still
           // carefully accept it by-pointer. The VectorXd is always necessarily
-          // copied when going form numpy to Eigen so we still pass it by-value.
+          // copied when going from numpy to Eigen so we still pass it by-value.
           // TODO(Alexandre.Amice) change to generator form.
           [](std::vector<const MathematicalProgram*> progs,
               std::optional<std::vector<std::optional<Eigen::VectorXd>>>
@@ -1646,25 +1646,41 @@ void BindFreeFunctions(py::module m) {
                   solver_options,
               std::optional<std::vector<std::optional<SolverId>>> solver_ids,
               const Parallelism& parallelism, bool dynamic_schedule) {
-            std::vector<const Eigen::VectorXd*> initial_guesses_ptrs;
-            if (initial_guesses.has_value()) {
-              initial_guesses_ptrs.reserve(initial_guesses->size());
-              for (const auto& guess : *initial_guesses) {
-                initial_guesses_ptrs.push_back(guess ? &(*guess) : nullptr);
+            const std::function<const MathematicalProgram*(int64_t, int64_t)>
+                progs_generator =
+                    [&progs](int64_t, int64_t i) -> const MathematicalProgram* {
+              return progs.at(i);
+            };
+            auto initial_guess_generator =
+                [&initial_guesses](
+                    int64_t, int64_t i) -> std::optional<Eigen::VectorXd> {
+              if (initial_guesses.has_value()) {
+                return initial_guesses->at(i);
+              } else {
+                return std::nullopt;
               }
-            }
-            std::vector<const SolverOptions*> solver_options_ptrs;
-            if (solver_options.has_value()) {
-              solver_options_ptrs.reserve(solver_options->size());
-              for (const auto& option : *solver_options) {
-                solver_options_ptrs.push_back(option ? *option : nullptr);
+            };
+            auto solver_options_generator =
+                [&solver_options](
+                    int64_t, int64_t i) -> std::optional<SolverOptions> {
+              if (solver_options.has_value() &&
+                  *(solver_options->at(i)) != nullptr) {
+                return **(solver_options->at(i));
+              } else {
+                return std::nullopt;
               }
-            }
-            return solvers::SolveInParallel(progs,
-                initial_guesses.has_value() ? &initial_guesses_ptrs : nullptr,
-                solver_options.has_value() ? &solver_options_ptrs : nullptr,
-                solver_ids.has_value() ? &(*solver_ids) : nullptr, parallelism,
-                dynamic_schedule);
+            };
+            auto solver_ids_generator =
+                [&solver_ids](int64_t, int64_t i) -> std::optional<SolverId> {
+              if (solver_ids.has_value()) {
+                return solver_ids->at(i);
+              } else {
+                return std::nullopt;
+              }
+            };
+            return solvers::SolveInParallel(progs_generator, 0, ssize(progs),
+                initial_guess_generator, solver_options_generator,
+                solver_ids_generator, parallelism, dynamic_schedule);
           },
           py::arg("progs"), py::arg("initial_guesses") = std::nullopt,
           py::arg("solver_options") = std::nullopt,
@@ -1683,16 +1699,37 @@ void BindFreeFunctions(py::module m) {
               const std::optional<SolverId>& solver_id,
               const Parallelism& parallelism, bool dynamic_schedule) {
             // TODO(Alexandre.Amice) change to generator form.
-            std::vector<const Eigen::VectorXd*> initial_guesses_ptrs;
-            if (initial_guesses.has_value()) {
-              initial_guesses_ptrs.reserve(initial_guesses->size());
-              for (const auto& guess : *initial_guesses) {
-                initial_guesses_ptrs.push_back(guess ? &(*guess) : nullptr);
+            //            std::vector<const Eigen::VectorXd*>
+            //            initial_guesses_ptrs; if (initial_guesses.has_value())
+            //            {
+            //              initial_guesses_ptrs.reserve(initial_guesses->size());
+            //              for (const auto& guess : *initial_guesses) {
+            //                initial_guesses_ptrs.push_back(guess ? &(*guess) :
+            //                nullptr);
+            //              }
+            //            }
+            //            return solvers::SolveInParallel(progs,
+            //                initial_guesses.has_value() ?
+            //                &initial_guesses_ptrs : nullptr, solver_options,
+            //                solver_id, parallelism, dynamic_schedule);
+
+            const std::function<const MathematicalProgram*(int64_t, int64_t)>
+                progs_generator =
+                    [&progs](int64_t, int64_t i) -> const MathematicalProgram* {
+              return progs.at(i);
+            };
+            auto initial_guess_generator =
+                [&initial_guesses](
+                    int64_t, int64_t i) -> std::optional<Eigen::VectorXd> {
+              if (initial_guesses.has_value()) {
+                return initial_guesses->at(i);
+              } else {
+                return std::nullopt;
               }
-            }
-            return solvers::SolveInParallel(progs,
-                initial_guesses.has_value() ? &initial_guesses_ptrs : nullptr,
-                solver_options, solver_id, parallelism, dynamic_schedule);
+            };
+            return solvers::SolveInParallel(progs_generator, 0, ssize(progs),
+                initial_guess_generator, solver_options, solver_id, parallelism,
+                dynamic_schedule);
           },
           py::arg("progs"), py::arg("initial_guesses") = std::nullopt,
           py::arg("solver_options") = std::nullopt,
@@ -1702,6 +1739,9 @@ void BindFreeFunctions(py::module m) {
           py::call_guard<py::gil_scoped_release>(),
           doc.SolveInParallel
               .doc_6args_conststdvector_conststdvector_constdrakesolversSolverOptions_conststdoptional_drakeParallelism_bool);
+  // N.B. Do NOT bind the generator forms of SolveInParallel directly. Callbacks
+  // to Python state from parallel C++ is difficult and likely to lead to
+  // deadlocks.
 }
 
 }  // namespace
