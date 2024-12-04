@@ -1638,7 +1638,6 @@ void BindFreeFunctions(py::module m) {
           // that SolverOptions is not necessarily cheap to copy, so we still
           // carefully accept it by-pointer. The VectorXd is always necessarily
           // copied when going from numpy to Eigen so we still pass it by-value.
-          // TODO(Alexandre.Amice) change to generator form.
           [](std::vector<const MathematicalProgram*> progs,
               std::optional<std::vector<std::optional<Eigen::VectorXd>>>
                   initial_guesses,
@@ -1698,21 +1697,6 @@ void BindFreeFunctions(py::module m) {
               const SolverOptions* solver_options,
               const std::optional<SolverId>& solver_id,
               const Parallelism& parallelism, bool dynamic_schedule) {
-            // TODO(Alexandre.Amice) change to generator form.
-            //            std::vector<const Eigen::VectorXd*>
-            //            initial_guesses_ptrs; if (initial_guesses.has_value())
-            //            {
-            //              initial_guesses_ptrs.reserve(initial_guesses->size());
-            //              for (const auto& guess : *initial_guesses) {
-            //                initial_guesses_ptrs.push_back(guess ? &(*guess) :
-            //                nullptr);
-            //              }
-            //            }
-            //            return solvers::SolveInParallel(progs,
-            //                initial_guesses.has_value() ?
-            //                &initial_guesses_ptrs : nullptr, solver_options,
-            //                solver_id, parallelism, dynamic_schedule);
-
             const std::function<const MathematicalProgram*(int64_t, int64_t)>
                 progs_generator =
                     [&progs](int64_t, int64_t i) -> const MathematicalProgram* {
