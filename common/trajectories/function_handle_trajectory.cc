@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "drake/common/trajectories/derivative_trajectory.h"
+
 namespace drake {
 namespace trajectories {
 
@@ -36,7 +38,12 @@ FunctionHandleTrajectory<T>::~FunctionHandleTrajectory() = default;
 template <typename T>
 std::unique_ptr<Trajectory<T>> FunctionHandleTrajectory<T>::Clone() const {
   using Self = FunctionHandleTrajectory<T>;
-  return std::make_unique<Self>(func_, rows_, cols_, start_time_, end_time_);
+  auto clone =
+      std::make_unique<Self>(func_, rows_, cols_, start_time_, end_time_);
+  if (derivative_func_) {
+    clone->set_derivative(derivative_func_);
+  }
+  return clone;
 }
 
 template <typename T>
@@ -54,6 +61,34 @@ MatrixX<T> FunctionHandleTrajectory<T>::value(const T& t) const {
         result.rows(), result.cols(), rows_.value(), cols_.value()));
   }
   return result;
+}
+
+template <typename T>
+MatrixX<T> FunctionHandleTrajectory<T>::DoEvalDerivative(
+    const T& t, int derivative_order) const {
+  if (derivative_order == 0) {
+    return value(t);
+  }
+  DRAKE_THROW_UNLESS(derivative_func_ != nullptr);
+  MatrixX<T> derivative = derivative_func_(t, derivative_order);
+  if (derivative.rows() != rows_ || derivative.cols() != cols_) {
+    throw std::runtime_error(fmt::format(
+        "The FunctionHandleTrajectory derivative callback returned a matrix "
+        "of size {}x{}, but the constructor specified that the "
+        "output should be of size {}x{}.",
+        derivative.rows(), derivative.cols(), rows_.value(), cols_.value()));
+  }
+  return derivative;
+}
+
+template <typename T>
+std::unique_ptr<Trajectory<T>> FunctionHandleTrajectory<T>::DoMakeDerivative(
+    int derivative_order) const {
+  if (derivative_order == 0) {
+    return Clone();
+  }
+  DRAKE_THROW_UNLESS(derivative_func_ != nullptr);
+  return std::make_unique<DerivativeTrajectory<T>>(*this, derivative_order);
 }
 
 }  // namespace trajectories

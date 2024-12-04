@@ -19,7 +19,7 @@ GTEST_TEST(FunctionHandleTrajectoryTest, BasicTest) {
   EXPECT_EQ(dut.cols(), 1);
   EXPECT_EQ(dut.start_time(), 0);
   EXPECT_EQ(dut.end_time(), 1);
-  EXPECT_EQ(dut.has_derivative(), false);
+  EXPECT_FALSE(dut.has_derivative());
 
   for (double t = 0; t < 1; t += 0.1) {
     EXPECT_TRUE(CompareMatrices(dut.value(t),
@@ -33,7 +33,7 @@ GTEST_TEST(FunctionHandleTrajectoryTest, BasicTest) {
   EXPECT_EQ(clone->cols(), 1);
   EXPECT_EQ(clone->start_time(), 0);
   EXPECT_EQ(clone->end_time(), 1);
-  EXPECT_EQ(clone->has_derivative(), false);
+  EXPECT_FALSE(clone->has_derivative());
 
   for (double t = 0; t < 1; t += 0.1) {
     EXPECT_TRUE(CompareMatrices(clone->value(t),
@@ -132,6 +132,76 @@ GTEST_TEST(FunctionHandleTrajectoryTest, CallbackReturnsWrongSize2) {
   // But the value() method throws because the size is wrong for t >= 0.5.
   DRAKE_EXPECT_THROWS_MESSAGE(dut.value(0.6),
                               ".*returned a matrix of size 2x1.*");
+}
+
+GTEST_TEST(FunctionHandleTrajectoryTest, SetDerivative) {
+  const auto circle_func = [](const double& t) {
+    return Eigen::Vector2d(std::sin(t), std::cos(t));
+  };
+  FunctionHandleTrajectory<double> dut(circle_func, 2, 1, 0, 1);
+  EXPECT_FALSE(dut.has_derivative());
+  dut.set_derivative([](const double& t, int order) {
+    switch (order) {
+      case 1:
+        return Eigen::Vector2d(-std::cos(t), std::sin(t));
+      case 2:
+        return Eigen::Vector2d(-std::sin(t), -std::cos(t));
+      default:
+        throw std::runtime_error("Unsupported derivative order.");
+    }
+  });
+
+  EXPECT_TRUE(dut.has_derivative());
+  const double t = 0.5;
+  EXPECT_TRUE(
+      CompareMatrices(dut.value(t), Eigen::Vector2d(std::sin(t), std::cos(t))));
+  EXPECT_TRUE(CompareMatrices(dut.EvalDerivative(t, 0),
+                              Eigen::Vector2d(std::sin(t), std::cos(t))));
+  EXPECT_TRUE(CompareMatrices(dut.EvalDerivative(t, 1),
+                              Eigen::Vector2d(-std::cos(t), std::sin(t))));
+  EXPECT_TRUE(CompareMatrices(dut.EvalDerivative(t, 2),
+                              Eigen::Vector2d(-std::sin(t), -std::cos(t))));
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.EvalDerivative(t, 3),
+                              ".*Unsupported derivative order.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.EvalDerivative(t, -1),
+                              ".*derivative_order >= 0.*");
+
+  auto clone = dut.Clone();
+  EXPECT_TRUE(clone->has_derivative());
+  EXPECT_TRUE(CompareMatrices(clone->value(t),
+                              Eigen::Vector2d(std::sin(t), std::cos(t))));
+  EXPECT_TRUE(CompareMatrices(clone->EvalDerivative(t, 1),
+                              Eigen::Vector2d(-std::cos(t), std::sin(t))));
+
+  clone = dut.MakeDerivative(0);
+  EXPECT_TRUE(clone->has_derivative());
+  EXPECT_TRUE(CompareMatrices(clone->value(t),
+                              Eigen::Vector2d(std::sin(t), std::cos(t))));
+  EXPECT_TRUE(CompareMatrices(clone->EvalDerivative(t, 1),
+                              Eigen::Vector2d(-std::cos(t), std::sin(t))));
+
+  auto derivative = dut.MakeDerivative(1);
+  EXPECT_TRUE(derivative->has_derivative());
+  EXPECT_TRUE(derivative->has_derivative());
+  EXPECT_TRUE(CompareMatrices(derivative->value(t),
+                              Eigen::Vector2d(-std::cos(t), std::sin(t))));
+  EXPECT_TRUE(CompareMatrices(derivative->EvalDerivative(t, 1),
+                              Eigen::Vector2d(-std::sin(t), -std::cos(t))));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.MakeDerivative(3),
+                              ".*Unsupported derivative order.*");
+
+  // Set a derivative callback that outputs the wrong size.
+  dut.set_derivative([](const double& time, int order) {
+    switch (order) {
+      case 1:
+        return Vector1d(-std::cos(time));
+      default:
+        throw std::runtime_error("Unsupported derivative order.");
+    }
+  });
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.EvalDerivative(t, 1),
+                              ".*returned a matrix of size 1x1.*");
 }
 
 }  // namespace

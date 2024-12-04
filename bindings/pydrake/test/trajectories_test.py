@@ -215,12 +215,12 @@ class TestTrajectories(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_function_handle_trajectory(self, T):
         def f(t):
-            print(t)
             return np.array([[t, t**2]])
         dut = FunctionHandleTrajectory_[T](
             func=f, rows=1, cols=2, start_time=0, end_time=1)
         self.assertEqual(dut.rows(), 1)
         self.assertEqual(dut.cols(), 2)
+        self.assertFalse(dut.has_derivative())
         numpy_compare.assert_float_equal(dut.start_time(), 0.0)
         numpy_compare.assert_float_equal(dut.end_time(), 1.0)
         for t in [0.0, 0.5, 1.0]:
@@ -228,6 +228,19 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(dut.Clone(), FunctionHandleTrajectory_[T])
         copy.copy(dut)
         copy.deepcopy(dut)
+
+        def df(t, order):
+            if order == 1:
+                return np.array([[1, 2*t]])
+            else:
+                raise RuntimeError("Unsupported order")
+
+        dut.set_derivative(func=df)
+        self.assertTrue(dut.has_derivative())
+        for t in [0.0, 0.5, 1.0]:
+            numpy_compare.assert_float_equal(
+                dut.EvalDerivative(t, 1), df(t, 1))
+        self.assertIsInstance(dut.MakeDerivative(1), DerivativeTrajectory_[T])
 
     def test_legacy_unpickle(self):
         """Checks that data pickled as BsplineTrajectory_[float] in Drake
