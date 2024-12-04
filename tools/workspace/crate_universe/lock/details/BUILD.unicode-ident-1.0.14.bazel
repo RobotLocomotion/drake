@@ -6,6 +6,7 @@
 #     tools/workspace/crate_universe/upgrade.sh
 ###############################################################################
 
+load("@rules_license//rules:license.bzl", "license")
 load("@rules_license//rules:package_info.bzl", "package_info")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
@@ -89,4 +90,16 @@ rust_library(
         "//conditions:default": ["@platforms//:incompatible"],
     }),
     version = "1.0.14",
+)
+
+# Additive BUILD file content
+
+license(
+    name = "license",
+    license_kinds = [
+        "@rules_license//licenses/spdx:Apache-2.0",
+        "@rules_license//licenses/spdx:MIT",
+        "@rules_license//licenses/spdx:Unicode-3.0",
+    ],
+    license_text = "LICENSE-APACHE",
 )
