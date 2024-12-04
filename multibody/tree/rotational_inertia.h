@@ -597,8 +597,7 @@ class RotationalInertia {
     //    Imin ≈ 0.961    Imed ≈ 2   Imax ≈ 3.04
     // violate the triangle inequality since Imin + Imed < Imax.
     return !IsNaN() &&
-           AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-               /* use_principal_moments = */ true);
+           AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality();
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` in place to `I_BP_A`.
@@ -953,11 +952,8 @@ class RotationalInertia {
   // The positive (near-zero) ε accounts for round-off errors, e.g., from
   // re-expressing inertia in another frame, hence very small (equal to -ε)
   // negative moments of inertia are regarded as near-enough positive.
-  // @param use_principal_moments determines whether this test is performed for
-  // `this` rotational inertia's principal moments of inertia or for
-  // `this` rotational inertia's diagonal moments of inertia.
-  boolean<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-      bool use_principal_moments) const;
+  boolean<T> AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality()
+      const;
 
   // Tests whether each moment of inertia is non-negative (to within epsilon).
   // This test allows for small (equal to -epsilon) negative moments of inertia
