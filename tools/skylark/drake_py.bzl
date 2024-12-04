@@ -9,15 +9,10 @@ load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
 
 def drake_py_library(
         name,
-        deps = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations."""
-
-    # Work around https://github.com/bazelbuild/bazel/issues/1567.
-    deps = (deps or []) + ["//:module_py"]
     py_library(
         name = name,
-        deps = deps,
         srcs_version = "PY3",
         **kwargs
     )
@@ -134,11 +129,6 @@ def drake_py_binary(
         library code. This prevents submodules from leaking in as top-level
         submodules. For more detail, see #8041.
     """
-
-    # Work around https://github.com/bazelbuild/bazel/issues/1567.
-    deps = deps or []
-    if "//:module_py" not in deps:
-        deps += ["//:module_py"]
     if main == None and len(srcs) == 1:
         main = srcs[0]
     _py_target_isolated(
@@ -265,10 +255,7 @@ def drake_py_test(
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     kwargs = amend(kwargs, "tags", append = ["py"])
 
-    # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = deps or []
-    if "//:module_py" not in deps:
-        deps += ["//:module_py"]
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
     _py_target_isolated(
