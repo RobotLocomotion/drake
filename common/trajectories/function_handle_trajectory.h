@@ -41,6 +41,13 @@ class FunctionHandleTrajectory final : public Trajectory<T> {
 
   ~FunctionHandleTrajectory() final;
 
+  /** Sets a callback function that returns the derivative of the function.
+  `func(t,order)` will only be called with `order > 0`. */
+  void set_derivative(
+      std::function<MatrixX<T>(const T& /*t*/, int /* order */)> func) {
+    derivative_func_ = func;
+  }
+
   // Trajectory overrides.
   std::unique_ptr<Trajectory<T>> Clone() const final;
   MatrixX<T> value(const T& t) const final;
@@ -51,14 +58,15 @@ class FunctionHandleTrajectory final : public Trajectory<T> {
 
  private:
   // Trajectory overrides.
-  bool do_has_derivative() const final { return false; }
+  bool do_has_derivative() const final { return derivative_func_ != nullptr; }
 
-  // TODO(russt): Support derivatives, potentially by having a setter method
-  // which can pass an additional function handle that explicitly represents
-  // the derivative (and using DerivativeTrajectory to implement
-  // DoMakeDerivative).
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
+
+  std::unique_ptr<Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const override;
 
   std::function<MatrixX<T>(const T&)> func_{};
+  std::function<MatrixX<T>(const T&, int)> derivative_func_{};
   reset_after_move<int> rows_;
   reset_after_move<int> cols_;
   double start_time_;
