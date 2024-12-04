@@ -75,10 +75,6 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   std::vector<std::unordered_map<SolverId, std::unique_ptr<SolverInterface>>>
       solvers(parallelism.num_threads());
 
-  // This caches programs which are skipped in the parallel for loop because
-  // they are not threadsafe. This avoids having to create the program twice.
-  std::vector<T> cached_progs(num_progs);
-
   const auto range_index_to_output_index = [&](int64_t i) {
     return static_cast<int>(i) - range_start;
   };
@@ -89,18 +85,8 @@ std::vector<MathematicalProgramResult> SolveInParallel(
   auto solve_ith = [&](const bool in_parallel, const int thread_num,
                        const int64_t i) {
     const int output_index = range_index_to_output_index(i);
-    T prog = cached_progs[output_index] == nullptr
-                 ? prog_generator(thread_num, i)
-                 : std::move(cached_progs[output_index]);
+    T prog = prog_generator(thread_num, i);
     if (prog == nullptr) {
-      // This case can only occur when both the cached program and the program
-      // generator return nullptr, in which case this is skipped.
-      return;
-    }
-    // If this program is not thread safe, then skip it and save it for
-    // later.
-    if (in_parallel && !prog->IsThreadSafe()) {
-      cached_progs[output_index] = std::move(prog);
       return;
     }
 
@@ -153,20 +139,16 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     if (prog_teardown != nullptr) {
       (*prog_teardown)(&prog, results[output_index], thread_num, i);
     }
-
-    if (cached_progs[output_index] != nullptr) {
-      // Free the cached progs to avoid holding the memory unnecessarily.
-      cached_progs[output_index] = nullptr;
-    }
-    std::cout << prog << std::endl;
-    std::cout << "INTERNAL SOLVE" << std::endl;
-    std::cout << (results[output_index]).get_optimal_cost() << std::endl;
-    std::cout << (results[output_index]).get_solution_result() << std::endl;
-    std::cout << fmt::format(
-                     "{}\n",
-                     fmt_eigen(results[output_index].get_x_val().transpose()))
-              << std::endl;
-    std::cout << "DONE" << std::endl;
+    //
+    //    std::cout << prog << std::endl;
+    //    std::cout << "INTERNAL SOLVE" << std::endl;
+    //    std::cout << (results[output_index]).get_optimal_cost() << std::endl;
+    //    std::cout << (results[output_index]).get_solution_result() <<
+    //    std::endl; std::cout << fmt::format(
+    //                     "{}\n",
+    //                     fmt_eigen(results[output_index].get_x_val().transpose()))
+    //              << std::endl;
+    //    std::cout << "DONE" << std::endl;
   };
   const auto solve_ith_parallel = [&](const int thread_num, const int64_t i) {
     solve_ith(/* in parallel */ true, thread_num, i);
