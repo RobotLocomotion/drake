@@ -46,6 +46,14 @@ MathematicalProgramResult Solve(
 
 MathematicalProgramResult Solve(const MathematicalProgram& prog);
 
+namespace internal {
+template <typename T>
+concept MathematicalProgramPtr =
+    std::is_same_v<T, std::unique_ptr<MathematicalProgram>> ||
+    std::is_same_v<T, MathematicalProgram*> ||
+    std::is_same_v<T, const MathematicalProgram*>;
+}  // namespace internal
+
 /**
  * Solves progs[i] into result[i], optionally using initial_guess[i] and
  * solver_options[i] if given, by invoking the solver at solver_ids[i] if
@@ -79,8 +87,10 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog);
  *
  * @throws std::exception if any of the programs cannot be solved.
  */
+template <typename T>
+  requires internal::MathematicalProgramPtr<T>
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<const MathematicalProgram*>& progs,
+    const std::vector<T>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses,
     const std::vector<const SolverOptions*>* solver_options,
     const std::vector<std::optional<SolverId>>* solver_ids,
@@ -98,40 +108,40 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  *
  * @throws std::exception if any of the progs are nullptr.
  */
+template <typename T>
+  requires internal::MathematicalProgramPtr<T>
 std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::vector<const MathematicalProgram*>& progs,
+    const std::vector<T>& progs,
     const std::vector<const Eigen::VectorXd*>* initial_guesses = nullptr,
     const SolverOptions* solver_options = nullptr,
     const std::optional<SolverId>& solver_id = std::nullopt,
     Parallelism parallelism = Parallelism::Max(),
-    bool dynamic_schedule = false);
+    bool dynamic_schedule = false);  // requires MathematicalProgramPtr;
 
 /**
  * Provides the same functionality as SolveInParallel, but the programs, initial
  * guesses, solver options and solver ids are created using a generator.
  *
  * The input to the generator is the current thread number and an index i and
- * the output is the ith program, guess, option and solver id respectively. The
- * index i is iterated from range_start to range_end.
+ * the output is the ith program, guess, option and solver_id respectively. The
+ * index i is iterated from [range_start, range_end).
  *
- * If thehe output of prog_generator is nullptr, then the program is skipped.
- * The user is responsible for ensuring that the pointer is not dangling.
+ * If the output of prog_generator is nullptr, then the program is skipped.
+ * The user is responsible for ensuring that no pointer is not dangling.
  *
  * The output of the initial_guesses_generator, solver_options_generator and
  * solver_ids can be std::nullopt
  *
  * After the ith program is solved, the prog_teardown function is called with
  * the ith program and its result, the current thread number, and the index i to
- * potentially clean up after the solve or perform some other callback
+ * potentially clean up after the solve or perform some other callback.
  *
- * @return A vector of size range_end with range_start to range_end populated
- * with the results of solving prog_generator(*, range_start-range_end)
+ * @return A vector of size range_end - range_start where the 0th index is
+ * populated with the result of solving prog_generator(range_start) and the last
+ * index is populated with the result of solving prog_generator(range_end-1);
  */
-template <typename T,
-          typename = std::enable_if_t<
-              std::is_same_v<T, std::unique_ptr<MathematicalProgram>> ||
-              std::is_same_v<T, MathematicalProgram*> ||
-              std::is_same_v<T, const MathematicalProgram*>>>
+template <typename T>
+  requires internal::MathematicalProgramPtr<T>
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::function<T(int64_t, int64_t)>& prog_generator,
     const int64_t range_start, const int64_t range_end,
@@ -148,41 +158,17 @@ std::vector<MathematicalProgramResult> SolveInParallel(
               return std::nullopt;
             },
     Parallelism parallelism = Parallelism::Max(), bool dynamic_schedule = false,
-    const std::function<void(MathematicalProgram*, MathematicalProgramResult,
-                             int64_t, int64_t)>* prog_teardown = nullptr);
+    const std::function<void(T*, const MathematicalProgramResult&, int64_t,
+                             int64_t)>* prog_teardown = nullptr);
 
 /**
- * Provides the same functionality as SolveInParallel, but the programs, initial
- * guesses, solver options and solver ids are created using a generator.
- *
- * The output of prog_generator cannot be a nullptr.
+ * Provides the same functionality as SolveInParallel, but the programs and
+ * initial guesses are created using a generator. This overloads allows for
+ * specifying a single solver id and solver option that is used when solving all
+ * programs.
  */
-std::vector<MathematicalProgramResult> SolveInParallel(
-    const std::function<std::unique_ptr<MathematicalProgram>(int64_t, int64_t)>&
-        prog_generator,
-    const int64_t range_start, const int64_t range_end,
-    const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
-        initial_guesses_generator,
-    const std::function<std::optional<SolverOptions>(int64_t, int64_t)>&
-        solver_options_generator =
-            [](int64_t, int64_t) {
-              return std::nullopt;
-            },
-    const std::function<std::optional<SolverId>(int64_t, int64_t)>&
-        solver_ids_generator =
-            [](int64_t, int64_t) {
-              return std::nullopt;
-            },
-    Parallelism parallelism = Parallelism::Max(), bool dynamic_schedule = false,
-    const std::function<void(MathematicalProgram*, MathematicalProgramResult,
-                             int64_t, int64_t)>* prog_teardown = nullptr);
-
-template <typename T,
-          typename = std::enable_if_t<
-              std::is_same_v<T, std::unique_ptr<MathematicalProgram>> ||
-              std::is_same_v<T, MathematicalProgram*> ||
-              std::is_same_v<T, const MathematicalProgram*>>>
-
+template <typename T>
+  requires internal::MathematicalProgramPtr<T>
 std::vector<MathematicalProgramResult> SolveInParallel(
     const std::function<T(int64_t, int64_t)>& prog_generator,
     const int64_t range_start, const int64_t range_end,
@@ -194,55 +180,8 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     const SolverOptions* solver_options = nullptr,
     const std::optional<SolverId>& solver_id = std::nullopt,
     Parallelism parallelism = Parallelism::Max(), bool dynamic_schedule = false,
-    const std::function<void(MathematicalProgram*, MathematicalProgramResult,
-                             int64_t, int64_t)>* prog_teardown = nullptr);
-
-///**
-// * Provides the same functionality as SolveInParallel, but the programs and
-// * initial guesses are created using a generator. The same solver option, and
-// * solver ids are used when solving all the programs.
-// *
-// * The output of prog_generator cannot be a nullptr and should not be
-// dangling.
-// */
-// std::vector<MathematicalProgramResult> SolveInParallel(
-//    const std::function<MathematicalProgram*(int64_t, int64_t)>&
-//    prog_generator, const int64_t range_start, const int64_t range_end, const
-//    std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
-//        initial_guesses_generator =
-//            [](int64_t, int64_t) {
-//              return std::nullopt;
-//            },
-//    const SolverOptions* solver_options = nullptr,
-//    const std::optional<SolverId>& solver_id = std::nullopt,
-//    Parallelism parallelism = Parallelism::Max(), bool dynamic_schedule =
-//    false, const std::function<void(MathematicalProgram*,
-//    MathematicalProgramResult,
-//                             int64_t, int64_t)>* prog_teardown = nullptr);
-//
-///**
-// * Provides the same functionality as SolveInParallel, but the programs and
-// * initial guesses are created using a generator. The same solver option, and
-// * solver ids are used when solving all the programs.
-// *
-// * The output of prog_generator cannot be a nullptr.
-// */
-// std::vector<MathematicalProgramResult> SolveInParallel(
-//    const std::function<std::unique_ptr<MathematicalProgram>(int64_t,
-//    int64_t)>&
-//        prog_generator,
-//    const int64_t range_start, const int64_t range_end,
-//    const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&
-//        initial_guesses_generator =
-//            [](int64_t, int64_t) {
-//              return std::nullopt;
-//            },
-//    const SolverOptions* solver_options = nullptr,
-//    const std::optional<SolverId>& solver_id = std::nullopt,
-//    Parallelism parallelism = Parallelism::Max(), bool dynamic_schedule =
-//    false, const std::function<void(MathematicalProgram*,
-//    MathematicalProgramResult,
-//                             int64_t, int64_t)>* prog_teardown = nullptr);
+    const std::function<void(T*, const MathematicalProgramResult&, int64_t,
+                             int64_t)>* prog_teardown = nullptr);
 
 }  // namespace solvers
 }  // namespace drake
