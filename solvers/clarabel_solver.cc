@@ -226,8 +226,8 @@ b = [{}]
 )""",
       fmt::join(q_vec.data(), q_vec.data() + q_vec.size(), ", "),
       fmt::join(b_vec.data(), b_vec.data() + b_vec.size(), ", "));
-  math::GeneratePythonCsc(P, "P", &out_file);
-  math::GeneratePythonCsc(A, "A", &out_file);
+  out_file << math::GeneratePythonCsc(P, "P");
+  out_file << math::GeneratePythonCsc(A, "A");
   out_file << "cones = [" << std::endl;
 
   for (const clarabel::SupportedConeT<double>& cone : cones) {

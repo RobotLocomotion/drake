@@ -329,8 +329,8 @@ b = np.array([{}], dtype=np.float64)
       fmt::join(c_vec.data(), c_vec.data() + c_vec.size(), ", "),
       fmt::join(b_vec.data(), b_vec.data() + b_vec.size(), ", "));
 
-  math::GeneratePythonCsc(P, "P", &out_file);
-  math::GeneratePythonCsc(A, "A", &out_file);
+  out_file << math::GeneratePythonCsc(P, "P");
+  out_file << math::GeneratePythonCsc(A, "A");
 
   out_file << "data=dict(P=P, A=A, b=b, c=c)\n";
 

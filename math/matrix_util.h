@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <fstream>
 #include <functional>
 #include <set>
 #include <string_view>
@@ -253,15 +252,15 @@ MatrixX<typename Derived::Scalar> ExtractPrincipalSubmatrix(
   return minor;
 }
 
-/// Generate the python code to construct scipy.sparse matrix. The generated
+/// Returns the python statement to construct scipy.sparse matrix. The generated
 /// code will call sparse.csc_matrix() directly (please make sure you have
-/// imported the module through `from scipy import sparse`.
+/// imported the module through `from scipy import sparse`), and will end with a
+/// newline.
 /// @param mat The Eigen matrix to be generated to python code.
 /// @param name The name of the python variable for the sparse matrix.
-/// @param python_stream[in/out] The generated python code will be appended to
-/// `python_stream`
-void GeneratePythonCsc(const Eigen::SparseMatrix<double>& mat,
-                       std::string_view name, std::ostream* python_stream);
+/// @returns the generated python code
+std::string GeneratePythonCsc(const Eigen::SparseMatrix<double>& mat,
+                              std::string_view name);
 
 }  // namespace math
 }  // namespace drake
