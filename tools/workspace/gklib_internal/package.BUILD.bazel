@@ -1,0 +1,29 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "gklib",
+    srcs = glob(["*.c"], allow_empty = False),
+    hdrs = glob(["*.h"], allow_empty = False),
+    includes = ["."],
+    copts = [
+        "-fno-openmp",
+        "-fvisibility=hidden",
+        "-w",
+    ],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+)
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["LICENSE.txt"],
+    visibility = ["//visibility:public"],
+)
