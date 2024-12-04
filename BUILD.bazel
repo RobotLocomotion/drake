@@ -11,6 +11,9 @@ package(
 
 exports_files([
     "CPPLINT.cfg",
+    "MODULE.bazel",
+    "WORKSPACE.bzlmod",
+    "cmake/WORKSPACE.bzlmod.in",
     ".bazelproject",
     ".clang-format",
     ".drake-find_resource-sentinel",
@@ -84,11 +87,19 @@ filegroup(
 _INSTALL_TEST_COMMANDS = "install_test_commands"
 
 install(
+    name = "install_files",
+    data = ["package.xml"],
+    data_dest = "share/drake",
+    docs = ["LICENSE.TXT"],
+    doc_dest = "share/doc/drake",
+    visibility = ["//visibility:private"],
+)
+
+install(
     name = "install",
     install_tests_script = _INSTALL_TEST_COMMANDS,
-    data = ["package.xml"],
-    docs = ["LICENSE.TXT"],
     deps = [
+        ":install_files",
         "//bindings/pydrake:install",
         "//common:install",
         "//examples:install",

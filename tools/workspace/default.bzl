@@ -272,6 +272,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         rules_license_repository(name = "rules_license", mirrors = mirrors)
     if "rules_python" not in excludes:
         rules_python_repository(name = "rules_python", mirrors = mirrors)
+    else:
+        rules_python_repository(name = "rules_python", _constants_only = True)
     if "rules_rust" not in excludes:
         rules_rust_repository(name = "rules_rust", mirrors = mirrors)
     if "rules_rust_tinyjson" not in excludes:

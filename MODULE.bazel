@@ -1,0 +1,21 @@
+# This file marks a workspace root for the Bazel build system.
+# See `https://bazel.build/`.
+
+# This file lists Drake's external dependencies as known to bzlmod.
+#
+# When bzlmod is disabled (the default), this file is NOT used.
+# Instead, only WORKSPACE is used.
+#
+# When bzlmod is enabled, this file + WORKSPACE.bzlmod are both used,
+# and WORKSPACE is ignored.
+
+module(name = "drake")
+
+bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "rules_cc", version = "0.0.17")
+bazel_dep(name = "rules_java", version = "8.6.1")
+bazel_dep(name = "rules_license", version = "1.0.0")
+bazel_dep(name = "rules_python", version = "0.40.0")
+
+cc_configure = use_extension("@rules_cc//cc:extensions.bzl", "cc_configure_extension")
+use_repo(cc_configure, "local_config_cc")

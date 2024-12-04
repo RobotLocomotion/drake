@@ -7,6 +7,9 @@ startup --output_base="@BAZEL_OUTPUT_BASE@"
 # Inherit Drake's default options.
 @BAZELRC_IMPORT@
 
+# By default Drake (currently) opt-out of bzlmod, but for this build we want it.
+common --enable_bzlmod=true
+
 # Environment variables to be used in repository rules (if any).
 common @BAZEL_REPO_ENV@
 

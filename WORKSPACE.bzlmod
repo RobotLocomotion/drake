@@ -1,16 +1,33 @@
-# This file marks a workspace root for the Bazel build system.
-# See `https://bazel.build/`.
+# -*- bazel -*-
 #
-# When bzlmod is disabled (the default), only this file is used.
-# The related files MODULE.bazel and WORKSPACE.bzlmod are NOT used.
+# This file lists Drake's external dependencies as known to bzlmod.
 #
-# When bzlmod is enabled, this file is ignored.
+# When bzlmod is disabled (the default), this file is NOT used.
+# Instead, only WORKSPACE is used.
+#
+# When bzlmod is enabled, this file + MODULE.bazel are both used,
+# and WORKSPACE is ignored.
+
+# TODO(jwnimmer-tri) When Drake drops support for WORKSPACE, remember to also
+# clean up the following:
+# - Search for BZLMOD_ENABLED (and similar) and remove the checks. Be sure to
+#   use a case-insensitive search, and check for a space instead of underscore.
 
 workspace(name = "drake")
 
 load("//tools/workspace:default.bzl", "add_default_workspace")
 
-add_default_workspace()
+# This is the list of modules that our MODULE.bazel already incorporates.
+REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
+    "bazel_skylib",
+    "rules_cc",
+    "rules_license",
+    "rules_python",
+]
+
+add_default_workspace(
+    repository_excludes = REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES,
+)
 
 load("@build_bazel_apple_support//crosstool:setup.bzl", "apple_cc_configure")
 

@@ -160,6 +160,7 @@ def drake_py_binary(
             srcs = srcs,
             main = main,
             deps = deps,
+            precompile = "disabled",  # To avoid *.pyc conflicts.
             isolate = isolate,
             args = test_rule_args,
             data = data + test_rule_data,
