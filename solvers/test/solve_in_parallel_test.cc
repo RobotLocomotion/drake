@@ -409,12 +409,10 @@ GTEST_TEST(SolveInParallel, TestGeneratorsImplementation) {
       false,               // dynamic_schedule
       &teardown_ith        // prog_teardown
   );                       // NOLINT
-  int ctr = 0;
   for (const auto& result : results) {
     EXPECT_NE(result.get_solution_result(),
               SolutionResult::kSolutionResultNotSet);
     EXPECT_NEAR(std::abs(result.get_optimal_cost()), 1, kTol);
-    ctr++;
   }
 
   // Now remove the top 2 rows of A and b. This makes the box unbounded and so
