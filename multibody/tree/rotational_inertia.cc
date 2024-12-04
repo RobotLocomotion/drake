@@ -182,9 +182,8 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
 }
 
 template <typename T>
-boolean<T> RotationalInertia<T>::
-    AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-        bool use_principal_moments) const {
+boolean<T> RotationalInertia<
+    T>::AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality() const {
   // We use a tiny multiple of max_possible_inertia_moment to guide the value
   // of ε. We scale ε by max_possible_inertia_moment regardless of whether or
   // not we are using principle moments of inertia so that ε is similar across
@@ -201,9 +200,13 @@ boolean<T> RotationalInertia<T>::
   const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
   const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
-  const Vector3<double> moments = use_principal_moments
-                                      ? CalcPrincipalMomentsOfInertia()
-                                      : ExtractDoubleOrThrow(get_moments());
+  // TODO(Mitiguy) For now, this function is only used to test principal moments
+  //  of inertia. A future PR will instead first perform the tests herein with
+  //  `this` rotational inertia's diagonal moments of inertia e.g., with
+  //  ExtractDoubleOrThrow(get_moments()) and also do the product of inertia
+  //  inequality tests (e.g., is 2*abs(Ixy) ≤ Izz + ε).
+  const Vector3<double> moments = CalcPrincipalMomentsOfInertia();
+
   const double Ixx = moments.x();
   const double Iyy = moments.y();
   const double Izz = moments.z();
@@ -226,8 +229,7 @@ void RotationalInertia<T>::ThrowNotPhysicallyValid(
   // or if moments of inertia do not satisfy the triangle inequality.
   if constexpr (scalar_predicate<T>::is_bool) {
     if (!IsNaN()) {
-      if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality(
-              /* use_principal_moments = */ true)) {
+      if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality()) {
         const Vector3<double> p = CalcPrincipalMomentsOfInertia();
         error_message += fmt::format(
             "\nThe associated principal moments of inertia:"
