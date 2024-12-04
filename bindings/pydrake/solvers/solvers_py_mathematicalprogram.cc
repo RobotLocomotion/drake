@@ -1638,6 +1638,7 @@ void BindFreeFunctions(py::module m) {
           // that SolverOptions is not necessarily cheap to copy, so we still
           // carefully accept it by-pointer. The VectorXd is always necessarily
           // copied when going form numpy to Eigen so we still pass it by-value.
+          // TODO(Alexandre.Amice) change to generator form.
           [](std::vector<const MathematicalProgram*> progs,
               std::optional<std::vector<std::optional<Eigen::VectorXd>>>
                   initial_guesses,
@@ -1672,7 +1673,7 @@ void BindFreeFunctions(py::module m) {
           py::arg("dynamic_schedule") = false,
           py::call_guard<py::gil_scoped_release>(),
           doc.SolveInParallel
-              .doc_6args_progs_initial_guesses_solver_options_solver_ids_parallelism_dynamic_schedule)
+              .doc_6args_conststdvector_conststdvector_conststdvector_conststdvector_drakeParallelism_bool)
       .def(
           "SolveInParallel",
           [](std::vector<const MathematicalProgram*> progs,
@@ -1681,6 +1682,7 @@ void BindFreeFunctions(py::module m) {
               const SolverOptions* solver_options,
               const std::optional<SolverId>& solver_id,
               const Parallelism& parallelism, bool dynamic_schedule) {
+            // TODO(Alexandre.Amice) change to generator form.
             std::vector<const Eigen::VectorXd*> initial_guesses_ptrs;
             if (initial_guesses.has_value()) {
               initial_guesses_ptrs.reserve(initial_guesses->size());
@@ -1699,7 +1701,7 @@ void BindFreeFunctions(py::module m) {
           py::arg("dynamic_schedule") = false,
           py::call_guard<py::gil_scoped_release>(),
           doc.SolveInParallel
-              .doc_6args_progs_initial_guesses_solver_options_solver_id_parallelism_dynamic_schedule);
+              .doc_6args_conststdvector_conststdvector_constdrakesolversSolverOptions_conststdoptional_drakeParallelism_bool);
 }
 
 }  // namespace

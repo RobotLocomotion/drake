@@ -1,6 +1,5 @@
 #include "drake/solvers/solve.h"
 
-#include <iostream>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -56,7 +55,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     Parallelism parallelism, bool dynamic_schedule,
     const std::function<void(T*, const MathematicalProgramResult&, int64_t,
                              int64_t)>* prog_teardown) {
-  DRAKE_THROW_UNLESS(range_start < range_end);
+  DRAKE_THROW_UNLESS(range_start <= range_end);
   const int num_progs = range_end - range_start;
   // Pre-allocate the results (i.e., don't use push_back) so that we can safely
   // write to the vector on multiple threads concurrently.
@@ -139,16 +138,6 @@ std::vector<MathematicalProgramResult> SolveInParallel(
     if (prog_teardown != nullptr) {
       (*prog_teardown)(&prog, results[output_index], thread_num, i);
     }
-    //
-    //    std::cout << prog << std::endl;
-    //    std::cout << "INTERNAL SOLVE" << std::endl;
-    //    std::cout << (results[output_index]).get_optimal_cost() << std::endl;
-    //    std::cout << (results[output_index]).get_solution_result() <<
-    //    std::endl; std::cout << fmt::format(
-    //                     "{}\n",
-    //                     fmt_eigen(results[output_index].get_x_val().transpose()))
-    //              << std::endl;
-    //    std::cout << "DONE" << std::endl;
   };
   const auto solve_ith_parallel = [&](const int thread_num, const int64_t i) {
     solve_ith(/* in parallel */ true, thread_num, i);

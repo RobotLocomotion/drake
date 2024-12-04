@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -327,17 +325,6 @@ GTEST_TEST(SolveInParallel, TestGeneratorsImplementation) {
     // has one cost (the linear cost).
     progs[thread_num].linear_costs()[0].evaluator()->update_coefficient_entry(
         dimension, maximize ? -1 : 1);
-    //    if (i == 1) {
-    //    std::cout << progs[thread_num] << std::endl;
-    //    auto result = Solve(progs[thread_num]);
-    //    std::cout << "INTERNAL SOLVE" << std::endl;
-    //    std::cout << result.get_optimal_cost() << std::endl;
-    //    std::cout << result.get_solution_result() << std::endl;
-    //    std::cout << fmt::format("{}\n",
-    //    fmt_eigen(result.get_x_val().transpose()))
-    //              << std::endl;
-    //    std::cout << "DONE" << std::endl;
-    //    }
     return &(progs[thread_num]);
   };
 
@@ -356,62 +343,6 @@ GTEST_TEST(SolveInParallel, TestGeneratorsImplementation) {
         }
       };
 
-  // This set is bounded which implies all the programs should be solved.
-  //  std::vector<MathematicalProgramResult> results =
-  //      SolveInParallel<MathematicalProgram*>(
-  //          make_ith,     // prog_generator
-  //          0,            // range_start
-  //          box_dim * 2,  // range_end
-  //          [](int64_t, int64_t) -> std::optional<Eigen::VectorXd> {
-  //            return std::nullopt;
-  //          },                   // initial_guesses_generator
-  //          nullptr,             // solver_options
-  //          std::nullopt,        // solver_id
-  //          Parallelism::Max(),  // parallelism
-  //          false,               // dynamic_schedule
-  //          &teardown_ith        // prog_teardown
-  //      );                       // NOLINT
-  //  EXPECT_EQ(ssize(results), box_dim * 2);
-  //  // The set is bounded, so we expect that all the results should be
-  //  populated
-  //  // and should have a cost of 2.
-  //  for (const auto& result : results) {
-  //    EXPECT_NE(result.get_solution_result(),
-  //              SolutionResult::kSolutionResultNotSet);
-  //    EXPECT_NEAR(std::abs(result.get_optimal_cost()), 1, kTol);
-  //  }
-  //
-  //  // Test that we can solve with the generator not starting and ending at 0
-  //  and
-  //  // the range end.
-  //  results = SolveInParallel<MathematicalProgram*>(
-  //      make_ith,  // prog_generator
-  //      2,         // range_start
-  //      4,         // range_end
-  //      [](int64_t, int64_t) -> std::optional<Eigen::VectorXd> {
-  //        return std::nullopt;
-  //      },                   // initial_guesses_generator
-  //      nullptr,             // solver_options
-  //      std::nullopt,        // solver_id
-  //      Parallelism::Max(),  // parallelism
-  //      false,               // dynamic_schedule
-  //      &teardown_ith        // prog_teardown
-  //  );                       // NOLINT
-  //  EXPECT_EQ(ssize(results), 2);
-  //  EXPECT_NEAR(results[0].get_optimal_cost(), -1, kTol);
-  //  EXPECT_NEAR(results[0].GetSolution(x)[1], 1, kTol);
-  //  EXPECT_NEAR(results[1].get_optimal_cost(), -1, kTol);
-  //  EXPECT_NEAR(results[1].GetSolution(x)[1], -1, kTol);
-
-  // On the 0th thread, we add a dummy constraint that is marked as NOT
-  // thread-safe. This tests that we circle back and solve programs which are
-  // not thread-safe.
-  const auto dummy_non_thread_safe_evaluator =
-      std::make_shared<DummyConstraint>();
-  auto y = progs[0].NewContinuousVariables(1, "y");
-  Binding<Constraint> dummy_binding(dummy_non_thread_safe_evaluator, y);
-  progs[0].AddConstraint(dummy_binding);
-  EXPECT_FALSE(progs[0].IsThreadSafe());
   std::vector<MathematicalProgramResult> results =
       SolveInParallel<MathematicalProgram*>(
           make_ith,     // prog_generator
@@ -426,64 +357,97 @@ GTEST_TEST(SolveInParallel, TestGeneratorsImplementation) {
           false,               // dynamic_schedule
           &teardown_ith        // prog_teardown
       );                       // NOLINT
+  EXPECT_EQ(ssize(results), box_dim * 2);
+  // The set is bounded, so we expect that all the results should be populated
+  // and should have a cost of 2.
+  for (const auto& result : results) {
+    EXPECT_NE(result.get_solution_result(),
+              SolutionResult::kSolutionResultNotSet);
+    EXPECT_NEAR(std::abs(result.get_optimal_cost()), 1, kTol);
+  }
+
+  // Test that we can solve with the generator not starting and ending at 0 and
+  // the range end.
+  results = SolveInParallel<MathematicalProgram*>(
+      make_ith,  // prog_generator
+      2,         // range_start
+      4,         // range_end
+      [](int64_t, int64_t) -> std::optional<Eigen::VectorXd> {
+        return std::nullopt;
+      },                   // initial_guesses_generator
+      nullptr,             // solver_options
+      std::nullopt,        // solver_id
+      Parallelism::Max(),  // parallelism
+      false,               // dynamic_schedule
+      &teardown_ith        // prog_teardown
+  );                       // NOLINT
+  EXPECT_EQ(ssize(results), 2);
+  EXPECT_NEAR(results[0].get_optimal_cost(), -1, kTol);
+  EXPECT_NEAR(results[0].GetSolution(x)[1], 1, kTol);
+  EXPECT_NEAR(results[1].get_optimal_cost(), -1, kTol);
+  EXPECT_NEAR(results[1].GetSolution(x)[1], -1, kTol);
+
+  // On the 0th thread, we add a dummy constraint that is marked as NOT
+  // thread-safe. This tests that we circle back and solve programs which are
+  // not thread-safe.
+  const auto dummy_non_thread_safe_evaluator =
+      std::make_shared<DummyConstraint>();
+  auto y = progs[0].NewContinuousVariables(1, "y");
+  Binding<Constraint> dummy_binding(dummy_non_thread_safe_evaluator, y);
+  progs[0].AddConstraint(dummy_binding);
+  EXPECT_FALSE(progs[0].IsThreadSafe());
+  results = SolveInParallel<MathematicalProgram*>(
+      make_ith,     // prog_generator
+      0,            // range_start
+      box_dim * 2,  // range_end
+      [](int64_t, int64_t) -> std::optional<Eigen::VectorXd> {
+        return std::nullopt;
+      },                   // initial_guesses_generator
+      nullptr,             // solver_options
+      std::nullopt,        // solver_id
+      Parallelism::Max(),  // parallelism
+      false,               // dynamic_schedule
+      &teardown_ith        // prog_teardown
+  );                       // NOLINT
   int ctr = 0;
   for (const auto& result : results) {
     EXPECT_NE(result.get_solution_result(),
               SolutionResult::kSolutionResultNotSet);
     EXPECT_NEAR(std::abs(result.get_optimal_cost()), 1, kTol);
-    if (!(std::abs(std::abs(result.get_optimal_cost()) - 1) < kTol)) {
-      std::cout << *make_ith(0, ctr) << std::endl;
-      teardown_ith(nullptr, results[ctr], 0, ctr);
-      std::cout << ctr << std::endl;
-      std::cout << result.get_optimal_cost() << std::endl;
-      std::cout << result.get_solution_result() << std::endl;
-      std::cout << fmt::format("{}\n",
-                               fmt_eigen(result.get_x_val().transpose()))
-                << std::endl;
-    }
     ctr++;
   }
 
   // Now remove the top 2 rows of A and b. This makes the box unbounded and so
   // not all the programs should solve.
-  //  const int num_rows = A.rows() - 2;
-  //  for (int i = 0; i < ssize(progs); ++i) {
-  //    progs[i].linear_constraints()[0].evaluator()->UpdateCoefficients(
-  //        A.bottomRows(num_rows), lb.bottomRows(num_rows),
-  //        ub.bottomRows(num_rows));
-  //  }
-  //  results = SolveInParallel<MathematicalProgram*>(
-  //      make_ith,     // prog_generator
-  //      0,            // range_start
-  //      box_dim * 2,  // range_end
-  //      [](int64_t, int64_t) -> std::optional<Eigen::VectorXd> {
-  //        return std::nullopt;
-  //      },                    // initial_guesses_generator
-  //      nullptr,              // solver_options
-  //      std::nullopt,         // solver_id
-  //      Parallelism::None(),  // parallelism
-  //      false,                // dynamic_schedule
-  //      &teardown_ith         // prog_teardown
-  //  );                        // NOLINT
-  //  bool at_least_one_solution_not_set = false;
-  //  for (const auto& result : results) {
-  //    if (result.is_success()) {
-  //      EXPECT_NEAR(std::abs(result.get_optimal_cost()), 1, 1e-6);
-  //      std::cout << fmt::format("{}\n",
-  //                               fmt_eigen(result.get_x_val().transpose()))
-  //                << std::endl;
-  //    } else if (result.get_solution_result() !=
-  //               SolutionResult::kSolutionResultNotSet) {
-  //      at_least_one_solution_not_set = true;
-  //    }
-  //  }
-  //  EXPECT_TRUE(at_least_one_solution_not_set);
-  //
-  //  // Reset the programs to check boundedness properly.
-  //  for (int i = 0; i < ssize(progs); ++i) {
-  //    progs[i].linear_constraints()[0].evaluator()->UpdateCoefficients(
-  //        A.topRows(num_rows), lb.topRows(num_rows), ub.topRows(num_rows));
-  //  }
+  const int num_rows = A.rows() - 2;
+  for (int i = 0; i < ssize(progs); ++i) {
+    progs[i].linear_constraints()[0].evaluator()->UpdateCoefficients(
+        A.bottomRows(num_rows), lb.bottomRows(num_rows),
+        ub.bottomRows(num_rows));
+  }
+  results = SolveInParallel<MathematicalProgram*>(
+      make_ith,     // prog_generator
+      0,            // range_start
+      box_dim * 2,  // range_end
+      [](int64_t, int64_t) -> std::optional<Eigen::VectorXd> {
+        return std::nullopt;
+      },                    // initial_guesses_generator
+      nullptr,              // solver_options
+      std::nullopt,         // solver_id
+      Parallelism::None(),  // parallelism
+      false,                // dynamic_schedule
+      &teardown_ith         // prog_teardown
+  );                        // NOLINT
+  bool at_least_one_solution_not_set = false;
+  for (const auto& result : results) {
+    if (result.is_success()) {
+      EXPECT_NEAR(std::abs(result.get_optimal_cost()), 1, 1e-6);
+    } else if (result.get_solution_result() !=
+               SolutionResult::kSolutionResultNotSet) {
+      at_least_one_solution_not_set = true;
+    }
+  }
+  EXPECT_TRUE(at_least_one_solution_not_set);
 }
 
 /* Test fixture that runs SolveInParallel against a specific solver_id. When run

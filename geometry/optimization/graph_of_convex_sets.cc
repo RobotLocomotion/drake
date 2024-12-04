@@ -858,10 +858,6 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     }
 
     // Check if edge e = (u,v) could be on a path from start to goal.
-    std::vector<const MathematicalProgram*> prog_ptrs(progs.size());
-    for (int i = 0; i < ssize(progs); ++i) {
-      prog_ptrs[i] = progs[i].get();
-    }
     std::optional<solvers::SolverId> maybe_solver_id;
     solvers::SolverOptions preprocessing_solver_options =
         options.preprocessing_solver_options.value_or(options.solver_options);
@@ -874,7 +870,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     }
 
     std::vector<MathematicalProgramResult> results =
-        SolveInParallel(prog_ptrs, nullptr, &preprocessing_solver_options,
+        SolveInParallel(progs, nullptr, &preprocessing_solver_options,
                         maybe_solver_id, options.parallelism, false);
 
     for (int i = 0; i < this_batch_nE; ++i) {

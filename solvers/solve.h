@@ -126,8 +126,9 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  * the output is the ith program, guess, option and solver_id respectively. The
  * index i is iterated from [range_start, range_end).
  *
- * If the output of prog_generator is nullptr, then the program is skipped.
- * The user is responsible for ensuring that no pointer is not dangling.
+ * If the output of prog_generator is nullptr, then the program is skipped. This
+ * can be useful if e.g. we wish to exit the parallel solve early. The user is
+ * responsible for ensuring that no pointer is not dangling.
  *
  * The output of the initial_guesses_generator, solver_options_generator and
  * solver_ids can be std::nullopt
@@ -135,6 +136,10 @@ std::vector<MathematicalProgramResult> SolveInParallel(
  * After the ith program is solved, the prog_teardown function is called with
  * the ith program and its result, the current thread number, and the index i to
  * potentially clean up after the solve or perform some other callback.
+ *
+ * @note This method may call the generator on non-threadsafe programs more than
+ * once. If generating the programs is an expensive operation, consider solving
+ * these programs sequentially without calling this method.
  *
  * @return A vector of size range_end - range_start where the 0th index is
  * populated with the result of solving prog_generator(range_start) and the last

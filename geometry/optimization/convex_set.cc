@@ -179,6 +179,75 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
 
   return !certified_unbounded.load();
 }
+//bool IsBoundedParallel2(const ConvexSet& s, Parallelism parallelism) {
+//  // Pre-allocate programs (which will be updated and solved within the parallel
+//  // loop).
+//  std::vector<MathematicalProgram> progs(parallelism.num_threads());
+//  for (int i = 0; i < ssize(progs); ++i) {
+//    ConstructEmptyBoundednessProgram(&(progs[i]), s);
+//  }
+//
+//  std::atomic<bool> certified_unbounded = false;
+//  auto index_to_dimension = [&](const int64_t i) -> int {
+//    return i / 2;
+//  };
+//
+//  // This worker lambda maps the index i to a dimension and direction to check
+//  // boundedness. If unboundedness has already been verified, it returns
+//  // nullptr. If unboundedness is verified in this iteration,
+//  // certified_unbounded will be updated to reflect that fact. For a given index
+//  // i, the dimension is int(i / 2), and if i % 2 == 0, then we maximize,
+//  // otherwise, we minimize.
+//  auto make_ith = [&](int64_t thread_num, int64_t i) -> MathematicalProgram* {
+//    if (certified_unbounded.load()) {
+//      // Exit early if unboundedness has already been verified.
+//      return nullptr;
+//    }
+//
+//    const int dimension = index_to_dimension(i);
+//    bool maximize = i % 2 == 0;
+//
+//    // Update the objective vector. By construction, each MathematicalProgram
+//    // has one cost (the linear cost).
+//    progs[thread_num].linear_costs()[0].evaluator()->update_coefficient_entry(
+//        dimension, maximize ? -1 : 1);
+//    return &(progs[thread_num]);
+//  };
+//
+//  std::function<void(MathematicalProgram**, const MathematicalProgramResult&,
+//                     int64_t, int64_t)>
+//      teardown_ith = [&](MathematicalProgram**,
+//                         const MathematicalProgramResult& result_i,
+//                         int64_t thread_num, int64_t i) {
+//        const int dimension = index_to_dimension(i);
+//        progs[thread_num]
+//            .linear_costs()[0]
+//            .evaluator()
+//            ->update_coefficient_entry(dimension, 0);
+//        if (ProgramResultImpliesUnbounded(result_i)) {
+//          certified_unbounded.store(true);
+//        }
+//      };
+//
+//  // We run the loop from 0 to 2 * s.ambient_dimension(), since two programs are
+//  // solved for each dimension (maximizing and minimizing). All programs are the
+//  // same size, so static scheduling is appropriate.
+//  std::vector<MathematicalProgramResult> results =
+//      SolveInParallel<MathematicalProgram*>(
+//          make_ith,                   // prog_generator
+//          0,                          // range_start
+//          2 * s.ambient_dimension(),  // range_end
+//          [](int64_t, int64_t) -> std::optional<Eigen::VectorXd> {
+//            return std::nullopt;
+//          },                   // initial_guesses_generator
+//          nullptr,             // solver_options
+//          std::nullopt,        // solver_id
+//          Parallelism::Max(),  // parallelism
+//          false,               // dynamic_schedule
+//          &teardown_ith        // prog_teardown
+//      );                       // NOLINT
+//  return !certified_unbounded.load();
+//}
 }  // namespace
 
 bool ConvexSet::GenericDoIsBounded(Parallelism parallelism) const {
