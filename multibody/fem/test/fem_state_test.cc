@@ -175,15 +175,24 @@ TYPED_TEST(FemStateTest, CopyFrom) {
 
   FemState<T> state(this->fem_state_system_.get());
   state.SetPositions(-1.23 * q<T>());
+  state.SetTimeStepPositions(-1.24 * q<T>());
   state.SetVelocities(3.14 * v<T>());
   state.SetAccelerations(-1.29 * a<T>());
 
   FemState<T> target(this->fem_state_system_.get());
+  EXPECT_NE(state.GetPositions(), target.GetPositions());
+  EXPECT_NE(state.GetPreviousStepPositions(),
+            target.GetPreviousStepPositions());
+  EXPECT_NE(state.GetVelocities(), target.GetVelocities());
+  EXPECT_NE(state.GetAccelerations(), target.GetAccelerations());
+
+  ASSERT_EQ(state.num_dofs(), target.num_dofs());
+  ASSERT_EQ(state.num_nodes(), target.num_nodes());
   target.CopyFrom(state);
 
-  EXPECT_EQ(state.num_dofs(), target.num_dofs());
-  EXPECT_EQ(state.num_nodes(), target.num_nodes());
   EXPECT_EQ(state.GetPositions(), target.GetPositions());
+  EXPECT_EQ(state.GetPreviousStepPositions(),
+            target.GetPreviousStepPositions());
   EXPECT_EQ(state.GetVelocities(), target.GetVelocities());
   EXPECT_EQ(state.GetAccelerations(), target.GetAccelerations());
 }

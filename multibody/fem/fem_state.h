@@ -12,6 +12,7 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
+// TODO(xuchenhan-tri): Move this class into internal namespace.
 /** %FemState provides access to private workspace FEM state and per-element
  state-dependent data. %FemState comes in two flavors, an "owned" version that
  owns the state and data stored in the private workspace, and a "shared" version
@@ -74,8 +75,15 @@ class FemState {
   void SetAccelerations(const Eigen::Ref<const VectorX<T>>& a);
   /* @} */
 
+  /** Makes `this` %FemState and exact copy of the given `other` %FemState.
+   @throws std::exception if num_dofs() of `this` %FemState and `other`
+   %FemState are not the same.
+   @throws std::exception if `this` %FemState is not owned (see class
+   documentation). */
   void CopyFrom(const FemState<T>& other) {
     DRAKE_THROW_UNLESS(num_dofs() == other.num_dofs());
+    if (owned_context_ == nullptr)
+      throw std::runtime_error("Trying to mutate a shared FemState.");
     SetPositions(other.GetPositions());
     SetTimeStepPositions(other.GetPreviousStepPositions());
     SetVelocities(other.GetVelocities());

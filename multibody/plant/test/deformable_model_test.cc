@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -14,6 +15,7 @@ namespace {
 
 using Eigen::Vector3d;
 using Eigen::VectorBlock;
+using Eigen::VectorXd;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
 using geometry::SceneGraphInspector;
@@ -51,6 +53,8 @@ class DeformableModelTest : public ::testing::Test {
                                   RigidTransformd X_WS = RigidTransformd()) {
     auto geometry =
         make_unique<GeometryInstance>(X_WS, make_unique<Sphere>(1), "sphere");
+    geometry::ProximityProperties deformable_proximity_props;
+    geometry->set_proximity_properties(deformable_proximity_props);
     DeformableBodyId body_id = model->RegisterDeformableBody(
         std::move(geometry), fem::DeformableBodyConfig<T>{}, resolution_hint);
     return body_id;
@@ -562,34 +566,53 @@ TEST_F(DeformableModelTest, LockUnlock) {
 
   plant_->Finalize();
   const int num_dofs = deformable_model_ptr_->GetFemModel(model_id).num_dofs();
+  auto diagram = builder_.Build();
 
   systems::DiscreteStateIndex state_index =
       deformable_model_ptr_->GetDiscreteStateIndex(model_id);
-  auto context = plant_->CreateDefaultContext();
+  auto context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(context.get());
   VectorBlock<VectorX<double>> discrete_state =
-      context->get_mutable_discrete_state(state_index).get_mutable_value();
+      plant_context.get_mutable_discrete_state(state_index).get_mutable_value();
 
-  /* Assign some position, velocity, and acceleration values. */
-  discrete_state.setRandom();
-  VectorX<double> q0 = discrete_state.head(num_dofs);
+  /* Assign arbitrary position, velocity, and acceleration values. */
+  discrete_state.head(num_dofs) = 3.14 * discrete_state.head(num_dofs);
+  discrete_state.tail(2 * num_dofs) =
+      VectorXd::LinSpaced(2 * num_dofs, 0.0, 1.0);
+  const VectorX<double> q0 = discrete_state.head(num_dofs);
 
-  deformable_model_ptr_->Lock(model_id, &*context);
-  EXPECT_TRUE(deformable_model_ptr_->is_locked(model_id, *context));
+  deformable_model_ptr_->Lock(model_id, &plant_context);
+  EXPECT_TRUE(deformable_model_ptr_->is_locked(model_id, plant_context));
   /* Verify that the position values are unchanged upon locking. */
   EXPECT_EQ(discrete_state.head(num_dofs), q0);
   /* Verify that the velocity and acceleration values are set to zero upon
   locking. */
   EXPECT_EQ(discrete_state.tail(2 * num_dofs),
             VectorX<double>::Zero(2 * num_dofs));
+  diagram->ExecuteForcedEvents(context.get());
+  const VectorXd& locked_next_state =
+      plant_context.get_discrete_state(state_index).value();
+  /* The position, velocity, and acceleration persist for the next time step. */
+  EXPECT_EQ(locked_next_state.head(num_dofs), q0);
+  EXPECT_EQ(locked_next_state.tail(2 * num_dofs),
+            VectorX<double>::Zero(2 * num_dofs));
 
-  deformable_model_ptr_->Unlock(model_id, &*context);
-  EXPECT_FALSE(deformable_model_ptr_->is_locked(model_id, *context));
+  deformable_model_ptr_->Unlock(model_id, &plant_context);
+  EXPECT_FALSE(deformable_model_ptr_->is_locked(model_id, plant_context));
   /* Verify that the position values are unchanged after unlocking. */
   EXPECT_EQ(discrete_state.head(num_dofs), q0);
   /* Verify that the velocity and acceleration values remain zero after
   unlocking. */
   EXPECT_EQ(discrete_state.tail(2 * num_dofs),
             VectorX<double>::Zero(2 * num_dofs));
+  /* The position, velocity, and acceleration for the next step. */
+  diagram->ExecuteForcedEvents(context.get());
+  const VectorXd& unlocked_next_state =
+      plant_context.get_discrete_state(state_index).value();
+  EXPECT_FALSE(CompareMatrices(unlocked_next_state.head(num_dofs), q0, 1e-4));
+  EXPECT_FALSE(CompareMatrices(unlocked_next_state.tail(2 * num_dofs),
+                               VectorXd::Zero(2 * num_dofs), 1e-2));
 }
 
 }  // namespace

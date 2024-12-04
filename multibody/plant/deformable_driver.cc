@@ -231,6 +231,7 @@ void DeformableDriver<T>::AppendLinearDynamicsMatrix(
   for (DeformableBodyIndex index(0); index < num_bodies; ++index) {
     const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
     if (deformable_model_->is_locked(body_id, context)) {
+      A->push_back(MatrixX<T>::Zero(0, 0));
       continue;
     }
     const SchurComplement& schur_complement =

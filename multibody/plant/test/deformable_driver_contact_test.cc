@@ -381,26 +381,38 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixLocked) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
   std::vector<MatrixXd> A;
-  DeformableBodyIndex body_index1(1);
+  driver_->AppendLinearDynamicsMatrix(plant_context, &A);
+  /* Confirm the bodies, when unlocked, have non-trivial linear dynamics
+   matrices. */
+  ASSERT_EQ(A.size(), 2);
+  EXPECT_NE(A[0].size(), 0);
+  EXPECT_NE(A[1].size(), 0);
 
-  /* With body0 locked, ensure that the dynamics matrix only has a row for
-  body1. */
+  /* With body0 locked, ensure that the dynamics matrix for body0 is empty. */
   model_->Lock(body_id0_, context_.get());
 
   A.clear();
   driver_->AppendLinearDynamicsMatrix(plant_context, &A);
-  ASSERT_EQ(A.size(), 1);
-  EXPECT_EQ(A[0], EvalFreeMotionTangentMatrixSchurComplement(plant_context,
+  ASSERT_EQ(A.size(), 2);
+  EXPECT_EQ(A[0].rows(), 0);
+  EXPECT_EQ(A[0].cols(), 0);
+  /* The linear dynamics matrix for body1 remains unchanged. */
+  DeformableBodyIndex body_index1(1);
+  EXPECT_EQ(A[1], EvalFreeMotionTangentMatrixSchurComplement(plant_context,
                                                              body_index1)
                           .get_D_complement() *
                       plant_->time_step());
 
-  /* With all bodies locked, ensure the dynamics matrix is empty. */
+  /* With all bodies locked, ensure the linear dynamic matrices for both bodies
+   are empty. */
   model_->Lock(body_id1_, context_.get());
-
   A.clear();
   driver_->AppendLinearDynamicsMatrix(plant_context, &A);
-  ASSERT_EQ(A.size(), 0);
+  ASSERT_EQ(A.size(), 2);
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(A[i].rows(), 0);
+    EXPECT_EQ(A[i].cols(), 0);
+  }
 }
 
 TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {

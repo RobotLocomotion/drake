@@ -161,6 +161,19 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
            owning this deformable model. */
   void AddExternalForce(std::unique_ptr<ForceDensityField<T>> external_force);
 
+  // TODO(xuchenhan-tri): We should allow instrospecting external forces
+  // pre-finalize. Currently we add gravity forces at finalize time (instead of
+  // immediately after a deformable body is registered) because when gravity is
+  // modified via MbP's API, there's no easy way to propagate that information
+  // to deformable models.
+  /** Returns the force density fields acting on the deformable body with the
+   given `id`.
+   @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
+   or if no deformable body with the given `id` has been registered in this
+   model. */
+  const std::vector<const ForceDensityField<T>*>& GetExternalForces(
+      DeformableBodyId id) const;
+
   /** Locks the deformable body with the given `id` in the given context.
    Locking a deformable body sets its vertex velocities and accelerations to
    zero and freezes its vertex positions. A locked deformable body is not
@@ -175,30 +188,14 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @throw std::exception if a deformable body with the given id is not
    registered.
    @throw std::exception if context is null. */
-  void Lock(DeformableBodyId id, systems::Context<T>* context) const {
-    DRAKE_THROW_UNLESS(context != nullptr);
-    ThrowUnlessRegistered(__func__, id);
-    context->get_mutable_abstract_parameter(is_locked_parameter_indexes_.at(id))
-        .set_value(true);
-    /* Set both the accelerations and the velocities to zero, noting that the
-     dofs are stored in the order of q, v, and then a. */
-    context->get_mutable_discrete_state(discrete_state_indexes_.at(id))
-        .get_mutable_value()
-        .tail(2 * fem_models_.at(id)->num_dofs())
-        .setZero();
-  }
+  void Lock(DeformableBodyId id, systems::Context<T>* context) const;
 
   /** Unlocks the deformable body with the given `id` in the given context.
    @see Lock().
    @throw std::exception if a deformable body with the given id is not
     registered.
    @throw std::exception if context is null. */
-  void Unlock(DeformableBodyId id, systems::Context<T>* context) const {
-    DRAKE_THROW_UNLESS(context != nullptr);
-    ThrowUnlessRegistered(__func__, id);
-    context->get_mutable_abstract_parameter(is_locked_parameter_indexes_.at(id))
-        .set_value(false);
-  }
+  void Unlock(DeformableBodyId id, systems::Context<T>* context) const;
 
   /** @return true if and only if the deformable body with the given id is
    locked.
@@ -210,19 +207,6 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
     return context.get_parameters().template get_abstract_parameter<bool>(
         is_locked_parameter_indexes_.at(id));
   }
-
-  // TODO(xuchenhan-tri): We should allow instrospecting external forces
-  // pre-finalize. Currently we add gravity forces at finalize time (instead of
-  // immediately after a deformable body is registered) because when gravity is
-  // modified via MbP's API, there's no easy way to propagate that information
-  // to deformable models.
-  /** Returns the force density fields acting on the deformable body with the
-   given `id`.
-   @throws std::exception if MultibodyPlant::Finalize() has not been called yet.
-   or if no deformable body with the given `id` has been registered in this
-   model. */
-  const std::vector<const ForceDensityField<T>*>& GetExternalForces(
-      DeformableBodyId id) const;
 
   /** Returns the FemModel for the body with `id`.
    @throws exception if no deformable body with `id` is registered with `this`

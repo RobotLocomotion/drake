@@ -209,6 +209,30 @@ DeformableModel<T>::GetExternalForces(DeformableBodyId id) const {
 }
 
 template <typename T>
+void DeformableModel<T>::Lock(DeformableBodyId id,
+                              systems::Context<T>* context) const {
+  DRAKE_THROW_UNLESS(context != nullptr);
+  ThrowUnlessRegistered(__func__, id);
+  context->get_mutable_abstract_parameter(is_locked_parameter_indexes_.at(id))
+      .set_value(true);
+  /* Set both the accelerations and the velocities to zero, noting that the
+   dofs are stored in the order of q, v, and then a. */
+  context->get_mutable_discrete_state(discrete_state_indexes_.at(id))
+      .get_mutable_value()
+      .tail(2 * fem_models_.at(id)->num_dofs())
+      .setZero();
+}
+
+template <typename T>
+void DeformableModel<T>::Unlock(DeformableBodyId id,
+                                systems::Context<T>* context) const {
+  DRAKE_THROW_UNLESS(context != nullptr);
+  ThrowUnlessRegistered(__func__, id);
+  context->get_mutable_abstract_parameter(is_locked_parameter_indexes_.at(id))
+      .set_value(false);
+}
+
+template <typename T>
 const fem::FemModel<T>& DeformableModel<T>::GetFemModel(
     DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);

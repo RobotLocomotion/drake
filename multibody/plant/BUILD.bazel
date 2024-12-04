@@ -1024,6 +1024,7 @@ drake_cc_googletest(
     deps = [
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework:diagram_builder",
     ],

@@ -138,12 +138,16 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
    deformable body registered in this model to `A` in increasing order of
    deformable body indexes. The matrix corresponding to a body without any
    participating dof is empty.
+   @note a locked deformable body has no participating dofs and hence the
+   corresponding matrix is empty. See DeformableModel::Lock().
    @pre A != nullptr. */
   void AppendLinearDynamicsMatrix(const systems::Context<T>& context,
                                   std::vector<MatrixX<T>>* A) const;
 
   /* Appends discrete contact pairs where at least one of the bodies in contact
    is deformable.
+   @note a locked deformable body does not participate in contact. See
+   DeformableModel::Lock().
    @pre result != nullptr. */
   void AppendDiscreteContactPairs(
       const systems::Context<T>& context,
@@ -151,6 +155,8 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
 
   /* Appends the constraint kinematics information for each deformable rigid
    fixed constraint.
+   @note If a deformable body is locked, then the constraint kinematics is
+   ignored.
    @pre result != nullptr. */
   void AppendDeformableRigidFixedConstraintKinematics(
       const systems::Context<T>& context,
