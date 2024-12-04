@@ -254,23 +254,12 @@ drake_lcm_cc_library(
     ],
 )
 
-# Generate the *.py sources, but keep __init__.py separate, so that it doesn't
-# get installed.  The install will use this (private) library.  Users should
-# depend on ":lcmtypes_drake_py", immediately below.
 drake_lcm_py_library(
-    name = "_generated_lcmtypes_drake_py",
-    # We'll rely on the //:module_py path munging instead.
-    add_current_package_to_imports = False,
+    name = "lcmtypes_drake_py",
     lcm_package = "drake",
     lcm_srcs = ALL_LCM_SRCS,
-    visibility = ["//visibility:private"],
-)
-
-drake_py_library(
-    name = "lcmtypes_drake_py",
-    srcs = ["__init__.py"],
     deps = [
-        ":_generated_lcmtypes_drake_py",
+        "//:module_py",
     ],
 )
 
@@ -351,7 +340,7 @@ install(
         ],
     }),
     targets = [
-        ":_generated_lcmtypes_drake_py",
+        ":lcmtypes_drake_py",
     ] + select({
         "@lcm//:lcm_install_java_is_off": [],
         "//conditions:default": [

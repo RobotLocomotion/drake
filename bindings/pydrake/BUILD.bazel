@@ -35,6 +35,7 @@ exports_files([
 PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 
 # This target provides the following Python modules:
+# - drake (i.e., our lcmtypes)
 # - pydrake
 # - pydrake.autodiffutils
 # - pydrake.common (and all of its sub-modules)
@@ -48,6 +49,7 @@ drake_py_library(
     ],
     deps = [
         "//bindings/pydrake/common:_init_py",
+        "//lcmtypes:lcmtypes_drake_py",
     ],
 )
 
@@ -349,7 +351,6 @@ drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
-        "//lcmtypes:lcmtypes_drake_py",
     ],
 )
 
