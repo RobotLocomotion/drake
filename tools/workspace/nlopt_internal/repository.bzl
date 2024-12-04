@@ -10,7 +10,7 @@ def nlopt_internal_repository(
         sha256 = "1e6c33f8cbdc4138d525f3326c231f14ed50d99345561e85285638c49b64ee93",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/repair_luksan_config.patch",
+            ":patches/upstream/repair_luksan_config.patch",
             ":patches/vendor.patch",
         ],
         mirrors = mirrors,
