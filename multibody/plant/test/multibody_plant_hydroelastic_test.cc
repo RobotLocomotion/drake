@@ -70,7 +70,8 @@ class HydroelasticModelTests : public ::testing::Test {
   // @param compliant_hydroelastic_modulus is required for the compliant box
   //                                       but not the rigid box.
   void SetUpModel(double mbp_dt, BoxType box_type,
-                  std::optional<double> compliant_box_hydroelastic_modulus) {
+                  std::optional<double> compliant_box_hydroelastic_modulus,
+                  double margin = 0.0) {
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) =
         AddMultibodyPlantSceneGraph(&builder, mbp_dt);
@@ -78,7 +79,7 @@ class HydroelasticModelTests : public ::testing::Test {
     AddGroundBox(kFrictionCoefficient, plant_, box_type,
                  compliant_box_hydroelastic_modulus);
     body_ = &AddObject(plant_, kSphereRadius, kElasticModulus, kDissipation,
-                       kFrictionCoefficient);
+                       kFrictionCoefficient, margin);
 
     // The default contact model today is hydroelastic with fallback.
     EXPECT_EQ(plant_->get_contact_model(),
@@ -87,6 +88,8 @@ class HydroelasticModelTests : public ::testing::Test {
     // Tell the plant to use the hydroelastic model.
     plant_->set_contact_model(ContactModel::kHydroelastic);
     ASSERT_EQ(plant_->get_contact_model(), ContactModel::kHydroelastic);
+
+    plant_->SetUseSampledOutputPorts(false);
 
     plant_->Finalize();
 
@@ -135,7 +138,8 @@ class HydroelasticModelTests : public ::testing::Test {
   const RigidBody<double>& AddObject(MultibodyPlant<double>* plant,
                                      double radius, double hydroelastic_modulus,
                                      double dissipation,
-                                     double friction_coefficient) {
+                                     double friction_coefficient,
+                                     double margin) {
     // Inertial properties are only needed when verifying accelerations since
     // hydro forces are only a function of state.
     const SpatialInertia<double> M_BBcm =
@@ -160,6 +164,10 @@ class HydroelasticModelTests : public ::testing::Test {
         dissipation, {},
         CoulombFriction<double>(friction_coefficient, friction_coefficient),
         &props);
+    if (margin > 0) {
+      props.AddProperty(geometry::internal::kHydroGroup,
+                        geometry::internal::kMargin, margin);
+    }
     plant->RegisterCollisionGeometry(body, X_BG, shape, "BodyCollisionGeometry",
                                      std::move(props));
     return body;
@@ -408,6 +416,130 @@ TEST_F(HydroelasticModelTests, Parameters) {
         new_contact_results.hydroelastic_contact_info(i);
     EXPECT_NE(new_contact_info.F_Ac_W().get_coeffs(),
               old_contact_info.F_Ac_W().get_coeffs());
+  }
+}
+
+// We create a model with margin and later update the sphere's role to remove
+// margin.
+TEST_F(HydroelasticModelTests, ModelWithMarginLaterRemoved) {
+  const double kDt = 10e-3;
+  const double kMarginValue = 0.01;
+  const double penetration = -0.01 + 1.0e-6;  // kMarginValue / 2.0;
+  SetUpModel(kDt, BoxType::kRigid, std::nullopt, kMarginValue);
+  SetPose(penetration);
+
+  // Grab the initial ("old") properties.
+  const std::vector<geometry::GeometryId>& g_ids =
+      plant_->GetCollisionGeometriesForBody(*body_);
+  ASSERT_EQ(g_ids.size(), 1);
+  GeometryId gid = g_ids[0];
+  const ProximityProperties* props_with_margin =
+      scene_graph_->model_inspector().GetProximityProperties(gid);
+  ASSERT_TRUE(props_with_margin != nullptr);
+  ASSERT_TRUE(props_with_margin->HasProperty(geometry::internal::kHydroGroup,
+                                             geometry::internal::kMargin));
+
+  // Calculate contact results with MbP's APIs.
+  const ContactResults<double> results_with_margin =
+      plant_->get_contact_results_output_port()
+          .template Eval<ContactResults<double>>(*plant_context_);
+  EXPECT_EQ(results_with_margin.num_hydroelastic_contacts(), 1);
+
+  // Compute contact surfaces with SG's APSs.
+  {
+    const auto& query_object =
+        scene_graph_->get_query_output_port()
+            .Eval<geometry::QueryObject<double>>(*scene_graph_context_);
+    auto surfaces_with_margin = query_object.ComputeContactSurfaces(
+        geometry::HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(ssize(surfaces_with_margin), 1);
+  }
+
+  // Remove margin.
+  ProximityProperties props_wo_margin(*props_with_margin);
+  props_wo_margin.RemoveProperty(geometry::internal::kHydroGroup,
+                                 geometry::internal::kMargin);
+  scene_graph_->AssignRole(scene_graph_context_,
+                           plant_->get_source_id().value(), gid,
+                           props_wo_margin, geometry::RoleAssign::kReplace);
+
+  // Calculate the revised ("new") contact results.
+  const ContactResults<double> results_with_margin_removed =
+      plant_->get_contact_results_output_port()
+          .template Eval<ContactResults<double>>(*plant_context_);
+  EXPECT_EQ(results_with_margin_removed.num_hydroelastic_contacts(), 0);
+
+  // And with SG.
+  {
+    const auto& query_object =
+        scene_graph_->get_query_output_port()
+            .Eval<geometry::QueryObject<double>>(*scene_graph_context_);
+    auto surfaces_with_margin_removed = query_object.ComputeContactSurfaces(
+        geometry::HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(ssize(surfaces_with_margin_removed), 0);
+  }
+}
+
+// We create a model without margin and later update the sphere's role to have
+// margin.
+TEST_F(HydroelasticModelTests, ModelWoMarginLaterAdded) {
+  const double kDt = 10e-3;
+  SetUpModel(kDt, BoxType::kRigid, std::nullopt);
+  const double penetration = -1e-6;
+  const double kMarginValue = 0.01;
+  SetPose(penetration);
+
+  // Grab the initial properties, without margin.
+  const std::vector<geometry::GeometryId>& g_ids =
+      plant_->GetCollisionGeometriesForBody(*body_);
+  ASSERT_EQ(g_ids.size(), 1);
+  GeometryId gid = g_ids[0];
+  const ProximityProperties* props_wo_margin =
+      scene_graph_->model_inspector().GetProximityProperties(gid);
+  ASSERT_TRUE(props_wo_margin != nullptr);
+  ASSERT_FALSE(props_wo_margin->HasProperty(geometry::internal::kHydroGroup,
+                                            geometry::internal::kMargin));
+
+  // Calculate the initial ("old") contact results.
+  const ContactResults<double> results_wo_margin =
+      plant_->get_contact_results_output_port()
+          .template Eval<ContactResults<double>>(*plant_context_);
+  EXPECT_EQ(results_wo_margin.num_hydroelastic_contacts(), 0);
+
+  // Compute contact surfaces with SG's APSs.
+  {
+    const auto& query_object =
+        scene_graph_->get_query_output_port()
+            .Eval<geometry::QueryObject<double>>(*scene_graph_context_);
+    auto surfaces_wo_margin = query_object.ComputeContactSurfaces(
+        geometry::HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(ssize(surfaces_wo_margin), 0);
+  }
+
+  // Add margin.
+  ProximityProperties props_with_margin(*props_wo_margin);
+  props_with_margin.UpdateProperty(geometry::internal::kHydroGroup,
+                                   geometry::internal::kMargin, kMarginValue);
+  scene_graph_->AssignRole(scene_graph_context_,
+                           plant_->get_source_id().value(), gid,
+                           props_with_margin, geometry::RoleAssign::kReplace);
+
+  // Calculate contact results with margin.
+  const ContactResults<double> results_with_margin =
+      plant_->get_contact_results_output_port()
+          .template Eval<ContactResults<double>>(*plant_context_);
+  EXPECT_EQ(results_with_margin.num_hydroelastic_contacts(), 1);
+
+  // Compute contact surfaces with SG's APSs.
+  {
+    // N.B. QueryObject must be re-evaled for the new margin to take effect.
+    const auto& query_object =
+        scene_graph_->get_query_output_port()
+            .Eval<geometry::QueryObject<double>>(*scene_graph_context_);
+    // Compute contact surfaces with SG's APSs.
+    auto surfaces_with_margin = query_object.ComputeContactSurfaces(
+        geometry::HydroelasticContactRepresentation::kTriangle);
+    EXPECT_EQ(ssize(surfaces_with_margin), 1);
   }
 }
 
