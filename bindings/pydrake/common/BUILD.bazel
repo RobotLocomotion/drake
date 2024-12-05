@@ -120,6 +120,14 @@ drake_py_library(
 
 # ========================== FOO_pybind.h helpers ==========================
 
+drake_cc_library(
+    name = "builder_life_support_pybind",
+    hdrs = ["builder_life_support_pybind.h"],
+    declare_installed_headers = False,
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
 # ODR does not matter, because the singleton will be stored in Python.
 drake_cc_library(
     name = "cpp_param_pybind",
