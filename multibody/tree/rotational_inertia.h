@@ -589,13 +589,6 @@ class RotationalInertia {
   boolean<T> CouldBePhysicallyValid() const {
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.
-    // Note: An inertia matrix that passes the triangle inequality test is
-    // InertiaMatrix = ⌈  1    -0.2   0   ⌉    Ixx + Iyy ≥ Izz
-    //                 | -0.2   2    -0.2 |    Ixx + Izz ≥ Iyy
-    //                 ⌊  0    -0.2   3   ⌋    Iyy + Izz ≥ Ixx
-    // However, the principal moments of inertia for this matrix
-    //    Imin ≈ 0.961    Imed ≈ 2   Imax ≈ 3.04
-    // violate the triangle inequality since Imin + Imed < Imax.
     return !IsNaN() &&
            AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality();
   }
