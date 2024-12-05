@@ -27,7 +27,8 @@ namespace {
 // we can mutate it for efficiency; the data may be invalid afterwards, so the
 // caller should not use it for anything after we return.
 // @param[in,out] app The application to copy the options into.
-void SetAppOptions(internal::SpecificOptions* options,
+void SetAppOptions(const std::string& default_linear_solver,
+                   internal::SpecificOptions* options,
                    Ipopt::IpoptApplication* app) {
   // Wrap our calls to IPOPT to check for errors (i.e., unknown options).
   const auto set_double_option = [&app](const std::string& name, double value) {
@@ -56,13 +57,7 @@ void SetAppOptions(internal::SpecificOptions* options,
   // Turn off the banner.
   set_string_option("sb", "yes");
 
-  // The default linear solver is MA27, but it is not freely redistributable so
-  // we cannot use it. MUMPS is the only compatible linear solver guaranteed to
-  // be available on both macOS and Ubuntu. In versions of IPOPT prior to 3.13,
-  // it would correctly determine that MUMPS was the only available solver, but
-  // its behavior changed to instead error having unsuccessfully tried to dlopen
-  // a nonexistent hsl library that would contain MA27.
-  set_string_option("linear_solver", "mumps");
+  set_string_option("linear_solver", default_linear_solver);
 
   // The default tolerance.
   const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
@@ -168,7 +163,7 @@ void IpoptSolver::DoSolve2(const MathematicalProgram& prog,
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  SetAppOptions(options, &(*app));
+  SetAppOptions(default_linear_solver_, options, &(*app));
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {

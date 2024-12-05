@@ -40,9 +40,11 @@ cc_library(
     ],
     copts = [
         "-fvisibility=hidden",
-        "-fno-openmp",
         "-w",
         "-Werror=incompatible-pointer-types",
+        # We don't allow Drake externals to use OpenMP until we wire up "max
+        # parallelism" governance to a drake::Parallellism public API option.
+        "-fno-openmp",
     ],
     linkstatic = 1,
     linkopts = select({
