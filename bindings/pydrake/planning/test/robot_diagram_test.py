@@ -120,7 +120,6 @@ class TestRobotDiagram(unittest.TestCase):
             return diagram, controller
 
         # Manage lifetime via diagram reference.
-        import pdb; pdb.set_trace()
         diagram, controller = make_diagram()
         del controller
         gc.collect()
