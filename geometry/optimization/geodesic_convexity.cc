@@ -460,26 +460,23 @@ ComputePairwiseIntersections(const ConvexSets& convex_sets_A,
   Eigen::MatrixXd Aeq(dimension, 2 * dimension);  // Aeq = [-I, I]
   Aeq.leftCols(dimension) = -Eigen::MatrixXd::Identity(dimension, dimension);
   Aeq.rightCols(dimension) = Eigen::MatrixXd::Identity(dimension, dimension);
-  std::vector<MathematicalProgram> progs(n_candidates);
+  std::vector<std::unique_ptr<MathematicalProgram>> progs;
+  progs.reserve(n_candidates);
   for (int i = 0; i < n_candidates; ++i) {
-    VectorXDecisionVariable x = progs[i].NewContinuousVariables(dimension);
-    VectorXDecisionVariable y = progs[i].NewContinuousVariables(dimension);
+    progs.emplace_back(std::make_unique<MathematicalProgram>());
+    VectorXDecisionVariable x = progs[i]->NewContinuousVariables(dimension);
+    VectorXDecisionVariable y = progs[i]->NewContinuousVariables(dimension);
     // Add x + offset == y by [-I, I][x; y] == [offset]
-    progs[i].AddLinearEqualityConstraint(Aeq, candidate_edge_offsets[i],
-                                         {x, y});
+    progs[i]->AddLinearEqualityConstraint(Aeq, candidate_edge_offsets[i],
+                                          {x, y});
     convex_sets_A.at(candidate_edges[i].first)
-        ->AddPointInSetConstraints(&(progs[i]), x);
+        ->AddPointInSetConstraints(progs[i].get(), x);
     convex_sets_B.at(candidate_edges[i].second)
-        ->AddPointInSetConstraints(&(progs[i]), y);
+        ->AddPointInSetConstraints(progs[i].get(), y);
   }
 
-  std::vector<const MathematicalProgram*> prog_ptrs;
-  prog_ptrs.reserve(n_candidates);
-  for (int i = 0; i < n_candidates; ++i) {
-    prog_ptrs.push_back(&(progs[i]));
-  }
   std::vector<MathematicalProgramResult> results = SolveInParallel(
-      prog_ptrs, nullptr /* initial_guesses */, nullptr /* solver_options */,
+      progs, nullptr /* initial_guesses */, nullptr /* solver_options */,
       std::nullopt /* solver_id */, parallelism, false /* dynamic_schedule */);
 
   std::vector<std::pair<int, int>> edges;
