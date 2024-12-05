@@ -1,0 +1,34 @@
+# -*- bazel -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+licenses(["notice"])  # Apache-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "metis",
+    srcs = glob(["libmetis/*.c"], allow_empty = False),
+    hdrs = glob(["libmetis/*.h"], allow_empty = False) + ["include/metis.h"],
+    includes = ["include"],
+    copts = [
+        # We don't allow Drake externals to use OpenMP until we wire up "max
+    	# parallelism" governance to a drake::Parallellism public API option.
+        "-fno-openmp",
+        "-fvisibility=hidden",
+        "-w",
+    ],
+    linkstatic = True,
+    deps = [
+        "@gklib_internal//:gklib",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    visibility = ["//visibility:public"],
+)
