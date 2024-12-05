@@ -542,8 +542,9 @@ endforeach()
 # however, that the macOS wheel builds also need to know this path, so if it
 # ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
-configure_file(cmake/WORKSPACE.in drake_build_cwd/WORKSPACE.bazel @ONLY)
+configure_file(cmake/WORKSPACE.bzlmod.in drake_build_cwd/WORKSPACE.bzlmod @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
+file(CREATE_LINK "${PROJECT_SOURCE_DIR}/MODULE.bazel" drake_build_cwd/MODULE.bazel SYMBOLIC)
 
 find_package(Git)
 
