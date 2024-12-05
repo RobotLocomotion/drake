@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 namespace drake {
 namespace math {
