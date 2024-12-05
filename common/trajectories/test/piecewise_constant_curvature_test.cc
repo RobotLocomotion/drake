@@ -67,20 +67,26 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestAnalytical) {
       segment_breaks, turning_rates, curve_tangent, plane_normal,
       Vector3d::Zero());
 
+  double s_dot = 0.5;
+  double s_ddot = 0.25;
   for (double l = segment_breaks.front(); l < segment_breaks.back();
        l += 0.01) {
     math::RigidTransformd expected_pose = math::RigidTransformd(
         math::RotationMatrixd::MakeZRotation(l * kappa),
         Vector3d(r * sin(l * kappa), r * (1 - cos(l * kappa)), 0));
     multibody::SpatialVelocity<double> expected_velocity(
-        kappa * Vector3d::UnitZ(), Vector3d(cos(l * kappa), sin(l * kappa), 0));
+        s_dot * kappa * Vector3d::UnitZ(),
+        s_dot * Vector3d(cos(l * kappa), sin(l * kappa), 0));
     multibody::SpatialAcceleration<double> expected_acceleration(
-        Vector3d::Zero(),
-        Vector3d(-kappa * sin(l * kappa), kappa * cos(l * kappa), 0));
+        s_ddot * kappa * Vector3d::UnitZ(),
+        s_ddot * Vector3d(cos(l * kappa), sin(l * kappa), 0) +
+            s_dot * s_dot *
+                Vector3d(-kappa * sin(l * kappa), kappa * cos(l * kappa), 0));
 
     auto actual_pose = trajectory.GetPose(l);
-    auto actual_velocity = trajectory.CalcSpatialVelocity(l);
-    auto actual_acceleration = trajectory.CalcSpatialAcceleration(l);
+    auto actual_velocity = trajectory.CalcSpatialVelocity(l, s_dot);
+    auto actual_acceleration =
+        trajectory.CalcSpatialAcceleration(l, s_dot, s_ddot);
 
     EXPECT_TRUE(actual_pose.IsNearlyEqualTo(expected_pose, kTolerance));
     EXPECT_TRUE(actual_velocity.IsApprox(expected_velocity, kTolerance));
@@ -132,11 +138,11 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestRandomizedTrajectory) {
     auto curve_rotation = curve_pose.rotation();
     auto curve_position = curve_pose.translation();
 
-    auto curve_velocity = curve_spline.CalcSpatialVelocity(l);
+    auto curve_velocity = curve_spline.CalcSpatialVelocity(l, 1.);
     auto translational_velocity = curve_velocity.translational();
     auto rotational_velocity = curve_velocity.rotational();
 
-    auto curve_acceleration = curve_spline.CalcSpatialAcceleration(l);
+    auto curve_acceleration = curve_spline.CalcSpatialAcceleration(l, 1., 0.);
     auto translational_acceleration = curve_acceleration.translational();
     auto rotational_acceleration = curve_acceleration.rotational();
 
@@ -215,6 +221,13 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {
   PiecewiseConstantCurvatureTrajectory<symbolic::Expression>
       expression_trajectory(double_trajectory);
 
+  double s_dot = 2.;
+  double s_ddot = 3.;
+  AutoDiffXd s_dot_ad(s_dot);
+  symbolic::Expression s_dot_exp(s_dot);
+  AutoDiffXd s_ddot_ad(s_ddot);
+  symbolic::Expression s_ddot_exp(s_ddot);
+
   for (double l = breaks.front(); l < breaks.back(); l += 0.01) {
     math::RigidTransform<double> double_pose = double_trajectory.GetPose(l);
     math::RigidTransform<AutoDiffXd> autodiff_pose =
@@ -223,7 +236,7 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {
         double_pose.template cast<symbolic::Expression>();
 
     multibody::SpatialVelocity<double> double_velocity =
-        double_trajectory.CalcSpatialVelocity(l);
+        double_trajectory.CalcSpatialVelocity(l, s_dot);
     multibody::SpatialVelocity<AutoDiffXd> autodiff_velocity(
         double_velocity.rotational().template cast<AutoDiffXd>(),
         double_velocity.translational().template cast<AutoDiffXd>());
@@ -232,7 +245,7 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {
         double_velocity.translational().template cast<symbolic::Expression>());
 
     multibody::SpatialAcceleration<double> double_acceleration =
-        double_trajectory.CalcSpatialAcceleration(l);
+        double_trajectory.CalcSpatialAcceleration(l, s_dot, s_ddot);
     multibody::SpatialAcceleration<AutoDiffXd> autodiff_acceleration(
         double_acceleration.rotational().template cast<AutoDiffXd>(),
         double_acceleration.translational().template cast<AutoDiffXd>());
@@ -248,14 +261,16 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {
         expression_trajectory.GetPose(l), kTolerance));
 
     EXPECT_TRUE(autodiff_velocity.IsApprox(
-        autodiff_trajectory.CalcSpatialVelocity(l), kTolerance));
+        autodiff_trajectory.CalcSpatialVelocity(l, s_dot_ad), kTolerance));
     EXPECT_TRUE(expression_velocity.IsApprox(
-        expression_trajectory.CalcSpatialVelocity(l), kTolerance));
+        expression_trajectory.CalcSpatialVelocity(l, s_dot_exp), kTolerance));
 
     EXPECT_TRUE(autodiff_acceleration.IsApprox(
-        autodiff_trajectory.CalcSpatialAcceleration(l), kTolerance));
+        autodiff_trajectory.CalcSpatialAcceleration(l, s_dot_ad, s_ddot_ad),
+        kTolerance));
     EXPECT_TRUE(expression_acceleration.IsApprox(
-        expression_trajectory.CalcSpatialAcceleration(l), kTolerance));
+        expression_trajectory.CalcSpatialAcceleration(l, s_dot_exp, s_ddot_exp),
+        kTolerance));
   }
 }
 

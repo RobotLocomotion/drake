@@ -22,9 +22,10 @@ namespace trajectories {
  * function of arclength s [m], with position r(s) = p_AoFo_A(s) and orientation
  * R(s) = R_AF(s). The initial position r(s₀) is provided at construction. r(s)
  * is the quantity defined through Trajectory::value, and the full pose and its
- * derivatives are available through CalcPose(), CalcSpatialVelocity(), and
- * CalcSpatialAcceleration(). We note that these quantities are derivatives with
- * respect to arclength s, and not time t.
+ * time derivatives are available through CalcPose(), CalcSpatialVelocity(), and
+ * CalcSpatialAcceleration(). Evaluation of the time derivatives is implemented
+ * using the chain rule, and thus corresponding time derivatives of s (i.e.
+ * ds/dt [m/s]) are required to be provided as inputs.
  *
  * The trajectory is arclength-parameterized; thus t̂_A(s) = dr(s)/ds is the
  * curve's tangent unit vector (in the Frenet–Serret sense).
@@ -34,18 +35,18 @@ namespace trajectories {
  * class uses arclength s [m] as the independet variable. The segment breaks s₀
  * < s₁ < ... < sₙ [m] define segments within which curvature is constant. On
  * "segment" i, defined as [sᵢ, sᵢ₊₁), the curvature is parameterized by a
- * constant "turning rate" kᵢ [1/m], setting the angular velocity of F in A
- * (equivalently the Darboux vector) as w_AF = kᵢ * p̂, and the curvature is
- * equal to the magnitude of the turning rate abs(k). Thus,
+ * constant "turning rate" kᵢ [1/m], setting the angular velocity of F in A for
+ * ds/dt = 1 [m/s] (equivalently the Darboux vector) as w_AF = kᵢ * p̂. The
+ * curvature is equal to the magnitude of the turning rate abs(k). Thus,
  *
  *   * kᵢ > 0 indicates a counterclockwise turn along a circular arc of
  *     radius 1/kᵢ [m].
  *   * kᵢ = 0 indicates a straight line segment.
  *   * kᵢ < 0 indicates a clockwise turn along an arc of radius -1/kᵢ [m].
  *
- * The angular velocity w_AF is finite and constant within the segments. Thus
- * the angular acceleration alpha_AF is zero within the segments and undefined
- * at the segment endpoints. R(s) is continuous.
+ * Under a constant tangential velocity, the angular velocity w_AF is finite and
+ * constant within the segments, and the angular acceleration alpha_AF is zero
+ * within the segments. alpha_AF is undefined at the breaks. R(s) is continuous.
  *
  * For brevity, we refer to the pose at the start of each segment as Fi, and
  * the associated transfrom X_AF(sᵢ) as X_AFi.
@@ -184,20 +185,36 @@ class PiecewiseConstantCurvatureTrajectory final
   std::unique_ptr<Trajectory<T>> Clone() const override;
 
   /**
-   * Returns the spatial velocity V_AF_A(s) at the given arclength s [m].
+   * Returns the spatial velocity V_AF_A(s) via chain rule, given arclength s
+   * [m] and tangential velocity ds/dt [m/s].
    *
    * @param s The query arclength in meters.
+   * @param s_dot The query tangential velocity in meters per second.
    * @return The corresponding spatial velocity V_AF_A(s).
    */
-  multibody::SpatialVelocity<T> CalcSpatialVelocity(const T& s) const;
+  multibody::SpatialVelocity<T> CalcSpatialVelocity(const T& s,
+                                                    const T& s_dot) const;
 
   /**
-   * Returns the spatial acceleration A_AF_A(s) at the given arclength s [m].
+   * Returns the spatial acceleration A_AF_A(s) via chain rule, given
+   * arclength s [m]; tangential velocity ds/dt [m/s]; and tangential
+   * acceleration d²s/dt² [m/s²].
+   *
+   * As the curve does not have continuous acceleration at the breaks, by
+   * convention we set the acceleration at the break sᵢ to be the limit
+   * as approached from the right -- i.e. the acceleration is continuous on each
+   * segment domain [sᵢ, sᵢ₊₁) (see implementation of
+   * PiecewiseTrajectory::get_segment_index for convention on the segment index
+   * of sᵢ).
    *
    * @param s The query arclength in meters.
+   * @param s_dot The query tangential velocity in meters per second.
+   * @param s_ddot The query tangential acceleration in meters per second
+   * squared.
    * @return The corresponding spatial acceleration A_AF_A(s).
    */
-  multibody::SpatialAcceleration<T> CalcSpatialAcceleration(const T& s) const;
+  multibody::SpatialAcceleration<T> CalcSpatialAcceleration(
+      const T& s, const T& s_dot, const T& s_ddot) const;
 
   /**
    * Checks if the trajectory is nearly periodic within the given tolerance.

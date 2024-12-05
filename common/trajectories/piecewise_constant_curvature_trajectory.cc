@@ -49,18 +49,20 @@ math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::GetPose(
 
 template <typename T>
 multibody::SpatialVelocity<T>
-PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialVelocity(const T& s) const {
+PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialVelocity(
+    const T& s, const T& s_dot) const {
   const math::RotationMatrix<T> R_AF = GetPose(s).rotation();
   const T& k_i = segment_turning_rates_[this->get_segment_index(s)];
 
   multibody::SpatialVelocity<T> spatial_velocity;
   // From Frenet–Serret analysis and the class doc for
   // PiecewiseConstantCurvatureTrajectory, the rotational velocity is equal to
-  // the Darboux vector, curvature * b̂ = kᵢ * Fz.
-  spatial_velocity.rotational() = k_i * R_AF.col(kPlaneNormalIndex);
+  // the Darboux vector times the tangential velocity: kᵢ * Fz * ds/dt.
+  spatial_velocity.rotational() = k_i * R_AF.col(kPlaneNormalIndex) * s_dot;
 
-  // The translational velocity is also then equal to t̂(s) = Fx(s).
-  spatial_velocity.translational() = R_AF.col(kCurveTangentIndex);
+  // The translational velocity is equal to the tangent direction times the
+  // tangential velocity: t̂(s) * ds/dt = Fx(s) * ds/dt.
+  spatial_velocity.translational() = R_AF.col(kCurveTangentIndex) * s_dot;
 
   return spatial_velocity;
 }
@@ -68,30 +70,30 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialVelocity(const T& s) const {
 template <typename T>
 multibody::SpatialAcceleration<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
-    const T& s) const {
+    const T& s, const T& s_dot, const T& s_ddot) const {
   const math::RotationMatrix<T> R_AF = GetPose(s).rotation();
   const T& k_i = segment_turning_rates_[this->get_segment_index(s)];
 
   multibody::SpatialAcceleration<T> spatial_acceleration;
-  // Under arclength parameterization, there is no azimuthal/transverse/Euler
-  // acceleration component.
-  //
-  // As the curve does not have continuous acceleration at the breaks, by
-  // convention we set the acceleration at the break tᵢ to be the limit
-  // as approached from the right -- i.e. the acceleration is continuous on each
-  // segment domain [sᵢ, sᵢ₊₁) (see implementation of
-  // PiecewiseTrajectory::get_segment_index for convention on the segment index
-  // of sᵢ).
-  //
-  // From the Frenet-Serret analysis in the class doc for
-  // PiecewiseConstantCurvatureTrajectory, we know that the angular velocity is
-  // kᵢ * Fz. As Fz and kᵢ are constant everywhere except the breaks,
-  // the angular acceleration is then equal to zero.
-  spatial_acceleration.rotational() = Vector3<T>::Zero();
+  // The spatial acceleration is the time derivative of the spatial velocity.
+  // We compute the acceleration by applying the chain rule to the formulas
+  // in CalcSpatialVelocity.
 
+  // The angular velocity is kᵢ * Fz * ds/dt. As Fz and kᵢ are constant
+  // everywhere except the breaks, the angular acceleration is then equal to kᵢ
+  // * Fz * d²s/dt².
+  spatial_acceleration.rotational() =
+      k_i * R_AF.col(kPlaneNormalIndex) * s_ddot;
+
+  // The translational velocity is Fx(s) * ds/dt. Thus by product and chain
+  // rule, the translational acceleration is:
+  //    dFx(s)/ds * (ds/dt)² + F(x) * d²s/dt².
+  // From the class doc, we know dFx/dt = kᵢ * Fy.
   // We also know that the translational velocity is Fx and thus the
-  // translational acceleration is dF/ds = kᵢ * Fy(s).
-  spatial_acceleration.translational() = k_i * R_AF.col(kCurveNormalIndex);
+  // translational acceleration is kᵢ * Fy * (ds/dt)² + Fx * d²s/dt².
+  spatial_acceleration.translational() =
+      k_i * R_AF.col(kCurveNormalIndex) * s_dot * s_dot +
+      R_AF.col(kCurveTangentIndex) * s_ddot;
   return spatial_acceleration;
 }
 
