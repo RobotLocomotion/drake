@@ -87,10 +87,9 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
 
   // The translational velocity is Fx(s) * ds/dt. Thus by product and chain
   // rule, the translational acceleration is:
-  //    dFx(s)/ds * (ds/dt)² + F(x) * d²s/dt².
-  // From the class doc, we know dFx/dt = kᵢ * Fy.
-  // We also know that the translational velocity is Fx and thus the
-  // translational acceleration is kᵢ * Fy * (ds/dt)² + Fx * d²s/dt².
+  //    dFx(s)/ds * (ds/dt)² + Fx * d²s/dt².
+  // From the class doc, we know dFx/ds = kᵢ * Fy.
+  // Thus the translational acceleration is kᵢ * Fy * (ds/dt)² + Fx * d²s/dt².
   spatial_acceleration.translational() =
       k_i * R_AF.col(kCurveNormalIndex) * s_dot * s_dot +
       R_AF.col(kCurveTangentIndex) * s_ddot;
