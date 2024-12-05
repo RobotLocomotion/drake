@@ -160,14 +160,14 @@ void TestdPdFIsDerivativeOfP() {
   data.UpdateData(deformation_gradients, previous_step_deformation_gradients);
   Matrix3<AutoDiffXd> P;
   model.CalcFirstPiolaStress(data, &P);
-  Eigen::Matrix<AutoDiffXd, 9, 9> dPdF;
+  math::internal::FourthOrderTensor<AutoDiffXd> dPdF;
   model.CalcFirstPiolaStressDerivative(data, &dPdF);
   for (int i = 0; i < kSpaceDimension; ++i) {
     for (int j = 0; j < kSpaceDimension; ++j) {
       Matrix3d dPijdF;
       for (int k = 0; k < kSpaceDimension; ++k) {
         for (int l = 0; l < kSpaceDimension; ++l) {
-          dPijdF(k, l) = dPdF(3 * j + i, 3 * l + k).value();
+          dPijdF(k, l) = dPdF(i, j, k, l).value();
         }
       }
       EXPECT_TRUE(CompareMatrices(

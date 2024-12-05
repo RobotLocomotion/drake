@@ -48,7 +48,7 @@ GTEST_TEST(ConstitutiveModelTest, InvalidModel) {
                   "CalcFirstPiolaStressImpl.. to be correct.",
                   NiceTypeName::Get(model)));
 
-  Eigen::Matrix<double, 9, 9> dPdF;
+  math::internal::FourthOrderTensor<double> dPdF;
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.CalcFirstPiolaStressDerivative(data, &dPdF),
       fmt::format("The derived class {} must provide a shadow definition of "

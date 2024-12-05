@@ -14,41 +14,6 @@ namespace multibody {
 namespace fem {
 namespace internal {
 
-// TODO(xuchenhan-tri): Encapsulate the the memory layout of 4th order tensors
-//  and the contraction operation in a FourthOrderTensor class.
-/* Helper function that performs a contraction between a 4th order tensor A
- and two vectors u and v and returns a matrix B. In Einstein notation, the
- contraction is: Bᵢₖ = uⱼ Aᵢⱼₖₗ vₗ. The 4th order tensor A of dimension
- 3*3*3*3 is flattened to a 9*9 matrix that is organized as following
-
-                  l = 1       l = 2       l = 3
-              -------------------------------------
-              |           |           |           |
-    j = 1     |   Aᵢ₁ₖ₁   |   Aᵢ₁ₖ₂   |   Aᵢ₁ₖ₃   |
-              |           |           |           |
-              -------------------------------------
-              |           |           |           |
-    j = 2     |   Aᵢ₂ₖ₁   |   Aᵢ₂ₖ₂   |   Aᵢ₂ₖ₃   |
-              |           |           |           |
-              -------------------------------------
-              |           |           |           |
-    j = 3     |   Aᵢ₃ₖ₁   |   Aᵢ₃ₖ₂   |   Aᵢ₃ₖ₃   |
-              |           |           |           |
-              -------------------------------------
-Namely the ik-th entry in the jl-th block corresponds to the value Aᵢⱼₖₗ. */
-template <typename T>
-void PerformDoubleTensorContraction(
-    const Eigen::Ref<const Eigen::Matrix<T, 9, 9>>& A,
-    const Eigen::Ref<const Vector3<T>>& u,
-    const Eigen::Ref<const Vector3<T>>& v, EigenPtr<Matrix3<T>> B) {
-  B->setZero();
-  for (int l = 0; l < 3; ++l) {
-    for (int j = 0; j < 3; ++j) {
-      *B += A.template block<3, 3>(3 * j, 3 * l) * u(j) * v(l);
-    }
-  }
-}
-
 /* The data struct that stores per element data for VolumetricElement. See
  FemElement for the requirement. We define it here instead of nesting it in the
  traits class below due to #17109. */
@@ -74,7 +39,7 @@ struct VolumetricElementData {
   std::array<Matrix3<T>, num_quadrature_points> P;
   /* The derivative of first Piola stress with respect to the deformation
    gradient evaluated at quadrature points. */
-  std::array<Eigen::Matrix<T, 9, 9>, num_quadrature_points> dPdF;
+  std::array<math::internal::FourthOrderTensor<T>, num_quadrature_points> dPdF;
 };
 
 /* Forward declaration needed for defining the traits below. */
@@ -354,8 +319,8 @@ class VolumetricElement
           /* Note that the scale is negated here because the tensor contraction
            gives the second derivative of energy, which is the opposite of the
            force derivative. */
-          PerformDoubleTensorContraction<T>(
-              data.dPdF[q], dSdX_transpose_[q].col(a),
+          data.dPdF[q].ContractWithVectors(
+              dSdX_transpose_[q].col(a),
               dSdX_transpose_[q].col(b) * reference_volume_[q] * -scale, &K_ab);
           AccumulateMatrixBlock(K_ab, a, b, K);
         }
