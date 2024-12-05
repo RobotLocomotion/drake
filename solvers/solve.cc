@@ -258,7 +258,7 @@ std::vector<MathematicalProgramResult> SolveInParallel(
 
   auto solver_options_generator =
       [&solver_options](int64_t, int64_t i) -> std::optional<SolverOptions> {
-    if (solver_options != nullptr) {
+    if (solver_options != nullptr && solver_options->at(i) != nullptr) {
       return *(solver_options->at(i));
     } else {
       return std::nullopt;
