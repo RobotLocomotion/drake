@@ -69,7 +69,8 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
   EXPECT_EQ(I.get_products(), products_expected);
 }
 
-// Test rotational inertia factory method set via a 3x3 matrix.
+// Test the factory method for rotational inertia factory that uses moments and
+// products of inertia (similar to construction from a 3x3 symmetric matrix).
 GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
   // Ensure a zero rotational inertia is valid.
   EXPECT_NO_THROW(
@@ -93,13 +94,22 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
 
   // Form an arbitrary (but valid) rotational inertia.
   // Ensure MakeFromMomentsAndProductsOfInertia() and CouldBePhysicallyValid()
-  // lead to the same conclusion for at least one valid rotational inertia.
+  // lead to the same conclusion for at least one _valid_ rotational inertia.
   const double Ixx = 17, Iyy = 13, Izz = 10;
   const double Ixy = -3, Ixz = -3, Iyz = -6;
-  RotationalInertia<double> I =
-      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
+  RotationalInertia<double> I;
+  EXPECT_NO_THROW(
+      I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false));
   EXPECT_TRUE(I.CouldBePhysicallyValid());
+
+  // Ensure MakeFromMomentsAndProductsOfInertia() and CouldBePhysicallyValid()
+  // lead to the same conclusion for at least one _invalid_ rotational inertia.
+  RotationalInertia<double> I_bad;
+  EXPECT_NO_THROW(
+      I_bad = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ true));
+  EXPECT_FALSE(I_bad.CouldBePhysicallyValid());
 
   // Ensure an invalid rotational inertia always throws an exception if the
   // 2nd argument of MakeFromMomentsAndProductsOfInertia() is false or missing.

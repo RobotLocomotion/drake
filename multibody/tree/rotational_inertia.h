@@ -587,8 +587,6 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
-    // Calculate principal moments of inertia p and then test these principal
-    // moments to be mostly non-negative and also satisfy triangle inequality.
     return !IsNaN() &&
            AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality();
   }
