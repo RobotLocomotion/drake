@@ -8,6 +8,7 @@
 
 #include <Eigen/Sparse>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 // clang-format off
 #include <scs.h>
