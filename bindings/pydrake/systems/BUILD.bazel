@@ -227,7 +227,6 @@ drake_pybind_library(
         ":framework_py",
         ":module_py",
         "//bindings/pydrake:lcm_py",
-        "//lcmtypes:lcmtypes_drake_py",
     ],
     py_srcs = ["_lcm_extra.py"],
 )
