@@ -24,6 +24,7 @@ void LinearConstitutiveModelData<T>::UpdateFromDeformationGradient() {
   trace_strain_ = strain_.trace();
 }
 
+template class LinearConstitutiveModelData<float>;
 template class LinearConstitutiveModelData<double>;
 template class LinearConstitutiveModelData<AutoDiffXd>;
 

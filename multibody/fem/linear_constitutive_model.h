@@ -20,7 +20,7 @@ struct LinearConstitutiveModelTraits {
 
 /* Implements the infinitesimal-strain linear elasticity constitutive model as
  described in Section 7.4 of [Gonzalez, 2008].
- @tparam_nonsymbolic_scalar.
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd.
 
 [Gonzalez, 2008] Gonzalez, Oscar, and Andrew M. Stuart. A first course in
 continuum mechanics. Cambridge University Press, 2008. */
