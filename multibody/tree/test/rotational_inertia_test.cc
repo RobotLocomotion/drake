@@ -72,17 +72,16 @@ GTEST_TEST(RotationalInertia, DiagonalInertiaConstructor) {
 // Test rotational inertia factory method set via a 3x3 matrix.
 GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
   // Ensure a zero rotational inertia is valid.
-  RotationalInertia<double> I =
+  EXPECT_NO_THROW(
       RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-          0, 0, 0, 0, 0, 0, /* skip_validity_check = */ false);
-  EXPECT_TRUE(I.CouldBePhysicallyValid());
+          0, 0, 0, 0, 0, 0, /* skip_validity_check = */ false));
 
   // Check that an _invalid_ rotational inertia with tiny negative moments of
   // inertia does _not_ throw an exception (ensure test is not too fussy).
   constexpr double kTiny = 8 * kEpsilon;
-  I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-      -kTiny, 0, -kTiny, 0, 0, 0, /* skip_validity_check = */ false);
-  EXPECT_TRUE(I.CouldBePhysicallyValid());
+  EXPECT_NO_THROW(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          -kTiny, 0, -kTiny, 0, 0, 0, /* skip_validity_check = */ false));
 
   // Ensure an _invalid_ rotational inertia with very small negative moments of
   // inertia throws an exception (ensure test is fussy enough for robotics).
@@ -95,8 +94,9 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
   // Form an arbitrary (but valid) rotational inertia.
   const double Ixx = 17, Iyy = 13, Izz = 10;
   const double Ixy = -3, Ixz = -3, Iyz = -6;
-  I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-      Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
+  RotationalInertia<double> I =
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false);
   EXPECT_TRUE(I.CouldBePhysicallyValid());
 
   // Ensure an invalid rotational inertia always throws an exception if the
