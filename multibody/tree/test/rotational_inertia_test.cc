@@ -92,6 +92,8 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
       std::exception);
 
   // Form an arbitrary (but valid) rotational inertia.
+  // Ensure MakeFromMomentsAndProductsOfInertia() and CouldBePhysicallyValid()
+  // lead to the same conclusion for at least one valid rotational inertia.
   const double Ixx = 17, Iyy = 13, Izz = 10;
   const double Ixy = -3, Ixz = -3, Iyz = -6;
   RotationalInertia<double> I =
@@ -100,7 +102,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
   EXPECT_TRUE(I.CouldBePhysicallyValid());
 
   // Ensure an invalid rotational inertia always throws an exception if the
-  // 2nd argument of MakeFromMomentsAndProductsOfInertia is false or missing.
+  // 2nd argument of MakeFromMomentsAndProductsOfInertia() is false or missing.
   EXPECT_THROW(
       RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
           2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz, /* skip_validity_check = */ false),
@@ -110,7 +112,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
                std::exception);
 
   // Ensure an invalid rotational inertia does not throw an exception if the
-  // 2nd argument of MakeFromMomentsAndProductsOfInertia is true.
+  // 2nd argument of MakeFromMomentsAndProductsOfInertia() is true.
   EXPECT_NO_THROW(
       I = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
           2 * Ixx, Iyy, Izz, Ixy, Ixz, Iyz,
