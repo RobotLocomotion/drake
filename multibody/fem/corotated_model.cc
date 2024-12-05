@@ -60,6 +60,7 @@ void CorotatedModel<T>::CalcFirstPiolaStressDerivativeImpl(
   internal::AddScaledCofactorMatrixDerivative<T>(F, lambda_ * Jm1, &local_dPdF);
 }
 
+template class CorotatedModel<float>;
 template class CorotatedModel<double>;
 template class CorotatedModel<AutoDiffXd>;
 

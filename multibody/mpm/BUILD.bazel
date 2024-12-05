@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":bspline_weights",
         ":grid_data",
+        ":particle_data",
     ],
 )
 
@@ -41,6 +42,21 @@ drake_cc_library(
     deps = [
         "//common:bit_cast",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "particle_data",
+    srcs = [
+        "particle_data.cc",
+    ],
+    hdrs = [
+        "particle_data.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:parallelism",
+        "//multibody/fem",
     ],
 )
 
@@ -72,6 +88,14 @@ drake_cc_googletest(
     name = "grid_data_test",
     deps = [
         ":grid_data",
+    ],
+)
+
+drake_cc_googletest(
+    name = "particle_data_test",
+    deps = [
+        ":particle_data",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
