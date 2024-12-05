@@ -12,6 +12,7 @@ def styleguide_repository(
         patches = [
             ":patches/upstream/sre_deprecation.patch",
             ":patches/test_paths.patch",
+            ":patches/include_for_fmt_join.patch",
         ],
         mirrors = mirrors,
     )
