@@ -1,6 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@gfortran//:version.bzl", COMPILER_MAJOR = "MAJOR")
 load(":fortran.bzl", "fortran_library")
 
 licenses(["by_exception_only"])  # SNOPT
@@ -26,6 +27,13 @@ fortran_library(
             "src/snblas.f",
         ],
     ),
+    fopts = [
+        # Allow our patches/snopt-openmp.patch to mark THREADPRIVATE.
+        "-fopenmp",
+    ] + [
+        # We need this for SNOPT 7.6 which has non-conforming code.
+        "-fallow-argument-mismatch" if COMPILER_MAJOR >= 10 else "",
+    ],
     # Link statically per note (1) above.
     linkstatic = 1,
     deps = [

@@ -1,0 +1,107 @@
+[spral] Add drake_vendor prefix to some symbols
+
+Reasoning for not upstreaming this patch: Drake-specific vendoring.
+
+--- src/hw_topology/guess_topology.hxx
++++ src/hw_topology/guess_topology.hxx
+@@ -18,6 +18,9 @@
+    int *gpus;
+ };
+ 
++#define spral_hw_topology_guess drake_vendor_spral_hw_topology_guess
++#define spral_hw_topology_free drake_vendor_spral_hw_topology_free
++
+ extern "C"
+ void spral_hw_topology_guess(int* nregions, NumaRegion** regions);
+ extern "C"
+--- src/hw_topology/hw_topology.f90
++++ src/hw_topology/hw_topology.f90
+@@ -30,20 +30,20 @@
+   end type numa_region
+ 
+   interface
+-     !> Interface to spral_hw_topology_guess()
+-     subroutine spral_hw_topology_guess(nregion, regions) bind(C)
++     !> Interface to drake_vendor_spral_hw_topology_guess()
++     subroutine drake_vendor_spral_hw_topology_guess(nregion, regions) bind(C)
+        use, intrinsic :: iso_c_binding
+        implicit none
+        integer(C_INT), intent(out) :: nregion
+        type(C_PTR), intent(out) :: regions
+-     end subroutine spral_hw_topology_guess
+-     !> Interface to spral_hw_topology_free()
+-     subroutine spral_hw_topology_free(nregion, regions) bind(C)
++     end subroutine drake_vendor_spral_hw_topology_guess
++     !> Interface to drake_vendor_spral_hw_topology_free()
++     subroutine drake_vendor_spral_hw_topology_free(nregion, regions) bind(C)
+        use, intrinsic :: iso_c_binding
+        implicit none
+        integer(C_INT), value :: nregion
+        type(C_PTR), value :: regions
+-     end subroutine spral_hw_topology_free
++     end subroutine drake_vendor_spral_hw_topology_free
+   end interface
+ 
+ contains
+@@ -66,7 +66,7 @@
+     integer(C_INT), dimension(:), pointer, contiguous :: f_gpus
+ 
+     ! Get regions from C
+-    call spral_hw_topology_guess(nregions, c_regions)
++    call drake_vendor_spral_hw_topology_guess(nregions, c_regions)
+     if (c_associated(c_regions)) then
+        call c_f_pointer(c_regions, f_regions, shape=(/ nregions /))
+ 
+@@ -86,7 +86,7 @@
+     end if
+ 
+     ! Free C version
+-    call spral_hw_topology_free(nregions, c_regions)
++    call drake_vendor_spral_hw_topology_free(nregions, c_regions)
+   end subroutine guess_topology
+ 
+ end module spral_hw_topology
+--- src/ssids/contrib.h
++++ src/ssids/contrib.h
+@@ -13,6 +13,8 @@
+ extern "C" {
+ #endif
+ 
++#define spral_ssids_contrib_free_dbl drake_vendor_spral_ssids_contrib_free_dbl
++
+ void spral_ssids_contrib_get_data(const void *const contrib, int *const n,
+       const double* *const val, int *const ldval, const int* *const rlist,
+       int *const ndelay, const int* *const delay_perm,
+--- src/ssids/contrib_free.f90
++++ src/ssids/contrib_free.f90
+@@ -7,7 +7,7 @@
+ !>
+ !> As it depends on routines defined by module that use the type, it needs
+ !> to be a seperate module to spral_ssids_contrib.
+-module spral_ssids_contrib_free
++module drake_vendor_spral_ssids_contrib_free
+   use spral_ssids_contrib, only : contrib_type
+   use spral_ssids_cpu_subtree, only : cpu_free_contrib
+   use spral_ssids_gpu_subtree, only : gpu_free_contrib
+@@ -29,12 +29,12 @@
+        stop -1
+     end select
+   end subroutine contrib_free
+-end module spral_ssids_contrib_free
++end module drake_vendor_spral_ssids_contrib_free
+ 
+ ! The C prototype for the following routine is in contrib.h
+-subroutine spral_ssids_contrib_free_dbl(ccontrib) bind(C)
++subroutine drake_vendor_spral_ssids_contrib_free_dbl(ccontrib) bind(C)
+   use, intrinsic :: iso_c_binding
+-  use spral_ssids_contrib_free
++  use drake_vendor_spral_ssids_contrib_free
+   implicit none
+ 
+   type(C_PTR), value :: ccontrib
+@@ -45,4 +45,4 @@
+       call c_f_pointer(ccontrib, fcontrib)
+       call contrib_free(fcontrib)
+    end if
+-end subroutine spral_ssids_contrib_free_dbl
++end subroutine drake_vendor_spral_ssids_contrib_free_dbl
