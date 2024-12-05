@@ -397,6 +397,61 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
   }
 }
 
+// We place two geometries in marginal contact and verify that the geometry
+// engine returns a result.
+GTEST_TEST(ProximityEngineTests, HydroelasticAabbInMarginalContact) {
+  ProximityEngine<double> engine;
+  // All of the geometries will have a scale comparable to edge_length, so that
+  // the mesh creation is as cheap as possible. The exception is Mesh
+  // geometry since we have no re-meshing.
+  const double kLength = 0.5;
+  const double kResHint = kLength / 5;
+  const double E = 1e8;  // Elastic modulus.
+  const double kMarginValue = 0.01;
+  const double kDistance = 1.9 * kMarginValue;
+
+  const Sphere shape(kLength);
+
+  ProximityProperties no_hydro_properties;
+  no_hydro_properties.AddProperty(kHydroGroup, kMargin, kMarginValue);
+
+  ProximityProperties soft_properties(no_hydro_properties);
+  AddCompliantHydroelasticProperties(kResHint, E, &soft_properties);
+
+  ProximityProperties rigid_properties(no_hydro_properties);
+  AddRigidHydroelasticProperties(kResHint, &rigid_properties);
+
+  (void)no_hydro_properties;
+  (void)soft_properties;
+  (void)rigid_properties;
+
+  const GeometryId idA = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(shape, {}, idA, soft_properties);
+
+  const GeometryId idB = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(shape, {}, idB, soft_properties);
+
+  const std::unordered_map<GeometryId, math::RigidTransformd> poses = {
+      {idA, RigidTransformd(Vector3d(0, 0, 0))},
+      {idB, RigidTransformd(Vector3d(2.0 * kLength + kDistance, 0, 0))}};
+  engine.UpdateWorldPoses(poses);
+
+  const SignedDistancePair<double> sdf_result =
+      engine.ComputeSignedDistancePairClosestPoints(idA, idB, poses);
+  EXPECT_NEAR(sdf_result.distance, kDistance,
+              std::numeric_limits<double>::epsilon());
+
+  std::vector<ContactSurface<double>> surfaces = engine.ComputeContactSurfaces(
+      HydroelasticContactRepresentation::kTriangle, poses);
+  EXPECT_EQ(ssize(surfaces), 1);
+
+  // Margin only affects hydroelastic contact. Therefore we expect empty results
+  // on other queries.
+  std::vector<PenetrationAsPointPair<double>> penetrations =
+      engine.ComputePointPairPenetration(poses);
+  EXPECT_EQ(ssize(penetrations), 0);
+}
+
 // Test a combination that used to throw an exception.
 GTEST_TEST(ProximityEngineTests, ProcessVtkMeshUndefHydro) {
   ProximityEngine<double> engine;

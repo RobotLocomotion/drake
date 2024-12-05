@@ -118,12 +118,28 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
 // Helper function that creates a *deep* copy of the given collision object.
 unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
     const CollisionObjectd& object) {
-  shared_ptr<fcl::ShapeBased> geometry_copy =
+  const auto& original_geometry = *object.collisionGeometry();
+
+  shared_ptr<fcl::ShapeBased> shape_copy =
       CopyShapeOrThrow(*object.collisionGeometry());
-  auto copy = make_unique<CollisionObjectd>(geometry_copy);
+
+  // N.B. The call below not only creates a new CollisionObject, but modifies
+  // shape_copy! In particular, it re-computes its local AABB based on the
+  // underlying shape. So margin updates will be lost!
+  auto copy = make_unique<CollisionObjectd>(shape_copy);
+
+  // Since "copy" has its AABB computed based of the new shape_copy, we must
+  // update copy the AABB of the original object to propagate margin updates.
+  auto* geometry_copy =
+      const_cast<fcl::CollisionGeometryd*>(copy->collisionGeometry().get());
+  geometry_copy->aabb_local.min_ = original_geometry.aabb_local.min_;
+  geometry_copy->aabb_local.max_ = original_geometry.aabb_local.max_;
+  geometry_copy->aabb_radius = original_geometry.aabb_radius;
+
   copy->setUserData(object.getUserData());
   copy->setTransform(object.getTransform());
   copy->computeAABB();
+
   return copy;
 }
 
@@ -353,10 +369,42 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
             geometry.shape().type_name() == "Convex");
   }
 
+  void UpdateFclLocalAabbWithMargin(const InternalGeometry& geometry,
+                                    const ProximityProperties& props) {
+    if (!IsRegisteredAsRigid(geometry.id())) {
+      return;
+    }
+
+    // TODO(SeanCurtis-TRI): This should be drawing from
+    // DefaultProximityProperties::margin for the default value.
+    const double margin =
+        props.GetPropertyOrDefault<double>(kHydroGroup, kMargin, 0.0);
+
+    if (margin == 0) return;  // nothing to update.
+
+    auto& tree = geometry.is_dynamic() ? dynamic_tree_ : anchored_tree_;
+
+    CollisionObjectd* object = geometry.is_dynamic()
+                                   ? dynamic_objects_[geometry.id()].get()
+                                   : anchored_objects_[geometry.id()].get();
+    DRAKE_DEMAND(object != nullptr);
+
+    InflateLocalAabbForHydroelasticTypesOnly(geometry.shape(), geometry.id(),
+                                             margin, object);
+
+    // N.B. If margin is update we must also update the "global" AABBs of the
+    // BVH. If we don't, subsequent calls to geometry queries might not update
+    // the BVH if poses in the upper level SceneGraph's context were not
+    // modified. At this point, we force this update right here.
+    object->computeAABB();
+    tree.update();
+  }
+
   void UpdateRepresentationForNewProperties(
       const InternalGeometry& geometry,
       const ProximityProperties& new_properties) {
     const GeometryId id = geometry.id();
+
     // Note: Currently, the only aspects of a geometry's representation that can
     // be affected by its proximity properties are its hydroelastic
     // representation and rigid (non-deformable) representation for deformable
@@ -382,6 +430,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // We'll simply mindlessly destroy and recreate the hydroelastic and
     // deformable contact representations of rigid (non-deformable)
     // geometries.
+
     hydroelastic_geometries_.RemoveGeometry(id);
     hydroelastic_geometries_.MaybeAddGeometry(geometry.shape(), id,
                                               new_properties);
@@ -389,6 +438,9 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     geometries_for_deformable_contact_.RemoveGeometry(id);
     geometries_for_deformable_contact_.MaybeAddRigidGeometry(
         geometry.shape(), id, new_properties, X_WG);
+
+    // We must also update the FCL representation in case margin was updated.
+    UpdateFclLocalAabbWithMargin(geometry, new_properties);
   }
 
   // Returns true if the geometry with the given Id has been registered in
@@ -907,8 +959,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // @pre `data.margin` > 0.
   void InflateLocalAabbForHydroelasticTypesOnly(const Shape& shape,
                                                 const ReifyData& data) {
-    DRAKE_DEMAND(data.margin > 0);
-    DRAKE_DEMAND(hydroelastic_geometries_.hydroelastic_type(data.id) ==
+    InflateLocalAabbForHydroelasticTypesOnly(shape, data.id, data.margin,
+                                             data.fcl_object.get());
+  }
+
+  void InflateLocalAabbForHydroelasticTypesOnly(const Shape& shape,
+                                                const GeometryId id,
+                                                double margin,
+                                                fcl::CollisionObjectd* object) {
+    DRAKE_DEMAND(margin > 0);
+    DRAKE_DEMAND(hydroelastic_geometries_.hydroelastic_type(id) ==
                  HydroelasticType::kCompliant);
 
     // To edit the assigned collision geometry, we have to cheat and temporarily
@@ -916,14 +976,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // hasn't been added to a BVH yet; as long as this is part of the
     // reification process, that will remain true. The collision object only
     // gets added when reification is complete.
-    auto* g = const_cast<fcl::CollisionGeometryd*>(
-        data.fcl_object->collisionGeometry().get());
+    auto* g =
+        const_cast<fcl::CollisionGeometryd*>(object->collisionGeometry().get());
     DRAKE_DEMAND(g != nullptr);
+
+    // When updating proximity properites, we might update AABBs several times.
+    // Therefore we recompute a clean AABB before inflating it with margin.
+    g->computeLocalAABB();
+
     std::string_view shape_name = shape.type_name();
     if (shape_name == "Mesh" || shape_name == "Convex") {
       // Meshes can have their vertices move an arbitrary amount, we simply need
       // to recompute the bounding box.
-      const auto& mesh = hydroelastic_geometries_.soft_geometry(data.id).mesh();
+      const auto& mesh = hydroelastic_geometries_.soft_geometry(id).mesh();
       g->aabb_local.min_ =
           Vector3d::Constant(std::numeric_limits<double>::infinity());
       g->aabb_local.max_ = -g->aabb_local.min_;
@@ -933,8 +998,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       }
     } else {
       // Primitives simply grow by margin in each axis direction.
-      g->aabb_local.max_ += Vector3d::Constant(data.margin);
-      g->aabb_local.min_ -= Vector3d::Constant(data.margin);
+      g->aabb_local.max_ += Vector3d::Constant(margin);
+      g->aabb_local.min_ -= Vector3d::Constant(margin);
     }
     // Changes to the local AABB also require updating the radius of its
     // circumscribing sphere.
@@ -955,11 +1020,13 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     data.fcl_object->setTransform(X_WG.GetAsIsometry3());
     data.fcl_object->computeAABB();
+
     EncodedData encoding(id, is_dynamic);
     encoding.write_to(data.fcl_object.get());
 
     tree->registerObject(data.fcl_object.get());
     tree->update();
+
     (*objects)[id] = std::move(data.fcl_object);
 
     collision_filter_.AddGeometry(id);
