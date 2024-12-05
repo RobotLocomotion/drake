@@ -38,6 +38,8 @@ struct RlocationOrError {
 runfiles, or else an error message when not found.  When HasRunfiles() is
 false, returns an error. The `resource_path` looks like
 `workspace/pkg/subpkg/file.ext`, e.g., "drake/common/foo.txt". */
-RlocationOrError FindRunfile(const std::string& resource_path);
+RlocationOrError FindRunfile(
+    const std::string& resource_path,
+    const std::string& source_repository = {});
 
 }  // namespace drake

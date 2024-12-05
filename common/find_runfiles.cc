@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 
 #ifdef __APPLE__
@@ -10,12 +11,23 @@
 
 #include <filesystem>
 
-#include "tools/cpp/runfiles/runfiles.h"
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
+
+// Because our our gross violation of decorum, this must be the last include:
+// clang-format off
+#include <functional>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+#define private public
+#include "tools/cpp/runfiles/runfiles.h"
+#undef private
+// clang-format on
 
 using bazel::tools::cpp::runfiles::Runfiles;
 
@@ -24,15 +36,32 @@ namespace {
 
 namespace fs = std::filesystem;
 
+// This macro is defined for us by @bazel_tools//tools/cpp/runfiles.
+constexpr char kBazelCurrentRepository[] = BAZEL_CURRENT_REPOSITORY;
+
 // Replace `nullptr` with `"nullptr",` or else just return `arg` unchanged.
 const char* nullable_to_string(const char* arg) {
   return arg ? arg : "nullptr";
 }
 
-// Either a bazel_tools Runfiles object xor an error string.
+// Either the runfiles details from bazel_tools xor an error string.
 struct RunfilesSingleton {
-  std::unique_ptr<Runfiles> runfiles;
-  std::string runfiles_dir;
+  struct Success {
+    // This is the nominal, full-featured Runfiles; never nullptr.
+    std::unique_ptr<Runfiles> runfiles;
+    // This is the RUNFILES_DIR of `runfiles`; never empty.
+    std::string runfiles_dir;
+    // This is the same as `runfiles` but without using the manifest, rather
+    // only the RUNFILES_DIR.
+    std::unique_ptr<Runfiles> runfiles_unchecked;
+  };
+
+  // When runfiles WERE located successfully, this contains the details.
+  // When non-null, then `error` must be empty.
+  std::optional<Success> success;
+
+  // When runfiles were NOT located successfully, this contains the details.
+  // When non-empty, then `success` must null.
   std::string error;
 };
 
@@ -44,15 +73,16 @@ RunfilesSingleton Create() {
   std::string bazel_error;
 
   // Chose a mechanism based on environment variables.
+  result.success.emplace();
   if (std::getenv("TEST_SRCDIR")) {
     // When running under bazel test, use the test heuristics.
     mechanism = "TEST_SRCDIR";
-    result.runfiles.reset(Runfiles::CreateForTest(&bazel_error));
+    result.success->runfiles.reset(Runfiles::CreateForTest(&bazel_error));
   } else if ((std::getenv("RUNFILES_MANIFEST_FILE") != nullptr) ||
              (std::getenv("RUNFILES_DIR") != nullptr)) {
     // When running with some RUNFILES_* env already set, just use that.
     mechanism = "RUNFILES_{MANIFEST_FILE,DIR}";
-    result.runfiles.reset(Runfiles::Create({}, &bazel_error));
+    result.success->runfiles.reset(Runfiles::Create({}, &bazel_error));
   } else {
     // When running from the user's command line, use argv0.
     mechanism = "argv0";
@@ -70,41 +100,55 @@ RunfilesSingleton Create() {
     const std::string& argv0 = fs::read_symlink({"/proc/self/exe"}).string();
     drake::log()->debug("readlink(/proc/self/exe) = {}", argv0);
 #endif
-    result.runfiles.reset(Runfiles::Create(argv0, &bazel_error));
+    result.success->runfiles.reset(Runfiles::Create(argv0, &bazel_error));
   }
   drake::log()->debug("FindRunfile mechanism = {}", mechanism);
   drake::log()->debug("cwd = \"{}\"", fs::current_path().string());
 
-  // If there were runfiles, identify the RUNFILES_DIR.
-  if (result.runfiles) {
-    for (const auto& key_value : result.runfiles->EnvVars()) {
-      if (key_value.first == "RUNFILES_DIR") {
+  // If there were no runfiles, then reset success; otherwise, identify the
+  // RUNFILES_DIR.
+  if (result.success->runfiles == nullptr) {
+    result.success = std::nullopt;
+  } else {
+    for (const auto& [key, value] : result.success->runfiles->EnvVars()) {
+      if (key == "RUNFILES_DIR") {
         // N.B. We must normalize the path; otherwise the path may include
         // `parent/./path` if the binary was run using `./bazel-bin/target` vs
         // `bazel-bin/target`.
         // TODO(eric.cousineau): Show this in Drake itself. This behavior was
         // encountered in Anzu issue 5653, in a Python binary.
-        fs::path path = key_value.second;
+        fs::path path = value;
         path = fs::absolute(path);
         path = path.lexically_normal();
-        result.runfiles_dir = path.string();
+        result.success->runfiles_dir = path.string();
         break;
       }
     }
     // If we didn't find it, something was very wrong.
-    if (result.runfiles_dir.empty()) {
+    if (result.success->runfiles_dir.empty()) {
       bazel_error = "RUNFILES_DIR was not provided by the Runfiles object";
-      result.runfiles.reset();
-    } else if (!fs::is_directory({result.runfiles_dir})) {
-      bazel_error =
-          fmt::format("RUNFILES_DIR '{}' does not exist", result.runfiles_dir);
-      result.runfiles.reset();
+      result.success = std::nullopt;
+    } else if (!fs::is_directory({result.success->runfiles_dir})) {
+      bazel_error = fmt::format("RUNFILES_DIR {} does not exist",
+                                fmt_debug_string(result.success->runfiles_dir));
+      result.success = std::nullopt;
+    } else {
+      // We found the runfiles_dir; create the second Runfiles object using it.
+      result.success->runfiles_unchecked.reset(Runfiles::Create(
+          /* argv0 = */ {}, /* runfiles_manifest_file = */ {},
+          result.success->runfiles_dir, &bazel_error));
+      if (result.success->runfiles_unchecked == nullptr) {
+        result.success = std::nullopt;
+      } else {
+        const_cast<std::map<std::string, std::string>&>(
+            result.success->runfiles_unchecked->runfiles_map_)
+            .clear();
+      }
     }
   }
 
   // Report any error.
-  if (!result.runfiles) {
-    result.runfiles_dir.clear();
+  if (!result.success) {
     result.error = fmt::format(
         "{} (created using {} with TEST_SRCDIR={} and "
         "RUNFILES_MANIFEST_FILE={} and RUNFILES_DIR={})",
@@ -115,12 +159,13 @@ RunfilesSingleton Create() {
   }
 
   // Sanity check our return value.
-  if (result.runfiles.get() == nullptr) {
-    DRAKE_DEMAND(result.runfiles_dir.empty());
-    DRAKE_DEMAND(result.error.length() > 0);
-  } else {
-    DRAKE_DEMAND(result.runfiles_dir.length() > 0);
+  if (result.success.has_value()) {
+    DRAKE_DEMAND(result.success->runfiles != nullptr);
+    DRAKE_DEMAND(!result.success->runfiles_dir.empty());
+    DRAKE_DEMAND(result.success->runfiles_unchecked != nullptr);
     DRAKE_DEMAND(result.error.empty());
+  } else {
+    DRAKE_DEMAND(result.error.length() > 0);
   }
 
   return result;
@@ -136,15 +181,17 @@ const RunfilesSingleton& GetRunfilesSingleton() {
 }  // namespace
 
 bool HasRunfiles() {
-  return GetRunfilesSingleton().runfiles.get() != nullptr;
+  const RunfilesSingleton& singleton = GetRunfilesSingleton();
+  return singleton.success && singleton.success->runfiles.get() != nullptr;
 }
 
-RlocationOrError FindRunfile(const std::string& resource_path) {
+RlocationOrError FindRunfile(const std::string& resource_path,
+                             const std::string& source_repository) {
   const auto& singleton = GetRunfilesSingleton();
 
   // Check for HasRunfiles.
   RlocationOrError result;
-  if (!singleton.runfiles) {
+  if (!singleton.success) {
     DRAKE_DEMAND(!singleton.error.empty());
     result.error = singleton.error;
     return result;
@@ -161,9 +208,19 @@ RlocationOrError FindRunfile(const std::string& resource_path) {
     return result;
   }
 
+  // Map our FindRunfile argument onto the equivalent Rlocation argument.
+  std::string rlocation_source_repository;
+  if (resource_path.starts_with("drake/")) {
+    rlocation_source_repository = kBazelCurrentRepository;
+  } else {
+    rlocation_source_repository = source_repository;
+  }
+
   // Locate the file on the manifest and in the directory.
-  const std::string by_man = singleton.runfiles->Rlocation(resource_path);
-  const std::string by_dir = singleton.runfiles_dir + "/" + resource_path;
+  const std::string by_man = singleton.success->runfiles->Rlocation(
+      resource_path, rlocation_source_repository);
+  const std::string by_dir = singleton.success->runfiles_unchecked->Rlocation(
+      resource_path, rlocation_source_repository);
   const bool by_man_ok = fs::is_regular_file({by_man});
   const bool by_dir_ok = fs::is_regular_file({by_dir});
   drake::log()->debug(
@@ -193,13 +250,13 @@ RlocationOrError FindRunfile(const std::string& resource_path) {
   } else {
     DRAKE_DEMAND(by_man_ok && !by_dir_ok);
     detail =
-        "and it is on the manifest"
+        "and it is on the manifest "
         "but the file does not exist at that location";
   }
   result.error = fmt::format(
       "Sought '{}' in runfiles directory '{}' {}; "
       "perhaps a 'data = []' dependency is missing.",
-      resource_path, singleton.runfiles_dir, detail);
+      resource_path, singleton.success->runfiles_dir, detail);
   return result;
 }
 
