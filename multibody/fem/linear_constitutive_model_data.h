@@ -16,7 +16,7 @@ namespace internal {
 
  See LinearConstitutiveModel for how the data is used. See
  DeformationGradientData for more about constitutive model data.
- @tparam_nonsymbolic_scalar */
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 class LinearConstitutiveModelData
     : public DeformationGradientData<LinearConstitutiveModelData<T>> {
