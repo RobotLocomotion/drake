@@ -159,10 +159,8 @@ GTEST_TEST(ParseLinearExpression, Test2) {
   // Test with non-empty A matrix and empty B matrix, with only Mosek matrix
   // variable and no non-matrix variable.
   MathematicalProgram prog;
-  auto X1 = prog.NewSymmetricContinuousVariables<2>();
   auto X2 = prog.NewSymmetricContinuousVariables<3>();
   auto X3 = prog.NewSymmetricContinuousVariables<4>();
-  prog.AddPositiveSemidefiniteConstraint(X1);
   prog.AddPositiveSemidefiniteConstraint(X2);
   prog.AddPositiveSemidefiniteConstraint(X3);
 
@@ -174,8 +172,8 @@ GTEST_TEST(ParseLinearExpression, Test2) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  std::vector<MSKint32t> bar_var_dimension = {2, 3, 4};
-  MSK_appendbarvars(dut.task(), 3, bar_var_dimension.data());
+  std::vector<MSKint32t> bar_var_dimension = {3, 4};
+  MSK_appendbarvars(dut.task(), 2, bar_var_dimension.data());
 
   Vector3<symbolic::Variable> decision_vars(X2(0, 1), X3(1, 1), X3(1, 2));
   std::vector<MSKint32t> F_subi;
@@ -215,8 +213,8 @@ GTEST_TEST(ParseLinearExpression, Test3) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  std::vector<MSKint32t> bar_var_dimension = {2, 3, 4};
-  MSK_appendbarvars(dut.task(), 3, bar_var_dimension.data());
+  std::vector<MSKint32t> bar_var_dimension = {3};
+  MSK_appendbarvars(dut.task(), 1, bar_var_dimension.data());
   const int num_slack_vars = 3;
   AppendFreeVariable(
       dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size() +

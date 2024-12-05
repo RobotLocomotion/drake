@@ -19,6 +19,13 @@ GTEST_TEST(PartialPermutation, EmptyPermutation) {
   EXPECT_EQ(p.permuted_domain_size(), 0);
 }
 
+GTEST_TEST(PartialPermutation, EmptyPermutationFromStdVector) {
+  std::vector<int> permutation;
+  PartialPermutation p(std::move(permutation));
+  EXPECT_EQ(p.domain_size(), 0);
+  EXPECT_EQ(p.permuted_domain_size(), 0);
+}
+
 // Creates a permutation of size 6 where none of the indexes participates and
 // adds permuted indexes one at a time with push().
 GTEST_TEST(PartialPermutation, PushElements) {

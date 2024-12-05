@@ -2891,34 +2891,43 @@ GTEST_TEST(GcsTrajectoryOptimizationTest,
   Formula outgoing_time_minimum =
       Expression(edge_durations.first) >= Expression(2 * kMinimumDuration);
   edges.AddEdgeConstraint(outgoing_time_minimum);
+  edges.AddEdgeConstraint(ParseConstraint(outgoing_time_minimum));
 
   // Require that the time of the first and second sets of an edge be equal.
   Formula equal_time_constraint =
       Expression(edge_durations.first) == Expression(edge_durations.second);
   edges.AddEdgeConstraint(equal_time_constraint);
+  edges.AddEdgeConstraint(ParseConstraint(equal_time_constraint));
 
   // Add a cost to the time of the second set of an edge.
   Expression incoming_time_cost = Expression(edge_durations.second);
   edges.AddEdgeCost(incoming_time_cost);
+  edges.AddEdgeCost(ParseCost(incoming_time_cost));
 
   // Require that the second control point of the first set of an edge be at
   // most 0.85.
   Formula control_point_limit =
       Expression(edge_control_points.first(0, 1)) <= Expression(0.85);
   edges.AddEdgeConstraint(control_point_limit);
+  edges.AddEdgeConstraint(ParseConstraint(control_point_limit));
 
   // Add a cost to maximize the first control point of the second set of an
   // edge.
   Expression control_point_cost =
       -1 * Expression(edge_control_points.second(0, 0));
   edges.AddEdgeCost(control_point_cost);
+  edges.AddEdgeCost(ParseCost(control_point_cost));
 
   // Also add the summed costs and logical conjunction of the constraints, but
   // just to the restriction (due to parsing limitations).
   edges.AddEdgeCost(incoming_time_cost + control_point_cost,
                     {GraphOfConvexSets::Transcription::kRestriction});
+  edges.AddEdgeCost(ParseCost(incoming_time_cost + control_point_cost),
+                    {GraphOfConvexSets::Transcription::kRestriction});
   edges.AddEdgeConstraint(outgoing_time_minimum && equal_time_constraint &&
                           control_point_limit);
+  edges.AddEdgeConstraint(ParseConstraint(
+      outgoing_time_minimum && equal_time_constraint && control_point_limit));
 
   // All costs and constraints are convex, so the relaxation should be solvable.
   GraphOfConvexSetsOptions options;
@@ -2939,6 +2948,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest,
               // continuity constraints) has been limited to be at most 0.85.
   cost *= 2;  // We double the cost due to the additional constraint on the
               // restriction.
+  cost *= 2;  // Each cost is added twice, once as an Expression, and once as a
+              // Binding<Cost>.
   EXPECT_NEAR(result.get_optimal_cost(), cost, kTol);
 
   // Check the constraints.
@@ -2958,8 +2969,13 @@ GTEST_TEST(GcsTrajectoryOptimizationTest,
   Formula bad_formula = bad_expression == Expression(0.0);
   DRAKE_EXPECT_THROWS_MESSAGE(edges.AddEdgeCost(bad_expression),
                               ".*IsSubsetOf\\(allowed_vars_\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(edges.AddEdgeCost(ParseCost(bad_expression)),
+                              ".*Unknown variable.*");
   DRAKE_EXPECT_THROWS_MESSAGE(edges.AddEdgeConstraint(bad_formula),
                               ".*IsSubsetOf\\(allowed_vars_\\).*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      edges.AddEdgeConstraint(ParseConstraint(bad_formula)),
+      ".*Unknown variable.*");
 }
 
 }  // namespace

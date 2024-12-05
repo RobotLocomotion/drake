@@ -34,6 +34,7 @@ environment_map:
 exposure: 1.0
 cast_shadows: true
 shadow_map_size: 512
+force_to_pbr: true
 gltf_extensions:
   KHR_draco_mesh_compression:
     warn_unimplemented: true

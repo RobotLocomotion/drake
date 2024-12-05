@@ -37,6 +37,10 @@ cmake_configure_file(
         "SIZEOF_UNSIGNED_INT=",
         "SIZEOF_UNSIGNED_LONG=",
     ],
+    undefines = [
+        # Avoid incompatible licensed luksan.
+        "NLOPT_LUKSAN",
+    ],
 )
 
 # Make the config header available as a private library.

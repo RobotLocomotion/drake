@@ -186,6 +186,12 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
   for (auto& pipeline : pipelines_) {
     pipeline = make_unique<RenderingPipeline>(backend);
   }
+
+  // Requesting PBR on construction should require all materials to be PBR.
+  if (parameters.force_to_pbr) {
+    SetPbrMaterials();
+  }
+
   // Only populate the fallback lights if we haven't specified an environment
   // map.
   // Until we introduce CubeMap, the default texture (NullTexture) should be
@@ -515,7 +521,8 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
            make_unique<RenderingPipeline>(other.pipelines_[2]->backend)}},
       default_diffuse_{other.default_diffuse_},
       default_clear_color_{other.default_clear_color_},
-      fallback_lights_(other.fallback_lights_) {
+      fallback_lights_(other.fallback_lights_),
+      use_pbr_materials_(other.use_pbr_materials_) {
   InitializePipelines();
 
   for (const auto& [id, source_props] : other.props_) {

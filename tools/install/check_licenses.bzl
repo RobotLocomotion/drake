@@ -6,6 +6,7 @@ LICENSE_LITERALS = [
     "COPYING",
     "Copyright.txt",  # @vtk
     "EULA.pdf",  # @gurobi
+    "LICENCE",
     "LICENSE",
     "mosek-eula.pdf",  # @mosek
 ]
@@ -13,6 +14,8 @@ LICENSE_LITERALS = [
 # List of file name prefixes of license files
 LICENSE_PREFIXES = [
     "COPYING.",
+    "LICENCE.",
+    "Licence.",
     "LICENSE.",
     "License.",
 ]

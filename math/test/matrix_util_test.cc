@@ -241,6 +241,25 @@ GTEST_TEST(TestMatrixUtil, ExtractPrincipalSubmatrixSquareMatrixErrors) {
   EXPECT_ANY_THROW(ExtractPrincipalSubmatrix(X, indices));
 }
 
+GTEST_TEST(GeneratePythonCsc, TestNonEmpty) {
+  Eigen::Matrix<double, 2, 3> A;
+  // clang-format off
+  A << 1.5, 0.5, 1,
+        0,  0.5, 0;
+  // clang-format on
+  const Eigen::SparseMatrix<double> A_sparse = A.sparseView();
+  EXPECT_EQ(
+      GeneratePythonCsc(A_sparse, "A"),
+      "A = sparse.csc_matrix((np.array([1.5, 0.5, 0.5, 1], "
+      "dtype=np.float64), ([0, 0, 1, 0], [0, 1, 1, 2])), shape=(2, 3))\n");
+}
+
+GTEST_TEST(GeneratePythonCsc, TestEmpty) {
+  const Eigen::SparseMatrix<double> A_sparse(2, 3);
+  EXPECT_EQ(GeneratePythonCsc(A_sparse, "A"),
+            "A = sparse.csc_matrix((2, 3))\n");
+}
+
 }  // namespace test
 }  // namespace math
 }  // namespace drake
