@@ -117,30 +117,29 @@ shared_ptr<fcl::ShapeBased> CopyShapeOrThrow(
 
 // Helper function that creates a *deep* copy of the given collision object.
 unique_ptr<CollisionObjectd> CopyFclObjectOrThrow(
-    const CollisionObjectd& object) {
-  const auto& original_geometry = *object.collisionGeometry();
+    const CollisionObjectd& object_source) {
+  const auto& shape_source = *object_source.collisionGeometry();
 
-  shared_ptr<fcl::ShapeBased> shape_copy =
-      CopyShapeOrThrow(*object.collisionGeometry());
+  shared_ptr<fcl::ShapeBased> shape_copy = CopyShapeOrThrow(shape_source);
 
-  // N.B. The call below not only creates a new CollisionObject, but modifies
-  // shape_copy! In particular, it re-computes its local AABB based on the
-  // underlying shape. So margin updates will be lost!
-  auto copy = make_unique<CollisionObjectd>(shape_copy);
+  // N.B. CollisionObject's constructor resets the shape's local bounding
+  // box to fit the _instantiated_ shape.
+  auto object_copy = make_unique<CollisionObjectd>(shape_copy);
 
-  // Since "copy" has its AABB computed based of the new shape_copy, we must
-  // update copy the AABB of the original object to propagate margin updates.
-  auto* geometry_copy =
-      const_cast<fcl::CollisionGeometryd*>(copy->collisionGeometry().get());
-  geometry_copy->aabb_local.min_ = original_geometry.aabb_local.min_;
-  geometry_copy->aabb_local.max_ = original_geometry.aabb_local.max_;
-  geometry_copy->aabb_radius = original_geometry.aabb_radius;
+  // The source's local AABB may have been inflated if the underlying object is
+  // associated with a compliant hydroelastic shape with a non-zero margin;
+  // therefore the AABB that fits the shape may not be what we want. We can't
+  // tell simply by looking at the fcl object if this is the case, so, we'll
+  // simply copy the source's local AABB verbatim to preserve the effect.
+  shape_copy->aabb_local.min_ = shape_source.aabb_local.min_;
+  shape_copy->aabb_local.max_ = shape_source.aabb_local.max_;
+  shape_copy->aabb_radius = shape_source.aabb_radius;
 
-  copy->setUserData(object.getUserData());
-  copy->setTransform(object.getTransform());
-  copy->computeAABB();
+  object_copy->setUserData(object_source.getUserData());
+  object_copy->setTransform(object_source.getTransform());
+  object_copy->computeAABB();
 
-  return copy;
+  return object_copy;
 }
 
 // Helper function that creates a deep copy of a vector of collision objects.
@@ -388,21 +387,20 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
     if (margin == 0) return;  // nothing to update.
 
-    auto& tree = geometry.is_dynamic() ? dynamic_tree_ : anchored_tree_;
+    FclDynamicAABBTreeCollisionManager& tree =
+        geometry.is_dynamic() ? dynamic_tree_ : anchored_tree_;
 
     CollisionObjectd* object = geometry.is_dynamic()
                                    ? dynamic_objects_[geometry.id()].get()
                                    : anchored_objects_[geometry.id()].get();
     DRAKE_DEMAND(object != nullptr);
 
-    InflateLocalAabbForHydroelasticTypesOnly(geometry.shape(), geometry.id(),
-                                             margin, object);
+    InflateAabbForHydroelasticTypesOnly(geometry.shape(), geometry.id(), margin,
+                                        object);
 
-    // N.B. If margin is update we must also update the "global" AABBs of the
-    // BVH. If we don't, subsequent calls to geometry queries might not update
-    // the BVH if poses in the upper level SceneGraph's context were not
-    // modified. At this point, we force this update right here.
-    object->computeAABB();
+    // If this led to a change in the collision object's AABB, we need to
+    // propagate those changes up through the tree's BVH. The surest way to do
+    // that is to explicitly update.
     tree.update();
   }
 
@@ -535,7 +533,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     hydroelastic_geometries_.MaybeAddGeometry(shape, data.id, data.properties);
     if (data.margin > 0 && hydroelastic_geometries_.hydroelastic_type(
                                data.id) == HydroelasticType::kCompliant) {
-      InflateLocalAabbForHydroelasticTypesOnly(shape, data);
+      InflateAabbForHydroelasticTypesOnly(shape, data);
     }
   }
 
@@ -943,8 +941,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return static_cast<CollisionObjectd*>(GetCollisionObject(id));
   }
 
-  // Inflates the local AABB (expressed in the g's frame) for compliant
-  // hydroelastic geometries only.
+  // Overload for when the parameters are largely stashed within a ReifyData
+  // instance.
+  void InflateAabbForHydroelasticTypesOnly(const Shape& shape,
+                                           const ReifyData& data) {
+    InflateAabbForHydroelasticTypesOnly(shape, data.id, data.margin,
+                                        data.fcl_object.get());
+  }
+
+  // Inflates the AABB of the collision object and its geometry (in their
+  // respective frames) for compliant hydroelastic geometries only.
   //
   // Each fcl::CollisionGeometryd computes an axis-aligned bounding box in the
   // geometry's frame (its "local AABB") during construction. The hydroelastic
@@ -953,29 +959,26 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   // properly enclose them. So, we'll edit fcl's bounding box definition after
   // the fact to account for the inflation.
   //
+  // The fcl::CollisionObject likewise has a bounding box based on the
+  // geometry's local AABB and its current pose. We also update the collision
+  // objects AABB.
+  //
   // Inflation for the primitives' bounding boxes is trivial; each grows twice
   // `margin` along the canonical frames' axes. Meshes (Mesh and Convex) are
   // trickier because vertices can move a larger distance than margin, so simply
   // bumping the box by 2 * margin is insufficient, we need to rebound the
   // set of vertices.
   //
-  // @pre `data.id` has a compliant hydroelastic representation.
-  // @pre `data.margin` > 0.
-  void InflateLocalAabbForHydroelasticTypesOnly(const Shape& shape,
-                                                const ReifyData& data) {
-    InflateLocalAabbForHydroelasticTypesOnly(shape, data.id, data.margin,
-                                             data.fcl_object.get());
-  }
-
-  // Overload for when the FCL collision object is explicitly available.
-  // Refer to the alternative overload for further documentation.
-  void InflateLocalAabbForHydroelasticTypesOnly(const Shape& shape,
-                                                const GeometryId id,
-                                                double margin,
-                                                fcl::CollisionObjectd* object) {
+  // @pre `id` has a compliant hydroelastic representation.
+  // @pre `margin` > 0.
+  // @pre `object != nullptr`.
+  void InflateAabbForHydroelasticTypesOnly(const Shape& shape,
+                                           const GeometryId id, double margin,
+                                           fcl::CollisionObjectd* object) {
     DRAKE_DEMAND(margin > 0);
     DRAKE_DEMAND(hydroelastic_geometries_.hydroelastic_type(id) ==
                  HydroelasticType::kCompliant);
+    DRAKE_DEMAND(object != nullptr);
 
     // To edit the assigned collision geometry, we have to cheat and temporarily
     // ignore the const-ness. Note: this assumes that the collision object
@@ -986,14 +989,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         const_cast<fcl::CollisionGeometryd*>(object->collisionGeometry().get());
     DRAKE_DEMAND(g != nullptr);
 
-    // When updating proximity properites, we might update AABBs several times.
-    // Therefore we recompute a clean AABB before inflating it with margin.
-    g->computeLocalAABB();
 
     std::string_view shape_name = shape.type_name();
     if (shape_name == "Mesh" || shape_name == "Convex") {
       // Meshes can have their vertices move an arbitrary amount, we simply need
-      // to recompute the bounding box.
+      // to recompute the bounding box based on the *moved* vertex positions
+      // defined in the hydro mesh.
       const auto& mesh = hydroelastic_geometries_.soft_geometry(id).mesh();
       g->aabb_local.min_ =
           Vector3d::Constant(std::numeric_limits<double>::infinity());
@@ -1003,6 +1004,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
         g->aabb_local.max_ = g->aabb_local.max_.cwiseMax(v);
       }
     } else {
+      // To guarantee correct inflation, always start with a tight fitting AABB.
+      g->computeLocalAABB();
       // Primitives simply grow by margin in each axis direction.
       g->aabb_local.max_ += Vector3d::Constant(margin);
       g->aabb_local.min_ -= Vector3d::Constant(margin);
@@ -1010,6 +1013,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     // Changes to the local AABB also require updating the radius of its
     // circumscribing sphere.
     g->aabb_radius = (g->aabb_local.min_ - g->aabb_center).norm();
+    // Finally fit the object's AABB.
+    object->computeAABB();
   }
 
   void AddGeometry(
