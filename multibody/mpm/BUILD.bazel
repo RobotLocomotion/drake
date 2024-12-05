@@ -1,11 +1,28 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
     "drake_cc_googletest_linux_only",
+    "drake_cc_library",
     "drake_cc_library_linux_only",
 )
 
 package(default_visibility = ["//visibility:public"])
+
+drake_cc_library(
+    name = "particle_data",
+    srcs = [
+        "particle_data.cc",
+    ],
+    hdrs = [
+        "particle_data.h",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:parallelism",
+        "//multibody/fem",
+    ],
+)
 
 # TODO(xuchenhan-tri): when we enable SPGrid in our releases, we also need to
 # install its license file in drake/tools/workspace/BUILD.bazel.
@@ -21,6 +38,14 @@ drake_cc_library_linux_only(
     deps = [
         "//common:essential",
         "@spgrid_internal",
+    ],
+)
+
+drake_cc_googletest(
+    name = "particle_data_test",
+    deps = [
+        ":particle_data",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

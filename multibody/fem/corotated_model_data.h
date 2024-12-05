@@ -15,8 +15,7 @@ namespace internal {
  the polar decomposition of the deformation gradient F, along with J-1 and JF⁻ᵀ
  (J = det(F)) used in evaluating the energy density and its derivatives.
  See DeformationGradientData for more about constitutive model data.
- @tparam_nonsymbolic_scalar
- dependent quantities are evaluated. */
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 class CorotatedModelData
     : public DeformationGradientData<CorotatedModelData<T>> {
