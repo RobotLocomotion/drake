@@ -103,6 +103,7 @@ drake_cc_library(
     srcs = ["function_handle_trajectory.cc"],
     hdrs = ["function_handle_trajectory.h"],
     deps = [
+        ":derivative_trajectory",
         ":trajectory",
         "//common:default_scalars",
         "//common:essential",
