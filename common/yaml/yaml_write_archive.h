@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -149,6 +150,11 @@ class YamlWriteArchive final {
                             data.empty() ? nullptr : &data.at(0));
   }
 
+  template <typename NVP>
+  void DoVisit(const NVP& nvp, const std::vector<uint8_t>&, int32_t) {
+    this->VisitScalar(nvp);
+  }
+
   // For std::array.
   template <typename NVP, typename T, std::size_t N>
   void DoVisit(const NVP& nvp, const std::array<T, N>&, int32_t) {
@@ -217,6 +223,9 @@ class YamlWriteArchive final {
     root_.Add(nvp.name(), std::move(sub_archive.root_));
   }
 
+  // Encode a binary string.
+  static internal::Node ByteString(const std::vector<uint8_t>& value);
+
   // This is used for simple types that can be converted to a string.
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
@@ -232,7 +241,23 @@ class YamlWriteArchive final {
       root_.Add(nvp.name(), std::move(scalar));
       return;
     }
-    auto scalar = internal::Node::MakeScalar(fmt::format("{}", value));
+    auto make_scalar = [](const T& v) {
+      if constexpr (std::is_same_v<T, std::vector<uint8_t>>) {
+        return ByteString(v);
+      } else {
+        std::string value_str;
+        if constexpr (std::is_same_v<T, std::filesystem::path>) {
+          // We want a simple path: /path/stuff. No extra decorations.
+          value_str = v.string();
+        } else {
+          value_str = fmt::to_string(v);
+        }
+
+        return internal::Node::MakeScalar(value_str);
+      }
+    };
+
+    auto scalar = make_scalar(value);
     if constexpr (std::is_same_v<T, bool>) {
       scalar.SetTag(internal::JsonSchemaTag::kBool);
     }

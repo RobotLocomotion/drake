@@ -1,10 +1,12 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
 #include <algorithm>
+#include <cctype>
 #include <sstream>
 #include <utility>
 #include <vector>
 
+#include <common_robotics_utilities/base64_helpers.hpp>
 #include <yaml-cpp/emitfromevents.h>
 #include <yaml-cpp/yaml.h>
 
@@ -33,11 +35,11 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
   std::string tag{node.GetTag()};
   if ((tag == internal::Node::kTagNull) || (tag == internal::Node::kTagBool) ||
       (tag == internal::Node::kTagInt) || (tag == internal::Node::kTagFloat) ||
-      (tag == internal::Node::kTagStr)) {
+      (tag == internal::Node::kTagStr) || (tag == internal::Node::kTagBinary)) {
     // In most cases we don't need to emit the "JSON Schema" tags for YAML data,
     // because they are implied by default. However, YamlWriteArchive on variant
     // types sometimes marks the tag as important.
-    if (node.IsTagImportant()) {
+    if (node.IsTagImportant() || tag == internal::Node::kTagBinary) {
       DRAKE_DEMAND(tag.size() > 0);
       // The `internal::Node::kTagFoo` all look like "tag:yaml.org,2002:foo".
       // We only want the "foo" part (after the second colon).
@@ -324,6 +326,24 @@ void YamlWriteArchive::EraseMatchingMaps(const YamlWriteArchive& other) {
   DoEraseMatchingMaps(&(this->root_), &(other.root_));
 }
 
+internal::Node YamlWriteArchive::ByteString(const std::vector<uint8_t>& value) {
+  const bool is_binary = [&value]() {
+    for (int i = 0; i < ssize(value); ++i) {
+      if (!std::isprint(value[i])) return true;
+    }
+    return false;
+  }();
+
+  if (is_binary) {
+    internal::Node node = internal::Node::MakeScalar(
+        common_robotics_utilities::base64_helpers::Encode(value));
+    node.SetTag(std::string(internal::Node::kTagBinary));
+    return node;
+  } else {
+    return internal::Node::MakeScalar(
+        std::string(reinterpret_cast<const char*>(value.data()), value.size()));
+  }
+}
 }  // namespace internal
 }  // namespace yaml
 }  // namespace drake
