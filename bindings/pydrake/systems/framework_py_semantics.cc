@@ -599,6 +599,9 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def(
           "AddSystem",
           [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
+            // stash() makes the builder temporarily immortal (uncollectible
+            // self cycle). This will be resolved by the Build() step. See
+            // BuilderLifeSupport for rationale.
             BuilderLifeSupport<T>::stash(self);
             return self->AddSystem(std::move(system));
           },
@@ -608,6 +611,9 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
           "AddNamedSystem",
           [](DiagramBuilder<T>* self, std::string& name,
               unique_ptr<System<T>> system) {
+            // stash() makes the builder temporarily immortal (uncollectible
+            // self cycle). This will be resolved by the Build() step. See
+            // BuilderLifeSupport for rationale.
             BuilderLifeSupport<T>::stash(self);
             return self->AddNamedSystem(name, std::move(system));
           },
@@ -690,6 +696,12 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def(
           "Build",
           [](DiagramBuilder<T>* self) {
+            // The c++ Build() step would pass life support to the
+            // diagram. Instead of relying on its one-way, uncollectible
+            // support here, abandon it in favor of the builder-diagram
+            // ref_cycle invoked below. We can't have both; that would create
+            // an uncollectible builder-diagram cycle and make those objects
+            // immortal.
             BuilderLifeSupport<T>::abandon(self);
             return self->Build();
           },
@@ -697,6 +709,12 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def(
           "BuildInto",
           [](DiagramBuilder<T>* self, Diagram<T>* target) {
+            // The c++ BuildInto() step would pass life support to the
+            // diagram. Instead of relying on its one-way, uncollectible
+            // support here, abandon it in favor of the builder-diagram
+            // ref_cycle invoked below. We can't have both; that would create
+            // an uncollectible builder-diagram cycle and make those objects
+            // immortal.
             BuilderLifeSupport<T>::abandon(self);
             self->BuildInto(target);
           },
