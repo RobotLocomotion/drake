@@ -1,6 +1,9 @@
 #pragma once
 
+#include <any>
+
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/common/string_map.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 namespace drake {
@@ -46,7 +49,7 @@ struct BuilderLifeSupport {
     BuilderLifeSupport<T>::attrs(builder).erase(kKey);
   }
 
-  static auto& attrs(systems::DiagramBuilder<T>* builder) {
+  static string_map<std::any>& attrs(systems::DiagramBuilder<T>* builder) {
     return builder->get_mutable_life_support().attributes;
   }
 };
