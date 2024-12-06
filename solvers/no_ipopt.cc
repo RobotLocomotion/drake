@@ -13,6 +13,10 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
       "solver.");
 }
 
+IpoptSolver::IpoptSolver()
+    : SolverBase(id(), &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {}
+
 bool IpoptSolver::is_available() {
   return false;
 }

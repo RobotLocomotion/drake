@@ -57,7 +57,9 @@ void SetAppOptions(const std::string& default_linear_solver,
   // Turn off the banner.
   set_string_option("sb", "yes");
 
-  set_string_option("linear_solver", default_linear_solver);
+  if (!default_linear_solver.empty()) {
+    set_string_option("linear_solver", default_linear_solver);
+  }
 
   // The default tolerance.
   const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
@@ -145,6 +147,16 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
     }
   }
   return "Unknown enumerated SolverReturn value.";
+}
+
+IpoptSolver::IpoptSolver()
+    : SolverBase(id(), &is_available, &is_enabled,
+                 &ProgramAttributesSatisfied) {
+  const std::vector<std::string_view> linear_solvers =
+      internal::GetSupportedIpoptLinearSolvers();
+  if (!linear_solvers.empty()) {
+    default_linear_solver_ = linear_solvers.at(0);
+  }
 }
 
 bool IpoptSolver::is_available() {

@@ -270,6 +270,27 @@ GTEST_TEST(TestIpoptSolverNlp, NonlinearConstraintDuplicatedVariables) {
     EXPECT_TRUE(CompareMatrices(jac.toDense(), jac_expected));
   }
 }
+
+#if defined(__APPLE__)
+constexpr bool kApple = true;
+#else
+constexpr bool kApple = false;
+#endif
+
+// This provides a cross-check of our build system choices for @ipopt.
+GTEST_TEST(TestIpoptSolver, SupportedLinearSolvers) {
+  const std::vector<std::string_view> actual = GetSupportedIpoptLinearSolvers();
+  std::vector<std::string_view> expected;
+  if (kApple) {
+    // Homebrew doesn't provide SPRAL.
+    expected.emplace_back("mumps");
+  } else {
+    expected.emplace_back("mumps");
+    expected.emplace_back("spral");
+  }
+  EXPECT_EQ(actual, expected);
+}
+
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake
