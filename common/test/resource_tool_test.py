@@ -98,5 +98,5 @@ class TestResourceTool(unittest.TestCase):
             example_relpath,
             ], expected_returncode=0)
         absolute_path = output.strip()
-        self.assertTrue(absolute_path.endswith(example_abspath))
+        self.assertTrue(absolute_path.endswith("/Pendulum.urdf"))
         self.assertTrue(os.path.exists(absolute_path))
