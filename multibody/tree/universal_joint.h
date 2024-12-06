@@ -280,6 +280,16 @@ class UniversalJoint final : public Joint<T> {
 template <typename T>
 const char UniversalJoint<T>::kTypeName[] = "universal";
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<UniversalJoint> {
+  template <typename T>
+  static const UniversalJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

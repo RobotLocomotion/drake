@@ -92,6 +92,16 @@ class RevoluteSpring final : public ForceElement<T> {
   double stiffness_;
 };
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastForceElement<RevoluteSpring> {
+  template <typename T>
+  static const RevoluteSpring<T>* cast(const ForceElement<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

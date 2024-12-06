@@ -279,6 +279,16 @@ class BallRpyJoint final : public Joint<T> {
 template <typename T>
 const char BallRpyJoint<T>::kTypeName[] = "ball_rpy";
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<BallRpyJoint> {
+  template <typename T>
+  static const BallRpyJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
