@@ -126,6 +126,7 @@ drake_pybind_library(
     cc_srcs = ["controllers_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":analysis_py",
         ":framework_py",
         ":module_py",
         ":primitives_py",
