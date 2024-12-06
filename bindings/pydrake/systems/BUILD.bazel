@@ -44,7 +44,6 @@ drake_pybind_library(
     name = "framework_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:builder_life_support_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
@@ -53,6 +52,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
+        "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_srcs = [
         "framework_py.cc",
@@ -200,6 +200,14 @@ drake_py_library(
     srcs = ["drawing.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [":module_py"],
+)
+
+drake_cc_library(
+    name = "builder_life_support_pybind",
+    hdrs = ["builder_life_support_pybind.h"],
+    declare_installed_headers = False,
+    visibility = ["//bindings/pydrake:__subpackages__"],
+    deps = [],
 )
 
 drake_cc_library(

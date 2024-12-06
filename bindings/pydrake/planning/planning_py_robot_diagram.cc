@@ -1,10 +1,10 @@
-#include "drake/bindings/pydrake/common/builder_life_support_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/planning/robot_diagram.h"
 #include "drake/planning/robot_diagram_builder.h"
 
