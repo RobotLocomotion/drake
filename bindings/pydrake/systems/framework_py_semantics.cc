@@ -601,7 +601,10 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
           [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
             // stash() makes the builder temporarily immortal (uncollectible
             // self cycle). This will be resolved by the Build() step. See
-            // BuilderLifeSupport for rationale.
+            // BuilderLifeSupport for rationale. This can't be done in init,
+            // because we are not guaranteed that the init wrapper is ever
+            // used; think of classes that return a reference to an embedded
+            // diagram builder.
             BuilderLifeSupport<T>::stash(self);
             return self->AddSystem(std::move(system));
           },
@@ -613,7 +616,10 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
               unique_ptr<System<T>> system) {
             // stash() makes the builder temporarily immortal (uncollectible
             // self cycle). This will be resolved by the Build() step. See
-            // BuilderLifeSupport for rationale.
+            // BuilderLifeSupport for rationale. This can't be done in init,
+            // because we are not guaranteed that the init wrapper is ever
+            // used; think of classes that return a reference to an embedded
+            // diagram builder.
             BuilderLifeSupport<T>::stash(self);
             return self->AddNamedSystem(name, std::move(system));
           },
