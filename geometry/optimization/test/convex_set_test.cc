@@ -235,6 +235,41 @@ GTEST_TEST(ConvexSetTest, CalcVolumeViaSampling) {
   EXPECT_LT(good_result.num_samples, max_num_samples_high);
 };
 
+GTEST_TEST(ConvexSetTest, CalcMaximumDistanceViaSampling) {
+  RandomGenerator generator(1234);
+  const int max_num_samples = 1e3;
+
+  // Test for a set with ambient dimension 0.
+  const HPolyhedron zero_order_set = HPolyhedron::MakeUnitBox(0);
+  DRAKE_EXPECT_THROWS_MESSAGE(zero_order_set.CalcMaximumDistanceViaSampling(
+                                  &generator, max_num_samples),
+                              ".*zero-dimensional.*");
+
+  // Test with a unit circle.
+  const Hyperellipsoid unit_circle = Hyperellipsoid::MakeUnitBall(2);
+  double maximum_distance =
+      unit_circle.CalcMaximumDistanceViaSampling(&generator, max_num_samples);
+  EXPECT_NEAR(maximum_distance, 2.0, 1e-6);
+
+  // Test with a unit sphere.
+  const Hyperellipsoid unit_sphere = Hyperellipsoid::MakeUnitBall(3);
+  maximum_distance =
+      unit_sphere.CalcMaximumDistanceViaSampling(&generator, max_num_samples);
+  EXPECT_NEAR(maximum_distance, 2.0, 1e-6);
+
+  // Test with a unit square.
+  const HPolyhedron unit_square = HPolyhedron::MakeUnitBox(2);
+  maximum_distance =
+      unit_square.CalcMaximumDistanceViaSampling(&generator, max_num_samples);
+  EXPECT_NEAR(maximum_distance, 2 * std::sqrt(2.0), 1e-6);
+
+  // Test with a unit square.
+  const HPolyhedron unit_box = HPolyhedron::MakeUnitBox(3);
+  maximum_distance =
+      unit_box.CalcMaximumDistanceViaSampling(&generator, max_num_samples);
+  EXPECT_NEAR(maximum_distance, 2 * std::sqrt(3.0), 1e-6);
+};
+
 // Compute the projection of a point onto a set that has no point in set
 // shortcut and no projection shortcut.
 GTEST_TEST(ConvexSetTest, GenericProjection) {
