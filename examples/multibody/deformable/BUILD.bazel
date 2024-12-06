@@ -116,6 +116,30 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "deformable_locking",
+    srcs = [
+        "deformable_locking.cc",
+    ],
+    add_test_rule = 1,
+    data = [
+        ":models",
+    ],
+    test_rule_args = [
+        "-simulation_time=0.1",
+        "-realtime_rate=0.0",
+    ],
+    deps = [
+        "//geometry:drake_visualizer",
+        "//geometry:scene_graph",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+        "@gflags",
+    ],
+)
+
 drake_cc_googletest(
     name = "point_source_force_field_test",
     deps = [
