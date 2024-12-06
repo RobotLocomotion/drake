@@ -1,6 +1,7 @@
 import gc
 import math
 import unittest
+import weakref
 
 import numpy as np
 
@@ -31,6 +32,7 @@ from pydrake.systems.framework import (
     DiagramBuilder, InputPortSelection, InputPort, OutputPort,
 )
 from pydrake.systems.primitives import Integrator, LinearSystem
+from pydrake.systems.test.test_util import lifetime_oblivious_build_step
 from pydrake.trajectories import Trajectory
 
 
@@ -249,7 +251,7 @@ class TestControllers(unittest.TestCase):
         https://github.com/RobotLocomotion/drake/issues/14355
         """
 
-        def make_diagram():
+        def make_diagram(oblivious=False):
             # Use a nested function to ensure that all locals get garbage
             # collected quickly.
 
@@ -273,18 +275,27 @@ class TestControllers(unittest.TestCase):
             builder.ExportInput(
                 controller.get_input_port_desired_state(), "x_desired")
             builder.ExportOutput(controller.get_output_port_control(), "u")
-            diagram = builder.Build()
-            return diagram
+            spy = weakref.finalize(builder, lambda: None)
+            if oblivious:
+                diagram = lifetime_oblivious_build_step(builder)
+            else:
+                diagram = builder.Build()
+            assert spy.alive
+            return diagram, spy
 
-        diagram = make_diagram()
-        gc.collect()
-        # N.B. Without the workaround for #14355, we get a segfault when
-        # creating the context.
-        context = diagram.CreateDefaultContext()
-        diagram.GetInputPort("x_estimated").FixValue(context, [])
-        diagram.GetInputPort("x_desired").FixValue(context, [])
-        u = diagram.GetOutputPort("u").Eval(context)
-        np.testing.assert_equal(u, [])
+        for oblivious in [False, True]:
+            diagram, spy = make_diagram(oblivious)
+            assert spy.alive
+            gc.collect()
+            assert spy.alive
+            # N.B. Without the workaround for #14355, we get a segfault when
+            # creating the context.
+            context = diagram.CreateDefaultContext()
+            assert spy.alive
+            diagram.GetInputPort("x_estimated").FixValue(context, [])
+            diagram.GetInputPort("x_desired").FixValue(context, [])
+            u = diagram.GetOutputPort("u").Eval(context)
+            np.testing.assert_equal(u, [])
 
     def test_pid_controlled_system(self):
         controllers = [

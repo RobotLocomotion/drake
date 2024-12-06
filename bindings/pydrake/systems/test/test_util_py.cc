@@ -2,6 +2,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/vector_system.h"
 
@@ -145,6 +146,9 @@ PYBIND11_MODULE(test_util, m) {
         system.CalcOutput(*context, output.get());
         return output;
       });
+
+  m.def("lifetime_oblivious_build_step",
+      [](DiagramBuilder<T>* builder) { return builder->Build(); });
 }
 
 }  // namespace pydrake
