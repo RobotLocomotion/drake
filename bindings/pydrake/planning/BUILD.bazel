@@ -99,7 +99,6 @@ drake_py_unittest(
     deps = [
         ":planning",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
-        "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:controllers_py",
     ],
 )
