@@ -117,6 +117,7 @@ _SRCS = [
     "lib/strdup.c",
     "lib/strerror.c",
     "lib/strtoofft.c",
+    "lib/timediff.c",
     "lib/timeval.c",
     "lib/transfer.c",
     "lib/url.c",
