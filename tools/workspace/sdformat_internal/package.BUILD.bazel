@@ -246,6 +246,7 @@ _SRCS = [
 
 _SKIP_SRCS = [
     # We don't want the "optional binary relocatability" feature.
+    "src/bazel/InstallationDirectories.cc",
     "src/InstallationDirectories.cc",
 ]
 
