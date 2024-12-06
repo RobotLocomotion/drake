@@ -88,7 +88,6 @@ class TestRobotDiagram(unittest.TestCase):
         expectation that any system reference will keep the diagram
         alive. Ensure that either a system reference or a diagram reference
         will work.
-
         """
 
         def make_diagram():
