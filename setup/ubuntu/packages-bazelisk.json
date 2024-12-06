@@ -1,0 +1,18 @@
+{
+    "name": "bazelisk",
+    "version": "1.22.1",
+    "arch": {
+        "amd64": {
+            "sha256": "26723ac5cc5753717ba873281c9abf180ce355fe42aa3219472c24b17bfdd3d6",
+            "urls": [
+                "https://github.com/bazelbuild/bazelisk/releases/download/v1.22.1/bazelisk-amd64.deb"
+            ]
+        },
+        "arm64": {
+            "sha256": "86b416e4664d4b4eef2ef44bb0256a4357f5e4e62e4838c45c036cb60b2b1334",
+            "urls": [
+                "https://github.com/bazelbuild/bazelisk/releases/download/v1.22.1/bazelisk-arm64.deb"
+            ]
+        }
+    }
+}

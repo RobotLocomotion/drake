@@ -53,16 +53,10 @@ export HOMEBREW_NO_AUTO_UPDATE=1
 # completes or wait for the next automatic cleanup if necessary.
 export HOMEBREW_NO_INSTALL_CLEANUP=1
 
-binary_distribution_called_update=0
-
 if [[ "${with_update}" -eq 1 ]]; then
   # Note that brew update uses git, so HOMEBREW_CURL_RETRIES does not take
   # effect.
   brew update || (sleep 30; brew update)
-
-  # Do NOT call brew update again when installing prerequisites for source
-  # distributions.
-  binary_distribution_called_update=1
 fi
 
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock

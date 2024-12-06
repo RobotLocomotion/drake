@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -euo pipefail
+
+case "$OSTYPE" in
+  darwin*)
+    exec "${BASH_SOURCE%/*}/mac/install_prereqs" "$@"
+    ;;
+  linux*)
+    exec "${BASH_SOURCE%/*}/ubuntu/install_prereqs" "$@"
+    ;;
+  *)
+    echo 'ERROR: Unsupported OS' >&2
+    exit 1
+    ;;
+esac
