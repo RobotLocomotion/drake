@@ -197,22 +197,31 @@ boolean<T> RotationalInertia<
   const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
   const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
-  // TODO(Mitiguy) For now, this function is only used to test principal moments
-  //  of inertia. A future PR will instead first perform the tests herein with
-  //  `this` rotational inertia's diagonal moments of inertia e.g., with
-  //  ExtractDoubleOrThrow(get_moments()) and also do the product of inertia
-  //  inequality tests (e.g., is 2*abs(Ixy) ≤ Izz + ε).
-  const Vector3<double> moments = CalcPrincipalMomentsOfInertia();
+  // Lambda function to test moments of inertia.
+  auto is_valid_moments_of_inertia = [epsilon](const Vector3<double>& moments) {
+    const double Ixx = moments.x();
+    const double Iyy = moments.y();
+    const double Izz = moments.z();
+    const auto are_moments_near_positive =
+        AreMomentsOfInertiaNearPositive(Ixx, Iyy, Izz, epsilon);
+    const auto is_triangle_inequality_satisfied = Ixx + Iyy + epsilon >= Izz &&
+                                                  Ixx + Iyy + epsilon >= Iyy &&
+                                                  Iyy + Izz + epsilon >= Ixx;
+    return are_moments_near_positive && is_triangle_inequality_satisfied;
+  };
 
-  const double Ixx = moments.x();
-  const double Iyy = moments.y();
-  const double Izz = moments.z();
-  const auto are_moments_near_positive =
-      AreMomentsOfInertiaNearPositive(Ixx, Iyy, Izz, epsilon);
-  const auto is_triangle_inequality_satisfied = Ixx + Iyy + epsilon >= Izz &&
-                                                Ixx + Iyy + epsilon >= Iyy &&
-                                                Iyy + Izz + epsilon >= Ixx;
-  return are_moments_near_positive && is_triangle_inequality_satisfied;
+  // First test `this` rotational inertia's diagonal moments of inertia.
+  // TODO(Mitiguy) also do the product of inertia inequality tests, e.g., is
+  //  2*abs(Ixy) ≤ Izz + ε.
+  Vector3<double> moments = ExtractDoubleOrThrow(get_moments());
+  boolean<T> is_valid_moments = is_valid_moments_of_inertia(moments);
+
+  // Next, test the principal moments of inertia.
+  if (is_valid_moments) {
+    moments = CalcPrincipalMomentsOfInertia();
+    is_valid_moments = is_valid_moments_of_inertia(moments);
+  }
+  return is_valid_moments;
 }
 
 template <typename T>
