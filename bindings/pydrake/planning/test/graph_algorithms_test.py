@@ -58,8 +58,7 @@ class TestGraphAlgorithms(unittest.TestCase):
         # Test the default constructor.
         solver_default = mut.MaxCliqueSolverViaMip()
         self.assertIsNone(solver_default.GetInitialGuess())
-        self.assertFalse(
-            solver_default.GetSolverOptions().get_print_to_console())
+        self.assertEqual(len(solver_default.GetSolverOptions().options), 0)
 
         # Test the argument constructor.
         solver_options = SolverOptions()
@@ -68,21 +67,19 @@ class TestGraphAlgorithms(unittest.TestCase):
         solver = mut.MaxCliqueSolverViaMip(solver_options=solver_options,
                                            initial_guess=initial_guess)
         # Test the getters.
-        numpy_compare.assert_equal(
-            solver.GetInitialGuess(), initial_guess
+        numpy_compare.assert_equal(solver.GetInitialGuess(), initial_guess)
+        self.assertTrue(
+            solver.GetSolverOptions().options["Drake"]["kPrintToConsole"],
         )
-        self.assertTrue(solver.GetSolverOptions().get_print_to_console())
 
         # Test the setters.
         new_guess = np.zeros(graph.shape[0])
         solver.SetInitialGuess(initial_guess=new_guess)
-        numpy_compare.assert_equal(
-            solver.GetInitialGuess(), new_guess
-        )
+        numpy_compare.assert_equal(solver.GetInitialGuess(), new_guess)
 
         new_options = SolverOptions()
         solver.SetSolverOptions(solver_options=new_options)
-        self.assertFalse(solver.GetSolverOptions().get_print_to_console())
+        self.assertEqual(len(solver.GetSolverOptions().options), 0)
 
         # Test solve max clique.
         if GurobiOrMosekSolverAvailable():
