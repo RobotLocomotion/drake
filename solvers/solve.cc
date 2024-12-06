@@ -317,8 +317,8 @@ std::vector<MathematicalProgramResult> SolveInParallel(
       solver_options, solver_id, parallelism, dynamic_schedule, nullptr);
 }
 
-// Explicit template instantiations for the generator forms of SolveInParallel.
-#define DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_GENERATOR_INSTANTIATE(PointerType)    \
+// Explicit template instantiations for SolveInParallel.
+#define DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_INSTANTIATE(PointerType)              \
   template std::vector<MathematicalProgramResult>                              \
   SolveInParallel<PointerType>(                                                \
       const std::function<PointerType(int64_t, int64_t)>&, const int64_t,      \
@@ -329,7 +329,6 @@ std::vector<MathematicalProgramResult> SolveInParallel(
       Parallelism, bool,                                                       \
       const std::function<void(PointerType*, const MathematicalProgramResult&, \
                                int64_t, int64_t)>*);                           \
-                                                                               \
   template std::vector<MathematicalProgramResult>                              \
   SolveInParallel<PointerType>(                                                \
       const std::function<PointerType(int64_t, int64_t)>&, const int64_t,      \
@@ -337,34 +336,24 @@ std::vector<MathematicalProgramResult> SolveInParallel(
       const std::function<std::optional<Eigen::VectorXd>(int64_t, int64_t)>&,  \
       const SolverOptions*, const std::optional<SolverId>&, Parallelism, bool, \
       const std::function<void(PointerType*, const MathematicalProgramResult&, \
-                               int64_t, int64_t)>*)
-
-DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_GENERATOR_INSTANTIATE(
-    const MathematicalProgram*);
-DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_GENERATOR_INSTANTIATE(MathematicalProgram*);
-DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_GENERATOR_INSTANTIATE(
-    std::unique_ptr<MathematicalProgram>);
-#undef DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_GENERATOR_INSTANTIATE
-
-// Explicit template instantiations for the vector forms of SolveInParallel.
-#define DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_INSTANTIATE(PointerType)           \
-  template std::vector<MathematicalProgramResult>                           \
-  SolveInParallel<PointerType>(const std::vector<PointerType>&,             \
-                               const std::vector<const Eigen::VectorXd*>*,  \
-                               const std::vector<const SolverOptions*>*,    \
-                               const std::vector<std::optional<SolverId>>*, \
-                               Parallelism, bool);                          \
-  template std::vector<MathematicalProgramResult>                           \
-  SolveInParallel<PointerType>(                                             \
-      const std::vector<PointerType>&,                                      \
-      const std::vector<const Eigen::VectorXd*>*, const SolverOptions*,     \
+                               int64_t, int64_t)>*);                           \
+  template std::vector<MathematicalProgramResult>                              \
+  SolveInParallel<PointerType>(const std::vector<PointerType>&,                \
+                               const std::vector<const Eigen::VectorXd*>*,     \
+                               const std::vector<const SolverOptions*>*,       \
+                               const std::vector<std::optional<SolverId>>*,    \
+                               Parallelism, bool);                             \
+  template std::vector<MathematicalProgramResult>                              \
+  SolveInParallel<PointerType>(                                                \
+      const std::vector<PointerType>&,                                         \
+      const std::vector<const Eigen::VectorXd*>*, const SolverOptions*,        \
       const std::optional<SolverId>&, Parallelism, bool)
 
 DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_INSTANTIATE(const MathematicalProgram*);
 DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_INSTANTIATE(MathematicalProgram*);
 DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_INSTANTIATE(
     std::unique_ptr<MathematicalProgram>);
-#undef DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_INSTANTIATE
+#undef DRAKE_EXPLICIT_SOLVE_IN_PARALLEL_GENERATOR_INSTANTIATE
 
 }  // namespace solvers
 }  // namespace drake
