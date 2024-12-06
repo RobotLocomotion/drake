@@ -223,7 +223,9 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.frame_body_poses =
       this->DeclareCacheEntry(
               std::string("frame pose in body frame"),
-              FrameBodyPoseCache<T>(num_frame_body_poses_needed),
+              FrameBodyPoseCache<T>(internal_tree().num_mobods(),
+                                    internal_tree().num_frames(),
+                                    num_frame_body_poses_needed),
               &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
               {this->all_parameters_ticket()})
           .cache_index();
@@ -241,6 +243,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("position kinematics"),
               PositionKinematicsCache<T>(internal_tree().get_topology()),
               &MultibodyTreeSystem<T>::CalcPositionKinematicsCache,
+              {position_ticket, this->all_parameters_ticket()})
+          .cache_index();
+
+  cache_indexes_.position_kinematics2 =
+      this->DeclareCacheEntry(
+              std::string("position kinematics in M"),
+              PositionKinematicsCache2<T>(internal_tree().num_mobods()),
+              &MultibodyTreeSystem<T>::CalcPositionKinematicsCache2,
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
 
@@ -272,6 +282,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("velocity kinematics"),
               VelocityKinematicsCache<T>(internal_tree().get_topology()),
               &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
+              {position_ticket, velocity_ticket, this->all_parameters_ticket()})
+          .cache_index();
+
+  cache_indexes_.velocity_kinematics2 =
+      this->DeclareCacheEntry(
+              std::string("velocity kinematics in M"),
+              VelocityKinematicsCache2<T>(internal_tree().num_mobods()),
+              &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache2,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
 
