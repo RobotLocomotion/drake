@@ -35,25 +35,51 @@ namespace internal {
 // the extra strong reference.
 template <typename T>
 struct BuilderLifeSupport {
-  static constexpr char kKey[] = "_pydrake_internal_life_support";
-
   // Store a strong reference to the python builder into the c++ builder's life
   // support attributes.
-  static void stash(systems::DiagramBuilder<T>* builder) {
-    BuilderLifeSupport<T>::attrs(builder).emplace(kKey, py::cast(builder));
-  }
+  static void stash(systems::DiagramBuilder<T>* builder);
 
   // Delete a previously stored strong reference to the python builder from the
   // c++ builder's life support attributes.
-  static void abandon(systems::DiagramBuilder<T>* builder) {
-    BuilderLifeSupport<T>::attrs(builder).erase(kKey);
-  }
+  static void abandon(systems::DiagramBuilder<T>* builder);
 
-  static string_map<std::any>& attrs(systems::DiagramBuilder<T>* builder) {
-    return builder->get_mutable_life_support().attributes;
-  }
+  // (Internal use only) Return a reference to a map of attributes stored in
+  // life support.
+  static string_map<std::any>& attrs(systems::DiagramBuilder<T>* builder);
 };
+
+template <typename T, size_t Builder>
+struct builder_life_support_stash {};
+
+template <typename T>
+void builder_life_support_stash_impl(size_t builder_index,
+    const py::detail::function_call& call, py::handle ret);
 
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
+
+namespace pybind11 {
+namespace detail {
+
+// Provide a specialization of the pybind11 internal process_attribute
+// template; this allows writing an annotation that works seamlessly in
+// bindings definitions.
+template <typename T, size_t Builder>
+class process_attribute<
+    drake::pydrake::internal::builder_life_support_stash<T, Builder>>
+    : public process_attribute_default<
+          drake::pydrake::internal::builder_life_support_stash<T, Builder>> {
+ public:
+  // NOLINTNEXTLINE(runtime/references)
+  static void precall(function_call& call) {}
+
+  // NOLINTNEXTLINE(runtime/references)
+  static void postcall(function_call& call, handle ret) {
+    drake::pydrake::internal::builder_life_support_stash_impl<T>(
+        Builder, call, ret);
+  }
+};
+
+}  // namespace detail
+}  // namespace pybind11

@@ -205,10 +205,18 @@ drake_py_library(
 
 drake_cc_library(
     name = "builder_life_support_pybind",
+    srcs = ["builder_life_support_pybind.cc"],
     hdrs = ["builder_life_support_pybind.h"],
     declare_installed_headers = False,
     visibility = ["//bindings/pydrake:__subpackages__"],
-    deps = [],
+    deps = [
+        "//bindings/pydrake:pydrake_pybind",
+        "//common:essential",
+        "//common:string_container",
+        "//systems/framework:diagram_builder",
+        "@fmt",
+        "@pybind11",
+    ],
 )
 
 drake_cc_library(
