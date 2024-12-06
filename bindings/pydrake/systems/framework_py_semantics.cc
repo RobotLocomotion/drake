@@ -593,37 +593,28 @@ void DefineEventAndEventSubclasses(py::module m) {
 template <typename T>
 void DoDefineFrameworkDiagramBuilder(py::module m) {
   using internal::BuilderLifeSupport;
+  // For Add*System, using builder_life_support_stash makes the builder
+  // temporarily immortal (uncollectible self cycle). This will be resolved
+  // by the Build() step. See BuilderLifeSupport for rationale.
   DefineTemplateClassWithDefault<DiagramBuilder<T>>(m, "DiagramBuilder",
       GetPyParam<T>(), doc.DiagramBuilder.doc, std::nullopt, py::dynamic_attr())
       .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
       .def(
           "AddSystem",
           [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
-            // stash() makes the builder temporarily immortal (uncollectible
-            // self cycle). This will be resolved by the Build() step. See
-            // BuilderLifeSupport for rationale. This can't be done in init,
-            // because we are not guaranteed that the init wrapper is ever
-            // used; think of classes that return a reference to an embedded
-            // diagram builder.
-            BuilderLifeSupport<T>::stash(self);
             return self->AddSystem(std::move(system));
           },
           py::arg("system"), internal::ref_cycle<1, 2>(),
+          internal::builder_life_support_stash<T, 1>(),
           doc.DiagramBuilder.AddSystem.doc)
       .def(
           "AddNamedSystem",
           [](DiagramBuilder<T>* self, std::string& name,
               unique_ptr<System<T>> system) {
-            // stash() makes the builder temporarily immortal (uncollectible
-            // self cycle). This will be resolved by the Build() step. See
-            // BuilderLifeSupport for rationale. This can't be done in init,
-            // because we are not guaranteed that the init wrapper is ever
-            // used; think of classes that return a reference to an embedded
-            // diagram builder.
-            BuilderLifeSupport<T>::stash(self);
             return self->AddNamedSystem(name, std::move(system));
           },
           py::arg("name"), py::arg("system"), internal::ref_cycle<1, 3>(),
+          internal::builder_life_support_stash<T, 1>(),
           doc.DiagramBuilder.AddNamedSystem.doc)
       .def("RemoveSystem", &DiagramBuilder<T>::RemoveSystem, py::arg("system"),
           doc.DiagramBuilder.RemoveSystem.doc)
