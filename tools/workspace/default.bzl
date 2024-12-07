@@ -70,6 +70,7 @@ load("//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
 load("//tools/workspace/platforms:repository.bzl", "platforms_repository")
+load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
@@ -261,6 +262,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)  # noqa
     if "platforms" not in excludes:
         platforms_repository(name = "platforms", mirrors = mirrors)
+    if "poisson_disk_sampling_internal" not in excludes:
+        poisson_disk_sampling_internal_repository(name = "poisson_disk_sampling_internal", mirrors = mirrors)  # noqa
     if "pybind11" not in excludes:
         pybind11_repository(name = "pybind11", mirrors = mirrors)
     if "pycodestyle" not in excludes:

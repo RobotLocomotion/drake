@@ -1,0 +1,20 @@
+Ensure capacity is positive when reserving for point allocations.
+
+--- include/thinks/tph_poisson.h
++++ include/thinks/tph_poisson.h
+@@ -1037,10 +1037,11 @@ int tph_poisson_create(const tph_poisson_args *args,
+    * growing the buffer. Estimate that 25% of the grid cells will end up
+    * containing a sample, which is a fairly conservative guess. Prefering not
+    * to over-allocate up front here, at the cost of having to reallocate later. */
+-  ret = tph_poisson_vec_reserve(&internal->samples,
+-    &internal->alloc,
+-    (ctx.grid_linear_size / 4) * ((ptrdiff_t)sizeof(tph_poisson_real) * ctx.ndims),
+-    (ptrdiff_t)alignof(tph_poisson_real));
++  ptrdiff_t capacity = (ctx.grid_linear_size / 4) * (ptrdiff_t)sizeof(tph_poisson_real) * ctx.ndims;
++  /* Ensure capacity is at least 1 to guard against overflow and zero capacity. */
++  if (capacity < (ptrdiff_t)1) { capacity = (ptrdiff_t)1; }
++  ret = tph_poisson_vec_reserve(&internal->samples,
++    &internal->alloc, capacity, (ptrdiff_t)alignof(tph_poisson_real));
+   if (ret != TPH_POISSON_SUCCESS) {
+     tph_poisson_context_destroy(&ctx, &internal->alloc);
+     tph_poisson_destroy(sampling);
