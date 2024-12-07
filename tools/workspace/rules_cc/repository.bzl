@@ -10,6 +10,10 @@ def rules_cc_repository(
     github_archive(
         name = name,
         repository = "bazelbuild/rules_cc",  # License: Apache-2.0,
+        upgrade_advice = """
+        When updating, you must also manually propagate to the new version
+        number into the MODULE.bazel file (at the top level of Drake).
+        """,
         commit = "0.0.17",
         sha256 = "abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",  # noqa
         patches = [

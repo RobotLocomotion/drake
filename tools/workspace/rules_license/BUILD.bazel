@@ -1,3 +1,9 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+# Required for workspace_bzlmod_sync_test.py.
+exports_files(
+    ["repository.bzl"],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
 add_lint_tests()
