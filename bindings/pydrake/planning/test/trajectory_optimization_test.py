@@ -773,7 +773,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         traj, result = gcs_wraparound.SolvePath(g1, g2)
         self.assertTrue(result.is_success())
 
-        new_traj = GcsTrajectoryOptimization.UnwrapToContinousTrajectory(
+        new_traj = GcsTrajectoryOptimization.UnwrapToContinuousTrajectory(
             gcs_trajectory=traj,
             continuous_revolute_joints=[0],
             starting_rounds=[43],

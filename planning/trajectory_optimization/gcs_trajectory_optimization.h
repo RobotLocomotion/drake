@@ -1330,7 +1330,7 @@ class GcsTrajectoryOptimization final {
    GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory of
    BezierCurves.
     */
-  static trajectories::CompositeTrajectory<double> UnwrapToContinousTrajectory(
+  static trajectories::CompositeTrajectory<double> UnwrapToContinuousTrajectory(
       const trajectories::CompositeTrajectory<double>& gcs_trajectory,
       std::vector<int> continuous_revolute_joints,
       std::optional<std::vector<int>> starting_rounds = std::nullopt,
