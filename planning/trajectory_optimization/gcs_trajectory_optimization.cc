@@ -2329,7 +2329,7 @@ double UnwrapAngle(const double angle, const int round) {
 }  // namespace
 
 trajectories::CompositeTrajectory<double>
-GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
     const trajectories::CompositeTrajectory<double>& gcs_trajectory,
     std::vector<int> continuous_revolute_joints,
     std::optional<std::vector<int>> starting_rounds, double tol) {
