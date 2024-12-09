@@ -21,10 +21,10 @@ namespace trajectories {
  C¹, i.e. position r(s) and tangent vector t̂(s) = dr(s)/ds are continuous
  functions of arclength s. The trajectory's length is divided into segments
  s₀ < s₁ < ... < sₙ, where each interval [sᵢ, sᵢ₊₁) has constant curvature
- determined by the turning rate τᵢ (with units of 1/m). The turning rate is
- defined such that curvature is κᵢ = |τᵢ|, with its sign indicating the curve's
+ determined by the turning rate ρᵢ (with units of 1/m). The turning rate is
+ defined such that curvature is κᵢ = |ρᵢ|, with its sign indicating the curve's
  direction around p̂ according ot the right-hand rule (counterclockwise if
- positive and clockwise if negative) . For τᵢ = 0, the segment is a straight
+ positive and clockwise if negative) . For ρᵢ = 0, the segment is a straight
  line.
 
  Given the tangent vector t̂(s) = dr(s)/ds and the plane's normal p̂, we define
@@ -40,8 +40,8 @@ namespace trajectories {
  For constant curvature paths on a plane, the <a
  href="https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas">Frenet–Serret
  formulas</a> simplify and we can write: <pre>
-     dFx/ds(s) =  τ(s)⋅ Fy(s)
-     dFy/ds(s) = -τ(s)⋅ Fx(s)
+     dFx/ds(s) =  ρ(s)⋅ Fy(s)
+     dFy/ds(s) = -ρ(s)⋅ Fx(s)
      dFz/ds(s) =  0
  </pre>
  for the entire trajectory.
@@ -72,7 +72,7 @@ class PiecewiseConstantCurvatureTrajectory final
   /** Constructs a piecewise constant curvature trajectory.
 
    Endpoints of each constant-curvature segments are defined by n breaks
-   s₀ = 0 < s₁ < ... < sₙ (in meters). The turning rates τ₀, ..., τₙ₋₁ (in 1/m)
+   s₀ = 0 < s₁ < ... < sₙ (in meters). The turning rates ρ₀, ..., ρₙ₋₁ (in 1/m)
    are passed through `turning_rates`. There must be exactly one turning rate
    per segment, i.e. turning_rates.size() == breaks.size() - 1.
 
@@ -87,7 +87,7 @@ class PiecewiseConstantCurvatureTrajectory final
    @param breaks A vector of n break values sᵢ between segments. The parent
    class, PiecewiseTrajectory, enforces that the breaks increase by at least
    PiecewiseTrajectory::kEpsilonTime.
-   @param turning_rates A vector of n-1 turning rates τᵢ for each segment.
+   @param turning_rates A vector of n-1 turning rates ρᵢ for each segment.
    @param initial_curve_tangent The initial tangent of the curve expressed in
    the parent frame, t̂_A(s₀).
    @param   The normal axis of the 2D plane in which the curve
@@ -113,17 +113,17 @@ class PiecewiseConstantCurvatureTrajectory final
   explicit PiecewiseConstantCurvatureTrajectory(
       const PiecewiseConstantCurvatureTrajectory<U> other)
       : PiecewiseConstantCurvatureTrajectory(
-            CloneSegmentDataFromScalar<U>(other.get_segment_times()),
-            CloneSegmentDataFromScalar<U>(other.segment_turning_rates_),
-            other.get_base_pose()
+            ScalarConvertStdVector<U>(other.get_segment_times()),
+            ScalarConvertStdVector<U>(other.segment_turning_rates_),
+            other.get_initial_pose()
                 .rotation()
                 .col(kCurveTangentIndex)
                 .template cast<U>(),
-            other.get_base_pose()
+            other.get_initial_pose()
                 .rotation()
                 .col(kPlaneNormalIndex)
                 .template cast<U>(),
-            other.get_base_pose().translation().template cast<U>()) {}
+            other.get_initial_pose().translation().template cast<U>()) {}
 
   /** @returns the number of rows in the output of value(). */
   Eigen::Index rows() const override { return 3; }
@@ -161,10 +161,10 @@ class PiecewiseConstantCurvatureTrajectory final
 
    In frame invariant notation, the angular velocity ω(s) and translational
    velocity v(s) are: <pre>
-     ω(s) = ṡ⋅τ(s)⋅p̂
+     ω(s) = ṡ⋅ρ(s)⋅p̂
      v(s) = ṡ⋅t̂(s)
    </pre>
-   where τ(s) and t̂(s) are extrapolated for s < 0 and s > length() keeping the
+   where ρ(s) and t̂(s) are extrapolated for s < 0 and s > length() keeping the
    constant curvature of the corresponding end segment.
 
    @param s The query arclength, in meters.
@@ -180,10 +180,10 @@ class PiecewiseConstantCurvatureTrajectory final
 
    In frame invariant notation, the angular acceleration α(s) and translational
    acceleration a(s) are: <pre>
-     α(s) = s̈⋅τ(s)⋅p̂
-     a(s) = ṡ²⋅τ(s)⋅n̂(s) + s̈⋅t̂(s)
+     α(s) = s̈⋅ρ(s)⋅p̂
+     a(s) = ṡ²⋅ρ(s)⋅n̂(s) + s̈⋅t̂(s)
    </pre>
-   where τ(s), t̂(s) and n̂(s) are extrapolated for s < 0 and s > length()
+   where ρ(s), t̂(s) and n̂(s) are extrapolated for s < 0 and s > length()
    keeping the constant curvature of the corresponding end segment.
 
    As the curve does not have continuous acceleration at the breaks, by
@@ -210,16 +210,6 @@ class PiecewiseConstantCurvatureTrajectory final
    @param tolerance The tolerance for periodicity check. */
   boolean<T> IsNearlyPeriodic(double tolerance) const;
 
-  /** @returns the initial pose X_AF₀ at s = 0. */
-  const math::RigidTransform<T>& get_base_pose() const {
-    return segment_start_poses_[0];
-  }
-
-  /** @returns the normal p̂ in which the curve lies, expressed in frame A. */
-  const Eigen::Ref<const Vector3<T>> get_plane_normal() const {
-    return segment_start_poses_[0].rotation().col(kPlaneNormalIndex);
-  }
-
  private:
   template <typename U>
   friend class PiecewiseConstantCurvatureTrajectory;
@@ -228,7 +218,7 @@ class PiecewiseConstantCurvatureTrajectory final
    @param segment_data std::vector storing types U.
    @returns the input vector scalar converted T. */
   template <typename U>
-  static std::vector<T> CloneSegmentDataFromScalar(
+  static std::vector<T> ScalarConvertStdVector(
       const std::vector<U>& segment_data) {
     std::vector<T> converted_segment_data;
     systems::scalar_conversion::ValueConverter<U, T> converter;
@@ -245,10 +235,10 @@ class PiecewiseConstantCurvatureTrajectory final
    the plane as the z axis of F, this pose consists of a circular arc or line
    segment in the x-y plane, and a corresponding z-axis rotation.
 
-   @param tau_i The turning rate of the segment.
+   @param rho_i The turning rate of the segment.
    @param ds The length within the segment.
    @returns X_FiF. */
-  static math::RigidTransform<T> CalcRelativePoseInSegment(const T& tau_i,
+  static math::RigidTransform<T> CalcRelativePoseInSegment(const T& rho_i,
                                                            const T& ds);
 
   /* Builds the initial pose, X_AF₀, from the given tangent and plane axes,
@@ -269,8 +259,8 @@ class PiecewiseConstantCurvatureTrajectory final
    @pre Norm of plane_normal is not zero.
    @pre initial_curve_tangent is orthogonal to plane_normal.
 
-   @returns The base pose X_AF. */
-  static math::RigidTransform<T> MakeBasePose(
+   @returns The initial pose X_AF. */
+  static math::RigidTransform<T> MakeInitialPose(
       const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
       const Vector3<T>& initial_position);
 
@@ -279,15 +269,23 @@ class PiecewiseConstantCurvatureTrajectory final
    For each segment i, the returned vector's i-th element contains the
    relative transform X_AFi = X_AF(sᵢ), for 0 <= i < to turning_rates.size().
 
-   @param base_pose The base pose of the trajectory.
+   @param initial_pose The initial pose of the trajectory (at s₀ = 0).
    @param breaks The vector of break points sᵢ between segments.
-   @param turning_rates The vector of turning rates τᵢ for each segment.
+   @param turning_rates The vector of turning rates ρᵢ for each segment.
 
    @returns A vector with as many entries as segments, storing at element i the
    pose X_AFi at the beginning of the i-th segment. */
   static std::vector<math::RigidTransform<T>> MakeSegmentStartPoses(
-      const math::RigidTransform<T>& base_pose, const std::vector<T>& breaks,
+      const math::RigidTransform<T>& initial_pose, const std::vector<T>& breaks,
       const std::vector<T>& turning_rates);
+
+  /** @returns the initial pose X_AF₀ at s = 0.
+
+   @warning may be uninitialized for an empty trajectory.
+  */
+  const math::RigidTransform<T>& get_initial_pose() const {
+    return segment_start_poses_[0];
+  }
 
   std::vector<T> segment_turning_rates_;
   std::vector<math::RigidTransform<T>> segment_start_poses_;

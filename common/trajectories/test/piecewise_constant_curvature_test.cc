@@ -83,7 +83,7 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestAnalytical) {
             s_dot * s_dot *
                 Vector3d(-kappa * sin(l * kappa), kappa * cos(l * kappa), 0));
 
-    auto actual_pose = trajectory.GetPose(l);
+    auto actual_pose = trajectory.CalcPose(l);
     auto actual_velocity = trajectory.CalcSpatialVelocity(l, s_dot);
     auto actual_acceleration =
         trajectory.CalcSpatialAcceleration(l, s_dot, s_ddot);
@@ -131,10 +131,10 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestRandomizedTrajectory) {
   PiecewiseConstantCurvatureTrajectory<double> curve_spline(
       breaks, turning_rates, initial_curve_tangent, initial_plane_normal,
       Vector3d::Zero());
-  auto initial_position = curve_spline.GetPose(breaks.front()).translation();
+  auto initial_position = curve_spline.CalcPose(breaks.front()).translation();
   // Check dense interpolated quaternions.
   for (double l = breaks.front(); l < breaks.back(); l += 0.01) {
-    auto curve_pose = curve_spline.GetPose(l);
+    auto curve_pose = curve_spline.CalcPose(l);
     auto curve_rotation = curve_pose.rotation();
     auto curve_position = curve_pose.translation();
 
@@ -229,7 +229,7 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {
   symbolic::Expression s_ddot_exp(s_ddot);
 
   for (double l = breaks.front(); l < breaks.back(); l += 0.01) {
-    math::RigidTransform<double> double_pose = double_trajectory.GetPose(l);
+    math::RigidTransform<double> double_pose = double_trajectory.CalcPose(l);
     math::RigidTransform<AutoDiffXd> autodiff_pose =
         double_pose.template cast<AutoDiffXd>();
     math::RigidTransform<symbolic::Expression> expression_pose =
@@ -255,10 +255,10 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {
                                 double_acceleration.translational()
                                     .template cast<symbolic::Expression>());
 
-    EXPECT_TRUE(autodiff_pose.IsNearlyEqualTo(autodiff_trajectory.GetPose(l),
+    EXPECT_TRUE(autodiff_pose.IsNearlyEqualTo(autodiff_trajectory.CalcPose(l),
                                               kTolerance));
     EXPECT_TRUE(expression_pose.IsNearlyEqualTo(
-        expression_trajectory.GetPose(l), kTolerance));
+        expression_trajectory.CalcPose(l), kTolerance));
 
     EXPECT_TRUE(autodiff_velocity.IsApprox(
         autodiff_trajectory.CalcSpatialVelocity(l, s_dot_ad), kTolerance));
