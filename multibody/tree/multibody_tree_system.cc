@@ -75,6 +75,12 @@ void MultibodyTreeSystem<T>::SetDefaultParameters(
     const Context<T>& context, Parameters<T>* parameters) const {
   LeafSystem<T>::SetDefaultParameters(context, parameters);
 
+  if (!already_finalized_) {
+    throw std::logic_error(
+        "MultibodyPlant cannot SetDefaultParameters or CreateDefaultContext "
+        "until after MultibodyPlant::Finalize() has been called.");
+  }
+
   // Mobilizers.
   for (MobodIndex mobilizer_index(0); mobilizer_index < tree_->num_mobilizers();
        ++mobilizer_index) {

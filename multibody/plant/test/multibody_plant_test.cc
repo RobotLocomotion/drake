@@ -520,6 +520,8 @@ GTEST_TEST(MultibodyPlant, EmptyWorldElements) {
 GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
   const double discrete_update_period = 1.0e-3;
   MultibodyPlant<double> plant(discrete_update_period);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.CreateDefaultContext(),
+                              ".*CreateDefaultContext.*Finalize.*");
   plant.Finalize();
   EXPECT_EQ(plant.num_velocities(), 0);
   EXPECT_EQ(plant.num_positions(), 0);
@@ -539,6 +541,8 @@ GTEST_TEST(MultibodyPlantTest, EmptyWorldDiscrete) {
 
 GTEST_TEST(MultibodyPlantTest, EmptyWorldContinuous) {
   MultibodyPlant<double> plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.CreateDefaultContext(),
+                              ".*CreateDefaultContext.*Finalize.*");
   plant.Finalize();
   EXPECT_EQ(plant.num_velocities(), 0);
   EXPECT_EQ(plant.num_positions(), 0);
