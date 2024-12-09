@@ -11,19 +11,32 @@ PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
     const std::vector<T>& breaks, const std::vector<T>& turning_rates,
     const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
     const Vector3<T>& initial_position)
-    : PiecewiseTrajectory<T>(breaks),
-      segment_turning_rates_(turning_rates),
-      segment_start_poses_(MakeSegmentStartPoses(
-          MakeBasePose(initial_curve_tangent, plane_normal, initial_position),
-          breaks, turning_rates)) {
+    : PiecewiseTrajectory<T>(breaks), segment_turning_rates_(turning_rates) {
   if (turning_rates.size() != breaks.size() - 1) {
-    throw std::invalid_argument(
+    throw std::std::logic_error(
         "The number of turning rates must be equal to the number of segments.");
   }
   if (breaks[0] != 0) {
-    throw std::invalid_argument(
+    throw std::logic_error(
         "The first break must be 0, as the breaks are in arclength units.");
   }
+  if (initial_curve_tangent.norm() == 0) {
+    throw std::logic_error("The norm of the initial tangent is zero.");
+  }
+  if (plane_normal.norm() == 0) {
+    throw std::logic_error("The norm of the plane's normal is zero.");
+  }
+  using std::abs;
+  constexpr double tolerance =
+      math::RotationMatrix<T>::get_internal_tolerance_for_orthonormality();
+  if (abs(initial_curve_tangent.dot(plane_normal)) > tolerance) {
+    throw std::logic_error(
+        "The initial curve's tangent vector must be perpendicular to the "
+        "plane's normal.");
+  }
+  segment_start_poses_ = MakeSegmentStartPoses(
+      MakeBasePose(initial_curve_tangent, plane_normal, initial_position),
+      breaks, turning_rates);
 }
 
 template <typename T>
@@ -38,7 +51,7 @@ std::unique_ptr<Trajectory<T>> PiecewiseConstantCurvatureTrajectory<T>::Clone()
 }
 
 template <typename T>
-math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::GetPose(
+math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::CalcPose(
     const T& s) const {
   int segment_index = this->get_segment_index(s);
   const math::RigidTransform<T> X_FiF =
@@ -51,17 +64,17 @@ template <typename T>
 multibody::SpatialVelocity<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialVelocity(
     const T& s, const T& s_dot) const {
-  const math::RotationMatrix<T> R_AF = GetPose(s).rotation();
-  const T& k_i = segment_turning_rates_[this->get_segment_index(s)];
+  const math::RotationMatrix<T> R_AF = CalcPose(s).rotation();
+  const T& tau_i = segment_turning_rates_[this->get_segment_index(s)];
 
   multibody::SpatialVelocity<T> spatial_velocity;
   // From Frenet–Serret analysis and the class doc for
   // PiecewiseConstantCurvatureTrajectory, the rotational velocity is equal to
   // the Darboux vector times the tangential velocity: kᵢ * Fz * ds/dt.
-  spatial_velocity.rotational() = k_i * R_AF.col(kPlaneNormalIndex) * s_dot;
+  spatial_velocity.rotational() = tau_i * R_AF.col(kPlaneNormalIndex) * s_dot;
 
   // The translational velocity is equal to the tangent direction times the
-  // tangential velocity: t̂(s) * ds/dt = Fx(s) * ds/dt.
+  // tangential velocity: dr(s)/dt = t̂(s) * ds/dt = Fx(s) * ds/dt.
   spatial_velocity.translational() = R_AF.col(kCurveTangentIndex) * s_dot;
 
   return spatial_velocity;
@@ -71,8 +84,8 @@ template <typename T>
 multibody::SpatialAcceleration<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
     const T& s, const T& s_dot, const T& s_ddot) const {
-  const math::RotationMatrix<T> R_AF = GetPose(s).rotation();
-  const T& k_i = segment_turning_rates_[this->get_segment_index(s)];
+  const math::RotationMatrix<T> R_AF = CalcPose(s).rotation();
+  const T& tau_i = segment_turning_rates_[this->get_segment_index(s)];
 
   multibody::SpatialAcceleration<T> spatial_acceleration;
   // The spatial acceleration is the time derivative of the spatial velocity.
@@ -83,15 +96,15 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
   // everywhere except the breaks, the angular acceleration is then equal to kᵢ
   // * Fz * d²s/dt².
   spatial_acceleration.rotational() =
-      k_i * R_AF.col(kPlaneNormalIndex) * s_ddot;
+      tau_i * R_AF.col(kPlaneNormalIndex) * s_ddot;
 
-  // The translational velocity is Fx(s) * ds/dt. Thus by product and chain
-  // rule, the translational acceleration is:
-  //    dFx(s)/ds * (ds/dt)² + Fx * d²s/dt².
-  // From the class doc, we know dFx/ds = kᵢ * Fy.
-  // Thus the translational acceleration is kᵢ * Fy * (ds/dt)² + Fx * d²s/dt².
+  // The translational velocity is dr(s)/dt = Fx(s) * ds/dt. Thus by product and
+  // chain rule, the translational acceleration is:
+  //    a(s) = d²r(s)/ds² = dFx(s)/ds⋅(ds/dt)² + Fx⋅d²s/dt².
+  // From the class doc, we know dFx/ds = τᵢ⋅Fy.
+  // Thus the translational acceleration is a(s) = τᵢ⋅Fy⋅(ds/dt)² + Fx⋅d²s/dt².
   spatial_acceleration.translational() =
-      k_i * R_AF.col(kCurveNormalIndex) * s_dot * s_dot +
+      tau_i * R_AF.col(kCurveNormalIndex) * s_dot * s_dot +
       R_AF.col(kCurveTangentIndex) * s_ddot;
   return spatial_acceleration;
 }
@@ -99,18 +112,18 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
 template <typename T>
 boolean<T> PiecewiseConstantCurvatureTrajectory<T>::IsNearlyPeriodic(
     double tolerance) const {
-  return GetPose(0.).IsNearlyEqualTo(GetPose(length()), tolerance);
+  return CalcPose(0.).IsNearlyEqualTo(CalcPose(length()), tolerance);
 }
 
 template <typename T>
 math::RigidTransform<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcRelativePoseInSegment(
-    const T& k_i, const T& ds) {
+    const T& tau_i, const T& ds) {
   Vector3<T> p_FioFo_Fi = Vector3<T>::Zero();
   // Calculate rotation angle
-  const T theta = ds * k_i;
+  const T theta = ds * tau_i;
   math::RotationMatrix<T> R_FiF = math::RotationMatrix<T>::MakeZRotation(theta);
-  if (k_i == T(0)) {
+  if (tau_i == T(0)) {
     // Case 1: zero curvature (straight line)
     //
     // The tangent axis is constant, thus the displacement p_FioFo_Fi is just
@@ -140,8 +153,8 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcRelativePoseInSegment(
     // with initial direction Fix and radius abs(1/kᵢ). Thus the angle traveled
     // along the arc is θ = kᵢ * Δs, with the sign of kᵢ handling the
     // clockwise/counterclockwise direction. The kᵢ > 0 case is shown above.
-    p_FioFo_Fi(kCurveNormalIndex) = (T(1) - cos(theta)) / k_i;
-    p_FioFo_Fi(kCurveTangentIndex) = sin(theta) / k_i;
+    p_FioFo_Fi(kCurveNormalIndex) = (T(1) - cos(theta)) / tau_i;
+    p_FioFo_Fi(kCurveTangentIndex) = sin(theta) / tau_i;
   }
   return math::RigidTransform<T>(R_FiF, p_FioFo_Fi);
 }
@@ -151,11 +164,10 @@ math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::MakeBasePose(
     const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
     const Vector3<T>& initial_position) {
   const Vector3<T> initial_Fy_A = plane_normal.cross(initial_curve_tangent);
-
-  auto base_frame = math::RotationMatrix<T>::MakeFromOrthonormalColumns(
+  const auto R_WF = math::RotationMatrix<T>::MakeFromOrthonormalColumns(
       initial_curve_tangent.normalized(), initial_Fy_A.normalized(),
       plane_normal.normalized());
-  return math::RigidTransform<T>(base_frame, initial_position);
+  return math::RigidTransform<T>(R_WF, initial_position);
 }
 
 template <typename T>
