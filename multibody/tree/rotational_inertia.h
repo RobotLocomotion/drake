@@ -421,7 +421,23 @@ class RotationalInertia {
   /// @return The Vector that results from multiplying `this` by `w_E`.
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
   Vector3<T> operator*(const Vector3<T>& w_E) const {
-    return Vector3<T>(get_symmetric_matrix_view() * w_E);
+    // Eigen's symmetric multiply can be slow. Do this by hand instead:
+    //     [a (b) (c)]   [x]   [ ax+by+cz ]
+    //     [b  d  (e)] * [y] = [ bx+dy+ez ]
+    //     [c  e   f ]   [z]   [ cx+ey+fz ]
+    const T& a = I_SP_E_(0, 0);  // Access only lower triangle.
+    const T& b = I_SP_E_(1, 0);
+    const T& c = I_SP_E_(2, 0);
+    const T& d = I_SP_E_(1, 1);
+    const T& e = I_SP_E_(2, 1);
+    const T& f = I_SP_E_(2, 2);
+    const T& x = w_E(0);
+    const T& y = w_E(1);
+    const T& z = w_E(2);
+
+    const Vector3<T> Iw(a * x + b * y + c * z, b * x + d * y + e * z,
+                        c * x + e * y + f * z);
+    return Iw;
   }
 
   /// Divides `this` rotational inertia by a positive scalar (> 0).
