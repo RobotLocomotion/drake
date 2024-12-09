@@ -204,6 +204,13 @@ void AggregateBoundingBoxConstraintsImpl(const MathematicalProgram& prog,
   }
 }
 
+void EmplaceNonzeroTriplet(int row, int col, double val,
+                           std::vector<Eigen::Triplet<double>>* triplets) {
+  if (val != 0) {
+    triplets->emplace_back(row, col, val);
+  }
+}
+
 }  // namespace
 
 void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
@@ -687,12 +694,12 @@ void ParsePositiveSemidefiniteConstraints(
     std::vector<std::optional<int>>* lmi_y_start_indices) {
   DRAKE_ASSERT(ssize(*b) == *A_row_count);
   DRAKE_ASSERT(psd_cone_length != nullptr);
-  // Make sure that each triplet in A_triplets has row no larger than
+  // Make sure that each triplet in A_triplets has row smaller than
   // *A_row_count.
   // Use kDrakeAssertIsArmed to bypass the entire for loop in the release mode.
   if (kDrakeAssertIsArmed) {
     for (const auto& A_triplet : *A_triplets) {
-      DRAKE_DEMAND(A_triplet.row() <= *A_row_count);
+      DRAKE_DEMAND(A_triplet.row() < *A_row_count);
     }
   }
   DRAKE_ASSERT(psd_cone_length->empty());
@@ -701,114 +708,276 @@ void ParsePositiveSemidefiniteConstraints(
   DRAKE_ASSERT(lmi_y_start_indices->empty());
   const double sqrt2 = std::sqrt(2);
   for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
-    psd_constraint.evaluator()->WarnOnSmallMatrixSize();
-    // PositiveSemidefiniteConstraint encodes the matrix X being psd.
-    // We convert it to SCS/Clarabel form
-    // A * x + s = 0
-    // s in positive semidefinite cone.
-    // where A is a diagonal matrix, with its diagonal entries being the stacked
-    // column vector of the lower/upper triangular part of matrix
-    // ⎡ -1 -√2 -√2 ... -√2⎤
-    // ⎢-√2  -1 -√2 ... -√2⎥
-    // ⎢-√2 -√2  -1 ... -√2⎥
-    // ⎢    ...            ⎥
-    // ⎣-√2 -√2 -√2 ...  -1⎦
-    // The √2 scaling factor in the off-diagonal entries are required by SCS and
-    // Clarabel, as it uses only the lower triangular part (for SCS), or upper
-    // triangular part (for Clarabel) of the symmetric matrix, as explained in
-    // https://www.cvxgrp.org/scs/api/cones.html#semidefinite-cones and
-    // https://oxfordcontrol.github.io/ClarabelDocs/stable/examples/example_sdp.
-    // x is the stacked column vector of the lower triangular part of the
-    // symmetric matrix X.
-    const int X_rows = psd_constraint.evaluator()->matrix_rows();
-    int x_index_count = 0;
-    // The variables in the psd constraint are the stacked columns of the matrix
-    // X (in column major order).
-    const VectorXDecisionVariable& flat_X = psd_constraint.variables();
-    DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
-    b->reserve(b->size() + X_rows * (X_rows + 1) / 2);
-    for (int j = 0; j < X_rows; ++j) {
-      const int i_start = upper_triangular ? 0 : j;
-      const int i_end = upper_triangular ? j + 1 : X_rows;
-      for (int i = i_start; i < i_end; ++i) {
-        const double scale_factor = i == j ? 1 : sqrt2;
-        A_triplets->emplace_back(
-            *A_row_count + x_index_count,
-            prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)),
-            -scale_factor);
-        b->push_back(0);
-        ++x_index_count;
+    if (psd_constraint.evaluator()->matrix_rows() > 2) {
+      // PositiveSemidefiniteConstraint encodes the matrix X being psd.
+      // We convert it to SCS/Clarabel form
+      // A * x + s = 0
+      // s in positive semidefinite cone.
+      // where A is a diagonal matrix, with its diagonal entries being the
+      // stacked column vector of the lower/upper triangular part of matrix
+      // ⎡ -1 -√2 -√2 ... -√2⎤
+      // ⎢-√2  -1 -√2 ... -√2⎥
+      // ⎢-√2 -√2  -1 ... -√2⎥
+      // ⎢    ...            ⎥
+      // ⎣-√2 -√2 -√2 ...  -1⎦
+      // The √2 scaling factor in the off-diagonal entries are required by SCS
+      // and Clarabel, as it uses only the lower triangular part (for SCS), or
+      // upper triangular part (for Clarabel) of the symmetric matrix, as
+      // explained in
+      // https://www.cvxgrp.org/scs/api/cones.html#semidefinite-cones and
+      // https://oxfordcontrol.github.io/ClarabelDocs/stable/examples/example_sdp.
+      // x is the stacked column vector of the lower triangular part of the
+      // symmetric matrix X.
+      const int X_rows = psd_constraint.evaluator()->matrix_rows();
+      int x_index_count = 0;
+      // The variables in the psd constraint are the stacked columns of the
+      // matrix X (in column major order).
+      const VectorXDecisionVariable& flat_X = psd_constraint.variables();
+      DRAKE_DEMAND(flat_X.rows() == X_rows * X_rows);
+      b->reserve(b->size() + X_rows * (X_rows + 1) / 2);
+      for (int j = 0; j < X_rows; ++j) {
+        const int i_start = upper_triangular ? 0 : j;
+        const int i_end = upper_triangular ? j + 1 : X_rows;
+        for (int i = i_start; i < i_end; ++i) {
+          const double scale_factor = i == j ? 1 : sqrt2;
+          A_triplets->emplace_back(
+              *A_row_count + x_index_count,
+              prog.FindDecisionVariableIndex(flat_X(j * X_rows + i)),
+              -scale_factor);
+          b->push_back(0);
+          ++x_index_count;
+        }
       }
+      psd_cone_length->push_back(X_rows);
+      psd_y_start_indices->push_back(*A_row_count);
+      (*A_row_count) += X_rows * (X_rows + 1) / 2;
+    } else {
+      psd_cone_length->push_back(std::nullopt);
+      psd_y_start_indices->push_back(std::nullopt);
     }
-    psd_cone_length->push_back(X_rows);
-    psd_y_start_indices->push_back(*A_row_count);
-    (*A_row_count) += X_rows * (X_rows + 1) / 2;
   }
   for (const auto& lmi_constraint :
        prog.linear_matrix_inequality_constraints()) {
-    lmi_constraint.evaluator()->WarnOnSmallMatrixSize();
-    // LinearMatrixInequalityConstraint encodes
-    // F₀ + x₁*F₁ + x₂*F₂ + ... + xₙFₙ is p.s.d
-    // We convert this to SCS/Clarabel form as
-    // A_cone * x + s = b_cone
-    // s in SCS/Clarabel positive semidefinite cone.
-    // For SCS, it uses the lower triangular of the symmetric psd matrix, hence
-    //              ⎡  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)⎤
-    //              ⎢√2F₁(1, 0) √2F₂(1, 0) ... √2Fₙ(1, 0)⎥
-    //   A_cone = - ⎢√2F₁(2, 0) √2F₂(2, 0) ... √2Fₙ(2, 0)⎥,
-    //              ⎢            ...                     ⎥
-    //              ⎣  F₁(m, m)   F₂(m, m) ...   Fₙ(m, m)⎦
-    //
-    //              ⎡  F₀(0, 0)⎤
-    //              ⎢√2F₀(1, 0)⎥
-    //   b_cone =   ⎢√2F₀(2, 0)⎥,
-    //              ⎢   ...    ⎥
-    //              ⎣  F₀(m, m)⎦
-    // For Clarabel, it uses the upper triangular of the symmetric psd matrix,
-    // hence
-    //              ⎡  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)⎤
-    //              ⎢√2F₁(0, 1) √2F₂(0, 1) ... √2Fₙ(0, 1)⎥
-    //   A_cone = - ⎢√2F₁(1, 1) √2F₂(1, 1) ... √2Fₙ(1, 1)⎥,
-    //              ⎢            ...                     ⎥
-    //              ⎣  F₁(m, m)   F₂(m, m) ...   Fₙ(m, m)⎦
-    //
-    //              ⎡  F₀(0, 0)⎤
-    //              ⎢√2F₀(0, 1)⎥
-    //   b_cone =   ⎢√2F₀(1, 1)⎥,
-    //              ⎢   ...    ⎥
-    //              ⎣  F₀(m, m)⎦
-    // For both SCS and Clarabel, we have
-    //   x = [x₁; x₂; ... ; xₙ].
-    // As explained above, the off-diagonal rows are scaled by √2. Please refer
-    // to https://github.com/cvxgrp/scs about the scaling factor √2.
-    // Note that since all F matrices are symmetric, we don't need to
-    // differentiate between lower triangular or upper triangular version.
-    const std::vector<Eigen::MatrixXd>& F = lmi_constraint.evaluator()->F();
-    const VectorXDecisionVariable& x = lmi_constraint.variables();
-    const int F_rows = lmi_constraint.evaluator()->matrix_rows();
-    const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
-    int A_cone_row_count = 0;
-    b->reserve(b->size() + F_rows * (F_rows + 1) / 2);
-    for (int j = 0; j < F_rows; ++j) {
-      const int i_start = upper_triangular ? 0 : j;
-      const int i_end = upper_triangular ? j + 1 : F_rows;
-      for (int i = i_start; i < i_end; ++i) {
-        const double scale_factor = i == j ? 1 : sqrt2;
-        for (int k = 1; k < static_cast<int>(F.size()); ++k) {
-          A_triplets->emplace_back(*A_row_count + A_cone_row_count,
-                                   x_indices[k - 1],
-                                   -scale_factor * F[k](i, j));
+    if (lmi_constraint.evaluator()->matrix_rows() > 2) {
+      // LinearMatrixInequalityConstraint encodes
+      // F₀ + x₁*F₁ + x₂*F₂ + ... + xₙFₙ is p.s.d
+      // We convert this to SCS/Clarabel form as
+      // A_cone * x + s = b_cone
+      // s in SCS/Clarabel positive semidefinite cone.
+      // For SCS, it uses the lower triangular of the symmetric psd matrix,
+      // hence
+      //              ⎡  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)⎤
+      //              ⎢√2F₁(1, 0) √2F₂(1, 0) ... √2Fₙ(1, 0)⎥
+      //   A_cone = - ⎢√2F₁(2, 0) √2F₂(2, 0) ... √2Fₙ(2, 0)⎥,
+      //              ⎢            ...                     ⎥
+      //              ⎣  F₁(m, m)   F₂(m, m) ...   Fₙ(m, m)⎦
+      //
+      //              ⎡  F₀(0, 0)⎤
+      //              ⎢√2F₀(1, 0)⎥
+      //   b_cone =   ⎢√2F₀(2, 0)⎥,
+      //              ⎢   ...    ⎥
+      //              ⎣  F₀(m, m)⎦
+      // For Clarabel, it uses the upper triangular of the symmetric psd matrix,
+      // hence
+      //              ⎡  F₁(0, 0)   F₂(0, 0) ...   Fₙ(0, 0)⎤
+      //              ⎢√2F₁(0, 1) √2F₂(0, 1) ... √2Fₙ(0, 1)⎥
+      //   A_cone = - ⎢√2F₁(1, 1) √2F₂(1, 1) ... √2Fₙ(1, 1)⎥,
+      //              ⎢            ...                     ⎥
+      //              ⎣  F₁(m, m)   F₂(m, m) ...   Fₙ(m, m)⎦
+      //
+      //              ⎡  F₀(0, 0)⎤
+      //              ⎢√2F₀(0, 1)⎥
+      //   b_cone =   ⎢√2F₀(1, 1)⎥,
+      //              ⎢   ...    ⎥
+      //              ⎣  F₀(m, m)⎦
+      // For both SCS and Clarabel, we have
+      //   x = [x₁; x₂; ... ; xₙ].
+      // As explained above, the off-diagonal rows are scaled by √2. Please
+      // refer to https://github.com/cvxgrp/scs about the scaling factor √2.
+      // Note that since all F matrices are symmetric, we don't need to
+      // differentiate between lower triangular or upper triangular version.
+      const std::vector<Eigen::MatrixXd>& F = lmi_constraint.evaluator()->F();
+      const VectorXDecisionVariable& x = lmi_constraint.variables();
+      const int F_rows = lmi_constraint.evaluator()->matrix_rows();
+      const std::vector<int> x_indices = prog.FindDecisionVariableIndices(x);
+      int A_cone_row_count = 0;
+      b->reserve(b->size() + F_rows * (F_rows + 1) / 2);
+      for (int j = 0; j < F_rows; ++j) {
+        const int i_start = upper_triangular ? 0 : j;
+        const int i_end = upper_triangular ? j + 1 : F_rows;
+        for (int i = i_start; i < i_end; ++i) {
+          const double scale_factor = i == j ? 1 : sqrt2;
+          for (int k = 1; k < static_cast<int>(F.size()); ++k) {
+            EmplaceNonzeroTriplet(*A_row_count + A_cone_row_count,
+                                  x_indices[k - 1], -scale_factor * F[k](i, j),
+                                  A_triplets);
+          }
+          b->push_back(scale_factor * F[0](i, j));
+          ++A_cone_row_count;
         }
-        b->push_back(scale_factor * F[0](i, j));
-        ++A_cone_row_count;
       }
+      lmi_cone_length->push_back(F_rows);
+      lmi_y_start_indices->push_back(*A_row_count);
+      *A_row_count += F_rows * (F_rows + 1) / 2;
+    } else {
+      lmi_cone_length->push_back(std::nullopt);
+      lmi_y_start_indices->push_back(std::nullopt);
     }
-    lmi_cone_length->push_back(F_rows);
-    lmi_y_start_indices->push_back(*A_row_count);
-    *A_row_count += F_rows * (F_rows + 1) / 2;
   }
 }
 
+void ParseScalarPositiveSemidefiniteConstraints(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+    int* A_row_count, int* new_positive_cone_length,
+    std::vector<std::optional<int>>* scalar_psd_dual_indices,
+    std::vector<std::optional<int>>* scalar_lmi_dual_indices) {
+  DRAKE_ASSERT(ssize(*b) == *A_row_count);
+  DRAKE_ASSERT(new_positive_cone_length != nullptr);
+  *new_positive_cone_length = 0;
+  // Make sure that each triplet in A_triplets has row smaller than
+  // *A_row_count.
+  // Use kDrakeAssertIsArmed to bypass the entire for loop in the release mode.
+  if (kDrakeAssertIsArmed) {
+    for (const auto& A_triplet : *A_triplets) {
+      DRAKE_DEMAND(A_triplet.row() < *A_row_count);
+    }
+  }
+  scalar_psd_dual_indices->reserve(
+      prog.positive_semidefinite_constraints().size());
+  for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
+    if (psd_constraint.evaluator()->matrix_rows() == 1) {
+      // Impose the constraint -x + s = 0, s in positive-orthant cone.
+      A_triplets->emplace_back(
+          *A_row_count,
+          prog.FindDecisionVariableIndex(psd_constraint.variables()[0]), -1);
+      b->push_back(0);
+      (*new_positive_cone_length) += 1;
+      scalar_psd_dual_indices->push_back(*A_row_count);
+      *A_row_count += 1;
+    } else {
+      scalar_psd_dual_indices->push_back(std::nullopt);
+    }
+  }
+  scalar_lmi_dual_indices->reserve(
+      prog.linear_matrix_inequality_constraints().size());
+  for (const auto& lmi_constraint :
+       prog.linear_matrix_inequality_constraints()) {
+    if (lmi_constraint.evaluator()->matrix_rows() == 1) {
+      // Impose the constraint
+      // -x₁*F₁[0, 0] - x₂*F₂[0, 0] - ... - xₙFₙ[0, 0] + s  = F₀[0, 0]
+      // s in positive orthant cone.
+      for (int i = 0; i < ssize(lmi_constraint.evaluator()->F()) - 1; ++i) {
+        EmplaceNonzeroTriplet(
+            *A_row_count,
+            prog.FindDecisionVariableIndex(lmi_constraint.variables()[i]),
+            -lmi_constraint.evaluator()->F()[i + 1](0, 0), A_triplets);
+      }
+      b->push_back(lmi_constraint.evaluator()->F()[0](0, 0));
+      (*new_positive_cone_length) += 1;
+      scalar_lmi_dual_indices->push_back(*A_row_count);
+      (*A_row_count) += 1;
+    } else {
+      scalar_lmi_dual_indices->push_back(std::nullopt);
+    }
+  }
+}
+
+void Parse2x2PositiveSemidefiniteConstraints(
+    const MathematicalProgram& prog,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+    int* A_row_count, int* num_new_second_order_cones,
+    std::vector<std::optional<int>>* twobytwo_psd_dual_start_indices,
+    std::vector<std::optional<int>>* twobytwo_lmi_dual_start_indices) {
+  DRAKE_ASSERT(ssize(*b) == *A_row_count);
+  DRAKE_ASSERT(num_new_second_order_cones != nullptr);
+  *num_new_second_order_cones = 0;
+  // Make sure that each triplet in A_triplets has row smaller than
+  // *A_row_count.
+  // Use kDrakeAssertIsArmed to bypass the entire for loop in the release mode.
+  if (kDrakeAssertIsArmed) {
+    for (const auto& A_triplet : *A_triplets) {
+      DRAKE_DEMAND(A_triplet.row() < *A_row_count);
+    }
+  }
+  twobytwo_psd_dual_start_indices->reserve(
+      prog.positive_semidefinite_constraints().size());
+  twobytwo_lmi_dual_start_indices->reserve(
+      prog.linear_matrix_inequality_constraints().size());
+  for (const auto& psd_constraint : prog.positive_semidefinite_constraints()) {
+    if (psd_constraint.evaluator()->matrix_rows() == 2) {
+      // The PSD constraint imposes
+      // [x(0) x(2)] is psd.
+      // [x(1) x(3)]
+      // where (x(0), x(1), x(2), x(3)) is psd_constraint.variables() (Note
+      // that x(1) and x(2) are the same).
+      // This is equivalent to
+      // [x(0) + x(3)]
+      // [x(0) - x(3)]  in lorentz cone.
+      // [  2*x(1)   ]
+      // Namely
+      // [-x(0) - x(3) + s(0)]   [0]
+      // [-x(0) + x(3) + s(1)] = [0]
+      // [ -2 * x(1) + s(2)  ]   [0]
+      // s in second order cone.
+      const int x0_index =
+          prog.FindDecisionVariableIndex(psd_constraint.variables()[0]);
+      const int x1_index =
+          prog.FindDecisionVariableIndex(psd_constraint.variables()[1]);
+      const int x3_index =
+          prog.FindDecisionVariableIndex(psd_constraint.variables()[3]);
+      A_triplets->emplace_back(*A_row_count, x0_index, -1);
+      A_triplets->emplace_back(*A_row_count, x3_index, -1);
+      A_triplets->emplace_back(*A_row_count + 1, x0_index, -1);
+      A_triplets->emplace_back(*A_row_count + 1, x3_index, 1);
+      A_triplets->emplace_back(*A_row_count + 2, x1_index, -2);
+      b->push_back(0);
+      b->push_back(0);
+      b->push_back(0);
+      ++(*num_new_second_order_cones);
+      twobytwo_psd_dual_start_indices->push_back(*A_row_count);
+      *A_row_count += 3;
+    } else {
+      twobytwo_psd_dual_start_indices->push_back(std::nullopt);
+    }
+  }
+  for (const auto& lmi_constraint :
+       prog.linear_matrix_inequality_constraints()) {
+    if (lmi_constraint.evaluator()->matrix_rows() == 2) {
+      // The constraint imposes
+      // F[0] + ∑ᵢF[1+i] * x(i) is psd.
+      // This is equivalent to
+      // [F[0](0, 0) + F[0](1, 1) + ∑ᵢ(F[1+i](0, 0) + F[1+i)(1, 1)) * x[i]]
+      // [F[0](0, 0) - F[0](1, 1) + ∑ᵢ(F[1+i](0, 0) - F[1+i)(1, 1)) * x[i]]
+      // [     2 * F[0](0, 1) + 2 * ∑ᵢF[1+i](0, 1)*x[i]                   ]
+      // is in Lorentz cone.
+      // Writing it in SCS/Clarabel format
+      // -∑ᵢ(F[1+i](0,0) + F[1+i](1,1))x[i] + s[0] = F[0](0, 0) + F[0](1, 1)
+      // -∑ᵢ(F[1+i](0,0) - F[1+i](1,1))x[i] + s[1] = F[0](0, 0) - F[0](1, 1)
+      //             -2*∑ᵢF[1+i](0, 1)*x[i] + s[2] = 2 * F[0](0, 1)
+      //  s in second order cone.
+      const auto& F = lmi_constraint.evaluator()->F();
+      for (int i = 0; i < lmi_constraint.variables().rows(); ++i) {
+        const int var_index =
+            prog.FindDecisionVariableIndex(lmi_constraint.variables()(i));
+        EmplaceNonzeroTriplet(*A_row_count, var_index,
+                              -F[1 + i](0, 0) - F[1 + i](1, 1), A_triplets);
+        EmplaceNonzeroTriplet(*A_row_count + 1, var_index,
+                              -F[1 + i](0, 0) + F[1 + i](1, 1), A_triplets);
+        EmplaceNonzeroTriplet(*A_row_count + 2, var_index, -2 * F[1 + i](0, 1),
+                              A_triplets);
+      }
+      b->push_back(F[0](0, 0) + F[0](1, 1));
+      b->push_back(F[0](0, 0) - F[0](1, 1));
+      b->push_back(2 * F[0](0, 1));
+      ++(*num_new_second_order_cones);
+      twobytwo_lmi_dual_start_indices->push_back(*A_row_count);
+      *A_row_count += 3;
+    } else {
+      twobytwo_lmi_dual_start_indices->push_back(std::nullopt);
+    }
+  }
+}
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

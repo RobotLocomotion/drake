@@ -859,19 +859,20 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestPsd) {
     ParsePositiveSemidefiniteConstraints(
         prog, upper_triangular, &A_triplets, &b, &A_row_count, &psd_cone_length,
         &lmi_cone_length, &psd_y_start_indices, &lmi_y_start_indices);
-    EXPECT_EQ(psd_cone_length, std::vector<std::optional<int>>({{3}, {2}}));
+    EXPECT_EQ(psd_cone_length,
+              std::vector<std::optional<int>>({{3}, {std::nullopt}}));
     EXPECT_TRUE(lmi_cone_length.empty());
-    EXPECT_EQ(psd_y_start_indices,
-              std::vector<std::optional<int>>(
-                  {{A_row_count_old}, {A_row_count_old + 3 * (3 + 1) / 2}}));
+    EXPECT_EQ(psd_y_start_indices, std::vector<std::optional<int>>(
+                                       {{A_row_count_old}, {std::nullopt}}));
     EXPECT_TRUE(lmi_y_start_indices.empty());
-    // We add 3 * (3+1) / 2 = 6 rows in A for "X is psd", and 2 * (2+1) / 2 = 3
-    // rows in A for "Y is psd".
-    EXPECT_EQ(A_row_count, A_row_count_old + 3 * (3 + 1) / 2 + 2 * (2 + 1) / 2);
+    // We add 3 * (3+1) / 2 = 6 rows in A for "X is psd", and 0
+    // rows in A for "Y is psd" since Y is a 2x2 matrix, which should be imposed
+    // as a second order cone constraint.
+    EXPECT_EQ(A_row_count, A_row_count_old + 3 * (3 + 1) / 2);
     const double sqrt2 = std::sqrt(2);
     Eigen::SparseMatrix<double> A(A_row_count, prog.num_vars());
     A.setFromTriplets(A_triplets.begin(), A_triplets.end());
-    Eigen::MatrixXd A_expected(A_row_count_old + 9, 9);
+    Eigen::MatrixXd A_expected(A_row_count_old + 6, prog.num_vars());
     A_expected.setZero();
     // [1 √2 √2]
     // [√2 1 √2]
@@ -900,16 +901,6 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestPsd) {
       A_expected(A_row_count_old + 3, 2 /* X(0, 2) */) = -sqrt2;
       A_expected(A_row_count_old + 4, 4 /* X(1, 2) */) = -sqrt2;
       A_expected(A_row_count_old + 5, 5 /* X(2, 2) */) = -1;
-      // For the 2 by 2 matrix Y to be psd, we need the constraint
-      //   -Y(0, 0) + s(6) = 0
-      // -√2Y(0, 1) + s(7) = 0
-      //   -Y(1, 1) + s(8) = 0
-      // and
-      // [s(6) s(7)] is psd
-      // [s(7) s(8)]
-      A_expected(A_row_count_old + 6, 6) = -1;
-      A_expected(A_row_count_old + 7, 7) = -sqrt2;
-      A_expected(A_row_count_old + 8, 8) = -1;
     } else {
       // If we use the lower triangular part of the symmetric matrix, to impose
       // the constraint that 3 by 3 matrix X is psd, we need the constraint
@@ -931,16 +922,6 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestPsd) {
       A_expected(A_row_count_old + 3, 3) = -1;
       A_expected(A_row_count_old + 4, 4) = -sqrt2;
       A_expected(A_row_count_old + 5, 5) = -1;
-      // For the 2 by 2 matrix Y to be psd, we need the constraint
-      //   -Y(0, 0) + s(6) = 0
-      // -√2Y(0, 1) + s(7) = 0
-      //   -Y(1, 1) + s(8) = 0
-      // and
-      // [s(6) s(7)] is psd
-      // [s(7) s(8)]
-      A_expected(A_row_count_old + 6, 6) = -1;
-      A_expected(A_row_count_old + 7, 7) = -sqrt2;
-      A_expected(A_row_count_old + 8, 8) = -1;
     }
     EXPECT_TRUE(CompareMatrices(A.toDense(), A_expected));
     EXPECT_EQ(b.size(), A_row_count);
@@ -1031,6 +1012,150 @@ GTEST_TEST(ParsePositiveSemidefiniteConstraints, TestLmi) {
   };
   check_lmi(true);
   check_lmi(false);
+}
+
+GTEST_TEST(ParseScalarPositiveSemidefiniteConstraints, Test) {
+  // The program contains both scalar PSD/LMI constraints and non-scalar PSD/LMI
+  // constraints.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddPositiveSemidefiniteConstraint(x);
+  auto X = prog.NewSymmetricContinuousVariables<3>();
+  prog.AddPositiveSemidefiniteConstraint(X);
+  auto y = prog.NewContinuousVariables<2>();
+  prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix3d::Zero(), Eigen::Matrix3d::Ones(),
+       Eigen::Matrix3d::Identity()},
+      y);
+  auto scalar_lmi_con = prog.AddLinearMatrixInequalityConstraint(
+      {Eigen::Matrix<double, 1, 1>(1), Eigen::Matrix<double, 1, 1>(2),
+       Eigen::Matrix<double, 1, 1>(-3)},
+      y);
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  std::vector<double> b;
+  int A_row_count = 0;
+  int new_positive_cone_length{};
+  std::vector<std::optional<int>> scalar_psd_dual_indices;
+  std::vector<std::optional<int>> scalar_lmi_dual_indices;
+  ParseScalarPositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &new_positive_cone_length,
+      &scalar_psd_dual_indices, &scalar_lmi_dual_indices);
+  EXPECT_EQ(A_triplets.size(), 3);
+  Eigen::SparseMatrix<double> A(2, prog.num_vars());
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  Eigen::MatrixXd A_expected(2, prog.num_vars());
+  A_expected.setZero();
+  A_expected(0, prog.FindDecisionVariableIndex(x(0))) = -1;
+  for (int i = 0; i < y.rows(); ++i) {
+    A_expected(1, prog.FindDecisionVariableIndex(y(i))) =
+        -scalar_lmi_con.evaluator()->F()[i + 1](0, 0);
+  }
+  EXPECT_TRUE(CompareMatrices(A.toDense(), A_expected));
+  const Eigen::Vector2d b_expected(0, scalar_lmi_con.evaluator()->F()[0](0, 0));
+  EXPECT_TRUE(
+      CompareMatrices(Eigen::Map<Eigen::Vector2d>(b.data()), b_expected));
+  EXPECT_EQ(A_row_count, 2);
+  EXPECT_EQ(new_positive_cone_length, 2);
+  EXPECT_FALSE(scalar_psd_dual_indices[1].has_value());
+  EXPECT_FALSE(scalar_lmi_dual_indices[0].has_value());
+
+  std::vector<std::optional<int>> psd_cone_length;
+  std::vector<std::optional<int>> lmi_cone_length;
+  std::vector<std::optional<int>> psd_y_start_indices;
+  std::vector<std::optional<int>> lmi_y_start_indices;
+  ParsePositiveSemidefiniteConstraints(
+      prog, /*upper_triangular=*/true, &A_triplets, &b, &A_row_count,
+      &psd_cone_length, &lmi_cone_length, &psd_y_start_indices,
+      &lmi_y_start_indices);
+  EXPECT_EQ(psd_cone_length,
+            std::vector<std::optional<int>>({{std::nullopt}, {3}}));
+  EXPECT_EQ(lmi_cone_length,
+            std::vector<std::optional<int>>({{3}, {std::nullopt}}));
+  EXPECT_FALSE(psd_y_start_indices[0].has_value());
+  EXPECT_FALSE(lmi_y_start_indices[1].has_value());
+}
+
+GTEST_TEST(Parse2x2PositiveSemidefiniteConstraints, TestPSD) {
+  // A PositiveSemidefiniteConstraint on a 2 x 2 matrix.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  // X has repeated entries.
+  Matrix2<symbolic::Variable> X;
+  // clang-format off
+  X << x(0), x(1),
+       x(1), x(0);
+  // clang-format on
+  auto psd_con = prog.AddPositiveSemidefiniteConstraint(X);
+  int A_row_count = 0;
+  std::vector<Eigen::Triplet<double>> A_triplets{};
+  std::vector<double> b{};
+  int num_new_second_order_cones{0};
+  std::vector<std::optional<int>> twobytwo_psd_dual_start_indices;
+  std::vector<std::optional<int>> twobytwo_lmi_dual_start_indices;
+  Parse2x2PositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &num_new_second_order_cones,
+      &twobytwo_psd_dual_start_indices, &twobytwo_lmi_dual_start_indices);
+  EXPECT_EQ(A_row_count, 3);
+  EXPECT_EQ(num_new_second_order_cones, 1);
+  EXPECT_EQ(b, std::vector<double>({0, 0, 0}));
+  Eigen::SparseMatrix<double> A(A_row_count, prog.num_vars());
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  Eigen::Matrix<double, 3, 2> A_expected;
+  // clang-format off
+  A_expected << -2, 0,
+                0, 0,
+                0, -2;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(A.toDense(), A_expected));
+  EXPECT_EQ(twobytwo_psd_dual_start_indices,
+            std::vector<std::optional<int>>({{0}}));
+  EXPECT_TRUE(twobytwo_lmi_dual_start_indices.empty());
+}
+
+GTEST_TEST(Parse2x2PositiveSemidefiniteConstraints, TestLMI) {
+  // A LinearMatrixInequalityConstraint on a 2x2 matrix.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  std::vector<Eigen::MatrixXd> F;
+  F.push_back((Eigen::Matrix2d() << 1, 2, 2, 4).finished());
+  F.push_back((Eigen::Matrix2d() << 0, 1, 1, -2).finished());
+  F.push_back((Eigen::Matrix2d() << 1, 0, 0, -1).finished());
+  F.push_back((Eigen::Matrix2d() << 2, 1, 1, 1).finished());
+  auto lmi_con = prog.AddLinearMatrixInequalityConstraint(
+      F, Vector3<symbolic::Variable>(x(0), x(1), x(0)));
+  std::vector<Eigen::Triplet<double>> A_triplets;
+  std::vector<double> b;
+  int A_row_count = 0;
+  int num_new_second_order_cones{};
+  std::vector<std::optional<int>> twobytwo_psd_dual_start_indices;
+  std::vector<std::optional<int>> twobytwo_lmi_dual_start_indices;
+  Parse2x2PositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &num_new_second_order_cones,
+      &twobytwo_psd_dual_start_indices, &twobytwo_lmi_dual_start_indices);
+  EXPECT_EQ(A_row_count, 3);
+  EXPECT_EQ(num_new_second_order_cones, 1);
+  Eigen::SparseMatrix<double> A(3, prog.num_vars());
+  A.setFromTriplets(A_triplets.begin(), A_triplets.end());
+  // Since A*x + s = b, we have s = -A*x+b
+  VectorX<symbolic::Expression> s =
+      -A.toDense() * prog.decision_variables() +
+      Eigen::Map<Eigen::VectorXd>(b.data(), b.size());
+  // Now evaluate F[0] + ∑ᵢF[1+i] * x(i)
+  Matrix2<symbolic::Expression> lmi_expected = F[0];
+  for (int i = 0; i < lmi_con.variables().rows(); ++i) {
+    lmi_expected += lmi_con.evaluator()->F()[1 + i] * lmi_con.variables()(i);
+  }
+  EXPECT_PRED2(symbolic::test::ExprEqual,
+               (lmi_expected(0, 0) + lmi_expected(1, 1)).Expand(),
+               s(0).Expand());
+  EXPECT_PRED2(symbolic::test::ExprEqual,
+               (lmi_expected(0, 0) - lmi_expected(1, 1)).Expand(),
+               s(1).Expand());
+  EXPECT_PRED2(symbolic::test::ExprEqual, (2 * lmi_expected(0, 1)).Expand(),
+               s(2).Expand());
+  EXPECT_TRUE(twobytwo_psd_dual_start_indices.empty());
+  EXPECT_EQ(twobytwo_lmi_dual_start_indices,
+            std::vector<std::optional<int>>({{0}}));
 }
 }  // namespace internal
 }  // namespace solvers

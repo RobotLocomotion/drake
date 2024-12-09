@@ -16,6 +16,7 @@ def clarabel_cpp_internal_repository(
             ":patches/extern_c.patch",
             ":patches/git_submodule.patch",
             ":patches/sdp.patch",
+            ":patches/upstream/allow_unused_must_use.patch",
         ],
         mirrors = mirrors,
     )

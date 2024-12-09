@@ -1286,6 +1286,15 @@ class TestMathematicalProgram(unittest.TestCase):
         np.testing.assert_array_equal(constraint.evaluator().F()[1], F[1])
         self.assertEqual(len(prog.linear_matrix_inequality_constraints()), 1)
 
+        constraint2 = prog.AddLinearMatrixInequalityConstraint(
+            X=np.array([
+                [1, 2 + x[0], 3 - x[0]],
+                [2 + x[0], 1 - x[0], 1],
+                [3 - x[0], 1, 2]]))
+        self.assertIsInstance(
+            constraint2.evaluator(), mp.LinearMatrixInequalityConstraint)
+        self.assertEqual(len(prog.linear_matrix_inequality_constraints()), 2)
+
     def test_solver_id(self):
         self.assertEqual(ScsSolver().solver_id(), ScsSolver().solver_id())
         self.assertNotEqual(ScsSolver().solver_id(), OsqpSolver().solver_id())

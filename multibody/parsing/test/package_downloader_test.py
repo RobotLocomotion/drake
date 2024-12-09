@@ -8,7 +8,7 @@ import zipfile
 import unittest
 from urllib.error import HTTPError
 
-import drake.multibody.parsing.package_downloader as mut
+import multibody.parsing.package_downloader as mut
 
 # We'll mock out the internet-touching methods. We don't want our unit test
 # touching the internet. See setUp and tearDown below for details.

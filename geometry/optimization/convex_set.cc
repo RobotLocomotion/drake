@@ -157,6 +157,7 @@ bool IsBoundedParallel(const ConvexSet& s, Parallelism parallelism) {
     // has one cost (the linear cost).
     progs[thread_num].linear_costs()[0].evaluator()->update_coefficient_entry(
         dimension, maximize ? -1 : 1);
+    DRAKE_ASSERT(progs[thread_num].IsThreadSafe());
     solver_interfaces[thread_num]->Solve(progs[thread_num], std::nullopt,
                                          options[thread_num],
                                          &(results[thread_num]));

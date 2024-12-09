@@ -4,6 +4,7 @@
 // that we can expose the internals to ipopt_solver_internal_test.
 
 #include <memory>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -143,6 +144,12 @@ class DRAKE_NO_EXPORT IpoptSolver_NLP : public Ipopt::TNLP {
   // corresponding dual variables.
   std::unordered_map<Binding<Constraint>, int> constraint_dual_start_index_;
 };
+
+// Returns Drake's supported values for the "linear_solver" IpoptSolver option.
+// This will be affected by which options the IPOPT library was compiled with.
+// The first item in the result is Drake's default value.
+std::vector<std::string_view> GetSupportedIpoptLinearSolvers();
+
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

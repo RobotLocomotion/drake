@@ -34,10 +34,12 @@ class RevoluteMobilizerTest : public MobilizerTester {
         std::make_unique<RevoluteJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame(),
             axis_F_));
+    mutable_mobilizer_ = const_cast<RevoluteMobilizer<double>*>(mobilizer_);
   }
 
  protected:
   const RevoluteMobilizer<double>* mobilizer_{nullptr};
+  RevoluteMobilizer<double>* mutable_mobilizer_{nullptr};
   const Vector3d axis_F_{1.0, 2.0, 3.0};
 };
 
@@ -87,12 +89,9 @@ TEST_F(RevoluteMobilizerTest, ZeroState) {
 }
 
 TEST_F(RevoluteMobilizerTest, DefaultPosition) {
-  RevoluteMobilizer<double>* mutable_mobilizer =
-      &mutable_tree().get_mutable_variant(*mobilizer_);
-
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
 
-  mutable_mobilizer->set_default_position(Vector1d{.4});
+  mutable_mobilizer_->set_default_position(Vector1d{.4});
   mobilizer_->set_default_state(*context_, &context_->get_mutable_state());
 
   EXPECT_EQ(mobilizer_->get_angle(*context_), .4);
@@ -102,36 +101,33 @@ TEST_F(RevoluteMobilizerTest, RandomState) {
   RandomGenerator generator;
   std::uniform_real_distribution<symbolic::Expression> uniform;
 
-  RevoluteMobilizer<double>* mutable_mobilizer =
-      &mutable_tree().get_mutable_variant(*mobilizer_);
-
   // Default behavior is to set to zero.
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
 
   // Set position to be random, but not velocity (yet).
-  mutable_mobilizer->set_random_position_distribution(
+  mutable_mobilizer_->set_random_position_distribution(
       Vector1<symbolic::Expression>(uniform(generator) + 2.0));
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 2.0);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), 0);
 
   // Set the velocity distribution.  Now both should be random.
-  mutable_mobilizer->set_random_velocity_distribution(
+  mutable_mobilizer_->set_random_velocity_distribution(
       Vector1<symbolic::Expression>(uniform(generator) - 2.0));
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_GE(mobilizer_->get_angle(*context_), 2.0);
   EXPECT_LE(mobilizer_->get_angular_rate(*context_), -1.0);
 
   // Check that they change on a second draw from the distribution.
   const double last_angle = mobilizer_->get_angle(*context_);
   const double last_angular_rate = mobilizer_->get_angular_rate(*context_);
-  mutable_mobilizer->set_random_state(*context_, &context_->get_mutable_state(),
-                                      &generator);
+  mutable_mobilizer_->set_random_state(
+      *context_, &context_->get_mutable_state(), &generator);
   EXPECT_NE(mobilizer_->get_angle(*context_), last_angle);
   EXPECT_NE(mobilizer_->get_angular_rate(*context_), last_angular_rate);
 }

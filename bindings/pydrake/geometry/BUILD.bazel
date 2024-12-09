@@ -121,7 +121,6 @@ drake_py_unittest(
     name = "optimization_test",
     deps = [
         ":geometry",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/multibody:inverse_kinematics_py",
         "//bindings/pydrake/multibody:parsing_py",

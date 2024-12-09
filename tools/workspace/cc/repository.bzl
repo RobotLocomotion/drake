@@ -28,8 +28,11 @@ Argument:
     name: A unique name for this rule.
 """
 
-load("@bazel_tools//tools/cpp:unix_cc_configure.bzl", "find_cc")
 load("//tools/workspace:execute.bzl", "execute_or_fail")
+
+# We can probe whether bzlmod is enabled by checking if labels use one or two
+# leading '@' charaters. (The label doesn't need to be valid.)
+BZLMOD_ENABLED = "@@" in str(Label("//:foo"))
 
 def _check_compiler_version(compiler_id, actual_version, supported_version):
     """
@@ -88,9 +91,14 @@ def _impl(repository_ctx):
     else:
         cc_environment = {}
 
+    local_config_cc = "@local_config_cc"
+    if BZLMOD_ENABLED:
+        local_config_cc = "@bazel_tools~cc_configure_extension~local_config_cc"
     executable = repository_ctx.path("identify_compiler")
     execute_or_fail(repository_ctx, [
-        repository_ctx.path(Label("@local_config_cc//:cc_wrapper.sh")),
+        repository_ctx.path(
+            Label(local_config_cc + "//:cc_wrapper.sh"),
+        ),
         repository_ctx.path(
             Label("@drake//tools/workspace/cc:identify_compiler.cc"),
         ),

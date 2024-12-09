@@ -1,0 +1,24 @@
+Repair NLopt's configuration scheme for the Luksan dependency.
+
+That library is licensed under LGPL-2.1+ but the rest of NLopt is
+licensed under MIT or similar notice-only licenses, and we really
+don't want to distribute this code using dynamic linking.
+
+Recent versions of NLopt offer a configuration setting to remove Luksan,
+but the piece shown below is missing.
+
+This patch should probably be upstreamed.
+
+
+--- nlopt_config.h.in
++++ nlopt_config.h.in
+@@ -129,6 +129,9 @@
+ /* Define if compiled including C++-based routines */
+ #cmakedefine NLOPT_CXX
+ 
++/* Define if using LGPL Luksan solvers */
++#cmakedefine NLOPT_LUKSAN
++
+ /* Define to empty if `const' does not conform to ANSI C. */
+ #undef const
+ 

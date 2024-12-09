@@ -133,11 +133,11 @@ filegroup(
     name = "test_models",
     testonly = 1,
     srcs = [
+        "test/box.sdf",
         ":box_checkered",
         ":box_no_mtl",
     ] + glob([
         "test/meshes/*",
-        "test/box.sdf",
         "test/*.png",
     ]),
 )

@@ -159,10 +159,8 @@ GTEST_TEST(ParseLinearExpression, Test2) {
   // Test with non-empty A matrix and empty B matrix, with only Mosek matrix
   // variable and no non-matrix variable.
   MathematicalProgram prog;
-  auto X1 = prog.NewSymmetricContinuousVariables<2>();
   auto X2 = prog.NewSymmetricContinuousVariables<3>();
   auto X3 = prog.NewSymmetricContinuousVariables<4>();
-  prog.AddPositiveSemidefiniteConstraint(X1);
   prog.AddPositiveSemidefiniteConstraint(X2);
   prog.AddPositiveSemidefiniteConstraint(X3);
 
@@ -174,8 +172,8 @@ GTEST_TEST(ParseLinearExpression, Test2) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  std::vector<MSKint32t> bar_var_dimension = {2, 3, 4};
-  MSK_appendbarvars(dut.task(), 3, bar_var_dimension.data());
+  std::vector<MSKint32t> bar_var_dimension = {3, 4};
+  MSK_appendbarvars(dut.task(), 2, bar_var_dimension.data());
 
   Vector3<symbolic::Variable> decision_vars(X2(0, 1), X3(1, 1), X3(1, 2));
   std::vector<MSKint32t> F_subi;
@@ -215,8 +213,8 @@ GTEST_TEST(ParseLinearExpression, Test3) {
   MSKenv_t env;
   MSK_makeenv(&env, nullptr);
   MosekSolverProgram dut(prog, env);
-  std::vector<MSKint32t> bar_var_dimension = {2, 3, 4};
-  MSK_appendbarvars(dut.task(), 3, bar_var_dimension.data());
+  std::vector<MSKint32t> bar_var_dimension = {3};
+  MSK_appendbarvars(dut.task(), 1, bar_var_dimension.data());
   const int num_slack_vars = 3;
   AppendFreeVariable(
       dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size() +
@@ -1105,6 +1103,158 @@ GTEST_TEST(PositiveSemidefiniteConstraint, RepeatedVariableDifferentMatrices) {
     }
     EXPECT_TRUE(CompareMatrices(barA_for_X1, barA_for_X1_expected));
     EXPECT_TRUE(CompareMatrices(barA_for_X2, barA_for_X2_expected));
+  }
+  MSK_deleteenv(&env);
+}
+
+GTEST_TEST(AddScalarPsdConstraint, NonMatrixVariable) {
+  // Adds "X is psd" constraint with X being a 1 x 1 matrix. X(0, 0) doesn't
+  // show up in other PSD constraint.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>("x");
+  const auto scalar_psd_binding = prog.AddPositiveSemidefiniteConstraint(
+      MatrixDecisionVariable<1, 1>(x(1)));
+
+  MSKrescodee rescode{MSK_RES_OK};
+
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+  {
+    // The program has only a scalar PSD constraint.
+    MosekSolverProgram dut(prog, env);
+    rescode = MSK_appendvars(
+        dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+    EXPECT_TRUE(dut.decision_variable_to_mosek_matrix_variable().empty());
+    EXPECT_EQ(dut.decision_variable_to_mosek_nonmatrix_variable().size(),
+              prog.num_vars());
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>
+        psd_barvar_indices;
+    dut.AddPositiveSemidefiniteConstraints(prog, &psd_barvar_indices);
+    EXPECT_TRUE(psd_barvar_indices.empty());
+    MSKint32t num_barvar;
+    MSK_getnumbarvar(dut.task(), &num_barvar);
+    EXPECT_EQ(num_barvar, 0);
+    std::unordered_map<Binding<BoundingBoxConstraint>,
+                       std::pair<ConstraintDualIndices, ConstraintDualIndices>>
+        bbcon_dual_indices;
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                       std::pair<ConstraintDualIndex, ConstraintDualIndex>>
+        scalar_psd_dual_indices;
+    rescode = dut.AddVariableBounds(prog, &bbcon_dual_indices,
+                                    &scalar_psd_dual_indices);
+    ASSERT_EQ(rescode, MSK_RES_OK);
+    EXPECT_TRUE(bbcon_dual_indices.empty());
+    EXPECT_EQ(scalar_psd_dual_indices.size(), 1);
+    EXPECT_EQ(scalar_psd_dual_indices.at(scalar_psd_binding).first.type,
+              DualVarType::kVariableBound);
+    EXPECT_EQ(scalar_psd_dual_indices.at(scalar_psd_binding).first.index,
+              dut.decision_variable_to_mosek_nonmatrix_variable().at(
+                  prog.FindDecisionVariableIndex(x(1))));
+    EXPECT_EQ(scalar_psd_dual_indices.at(scalar_psd_binding).second.type,
+              DualVarType::kVariableBound);
+    EXPECT_EQ(scalar_psd_dual_indices.at(scalar_psd_binding).second.index,
+              -1 /* upper bound is inactive. */);
+  }
+
+  {
+    // Adds bounding box constraint to the program, the scalar psd constraint
+    // will always be inactive because the bounding box constraint is tighter.
+    const auto bb_con = prog.AddBoundingBoxConstraint(1, 3, x(1));
+    MosekSolverProgram dut(prog, env);
+    rescode = MSK_appendvars(
+        dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>
+        psd_barvar_indices;
+    dut.AddPositiveSemidefiniteConstraints(prog, &psd_barvar_indices);
+    EXPECT_TRUE(psd_barvar_indices.empty());
+    MSKint32t num_barvar;
+    MSK_getnumbarvar(dut.task(), &num_barvar);
+    EXPECT_EQ(num_barvar, 0);
+    std::unordered_map<Binding<BoundingBoxConstraint>,
+                       std::pair<ConstraintDualIndices, ConstraintDualIndices>>
+        bbcon_dual_indices;
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                       std::pair<ConstraintDualIndex, ConstraintDualIndex>>
+        scalar_psd_dual_indices;
+    rescode = dut.AddVariableBounds(prog, &bbcon_dual_indices,
+                                    &scalar_psd_dual_indices);
+    ASSERT_EQ(rescode, MSK_RES_OK);
+    EXPECT_EQ(bbcon_dual_indices.size(), 1);
+    auto [bb_lb_dual_indices, bb_ub_dual_indices] =
+        bbcon_dual_indices.at(bb_con);
+    for (const auto& dual_indices : {bb_lb_dual_indices, bb_ub_dual_indices}) {
+      EXPECT_EQ(dual_indices.size(), 1);
+
+      EXPECT_EQ(dual_indices[0].type, DualVarType::kVariableBound);
+      EXPECT_EQ(dual_indices[0].index,
+                dut.decision_variable_to_mosek_nonmatrix_variable().at(
+                    prog.FindDecisionVariableIndex(x(1))));
+    }
+    EXPECT_EQ(scalar_psd_dual_indices.size(), 1);
+    for (const auto& bound_dual :
+         {scalar_psd_dual_indices.at(scalar_psd_binding).first,
+          scalar_psd_dual_indices.at(scalar_psd_binding).second}) {
+      EXPECT_EQ(bound_dual.type, DualVarType::kVariableBound);
+      EXPECT_EQ(bound_dual.index, -1 /* inactive constraint */);
+    }
+  }
+  MSK_deleteenv(&env);
+}
+
+GTEST_TEST(AddScalarPsdConstraint, MatrixVariable) {
+  // Add "X is psd" constraint where X is a 1x1 scalar matrix, and X(0, 0)
+  // appears in another PSD constraint.
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>("x");
+  const auto scalar_psd_binding = prog.AddPositiveSemidefiniteConstraint(
+      MatrixDecisionVariable<1, 1>(x(1)));
+  Matrix3<symbolic::Variable> psd_mat;
+  // clang-format off
+  psd_mat << x(0), x(1), x(2),
+             x(1), x(2), x(0),
+             x(2), x(0), x(1);
+  // clang-format on
+  const auto psd_binding = prog.AddPositiveSemidefiniteConstraint(psd_mat);
+
+  MSKrescodee rescode{MSK_RES_OK};
+
+  MSKenv_t env;
+  MSK_makeenv(&env, nullptr);
+
+  {
+    MosekSolverProgram dut(prog, env);
+    rescode = MSK_appendvars(
+        dut.task(), dut.decision_variable_to_mosek_nonmatrix_variable().size());
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>
+        psd_barvar_indices;
+    dut.AddPositiveSemidefiniteConstraints(prog, &psd_barvar_indices);
+    EXPECT_EQ(psd_barvar_indices.size(), 1);
+    MSKint32t num_barvar;
+    MSK_getnumbarvar(dut.task(), &num_barvar);
+    EXPECT_EQ(num_barvar, 1);
+    std::unordered_map<Binding<BoundingBoxConstraint>,
+                       std::pair<ConstraintDualIndices, ConstraintDualIndices>>
+        bbcon_dual_indices;
+    std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                       std::pair<ConstraintDualIndex, ConstraintDualIndex>>
+        scalar_psd_dual_indices;
+    rescode = dut.AddVariableBounds(prog, &bbcon_dual_indices,
+                                    &scalar_psd_dual_indices);
+    ASSERT_EQ(rescode, MSK_RES_OK);
+    // We add one linear constraint that x(0) >= 0.
+    int num_mosek_constraint;
+    MSK_getnumcon(dut.task(), &num_mosek_constraint);
+    EXPECT_EQ(num_mosek_constraint, 1);
+    rescode =
+    // NOLINTNEXTLINE(whitespace/line_length)
+        dut.AddEqualityConstraintBetweenMatrixVariablesForSameDecisionVariable();
+    ASSERT_EQ(rescode, MSK_RES_OK);
+    EXPECT_TRUE(bbcon_dual_indices.empty());
+    EXPECT_EQ(scalar_psd_dual_indices.size(), 1);
+    // In the constraint "psd_mat is psd", psd_mat contains repeated entries,
+    // hence we need to add 3 additional linear equality constraints.
+    MSK_getnumcon(dut.task(), &num_mosek_constraint);
+    EXPECT_EQ(num_mosek_constraint, 4);
   }
 
   MSK_deleteenv(&env);

@@ -229,15 +229,20 @@ class MosekSolverProgram {
                          ConstraintDualIndices>* lin_eq_con_dual_indices);
 
   // Add the bounds on the decision variables in @p prog. Note that if a
-  // decision variable in positive definite matrix has a bound, we need to add
-  // new linear constraint to Mosek to bound that variable.
-  // @param[out] dual_indices Map each bounding box constraint to its dual
+  // decision variable in positive definite matrix (with >= 2 rows) has a bound,
+  // we need to add new linear constraint to Mosek to bound that variable.
+  // @param[out] bbcon_dual_indices Map each bounding box constraint to its dual
   // variable indices.
-  MSKrescodee AddBoundingBoxConstraints(
+  // @param[out] scalar_psd_dual_indices Map each 1x1
+  // PositiveSemidefiniteConstraint to its dual variable index.
+  MSKrescodee AddVariableBounds(
       const MathematicalProgram& prog,
       std::unordered_map<Binding<BoundingBoxConstraint>,
                          std::pair<ConstraintDualIndices,
-                                   ConstraintDualIndices>>* dual_indices);
+                                   ConstraintDualIndices>>* bbcon_dual_indices,
+      std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                         std::pair<ConstraintDualIndex, ConstraintDualIndex>>*
+          scalar_psd_dual_indices);
 
   // Add the quadratic constraints in @p prog.
   // @param[out] dual_indices Map each quadratic constraint to its dual variable
@@ -280,6 +285,11 @@ class MosekSolverProgram {
       const std::vector<Binding<C>>& cone_constraints,
       std::unordered_map<Binding<C>, MSKint64t>* acc_indices);
 
+  // Add positive semidefinite constraints to Mosek.
+  // Normally (for psd matrix with > 2 rows), we use Mosek's "bar variable"
+  // which is constrained to be positive semidefinite;
+  // for a psd matrix with 1 row (namely a scalar >= 0), we just impose a lower
+  // bound on that scalar (in AddVariableBounds).
   // @param[out] psd_barvar_indices maps each psd constraint to Mosek matrix
   // variable
   MSKrescodee AddPositiveSemidefiniteConstraints(
@@ -287,8 +297,22 @@ class MosekSolverProgram {
       std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint32t>*
           psd_barvar_indices);
 
+  // Adds positive semidefinite constraints on a 2x2 matrix to Mosek.
+  // [x(0) x(1)] is psd
+  // [x(1) x(2)]
+  // is imposed as
+  // [x(0), x(2), x(1)] in the rotated Lorentz cone.
+  MSKrescodee Add2x2PositiveSemidefiniteConstraints(
+      const MathematicalProgram& prog,
+      std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint64t>*
+          acc_indices);
+
   // Add linear matrix inequality (LMI) constraints as affine cone constraints
   // (acc), return the indices of the added affine cone constraints.
+  // Note that when the LMI constraint is on a 1x1 matrix (a scalar), then we
+  // impose it as a linear inequality constraint; when the LMI constraint is on
+  // a 2x2 matrix, then we impose it as a rotated Lorentz cone constraint; when
+  // the matrix size is >= 3, then we impose it as a PSD cone constraint.
   MSKrescodee AddLinearMatrixInequalityConstraint(
       const MathematicalProgram& prog,
       std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>*
@@ -356,6 +380,13 @@ class MosekSolverProgram {
           exp_cone_acc_indices,
       const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
                                MSKint32t>& psd_barvar_indices,
+      const std::unordered_map<
+          Binding<PositiveSemidefiniteConstraint>,
+          std::pair<ConstraintDualIndex, ConstraintDualIndex>>&
+          scalar_psd_dual_indices,
+      const std::unordered_map<Binding<PositiveSemidefiniteConstraint>,
+                               MSKint64t>&
+          twobytwo_psd_constraint_cone_acc_indices,
       MathematicalProgramResult* result) const;
 
   // @param[in] options The options to copy into our task. It is mutable so
@@ -514,14 +545,19 @@ MSKrescodee MosekSolverProgram::AddConeConstraints(
 // https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getslc
 // @param suc Mosek dual variables for linear constraint upper bound. See
 // https://docs.mosek.com/10.1/capi/alphabetic-functionalities.html#mosek.task.getsuc
-void SetBoundingBoxDualSolution(
-    const std::vector<Binding<BoundingBoxConstraint>>& constraints,
+void SetVariableBoundsDualSolution(
+    const std::vector<Binding<BoundingBoxConstraint>>& bb_constraints,
+    const std::vector<Binding<PositiveSemidefiniteConstraint>>& psd_constraints,
     const std::vector<MSKrealt>& slx, const std::vector<MSKrealt>& sux,
     const std::vector<MSKrealt>& slc, const std::vector<MSKrealt>& suc,
     const std::unordered_map<
         Binding<BoundingBoxConstraint>,
         std::pair<ConstraintDualIndices, ConstraintDualIndices>>&
         bb_con_dual_indices,
+    const std::unordered_map<
+        Binding<PositiveSemidefiniteConstraint>,
+        std::pair<ConstraintDualIndex, ConstraintDualIndex>>&
+        scalar_psd_con_dual_indices,
     MathematicalProgramResult* result);
 
 template <typename C>
@@ -581,6 +617,16 @@ MSKrescodee SetAffineConeConstraintDualSolution(
     const std::unordered_map<Binding<C>, MSKint64t>& acc_indices,
     MathematicalProgramResult* result) {
   for (const auto& binding : bindings) {
+    if constexpr (std::is_same_v<C, PositiveSemidefiniteConstraint>) {
+      // For PositiveSemidefiniteConstraint, it is only treated as an affine
+      // cone constraint when the matrix has size 2x2. For other cases they are
+      // treated differently: for 1x1 matrix it is treated as a lower bound on
+      // the scalar variable. For matrix with more than 2 rows it is treated as
+      // a Mosek "bar" matrix.
+      if (binding.evaluator()->matrix_rows() != 2) {
+        continue;
+      }
+    }
     const MSKint64t acc_index = acc_indices.at(binding);
     MSKint64t acc_dim;
     auto rescode = MSK_getaccn(task, acc_index, &acc_dim);
@@ -605,18 +651,63 @@ MSKrescodee SetAffineConeConstraintDualSolution(
       dual_sol(0) *= 0.5;
     }
     if constexpr (std::is_same_v<C, LinearMatrixInequalityConstraint>) {
-      // The dual solution returned by Mosek is the lower triangular part of the
-      // psd matrix, but the off-diagonal terms are scaled by sqrt(2). We need
-      // to scale the off-diagonal terms back.
-      int dual_sol_entry_count = 0;
-      const double sqrt2 = std::sqrt(2);
-      for (int j = 0; j < binding.evaluator()->matrix_rows(); ++j) {
-        for (int i = j; i < binding.evaluator()->matrix_rows(); ++i) {
-          if (i != j) {
-            dual_sol(dual_sol_entry_count) /= sqrt2;
+      const int matrix_rows = binding.evaluator()->matrix_rows();
+      if (matrix_rows == 2) {
+        // We impose the LMI constraint as a rotated Quadratic cone constraint
+        // in Mosek. For a constraint that
+        // [y0 y1]
+        // [y1 y2]
+        // is in psd, this is equivalent to
+        // [y0/2, y2, y1] in Mosek's rotated quadratic cone.
+        // If we denote the dual solution of the Mosek's rotated quadratic cone
+        // as [z0, z2, z1], then by the duality theory, the complementary
+        // slackness (namely the inner product between the primal and the dual)
+        // should be the same for both the PSD cone and the rotated quadratic
+        // cone, hence the dual solution for the PSD constraint is
+        // [z0/2 z1/2]
+        // [z1/2   z2]
+        // We store the lower triangular part of the dual PSD matrix as the dual
+        // solution, namely [z0/2, z1/2, z2]
+        dual_sol(0) *= 0.5;
+        const double tmp = dual_sol(1);
+        dual_sol(1) = dual_sol(2) / 2;
+        dual_sol(2) = tmp;
+      } else {
+        // The dual solution returned by Mosek is the lower triangular part of
+        // the psd matrix, but the off-diagonal terms are scaled by sqrt(2). We
+        // need to scale the off-diagonal terms back.
+        int dual_sol_entry_count = 0;
+        const double sqrt2 = std::sqrt(2);
+        for (int j = 0; j < binding.evaluator()->matrix_rows(); ++j) {
+          for (int i = j; i < binding.evaluator()->matrix_rows(); ++i) {
+            if (i != j) {
+              dual_sol(dual_sol_entry_count) /= sqrt2;
+            }
+            ++dual_sol_entry_count;
           }
-          ++dual_sol_entry_count;
         }
+      }
+    } else if constexpr (std::is_same_v<C, PositiveSemidefiniteConstraint>) {
+      if (binding.evaluator()->matrix_rows() == 2) {
+        // The PSD constraint on 2x2 matrix
+        // [x(0) x(1)]
+        // [x(1) x(2)]
+        // is imposed as a rotated Lorentz cone
+        // [x(0), x(2), x(1)] in rotated Lorentz cone.
+        // Or equivalently [0.5 * x(0), x(2), x(1)] is in Mosek's rotated
+        // Quadratic cone. So if the dual of Mosek's rotated Quadratic cone is
+        // [y(0), y(1), y(2)], then the dual of the PSD cone is
+        // [0.5*y(0)   0.5*y(2)]
+        // [0.5*y(2)       y(1)]
+        // (Because the complementarity slackness, which is the inner-product of
+        // the primal and dual should be the same for both PSD cone constraint
+        // and Mosek's rotated Quadratic cone constraint).
+        // We return the lower-triangular part of the dual matrix as
+        // [0.5*y(0), 0.5*y(2) ,y(1)]
+        dual_sol(0) *= 0.5;
+        const double tmp = dual_sol(1);
+        dual_sol(1) = dual_sol(2) * 0.5;
+        dual_sol(2) = tmp;
       }
     }
     result->set_dual_solution(binding, dual_sol);

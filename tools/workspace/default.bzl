@@ -27,6 +27,7 @@ load("//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
 load("//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
+load("//tools/workspace/gklib_internal:repository.bzl", "gklib_internal_repository")  # noqa
 load("//tools/workspace/glib:repository.bzl", "glib_repository")
 load("//tools/workspace/glx:repository.bzl", "glx_repository")
 load("//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
@@ -48,6 +49,7 @@ load("//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
 load("//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
+load("//tools/workspace/metis_internal:repository.bzl", "metis_internal_repository")  # noqa
 load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
@@ -68,6 +70,7 @@ load("//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
 load("//tools/workspace/platforms:repository.bzl", "platforms_repository")
+load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
@@ -85,6 +88,7 @@ load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_re
 load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
 load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_internal_repository")  # noqa
+load("//tools/workspace/spral_internal:repository.bzl", "spral_internal_repository")  # noqa
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
 load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
@@ -172,6 +176,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gfortran_repository(name = "gfortran")
     if "github3_py_internal" not in excludes:
         github3_py_internal_repository(name = "github3_py_internal", mirrors = mirrors)  # noqa
+    if "gklib_internal" not in excludes:
+        gklib_internal_repository(name = "gklib_internal", mirrors = mirrors)  # noqa
     if "glib" not in excludes:
         glib_repository(name = "glib")
     if "glx" not in excludes:
@@ -214,6 +220,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)  # noqa
     if "meshcat" not in excludes:
         meshcat_repository(name = "meshcat", mirrors = mirrors)
+    if "metis_internal" not in excludes:
+        metis_internal_repository(name = "metis_internal", mirrors = mirrors)
     if "mosek" not in excludes:
         mosek_repository(name = "mosek", mirrors = mirrors)
     if "mpmath_py_internal" not in excludes:
@@ -254,6 +262,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)  # noqa
     if "platforms" not in excludes:
         platforms_repository(name = "platforms", mirrors = mirrors)
+    if "poisson_disk_sampling_internal" not in excludes:
+        poisson_disk_sampling_internal_repository(name = "poisson_disk_sampling_internal", mirrors = mirrors)  # noqa
     if "pybind11" not in excludes:
         pybind11_repository(name = "pybind11", mirrors = mirrors)
     if "pycodestyle" not in excludes:
@@ -288,6 +298,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         spdlog_repository(name = "spdlog", mirrors = mirrors)
     if "spgrid_internal" not in excludes:
         spgrid_internal_repository(name = "spgrid_internal")
+    if "spral_internal" not in excludes:
+        spral_internal_repository(name = "spral_internal", mirrors = mirrors)
     if "stable_baselines3_internal" not in excludes:
         stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
     if "statsjs" not in excludes:

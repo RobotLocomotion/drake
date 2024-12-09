@@ -56,6 +56,32 @@ void ScalePsdConeDualVariable(int matrix_rows, bool upper_triangular_psd,
     }
   }
 }
+
+// The PSD constraint on a 2x2 matrix
+// [x(0) x(1)] is psd
+// [x(1) x(2)]
+// is converted to a second order cone
+// [x(0) + x(2)]
+// [x(0) - x(2)] is in Lorentz cone.
+// [  2 * x(1) ]
+// We need to convert the dual of the second order cone back to the dual of the
+// PSD cone. Note that both Lorentz cone and PSD cone are self-dual.
+Eigen::Vector3d SecondOrderConeDualToPsdDual(const Eigen::Vector3d& soc_dual) {
+  // soc_dual = k * [y(0) + y(2), y(0) - y(2), 2 * y(1)] for the PSD dual
+  // solution [y(0) y(1)]
+  //          [y(1) y(2)]
+  // where k is a scaling constant, to guarantee that the complementarity
+  // slackness is the same for using PSD cone with its dual, and the second
+  // order cone with its dual, namely
+  // [x(0) + x(2), x(0) - x(2), 2 * x(1)].dot(soc_dual) =
+  // trace([x(0) x(1)] * [y(0) y(1)])
+  //       [x(1) x(2)]   [y(1) y(2)]
+  // and we can compute k = 0.5
+  // Hence
+  // y = [soc_dual(0) + soc_dual(1), soc_dual(2), soc_dual(0) - soc_dual(1)]
+  return Eigen::Vector3d(soc_dual(0) + soc_dual(1), soc_dual(2),
+                         soc_dual(0) - soc_dual(1));
+}
 }  // namespace
 void SetDualSolution(
     const MathematicalProgram& prog,
@@ -67,6 +93,10 @@ void SetDualSolution(
     const std::vector<int>& rotated_lorentz_cone_y_start_indices,
     const std::vector<std::optional<int>>& psd_y_start_indices,
     const std::vector<std::optional<int>>& lmi_y_start_indices,
+    const std::vector<std::optional<int>>& scalar_psd_y_indices,
+    const std::vector<std::optional<int>>& scalar_lmi_y_indices,
+    const std::vector<std::optional<int>>& twobytwo_psd_y_start_indices,
+    const std::vector<std::optional<int>>& twobytwo_lmi_y_start_indices,
     bool upper_triangular_psd, MathematicalProgramResult* result) {
   for (int i = 0; i < ssize(prog.linear_constraints()); ++i) {
     Eigen::VectorXd lin_con_dual = Eigen::VectorXd::Zero(
@@ -156,6 +186,14 @@ void SetDualSolution(
       ScalePsdConeDualVariable(matrix_rows, upper_triangular_psd, &psd_dual);
       result->set_dual_solution(prog.positive_semidefinite_constraints()[i],
                                 psd_dual);
+    } else if (scalar_psd_y_indices[i].has_value()) {
+      result->set_dual_solution(
+          prog.positive_semidefinite_constraints()[i],
+          Vector1d(dual(scalar_psd_y_indices[i].value())));
+    } else if (twobytwo_psd_y_start_indices[i].has_value()) {
+      result->set_dual_solution(prog.positive_semidefinite_constraints()[i],
+                                SecondOrderConeDualToPsdDual(dual.segment<3>(
+                                    twobytwo_psd_y_start_indices[i].value())));
     }
   }
   for (int i = 0; i < ssize(prog.linear_matrix_inequality_constraints()); ++i) {
@@ -168,6 +206,14 @@ void SetDualSolution(
       ScalePsdConeDualVariable(matrix_rows, upper_triangular_psd, &lmi_dual);
       result->set_dual_solution(prog.linear_matrix_inequality_constraints()[i],
                                 lmi_dual);
+    } else if (scalar_lmi_y_indices[i].has_value()) {
+      result->set_dual_solution(
+          prog.linear_matrix_inequality_constraints()[i],
+          Vector1d(dual(scalar_lmi_y_indices[i].value())));
+    } else if (twobytwo_lmi_y_start_indices[i].has_value()) {
+      result->set_dual_solution(prog.linear_matrix_inequality_constraints()[i],
+                                SecondOrderConeDualToPsdDual(dual.segment<3>(
+                                    twobytwo_lmi_y_start_indices[i].value())));
     }
   }
 }

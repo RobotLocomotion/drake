@@ -840,7 +840,7 @@ void DiscreteUpdateManager<T>::AppendDiscreteContactPairsForHydroelasticContact(
     // models.
     const T d = GetCombinedHuntCrossleyDissipation(
         s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N,
-        0.0 /* Default value */, inspector);
+        default_contact_dissipation(), inspector);
     // Dissipation time scale. Used by Sap contact model. Ignored by Tamsi,
     // Lagged, and Similar contact model. See
     // multibody::DiscreteContactApproximation for details about these contact

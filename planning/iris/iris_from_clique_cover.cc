@@ -169,7 +169,7 @@ void ComputeGreedyTruncatedCliqueCover(
   // to the queue. Removing this line will cause an infinite loop.
   computed_cliques->done_filling();
   log()->info(
-      "Finished adding cliques. Total of {} clique added. Number of cliques "
+      "Finished adding cliques. Total of {} cliques added. Number of cliques "
       "left to process = {}",
       num_cliques, computed_cliques->size());
 }
@@ -223,13 +223,13 @@ std::queue<HPolyhedron> IrisWorker(
     } else {
       // Find the nearest clique member to the center that is not in collision.
       Eigen::Index nearest_point_col;
-      (clique_points - clique_ellipse.center())
+      (clique_points.colwise() - clique_ellipse.center())
           .colwise()
           .norm()
           .minCoeff(&nearest_point_col);
       Eigen::VectorXd center = clique_points.col(nearest_point_col);
       iris_options.starting_ellipse =
-          Hyperellipsoid(center, clique_ellipse.A());
+          Hyperellipsoid(clique_ellipse.A(), center);
     }
     checker.UpdatePositions(iris_options.starting_ellipse->center(),
                             builder_id);

@@ -90,8 +90,10 @@ drake_cc_library(
         "discrete_step_memory.cc",
         "discrete_update_manager.cc",
         "dummy_physical_model.cc",
+        "force_density_field_declare_system_resources.cc",
         "geometry_contact_data.cc",
         "make_discrete_update_manager.cc",
+        "multibody_element_getter.cc",
         "multibody_plant.cc",
         "physical_model.cc",
         "physical_model_collection.cc",
@@ -193,9 +195,6 @@ drake_cc_library(
         "deformable_contact_info.h",
         "hydroelastic_contact_info.h",
         "point_pair_contact_info.h",
-        # Upon 2024-12-01 deprecation removal, this next header can possibly
-        # move to a better home, e.g., the traction_calculator?
-        "hydroelastic_quadrature_point_data.h",
     ],
     deps = [
         "//common:default_scalars",
@@ -291,6 +290,7 @@ drake_cc_library(
         "hydroelastic_traction_calculator.cc",
     ],
     hdrs = [
+        "hydroelastic_quadrature_point_data.h",
         "hydroelastic_traction_calculator.h",
     ],
     internal = True,
@@ -1011,6 +1011,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "deformable_integration_test",
     deps = [
+        ":multibody_plant_config_functions",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry:drake_visualizer",

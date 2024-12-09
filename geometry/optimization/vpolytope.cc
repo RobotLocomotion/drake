@@ -380,10 +380,38 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
   return MakeBox(VectorXd::Constant(dim, -1.0), VectorXd::Constant(dim, 1.0));
 }
 
-VPolytope VPolytope::GetMinimalRepresentation() const {
+VPolytope VPolytope::GetMinimalRepresentation(double tol) const {
   if (ambient_dimension() == 0) {
     return VPolytope();
   }
+  if (vertices_.cols() <= 1) {
+    // If there are zero columns, the VPolytope is empty. If there is one
+    // column, the VPolytope is a point. Either way, the current representation
+    // is already minimal.
+    return *this;
+  }
+  if (ambient_dimension() == 1) {
+    // If the ambient dimension is one, we can just take the lowest and highest
+    // points.
+    const double min = vertices_.row(0).minCoeff();
+    const double max = vertices_.row(0).maxCoeff();
+    return VPolytope(Eigen::Matrix<double, 1, 2>(min, max));
+  }
+
+  // Next, compute the affine hull to see if the VPolytope is not full
+  // dimensional.
+  const AffineSubspace affine_hull(*this, tol);
+  if (affine_hull.AffineDimension() < affine_hull.ambient_dimension()) {
+    // Project the points onto the local coordinate system of the affine hull,
+    // compute the minimal representation there, and then lift back to the
+    // ambient space.
+    MatrixXd points_local = affine_hull.ToLocalCoordinates(vertices_);
+    VPolytope vpoly_local(points_local);
+    MatrixXd minimal_points_local =
+        vpoly_local.GetMinimalRepresentation().vertices();
+    return VPolytope(affine_hull.ToGlobalCoordinates(minimal_points_local));
+  }
+
   orgQhull::Qhull qhull;
   qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(), "");
   if (qhull.qhullStatus() != 0) {

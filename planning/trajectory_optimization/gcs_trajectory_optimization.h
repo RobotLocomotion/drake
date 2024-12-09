@@ -349,7 +349,10 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
-    /** Convenience overload of AddVertexCost to take in a Binding<Cost>. */
+    /** Convenience overload of AddVertexCost to take in a Binding<Cost>.
+
+    @throws std::exception if any variables besides those from @ref
+    vertex_duration and @ref vertex_control_points are used. */
     void AddVertexCost(
         const solvers::Binding<solvers::Cost>& binding,
         const std::unordered_set<
@@ -388,7 +391,10 @@ class GcsTrajectoryOptimization final {
                     kRestriction});
 
     /** Convenience overload of AddVertexConstraint to take in a
-    Binding<Constraint>. */
+    Binding<Constraint>.
+
+    @throws std::exception if any variables besides those from @ref
+    vertex_duration and @ref vertex_control_points are used. */
     void AddVertexConstraint(
         const solvers::Binding<solvers::Constraint>& binding,
         const std::unordered_set<
@@ -426,7 +432,11 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
-    /** Convenience overload of AddEdgeCost to take in a Binding<Cost>. */
+    /** Convenience overload of AddEdgeCost to take in a Binding<Cost>.
+
+    @throws std::exception if any variables besides those from @ref
+    edge_constituent_vertex_durations and @ref
+    edge_constituent_vertex_control_points are used. */
     void AddEdgeCost(
         const solvers::Binding<solvers::Cost>& binding,
         const std::unordered_set<
@@ -467,7 +477,11 @@ class GcsTrajectoryOptimization final {
                     kRestriction});
 
     /** Convenience overload of AddEdgeConstraint to take in a
-     * Binding<Constraint>. */
+    Binding<Constraint>.
+
+    @throws std::exception if any variables besides those from @ref
+    edge_constituent_vertex_durations and @ref
+    edge_constituent_vertex_control_points are used. */
     void AddEdgeConstraint(
         const solvers::Binding<solvers::Constraint>& binding,
         const std::unordered_set<
@@ -756,6 +770,22 @@ class GcsTrajectoryOptimization final {
                 geometry::optimization::GraphOfConvexSets::Transcription::
                     kRestriction});
 
+    /** Convenience overload of AddEdgeCost to take in a Binding<Cost>.
+
+    @throws std::exception if any variables besides those from @ref
+    edge_constituent_vertex_durations and @ref
+    edge_constituent_vertex_control_points are used. */
+    void AddEdgeCost(
+        const solvers::Binding<solvers::Cost>& binding,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
     /** Adds an arbitrary user-defined constraint to every edge within the
     EdgesBetweenSubgraphs. The constraint should be defined using the
     placeholder control point variables (obtained from
@@ -775,6 +805,23 @@ class GcsTrajectoryOptimization final {
     */
     void AddEdgeConstraint(
         const symbolic::Formula& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription = {
+                geometry::optimization::GraphOfConvexSets::Transcription::kMIP,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRelaxation,
+                geometry::optimization::GraphOfConvexSets::Transcription::
+                    kRestriction});
+
+    /** Convenience overload of AddEdgeConstraint to take in a
+    Binding<Constraint>.
+
+    @throws std::exception if any variables besides those from @ref
+    edge_constituent_vertex_durations and @ref
+    edge_constituent_vertex_control_points are used. */
+    void AddEdgeConstraint(
+        const solvers::Binding<solvers::Constraint>& binding,
         const std::unordered_set<
             geometry::optimization::GraphOfConvexSets::Transcription>&
             use_in_transcription = {
@@ -826,6 +873,20 @@ class GcsTrajectoryOptimization final {
     template <typename T>
     T SubstituteEdgePlaceholderVariables(
         T e, const geometry::optimization::GraphOfConvexSets::Edge& edge) const;
+
+    template <typename T>
+    void DoAddEdgeCost(
+        const T& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription);
+
+    template <typename T>
+    void DoAddEdgeConstraint(
+        const T& e,
+        const std::unordered_set<
+            geometry::optimization::GraphOfConvexSets::Transcription>&
+            use_in_transcription);
 
     GcsTrajectoryOptimization& traj_opt_;
     const Subgraph& from_subgraph_;
@@ -1269,7 +1330,7 @@ class GcsTrajectoryOptimization final {
    GcsTrajectoryOptimization::SolvePath() is a CompositeTrajectory of
    BezierCurves.
     */
-  static trajectories::CompositeTrajectory<double> UnwrapToContinousTrajectory(
+  static trajectories::CompositeTrajectory<double> UnwrapToContinuousTrajectory(
       const trajectories::CompositeTrajectory<double>& gcs_trajectory,
       std::vector<int> continuous_revolute_joints,
       std::optional<std::vector<int>> starting_rounds = std::nullopt,

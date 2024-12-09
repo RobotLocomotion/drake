@@ -432,6 +432,16 @@ class TestTrajectoryOptimization(unittest.TestCase):
         edges.AddEdgeConstraint(e=edge_constraint,
                                 use_in_transcription=all_transcriptions)
 
+        to_bind_edge_cost = ExpressionCost(edge_cost)
+        to_bind_edge_constraint = ExpressionConstraint([edge_cost], [-1], [1])
+
+        edges.AddEdgeCost(binding=Binding[Cost](
+                to_bind_edge_cost, to_bind_edge_cost.vars()),
+                use_in_transcription=restriction_only)
+        edges.AddEdgeConstraint(binding=Binding[Constraint](
+                to_bind_edge_constraint, to_bind_edge_constraint.vars()),
+                use_in_transcription=restriction_only)
+
         traj, result = gcs.SolvePath(source, target)
         self.assertTrue(result.is_success())
 
@@ -763,7 +773,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         traj, result = gcs_wraparound.SolvePath(g1, g2)
         self.assertTrue(result.is_success())
 
-        new_traj = GcsTrajectoryOptimization.UnwrapToContinousTrajectory(
+        new_traj = GcsTrajectoryOptimization.UnwrapToContinuousTrajectory(
             gcs_trajectory=traj,
             continuous_revolute_joints=[0],
             starting_rounds=[43],

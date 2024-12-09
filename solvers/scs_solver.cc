@@ -1,5 +1,6 @@
 #include "drake/solvers/scs_solver.h"
 
+#include <fstream>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -7,6 +8,7 @@
 
 #include <Eigen/Sparse>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 // clang-format off
 #include <scs.h>
@@ -18,6 +20,7 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/eigen_sparse_triplet.h"
+#include "drake/math/matrix_util.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/mathematical_program.h"
@@ -302,6 +305,54 @@ void SetBoundingBoxDualSolution(
   }
 }
 
+void WriteScsReproduction(std::string filename,
+                          const Eigen::SparseMatrix<double>& P,
+                          const Eigen::Map<Eigen::VectorXd>& c_vec,
+                          const Eigen::SparseMatrix<double>& A,
+                          const Eigen::Map<Eigen::VectorXd>& b_vec,
+                          const ScsCone& cone) {
+  std::ofstream out_file(filename);
+  if (!out_file.is_open()) {
+    log()->error(
+        "Failed to open kStandaloneReproductionFileName {} for writing; no "
+        "reproduction will be generated.");
+    return;
+  }
+  out_file << fmt::format(
+      R"""(
+import scs
+import numpy as np
+from scipy import sparse
+
+c = np.array([{}], dtype=np.float64)
+b = np.array([{}], dtype=np.float64)
+)""",
+      fmt::join(c_vec.data(), c_vec.data() + c_vec.size(), ", "),
+      fmt::join(b_vec.data(), b_vec.data() + b_vec.size(), ", "));
+
+  out_file << math::GeneratePythonCsc(P, "P");
+  out_file << math::GeneratePythonCsc(A, "A");
+
+  out_file << "data=dict(P=P, A=A, b=b, c=c)\n";
+
+  out_file << fmt::format(
+      R"""(cone=dict(z={}, l={}, bu=[{}], bl=[{}], q=[{}], s=[{}], ep={}, ed={}, p=[{}]))""",
+      cone.z, cone.l, fmt::join(cone.bu, cone.bu + cone.bsize, ","),
+      fmt::join(cone.bl, cone.bl + cone.bsize, ","),
+      fmt::join(cone.q, cone.q + cone.qsize, ","),
+      fmt::join(cone.s, cone.s + cone.ssize, ","), cone.ep, cone.ed,
+      fmt::join(cone.p, cone.p + cone.psize, ","));
+
+  // TODO(hongkai.dai): write solver options.
+  out_file << R"""(
+
+solver = scs.SCS(data, cone)
+sol = solver.solve()
+)""";
+  log()->info("SCS reproduction successfully written to {}.", filename);
+
+  out_file.close();
+}
 }  // namespace
 
 bool ScsSolver::is_available() {
@@ -385,27 +436,6 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
     scs_free(scs_stgs);
   });
 
-  // Set the parameters to default values.
-  scs_set_default_settings(scs_stgs);
-  // Customize the defaults for Drake:
-  // - SCS 3.0 uses 1E-4 as the default value, see
-  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
-  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
-  //   accuracy.
-  scs_stgs->eps_abs = 1E-5;
-  // - SCS 3.0 uses 1E-4 as the default value, see
-  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
-  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
-  //   accuracy.
-  scs_stgs->eps_rel = 1E-5;
-  // Apply the user's additional custom options (if any).
-  options->Respell([](const auto& common, auto* respelled) {
-    respelled->emplace("verbose", common.print_to_console ? 1 : 0);
-    // SCS does not support setting the number of threads so we ignore the
-    // kMaxThreads option.
-  });
-  options->CopyToSerializableStruct(scs_stgs);
-
   // A_row_count will increment, when we add each constraint.
   int A_row_count = 0;
   std::vector<double> b;
@@ -457,6 +487,22 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
                                    &num_linear_constraint_rows);
   cone->l += num_linear_constraint_rows;
 
+  // Parse scalar PSD constraints as linear constraints.
+  // SCS requires ordering the cone with the positive orthant cone coming before
+  // the positive semidefinite cones. So we call
+  // ParseScalarPositiveSemidefiniteConstraints() next to
+  // ParseLinearConstraints(), and finally calling
+  // ParsePositiveSemidefiniteConstraints().
+  int scalar_psd_positive_cone_length{};
+  std::vector<std::optional<int>> scalar_psd_dual_indices;
+  std::vector<std::optional<int>> scalar_lmi_dual_indices;
+  internal::ParseScalarPositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &scalar_psd_positive_cone_length,
+      &scalar_psd_dual_indices, &scalar_lmi_dual_indices);
+  if (scalar_psd_positive_cone_length > 0) {
+    cone->l += scalar_psd_positive_cone_length;
+  }
+
   // Parse Lorentz cone and rotated Lorentz cone constraint
   std::vector<int> second_order_cone_length;
   // y[lorentz_cone_y_start_indices[i]:
@@ -476,6 +522,20 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
   internal::ParseSecondOrderConeConstraints(
       prog, &A_triplets, &b, &A_row_count, &second_order_cone_length,
       &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices);
+
+  // Add PSD or LMI constraint on 2x2 matrices. This must be called with the
+  // other second order cone constraint parsing code before
+  // ParsePositiveSemidefiniteConstraints() as the 2x2 PSD/LMI constraints are
+  // formulated as second order cones.
+  int num_second_order_cones_from_psd{};
+  std::vector<std::optional<int>> twobytwo_psd_dual_start_indices;
+  std::vector<std::optional<int>> twobytwo_lmi_dual_start_indices;
+  internal::Parse2x2PositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &num_second_order_cones_from_psd,
+      &twobytwo_psd_dual_start_indices, &twobytwo_lmi_dual_start_indices);
+  for (int i = 0; i < num_second_order_cones_from_psd; ++i) {
+    second_order_cone_length.push_back(3);
+  }
 
   // Add L2NormCost. L2NormCost should be parsed together with the other second
   // order cone constraints, since we introduce new second order cone
@@ -563,6 +623,36 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
 
+  // Set the parameters to default values.
+  scs_set_default_settings(scs_stgs);
+  // Customize the defaults for Drake:
+  // - SCS 3.0 uses 1E-4 as the default value, see
+  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_abs). This
+  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
+  //   accuracy.
+  scs_stgs->eps_abs = 1E-5;
+  // - SCS 3.0 uses 1E-4 as the default value, see
+  //   https://www.cvxgrp.org/scs/api/settings.html?highlight=eps_rel). This
+  //   tolerance is too loose. We set the default tolerance to 1E-5 for better
+  //   accuracy.
+  scs_stgs->eps_rel = 1E-5;
+  // Apply the user's additional custom options (if any).
+  options->Respell([&](const auto& common, auto* respelled) {
+    respelled->emplace("verbose", common.print_to_console ? 1 : 0);
+    // TODO(jwnimmer-tri) Handle common.print_file_name.
+    if (!common.standalone_reproduction_file_name.empty()) {
+      Eigen::SparseMatrix<double> P(num_x, num_x);
+      P.setFromTriplets(P_upper_triplets.begin(), P_upper_triplets.end());
+      WriteScsReproduction(common.standalone_reproduction_file_name, P,
+                           Eigen::Map<Eigen::VectorXd>(c.data(), num_x), A,
+                           Eigen::Map<Eigen::VectorXd>(b.data(), b.size()),
+                           *cone);
+    }
+    // SCS does not support setting the number of threads so we ignore the
+    // kMaxThreads option.
+  });
+  options->CopyToSerializableStruct(scs_stgs);
+
   SetScsProblemData(A_row_count, num_x, A, b, P_upper_triplets, c,
                     scs_problem_data);
 
@@ -607,7 +697,9 @@ void ScsSolver::DoSolve2(const MathematicalProgram& prog,
       prog, solver_details.y, linear_constraint_dual_indices,
       linear_eq_y_start_indices, lorentz_cone_y_start_indices,
       rotated_lorentz_cone_y_start_indices, psd_y_start_indices,
-      lmi_y_start_indices, /*upper_triangular_psd=*/false, result);
+      lmi_y_start_indices, scalar_psd_dual_indices, scalar_lmi_dual_indices,
+      twobytwo_psd_dual_start_indices, twobytwo_lmi_dual_start_indices,
+      /*upper_triangular_psd=*/false, result);
   // Set the solution_result enum and the optimal cost based on SCS status.
   if (solver_details.scs_status == SCS_SOLVED ||
       solver_details.scs_status == SCS_SOLVED_INACCURATE) {

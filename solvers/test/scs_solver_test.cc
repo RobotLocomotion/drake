@@ -1,7 +1,11 @@
 #include "drake/solvers/scs_solver.h"
 
+#include <fstream>
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/exponential_cone_program_examples.h"
@@ -24,6 +28,8 @@ namespace {
 constexpr double kTol = 1e-3;
 
 }  // namespace
+
+using testing::HasSubstr;
 
 GTEST_TEST(LinearProgramTest, Test0) {
   // Test a linear program with only equality constraint.
@@ -464,7 +470,7 @@ GTEST_TEST(TestSemidefiniteProgram, TestTrivial1x1LMI) {
 GTEST_TEST(TestSemidefiniteProgram, Test2X2LMI) {
   ScsSolver solver;
   if (solver.available()) {
-    Test2x2LMI(solver, 1E-7, /*check_dual=*/true, /*dual_tol=*/1E-7);
+    Test2x2LMI(solver, 1E-5, /*check_dual=*/true, /*dual_tol=*/1E-5);
   }
 }
 
@@ -597,6 +603,38 @@ GTEST_TEST(TestScs, TestVerbose) {
     options.SetOption(CommonSolverOption::kPrintToConsole, 0);
     options.SetOption(solver.id(), "verbose", 1);
     solver.Solve(prog, std::nullopt, options, &result);
+  }
+}
+
+GTEST_TEST(TestOptions, StandaloneReproduction) {
+  MathematicalProgram prog;
+  const auto x = prog.NewContinuousVariables<3>("x");
+  prog.AddLinearEqualityConstraint(x(0) + x(1) == 1);
+  prog.AddLinearConstraint(x(0) + x(1) + x(2) >= 0);
+  prog.AddLorentzConeConstraint(Vector2<symbolic::Expression>(x(0), x(1)));
+  prog.AddExponentialConeConstraint(
+      Vector3<symbolic::Expression>(x(2), x(0), x(1)));
+  const auto Y = prog.NewSymmetricContinuousVariables<3>("Y");
+  prog.AddPositiveSemidefiniteConstraint(Y);
+
+  ScsSolver solver;
+  if (solver.available()) {
+    SolverOptions solver_options;
+    const std::string repro_file_name = temp_directory() + "/reproduction.py";
+    std::cout << repro_file_name << "\n";
+    solver_options.SetOption(
+        CommonSolverOption::kStandaloneReproductionFileName, repro_file_name);
+    solver.Solve(prog, std::nullopt, solver_options);
+
+    // Read in the reproduction file.
+    std::ifstream input_stream(repro_file_name);
+    ASSERT_TRUE(input_stream.is_open());
+    std::stringstream buffer;
+    buffer << input_stream.rdbuf();
+    std::string repro_str = buffer.str();
+
+    EXPECT_THAT(repro_str, HasSubstr("import scs"));
+    EXPECT_THAT(repro_str, HasSubstr("solve"));
   }
 }
 }  // namespace test

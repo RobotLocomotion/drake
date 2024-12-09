@@ -52,7 +52,7 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
 template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
-    EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dRdF) {
+    math::internal::FourthOrderTensor<T>* scaled_dRdF) {
   /* Some notes on derivation on the derivative of the rotation matrix from
    polar decomposition: we start with the result from section 2 of [McAdams,
    2011] about the differential of the rotation matrix, which states that δR =
@@ -94,7 +94,7 @@ void AddScaledRotationalDerivative(
       for (int i = 0; i < 3; ++i) {
         for (int j = 0; j < 3; ++j) {
           const int row_index = 3 * j + i;
-          (*scaled_dRdF)(row_index, column_index) +=
+          scaled_dRdF->mutable_data()(row_index, column_index) +=
               sRART(i, a) * A(j, b) - sRA(i, b) * RA(a, j);
         }
       }
@@ -118,46 +118,46 @@ void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor) {
 template <typename T>
 void AddScaledCofactorMatrixDerivative(
     const Matrix3<T>& M, const T& scale,
-    EigenPtr<Eigen::Matrix<T, 9, 9>> scaled_dCdM) {
+    math::internal::FourthOrderTensor<T>* scaled_dCdM) {
   /* See the convention for ordering the 9-by-9 derivatives at the top of the
    header file. */
   const Matrix3<T> A = scale * M;
-  (*scaled_dCdM)(4, 0) += A(2, 2);
-  (*scaled_dCdM)(5, 0) += -A(1, 2);
-  (*scaled_dCdM)(7, 0) += -A(2, 1);
-  (*scaled_dCdM)(8, 0) += A(1, 1);
-  (*scaled_dCdM)(3, 1) += -A(2, 2);
-  (*scaled_dCdM)(5, 1) += A(0, 2);
-  (*scaled_dCdM)(6, 1) += A(2, 1);
-  (*scaled_dCdM)(8, 1) += -A(0, 1);
-  (*scaled_dCdM)(3, 2) += A(1, 2);
-  (*scaled_dCdM)(4, 2) += -A(0, 2);
-  (*scaled_dCdM)(6, 2) += -A(1, 1);
-  (*scaled_dCdM)(7, 2) += A(0, 1);
-  (*scaled_dCdM)(1, 3) += -A(2, 2);
-  (*scaled_dCdM)(2, 3) += A(1, 2);
-  (*scaled_dCdM)(7, 3) += A(2, 0);
-  (*scaled_dCdM)(8, 3) += -A(1, 0);
-  (*scaled_dCdM)(0, 4) += A(2, 2);
-  (*scaled_dCdM)(2, 4) += -A(0, 2);
-  (*scaled_dCdM)(6, 4) += -A(2, 0);
-  (*scaled_dCdM)(8, 4) += A(0, 0);
-  (*scaled_dCdM)(0, 5) += -A(1, 2);
-  (*scaled_dCdM)(1, 5) += A(0, 2);
-  (*scaled_dCdM)(6, 5) += A(1, 0);
-  (*scaled_dCdM)(7, 5) += -A(0, 0);
-  (*scaled_dCdM)(1, 6) += A(2, 1);
-  (*scaled_dCdM)(2, 6) += -A(1, 1);
-  (*scaled_dCdM)(4, 6) += -A(2, 0);
-  (*scaled_dCdM)(5, 6) += A(1, 0);
-  (*scaled_dCdM)(0, 7) += -A(2, 1);
-  (*scaled_dCdM)(2, 7) += A(0, 1);
-  (*scaled_dCdM)(3, 7) += A(2, 0);
-  (*scaled_dCdM)(5, 7) += -A(0, 0);
-  (*scaled_dCdM)(0, 8) += A(1, 1);
-  (*scaled_dCdM)(1, 8) += -A(0, 1);
-  (*scaled_dCdM)(3, 8) += -A(1, 0);
-  (*scaled_dCdM)(4, 8) += A(0, 0);
+  scaled_dCdM->mutable_data()(4, 0) += A(2, 2);
+  scaled_dCdM->mutable_data()(5, 0) += -A(1, 2);
+  scaled_dCdM->mutable_data()(7, 0) += -A(2, 1);
+  scaled_dCdM->mutable_data()(8, 0) += A(1, 1);
+  scaled_dCdM->mutable_data()(3, 1) += -A(2, 2);
+  scaled_dCdM->mutable_data()(5, 1) += A(0, 2);
+  scaled_dCdM->mutable_data()(6, 1) += A(2, 1);
+  scaled_dCdM->mutable_data()(8, 1) += -A(0, 1);
+  scaled_dCdM->mutable_data()(3, 2) += A(1, 2);
+  scaled_dCdM->mutable_data()(4, 2) += -A(0, 2);
+  scaled_dCdM->mutable_data()(6, 2) += -A(1, 1);
+  scaled_dCdM->mutable_data()(7, 2) += A(0, 1);
+  scaled_dCdM->mutable_data()(1, 3) += -A(2, 2);
+  scaled_dCdM->mutable_data()(2, 3) += A(1, 2);
+  scaled_dCdM->mutable_data()(7, 3) += A(2, 0);
+  scaled_dCdM->mutable_data()(8, 3) += -A(1, 0);
+  scaled_dCdM->mutable_data()(0, 4) += A(2, 2);
+  scaled_dCdM->mutable_data()(2, 4) += -A(0, 2);
+  scaled_dCdM->mutable_data()(6, 4) += -A(2, 0);
+  scaled_dCdM->mutable_data()(8, 4) += A(0, 0);
+  scaled_dCdM->mutable_data()(0, 5) += -A(1, 2);
+  scaled_dCdM->mutable_data()(1, 5) += A(0, 2);
+  scaled_dCdM->mutable_data()(6, 5) += A(1, 0);
+  scaled_dCdM->mutable_data()(7, 5) += -A(0, 0);
+  scaled_dCdM->mutable_data()(1, 6) += A(2, 1);
+  scaled_dCdM->mutable_data()(2, 6) += -A(1, 1);
+  scaled_dCdM->mutable_data()(4, 6) += -A(2, 0);
+  scaled_dCdM->mutable_data()(5, 6) += A(1, 0);
+  scaled_dCdM->mutable_data()(0, 7) += -A(2, 1);
+  scaled_dCdM->mutable_data()(2, 7) += A(0, 1);
+  scaled_dCdM->mutable_data()(3, 7) += A(2, 0);
+  scaled_dCdM->mutable_data()(5, 7) += -A(0, 0);
+  scaled_dCdM->mutable_data()(0, 8) += A(1, 1);
+  scaled_dCdM->mutable_data()(1, 8) += -A(0, 1);
+  scaled_dCdM->mutable_data()(3, 8) += -A(1, 0);
+  scaled_dCdM->mutable_data()(4, 8) += A(0, 0);
 }
 
 template <typename T>

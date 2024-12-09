@@ -2599,9 +2599,9 @@ class MathematicalProgram {
    * expressions @p e. We create a new symmetric matrix of variables M being
    * positive semidefinite, with the linear equality constraint e == M.
    * @param e Imposes constraint "e is positive semidefinite".
-   * @pre{1. e is symmetric.
-   *      2. e(i, j) is linear for all i, j
-   *      }
+   * @pre e is symmetric.
+   * @pre e(i, j) is linear for all i, j
+   *
    * @return The newly added positive semidefinite constraint, with the bound
    * variable M that are also newly added.
    *
@@ -2618,6 +2618,9 @@ class MathematicalProgram {
    *      x+y,     0,   x;
    * prog.AddPositiveSemidefiniteConstraint(e);
    * @endcode
+   * @note This function will add additional variables and linear equality
+   * constraints. Consider calling AddLinearMatrixInequalityConstraint(e), which
+   * doesn't introduce new variables or linear equality constraints.
    */
   Binding<PositiveSemidefiniteConstraint> AddPositiveSemidefiniteConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e);
@@ -2630,7 +2633,7 @@ class MathematicalProgram {
    * @pre All values in  `minor_indices` lie in the range [0,
    * symmetric_matrix_var.rows() - 1].
    * @param symmetric_matrix_var A symmetric MatrixDecisionVariable object.
-   * @see AddPositiveSemidefiniteConstraint.
+   * @see AddPositiveSemidefiniteConstraint
    */
   Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixXDecisionVariable>& symmetric_matrix_var,
@@ -2645,9 +2648,14 @@ class MathematicalProgram {
    * @pre All values in  `minor_indices` lie in the range [0,
    * symmetric_matrix_var.rows() - 1].
    * @param e Imposes constraint "e is positive semidefinite".
-   * @see AddPositiveSemidefiniteConstraint.
+   * @see AddLinearMatrixInequalityConstraint.
+   * @note the return type is Binding<LinearMatrixInequalityConstraint>,
+   * different from the overloaded function above which returns
+   * Binding<PositiveSemidefiniteConstraint>. We impose the constraint as an LMI
+   * so as to add fewer additional variables and constraints.
    */
-  Binding<PositiveSemidefiniteConstraint> AddPrincipalSubmatrixIsPsdConstraint(
+  Binding<LinearMatrixInequalityConstraint>
+  AddPrincipalSubmatrixIsPsdConstraint(
       const Eigen::Ref<const MatrixX<symbolic::Expression>>& e,
       const std::set<int>& minor_indices);
 
@@ -2674,6 +2682,20 @@ class MathematicalProgram {
   Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
       std::vector<Eigen::MatrixXd> F,
       const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
+   * Adds a linear matrix inequality constraint on a symmetric matrix of
+   * symbolic expressions `X`, namely `X` is positive semidefinite, and each
+   * entry in `X` is a linear (affine) expression of decision variables.
+   *
+   * @param X Imposes constraint "X is positive semidefinite".
+   * @pre X is symmetric.
+   * @pre X(i, j) is linear (affine) for all i, j
+   *
+   * @return The newly added linear matrix inequality constraint.
+   */
+  Binding<LinearMatrixInequalityConstraint> AddLinearMatrixInequalityConstraint(
+      const Eigen::Ref<const MatrixX<symbolic::Expression>>& X);
 
   /**
    * Adds the constraint that a symmetric matrix is diagonally dominant with

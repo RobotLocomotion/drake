@@ -14,6 +14,7 @@
 #include "drake/common/name_value.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
+#include "drake/math/matrix_util.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
 #include "drake/solvers/scs_clarabel_common.h"
 #include "drake/tools/workspace/clarabel_cpp_internal/serialize.h"
@@ -214,37 +215,6 @@ void WriteClarabelReproduction(
     return;
   }
 
-  auto write_csc = [&](const Eigen::SparseMatrix<double>& mat,
-                       const std::string& name) {
-    if (mat.nonZeros() == 0) {
-      out_file << fmt::format("{} = sparse.csc_matrix(({}, {}))", name,
-                              P.rows(), P.cols())
-               << std::endl;
-      return;
-    }
-    std::vector<double> data;
-    std::vector<int> rows;
-    std::vector<int> cols;
-    data.reserve(mat.nonZeros());
-    rows.reserve(mat.nonZeros());
-    cols.reserve(mat.nonZeros());
-    for (int k = 0; k < mat.outerSize(); ++k) {
-      for (Eigen::SparseMatrix<double>::InnerIterator it(mat, k); it; ++it) {
-        data.push_back(it.value());
-        rows.push_back(it.row());
-        cols.push_back(it.col());
-      }
-    }
-    out_file << fmt::format(R"""(
-data = [{}]
-rows = [{}]
-cols = [{}]
-{} = sparse.csc_matrix((data, (rows, cols)))
-)""",
-                            fmt::join(data, ", "), fmt::join(rows, ", "),
-                            fmt::join(cols, ", "), name);
-  };
-
   out_file << fmt::format(
       R"""(
 import clarabel
@@ -256,8 +226,8 @@ b = [{}]
 )""",
       fmt::join(q_vec.data(), q_vec.data() + q_vec.size(), ", "),
       fmt::join(b_vec.data(), b_vec.data() + b_vec.size(), ", "));
-  write_csc(P, "P");
-  write_csc(A, "A");
+  out_file << math::GeneratePythonCsc(P, "P");
+  out_file << math::GeneratePythonCsc(A, "A");
   out_file << "cones = [" << std::endl;
 
   for (const clarabel::SupportedConeT<double>& cone : cones) {
@@ -433,6 +403,18 @@ void ClarabelSolver::DoSolve2(const MathematicalProgram& prog,
         clarabel::NonnegativeConeT<double>(num_linear_constraint_rows));
   }
 
+  // Parse scalar PSD constraint as linear constraint.
+  int scalar_psd_positive_cone_length{};
+  std::vector<std::optional<int>> scalar_psd_dual_indices;
+  std::vector<std::optional<int>> scalar_lmi_dual_indices;
+  internal::ParseScalarPositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &scalar_psd_positive_cone_length,
+      &scalar_psd_dual_indices, &scalar_lmi_dual_indices);
+  if (scalar_psd_positive_cone_length > 0) {
+    cones.push_back(
+        clarabel::NonnegativeConeT<double>(scalar_psd_positive_cone_length));
+  }
+
   // Parse Lorentz cone and rotated Lorentz cone constraint
   std::vector<int> second_order_cone_length;
   // y[lorentz_cone_y_start_indices[i]:
@@ -445,6 +427,16 @@ void ClarabelSolver::DoSolve2(const MathematicalProgram& prog,
       &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices);
   for (const int soc_length : second_order_cone_length) {
     cones.push_back(clarabel::SecondOrderConeT<double>(soc_length));
+  }
+  // Parse PSD/LMI constraints on 2x2 matrices as second order cone constraints.
+  int num_second_order_cones_from_psd{};
+  std::vector<std::optional<int>> twobytwo_psd_y_start_indices;
+  std::vector<std::optional<int>> twobytwo_lmi_y_start_indices;
+  internal::Parse2x2PositiveSemidefiniteConstraints(
+      prog, &A_triplets, &b, &A_row_count, &num_second_order_cones_from_psd,
+      &twobytwo_psd_y_start_indices, &twobytwo_lmi_y_start_indices);
+  for (int i = 0; i < num_second_order_cones_from_psd; ++i) {
+    cones.push_back(clarabel::SecondOrderConeT<double>(3));
   }
 
   std::vector<std::optional<int>> psd_cone_length;
@@ -513,7 +505,9 @@ void ClarabelSolver::DoSolve2(const MathematicalProgram& prog,
       prog, solution.z, linear_constraint_dual_indices,
       linear_eq_y_start_indices, lorentz_cone_y_start_indices,
       rotated_lorentz_cone_y_start_indices, psd_y_start_indices,
-      lmi_y_start_indices, /*upper_triangular_psd=*/true, result);
+      lmi_y_start_indices, scalar_psd_dual_indices, scalar_lmi_dual_indices,
+      twobytwo_psd_y_start_indices, twobytwo_lmi_y_start_indices,
+      /*upper_triangular_psd=*/true, result);
   if (solution.status == clarabel::SolverStatus::Solved ||
       solution.status == clarabel::SolverStatus::AlmostSolved) {
     solution_result = SolutionResult::kSolutionFound;

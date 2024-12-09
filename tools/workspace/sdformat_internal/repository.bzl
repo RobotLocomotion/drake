@@ -19,6 +19,7 @@ def sdformat_internal_repository(
             ":patches/no_global_config.patch",
             ":patches/no_share_path.patch",
             ":patches/no_urdf.patch",
+            ":patches/upstream/support_drake_visual.patch",
         ],
         mirrors = mirrors,
     )

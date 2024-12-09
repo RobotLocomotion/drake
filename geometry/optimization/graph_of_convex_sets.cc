@@ -854,6 +854,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
       EdgeId edge_id = idx_to_edge_id.at(i);
       progs.emplace_back(ConstructPreprocessingProgram(
           edge_id, incoming_edges, outgoing_edges, source_id, target_id));
+      DRAKE_ASSERT(progs.back()->IsThreadSafe());
     }
 
     // Check if edge e = (u,v) could be on a path from start to goal.
@@ -1143,6 +1144,50 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
                     binding.to_string()));
   }
 }
+
+namespace {
+
+bool GcsIsThreadsafe(const GraphOfConvexSets& gcs) {
+  // Iterate over vertices to look for non-thread-safe costs and constraints.
+  for (const auto& vertex_ptr : gcs.Vertices()) {
+    DRAKE_ASSERT(vertex_ptr != nullptr);
+    std::vector<Binding<Cost>> restriction_costs =
+        vertex_ptr->GetCosts({Transcription::kRestriction});
+    for (const auto& binding : restriction_costs) {
+      if (!binding.evaluator()->is_thread_safe()) {
+        return false;
+      }
+    }
+    std::vector<Binding<Constraint>> restriction_constraints =
+        vertex_ptr->GetConstraints({Transcription::kRestriction});
+    for (const auto& binding : restriction_constraints) {
+      if (!binding.evaluator()->is_thread_safe()) {
+        return false;
+      }
+    }
+  }
+  // Iterate over edges to look for non-thread-safe costs and constraints.
+  for (const auto& edge_ptr : gcs.Edges()) {
+    DRAKE_ASSERT(edge_ptr != nullptr);
+    std::vector<Binding<Cost>> restriction_costs =
+        edge_ptr->GetCosts({Transcription::kRestriction});
+    for (const auto& binding : restriction_costs) {
+      if (!binding.evaluator()->is_thread_safe()) {
+        return false;
+      }
+    }
+    std::vector<Binding<Constraint>> restriction_constraints =
+        edge_ptr->GetConstraints({Transcription::kRestriction});
+    for (const auto& binding : restriction_constraints) {
+      if (!binding.evaluator()->is_thread_safe()) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+}  // namespace
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     const Vertex& source, const Vertex& target,
@@ -1599,31 +1644,67 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
           "the solution to the relaxation instead.");
     }
 
-    MathematicalProgramResult best_rounded_result;
+    // If any costs or constraints aren't thread-safe, we can't parallelize.
+    bool is_thread_safe = GcsIsThreadsafe(*this);
+    if (!is_thread_safe) {
+      static const logging::Warn log_once(
+          "GCS restriction has costs or constraints which are not declared "
+          "thread-safe. Any paths being considered in the rounding process "
+          "that contain these constraints will be solved sequentially.");
+    }
 
-    for (auto new_path : candidate_paths) {
-      // Optimize path.
-      MathematicalProgramResult rounded_result =
-          SolveConvexRestriction(new_path, options, &result);
+    std::vector<std::unique_ptr<MathematicalProgram>> progs;
+    std::vector<const MathematicalProgram*> prog_ptrs;
+    for (int i = 0; i < ssize(candidate_paths); ++i) {
+      progs.push_back(ConstructRestrictionProgram(candidate_paths[i], &result));
+      prog_ptrs.push_back(progs[i].get());
+    }
 
-      // Check path quality.
-      if (rounded_result.is_success() &&
-          (!best_rounded_result.is_success() ||
-           rounded_result.get_optimal_cost() <
-               best_rounded_result.get_optimal_cost())) {
-        best_rounded_result = rounded_result;
-      } else {
-        // In the event that all rounded results are infeasible, we still want
-        // to propagate the solver id for logging.
-        best_rounded_result.set_solver_id(rounded_result.get_solver_id());
+    std::optional<solvers::SolverId> maybe_solver_id = std::nullopt;
+    if (options.restriction_solver) {
+      maybe_solver_id = options.restriction_solver->solver_id();
+    } else if (options.solver) {
+      maybe_solver_id = options.solver->solver_id();
+    }
+
+    const solvers::SolverOptions* maybe_options =
+        options.restriction_solver_options
+            ? &(options.restriction_solver_options.value())
+            : &(options.solver_options);
+
+    // We use nullptr for the initial guesses, since ConstructRestrictionProgram
+    // prepopulates the initial guesses. We use dynamic scheduling, since
+    // individual restriction solves may vary in the number of variables and
+    // constraints.
+    std::vector<MathematicalProgramResult> rounded_results =
+        SolveInParallel(prog_ptrs, nullptr /* initial_guesses */,
+                        maybe_options /* solver_options */, maybe_solver_id,
+                        options.parallelism, true /* dynamic_schedule */);
+
+    constexpr double kInf = std::numeric_limits<double>::infinity();
+    double best_cost = kInf;
+    int best_result_idx = -1;
+    for (int i = 0; i < ssize(rounded_results); ++i) {
+      if (rounded_results[i].is_success() &&
+          rounded_results[i].get_optimal_cost() < best_cost) {
+        best_result_idx = i;
+        best_cost = rounded_results[i].get_optimal_cost();
       }
     }
-    if (best_rounded_result.is_success()) {
-      result = best_rounded_result;
+
+    if (best_cost < kInf) {
+      // We found at least one valid result.
+      result = rounded_results[best_result_idx];
+      MakeRestrictionResultLookLikeMixedInteger(
+          *(prog_ptrs[best_result_idx]), &result,
+          candidate_paths[best_result_idx]);
     } else {
+      // In the event that all rounded results are infeasible, we still want
+      // to propagate the solver id for logging.
       result.set_solution_result(SolutionResult::kIterationLimit);
-      result.set_solver_id(best_rounded_result.get_solver_id());
+      result.set_solver_id(rounded_results.back().get_solver_id());
     }
+
     log()->info("Finished {} rounding solutions with {}.",
                 candidate_paths.size(), result.get_solver_id().name());
   }
@@ -1921,20 +2002,12 @@ void RewriteForConvexSolver(MathematicalProgram* prog) {
 
 }  // namespace
 
-MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
+std::unique_ptr<MathematicalProgram>
+GraphOfConvexSets::ConstructRestrictionProgram(
     const std::vector<const Edge*>& active_edges,
-    const GraphOfConvexSetsOptions& options,
     const MathematicalProgramResult* initial_guess) const {
-  // Use the restriction solver and options if they are provided.
-  GraphOfConvexSetsOptions restriction_options = options;
-  if (restriction_options.restriction_solver) {
-    restriction_options.solver = restriction_options.restriction_solver;
-  }
-  if (restriction_options.restriction_solver_options) {
-    restriction_options.solver_options =
-        *restriction_options.restriction_solver_options;
-  }
-  MathematicalProgram prog;
+  std::unique_ptr<MathematicalProgram> prog =
+      std::make_unique<MathematicalProgram>();
 
   std::set<const Vertex*, VertexIdComparator> vertices;
   for (const auto* e : active_edges) {
@@ -1950,47 +2023,52 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
     if (v->set().ambient_dimension() == 0) {
       continue;
     }
-    prog.AddDecisionVariables(v->x());
+    prog->AddDecisionVariables(v->x());
     if (initial_guess) {
-      prog.SetInitialGuess(v->x(), initial_guess->GetSolution(v->x()));
+      prog->SetInitialGuess(v->x(), initial_guess->GetSolution(v->x()));
     }
-    v->set().AddPointInSetConstraints(&prog, v->x());
+    v->set().AddPointInSetConstraints(prog.get(), v->x());
 
     // Vertex costs.
     for (const auto& [b, transcriptions] : v->costs_) {
       if (transcriptions.contains(Transcription::kRestriction)) {
-        prog.AddCost(b);
+        prog->AddCost(b);
       }
     }
     // Vertex constraints.
     for (const auto& [b, transcriptions] : v->constraints_) {
       if (transcriptions.contains(Transcription::kRestriction)) {
-        prog.AddConstraint(b);
+        prog->AddConstraint(b);
       }
     }
   }
 
   for (const auto* e : active_edges) {
-    prog.AddDecisionVariables(e->slacks_);
+    prog->AddDecisionVariables(e->slacks_);
 
     // Edge costs.
     for (const auto& [b, transcriptions] : e->costs_) {
       if (transcriptions.contains(Transcription::kRestriction)) {
-        prog.AddCost(b);
+        prog->AddCost(b);
       }
     }
     // Edge constraints.
     for (const auto& [b, transcriptions] : e->constraints_) {
       if (transcriptions.contains(Transcription::kRestriction)) {
-        prog.AddConstraint(b);
+        prog->AddConstraint(b);
       }
     }
   }
 
-  RewriteForConvexSolver(&prog);
-  MathematicalProgramResult result =
-      SolveMainProgram(prog, restriction_options);
+  RewriteForConvexSolver(prog.get());
 
+  return prog;
+}
+
+void GraphOfConvexSets::MakeRestrictionResultLookLikeMixedInteger(
+    const MathematicalProgram& prog, MathematicalProgramResult* result,
+    const std::vector<const Edge*>& active_edges) const {
+  DRAKE_DEMAND(result != nullptr);
   // TODO(russt): Add the dual variables back in for the rewritten costs.
 
   // In order to access to the results that is comparable with the other GCS
@@ -1999,6 +2077,16 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
   // - slack variables corresponding the (active) vertex and edge costs: they
   //   are not used in the restriction, but are the only way to retrieve the
   //   cost from the MIP and/or its convex relaxation.
+
+  std::set<const Vertex*, VertexIdComparator> vertices;
+  for (const auto* e : active_edges) {
+    if (!edges_.contains(e->id())) {
+      throw std::runtime_error(
+          fmt::format("Edge {} is not in the graph.", e->name()));
+    }
+    vertices.emplace(&e->u());
+    vertices.emplace(&e->v());
+  }
 
   // Add phi vars for all edges.
   int num_excluded_vars = edges_.size();
@@ -2020,9 +2108,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
       }
     }
   }
-  int count = result.get_x_val().size();
+  int count = result->get_x_val().size();
   Eigen::VectorXd x_val(count + num_excluded_vars);
-  x_val.head(count) = result.get_x_val();
+  x_val.head(count) = result->get_x_val();
   std::unordered_map<symbolic::Variable::Id, int> decision_variable_index =
       prog.decision_variable_index();
   for (const auto& pair : edges_) {
@@ -2037,7 +2125,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
         const auto& [b, transcriptions] = e->costs_[i];
         if (transcriptions.contains(Transcription::kRestriction)) {
           decision_variable_index.emplace(e->ell_[i].get_id(), count);
-          x_val[count++] = result.EvalBinding(b)[0];
+          x_val[count++] = result->EvalBinding(b)[0];
         }
       }
     } else {
@@ -2052,12 +2140,37 @@ MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
       const auto& [b, transcriptions] = v->costs_[i];
       if (transcriptions.contains(Transcription::kRestriction)) {
         decision_variable_index.emplace(v->ell_[i].get_id(), count);
-        x_val[count++] = result.EvalBinding(b)[0];
+        x_val[count++] = result->EvalBinding(b)[0];
       }
     }
   }
-  result.set_decision_variable_index(decision_variable_index);
-  result.set_x_val(x_val);
+  result->set_decision_variable_index(decision_variable_index);
+  result->set_x_val(x_val);
+}
+
+MathematicalProgramResult GraphOfConvexSets::SolveConvexRestriction(
+    const std::vector<const Edge*>& active_edges,
+    const GraphOfConvexSetsOptions& options,
+    const MathematicalProgramResult* initial_guess) const {
+  std::unique_ptr<MathematicalProgram> prog =
+      ConstructRestrictionProgram(active_edges, initial_guess);
+  DRAKE_ASSERT(prog != nullptr);
+
+  // Use the restriction solver and options if they are provided.
+  const solvers::SolverInterface* solver;
+  std::unique_ptr<solvers::SolverInterface> default_solver;
+  if (options.restriction_solver) {
+    solver = options.restriction_solver;
+  } else {
+    default_solver = solvers::MakeSolver(solvers::ChooseBestSolver(*prog));
+    solver = default_solver.get();
+  }
+  solvers::SolverOptions solver_options =
+      options.restriction_solver_options.value_or(options.solver_options);
+
+  MathematicalProgramResult result;
+  solver->Solve(*prog, {}, solver_options, &result);
+  MakeRestrictionResultLookLikeMixedInteger(*prog, &result, active_edges);
 
   return result;
 }

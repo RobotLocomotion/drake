@@ -49,7 +49,6 @@ drake_pybind_library(
         "//bindings/pydrake/systems",
         "//bindings/pydrake/geometry",
         "//bindings/pydrake:lcm_py",
-        "//lcmtypes:lcmtypes_drake_py",
     ],
     py_srcs = [
         "meldis.py",
