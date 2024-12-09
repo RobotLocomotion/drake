@@ -8,17 +8,6 @@
 namespace drake {
 namespace solvers {
 
-IpoptSolver::IpoptSolver()
-    : SolverBase(id(), &is_available, &is_enabled, &ProgramAttributesSatisfied),
-      // The default linear solver is MA27, but it is not freely redistributable
-      // so we cannot use it. MUMPS is the only compatible linear solver
-      // guaranteed to be available on both macOS and Ubuntu. In versions of
-      // IPOPT prior to 3.13, it would correctly determine that MUMPS was the
-      // only available solver, but its behavior changed to instead error having
-      // unsuccessfully tried to dlopen a nonexistent hsl library that would
-      // contain MA27.
-      default_linear_solver_("mumps") {}
-
 IpoptSolver::~IpoptSolver() = default;
 
 void IpoptSolver::SetDefaultLinearSolver(std::string linear_solver) {
