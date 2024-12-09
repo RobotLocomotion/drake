@@ -550,8 +550,8 @@ class FilteredContactResultsTest
         CoulombFriction<double>{1.0, 1.0} /* friction */, &ball_props);
 
     // N.B. these properties go unused if the contact model is kPoint.
-    geometry::AddCompliantHydroelasticProperties(
-        0.1 * radius_, hydroelastic_modulus_, &ball_props);
+    geometry::AddCompliantHydroelasticProperties(radius_, hydroelastic_modulus_,
+                                                 &ball_props);
 
     plant_->RegisterCollisionGeometry(ball, X_BS, geometry::Sphere(radius_),
                                       "collision", std::move(ball_props));
