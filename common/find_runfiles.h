@@ -4,7 +4,7 @@
 
 /** @file
 This file contains helpers to work with Bazel-declared runfiles -- declared
-data dependencies used by C++ code.  The functions in this file only succeed
+data dependencies used by C++ code. The functions in this file only succeed
 when used within a Bazel build.
 
 All source code within Drake should use FindResource() or FindResourceOrThrow()
@@ -34,10 +34,14 @@ struct RlocationOrError {
   std::string error;
 };
 
-/** (Advanced.) Returns the absolute path to the given resource_path from Bazel
-runfiles, or else an error message when not found.  When HasRunfiles() is
-false, returns an error. The `resource_path` looks like
-`workspace/pkg/subpkg/file.ext`, e.g., "drake/common/foo.txt". */
-RlocationOrError FindRunfile(const std::string& resource_path);
+/** (Advanced.) Returns the absolute path to the given `resource_path` from
+Bazel runfiles, or else an error message when not found. When HasRunfiles()
+is false, returns an error. The `resource_path` looks like
+`workspace/pkg/subpkg/file.ext`, e.g., "drake/common/foo.txt". When looking
+up a non-Drake runfile, the `source_repository` should be set to the
+value of the preprocessor definition `BAZEL_CURRENT_REPOSITORY`. */
+RlocationOrError FindRunfile(
+    const std::string& resource_path,
+    const std::string& source_repository = {});
 
 }  // namespace drake

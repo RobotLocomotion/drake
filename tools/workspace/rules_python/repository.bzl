@@ -25,17 +25,22 @@ _rules_python_drake_constants_repository = repository_rule(
 
 def rules_python_repository(
         name,
-        mirrors = None):
-    # For Bazel versions < 8, we pin our own particular copy of rules_python.
+        mirrors = None,
+        _constants_only = False):
+    # For Bazel versions < 8, we pin our own particular copy of rules_python,
+    # though when we are skipping rules_python by definition that is unpinned.
     # For Bazel versions >= 8, we'll use Bazel's vendored copy of rules_python.
     # Our minimum version (per WORKSPACE) is 7.1 so we can use a string match.
-    use_drake_rules_python_pin = native.bazel_version[0:2] == "7."
+    use_drake_rules_python_pin = (native.bazel_version[0:2] == "7." and
+                                  not _constants_only)
     _rules_python_drake_constants_repository(
         name = name + "_drake_constants",
         constants_json = json.encode({
             "USE_DRAKE_PIN": 1 if use_drake_rules_python_pin else 0,
         }),
     )
+    if _constants_only:
+        return
     if not use_drake_rules_python_pin:
         return
     github_archive(
