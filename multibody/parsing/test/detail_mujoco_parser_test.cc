@@ -857,6 +857,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
     <mesh name="non_convex_mesh" file="{}"/>
   </asset>
   <worldbody>
+    <geom name="plane" type="plane" />
     <body name="default">
       <geom name="default" size="0.1"/>
     </body>
@@ -1010,6 +1011,10 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   const SpatialInertia<double> inertia_from_inertial_tag =
       SpatialInertia<double>::MakeFromCentralInertia(
           524, Vector3d::Zero(), RotationalInertia<double>(1, 2, 3));
+
+  // This line documents that the world body (which has "plane" geometry in this
+  // example) has NaN inertia, and that's ok:
+  EXPECT_TRUE(plant_.world_body().default_spatial_inertia().IsNaN());
 
   check_body("default", UnitInertia<double>::SolidSphere(0.1));
   check_body_spatial("sphere", inertia_from_inertial_tag);
@@ -1474,6 +1479,9 @@ TEST_F(MujocoParserTest, InertialErrors) {
     <body>
       <inertial mass="10"/>
     </body>
+    <body>
+      <geom name="negative_mass" type="sphere" size="1" mass="-1"/>
+    </body>
   </worldbody>
 </mujoco>
 )""";
@@ -1483,6 +1491,8 @@ TEST_F(MujocoParserTest, InertialErrors) {
       ".*inertial.*must include.*mass.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(
       ".*inertial.*must include.*diaginertia or fullinertia.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*negative_mass.*IsPhysicallyValid.*"));
 }
 
 TEST_F(MujocoParserTest, GeomAutoName) {
