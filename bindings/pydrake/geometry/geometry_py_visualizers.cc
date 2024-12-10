@@ -3,6 +3,7 @@
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
@@ -53,10 +54,11 @@ void DefineDrakeVisualizer(py::module m, T) {
             py::arg("builder"), py::arg("scene_graph"),
             py::arg("lcm") = nullptr,
             py::arg("params") = DrakeVisualizerParams{},
-            // Keep alive, ownership: `return` keeps `builder` alive.
-            py::keep_alive<0, 1>(),
-            // Keep alive, reference: `builder` keeps `lcm` alive.
-            py::keep_alive<1, 3>(), py_rvp::reference,
+            // XXX need ref_cycle, stash
+            // `return` and `builder` join ref cycle.
+            internal::ref_cycle<0, 1>(),
+            // Keep alive, reference: `return` keeps `lcm` alive.
+            py::keep_alive<0, 3>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc_4args_builder_scene_graph_lcm_params)
         .def_static("AddToBuilder",
             py::overload_cast<systems::DiagramBuilder<T>*,
@@ -65,10 +67,11 @@ void DefineDrakeVisualizer(py::module m, T) {
             py::arg("builder"), py::arg("query_object_port"),
             py::arg("lcm") = nullptr,
             py::arg("params") = DrakeVisualizerParams{},
-            // Keep alive, ownership: `return` keeps `builder` alive.
-            py::keep_alive<0, 1>(),
-            // Keep alive, reference: `builder` keeps `lcm` alive.
-            py::keep_alive<1, 3>(), py_rvp::reference,
+            // XXX need ref_cycle, stash
+            // `return` and `builder` join ref cycle.
+            internal::ref_cycle<0, 1>(),
+            // Keep alive, reference: `return` keeps `lcm` alive.
+            py::keep_alive<0, 3>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc_4args_builder_query_object_port_lcm_params)
         .def_static("DispatchLoadMessage",
             &DrakeVisualizer<T>::DispatchLoadMessage, py::arg("scene_graph"),
