@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/common/overloaded.h"
 
 namespace drake {
 namespace solvers {
@@ -20,22 +21,22 @@ using MapMap = std::unordered_map<SolverId, std::unordered_map<std::string, T>>;
 using CommonMap =
     std::unordered_map<CommonSolverOption, SolverOptions::OptionValue>;
 
-void SolverOptions::SetOption(const SolverId& solver_id,
-                              const std::string& solver_option,
-                              double option_value) {
-  solver_options_double_[solver_id][solver_option] = option_value;
-}
-
-void SolverOptions::SetOption(const SolverId& solver_id,
-                              const std::string& solver_option,
-                              int option_value) {
-  solver_options_int_[solver_id][solver_option] = option_value;
-}
-
-void SolverOptions::SetOption(const SolverId& solver_id,
-                              const std::string& solver_option,
-                              const std::string& option_value) {
-  solver_options_str_[solver_id][solver_option] = option_value;
+void SolverOptions::SetOption(const SolverId& solver_id, std::string key,
+                              OptionValue value) {
+  std::visit(
+      overloaded{
+          [&](double unboxed_value) {
+            solver_options_double_[solver_id][std::move(key)] = unboxed_value;
+          },
+          [&](int unboxed_value) {
+            solver_options_int_[solver_id][std::move(key)] = unboxed_value;
+          },
+          [&](std::string&& unboxed_value) {
+            solver_options_str_[solver_id][std::move(key)] =
+                std::move(unboxed_value);
+          },
+      },
+      std::move(value));
 }
 
 void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
