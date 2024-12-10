@@ -153,9 +153,31 @@ TYPED_TEST_P(FemSolverTest, DefaultStateAndSchurComplement) {
   EXPECT_EQ(next_schur_complement.get_D_complement().cols(), 0);
 }
 
+TYPED_TEST_P(FemSolverTest, SetNextFemState) {
+  std::unique_ptr<FemState<double>> default_state = this->model_.MakeFemState();
+  const FemState<double>& next_state = this->solver_.next_fem_state();
+
+  this->solver_.SetNextFemState(next_state);
+
+  /* Verify that the next state is set. */
+  const FemState<double>& next_state2 = this->solver_.next_fem_state();
+  EXPECT_EQ(next_state.num_dofs(), next_state2.num_dofs());
+  EXPECT_EQ(next_state.num_nodes(), next_state2.num_nodes());
+  EXPECT_EQ(next_state.GetPositions(), next_state2.GetPositions());
+  EXPECT_EQ(next_state.GetVelocities(), next_state2.GetVelocities());
+  EXPECT_EQ(next_state.GetAccelerations(), next_state2.GetAccelerations());
+
+  /* Verify that the schur complement at the next time step is emptied. */
+  const contact_solvers::internal::SchurComplement next_schur_complement =
+      this->solver_.next_schur_complement();
+  EXPECT_EQ(next_schur_complement.get_D_complement().rows(), 0);
+  EXPECT_EQ(next_schur_complement.get_D_complement().cols(), 0);
+}
+
 using AllTypes = ::testing::Types<BoolWrapper<true>, BoolWrapper<false>>;
 REGISTER_TYPED_TEST_SUITE_P(FemSolverTest, Tolerance, AdvanceOneTimeStep,
-                            Nonconvergence, DefaultStateAndSchurComplement);
+                            Nonconvergence, DefaultStateAndSchurComplement,
+                            SetNextFemState);
 INSTANTIATE_TYPED_TEST_SUITE_P(LinearAndNonLinear, FemSolverTest, AllTypes);
 
 }  // namespace

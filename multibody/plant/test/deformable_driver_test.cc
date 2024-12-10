@@ -162,6 +162,24 @@ TEST_F(DeformableDriverTest, FreeMotionFemState) {
                               kTol / kDt));
 }
 
+TEST_F(DeformableDriverTest, FreeMotionFemStateLocked) {
+  model_->Lock(body_id_, plant_context_);
+
+  const VectorX<double> q = model_->GetReferencePositions(body_id_);
+  const int num_dofs = q.size();
+  const FemState<double>& free_motion_fem_state =
+      EvalFreeMotionFemState(*plant_context_, DeformableBodyIndex(0));
+  // Free motion velocity/acceleration should be exactly zero for locked bodies.
+  // Position should remain unchanged.
+  const VectorX<double> next_a = VectorX<double>::Zero(num_dofs);
+  const VectorX<double> next_v = VectorX<double>::Zero(num_dofs);
+  const VectorX<double> next_q = q;
+  EXPECT_TRUE(CompareMatrices(free_motion_fem_state.GetPositions(), next_q));
+  EXPECT_TRUE(CompareMatrices(free_motion_fem_state.GetVelocities(), next_v));
+  EXPECT_TRUE(
+      CompareMatrices(free_motion_fem_state.GetAccelerations(), next_a));
+}
+
 TEST_F(DeformableDriverTest, NextFemState) {
   const FemState<double>& free_motion_fem_state =
       EvalFreeMotionFemState(*plant_context_, DeformableBodyIndex(0));
