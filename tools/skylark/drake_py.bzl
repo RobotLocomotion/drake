@@ -150,6 +150,12 @@ def drake_py_binary(
             srcs = srcs,
             main = main,
             deps = deps,
+            # We use the same srcs for both the py_binary and the py_test so we
+            # must disable pre-compilation during the py_test target; otherwise
+            # both targets would declare an identical set of `*.pyc` output
+            # files from their build actions and bazel would error out because
+            # of the malformed BUILD file.
+            precompile = "disabled",
             isolate = isolate,
             args = test_rule_args,
             data = data + test_rule_data,

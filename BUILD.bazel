@@ -17,6 +17,15 @@ exports_files([
     "package.xml",
 ])
 
+exports_files(
+    [
+        "MODULE.bazel",
+        "WORKSPACE",
+        "WORKSPACE.bzlmod",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
 # A legacy hack module to disambiguate the 'drake' module when Drake is being
 # used as a non-bzlmod external. We should remove this when we drop support for
 # WORKSPACE (i.e., Bazel >= 9).
@@ -84,12 +93,24 @@ filegroup(
 
 _INSTALL_TEST_COMMANDS = "install_test_commands"
 
+# These are the (only) files from our root directory which are installed. Note
+# that even though the "data_dest" and "doc_dest" seem to be redundant with the
+# default value for those attributes, that is not the case with bzlmod (where
+# the default repository is named "_main" not "drake").
+install(
+    name = "install_files",
+    data = ["package.xml"],
+    data_dest = "share/drake",
+    docs = ["LICENSE.TXT"],
+    doc_dest = "share/doc/drake",
+    visibility = ["//visibility:private"],
+)
+
 install(
     name = "install",
     install_tests_script = _INSTALL_TEST_COMMANDS,
-    data = ["package.xml"],
-    docs = ["LICENSE.TXT"],
     deps = [
+        ":install_files",
         "//bindings/pydrake:install",
         "//common:install",
         "//examples:install",
