@@ -1,5 +1,9 @@
 load("@python//:version.bzl", "PYTHON_BIN_PATH")
 load("@rules_python//python:defs.bzl", "py_runtime", "py_runtime_pair")
+load(
+    "@rules_python//python:py_exec_tools_toolchain.bzl",
+    "py_exec_tools_toolchain",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 py_runtime(
@@ -17,6 +21,17 @@ toolchain(
     name = "toolchain",
     toolchain = ":runtime_pair",
     toolchain_type = "@rules_python//python:toolchain_type",
+)
+
+py_exec_tools_toolchain(
+    name = "exec_tools",
+    precompiler = "@rules_python//tools/precompiler:precompiler",
+)
+
+toolchain(
+    name = "exec_tools_toolchain",
+    toolchain = ":exec_tools",
+    toolchain_type = "@rules_python//python:exec_tools_toolchain_type",
 )
 
 add_lint_tests()

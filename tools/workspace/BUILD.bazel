@@ -72,6 +72,26 @@ drake_py_test(
     deps = [":module_py"],
 )
 
+drake_py_test(
+    name = "workspace_bzlmod_sync_test",
+    srcs = ["workspace_bzlmod_sync_test.py"],
+    allow_import_unittest = True,
+    data = [
+        ":default.bzl",
+        "//:MODULE.bazel",
+        "//:WORKSPACE",
+        "//:WORKSPACE.bzlmod",
+        "//tools/workspace/bazel_skylib:repository.bzl",
+        "//tools/workspace/rules_cc:repository.bzl",
+        "//tools/workspace/rules_license:repository.bzl",
+    ],
+    tags = ["lint"],
+    deps = [
+        ":module_py",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 drake_py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],

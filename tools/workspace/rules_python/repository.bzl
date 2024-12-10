@@ -25,11 +25,28 @@ _rules_python_drake_constants_repository = repository_rule(
 
 def rules_python_repository(
         name,
-        mirrors = None):
-    # For Bazel versions < 8, we pin our own particular copy of rules_python.
-    # For Bazel versions >= 8, we'll use Bazel's vendored copy of rules_python.
-    # Our minimum version (per WORKSPACE) is 7.1 so we can use a string match.
-    use_drake_rules_python_pin = native.bazel_version[0:2] == "7."
+        mirrors = None,
+        _constants_only = False):
+    """Declares the @rules_python repository (if necessary) as well as the
+    @rules_python_drake_constants repository (always).
+
+    When `_constants_only` is true, the @rules_python repository will NOT be
+    declared; only @rules_python_drake_constants is declared. (In practice,
+    this happens when "rules_python" is listed in the `repository_excludes`
+    for `default.bzl`, e.g., when bzlmod is enabled.)
+
+    Even when _constants_only is false, the @rules_python repository still
+    might not be declared according to the heuristic described below.
+    """
+
+    # For Bazel versions < 8, we pin our own particular copy of rules_python,
+    # because the bazel's default (vendored) version is somewhat stale. For
+    # Bazel versions >= 8, we'll use Bazel's vendored copy of rules_python when
+    # running in WORKSPACE mode. Our minimum version (per WORKSPACE) is 7.1 so
+    # we can use a string match. When running in MODULE (bzlmod) mode, the
+    # _constants_only will be True (so we will NOT pin).
+    use_drake_rules_python_pin = (native.bazel_version[0:2] == "7." and
+                                  not _constants_only)
     _rules_python_drake_constants_repository(
         name = name + "_drake_constants",
         constants_json = json.encode({
