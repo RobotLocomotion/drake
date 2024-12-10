@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
@@ -64,7 +65,7 @@ void DefineSensorsCameraConfig(py::module m) {
       py::arg("plant") = nullptr, py::arg("scene_graph") = nullptr,
       py::arg("lcm") = nullptr,
       // Keep alive, reference: `builder` keeps `lcm` alive.
-      py::keep_alive<2, 6>(), doc.ApplyCameraConfig.doc);
+      internal::ref_cycle<2, 6>(), doc.ApplyCameraConfig.doc);
 }
 
 }  // namespace internal
