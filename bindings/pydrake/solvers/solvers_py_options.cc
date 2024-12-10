@@ -29,10 +29,9 @@ void DefineSolversOptions(py::module m) {
   }
 
   {
-    // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
     py::class_<SolverOptions> cls(m, "SolverOptions", doc.SolverOptions.doc);
     cls  // BR
-        .def(py::init<>(), doc.SolverOptions.ctor.doc)
+        .def(py::init<>())
         .def("SetOption",
             py::overload_cast<const SolverId&, std::string,
                 SolverOptions::OptionValue>(&SolverOptions::SetOption),
@@ -43,34 +42,9 @@ void DefineSolversOptions(py::module m) {
                 &SolverOptions::SetOption),
             py::arg("key"), py::arg("value"),
             doc.SolverOptions.SetOption.doc_2args)
-        .def(
-            "GetOptions",
-            [](const SolverOptions& solver_options, SolverId solver_id) {
-              py::dict out;
-              py::object update = out.attr("update");
-              update(solver_options.GetOptionsDouble(solver_id));
-              update(solver_options.GetOptionsInt(solver_id));
-              update(solver_options.GetOptionsStr(solver_id));
-              return out;
-            },
-            py::arg("solver_id"), doc.SolverOptions.GetOptionsDouble.doc)
-        .def("common_solver_options", &SolverOptions::common_solver_options,
-            doc.SolverOptions.common_solver_options.doc)
-        .def("get_print_file_name", &SolverOptions::get_print_file_name,
-            doc.SolverOptions.get_print_file_name.doc)
-        .def("get_print_to_console", &SolverOptions::get_print_to_console,
-            doc.SolverOptions.get_print_to_console.doc)
-        .def("get_standalone_reproduction_file_name",
-            &SolverOptions::get_standalone_reproduction_file_name,
-            doc.SolverOptions.get_standalone_reproduction_file_name.doc)
-        .def("get_max_threads", &SolverOptions::get_max_threads,
-            doc.SolverOptions.get_max_threads.doc)
-        .def("__repr__", [](const SolverOptions&) -> std::string {
-          // This is a minimal implementation that serves to avoid displaying
-          // memory addresses in pydrake docs and help strings. In the future,
-          // we should enhance this to provide more details.
-          return "<SolverOptions>";
-        });
+        .def_readwrite("options", &SolverOptions::options)
+        .def("__repr__",
+            [](const SolverOptions& self) { return fmt::to_string(self); });
     DefCopyAndDeepCopy(&cls);
 
     constexpr char kSetOptionKwargNameDeprecation[] =
@@ -105,6 +79,44 @@ void DefineSolversOptions(py::module m) {
                 }),
             py::arg("solver_id"), py::arg("solver_option"),
             py::arg("option_value"), kSetOptionKwargNameDeprecation);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("GetOptions",
+            WrapDeprecated(doc.SolverOptions.GetOptionsDouble.doc_deprecated,
+                [](const SolverOptions& solver_options, SolverId solver_id) {
+                  py::dict out;
+                  py::object update = out.attr("update");
+                  update(solver_options.GetOptionsDouble(solver_id));
+                  update(solver_options.GetOptionsInt(solver_id));
+                  update(solver_options.GetOptionsStr(solver_id));
+                  return out;
+                }),
+            py::arg("solver_id"),
+            doc.SolverOptions.GetOptionsDouble.doc_deprecated)
+        .def("common_solver_options",
+            WrapDeprecated(
+                doc.SolverOptions.common_solver_options.doc_deprecated,
+                &SolverOptions::common_solver_options),
+            doc.SolverOptions.common_solver_options.doc_deprecated)
+        .def("get_print_file_name",
+            WrapDeprecated(doc.SolverOptions.get_print_file_name.doc_deprecated,
+                &SolverOptions::get_print_file_name),
+            doc.SolverOptions.get_print_file_name.doc_deprecated)
+        .def("get_print_to_console",
+            WrapDeprecated(
+                doc.SolverOptions.get_print_to_console.doc_deprecated,
+                &SolverOptions::get_print_to_console),
+            doc.SolverOptions.get_print_to_console.doc_deprecated)
+        .def("get_standalone_reproduction_file_name",
+            WrapDeprecated(
+                doc.SolverOptions.get_standalone_reproduction_file_name
+                    .doc_deprecated,
+                &SolverOptions::get_standalone_reproduction_file_name))
+        .def("get_max_threads",
+            WrapDeprecated(doc.SolverOptions.get_max_threads.doc_deprecated,
+                &SolverOptions::get_max_threads),
+            doc.SolverOptions.get_max_threads.doc_deprecated);
   }
 }
 

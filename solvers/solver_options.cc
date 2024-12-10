@@ -1,209 +1,243 @@
 #include "drake/solvers/solver_options.h"
 
-#include <map>
+#include <algorithm>
 #include <sstream>
 #include <utility>
+#include <vector>
 
 #include <fmt/format.h>
 
-#include "drake/common/never_destroyed.h"
 #include "drake/common/overloaded.h"
 
 namespace drake {
 namespace solvers {
 
-// A shorthand for our member field type, for options typed as T's, as in
-// MapMap[SolverId][string] => T.
-template <typename T>
-using MapMap = std::unordered_map<SolverId, std::unordered_map<std::string, T>>;
+using OptionValue = SolverOptions::OptionValue;
 
-// A shorthand for our member field type.
-using CommonMap =
-    std::unordered_map<CommonSolverOption, SolverOptions::OptionValue>;
+namespace {
+/* The 'options' map uses this "solver name" for the common options. */
+constexpr const char kCommonKey[] = "Drake";
+}  // namespace
 
-void SolverOptions::SetOption(const SolverId& solver_id, std::string key,
-                              OptionValue value) {
-  std::visit(
-      overloaded{
-          [&](double unboxed_value) {
-            solver_options_double_[solver_id][std::move(key)] = unboxed_value;
-          },
-          [&](int unboxed_value) {
-            solver_options_int_[solver_id][std::move(key)] = unboxed_value;
-          },
-          [&](std::string&& unboxed_value) {
-            solver_options_str_[solver_id][std::move(key)] =
-                std::move(unboxed_value);
-          },
-      },
-      std::move(value));
+namespace internal {
+
+/* Returns the pythonic repr() for the given value. */
+std::string OptionValueToString(const OptionValue& option_value) {
+  return std::visit(overloaded{[](const double& unboxed_value) {
+                                 return fmt_floating_point(unboxed_value);
+                               },
+                               [](const int& unboxed_value) {
+                                 return fmt::to_string(unboxed_value);
+                               },
+                               [](const std::string& unboxed_value) {
+                                 return fmt_debug_string(unboxed_value);
+                               }},
+                    option_value);
+}
+
+}  // namespace internal
+
+void SolverOptions::SetOption(const SolverId& solver_id,
+                              std::string solver_option,
+                              OptionValue option_value) {
+  options[solver_id.name()][std::move(solver_option)] = std::move(option_value);
+
+  // Remove on 2025-05-01 upon completion of deprecation.
+  solver_ids.insert(solver_id);
 }
 
 void SolverOptions::SetOption(CommonSolverOption key, OptionValue value) {
   switch (key) {
     case CommonSolverOption::kPrintToConsole: {
-      if (!std::holds_alternative<int>(value)) {
-        throw std::runtime_error(fmt::format(
-            "SolverOptions::SetOption support {} only with int value.", key));
+      if (std::holds_alternative<int>(value)) {
+        const int int_value = std::get<int>(value);
+        if (int_value == 0 || int_value == 1) {
+          options[kCommonKey][fmt::to_string(key)] = std::move(value);
+          return;
+        }
       }
-      const int int_value = std::get<int>(value);
-      if (int_value != 0 && int_value != 1) {
-        throw std::runtime_error(
-            fmt::format("{} expects value either 0 or 1", key));
-      }
-      common_solver_options_[key] = std::move(value);
+      throw std::runtime_error(fmt::format(
+          "SolverOptions::SetOption({}) value must be 0 or 1, not {}.", key,
+          internal::OptionValueToString(value)));
       return;
     }
     case CommonSolverOption::kPrintFileName: {
-      if (!std::holds_alternative<std::string>(value)) {
-        throw std::runtime_error(fmt::format(
-            "SolverOptions::SetOption support {} only with std::string value.",
-            key));
+      if (std::holds_alternative<std::string>(value)) {
+        options[kCommonKey][fmt::to_string(key)] = std::move(value);
+        return;
       }
-      common_solver_options_[key] = std::move(value);
+      throw std::runtime_error(fmt::format(
+          "SolverOptions::SetOption({}) value must be a string, not {}.", key,
+          internal::OptionValueToString(value)));
       return;
     }
     case CommonSolverOption::kStandaloneReproductionFileName: {
-      if (!std::holds_alternative<std::string>(value)) {
-        throw std::runtime_error(fmt::format(
-            "SolverOptions::SetOption support {} only with std::string value.",
-            key));
+      if (std::holds_alternative<std::string>(value)) {
+        options[kCommonKey][fmt::to_string(key)] = std::move(value);
+        return;
       }
-      common_solver_options_[key] = std::move(value);
-      return;
+      throw std::runtime_error(fmt::format(
+          "SolverOptions::SetOption({}) value must be a string, not {}.", key,
+          internal::OptionValueToString(value)));
     }
     case CommonSolverOption::kMaxThreads: {
-      if (!std::holds_alternative<int>(value)) {
-        throw std::runtime_error(fmt::format(
-            "SolverOptions::SetOption support {} only with int value.", key));
+      if (std::holds_alternative<int>(value)) {
+        const int int_value = std::get<int>(value);
+        if (int_value > 0) {
+          options[kCommonKey][fmt::to_string(key)] = std::move(value);
+          return;
+        }
       }
-      const int int_value = std::get<int>(value);
-      if (int_value <= 0) {
-        throw std::runtime_error(
-            fmt::format("kMaxThreads must be > 0, got {}", int_value));
-      }
-      common_solver_options_[key] = std::move(value);
-      return;
+      throw std::runtime_error(fmt::format(
+          "SolverOptions::SetOption({}) value must be an int > 0, not {}.", key,
+          internal::OptionValueToString(value)));
     }
   }
   DRAKE_UNREACHABLE();
 }
 
 namespace {
-// If options has an entry for the given solver_id, returns a reference to the
-// mapped value.  Otherwise, returns a long-lived reference to an empty value.
+// If options has an entry for the given solver_id, returns a copy of the mapped
+// value, filered by the requested type `T`. Otherwise, returns an empty map.
+// This function should be removed when the deprecations 2025-05 expire.
 template <typename T>
-const std::unordered_map<std::string, T>& GetOptionsHelper(
-    const SolverId& solver_id, const MapMap<T>& options) {
-  static never_destroyed<std::unordered_map<std::string, T>> empty;
-  const auto iter = options.find(solver_id);
-  return (iter != options.end()) ? iter->second : empty.access();
+std::unordered_map<std::string, T> GetOptionsHelper(
+    const SolverOptions& solver_options, const std::string_view solver_name) {
+  std::unordered_map<std::string, T> result;
+  const auto iter = solver_options.options.find(solver_name);
+  if (iter != solver_options.options.end()) {
+    const string_unordered_map<OptionValue>& items = iter->second;
+    for (const auto& [key, value] : items) {
+      if (std::holds_alternative<T>(value)) {
+        result[key] = std::get<T>(value);
+      }
+    }
+  }
+  return result;
 }
 }  // namespace
 
-const std::unordered_map<std::string, double>& SolverOptions::GetOptionsDouble(
+// Deprecated 2025-05.
+std::unordered_map<std::string, double> SolverOptions::GetOptionsDouble(
     const SolverId& solver_id) const {
-  return GetOptionsHelper(solver_id, solver_options_double_);
+  return GetOptionsHelper<double>(*this, solver_id.name());
 }
 
-const std::unordered_map<std::string, int>& SolverOptions::GetOptionsInt(
+// Deprecated 2025-05.
+std::unordered_map<std::string, int> SolverOptions::GetOptionsInt(
     const SolverId& solver_id) const {
-  return GetOptionsHelper(solver_id, solver_options_int_);
+  return GetOptionsHelper<int>(*this, solver_id.name());
 }
 
-const std::unordered_map<std::string, std::string>&
-SolverOptions::GetOptionsStr(const SolverId& solver_id) const {
-  return GetOptionsHelper(solver_id, solver_options_str_);
+// Deprecated 2025-05.
+std::unordered_map<std::string, std::string> SolverOptions::GetOptionsStr(
+    const SolverId& solver_id) const {
+  return GetOptionsHelper<std::string>(*this, solver_id.name());
 }
 
+// Deprecated 2025-05.
+std::unordered_map<CommonSolverOption, OptionValue>
+SolverOptions::common_solver_options() const {
+  std::unordered_map<CommonSolverOption, OptionValue> result;
+  const auto iter1 = options.find(kCommonKey);
+  if (iter1 != options.end()) {
+    const string_unordered_map<OptionValue>& common = iter1->second;
+    for (auto key : {CommonSolverOption::kPrintFileName,
+                     CommonSolverOption::kPrintToConsole,
+                     CommonSolverOption::kStandaloneReproductionFileName,
+                     CommonSolverOption::kMaxThreads}) {
+      const auto iter2 = common.find(fmt::to_string(key));
+      if (iter2 != common.end()) {
+        const OptionValue& value = iter2->second;
+        result[key] = value;
+      }
+    }
+  }
+  return result;
+}
+
+// Deprecated 2025-05.
 std::string SolverOptions::get_print_file_name() const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  std::unordered_map<CommonSolverOption, OptionValue> common =
+      common_solver_options();
+#pragma GCC diagnostic pop
   // N.B. SetOption sanity checks the value; we don't need to re-check here.
   std::string result;
-  auto iter = common_solver_options_.find(CommonSolverOption::kPrintFileName);
-  if (iter != common_solver_options_.end()) {
+  auto iter = common.find(CommonSolverOption::kPrintFileName);
+  if (iter != common.end()) {
     result = std::get<std::string>(iter->second);
   }
   return result;
 }
 
+// Deprecated 2025-05.
 bool SolverOptions::get_print_to_console() const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  std::unordered_map<CommonSolverOption, OptionValue> common =
+      common_solver_options();
+#pragma GCC diagnostic pop
   // N.B. SetOption sanity checks the value; we don't need to re-check here.
   bool result = false;
-  auto iter = common_solver_options_.find(CommonSolverOption::kPrintToConsole);
-  if (iter != common_solver_options_.end()) {
+  auto iter = common.find(CommonSolverOption::kPrintToConsole);
+  if (iter != common.end()) {
     const int value = std::get<int>(iter->second);
     result = static_cast<bool>(value);
   }
   return result;
 }
 
+// Deprecated 2025-05.
 std::string SolverOptions::get_standalone_reproduction_file_name() const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  std::unordered_map<CommonSolverOption, OptionValue> common =
+      common_solver_options();
+#pragma GCC diagnostic pop
   // N.B. SetOption sanity checks the value; we don't need to re-check here.
   std::string result;
-  auto iter = common_solver_options_.find(
-      CommonSolverOption::kStandaloneReproductionFileName);
-  if (iter != common_solver_options_.end()) {
+  auto iter = common.find(CommonSolverOption::kStandaloneReproductionFileName);
+  if (iter != common.end()) {
     result = std::get<std::string>(iter->second);
   }
   return result;
 }
 
+// Deprecated 2025-05.
 std::optional<int> SolverOptions::get_max_threads() const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  std::unordered_map<CommonSolverOption, OptionValue> common =
+      common_solver_options();
+#pragma GCC diagnostic pop
   // N.B. SetOption sanity checks the value; we don't need to re-check here.
-  auto iter = common_solver_options_.find(CommonSolverOption::kMaxThreads);
-  if (iter != common_solver_options_.end()) {
+  auto iter = common.find(CommonSolverOption::kMaxThreads);
+  if (iter != common.end()) {
     return std::get<int>(iter->second);
   }
   return std::nullopt;
 }
 
+// Deprecated 2025-05.
 std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {
-  std::unordered_set<SolverId> result;
-  for (const auto& pair : solver_options_double_) {
-    result.insert(pair.first);
-  }
-  for (const auto& pair : solver_options_int_) {
-    result.insert(pair.first);
-  }
-  for (const auto& pair : solver_options_str_) {
-    result.insert(pair.first);
-  }
-  return result;
+  return solver_ids;
 }
 
-namespace {
-template <typename T>
-void MergeHelper(const MapMap<T>& other, MapMap<T>* self) {
-  for (const auto& other_id_keyvals : other) {
-    const SolverId& id = other_id_keyvals.first;
-    std::unordered_map<std::string, T>& self_keyvals = (*self)[id];
-    for (const auto& other_keyval : other_id_keyvals.second) {
+void SolverOptions::Merge(const SolverOptions& other) {
+  for (const auto& [other_solver, other_keyvals] : other.options) {
+    string_unordered_map<OptionValue>& self_keyvals =
+        this->options[other_solver];
+    for (const auto& other_keyval : other_keyvals) {
       // This is a no-op when the key already exists.
       self_keyvals.insert(other_keyval);
     }
   }
 }
 
-void MergeHelper(const CommonMap& other, CommonMap* self) {
-  for (const auto& other_keyval : other) {
-    // This is a no-op when the key already exists.
-    self->insert(other_keyval);
-  }
-}
-}  // namespace
-
-void SolverOptions::Merge(const SolverOptions& other) {
-  MergeHelper(other.solver_options_double_, &solver_options_double_);
-  MergeHelper(other.solver_options_int_, &solver_options_int_);
-  MergeHelper(other.solver_options_str_, &solver_options_str_);
-  MergeHelper(other.common_solver_options_, &common_solver_options_);
-}
-
 bool SolverOptions::operator==(const SolverOptions& other) const {
-  return solver_options_double_ == other.solver_options_double_ &&
-         solver_options_int_ == other.solver_options_int_ &&
-         solver_options_str_ == other.solver_options_str_ &&
-         common_solver_options_ == other.common_solver_options_;
+  return options == other.options;
 }
 
 bool SolverOptions::operator!=(const SolverOptions& other) const {
@@ -211,84 +245,90 @@ bool SolverOptions::operator!=(const SolverOptions& other) const {
 }
 
 namespace {
-template <typename T>
-void Summarize(const SolverId& id,
-               const std::unordered_map<std::string, T>& keyvals,
-               std::map<std::string, std::string>* pairs) {
-  for (const auto& keyval : keyvals) {
-    (*pairs)[fmt::format("{}:{}", id.name(), keyval.first)] =
-        fmt::format("{}", keyval.second);
+/* Returns keys of the given map in sorted order, paired up with a "bool comma"
+marker that is set to false for the last item only. The keys are string_view
+aliases into `map`, so the `map` object must outlive this result. */
+template <typename Map>
+std::vector<std::pair<std::string_view, bool>> SortedKeys(const Map& map) {
+  std::vector<std::pair<std::string_view, bool>> result;
+  if (!map.empty()) {
+    for (const auto& [key, _] : map) {
+      result.push_back({std::string_view{key}, true});
+    }
+    std::sort(result.begin(), result.end());
+    result.back().second = false;
   }
+  return result;
 }
-
 }  // namespace
 
-std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
-  os << "{SolverOptions";
-  const auto& ids = x.GetSolverIds();
-  if (ids.empty()) {
-    os << " empty";
-  } else {
-    // Map keyed on "solver_name:option_key" so our output is deterministic.
-    std::map<std::string, std::string> pairs;
-    for (const auto& id : ids) {
-      Summarize(id, x.GetOptionsDouble(id), &pairs);
-      Summarize(id, x.GetOptionsInt(id), &pairs);
-      Summarize(id, x.GetOptionsStr(id), &pairs);
+std::string SolverOptions::to_string() const {
+  std::ostringstream result;
+  result << "SolverOptions(options={";
+  for (const auto& [solver_name, comma1] : SortedKeys(options)) {
+    result << fmt::format("\"{}\":{{", solver_name);
+    const auto iter1 = options.find(solver_name);
+    DRAKE_DEMAND(iter1 != options.end());
+    const string_unordered_map<OptionValue>& solver_options = iter1->second;
+    for (const auto& [key, comma2] : SortedKeys(solver_options)) {
+      const auto iter2 = solver_options.find(key);
+      DRAKE_DEMAND(iter2 != solver_options.end());
+      const OptionValue& value = iter2->second;
+      result << fmt_debug_string(key);
+      result << ":";
+      result << internal::OptionValueToString(value);
+      if (comma2) {
+        result << ",";
+      }
     }
-    for (const auto& keyval : x.common_solver_options()) {
-      const CommonSolverOption& key = keyval.first;
-      const auto& val = keyval.second;
-      std::visit(
-          [key, &pairs](auto& val_x) {
-            pairs[fmt::format("CommonSolverOption::{}", key)] =
-                fmt::format("{}", val_x);
-          },
-          val);
-    }
-    for (const auto& pair : pairs) {
-      os << ", " << pair.first << "=" << pair.second;
+    result << "}";
+    if (comma1) {
+      result << ",";
     }
   }
-  os << "}";
-  return os;
-}
-
-std::string to_string(const SolverOptions& x) {
-  std::ostringstream result;
-  result << x;
+  result << "})";
   return result.str();
 }
 
-namespace {
-// Check if all the keys in key_value pair key_vals is a subset of
-// allowable_keys, and throw an invalid argument if not.
-template <typename T>
-void CheckOptionKeysForSolverHelper(
-    const std::unordered_map<std::string, T>& key_vals,
-    const std::unordered_set<std::string>& allowable_keys,
-    const std::string& solver_name) {
-  for (const auto& key_val : key_vals) {
-    if (!allowable_keys.contains(key_val.first)) {
-      throw std::invalid_argument(key_val.first +
-                                  " is not allowed in the SolverOptions for " +
-                                  solver_name + ".");
-    }
-  }
+// Deprecated 2025-05.
+std::ostream& operator<<(std::ostream& os, const SolverOptions& x) {
+  os << x.to_string();
+  return os;
 }
-}  // namespace
 
+// Deprecated 2025-05.
+std::string to_string(const SolverOptions& x) {
+  return x.to_string();
+}
+
+// Deprecated 2025-05.
 void SolverOptions::CheckOptionKeysForSolver(
     const SolverId& solver_id,
     const std::unordered_set<std::string>& double_keys,
     const std::unordered_set<std::string>& int_keys,
     const std::unordered_set<std::string>& str_keys) const {
-  CheckOptionKeysForSolverHelper(GetOptionsDouble(solver_id), double_keys,
-                                 solver_id.name());
-  CheckOptionKeysForSolverHelper(GetOptionsInt(solver_id), int_keys,
-                                 solver_id.name());
-  CheckOptionKeysForSolverHelper(GetOptionsStr(solver_id), str_keys,
-                                 solver_id.name());
+  auto iter = options.find(solver_id.name());
+  if (iter == options.end()) {
+    return;
+  }
+  for (const auto& [key, value] : iter->second) {
+    const bool allowed =
+        std::visit(overloaded{[&key, &double_keys](const double&) {
+                                return double_keys.count(key);
+                              },
+                              [&key, &int_keys](const int&) {
+                                return int_keys.count(key);
+                              },
+                              [&key, &str_keys](const std::string&) {
+                                return str_keys.count(key);
+                              }},
+                   value);
+    if (!allowed) {
+      throw std::invalid_argument(
+          fmt::format("{} is not allowed in the SolverOptions for {}", key,
+                      solver_id.name()));
+    }
+  }
 }
 
 }  // namespace solvers
