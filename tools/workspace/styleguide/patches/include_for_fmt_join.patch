@@ -1,0 +1,31 @@
+fmtlib 11 (currently used on unprovisioned mac) requires including fmt/ranges.h
+in support of fmt::join(). The earlier versions do not require it. It is easy
+to forget this during review and have this blow up in mac nightly. Until all
+of our build targets are up to fmtlib 11, we'll lint for this particular case.
+After we're caught up, it simply won't compile for developers and linting won't
+be necessary.
+
+Reasoning for not upstreaming this patch: it is unique to Drake's build
+ecosystem and how it straddles fmtlib's development trajectory.
+
+--- cpplint/cpplint.py
++++ cpplint/cpplint.py
+@@ -5471,6 +5471,7 @@ _HEADERS_MAYBE_TEMPLATES = (
+     )
+ 
+ _RE_PATTERN_STRING = re.compile(r'\bstring\b')
++_RE_PATTERN_FMT_JOIN = re.compile(r'\bfmt::join\b')
+ 
+ _re_pattern_headers_maybe_templates = []
+ for _header, _templates in _HEADERS_MAYBE_TEMPLATES:
+@@ -5609,6 +5610,10 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
+       if prefix.endswith('std::') or not prefix.endswith('::'):
+         required['<string>'] = (linenum, 'string')
+ 
++    matched = _RE_PATTERN_FMT_JOIN.search(line)
++    if matched:
++      required['<fmt/ranges.h>'] = (linenum, 'fmt::join')
++
+     for pattern, template, header in _re_pattern_headers_maybe_templates:
+       if pattern.search(line):
+         required[header] = (linenum, template)
