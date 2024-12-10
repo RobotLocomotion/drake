@@ -153,19 +153,40 @@ TYPED_TEST_P(FemSolverTest, DefaultStateAndSchurComplement) {
   EXPECT_EQ(next_schur_complement.get_D_complement().cols(), 0);
 }
 
+/* Tests that SetNextFemState properly copies the state variables. */
 TYPED_TEST_P(FemSolverTest, SetNextFemState) {
-  std::unique_ptr<FemState<double>> default_state = this->model_.MakeFemState();
+  constexpr bool is_linear = TypeParam::value;
+  typename DummyModel<is_linear>::DummyBuilder builder(&this->model_);
+  builder.AddTwoElementsWithSharedNodes();
+  builder.Build();
+
+  /* Construct an arbitrary target state. */
+  std::unique_ptr<FemState<double>> state0 = this->model_.MakeFemState();
+
+  /* Force the solver to reinitialize with the updated model. */
+  const systems::LeafContext<double> dummy_context;
+  const FemPlantData<double> dummy_data{dummy_context, {}};
+  this->solver_.AdvanceOneTimeStep(*state0, dummy_data, {});
+
+  auto q = Eigen::VectorXd::LinSpaced(state0->num_dofs(), 1.0, 2.0);
+  auto q0 = Eigen::VectorXd::LinSpaced(state0->num_dofs(), 2.0, 3.0);
+  auto v = Eigen::VectorXd::LinSpaced(state0->num_dofs(), 3.0, 4.0);
+  auto a = Eigen::VectorXd::LinSpaced(state0->num_dofs(), 4.0, 5.0);
+
+  state0->SetPositions(q);
+  state0->SetTimeStepPositions(q0);
+  state0->SetVelocities(v);
+  state0->SetAccelerations(a);
+
+  this->solver_.SetNextFemState(*state0);
+
+  /* Verify that the next state is set to the expected values. */
   const FemState<double>& next_state = this->solver_.next_fem_state();
-
-  this->solver_.SetNextFemState(next_state);
-
-  /* Verify that the next state is set. */
-  const FemState<double>& next_state2 = this->solver_.next_fem_state();
-  EXPECT_EQ(next_state.num_dofs(), next_state2.num_dofs());
-  EXPECT_EQ(next_state.num_nodes(), next_state2.num_nodes());
-  EXPECT_EQ(next_state.GetPositions(), next_state2.GetPositions());
-  EXPECT_EQ(next_state.GetVelocities(), next_state2.GetVelocities());
-  EXPECT_EQ(next_state.GetAccelerations(), next_state2.GetAccelerations());
+  EXPECT_EQ(next_state.num_dofs(), state0->num_dofs());
+  EXPECT_EQ(next_state.num_nodes(), state0->num_nodes());
+  EXPECT_EQ(next_state.GetPositions(), state0->GetPositions());
+  EXPECT_EQ(next_state.GetVelocities(), state0->GetVelocities());
+  EXPECT_EQ(next_state.GetAccelerations(), state0->GetAccelerations());
 
   /* Verify that the schur complement at the next time step is emptied. */
   const contact_solvers::internal::SchurComplement next_schur_complement =

@@ -2,7 +2,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
+#include "drake/examples/multibody/deformable/deformable_common.h"
 #include "drake/examples/multibody/deformable/parallel_gripper_controller.h"
 #include "drake/examples/multibody/deformable/point_source_force_field.h"
 #include "drake/examples/multibody/deformable/suction_cup_controller.h"
@@ -48,18 +48,13 @@ using drake::examples::deformable::ParallelGripperController;
 using drake::examples::deformable::PointSourceForceField;
 using drake::examples::deformable::SuctionCupController;
 using drake::geometry::AddContactMaterial;
-using drake::geometry::Box;
 using drake::geometry::Capsule;
-using drake::geometry::Ellipsoid;
-using drake::geometry::GeometryInstance;
 using drake::geometry::IllustrationProperties;
-using drake::geometry::Mesh;
 using drake::geometry::ProximityProperties;
 using drake::geometry::Sphere;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlant;
 using drake::multibody::CoulombFriction;
-using drake::multibody::DeformableBodyId;
 using drake::multibody::DeformableModel;
 using drake::multibody::ModelInstanceIndex;
 using drake::multibody::MultibodyPlant;
@@ -69,12 +64,9 @@ using drake::multibody::PrismaticJoint;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
 using drake::multibody::fem::DeformableBodyConfig;
-using drake::systems::BasicVector;
 using drake::systems::Context;
-using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using Eigen::VectorXd;
 
 namespace drake {
 namespace examples {
@@ -167,6 +159,7 @@ int do_main() {
   plant_config.discrete_contact_approximation = FLAGS_contact_approximation;
 
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
+  deformable::RegisterRigidGround(&plant);
 
   /* Minimum required proximity properties for rigid bodies to interact with
    deformable bodies.
@@ -180,16 +173,6 @@ int do_main() {
   AddContactMaterial({}, {}, surface_friction, &rigid_proximity_props);
   rigid_proximity_props.AddProperty(geometry::internal::kHydroGroup,
                                     geometry::internal::kRezHint, 0.01);
-  /* Set up a ground. */
-  Box ground{4, 4, 4};
-  const RigidTransformd X_WG(Eigen::Vector3d{0, 0, -2});
-  plant.RegisterCollisionGeometry(plant.world_body(), X_WG, ground,
-                                  "ground_collision", rigid_proximity_props);
-  IllustrationProperties illustration_props;
-  illustration_props.AddProperty("phong", "diffuse",
-                                 Vector4d(0.7, 0.5, 0.4, 0.8));
-  plant.RegisterVisualGeometry(plant.world_body(), X_WG, ground,
-                               "ground_visual", std::move(illustration_props));
 
   /* Add a parallel gripper or a suction gripper depending on the runtime flag.
    */
@@ -205,37 +188,19 @@ int do_main() {
   deformable_config.set_mass_density(FLAGS_density);
   deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
 
-  const std::string torus_vtk = FindResourceOrThrow(
-      "drake/examples/multibody/deformable/models/torus.vtk");
   /* Load the geometry and scale it down to 65% (to showcase the scaling
    capability and to make the torus suitable for grasping by the gripper). */
   const double scale = 0.65;
-  auto torus_mesh = std::make_unique<Mesh>(torus_vtk, scale);
   /* Minor diameter of the torus inferred from the vtk file. */
   const double kL = 0.09 * scale;
   /* Set the initial pose of the torus such that its bottom face is touching the
    ground. */
   const RigidTransformd X_WB(Vector3<double>(0.0, 0.0, kL / 2.0));
-  auto torus_instance = std::make_unique<GeometryInstance>(
-      X_WB, std::move(torus_mesh), "deformable_torus");
-
-  /* Minimally required proximity properties for deformable bodies: A valid
-   Coulomb friction coefficient. */
-  ProximityProperties deformable_proximity_props;
-  AddContactMaterial(FLAGS_contact_damping, {}, surface_friction,
-                     &deformable_proximity_props);
-  torus_instance->set_proximity_properties(deformable_proximity_props);
-
-  /* Registration of all deformable geometries ostensibly requires a resolution
-   hint parameter that dictates how the shape is tessellated. In the case of a
-   `Mesh` shape, the resolution hint is unused because the shape is already
-   tessellated. */
-  // TODO(xuchenhan-tri): Though unused, we still asserts the resolution hint is
-  // positive. Remove the requirement of a resolution hint for meshed shapes.
-  const double unused_resolution_hint = 1.0;
   DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
-  deformable_model.RegisterDeformableBody(
-      std::move(torus_instance), deformable_config, unused_resolution_hint);
+
+  deformable::RegisterDeformableTorus(&deformable_model, "deformable_torus",
+                                      X_WB, deformable_config, scale,
+                                      FLAGS_contact_damping);
 
   /* Add an external suction force if using a suction gripper. */
   const PointSourceForceField* suction_force_ptr{nullptr};

@@ -2,7 +2,7 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
+#include "drake/examples/multibody/deformable/deformable_common.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/math/rigid_transform.h"
@@ -33,22 +33,16 @@ DEFINE_double(
     "Hunt and Crossley damping for the deformable body, only used when "
     "'contact_approximation' is set to 'lagged' or 'similar' [s/m].");
 
-using drake::geometry::AddContactMaterial;
-using drake::geometry::Box;
-using drake::geometry::GeometryInstance;
-using drake::geometry::IllustrationProperties;
-using drake::geometry::Mesh;
-using drake::geometry::ProximityProperties;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlant;
-using drake::multibody::CoulombFriction;
 using drake::multibody::DeformableBodyId;
 using drake::multibody::DeformableModel;
 using drake::multibody::MultibodyPlantConfig;
 using drake::multibody::fem::DeformableBodyConfig;
 using drake::systems::Context;
-using Eigen::Vector3d;
-using Eigen::Vector4d;
+
+using drake::examples::deformable::RegisterDeformableTorus;
+using drake::examples::deformable::RegisterRigidGround;
 
 namespace drake {
 namespace examples {
@@ -62,29 +56,7 @@ int do_main() {
   plant_config.discrete_contact_approximation = FLAGS_contact_approximation;
 
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
-
-  /* Minimum required proximity properties for rigid bodies to interact with
-   deformable bodies.
-   1. A valid Coulomb friction coefficient, and
-   2. A resolution hint. (Rigid bodies need to be tessellated so that collision
-   queries can be performed against deformable geometries.) The value dictates
-   how fine the mesh used to represent the rigid collision geometry is. */
-  ProximityProperties rigid_proximity_props;
-  /* Set the friction coefficient close to that of rubber against rubber. */
-  const CoulombFriction<double> surface_friction(1.15, 1.15);
-  AddContactMaterial({}, {}, surface_friction, &rigid_proximity_props);
-  rigid_proximity_props.AddProperty(geometry::internal::kHydroGroup,
-                                    geometry::internal::kRezHint, 0.01);
-  /* Set up a ground. */
-  Box ground{4, 4, 4};
-  const RigidTransformd X_WG(Eigen::Vector3d{0, 0, -2});
-  plant.RegisterCollisionGeometry(plant.world_body(), X_WG, ground,
-                                  "ground_collision", rigid_proximity_props);
-  IllustrationProperties illustration_props;
-  illustration_props.AddProperty("phong", "diffuse",
-                                 Vector4d(0.7, 0.5, 0.4, 0.8));
-  plant.RegisterVisualGeometry(plant.world_body(), X_WG, ground,
-                               "ground_visual", std::move(illustration_props));
+  RegisterRigidGround(&plant);
 
   /* Set up a deformable bodies. */
   DeformableBodyConfig<double> deformable_config;
@@ -95,40 +67,21 @@ int do_main() {
 
   DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
 
-  const std::string torus_vtk = FindResourceOrThrow(
-      "drake/examples/multibody/deformable/models/torus.vtk");
-  /* Minor diameter of the torus inferred from the vtk file. */
-  const double kL = 0.09;
-
+  /* Add a few deformable torus bodies stacked on top of each other. */
   std::vector<DeformableBodyId> torus_ids;
   for (int i = 0; i < 3; i++) {
-    auto torus_mesh = std::make_unique<Mesh>(torus_vtk, 1.0);
+    const double scale = 1.0;
+    /* Minor diameter of the torus inferred from the vtk file. */
+    const double kL = 0.09 * scale;
 
     /* Set the initial pose of the i-th torus such that it is slightly above the
-    (i-1)th torus. */
+     (i-1)th torus. The first torus is set just above the floor surface. */
+    const auto model_name = "deformable_torus_" + std::to_string(i);
     const RigidTransformd X_WB(
         Vector3<double>(0.0, 0.0, kL / 2.0 + 1.25 * kL * i));
-    auto torus_instance = std::make_unique<GeometryInstance>(
-        X_WB, std::move(torus_mesh), "deformable_torus_" + std::to_string(i));
-
-    /* Minimally required proximity properties for deformable bodies: A valid
-    Coulomb friction coefficient. */
-    ProximityProperties deformable_proximity_props;
-    AddContactMaterial(FLAGS_contact_damping, {}, surface_friction,
-                       &deformable_proximity_props);
-    torus_instance->set_proximity_properties(deformable_proximity_props);
-
-    /* Registration of all deformable geometries ostensibly requires a
-    resolution hint parameter that dictates how the shape is tessellated. In the
-    case of a `Mesh` shape, the resolution hint is unused because the shape is
-    already tessellated. */
-    // TODO(xuchenhan-tri): Though unused, we still asserts the resolution hint
-    // is positive. Remove the requirement of a resolution hint for meshed
-    // shapes.
-    const double unused_resolution_hint = 1.0;
-    DeformableBodyId torus_id = deformable_model.RegisterDeformableBody(
-        std::move(torus_instance), deformable_config, unused_resolution_hint);
-
+    auto torus_id = RegisterDeformableTorus(&deformable_model, model_name, X_WB,
+                                            deformable_config, scale,
+                                            FLAGS_contact_damping);
     torus_ids.push_back(torus_id);
   }
 
@@ -154,21 +107,27 @@ int do_main() {
   simulator.Initialize();
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
 
-  /* Initially lock all of the deformables so that they are suspended in the air
-  above each other. */
+  /* Initially lock all of the deformable tori so that they are suspended in the
+   air above each other. */
   for (const auto& torus_id : torus_ids) {
     plant.deformable_model().Lock(torus_id, &plant_context);
   }
 
   /* Advance the simulation time in intervals, unlocking a new deformable body
-  at each boundary. */
-  const double advance_interval = FLAGS_simulation_time / torus_ids.size();
+   at each boundary. */
+  const double advance_interval =
+      FLAGS_simulation_time / (torus_ids.size() + 1);
   for (std::size_t i = 0; i < torus_ids.size(); i++) {
     const auto& torus_id = torus_ids[i];
     plant.deformable_model().Unlock(torus_id, &plant_context);
 
     simulator.AdvanceTo((i + 1) * advance_interval);
   }
+
+  /* Unlock the bottom torus, causing the others to fall through and reveal that
+   locked bodies do not participate in contact. */
+  plant.deformable_model().Lock(torus_ids[0], &plant_context);
+  simulator.AdvanceTo(FLAGS_simulation_time);
 
   return 0;
 }

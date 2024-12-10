@@ -61,6 +61,22 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "deformable_common",
+    srcs = [
+        "deformable_common.cc",
+    ],
+    hdrs = [
+        "deformable_common.h",
+    ],
+    deps = [
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/framework:diagram",
+    ],
+)
+
 drake_cc_binary(
     name = "deformable_torus",
     srcs = [
@@ -75,6 +91,7 @@ drake_cc_binary(
         "-realtime_rate=0.0",
     ],
     deps = [
+        ":deformable_common",
         ":parallel_gripper_controller",
         ":point_source_force_field",
         ":suction_cup_controller",
@@ -130,6 +147,7 @@ drake_cc_binary(
         "-realtime_rate=0.0",
     ],
     deps = [
+        ":deformable_common",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//multibody/parsing",

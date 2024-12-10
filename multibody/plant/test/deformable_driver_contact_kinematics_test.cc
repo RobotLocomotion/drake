@@ -570,6 +570,36 @@ TEST_F(DeformableDriverContactKinematicsTest,
   ValidateConstraintParticipation();
 }
 
+/* Tests that locked deformable bodies do not participate in contact. */
+TEST_F(DeformableDriverContactKinematicsTest,
+       LockedDeformableDeformableContactKinematics) {
+  /* Build a scene with two deformables in contact, but locked. */
+  MakeDeformableDeformableScene();
+  model_->Lock(deformable_body_id_, context_.get());
+  model_->Lock(deformable_body_id2_, context_.get());
+
+  /* Validate that placeholder contact participation entries exist for the
+   locked bodies. */
+  for (const auto& deformable_id :
+       {deformable_body_id_, deformable_body_id2_}) {
+    const DeformableBodyIndex body_index = model_->GetBodyIndex(deformable_id);
+    const ContactParticipation& participation =
+        driver_->EvalConstraintParticipation(
+            plant_->GetMyContextFromRoot(*context_), body_index);
+    EXPECT_EQ(participation.num_vertices(),
+              model_->GetFemModel(deformable_id).num_nodes());
+    EXPECT_EQ(participation.num_vertices_in_contact(), 0);
+  }
+
+  /* Validate that the locked bodies do not get fixed kinematic constraints. */
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  std::vector<FixedConstraintKinematics<double>> constraint_kinematics;
+  driver_->AppendDeformableRigidFixedConstraintKinematics(
+      plant_context, &constraint_kinematics);
+  EXPECT_EQ(constraint_kinematics.size(), 0);
+}
+
 }  // namespace
 
 class DeformableDriverTest {
