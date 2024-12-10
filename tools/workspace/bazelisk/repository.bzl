@@ -18,6 +18,8 @@ def bazelisk_repository(
         Additionally, you must manually update the version number in
           setup/ubuntu/source_distribution/install_bazelisk.sh
         and adjust the expected checksums accordingly.
+
+        To fully test, a Linux uprovisioned job must be launched from the pull request.
         """,
         commit = "v1.24.1",
         sha256 = "c7a44600ae88732fd75d8cbd1d58efe69610e41540566ff4102c5e3b96e497a7",  # noqa
