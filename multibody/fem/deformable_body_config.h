@@ -9,6 +9,8 @@ namespace drake {
 namespace multibody {
 namespace fem {
 
+// TODO(xuchenhang-tri): Move everything in this file outside of the FEM module
+// to be shared with MPM.
 /** Types of material models for the deformable body. */
 enum class MaterialModel {
   /** Linear corotational model as described in [Han et al., 2023]. It provides
