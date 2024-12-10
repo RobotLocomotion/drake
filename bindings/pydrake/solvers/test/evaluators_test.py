@@ -75,6 +75,10 @@ class TestCost(unittest.TestCase):
         cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
         np.testing.assert_allclose(cost.A(), 2*A)
         np.testing.assert_allclose(cost.b(), 2*b)
+        cost.update_A_entry(i=0, j=1, val=0.5)
+        np.testing.assert_allclose(cost.A(), np.array([[2, 0.5], [-0.8, 1.4]]))
+        cost.update_b_entry(i=0, val=1)
+        np.testing.assert_allclose(cost.b(), np.array([1, -0.8]))
 
     def test_l2norm_cost(self):
         A = np.array([[1., 2.], [-.4, .7]])
@@ -95,6 +99,10 @@ class TestCost(unittest.TestCase):
         cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
         np.testing.assert_allclose(cost.A(), 2*A)
         np.testing.assert_allclose(cost.b(), 2*b)
+        cost.update_A_entry(i=0, j=1, val=0.5)
+        np.testing.assert_allclose(cost.A(), np.array([[2, 0.5], [-0.8, 1.4]]))
+        cost.update_b_entry(i=0, val=1)
+        np.testing.assert_allclose(cost.b(), np.array([1, -0.8]))
 
     def test_perspective_quadratic_cost(self):
         A = np.array([[1., 2.], [-.4, .7]])
@@ -105,6 +113,10 @@ class TestCost(unittest.TestCase):
         cost.UpdateCoefficients(new_A=2*A, new_b=2*b)
         np.testing.assert_allclose(cost.A(), 2*A)
         np.testing.assert_allclose(cost.b(), 2*b)
+        cost.update_A_entry(i=0, j=1, val=0.5)
+        np.testing.assert_allclose(cost.A(), np.array([[2, 0.5], [-0.8, 1.4]]))
+        cost.update_b_entry(i=0, val=1)
+        np.testing.assert_allclose(cost.b(), np.array([1, -0.8]))
 
     def test_expression_cost(self):
         x = sym.Variable("x")
