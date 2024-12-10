@@ -43,6 +43,7 @@ class AllScalarsStruct:
     some_float: float = nan
     some_int: int = 11
     some_str: str = "nominal_string"
+    some_path: Path = "/path/to/nowhere"
 
 
 @dc.dataclass
@@ -236,12 +237,14 @@ class TestYamlTypedRead(unittest.TestCase,
         some_bool: true
         some_float: 101.0
         some_int: 102
+        some_path: /alternative/path
         some_str: foo
         """)
         x = yaml_load_typed(schema=AllScalarsStruct, data=data, **options)
         self.assertEqual(x.some_bool, True)
         self.assertEqual(x.some_float, 101.0)
         self.assertEqual(x.some_int, 102)
+        self.assertEqual(x.some_path, Path("/alternative/path"))
         self.assertEqual(x.some_str, "foo")
 
     @run_with_multiple_values(_all_typed_read_options())

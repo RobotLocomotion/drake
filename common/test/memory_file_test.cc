@@ -7,6 +7,8 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace {
@@ -107,6 +109,14 @@ GTEST_TEST(MemoryFileTest, ToString) {
   EXPECT_THAT(file.to_string(5), testing::HasSubstr("\"<01234...>\""));
 
   EXPECT_THAT(fmt::to_string(file), testing::HasSubstr("\"0123456789\""));
+}
+
+/** Serialization compiles but throws. */
+GTEST_TEST(MemoryFileTest, SerializationThrows) {
+  const MemoryFile dut("stuff", ".ext", "hint");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      yaml::SaveYamlString(dut),
+      "Serialization for MemoryFile not yet supported.");
 }
 
 }  // namespace

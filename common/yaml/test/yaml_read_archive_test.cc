@@ -164,6 +164,7 @@ doc:
   some_int64: 104
   some_uint64: 105
   some_string: foo
+  some_path: "/path/to/nowhere"
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
@@ -174,6 +175,7 @@ doc:
   EXPECT_EQ(x.some_int64, 104);
   EXPECT_EQ(x.some_uint64, 105);
   EXPECT_EQ(x.some_string, "foo");
+  EXPECT_EQ(x.some_path, "/path/to/nowhere");
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {
