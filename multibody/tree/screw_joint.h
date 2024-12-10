@@ -391,6 +391,16 @@ class ScrewJoint final : public Joint<T> {
   double screw_pitch_;
 };
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<ScrewJoint> {
+  template <typename T>
+  static const ScrewJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

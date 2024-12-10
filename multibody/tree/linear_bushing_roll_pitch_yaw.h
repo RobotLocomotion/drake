@@ -805,6 +805,17 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   systems::NumericParameterIndex force_damping_parameter_index_;
 };
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastForceElement<LinearBushingRollPitchYaw> {
+  template <typename T>
+  static const LinearBushingRollPitchYaw<T>* cast(
+      const ForceElement<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

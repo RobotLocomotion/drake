@@ -480,6 +480,12 @@ TEST_F(DoorHingeTest, EnergyTestWithAllTorques) {
   TestEnergyConservation(plant(), init_state);
 }
 
+TEST_F(DoorHingeTest, DynamicCast) {
+  const DoorHinge<double>* dut = &door_hinge();
+  const ForceElement<double>* base = dut;
+  EXPECT_EQ(internal::DynamicCastForceElement<DoorHinge>::cast(base), dut);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
