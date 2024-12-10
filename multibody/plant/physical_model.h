@@ -208,6 +208,9 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   systems::DiscreteStateIndex DeclareDiscreteState(
       const VectorX<T>& model_value);
 
+  systems::AbstractParameterIndex DeclareAbstractParameter(
+      const AbstractValue& model_value);
+
   systems::LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::string name,
       typename systems::LeafOutputPort<T>::AllocCallback alloc_function,
