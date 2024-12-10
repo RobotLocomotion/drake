@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":bspline_weights",
+        ":grid_data",
     ],
 )
 
@@ -29,6 +30,17 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "grid_data",
+    hdrs = [
+        "grid_data.h",
+    ],
+    deps = [
+        "//common:bit_cast",
+        "//common:essential",
     ],
 )
 
@@ -53,6 +65,13 @@ drake_cc_googletest(
     name = "bspline_weights_test",
     deps = [
         ":bspline_weights",
+    ],
+)
+
+drake_cc_googletest(
+    name = "grid_data_test",
+    deps = [
+        ":grid_data",
     ],
 )
 
