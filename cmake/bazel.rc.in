@@ -7,6 +7,11 @@ startup --output_base="@BAZEL_OUTPUT_BASE@"
 # Inherit Drake's default options.
 @BAZELRC_IMPORT@
 
+# By default Drake (currently) opts-out of bzlmod, but for CMake builds we want
+# to enable it as a mechanism for covering our bzlmod changes in CI, and also
+# to be forward-looking since bzlmod is all Bazel >= 9 will support.
+common --enable_bzlmod=true
+
 # Environment variables to be used in repository rules (if any).
 common @BAZEL_REPO_ENV@
 
