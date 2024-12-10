@@ -1,14 +1,12 @@
 #include <limits>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/common/autodiff.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/tree/frame.h"
-#include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
 
@@ -41,6 +39,9 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
                                  end_effector_link_->body_frame(), &forces);
   const VectorX<double> tau_id =
       plant_->CalcInverseDynamics(*context_, vdot, forces);
+  const VectorX<double> tau_id2 =
+      plant_->CalcInverseDynamics2(*context_, vdot, forces);
+
   {  // Repeat the computation to confirm the heap behavior.  We allow the
     // method to heap-allocate 2 temporaries and 1 return value.
     drake::test::LimitMalloc guard({.max_num_allocations = 3});
@@ -74,6 +75,10 @@ TEST_F(KukaIiwaModelTests, ExternalBodyForces) {
   // computations since errors accumulate during inboard/outboard passes.
   const double kTolerance = 50 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(tau_id, tau_id_expected, kTolerance,
+                              MatrixCompareType::relative));
+  // W & M frame ID should be very close.
+  EXPECT_TRUE(CompareMatrices(tau_id2, tau_id,
+                              16 * std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
 }
 
