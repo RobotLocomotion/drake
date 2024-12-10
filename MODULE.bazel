@@ -1,21 +1,30 @@
 # This file marks a workspace root for the Bazel build system.
 # See `https://bazel.build/`.
 
-# This file lists Drake's external dependencies as known to bzlmod.
-#
-# When bzlmod is disabled, this file is NOT used. Instead, only WORKSPACE is
-# used.
-#
-# When bzlmod is enabled, this file + WORKSPACE.bzlmod are both used, and
-# WORKSPACE is ignored.
+# This file lists Drake's external dependencies as known to bzlmod. It is used
+# in concert with WORKSPACE.bzlmod for the workspace-style externals.
 
 module(name = "drake")
 
+bazel_dep(name = "apple_support", version = "1.17.1", repo_name = "build_bazel_apple_support")  # noqa
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
+bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "rules_cc", version = "0.0.17")
 bazel_dep(name = "rules_java", version = "8.6.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "0.40.0")
+bazel_dep(name = "rules_rust", version = "0.54.1")  # N.B. See below.
+
+# We need rules_rust >= 0.55 but it hasn't made it into the registry yet.
+archive_override(
+    module_name = "rules_rust",
+    sha256 = "d2e7e061408723444570788d56a54d850748fabcca3b4a26edc4db1b30eec241",  # noqa
+    strip_prefix = "rules_rust-0.55.3",
+    type = "tar.gz",
+    urls = [
+        "https://github.com/bazelbuild/rules_rust/archive/refs/tags/0.55.3.tar.gz",  # noqa
+    ],
+)
 
 cc_configure = use_extension(
     "@rules_cc//cc:extensions.bzl",

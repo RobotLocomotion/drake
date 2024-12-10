@@ -1,22 +1,13 @@
 # -*- bazel -*-
 #
-# This file lists Drake's external dependencies as known to bzlmod.
-#
-# When bzlmod is disabled, this file is NOT used. Instead, only WORKSPACE is
-# used.
-#
-# When bzlmod is enabled, this file + MODULE.bazel are both used, and WORKSPACE
-# is ignored.
+# This file lists Drake's workspace-style external dependencies. It is used in
+# concert with MODULE.bazel for the module-style externals.
 
 workspace(name = "drake")
 
 load("//tools/workspace:default.bzl", "add_default_workspace")
 
 add_default_workspace(bzlmod = True)
-
-load("@build_bazel_apple_support//crosstool:setup.bzl", "apple_cc_configure")
-
-apple_cc_configure()
 
 # Add some special heuristic logic for using CLion with Drake.
 load("//tools/clion:repository.bzl", "drake_clion_environment")
@@ -29,10 +20,3 @@ load("@bazel_skylib//lib:versions.bzl", "versions")
 # to actually be defined. The minimum_bazel_version value should match the
 # version passed to the find_package(Bazel) call in the root CMakeLists.txt.
 versions.check(minimum_bazel_version = "7.1")
-
-# The cargo_universe programs are only used by Drake's new_release tooling, not
-# by any compilation rules. As such, we can put it directly into the WORKSPACE
-# instead of into our `//tools/workspace:default.bzl` repositories.
-load("@rules_rust//crate_universe:repositories.bzl", "crate_universe_dependencies")  # noqa
-
-crate_universe_dependencies(bootstrap = True)
