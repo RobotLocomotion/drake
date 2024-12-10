@@ -62,4 +62,9 @@ sh_binary(
     data = ["valgrind.supp"],
 )
 
-add_lint_tests(python_lint_extra_srcs = ["kcoverage.py"])
+add_lint_tests(
+    python_lint_extra_srcs = [
+        "kcoverage.py",
+        "kcov_tool",
+    ],
+)
