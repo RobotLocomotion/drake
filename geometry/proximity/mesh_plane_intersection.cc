@@ -59,15 +59,70 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsTable = {
     std::array<int, 4>{0, 4, 1, -1},    /* 1101 */
     std::array<int, 4>{0, 2, 3, -1},    /* 1110 */
     std::array<int, 4>{-1, -1, -1, -1}  /* 1111 */};
+
+
+// 01 -> 3
+// 02 -> 3
+// 03 -> 2
+// 04 -> 2
+
+// 10 -> 3
+// 12 -> 3
+// 14 -> 0
+// 15 -> 0
+
+// 20 -> 3
+// 21 -> 3
+// 23 -> 1
+// 25 -> 1
+
+// 30 -> 2
+// 32 -> 1
+// 34 -> 2
+// 35 -> 1
+
+// 40 -> 2
+// 41 -> 0
+// 43 -> 2
+// 45 -> 0
+
+// 51 -> 0
+// 52 -> 1
+// 53 -> 1
+// 54 -> 0
+constexpr std::array<std::array<int, 4>, 16> kMarchingTetsFaceTable = {
+                                /* bits    3210 */
+    std::array<int, 4>{-1, -1, -1, -1}, /* 0000 */
+    std::array<int, 4>{2, 1, 3, -1},    /* 0001 */
+    std::array<int, 4>{3, 0, 2, -1},    /* 0010 */
+    std::array<int, 4>{2, 1, 3, 0},     /* 0011 */
+    std::array<int, 4>{3, 1, 0, -1},    /* 0100 */
+    std::array<int, 4>{2, 1, 0, 3},     /* 0101 */
+    std::array<int, 4>{3, 1, 0, 2},     /* 0110 */
+    std::array<int, 4>{1, 0, 2, -1},    /* 0111 */
+    std::array<int, 4>{2, 0, 1, -1},    /* 1000 */
+    std::array<int, 4>{0, 1, 3, 2},     /* 1001 */
+    std::array<int, 4>{0, 1, 2, 3},     /* 1010 */
+    std::array<int, 4>{0, 1, 3, -1},    /* 1011 */
+    std::array<int, 4>{3, 1, 2, 0},     /* 1100 */
+    std::array<int, 4>{2, 0, 3, -1},    /* 1101 */
+    std::array<int, 4>{3, 1, 2, -1},    /* 1110 */
+    std::array<int, 4>{-1, -1, -1, -1}  /* 1111 */};
 // clang-format on
+
 }  // namespace
 
 template <typename T>
 void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
                                const Plane<T>& plane_M,
                                std::vector<Vector3<T>>* polygon_vertices,
-                               std::vector<SortedPair<int>>* cut_edges) {
+                               std::vector<SortedPair<int>>* cut_edges,
+                               std::vector<int>* faces) {
   DRAKE_DEMAND(polygon_vertices != nullptr);
+
+  if (faces != nullptr) {
+    faces->clear();
+  }
 
   T distance[4];
   // Bit encoding of the sign of signed-distance: v0, v1, v2, v3.
@@ -80,6 +135,8 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
 
   const std::array<int, 4>& intersected_edges =
       kMarchingTetsTable[intersection_code];
+  const std::array<int, 4>& intersected_faces =
+      kMarchingTetsFaceTable[intersection_code];
 
   // No intersecting edges --> no intersection.
   if (intersected_edges[0] == -1) return;
@@ -102,6 +159,9 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     const T t = d_v0 / (d_v0 - d_v1);
     const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
     polygon_vertices->push_back(p_MC);
+    if (faces != nullptr) {
+      faces->push_back(intersected_faces[e]);
+    }
     if (cut_edges != nullptr) {
       const SortedPair<int> mesh_edge{v0, v1};
       cut_edges->push_back(mesh_edge);
