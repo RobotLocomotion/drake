@@ -74,25 +74,14 @@ class SolverOptions {
   retrieve the variant's value in a future-proof way. */
   using OptionValue = std::variant<double, int, std::string>;
 
-  /** Sets a double-valued solver option for a specific solver.
-  @pydrake_mkdoc_identifier{double_option} */
-  void SetOption(const SolverId& solver_id, const std::string& solver_option,
-                 double option_value);
-
-  /** Sets an integer-valued solver option for a specific solver.
-  @pydrake_mkdoc_identifier{int_option} */
-  void SetOption(const SolverId& solver_id, const std::string& solver_option,
-                 int option_value);
-
-  /** Sets a string-valued solver option for a specific solver.
-  @pydrake_mkdoc_identifier{str_option} */
-  void SetOption(const SolverId& solver_id, const std::string& solver_option,
-                 const std::string& option_value);
+  /** Sets a solver option for a specific solver. If the solver doesn't support
+  the option, it will throw an exception during the Solve (not when setting the
+  option here). */
+  void SetOption(const SolverId& solver_id, std::string key, OptionValue value);
 
   /** Sets a common option for all solvers supporting that option (for example,
   printing the progress in each iteration). If the solver doesn't support the
-  option, the option is ignored.
-  @pydrake_mkdoc_identifier{common_option} */
+  option, the option is ignored. */
   void SetOption(CommonSolverOption key, OptionValue value);
 
   const std::unordered_map<std::string, double>& GetOptionsDouble(
