@@ -70,6 +70,7 @@ using Eigen::Vector4d;
 
 namespace drake {
 namespace examples {
+namespace deformable {
 namespace {
 
 /* Adds a suction gripper to the given MultibodyPlant and assign
@@ -159,7 +160,7 @@ int do_main() {
   plant_config.discrete_contact_approximation = FLAGS_contact_approximation;
 
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
-  deformable::RegisterRigidGround(&plant);
+  RegisterRigidGround(&plant);
 
   /* Minimum required proximity properties for rigid bodies to interact with
    deformable bodies.
@@ -198,9 +199,8 @@ int do_main() {
   const RigidTransformd X_WB(Vector3<double>(0.0, 0.0, kL / 2.0));
   DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
 
-  deformable::RegisterDeformableTorus(&deformable_model, "deformable_torus",
-                                      X_WB, deformable_config, scale,
-                                      FLAGS_contact_damping);
+  RegisterDeformableTorus(&deformable_model, "deformable_torus", X_WB,
+                          deformable_config, scale, FLAGS_contact_damping);
 
   /* Add an external suction force if using a suction gripper. */
   const PointSourceForceField* suction_force_ptr{nullptr};
@@ -261,6 +261,7 @@ int do_main() {
 }
 
 }  // namespace
+}  // namespace deformable
 }  // namespace examples
 }  // namespace drake
 
@@ -272,5 +273,5 @@ int main(int argc, char* argv[]) {
       "Launch meldis before running this example. "
       "Refer to README for instructions on meldis as well as optional flags.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  return drake::examples::do_main();
+  return drake::examples::deformable::do_main();
 }

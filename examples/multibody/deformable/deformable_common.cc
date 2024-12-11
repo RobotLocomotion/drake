@@ -58,19 +58,6 @@ DeformableBodyId RegisterDeformableTorus(
     DeformableModel<double>* model, const std::string& model_name,
     RigidTransformd X_WB, DeformableBodyConfig<double> deformable_config,
     double scale, double contact_damping) {
-  /* Minimum required proximity properties for rigid bodies to interact with
-   deformable bodies.
-   1. A valid Coulomb friction coefficient, and
-   2. A resolution hint. (Rigid bodies need to be tessellated so that collision
-   queries can be performed against deformable geometries.) The value dictates
-   how fine the mesh used to represent the rigid collision geometry is. */
-  ProximityProperties rigid_proximity_props;
-  /* Set the friction coefficient close to that of rubber against rubber. */
-  const CoulombFriction<double> surface_friction(1.15, 1.15);
-  AddContactMaterial({}, {}, surface_friction, &rigid_proximity_props);
-  rigid_proximity_props.AddProperty(geometry::internal::kHydroGroup,
-                                    geometry::internal::kRezHint, 0.01);
-
   /* Load the torus mesh and apply scaling. */
   const std::string torus_vtk = FindResourceOrThrow(
       "drake/examples/multibody/deformable/models/torus.vtk");
@@ -81,6 +68,7 @@ DeformableBodyId RegisterDeformableTorus(
   /* Minimally required proximity properties for deformable bodies: A valid
    Coulomb friction coefficient. */
   ProximityProperties deformable_proximity_props;
+  const CoulombFriction<double> surface_friction(1.15, 1.15);
   AddContactMaterial(contact_damping, {}, surface_friction,
                      &deformable_proximity_props);
   torus_instance->set_proximity_properties(deformable_proximity_props);

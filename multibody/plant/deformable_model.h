@@ -174,6 +174,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   const std::vector<const ForceDensityField<T>*>& GetExternalForces(
       DeformableBodyId id) const;
 
+  // TODO(xuchenhan-tri): filter collisions for the locked deformable body's
+  // geometry.
   /** Locks the deformable body with the given `id` in the given context.
    Locking a deformable body sets its vertex velocities and accelerations to
    zero and freezes its vertex positions. A locked deformable body is not

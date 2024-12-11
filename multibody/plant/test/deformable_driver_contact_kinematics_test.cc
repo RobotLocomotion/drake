@@ -577,6 +577,8 @@ TEST_F(DeformableDriverContactKinematicsTest,
   MakeDeformableDeformableScene();
   model_->Lock(deformable_body_id_, context_.get());
   model_->Lock(deformable_body_id2_, context_.get());
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
 
   /* Validate that placeholder contact participation entries exist for the
    locked bodies. */
@@ -584,16 +586,13 @@ TEST_F(DeformableDriverContactKinematicsTest,
        {deformable_body_id_, deformable_body_id2_}) {
     const DeformableBodyIndex body_index = model_->GetBodyIndex(deformable_id);
     const ContactParticipation& participation =
-        driver_->EvalConstraintParticipation(
-            plant_->GetMyContextFromRoot(*context_), body_index);
+        driver_->EvalConstraintParticipation(plant_context, body_index);
     EXPECT_EQ(participation.num_vertices(),
               model_->GetFemModel(deformable_id).num_nodes());
     EXPECT_EQ(participation.num_vertices_in_contact(), 0);
   }
 
-  /* Validate that the locked bodies do not get fixed kinematic constraints. */
-  const Context<double>& plant_context =
-      plant_->GetMyContextFromRoot(*context_);
+  /* Validate that the locked bodies are not under fixed constraints. */
   std::vector<FixedConstraintKinematics<double>> constraint_kinematics;
   driver_->AppendDeformableRigidFixedConstraintKinematics(
       plant_context, &constraint_kinematics);

@@ -11,12 +11,12 @@ namespace drake {
 namespace examples {
 namespace deformable {
 
-/* Add collision and visual box geometry serving as the world's floor. The floor
- is placed just below the XY plane and assigned rigid proximity properties.
- */
+/* Adds collision and visual box geometry serving as the world's floor. The
+ floor is placed just below the XY plane and assigned rigid proximity
+ properties. */
 void RegisterRigidGround(drake::multibody::MultibodyPlant<double>* plant);
 
-/* Add a deformable torus model with the given properties.
+/* Adds a deformable torus model with the given properties.
  @param[in] model             The deformable model to which the torus will be
                               added.
  @param[in] model_name        A unique name assigned to the torus instance.
@@ -24,12 +24,11 @@ void RegisterRigidGround(drake::multibody::MultibodyPlant<double>* plant);
                               world frame.
  @param[in] deformable_config Deformable properties of the torus.
  @param[in] scale             Scaling factor applied to the loaded torus mesh.
- @param[in] contact_damping   Damping value assigned to the torus material.
- */
-drake::multibody::DeformableBodyId RegisterDeformableTorus(
-    drake::multibody::DeformableModel<double>* model,
-    const std::string& model_name, drake::math::RigidTransformd X_WB,
-    drake::multibody::fem::DeformableBodyConfig<double> deformable_config,
+ @param[in] contact_damping   Damping value assigned to the torus material. */
+multibody::DeformableBodyId RegisterDeformableTorus(
+    multibody::DeformableModel<double>* model, const std::string& model_name,
+    math::RigidTransformd X_WB,
+    multibody::fem::DeformableBodyConfig<double> deformable_config,
     double scale, double contact_damping);
 
 }  // namespace deformable

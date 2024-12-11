@@ -69,19 +69,19 @@ int do_main() {
 
   /* Add a few deformable torus bodies stacked on top of each other. */
   std::vector<DeformableBodyId> torus_ids;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     const double scale = 1.0;
     /* Minor diameter of the torus inferred from the vtk file. */
     const double kL = 0.09 * scale;
 
     /* Set the initial pose of the i-th torus such that it is slightly above the
      (i-1)th torus. The first torus is set just above the floor surface. */
-    const auto model_name = "deformable_torus_" + std::to_string(i);
+    const std::string model_name = fmt::format("deformable_torus_{}", i);
     const RigidTransformd X_WB(
         Vector3<double>(0.0, 0.0, kL / 2.0 + 1.25 * kL * i));
-    auto torus_id = RegisterDeformableTorus(&deformable_model, model_name, X_WB,
-                                            deformable_config, scale,
-                                            FLAGS_contact_damping);
+    const DeformableBodyId torus_id = RegisterDeformableTorus(
+        &deformable_model, model_name, X_WB, deformable_config, scale,
+        FLAGS_contact_damping);
     torus_ids.push_back(torus_id);
   }
 
@@ -117,7 +117,7 @@ int do_main() {
    at each boundary. */
   const double advance_interval =
       FLAGS_simulation_time / (torus_ids.size() + 1);
-  for (std::size_t i = 0; i < torus_ids.size(); i++) {
+  for (std::size_t i = 0; i < torus_ids.size(); ++i) {
     const auto& torus_id = torus_ids[i];
     plant.deformable_model().Unlock(torus_id, &plant_context);
 
