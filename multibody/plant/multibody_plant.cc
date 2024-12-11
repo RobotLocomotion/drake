@@ -1690,7 +1690,7 @@ template <typename T>
 internal::DummyPhysicalModel<T>& MultibodyPlant<T>::AddDummyModel(
     std::unique_ptr<internal::DummyPhysicalModel<T>> model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
-  DRAKE_THROW_UNLESS(model->plant() == this);
+  DRAKE_THROW_UNLESS(&model->plant() == this);
   return physical_models_->AddDummyModel(std::move(model));
 }
 
