@@ -62,6 +62,7 @@ class TestWorkspaceBzlmodSync(unittest.TestCase):
         modules = self._parse_modules(self._read(f"drake/MODULE.bazel"))
 
         # Don't check modules that are known to be module-only.
+        del modules["bazel_features"]
         del modules["rules_java"]
 
         # Don't check module that are documented to purposefully skew versions.
