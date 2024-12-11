@@ -78,7 +78,7 @@ template <typename T>
 void PhysicalModelCollection<T>::ThrowForIncompatibleModel(
     const PhysicalModel<T>& model) const {
   if (!owned_models_.empty() &&
-      model.plant() != owned_models_.back()->plant()) {
+      &model.plant() != &owned_models_.back()->plant()) {
     throw std::runtime_error(
         "The given model belongs to a different MultibodyPlant.");
   }

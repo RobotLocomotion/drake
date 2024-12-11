@@ -66,6 +66,7 @@ GTEST_TEST(PhysicalModelCollectionTest, AddEmptyModels) {
 
   /* Mimic Finalizing the plant after all PhysicalModels have been added. */
   model_collection.DeclareSystemResources();
+  plant.Finalize();
 
   /* Neither the dummy model or the empty deformable model prevents scalar
    conversion. */
@@ -109,6 +110,7 @@ GTEST_TEST(PhysicalModelCollectionTest, NonEmptyDeformableModel) {
 
   /* Mimic Finalizing the plant after all PhysicalModels have been added. */
   model_collection.DeclareSystemResources();
+  plant.Finalize();
 
   EXPECT_TRUE(model_collection.is_cloneable_to_double());
   EXPECT_FALSE(model_collection.is_cloneable_to_autodiff());
@@ -127,14 +129,9 @@ GTEST_TEST(PhysicalModelCollectionTest, IncompatibleModel) {
   MultibodyPlant<double> another_plant(0.01);
   auto model_with_wrong_plant =
       std::make_unique<DummyPhysicalModel<double>>(&another_plant);
-  auto finalized_model = std::make_unique<DummyPhysicalModel<double>>(&plant);
-  finalized_model->DeclareSystemResources();
   auto ok_model = std::make_unique<DummyPhysicalModel<double>>(&plant);
-  EXPECT_THROW(
-      model_collection.AddDummyModel(std::move(model_with_wrong_plant)),
-      std::exception);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model_collection.AddDummyModel(std::move(finalized_model)),
+      model_collection.AddDummyModel(std::move(model_with_wrong_plant)),
       "The given model belongs to a different MultibodyPlant.");
   EXPECT_NO_THROW(model_collection.AddDummyModel(std::move(ok_model)));
 }
