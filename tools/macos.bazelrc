@@ -1,5 +1,11 @@
 # Common options for macOS, no matter the arch (x86 or arm).
 
+# The runtime_version defaults to local_jdk, which is some uncontrolled
+# version from homebrew that can lead to build failures. Instead, we'll
+# set it to match the default java_language_version.
+# For background, see https://bazel.build/docs/bazel-and-java.
+build --java_runtime_version=remotejdk_11
+
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.
 build:asan --copt=-Wno-macro-redefined

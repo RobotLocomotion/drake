@@ -114,6 +114,7 @@ load("//tools/workspace/zlib:repository.bzl", "zlib_repository")
 # It is cross-checked by the workspace_bzlmod_sync_test.py test.
 REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
     "build_bazel_apple_support",
+    "bazel_features",
     "bazel_skylib",
     "platforms",
     "rust_toolchain",
