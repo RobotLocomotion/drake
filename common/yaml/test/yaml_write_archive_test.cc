@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <fmt/args.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -73,8 +74,27 @@ TEST_F(YamlWriteArchiveTest, String) {
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
 
+  // We'll use these named fmt args to help make our expected values clear.
+  fmt::dynamic_format_arg_store<fmt::format_context> args;
+  args.push_back(fmt::arg("bs", '\\'));  // backslash
+  args.push_back(fmt::arg("dq", '"'));   // double quote
+
+  // Plain string.
   test("a", "a");
-  test("1", "1");
+
+  // Needs quoting for special characters. Note that there are several valid
+  // ways to quote and/or escape these, but for now we just check against the
+  // exact choice that yaml-cpp uses. In the future if we see new outputs, we
+  // could allow them too.
+  test("'", fmt::vformat("{dq}'{dq}", args));
+  test("\"", fmt::vformat("{dq}{bs}{dq}{dq}", args));
+
+  // Needs quoting to avoid being misinterpreted as another data type.
+  test("1", "'1'");
+  test("1.0", "'1.0'");
+  test(".NaN", "'.NaN'");
+  test("true", "'true'");
+  test("null", "'null'");
 }
 
 TEST_F(YamlWriteArchiveTest, StdArray) {
@@ -208,7 +228,7 @@ TEST_F(YamlWriteArchiveTest, Variant) {
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
 
-  test(Variant4(std::string()), "\"\"");
+  test(Variant4(std::string()), "''");
   test(Variant4(std::string("foo")), "foo");
   test(Variant4(1.0), "!!float 1.0");
   test(Variant4(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");

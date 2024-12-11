@@ -222,23 +222,29 @@ class YamlWriteArchive final {
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
-    if constexpr (std::is_floating_point_v<T>) {
-      std::string value_str = std::isfinite(value) ? fmt_floating_point(value)
-                              : std::isnan(value)  ? ".nan"
-                              : (value > 0)        ? ".inf"
-                                                   : "-.inf";
-      auto scalar = internal::Node::MakeScalar(std::move(value_str));
-      scalar.SetTag(internal::JsonSchemaTag::kFloat);
-      root_.Add(nvp.name(), std::move(scalar));
-      return;
+    std::string text;
+    JsonSchemaTag tag;
+    if constexpr (std::is_same_v<T, std::string>) {
+      text = value;
+      tag = internal::JsonSchemaTag::kStr;
+    } else if constexpr (std::is_same_v<T, bool>) {
+      text = value ? "true" : "false";
+      tag = internal::JsonSchemaTag::kBool;
+    } else if constexpr (std::is_integral_v<T>) {
+      text = fmt::to_string(value);
+      tag = internal::JsonSchemaTag::kInt;
+    } else if constexpr (std::is_floating_point_v<T>) {
+      text = std::isfinite(value) ? fmt_floating_point(value)
+             : std::isnan(value)  ? ".nan"
+             : (value > 0)        ? ".inf"
+                                  : "-.inf";
+      tag = internal::JsonSchemaTag::kFloat;
+    } else {
+      text = fmt::format("{}", value);
+      tag = internal::JsonSchemaTag::kStr;
     }
-    auto scalar = internal::Node::MakeScalar(fmt::format("{}", value));
-    if constexpr (std::is_same_v<T, bool>) {
-      scalar.SetTag(internal::JsonSchemaTag::kBool);
-    }
-    if constexpr (std::is_integral_v<T>) {
-      scalar.SetTag(internal::JsonSchemaTag::kInt);
-    }
+    auto scalar = internal::Node::MakeScalar(std::move(text));
+    scalar.SetTag(tag);
     root_.Add(nvp.name(), std::move(scalar));
   }
 
