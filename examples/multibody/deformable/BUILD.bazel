@@ -134,9 +134,9 @@ drake_cc_binary(
 )
 
 drake_cc_binary(
-    name = "deformable_locking",
+    name = "deformable_disabling",
     srcs = [
-        "deformable_locking.cc",
+        "deformable_disabling.cc",
     ],
     add_test_rule = 1,
     data = [

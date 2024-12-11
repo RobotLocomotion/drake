@@ -230,7 +230,7 @@ void DeformableDriver<T>::AppendLinearDynamicsMatrix(
   const int num_bodies = deformable_model_->num_bodies();
   for (DeformableBodyIndex index(0); index < num_bodies; ++index) {
     const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
-    if (deformable_model_->is_locked(body_id, context)) {
+    if (!deformable_model_->is_enabled(body_id, context)) {
       A->push_back(MatrixX<T>::Zero(0, 0));
       continue;
     }
@@ -412,16 +412,17 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        ++surface_index) {
     const DeformableContactSurface<T>& surface =
         contact_surfaces[surface_index];
-    /* Skip this surface if either body in contact is a locked deformable body.
-     */
+    /* Skip this surface if either body in contact is a disabled deformable
+     body. */
     const DeformableBodyId body_id_A =
         deformable_model_->GetBodyId(surface.id_A());
-    const bool is_A_locked = deformable_model_->is_locked(body_id_A, context);
-    const bool is_B_locked =
+    const bool is_A_disabled =
+        !deformable_model_->is_enabled(body_id_A, context);
+    const bool is_B_disabled =
         surface.is_B_deformable() &&
-        deformable_model_->is_locked(
+        !deformable_model_->is_enabled(
             deformable_model_->GetBodyId(surface.id_B()), context);
-    if (is_A_locked || is_B_locked) {
+    if (is_A_disabled || is_B_disabled) {
       continue;
     }
     /* Write the contact jacobian and velocity for all contact points for body
@@ -585,7 +586,7 @@ void DeformableDriver<T>::AppendDeformableRigidFixedConstraintKinematics(
   for (DeformableBodyIndex index(0); index < deformable_model_->num_bodies();
        ++index) {
     DeformableBodyId body_id = deformable_model_->GetBodyId(index);
-    if (deformable_model_->is_locked(body_id, context) ||
+    if (!deformable_model_->is_enabled(body_id, context) ||
         !deformable_model_->HasConstraint(body_id)) {
       continue;
     }
@@ -886,7 +887,7 @@ void DeformableDriver<T>::CalcFreeMotionFemSolver(
   const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
   const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
   const FemState<T>& fem_state = EvalFemState(context, index);
-  if (deformable_model_->is_locked(body_id, context)) {
+  if (!deformable_model_->is_enabled(body_id, context)) {
     fem_solver->SetNextFemState(fem_state);
     return;
   }
@@ -1042,7 +1043,7 @@ void DeformableDriver<T>::CalcConstraintParticipation(
     geometry::internal::ContactParticipation* constraint_participation) const {
   DRAKE_DEMAND(constraint_participation != nullptr);
   const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
-  if (deformable_model_->is_locked(body_id, context)) {
+  if (!deformable_model_->is_enabled(body_id, context)) {
     const int num_vertices =
         deformable_model_->GetFemModel(body_id).num_nodes();
     *constraint_participation =

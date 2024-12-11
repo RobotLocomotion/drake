@@ -107,26 +107,26 @@ int do_main() {
   simulator.Initialize();
   simulator.set_target_realtime_rate(FLAGS_realtime_rate);
 
-  /* Initially lock all of the deformable tori so that they are suspended in the
-   air above each other. */
+  /* Initially disable all of the deformable tori so that they are suspended in
+   the air above each other. */
   for (const auto& torus_id : torus_ids) {
-    plant.deformable_model().Lock(torus_id, &plant_context);
+    plant.deformable_model().Disable(torus_id, &plant_context);
   }
 
-  /* Advance the simulation time in intervals, unlocking a new deformable body
+  /* Advance the simulation time in intervals, enabling a new deformable body
    at each boundary. */
   const double advance_interval =
       FLAGS_simulation_time / (torus_ids.size() + 1);
   for (std::size_t i = 0; i < torus_ids.size(); ++i) {
     const auto& torus_id = torus_ids[i];
-    plant.deformable_model().Unlock(torus_id, &plant_context);
+    plant.deformable_model().Enable(torus_id, &plant_context);
 
     simulator.AdvanceTo((i + 1) * advance_interval);
   }
 
-  /* Unlock the bottom torus, causing the others to fall through and reveal that
-   locked bodies do not participate in contact. */
-  plant.deformable_model().Lock(torus_ids[0], &plant_context);
+  /* Disable the bottom torus, causing the others to fall through and reveal
+   that disabled deformables do not participate in contact. */
+  plant.deformable_model().Disable(torus_ids[0], &plant_context);
   simulator.AdvanceTo(FLAGS_simulation_time);
 
   return 0;
@@ -138,8 +138,8 @@ int do_main() {
 
 int main(int argc, char* argv[]) {
   gflags::SetUsageMessage(
-      "This is a demo used to showcase locking/unlocking of deformable bodies."
-      "Deformable torus bodies are stacked on top of each other and unlocked "
+      "This is a demo used to showcase enabling/disabling of deformable bodies."
+      "Deformable torus bodies are stacked on top of each other and enabled "
       "one-by-one. Refer to README for instructions on meldis as well as "
       "optional flags.");
   gflags::ParseCommandLineFlags(&argc, &argv, true);

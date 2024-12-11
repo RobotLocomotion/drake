@@ -37,12 +37,12 @@ by calling C++ APIs.
 Note that currently (April 2024), this example doesn't run on macOS. We are
 working on supporting this on all platforms supported by Drake.
 
-# Deformable locking
+# Deformable disabling
 
-This example showcases the behavior of locked/unlocked deformable models.
-Deformable torus bodies are initially placed in a vertical column and locked.
-One by one, they are unlocked and fall into contact to demonstrate deformable
-behavior. Finally, one of the torus bodies is again locked to demonstrate that
+This example showcases the behavior of enabled/disabled deformable models.
+Deformable torus bodies are initially placed in a vertical column and disabled.
+One by one, they are enabled and fall into contact to demonstrate deformable
+behavior. Finally, one of the torus bodies is again disabled to demonstrate that
 it is removed from contact participation, causing the other tori to pass through
 it.
 
@@ -68,7 +68,7 @@ bazel run //examples/multibody/deformable:bubble_gripper
 or
 
 ```
-bazel run //examples/multibody/deformable:deformable_locking
+bazel run //examples/multibody/deformable:deformable_disabling
 ```
 
 ## Options
@@ -89,5 +89,5 @@ bazel run //examples/multibody/deformable:bubble_gripper -- --help
 or
 
 ```
-bazel run //examples/multibody/deformable:deformable_locking -- --help
+bazel run //examples/multibody/deformable:deformable_disabling -- --help
 ```

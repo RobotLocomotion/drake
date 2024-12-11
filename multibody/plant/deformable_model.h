@@ -174,40 +174,40 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   const std::vector<const ForceDensityField<T>*>& GetExternalForces(
       DeformableBodyId id) const;
 
-  // TODO(xuchenhan-tri): filter collisions for the locked deformable body's
+  // TODO(xuchenhan-tri): filter collisions for the disabled deformable body's
   // geometry.
-  /** Locks the deformable body with the given `id` in the given context.
-   Locking a deformable body sets its vertex velocities and accelerations to
-   zero and freezes its vertex positions. A locked deformable body is not
+  /** Disables the deformable body with the given `id` in the given context.
+   Disabling a deformable body sets its vertex velocities and accelerations to
+   zero and freezes its vertex positions. A disabled deformable body is not
    subject to any constraint (e.g. frictional contact constraint or fixed
    constraint); it does not move under the influence of external forces
    (e.g. gravity); and it does not necessarily satisfy the prescribed boundary
-   condition (if any). On the flip side, a locked deformable body does not
-   affect the dynamics of other bodies, even if the collision between the locked
-   body's geometry and other geometries is not filtered.
-   The deformable body can be unlocked by calling Unlock().
-   @see Unlock().
+   condition (if any). On the flip side, a disabled deformable body does not
+   affect the dynamics of other bodies, even if the collision between the
+   disabled body's geometry and other geometries is not filtered. The deformable
+   body can be enabled by calling Enable().
+   @see Enable().
    @throw std::exception if a deformable body with the given id is not
    registered.
    @throw std::exception if context is null. */
-  void Lock(DeformableBodyId id, systems::Context<T>* context) const;
+  void Disable(DeformableBodyId id, systems::Context<T>* context) const;
 
-  /** Unlocks the deformable body with the given `id` in the given context.
-   @see Lock().
+  /** Enables the deformable body with the given `id` in the given context.
+   @see Disable().
    @throw std::exception if a deformable body with the given id is not
     registered.
    @throw std::exception if context is null. */
-  void Unlock(DeformableBodyId id, systems::Context<T>* context) const;
+  void Enable(DeformableBodyId id, systems::Context<T>* context) const;
 
   /** @return true if and only if the deformable body with the given id is
-   locked.
+   enabled.
    @throw std::exception if a deformable body with the given id is not
    registered. */
-  bool is_locked(DeformableBodyId id,
-                 const systems::Context<T>& context) const {
+  bool is_enabled(DeformableBodyId id,
+                  const systems::Context<T>& context) const {
     ThrowUnlessRegistered(__func__, id);
     return context.get_parameters().template get_abstract_parameter<bool>(
-        is_locked_parameter_indexes_.at(id));
+        is_enabled_parameter_indexes_.at(id));
   }
 
   /** Returns the FemModel for the body with `id`.
@@ -362,9 +362,9 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   /* The discrete state indexes for all deformable bodies. */
   std::unordered_map<DeformableBodyId, systems::DiscreteStateIndex>
       discrete_state_indexes_;
-  /* System parameter index for the lock states for each deformable body. */
+  /* System parameter index for the enable states for each deformable body. */
   std::unordered_map<DeformableBodyId, systems::AbstractParameterIndex>
-      is_locked_parameter_indexes_;
+      is_enabled_parameter_indexes_;
   std::unordered_map<DeformableBodyId, geometry::GeometryId>
       body_id_to_geometry_id_;
   std::unordered_map<geometry::GeometryId, DeformableBodyId>

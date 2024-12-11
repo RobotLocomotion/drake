@@ -75,7 +75,7 @@ class FemState {
   void SetAccelerations(const Eigen::Ref<const VectorX<T>>& a);
   /* @} */
 
-  /** Makes `this` %FemState and exact copy of the given `other` %FemState.
+  /** Makes `this` %FemState an exact copy of the given `other` %FemState.
    @throws std::exception if num_dofs() of `this` %FemState and `other`
    %FemState are not the same.
    @throws std::exception if `this` %FemState is not owned (see class

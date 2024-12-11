@@ -561,7 +561,7 @@ TEST_F(DeformableModelTest, RegistrationNotAllowedForNonDoubleModel) {
       ".*AddExternalForce.*T != double.*not allowed.*");
 }
 
-TEST_F(DeformableModelTest, LockUnlock) {
+TEST_F(DeformableModelTest, EnableDisable) {
   auto model_id = RegisterSphere(0.5);
 
   plant_->Finalize();
@@ -582,36 +582,36 @@ TEST_F(DeformableModelTest, LockUnlock) {
       VectorXd::LinSpaced(2 * num_dofs, 0.0, 1.0);
   const VectorX<double> q0 = discrete_state.head(num_dofs);
 
-  deformable_model_ptr_->Lock(model_id, &plant_context);
-  EXPECT_TRUE(deformable_model_ptr_->is_locked(model_id, plant_context));
-  /* Verify that the position values are unchanged upon locking. */
+  deformable_model_ptr_->Disable(model_id, &plant_context);
+  EXPECT_FALSE(deformable_model_ptr_->is_enabled(model_id, plant_context));
+  /* Verify that the position values are unchanged upon disabling. */
   EXPECT_EQ(discrete_state.head(num_dofs), q0);
   /* Verify that the velocity and acceleration values are set to zero upon
-  locking. */
+  disabling. */
   EXPECT_EQ(discrete_state.tail(2 * num_dofs),
             VectorX<double>::Zero(2 * num_dofs));
   diagram->ExecuteForcedEvents(context.get());
-  const VectorXd& locked_next_state =
+  const VectorXd& disabled_next_state =
       plant_context.get_discrete_state(state_index).value();
   /* The position, velocity, and acceleration persist for the next time step. */
-  EXPECT_EQ(locked_next_state.head(num_dofs), q0);
-  EXPECT_EQ(locked_next_state.tail(2 * num_dofs),
+  EXPECT_EQ(disabled_next_state.head(num_dofs), q0);
+  EXPECT_EQ(disabled_next_state.tail(2 * num_dofs),
             VectorX<double>::Zero(2 * num_dofs));
 
-  deformable_model_ptr_->Unlock(model_id, &plant_context);
-  EXPECT_FALSE(deformable_model_ptr_->is_locked(model_id, plant_context));
-  /* Verify that the position values are unchanged after unlocking. */
+  deformable_model_ptr_->Enable(model_id, &plant_context);
+  EXPECT_TRUE(deformable_model_ptr_->is_enabled(model_id, plant_context));
+  /* Verify that the position values are unchanged after enabling. */
   EXPECT_EQ(discrete_state.head(num_dofs), q0);
   /* Verify that the velocity and acceleration values remain zero after
-  unlocking. */
+  enabling. */
   EXPECT_EQ(discrete_state.tail(2 * num_dofs),
             VectorX<double>::Zero(2 * num_dofs));
   /* The position, velocity, and acceleration for the next step. */
   diagram->ExecuteForcedEvents(context.get());
-  const VectorXd& unlocked_next_state =
+  const VectorXd& enabled_next_state =
       plant_context.get_discrete_state(state_index).value();
-  EXPECT_FALSE(CompareMatrices(unlocked_next_state.head(num_dofs), q0, 1e-4));
-  EXPECT_FALSE(CompareMatrices(unlocked_next_state.tail(2 * num_dofs),
+  EXPECT_FALSE(CompareMatrices(enabled_next_state.head(num_dofs), q0, 1e-4));
+  EXPECT_FALSE(CompareMatrices(enabled_next_state.tail(2 * num_dofs),
                                VectorXd::Zero(2 * num_dofs), 1e-2));
 }
 

@@ -377,19 +377,19 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrix) {
                       plant_->time_step());
 }
 
-TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixLocked) {
+TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixDisabled) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
   std::vector<MatrixXd> A;
   driver_->AppendLinearDynamicsMatrix(plant_context, &A);
-  /* Confirm the bodies, when unlocked, have non-trivial linear dynamics
+  /* Confirm the bodies, when enabled, have non-trivial linear dynamics
    matrices. */
   ASSERT_EQ(A.size(), 2);
   EXPECT_NE(A[0].size(), 0);
   EXPECT_NE(A[1].size(), 0);
 
-  /* With body0 locked, ensure that the dynamics matrix for body0 is empty. */
-  model_->Lock(body_id0_, context_.get());
+  /* With body0 disabled, ensure that the dynamics matrix for body0 is empty. */
+  model_->Disable(body_id0_, context_.get());
 
   A.clear();
   driver_->AppendLinearDynamicsMatrix(plant_context, &A);
@@ -403,9 +403,9 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixLocked) {
                           .get_D_complement() *
                       plant_->time_step());
 
-  /* With all bodies locked, ensure the linear dynamic matrices for both bodies
-   are empty. */
-  model_->Lock(body_id1_, context_.get());
+  /* With all bodies disabled, ensure the linear dynamic matrices for both
+   bodies are empty. */
+  model_->Disable(body_id1_, context_.get());
   A.clear();
   driver_->AppendLinearDynamicsMatrix(plant_context, &A);
   ASSERT_EQ(A.size(), 2);
@@ -489,42 +489,41 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   EXPECT_EQ(face_indices_1, expected_face_indices);
 }
 
-/* Test that locked deformable bodies are ignored when computing contact pairs.
- */
-TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairsLocked) {
+/* Test that disabled deformable bodies are ignored when computing contact
+ pairs. */
+TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairsDisabled) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
 
-  /* Test all combinations of deformable contact pairs where zero, one, or both
-   of the bodies are locked. */
+  /* Test combinations of deformable contact pairs where zero, one, or both of
+   the bodies are disabled. */
   std::vector<std::vector<std::pair<DeformableBodyId, bool>>> test_cases = {
-      {{body_id0_, false}, {body_id1_, false}},
-      {{body_id0_, false}, {body_id1_, true}},
-      {{body_id0_, true}, {body_id1_, false}},
       {{body_id0_, true}, {body_id1_, true}},
+      {{body_id0_, true}, {body_id1_, false}},
+      {{body_id0_, false}, {body_id1_, false}},
   };
 
   for (const auto& test_case : test_cases) {
     const DeformableContact<double>& contact_data =
         EvalDeformableContact(plant_context);
 
-    /* Apply locking/unlocking per the test case configuration. Compute the
-     number of expected contacts from the unlocked body count. */
+    /* Apply enable/disable per the test case configuration. Compute the
+     number of expected contacts from the enabled body count. */
     int num_contact_points = 0;
-    for (const auto& [deformable_id, is_locked] : test_case) {
-      if (is_locked) {
-        model_->Lock(deformable_id, context_.get());
+    for (const auto& [deformable_id, is_enabled] : test_case) {
+      if (is_enabled) {
+        model_->Enable(deformable_id, context_.get());
       } else {
-        model_->Unlock(deformable_id, context_.get());
+        model_->Disable(deformable_id, context_.get());
       }
 
       /* Compute this model's contribution to the expected contact point count,
-        disregarding locked models. */
+        disregarding disabled models. */
       for (const DeformableContactSurface<double>& surface :
            contact_data.contact_surfaces()) {
         const GeometryId geom_id = model_->GetGeometryId(deformable_id);
         if (surface.id_A() == geom_id || surface.id_B() == geom_id) {
-          num_contact_points += is_locked ? 0 : surface.num_contact_points();
+          num_contact_points += is_enabled ? surface.num_contact_points() : 0;
         }
       }
     }
