@@ -113,11 +113,15 @@ load("//tools/workspace/zlib:repository.bzl", "zlib_repository")
 # This is the list of modules that our MODULE.bazel already incorporates.
 # It is cross-checked by the workspace_bzlmod_sync_test.py test.
 REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
+    "build_bazel_apple_support",
     "bazel_skylib",
+    "platforms",
+    "rust_toolchain",
     "rules_cc",
     "rules_java",
     "rules_license",
     "rules_python",
+    "rules_rust",
 ]
 
 def add_default_repositories(
@@ -374,6 +378,9 @@ def add_default_toolchains(
         bzlmod: when True, skips toolchains declared in our MODULE.bazel;
           set this to True if you are using bzlmod.
     """
+    if bzlmod:
+        # All toolchains are in MODULE.bazel already.
+        return
 
     if "py" not in excludes:
         native.register_toolchains(
