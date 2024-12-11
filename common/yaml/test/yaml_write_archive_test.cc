@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include <fmt/args.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -73,8 +74,54 @@ TEST_F(YamlWriteArchiveTest, String) {
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
 
+  // We'll use these named fmt args to help make our expected values clear.
+  fmt::dynamic_format_arg_store<fmt::format_context> args;
+  args.push_back(fmt::arg("bs", '\\'));  // backslash
+  args.push_back(fmt::arg("dq", '"'));   // double quote
+
+  // Plain string.
   test("a", "a");
-  test("1", "1");
+
+  // Needs quoting for special characters. Note that there are several valid
+  // ways to quote and/or escape these, but for now we just check against the
+  // exact choice that yaml-cpp uses. In the future if we see new outputs, we
+  // could allow them too.
+  test("'", fmt::vformat("{dq}'{dq}", args));
+  test("\"", fmt::vformat("{dq}{bs}{dq}{dq}", args));
+
+  // Needs quoting to avoid being misinterpreted as another data type.
+  test("1", "'1'");
+  test("1.0", "'1.0'");
+  test(".NaN", "'.NaN'");
+  test("true", "'true'");
+  test("null", "'null'");
+
+  // Similar to things that would be misinterpreted but actually a-ok.
+  test("nonnull", "nonnull");
+  test("NaN", "NaN");
+  test("=1.0", "=1.0");
+}
+
+TEST_F(YamlWriteArchiveTest, AllScalars) {
+  AllScalarsStruct x;
+  x.some_bool = true;
+  x.some_float = 100.0;
+  x.some_double = 101.0;
+  x.some_int32 = 102;
+  x.some_uint32 = 103;
+  x.some_int64 = 104;
+  x.some_uint64 = 105;
+  x.some_string = "foo";
+  EXPECT_EQ(Save(x), R"""(doc:
+  some_bool: true
+  some_float: 100.0
+  some_double: 101.0
+  some_int32: 102
+  some_uint32: 103
+  some_int64: 104
+  some_uint64: 105
+  some_string: foo
+)""");
 }
 
 TEST_F(YamlWriteArchiveTest, StdArray) {
@@ -208,7 +255,7 @@ TEST_F(YamlWriteArchiveTest, Variant) {
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
 
-  test(Variant4(std::string()), "\"\"");
+  test(Variant4(std::string()), "''");
   test(Variant4(std::string("foo")), "foo");
   test(Variant4(1.0), "!!float 1.0");
   test(Variant4(DoubleStruct{1.0}), "!DoubleStruct\n    value: 1.0");

@@ -157,8 +157,8 @@ TEST_P(YamlReadArchiveTest, AllScalars) {
   const std::string doc = R"""(
 doc:
   some_bool: true
-  some_double: 100.0
-  some_float: 101.0
+  some_float: 100.0
+  some_double: 101.0
   some_int32: 102
   some_uint32: 103
   some_int64: 104
@@ -167,8 +167,8 @@ doc:
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
-  EXPECT_EQ(x.some_double, 100.0);
-  EXPECT_EQ(x.some_float, 101.0);
+  EXPECT_EQ(x.some_float, 100.0);
+  EXPECT_EQ(x.some_double, 101.0);
   EXPECT_EQ(x.some_int32, 102);
   EXPECT_EQ(x.some_uint32, 103);
   EXPECT_EQ(x.some_int64, 104);
