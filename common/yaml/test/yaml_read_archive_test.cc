@@ -199,6 +199,19 @@ TEST_P(YamlReadArchiveTest, Path) {
   test("true");
 }
 
+// Decode base64 strings automatically.
+TEST_P(YamlReadArchiveTest, String) {
+  const auto test = [](const std::string& value, const std::string& expected) {
+    const auto& x = AcceptNoThrow<StringStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected);
+  };
+
+  test("all printable", "all printable");
+  test("\"\\tall\\nprintable\\r  char\"", "\tall\nprintable\r  char");
+  test("!!binary Tm9uUHJpbnRhYmxlAw==", "NonPrintable\x03");
+  test("!!binary |\n    Tm9uUHJpbnRhYmxlAw==", "NonPrintable\x03");
+}
+
 TEST_P(YamlReadArchiveTest, PathMissing) {
   const PathStruct default_path;
   const auto& x = AcceptEmptyDoc<PathStruct>();

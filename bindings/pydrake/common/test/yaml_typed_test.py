@@ -667,6 +667,34 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
         result = yaml_load_typed(schema=StringStruct, data=data)
         self.assertEqual(result.value, "some_value")
 
+        data = dedent("""
+        value:
+          !!binary Tm9uUHJpbnRhYmxlAw==
+        """)
+        result = yaml_load_typed(schema=StringStruct, data=data)
+        self.assertEqual(result.value, "NonPrintable\x03")
+
+        data = dedent("""
+        value: !!binary |
+          Tm9uUHJpbnRhYmxlAw==
+        """)
+        result = yaml_load_typed(schema=StringStruct, data=data)
+        self.assertEqual(result.value, "NonPrintable\x03")
+
+        data = dedent("""
+        value:
+          !!str Tm9uUHJpbnRhYmxlAw==
+        """)
+        result = yaml_load_typed(schema=StringStruct, data=data)
+        self.assertEqual(result.value, "Tm9uUHJpbnRhYmxlAw==")
+
+        data = dedent("""
+        value:
+          "\\tall\\nprintable\\r  char"
+        """)
+        result = yaml_load_typed(schema=StringStruct, data=data)
+        self.assertEqual(result.value, "\tall\nprintable\r  char")
+
     def test_load_string_child_name(self):
         data = dedent("""
         some_child_name:
@@ -777,6 +805,7 @@ class TestYamlTypedWrite(unittest.TestCase):
         cases = [
             ("a", "a"),
             ("1", "'1'"),
+            ("NonPrintable\x03", "!!binary |\n  Tm9uUHJpbnRhYmxlAw=="),
         ]
         for value, expected_str in cases:
             actual_doc = yaml_dump_typed(StringStruct(value=value))

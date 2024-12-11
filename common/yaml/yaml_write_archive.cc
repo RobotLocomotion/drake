@@ -33,7 +33,7 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
   std::string tag{node.GetTag()};
   if ((tag == internal::Node::kTagNull) || (tag == internal::Node::kTagBool) ||
       (tag == internal::Node::kTagInt) || (tag == internal::Node::kTagFloat) ||
-      (tag == internal::Node::kTagStr)) {
+      (tag == internal::Node::kTagStr) || (tag == internal::Node::kTagBinary)) {
     // In most cases we don't need to emit the "JSON Schema" tags for YAML data,
     // because they are implied by default. However, YamlWriteArchive on variant
     // types sometimes marks the tag as important.
@@ -352,6 +352,24 @@ void YamlWriteArchive::VisitPathScalar(const char* name,
     scalar.SetTag(internal::JsonSchemaTag::kStr, /* important */ true);
   }
   root_.Add(name, std::move(scalar));
+}
+
+void YamlWriteArchive::VisitStringScalar(const char* name, std::string value) {
+  const bool is_binary = [&value]() {
+    for (char c : value) {
+      if (!std::isprint(c) && c != '\n' && c != '\r' && c != '\t') return true;
+    }
+    return false;
+  }();
+  if (is_binary) {
+    std::string encoded = YAML::EncodeBase64(
+        reinterpret_cast<const unsigned char*>(value.c_str()), value.size());
+    auto scalar = internal::Node::MakeScalar(std::move(encoded));
+    scalar.SetTag(internal::JsonSchemaTag::kBinary, /* important= */ true);
+    root_.Add(name, std::move(scalar));
+  } else {
+    root_.Add(name, internal::Node::MakeScalar(std::move(value)));
+  }
 }
 
 }  // namespace internal

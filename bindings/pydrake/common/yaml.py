@@ -141,6 +141,19 @@ class _SchemaDumper(yaml.dumper.SafeDumper):
         else:
             return super().represent_dict(data)
 
+    def _represent_str(self, s):
+        """Handle non-printable strings."""
+        is_binary = False
+        for c in s:
+            if (not c.isprintable()
+                    and not (c == '\n' or c == '\r' or c == '\t')):
+                is_binary = True
+                break
+        if is_binary:
+            return self.represent_binary(s.encode("utf-8"))
+        else:
+            return self.represent_str(s)
+
     def _represent_undefined(self, data):
         if getattr(type(data), "__module__", "").startswith("pydrake"):
             raise yaml.representer.RepresenterError(
@@ -151,6 +164,7 @@ class _SchemaDumper(yaml.dumper.SafeDumper):
 
 _SchemaDumper.add_representer(None, _SchemaDumper._represent_undefined)
 _SchemaDumper.add_representer(dict, _SchemaDumper._represent_dict)
+_SchemaDumper.add_representer(str, _SchemaDumper._represent_str)
 _SchemaDumper.add_representer(
     _SchemaDumper.ExplicitScalar,
     _SchemaDumper._represent_explicit_scalar)
@@ -166,6 +180,9 @@ class _DrakeFlowSchemaDumper(_SchemaDumper):
 
     - For mappings: If there are no children, then formats this map onto a
       single line; otherwise, format over multiple lines.
+
+    - For strings: if the string contains non-printable characters, it is
+      emitted as a binary string.
     """
 
     def serialize_node(self, node, parent, index):
@@ -293,7 +310,11 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
             raise RuntimeError(
                 f"Expected a {value_schema} value for '{name}' but instead got"
                 f" non-scalar yaml data of type {type(yaml_value)}")
-        new_value = value_schema(yaml_value)
+        if value_schema == str and isinstance(yaml_value, bytes):
+            # This had the !!binary tag.
+            new_value = yaml_value.decode('utf-8')
+        else:
+            new_value = value_schema(yaml_value)
         setter(new_value)
         return
 
@@ -595,10 +616,12 @@ def _yaml_dump_get_attribute(*, obj, name):
 def _yaml_dump_typed_item(*, obj, schema):
     """Given an object ``obj`` and its type ``schema``, returns the plain YAML
     object that should be serialized. Objects that are already primitive types
-    (str, float, etc.) are returned unchanged. Bare collection types (List and
-    Mapping) are processed recursively. Structs (dataclasses) are processed
-    using their schema. The result is "plain" in the sense that's it's always
-    just a tree of primitives, lists, and dicts -- no user-defined types.
+    (str, float, etc.) are returned mostly unchanged; strings with unprintable
+    characters (excluding whitespace) will be translated to byte strings. Bare
+    collection types (List and Mapping) are processed recursively. Structs
+    (dataclasses) are processed using their schema. The result is "plain" in
+    the sense that's it's always just a tree of primitives, lists, and dicts --
+    no user-defined types.
     """
     assert schema is not None
 

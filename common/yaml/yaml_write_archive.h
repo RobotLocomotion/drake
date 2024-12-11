@@ -223,6 +223,10 @@ class YamlWriteArchive final {
   // be conditioned so it doesn't get misinterpreted when read.
   void VisitPathScalar(const char* name, std::filesystem::path value);
 
+  // If the string has non-printable characters, it will be written as binary
+  // data (e.g., with the !!binary tag and encoded in base64).
+  void VisitStringScalar(const char* name, std::string value);
+
   // This is used for simple types that can be converted to a string.
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
@@ -236,6 +240,11 @@ class YamlWriteArchive final {
       auto scalar = internal::Node::MakeScalar(std::move(value_str));
       scalar.SetTag(internal::JsonSchemaTag::kFloat);
       root_.Add(nvp.name(), std::move(scalar));
+      return;
+    }
+
+    if constexpr (std::is_same_v<T, std::string>) {
+      VisitStringScalar(nvp.name(), std::move(value));
       return;
     }
 

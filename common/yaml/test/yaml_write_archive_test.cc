@@ -76,6 +76,12 @@ TEST_F(YamlWriteArchiveTest, String) {
 
   test("a", "a");
   test("1", "1");
+  test("\twith\nnew\r  line", "\"\\twith\\nnew\\r  line\"");
+  test(
+      R"""(multi
+  lines)""",
+      "\"multi\\n  lines\"");
+  test("NonPrintable\x03", "!!binary Tm9uUHJpbnRhYmxlAw==");
 }
 
 TEST_F(YamlWriteArchiveTest, Path) {
