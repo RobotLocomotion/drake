@@ -26,6 +26,7 @@ void LinearCorotatedModelData<T>::UpdateFromDeformationGradient() {
   trace_strain_ = strain_.trace();
 }
 
+template class LinearCorotatedModelData<float>;
 template class LinearCorotatedModelData<double>;
 template class LinearCorotatedModelData<AutoDiffXd>;
 

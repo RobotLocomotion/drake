@@ -24,6 +24,7 @@ void CorotatedModelData<T>::UpdateFromDeformationGradient() {
   internal::CalcCofactorMatrix<T>(F, &JFinvT_);
 }
 
+template class CorotatedModelData<float>;
 template class CorotatedModelData<double>;
 template class CorotatedModelData<AutoDiffXd>;
 
