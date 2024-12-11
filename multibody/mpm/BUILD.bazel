@@ -39,6 +39,7 @@ drake_cc_library(
         "grid_data.h",
     ],
     deps = [
+        "//common:bit_cast",
         "//common:essential",
     ],
 )
