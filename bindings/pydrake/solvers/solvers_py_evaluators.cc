@@ -691,7 +691,11 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.UpdateCoefficients(new_A, new_b);
           },
           py::arg("new_A"), py::arg("new_b") = 0,
-          doc.L1NormCost.UpdateCoefficients.doc);
+          doc.L1NormCost.UpdateCoefficients.doc)
+      .def("update_A_entry", &L1NormCost::update_A_entry, py::arg("i"),
+          py::arg("j"), py::arg("val"), doc.L1NormCost.update_A_entry.doc)
+      .def("update_b_entry", &L1NormCost::update_b_entry, py::arg("i"),
+          py::arg("val"), doc.L1NormCost.update_b_entry.doc);
 
   {
     py::class_<L2NormCost, Cost, std::shared_ptr<L2NormCost>> cls(
@@ -742,7 +746,11 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.UpdateCoefficients(new_A, new_b);
           },
           py::arg("new_A"), py::arg("new_b") = 0,
-          doc.LInfNormCost.UpdateCoefficients.doc);
+          doc.LInfNormCost.UpdateCoefficients.doc)
+      .def("update_A_entry", &LInfNormCost::update_A_entry, py::arg("i"),
+          py::arg("j"), py::arg("val"), doc.LInfNormCost.update_A_entry.doc)
+      .def("update_b_entry", &LInfNormCost::update_b_entry, py::arg("i"),
+          py::arg("val"), doc.LInfNormCost.update_b_entry.doc);
 
   py::class_<PerspectiveQuadraticCost, Cost,
       std::shared_ptr<PerspectiveQuadraticCost>>(
@@ -762,7 +770,13 @@ void BindEvaluatorsAndBindings(py::module m) {
             self.UpdateCoefficients(new_A, new_b);
           },
           py::arg("new_A"), py::arg("new_b"),
-          doc.PerspectiveQuadraticCost.UpdateCoefficients.doc);
+          doc.PerspectiveQuadraticCost.UpdateCoefficients.doc)
+      .def("update_A_entry", &PerspectiveQuadraticCost::update_A_entry,
+          py::arg("i"), py::arg("j"), py::arg("val"),
+          doc.PerspectiveQuadraticCost.update_A_entry.doc)
+      .def("update_b_entry", &PerspectiveQuadraticCost::update_b_entry,
+          py::arg("i"), py::arg("val"),
+          doc.PerspectiveQuadraticCost.update_b_entry.doc);
 
   py::class_<ExpressionCost, Cost, std::shared_ptr<ExpressionCost>>(
       m, "ExpressionCost", doc.ExpressionCost.doc)
