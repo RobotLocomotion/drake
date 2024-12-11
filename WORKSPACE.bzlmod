@@ -14,10 +14,6 @@ load("//tools/workspace:default.bzl", "add_default_workspace")
 
 add_default_workspace(bzlmod = True)
 
-load("@build_bazel_apple_support//crosstool:setup.bzl", "apple_cc_configure")
-
-apple_cc_configure()
-
 # Add some special heuristic logic for using CLion with Drake.
 load("//tools/clion:repository.bzl", "drake_clion_environment")
 
