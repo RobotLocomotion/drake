@@ -16,37 +16,63 @@ class GridNodeIndexTest : public ::testing::Test {};
 TYPED_TEST_SUITE(GridNodeIndexTest, IndexTypes);
 
 TYPED_TEST(GridNodeIndexTest, Basic) {
-  GridNodeIndex<TypeParam> index;
-  EXPECT_TRUE(index.is_valid());
+  using T = TypeParam;
+  GridNodeIndex<T> index;
+  EXPECT_FALSE(index.is_index());
+  EXPECT_FALSE(index.is_participating());
+  EXPECT_TRUE(index.is_inactive());
 
   index.set_value(123);
-  EXPECT_TRUE(index.is_valid());
   EXPECT_EQ(index.value(), 123);
-  index.reset();
-  EXPECT_TRUE(index.is_valid());
-  index.set_flag();
-  EXPECT_FALSE(index.is_valid());
-  /* Setting participation twice in a row is fine. */
-  index.set_flag();
-  EXPECT_FALSE(index.is_valid());
+  index.set_inactive();
+  EXPECT_TRUE(index.is_inactive());
+  index.set_participating();
+  EXPECT_TRUE(index.is_participating());
+  /* Setting participation twice is allowed. */
+  index.set_participating();
+  EXPECT_TRUE(index.is_participating());
 }
 
-TYPED_TEST(GridNodeIndexTest, Equality) {
-  GridNodeIndex<TypeParam> index1(123);
-  GridNodeIndex<TypeParam> index2(123);
-  EXPECT_EQ(index1, index2);
-  index2.set_flag();
-  EXPECT_NE(index1, index2);
-  index1.set_flag();
-  EXPECT_EQ(index1, index2);
-  index2.reset();
-  EXPECT_NE(index1, index2);
-  index1.reset();
-  EXPECT_EQ(index1, index2);
-  index2.set_value(123);
-  EXPECT_NE(index1, index2);
-  index1.set_value(123);
-  EXPECT_EQ(index1, index2);
+TYPED_TEST(GridNodeIndexTest, StateTransition) {
+  using T = TypeParam;
+  GridNodeIndex<T> index(123);
+  EXPECT_TRUE(index.is_index());
+  EXPECT_FALSE(index.is_participating());
+  EXPECT_FALSE(index.is_inactive());
+
+  /* Active -> Inactive */
+  index.set_inactive();
+  EXPECT_FALSE(index.is_index());
+  EXPECT_FALSE(index.is_participating());
+  EXPECT_TRUE(index.is_inactive());
+
+  /* Inactive -> Participating */
+  index.set_participating();
+  EXPECT_FALSE(index.is_index());
+  EXPECT_TRUE(index.is_participating());
+  EXPECT_FALSE(index.is_inactive());
+
+  /* Participating -> Inactive */
+  index.set_inactive();
+  EXPECT_FALSE(index.is_index());
+  EXPECT_FALSE(index.is_participating());
+  EXPECT_TRUE(index.is_inactive());
+
+  /* Inactive -> Active */
+  index.set_value(123);
+  EXPECT_TRUE(index.is_index());
+  EXPECT_FALSE(index.is_participating());
+  EXPECT_FALSE(index.is_inactive());
+  EXPECT_EQ(index.value(), 123);
+
+  /* Additional scenario: Participating -> Active */
+  GridNodeIndex<T> another_index;
+  another_index.set_participating();
+  another_index.set_value(123);
+  EXPECT_TRUE(another_index.is_index());
+  EXPECT_EQ(another_index.value(), 123);
+  EXPECT_FALSE(another_index.is_participating());
+  EXPECT_FALSE(another_index.is_inactive());
 }
 
 using FloatingPointTypes = ::testing::Types<float, double>;
@@ -57,40 +83,42 @@ class GridDataTest : public ::testing::Test {};
 TYPED_TEST_SUITE(GridDataTest, FloatingPointTypes);
 
 TYPED_TEST(GridDataTest, Reset) {
-  GridData<TypeParam> data;
+  using T = TypeParam;
+  GridData<T> data;
   data.index.set_value(123);
-  data.scratch = Vector3<TypeParam>::Ones();
-  data.v = Vector3<TypeParam>::Ones();
+  data.scratch = Vector3<T>::Ones();
+  data.v = Vector3<T>::Ones();
   data.m = 1;
 
   data.reset();
-  EXPECT_EQ(data.index.value(), 0);
-  EXPECT_EQ(data.scratch, Vector3<TypeParam>::Zero());
-  EXPECT_EQ(data.v, Vector3<TypeParam>::Zero());
-  EXPECT_EQ(data.m, 0);
+  EXPECT_TRUE(data.index.is_inactive());
+  EXPECT_NE(data.scratch, data.scratch);
+  EXPECT_NE(data.v, data.v);
+  EXPECT_TRUE(std::isnan(data.m));
 }
 
 TYPED_TEST(GridDataTest, Equality) {
-  GridData<TypeParam> data1;
+  using T = TypeParam;
+  GridData<T> data1;
   data1.index.set_value(123);
-  data1.scratch = Vector3<TypeParam>::Ones();
-  data1.v = Vector3<TypeParam>::Ones();
+  data1.scratch = Vector3<T>::Ones();
+  data1.v = Vector3<T>::Ones();
   data1.m = 1;
 
-  GridData<TypeParam> data2;
+  GridData<T> data2;
   data2.index.set_value(123);
-  data2.scratch = Vector3<TypeParam>::Ones();
-  data2.v = Vector3<TypeParam>::Ones();
+  data2.scratch = Vector3<T>::Ones();
+  data2.v = Vector3<T>::Ones();
   data2.m = 1;
 
   EXPECT_EQ(data1, data2);
-  data2.index.set_flag();
+  data2.index.set_participating();
   EXPECT_NE(data1, data2);
-  data1.index.set_flag();
+  data1.index.set_participating();
   EXPECT_EQ(data1, data2);
-  data2.reset();
-  EXPECT_NE(data1, data2);
   data1.reset();
+  EXPECT_NE(data1, data2);
+  data2.reset();
   EXPECT_EQ(data1, data2);
 }
 
