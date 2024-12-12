@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -217,6 +218,15 @@ class YamlWriteArchive final {
     root_.Add(nvp.name(), std::move(sub_archive.root_));
   }
 
+  // Paths need special treatment. If the path has a string value that can be
+  // interpreted as a basic scalar value (e.g., bool, double, etc.) it needs to
+  // be conditioned so it doesn't get misinterpreted when read.
+  void VisitPathScalar(const char* name, std::filesystem::path value);
+
+  // If the string has non-printable characters, it will be written as binary
+  // data (e.g., with the !!binary tag and encoded in base64).
+  void VisitStringScalar(const char* name, std::string value);
+
   // This is used for simple types that can be converted to a string.
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
@@ -232,14 +242,24 @@ class YamlWriteArchive final {
       root_.Add(nvp.name(), std::move(scalar));
       return;
     }
-    auto scalar = internal::Node::MakeScalar(fmt::format("{}", value));
-    if constexpr (std::is_same_v<T, bool>) {
-      scalar.SetTag(internal::JsonSchemaTag::kBool);
+
+    if constexpr (std::is_same_v<T, std::string>) {
+      VisitStringScalar(nvp.name(), std::move(value));
+      return;
     }
-    if constexpr (std::is_integral_v<T>) {
-      scalar.SetTag(internal::JsonSchemaTag::kInt);
+
+    if constexpr (std::is_same_v<T, std::filesystem::path>) {
+      VisitPathScalar(nvp.name(), std::move(value));
+    } else {
+      auto scalar = internal::Node::MakeScalar(fmt::format("{}", value));
+      if constexpr (std::is_same_v<T, bool>) {
+        scalar.SetTag(internal::JsonSchemaTag::kBool);
+      }
+      if constexpr (std::is_integral_v<T>) {
+        scalar.SetTag(internal::JsonSchemaTag::kInt);
+      }
+      root_.Add(nvp.name(), std::move(scalar));
     }
-    root_.Add(nvp.name(), std::move(scalar));
   }
 
   // This is used for std::optional or similar.

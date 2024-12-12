@@ -979,6 +979,8 @@ drake_cc_googletest(
     name = "file_source_test",
     deps = [
         ":file_source",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml:yaml_io",
     ],
 )
 
@@ -1099,6 +1101,8 @@ drake_cc_googletest(
         ":find_resource",
         ":memory_file",
         ":temp_directory",
+        "//common/test_utilities:expect_throws_message",
+        "//common/yaml:yaml_io",
     ],
 )
 

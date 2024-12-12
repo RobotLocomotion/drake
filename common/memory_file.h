@@ -67,6 +67,16 @@ class MemoryFile final {
    any number less than or equal to zero. */
   std::string to_string(int contents_limit = 100) const;
 
+  /** Serialization stub.
+
+   %MemoryFile cannot actually be serialized yet. Attempting to do will throw.
+   This stub merely permits FileSource to be serialized (when it contains a
+   `std::filesystem::path`). */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    throw std::runtime_error("Serialization for MemoryFile not yet supported.");
+  }
+
  private:
   reset_after_move<std::string> contents_;
 
