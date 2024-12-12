@@ -1,1 +1,3 @@
-../../../../.bazeliskrc
+# We can't use any version >= 8 for some unknown reason. However, that
+# seems fine for our purposes (i.e., instrumentation for upgrades).
+USE_BAZEL_VERSION=7.4.1
