@@ -124,10 +124,18 @@ internal::Node ConvertJbederYamlNodeToDrakeYamlNode(const YAML::Node& parent,
       return internal::Node::MakeNull();
     }
     case YAML::NodeType::Scalar: {
-      auto result = internal::Node::MakeScalar(node.Scalar());
-      result.SetTag(node.Tag());
-      result.SetMark(mark);
-      return result;
+      if (node.Tag() == Node::kTagBinary) {
+        std::vector<unsigned char> decoded = YAML::DecodeBase64(node.Scalar());
+        auto result = internal::Node::MakeScalar(
+            std::string(decoded.begin(), decoded.end()));
+        result.SetMark(mark);
+        return result;
+      } else {
+        auto result = internal::Node::MakeScalar(node.Scalar());
+        result.SetTag(node.Tag());
+        result.SetMark(mark);
+        return result;
+      }
     }
     case YAML::NodeType::Sequence: {
       auto result = internal::Node::MakeSequence();
@@ -261,6 +269,12 @@ void YamlReadArchive::ParseScalar(const std::string& value, uint64_t* result) {
 
 void YamlReadArchive::ParseScalar(const std::string& value,
                                   std::string* result) {
+  DRAKE_DEMAND(result != nullptr);
+  *result = value;
+}
+
+void YamlReadArchive::ParseScalar(const std::string& value,
+                                  std::filesystem::path* result) {
   DRAKE_DEMAND(result != nullptr);
   *result = value;
 }

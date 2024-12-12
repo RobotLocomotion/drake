@@ -71,6 +71,11 @@ enum class JsonSchemaTag {
   kFloat,
   // https://yaml.org/spec/1.2.2/#generic-string
   kStr,
+  // Note: this isn't one of the json schema tags, properly. It is a valid
+  // yaml tag which is treated the same as the json tags when reading/writing
+  // data.
+  // https://yaml.org/type/binary.html
+  kBinary,
 };
 
 /* Data type that represents a YAML node.  A Node can hold one of three
@@ -170,6 +175,9 @@ class Node final {
 
   // https://yaml.org/spec/1.2.2/#generic-string
   static constexpr std::string_view kTagStr{"tag:yaml.org,2002:str"};
+
+  // https://yaml.org/type/binary.html
+  static constexpr std::string_view kTagBinary{"tag:yaml.org,2002:binary"};
 
   /* Sets the filename where this Node was read from. A nullopt indicates that
   the filename is not known. */
