@@ -1,7 +1,9 @@
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/manipulation/kuka_iiwa/build_iiwa_control.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_command_receiver.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_command_sender.h"
@@ -179,10 +181,15 @@ void DefineManipulationKukaIiwa(py::module m) {
             py::arg("plant"), py::arg("iiwa_instance"),
             py::arg("controller_plant"), py::arg("ext_joint_filter_tau"),
             py::arg("desired_iiwa_kp_gains"), py::arg("control_mode"),
-            // Keep alive, ownership: `return` keeps `builder` alive.
-            py::keep_alive<0, 1>(),
-            // Keep alive, reference: `builder` keeps `controller_plant` alive.
-            py::keep_alive<1, 4>(), py_rvp::reference,
+            // Using builder_life_support_stash makes the
+            // builder temporarily immortal (uncollectible self cycle). This
+            // will be resolved by the Build() step. See BuilderLifeSupport for
+            // rationale.
+            internal::builder_life_support_stash<double, 1>(),
+            // `return` and `builder` join ref cycle.
+            internal::ref_cycle<0, 1>(),
+            // Keep alive, reference: `return` keeps `controller_plant` alive.
+            py::keep_alive<0, 4>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc);
   }
 

@@ -1,6 +1,7 @@
 import pydrake.geometry as mut
 
 import copy
+import gc
 import unittest
 import urllib.request
 
@@ -91,6 +92,46 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertEqual(draw_subscriber.count, 0)
         load_subscriber.clear()
         draw_subscriber.clear()
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_drake_visualizer_lifetime(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+        DiagramBuilder = DiagramBuilder_[T]
+        Simulator = Simulator_[T]
+        role = mut.Role.kIllustration
+        params = mut.DrakeVisualizerParams(
+            publish_period=0.1, role=mut.Role.kIllustration,
+            default_color=mut.Rgba(0.1, 0.2, 0.3, 0.4),
+            show_hydroelastic=False,
+            use_role_channel_suffix=False)
+
+        def auto_connect_to_system(builder, scene_graph, params):
+            lcm = DrakeLcm()
+            mut.DrakeVisualizer_[T].AddToBuilder(builder=builder,
+                                                 scene_graph=scene_graph,
+                                                 lcm=lcm, params=params)
+
+        def auto_connect_to_port(builder, scene_graph, params):
+            lcm = DrakeLcm()
+            mut.DrakeVisualizer_[T].AddToBuilder(
+                builder=builder,
+                query_object_port=scene_graph.get_query_output_port(),
+                lcm=lcm, params=params)
+
+        for func in [auto_connect_to_system, auto_connect_to_port]:
+            # Build the diagram.
+            builder = DiagramBuilder()
+            scene_graph = builder.AddSystem(SceneGraph())
+            func(builder, scene_graph, params)
+
+            gc.collect()
+
+            # Simulate to t = 0 to send initial load and draw messages.
+            diagram = builder.Build()
+            Simulator(diagram).AdvanceTo(0)
+
+    def test_drake_visualizer_life_support(self):
+        pass
 
     def test_meshcat_params(self):
         prop_a = mut.MeshcatParams.PropertyTuple(

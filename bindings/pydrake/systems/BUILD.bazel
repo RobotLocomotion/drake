@@ -48,9 +48,11 @@ drake_pybind_library(
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
+        "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_srcs = [
         "framework_py.cc",
@@ -124,6 +126,7 @@ drake_pybind_library(
     cc_srcs = ["controllers_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":analysis_py",
         ":framework_py",
         ":module_py",
         ":primitives_py",
@@ -198,6 +201,14 @@ drake_py_library(
     srcs = ["drawing.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [":module_py"],
+)
+
+drake_cc_library(
+    name = "builder_life_support_pybind",
+    hdrs = ["builder_life_support_pybind.h"],
+    declare_installed_headers = False,
+    visibility = ["//bindings/pydrake:__subpackages__"],
+    deps = [],
 )
 
 drake_cc_library(
@@ -459,6 +470,7 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
+        ":test_util_py",
         "//bindings/pydrake/examples",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
