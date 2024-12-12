@@ -118,4 +118,5 @@ rust_toolchain(
     extra_rustc_flags = [],
     extra_exec_rustc_flags = [],
     opt_level = None,
+    tags = ["rust_version=1.83.0"],
 )
