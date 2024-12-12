@@ -98,6 +98,16 @@ class PrismaticSpring final : public ForceElement<T> {
   double stiffness_{0};
 };
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastForceElement<PrismaticSpring> {
+  template <typename T>
+  static const PrismaticSpring<T>* cast(const ForceElement<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

@@ -89,6 +89,21 @@ std::unique_ptr<Joint<symbolic::Expression>> PrismaticJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+namespace internal {
+
+template <typename T>
+const PrismaticJoint<T>* DynamicCastJoint<PrismaticJoint>::cast(
+    const Joint<T>* element) {
+  return dynamic_cast<const PrismaticJoint<T>*>(element);
+}
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &DynamicCastJoint<PrismaticJoint>::template cast<T>
+));
+// clang-format on
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
