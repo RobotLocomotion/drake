@@ -1,0 +1,25 @@
+[rnv] Avoid valgrind memcheck errors
+
+This patch initializes some stack data, previously (and harmlessly) left
+unitialized, to avoid complaints from valgrind memcheck.
+
+Similar hazards in functions that Drake does not use are left untouched.
+
+diff --git rnl.c rnl.c
+index 65d899c..81986ed 100644
+--- rnl.c
++++ rnl.c
+@@ -45,11 +45,11 @@ int rnl_fn(char *fn) {
+ }
+ 
+ int rnl_fd(char *fn,int fd) {
+-  struct rnc_source src;
++  struct rnc_source src = {0};
+   rnc_bind(&src,fn,fd); return load(&src);
+ }
+ 
+ int rnl_s(char *fn,char *s,int len) {
+-  struct rnc_source src;
++  struct rnc_source src = {0};
+   rnc_stropen(&src,fn,s,len); return load(&src);
+ }
