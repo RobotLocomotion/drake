@@ -37,6 +37,15 @@ by calling C++ APIs.
 Note that currently (April 2024), this example doesn't run on macOS. We are
 working on supporting this on all platforms supported by Drake.
 
+# Deformable disabling
+
+This example showcases the behavior of enabled/disabled deformable models.
+Deformable torus bodies are initially placed in a vertical column and disabled.
+One by one, they are enabled and fall into contact to demonstrate deformable
+behavior. Finally, one of the torus bodies is again disabled to demonstrate that
+it is removed from contact participation, causing the other tori to pass through
+it.
+
 
 ## Run visualizer
 
@@ -56,6 +65,12 @@ or
 bazel run //examples/multibody/deformable:bubble_gripper
 ```
 
+or
+
+```
+bazel run //examples/multibody/deformable:deformable_disabling
+```
+
 ## Options
 
 There are a few command-line options that you can use to adjust the physical
@@ -69,4 +84,10 @@ or
 
 ```
 bazel run //examples/multibody/deformable:bubble_gripper -- --help
+```
+
+or
+
+```
+bazel run //examples/multibody/deformable:deformable_disabling -- --help
 ```

@@ -570,6 +570,35 @@ TEST_F(DeformableDriverContactKinematicsTest,
   ValidateConstraintParticipation();
 }
 
+/* Tests that disabled deformable bodies do not participate in contact. */
+TEST_F(DeformableDriverContactKinematicsTest,
+       DisabledDeformableDeformableContactKinematics) {
+  /* Build a scene with two deformables in contact, but disabled. */
+  MakeDeformableDeformableScene();
+  model_->Disable(deformable_body_id_, context_.get());
+  model_->Disable(deformable_body_id2_, context_.get());
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+
+  /* Validate that placeholder contact participation entries exist for the
+   disabled bodies. */
+  for (const auto& deformable_id :
+       {deformable_body_id_, deformable_body_id2_}) {
+    const DeformableBodyIndex body_index = model_->GetBodyIndex(deformable_id);
+    const ContactParticipation& participation =
+        driver_->EvalConstraintParticipation(plant_context, body_index);
+    EXPECT_EQ(participation.num_vertices(),
+              model_->GetFemModel(deformable_id).num_nodes());
+    EXPECT_EQ(participation.num_vertices_in_contact(), 0);
+  }
+
+  /* Validate that the disabled bodies are not under fixed constraints. */
+  std::vector<FixedConstraintKinematics<double>> constraint_kinematics;
+  driver_->AppendDeformableRigidFixedConstraintKinematics(
+      plant_context, &constraint_kinematics);
+  EXPECT_EQ(constraint_kinematics.size(), 0);
+}
+
 }  // namespace
 
 class DeformableDriverTest {
