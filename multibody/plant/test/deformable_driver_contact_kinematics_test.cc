@@ -575,8 +575,10 @@ TEST_F(DeformableDriverContactKinematicsTest,
        DisabledDeformableDeformableContactKinematics) {
   /* Build a scene with two deformables in contact, but disabled. */
   MakeDeformableDeformableScene();
-  model_->Disable(deformable_body_id_, context_.get());
-  model_->Disable(deformable_body_id2_, context_.get());
+  Context<double>& mutable_plant_context =
+      plant_->GetMyMutableContextFromRoot(context_.get());
+  model_->Disable(deformable_body_id_, &mutable_plant_context);
+  model_->Disable(deformable_body_id2_, &mutable_plant_context);
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
 

@@ -380,6 +380,8 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrix) {
 TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixDisabled) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
+  Context<double>& mutable_plant_context =
+      plant_->GetMyMutableContextFromRoot(context_.get());
   std::vector<MatrixXd> A;
   driver_->AppendLinearDynamicsMatrix(plant_context, &A);
   /* Confirm the bodies, when enabled, have non-trivial linear dynamics
@@ -389,7 +391,7 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixDisabled) {
   EXPECT_NE(A[1].size(), 0);
 
   /* With body0 disabled, ensure that the dynamics matrix for body0 is empty. */
-  model_->Disable(body_id0_, context_.get());
+  model_->Disable(body_id0_, &mutable_plant_context);
 
   A.clear();
   driver_->AppendLinearDynamicsMatrix(plant_context, &A);
@@ -405,7 +407,7 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixDisabled) {
 
   /* With all bodies disabled, ensure the linear dynamic matrices for both
    bodies are empty. */
-  model_->Disable(body_id1_, context_.get());
+  model_->Disable(body_id1_, &mutable_plant_context);
   A.clear();
   driver_->AppendLinearDynamicsMatrix(plant_context, &A);
   ASSERT_EQ(A.size(), 2);
@@ -494,6 +496,8 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
 TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairsDisabled) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
+  Context<double>& mutable_plant_context =
+      plant_->GetMyMutableContextFromRoot(context_.get());
 
   /* Test combinations of deformable contact pairs where zero, one, or both of
    the bodies are disabled. */
@@ -512,9 +516,9 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairsDisabled) {
     int num_contact_points = 0;
     for (const auto& [deformable_id, is_enabled] : test_case) {
       if (is_enabled) {
-        model_->Enable(deformable_id, context_.get());
+        model_->Enable(deformable_id, &mutable_plant_context);
       } else {
-        model_->Disable(deformable_id, context_.get());
+        model_->Disable(deformable_id, &mutable_plant_context);
       }
 
       /* Compute this model's contribution to the expected contact point count,

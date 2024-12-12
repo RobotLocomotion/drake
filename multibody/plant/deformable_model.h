@@ -187,6 +187,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    disabled body's geometry and other geometries is not filtered. The deformable
    body can be enabled by calling Enable().
    @see Enable().
+   @throw std::exception if the passed in context isn't compatible with the
+   MultibodyPlant associated with this %DeformableModel.
    @throw std::exception if a deformable body with the given id is not
    registered.
    @throw std::exception if context is null. */
@@ -194,18 +196,23 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
 
   /** Enables the deformable body with the given `id` in the given context.
    @see Disable().
+   @throw std::exception if the passed in context isn't compatible with the
+   MultibodyPlant associated with this %DeformableModel.
    @throw std::exception if a deformable body with the given id is not
-    registered.
+   registered.
    @throw std::exception if context is null. */
   void Enable(DeformableBodyId id, systems::Context<T>* context) const;
 
   /** @return true if and only if the deformable body with the given id is
    enabled.
+   @throw std::exception if the passed in context isn't compatible with the
+   MultibodyPlant associated with this %DeformableModel.
    @throw std::exception if a deformable body with the given id is not
    registered. */
   bool is_enabled(DeformableBodyId id,
                   const systems::Context<T>& context) const {
     ThrowUnlessRegistered(__func__, id);
+    this->plant().ValidateContext(context);
     return context.get_parameters().template get_abstract_parameter<bool>(
         is_enabled_parameter_indexes_.at(id));
   }

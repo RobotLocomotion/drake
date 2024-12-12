@@ -212,6 +212,7 @@ template <typename T>
 void DeformableModel<T>::Disable(DeformableBodyId id,
                                  systems::Context<T>* context) const {
   DRAKE_THROW_UNLESS(context != nullptr);
+  this->plant().ValidateContext(*context);
   ThrowUnlessRegistered(__func__, id);
   context->get_mutable_abstract_parameter(is_enabled_parameter_indexes_.at(id))
       .set_value(false);
@@ -227,6 +228,7 @@ template <typename T>
 void DeformableModel<T>::Enable(DeformableBodyId id,
                                 systems::Context<T>* context) const {
   DRAKE_THROW_UNLESS(context != nullptr);
+  this->plant().ValidateContext(*context);
   ThrowUnlessRegistered(__func__, id);
   context->get_mutable_abstract_parameter(is_enabled_parameter_indexes_.at(id))
       .set_value(true);

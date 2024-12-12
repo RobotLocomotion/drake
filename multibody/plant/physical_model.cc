@@ -103,9 +103,9 @@ systems::DiscreteStateIndex PhysicalModel<T>::DeclareDiscreteState(
 template <typename T>
 systems::AbstractParameterIndex PhysicalModel<T>::DeclareAbstractParameter(
     const AbstractValue& model_value) {
-  DRAKE_THROW_UNLESS(owning_plant_ != nullptr);
+  DRAKE_THROW_UNLESS(mutable_owning_plant_ != nullptr);
   return internal::MultibodyPlantModelAttorney<T>::DeclareAbstractParameter(
-      owning_plant_, model_value);
+      mutable_owning_plant_, model_value);
 }
 
 template <typename T>
