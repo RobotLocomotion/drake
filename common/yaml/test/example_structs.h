@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <filesystem>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -28,6 +29,9 @@ namespace test {
 // A value used in the test data below to include a default (placeholder) value
 // when initializing struct data members.
 constexpr double kNominalDouble = 1.2345;
+
+// A value used in the test for byte strings (see ByteStringStruct).
+constexpr std::string_view kNominalByteString = "nominal_bytes";
 
 // These unit tests use a variety of sample Serializable structs, showing what
 // a user may write for their own schemas.
@@ -60,6 +64,20 @@ bool operator==(const StringStruct& a, const StringStruct& b) {
   return a.value == b.value;
 }
 
+struct PathStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  std::filesystem::path value{"/path/to/nowhere"};
+};
+
+// This is used only for EXPECT_EQ, not by any YAML operations.
+bool operator==(const PathStruct& a, const PathStruct& b) {
+  return a.value == b.value;
+}
+
 struct AllScalarsStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -71,6 +89,7 @@ struct AllScalarsStruct {
     a->Visit(DRAKE_NVP(some_int64));
     a->Visit(DRAKE_NVP(some_uint64));
     a->Visit(DRAKE_NVP(some_string));
+    a->Visit(DRAKE_NVP(some_path));
   }
 
   bool some_bool = false;
@@ -81,6 +100,7 @@ struct AllScalarsStruct {
   int64_t some_int64 = 14;
   uint64_t some_uint64 = 15;
   std::string some_string = "kNominalString";
+  std::filesystem::path some_path{"/path/to/nowhere"};
 };
 
 struct ArrayStruct {
@@ -109,6 +129,23 @@ struct VectorStruct {
       : value(value_in) {}
 
   std::vector<double> value;
+};
+
+// Note: this is only different from VectorStruct in that it's a vector of
+// uint8_t. That type of vector is treated specially.
+struct ByteStringStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  ByteStringStruct()
+      : value(kNominalByteString.begin(), kNominalByteString.end()) {}
+
+  explicit ByteStringStruct(const std::vector<uint8_t>& value_in)
+      : value(value_in) {}
+
+  std::vector<uint8_t> value;
 };
 
 struct NonPodVectorStruct {
