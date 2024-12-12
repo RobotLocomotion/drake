@@ -13,49 +13,49 @@ namespace mpm {
 namespace internal {
 
 /* This class is a lightweight wrapper around an integer type (`int32_t` or
- `int64_t`) used to differentiate between active indices, inactive states, and
- special flags. A GridNodeIndex can be in exactly one of the following states:
+ `int64_t`) used to differentiate between active grid node indices, inactive
+ states, and a special flag. An IndexOrFlag can be in exactly one of the
+ following states:
 
-  1. Active index: A non-negative integer representing the index of a grid.
-  2. Inactive state (the default state).
-  3. The participating state: A special state used to mark grid nodes for
-     deferred processing. The participating state is intended as a marker that
-     must only be set from the inactive state (not from an active index) to
-     maintain consistency.
+  1. Active index: A non-negative integer representing the index of a grid node.
+  2. Inactive state (the default state): neither an index or a flag.
+  3. The `flag` state: A special state used to mark grid nodes for deferred
+     processing. The flag state is intended as a marker that must only be set
+     from the inactive state (not from an active index) to maintain consistency.
 
  Transitions between states are as follows:
   - Any state can become inactive.
-  - The inactive state can become participating.
+  - The inactive state can become flag state.
   - The inactive state can become active (with a non-negative index).
-  - Active cannot directly become participating (must go inactive first).
+  - Active cannot directly become flag state (must go inactive first).
 
- A GridNodeIndex object is guaranteed to have size equal to its template
+ An IndexOrFlag object is guaranteed to have size equal to its template
  parameter T. In addition, the inactive state is guaranteed to be represented
  with the value -1.
 
  @tparam T The integer type for the index. Must be `int32_t` or `int64_t`. */
 template <typename T>
-class GridNodeIndex {
+class IndexOrFlag {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(GridNodeIndex);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IndexOrFlag);
 
   static_assert(std::is_same_v<T, int32_t> || std::is_same_v<T, int64_t>,
                 "T must be int32_t or int64_t.");
 
-  /* Default constructor initializes the index to the inactive state. */
-  constexpr GridNodeIndex() = default;
+  /* Default constructor initializes the object to the inactive state. */
+  constexpr IndexOrFlag() = default;
 
   /* Constructor for an active index.
    @pre index >= 0 */
-  explicit constexpr GridNodeIndex(T index) { set_value(index); }
+  explicit constexpr IndexOrFlag(T index) { set_index(index); }
 
   /* Returns true iff `this` and `other` are bit-wise identical. */
-  bool operator==(const GridNodeIndex<T>& other) const = default;
+  bool operator==(const IndexOrFlag<T>& other) const = default;
 
   /* Sets the index to the given value, which must be non-negative, thereby
    making `this` active.
    @pre index >= 0 */
-  void set_value(T index) {
+  void set_index(T index) {
     DRAKE_ASSERT(index >= 0);
     value_ = index;
   }
@@ -63,31 +63,34 @@ class GridNodeIndex {
   /* Sets `this` to the inactive state. */
   void set_inactive() { value_ = kInactive; }
 
-  /* Sets `this` to the participating state.
+  /* Sets `this` to the flag state.
    @pre !is_index() (i.e., must currently be inactive) */
-  void set_participating() {
+  void set_flag() {
     DRAKE_ASSERT(!is_index());
-    value_ = kParticipating;
+    value_ = kFlag;
   }
 
-  /* Returns true iff the index is active (i.e., a non-negative integer). */
+  /* Returns true iff `this` is an active index (i.e., a non-negative integer).
+   */
   constexpr bool is_index() const { return value_ >= 0; }
 
-  /* Returns true iff the index is in the inactive state. */
+  /* Returns true iff `this` is in the inactive state. */
   constexpr bool is_inactive() const { return value_ == kInactive; }
 
-  /* Returns true iff the index is in the participating state. */
-  constexpr bool is_participating() const { return value_ == kParticipating; }
+  /* Returns true iff `this` is in the flag state. */
+  constexpr bool is_flag() const { return value_ == kFlag; }
 
   /* Returns the index value.
    @pre is_index() == true; */
-  constexpr T value() const {
+  constexpr T index() const {
     DRAKE_ASSERT(is_index());
     return value_;
   }
 
  private:
-  enum : T { kInactive = -1, kParticipating = -2 };
+  /* Note that the enum values are not arbitrary; kInactive must be -1 as in the
+   class documentation. */
+  enum : T { kInactive = -1, kFlag = -2 };
   /* We encode all information in `value_` to satisfy the size requirement laid
    out in the class documentation. */
   T value_{kInactive};
@@ -121,7 +124,7 @@ struct GridData {
     v = Vector3<T>::Constant(nan());
     m = nan();
     scratch = Vector3<T>::Constant(nan());
-    index.set_inactive();
+    index_or_flag.set_inactive();
   }
 
   /* Returns true iff `this` GridData is bit-wise equal to `other`. */
@@ -132,8 +135,8 @@ struct GridData {
   Vector3<T> v{Vector3<T>::Constant(nan())};
   T m{nan()};
   Vector3<T> scratch{Vector3<T>::Constant(nan())};
-  typename std::conditional<std::is_same_v<T, float>, GridNodeIndex<int32_t>,
-                            GridNodeIndex<int64_t>>::type index{};
+  typename std::conditional<std::is_same_v<T, float>, IndexOrFlag<int32_t>,
+                            IndexOrFlag<int64_t>>::type index_or_flag{};
 };
 
 /* With T = float, GridData is expected to be 32 bytes. With T = double,
