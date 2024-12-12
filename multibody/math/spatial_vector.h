@@ -278,7 +278,15 @@ class SpatialVector {
   /// </pre>
   friend SpatialQuantity operator*(
       const math::RotationMatrix<T>& R_FE, const SpatialQuantity& V_E) {
-    return SpatialQuantity(R_FE * V_E.rotational(), R_FE * V_E.translational());
+    if constexpr (std::is_same_v<T, double>) {
+      SpatialQuantity V_F;
+      math::internal::ReexpressSpatialVector(R_FE, V_E.get_coeffs(),
+                                             &V_F.get_coeffs());
+      return V_F;
+    } else {
+      return SpatialQuantity(R_FE * V_E.rotational(),
+                             R_FE * V_E.translational());
+    }
   }
 
   /// Factory to create a _zero_ spatial vector, i.e., a %SpatialVector whose

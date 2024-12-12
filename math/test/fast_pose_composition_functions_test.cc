@@ -171,6 +171,23 @@ TEST_P(FastPoseCompositionFunctions, ComposeXX) {
   EXPECT_TRUE(CompareMatrices(arg3->GetAsMatrix4(), expected));
 }
 
+GTEST_TEST(FastReexpressSpatialVector, ReexpressSpatialVector) {
+  constexpr double kTolerance = 8 * std::numeric_limits<double>::epsilon();
+  const RotationMatrixd R_AB(RollPitchYawd(1.0, 1.25, 1.5));
+  Vector6d V_B;
+  V_B << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0;
+  Vector6d V_A_expected;
+  V_A_expected.head<3>() = R_AB * V_B.head<3>();
+  V_A_expected.tail<3>() = R_AB * V_B.tail<3>();
+  Vector6d V_A;
+  ReexpressSpatialVector(R_AB, V_B, &V_A);
+  EXPECT_TRUE(CompareMatrices(V_A, V_A_expected, kTolerance));
+
+  // Ensure that it works when V_A and V_B are the same vector.
+  ReexpressSpatialVector(R_AB, V_B, &V_B);
+  EXPECT_TRUE(CompareMatrices(V_B, V_A_expected, kTolerance));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace math
