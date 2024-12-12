@@ -53,7 +53,7 @@ class TestLifetime(unittest.TestCase):
         # `system`, `builder`, and `diagram` are now joined by ref_cycles. The
         # c++ system is owned by the c++ diagram.
         diagram = builder.Build()
-        # Delete the builder. Should still be alive.
+        # Delete the builder. The `system` should still be alive.
         del builder
         self.assertFalse(info.deleted)
         # Delete the diagram. All are still reachable via `system`.
