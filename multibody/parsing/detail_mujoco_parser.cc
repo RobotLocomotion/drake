@@ -668,6 +668,7 @@ class MujocoParser {
     if (type == "plane") {
       // We interpret the MuJoCo infinite plane as a half-space.
       geom.shape = std::make_unique<geometry::HalfSpace>();
+      compute_inertia = false;
     } else if (type == "sphere") {
       if (size.size() < 1) {
         // Allow zero-radius spheres (the MJCF default size is 0 0 0).
@@ -914,7 +915,12 @@ class MujocoParser {
         ParseScalarAttribute(node, "density", &density);
         mass = volume * density;
       }
-      SpatialInertia<double> M_GGo_G(mass, p_GoGcm_G, G_GGo_G);
+      SpatialInertia<double> M_GGo_G(mass, p_GoGcm_G, G_GGo_G,
+                                     /*skip_validity_check=*/true);
+      if (!M_GGo_G.IsPhysicallyValid()) {
+        Error(*node, fmt::format("geom {} {}", geom.name,
+                                 M_GGo_G.CriticizeNotPhysicallyValid()));
+      }
 
       // Shift spatial inertia from Go to Bo and express it in the B frame.
       const math::RotationMatrix<double>& R_BG = geom.X_BG.rotation();

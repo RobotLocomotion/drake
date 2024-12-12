@@ -1194,7 +1194,8 @@ GTEST_TEST(SpatialInertia, KineticEnergy) {
   const double ke_WB_expected =
       0.5 * w_WB.dot(I_Bcm_W * w_WB) + 0.5 * mass * v_WBcm.squaredNorm();
 
-  EXPECT_NEAR(ke_WB, ke_WB_expected, 50 * kEpsilon);
+  const double relative_tol = ke_WB_expected * (8 * kEpsilon);
+  EXPECT_NEAR(ke_WB, ke_WB_expected, relative_tol);
 }
 
 GTEST_TEST(SpatialInertia, MultiplyByEigenMatrix) {

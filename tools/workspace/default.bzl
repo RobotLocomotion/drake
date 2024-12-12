@@ -27,6 +27,7 @@ load("//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
 load("//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
+load("//tools/workspace/gklib_internal:repository.bzl", "gklib_internal_repository")  # noqa
 load("//tools/workspace/glib:repository.bzl", "glib_repository")
 load("//tools/workspace/glx:repository.bzl", "glx_repository")
 load("//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
@@ -48,6 +49,7 @@ load("//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
 load("//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
+load("//tools/workspace/metis_internal:repository.bzl", "metis_internal_repository")  # noqa
 load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
@@ -68,6 +70,7 @@ load("//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
 load("//tools/workspace/platforms:repository.bzl", "platforms_repository")
+load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")
 load("//tools/workspace/python:repository.bzl", "python_repository")
@@ -85,6 +88,7 @@ load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_re
 load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
 load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_internal_repository")  # noqa
+load("//tools/workspace/spral_internal:repository.bzl", "spral_internal_repository")  # noqa
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
 load("//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
@@ -106,7 +110,26 @@ load("//tools/workspace/xmlrunner_py:repository.bzl", "xmlrunner_py_repository")
 load("//tools/workspace/yaml_cpp_internal:repository.bzl", "yaml_cpp_internal_repository")  # noqa
 load("//tools/workspace/zlib:repository.bzl", "zlib_repository")
 
-def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
+# This is the list of modules that our MODULE.bazel already incorporates.
+# It is cross-checked by the workspace_bzlmod_sync_test.py test.
+REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
+    "build_bazel_apple_support",
+    "bazel_features",
+    "bazel_skylib",
+    "platforms",
+    "rust_toolchain",
+    "rules_cc",
+    "rules_java",
+    "rules_license",
+    "rules_python",
+    "rules_rust",
+]
+
+def add_default_repositories(
+        excludes = [],
+        mirrors = DEFAULT_MIRRORS,
+        *,
+        bzlmod = False):
     """Declares workspace repositories for all externals needed by drake (other
     than those built into Bazel, of course).  This is intended to be loaded and
     called from a WORKSPACE file.
@@ -115,7 +138,11 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         excludes: list of string names of repositories to exclude; this can
           be useful if a WORKSPACE file has already supplied its own external
           of a given name.
+        bzlmod: when True, skips repositories declared in our MODULE.bazel;
+          set this to True if you are using bzlmod.
     """
+    if bzlmod:
+        excludes = excludes + REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES
     if "abseil_cpp_internal" not in excludes:
         abseil_cpp_internal_repository(name = "abseil_cpp_internal", mirrors = mirrors)  # noqa
     if "bazelisk" not in excludes:
@@ -172,6 +199,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gfortran_repository(name = "gfortran")
     if "github3_py_internal" not in excludes:
         github3_py_internal_repository(name = "github3_py_internal", mirrors = mirrors)  # noqa
+    if "gklib_internal" not in excludes:
+        gklib_internal_repository(name = "gklib_internal", mirrors = mirrors)  # noqa
     if "glib" not in excludes:
         glib_repository(name = "glib")
     if "glx" not in excludes:
@@ -214,6 +243,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         libtiff_internal_repository(name = "libtiff_internal", mirrors = mirrors)  # noqa
     if "meshcat" not in excludes:
         meshcat_repository(name = "meshcat", mirrors = mirrors)
+    if "metis_internal" not in excludes:
+        metis_internal_repository(name = "metis_internal", mirrors = mirrors)
     if "mosek" not in excludes:
         mosek_repository(name = "mosek", mirrors = mirrors)
     if "mpmath_py_internal" not in excludes:
@@ -254,6 +285,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)  # noqa
     if "platforms" not in excludes:
         platforms_repository(name = "platforms", mirrors = mirrors)
+    if "poisson_disk_sampling_internal" not in excludes:
+        poisson_disk_sampling_internal_repository(name = "poisson_disk_sampling_internal", mirrors = mirrors)  # noqa
     if "pybind11" not in excludes:
         pybind11_repository(name = "pybind11", mirrors = mirrors)
     if "pycodestyle" not in excludes:
@@ -272,6 +305,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         rules_license_repository(name = "rules_license", mirrors = mirrors)
     if "rules_python" not in excludes:
         rules_python_repository(name = "rules_python", mirrors = mirrors)
+    else:
+        rules_python_repository(name = "rules_python", _constants_only = True)
     if "rules_rust" not in excludes:
         rules_rust_repository(name = "rules_rust", mirrors = mirrors)
     if "rules_rust_tinyjson" not in excludes:
@@ -288,6 +323,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         spdlog_repository(name = "spdlog", mirrors = mirrors)
     if "spgrid_internal" not in excludes:
         spgrid_internal_repository(name = "spgrid_internal")
+    if "spral_internal" not in excludes:
+        spral_internal_repository(name = "spral_internal", mirrors = mirrors)
     if "stable_baselines3_internal" not in excludes:
         stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
     if "statsjs" not in excludes:
@@ -329,18 +366,29 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "zlib" not in excludes:
         zlib_repository(name = "zlib")
 
-def add_default_toolchains(excludes = []):
+def add_default_toolchains(
+        excludes = [],
+        *,
+        bzlmod = False):
     """Register toolchains for each language (e.g., "py") not explicitly
     excluded and/or not using an automatically generated toolchain.
 
     Args:
         excludes: List of languages for which a toolchain should not be
             registered.
+        bzlmod: when True, skips toolchains declared in our MODULE.bazel;
+          set this to True if you are using bzlmod.
     """
+    if bzlmod:
+        # All toolchains are in MODULE.bazel already.
+        return
 
     if "py" not in excludes:
         native.register_toolchains(
             "//tools/py_toolchain:toolchain",
+        )
+        native.register_toolchains(
+            "//tools/py_toolchain:exec_tools_toolchain",
         )
     if "rust" not in excludes:
         register_rust_toolchains()
@@ -348,7 +396,9 @@ def add_default_toolchains(excludes = []):
 def add_default_workspace(
         repository_excludes = [],
         toolchain_excludes = [],
-        mirrors = DEFAULT_MIRRORS):
+        mirrors = DEFAULT_MIRRORS,
+        *,
+        bzlmod = False):
     """Declare repositories in this WORKSPACE for each dependency of @drake
     (e.g., "eigen") that is not explicitly excluded, and register toolchains
     for each language (e.g., "py") not explicitly excluded and/or not using an
@@ -362,7 +412,16 @@ def add_default_workspace(
         mirrors: Dictionary of mirrors from which to download repository files.
             See mirrors.bzl file in this directory for the file format and
             default values.
+        bzlmod: when True, skips repositories and toolchains declared in our
+          MODULE.bazel; set this to True if you are using bzlmod.
     """
 
-    add_default_repositories(excludes = repository_excludes, mirrors = mirrors)
-    add_default_toolchains(excludes = toolchain_excludes)
+    add_default_repositories(
+        excludes = repository_excludes,
+        mirrors = mirrors,
+        bzlmod = bzlmod,
+    )
+    add_default_toolchains(
+        excludes = toolchain_excludes,
+        bzlmod = bzlmod,
+    )

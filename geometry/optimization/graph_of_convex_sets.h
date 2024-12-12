@@ -863,14 +863,27 @@ class GraphOfConvexSets {
  private: /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
 
-  // Modify prog so that it contains the variables and constraints of the
+  // Construct a prog so that it contains the variables and constraints of the
   // preprocessing program for a given edge.
   std::unique_ptr<solvers::MathematicalProgram> ConstructPreprocessingProgram(
       EdgeId edge_id,
       const std::map<VertexId, std::vector<int>>& incoming_edges,
-
       const std::map<VertexId, std::vector<int>>& outgoing_edges,
       VertexId source_id, VertexId target_id) const;
+
+  // Construct a prog that can be used to solve the convex restriction for a
+  // given set of active edges (and optionally populate with an initial guess if
+  // one is provided).
+  std::unique_ptr<solvers::MathematicalProgram> ConstructRestrictionProgram(
+      const std::vector<const Edge*>& active_edges,
+      const solvers::MathematicalProgramResult* initial_guess) const;
+
+  // Add results for additional variables in `result` to make it comparable with
+  // other transcriptions.
+  void MakeRestrictionResultLookLikeMixedInteger(
+      const solvers::MathematicalProgram& prog,
+      solvers::MathematicalProgramResult* result,
+      const std::vector<const Edge*>& active_edges) const;
 
   std::set<EdgeId> PreprocessShortestPath(
       VertexId source_id, VertexId target_id,

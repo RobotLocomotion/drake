@@ -432,14 +432,10 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   }
   EXPECT_GT(num_contact_points, 0);
   EXPECT_EQ(contact_pairs.size(), num_contact_points);
-  /* tau for deformable body is set to kDissipationTimeScale and is unset for
-   rigid body (which then assumes the default value, dt). */
-  constexpr double expected_tau = kDissipationTimeScale + kDt;
-  /* The H&C damping is set to be d = k₂/(k₁+k₂)⋅d₁ + k₁/(k₁+k₂)⋅d₂. In this
-   case, the stiffness of the rigid body defaults to infinity so the damping
-   value takes the mathematical limit in that expression, i.e. the damping
-   value of the deformable body. */
-  constexpr double expected_d = kHcDampingDeformable;
+  /* tau for deformable contact is always dt, the "near-rigid" regime value. */
+  const double expected_tau = kDt;
+  /* The H&C damping is always zero for deformables contact. */
+  constexpr double expected_d = 0.0;
 
   GeometryId id0 = model_->GetGeometryId(body_id0_);
   GeometryId id1 = model_->GetGeometryId(body_id1_);

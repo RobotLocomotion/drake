@@ -6,8 +6,8 @@ def tomli_internal_repository(
     github_archive(
         name = name,
         repository = "hukkin/tomli",
-        commit = "2.0.2",
-        sha256 = "a3a652f16bf326ba763ada67169165daf87ff9c465e21ad8264f2657beaf5264",  # noqa
+        commit = "2.2.1",
+        sha256 = "3af7c4b571d1ccddaba020c558da0ce5b5e24edc830e478a903d82dc2d9013ae",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

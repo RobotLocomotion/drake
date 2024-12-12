@@ -20,6 +20,22 @@ crates_vendor(
                 "@drake//tools/workspace/crate_universe:patches/clarabel_blas.patch",  # noqa
             ],
         )],
+        "unicode-ident": [crate.annotation(
+            # For some reason, crate_universe cannot grok the Unicode-3.0
+            # license text so we must list it out by hand.
+            additive_build_file_content = """
+load("@rules_license//rules:license.bzl", "license")
+license(
+    name = "license",
+    license_kinds = [
+        "@rules_license//licenses/spdx:Apache-2.0",
+        "@rules_license//licenses/spdx:MIT",
+        "@rules_license//licenses/spdx:Unicode-3.0",
+    ],
+    license_text = "LICENSE-APACHE",
+)
+""",
+        )],
     },
     cargo_lockfile = ":lock/Cargo.toml.lock",
     manifests = [

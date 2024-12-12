@@ -397,6 +397,116 @@ GTEST_TEST(ProximityEngineTests, HydroelasticAabbInflation) {
   }
 }
 
+// After updating the margin property of a registered shape, we need to make
+// sure that the new margin is accounted for.
+// We place two spheres in near proximity such that their marginal regions
+// overlap.
+//
+//              │
+//            ○○○○○        .....
+//          ○○  │  ○○    ..     ..
+//        ○○   ●●●   ○○..   +++   ..
+//       ○   ●  │  ●  .○   +   +    .
+//    ───○──●───B───●─.○──+──A──+───.──────────────
+//       ○   ●  │  ●  .○   +   +    .
+//        ○○   ●●●   ○○..   +++   ..
+//          ○○  │  ○○    ..     ..
+//            ○○○○○        .....
+//              │
+//
+//  - Spheres A and B with radius R and margin δ.
+//  - ● Boundary of B with radius R
+//  - ○ Margin boundary of B with radius (R + δ).
+//  - + Boundary of A with radius R
+//  - . Margin boundary of A with radius (R + δ).
+//
+// We must register geometries with compliant hydro representations for margin
+// to have an effect. However, we can *detect* the effect simply by asking for
+// the collision candidates (a cheaper operation than computing hydro contact
+// surfaces).
+GTEST_TEST(ProximityEngineTests, MarginAfterPropertyUpdate) {
+  ProximityEngine<double> engine;
+  // All of the geometries will have a scale comparable to edge_length, so that
+  // the mesh creation is as cheap as possible. The exception is Mesh
+  // geometry since we have no re-meshing.
+  const double kRadius = 0.5;
+  const double kResHint = kRadius / 5;
+  const double kE = 1e8;  // Elastic modulus.
+  const double kMarginValue = 0.1;  // Large margin value for clarity.
+  const double kDistance = 2 * (kRadius + kMarginValue) - 0.5 * kMarginValue;
+
+  const Sphere sphere(kRadius);
+  const RigidTransformd X_WA(Vector3d(kDistance, 0, 0));
+
+  ProximityProperties soft_properties;
+  soft_properties.AddProperty(kHydroGroup, kMargin, 0.0);
+  AddCompliantHydroelasticProperties(kResHint, kE, &soft_properties);
+
+  // Shape A starts with zero margin.
+  const GeometryId idA = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(sphere, {}, idA, soft_properties);
+
+  // Shape B gets margin.
+  soft_properties.UpdateProperty(kHydroGroup, kMargin, kMarginValue);
+  const GeometryId idB = GeometryId::get_new_id();
+  engine.AddAnchoredGeometry(sphere, {}, idB, soft_properties);
+
+  const std::unordered_map<GeometryId, math::RigidTransformd> poses = {
+      {idA, X_WA}, {idB, RigidTransformd()}};
+  engine.UpdateWorldPoses(poses);
+
+  // idA has no margin; there should be no collision candidates.
+  EXPECT_EQ(engine.FindCollisionCandidates().size(), 0);
+
+  // Now update A to get the margin. (To do so, we need a dummy InternalGeometry
+  // associated with the id).
+  const InternalGeometry geo_A(SourceId::get_new_id(),
+                               std::make_unique<Sphere>(kRadius),
+                               FrameId::get_new_id(), idA, "A", X_WA);
+  engine.UpdateRepresentationForNewProperties(geo_A, soft_properties);
+
+  // Now they overlap and should be reported as a collision candidate.
+  EXPECT_EQ(engine.FindCollisionCandidates().size(), 1);
+}
+
+// The same test set up as MarginAfterPropertyUpdate. However, this time we
+// confirm that margins survive cloning.
+GTEST_TEST(ProximityEngineTetsts, MarginAfterEngineClone) {
+  ProximityEngine<double> engine;
+  // All of the geometries will have a scale comparable to edge_length, so that
+  // the mesh creation is as cheap as possible. The exception is Mesh
+  // geometry since we have no re-meshing.
+  const double kRadius = 0.5;
+  const double kResHint = kRadius / 5;
+  const double kE = 1e8;  // Elastic modulus.
+  const double kMarginValue = 0.1;  // Large margin value for clarity.
+  const double kDistance = 2 * (kRadius + kMarginValue) - 0.5 * kMarginValue;
+
+  const Sphere sphere(kRadius);
+  const RigidTransformd X_WA(Vector3d(kDistance, 0, 0));
+
+  ProximityProperties soft_properties;
+  soft_properties.AddProperty(kHydroGroup, kMargin, kMarginValue);
+  AddCompliantHydroelasticProperties(kResHint, kE, &soft_properties);
+
+  // Both shapes have margin.
+  const GeometryId idA = GeometryId::get_new_id();
+  engine.AddDynamicGeometry(sphere, {}, idA, soft_properties);
+  const GeometryId idB = GeometryId::get_new_id();
+  engine.AddAnchoredGeometry(sphere, {}, idB, soft_properties);
+
+  const std::unordered_map<GeometryId, math::RigidTransformd> poses = {
+      {idA, X_WA}, {idB, RigidTransformd()}};
+  engine.UpdateWorldPoses(poses);
+
+  // The original engine reports contact.
+  EXPECT_EQ(engine.FindCollisionCandidates().size(), 1);
+
+  // A copy reports the same.
+  ProximityEngine<double> copy(engine);
+  EXPECT_EQ(copy.FindCollisionCandidates().size(), 1);
+}
+
 // Test a combination that used to throw an exception.
 GTEST_TEST(ProximityEngineTests, ProcessVtkMeshUndefHydro) {
   ProximityEngine<double> engine;

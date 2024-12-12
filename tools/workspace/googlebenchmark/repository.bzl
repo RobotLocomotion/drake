@@ -6,8 +6,8 @@ def googlebenchmark_repository(
     github_archive(
         name = name,
         repository = "google/benchmark",
-        commit = "v1.9.0",
-        sha256 = "35a77f46cc782b16fac8d3b107fbfbb37dcd645f7c28eee19f3b8e0758b48994",  # noqa
+        commit = "v1.9.1",
+        sha256 = "32131c08ee31eeff2c8968d7e874f3cb648034377dfc32a4c377fa8796d84981",  # noqa
         mirrors = mirrors,
         patches = [
             ":patches/console_allocs.patch",

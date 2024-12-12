@@ -1,11 +1,16 @@
 # This file marks a workspace root for the Bazel build system.
 # See `https://bazel.build/`.
+#
+# When bzlmod is disabled, only this file is used. The related files
+# MODULE.bazel and WORKSPACE.bzlmod are NOT used.
+#
+# When bzlmod is enabled, this file is ignored.
 
 workspace(name = "drake")
 
 load("//tools/workspace:default.bzl", "add_default_workspace")
 
-add_default_workspace()
+add_default_workspace(bzlmod = False)
 
 load("@build_bazel_apple_support//crosstool:setup.bzl", "apple_cc_configure")
 

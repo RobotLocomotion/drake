@@ -1169,7 +1169,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidSubspace) {
       "Subspace must be a Point or HPolyhedron.");
 }
 
-GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
+GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinuousTrajectory) {
   std::vector<copyable_unique_ptr<trajectories::Trajectory<double>>> segments;
   Eigen::MatrixXd control_points_1(3, 3), control_points_2(3, 3),
       control_points_3(3, 3);
@@ -1193,7 +1193,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
   const auto traj = trajectories::CompositeTrajectory<double>(segments);
   std::vector<int> continuous_revolute_joints = {1, 2};
   const auto unwrapped_traj =
-      GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+      GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
           traj, continuous_revolute_joints);
   // Small number to shift time around discontinuity points.
   const double time_eps = 1e-7;
@@ -1214,7 +1214,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
                               pos_eps));
   std::vector<int> starting_rounds = {-1, 0};
   const auto unwrapped_traj_with_start =
-      GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+      GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
           traj, continuous_revolute_joints, starting_rounds, 1e-8);
   // Check if the start is unwrapped to the correct value.
   EXPECT_TRUE(CompareMatrices(unwrapped_traj_with_start.value(0.0),
@@ -1229,7 +1229,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
   // Check for invalid start_rounds
   const std::vector<int> invalid_start_rounds = {-1, 0, 1};
   EXPECT_THROW(
-      GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+      GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
           traj, continuous_revolute_joints, invalid_start_rounds, 1e-8),
       std::runtime_error);
   // Check for discontinuity for continuous revolute joints
@@ -1244,14 +1244,14 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, UnwrapToContinousTrajectory) {
   // unwrapping will fail.
   continuous_revolute_joints = {0, 1};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+      GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
           traj_not_continous_on_revolute_manifold, continuous_revolute_joints),
       ".*is not a multiple of 2π at segment.*");
   // If we set the tolerance to be very large, no error will occur. We use a
   // tolerance of 0.6, which is larger than the 0.5 gap between adjacent
   // segments.
   const double loose_tol = 0.6;
-  EXPECT_NO_THROW(GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+  EXPECT_NO_THROW(GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
       traj_not_continous_on_revolute_manifold, continuous_revolute_joints,
       std::nullopt, loose_tol));
 }
@@ -1271,7 +1271,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, NotBezierCurveError) {
   const auto traj = trajectories::CompositeTrajectory<double>(segments);
   std::vector<int> continuous_revolute_joints = {0};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      GcsTrajectoryOptimization::UnwrapToContinousTrajectory(
+      GcsTrajectoryOptimization::UnwrapToContinuousTrajectory(
           traj, continuous_revolute_joints),
       ".*BezierCurve<double>.*");
 }

@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
@@ -33,26 +34,15 @@ void DefineSolversOptions(py::module m) {
     cls  // BR
         .def(py::init<>(), doc.SolverOptions.ctor.doc)
         .def("SetOption",
-            py::overload_cast<const SolverId&, const std::string&, double>(
-                &SolverOptions::SetOption),
-            py::arg("solver_id"), py::arg("solver_option"),
-            py::arg("option_value"),
-            doc.SolverOptions.SetOption.doc_double_option)
-        .def("SetOption",
-            py::overload_cast<const SolverId&, const std::string&, int>(
-                &SolverOptions::SetOption),
-            py::arg("solver_id"), py::arg("solver_option"),
-            py::arg("option_value"), doc.SolverOptions.SetOption.doc_int_option)
-        .def("SetOption",
-            py::overload_cast<const SolverId&, const std::string&,
-                const std::string&>(&SolverOptions::SetOption),
-            py::arg("solver_id"), py::arg("solver_option"),
-            py::arg("option_value"), doc.SolverOptions.SetOption.doc_str_option)
+            py::overload_cast<const SolverId&, std::string,
+                SolverOptions::OptionValue>(&SolverOptions::SetOption),
+            py::arg("solver_id"), py::arg("key"), py::arg("value"),
+            doc.SolverOptions.SetOption.doc_3args)
         .def("SetOption",
             py::overload_cast<CommonSolverOption, SolverOptions::OptionValue>(
                 &SolverOptions::SetOption),
             py::arg("key"), py::arg("value"),
-            doc.SolverOptions.SetOption.doc_common_option)
+            doc.SolverOptions.SetOption.doc_2args)
         .def(
             "GetOptions",
             [](const SolverOptions& solver_options, SolverId solver_id) {
@@ -82,6 +72,39 @@ void DefineSolversOptions(py::module m) {
           return "<SolverOptions>";
         });
     DefCopyAndDeepCopy(&cls);
+
+    constexpr char kSetOptionKwargNameDeprecation[] =
+        "The kwarg names for SolverOptions.SetOption have changed; the new "
+        "names are `key` and `value` not `solver_option` and `option_value`; "
+        "the old names are deprecated and will be removed from Drake on or "
+        "after 2025-05-01.";
+    // Deprecated 2025-05.
+    cls  // BR
+        .def("SetOption",
+            WrapDeprecated(kSetOptionKwargNameDeprecation,
+                [](SolverOptions& self, const SolverId& solver_id,
+                    const std::string& solver_option, double option_value) {
+                  self.SetOption(solver_id, solver_option, option_value);
+                }),
+            py::arg("solver_id"), py::arg("solver_option"),
+            py::arg("option_value"), kSetOptionKwargNameDeprecation)
+        .def("SetOption",
+            WrapDeprecated(kSetOptionKwargNameDeprecation,
+                [](SolverOptions& self, const SolverId& solver_id,
+                    const std::string& solver_option, int option_value) {
+                  self.SetOption(solver_id, solver_option, option_value);
+                }),
+            py::arg("solver_id"), py::arg("solver_option"),
+            py::arg("option_value"), kSetOptionKwargNameDeprecation)
+        .def("SetOption",
+            WrapDeprecated(kSetOptionKwargNameDeprecation,
+                [](SolverOptions& self, const SolverId& solver_id,
+                    const std::string& solver_option,
+                    const std::string& option_value) {
+                  self.SetOption(solver_id, solver_option, option_value);
+                }),
+            py::arg("solver_id"), py::arg("solver_option"),
+            py::arg("option_value"), kSetOptionKwargNameDeprecation);
   }
 }
 

@@ -71,14 +71,14 @@ class LinearConstitutiveModel final
 
   /* Shadows ConstitutiveModel::CalcFirstPiolaStressDerivativeImpl() as required
    by the CRTP base class. */
-  void CalcFirstPiolaStressDerivativeImpl(const Data& data,
-                                          Eigen::Matrix<T, 9, 9>* dPdF) const;
+  void CalcFirstPiolaStressDerivativeImpl(
+      const Data& data, math::internal::FourthOrderTensor<T>* dPdF) const;
 
   T E_;       // Young's modulus, N/m².
   T nu_;      // Poisson's ratio.
   T mu_;      // Lamé's second parameter/Shear modulus, N/m².
   T lambda_;  // Lamé's first parameter, N/m².
-  Eigen::Matrix<T, 9, 9>
+  math::internal::FourthOrderTensor<T>
       dPdF_;  // The First Piola stress derivative is constant and precomputed.
 };
 

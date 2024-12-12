@@ -30,10 +30,6 @@ Argument:
 
 load("//tools/workspace:execute.bzl", "execute_or_fail")
 
-# We can probe whether bzlmod is enabled by checking if labels use one or two
-# leading '@' charaters. (The label doesn't need to be valid.)
-BZLMOD_ENABLED = "@@" in str(Label("//:foo"))
-
 def _check_compiler_version(compiler_id, actual_version, supported_version):
     """
     Check if the compiler is of a supported version and report an error if not.
@@ -91,8 +87,13 @@ def _impl(repository_ctx):
     else:
         cc_environment = {}
 
+    # For Bazel 7.x sometimes we need a weird spelling of @local_config_cc.
+    # We can probably remove this once our minimum supported Bazel is >= 8.
     local_config_cc = "@local_config_cc"
-    if BZLMOD_ENABLED:
+    if all([
+        native.bazel_version.startswith("7."),
+        "@@" in str(Label("//:foo")),
+    ]):
         local_config_cc = "@bazel_tools~cc_configure_extension~local_config_cc"
     executable = repository_ctx.path("identify_compiler")
     execute_or_fail(repository_ctx, [

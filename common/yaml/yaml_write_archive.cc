@@ -1,6 +1,7 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
 #include <algorithm>
+#include <regex>
 #include <sstream>
 #include <utility>
 #include <vector>
@@ -9,6 +10,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/never_destroyed.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/unused.h"
 
@@ -19,6 +21,75 @@ namespace {
 
 constexpr const char* const kKeyOrder = "__key_order";
 
+// Returns true iff the `value` looks like a null, int, float, or bool literal:
+// specifically, returns true iff the given value (when parsed as an untagged
+// "plain scalar") would resolve to a core YAML type (i.e., a type like
+// "tag:yaml.org,2002:...") but not the string type "tag:yaml.org,2002:str".
+//
+// When loading a yaml document, there is syntax called a "plain scalar" which
+// is basically just bare word(s) without any quoting. When loading a plain
+// scalar that doesn't have any explicit tag given in the document, the type of
+// the scalar needs to be "resolved" by the application loading the document,
+// and YAML recommends that the application do so by using the "core schema"
+// suite of regexes -- e.g., plain scalars that look like integers resolve to
+// "tag:yaml.org,2002:int". Therefore, when writing out a document we need to be
+// careful that when emitting a string we must not emit it as a plain scalar
+// when the core schema would misinterpret the value as a non-string type.
+//
+// Ideally yaml-cpp would have some way for us to signal to its emitter that
+// this is what we want (rather than implementing this logic ourselves), but
+// so far we haven't been able to find anything.
+bool DoesPlainScalarResolveToNonStrInYamlCoreSchema(const std::string& value) {
+  static const never_destroyed<std::regex> regex_null_bool_int_float{
+      // ----------------------------------------------------------------------
+      // Regexes adapted from https://yaml.org/spec/1.2.2/#1032-tag-resolution:
+      // ----------------------------------------------------------------------
+      // tag: null (literal)
+      "null|Null|NULL|~"
+      // tag: null (empty)
+      "|"
+      // tag: bool
+      "|true|True|TRUE|false|False|FALSE"
+      // tag: int (base 10)
+      // Note that https://yaml.org/type/int.html subsequently narrow this to
+      // forbid multiple leading zeros in base 10, but we stick with the more
+      // generous spelling here to err on the side of caution when writing.
+      "|[-+]?[0-9]+"
+      // tag: int (base 8)
+      "|0o[0-7]+"
+      // tag: int (base 16)
+      "|0x[0-9a-fA-F]+"
+      // tag: float (number)
+      "|[-+]?(\\.[0-9]+|[0-9]+(\\.[0-9]*)?)([eE][-+]?[0-9]+)?"
+      // tag: float (infinity)
+      "|[-+]?\\.(inf|Inf|INF)"
+      // tag: float (nan)
+      "|\\.(nan|NaN|NAN)"
+      //
+      // ----------------------------------------------------------------------
+      // Additional regexes from https://yaml.org/type/bool.html:
+      // ----------------------------------------------------------------------
+      "|y|Y|yes|Yes|YES|n|N|no|No|NO"
+      "|on|On|ON|off|Off|OFF"
+      //
+      // ----------------------------------------------------------------------
+      // Additional regexes from https://yaml.org/type/int.html:
+      // ----------------------------------------------------------------------
+      "|[-+]?0b[0-1_]+"                    // (base 2)
+      "|[-+]?[1-9][0-9_]*(:[0-5]?[0-9])+"  // (base 60)
+      //
+      // ----------------------------------------------------------------------
+      // Additional regexes from https://yaml.org/type/float.html:
+      // ----------------------------------------------------------------------
+      "|[-+]?([0-9][0-9_]*)?\\.[0-9.]*([eE][-+][0-9]+)?"  // (base 10)
+      "|[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+\\.[0-9_]*"       // (base 60)
+      // N.B. There is also https://yaml.org/type/null.html but it doesn't
+      // contain any regexs beyond what #1032-tag-resolution says.
+  };
+  std::smatch ignored;
+  return std::regex_match(value, ignored, regex_null_bool_int_float.access());
+}
+
 // This function uses the same approach as YAML::NodeEvents::Emit.
 // https://github.com/jbeder/yaml-cpp/blob/release-0.5.2/src/nodeevents.cpp#L55
 //
@@ -27,28 +98,40 @@ constexpr const char* const kKeyOrder = "__key_order";
 // end sequence, end mapping) and then its job is to spit out the equivalent
 // YAML syntax for that stream (e.g., "foo: [1, 2]") with appropriately matched
 // delimiters (i.e., `:` or `{}` or `[]`) and horizontal indentation levels.
-void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
+void RecursiveEmit(const internal::Node& node, YAML::Emitter* emitter,
+                   YAML::EmitFromEvents* sink) {
   const YAML::Mark no_mark;
   const YAML::anchor_t no_anchor = YAML::NullAnchor;
-  std::string tag{node.GetTag()};
-  if ((tag == internal::Node::kTagNull) || (tag == internal::Node::kTagBool) ||
-      (tag == internal::Node::kTagInt) || (tag == internal::Node::kTagFloat) ||
-      (tag == internal::Node::kTagStr)) {
+  const std::string_view node_tag = node.GetTag();
+  std::string emitted_tag;
+  if ((node_tag == internal::Node::kTagNull) ||
+      (node_tag == internal::Node::kTagBool) ||
+      (node_tag == internal::Node::kTagInt) ||
+      (node_tag == internal::Node::kTagFloat) ||
+      (node_tag == internal::Node::kTagStr)) {
     // In most cases we don't need to emit the "JSON Schema" tags for YAML data,
     // because they are implied by default. However, YamlWriteArchive on variant
     // types sometimes marks the tag as important.
     if (node.IsTagImportant()) {
-      DRAKE_DEMAND(tag.size() > 0);
       // The `internal::Node::kTagFoo` all look like "tag:yaml.org,2002:foo".
       // We only want the "foo" part (after the second colon).
-      tag = "!!" + tag.substr(18);
-    } else {
-      tag.clear();
+      emitted_tag = std::string("!!");
+      emitted_tag.append(node_tag.substr(18));
     }
+  } else {
+    emitted_tag = node_tag;
   }
   node.Visit(overloaded{
       [&](const internal::Node::ScalarData& data) {
-        sink->OnScalar(no_mark, tag, no_anchor, data.scalar);
+        if (emitted_tag.empty() && node_tag == internal::Node::kTagStr &&
+            DoesPlainScalarResolveToNonStrInYamlCoreSchema(data.scalar)) {
+          // We need to force this scalar to be seen as a string, so we'll turn
+          // off "auto" string format by asking for "single quoted" instead. If
+          // the value can't be single quoted, yaml-cpp will fall back to using
+          // double quotes automatically.
+          emitter->SetLocalValue(YAML::SingleQuoted);
+        }
+        sink->OnScalar(no_mark, emitted_tag, no_anchor, data.scalar);
       },
       [&](const internal::Node::SequenceData& data) {
         // If all children are scalars, then format this sequence onto a
@@ -59,9 +142,9 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
             style = YAML::EmitterStyle::Block;
           }
         }
-        sink->OnSequenceStart(no_mark, tag, no_anchor, style);
+        sink->OnSequenceStart(no_mark, emitted_tag, no_anchor, style);
         for (const auto& child : data.sequence) {
-          RecursiveEmit(child, sink);
+          RecursiveEmit(child, emitter, sink);
         }
         sink->OnSequenceEnd();
       },
@@ -72,7 +155,7 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
         if (data.mapping.empty()) {
           style = YAML::EmitterStyle::Flow;
         }
-        sink->OnMapStart(no_mark, tag, no_anchor, style);
+        sink->OnMapStart(no_mark, emitted_tag, no_anchor, style);
         // If there is a __key_order node inserted (as part of the Accept()
         // member function in our header file), use it to specify output order;
         // otherwise, use alphabetical order.
@@ -95,8 +178,8 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
           }
         }
         for (const auto& string_key : key_order) {
-          RecursiveEmit(internal::Node::MakeScalar(string_key), sink);
-          RecursiveEmit(data.mapping.at(string_key), sink);
+          RecursiveEmit(internal::Node::MakeScalar(string_key), emitter, sink);
+          RecursiveEmit(data.mapping.at(string_key), emitter, sink);
         }
         sink->OnMapEnd();
       },
@@ -114,7 +197,7 @@ std::string YamlWriteArchive::YamlDumpWithSortedMaps(
     const internal::Node& document) {
   YAML::Emitter emitter;
   YAML::EmitFromEvents sink(emitter);
-  RecursiveEmit(document, &sink);
+  RecursiveEmit(document, &emitter, &sink);
   return emitter.c_str();
 }
 

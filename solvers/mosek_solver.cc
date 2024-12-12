@@ -205,6 +205,14 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
         impl.AddQuadraticConstraints(prog, &quadratic_constraint_dual_indices);
   }
 
+  // Add 2x2 PSD constraints as rotated lorentz cones.
+  std::unordered_map<Binding<PositiveSemidefiniteConstraint>, MSKint64t>
+      twobytwo_psd_constraint_cone_acc_indices;
+  if (rescode == MSK_RES_OK) {
+    rescode = impl.Add2x2PositiveSemidefiniteConstraints(
+        prog, &twobytwo_psd_constraint_cone_acc_indices);
+  }
+
   // Add linear matrix inequality constraints.
   std::unordered_map<Binding<LinearMatrixInequalityConstraint>, MSKint64t>
       lmi_acc_indices;
@@ -357,7 +365,8 @@ void MosekSolver::DoSolve2(const MathematicalProgram& prog,
         lin_eq_con_dual_indices, quadratic_constraint_dual_indices,
         lorentz_cone_acc_indices, rotated_lorentz_cone_acc_indices,
         lmi_acc_indices, exp_cone_acc_indices, psd_barvar_indices,
-        scalar_psd_con_dual_indices, result);
+        scalar_psd_con_dual_indices, twobytwo_psd_constraint_cone_acc_indices,
+        result);
     DRAKE_ASSERT(rescode == MSK_RES_OK);
   }
 

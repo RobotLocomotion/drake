@@ -19,11 +19,8 @@ def bazelisk_repository(
           setup/ubuntu/source_distribution/install_bazelisk.sh
         and adjust the expected checksums accordingly.
         """,
-        commit = "v1.22.1",
-        sha256 = "64b584d1019d54cde34123d8da06c718c7a7c591f9fd49a29dccb825b9e95e8c",  # noqa
+        commit = "v1.25.0",
+        sha256 = "8ff4c6b9ab6a00fbef351d52fde39afc2b9f047865f219a89ed0b23ad6f8cf06",  # noqa
         build_file = ":package.BUILD.bazel",
-        patches = [
-            ":patches/upstream/pull494.patch",
-        ],
         mirrors = mirrors,
     )

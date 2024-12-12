@@ -8,7 +8,7 @@ Reasoning for not upstreaming this patch: Drake-specific build hack.
 
 --- src/api/nlopt-in.hpp.orig
 +++ src/api/nlopt-in.hpp
-@@ -46,6 +46,68 @@
+@@ -46,4 +46,65 @@
    // nlopt::* namespace versions of the C enumerated types
    //          AUTOMATICALLY GENERATED, DO NOT EDIT
    // GEN_ENUMS_HERE
@@ -23,7 +23,6 @@ Reasoning for not upstreaming this patch: Drake-specific build hack.
 +    GN_ORIG_DIRECT_L,
 +    GD_STOGO,
 +    GD_STOGO_RAND,
-+    LD_LBFGS_NOCEDAL,
 +    LD_LBFGS,
 +    LN_PRAXIS,
 +    LD_VAR1,

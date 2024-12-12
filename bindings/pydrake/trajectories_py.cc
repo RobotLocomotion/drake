@@ -347,6 +347,8 @@ struct Impl {
               py::arg("start_time") = -std::numeric_limits<double>::infinity(),
               py::arg("end_time") = std::numeric_limits<double>::infinity(),
               cls_doc.ctor.doc)
+          .def("set_derivative", &Class::set_derivative, py::arg("func"),
+              cls_doc.set_derivative.doc)
           .def("Clone", &Class::Clone, cls_doc.Clone.doc);
       DefCopyAndDeepCopy(&cls);
     }

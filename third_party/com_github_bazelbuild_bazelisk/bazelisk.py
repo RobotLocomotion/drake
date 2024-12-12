@@ -62,29 +62,48 @@ BAZEL_REAL = "BAZEL_REAL"
 
 BAZEL_UPSTREAM = "bazelbuild"
 
+_dotfiles_dict = None
 
-def get_env_or_config(name, default=None):
-    """Reads a configuration value from the environment, but falls back to
-    reading it from .bazeliskrc in the workspace root.
+
+def get_dotfiles_dict():
+    """Loads all supported dotfiles and returns a unified name=value dictionary
+    for their config settings. The dictionary is only loaded on the first call
+    to this function; subsequent calls used a cached result, so won't change.
     """
-    if name in os.environ:
-        return os.environ[name]
+    global _dotfiles_dict
+    if _dotfiles_dict is not None:
+        return _dotfiles_dict
+    _dotfiles_dict = dict()
     env_files = []
+    # Here we're only checking the workspace root. Ideally, we would also check
+    # the user's home directory to match the Go version. When making that edit,
+    # be sure to obey the correctly prioritization of workspace / home rcfiles.
     root = find_workspace_root()
     if root:
         env_files.append(os.path.join(root, ".bazeliskrc"))
     for env_file in env_files:
         try:
             with open(env_file, "r") as f:
-                for line in f.readlines():
-                    line = line.split("#", 1)[0].strip()
-                    if not line:
-                        continue
-                    some_name, some_value = line.split("=", 1)
-                    if some_name == name:
-                        return some_value
+                rcdata = f.read()
         except Exception:
-            pass
+            continue
+        for line in rcdata.splitlines():
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            some_name, some_value = line.split("=", 1)
+            _dotfiles_dict[some_name] = some_value
+    return _dotfiles_dict
+
+
+def get_env_or_config(name, default=None):
+    """Reads a configuration value from the environment, but falls back to
+    reading it from .bazeliskrc in the workspace root."""
+    if name in os.environ:
+        return os.environ[name]
+    dotfiles = get_dotfiles_dict()
+    if name in dotfiles:
+        return dotfiles[name]
     return default
 
 

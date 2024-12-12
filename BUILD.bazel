@@ -3,7 +3,7 @@
 
 load("//tools/install:install.bzl", "install", "install_test")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:py.bzl", "py_library")
+load("//tools/skylark:drake_py.bzl", "drake_py_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -17,12 +17,22 @@ exports_files([
     "package.xml",
 ])
 
-# Drake's top-level module; all drake_py_stuff rules add this to deps.
-# (We use py_library here because drake_py_library would be circular.)
-# This file should NOT be installed (see commits in __init__.py).
-py_library(
+exports_files(
+    [
+        "MODULE.bazel",
+        "WORKSPACE",
+        "WORKSPACE.bzlmod",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
+)
+
+# A legacy hack module to disambiguate the 'drake' module when Drake is being
+# used as a non-bzlmod external. We should remove this when we drop support for
+# WORKSPACE (i.e., Bazel >= 9).
+drake_py_library(
     name = "module_py",
     srcs = ["__init__.py"],
+    visibility = ["//lcmtypes:__pkg__"],
 )
 
 # Expose shared library for (a) installed binaries, (b) Drake Python bindings,
@@ -83,12 +93,24 @@ filegroup(
 
 _INSTALL_TEST_COMMANDS = "install_test_commands"
 
+# These are the (only) files from our root directory which are installed. Note
+# that even though the "data_dest" and "doc_dest" seem to be redundant with the
+# default value for those attributes, that is not the case with bzlmod (where
+# the default repository is named "_main" not "drake").
+install(
+    name = "install_files",
+    data = ["package.xml"],
+    data_dest = "share/drake",
+    docs = ["LICENSE.TXT"],
+    doc_dest = "share/doc/drake",
+    visibility = ["//visibility:private"],
+)
+
 install(
     name = "install",
     install_tests_script = _INSTALL_TEST_COMMANDS,
-    data = ["package.xml"],
-    docs = ["LICENSE.TXT"],
     deps = [
+        ":install_files",
         "//bindings/pydrake:install",
         "//common:install",
         "//examples:install",

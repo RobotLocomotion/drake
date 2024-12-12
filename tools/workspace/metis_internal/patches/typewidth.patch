@@ -1,0 +1,28 @@
+[metis_internal] Choose an integer size
+
+This software doesn't compile unless we do this.
+
+Reasoning for not upstreaming this patch: upstream wants end users
+like us to purposefully edit this file as the canonical mechanism
+for configuring the library.
+
+--- include/metis.h
++++ include/metis.h
+@@ -30,7 +30,7 @@
+  GCC does provides these definitions in stdint.h, but it may require some
+  modifications on other architectures.
+ --------------------------------------------------------------------------*/
+-//#define IDXTYPEWIDTH 32
++#define IDXTYPEWIDTH 32
+ 
+ 
+ /*--------------------------------------------------------------------------
+@@ -40,7 +40,7 @@
+    32 : single precision floating point (float)
+    64 : double precision floating point (double)
+ --------------------------------------------------------------------------*/
+-//#define REALTYPEWIDTH 32
++#define REALTYPEWIDTH 64
+ 
+ 
+ 

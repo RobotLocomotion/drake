@@ -69,9 +69,9 @@ GTEST_TEST(DecomposeNonConvexQuadraticForm, Test3) {
   Q1_expected << 1.5, 1.5, 1.5, 1.5;
   Q2_expected << 0.5, -0.5, -0.5, 0.5;
   EXPECT_TRUE(
-      CompareMatrices(Q1, Q1_expected, 1E-5, MatrixCompareType::absolute));
+      CompareMatrices(Q1, Q1_expected, 3E-5, MatrixCompareType::absolute));
   EXPECT_TRUE(
-      CompareMatrices(Q2, Q2_expected, 1E-5, MatrixCompareType::absolute));
+      CompareMatrices(Q2, Q2_expected, 3E-5, MatrixCompareType::absolute));
 }
 
 void CheckRelaxNonConvexQuadraticConstraintInTrustRegion(

@@ -72,6 +72,29 @@ drake_py_test(
     deps = [":module_py"],
 )
 
+drake_py_test(
+    name = "workspace_bzlmod_sync_test",
+    srcs = ["workspace_bzlmod_sync_test.py"],
+    allow_import_unittest = True,
+    data = [
+        ":default.bzl",
+        "//:MODULE.bazel",
+        "//:WORKSPACE",
+        "//:WORKSPACE.bzlmod",
+        "//tools/workspace/bazel_skylib:repository.bzl",
+        "//tools/workspace/build_bazel_apple_support:repository.bzl",
+        "//tools/workspace/platforms:repository.bzl",
+        "//tools/workspace/rules_cc:repository.bzl",
+        "//tools/workspace/rules_license:repository.bzl",
+        "//tools/workspace/rules_rust:repository.bzl",
+    ],
+    tags = ["lint"],
+    deps = [
+        ":module_py",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 drake_py_binary(
     name = "cmake_configure_file",
     srcs = ["cmake_configure_file.py"],
@@ -88,6 +111,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "curl_internal",
     "fcl_internal",
     "fmt",
+    "gklib_internal",
     "gz_math_internal",
     "gz_utils_internal",
     "ipopt",
@@ -95,6 +119,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "libpng_internal",
     "libtiff_internal",
     "meshcat",
+    "metis_internal",
     "msgpack_internal",
     "net_sf_jchart2d",
     "nanoflann_internal",
@@ -102,10 +127,12 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "nlopt_internal",
     "org_apache_xmlgraphics_commons",
     "picosha2_internal",
+    "poisson_disk_sampling_internal",
     "pybind11",
     "qhull_internal",
     "sdformat_internal",
     "spdlog",
+    "spral_internal",
     "statsjs",
     "stduuid_internal",
     "suitesparse_internal",
