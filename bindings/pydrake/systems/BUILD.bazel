@@ -410,7 +410,7 @@ drake_pybind_library(
         ":framework_py",
         ":primitives_py",
     ],
-    visibility = ["//visibility:private"],
+    visibility = ["//bindings/pydrake:__subpackages__"],
 )
 
 drake_py_unittest(

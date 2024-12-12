@@ -182,6 +182,7 @@ drake_py_unittest(
         "//bindings/pydrake/multibody:plant_py",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:lcm_py",
+        "//bindings/pydrake/systems:test_util_py",
     ],
 )
 

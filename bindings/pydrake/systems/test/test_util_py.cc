@@ -147,6 +147,8 @@ PYBIND11_MODULE(test_util, m) {
         return output;
       });
 
+  // Use this in tests to approximate a mixed-language program that populates a
+  // DiagramBuilder in Python, but calls the Build() step from C++.
   m.def("lifetime_oblivious_build_step",
       [](DiagramBuilder<T>* builder) { return builder->Build(); });
 }
