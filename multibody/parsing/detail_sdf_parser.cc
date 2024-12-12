@@ -1045,7 +1045,7 @@ void DrakeVisualToSdfVisual(const SDFormatDiagnostic& diagnostic,
                             const sdf::ParserConfig& parser_config,
                             sdf::Link* link) {
   sdf::ElementPtr link_element = link->Element();
-  sdf::ElementPtr drake_visual = link_element->GetElement("drake:visual");
+  sdf::ElementPtr drake_visual = link_element->FindElement("drake:visual");
   while (drake_visual != nullptr) {
     if (DrakeVisualToSdfVisualRecurse(diagnostic, drake_visual)) {
       // Stash an attribute into the element that we can use later to recognize
