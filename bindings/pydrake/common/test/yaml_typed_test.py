@@ -728,9 +728,28 @@ class TestYamlTypedWrite(unittest.TestCase):
             self.assertEqual(actual_doc, expected_doc)
 
     def test_write_string(self):
+        # We'll use this abbreviation to help make our expected values clear.
+        dq = '"'   # double quote
         cases = [
+            # Plain string.
             ("a", "a"),
+            # Needs quoting for special characters.
+            ("'", f"''''"),
+            ('"', f"'{dq}'"),
+            # Needs quoting to avoid being misinterpreted as another data type.
             ("1", "'1'"),
+            ("1.0", "'1.0'"),
+            (".NaN", "'.NaN'"),
+            ("true", "'true'"),
+            ("null", "'null'"),
+            ("NO", "'NO'"),
+            ("null", "'null'"),
+            ("190:20:30", "'190:20:30'"),  # YAML has sexagesimal literals.
+            # Similar to things that would be misinterpreted but actually a-ok.
+            ("nonnull", "nonnull"),
+            ("NaN", "NaN"),
+            ("=1.0", "=1.0"),
+            ("00:1A:2B:3C:4D:5E", "00:1A:2B:3C:4D:5E"),
         ]
         for value, expected_str in cases:
             actual_doc = yaml_dump_typed(StringStruct(value=value))

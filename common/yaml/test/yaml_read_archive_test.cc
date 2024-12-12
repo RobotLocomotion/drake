@@ -27,7 +27,6 @@ using internal::YamlReadArchive;
 
 // TODO(jwnimmer-tri) Add a test case for reading NonPodVectorStruct.
 // TODO(jwnimmer-tri) Add a test case for reading OuterWithBlankInner.
-// TODO(jwnimmer-tri) Add a test case for reading StringStruct.
 // TODO(jwnimmer-tri) Add a test case for reading UnorderedMapStruct.
 
 // A test fixture with common helpers.
@@ -119,6 +118,19 @@ class YamlReadArchiveTest : public ::testing::TestWithParam<LoadYamlOptions> {
   }
 };
 
+// TODO(jwnimmer-tri) This test case is extremely basic. We should add many more
+// corner cases & etc. here.
+TEST_P(YamlReadArchiveTest, String) {
+  const auto test = [](const std::string& value, const std::string& expected) {
+    const auto& x = AcceptNoThrow<StringStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected);
+  };
+
+  test("foo", "foo");
+  test("''''", "'");
+  test("'\"'", "\"");
+}
+
 TEST_P(YamlReadArchiveTest, Double) {
   const auto test = [](const std::string& value, double expected) {
     const auto& x = AcceptNoThrow<DoubleStruct>(LoadSingleValue(value));
@@ -157,8 +169,8 @@ TEST_P(YamlReadArchiveTest, AllScalars) {
   const std::string doc = R"""(
 doc:
   some_bool: true
-  some_double: 100.0
-  some_float: 101.0
+  some_float: 100.0
+  some_double: 101.0
   some_int32: 102
   some_uint32: 103
   some_int64: 104
@@ -167,8 +179,8 @@ doc:
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
-  EXPECT_EQ(x.some_double, 100.0);
-  EXPECT_EQ(x.some_float, 101.0);
+  EXPECT_EQ(x.some_float, 100.0);
+  EXPECT_EQ(x.some_double, 101.0);
   EXPECT_EQ(x.some_int32, 102);
   EXPECT_EQ(x.some_uint32, 103);
   EXPECT_EQ(x.some_int64, 104);
