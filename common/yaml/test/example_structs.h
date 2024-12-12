@@ -47,6 +47,24 @@ bool operator==(const DoubleStruct& a, const DoubleStruct& b) {
   return a.value == b.value;
 }
 
+// A value used in the test data below to include a default (placeholder) value
+// when initializing struct data members.
+constexpr double kNominalInt = -1;
+
+struct IntStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  int value = kNominalInt;
+};
+
+// This is used only for EXPECT_EQ, not by any YAML operations.
+bool operator==(const IntStruct& a, const IntStruct& b) {
+  return a.value == b.value;
+}
+
 struct StringStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -58,6 +76,20 @@ struct StringStruct {
 
 // This is used only for EXPECT_EQ, not by any YAML operations.
 bool operator==(const StringStruct& a, const StringStruct& b) {
+  return a.value == b.value;
+}
+
+struct BytesStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  std::vector<std::byte> value{std::byte(0), std::byte(1), std::byte(2)};
+};
+
+// This is used only for EXPECT_EQ, not by any YAML operations.
+bool operator==(const BytesStruct& a, const BytesStruct& b) {
   return a.value == b.value;
 }
 
@@ -87,6 +119,7 @@ struct AllScalarsStruct {
     a->Visit(DRAKE_NVP(some_uint64));
     a->Visit(DRAKE_NVP(some_string));
     a->Visit(DRAKE_NVP(some_path));
+    a->Visit(DRAKE_NVP(some_bytes));
   }
 
   bool some_bool = false;
@@ -98,6 +131,7 @@ struct AllScalarsStruct {
   uint64_t some_uint64 = 15;
   std::string some_string = "kNominalString";
   std::filesystem::path some_path{"/path/to/nowhere"};
+  std::vector<std::byte> some_bytes{std::byte(0), std::byte(1), std::byte(2)};
 };
 
 struct ArrayStruct {

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <map>
@@ -170,6 +171,15 @@ class YamlReadArchive final {
     this->VisitVector(nvp);
   }
 
+  // For std::vector<std::byte>. Since a `std::byte` is not any kind of YAML
+  // scalar (semantically it's neither an integer nor a string), it would be
+  // impossible to have a YAML sequence of std::byte elements. Therefore, we
+  // will treat the std::vector<std::byte> C++ type as a yaml !!binary scalar.
+  template <typename NVP>
+  void DoVisit(const NVP& nvp, const std::vector<std::byte>&, int32_t) {
+    this->VisitScalar(nvp);
+  }
+
   // For std::array.
   template <typename NVP, typename T, std::size_t N>
   void DoVisit(const NVP& nvp, const std::array<T, N>&, int32_t) {
@@ -245,7 +255,7 @@ class YamlReadArchive final {
     if (sub_node == nullptr) {
       return;
     }
-    ParseScalar(sub_node->GetScalar(), nvp.value());
+    ParseScalar(*sub_node, nvp.value());
   }
 
   template <typename NVP>
@@ -509,18 +519,20 @@ class YamlReadArchive final {
 
   // These are the only scalar types that Drake supports.
   // Users cannot add de-string-ification functions for custom scalars.
-  void ParseScalar(const std::string& value, bool* result);
-  void ParseScalar(const std::string& value, float* result);
-  void ParseScalar(const std::string& value, double* result);
-  void ParseScalar(const std::string& value, int32_t* result);
-  void ParseScalar(const std::string& value, uint32_t* result);
-  void ParseScalar(const std::string& value, int64_t* result);
-  void ParseScalar(const std::string& value, uint64_t* result);
-  void ParseScalar(const std::string& value, std::string* result);
-  void ParseScalar(const std::string& value, std::filesystem::path* result);
+  void ParseScalar(const internal::Node& scalar, bool* result);
+  void ParseScalar(const internal::Node& scalar, float* result);
+  void ParseScalar(const internal::Node& scalar, double* result);
+  void ParseScalar(const internal::Node& scalar, int32_t* result);
+  void ParseScalar(const internal::Node& scalar, uint32_t* result);
+  void ParseScalar(const internal::Node& scalar, int64_t* result);
+  void ParseScalar(const internal::Node& scalar, uint64_t* result);
+  void ParseScalar(const internal::Node& scalar, std::string* result);
+  void ParseScalar(const internal::Node& scalar, std::filesystem::path* result);
+  void ParseScalar(const internal::Node& scalar,
+                   std::vector<std::byte>* result);
 
   template <typename T>
-  void ParseScalarImpl(const std::string& value, T* result);
+  void ParseScalarImpl(const internal::Node& scalar, T* result);
 
   // --------------------------------------------------------------------------
   // @name Helpers, utilities, and member variables.

@@ -150,6 +150,12 @@ class YamlWriteArchive final {
                             data.empty() ? nullptr : &data.at(0));
   }
 
+  // We treat std::vector<byte> as a base64-encoded scalar.
+  template <typename NVP>
+  void DoVisit(const NVP& nvp, const std::vector<std::byte>&, int32_t) {
+    this->VisitScalar(nvp);
+  }
+
   // For std::array.
   template <typename NVP, typename T, std::size_t N>
   void DoVisit(const NVP& nvp, const std::array<T, N>&, int32_t) {
@@ -218,6 +224,9 @@ class YamlWriteArchive final {
     root_.Add(nvp.name(), std::move(sub_archive.root_));
   }
 
+  // Encodes vector of bytes into a base64 string.
+  static std::string EncodeBase64(const std::vector<std::byte>& bytes);
+
   // This is used for simple types that can be converted to a string.
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
@@ -225,6 +234,7 @@ class YamlWriteArchive final {
     const T& value = *nvp.value();
     std::string text;
     JsonSchemaTag tag;
+    bool tag_is_important = false;
     if constexpr (std::is_same_v<T, std::string>) {
       text = value;
       tag = internal::JsonSchemaTag::kStr;
@@ -244,12 +254,16 @@ class YamlWriteArchive final {
              : (value > 0)        ? ".inf"
                                   : "-.inf";
       tag = internal::JsonSchemaTag::kFloat;
+    } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
+      text = EncodeBase64(value);
+      tag = internal::JsonSchemaTag::kBinary;
+      tag_is_important = true;
     } else {
       text = fmt::format("{}", value);
       tag = internal::JsonSchemaTag::kStr;
     }
     internal::Node scalar = internal::Node::MakeScalar(std::move(text));
-    scalar.SetTag(tag);
+    scalar.SetTag(tag, tag_is_important);
     root_.Add(nvp.name(), std::move(scalar));
   }
 

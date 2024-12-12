@@ -147,6 +147,8 @@ std::string_view Node::GetTag() const {
                 return kTagFloat;
               case JsonSchemaTag::kStr:
                 return kTagStr;
+              case JsonSchemaTag::kBinary:
+                return kTagBinary;
             }
             DRAKE_UNREACHABLE();
           },

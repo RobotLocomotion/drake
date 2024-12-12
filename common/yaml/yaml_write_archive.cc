@@ -108,7 +108,8 @@ void RecursiveEmit(const internal::Node& node, YAML::Emitter* emitter,
       (node_tag == internal::Node::kTagBool) ||
       (node_tag == internal::Node::kTagInt) ||
       (node_tag == internal::Node::kTagFloat) ||
-      (node_tag == internal::Node::kTagStr)) {
+      (node_tag == internal::Node::kTagStr) ||
+      (node_tag == internal::Node::kTagBinary)) {
     // In most cases we don't need to emit the "JSON Schema" tags for YAML data,
     // because they are implied by default. However, YamlWriteArchive on variant
     // types sometimes marks the tag as important.
@@ -405,6 +406,12 @@ void DoEraseMatchingMaps(internal::Node* x, const internal::Node* y) {
 
 void YamlWriteArchive::EraseMatchingMaps(const YamlWriteArchive& other) {
   DoEraseMatchingMaps(&(this->root_), &(other.root_));
+}
+
+std::string YamlWriteArchive::EncodeBase64(
+    const std::vector<std::byte>& bytes) {
+  const auto* data = reinterpret_cast<const unsigned char*>(bytes.data());
+  return YAML::EncodeBase64(data, bytes.size());
 }
 
 }  // namespace internal

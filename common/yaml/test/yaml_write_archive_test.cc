@@ -69,6 +69,18 @@ TEST_F(YamlWriteArchiveTest, Double) {
   test(-std::numeric_limits<double>::infinity(), "-.inf");
 }
 
+TEST_F(YamlWriteArchiveTest, Bytes) {
+  const auto test = [](const std::string& value, const std::string& expected) {
+    const auto* data = reinterpret_cast<const std::byte*>(value.c_str());
+    const BytesStruct x{std::vector<std::byte>(data, data + value.size())};
+    EXPECT_EQ(Save(x), WrapDoc(expected));
+  };
+
+  test("", "!!binary \"\"");
+  test("all ascii", "!!binary YWxsIGFzY2lp");
+  test("other\x03\xffstuff", "!!binary b3RoZXID/3N0dWZm");
+}
+
 TEST_F(YamlWriteArchiveTest, String) {
   const auto test = [](const std::string& value, const std::string& expected) {
     const StringStruct x{value};
