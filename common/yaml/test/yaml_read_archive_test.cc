@@ -1,5 +1,7 @@
 #include "drake/common/yaml/yaml_read_archive.h"
 
+#include <optional>
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -27,7 +29,6 @@ using internal::YamlReadArchive;
 
 // TODO(jwnimmer-tri) Add a test case for reading NonPodVectorStruct.
 // TODO(jwnimmer-tri) Add a test case for reading OuterWithBlankInner.
-// TODO(jwnimmer-tri) Add a test case for reading StringStruct.
 // TODO(jwnimmer-tri) Add a test case for reading UnorderedMapStruct.
 
 // A test fixture with common helpers.
@@ -119,6 +120,19 @@ class YamlReadArchiveTest : public ::testing::TestWithParam<LoadYamlOptions> {
   }
 };
 
+// TODO(jwnimmer-tri) This test case is extremely basic. We should add many more
+// corner cases & etc. here.
+TEST_P(YamlReadArchiveTest, String) {
+  const auto test = [](const std::string& value, const std::string& expected) {
+    const auto& x = AcceptNoThrow<StringStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected);
+  };
+
+  test("foo", "foo");
+  test("''''", "'");
+  test("'\"'", "\"");
+}
+
 TEST_P(YamlReadArchiveTest, Double) {
   const auto test = [](const std::string& value, double expected) {
     const auto& x = AcceptNoThrow<DoubleStruct>(LoadSingleValue(value));
@@ -153,27 +167,66 @@ TEST_P(YamlReadArchiveTest, DoubleMissing) {
   EXPECT_EQ(x.value, kNominalDouble);
 }
 
+TEST_P(YamlReadArchiveTest, Path) {
+  const auto test = [](const std::string& value,
+                       const std::optional<std::string>& maybe_expected =
+                           std::nullopt) {
+    const auto& x = AcceptNoThrow<PathStruct>(LoadSingleValue(value));
+    const std::string& expected = maybe_expected ? *maybe_expected : value;
+    EXPECT_EQ(x.value, expected);
+  };
+
+  test("no_directory.txt");
+  test("/absolute/path/file.txt");
+  test("\"\"", "");
+  test("!!str", "");
+  test(".");
+  test("/non_lexical//path", "/non_lexical/path");
+  test("/quoted\"/path");
+
+  // Plain literals that look like primitive *declared* as strings still become
+  // paths.
+  test("'1234'", "1234");
+  test("\"1234\"", "1234");
+  test("!!str 1234", "1234");
+
+  // C++ parsing is lazy in determining the type. Rather than aggressively
+  // parsing plain types into primitives, it defers until it sees the type it
+  // is being written to. This make's Drake's YAML parsing more permissive.
+  // This tests tracks the permissive behavior so when we fix it up (and make
+  // it stricter), we'll be reminded to say something in release notes.
+  test("1234");
+}
+
+TEST_P(YamlReadArchiveTest, PathMissing) {
+  const PathStruct default_path;
+  const auto& x = AcceptEmptyDoc<PathStruct>();
+  EXPECT_EQ(x.value, default_path.value);
+}
+
 TEST_P(YamlReadArchiveTest, AllScalars) {
   const std::string doc = R"""(
 doc:
   some_bool: true
-  some_double: 100.0
-  some_float: 101.0
+  some_float: 100.0
+  some_double: 101.0
   some_int32: 102
   some_uint32: 103
   some_int64: 104
   some_uint64: 105
   some_string: foo
+  some_path: "/alternative/path"
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
-  EXPECT_EQ(x.some_double, 100.0);
-  EXPECT_EQ(x.some_float, 101.0);
+  EXPECT_EQ(x.some_float, 100.0);
+  EXPECT_EQ(x.some_double, 101.0);
   EXPECT_EQ(x.some_int32, 102);
   EXPECT_EQ(x.some_uint32, 103);
   EXPECT_EQ(x.some_int64, 104);
   EXPECT_EQ(x.some_uint64, 105);
   EXPECT_EQ(x.some_string, "foo");
+  EXPECT_EQ(x.some_path, "/alternative/path");
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {
