@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/common/eigen_types.h"
+
 namespace drake {
 namespace math {
 
@@ -65,6 +67,17 @@ or both inputs. */
 void ComposeXinvX(const RigidTransform<double>& X_BA,
                   const RigidTransform<double>& X_BC,
                   RigidTransform<double>* X_AC);
+
+// TODO(sherm1) Consider making the signature take SpatialVector instead of
+//  Vector6.
+/* Re-express a spatial vector via `S_A = R_AB * S_B`. A spatial vector is
+a Vector6 composed of two 3-element Vector3's that are re-expressed
+independently. It is OK if S_A is exactly the same memory as S_B, but not if
+they partially overlap or overlap with R_AB.
+This requires 30 floating point operations but can be done more efficiently
+exploing SIMD instructions when available. */
+void ReexpressSpatialVector(const RotationMatrix<double>& R_AB,
+                            const Vector6<double>& V_B, Vector6<double>* V_A);
 
 }  // namespace internal
 }  // namespace math

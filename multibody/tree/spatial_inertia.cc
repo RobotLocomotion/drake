@@ -448,10 +448,10 @@ SpatialForce<T> SpatialInertia<T>::operator*(
   return SpatialForce<T>(
       // Note: p_PScm_E here is p_BoBcm in the above notation.
       // Rotational
-      mass_ * (G_SP_E_ * alpha_WB_E + p_PScm_E_.cross(a_WBo_E)),
+      mass_ * (G_SP_E_ * alpha_WB_E + p_PScm_E_.cross(a_WBo_E)),  // 30 flops
       // Translational: notice the order of the cross product is the reversed
       // of the documentation above and thus no minus sign is needed.
-      mass_ * (alpha_WB_E.cross(p_PScm_E_) + a_WBo_E));
+      mass_ * (alpha_WB_E.cross(p_PScm_E_) + a_WBo_E));  // 15 flops
 }
 
 template <typename T>
@@ -466,10 +466,10 @@ SpatialMomentum<T> SpatialInertia<T>::operator*(
   return SpatialMomentum<T>(
       // Note: p_PScm_E here is p_BoBcm in the above notation.
       // Rotational
-      mass_ * (G_SP_E_ * w_WB_E + p_PScm_E_.cross(v_WP_E)),
+      mass_ * (G_SP_E_ * w_WB_E + p_PScm_E_.cross(v_WP_E)),  // 30 flops
       // Translational: notice the order of the cross product is the reversed
       // of the documentation above and thus no minus sign is needed.
-      mass_ * (w_WB_E.cross(p_PScm_E_) + v_WP_E));
+      mass_ * (w_WB_E.cross(p_PScm_E_) + v_WP_E));  // 15 flops
 }
 
 template <typename T>

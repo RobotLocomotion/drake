@@ -279,7 +279,8 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache2_BaseToTip(
   const SpatialVelocity<T> V_WMc_Mp = V_WMp_Mp.Shift(p_MpM_Mp);  // 15 flops
 
   SpatialVelocity<T>& V_WM_M = vc2->get_mutable_V_WM_M(index);
-  V_WM_M = R_MMp * V_WMc_Mp + V_FM_M;  // 36 flops
+  V_WM_M = R_MMp * V_WMc_Mp  // 6 SIMD flops
+           + V_FM_M;         // 6 flops
 }
 
 // As a guideline for developers, a summary of the computations performed in
@@ -439,7 +440,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration2_BaseToTip(
   const math::RotationMatrix<T> R_MMp = X_MpM.rotation().inverse();
   const Vector3<T>& w_WP_Mp = V_WMp_Mp.rotational();  // all frames on P same ω
 
-  // Start with parent contribution. 42 flops for shift + 30 for re-express
+  // Start with parent contribution. shift: 33 flops, reexpress: 6 SIMD flops
   A_WM_M = R_MMp * A_WMp_Mp.Shift(p_MpM_Mp, w_WP_Mp);  // parent contribution
 
   // Next add in the velocity-dependent bias acceleration:
@@ -672,17 +673,18 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics2_TipToBase(
   // Unfortunately the applied force is given at Bo and expressed in W. We
   // need it applied at Mo and expressed in M.
   const SpatialForce<T>& Fapp_BBo_W = Fapplied_Bo_W_array[index];
-  const SpatialForce<T> Fapp_BBo_M = R_MW * Fapp_BBo_W;            // 30 flops
+  const SpatialForce<T> Fapp_BBo_M = R_MW * Fapp_BBo_W;  // 6 SIMD flops
   const SpatialForce<T> Fapp_BMo_M = Fapp_BBo_M.Shift(-p_MoBo_M);  // 15 flops
 
-  // Calculate the velocity-dependent bias force on B (57 flops).
+  // Calculate the velocity-dependent bias force on B (48 flops).
   const SpatialForce<T> Fbias_BMo_M(
-      mass * w_WM_M.cross(G_BMo_M * w_WM_M),          // bias moment, 30 flops
-      mass * w_WM_M.cross(w_WM_M.cross(p_MoBcm_M)));  // bias force, 27 flops
+      mass * w_WM_M.cross(G_BMo_M * w_WM_M),          // bias moment, 27 flops
+      mass * w_WM_M.cross(w_WM_M.cross(p_MoBcm_M)));  // bias force, 21 flops
 
   // F_BMo_M is an output and will be the total force on B.
   SpatialForce<T>& F_BMo_M = (*F_BMo_M_array)[index];
-  F_BMo_M = M_BMo_M * A_WM_M + Fbias_BMo_M - Fapp_BMo_M;  // 78 flops
+  F_BMo_M = M_BMo_M * A_WM_M             // 45 flops
+            + Fbias_BMo_M - Fapp_BMo_M;  // 12 flops
 
   // Next, account for forces applied to B through its outboard joints, treated
   // as though they were locked. Since we're going tip to base we already have
@@ -696,7 +698,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics2_TipToBase(
     const Vector3<T>& p_MoMc_M = X_MMc.translation();
 
     const SpatialForce<T>& F_CMc_Mc = (*F_BMo_M_array)[outboard_index];
-    const SpatialForce<T> F_CMc_M = R_MMc * F_CMc_Mc;          // 30 flops
+    const SpatialForce<T> F_CMc_M = R_MMc * F_CMc_Mc;          // 6 SIMD flops
     const SpatialForce<T> F_CMo_M = F_CMc_M.Shift(-p_MoMc_M);  // 15 flops
     F_BMo_M += F_CMo_M;                                        // 6 flops
   }

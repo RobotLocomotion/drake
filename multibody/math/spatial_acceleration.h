@@ -134,7 +134,7 @@ class SpatialAcceleration : public SpatialVector<SpatialAcceleration, T> {
     const Vector3<T>& alpha_MB_E = this->rotational();
     // Calculate point Co's translational acceleration measured in M.
     Vector3<T>& a_MCo_E = this->translational();
-    a_MCo_E += (alpha_MB_E.cross(p_BoCo_E)
+    a_MCo_E += (alpha_MB_E.cross(p_BoCo_E)  // 33 flops total
             +   w_MB_E.cross(w_MB_E.cross(p_BoCo_E)));
   }
 
