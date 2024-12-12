@@ -69,6 +69,18 @@ TEST_F(YamlWriteArchiveTest, Double) {
   test(-std::numeric_limits<double>::infinity(), "-.inf");
 }
 
+TEST_F(YamlWriteArchiveTest, Bytes) {
+  const auto test = [](const std::string& value, const std::string& expected) {
+    const auto* data = reinterpret_cast<const std::byte*>(value.data());
+    const BytesStruct x{std::vector<std::byte>(data, data + value.size())};
+    EXPECT_EQ(Save(x), WrapDoc(expected));
+  };
+
+  test("", "!!binary \"\"");
+  test("all ascii", "!!binary YWxsIGFzY2lp");
+  test("other\x03\xffstuff", "!!binary b3RoZXID/3N0dWZm");
+}
+
 TEST_F(YamlWriteArchiveTest, String) {
   const auto test = [](const std::string& value, const std::string& expected) {
     const StringStruct x{value};
@@ -117,6 +129,7 @@ TEST_F(YamlWriteArchiveTest, AllScalars) {
   x.some_uint64 = 105;
   x.some_string = "foo";
   x.some_path = "/test/path";
+  x.some_bytes = {std::byte(15), std::byte(20), std::byte(25)};
   EXPECT_EQ(Save(x), R"""(doc:
   some_bool: true
   some_float: 100.0
@@ -127,6 +140,7 @@ TEST_F(YamlWriteArchiveTest, AllScalars) {
   some_uint64: 105
   some_string: foo
   some_path: /test/path
+  some_bytes: !!binary DxQZ
 )""");
 }
 
