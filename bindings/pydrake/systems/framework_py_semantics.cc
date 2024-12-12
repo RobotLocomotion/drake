@@ -602,19 +602,19 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def(
           "AddSystem",
           [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
+            BuilderLifeSupport<T>::stash(self);
             return self->AddSystem(std::move(system));
           },
           py::arg("system"), internal::ref_cycle<1, 2>(),
-          internal::builder_life_support_stash<T, 1>(),
           doc.DiagramBuilder.AddSystem.doc)
       .def(
           "AddNamedSystem",
           [](DiagramBuilder<T>* self, std::string& name,
               unique_ptr<System<T>> system) {
+            BuilderLifeSupport<T>::stash(self);
             return self->AddNamedSystem(name, std::move(system));
           },
           py::arg("name"), py::arg("system"), internal::ref_cycle<1, 3>(),
-          internal::builder_life_support_stash<T, 1>(),
           doc.DiagramBuilder.AddNamedSystem.doc)
       .def("RemoveSystem", &DiagramBuilder<T>::RemoveSystem, py::arg("system"),
           doc.DiagramBuilder.RemoveSystem.doc)

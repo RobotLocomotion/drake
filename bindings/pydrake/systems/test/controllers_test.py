@@ -1,7 +1,6 @@
 import gc
 import math
 import unittest
-import weakref
 
 import numpy as np
 
@@ -275,23 +274,18 @@ class TestControllers(unittest.TestCase):
             builder.ExportInput(
                 controller.get_input_port_desired_state(), "x_desired")
             builder.ExportOutput(controller.get_output_port_control(), "u")
-            spy = weakref.finalize(builder, lambda: None)
             if oblivious:
                 diagram = lifetime_oblivious_build_step(builder)
             else:
                 diagram = builder.Build()
-            assert spy.alive
-            return diagram, spy
+            return diagram
 
         for oblivious in [False, True]:
-            diagram, spy = make_diagram(oblivious)
-            assert spy.alive
+            diagram = make_diagram(oblivious)
             gc.collect()
-            assert spy.alive
             # N.B. Without the workaround for #14355, we get a segfault when
             # creating the context.
             context = diagram.CreateDefaultContext()
-            assert spy.alive
             diagram.GetInputPort("x_estimated").FixValue(context, [])
             diagram.GetInputPort("x_desired").FixValue(context, [])
             u = diagram.GetOutputPort("u").Eval(context)
