@@ -67,7 +67,7 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
    `DeclareSystemResources()` through the call to `MultibodyPlant::Finalize()`.
    @pre owning_plant != nullptr. */
   explicit PhysicalModel(MultibodyPlant<T>* owning_plant)
-      : owning_plant_(owning_plant) {
+      : owning_plant_(*owning_plant), mutable_owning_plant_(owning_plant) {
     DRAKE_DEMAND(owning_plant != nullptr);
   }
 
@@ -92,9 +92,8 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
   std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar(
       MultibodyPlant<ScalarType>* plant) const {
     DRAKE_THROW_UNLESS(plant != nullptr);
-    /* The plant owning `this` PhysicalModel must be finalized and consequently
-     the plant back pointer is nulled out. */
-    if (this->plant() != nullptr) {
+    /* The plant owning `this` PhysicalModel must be finalized. */
+    if (!this->plant().is_finalized()) {
       throw std::logic_error(
           "The owning plant of the PhysicalModel to be cloned must be "
           "finalized.");
@@ -141,14 +140,13 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
     return DoToPhysicalModelPointerVariant();
   }
 
-  /* Returns the back pointer to the MultibodyPlant owning `this`
-   PhysicalModel pre-finalize and nullptr post-finalize. */
-  const MultibodyPlant<T>* plant() const { return owning_plant_; }
+  /* Returns MultibodyPlant owning `this` PhysicalModel. */
+  const MultibodyPlant<T>& plant() const { return owning_plant_; }
 
  protected:
   /* Returns the mutable back pointer to the MultibodyPlant owning `this`
    PhysicalModel pre-finalize and nullptr post-finalize. */
-  MultibodyPlant<T>* mutable_plant() { return owning_plant_; }
+  MultibodyPlant<T>* mutable_plant() { return mutable_owning_plant_; }
 
   /* Derived classes must override this function to return their specific model
    variant. */
@@ -223,9 +221,11 @@ class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
           systems::System<T>::all_sources_ticket()});
 
  private:
-  /* Back pointer to the MultibodyPlant owning `this` PhysicalModel. Only valid
-   pre-finalize and nulled out post-finalize. */
-  MultibodyPlant<T>* owning_plant_{nullptr};
+  /* Back pointer to the MultibodyPlant owning `this` PhysicalModel. */
+  const MultibodyPlant<T>& owning_plant_;
+  /* Mutable back pointer to the MultibodyPlant owning `this` PhysicalModel.
+   Nullified post-finalize. */
+  MultibodyPlant<T>* mutable_owning_plant_{nullptr};
 };
 
 }  // namespace multibody

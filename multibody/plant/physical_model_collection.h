@@ -39,7 +39,7 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
    successful.
    @throws std::exception if a DeformableModel is already in the collection.
    @throws std::exception if model is nullptr.
-   @throws std::exception if model->plant() != plant(). */
+   @throws std::exception if model.plant() is different from plant(). */
   DeformableModel<T>& AddDeformableModel(
       std::unique_ptr<DeformableModel<T>> model);
 
@@ -47,7 +47,7 @@ class PhysicalModelCollection : public ScalarConvertibleComponent<T> {
    the added model if successful.
    @throws std::exception if a DummyPhysicalModel is already in the collection.
    @throws std::exception if model is nullptr.
-   @throws std::exception if model->plant() != plant(). */
+   @throws std::exception if model.plant() is different from plant(). */
   DummyPhysicalModel<T>& AddDummyModel(
       std::unique_ptr<DummyPhysicalModel<T>> model);
 
