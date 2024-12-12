@@ -22,6 +22,10 @@ class FunctionHandleTrajectory final : public Trajectory<T> {
 
   /** Creates the FunctionHandleTrajectory.
 
+  By default the created trajectory does not provide derivatives. If
+  trajectory derivatives are required, call `set_derivative` to provide
+  the function's derivatives.
+
   @param func The function to be used to evaluate the trajectory.
   @param rows The number of rows in the output of the function.
   @param cols The number of columns in the output of the function.
@@ -41,6 +45,19 @@ class FunctionHandleTrajectory final : public Trajectory<T> {
 
   ~FunctionHandleTrajectory() final;
 
+  /** Sets a callback function that returns the derivative of the function.
+  `func(t,order)` will only be called with `order > 0`. It is recommended that
+  if the derivatives are not implemented for the requested order, the callback
+  should throw an exception.
+
+  The size of the output of @p func will be checked each time the derivative is
+  evaluated, and a std::exception will be thrown if the size is incorrect.
+  */
+  void set_derivative(
+      std::function<MatrixX<T>(const T& /*t*/, int /* order */)> func) {
+    derivative_func_ = func;
+  }
+
   // Trajectory overrides.
   std::unique_ptr<Trajectory<T>> Clone() const final;
   MatrixX<T> value(const T& t) const final;
@@ -51,14 +68,19 @@ class FunctionHandleTrajectory final : public Trajectory<T> {
 
  private:
   // Trajectory overrides.
-  bool do_has_derivative() const final { return false; }
+  bool do_has_derivative() const final { return derivative_func_ != nullptr; }
 
-  // TODO(russt): Support derivatives, potentially by having a setter method
-  // which can pass an additional function handle that explicitly represents
-  // the derivative (and using DerivativeTrajectory to implement
-  // DoMakeDerivative).
+  // This method throws a std::exception if derivative_order != 0 and
+  // derivative_func_ == nullptr.
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
+
+  // This method throws a std::exception if derivative_order != 0 and
+  // derivative_func_ == nullptr.
+  std::unique_ptr<Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const override;
 
   std::function<MatrixX<T>(const T&)> func_{};
+  std::function<MatrixX<T>(const T&, int)> derivative_func_{};
   reset_after_move<int> rows_;
   reset_after_move<int> cols_;
   double start_time_;
