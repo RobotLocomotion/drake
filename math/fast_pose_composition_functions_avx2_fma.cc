@@ -591,6 +591,62 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   hn::StoreN(stu_, tag, X_AC + 9, 3);  // 3-wide write to stay in bounds
 }
 
+/* Re-express SpatialVector via V_A = R_AB * V_B.
+
+R_AB is 9 consecutive doubles in column-major order, the vectors are 6
+consecutive elements comprising two independent 3-vectors. It is allowable for
+V_A and V_B to be the same memory.
+
+  R_AB = abcdefghi
+  V_B = xyzrst
+  V_A = XYZRST
+
+We want to perform two matrix-vector products:
+
+   V_A     R_AB    V_B
+
+    X     a d g     x
+    Y  =  b e h  @  y      15 flops
+    Z     c f i     z
+
+    R     a d g     r
+    S  =  b e h  @  s      15 flops
+    T     c f i     t
+
+We can do this in 6 SIMD instructions. We end up doing 40 flops and throwing
+10 of them away.
+*/
+void ReexpressSpatialVectorImpl(const double* R_AB,
+                                const double* V_B,
+                                double* V_A) {
+  const hn::FixedTag<double, 4> tag;
+
+  const auto abc_ = hn::LoadU(tag, R_AB);      // (d is loaded but unused)
+  const auto def_ = hn::LoadU(tag, R_AB + 3);  // (g is loaded but unused)
+  const auto ghi_ = hn::LoadN(tag, R_AB + 6, 3);
+
+  const auto xxx_ = hn::Set(tag, V_B[0]);
+  const auto yyy_ = hn::Set(tag, V_B[1]);
+  const auto zzz_ = hn::Set(tag, V_B[2]);
+
+  // Vector XYZ:                            X   Y   Z   _
+  auto XYZ_ = hn::Mul(abc_, xxx_);      //  ax  bx  cx  _
+  XYZ_ = hn::MulAdd(def_, yyy_, XYZ_);  // +dy +ey +fy  _
+  XYZ_ = hn::MulAdd(ghi_, zzz_, XYZ_);  // +gz +hz +iz  _
+
+  const auto rrr_ = hn::Set(tag, V_B[3]);
+  const auto sss_ = hn::Set(tag, V_B[4]);
+  const auto ttt_ = hn::Set(tag, V_B[5]);
+
+  // Vector RST:                            R   S   T   _
+  auto RST_ = hn::Mul(abc_, rrr_);      //  ar  br  cr  _
+  RST_ = hn::MulAdd(def_, sss_, RST_);  // +ds +es +fs  _
+  RST_ = hn::MulAdd(ghi_, ttt_, RST_);  // +gt +ht +it  _
+
+  hn::StoreU(XYZ_, tag, V_A);         // 4-wide write temporarily overwrites R
+  hn::StoreN(RST_, tag, V_A + 3, 3);  // 3-wide write to stay in bounds
+}
+
 #else  // HWY_MAX_BYTES
 
 /* The portable versions are always defined. They should be written to maximize
@@ -697,6 +753,20 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   ComposeXinvXNoAlias(X_BA, X_BC, X_AC_temp);
   std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
 }
+void ReexpressSpatialVectorImpl(const double* R_AB,
+                                const double* V_B,
+                                double* V_A) {
+  DRAKE_ASSERT(V_A != nullptr);
+  double x, y, z;  // Protect from overlap with V_B.
+  x = row_x_col(&R_AB[0], &V_B[0]);
+  y = row_x_col(&R_AB[1], &V_B[0]);
+  z = row_x_col(&R_AB[2], &V_B[0]);
+  V_A[0] = x; V_A[1] = y; V_A[2] = z;
+  x = row_x_col(&R_AB[0], &V_B[3]);
+  y = row_x_col(&R_AB[1], &V_B[3]);
+  z = row_x_col(&R_AB[2], &V_B[3]);
+  V_A[3] = x; V_A[4] = y; V_A[5] = z;
+}
 
 #endif  // HWY_MAX_BYTES
 
@@ -732,6 +802,10 @@ HWY_EXPORT(ComposeXinvXImpl);
 struct ChooseBestComposeXinvX {
   auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXinvXImpl); }
 };
+HWY_EXPORT(ReexpressSpatialVectorImpl);
+struct ChooseBestReexpressSpatialVector {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ReexpressSpatialVectorImpl); }
+};
 
 // These sugar functions convert C++ types into bare arrays.
 const double* GetRawData(const RotationMatrix<double>& R) {
@@ -749,6 +823,12 @@ double* GetRawData(RigidTransform<double>* X) {
   // In rigid_transform.h we assert that the memory layout is 12 doubles, with
   // the rotation matrix first followed by the translation.
   return const_cast<double*>(X->rotation().matrix().data());
+}
+const double* GetRawData(const Vector6<double>& V) {
+  return V.data();
+}
+double* GetRawData(Vector6<double>* V) {
+  return V->data();
 }
 
 }  // namespace
@@ -779,6 +859,13 @@ void ComposeXinvX(const RigidTransform<double>& X_BA,
                   RigidTransform<double>* X_AC) {
   LateBoundFunction<ChooseBestComposeXinvX>::Call(
       GetRawData(X_BA), GetRawData(X_BC), GetRawData(X_AC));
+}
+
+void ReexpressSpatialVector(const RotationMatrix<double>& R_AB,
+                            const Vector6<double>& V_B,
+                            Vector6<double>* V_A) {
+  LateBoundFunction<ChooseBestReexpressSpatialVector>::Call(
+      GetRawData(R_AB), GetRawData(V_B), GetRawData(V_A));
 }
 
 }  // namespace internal
