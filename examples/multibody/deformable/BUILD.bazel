@@ -70,10 +70,7 @@ drake_cc_library(
         "deformable_common.h",
     ],
     deps = [
-        "//multibody/parsing",
         "//multibody/plant",
-        "//systems/analysis:simulator",
-        "//systems/framework:diagram",
     ],
 )
 

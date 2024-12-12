@@ -66,11 +66,7 @@ class FemSolver {
 
   /* Forces the next fem state to be the given state, and sets the the schur
    complement at the next time step to be empty. */
-  void SetNextFemState(const FemState<T>& next_state) {
-    next_state_and_schur_complement_.state->CopyFrom(next_state);
-    next_state_and_schur_complement_.schur_complement =
-        contact_solvers::internal::SchurComplement{};
-  }
+  void SetNextFemState(const FemState<T>& next_state);
 
   /* Returns the state of the FEM model after last invocation of
    `AdvanceOneTimeStep()` or `SetNextFemState()`. If neither has been called,

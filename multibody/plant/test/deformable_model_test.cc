@@ -573,46 +573,61 @@ TEST_F(DeformableModelTest, EnableDisable) {
   auto context = diagram->CreateDefaultContext();
   systems::Context<double>& plant_context =
       plant_->GetMyMutableContextFromRoot(context.get());
-  VectorBlock<VectorX<double>> discrete_state =
-      plant_context.get_mutable_discrete_state(state_index).get_mutable_value();
 
   /* Assign arbitrary position, velocity, and acceleration values. */
-  discrete_state.head(num_dofs) = 3.14 * discrete_state.head(num_dofs);
-  discrete_state.tail(2 * num_dofs) =
+  VectorX<double> initial_discrete_state =
+      plant_context.get_discrete_state(state_index).get_value();
+  initial_discrete_state.head(num_dofs) =
+      3.14 * initial_discrete_state.head(num_dofs);
+  initial_discrete_state.tail(2 * num_dofs) =
       VectorXd::LinSpaced(2 * num_dofs, 0.0, 1.0);
-  const VectorX<double> q0 = discrete_state.head(num_dofs);
+  plant_context.SetDiscreteState(state_index, initial_discrete_state);
+  const VectorX<double> q0 = initial_discrete_state.head(num_dofs);
 
-  deformable_model_ptr_->Disable(model_id, &plant_context);
-  EXPECT_FALSE(deformable_model_ptr_->is_enabled(model_id, plant_context));
-  /* Verify that the position values are unchanged upon disabling. */
-  EXPECT_EQ(discrete_state.head(num_dofs), q0);
-  /* Verify that the velocity and acceleration values are set to zero upon
-  disabling. */
-  EXPECT_EQ(discrete_state.tail(2 * num_dofs),
-            VectorX<double>::Zero(2 * num_dofs));
-  diagram->ExecuteForcedEvents(context.get());
-  const VectorXd& disabled_next_state =
-      plant_context.get_discrete_state(state_index).value();
-  /* The position, velocity, and acceleration persist for the next time step. */
-  EXPECT_EQ(disabled_next_state.head(num_dofs), q0);
-  EXPECT_EQ(disabled_next_state.tail(2 * num_dofs),
-            VectorX<double>::Zero(2 * num_dofs));
+  /* Verify properties of disabled body. */
+  {
+    deformable_model_ptr_->Disable(model_id, &plant_context);
+    VectorX<double> discrete_state =
+        plant_context.get_discrete_state(state_index).get_value();
 
-  deformable_model_ptr_->Enable(model_id, &plant_context);
-  EXPECT_TRUE(deformable_model_ptr_->is_enabled(model_id, plant_context));
-  /* Verify that the position values are unchanged after enabling. */
-  EXPECT_EQ(discrete_state.head(num_dofs), q0);
-  /* Verify that the velocity and acceleration values remain zero after
-  enabling. */
-  EXPECT_EQ(discrete_state.tail(2 * num_dofs),
-            VectorX<double>::Zero(2 * num_dofs));
-  /* The position, velocity, and acceleration for the next step. */
-  diagram->ExecuteForcedEvents(context.get());
-  const VectorXd& enabled_next_state =
-      plant_context.get_discrete_state(state_index).value();
-  EXPECT_FALSE(CompareMatrices(enabled_next_state.head(num_dofs), q0, 1e-4));
-  EXPECT_FALSE(CompareMatrices(enabled_next_state.tail(2 * num_dofs),
-                               VectorXd::Zero(2 * num_dofs), 1e-2));
+    EXPECT_FALSE(deformable_model_ptr_->is_enabled(model_id, plant_context));
+    /* Verify that the position values are unchanged upon disabling. */
+    EXPECT_EQ(discrete_state.head(num_dofs), q0);
+    /* Verify that the velocity and acceleration values are set to zero upon
+    disabling. */
+    EXPECT_EQ(discrete_state.tail(2 * num_dofs),
+              VectorX<double>::Zero(2 * num_dofs));
+    diagram->ExecuteForcedEvents(context.get());
+    const VectorXd& disabled_next_state =
+        plant_context.get_discrete_state(state_index).value();
+    /* The position, velocity, and acceleration persist for the next time step.
+     */
+    EXPECT_EQ(disabled_next_state.head(num_dofs), q0);
+    EXPECT_EQ(disabled_next_state.tail(2 * num_dofs),
+              VectorX<double>::Zero(2 * num_dofs));
+  }
+
+  /* Verify properties of re-enabled body. */
+  {
+    deformable_model_ptr_->Enable(model_id, &plant_context);
+    VectorX<double> discrete_state =
+        plant_context.get_discrete_state(state_index).get_value();
+
+    EXPECT_TRUE(deformable_model_ptr_->is_enabled(model_id, plant_context));
+    /* Verify that the position values are unchanged after enabling. */
+    EXPECT_EQ(discrete_state.head(num_dofs), q0);
+    /* Verify that the velocity and acceleration values remain zero after
+    enabling. */
+    EXPECT_EQ(discrete_state.tail(2 * num_dofs),
+              VectorX<double>::Zero(2 * num_dofs));
+    /* The position, velocity, and acceleration for the next step. */
+    diagram->ExecuteForcedEvents(context.get());
+    const VectorXd& enabled_next_state =
+        plant_context.get_discrete_state(state_index).value();
+    EXPECT_FALSE(CompareMatrices(enabled_next_state.head(num_dofs), q0, 1e-4));
+    EXPECT_FALSE(CompareMatrices(enabled_next_state.tail(2 * num_dofs),
+                                 VectorXd::Zero(2 * num_dofs), 1e-2));
+  }
 }
 
 }  // namespace

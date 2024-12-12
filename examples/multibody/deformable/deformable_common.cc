@@ -29,6 +29,9 @@ namespace drake {
 namespace examples {
 namespace deformable {
 
+// TODO(xuchenhan-tri): Instead of defining the ground model in code, it should
+// come from a data file, e.g. a "ground.sdf" in this directory, which is loaded
+// via the parser.
 void RegisterRigidGround(MultibodyPlant<double>* plant) {
   /* Minimum required proximity properties for rigid bodies to interact with
    deformable bodies.
@@ -56,8 +59,9 @@ void RegisterRigidGround(MultibodyPlant<double>* plant) {
 
 DeformableBodyId RegisterDeformableTorus(
     DeformableModel<double>* model, const std::string& model_name,
-    RigidTransformd X_WB, DeformableBodyConfig<double> deformable_config,
-    double scale, double contact_damping) {
+    const RigidTransformd& X_WB,
+    const DeformableBodyConfig<double>& deformable_config, double scale,
+    double contact_damping) {
   /* Load the torus mesh and apply scaling. */
   const std::string torus_vtk = FindResourceOrThrow(
       "drake/examples/multibody/deformable/models/torus.vtk");

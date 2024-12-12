@@ -250,8 +250,12 @@ class DeformableDriverContactKinematicsTest
   }
 
   /* Verifies contact kinematics data in the deformable vs. deformable contact
-   scene are as expected. */
-  void ValidateDeformableDeformableContactPairs() {
+   scene are as expected.
+   @param[in] expect_nonzero_velocity  True if the participating deformable dof
+   velocities should be verified against their expected values from the scene
+   construction, or false if they are expected to be zero.
+   */
+  void ValidateDeformableDeformableContactPairs(bool expect_nonzero_velocity) {
     /* Each discrete contact pair should create a contact kinematics pair. */
     const Context<double>& plant_context =
         plant_->GetMyContextFromRoot(*context_);
@@ -276,7 +280,8 @@ class DeformableDriverContactKinematicsTest
         math::RotationMatrixd::MakeFromOneUnitVector(nhat_AB_W, kZAxis);
     /* Velocities of the participating deformable dofs. */
     const VectorXd v = driver_->EvalParticipatingVelocities(plant_context);
-    const Vector3d expected_v_D1D2_C(0, 0, -1);
+    const Vector3d expected_v_D1D2_C =
+        expect_nonzero_velocity ? Vector3d(0, 0, -1) : Vector3d::Zero();
     for (int i = 0; i < num_contact_points; ++i) {
       const DiscreteContactPair<double>& contact_pair = contact_pairs[i];
       /* Test Jacobian by verifying J*v = vc. */
@@ -566,7 +571,7 @@ INSTANTIATE_TEST_SUITE_P(All, DeformableDriverContactKinematicsTest,
 TEST_F(DeformableDriverContactKinematicsTest,
        DeformableDeformableContactKinematics) {
   MakeDeformableDeformableScene();
-  ValidateDeformableDeformableContactPairs();
+  ValidateDeformableDeformableContactPairs(true);
   ValidateConstraintParticipation();
 }
 
@@ -599,6 +604,14 @@ TEST_F(DeformableDriverContactKinematicsTest,
   driver_->AppendDeformableRigidFixedConstraintKinematics(
       plant_context, &constraint_kinematics);
   EXPECT_EQ(constraint_kinematics.size(), 0);
+
+  /* Validate that after re-enabling the bodies, they behave as if they were
+   never disabled except that their participating vertex velocities are set to
+   zero. */
+  model_->Enable(deformable_body_id_, context_.get());
+  model_->Enable(deformable_body_id2_, context_.get());
+  ValidateDeformableDeformableContactPairs(false);
+  ValidateConstraintParticipation();
 }
 
 }  // namespace

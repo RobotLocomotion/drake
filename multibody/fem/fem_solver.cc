@@ -93,6 +93,13 @@ int FemSolver<T>::AdvanceOneTimeStep(
 }
 
 template <typename T>
+void FemSolver<T>::SetNextFemState(const FemState<T>& next_state) {
+  next_state_and_schur_complement_.state->CopyFrom(next_state);
+  next_state_and_schur_complement_.schur_complement =
+      contact_solvers::internal::SchurComplement{};
+}
+
+template <typename T>
 bool FemSolver<T>::solver_converged(const T& residual_norm,
                                     const T& initial_residual_norm) const {
   return residual_norm < std::max(relative_tolerance_ * initial_residual_norm,

@@ -17,18 +17,20 @@ namespace deformable {
 void RegisterRigidGround(drake::multibody::MultibodyPlant<double>* plant);
 
 /* Adds a deformable torus model with the given properties.
- @param[in] model             The deformable model to which the torus will be
-                              added.
- @param[in] model_name        A unique name assigned to the torus instance.
- @param[in] X_WB              The initial pose of the torus expressed in the
-                              world frame.
- @param[in] deformable_config Deformable properties of the torus.
- @param[in] scale             Scaling factor applied to the loaded torus mesh.
- @param[in] contact_damping   Damping value assigned to the torus material. */
+ @param[in,out] model             The deformable model to which the torus will
+                                  be added.
+ @param[in]     model_name        A unique name assigned to the torus instance.
+ @param[in]     X_WB              The initial pose of the torus expressed in the
+                                  world frame.
+ @param[in]     deformable_config Deformable properties of the torus.
+ @param[in]     scale             Scaling factor applied to the loaded torus
+                                  mesh.
+ @param[in]     contact_damping   Damping value assigned to the torus material.
+ */
 multibody::DeformableBodyId RegisterDeformableTorus(
     multibody::DeformableModel<double>* model, const std::string& model_name,
-    math::RigidTransformd X_WB,
-    multibody::fem::DeformableBodyConfig<double> deformable_config,
+    const math::RigidTransformd& X_WB,
+    const multibody::fem::DeformableBodyConfig<double>& deformable_config,
     double scale, double contact_damping);
 
 }  // namespace deformable

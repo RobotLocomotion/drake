@@ -184,8 +184,10 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    (e.g. gravity); and it does not necessarily satisfy the prescribed boundary
    condition (if any). On the flip side, a disabled deformable body does not
    affect the dynamics of other bodies, even if the collision between the
-   disabled body's geometry and other geometries is not filtered. The deformable
-   body can be enabled by calling Enable().
+   disabled body's geometry and other geometries is not filtered. Effectively,
+   the physics of the deformable body stop being computed. The deformable body
+   can be enabled by calling Enable(). Calling Disable() on a body which is
+   already disabled has no effect.
    @see Enable().
    @throw std::exception if the passed in context isn't compatible with the
    MultibodyPlant associated with this %DeformableModel.

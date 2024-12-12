@@ -155,8 +155,8 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
 
   /* Appends the constraint kinematics information for each deformable rigid
    fixed constraint.
-   @note If a deformable body is disabled, then the constraint kinematics is
-   ignored.
+   @note If a deformable body is disabled, then it by definition does not have
+   any constraint kinematics and nothing is appended.
    @pre result != nullptr. */
   void AppendDeformableRigidFixedConstraintKinematics(
       const systems::Context<T>& context,
