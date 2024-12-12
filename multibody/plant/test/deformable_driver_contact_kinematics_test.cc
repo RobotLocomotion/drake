@@ -608,8 +608,8 @@ TEST_F(DeformableDriverContactKinematicsTest,
   /* Validate that after re-enabling the bodies, they behave as if they were
    never disabled except that their participating vertex velocities are set to
    zero. */
-  model_->Enable(deformable_body_id_, context_.get());
-  model_->Enable(deformable_body_id2_, context_.get());
+  model_->Enable(deformable_body_id_, &mutable_plant_context);
+  model_->Enable(deformable_body_id2_, &mutable_plant_context);
   ValidateDeformableDeformableContactPairs(false);
   ValidateConstraintParticipation();
 }

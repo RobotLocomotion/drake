@@ -197,6 +197,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   void Disable(DeformableBodyId id, systems::Context<T>* context) const;
 
   /** Enables the deformable body with the given `id` in the given context.
+   Calling Enable() on a body which is already enabled has no effect.
    @see Disable().
    @throw std::exception if the passed in context isn't compatible with the
    MultibodyPlant associated with this %DeformableModel.
