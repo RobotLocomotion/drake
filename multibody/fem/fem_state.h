@@ -74,6 +74,14 @@ class FemState {
   void SetAccelerations(const Eigen::Ref<const VectorX<T>>& a);
   /* @} */
 
+  void CopyFrom(const FemState<T>& other) {
+    DRAKE_THROW_UNLESS(num_dofs() == other.num_dofs());
+    SetPositions(other.GetPositions());
+    SetTimeStepPositions(other.GetPreviousStepPositions());
+    SetVelocities(other.GetVelocities());
+    SetAccelerations(other.GetAccelerations());
+  }
+
   /** Returns the number of degrees of freedom in the FEM model and state. */
   int num_dofs() const {
     return get_context()

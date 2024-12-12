@@ -275,6 +275,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
 
     result->reference_positions_ = reference_positions_;
     result->discrete_state_indexes_ = discrete_state_indexes_;
+    result->is_locked_parameter_indexes_ = is_locked_parameter_indexes_;
     result->body_id_to_geometry_id_ = body_id_to_geometry_id_;
     result->geometry_id_to_body_id_ = geometry_id_to_body_id_;
     for (const auto& [deformable_id, fem_model] : fem_models_) {
@@ -411,6 +412,8 @@ void DeformableModel<T>::DoDeclareSystemResources() {
     model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
     discrete_state_indexes_.emplace(deformable_id,
                                     this->DeclareDiscreteState(model_state));
+    is_locked_parameter_indexes_.emplace(
+        deformable_id, this->DeclareAbstractParameter(Value<bool>(false)));
   }
 
   std::sort(body_ids_.begin(), body_ids_.end());
