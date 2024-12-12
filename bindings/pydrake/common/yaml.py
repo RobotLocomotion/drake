@@ -268,7 +268,7 @@ def _create_from_schema(*, schema, forthcoming_value):
 # For details, see:
 #  https://yaml.org/spec/1.2.2/#scalars
 #  https://yaml.org/spec/1.2.2/#json-schema
-_PRIMITIVE_YAML_TYPES = (bool, int, float, str)
+_PRIMITIVE_YAML_TYPES = (bool, int, float, str, bytes)
 
 
 def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
@@ -284,6 +284,13 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
     else:
         getter = functools.partial(getattr, target, name)
         setter = functools.partial(setattr, target, name)
+
+    # Only bytes get assigned to bytes. If either is bytes, both must be.
+    binary_match = isinstance(yaml_value, bytes) == (value_schema is bytes)
+    if not binary_match:
+        raise RuntimeError(
+            f"Expected a {value_schema} value for '{name}' but instead got "
+            f"yaml data of type {type(yaml_value)}")
 
     # Handle all of the plain YAML scalars:
     #  https://yaml.org/spec/1.2.2/#scalars
