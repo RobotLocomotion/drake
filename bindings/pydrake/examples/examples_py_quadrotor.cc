@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -45,7 +46,7 @@ void DefineExamplesQuadrotor(py::module m) {
           py::arg("builder"), py::arg("quadrotor_state_port"),
           py::arg("scene_graph"), py::return_value_policy::reference,
           // Keep alive, ownership: `return` keeps `builder` alive.
-          py::keep_alive<0, 1>(), doc.QuadrotorGeometry.AddToBuilder.doc);
+          internal::ref_cycle<0, 1>(), doc.QuadrotorGeometry.AddToBuilder.doc);
 
   m.def("StabilizingLQRController", &StabilizingLQRController,
       py::arg("quadrotor_plant"), py::arg("nominal_position"),

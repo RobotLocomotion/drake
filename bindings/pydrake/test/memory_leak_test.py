@@ -43,7 +43,7 @@ from pydrake.visualization import ApplyVisualizationConfig, VisualizationConfig
 
 
 # Developer-only configuration.
-VERBOSE = False
+VERBOSE = True
 
 
 @functools.cache
@@ -316,18 +316,10 @@ class TestMemoryLeaks(unittest.TestCase):
         self.do_test(dut=_dut_simple_source, count=10)
 
     def test_trivial_simulator(self):
-        self.do_test(
-            dut=_dut_trivial_simulator,
-            count=5,
-            # TODO(rpoyner-tri): Allow 0 leaks.
-            leaks_allowed=5, leaks_required=1)
+        self.do_test(dut=_dut_trivial_simulator, count=5)
 
     def test_mixed_language_simulator(self):
-        self.do_test(
-            dut=_dut_mixed_language_simulator,
-            count=5,
-            # TODO(rpoyner-tri): Allow 0 leaks.
-            leaks_allowed=5, leaks_required=1)
+        self.do_test(dut=_dut_mixed_language_simulator, count=5)
 
     def test_full_example(self):
         # Note: this test doesn't invoke the #14355 deliberate cycle.
