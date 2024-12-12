@@ -20,6 +20,7 @@ from pydrake.geometry import (
 )
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
+from pydrake.multibody.plant import DiscreteContactApproximation
 from pydrake.multibody.tree import (
     FixedOffsetFrame,
     FrameIndex,
@@ -312,6 +313,23 @@ class ModelVisualizer:
 
         # We're not going to step time, so we don't want output port sampling.
         self._builder.plant().SetUseSampledOutputPorts(False)
+
+        # TODO(amcastro-tri): Model visualizer evaluates contact results when
+        # the user requests to visualize contacts. Now, we do allow models with
+        # no mass properties (or zero mass) in ModelVisualizer. For models with
+        # zero mass, SAP detects the problematic zero masses and throws an
+        # exception. The older TAMSI does not have this zero mass detection and
+        # the problem simply goes undetected, even though the computed update
+        # along with contact forces will be garbage if there is contact. We
+        # want to allow visualization of models with zero mass, even though we
+        # should throw if we want to compute forces. Therefore, as a work
+        # around, here we revert to use the old TAMSI solver.
+        #
+        # NOTE: we should probably consider using the plant in continuous mode,
+        # since forces are algebraic functions of state and mass properties are
+        # not needed for their computation.
+        self._builder.plant().set_discrete_contact_approximation(
+            DiscreteContactApproximation.kTamsi)
 
         self._builder.plant().Finalize()
 

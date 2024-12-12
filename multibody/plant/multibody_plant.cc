@@ -313,20 +313,10 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
   DRAKE_DEMAND(contact_model_ == ContactModel::kHydroelasticWithFallback);
   DRAKE_DEMAND(MultibodyPlantConfig{}.contact_model ==
                "hydroelastic_with_fallback");
-  // By default, MultibodyPlantConfig::discrete_contact_approximation and
-  // MultibodyPlantConfig::discrete_contact_solver are empty, indicating that
-  // TAMSI is the default approximation and solver.
-  // TODO(amcastro-tri): Along the removal of
-  // MultibodyPlant::set_discrete_contact_solver() on or after 2024-04-01,
-  // the code below should be updated to:
-  //   DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation ==
-  //     "[approximation]");
-  // with [approximation] the name of the default contact approximation
-  // consistent with MultibodyPlantConfig.
   DRAKE_DEMAND(discrete_contact_approximation_ ==
-               DiscreteContactApproximation::kTamsi);
-  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_solver == "");
-  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation == "");
+               DiscreteContactApproximation::kLagged);
+  DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_approximation ==
+               "lagged");
 }
 
 template <typename T>
@@ -726,27 +716,6 @@ template <typename T>
 void MultibodyPlant<T>::set_contact_model(ContactModel model) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   contact_model_ = model;
-}
-
-template <typename T>
-void MultibodyPlant<T>::set_discrete_contact_solver(
-    DiscreteContactSolver contact_solver) {
-  DRAKE_MBP_THROW_IF_FINALIZED();
-  switch (contact_solver) {
-    case DiscreteContactSolver::kTamsi:
-      if (num_constraints() > 0) {
-        throw std::runtime_error(fmt::format(
-            "You selected TAMSI as the solver, but you have constraints "
-            "registered with this model (num_constraints() == {}). TAMSI does "
-            "not support constraints.",
-            num_constraints()));
-      }
-      discrete_contact_approximation_ = DiscreteContactApproximation::kTamsi;
-      break;
-    case DiscreteContactSolver::kSap:
-      discrete_contact_approximation_ = DiscreteContactApproximation::kSap;
-      break;
-  }
 }
 
 template <typename T>

@@ -918,7 +918,12 @@ class WeldedAndFloatingTest : public ::testing::TestWithParam<bool> {
   const WeldJoint<double>* weld2_{nullptr};
   const WeldJoint<double>* weld3_{nullptr};
   // Mass of each body in Kg.
-  const std::array<double, 4> kBodyMasses{1.0, 2.0, 3.0, 4.0};
+  // N.B. for the first two bodies, it is important that masses have an exact
+  // floating point representation of their root square so that Cholesky
+  // factorizations within the forward dynamics used by SAP do not introduce
+  // machine epsilon round-off errors. With that consideration, the force
+  // comparisons below can be performed exactly.
+  const std::array<double, 4> kBodyMasses{1.0, 4.0, 3.0, 4.0};
   // We round off gravity for simpler numbers.
   const double kGravity{10.0};  // [m/s²]
 };
@@ -972,8 +977,8 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
   } else {
     // Do not replace the floating joints.
 
-    // Joints will have assigned continguous indices and ordinals in the
-    // order they were created.
+    // Joints will have assigned contiguous indices and ordinals in the order
+    // they were created.
     const std::vector<const Joint<double>*> joints{floating0_, floating1_,
                                                    weld2_, weld3_};
     const std::vector<JointIndex> expected_indices{
@@ -991,7 +996,7 @@ TEST_P(WeldedAndFloatingTest, ReactionForcesOrdinalIndexing) {
         EXPECT_EQ(F_Bcm_W.translational(), Vector3d::Zero());
         EXPECT_EQ(F_Bcm_W.rotational(), Vector3d::Zero());
       } else {
-        // Joints for bodies 2 and 3 are welded, so we expect the reation
+        // Joints for bodies 2 and 3 are welded, so we expect the reaction
         // forces to oppose gravity on the bodies.
         EXPECT_EQ(F_Bcm_W.translational(),
                   kBodyMasses[i] * kGravity * Vector3d::UnitZ());
