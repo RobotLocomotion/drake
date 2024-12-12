@@ -405,7 +405,7 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixDisabled) {
                           .get_D_complement() *
                       plant_->time_step());
 
-  /* With all bodies disabled, ensure the linear dynamic matrices for both
+  /* With all bodies disabled, ensure the linear dynamics matrices for both
    bodies are empty. */
   model_->Disable(body_id1_, &mutable_plant_context);
   A.clear();

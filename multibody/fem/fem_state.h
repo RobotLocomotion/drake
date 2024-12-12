@@ -80,15 +80,7 @@ class FemState {
    %FemState are not the same.
    @throws std::exception if `this` %FemState is not owned (see class
    documentation). */
-  void CopyFrom(const FemState<T>& other) {
-    DRAKE_THROW_UNLESS(num_dofs() == other.num_dofs());
-    if (owned_context_ == nullptr)
-      throw std::runtime_error("Trying to mutate a shared FemState.");
-    SetPositions(other.GetPositions());
-    SetTimeStepPositions(other.GetPreviousStepPositions());
-    SetVelocities(other.GetVelocities());
-    SetAccelerations(other.GetAccelerations());
-  }
+  void CopyFrom(const FemState<T>& other);
 
   /** Returns the number of degrees of freedom in the FEM model and state. */
   int num_dofs() const {
