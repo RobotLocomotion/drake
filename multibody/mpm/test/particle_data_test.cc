@@ -27,6 +27,7 @@ using ScalarTypes = ::testing::Types<float, double, AutoDiffXd>;
 TYPED_TEST_SUITE(ParticleDataTest, ScalarTypes);
 
 TYPED_TEST(ParticleDataTest, Constructor) {
+  using T = TypeParam;
   EXPECT_EQ(this->dut_.num_particles(), 0);
   EXPECT_TRUE(this->dut_.m().empty());
   EXPECT_TRUE(this->dut_.x().empty());
@@ -38,9 +39,11 @@ TYPED_TEST(ParticleDataTest, Constructor) {
   EXPECT_TRUE(this->dut_.constitutive_models().empty());
   EXPECT_TRUE(this->dut_.in_constraint().empty());
   EXPECT_TRUE(this->dut_.tau_volume().empty());
+  EXPECT_TRUE((std::is_same_v<typename ParticleData<T>::Scalar, T>));
 }
 
-TYPED_TEST(ParticleDataTest, Sample) {
+TYPED_TEST(ParticleDataTest, AddParticles) {
+  using T = TypeParam;
   const Vector3d x0(1.0, 2.0, 3.0);
   const Vector3d x1(0.0, 2.1, 3.2);
   const std::vector<Vector3d> positions = {x0, x1};
@@ -49,28 +52,57 @@ TYPED_TEST(ParticleDataTest, Sample) {
   fem::DeformableBodyConfig<double> config;
   config.set_mass_density(2.0);
 
-  this->dut_.Sample(positions, total_volume, config);
+  this->dut_.AddParticles(positions, total_volume, config);
 
   EXPECT_EQ(this->dut_.num_particles(), 2);
   EXPECT_EQ(this->dut_.m().size(), 2);
   EXPECT_EQ(this->dut_.x().size(), 2);
   EXPECT_EQ(this->dut_.volume().size(), 2);
+  EXPECT_EQ(this->dut_.v().size(), 2);
+  EXPECT_EQ(this->dut_.C().size(), 2);
+  EXPECT_EQ(this->dut_.F().size(), 2);
+  EXPECT_EQ(this->dut_.F0().size(), 2);
+  EXPECT_EQ(this->dut_.tau_volume().size(), 2);
+  EXPECT_EQ(this->dut_.in_constraint().size(), 2);
+  EXPECT_EQ(this->dut_.constitutive_models().size(), 2);
 
   for (int i = 0; i < 2; ++i) {
     EXPECT_EQ(this->dut_.m()[i], 1.0);
+    EXPECT_EQ(this->dut_.x()[i], positions[i].cast<T>());
     EXPECT_EQ(this->dut_.volume()[i], 0.5);
-
-    EXPECT_EQ(this->dut_.v()[i], Vector3<TypeParam>::Zero());
-    EXPECT_EQ(this->dut_.C()[i], Matrix3<TypeParam>::Zero());
-    EXPECT_EQ(this->dut_.F()[i], Matrix3<TypeParam>::Identity());
+    EXPECT_EQ(this->dut_.v()[i], Vector3<T>::Zero());
+    EXPECT_EQ(this->dut_.C()[i], Matrix3<T>::Zero());
+    EXPECT_EQ(this->dut_.F()[i], Matrix3<T>::Identity());
+    EXPECT_EQ(this->dut_.F0()[i], Matrix3<T>::Identity());
+    EXPECT_EQ(this->dut_.tau_volume()[i], Matrix3<T>::Zero());
+    EXPECT_EQ(this->dut_.in_constraint()[i], false);
+    EXPECT_TRUE(std::holds_alternative<fem::internal::LinearCorotatedModel<T>>(
+        this->dut_.constitutive_models()[i]));
   }
+
+  /* Test mutable accessors. */
+  this->dut_.mutable_x()[0] = Vector3<T>::Ones();
+  this->dut_.mutable_v()[0] = 2.0 * Vector3<T>::Ones();
+  this->dut_.mutable_F()[0] = 3.0 * Matrix3<T>::Ones();
+  this->dut_.mutable_F0()[0] = 4.0 * Matrix3<T>::Ones();
+  this->dut_.mutable_C()[0] = 5.0 * Matrix3<T>::Ones();
+  this->dut_.mutable_tau_volume()[0] = 6.0 * Matrix3<T>::Ones();
+  this->dut_.mutable_in_constraint()[0] = true;
+  EXPECT_EQ(this->dut_.x()[0], Vector3<T>::Ones());
+  EXPECT_EQ(this->dut_.v()[0], 2.0 * Vector3<T>::Ones());
+  EXPECT_EQ(this->dut_.F()[0], 3.0 * Matrix3<T>::Ones());
+  EXPECT_EQ(this->dut_.F0()[0], 4.0 * Matrix3<T>::Ones());
+  EXPECT_EQ(this->dut_.C()[0], 5.0 * Matrix3<T>::Ones());
+  EXPECT_EQ(this->dut_.tau_volume()[0], 6.0 * Matrix3<T>::Ones());
+  EXPECT_EQ(this->dut_.in_constraint()[0], true);
 }
 
 TYPED_TEST(ParticleDataTest, ComputeTotalEnergy) {
-  const std::vector<Matrix3<TypeParam>> F = {Matrix3<TypeParam>::Identity(),
-                                             Matrix3<TypeParam>::Identity()};
-  const std::vector<Matrix3<TypeParam>> F0 = {Matrix3<TypeParam>::Identity(),
-                                              Matrix3<TypeParam>::Identity()};
+  using T = TypeParam;
+  const std::vector<Matrix3<T>> F = {Matrix3<T>::Identity(),
+                                     Matrix3<T>::Identity()};
+  const std::vector<Matrix3<T>> F0 = {Matrix3<T>::Identity(),
+                                      Matrix3<T>::Identity()};
 
   const Vector3d x0(1.0, 2.0, 3.0);
   const Vector3d x1(0.0, 2.1, 3.2);
@@ -79,41 +111,39 @@ TYPED_TEST(ParticleDataTest, ComputeTotalEnergy) {
 
   fem::DeformableBodyConfig<double> config;
   config.set_mass_density(1.2);
-  this->dut_.Sample(positions, total_volume, config);
+  this->dut_.AddParticles(positions, total_volume, config);
 
-  const TypeParam zero_energy = this->dut_.ComputeTotalEnergy(F, F0);
+  const T zero_energy = this->dut_.ComputeTotalEnergy(F, F0);
   EXPECT_EQ(zero_energy, 0);
 
-  const std::vector<Matrix3<TypeParam>> nontrivial_F = {
-      2.0 * Matrix3<TypeParam>::Identity(),
-      0.5 * Matrix3<TypeParam>::Identity()};
-  const TypeParam nonzero_energy =
-      this->dut_.ComputeTotalEnergy(nontrivial_F, F0);
+  const std::vector<Matrix3<T>> nontrivial_F = {2.0 * Matrix3<T>::Identity(),
+                                                0.5 * Matrix3<T>::Identity()};
+  const T nonzero_energy = this->dut_.ComputeTotalEnergy(nontrivial_F, F0);
   EXPECT_GT(nonzero_energy, 0);
 }
 
 TYPED_TEST(ParticleDataTest, ComputeKirchhoffStress) {
-  const std::vector<Matrix3<TypeParam>> F = {Matrix3<TypeParam>::Identity(),
-                                             Matrix3<TypeParam>::Identity()};
-  const std::vector<Matrix3<TypeParam>> F0 = {Matrix3<TypeParam>::Identity(),
-                                              Matrix3<TypeParam>::Identity()};
+  using T = TypeParam;
+  const std::vector<Matrix3<T>> F = {Matrix3<T>::Identity(),
+                                     Matrix3<T>::Identity()};
+  const std::vector<Matrix3<T>> F0 = {Matrix3<T>::Identity(),
+                                      Matrix3<T>::Identity()};
   const Vector3d x0(1.0, 2.0, 3.0);
   const Vector3d x1(0.0, 2.1, 3.2);
   const std::vector<Vector3d> positions = {x0, x1};
   const double total_volume = 1.0;
   const fem::DeformableBodyConfig<double> config;
-  this->dut_.Sample(positions, total_volume, config);
+  this->dut_.AddParticles(positions, total_volume, config);
 
-  std::vector<Matrix3<TypeParam>> tau_volume(2);
+  std::vector<Matrix3<T>> tau_volume(2);
   this->dut_.ComputeKirchhoffStress(F, F0, &tau_volume);
 
   for (const auto& tau : tau_volume) {
     EXPECT_TRUE(tau.isZero());
   }
 
-  const std::vector<Matrix3<TypeParam>> nontrivial_F = {
-      2.0 * Matrix3<TypeParam>::Identity(),
-      0.5 * Matrix3<TypeParam>::Identity()};
+  const std::vector<Matrix3<T>> nontrivial_F = {2.0 * Matrix3<T>::Identity(),
+                                                0.5 * Matrix3<T>::Identity()};
   this->dut_.ComputeKirchhoffStress(nontrivial_F, F0, &tau_volume);
   for (const auto& tau : tau_volume) {
     EXPECT_GT(tau.norm(), 1.0);
@@ -121,10 +151,11 @@ TYPED_TEST(ParticleDataTest, ComputeKirchhoffStress) {
 }
 
 TYPED_TEST(ParticleDataTest, ComputePK1StressDerivatives) {
-  const std::vector<Matrix3<TypeParam>> F = {Matrix3<TypeParam>::Identity(),
-                                             Matrix3<TypeParam>::Identity()};
-  const std::vector<Matrix3<TypeParam>> F0 = {Matrix3<TypeParam>::Identity(),
-                                              Matrix3<TypeParam>::Identity()};
+  using T = TypeParam;
+  const std::vector<Matrix3<T>> F = {Matrix3<T>::Identity(),
+                                     Matrix3<T>::Identity()};
+  const std::vector<Matrix3<T>> F0 = {Matrix3<T>::Identity(),
+                                      Matrix3<T>::Identity()};
   const Vector3d x0(1.0, 2.0, 3.0);
   const Vector3d x1(0.0, 2.1, 3.2);
   const std::vector<Vector3d> positions = {x0, x1};
@@ -132,14 +163,14 @@ TYPED_TEST(ParticleDataTest, ComputePK1StressDerivatives) {
 
   fem::DeformableBodyConfig<double> config;
   config.set_mass_density(1.2);
-  this->dut_.Sample(positions, total_volume, config);
+  this->dut_.AddParticles(positions, total_volume, config);
 
-  std::vector<math::internal::FourthOrderTensor<TypeParam>> dPdF_volume(2);
+  std::vector<math::internal::FourthOrderTensor<T>> dPdF_volume(2);
   this->dut_.ComputePK1StressDerivatives(F, F0, &dPdF_volume);
   /* Comfirm that the stress derivative is symmetric positive-definite. Here, we
    perform double contraction T : dPdF_volume : T where T is a test matrix and
    confirm the result is positive. */
-  Eigen::Vector<TypeParam, 9> test_matrix;
+  Eigen::Vector<T, 9> test_matrix;
   for (int i = 0; i < 9; ++i) {
     test_matrix.setZero();
     test_matrix(i) = 1.0;
@@ -199,13 +230,13 @@ GTEST_TEST(ParticleDataDerivativeTest, FirstDerivative) {
   config.set_mass_density(1.2);
 
   ParticleData<AutoDiffXd> particle_data_ad;
-  particle_data_ad.Sample(positions, total_volume, config);
+  particle_data_ad.AddParticles(positions, total_volume, config);
   const AutoDiffXd energy = particle_data_ad.ComputeTotalEnergy(F_ad, F0_ad);
 
   const std::vector<Matrix3d> F_double = {math::DiscardGradient(F_ad[0])};
   const std::vector<Matrix3d> F0_double = {MakeArbitraryMatrix3<double>()};
   ParticleData<double> particle_data_double;
-  particle_data_double.Sample(positions, total_volume, config);
+  particle_data_double.AddParticles(positions, total_volume, config);
   /* We scale by an arbitrary factor of 1.23 so that particle_F is not the same
    as F0 to make the test more general. */
   const std::vector<Matrix3d> particle_F = {1.23 *
@@ -240,7 +271,7 @@ GTEST_TEST(ParticleDataDerivativeTest, SecondDerivative) {
   config.set_mass_density(1.2);
 
   ParticleData<AutoDiffXd> particle_data_ad;
-  particle_data_ad.Sample(positions, total_volume, config);
+  particle_data_ad.AddParticles(positions, total_volume, config);
   particle_data_ad.mutable_F() = {Matrix3<AutoDiffXd>::Identity()};
   std::vector<Matrix3<AutoDiffXd>> tau_volume_ad(1);
   /* Now tau_volume_ad should store volume * P. */
@@ -249,7 +280,7 @@ GTEST_TEST(ParticleDataDerivativeTest, SecondDerivative) {
   const std::vector<Matrix3d> F_double = {math::DiscardGradient(F_ad[0])};
   const std::vector<Matrix3d> F0_double = {MakeArbitraryMatrix3<double>()};
   ParticleData<double> particle_data_double;
-  particle_data_double.Sample(positions, total_volume, config);
+  particle_data_double.AddParticles(positions, total_volume, config);
   std::vector<math::internal::FourthOrderTensor<double>> dPdF_volume_double(1);
   particle_data_double.ComputePK1StressDerivatives(F_double, F0_double,
                                                    &dPdF_volume_double);

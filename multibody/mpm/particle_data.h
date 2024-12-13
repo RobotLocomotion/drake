@@ -29,9 +29,9 @@ using DeformationGradientDataVariant =
                  fem::internal::LinearCorotatedModelData<T>,
                  fem::internal::LinearConstitutiveModelData<T>>;
 
-/* The collection of all physical attributes we care about for all particles.
- All quantities are measured and expressed in the world frame (when
- applicable).
+/* The collection of all physical attributes we care about for all particles in
+ a full MPM model. All quantities are measured and expressed in the world frame
+ (when applicable).
  @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 class ParticleData {
@@ -59,17 +59,12 @@ class ParticleData {
   const std::vector<bool>& in_constraint() const { return in_constraint_; }
   const std::vector<Matrix3<T>>& tau_volume() const { return tau_volume_; }
 
-  /* Mutators */
-  std::vector<T>& mutable_m() { return m_; }
+  /* Mutable accessors */
   std::vector<Vector3<T>>& mutable_x() { return x_; }
   std::vector<Vector3<T>>& mutable_v() { return v_; }
   std::vector<Matrix3<T>>& mutable_F() { return F_; }
   std::vector<Matrix3<T>>& mutable_F0() { return F0_; }
   std::vector<Matrix3<T>>& mutable_C() { return C_; }
-  std::vector<T>& mutable_volume() { return volume_; }
-  std::vector<ConstitutiveModelVariant<T>>& mutable_constitutive_models() {
-    return constitutive_models_;
-  }
   std::vector<bool>& mutable_in_constraint() { return in_constraint_; }
   std::vector<Matrix3<T>>& mutable_tau_volume() { return tau_volume_; }
 
@@ -89,7 +84,7 @@ class ParticleData {
    @param[in] F            The deformation gradients of the particles.
    @param[in] F0           The deformation gradients at the previous time step.
    @param[out] tau_volume  The Kirchhoff stress of each particle scaled by the
-                           volume of the particle.
+                           reference volume of the particle.
    @param[in] parallelism  Specifies the degree of parallelism to use.
    @pre F and F0 have the same size and ordering as this ParticleData.
    @pre volume_scaled_stress != nullptr.
@@ -125,35 +120,42 @@ class ParticleData {
   // TODO(xuchenhan-tri): Support Rayleigh damping for MPM.
   /* Appends default particle data to `this` ParticleData using the given
    parameters. The velocities of the particles are set to zeros. The deformation
-   gradients are set to identities.
+   gradients are set to identities. This function can be called repeatedly on a
+   single ParticleData object to add particles in multiple passes.
    @param positions     The positions of the new particles in the world frame.
    @param total_volume  The per particle volume of the new particles is given by
                         total_volume divided by the number of new particles.
+                        This is using the assumption that the new particles are
+                        evenly distributed across the domain.
    @param config        Provides the constitutive models and the mass densities
                         of the new particles.
    @pre total_volume > 0. */
-  void Sample(const std::vector<Vector3<double>>& positions,
-              double total_volume,
-              const fem::DeformableBodyConfig<double>& config);
+  void AddParticles(const std::vector<Vector3<double>>& positions,
+                    double total_volume,
+                    const fem::DeformableBodyConfig<double>& config);
 
   /* Per particle state and data. All of the following fields have the same
    size and ordering. */
-  std::vector<T> m_;           // mass
+  /* State */
   std::vector<Vector3<T>> x_;  // positions
   std::vector<Vector3<T>> v_;  // velocity
   std::vector<Matrix3<T>> F_;  // deformation gradient
   std::vector<Matrix3<T>>
       F0_;                     // deformation gradient at the previous time step
   std::vector<Matrix3<T>> C_;  // affine velocity field
-  std::vector<T> volume_;      // reference volume
+  /* Constant data. */
+  std::vector<T> m_;       // mass
+  std::vector<T> volume_;  // reference volume
   std::vector<ConstitutiveModelVariant<T>> constitutive_models_;
+  /* State dependent data. */
   std::vector<bool> in_constraint_;  // whether the particle is participating
                                      // in a constraint
   std::vector<Matrix3<T>>
       tau_volume_;  // Kirchhoff stress scaled by reference volume
   mutable std::vector<DeformationGradientDataVariant<T>>
-      strain_data_;  // Deformation gradient dependent data that is used to
-                     // calculate the energy density and its derivatives.
+      deformation_gradient_data_;  // Deformation gradient dependent data that
+                                   // is used to calculate the energy density
+                                   // and its derivatives.
 };
 
 }  // namespace internal

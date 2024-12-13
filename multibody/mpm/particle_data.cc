@@ -26,7 +26,7 @@ ConstitutiveModelVariant<T> MakeConstitutiveModel(
 }
 
 template <typename T>
-DeformationGradientDataVariant<T> MakeStrainData(
+DeformationGradientDataVariant<T> MakeDeformationGradientData(
     const fem::DeformableBodyConfig<double>& config) {
   switch (config.material_model()) {
     case fem::MaterialModel::kCorotated:
@@ -53,12 +53,14 @@ T ParticleData<T>::ComputeTotalEnergy(const std::vector<Matrix3<T>>& F,
         [&, this](auto&& model) {
           const Matrix3<T>& F_p = F[p];
           const Matrix3<T>& F0_p = F0[p];
-          using StrainDataType = typename std::decay_t<decltype(model)>::Data;
-          StrainDataType& strain_data_p =
-              std::get<StrainDataType>(strain_data_[p]);
-          strain_data_p.UpdateData(F_p, F0_p);
+          using DeformationGradientDataType =
+              typename std::remove_reference_t<decltype(model)>::Data;
+          DeformationGradientDataType& deformation_gradient_data_p =
+              std::get<DeformationGradientDataType>(
+                  deformation_gradient_data_[p]);
+          deformation_gradient_data_p.UpdateData(F_p, F0_p);
           T Psi;
-          model.CalcElasticEnergyDensity(strain_data_p, &Psi);
+          model.CalcElasticEnergyDensity(deformation_gradient_data_p, &Psi);
           result += Psi * volume_[p];
         },
         constitutive_models_[p]);
@@ -80,13 +82,16 @@ void ParticleData<T>::ComputeKirchhoffStress(
         [&, this](auto& model) {
           const Matrix3<T>& F_p = F[p];
           const Matrix3<T>& F0_p = F0[p];
-          using StrainDataType = typename std::decay_t<decltype(model)>::Data;
-          StrainDataType& strain_data_p =
-              std::get<StrainDataType>(strain_data_[p]);
-          strain_data_p.UpdateData(F_p, F0_p);
+          using DeformationGradientDataType =
+              typename std::decay_t<decltype(model)>::Data;
+          DeformationGradientDataType& deformation_gradient_data_p =
+              std::get<DeformationGradientDataType>(
+                  deformation_gradient_data_[p]);
+          deformation_gradient_data_p.UpdateData(F_p, F0_p);
           auto& tau_volume_p = (*volume_scaled_stress)[p];
           const Matrix3<T>& particle_F = F_[p];
-          model.CalcFirstPiolaStress(strain_data_p, &tau_volume_p);
+          model.CalcFirstPiolaStress(deformation_gradient_data_p,
+                                     &tau_volume_p);
           tau_volume_p *= volume_[p] * particle_F.transpose();
         },
         constitutive_models_[p]);
@@ -107,12 +112,15 @@ void ParticleData<T>::ComputePK1StressDerivatives(
         [&, this](auto& model) {
           const Matrix3<T>& F_p = F[p];
           const Matrix3<T>& F0_p = F0[p];
-          using StrainDataType = typename std::decay_t<decltype(model)>::Data;
-          StrainDataType& strain_data_p =
-              std::get<StrainDataType>(strain_data_[p]);
-          strain_data_p.UpdateData(F_p, F0_p);
+          using DeformationGradientDataType =
+              typename std::decay_t<decltype(model)>::Data;
+          DeformationGradientDataType& deformation_gradient_data_p =
+              std::get<DeformationGradientDataType>(
+                  deformation_gradient_data_[p]);
+          deformation_gradient_data_p.UpdateData(F_p, F0_p);
           auto& dPdF_volume_p = (*dPdF_volume)[p];
-          model.CalcFirstPiolaStressDerivative(strain_data_p, &dPdF_volume_p);
+          model.CalcFirstPiolaStressDerivative(deformation_gradient_data_p,
+                                               &dPdF_volume_p);
           dPdF_volume_p.mutable_data() *= volume_[p];
         },
         constitutive_models_[p]);
@@ -120,9 +128,9 @@ void ParticleData<T>::ComputePK1StressDerivatives(
 }
 
 template <typename T>
-void ParticleData<T>::Sample(const std::vector<Vector3<double>>& positions,
-                             double total_volume,
-                             const fem::DeformableBodyConfig<double>& config) {
+void ParticleData<T>::AddParticles(
+    const std::vector<Vector3<double>>& positions, double total_volume,
+    const fem::DeformableBodyConfig<double>& config) {
   DRAKE_THROW_UNLESS(total_volume > 0);
   DRAKE_THROW_UNLESS(!positions.empty());
   const int num_new_particles = ssize(positions);
@@ -130,21 +138,24 @@ void ParticleData<T>::Sample(const std::vector<Vector3<double>>& positions,
   const double volume_per_particle = total_volume / num_new_particles;
   const ConstitutiveModelVariant<T> constitutive_model =
       MakeConstitutiveModel<T>(config);
-  const DeformationGradientDataVariant<T> strain_data =
-      MakeStrainData<T>(config);
+  const DeformationGradientDataVariant<T> deformation_gradient_data =
+      MakeDeformationGradientData<T>(config);
   for (int i = 0; i < num_new_particles; ++i) {
-    m_.push_back(mass_density * volume_per_particle);
     x_.emplace_back(positions[i].cast<T>());
-    v_.emplace_back(Vector3<T>::Zero());
-    F_.emplace_back(Matrix3<T>::Identity());
-    F0_.emplace_back(Matrix3<T>::Identity());
-    C_.emplace_back(Matrix3<T>::Zero());
-    volume_.push_back(volume_per_particle);
-    constitutive_models_.push_back(constitutive_model);
-    tau_volume_.emplace_back(Matrix3<T>::Zero());
-    in_constraint_.push_back(false);
-    strain_data_.push_back(strain_data);
   }
+  m_.insert(m_.end(), num_new_particles, mass_density * volume_per_particle);
+  v_.insert(v_.end(), num_new_particles, Vector3<T>::Zero());
+  F_.insert(F_.end(), num_new_particles, Matrix3<T>::Identity());
+  F0_.insert(F0_.end(), num_new_particles, Matrix3<T>::Identity());
+  C_.insert(C_.end(), num_new_particles, Matrix3<T>::Zero());
+  volume_.insert(volume_.end(), num_new_particles, volume_per_particle);
+  constitutive_models_.insert(constitutive_models_.end(), num_new_particles,
+                              constitutive_model);
+  tau_volume_.insert(tau_volume_.end(), num_new_particles, Matrix3<T>::Zero());
+  in_constraint_.insert(in_constraint_.end(), num_new_particles, false);
+  deformation_gradient_data_.insert(deformation_gradient_data_.end(),
+                                    num_new_particles,
+                                    deformation_gradient_data);
 }
 
 }  // namespace internal
