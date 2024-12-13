@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("//tools/skylark:cc.bzl", "CcInfo")
+
 # This function is forked and modified from bazelbuild/rules_cc as of:
 # https://github.com/bazelbuild/rules_cc/blob/262ebec/cc/find_cc_toolchain.bzl
 def _find_cc_toolchain(ctx):

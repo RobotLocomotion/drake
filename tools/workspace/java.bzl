@@ -87,6 +87,7 @@ def drake_java_import(
             for x in mirrors.get("maven")
         ],
         jar_sha256 = maven_jar_sha256,
+        rule_load = """load("@rules_java//java/bazel/rules:bazel_java_import.bzl", "java_import")""",  # noqa
     )
     _internal_drake_java_import(
         name = name,

@@ -42,6 +42,8 @@ class TestWorkspaceBzlmodSync(unittest.TestCase):
             if not line.startswith("commit = "):
                 continue
             _, version, _ = line.split('"')
+            if version.startswith("v"):
+                version = version[1:]
             return version
         self.fail(f"No 'commit = ...' found in:\n{content}")
 
@@ -63,7 +65,6 @@ class TestWorkspaceBzlmodSync(unittest.TestCase):
 
         # Don't check modules that are known to be module-only.
         del modules["bazel_features"]
-        del modules["rules_java"]
 
         # Don't check module that are documented to purposefully skew versions.
         del modules["rules_python"]
