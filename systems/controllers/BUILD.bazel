@@ -18,7 +18,6 @@ drake_cc_package_library(
         ":inverse_dynamics",
         ":inverse_dynamics_controller",
         ":joint_stiffness_controller",
-        ":linear_model_predictive_controller",
         ":linear_quadratic_regulator",
         ":pid_controlled_system",
         ":pid_controller",
@@ -98,18 +97,6 @@ drake_cc_library(
     deps = [
         "//multibody/plant",
         "//systems/framework",
-    ],
-)
-
-drake_cc_library(
-    name = "linear_model_predictive_controller",
-    srcs = ["linear_model_predictive_controller.cc"],
-    hdrs = ["linear_model_predictive_controller.h"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-        "//planning/trajectory_optimization:direct_transcription",
-        "//solvers:solve",
-        "//systems/primitives:linear_system",
     ],
 )
 
@@ -223,16 +210,6 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
-    ],
-)
-
-drake_cc_googletest(
-    name = "linear_model_predictive_controller_test",
-    deps = [
-        ":linear_model_predictive_controller",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:discrete_algebraic_riccati_equation",
-        "//systems/analysis:simulator",
     ],
 )
 
