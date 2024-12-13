@@ -1,4 +1,4 @@
-load("//tools/skylark:java.bzl", "java_binary")
+load("//tools/skylark:java.bzl", "JavaInfo", "java_binary")
 
 MainClassInfo = provider()
 

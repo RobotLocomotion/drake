@@ -1,6 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:sh.bzl", "sh_binary")
 load(":path.bzl", "LIBDIR")
 
 # libgfortran: GPL-3.0-or-later WITH GCC-exception-3.1.
