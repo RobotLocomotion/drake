@@ -1,6 +1,6 @@
 load("@vtk_internal//:modules.bzl", "MODULES", "PLATFORM")
 load("@vtk_internal//:settings.bzl", "MODULE_SETTINGS")
-load("//tools/skylark:cc.bzl", "cc_library")
+load("//tools/skylark:cc.bzl", "cc_library", "objc_library")
 load(
     "//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_files",
@@ -145,7 +145,7 @@ def _vtk_cc_module_impl(
     # Deal with objc code.
     if PLATFORM["name"] != "linux" and srcs_objc_non_arc:
         objc_lib_name = "_" + module_name + "_objc"
-        native.objc_library(
+        objc_library(
             name = objc_lib_name,
             non_arc_srcs = srcs_objc_non_arc,
             hdrs = hdrs,

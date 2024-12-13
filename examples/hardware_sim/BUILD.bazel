@@ -10,6 +10,7 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("//tools/skylark:sh.bzl", "sh_binary")
 
 package(default_visibility = ["//visibility:private"])
 

@@ -85,8 +85,10 @@ drake_py_test(
         "//tools/workspace/build_bazel_apple_support:repository.bzl",
         "//tools/workspace/platforms:repository.bzl",
         "//tools/workspace/rules_cc:repository.bzl",
+        "//tools/workspace/rules_java:repository.bzl",
         "//tools/workspace/rules_license:repository.bzl",
         "//tools/workspace/rules_rust:repository.bzl",
+        "//tools/workspace/rules_shell:repository.bzl",
     ],
     tags = ["lint"],
     deps = [

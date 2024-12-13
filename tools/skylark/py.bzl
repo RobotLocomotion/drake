@@ -2,6 +2,7 @@
 
 load(
     "@rules_python//python:defs.bzl",
+    _PyInfo = "PyInfo",
     _py_binary = "py_binary",
     _py_library = "py_library",
     _py_test = "py_test",
@@ -34,3 +35,5 @@ def py_test(name, *, data = None, **kwargs):
         data = _add_requirements(data),
         **kwargs
     )
+
+PyInfo = _PyInfo

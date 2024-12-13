@@ -1,3 +1,6 @@
+load("//tools/skylark:cc.bzl", "CcInfo")
+load("//tools/skylark:sh.bzl", "sh_test")
+
 # This file contains a linter rule that ensures that only our allowed set of
 # third-party dependencies are used as "interface deps". In almost all cases,
 # we should be using "implementation deps" when using third-party libraries.
@@ -97,7 +100,7 @@ def cc_check_allowed_headers(name, deps = []):
         tags = ["manual"],
         deps = deps,
     )
-    native.sh_test(
+    sh_test(
         name = name,
         tags = ["lint"],
         srcs = [":" + sh_src],

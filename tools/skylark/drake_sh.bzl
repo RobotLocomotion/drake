@@ -5,6 +5,7 @@ load(
     "incorporate_display",
     "incorporate_num_threads",
 )
+load("//tools/skylark:sh.bzl", "sh_test")
 
 def drake_sh_test(
         name,
@@ -30,7 +31,7 @@ def drake_sh_test(
     kwargs = incorporate_display(kwargs, display = display)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     kwargs = amend(kwargs, "size", default = "small")
-    native.sh_test(
+    sh_test(
         name = name,
         **kwargs
     )

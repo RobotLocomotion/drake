@@ -78,10 +78,12 @@ load("//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_reposito
 load("//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
 load("//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
 load("//tools/workspace/rules_cc:repository.bzl", "rules_cc_repository")  # noqa
+load("//tools/workspace/rules_java:repository.bzl", "rules_java_repository")
 load("//tools/workspace/rules_license:repository.bzl", "rules_license_repository")  # noqa
 load("//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
 load("//tools/workspace/rules_rust:repository.bzl", "rules_rust_repository")
 load("//tools/workspace/rules_rust_tinyjson:repository.bzl", "rules_rust_tinyjson_repository")  # noqa
+load("//tools/workspace/rules_shell:repository.bzl", "rules_shell_repository")
 load("//tools/workspace/rust_toolchain:repository.bzl", "register_rust_toolchains", "rust_toolchain_repositories")  # noqa
 load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")  # noqa
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
@@ -123,6 +125,7 @@ REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
     "rules_license",
     "rules_python",
     "rules_rust",
+    "rules_shell",
 ]
 
 def add_default_repositories(
@@ -301,6 +304,8 @@ def add_default_repositories(
         ros_xacro_internal_repository(name = "ros_xacro_internal", mirrors = mirrors)  # noqa
     if "rules_cc" not in excludes:
         rules_cc_repository(name = "rules_cc", mirrors = mirrors)
+    if "rules_java" not in excludes:
+        rules_java_repository(name = "rules_java", mirrors = mirrors)
     if "rules_license" not in excludes:
         rules_license_repository(name = "rules_license", mirrors = mirrors)
     if "rules_python" not in excludes:
@@ -311,6 +316,8 @@ def add_default_repositories(
         rules_rust_repository(name = "rules_rust", mirrors = mirrors)
     if "rules_rust_tinyjson" not in excludes:
         rules_rust_tinyjson_repository(name = "rules_rust_tinyjson", mirrors = mirrors)  # noqa
+    if "rules_shell" not in excludes:
+        rules_shell_repository(name = "rules_shell", mirrors = mirrors)
     if "rust_toolchain" not in excludes:
         rust_toolchain_repositories(mirrors = mirrors, excludes = excludes)
     if "scs_internal" not in excludes:

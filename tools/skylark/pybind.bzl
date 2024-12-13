@@ -1,7 +1,7 @@
 load("@cc//:compiler.bzl", "COMPILER_ID")
 load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
 load("//tools/install:install.bzl", "install")
-load("//tools/skylark:cc.bzl", "cc_binary")
+load("//tools/skylark:cc.bzl", "CcInfo", "cc_binary")
 load("//tools/skylark:drake_cc.bzl", "drake_cc_binary", "drake_cc_googletest")
 load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_test")
 load("//tools/skylark:py.bzl", "py_library")
