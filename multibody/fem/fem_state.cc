@@ -70,6 +70,14 @@ void FemState<T>::SetAccelerations(const Eigen::Ref<const VectorX<T>>& a) {
 }
 
 template <typename T>
+void FemState<T>::CopyFrom(const FemState<T>& other) {
+  DRAKE_THROW_UNLESS(num_dofs() == other.num_dofs());
+  if (owned_context_ == nullptr)
+    throw std::runtime_error("Trying to mutate a shared FemState.");
+  owned_context_->SetTimeStateAndParametersFrom(other.get_context());
+}
+
+template <typename T>
 std::unique_ptr<FemState<T>> FemState<T>::Clone() const {
   if (owned_context_ != nullptr) {
     auto clone = std::make_unique<FemState<T>>(this->system_);

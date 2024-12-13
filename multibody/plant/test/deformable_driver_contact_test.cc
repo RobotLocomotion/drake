@@ -377,6 +377,46 @@ TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrix) {
                       plant_->time_step());
 }
 
+TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrixDisabled) {
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  Context<double>& mutable_plant_context =
+      plant_->GetMyMutableContextFromRoot(context_.get());
+  std::vector<MatrixXd> A;
+  driver_->AppendLinearDynamicsMatrix(plant_context, &A);
+  /* Confirm the bodies, when enabled, have non-trivial linear dynamics
+   matrices. */
+  ASSERT_EQ(A.size(), 2);
+  EXPECT_NE(A[0].size(), 0);
+  EXPECT_NE(A[1].size(), 0);
+
+  /* With body0 disabled, ensure that the dynamics matrix for body0 is empty. */
+  model_->Disable(body_id0_, &mutable_plant_context);
+
+  A.clear();
+  driver_->AppendLinearDynamicsMatrix(plant_context, &A);
+  ASSERT_EQ(A.size(), 2);
+  EXPECT_EQ(A[0].rows(), 0);
+  EXPECT_EQ(A[0].cols(), 0);
+  /* The linear dynamics matrix for body1 remains unchanged. */
+  DeformableBodyIndex body_index1(1);
+  EXPECT_EQ(A[1], EvalFreeMotionTangentMatrixSchurComplement(plant_context,
+                                                             body_index1)
+                          .get_D_complement() *
+                      plant_->time_step());
+
+  /* With all bodies disabled, ensure the linear dynamics matrices for both
+   bodies are empty. */
+  model_->Disable(body_id1_, &mutable_plant_context);
+  A.clear();
+  driver_->AppendLinearDynamicsMatrix(plant_context, &A);
+  ASSERT_EQ(A.size(), 2);
+  for (int i = 0; i < 2; ++i) {
+    EXPECT_EQ(A[i].rows(), 0);
+    EXPECT_EQ(A[i].cols(), 0);
+  }
+}
+
 TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
@@ -445,6 +485,55 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   }
   EXPECT_EQ(face_indices_0, expected_face_indices);
   EXPECT_EQ(face_indices_1, expected_face_indices);
+}
+
+/* Test that disabled deformable bodies are ignored when computing contact
+ pairs. */
+TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairsDisabled) {
+  const Context<double>& plant_context =
+      plant_->GetMyContextFromRoot(*context_);
+  Context<double>& mutable_plant_context =
+      plant_->GetMyMutableContextFromRoot(context_.get());
+
+  /* Test combinations of deformable contact pairs where zero, one, or both of
+   the bodies are disabled. */
+  std::vector<std::vector<std::pair<DeformableBodyId, bool>>> test_cases = {
+      {{body_id0_, true}, {body_id1_, true}},
+      {{body_id0_, true}, {body_id1_, false}},
+      {{body_id0_, false}, {body_id1_, false}},
+  };
+
+  for (const auto& test_case : test_cases) {
+    const DeformableContact<double>& contact_data =
+        EvalDeformableContact(plant_context);
+
+    /* Apply enable/disable per the test case configuration. Compute the
+     number of expected contacts from the enabled body count. */
+    int num_contact_points = 0;
+    for (const auto& [deformable_id, is_enabled] : test_case) {
+      if (is_enabled) {
+        model_->Enable(deformable_id, &mutable_plant_context);
+      } else {
+        model_->Disable(deformable_id, &mutable_plant_context);
+      }
+
+      /* Compute this model's contribution to the expected contact point count,
+        disregarding disabled models. */
+      for (const DeformableContactSurface<double>& surface :
+           contact_data.contact_surfaces()) {
+        const GeometryId geom_id = model_->GetGeometryId(deformable_id);
+        if (surface.id_A() == geom_id || surface.id_B() == geom_id) {
+          num_contact_points += is_enabled ? surface.num_contact_points() : 0;
+        }
+      }
+    }
+
+    DiscreteContactData<DiscreteContactPair<double>> contact_pairs;
+    driver_->AppendDiscreteContactPairs(plant_context, &contact_pairs);
+
+    EXPECT_GE(num_contact_points, 0);
+    EXPECT_EQ(contact_pairs.size(), num_contact_points);
+  }
 }
 
 /* Verifies that the post contact velocites for deformable bodies are as

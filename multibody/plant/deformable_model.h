@@ -174,6 +174,52 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   const std::vector<const ForceDensityField<T>*>& GetExternalForces(
       DeformableBodyId id) const;
 
+  // TODO(xuchenhan-tri): filter collisions for the disabled deformable body's
+  // geometry.
+  /** Disables the deformable body with the given `id` in the given context.
+   Disabling a deformable body sets its vertex velocities and accelerations to
+   zero and freezes its vertex positions. A disabled deformable body is not
+   subject to any constraint (e.g. frictional contact constraint or fixed
+   constraint); it does not move under the influence of external forces
+   (e.g. gravity); and it does not necessarily satisfy the prescribed boundary
+   condition (if any). On the flip side, a disabled deformable body does not
+   affect the dynamics of other bodies, even if the collision between the
+   disabled body's geometry and other geometries is not filtered. Effectively,
+   the physics of the deformable body stop being computed. The deformable body
+   can be enabled by calling Enable(). Calling Disable() on a body which is
+   already disabled has no effect.
+   @see Enable().
+   @throw std::exception if the passed in context isn't compatible with the
+   MultibodyPlant associated with this %DeformableModel.
+   @throw std::exception if a deformable body with the given id is not
+   registered.
+   @throw std::exception if context is null. */
+  void Disable(DeformableBodyId id, systems::Context<T>* context) const;
+
+  /** Enables the deformable body with the given `id` in the given context.
+   Calling Enable() on a body which is already enabled has no effect.
+   @see Disable().
+   @throw std::exception if the passed in context isn't compatible with the
+   MultibodyPlant associated with this %DeformableModel.
+   @throw std::exception if a deformable body with the given id is not
+   registered.
+   @throw std::exception if context is null. */
+  void Enable(DeformableBodyId id, systems::Context<T>* context) const;
+
+  /** @return true if and only if the deformable body with the given id is
+   enabled.
+   @throw std::exception if the passed in context isn't compatible with the
+   MultibodyPlant associated with this %DeformableModel.
+   @throw std::exception if a deformable body with the given id is not
+   registered. */
+  bool is_enabled(DeformableBodyId id,
+                  const systems::Context<T>& context) const {
+    ThrowUnlessRegistered(__func__, id);
+    this->plant().ValidateContext(context);
+    return context.get_parameters().template get_abstract_parameter<bool>(
+        is_enabled_parameter_indexes_.at(id));
+  }
+
   /** Returns the FemModel for the body with `id`.
    @throws exception if no deformable body with `id` is registered with `this`
    %DeformableModel. */
@@ -326,6 +372,9 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   /* The discrete state indexes for all deformable bodies. */
   std::unordered_map<DeformableBodyId, systems::DiscreteStateIndex>
       discrete_state_indexes_;
+  /* System parameter index for the enable states for each deformable body. */
+  std::unordered_map<DeformableBodyId, systems::AbstractParameterIndex>
+      is_enabled_parameter_indexes_;
   std::unordered_map<DeformableBodyId, geometry::GeometryId>
       body_id_to_geometry_id_;
   std::unordered_map<geometry::GeometryId, DeformableBodyId>

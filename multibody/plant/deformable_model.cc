@@ -209,6 +209,32 @@ DeformableModel<T>::GetExternalForces(DeformableBodyId id) const {
 }
 
 template <typename T>
+void DeformableModel<T>::Disable(DeformableBodyId id,
+                                 systems::Context<T>* context) const {
+  DRAKE_THROW_UNLESS(context != nullptr);
+  this->plant().ValidateContext(*context);
+  ThrowUnlessRegistered(__func__, id);
+  context->get_mutable_abstract_parameter(is_enabled_parameter_indexes_.at(id))
+      .set_value(false);
+  /* Set both the accelerations and the velocities to zero, noting that the
+   dofs are stored in the order of q, v, and then a. */
+  context->get_mutable_discrete_state(discrete_state_indexes_.at(id))
+      .get_mutable_value()
+      .tail(2 * fem_models_.at(id)->num_dofs())
+      .setZero();
+}
+
+template <typename T>
+void DeformableModel<T>::Enable(DeformableBodyId id,
+                                systems::Context<T>* context) const {
+  DRAKE_THROW_UNLESS(context != nullptr);
+  this->plant().ValidateContext(*context);
+  ThrowUnlessRegistered(__func__, id);
+  context->get_mutable_abstract_parameter(is_enabled_parameter_indexes_.at(id))
+      .set_value(true);
+}
+
+template <typename T>
 const fem::FemModel<T>& DeformableModel<T>::GetFemModel(
     DeformableBodyId id) const {
   ThrowUnlessRegistered(__func__, id);
@@ -275,6 +301,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
 
     result->reference_positions_ = reference_positions_;
     result->discrete_state_indexes_ = discrete_state_indexes_;
+    result->is_enabled_parameter_indexes_ = is_enabled_parameter_indexes_;
     result->body_id_to_geometry_id_ = body_id_to_geometry_id_;
     result->geometry_id_to_body_id_ = geometry_id_to_body_id_;
     for (const auto& [deformable_id, fem_model] : fem_models_) {
@@ -411,6 +438,8 @@ void DeformableModel<T>::DoDeclareSystemResources() {
     model_state.tail(num_dofs) = default_fem_state->GetAccelerations();
     discrete_state_indexes_.emplace(deformable_id,
                                     this->DeclareDiscreteState(model_state));
+    is_enabled_parameter_indexes_.emplace(
+        deformable_id, this->DeclareAbstractParameter(Value<bool>(true)));
   }
 
   std::sort(body_ids_.begin(), body_ids_.end());
