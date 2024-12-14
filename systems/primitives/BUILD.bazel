@@ -35,6 +35,7 @@ drake_cc_package_library(
         ":saturation",
         ":shared_pointer_system",
         ":sine",
+        ":sparse_matrix_gain",
         ":symbolic_vector_system",
         ":trajectory_affine_system",
         ":trajectory_linear_system",
@@ -285,6 +286,15 @@ drake_cc_library(
     deps = [
         "//systems/framework:diagram_builder",
         "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "sparse_matrix_gain",
+    srcs = ["sparse_matrix_gain.cc"],
+    hdrs = ["sparse_matrix_gain.h"],
+    deps = [
+        "//systems/framework",
     ],
 )
 
@@ -695,6 +705,16 @@ drake_cc_googletest(
     name = "shared_pointer_system_test",
     deps = [
         ":shared_pointer_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sparse_matrix_gain_test",
+    deps = [
+        ":sparse_matrix_gain",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework",
+        "//systems/framework/test_utilities",
     ],
 )
 

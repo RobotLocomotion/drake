@@ -1,4 +1,5 @@
 import gc
+import scipy.sparse
 import unittest
 import numpy as np
 
@@ -52,6 +53,7 @@ from pydrake.systems.primitives import (
     Saturation, Saturation_,
     SharedPointerSystem, SharedPointerSystem_,
     Sine, Sine_,
+    SparseMatrixGain_,
     StateInterpolatorWithDiscreteDerivative,
     StateInterpolatorWithDiscreteDerivative_,
     SymbolicVectorSystem, SymbolicVectorSystem_,
@@ -762,6 +764,25 @@ class TestGeneral(unittest.TestCase):
         discrete_derivative = DiscreteDerivative(
             num_inputs=5, time_step=0.5, suppress_initial_transient=False)
         self.assertFalse(discrete_derivative.suppress_initial_transient())
+
+    @numpy_compare.check_all_types
+    def test_sparse_matrix_gain(self, T):
+        D = scipy.sparse.csc_matrix(
+            (np.array([2, 1., 3]), np.array([0, 1, 0]),
+             np.array([0, 2, 2, 3])), shape=(2, 3))
+        dut = SparseMatrixGain_[T](D=D)
+        context = dut.CreateDefaultContext()
+        u = np.array([1, 2, 3])
+        dut.get_input_port().FixValue(context, u)
+        y = dut.get_output_port().Eval(context)
+        numpy_compare.assert_float_equal(y, D.todense() @ u)
+
+        numpy_compare.assert_float_equal(D.todense(), dut.D().todense())
+        D2 = scipy.sparse.csc_matrix(
+            (np.array([1, 4, 6]), np.array([0, 1, 0]),
+             np.array([0, 2, 2, 3])), shape=(2, 3))
+        dut.set_D(D=D2)
+        numpy_compare.assert_float_equal(D2.todense(), dut.D().todense())
 
     def test_state_interpolator_with_discrete_derivative(self):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
