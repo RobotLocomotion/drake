@@ -26,6 +26,7 @@
 #include "drake/systems/primitives/saturation.h"
 #include "drake/systems/primitives/shared_pointer_system.h"
 #include "drake/systems/primitives/sine.h"
+#include "drake/systems/primitives/sparse_matrix_gain.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
 #include "drake/systems/primitives/trajectory_affine_system.h"
 #include "drake/systems/primitives/trajectory_linear_system.h"
@@ -395,6 +396,16 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<const VectorX<T>&, const VectorX<T>&>(),
             py::arg("min_value"), py::arg("max_value"),
             doc.Saturation.ctor.doc_2args);
+
+    DefineTemplateClassWithDefault<SparseMatrixGain<T>, LeafSystem<T>>(
+        m, "SparseMatrixGain", GetPyParam<T>(), doc.SparseMatrixGain.doc)
+        .def(py::init([](const Eigen::SparseMatrix<double>& D) {
+          return std::make_unique<SparseMatrixGain<T>>(D);
+        }),
+            py::arg("D"), doc.SparseMatrixGain.ctor.doc)
+        .def("D", &SparseMatrixGain<T>::D, doc.SparseMatrixGain.D.doc)
+        .def("set_D", &SparseMatrixGain<T>::set_D, py::arg("D"),
+            doc.SparseMatrixGain.set_D.doc);
 
     DefineTemplateClassWithDefault<StateInterpolatorWithDiscreteDerivative<T>,
         Diagram<T>>(m, "StateInterpolatorWithDiscreteDerivative",
