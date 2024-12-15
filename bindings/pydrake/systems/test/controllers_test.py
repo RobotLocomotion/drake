@@ -273,6 +273,8 @@ class TestControllers(unittest.TestCase):
             builder.ExportInput(
                 controller.get_input_port_desired_state(), "x_desired")
             builder.ExportOutput(controller.get_output_port_control(), "u")
+            builder.ExportOutput(
+                controller.get_output_port_generalized_force(), "tau")
             diagram = builder.Build()
             return diagram
 

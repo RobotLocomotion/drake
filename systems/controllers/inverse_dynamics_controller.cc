@@ -8,6 +8,7 @@
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
+#include "drake/systems/primitives/sparse_matrix_gain.h"
 
 using drake::multibody::MultibodyPlant;
 
@@ -114,7 +115,16 @@ joints modeled with quaternions.)""", num_positions, num_velocities));
         builder.ExportInput(adder->get_input_port(1), "desired_acceleration");
   }
 
-  // Exposes inverse dynamics' output port.
+  // Add B⁻¹ to the diagram.
+  auto Binv = builder.template AddNamedSystem<SparseMatrixGain<T>>(
+      "B⁻¹", multibody_plant_for_control_->MakeActuationMatrixPseudoinverse());
+  builder.Connect(inverse_dynamics->get_output_port_generalized_force(),
+                  Binv->get_input_port());
+
+  // Expose the actuation output port.
+  actuation_ = builder.ExportOutput(Binv->get_output_port(), "actuation");
+
+  // Exposes the generalized force output port.
   generalized_force_ = builder.ExportOutput(
       inverse_dynamics->get_output_port_generalized_force(),
       "generalized_force");
