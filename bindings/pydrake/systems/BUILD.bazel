@@ -494,6 +494,7 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake:trajectories_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
 )
 
