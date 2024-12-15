@@ -28,22 +28,19 @@ class InverseDynamicsControllerTest : public ::testing::Test {
                           const VectorX<double>& kp, const VectorX<double>& ki,
                           const VectorX<double>& kd,
                           const Context<double>* robot_context = nullptr) {
-    EXPECT_EQ(test_sys->get_output_port().get_index(), 0);
-
     auto inverse_dynamics_context = test_sys->CreateDefaultContext();
-    auto output = test_sys->AllocateOutput();
     const MultibodyPlant<double>& robot_plant =
         *test_sys->get_multibody_plant_for_control();
 
     // Sets current state and reference state and acceleration values.
     const int dim = robot_plant.num_positions();
     VectorX<double> q(dim), v(dim), q_r(dim), v_r(dim), vd_r(dim);
-    q << 0.3, 0.2, 0.1, 0, -0.1, -0.2, -0.3;
+    q = Eigen::VectorXd::LinSpaced(dim, 0.3, -0.3);
     v = q * 3;
 
     q_r = (q + VectorX<double>::Constant(dim, 0.1)) * 2.;
     v_r.setZero();
-    vd_r << 1, 2, 3, 4, 5, 6, 7;
+    vd_r = Eigen::VectorXd::LinSpaced(dim, 1, dim);
 
     // Connects inputs.
     VectorX<double> state_input(robot_plant.num_positions() +
@@ -65,12 +62,8 @@ class InverseDynamicsControllerTest : public ::testing::Test {
         inverse_dynamics_context.get(), reference_acceleration_input);
 
     // Sets integrated position error.
-    VectorX<double> q_int(dim);
-    q_int << -1, -2, -3, -4, -5, -6, -7;
+    VectorX<double> q_int = Eigen::VectorXd::LinSpaced(dim, -1, -7);
     test_sys->set_integral_value(inverse_dynamics_context.get(), q_int);
-
-    // Computes output.
-    test_sys->CalcOutput(*inverse_dynamics_context, output.get());
 
     // The results should equal to this.
     VectorX<double> vd_d = (kp.array() * (q_r - q).array()).matrix() +
@@ -80,13 +73,22 @@ class InverseDynamicsControllerTest : public ::testing::Test {
     std::unique_ptr<Context<double>> workspace_context =
         robot_context == nullptr ? robot_plant.CreateDefaultContext()
                                  : robot_context->Clone();
-    VectorX<double> expected_torque = controllers_test::ComputeTorque(
+    VectorX<double> expected_force = controllers_test::ComputeTorque(
         robot_plant, q, v, vd_d, workspace_context.get());
+    Eigen::VectorXd expected_torque =
+        robot_plant.MakeActuationMatrixPseudoinverse() * expected_force;
 
     // Checks the expected and computed gravity torque.
-    const BasicVector<double>* output_vector = output->get_vector_data(0);
-    EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->get_value(),
-                                1e-10, MatrixCompareType::absolute));
+    const Eigen::VectorXd& actuation = test_sys->get_output_port_control()
+                                              .Eval(*inverse_dynamics_context);
+    EXPECT_TRUE(CompareMatrices(expected_torque, actuation, 1e-10,
+                                MatrixCompareType::absolute));
+
+    const Eigen::VectorXd& generalized_force =
+        test_sys->get_output_port_generalized_force().Eval(
+            *inverse_dynamics_context);
+    EXPECT_TRUE(CompareMatrices(expected_force, generalized_force, 1e-10,
+                                MatrixCompareType::absolute));
   }
 };
 
@@ -172,6 +174,48 @@ TEST_F(InverseDynamicsControllerTest,
       std::move(robot), kp, ki, kd, true, custom_context.get());
 
   ConfigTestAndCheck(dut.get(), kp, ki, kd, custom_context.get());
+}
+
+// Tests the case when the actuators are ordered differently than the
+// generalized forces (so B is not the identity matrix).
+TEST_F(InverseDynamicsControllerTest, ActuatorOrder) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="upper_arm" pos="0 0 2">
+      <joint name="shoulder" type="hinge" axis="0 1 0"/>
+      <geom name="upper_arm" fromto="0 0 0 0 0 1" size="0.05" type="capsule" mass="1"/>
+      <body name="lower_arm" pos="0 0 1">
+        <joint name="elbow" type="hinge" axis="0 1 0"/>
+        <geom name="lower_arm" fromto="0 0 0 0 0 1" size="0.049" type="capsule" mass="1"/>
+      </body>
+    </body>
+  </worldbody>
+   <actuator>
+    <!-- intentionally list these in reverse order -->
+    <motor name="elbow" joint="elbow"/>
+    <motor name="shoulder" joint="shoulder"/>
+  </actuator>
+</mujoco>
+)""";
+  auto mbp = std::make_unique<MultibodyPlant<double>>(0.0);
+  multibody::Parser(mbp.get()).AddModelsFromString(xml, ".xml");
+  mbp->Finalize();
+  EXPECT_EQ(mbp->num_positions(), 2);
+  EXPECT_EQ(mbp->num_velocities(), 2);
+  EXPECT_EQ(mbp->num_actuators(), 2);
+  EXPECT_FALSE(mbp->MakeActuationMatrix().isIdentity());
+
+  const int dim = mbp->num_positions();
+  VectorX<double> kp(dim), ki(dim), kd(dim);
+  kp << 1, 2;
+  ki << 0.1, 0.2;
+  kd = kp / 2.;
+
+  auto dut = std::make_unique<InverseDynamicsController<double>>(
+      std::move(mbp), kp, ki, kd, true);
+
+  ConfigTestAndCheck(dut.get(), kp, ki, kd);
 }
 
 GTEST_TEST(AdditionalInverseDynamicsTest, ScalarConversion) {

@@ -19,16 +19,22 @@ namespace controllers {
 // N.B. Inheritance order must remain fixed for pydrake (#9243).
 /**
  * A state feedback controller that uses a PidController to generate desired
- * accelerations, which are then converted into torques using InverseDynamics.
- * More specifically, the output of this controller is:
+ * accelerations, which are then converted into MultibodyPlant actuation inputs
+ * using InverseDynamics. More specifically, the output of this controller is:
  * <pre>
- *   force = inverse_dynamics(q, v, vd_command), where
+ *   actuation = B⁻¹ generalized_force, and
+ *   generalized_force = inverse_dynamics(q, v, vd_command), where
  *   vd_command = kp(q_d - q) + kd(v_d - v) + ki int(q_d - q) + vd_d.
  * </pre>
  * Here `q` and `v` stand for the generalized position and velocity, and `vd`
- * is the generalized acceleration. The subscript `_d` indicates desired
- * values, and `vd_command` indicates the acceleration command (which includes
- * the stabilization terms) passed to the inverse dynamics computation.
+ * is the generalized acceleration, and `B` is the actuation matrix. The
+ * subscript `_d` indicates desired values, and `vd_command` indicates the
+ * acceleration command (which includes the stabilization terms) passed to the
+ * inverse dynamics computation.
+ *
+ * @note In the case where the plant is not fully actuated, then B⁻¹ is
+ * implemented as the pseudo-inverse of B. See
+ * MultibodyPlant::MakeActuationMatrixPseudoinverse().
  *
  * @system
  * name: InverseDynamicsController
@@ -37,6 +43,7 @@ namespace controllers {
  * - desired_state
  * - <span style="color:gray">desired_acceleration</span>
  * output_ports:
+ * - actuation
  * - generalized_force
  * @endsystem
  *
@@ -153,9 +160,16 @@ class InverseDynamicsController final
   }
 
   /**
-   * Returns the output port for computed control.
+   * Returns the output port for computed actuation/control.
    */
   const OutputPort<T>& get_output_port_control() const final {
+    return this->get_output_port(actuation_);
+  }
+
+  /**
+   * Returns the output port for computed generalized_force.
+   */
+  const OutputPort<T>& get_output_port_generalized_force() const {
     return this->get_output_port(generalized_force_);
   }
 
@@ -178,6 +192,7 @@ class InverseDynamicsController final
   InputPortIndex estimated_state_;
   InputPortIndex desired_state_;
   InputPortIndex desired_acceleration_;
+  OutputPortIndex actuation_;
   OutputPortIndex generalized_force_;
 };
 
