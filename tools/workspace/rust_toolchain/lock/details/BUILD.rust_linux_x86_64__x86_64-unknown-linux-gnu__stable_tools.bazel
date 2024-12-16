@@ -43,6 +43,8 @@ filegroup(
     srcs = ["bin/cargo"],
     visibility = ["//visibility:public"],
 )
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
 filegroup(
     name = "rustfmt_bin",
     srcs = ["bin/rustfmt"],
