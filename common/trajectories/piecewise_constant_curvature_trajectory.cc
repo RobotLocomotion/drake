@@ -70,11 +70,11 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialVelocity(
   multibody::SpatialVelocity<T> spatial_velocity;
   // From Frenet–Serret analysis and the class doc for
   // PiecewiseConstantCurvatureTrajectory, the rotational velocity is equal to
-  // the Darboux vector times the tangential velocity: ρᵢ * Fz * ds/dt.
+  // the Darboux vector times the tangential velocity: ρ⋅Fz⋅ds/dt.
   spatial_velocity.rotational() = rho_i * R_AF.col(kPlaneNormalIndex) * s_dot;
 
   // The translational velocity is equal to the tangent direction times the
-  // tangential velocity: dr(s)/dt = t̂(s) * ds/dt = Fx(s) * ds/dt.
+  // tangential velocity: dr(s)/dt = t̂(s)⋅ds/dt = Fx(s)⋅ds/dt.
   spatial_velocity.translational() = R_AF.col(kCurveTangentIndex) * s_dot;
 
   return spatial_velocity;
@@ -87,18 +87,18 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
   const math::RotationMatrix<T> R_AF = CalcPose(s).rotation();
   const T& rho_i = segment_turning_rates_[this->get_segment_index(s)];
 
-  multibody::SpatialAcceleration<T> spatial_acceleration;
   // The spatial acceleration is the time derivative of the spatial velocity.
   // We compute the acceleration by applying the chain rule to the formulas
   // in CalcSpatialVelocity.
+  multibody::SpatialAcceleration<T> spatial_acceleration;
 
-  // The angular velocity is ρᵢ * Fz * ds/dt. As Fz and ρᵢ are constant
-  // everywhere except the breaks, the angular acceleration is then equal to ρᵢ
-  // * Fz * d²s/dt².
+  // The angular velocity is ρᵢ⋅Fz⋅ds/dt. As Fz and ρᵢ are constant
+  // everywhere except the breaks, the angular acceleration is then equal to
+  // ρᵢ⋅Fz⋅d²s/dt².
   spatial_acceleration.rotational() =
       rho_i * R_AF.col(kPlaneNormalIndex) * s_ddot;
 
-  // The translational velocity is dr(s)/dt = Fx(s) * ds/dt. Thus by product and
+  // The translational velocity is dr(s)/dt = Fx(s)⋅ds/dt. Thus by product and
   // chain rule, the translational acceleration is:
   //    a(s) = d²r(s)/ds² = dFx(s)/ds⋅(ds/dt)² + Fx⋅d²s/dt².
   // From the class doc, we know dFx/ds = ρᵢ⋅Fy.
@@ -120,14 +120,14 @@ math::RigidTransform<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcRelativePoseInSegment(
     const T& rho_i, const T& ds) {
   Vector3<T> p_FioFo_Fi = Vector3<T>::Zero();
-  // Calculate rotation angle
+  // Calculate rotation angle.
   const T theta = ds * rho_i;
   math::RotationMatrix<T> R_FiF = math::RotationMatrix<T>::MakeZRotation(theta);
   if (rho_i == T(0)) {
     // Case 1: zero curvature (straight line)
     //
     // The tangent axis is constant, thus the displacement p_FioFo_Fi is just
-    // t̂_Fi * Δs.
+    // t̂_Fi⋅Δs.
     p_FioFo_Fi(kCurveTangentIndex) = ds;
   } else {
     // Case 2: non-zero curvature (circular arc)
@@ -149,9 +149,9 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcRelativePoseInSegment(
     //      └xxx───────────────→ Fix
     //     p_Fio
     //
-    // The circular arc's centerpoint C is located at p_FioC = (1/ρᵢ) * Fiy,
+    // The circular arc's centerpoint C is located at p_FioC = (1/ρᵢ)⋅Fiy,
     // with initial direction Fix and radius abs(1/ρᵢ). Thus the angle traveled
-    // along the arc is θ = ρᵢ * Δs, with the sign of ρᵢ handling the
+    // along the arc is θ = ρᵢ⋅Δs, with the sign of ρᵢ handling the
     // clockwise/counterclockwise direction. The ρᵢ > 0 case is shown above.
     p_FioFo_Fi(kCurveNormalIndex) = (T(1) - cos(theta)) / rho_i;
     p_FioFo_Fi(kCurveTangentIndex) = sin(theta) / rho_i;
@@ -179,13 +179,13 @@ PiecewiseConstantCurvatureTrajectory<T>::MakeSegmentStartPoses(
   const size_t num_breaks = breaks.size();
   const size_t num_segments = num_breaks - 1;
 
-  // calculate angular change and length of each segment.
+  // Calculate angular change and length of each segment.
   const VectorX<T> breaks_eigen =
       Eigen::Map<const VectorX<T>>(breaks.data(), num_breaks);
   const VectorX<T> segment_durations =
       breaks_eigen.tail(num_segments) - breaks_eigen.head(num_segments);
 
-  // build frames for the start of each segment.
+  // Build frames for the start of each segment.
   std::vector<math::RigidTransform<T>> segment_start_poses;
   segment_start_poses.reserve(num_segments);
   segment_start_poses.push_back(initial_pose);

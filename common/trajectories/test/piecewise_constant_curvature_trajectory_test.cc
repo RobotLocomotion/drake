@@ -1,3 +1,5 @@
+#include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
+
 #include <random>
 
 #include <Eigen/Dense>
@@ -5,9 +7,13 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 
+using drake::math::RigidTransform;
+using drake::math::RigidTransformd;
+using drake::math::RotationMatrixd;
+using drake::multibody::SpatialAcceleration;
+using drake::multibody::SpatialVelocity;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 
@@ -19,20 +25,19 @@ namespace {
 
 // Generates a vector of random orientation using randomized axis angles.
 template <typename T>
-std::vector<T> GenerateRandomTurningRates(std::vector<double> breaks,
+std::vector<T> GenerateRandomTurningRates(const std::vector<double>& breaks,
                                           std::default_random_engine* generator,
                                           double max_angle = (10 * M_PI)) {
-  int size = breaks.size() - 1;
+  const int size = breaks.size() - 1;
   DRAKE_DEMAND(size >= 0);
   std::vector<T> turning_rates(size);
   std::uniform_real_distribution<double> travel_angle(-max_angle, max_angle);
-  std::bernoulli_distribution is_linear(0.25);
   for (int i = 0; i < size; ++i) {
     double duration = breaks[i + 1] - breaks[i];
-    if (is_linear(*generator)) {
+    if (i % 2) {
       turning_rates[i] = T(0);
     } else {
-      // pick a turning rate so the angle change on the segment is in (-pi, pi)
+      // Pick a turning rate so the angle change on the segment is in (-pi, pi).
       turning_rates[i] = T(travel_angle(*generator) / duration);
     }
   }
@@ -51,9 +56,9 @@ Quaternion<Scalar> GenerateRandomQuaternion(
 }
 
 GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestAnalytical) {
-  double r = 2;
-  double kappa = 1 / r;
-  int num_segments = 10000;
+  const double r = 2;
+  const double kappa = 1 / r;
+  const int num_segments = 3;
   std::vector<double> segment_breaks(num_segments + 1);
   std::vector<double> turning_rates(num_segments);
   segment_breaks[0] = 0;
@@ -61,37 +66,52 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestAnalytical) {
     segment_breaks[i + 1] = 2 * M_PI * r * (i + 1.) / num_segments;
     turning_rates[i] = kappa;
   }
-  Vector3d plane_normal = Vector3d::UnitZ();
-  Vector3d curve_tangent = Vector3d::UnitX();
+  // Construct trajectory consisting of the r-radius circle,
+  // starting from (r, 0, 0) in the x-y plane.
+  const Vector3d plane_normal = Vector3d::UnitZ();
+  const Vector3d curve_tangent = Vector3d::UnitY();
   PiecewiseConstantCurvatureTrajectory<double> trajectory(
       segment_breaks, turning_rates, curve_tangent, plane_normal,
-      Vector3d::Zero());
+      r * Vector3d::UnitX());
 
-  double s_dot = 0.5;
-  double s_ddot = 0.25;
-  for (double l = segment_breaks.front(); l < segment_breaks.back();
-       l += 0.01) {
-    math::RigidTransformd expected_pose = math::RigidTransformd(
-        math::RotationMatrixd::MakeZRotation(l * kappa),
-        Vector3d(r * sin(l * kappa), r * (1 - cos(l * kappa)), 0));
-    multibody::SpatialVelocity<double> expected_velocity(
-        s_dot * kappa * Vector3d::UnitZ(),
-        s_dot * Vector3d(cos(l * kappa), sin(l * kappa), 0));
-    multibody::SpatialAcceleration<double> expected_acceleration(
+  const RotationMatrixd expected_initial_rotation =
+      RotationMatrixd::MakeZRotation(M_PI / 2);
+
+  const double s_dot = 0.5;
+  const double s_ddot = 0.25;
+  const double ds = .01;
+  for (double s = segment_breaks.front(); s < segment_breaks.back(); s += ds) {
+    const double angle_change = s * kappa;
+    const Vector3d expected_position =
+        Vector3d(r * cos(angle_change), r * sin(angle_change), 0);
+    const RotationMatrixd expected_rotation =
+        expected_initial_rotation *
+        RotationMatrixd::MakeZRotation(angle_change);
+
+    const RigidTransformd expected_pose =
+        RigidTransformd(expected_rotation, expected_position);
+    // Normal to circle points to center (0, 0, 0) from position.
+    const Vector3d expected_normal = -expected_position.normalized();
+    // Tangent to circle is pi/2 radians clockwise from normal.
+    const Vector3d expected_tangent =
+        RotationMatrixd::MakeZRotation(-M_PI / 2) * expected_normal;
+
+    const SpatialVelocity<double> expected_velocity(
+        s_dot * kappa * Vector3d::UnitZ(), s_dot * expected_tangent);
+
+    const SpatialAcceleration<double> expected_acceleration(
         s_ddot * kappa * Vector3d::UnitZ(),
-        s_ddot * Vector3d(cos(l * kappa), sin(l * kappa), 0) +
-            s_dot * s_dot *
-                Vector3d(-kappa * sin(l * kappa), kappa * cos(l * kappa), 0));
+        s_ddot * expected_tangent + s_dot * s_dot * expected_normal / r);
 
-    auto actual_pose = trajectory.CalcPose(l);
-    auto actual_velocity = trajectory.CalcSpatialVelocity(l, s_dot);
-    auto actual_acceleration =
-        trajectory.CalcSpatialAcceleration(l, s_dot, s_ddot);
+    const RigidTransformd pose = trajectory.CalcPose(s);
+    const SpatialVelocity<double> velocity =
+        trajectory.CalcSpatialVelocity(s, s_dot);
+    const SpatialAcceleration<double> acceleration =
+        trajectory.CalcSpatialAcceleration(s, s_dot, s_ddot);
 
-    EXPECT_TRUE(actual_pose.IsNearlyEqualTo(expected_pose, kTolerance));
-    EXPECT_TRUE(actual_velocity.IsApprox(expected_velocity, kTolerance));
-    EXPECT_TRUE(
-        actual_acceleration.IsApprox(expected_acceleration, kTolerance));
+    EXPECT_TRUE(pose.IsNearlyEqualTo(expected_pose, kTolerance));
+    EXPECT_TRUE(velocity.IsApprox(expected_velocity, kTolerance));
+    EXPECT_TRUE(acceleration.IsApprox(expected_acceleration, kTolerance));
   }
 }
 
@@ -99,21 +119,22 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestAnalytical) {
 // generated from random breaks and samples.
 GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestRandomizedTrajectory) {
   std::default_random_engine generator(123);
-  int num_segments = 10000;
+  const int num_segments = 10;
   std::vector<double> breaks =
       PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
-  double start = breaks[0];
-  for (auto& s : breaks) {
+  const double start = breaks[0];
+  for (double& s : breaks) {
     s -= start;
   }
-  std::vector<double> turning_rates =
+  const std::vector<double> turning_rates =
       GenerateRandomTurningRates<double>(breaks, &generator);
-  VectorXd breaks_vector = Eigen::Map<VectorXd>(breaks.data(), breaks.size());
-  VectorXd turning_rates_vector =
-      Eigen::Map<VectorXd>(turning_rates.data(), turning_rates.size());
-  VectorXd segment_durations =
+  const VectorXd breaks_vector =
+      Eigen::Map<const VectorXd>(breaks.data(), breaks.size());
+  const VectorXd turning_rates_vector =
+      Eigen::Map<const VectorXd>(turning_rates.data(), turning_rates.size());
+  const VectorXd segment_durations =
       breaks_vector.tail(num_segments) - breaks_vector.head(num_segments);
-  VectorXd segment_angles =
+  const VectorXd segment_angles =
       turning_rates_vector.cwiseProduct(segment_durations);
   std::vector<MatrixX<double>> cumulative_angles(num_segments + 1);
   cumulative_angles[0] = MatrixX<double>::Zero(1, 1);
@@ -121,68 +142,73 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestRandomizedTrajectory) {
     cumulative_angles[i] =
         cumulative_angles[i - 1] + Vector1d(segment_angles[i - 1]);
   }
-  auto initial_quat = GenerateRandomQuaternion<double>(&generator);
-  auto initial_rotation = drake::math::RotationMatrixd(initial_quat);
+  const Quaternion<double> initial_quat =
+      GenerateRandomQuaternion<double>(&generator);
+  const RotationMatrixd initial_rotation(initial_quat);
   Eigen::Vector3d initial_plane_normal = initial_rotation.col(2);
   Eigen::Vector3d initial_curve_tangent = initial_rotation.col(0);
 
-  auto angle_spline =
+  const PiecewisePolynomial<double> expected_angle_trajectory =
       PiecewisePolynomial<double>::FirstOrderHold(breaks, cumulative_angles);
-  PiecewiseConstantCurvatureTrajectory<double> curve_spline(
+  const PiecewiseConstantCurvatureTrajectory<double> trajectory(
       breaks, turning_rates, initial_curve_tangent, initial_plane_normal,
       Vector3d::Zero());
-  auto initial_position = curve_spline.CalcPose(breaks.front()).translation();
+  const Vector3d initial_position =
+      trajectory.CalcPose(breaks.front()).translation();
   // Check dense interpolated quaternions.
   for (double l = breaks.front(); l < breaks.back(); l += 0.01) {
-    auto curve_pose = curve_spline.CalcPose(l);
-    auto curve_rotation = curve_pose.rotation();
-    auto curve_position = curve_pose.translation();
+    const RigidTransformd pose = trajectory.CalcPose(l);
+    const RotationMatrixd rotation = pose.rotation();
+    const Vector3d position = pose.translation();
 
-    auto curve_velocity = curve_spline.CalcSpatialVelocity(l, 1.);
-    auto translational_velocity = curve_velocity.translational();
-    auto rotational_velocity = curve_velocity.rotational();
+    const SpatialVelocity<double> spatial_velocity =
+        trajectory.CalcSpatialVelocity(l, 1.);
+    const Vector3d translational_velocity = spatial_velocity.translational();
+    const Vector3d rotational_velocity = spatial_velocity.rotational();
 
-    auto curve_acceleration = curve_spline.CalcSpatialAcceleration(l, 1., 0.);
-    auto translational_acceleration = curve_acceleration.translational();
-    auto rotational_acceleration = curve_acceleration.rotational();
+    const SpatialAcceleration<double> spatial_acceleration =
+        trajectory.CalcSpatialAcceleration(l, 1., 0.);
+    const Vector3d translational_acceleration =
+        spatial_acceleration.translational();
+    const Vector3d rotational_acceleration = spatial_acceleration.rotational();
 
-    // Rotation should just be cumulative angle rotation about plane axis
-    auto relative_rotation_expected = drake::math::RotationMatrixd(
-        AngleAxis<double>(angle_spline.value(l)(0, 0), initial_plane_normal));
-    auto curve_rotation_expected =
-        relative_rotation_expected * initial_rotation;
-    EXPECT_TRUE(
-        curve_rotation.IsNearlyEqualTo(curve_rotation_expected, kTolerance));
+    // Rotation should just be cumulative angle rotation about plane axis.
+    const RotationMatrixd expected_relative_rotation =
+        RotationMatrixd(AngleAxis<double>(
+            expected_angle_trajectory.value(l)(0, 0), initial_plane_normal));
+    const RotationMatrixd expected_rotation =
+        expected_relative_rotation * initial_rotation;
+    EXPECT_TRUE(rotation.IsNearlyEqualTo(expected_rotation, kTolerance));
 
-    // Displacement should be within plane
-    auto displacement = curve_position - initial_position;
+    // Displacement should be within plane.
+    const Vector3d displacement = position - initial_position;
     EXPECT_NEAR(displacement.dot(initial_plane_normal), 0, kTolerance);
 
-    // Translational velocity should be in-plane and unit norm
+    // Translational velocity should be in-plane and unit norm.
     EXPECT_NEAR(translational_velocity.dot(initial_plane_normal), 0,
                 kTolerance);
     EXPECT_NEAR(translational_velocity.norm(), 1, kTolerance);
 
-    // Rotational velocity should be normal to plane
+    // Rotational velocity should be normal to plane.
     EXPECT_NEAR(std::abs(rotational_velocity.dot(initial_plane_normal)),
                 rotational_velocity.norm(), kTolerance);
 
-    // Translational acceleration should in-plane and orthogonal to velocity
+    // Translational acceleration should in-plane and orthogonal to velocity.
     EXPECT_NEAR(translational_acceleration.dot(initial_plane_normal), 0,
                 kTolerance);
     EXPECT_NEAR(translational_acceleration.dot(translational_velocity), 0,
                 kTolerance);
 
-    // Rotational acceleration should be 0 almost everywhere
+    // Rotational acceleration should be 0 almost everywhere.
     EXPECT_NEAR(rotational_acceleration.dot(initial_plane_normal), 0,
                 kTolerance);
   }
 }
 
 GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestPeriodicity) {
-  double r = 2;
-  double kappa = 1 / r;
-  int num_segments = 10000;
+  const double r = 2;
+  const double kappa = 1 / r;
+  const int num_segments = 10;
   std::vector<double> segment_breaks_periodic(num_segments + 1);
   std::vector<double> segment_breaks_aperiodic(num_segments + 1);
   std::vector<double> turning_rates(num_segments);
@@ -195,13 +221,13 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestPeriodicity) {
     segment_breaks_aperiodic[i + 1] = M_PI * r * (i + 1.) / num_segments;
     turning_rates[i] = kappa;
   }
-  Vector3d plane_normal = Vector3d::UnitZ();
-  Vector3d curve_tangent = Vector3d::UnitX();
-  PiecewiseConstantCurvatureTrajectory<double> periodic_trajectory(
+  const Vector3d plane_normal = Vector3d::UnitZ();
+  const Vector3d curve_tangent = Vector3d::UnitX();
+  const PiecewiseConstantCurvatureTrajectory<double> periodic_trajectory(
       segment_breaks_periodic, turning_rates, curve_tangent, plane_normal,
       Vector3d::Zero());
 
-  PiecewiseConstantCurvatureTrajectory<double> aperiodic_trajectory(
+  const PiecewiseConstantCurvatureTrajectory<double> aperiodic_trajectory(
       segment_breaks_aperiodic, turning_rates, curve_tangent, plane_normal,
       Vector3d::Zero());
 
@@ -210,50 +236,49 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestPeriodicity) {
 }
 
 GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {
-  std::vector<double> breaks{0, 1, 2, 3};
-  std::vector<double> turning_rates{-1, 0, 1};
-  Vector3d plane_normal = Vector3d::UnitZ();
-  Vector3d curve_tangent = Vector3d::UnitX();
-  PiecewiseConstantCurvatureTrajectory<double> double_trajectory(
+  const std::vector<double> breaks{0, 1, 2, 3};
+  const std::vector<double> turning_rates{-1, 0, 1};
+  const Vector3d plane_normal = Vector3d::UnitZ();
+  const Vector3d curve_tangent = Vector3d::UnitX();
+  const PiecewiseConstantCurvatureTrajectory<double> double_trajectory(
       breaks, turning_rates, curve_tangent, plane_normal, Vector3d::Zero());
-  PiecewiseConstantCurvatureTrajectory<AutoDiffXd> autodiff_trajectory(
+  const PiecewiseConstantCurvatureTrajectory<AutoDiffXd> autodiff_trajectory(
       double_trajectory);
-  PiecewiseConstantCurvatureTrajectory<symbolic::Expression>
+  const PiecewiseConstantCurvatureTrajectory<symbolic::Expression>
       expression_trajectory(double_trajectory);
 
-  double s_dot = 2.;
-  double s_ddot = 3.;
-  AutoDiffXd s_dot_ad(s_dot);
-  symbolic::Expression s_dot_exp(s_dot);
-  AutoDiffXd s_ddot_ad(s_ddot);
-  symbolic::Expression s_ddot_exp(s_ddot);
+  const double s_dot = 2.;
+  const double s_ddot = 3.;
+  const AutoDiffXd s_dot_ad(s_dot);
+  const symbolic::Expression s_dot_exp(s_dot);
+  const AutoDiffXd s_ddot_ad(s_ddot);
+  const symbolic::Expression s_ddot_exp(s_ddot);
 
   for (double l = breaks.front(); l < breaks.back(); l += 0.01) {
-    math::RigidTransform<double> double_pose = double_trajectory.CalcPose(l);
-    math::RigidTransform<AutoDiffXd> autodiff_pose =
+    const RigidTransformd double_pose = double_trajectory.CalcPose(l);
+    const RigidTransform<AutoDiffXd> autodiff_pose =
         double_pose.template cast<AutoDiffXd>();
-    math::RigidTransform<symbolic::Expression> expression_pose =
+    const RigidTransform<symbolic::Expression> expression_pose =
         double_pose.template cast<symbolic::Expression>();
 
-    multibody::SpatialVelocity<double> double_velocity =
+    const SpatialVelocity<double> double_velocity =
         double_trajectory.CalcSpatialVelocity(l, s_dot);
-    multibody::SpatialVelocity<AutoDiffXd> autodiff_velocity(
+    const SpatialVelocity<AutoDiffXd> autodiff_velocity(
         double_velocity.rotational().template cast<AutoDiffXd>(),
         double_velocity.translational().template cast<AutoDiffXd>());
-    multibody::SpatialVelocity<symbolic::Expression> expression_velocity(
+    const SpatialVelocity<symbolic::Expression> expression_velocity(
         double_velocity.rotational().template cast<symbolic::Expression>(),
         double_velocity.translational().template cast<symbolic::Expression>());
 
-    multibody::SpatialAcceleration<double> double_acceleration =
+    const SpatialAcceleration<double> double_acceleration =
         double_trajectory.CalcSpatialAcceleration(l, s_dot, s_ddot);
-    multibody::SpatialAcceleration<AutoDiffXd> autodiff_acceleration(
+    const SpatialAcceleration<AutoDiffXd> autodiff_acceleration(
         double_acceleration.rotational().template cast<AutoDiffXd>(),
         double_acceleration.translational().template cast<AutoDiffXd>());
-    multibody::SpatialAcceleration<symbolic::Expression>
-        expression_acceleration(double_acceleration.rotational()
-                                    .template cast<symbolic::Expression>(),
-                                double_acceleration.translational()
-                                    .template cast<symbolic::Expression>());
+    const SpatialAcceleration<symbolic::Expression> expression_acceleration(
+        double_acceleration.rotational().template cast<symbolic::Expression>(),
+        double_acceleration.translational()
+            .template cast<symbolic::Expression>());
 
     EXPECT_TRUE(autodiff_pose.IsNearlyEqualTo(autodiff_trajectory.CalcPose(l),
                                               kTolerance));

@@ -301,7 +301,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "piecewise_constant_curvature_test",
+    name = "piecewise_constant_curvature_trajectory_test",
     deps = [
         ":piecewise_constant_curvature_trajectory",
         ":piecewise_quaternion",

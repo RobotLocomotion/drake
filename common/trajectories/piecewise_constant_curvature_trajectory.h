@@ -95,7 +95,7 @@ class PiecewiseConstantCurvatureTrajectory final
    @param initial_position The initial position of the curve expressed in
    the parent frame, p_AoFo_A(s₀).
 
-   @throws std::invalid_argument if the number of turning rates does not match
+   @throws std::exception if the number of turning rates does not match
    the number of segments
    @throws std::exception if or s₀ is not 0.
    @throws std::exception if initial_curve_tangent or plane_normal have zero
@@ -281,7 +281,7 @@ class PiecewiseConstantCurvatureTrajectory final
 
   /** @returns the initial pose X_AF₀ at s = 0.
 
-   @warning may be uninitialized for an empty trajectory.
+   @pre Trajectory must not be empty.
   */
   const math::RigidTransform<T>& get_initial_pose() const {
     return segment_start_poses_[0];
