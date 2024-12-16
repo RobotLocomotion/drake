@@ -169,6 +169,91 @@ TEST_P(YamlReadArchiveTest, DoubleMissing) {
   EXPECT_EQ(x.value, kNominalDouble);
 }
 
+TEST_P(YamlReadArchiveTest, Bytes) {
+  const auto test = [](const std::string& value, const std::string& expected) {
+    const std::byte* data = reinterpret_cast<const std::byte*>(expected.data());
+    std::vector<std::byte> expected_bytes(data, data + expected.size());
+    const auto& x = AcceptNoThrow<BytesStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected_bytes)
+        << "Expected string: '" << expected << "'";
+  };
+
+  // Using !!binary on a schema whose type is bytes.
+  test("!!binary A3Rlc3Rfc3RyAw==", "\x03test_str\x03");
+  // Note: The number of spaces is critical to producing proper formatted yaml.
+  test("!!binary |\n    A3Rlc3Rfc3RyAw==", "\x03test_str\x03");
+  test("!!binary |\n    A3Rlc3R\n    fc3RyAw==", "\x03test_str\x03");
+  test("!!binary ", "");
+
+  // Malformed base64 value.
+  {
+    // Proper encoding of "\x03t_str\x03" is 'A3Rfc3RyAw=='.
+
+    // Missing character.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        AcceptIntoDummy<BytesStruct>(LoadSingleValue("!!binary A3Rfc3RyAw=")),
+        "Expected a base64-encoded value.*error decoding.*");
+
+    // Invalid character.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        AcceptIntoDummy<BytesStruct>(LoadSingleValue("!!binary A3Rfc*RyAw==")),
+        "Expected a base64-encoded value.*error decoding.*");
+  }
+
+  // Assigning any other type to bytes is rejected.
+  // Note: these various value strings should be converted to various primitive
+  // types (string, int, etc.) before we process the scalar value. However,
+  // this doesn't currently happen so the error message can't complain that the
+  // wrong *type* has been passed to value. When we aggressively convert and
+  // check for mismatch, these error matches will shift to match what is done
+  // in yaml.py.
+  const auto reject = [](const std::string& value, std::string_view tag = {}) {
+    std::string tagged_str =
+        tag.empty() ? value : fmt::format("{} {}", tag, value);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        AcceptIntoDummy<BytesStruct>(LoadSingleValue(tagged_str)),
+        fmt::format(".*yaml value must be base64.*{}.*", value));
+  };
+  // String.
+  reject("test string");
+  reject("1234", "!!str");
+  // Int.
+  reject("12", "!!int");
+  reject("0x3");
+  reject("0o3");
+  reject("00:03");
+  // Float.
+  reject("1234.5");
+  reject("1234.5", "!!float");
+  reject(".inf");
+  reject("00:03.3");
+  // Bool
+  reject("true");
+
+  // Null is a special case; it is a non-scalar so doesn't get treated as the
+  // other scalar types.
+  const auto reject_non_scalar = [](const std::string& value) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        AcceptIntoDummy<BytesStruct>(LoadSingleValue(value)),
+        ".*has non-Scalar.*");
+  };
+  // Null
+  reject_non_scalar("null");
+  reject_non_scalar("");
+
+  // Using !!binary for non-binary types is bad.
+  const auto reject_bad_target = []<class T>(const std::string& value,
+                                             const T&) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        AcceptIntoDummy<T>(LoadSingleValue(value)),
+        ".*!!binary tag can only be applied to.*byte.*");
+  };
+  // These all use valid base64 encoding of what would otherwise be
+  reject_bad_target("!!binary LmluZg==", DoubleStruct{});  // .inf
+  reject_bad_target("!!binary MTIzNC41", DoubleStruct{});  // 1234.5
+  reject_bad_target("!!binary dGVzdC9wYXRo", PathStruct{});  // test/path
+}
+
 TEST_P(YamlReadArchiveTest, Path) {
   const auto test_valid = [](const std::string& value,
                              const std::string& expected) {
