@@ -33,6 +33,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(&dut.plant(), &plant);
+    EXPECT_EQ(dut.scene_graph(), nullptr);
     EXPECT_EQ(dut.AddModels(sdf_name).size(), 1);
     const auto prefix_ids = Parser(&plant, "prefix").AddModels(sdf_name);
     EXPECT_EQ(prefix_ids.size(), 1);
@@ -43,7 +44,10 @@ GTEST_TEST(FileParserTest, BasicTest) {
   // Load the same model again with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
-    Parser dut(&plant);
+    geometry::SceneGraph<double> scene_graph;
+    Parser dut(&plant, &scene_graph);
+    EXPECT_EQ(&dut.plant(), &plant);
+    EXPECT_EQ(dut.scene_graph(), &scene_graph);
     EXPECT_EQ(dut.AddModels(urdf_name).size(), 1);
     const auto prefix_ids = Parser(&plant, "prefix").AddModels(urdf_name);
     EXPECT_EQ(prefix_ids.size(), 1);
