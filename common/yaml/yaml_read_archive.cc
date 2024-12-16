@@ -265,12 +265,62 @@ void YamlReadArchive::ParseScalar(const std::string& value,
   *result = value;
 }
 
+std::string YamlReadArchive::DecodeBase64OrThrow(const std::string& encoded,
+                                                 std::string_view target) {
+  std::vector<unsigned char> chars = YAML::DecodeBase64(encoded);
+  std::string decoded(chars.begin(), chars.end());
+  if (decoded.empty() != encoded.empty()) {
+    // Decoded should only be empty if the input is empty. This is a good but
+    // imperfect test. If `encoded` were nothing but whitespace, it would
+    // *functionally* be an empty base64 string and *should* produce an empty
+    // result. If necessary, we can attempt stripping whitespace from encoded.
+
+    const int length = ssize(encoded);
+    std::string head = encoded.substr(0, 25);
+    if (ssize(head) < length) {
+      head += "...";
+    }
+    throw std::runtime_error(fmt::format(
+        "Expected a base64-encoded value for '{}'; error decoding: '{}'",
+        target, head));
+  }
+
+  return decoded;
+}
+
+void YamlReadArchive::ThrowIfBadBinaryScalar(
+    bool output_is_binary, const internal::Node& node,
+    std::string_view node_name, std::function<std::string()> get_output_type) {
+  const bool input_is_binary = node.GetTag() == internal::Node::kTagBinary;
+  const bool binary_match = output_is_binary == input_is_binary;
+  if (!binary_match) {
+    if (input_is_binary) {
+      throw std::runtime_error(fmt::format(
+          "The !!binary tag can only be applied to values written to "
+          "std::vector<std::byte>. The value for '{}' has type {}.",
+          node_name, get_output_type()));
+    } else {
+      throw std::runtime_error(fmt::format(
+          "The C++ type for '{}' is std::vector<std::byte>. Its yaml value "
+          "must be base64 encoded with the !!binary tag. Given '{}'.",
+          node_name, node.GetScalar()));
+    }
+  }
+}
+
 void YamlReadArchive::ParseScalar(const std::string& value,
                                   std::filesystem::path* result) {
   DRAKE_DEMAND(result != nullptr);
   // Python deserialization normalizes paths (i.e., a//b becomes a/b). We'll
   // mirror that behavior for consistency's sake.
   *result = std::filesystem::path(value).lexically_normal();
+}
+
+void YamlReadArchive::ParseScalar(const std::string& value,
+                                  std::vector<std::byte>* result) {
+  DRAKE_DEMAND(result != nullptr);
+  const std::byte* data = reinterpret_cast<const std::byte*>(value.data());
+  *result = std::vector<std::byte>(data, data + value.size());
 }
 
 const internal::Node* YamlReadArchive::MaybeGetSubNode(const char* name) const {

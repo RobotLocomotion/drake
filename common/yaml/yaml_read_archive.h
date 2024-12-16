@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdint>
 #include <filesystem>
+#include <functional>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -170,6 +171,12 @@ class YamlReadArchive final {
     this->VisitVector(nvp);
   }
 
+  // For std::vector<std::byte>.
+  template <typename NVP>
+  void DoVisit(const NVP& nvp, const std::vector<std::byte>&, int32_t) {
+    this->VisitScalar(nvp);
+  }
+
   // For std::array.
   template <typename NVP, typename T, std::size_t N>
   void DoVisit(const NVP& nvp, const std::array<T, N>&, int32_t) {
@@ -239,13 +246,50 @@ class YamlReadArchive final {
     sub_archive.Accept(&value);
   }
 
+  // Attempts to interpret `encoded` as a base64-encoded string, returning the
+  // decoded version.
+  //
+  // @param encoded  The ostensibly base64-encoded input.
+  // @param target   The name of the node the decoding was being done for. Only
+  //                 used in the exception message.
+  // @throws if there's an error decoding.
+  static std::string DecodeBase64OrThrow(const std::string& encoded,
+                                         std::string_view target);
+
+  // Throws an error message if the reported binary configuration of input and
+  // output don't match.
+  //
+  // @param output_is_binary  Assertion that the output is binary (if true).
+  // @param node              The node being processed.
+  // @param node_name         The name of the node being processed; only used in
+  //                          the exception message.
+  // @param get_output_type   A callable that reports the name of the output
+  //                          type. Only called if an exception is thrown.
+  // @throws if there is a binary mismatch.
+  static void ThrowIfBadBinaryScalar(
+      bool output_is_binary, const internal::Node& node,
+      std::string_view node_name, std::function<std::string()> get_output_type);
+
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
     const internal::Node* sub_node = GetSubNodeScalar(nvp.name());
     if (sub_node == nullptr) {
       return;
     }
-    ParseScalar(sub_node->GetScalar(), nvp.value());
+
+    using OutValueType = typename NVP::value_type;
+    constexpr bool output_is_binary =
+        std::is_same_v<OutValueType, std::vector<std::byte>>;
+    ThrowIfBadBinaryScalar(
+        output_is_binary, *sub_node, nvp.name(),
+        static_cast<std::string (*)()>(NiceTypeName::Get<OutValueType>));
+
+    if constexpr (output_is_binary) {
+      ParseScalar(DecodeBase64OrThrow(sub_node->GetScalar(), nvp.name()),
+                  nvp.value());
+    } else {
+      ParseScalar(sub_node->GetScalar(), nvp.value());
+    }
   }
 
   template <typename NVP>
@@ -518,6 +562,7 @@ class YamlReadArchive final {
   void ParseScalar(const std::string& value, uint64_t* result);
   void ParseScalar(const std::string& value, std::string* result);
   void ParseScalar(const std::string& value, std::filesystem::path* result);
+  void ParseScalar(const std::string& value, std::vector<std::byte>* result);
 
   template <typename T>
   void ParseScalarImpl(const std::string& value, T* result);

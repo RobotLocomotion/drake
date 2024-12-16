@@ -61,6 +61,20 @@ bool operator==(const StringStruct& a, const StringStruct& b) {
   return a.value == b.value;
 }
 
+struct BytesStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  std::vector<std::byte> value{std::byte(0), std::byte(1), std::byte(2)};
+};
+
+// This is used only for EXPECT_EQ, not by any YAML operations.
+bool operator==(const BytesStruct& a, const BytesStruct& b) {
+  return a.value == b.value;
+}
+
 struct PathStruct {
   template <typename Archive>
   void Serialize(Archive* a) {

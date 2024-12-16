@@ -43,6 +43,7 @@ class IntStruct:
 class StringStruct:
     value: str = "nominal_string"
 
+
 @dc.dataclass
 class BytesStruct:
     value: bytes = b'deadbeef'
@@ -367,7 +368,6 @@ class TestYamlTypedRead(unittest.TestCase,
                                         "yaml data of type <class 'bytes'>",
                                         msg=f'value: {byte_value}'):
                 yaml_load_typed(schema=schema, data=data, **options)
-
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_all_scalars(self, *, options):
