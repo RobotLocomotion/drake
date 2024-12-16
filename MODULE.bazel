@@ -1,13 +1,8 @@
 # This file marks a workspace root for the Bazel build system.
 # See `https://bazel.build/`.
 
-# This file lists Drake's external dependencies as known to bzlmod.
-#
-# When bzlmod is disabled, this file is NOT used. Instead, only WORKSPACE is
-# used.
-#
-# When bzlmod is enabled, this file + WORKSPACE.bzlmod are both used, and
-# WORKSPACE is ignored.
+# This file lists Drake's external dependencies as known to bzlmod. It is used
+# in concert with WORKSPACE.bzlmod (which has the workspace-style externals).
 
 module(name = "drake")
 
