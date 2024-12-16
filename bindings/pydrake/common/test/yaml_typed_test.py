@@ -38,10 +38,16 @@ class StringStruct:
 
 
 @dc.dataclass
+class PathStruct:
+    value: Path = "/path/to/nowhere"
+
+
+@dc.dataclass
 class AllScalarsStruct:
     some_bool: bool = False
     some_float: float = nan
     some_int: int = 11
+    some_path: Path = "/path/to/nowhere"
     some_str: str = "nominal_string"
 
 
@@ -231,17 +237,68 @@ class TestYamlTypedRead(unittest.TestCase,
                                 **options)
 
     @run_with_multiple_values(_all_typed_read_options())
+    def test_read_path(self, *, options):
+        # The following should all turn into paths.
+        cases = [
+            # These plain strings are unchanged by parsing them into a Path.
+            (".", "."),
+            ("no_directory.txt", "no_directory.txt"),
+            ("/absolute/path/file.txt", "/absolute/path/file.txt"),
+            ("/quoted\"/path", "/quoted\"/path"),
+            # These strings end up changing to a greater or lesser degree.
+            ("\"\"", "."),
+            ("!!str", "."),
+            ("/non_lexical//path", "/non_lexical/path"),
+            ("'1234'", "1234"),
+            ("\"1234\"", "1234"),
+            ("!!str 1234", "1234"),
+        ]
+        for value, expected in cases:
+            data = f"value: {value}"
+            x = yaml_load_typed(schema=PathStruct, data=data, **options)
+            self.assertEqual(x.value, Path(expected))
+
+        # The following should *not* turn into paths; we can't instantiate
+        # paths from these types.
+        cases = [
+            ("!!float 1234.5"),
+            ("1234.5"),
+            ("!!int 1234"),
+            ("1234"),
+            ("!!bool true"),
+            ("true"),
+        ]
+        for value in cases:
+            data = f"value: {value}"
+            with self.assertRaises(TypeError):
+                yaml_load_typed(schema=PathStruct, data=data, **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_path_missing(self, *, options):
+        if options["allow_schema_with_no_yaml"]:
+            default_value = PathStruct()
+            x = yaml_load_typed(schema=PathStruct, data="{}",
+                                **options)
+            self.assertEqual(x.value, default_value.value, msg=repr(x.value))
+        else:
+            with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
+                yaml_load_typed(schema=PathStruct, data="{}",
+                                **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
     def test_read_all_scalars(self, *, options):
         data = dedent("""
         some_bool: true
         some_float: 101.0
         some_int: 102
+        some_path: /alternative/path
         some_str: foo
         """)
         x = yaml_load_typed(schema=AllScalarsStruct, data=data, **options)
         self.assertEqual(x.some_bool, True)
         self.assertEqual(x.some_float, 101.0)
         self.assertEqual(x.some_int, 102)
+        self.assertEqual(x.some_path, Path("/alternative/path"))
         self.assertEqual(x.some_str, "foo")
 
     @run_with_multiple_values(_all_typed_read_options())
@@ -753,6 +810,19 @@ class TestYamlTypedWrite(unittest.TestCase):
         ]
         for value, expected_str in cases:
             actual_doc = yaml_dump_typed(StringStruct(value=value))
+            expected_doc = f"value: {expected_str}\n"
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_path(self):
+        cases = [
+            # In contrast to C++, there is no "empty" Path; it defaults to '.'.
+            (Path(""), "."),
+            (Path("/absolute/path"), "/absolute/path"),
+            (Path("relative/path"), "relative/path"),
+            (Path("1234"), "'1234'"),
+        ]
+        for value, expected_str in cases:
+            actual_doc = yaml_dump_typed(PathStruct(value=value))
             expected_doc = f"value: {expected_str}\n"
             self.assertEqual(actual_doc, expected_doc)
 
