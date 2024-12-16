@@ -138,6 +138,10 @@ PYBIND11_MODULE(controllers, m) {
             cls_doc.get_input_port_desired_state.doc)
         .def("get_output_port_control", &Class::get_output_port_control,
             py_rvp::reference_internal, cls_doc.get_output_port_control.doc)
+        .def("get_output_port_generalized_force",
+            &Class::get_output_port_generalized_force,
+            py_rvp::reference_internal,
+            cls_doc.get_output_port_generalized_force.doc)
         .def("get_multibody_plant_for_control",
             &Class::get_multibody_plant_for_control, py_rvp::reference_internal,
             cls_doc.get_multibody_plant_for_control.doc);
