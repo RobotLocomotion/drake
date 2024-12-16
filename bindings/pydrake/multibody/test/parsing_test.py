@@ -179,8 +179,11 @@ class TestParsing(unittest.TestCase):
         # collisions.
         Parser(plant=plant, model_name_prefix="prefix1").AddModelsFromString(
             model, "urdf")
-        Parser(plant=plant, scene_graph=scene_graph,
-               model_name_prefix="prefix2").AddModelsFromString(model, "urdf")
+        parser = Parser(
+            plant=plant, scene_graph=scene_graph, model_name_prefix="prefix2")
+        parser.AddModelsFromString(model, "urdf")
+        self.assertEqual(parser.plant(), plant)
+        self.assertEqual(parser.scene_graph(), scene_graph)
 
     def test_strict(self):
         model = """<robot name='robot' version='0.99'>

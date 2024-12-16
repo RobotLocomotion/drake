@@ -69,6 +69,13 @@ Parser::Parser(MultibodyPlant<double>* plant,
 
 Parser::~Parser() {}
 
+geometry::SceneGraph<double>& Parser::scene_graph() {
+  geometry::SceneGraph<double>* scene_graph =
+      plant_->GetMutableSceneGraphPreFinalize();
+  DRAKE_DEMAND(scene_graph != nullptr);
+  return *scene_graph;
+}
+
 CollisionFilterGroups Parser::GetCollisionFilterGroups() const {
   return CollisionFilterGroups(ConvertInstancedNamesToStrings(
       data_->collision_filter_groups_storage_, *plant_));
