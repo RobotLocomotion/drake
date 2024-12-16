@@ -171,6 +171,9 @@ class Node final {
   // https://yaml.org/spec/1.2.2/#generic-string
   static constexpr std::string_view kTagStr{"tag:yaml.org,2002:str"};
 
+  // https://yaml.org/spec/1.2.2/#generic-string
+  static constexpr std::string_view kTagBinary{"tag:yaml.org,2002:binary"};
+
   /* Sets the filename where this Node was read from. A nullopt indicates that
   the filename is not known. */
   void SetFilename(std::optional<std::string> filename);
