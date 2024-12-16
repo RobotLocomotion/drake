@@ -219,20 +219,20 @@ TEST_F(FieldIntersectionLowLevelTest, IntersectTetrahedra) {
   //                   ^
   //                   |              Pi = position of i-th vertex
   //                   |
-  //            P7     1      P6
+  //            P5     1      P4
   //                   |
   //                   |
-  //     P0           0.5            P5
+  //     P6           0.5            P3
   //                   |
   //                   |
   //     +------+------0------+------+---------> +X
   //    -1    -0.5     |     0.5     1
   //                   |
-  //     P1          -0.5            P4
+  //     P7          -0.5            P2
   //                   |
   //                   |
-  //            P2    -1      P3
-  //
+  //            P0    -1      P1
+
   EXPECT_TRUE(CompareMatrices(polygon_M.at(0), Vector3d(-0.5, -1, 0), kEps));
   EXPECT_TRUE(CompareMatrices(polygon_M.at(1), Vector3d(0.5, -1, 0), kEps));
   EXPECT_TRUE(CompareMatrices(polygon_M.at(2), Vector3d(1, -0.5, 0), kEps));
@@ -241,6 +241,19 @@ TEST_F(FieldIntersectionLowLevelTest, IntersectTetrahedra) {
   EXPECT_TRUE(CompareMatrices(polygon_M.at(5), Vector3d(-0.5, 1, 0), kEps));
   EXPECT_TRUE(CompareMatrices(polygon_M.at(6), Vector3d(-1, 0.5, 0), kEps));
   EXPECT_TRUE(CompareMatrices(polygon_M.at(7), Vector3d(-1, -0.5, 0), kEps));
+
+  // Verifies the expected intersected faces. The particular (cyclic) order of
+  // the faces is not strictly important. What is important is that all 4 faces
+  // of each tetrahedra appear, and that (by construction) the edges alternate
+  // intersection with a face of tet0 and a face of tet1.
+  EXPECT_EQ(faces.at(0), 2);  // Face 2 of tet0
+  EXPECT_EQ(faces.at(1), 6);  // Face 2 of tet1
+  EXPECT_EQ(faces.at(2), 1);  // Face 1 of tet0
+  EXPECT_EQ(faces.at(3), 5);  // Face 1 of tet1
+  EXPECT_EQ(faces.at(4), 3);  // Face 3 of tet0
+  EXPECT_EQ(faces.at(5), 7);  // Face 3 of tet1
+  EXPECT_EQ(faces.at(6), 0);  // Face 0 of tet0
+  EXPECT_EQ(faces.at(7), 4);  // Face 0 of tet1
 }
 
 // Move the equilibrium plane so far away that the above IntersectTetrahedra
@@ -317,27 +330,85 @@ class VolumeIntersectorTest : public ::testing::Test {
   SoftMesh octahedron_N_;
 };
 
+// The two algorithms provided by VolumeIntersector only differ in the manner in
+// which they find candidate tetrahedra pairs from the two MeshFieldLinear
+// objects. Each end up calling CalcContactPolygon() with their candidate pairs.
+// Therefore, if we can verify that the each algorithm makes the same set of
+// calls to CalcContactPolygon(), then the computed surfaces must be equivalent
+// (up to a shuffling of indexes). CalcContactPolygon() records the tet pairs
+// for each polygon it computes in tet0/1_of_polygon so we verify by checking
+// that the multiset of tet pairs recorded is identical.
+template <class MeshBuilder>
+bool ContactSurfacesAreEqual(
+    const VolumeIntersector<MeshBuilder, Obb>& intersector_A,
+    const typename MeshBuilder::MeshType& surface_A,
+    const VolumeIntersector<MeshBuilder, Obb>& intersector_B,
+    const typename MeshBuilder::MeshType& surface_B) {
+  if (surface_A.num_elements() != surface_B.num_elements()) {
+    return false;
+  }
+
+  std::multiset<std::pair<int, int>> set_A, set_B;
+  for (int i = 0; i < surface_A.num_elements(); ++i) {
+    set_A.emplace(intersector_A.tet0_of_polygon(i),
+                  intersector_A.tet1_of_polygon(i));
+    set_B.emplace(intersector_B.tet0_of_polygon(i),
+                  intersector_B.tet1_of_polygon(i));
+  }
+
+  return set_A == set_B;
+}
+
 TEST_F(VolumeIntersectorTest, IntersectFields) {
   const RigidTransformd X_MN = RigidTransformd(0.03 * Vector3d::UnitX());
+
+  // Compute the contact surface using both algorithms provided by
+  // VolumeIntersector and check that they produce identical contact surfaces.
   {
     SCOPED_TRACE("Use TriMeshBuilder.");
-    std::unique_ptr<TriangleSurfaceMesh<double>> surface_01_M;
-    std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>> e_MN_M;
-    VolumeIntersector<TriMeshBuilder<double>, Obb>().IntersectFields(
-        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
-        octahedron_N_.bvh(), X_MN, &surface_01_M, &e_MN_M);
+    std::array<std::unique_ptr<TriangleSurfaceMesh<double>>, 2> surface_01_M;
+    std::array<std::unique_ptr<TriangleSurfaceMeshFieldLinear<double, double>>,
+               2>
+        e_MN_M;
+    std::array<VolumeIntersector<TriMeshBuilder<double>, Obb>, 2> intersector;
 
-    EXPECT_NE(surface_01_M.get(), nullptr);
+    intersector[0].IntersectFields(
+        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
+        octahedron_N_.bvh(), X_MN, &surface_01_M[0], &e_MN_M[0]);
+
+    intersector[1].IntersectFields(
+        box_M_.pressure(), box_M_.surface_mesh_bvh(), box_M_.tri_to_tet(),
+        box_M_.mesh_topology(), octahedron_N_.pressure(),
+        octahedron_N_.surface_mesh_bvh(), octahedron_N_.tri_to_tet(),
+        octahedron_N_.mesh_topology(), X_MN, &surface_01_M[1], &e_MN_M[1]);
+
+    EXPECT_NE(surface_01_M[0].get(), nullptr);
+    EXPECT_NE(surface_01_M[1].get(), nullptr);
+    EXPECT_TRUE(ContactSurfacesAreEqual(intersector[0], *surface_01_M[0],
+                                        intersector[1], *surface_01_M[1]));
   }
   {
     SCOPED_TRACE("Use PolyMeshBuilder.");
-    std::unique_ptr<PolygonSurfaceMesh<double>> surface_01_M;
-    std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>> e_MN_M;
-    VolumeIntersector<PolyMeshBuilder<double>, Obb>().IntersectFields(
-        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
-        octahedron_N_.bvh(), X_MN, &surface_01_M, &e_MN_M);
+    std::array<std::unique_ptr<PolygonSurfaceMesh<double>>, 2> surface_01_M;
+    std::array<std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>>,
+               2>
+        e_MN_M;
+    std::array<VolumeIntersector<PolyMeshBuilder<double>, Obb>, 2> intersector;
 
-    EXPECT_NE(surface_01_M.get(), nullptr);
+    intersector[0].IntersectFields(
+        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
+        octahedron_N_.bvh(), X_MN, &surface_01_M[0], &e_MN_M[0]);
+
+    intersector[1].IntersectFields(
+        box_M_.pressure(), box_M_.surface_mesh_bvh(), box_M_.tri_to_tet(),
+        box_M_.mesh_topology(), octahedron_N_.pressure(),
+        octahedron_N_.surface_mesh_bvh(), octahedron_N_.tri_to_tet(),
+        octahedron_N_.mesh_topology(), X_MN, &surface_01_M[1], &e_MN_M[1]);
+
+    EXPECT_NE(surface_01_M[0].get(), nullptr);
+    EXPECT_NE(surface_01_M[1].get(), nullptr);
+    EXPECT_TRUE(ContactSurfacesAreEqual(intersector[0], *surface_01_M[0],
+                                        intersector[1], *surface_01_M[1]));
   }
 }
 
@@ -348,25 +419,54 @@ TEST_F(VolumeIntersectorTest, IntersectFieldsAutoDiffXd) {
                                               Vector3<AutoDiffXd>::UnitX());
   {
     SCOPED_TRACE("Use TriMeshBuilder.");
-    std::unique_ptr<TriangleSurfaceMesh<AutoDiffXd>> surface_01_M;
-    std::unique_ptr<TriangleSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>
+    std::array<std::unique_ptr<TriangleSurfaceMesh<AutoDiffXd>>, 2>
+        surface_01_M;
+    std::array<
+        std::unique_ptr<TriangleSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>,
+        2>
         e_MN_M;
-    VolumeIntersector<TriMeshBuilder<AutoDiffXd>, Obb>().IntersectFields(
-        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
-        octahedron_N_.bvh(), X_MN, &surface_01_M, &e_MN_M);
+    std::array<VolumeIntersector<TriMeshBuilder<AutoDiffXd>, Obb>, 2>
+        intersector;
 
-    EXPECT_NE(surface_01_M.get(), nullptr);
+    intersector[0].IntersectFields(
+        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
+        octahedron_N_.bvh(), X_MN, &surface_01_M[0], &e_MN_M[0]);
+
+    intersector[1].IntersectFields(
+        box_M_.pressure(), box_M_.surface_mesh_bvh(), box_M_.tri_to_tet(),
+        box_M_.mesh_topology(), octahedron_N_.pressure(),
+        octahedron_N_.surface_mesh_bvh(), octahedron_N_.tri_to_tet(),
+        octahedron_N_.mesh_topology(), X_MN, &surface_01_M[1], &e_MN_M[1]);
+
+    EXPECT_NE(surface_01_M[0].get(), nullptr);
+    EXPECT_NE(surface_01_M[1].get(), nullptr);
+    EXPECT_TRUE(ContactSurfacesAreEqual(intersector[0], *surface_01_M[0],
+                                        intersector[1], *surface_01_M[1]));
   }
   {
     SCOPED_TRACE("Use PolyMeshBuilder.");
-    std::unique_ptr<PolygonSurfaceMesh<AutoDiffXd>> surface_01_M;
-    std::unique_ptr<PolygonSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>
+    std::array<std::unique_ptr<PolygonSurfaceMesh<AutoDiffXd>>, 2> surface_01_M;
+    std::array<
+        std::unique_ptr<PolygonSurfaceMeshFieldLinear<AutoDiffXd, AutoDiffXd>>,
+        2>
         e_MN_M;
-    VolumeIntersector<PolyMeshBuilder<AutoDiffXd>, Obb>().IntersectFields(
-        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
-        octahedron_N_.bvh(), X_MN, &surface_01_M, &e_MN_M);
+    std::array<VolumeIntersector<PolyMeshBuilder<AutoDiffXd>, Obb>, 2>
+        intersector;
 
-    EXPECT_NE(surface_01_M.get(), nullptr);
+    intersector[0].IntersectFields(
+        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
+        octahedron_N_.bvh(), X_MN, &surface_01_M[0], &e_MN_M[0]);
+
+    intersector[1].IntersectFields(
+        box_M_.pressure(), box_M_.surface_mesh_bvh(), box_M_.tri_to_tet(),
+        box_M_.mesh_topology(), octahedron_N_.pressure(),
+        octahedron_N_.surface_mesh_bvh(), octahedron_N_.tri_to_tet(),
+        octahedron_N_.mesh_topology(), X_MN, &surface_01_M[1], &e_MN_M[1]);
+
+    EXPECT_NE(surface_01_M[0].get(), nullptr);
+    EXPECT_NE(surface_01_M[1].get(), nullptr);
+    EXPECT_TRUE(ContactSurfacesAreEqual(intersector[0], *surface_01_M[0],
+                                        intersector[1], *surface_01_M[1]));
   }
 }
 
@@ -374,15 +474,32 @@ TEST_F(VolumeIntersectorTest, IntersectFieldsAutoDiffXd) {
 // representative template argument.
 TEST_F(VolumeIntersectorTest, IntersectFieldsNoIntersection) {
   // 1 meter apart is well separated.
-  const RigidTransformd X_MN(Vector3d::UnitX());
-  std::unique_ptr<PolygonSurfaceMesh<double>> surface_01_M;
-  std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>> e_MN_M;
-  VolumeIntersector<PolyMeshBuilder<double>, Obb>().IntersectFields(
-      box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
-      octahedron_N_.bvh(), X_MN, &surface_01_M, &e_MN_M);
+  {
+    SCOPED_TRACE("Use VolumeMesh BVH.");
+    const RigidTransformd X_MN(Vector3d::UnitX());
+    std::unique_ptr<PolygonSurfaceMesh<double>> surface_01_M;
+    std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>> e_MN_M;
+    VolumeIntersector<PolyMeshBuilder<double>, Obb>().IntersectFields(
+        box_M_.pressure(), box_M_.bvh(), octahedron_N_.pressure(),
+        octahedron_N_.bvh(), X_MN, &surface_01_M, &e_MN_M);
 
-  EXPECT_EQ(surface_01_M.get(), nullptr);
-  EXPECT_EQ(e_MN_M.get(), nullptr);
+    EXPECT_EQ(surface_01_M.get(), nullptr);
+    EXPECT_EQ(e_MN_M.get(), nullptr);
+  }
+  {
+    SCOPED_TRACE("Use surface TriangleMesh BVH.");
+    const RigidTransformd X_MN(Vector3d::UnitX());
+    std::unique_ptr<PolygonSurfaceMesh<double>> surface_01_M;
+    std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>> e_MN_M;
+    VolumeIntersector<PolyMeshBuilder<double>, Obb>().IntersectFields(
+        box_M_.pressure(), box_M_.surface_mesh_bvh(), box_M_.tri_to_tet(),
+        box_M_.mesh_topology(), octahedron_N_.pressure(),
+        octahedron_N_.surface_mesh_bvh(), octahedron_N_.tri_to_tet(),
+        octahedron_N_.mesh_topology(), X_MN, &surface_01_M, &e_MN_M);
+
+    EXPECT_EQ(surface_01_M.get(), nullptr);
+    EXPECT_EQ(e_MN_M.get(), nullptr);
+  }
 }
 
 TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
@@ -391,21 +508,62 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
   const RigidTransformd X_WM = RigidTransformd::Identity();
   const RigidTransformd X_WN(0.03 * Vector3d::UnitX());
   {
-    SCOPED_TRACE("Triangle contact surface.");
+    SCOPED_TRACE("Triangle contact surface with volume BVH.");
     std::unique_ptr<ContactSurface<double>> contact_patch_W;
     HydroelasticVolumeIntersector<TriMeshBuilder<double>>()
         .IntersectCompliantVolumes(first_id, box_M_, X_WM, second_id,
-                                   octahedron_N_, X_WN, &contact_patch_W);
+                                   octahedron_N_, X_WN, &contact_patch_W,
+                                   false /* use_topology */);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kTriangle);
   }
   {
-    SCOPED_TRACE("Polygon contact surface.");
+    SCOPED_TRACE("Triangle contact surface with surface BVH.");
+    std::unique_ptr<ContactSurface<double>> contact_patch_W;
+    HydroelasticVolumeIntersector<TriMeshBuilder<double>>()
+        .IntersectCompliantVolumes(first_id, box_M_, X_WM, second_id,
+                                   octahedron_N_, X_WN, &contact_patch_W,
+                                   true /* use_topology */);
+    ASSERT_NE(contact_patch_W.get(), nullptr);
+    EXPECT_EQ(contact_patch_W->representation(),
+              HydroelasticContactRepresentation::kTriangle);
+  }
+  {
+    SCOPED_TRACE("Polygon contact surface with volume BVH.");
     std::unique_ptr<ContactSurface<double>> contact_patch_W;
     HydroelasticVolumeIntersector<PolyMeshBuilder<double>>()
         .IntersectCompliantVolumes(first_id, box_M_, X_WM, second_id,
-                                   octahedron_N_, X_WN, &contact_patch_W);
+                                   octahedron_N_, X_WN, &contact_patch_W,
+                                   false /* use_topology */);
+    ASSERT_NE(contact_patch_W.get(), nullptr);
+    EXPECT_EQ(contact_patch_W->representation(),
+              HydroelasticContactRepresentation::kPolygon);
+
+    // The hydroelastic modulus is in the order of 100 kPa, and the size of
+    // the geometries are in the order of centimeters. Therefore, the
+    // pressure gradient is in the order of 100 kPa / 1 cm = 10 MPa/meter
+    // = 1e7 Pa/m.
+    const double kExpectGradientOrderOfMagnitude = 1e7;
+    const double kRelativeTolerance = 1e-13;
+    const double kGradientTolerance =
+        kRelativeTolerance * kExpectGradientOrderOfMagnitude;
+    const Vector3d expect_grad_e0_M =
+        kExpectGradientOrderOfMagnitude * Vector3d(-1 / 3.0, 0, 0);
+    EXPECT_TRUE(CompareMatrices(contact_patch_W->EvaluateGradE_M_W(0),
+                                expect_grad_e0_M, kGradientTolerance));
+    const Vector3d expect_grad_e1_M =
+        kExpectGradientOrderOfMagnitude * Vector3d(1 / 3.0, -1 / 3.0, -1 / 3.0);
+    EXPECT_TRUE(CompareMatrices(contact_patch_W->EvaluateGradE_N_W(0),
+                                expect_grad_e1_M, kGradientTolerance));
+  }
+  {
+    SCOPED_TRACE("Polygon contact surface with surface BVH.");
+    std::unique_ptr<ContactSurface<double>> contact_patch_W;
+    HydroelasticVolumeIntersector<PolyMeshBuilder<double>>()
+        .IntersectCompliantVolumes(first_id, box_M_, X_WM, second_id,
+                                   octahedron_N_, X_WN, &contact_patch_W,
+                                   true /* use_topology */);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kPolygon);
