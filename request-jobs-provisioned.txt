@@ -27,6 +27,10 @@
 @drake-jenkins-bot linux-noble-gcc-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-noble-gcc-bazel-experimental-release please
 @drake-jenkins-bot linux-noble-gcc-cmake-experimental-everything-release please
+@drake-jenkins-bot mac-arm-sequoia-clang-bazel-experimental-everything-release please
+@drake-jenkins-bot mac-arm-sequoia-clang-bazel-experimental-release please
+@drake-jenkins-bot mac-arm-sequoia-clang-cmake-experimental-everything-release please
+@drake-jenkins-bot mac-arm-sequoia-clang-cmake-experimental-release please
 @drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-release please
 @drake-jenkins-bot mac-arm-sonoma-clang-cmake-experimental-everything-release please
