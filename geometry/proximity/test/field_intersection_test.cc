@@ -287,6 +287,98 @@ TEST_F(FieldIntersectionLowLevelTest, IsPlaneNormalAlongPressureGradient) {
       nhat_M_against_gradient, first_tetrahedron_in_field0, field0_M_));
 }
 
+// Special cases that we may or may not care.
+//
+// This unit test suite shows that in special cases, the two versions of
+// IntersectFields() give different results.  One version can sense the
+// contact, but the other version misses the contact.
+//
+// They are special cases that may or may not affect users depending on their
+// applications.
+class VolumeIntersectorTestSpecialCases : public ::testing::Test {
+ public:
+  VolumeIntersectorTestSpecialCases() {
+    std::unique_ptr<VolumeMesh<double>> big_mesh =
+        std::make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
+            big_sphere_, big_sphere_.radius(),
+            TessellationStrategy::kSingleInteriorVertex));
+    std::unique_ptr<VolumeMeshFieldLinear<double, double>> big_field =
+        std::make_unique<VolumeMeshFieldLinear<double, double>>(
+            MakeSpherePressureField<double>(big_sphere_, big_mesh.get(),
+                                            kElasticModulus_));
+
+    std::unique_ptr<VolumeMesh<double>> small_mesh =
+        std::make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
+            small_sphere_, small_sphere_.radius(),
+            TessellationStrategy::kSingleInteriorVertex));
+
+    std::unique_ptr<VolumeMeshFieldLinear<double, double>> small_field =
+        std::make_unique<VolumeMeshFieldLinear<double, double>>(
+            MakeSpherePressureField<double>(small_sphere_, small_mesh.get(),
+                                            kElasticModulus_));
+
+    big_sphere_M_ = SoftMesh(std::move(big_mesh), std::move(big_field));
+    small_sphere_N_ = SoftMesh(std::move(small_mesh), std::move(small_field));
+  }
+
+ protected:
+  void SetUp() override {
+    // The tessellation needs to be fine enough that the BVH leaf node
+    // (three triangles for TriangleSurfaceMesh and one tetrahedron for
+    // VolumeMesh) can do what we want, i.e., BVH(TriangleSurfaceMesh) and
+    // BVH(VolumeMesh) report empty and non-empty overlaps, respectively.
+    ASSERT_EQ(small_sphere_N_.mesh().num_elements(), 32);
+  }
+
+  // Geometry 0 and its field.
+  const Sphere big_sphere_{0.20};
+  SoftMesh big_sphere_M_;
+
+  // Geometry 1 and its field.
+  const Sphere small_sphere_{0.03};
+  SoftMesh small_sphere_N_;
+
+  const double kElasticModulus_{1.0e5};
+};
+
+TEST_F(VolumeIntersectorTestSpecialCases, IntersectFields) {
+  // The small sphere is completely inside the big sphere. It may or may not
+  // be an interesting case for users.
+  //
+  // The penetration is deep enough that the two BVHs of the two surface
+  // meshes miss the contact.
+  const RigidTransformd X_MN = RigidTransformd(0.10 * Vector3d::UnitX());
+
+  // Compute the contact surface using both algorithms provided by
+  // VolumeIntersector and confirm that they produce different contact
+  // surfaces: an empty one and a non-empty one.
+  {
+    SCOPED_TRACE("Use PolyMeshBuilder.");
+    std::array<std::unique_ptr<PolygonSurfaceMesh<double>>, 2> surface_01_M;
+    std::array<std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>>,
+               2>
+        e_MN_M;
+    std::array<VolumeIntersector<PolyMeshBuilder<double>, Obb>, 2> intersector;
+
+    intersector[0].IntersectFields(
+        big_sphere_M_.pressure(), big_sphere_M_.bvh(),
+        small_sphere_N_.pressure(), small_sphere_N_.bvh(), X_MN,
+        &surface_01_M[0], &e_MN_M[0]);
+
+    intersector[1].IntersectFields(
+        big_sphere_M_.pressure(), big_sphere_M_.surface_mesh_bvh(),
+        big_sphere_M_.tri_to_tet(), big_sphere_M_.mesh_topology(),
+        small_sphere_N_.pressure(), small_sphere_N_.surface_mesh_bvh(),
+        small_sphere_N_.tri_to_tet(), small_sphere_N_.mesh_topology(), X_MN,
+        &surface_01_M[1], &e_MN_M[1]);
+
+    // The first version of IntersectFields() can sense the contact.
+    EXPECT_NE(surface_01_M[0].get(), nullptr);
+    // The second version of IntersectFields() cannot.
+    EXPECT_EQ(surface_01_M[1].get(), nullptr);
+  }
+}
+
 class VolumeIntersectorTest : public ::testing::Test {
  public:
   VolumeIntersectorTest() {
