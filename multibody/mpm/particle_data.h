@@ -45,75 +45,97 @@ class ParticleData {
 
   int num_particles() const { return ssize(m_); }
 
-  /* Accessors */
-  const std::vector<T>& m() const { return m_; }
+  /* Const accessors for states. */
   const std::vector<Vector3<T>>& x() const { return x_; }
   const std::vector<Vector3<T>>& v() const { return v_; }
   const std::vector<Matrix3<T>>& F() const { return F_; }
-  const std::vector<Matrix3<T>>& F0() const { return F0_; }
   const std::vector<Matrix3<T>>& C() const { return C_; }
+
+  /* Const accessors for immutable data. */
+  const std::vector<T>& m() const { return m_; }
   const std::vector<T>& volume() const { return volume_; }
   const std::vector<ConstitutiveModelVariant<T>>& constitutive_models() const {
     return constitutive_models_;
   }
+
+  /* Const accessors for state-dependent data. */
   const std::vector<bool>& in_constraint() const { return in_constraint_; }
+  const std::vector<DeformationGradientDataVariant<T>>&
+  deformation_gradient_data() {
+    return deformation_gradient_data_;
+  }
   const std::vector<Matrix3<T>>& tau_volume() const { return tau_volume_; }
 
-  /* Mutable accessors */
+  /* Mutable accessors for states. */
   std::vector<Vector3<T>>& mutable_x() { return x_; }
   std::vector<Vector3<T>>& mutable_v() { return v_; }
   std::vector<Matrix3<T>>& mutable_F() { return F_; }
-  std::vector<Matrix3<T>>& mutable_F0() { return F0_; }
   std::vector<Matrix3<T>>& mutable_C() { return C_; }
+
+  /* Mutable accessors for state-dependent data. */
   std::vector<bool>& mutable_in_constraint() { return in_constraint_; }
+  std::vector<DeformationGradientDataVariant<T>>&
+  mutable_deformation_gradient_data() {
+    return deformation_gradient_data_;
+  }
   std::vector<Matrix3<T>>& mutable_tau_volume() { return tau_volume_; }
 
-  /* Computes the total elastic potential energy stored in the particles
-   assuming that the deformation gradients and their previous time step values
-   are given by `F` and `F0`.
-   @pre F and F0 have the same size and ordering as this ParticleData.
-   @note The deformation gradients (and their previous time step values) stored
-   in `this` ParticleData are not necessarily used for the computation; the
-   passed in F and F0 are used instead. */
+  /* Computes the total elastic potential energy of each particle. The volume
+   and the constitutive models are supplied by `this` ParticleData.
+   @param[in] F  The deformation gradients of the particles.
+   @param[out] deformation_gradient_data  The deformation gradient dependent
+   data of each particle consumed by the constitutive models.
+   @pre F has the same size and ordering as this ParticleData.
+   @pre the inputs have the same size and ordering as this ParticleData.
+   @pre deformation_gradient_data != nullptr.
+   @pre The deformation gradient data type is consistent with the constitutive
+   model type. */
   T ComputeTotalEnergy(const std::vector<Matrix3<T>>& F,
-                       const std::vector<Matrix3<T>>& F0) const;
+                       std::vector<DeformationGradientDataVariant<T>>*
+                           deformation_gradient_data) const;
 
-  /* Computes the volume scaled Kirchhoff stress of each particle assuming that
-   the deformation gradients and their previous time step values are given by
-   `F` and `F0`.
-   @param[in] F            The deformation gradients of the particles.
-   @param[in] F0           The deformation gradients at the previous time step.
-   @param[out] tau_volume  The Kirchhoff stress of each particle scaled by the
-                           reference volume of the particle.
+  /* Computes the volume-scaled Kirchhoff stress of each particle. The volume
+   and the constitutive models are supplied by `this` ParticleData.
+   @param[in] F  The deformation gradients of the particles.
+   @param[out] deformation_gradient_data  The deformation gradient dependent
+   data of each particle consumed by the constitutive models.
+   @param[out] tau_volume  The Kirchhoff stress of each particle scaled by its
+   reference volume.
    @param[in] parallelism  Specifies the degree of parallelism to use.
-   @pre F and F0 have the same size and ordering as this ParticleData.
-   @pre volume_scaled_stress != nullptr.
-   @warn F and F0 are used to compute the strain, but the deformation gradients
+   @pre the inputs have the same size and ordering as this ParticleData.
+   @pre tau_volume != nullptr and deformation_gradient_data != nullptr.
+   @pre The deformation gradient data type is consistent with the constitutive
+   model type.
+   @warn F is used to compute the strain, but the deformation gradients
    stored in `this` ParticleData are used to convert First-Piola stress into
    Kirchhoff stress τ. In other words, `tau_volume` is given by
 
-    volume * τ = volume * ∂Ψ(F, F0)/∂F * Fpᵀ
+    volume * τ = volume * ∂Ψ(F)/∂F * Fpᵀ
 
-   where F and F0 are supplied as arguments, and Fp is the deformation gradients
+   where F is supplied as input parameter, and Fp is the deformation gradients
    stored in `this` ParticleData. */
-  void ComputeKirchhoffStress(const std::vector<Matrix3<T>>& F,
-                              const std::vector<Matrix3<T>>& F0,
-                              std::vector<Matrix3<T>>* tau_volume,
-                              Parallelism parallelism = false) const;
+  void ComputeKirchhoffStress(
+      const std::vector<Matrix3<T>>& F,
+      std::vector<DeformationGradientDataVariant<T>>* deformation_gradient_data,
+      std::vector<Matrix3<T>>* tau_volume,
+      Parallelism parallelism = false) const;
 
-  /* Computes the volume scaled first Piola-Kirchhoff stress derivatives of each
-   particle assuming that the deformation gradients and their previous time step
-   values are given by `F` and `F0`.
-   @param[in] F            The deformation gradients of the particles.
-   @param[in] F0           The deformation gradients at the previous time step.
+  /* Computes the volume-scaled first Piola-Kirchhoff stress derivatives of each
+   particle. THe volume and the constitutive models are supplied by `this`
+   ParticleData.
+   @param[in] F  The deformation gradients of the particles.
+   @param[out] deformation_gradient_data  The deformation gradient dependent
+   data of each particle consumed by the constitutive models.
+   @param[out] dPdF_volume  The first Piola-Kirchhoff stress derivatives of each
+   particle scaled by its reference volume.
    @param[in] parallelism  Specifies the degree of parallelism to use.
-   @pre F and F0 have the same size and ordering as this ParticleData.
-   @pre dPdF_volume != nullptr.
-   @note The deformation gradients (and their previous time step values) stored
-   in `this` ParticleData are not necessarily used for the computation; the
-   passed in F and F0 are used instead. */
+   @pre the inputs have the same size and ordering as this ParticleData.
+   @pre The deformation gradient data type is consistent with the constitutive
+   model type.
+   @pre dPdF_volume != nullptr and deformation_gradient_data != nullptr. */
   void ComputePK1StressDerivatives(
-      const std::vector<Matrix3<T>>& F, const std::vector<Matrix3<T>>& F0,
+      const std::vector<Matrix3<T>>& F,
+      std::vector<DeformationGradientDataVariant<T>>* deformation_gradient_data,
       std::vector<math::internal::FourthOrderTensor<T>>* dPdF_volume,
       Parallelism parallelism = false) const;
 
@@ -140,8 +162,6 @@ class ParticleData {
   std::vector<Vector3<T>> x_;  // positions
   std::vector<Vector3<T>> v_;  // velocity
   std::vector<Matrix3<T>> F_;  // deformation gradient
-  std::vector<Matrix3<T>>
-      F0_;                     // deformation gradient at the previous time step
   std::vector<Matrix3<T>> C_;  // affine velocity field
   /* Constant data. */
   std::vector<T> m_;       // mass
@@ -150,12 +170,12 @@ class ParticleData {
   /* State dependent data. */
   std::vector<bool> in_constraint_;  // whether the particle is participating
                                      // in a constraint
-  std::vector<Matrix3<T>>
-      tau_volume_;  // Kirchhoff stress scaled by reference volume
-  mutable std::vector<DeformationGradientDataVariant<T>>
+  std::vector<DeformationGradientDataVariant<T>>
       deformation_gradient_data_;  // Deformation gradient dependent data that
                                    // is used to calculate the energy density
                                    // and its derivatives.
+  std::vector<Matrix3<T>>
+      tau_volume_;  // Kirchhoff stress scaled by reference volume
 };
 
 }  // namespace internal
