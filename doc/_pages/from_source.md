@@ -12,12 +12,12 @@ officially supports:
 <!-- The minimum compiler versions should match those listed in both the root
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java                          |
-|------------------------------------|--------------|------------|-------|-------|------------------------------|-------------------------------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.0   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11                    |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.0   | 3.28  | GCC 13 (default) or Clang 15 | OpenJDK 21                    |
-| macOS Sonoma (14)                  | arm64        | 3.12       | 8.0   | 3.28  | Apple LLVM 16 (Xcode 16)     | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Sequoia (15)                 | arm64        | TBD        | TBD   | TBD   | Apple LLVM 16 (Xcode 16)     | TBD                           |
+| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java          |
+|------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.0   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.0   | 3.28  | GCC 13 (default) or Clang 15 | OpenJDK 21 |
+| macOS Sonoma (14)                  | arm64        | 3.12       | 8.0   | 3.31  | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
+| macOS Sequoia (15)                 | arm64        | 3.12       | 8.0   | 3.31  | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.

@@ -9,14 +9,24 @@ hardware_sim_py_test to actually run it.
 
 import copy
 import os.path
+import platform
 import re
 import shlex
 import subprocess
 import sys
+import unittest
 
 import yaml
 
 from python.runfiles import Create as CreateRunfiles
+
+
+def _is_macos_sequoia() -> bool:
+    if sys.platform == "darwin":
+        ver_str = platform.mac_ver()[0]
+        major = int(ver_str.split(".")[0])
+        return major == 15
+    return False
 
 
 class HardwareSimTest:
@@ -81,6 +91,7 @@ class HardwareSimTest:
         """Tests the OneOfEverything test scenario."""
         self._run(self._test_scenarios, "OneOfEverything")
 
+    @unittest.skipIf(_is_macos_sequoia(), "LCM problems cause a segfault")
     def test_Demo(self):
         """Tests the Demo example."""
         self._run(self._example_scenarios, "Demo")

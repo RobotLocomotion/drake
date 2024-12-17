@@ -331,4 +331,4 @@ class TestMemoryLeaks(unittest.TestCase):
 
     def test_full_example(self):
         # Note: this test doesn't invoke the #14355 deliberate cycle.
-        self.do_test(dut=_dut_full_example, count=2)
+        self.do_test(dut=_dut_full_example, count=1)

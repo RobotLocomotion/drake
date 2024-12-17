@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":discrete_time_trajectory",
         ":function_handle_trajectory",
         ":path_parameterized_trajectory",
+        ":piecewise_constant_curvature_trajectory",
         ":piecewise_polynomial",
         ":piecewise_pose",
         ":piecewise_quaternion",
@@ -142,6 +143,20 @@ drake_cc_library(
         "//math:binomial_coefficient",
         "//math:matrix_util",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "piecewise_constant_curvature_trajectory",
+    srcs = ["piecewise_constant_curvature_trajectory.cc"],
+    hdrs = ["piecewise_constant_curvature_trajectory.h"],
+    deps = [
+        ":piecewise_trajectory",
+        "//common:essential",
+        "//common:pointer_cast",
+        "//math:geometric_transform",
+        "//multibody/math:spatial_algebra",
+        "//systems/framework:system_scalar_converter",
     ],
 )
 
@@ -283,6 +298,15 @@ drake_cc_googletest(
         ":piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "piecewise_constant_curvature_trajectory_test",
+    deps = [
+        ":piecewise_constant_curvature_trajectory",
+        ":piecewise_quaternion",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

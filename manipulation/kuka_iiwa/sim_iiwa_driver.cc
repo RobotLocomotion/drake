@@ -118,18 +118,20 @@ SimIiwaDriver<T>::SimIiwaDriver(
   // When torque control is enabled, declare the `torque` input port and add it
   // to the inverse dynamics output. Otherwise, use the inverse dynamics output
   // by itself.
-  const System<T>* actuation = nullptr;
+  const systems::OutputPort<T>* actuation_output = nullptr;
   if (torque_enabled(control_mode)) {
-    actuation = builder.template AddNamedSystem<Adder>("+", 2, num_positions);
+    auto actuation =
+        builder.template AddNamedSystem<Adder>("+", 2, num_positions);
     builder.Connect(inverse_dynamics->GetOutputPort("generalized_force"),
                     actuation->get_input_port(0));
     builder.ExportInput(actuation->get_input_port(1), "torque");
+    actuation_output = &actuation->get_output_port();
   } else {
-    actuation = inverse_dynamics;
+    actuation_output = &inverse_dynamics->GetOutputPort("generalized_force");
   }
 
   // Declare the various output ports.
-  builder.ExportOutput(actuation->get_output_port(), "actuation");
+  builder.ExportOutput(*actuation_output, "actuation");
   if (position_enabled(control_mode)) {
     auto pass = builder.template AddNamedSystem<PassThrough>(
         "position_pass_through", num_positions);
@@ -146,10 +148,10 @@ SimIiwaDriver<T>::SimIiwaDriver(
     builder.ConnectInput("state", pass->get_input_port());
     builder.ExportOutput(pass->get_output_port(), "state_estimated");
   }
-  builder.ExportOutput(actuation->get_output_port(), "torque_commanded");
+  builder.ExportOutput(*actuation_output, "torque_commanded");
   // TODO(amcastro-tri): is this what we want to send as the "measured
   // torque"? why coming from the controllers instead of from the plant?
-  builder.ExportOutput(actuation->get_output_port(), "torque_measured");
+  builder.ExportOutput(*actuation_output, "torque_measured");
   builder.ExportOutput(contact_forces->get_output_port(), "torque_external");
 
   builder.BuildInto(this);

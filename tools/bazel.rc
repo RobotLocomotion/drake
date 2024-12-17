@@ -6,9 +6,7 @@ common --enable_bzlmod=false
 
 # Require all rules to be loaded in MODULE.bazel -- don't allow any legacy
 # implicit loads built-in to Bazel itself to take effect.
-# TODO(jwnimmer-tri) Once we upgrade rules_rust past > 0.55, we can remove
-# the rules_shell here; see bazelbuild/rules_rust#3074.
-common --incompatible_autoload_externally=@rules_shell
+common --incompatible_autoload_externally=
 
 # Default to an optimized build.
 build -c opt

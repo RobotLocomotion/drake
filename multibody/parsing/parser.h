@@ -180,6 +180,10 @@ class Parser final {
   /// parser.
   MultibodyPlant<double>& plant() { return *plant_; }
 
+  /// Gets a mutable pointer to the SceneGraph that will be modified by this
+  /// parser, or nullptr if this parser does not have a SceneGraph.
+  geometry::SceneGraph<double>* scene_graph();
+
   /// Gets a mutable reference to the PackageMap used by this parser.
   PackageMap& package_map() { return package_map_; }
 
