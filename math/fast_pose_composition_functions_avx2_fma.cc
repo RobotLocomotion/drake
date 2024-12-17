@@ -647,6 +647,28 @@ void ReexpressSpatialVectorImpl(const double* R_AB,
   hn::StoreN(RST_, tag, V_A + 3, 3);  // 3-wide write to stay in bounds
 }
 
+
+// w = uvw, r = xyz
+// w X v = vz - wy
+//         wx - uz
+//         uy - vx
+void CrossProductImpl(const double* w, const double* r, double* wXr) {
+  const hn::FixedTag<double, 4> tag;
+
+  const auto uvw_ = hn::LoadN(tag, w, 3);
+  const auto vwu_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(uvw_);  // w120
+  const auto wuv_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(uvw_);  // w201
+
+  const auto xyz_ = hn::LoadN(tag, r, 3);
+  const auto yzx_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(xyz_);  // r120
+  const auto zxy_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(xyz_);  // r201
+
+  const auto right = hn::Mul(wuv_, yzx_);          // w201 * r120
+  const auto wXr_ = hn::MulSub(vwu_, zxy_, right);  // w120*r201 - right
+
+  hn::StoreN(wXr_, tag, wXr, 3);
+}
+
 #else  // HWY_MAX_BYTES
 
 /* The portable versions are always defined. They should be written to maximize
@@ -753,6 +775,7 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   ComposeXinvXNoAlias(X_BA, X_BC, X_AC_temp);
   std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
 }
+
 void ReexpressSpatialVectorImpl(const double* R_AB,
                                 const double* V_B,
                                 double* V_A) {
@@ -766,6 +789,18 @@ void ReexpressSpatialVectorImpl(const double* R_AB,
   y = row_x_col(&R_AB[1], &V_B[3]);
   z = row_x_col(&R_AB[2], &V_B[3]);
   V_A[3] = x; V_A[4] = y; V_A[5] = z;
+}
+
+// w = uvw, r = xyz
+// w X v = vz - wy
+//         wx - uz
+//         uy - vx
+void CrossProductImpl(const double* w, const double* r, double* wXr) {
+  const double vz = w[1] * r[2], wx = w[2] * r[0], uy = w[0] * r[1];
+  const double wy = w[2] * r[1], uz = w[0] * r[2], vx = w[1] * r[0];
+  wXr[0] = vz - wy;
+  wXr[1] = wx - uz;
+  wXr[2] = uy - vx;
 }
 
 #endif  // HWY_MAX_BYTES
@@ -806,6 +841,10 @@ HWY_EXPORT(ReexpressSpatialVectorImpl);
 struct ChooseBestReexpressSpatialVector {
   auto operator()() { return HWY_DYNAMIC_POINTER(ReexpressSpatialVectorImpl); }
 };
+HWY_EXPORT(CrossProductImpl);
+struct ChooseBestShuffleVector {
+  auto operator()() { return HWY_DYNAMIC_POINTER(CrossProductImpl); }
+};
 
 // These sugar functions convert C++ types into bare arrays.
 const double* GetRawData(const RotationMatrix<double>& R) {
@@ -824,11 +863,13 @@ double* GetRawData(RigidTransform<double>* X) {
   // the rotation matrix first followed by the translation.
   return const_cast<double*>(X->rotation().matrix().data());
 }
-const double* GetRawData(const Vector6<double>& V) {
-  return V.data();
+template <int N>
+const double* GetRawData(const Vector<double, N>& v) {
+  return v.data();
 }
-double* GetRawData(Vector6<double>* V) {
-  return V->data();
+template <int N>
+double* GetRawData(Vector<double, N>* v) {
+  return v->data();
 }
 
 }  // namespace
@@ -866,6 +907,12 @@ void ReexpressSpatialVector(const RotationMatrix<double>& R_AB,
                             Vector6<double>* V_A) {
   LateBoundFunction<ChooseBestReexpressSpatialVector>::Call(
       GetRawData(R_AB), GetRawData(V_B), GetRawData(V_A));
+}
+
+void CrossProduct(const Vector3<double>& w, const Vector3<double>& r,
+                  Vector3<double>* wXr) {
+  LateBoundFunction<ChooseBestShuffleVector>::Call(
+      GetRawData(w), GetRawData(r), GetRawData(wXr));
 }
 
 }  // namespace internal
