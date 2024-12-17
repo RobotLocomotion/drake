@@ -80,6 +80,9 @@ void ReexpressSpatialVector(const RotationMatrix<double>& R_AB,
                             const Vector6<double>& V_B,
                             Vector6<double>* V_A);
 
+void CrossProduct(const Vector3<double>& w, const Vector3<double>& r,
+                  Vector3<double>* wXr);
+
 }  // namespace internal
 }  // namespace math
 }  // namespace drake
