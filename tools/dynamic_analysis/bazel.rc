@@ -10,6 +10,7 @@ build:kcov --run_under //tools/dynamic_analysis:kcov
 build:kcov --local_test_jobs=HOST_CPUS*0.5
 build:kcov --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_kcov
 build:kcov --nocache_test_results
+build:kcov --zip_undeclared_test_outputs=true
 # These increased timeouts were set through experimentation. Because kcov runs
 # in a separate process from the main program, the OS has to context-switch
 # between the processes every time a line is hit, slowing down execution
@@ -30,6 +31,7 @@ build:kcov_everything --run_under=//tools/dynamic_analysis:kcov
 build:kcov_everything --local_test_jobs=HOST_CPUS*0.5
 build:kcov_everything --test_tag_filters=-lint,-no_kcov
 build:kcov_everything --nocache_test_results
+build:kcov_everything --zip_undeclared_test_outputs=true
 # See timeout note above.
 build:kcov_everything --test_timeout=1200,6000,19000,72000
 
