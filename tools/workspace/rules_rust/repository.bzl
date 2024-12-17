@@ -15,8 +15,8 @@ def rules_rust_repository(
         When updating, you must also manually propagate to the new version
         number into the MODULE.bazel file (at the top level of Drake).
         """,
-        commit = "0.55.6",
-        sha256 = "f1d4ba0893277e766574e8be3bf9f414436215d5779ef5f14a7180d5b01ea264",  # noqa
+        commit = "0.56.0",
+        sha256 = "ec3280a42d501c6c7854e0725e779a26dd146c038da915a529e4b4b5f22a28c8",  # noqa
         patches = [
             ":patches/import_cycle.patch",
         ] + (extra_patches or []),
