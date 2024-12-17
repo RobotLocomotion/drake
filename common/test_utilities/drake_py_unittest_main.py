@@ -88,12 +88,23 @@ def main():
     runfiles, test_package, _, test_name, = match.groups()
     test_basename = test_name + ".py"
 
+    # Find the test's source file.
+    runfiles_test_filenames = [
+        # With bzlmod disabled.
+        runfiles + "drake/" + test_package + "test/" + test_basename,
+        # With bzlmod enabled.
+        runfiles + "_main/" + test_package + "test/" + test_basename,
+    ]
+    runfiles_test_filename = None
+    for x in runfiles_test_filenames:
+        if os.path.exists(x):
+            runfiles_test_filename = x
+            break
+    if runfiles_test_filename is None:
+        raise RuntimeError("Could not find {} at any of {}".format(
+            test_basename, runfiles_test_filenames))
+
     # Check the test's source code for a (misleading) __main__.
-    runfiles_test_filename = (
-        runfiles + "drake/" + test_package + "test/" + test_basename)
-    if not os.path.exists(runfiles_test_filename):
-        raise RuntimeError("Could not find {} at {}".format(
-            test_basename, runfiles_test_filename))
     realpath_test_filename = os.path.realpath(runfiles_test_filename)
     with io.open(realpath_test_filename, "r", encoding="utf8") as infile:
         for line in infile.readlines():
