@@ -166,6 +166,17 @@ def _main():
             visualizer.AddModels(url=item)
         else:
             visualizer.AddModels(item)
+
+    # Not all model files are compatible with computing dynamics (e.g., they
+    # might have zero-mass floating bodies). We'll try computing to see if it
+    # works, but if not then we'll need to turn off contact visualization.
+    try:
+        visualizer.Finalize()
+    except RuntimeError:
+        logging.warning("Contact results cannot be visualized")
+        visualizer._publish_contacts = False
+        visualizer._reload()
+
     visualizer.Run(position=args.position, loop_once=args.loop_once)
 
 

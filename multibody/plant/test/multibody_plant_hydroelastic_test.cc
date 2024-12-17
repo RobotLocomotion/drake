@@ -425,9 +425,11 @@ TEST_F(HydroelasticModelTests, DiscreteTamsiSolverRigidCompliant) {
   // The contact force should match the weight of the sphere.
   const Vector3<double> f_BBo_W_expected =
       -plant_->gravity_field().gravity_vector() * kMass;
-  // We use a tolerance value based on previous runs of this test.
-  const double tolerance = 2.0e-8;
-  EXPECT_TRUE(CompareMatrices(f_BBo_W, f_BBo_W_expected, tolerance));
+  // The accuracy of these results scales proportionally with the relative
+  // tolerance used by the (default) SAP solver.
+  const double tolerance = 1.0e-6;
+  EXPECT_TRUE(CompareMatrices(f_BBo_W, f_BBo_W_expected, tolerance,
+                              MatrixCompareType::relative));
 }
 
 // Tests that "very stiff" compliant hydroelastics converge to rigid
