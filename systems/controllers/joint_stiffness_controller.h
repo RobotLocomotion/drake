@@ -56,6 +56,13 @@ namespace controllers {
  * model the actual elastic joints and rotor-inertia shaping). See
  * https://manipulation.csail.mit.edu/force.html for more details.
  *
+ * @note As an alternative to adding a separate controller system to your
+ * diagram, you can model a JointStiffness controller using MultibodyPlant
+ * APIs. Refer to MultibodyPlant::set_gravity_enabled() as an alternative to
+ * modeling gravity compensation (unless the gravity compensation terms need to
+ * be accounted for when computing effort limits). To model PD controlled
+ * actuators, refer to @ref mbp_actuation "Actuation".
+ *
  * @tparam_default_scalar
  * @ingroup control_systems
  */

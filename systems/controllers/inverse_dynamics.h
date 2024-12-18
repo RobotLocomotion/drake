@@ -36,7 +36,8 @@ namespace controllers {
  *
  * @note As an alternative to adding a controller to your diagram, gravity
  * compensation can be modeled by disabling gravity for a given model instance,
- * see MultibodyPlant::set_gravity_enabled().
+ * see MultibodyPlant::set_gravity_enabled(), unless the gravity compensation
+ * needs to be accounted for when evaluating effort limits.
  *
  * InverseDynamicsController uses a PID controller to generate desired
  * acceleration and uses this class to compute generalized forces. Use this
