@@ -35,6 +35,7 @@ JointStiffnessController<T>::JointStiffnessController(
 
   DRAKE_DEMAND(kp.size() == num_q);
   DRAKE_DEMAND(kd.size() == num_q);
+  Binv_ = plant_->MakeActuationMatrixPseudoinverse();
 
   input_port_index_estimated_state_ =
       this->DeclareInputPort("estimated_state", kVectorValued, num_states)
@@ -48,12 +49,19 @@ JointStiffnessController<T>::JointStiffnessController(
   // other dependencies. Specifying this here is also essential so that that
   // GetDirectFeedthrough won't attempt to cast to Symbolic for evaluation
   // (which would fail if the plant is not owned).
-  output_port_index_force_ =
+  output_port_index_actuation_ =
       this->DeclareVectorOutputPort(
-              "generalized_force", num_q,
-              &JointStiffnessController<T>::CalcOutputForce,
+              "actuation", num_q,
+              &JointStiffnessController<T>::CalcOutputActuation,
               {this->all_input_ports_ticket()})
           .get_index();
+
+  this->DeprecateOutputPort(
+      this->DeclareVectorOutputPort(
+          "generalized_force", num_q,
+          &JointStiffnessController<T>::CalcOutputActuation,
+          {this->all_input_ports_ticket()}),
+      "Use the actuation output port instead.");
 
   auto plant_context = plant_->CreateDefaultContext();
 
@@ -118,7 +126,7 @@ void JointStiffnessController<T>::CalcMultibodyForces(
 }
 
 template <typename T>
-void JointStiffnessController<T>::CalcOutputForce(
+void JointStiffnessController<T>::CalcOutputActuation(
     const Context<T>& context, BasicVector<T>* output) const {
   const int num_q = plant_->num_positions();
 
@@ -154,7 +162,7 @@ void JointStiffnessController<T>::CalcOutputForce(
           kd_.array() * (x_d.tail(num_q) - x.tail(num_q)).array())
              .matrix();
 
-  output->get_mutable_value() = tau;
+  output->get_mutable_value() = Binv_ * tau;
 }
 
 }  // namespace controllers
