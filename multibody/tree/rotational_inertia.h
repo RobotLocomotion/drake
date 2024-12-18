@@ -605,8 +605,7 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
-    return !IsNaN() &&
-           AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality();
+    return boolean<T>(GetInvalidityReport().empty() == true);
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` in place to `I_BP_A`.
@@ -953,6 +952,11 @@ class RotationalInertia {
     const T product_max = product_difference.template lpNorm<Eigen::Infinity>();
     return moment_max <= epsilon && product_max <= epsilon;
   }
+
+  // Returns an error string if `this` RotationalInertia is verifiably invalid
+  // or else returns an empty string (e.g., if unable to test validity because
+  // the type T underlying this method is symbolic).
+  std::string GetInvalidityReport() const;
 
   // Tests whether each moment of inertia is non-negative (to within ε) and
   // tests whether moments of inertia satisfy the triangle-inequality.
