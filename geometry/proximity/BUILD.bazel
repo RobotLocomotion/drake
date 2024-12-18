@@ -1445,6 +1445,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "make_cylinder_mesh_test",
+    shard_count = 2,
     deps = [
         ":make_cylinder_mesh",
         ":proximity_utilities",
