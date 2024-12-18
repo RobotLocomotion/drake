@@ -2,7 +2,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 test_suite(
     name = "test_suite",
-    tests = ["@common_robotics_utilities//:test_suite"],
+    tests = ["@common_robotics_utilities_internal//:test_suite"],
 )
 
 add_lint_tests()

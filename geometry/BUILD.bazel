@@ -148,7 +148,7 @@ drake_cc_library(
         "//lcm:drake_lcm",
         "//lcmtypes:viewer",
         "//systems/lcm:lcm_system_graphviz",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",
     ],
 )
@@ -593,7 +593,7 @@ drake_cc_library(
         "//common:sha256",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//systems/analysis:realtime_rate_calculator",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@msgpack_internal//:msgpack",
         "@nlohmann_internal//:nlohmann",
         "@stduuid_internal//:stduuid",
@@ -911,7 +911,7 @@ drake_cc_googletest(
         "//lcm",
         "//lcmtypes:viewer",
         "//systems/analysis:simulator",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",
     ],
 )
