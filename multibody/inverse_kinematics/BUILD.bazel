@@ -15,12 +15,24 @@ drake_cc_package_library(
     name = "inverse_kinematics",
     visibility = ["//visibility:public"],
     deps = [
+        ":add_multibody_plant_constraints",
         ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
         ":differential_inverse_kinematics_integrator",
         ":global_inverse_kinematics",
         ":inverse_kinematics_core",
         ":kinematic_evaluators",
+    ],
+)
+
+drake_cc_library(
+    name = "add_multibody_plant_constraints",
+    srcs = ["add_multibody_plant_constraints.cc"],
+    hdrs = ["add_multibody_plant_constraints.h"],
+    deps = [
+        ":kinematic_evaluators",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
     ],
 )
 
@@ -149,6 +161,15 @@ drake_cc_library(
 )
 
 #============ Test ============================
+
+drake_cc_googletest(
+    name = "add_multibody_plant_constraints_test",
+    srcs = ["test/add_multibody_plant_constraints_test.cc"],
+    deps = [
+        ":add_multibody_plant_constraints",
+        "//solvers:solve",
+    ],
+)
 
 drake_cc_googletest(
     name = "constraint_relaxing_ik_test",

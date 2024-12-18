@@ -81,6 +81,11 @@ class TestInverseKinematics(unittest.TestCase):
         # TODO(eric.cousineau): Replace with state indexing.
         return q[11:14]
 
+    def test_AddMultibodyPlantConstraints(self):
+        bindings = ik.AddMultibodyPlantConstraints(
+            self.plant, self.q, self.prog, self.ik_two_bodies.context())
+        self.assertEqual(len(bindings), 2)
+
     def test_AddPositionConstraint1(self):
         p_BQ = np.array([0.2, 0.3, 0.5])
         p_AQ_lower = np.array([-0.1, -0.2, -0.3])

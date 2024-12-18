@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/constraint.h"
@@ -63,7 +64,8 @@ class UnitQuaternionConstraint : public solvers::Constraint {
  @tparam_default_scalar
  */
 template <typename T>
-void AddUnitQuaternionConstraintOnPlant(
+std::vector<solvers::Binding<solvers::Constraint>>
+AddUnitQuaternionConstraintOnPlant(
     const MultibodyPlant<T>& plant,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& q_vars,
     solvers::MathematicalProgram* prog);
