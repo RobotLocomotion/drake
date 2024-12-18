@@ -323,8 +323,8 @@ struct VariantWrappingStruct {
   VariantStruct inner;
 };
 
-using PrimitiveVariant =
-    std::variant<std::vector<double>, bool, int, double, std::string>;
+using PrimitiveVariant = std::variant<std::vector<double>, bool, int, double,
+                                      std::string, std::vector<std::byte>>;
 
 struct PrimitiveVariantStruct {
   template <typename Archive>

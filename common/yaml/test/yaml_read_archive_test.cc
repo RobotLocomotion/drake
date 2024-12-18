@@ -702,6 +702,10 @@ TEST_P(YamlReadArchiveTest, PrimitiveVariant) {
   test("doc:\n  value: !!float '1.0'", 1.0);
   test("doc:\n  value: !!str foo", std::string("foo"));
   test("doc:\n  value: !!str 'foo'", std::string("foo"));
+  const std::string byte_str("\x03test_str\x03");
+  const auto* bytes = reinterpret_cast<const std::byte*>(byte_str.data());
+  test("doc:\n  value: !!binary A3Rlc3Rfc3RyAw==",
+       std::vector<std::byte>(bytes, bytes + byte_str.size()));
 
   // It might be sensible for this case to pass, but for now we'll require that
   // non-0'th variant indices always use a tag even where it could be inferred.

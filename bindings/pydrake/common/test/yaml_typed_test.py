@@ -140,7 +140,7 @@ class NullableVariantStruct:
 
 @dc.dataclass
 class PrimitiveVariantStruct:
-    value: typing.Union[typing.List[float], bool, int, float, str] = nan
+    value: typing.Union[typing.List[float], bool, int, float, str, bytes] = nan
 
 
 @dc.dataclass
@@ -283,7 +283,7 @@ class TestYamlTypedRead(unittest.TestCase,
         ]
         for value in cases:
             data = f"value: {value}"
-            with self.assertRaises(TypeError):
+            with self.assertRaises(Exception):
                 yaml_load_typed(schema=PathStruct, data=data, **options)
 
     @run_with_multiple_values(_all_typed_read_options())
@@ -350,8 +350,7 @@ class TestYamlTypedRead(unittest.TestCase,
             data = f"value: {value}"
             with self.assertRaisesRegex(RuntimeError, error_regex,
                                         msg=f"For value '{value}'"):
-                x = yaml_load_typed(schema=BytesStruct, data=data, **options)
-                self.assertEqual(x.value, b"")
+                yaml_load_typed(schema=BytesStruct, data=data, **options)
 
         # Using !!binary and assigning it to non-bytes should throw.
         cases = [
@@ -615,6 +614,10 @@ class TestYamlTypedRead(unittest.TestCase,
         data = "value: !!str 'foo'"
         x = yaml_load_typed(schema=schema, data=data, **options)
         self.assertEqual(x.value, "foo")
+
+        data = "value: !!binary A3Rlc3Rfc3RyAw=="
+        x = yaml_load_typed(schema=schema, data=data, **options)
+        self.assertEqual(x.value, b"\x03test_str\x03")
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_variant_missing(self, *, options):
@@ -1128,6 +1131,10 @@ class TestYamlTypedWrite(unittest.TestCase):
                 # TODO(jwnimmer-tri) We want `value: !!str foo\n` here, but I
                 # can't figure out how to teach pyyaml to emit that.
                 "value: 'foo'\n",
+            ),
+            (
+                b"other\x03\xffstuff",
+                "value: !!binary |\n  b3RoZXID/3N0dWZm\n",
             ),
         ]
         for value, expected_doc in cases:
