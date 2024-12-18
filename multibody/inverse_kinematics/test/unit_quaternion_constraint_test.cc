@@ -50,7 +50,8 @@ TEST_F(TwoFreeBodiesConstraintTest, AddUnitQuaternionConstraintOnPlant) {
   prog.SetInitialGuess(
       q.segment<4>(plant_->GetBodyByName("body1").floating_positions_start()),
       body1_guess);
-  AddUnitQuaternionConstraintOnPlant(*plant_, q, &prog);
+  auto bindings = AddUnitQuaternionConstraintOnPlant(*plant_, q, &prog);
+  EXPECT_EQ(bindings.size(), 2);
   EXPECT_EQ(prog.generic_constraints().size(), 2);
   // Confirm that body 1's non-default initial guess was not overwritten.
   EXPECT_TRUE(CompareMatrices(
