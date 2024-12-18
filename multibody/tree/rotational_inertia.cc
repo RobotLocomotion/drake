@@ -197,31 +197,45 @@ boolean<T> RotationalInertia<
   const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
   const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
-  // Lambda function to test moments of inertia.
-  auto is_valid_moments_of_inertia = [epsilon](const Vector3<double>& moments) {
-    const double Ixx = moments.x();
-    const double Iyy = moments.y();
-    const double Izz = moments.z();
-    const auto are_moments_near_positive =
-        AreMomentsOfInertiaNearPositive(Ixx, Iyy, Izz, epsilon);
-    const auto is_triangle_inequality_satisfied = Ixx + Iyy + epsilon >= Izz &&
-                                                  Ixx + Iyy + epsilon >= Iyy &&
-                                                  Iyy + Izz + epsilon >= Ixx;
-    return are_moments_near_positive && is_triangle_inequality_satisfied;
-  };
+  // TODO(Mitiguy) For now, this function is only used to test principal moments
+  //  of inertia. A future PR will instead first perform the tests herein with
+  //  `this` rotational inertia's diagonal moments of inertia e.g., with
+  //  ExtractDoubleOrThrow(get_moments()) and also do the product of inertia
+  //  inequality tests (e.g., is 2*abs(Ixy) ≤ Izz + ε).
+  const Vector3<double> moments = CalcPrincipalMomentsOfInertia();
 
-  // First test `this` rotational inertia's diagonal moments of inertia.
-  // TODO(Mitiguy) also do the product of inertia inequality tests, e.g., is
-  //  2*abs(Ixy) ≤ Izz + ε.
-  Vector3<double> moments = ExtractDoubleOrThrow(get_moments());
-  boolean<T> is_valid_moments = is_valid_moments_of_inertia(moments);
+  const double Ixx = moments.x();
+  const double Iyy = moments.y();
+  const double Izz = moments.z();
+  const auto are_moments_near_positive =
+      AreMomentsOfInertiaNearPositive(Ixx, Iyy, Izz, epsilon);
+  const auto is_triangle_inequality_satisfied = Ixx + Iyy + epsilon >= Izz &&
+                                                Ixx + Iyy + epsilon >= Iyy &&
+                                                Iyy + Izz + epsilon >= Ixx;
+  return are_moments_near_positive && is_triangle_inequality_satisfied;
+}
 
-  // Next, test the principal moments of inertia.
-  if (is_valid_moments) {
-    moments = CalcPrincipalMomentsOfInertia();
-    is_valid_moments = is_valid_moments_of_inertia(moments);
+template <typename T>
+std::string RotationalInertia<T>::GetInvalidityReport() const {
+  // Default return value is an empty string (this RotationalInertia is valid).
+  std::string error_message;
+  if (IsNaN()) {
+    error_message = fmt::format("\nNaN detected in RotationalInertia.");
+  } else if constexpr (scalar_predicate<T>::is_bool) {
+    if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality()) {
+      const Vector3<double> p = CalcPrincipalMomentsOfInertia();
+      error_message += fmt::format(
+          "\nThe associated principal moments of inertia:"
+          "\n{}  {}  {}",
+          p(0), p(1), p(2));
+      if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
+        error_message += "\nare invalid since at least one is negative.";
+      } else {
+        error_message += "\ndo not satisfy the triangle inequality.";
+      }
+    }
   }
-  return is_valid_moments;
+  return error_message;
 }
 
 template <typename T>
@@ -231,24 +245,10 @@ void RotationalInertia<T>::ThrowNotPhysicallyValid(
       "{}(): The rotational inertia\n"
       "{}did not pass the test CouldBePhysicallyValid().",
       func_name, *this);
+
   // Provide additional information if a moment of inertia is non-negative
   // or if moments of inertia do not satisfy the triangle inequality.
-  if constexpr (scalar_predicate<T>::is_bool) {
-    if (!IsNaN()) {
-      if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality()) {
-        const Vector3<double> p = CalcPrincipalMomentsOfInertia();
-        error_message += fmt::format(
-            "\nThe associated principal moments of inertia:"
-            "\n{}  {}  {}",
-            p(0), p(1), p(2));
-        if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
-          error_message += "\nare invalid since at least one is negative.";
-        } else {
-          error_message += "\ndo not satisfy the triangle inequality.";
-        }
-      }
-    }
-  }
+  error_message += GetInvalidityReport();
   throw std::logic_error(error_message);
 }
 
