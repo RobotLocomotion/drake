@@ -616,8 +616,7 @@ We want to perform two matrix-vector products:
 We can do this in 6 SIMD instructions. We end up doing 40 flops and throwing
 10 of them away.
 */
-void ReexpressSpatialVectorImpl(const double* R_AB,
-                                const double* V_B,
+void ReexpressSpatialVectorImpl(const double* R_AB, const double* V_B,
                                 double* V_A) {
   const hn::FixedTag<double, 4> tag;
 
@@ -647,7 +646,6 @@ void ReexpressSpatialVectorImpl(const double* R_AB,
   hn::StoreN(RST_, tag, V_A + 3, 3);  // 3-wide write to stay in bounds
 }
 
-
 // w = uvw, r = xyz
 // w X v = vz - wy
 //         wx - uz
@@ -663,10 +661,49 @@ void CrossProductImpl(const double* w, const double* r, double* wXr) {
   const auto yzx_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(xyz_);  // r120
   const auto zxy_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(xyz_);  // r201
 
-  const auto right = hn::Mul(wuv_, yzx_);          // w201 * r120
+  const auto right = hn::Mul(wuv_, yzx_);           // w201 * r120
   const auto wXr_ = hn::MulSub(vwu_, zxy_, right);  // w120*r201 - right
 
   hn::StoreN(wXr_, tag, wXr, 3);
+}
+
+
+// w x w x r
+void CrossCrossProductImpl(const double* w, const double* r, double* wXwXr) {
+  const hn::FixedTag<double, 4> tag;
+
+  const auto uvw_ = hn::LoadN(tag, w, 3);
+  const auto vwu_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(uvw_);  // w120
+  const auto wuv_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(uvw_);  // w201
+
+  const auto xyz_ = hn::LoadN(tag, r, 3);
+  const auto yzx_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(xyz_);  // r120
+  const auto zxy_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(xyz_);  // r201
+
+  const auto right = hn::Mul(wuv_, yzx_);           // w201 * r120
+  const auto wXr_ = hn::MulSub(vwu_, zxy_, right);  // w120*r201 - right
+
+  const auto wXr_120 = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(wXr_);
+  const auto wXr_201 = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(wXr_);
+
+  const auto wXwXr_right = hn::Mul(wuv_, wXr_120);             // w201 * wxr_120
+  const auto wXwXr_ = hn::MulSub(vwu_, wXr_201, wXwXr_right);  // w120 * wxr_201
+
+  hn::StoreN(wXwXr_, tag, wXwXr, 3);
+}
+
+// G is a - - but symmetric
+//      b d -
+//      c e f
+void SymTimesVectorImpl(const double* G, const double* w, double* Gw) {
+  const hn::FixedTag<double, 4> tag;
+  const auto uvw_ = hn::LoadN(tag, w, 3);
+  const auto abcx = hn::LoadU(tag, G);
+  const auto cxde = hn::LoadU(tag, G + 2);
+  const auto abde = hn::ConcatUpperLower(tag, cxde, abcx);
+  const auto bde0 = hn::ShiftLeftLanes<1>(tag, abde);
+  hn::StoreU(bde0, tag, Gw);
+  // TODO(sherm1) Need cef_.
 }
 
 #else  // HWY_MAX_BYTES
@@ -776,19 +813,22 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
 }
 
-void ReexpressSpatialVectorImpl(const double* R_AB,
-                                const double* V_B,
+void ReexpressSpatialVectorImpl(const double* R_AB, const double* V_B,
                                 double* V_A) {
   DRAKE_ASSERT(V_A != nullptr);
   double x, y, z;  // Protect from overlap with V_B.
   x = row_x_col(&R_AB[0], &V_B[0]);
   y = row_x_col(&R_AB[1], &V_B[0]);
   z = row_x_col(&R_AB[2], &V_B[0]);
-  V_A[0] = x; V_A[1] = y; V_A[2] = z;
+  V_A[0] = x;
+  V_A[1] = y;
+  V_A[2] = z;
   x = row_x_col(&R_AB[0], &V_B[3]);
   y = row_x_col(&R_AB[1], &V_B[3]);
   z = row_x_col(&R_AB[2], &V_B[3]);
-  V_A[3] = x; V_A[4] = y; V_A[5] = z;
+  V_A[3] = x;
+  V_A[4] = y;
+  V_A[5] = z;
 }
 
 // w = uvw, r = xyz
@@ -903,16 +943,15 @@ void ComposeXinvX(const RigidTransform<double>& X_BA,
 }
 
 void ReexpressSpatialVector(const RotationMatrix<double>& R_AB,
-                            const Vector6<double>& V_B,
-                            Vector6<double>* V_A) {
+                            const Vector6<double>& V_B, Vector6<double>* V_A) {
   LateBoundFunction<ChooseBestReexpressSpatialVector>::Call(
       GetRawData(R_AB), GetRawData(V_B), GetRawData(V_A));
 }
 
 void CrossProduct(const Vector3<double>& w, const Vector3<double>& r,
                   Vector3<double>* wXr) {
-  LateBoundFunction<ChooseBestShuffleVector>::Call(
-      GetRawData(w), GetRawData(r), GetRawData(wXr));
+  LateBoundFunction<ChooseBestShuffleVector>::Call(GetRawData(w), GetRawData(r),
+                                                   GetRawData(wXr));
 }
 
 }  // namespace internal
