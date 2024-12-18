@@ -18,16 +18,16 @@ namespace controllers {
 /**
  * Implements a joint-space stiffness controller of the form
  * <pre>
- *   τ_control = −τ_g(q) − τ_app + kp⊙(q_d − q) + kd⊙(v_d − v)
+ *   τ_control = B⁻¹[−τ_g(q) − τ_app + kp⊙(q_d − q) + kd⊙(v_d − v)]
  * </pre>
  * where `Kp` and `Kd` are the joint stiffness and damping coefficients,
  * respectively, `τ_g(q)` is the vector of generalized forces due to gravity,
  * and `τ_app` contains applied forces from force elements added to the
  * multibody model (this can include damping, springs, etc. See
- * MultibodyPlant::CalcForceElementsContribution()).  `q_d` and `v_d` are the
- * desired (setpoint) values for the multibody positions and velocities,
- * respectively. `kd` and `kp` are taken as vectors, and ⊙ represents
- * elementwise multiplication.
+ * MultibodyPlant::CalcForceElementsContribution()). B⁻¹ is the inverse of the
+ * actuation matrix. `q_d` and `v_d` are the desired (setpoint) values for the
+ * multibody positions and velocities, respectively. `kd` and `kp` are taken as
+ * vectors, and ⊙ represents elementwise multiplication.
  *
  * The goal of this controller is to produce a closed-loop dynamics that
  * resembles a spring-damper dynamics at the joints around the setpoint:
@@ -48,7 +48,7 @@ namespace controllers {
  * - estimated_state
  * - desired_state
  * output_ports:
- * - generalized_force
+ * - actuation
  * @endsystem
  *
  * Note that the joint impedance control as implemented on Kuka's iiwa and
@@ -122,8 +122,19 @@ class JointStiffnessController final : public LeafSystem<T> {
   /**
    * Returns the output port for the generalized forces implementing the
    * control. */
+  DRAKE_DEPRECATED("2025-04-01",
+                   "Use get_output_port_actuation() instead, which multiplies "
+                   "the generalized force by B⁻¹ to be consumed by "
+                   "MultibodyPlant's actuation input port.")
   const OutputPort<T>& get_output_port_generalized_force() const {
     return this->get_output_port(output_port_index_force_);
+  }
+
+  /**
+   * Returns the output port implementing the control in the form (and order)
+   * expected for the plant's actuation input port. */
+  const OutputPort<T>& get_output_port_actuation() const {
+    return this->get_output_port(output_port_index_actuation_);
   }
 
   /**
@@ -143,9 +154,13 @@ class JointStiffnessController final : public LeafSystem<T> {
 
   template <typename> friend class JointStiffnessController;
 
-  // This is the calculator method for the output port.
+  // Calculator for the deprecated output port.
   void CalcOutputForce(const Context<T>& context,
-                       BasicVector<T>* force) const;
+                           BasicVector<T>* force) const;
+
+  // This is the calculator method for the output port.
+  void CalcOutputActuation(const Context<T>& context,
+                           BasicVector<T>* force) const;
 
   // Methods for updating cache entries.
   void SetMultibodyContext(const Context<T>&, Context<T>*) const;
@@ -157,9 +172,11 @@ class JointStiffnessController final : public LeafSystem<T> {
 
   int input_port_index_estimated_state_{0};
   int input_port_index_desired_state_{0};
+  int output_port_index_actuation_{0};
   int output_port_index_force_{0};
 
   Eigen::VectorXd kp_, kd_;
+  Eigen::SparseMatrix<double> Binv_;
 
   drake::systems::CacheIndex applied_forces_cache_index_;
   drake::systems::CacheIndex plant_context_cache_index_;
