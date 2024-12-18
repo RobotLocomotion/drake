@@ -37,8 +37,8 @@ struct CouplerConstraintSpec {
 
 // Struct to store the specification for a distance constraint. A distance
 // constraint is modeled as a holonomic constraint. Distance constraints can
-// be "soft" which imposes the the condition:
-//   (d(q)-d₀) + c/k⋅ḋ(q) + 1/k⋅f = 0
+// be "soft", and are implemented as a spring force, f:
+//   f = -k⋅(d(q) - d₀) - c⋅ḋ(q),
 // where d₀ is a fixed length, k a stiffness parameter in N/m and c a damping
 // parameter in N⋅s/m. We use d(q) to denote the Euclidean distance between two
 // points P and Q, rigidly affixed to bodies A and B respectively, as a function
