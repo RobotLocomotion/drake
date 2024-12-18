@@ -77,8 +77,7 @@ they partially overlap or overlap with R_AB.
 This requires 30 floating point operations but can be done very efficiently
 exploing SIMD instructions when available. */
 void ReexpressSpatialVector(const RotationMatrix<double>& R_AB,
-                            const Vector6<double>& V_B,
-                            Vector6<double>* V_A);
+                            const Vector6<double>& V_B, Vector6<double>* V_A);
 
 void CrossProduct(const Vector3<double>& w, const Vector3<double>& r,
                   Vector3<double>* wXr);
