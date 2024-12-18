@@ -646,7 +646,9 @@ MODULE_SETTINGS = {
         }),
         "copts_extra": [
             "-fvisibility=hidden",
-            "-Iexternal/vtk_internal/ThirdParty/glad/vtkglad/include",
+        ],
+        "includes_extra": [
+            "ThirdParty/glad/vtkglad/include",
         ],
         "deps_extra": [
             "@opengl",

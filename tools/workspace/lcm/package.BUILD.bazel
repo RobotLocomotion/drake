@@ -107,7 +107,7 @@ cc_binary(
             "-pthread",  # For lcm_(mp)udpm.c.
             "-Wl,-soname,libdrake_lcm.so",
         ],
-        "@//conditions:default": [],
+        "//conditions:default": [],
     }),
     linkshared = 1,
     visibility = ["//visibility:private"],
