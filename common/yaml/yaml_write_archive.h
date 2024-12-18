@@ -300,8 +300,7 @@ class YamlWriteArchive final {
         [this, name, needs_tag](auto&& unwrapped) {
           this->Visit(drake::MakeNameValue(name, &unwrapped));
           if (needs_tag) {
-            // TODO(jwnimmer-tri) Spell this as remove_cvref_t in C++20.
-            using T = std::decay_t<decltype(unwrapped)>;
+            using T = std::remove_cvref_t<decltype(unwrapped)>;
             Node& node = root_.At(name);
             if constexpr (std::is_same_v<T, bool>) {
               node.SetTag(JsonSchemaTag::kBool, /* important = */ true);
@@ -311,6 +310,8 @@ class YamlWriteArchive final {
               node.SetTag(JsonSchemaTag::kFloat, /* important = */ true);
             } else if constexpr (std::is_same_v<T, std::string>) {
               node.SetTag(JsonSchemaTag::kStr, /* important = */ true);
+            } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
+              node.SetTag(std::string(internal::Node::kTagBinary));
             } else {
               node.SetTag(YamlWriteArchive::GetVariantTag<T>());
             }

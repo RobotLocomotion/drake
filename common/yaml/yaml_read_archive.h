@@ -353,6 +353,8 @@ class YamlReadArchive final {
       return tag == internal::Node::kTagFloat;
     } else if constexpr (std::is_same_v<T, std::string>) {
       return tag == internal::Node::kTagStr;
+    } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
+      return tag == internal::Node::kTagBinary;
     } else {
       // Not a JSON schema. Check the drake-specific tag.
       return IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag);

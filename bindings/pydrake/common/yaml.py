@@ -268,7 +268,27 @@ def _create_from_schema(*, schema, forthcoming_value):
 # For details, see:
 #  https://yaml.org/spec/1.2.2/#scalars
 #  https://yaml.org/spec/1.2.2/#json-schema
-_PRIMITIVE_YAML_TYPES = (bool, int, float, str, bytes)
+_PRIMITIVE_JSON_TYPES = (bool, int, float, str)
+_PRIMITIVE_YAML_TYPES = _PRIMITIVE_JSON_TYPES + (bytes,)
+
+
+def _convert_yaml_primitive_to_schema_type(*, yaml_value, value_schema):
+    """Given a primitive yaml value parsed from a document and the declared
+    schema type we are reading it into, converts the value to the requested
+    schema type or else returns None when the types are not compatible.
+    """
+    yaml_value_type = type(yaml_value)
+    # Allow exact matches.
+    if yaml_value_type is value_schema:
+        return yaml_value
+    # All implicit promotion from int -> float.
+    if yaml_value_type is int and value_schema is float:
+        return float(yaml_value)
+    # Allow parsing strings to numbers.
+    if yaml_value_type is str and value_schema in (float, int):
+        return value_schema(yaml_value)
+    # Don't allow any other primitive conversions.
+    return None
 
 
 def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
@@ -285,22 +305,23 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         getter = functools.partial(getattr, target, name)
         setter = functools.partial(setattr, target, name)
 
-    # Only bytes get assigned to bytes. If either is bytes, both must be.
-    binary_match = isinstance(yaml_value, bytes) == (value_schema is bytes)
-    if not binary_match:
-        raise RuntimeError(
-            f"Expected a {value_schema} value for '{name}' but instead got "
-            f"yaml data of type {type(yaml_value)}")
-
     # Handle all of the plain YAML scalars:
     #  https://yaml.org/spec/1.2.2/#scalars
     #  https://yaml.org/spec/1.2.2/#json-schema
+    #  https://yaml.org/type/binary.html
     if value_schema in _PRIMITIVE_YAML_TYPES:
         if type(yaml_value) in (list, dict):
             raise RuntimeError(
                 f"Expected a {value_schema} value for '{name}' but instead got"
                 f" non-scalar yaml data of type {type(yaml_value)}")
-        new_value = value_schema(yaml_value)
+        new_value = _convert_yaml_primitive_to_schema_type(
+            yaml_value=yaml_value,
+            value_schema=value_schema,
+        )
+        if new_value is None:
+            raise RuntimeError(
+                f"Expected a {value_schema} value for '{name}' but instead got"
+                f" yaml data of type {type(yaml_value)} ({yaml_value!r})")
         setter(new_value)
         return
 
@@ -325,6 +346,10 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
 
     # Handle pathlib.Path.
     if value_schema == Path:
+        if not isinstance(yaml_value, str):
+            raise RuntimeError(
+                f"Expected a !!str value for '{name}: Path' but instead got"
+                f" yaml data of type {type(yaml_value)}")
         new_value = Path(yaml_value)
         setter(new_value)
         return
@@ -671,8 +696,12 @@ def _yaml_dump_typed_item(*, obj, schema):
         union_schema = generic_args[i]
         result = _yaml_dump_typed_item(obj=obj, schema=union_schema)
         if i != 0:
-            if union_schema in _PRIMITIVE_YAML_TYPES:
+            if union_schema in _PRIMITIVE_JSON_TYPES:
                 result = _SchemaDumper.ExplicitScalar(result)
+            elif union_schema in _PRIMITIVE_YAML_TYPES:
+                # The correct tag will be automatically applied by pyyaml with
+                # no special effort on our part.
+                pass
             else:
                 class_name_with_args = pretty_class_name(union_schema)
                 class_name = class_name_with_args.split("[", 1)[0]
@@ -768,7 +797,7 @@ def yaml_dump_typed(data,
     # Sanity checks.
     assert data is not None
     if child_name is not None:
-        if type(child_name) not in _PRIMITIVE_YAML_TYPES:
+        if type(child_name) not in _PRIMITIVE_JSON_TYPES:
             raise RuntimeError("The child_name must be a primitive type, "
                                f"not a {type(child_name)}")
 

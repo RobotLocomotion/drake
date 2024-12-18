@@ -310,6 +310,11 @@ TEST_F(YamlWriteArchiveTest, PrimitiveVariant) {
   test(10, "!!int 10");
   test(1.0, "!!float 1.0");
   test(std::string("foo"), "!!str foo");
+
+  const std::string byte_str("other\x03\xffstuff");
+  const auto* bytes = reinterpret_cast<const std::byte*>(byte_str.data());
+  test(std::vector<std::byte>(bytes, bytes + byte_str.size()),
+       "!!binary b3RoZXID/3N0dWZm");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVector) {
