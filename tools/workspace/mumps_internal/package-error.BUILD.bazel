@@ -1,0 +1,23 @@
+# -*- bazel -*-
+
+# This stub BUILD file for MUMPS contains the same public targets as the real
+# BUILD file, always reports an error (from error.txt) during compilation, but
+# does not report any loading-phase errors.  This is useful to defer error
+# reporting until after the loading phase, so that `bazel query` commands will
+# still work even with MUMPS missing.
+
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+genrule(
+    name = "error-message",
+    srcs = ["error.txt"],
+    outs = ["error-message.h"],
+    cmd = "cat $< 1>&2 && false",
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "dmumps_seq",
+    hdrs = [":error-message.h"],
+    visibility = ["//visibility:public"],
+)

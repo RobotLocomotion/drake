@@ -47,8 +47,6 @@ _SRCS = glob(
         # We treat COIN_HAS_AMD, COIN_HAS_CHOLMOD, and COIN_HAS_GLPK as OFF.
         "**/ClpCholeskyUfl*",
         # We treat COIN_HAS_MUMPS as OFF.
-        # TODO(jwnimmer-tri) We can probably enable this. I've left it off for
-        # now only out of inertia -- Ubuntu builds CLP without MUMPS.
         "**/ClpCholeskyMumps*",
         # We treat COIN_HAS_WSMP as OFF.
         "**/ClpCholeskyWssmp*",
@@ -95,15 +93,13 @@ _AUTOCONF_UNDEFINES = [
     "HAVE_DLFCN_H",
     "HAVE_IEEEFP_H",
     "HAVE_MEMORY_H",
-    # TODO(jwnimmer-tri) We can probably enable this. I've left it off for now
-    # only out of inertia -- Ubuntu builds CLP without MUMPS.
-    "COIN_HAS_MUMPS",
     # Optional dependencies that we don't use.
     "CLP_HAS_ABC",
     "COIN_HAS_AMD",
     "COIN_HAS_ASL",
     "COIN_HAS_CHOLMOD",
     "COIN_HAS_GLPK",
+    "COIN_HAS_MUMPS",
     "COIN_HAS_NETLIB",
     "COIN_HAS_OSI",
     "COIN_HAS_OSITESTS",

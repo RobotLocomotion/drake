@@ -46,7 +46,7 @@ struct IpoptSolverDetails {
  * using Drake's MathematicalProgram.
  *
  * The IpoptSolver is NOT threadsafe to call in parallel. This is due to Ipopt's
- * reliance on the MUMPs linear solver which is not safe to call concurrently
+ * reliance on the MUMPS linear solver which is not safe to call concurrently
  * (see https://github.com/coin-or/Ipopt/issues/733). This can be resolved by
  * enabling the SPRAL solver (see Drake issue
  * https://github.com/RobotLocomotion/drake/issues/21476).
