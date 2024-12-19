@@ -20,7 +20,7 @@ struct LinearCorotatedModelTraits {
 
 /* Implements the linear corotated constitutive model as described in
  [Han et al., 2023].
- @tparam_nonsymbolic_scalar
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd.
 
  [Han et al., 2023] Han, Xuchen, Joseph Masterjohn, and Alejandro Castro. "A
  Convex Formulation of Frictional Contact between Rigid and Deformable Bodies."

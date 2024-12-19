@@ -24,6 +24,8 @@ LameParameters<T> CalcLameParameters(const T& youngs_modulus,
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&CalcLameParameters<T>));
+template LameParameters<float> CalcLameParameters<float>(const float&,
+                                                         const float&);
 
 }  // namespace internal
 }  // namespace fem
