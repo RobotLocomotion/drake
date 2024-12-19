@@ -129,9 +129,19 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
           /* skip_validity_check = */ true));
   EXPECT_FALSE(I.CouldBePhysicallyValid());
 
+  // Check for a thrown exception with proper error message when creating a
+  // rotational inertia with NaN moments/products of inertia.
+  std::string expected_message = "[^]*NaN detected in RotationalInertia\\.";
+  constexpr double nan = std::numeric_limits<double>::quiet_NaN();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          nan, Iyy, Izz, /* Ixy = */ 0, /* Ixz = */ 0, /* Iyz = */ 0,
+          /* skip_validity_check = */ false),
+      expected_message);
+
   // Check for a thrown exception with proper error message when creating an
   // invalid rotational inertia (a principal moment of inertia is negative).
-  std::string expected_message =
+  expected_message =
       "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
       "\\[ 1  -3  -3\\]\n"
       "\\[-3  13  -6\\]\n"
