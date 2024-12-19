@@ -1,7 +1,21 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "int_flag", "string_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:sh.bzl", "sh_binary")
 
 package(default_visibility = ["//visibility:public"])
+
+# When this is set to "error", a Drake build will promote some warnings of our
+# choice to errors. See drake/tools/cc_toolchain/bazel.rc for details. This is
+# intended for internal use only, not for users to configure.
+string_flag(
+    name = "error_severity",
+    build_setting_default = "warning",
+    values = [
+        "warning",
+        "error",
+    ],
+)
 
 config_setting(
     name = "apple",
@@ -9,13 +23,110 @@ config_setting(
 )
 
 config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "error_severity_warning",
+    flag_values = {":error_severity": "warning"},
+)
+
+config_setting(
+    name = "error_severity_error",
+    flag_values = {":error_severity": "error"},
+)
+
+selects.config_setting_group(
+    name = "apple_clang_with_warnings",
+    match_all = [
+        ":apple",
+        "@rules_cc//cc/compiler:clang",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "apple_clang_with_errors",
+    match_all = [
+        ":apple",
+        "@rules_cc//cc/compiler:clang",
+        ":error_severity_error",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gcc_with_warnings",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gcc_with_errors",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":error_severity_error",
+    ],
+)
+
+selects.config_setting_group(
+    name = "linux_clang_with_warnings",
+    match_all = [
+        ":linux",
+        "@rules_cc//cc/compiler:clang",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "linux_clang_with_errors",
+    match_all = [
+        ":linux",
+        "@rules_cc//cc/compiler:clang",
+        ":error_severity_error",
+    ],
+)
+
+config_setting(
     name = "debug",
     values = {"compilation_mode": "dbg"},
 )
 
+# In our developer builds, we use this as an optional hint for configuring
+# compiler warnings. It's neither necessary (nor typically set) when Drake
+# is installed with CMake or used as a Bazel external. This is intended for
+# internal use only, not for users to configure.
+#
+# TODO(jwnimmer-tri) Ideally, rules_cc would provide this as a toolchain
+# attribute that we could query, but it doesn't seem to exist there yet.
+int_flag(
+    name = "compiler_major",
+    build_setting_default = 0,
+)
+
 config_setting(
-    name = "linux",
-    constraint_values = ["@platforms//os:linux"],
+    name = "compiler_major_13",
+    flag_values = {":compiler_major": "13"},
+)
+
+selects.config_setting_group(
+    name = "gcc_13_with_warnings",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":compiler_major_13",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gcc_13_with_errors",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":compiler_major_13",
+        ":error_severity_error",
+    ],
 )
 
 # Capture some bazel cc_toolchain variables into a bash environment file. These

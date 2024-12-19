@@ -11,4 +11,4 @@ build --action_env=CCACHE_DISABLE=1
 #
 # When compiilng Drake as an external package, this rcfile is not loaded and we
 # won't promote warnings to errors by default.
-build --define=DRAKE_WERROR=ON
+build --@drake//tools/cc_toolchain:error_severity=error

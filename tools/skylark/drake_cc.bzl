@@ -1,4 +1,3 @@
-load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
 load("//tools/skylark:cc.bzl", "CcInfo", "cc_binary", "cc_library", "cc_test")
 load(
     "//tools/skylark:kwargs.bzl",
@@ -43,22 +42,9 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=unqualified-std-cast-call",
 ]
 
-# The CLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
-# project when building with a Clang compiler of the specified major
-# version (excluding the Apple LLVM compiler, see
-# APPLECLANG_VERSION_SPECIFIC_FLAGS below).
-CLANG_VERSION_SPECIFIC_FLAGS = {
-}
-
 # The APPLECLANG_FLAGS will be enabled for all C++ rules in the project when
 # building with the Apple LLVM compiler.
 APPLECLANG_FLAGS = CLANG_FLAGS
-
-# The APPLECLANG_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in
-# the project when building with an Apple LLVM compiler of the specified major
-# version.
-APPLECLANG_VERSION_SPECIFIC_FLAGS = {
-}
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
 # building with gcc.
@@ -79,6 +65,11 @@ GCC_CC_TEST_FLAGS = [
     "-Wno-unused-parameter",
 ]
 
+# The GCC_VERSION_SPECIFIC_FLAGS will be enabled for all C++ rules in the
+# project when building with gcc of the specified major version, but only if
+# the --@drake//tools/cc_toolchain:compiler_major=NN flag has been set on the
+# command line or in an rcfile. (It typically will be except when Drake is used
+# as a Bazel external.)
 GCC_VERSION_SPECIFIC_FLAGS = {
     13: [
         "-Werror=pessimizing-move",
@@ -93,39 +84,49 @@ GCC_VERSION_SPECIFIC_FLAGS = {
     ],
 }
 
+def _defang(flags):
+    """Given a list of copts, demote all -Werror into just plain -W."""
+    return [
+        x.replace("-Werror=", "-W")
+        for x in flags
+    ]
+
+# The BASE_COPTS are used for all drake_cc_{binary,library,test} rules.
+BASE_COPTS = select({
+    "//tools/cc_toolchain:apple_clang_with_errors": APPLECLANG_FLAGS,
+    "//tools/cc_toolchain:apple_clang_with_warnings": _defang(APPLECLANG_FLAGS),  # noqa
+    "//tools/cc_toolchain:gcc_with_errors": GCC_FLAGS,
+    "//tools/cc_toolchain:gcc_with_warnings": _defang(GCC_FLAGS),
+    "//tools/cc_toolchain:linux_clang_with_errors": CLANG_FLAGS,
+    "//tools/cc_toolchain:linux_clang_with_warnings": _defang(CLANG_FLAGS),
+    "//conditions:default": _defang(CXX_FLAGS),
+}) + select(dict([
+    ("//tools/cc_toolchain:gcc_{}_with_errors".format(major_ver), flags)
+    for major_ver, flags in GCC_VERSION_SPECIFIC_FLAGS.items()
+] + [
+    ("//tools/cc_toolchain:gcc_{}_with_warnings".format(major_ver), _defang(flags))  # noqa
+    for major_ver, flags in GCC_VERSION_SPECIFIC_FLAGS.items()
+] + [
+    ("//conditions:default", []),
+]))
+
 def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
-    """Returns both the rule_copts (plus rule_{cc}_copts iff under the
-    specified compiler), and platform-specific copts.
+    """Returns the concatenation of Drake's platform-specific BASE_COPTS,
+    plus the passed-in rule_copts, plus the passed-in plus rule_{cc}_copts iff
+    building with the specified compiler).
 
-    When cc_test=1, the GCC_CC_TEST_FLAGS will be added.  It should only be set
-    to 1 from cc_test rules or rules that are boil down to cc_test rules.
+    When cc_test=1, the GCC_CC_TEST_FLAGS will also be added. It should only be
+    used from cc_test rules or rules that are boil down to cc_test rules.
     """
-    if COMPILER_ID == "AppleClang":
-        result = APPLECLANG_FLAGS + rule_copts + rule_clang_copts
-        if COMPILER_VERSION_MAJOR in APPLECLANG_VERSION_SPECIFIC_FLAGS:
-            result += APPLECLANG_VERSION_SPECIFIC_FLAGS[COMPILER_VERSION_MAJOR]
-    elif COMPILER_ID == "Clang":
-        result = CLANG_FLAGS + rule_copts + rule_clang_copts
-        if COMPILER_VERSION_MAJOR in CLANG_VERSION_SPECIFIC_FLAGS:
-            result += CLANG_VERSION_SPECIFIC_FLAGS[COMPILER_VERSION_MAJOR]
-    elif COMPILER_ID == "GNU":
-        extra_gcc_flags = GCC_CC_TEST_FLAGS if cc_test else []
-        result = GCC_FLAGS + extra_gcc_flags + rule_copts + rule_gcc_copts
-        if COMPILER_VERSION_MAJOR in GCC_VERSION_SPECIFIC_FLAGS:
-            result += GCC_VERSION_SPECIFIC_FLAGS[COMPILER_VERSION_MAJOR]
-    else:
-        result = rule_copts
-
-    # We can't handle select() yet.
-    # TODO(jwnimmer-tri) We should handle select.
-    if type(result) != "list":
-        return result
-    return select({
-        "//tools:drake_werror": result,
-        "//conditions:default": [
-            x.replace("-Werror=", "-W")
-            for x in result
-        ],
+    if not any([rule_copts, rule_gcc_copts, rule_clang_copts, cc_test]):
+        # In the case of no special arguments at all, we can save Bazel the
+        # hassle of concatenating a bunch of empty stuff.
+        return BASE_COPTS
+    test_gcc_copts = GCC_CC_TEST_FLAGS if cc_test else []
+    return BASE_COPTS + (rule_copts or []) + select({
+        "@rules_cc//cc/compiler:gcc": rule_gcc_copts + test_gcc_copts,
+        "@rules_cc//cc/compiler:clang": rule_clang_copts,
+        "//conditions:default": [],
     })
 
 def _check_library_deps_blacklist(name, deps):
