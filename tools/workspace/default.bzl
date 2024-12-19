@@ -15,7 +15,7 @@ load("//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jid
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository", "common_robotics_utilities_repository")  # noqa
 load("//tools/workspace/commons_io:repository.bzl", "commons_io_repository")
 load("//tools/workspace/conex_internal:repository.bzl", "conex_internal_repository")  # noqa
-load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories")  # noqa
+load("//tools/workspace/crate_universe:repository.bzl", _crate_universe_repositories = "crate_universe_repositories")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
 load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
@@ -181,7 +181,7 @@ def add_default_repositories(
     if "conex_internal" not in excludes:
         conex_internal_repository(name = "conex_internal", mirrors = mirrors)
     if "crate_universe" not in excludes:
-        crate_universe_repositories(mirrors = mirrors, excludes = excludes)
+        _crate_universe_repositories(mirrors = mirrors, excludes = excludes)
     if "csdp_internal" not in excludes:
         csdp_internal_repository(name = "csdp_internal", mirrors = mirrors)
     if "curl_internal" not in excludes:
@@ -436,3 +436,28 @@ def add_default_workspace(
         excludes = toolchain_excludes,
         bzlmod = bzlmod,
     )
+
+def _drake_dep_repositories_impl(module_ctx):
+    add_default_repositories(
+        bzlmod = True,
+        excludes = ["crate_universe"],
+    )
+
+drake_dep_repositories = module_extension(
+    implementation = _drake_dep_repositories_impl,
+    doc = """
+(Internal use only) Wraps the add_default_repositories repository rules to be
+usable as a bzlmod module extension.
+""",
+)
+
+def _crate_universe_repositories_module_extension_impl(module_ctx):
+    _crate_universe_repositories(mirrors = DEFAULT_MIRRORS)
+
+crate_universe_repositories = module_extension(
+    implementation = _crate_universe_repositories_module_extension_impl,
+    doc = """
+(Internal use only) Wraps the crate_universe repository rules to be usable as a
+bzlmod module extension.
+""",
+)

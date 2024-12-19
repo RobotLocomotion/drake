@@ -12,6 +12,7 @@ load(
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
+    "//tools/workspace/drake_models:__pkg__",
 ])
 
 # This determines how `PYTHONPATH` is configured.
@@ -31,10 +32,6 @@ drake_py_library(
     name = "algebra_test_util_py",
     testonly = True,
     srcs = ["algebra_test_util.py"],
-    visibility = [
-        "//bindings/pydrake/autodiffutils:__pkg__",
-        "//bindings/pydrake/symbolic:__pkg__",
-    ],
     deps = [
         ":module_py",
     ],

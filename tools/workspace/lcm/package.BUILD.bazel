@@ -226,16 +226,22 @@ cc_binary(
 # that, we pre-load the shared library before calling the upstream __init__,
 # using python ctypes with the realpath to the shared library.
 generate_file(
-    name = "__init__.py",
+    name = "gen/lcm/__init__.py",
     content = """
 import ctypes
-import os.path
-ctypes.cdll.LoadLibrary(os.path.realpath(
-     __path__[0] + '/_lcm{extension_suffix}'))
-_filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
-with open(_filename) as f:
-    _code = compile(f.read(), _filename, 'exec')
-    exec(_code)
+from pathlib import Path
+# The base_dir refers to the base of our package.BUILD.bazel.
+_base_dir = Path(__path__[0]).resolve().parent.parent
+# Load the native code.
+ctypes.cdll.LoadLibrary(_base_dir / '_lcm{extension_suffix}')
+# We need to tweak the upstream __init__ before we run it.
+_filename = _base_dir / 'lcm-python/lcm/__init__.py'
+_text = _filename.read_text(encoding='utf-8')
+# Delete the line which loads the native code; we already did that.
+_text = _text.replace('from lcm import _lcm', '')
+# Respell where the native code comes from.
+_text = _text.replace('from lcm._lcm import', 'from _lcm import')
+exec(compile(_text, _filename, 'exec'))
 """.format(extension_suffix = PYTHON_EXTENSION_SUFFIX),
     visibility = ["//visibility:private"],
 )
@@ -249,7 +255,8 @@ py_library(
 
 py_library(
     name = "lcm-python",
-    srcs = ["__init__.py"],  # Shim, from the genrule above.
+    srcs = ["gen/lcm/__init__.py"],  # Shim, from the genrule above.
+    imports = ["gen"],
     deps = [":lcm-python-upstream"],
 )
 

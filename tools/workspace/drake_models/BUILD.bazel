@@ -9,13 +9,14 @@ enumerate_filegroup(
 
 drake_py_unittest(
     name = "parse_test",
-    timeout = "long",
     data = [
         ":inventory.txt",
         "@drake_models",
     ],
+    shard_count = 16,
     deps = [
         "//bindings/pydrake",
+        "//bindings/pydrake/common/test_utilities:meta_py",
         "@rules_python//python/runfiles",
     ],
 )
