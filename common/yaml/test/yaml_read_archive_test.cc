@@ -672,6 +672,20 @@ TEST_P(YamlReadArchiveTest, Optional) {
   }
 }
 
+/* Smoke test for compatibility for the odd scalar: vector<byte>. This skips the
+ nuance of parsing configuration and default/non-default. We assume that the
+ Optional test covers that and there is nothing about vector<bytes> that would
+ invalidate it. */
+TEST_P(YamlReadArchiveTest, OptionalBytes) {
+  const std::string byte_str("other\x03\xffstuff");
+  const auto* byte_ptr = reinterpret_cast<const std::byte*>(byte_str.data());
+  const std::vector<std::byte> expected(byte_ptr, byte_ptr + byte_str.size());
+  const auto& x = AcceptNoThrow<OptionalBytesStruct>(
+      Load("doc:\n  value: !!binary b3RoZXID/3N0dWZm"));
+  ASSERT_TRUE(x.value.has_value());
+  EXPECT_EQ(x.value.value(), expected);
+}
+
 TEST_P(YamlReadArchiveTest, Variant) {
   const auto test = [](const std::string& doc, const Variant4& expected) {
     const auto& x = AcceptNoThrow<VariantStruct>(Load(doc));

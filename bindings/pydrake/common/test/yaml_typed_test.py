@@ -82,6 +82,11 @@ class InnerStruct:
 
 
 @dc.dataclass
+class OptionalByteStruct:
+    value: bytes | None = None
+
+
+@dc.dataclass
 class OptionalStruct:
     value: float | None = nan
 
@@ -531,6 +536,15 @@ class TestYamlTypedRead(unittest.TestCase,
                     actual = yaml_load_typed(
                         schema=schema, data=amended_data, **options)
                     self.assertEqual(actual, schema(expected))
+
+    def test_read_optional_bytes(self):
+        """Smoke test for compatibility for the odd scalar: vector<byte>.
+        It skips the nuance of parsing configuration, assuming that is handled
+        by the more general test on Optional.
+        """
+        data = "value: !!binary b3RoZXID/3N0dWZm"
+        actual = yaml_load_typed(schema=OptionalByteStruct, data=data)
+        self.assertEqual(actual, OptionalByteStruct(b"other\x03\xffstuff"))
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_variant(self, *, options):
@@ -1038,6 +1052,10 @@ class TestYamlTypedWrite(unittest.TestCase):
         for value, expected_doc in cases:
             actual_doc = yaml_dump_typed(LegacyOptionalStruct(value=value))
             self.assertEqual(actual_doc, expected_doc)
+
+        # Smoke test for compatibility for the odd scalar: vector<byte>.
+        actual_doc = yaml_dump_typed(OptionalByteStruct(b"other\x03\xffstuff"))
+        self.assertEqual(actual_doc, "value: !!binary |\n  b3RoZXID/3N0dWZm\n")
 
     def test_write_variant(self):
         cases = [

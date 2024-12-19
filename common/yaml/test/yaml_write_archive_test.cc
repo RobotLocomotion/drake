@@ -282,6 +282,19 @@ TEST_F(YamlWriteArchiveTest, Optional) {
 
   test(std::nullopt, "doc:\n");
   test(1.0, "doc:\n  value: 1.0\n");
+
+  // Smoke test for compatibility for the odd scalar: vector<byte>.
+  using ByteString = std::vector<std::byte>;
+  const auto test_bytes = [](const std::optional<ByteString>& value,
+                             const std::string& expected) {
+    const OptionalBytesStruct x(value);
+    EXPECT_EQ(Save(x), expected);
+  };
+  test_bytes(std::nullopt, "doc:\n");
+  const std::string bytes("other\x03\xffstuff");
+  const auto* byte_ptr = reinterpret_cast<const std::byte*>(bytes.data());
+  test_bytes(ByteString(byte_ptr, byte_ptr + bytes.size()),
+             "doc:\n  value: !!binary b3RoZXID/3N0dWZm\n");
 }
 
 TEST_F(YamlWriteArchiveTest, Variant) {
