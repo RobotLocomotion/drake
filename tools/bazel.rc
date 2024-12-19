@@ -1,8 +1,5 @@
-# Don't use bzlmod yet.
-# TODO(jwnimmer-tri) When we enable bzlmod by default here, we should nix the
-# redundant setting drake/cmake/bazel.rc.in at the same time.
+# TODO(#20731) Stop using WORKSPACE (and WORKSPACE.bzlmod).
 common --enable_workspace=true
-common --enable_bzlmod=false
 
 # Require all rules to be loaded in MODULE.bazel -- don't allow any legacy
 # implicit loads built-in to Bazel itself to take effect.

@@ -12,7 +12,7 @@ bazel run :crate -- --repin=all
 rm -f lock/details/crates.bzl
 
 # Fix the upgrade advice comments.
-old_tool="bazel run @//tools/workspace/crate_universe:crate"
+old_tool="bazel run @@//tools/workspace/crate_universe:crate"
 new_tool="tools/workspace/crate_universe/upgrade.sh"
 perl -pi -e "s#${old_tool}#${new_tool}#g;" lock/details/*
 

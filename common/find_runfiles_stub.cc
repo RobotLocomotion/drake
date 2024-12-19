@@ -20,7 +20,8 @@ bool HasRunfiles() {
   return false;
 }
 
-RlocationOrError FindRunfile(const std::string& resource_path) {
+RlocationOrError FindRunfile(const std::string& resource_path,
+                             const std::string& source_repository) {
   RlocationOrError result;
   result.error = "FindRunfile is stubbed out";
   return result;

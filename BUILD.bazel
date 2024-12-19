@@ -20,7 +20,6 @@ exports_files([
 exports_files(
     [
         "MODULE.bazel",
-        "WORKSPACE",
         "WORKSPACE.bzlmod",
     ],
     visibility = ["//tools/workspace:__pkg__"],

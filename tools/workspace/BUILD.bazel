@@ -79,7 +79,6 @@ drake_py_test(
     data = [
         ":default.bzl",
         "//:MODULE.bazel",
-        "//:WORKSPACE",
         "//:WORKSPACE.bzlmod",
         "//tools/workspace/bazel_skylib:repository.bzl",
         "//tools/workspace/build_bazel_apple_support:repository.bzl",
