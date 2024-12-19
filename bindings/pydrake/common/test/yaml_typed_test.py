@@ -1,3 +1,4 @@
+import base64
 import copy
 import dataclasses as dc
 import functools
@@ -8,6 +9,7 @@ from pathlib import Path
 from textwrap import dedent
 import typing
 import unittest
+import yaml
 
 import numpy as np
 
@@ -33,8 +35,18 @@ class FloatStruct:
 
 
 @dc.dataclass
+class IntStruct:
+    value: int = -1
+
+
+@dc.dataclass
 class StringStruct:
     value: str = "nominal_string"
+
+
+@dc.dataclass
+class BytesStruct:
+    value: bytes = b"\x00\x01\x02"
 
 
 @dc.dataclass
@@ -45,6 +57,7 @@ class PathStruct:
 @dc.dataclass
 class AllScalarsStruct:
     some_bool: bool = False
+    some_bytes: bytes = b"\x00\x01\x02"
     some_float: float = nan
     some_int: int = 11
     some_path: Path = "/path/to/nowhere"
@@ -286,9 +299,80 @@ class TestYamlTypedRead(unittest.TestCase,
                                 **options)
 
     @run_with_multiple_values(_all_typed_read_options())
+    def test_read_bytes(self, *, options):
+        # Using !!binary on a schema whose type is bytes.
+        cases = [
+            ("!!binary A3Rlc3Rfc3RyAw==", b"\x03test_str\x03"),
+            ("!!binary |\n  A3Rlc3Rfc3RyAw==", b"\x03test_str\x03"),
+            ("!!binary |\n  A3Rlc3Rf\n  c3RyAw====", b"\x03test_str\x03"),
+            ("!!binary", b""),
+        ]
+        for value, expected in cases:
+            data = f"value: {value}"
+            x = yaml_load_typed(schema=BytesStruct, data=data, **options)
+            self.assertEqual(x.value, expected)
+
+        # Malformed base64 encoding.
+        cases = [
+            ("A3Rfc3RyAw=", "Incorrect padding"),
+            ("A3Rfc*RyAw==", "Invalid base64-encoded string")]
+        for value,  error_regex in cases:
+            data = f"value: !!binary {value}"
+            with self.assertRaisesRegex(Exception, error_regex):
+                yaml_load_typed(schema=BytesStruct, data=data, **options)
+
+        # Assigning any other type to bytes is rejected.
+        cases = [
+            # String.
+            ("test string", "Expected.*bytes.*str"),
+            ("!!str 1234", "Expected.*bytes.*str"),
+            # Int.
+            ("12", "Expected.*bytes.*int"),
+            ("0x3", "Expected.*bytes.*int"),
+            # Pyyaml defect: 0o3 should be an int.
+            ("0o3", "Expected.*bytes.*str"),
+            # Pyyaml defect: 00:03 should be an int (value of 3).
+            ("00:03", "Expected.*bytes.*str"),
+            # Float.
+            ("1234.5", "Expected.*bytes.*float"),
+            (".inf", "Expected.*bytes.*float"),
+            ("00:03.3", "Expected.*bytes.*float"),
+            # Null
+            ("null", "Expected.*bytes.*NoneType"),
+            ("", "Expected.*bytes.*NoneType"),
+            # Bool
+            ("true", "Expected.*bytes.*bool"),
+        ]
+        for value, error_regex in cases:
+            data = f"value: {value}"
+            with self.assertRaisesRegex(RuntimeError, error_regex,
+                                        msg=f"For value '{value}'"):
+                x = yaml_load_typed(schema=BytesStruct, data=data, **options)
+                self.assertEqual(x.value, b"")
+
+        # Using !!binary and assigning it to non-bytes should throw.
+        cases = [
+            (b".inf", FloatStruct),
+            (b"inf", FloatStruct),
+            (b"1234.5", FloatStruct),
+            (b"1234", IntStruct),
+            (b"test/path", PathStruct),
+            (b"a string", StringStruct)
+        ]
+        for byte_value, schema in cases:
+            encoded = base64.b64encode(byte_value)
+            data = f"value: !!binary {encoded.decode('utf-8')}"
+            with self.assertRaisesRegex(RuntimeError,
+                                        "Expected a .* value .* instead got "
+                                        "yaml data of type <class 'bytes'>",
+                                        msg=f"value: {byte_value}"):
+                yaml_load_typed(schema=schema, data=data, **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
     def test_read_all_scalars(self, *, options):
         data = dedent("""
         some_bool: true
+        some_bytes: !!binary dGVzdCBzdHJpbmc=
         some_float: 101.0
         some_int: 102
         some_path: /alternative/path
@@ -296,6 +380,7 @@ class TestYamlTypedRead(unittest.TestCase,
         """)
         x = yaml_load_typed(schema=AllScalarsStruct, data=data, **options)
         self.assertEqual(x.some_bool, True)
+        self.assertEqual(x.some_bytes, b'test string')
         self.assertEqual(x.some_float, 101.0)
         self.assertEqual(x.some_int, 102)
         self.assertEqual(x.some_path, Path("/alternative/path"))
@@ -810,6 +895,17 @@ class TestYamlTypedWrite(unittest.TestCase):
         ]
         for value, expected_str in cases:
             actual_doc = yaml_dump_typed(StringStruct(value=value))
+            expected_doc = f"value: {expected_str}\n"
+            self.assertEqual(actual_doc, expected_doc)
+
+    def test_write_bytes(self):
+        cases = [
+            (b"", "!!binary \"\""),
+            (b"all ascii", "!!binary |\n  YWxsIGFzY2lp"),
+            (b"other\x03\xffstuff", "!!binary |\n  b3RoZXID/3N0dWZm")
+        ]
+        for value, expected_str in cases:
+            actual_doc = yaml_dump_typed(BytesStruct(value=value))
             expected_doc = f"value: {expected_str}\n"
             self.assertEqual(actual_doc, expected_doc)
 

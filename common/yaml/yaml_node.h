@@ -57,9 +57,13 @@ enum class NodeType {
   kMapping,
 };
 
-/* Denotes one of the "JSON Schema" tags.
-Note that this schema incorporates the "failsafe schema" by reference.
-See https://yaml.org/spec/1.2.2/#json-schema. */
+/* Denotes one of the "Json Schema" tags. This includes:
+  - Generic string from the failsafe schema
+    (https://yaml.org/spec/1.2.2/#failsafe-schema)
+  - null, bool, int and float from the json schema
+    (https://yaml.org/spec/1.2.2/#json-schema)
+  - and binary from the the set of "explicit tags"
+    (https://yaml.org/spec/1.2.2/#tags). */
 enum class JsonSchemaTag {
   // https://yaml.org/spec/1.2.2/#null
   kNull,
@@ -71,6 +75,8 @@ enum class JsonSchemaTag {
   kFloat,
   // https://yaml.org/spec/1.2.2/#generic-string
   kStr,
+  // https://yaml.org/spec/1.2.2/#tags
+  kBinary,
 };
 
 /* Data type that represents a YAML node.  A Node can hold one of three
@@ -170,6 +176,9 @@ class Node final {
 
   // https://yaml.org/spec/1.2.2/#generic-string
   static constexpr std::string_view kTagStr{"tag:yaml.org,2002:str"};
+
+  // https://yaml.org/type/binary.html
+  static constexpr std::string_view kTagBinary{"tag:yaml.org,2002:binary"};
 
   /* Sets the filename where this Node was read from. A nullopt indicates that
   the filename is not known. */
