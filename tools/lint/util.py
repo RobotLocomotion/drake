@@ -32,10 +32,12 @@ def find_all_sources(workspace_name):
         with open(manifest, "r") as infile:
             lines = infile.readlines()
         for one_line in lines:
-            if not one_line.startswith(workspace_name + "/.bazelproject"):
+            if not one_line.endswith("/.bazelproject\n"):
                 continue
             _, source_sentinel = one_line.split(" ")
             workspace_root = os.path.dirname(os.path.realpath(source_sentinel))
+            if not workspace_root.endswith("/" + workspace_name):
+                continue
             assert workspace_root.startswith("/"), workspace_root
             assert os.path.isdir(workspace_root), workspace_root
             break

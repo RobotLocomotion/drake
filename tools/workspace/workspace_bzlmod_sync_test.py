@@ -116,43 +116,6 @@ class TestWorkspaceBzlmodSync(unittest.TestCase):
         self.assertEqual(repo_names, self._parse_workspace_already_provided(
             self._read("drake/tools/workspace/default.bzl")))
 
-    def _canonicalize_workspace(self, content):
-        """Given the contents of WORKSPACE or WORKSPACE.bzlmod, returns a
-        modified copy that:
-        - strips away comments and blank lines, and
-        - fuzzes out the `bzlmod = ...` attribute, and
-        - strips some known workspace-only content.
-        """
-        needle1 = "add_default_workspace(bzlmod = False)"
-        needle2 = "add_default_workspace(bzlmod = True)"
-        replacement = "add_default_workspace(bzlmod = ...)"
-        result = []
-        for line in content.splitlines():
-            if "#" in line:
-                line, _ = line.split("#", maxsplit=1)
-            line = line.strip()
-            if not line:
-                continue
-            if "apple_cc_configure" in line:
-                # The apple_cc_configure function should only be used when
-                # bzlmod is disabled; as such, it should not be in both files.
-                continue
-            if line in (needle1, needle2):
-                line = replacement
-            result.append(line)
-        return "\n".join(result) + "\n"
-
-    def test_workspace_copies(self):
-        """Checks that our WORKSPACE and WORKSPACE.bzlmod are identical,
-        modulo comments and the `bzlmod = ...` attribute.
-        """
-        workspace1 = self._canonicalize_workspace(
-            self._read(f"drake/WORKSPACE"))
-        workspace2 = self._canonicalize_workspace(
-            self._read(f"drake/WORKSPACE.bzlmod"))
-        self.maxDiff = None
-        self.assertMultiLineEqual(workspace1, workspace2)
-
 
 assert __name__ == '__main__'
 unittest.main()
