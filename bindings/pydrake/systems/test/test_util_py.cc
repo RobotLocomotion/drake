@@ -1,7 +1,11 @@
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/vector_system.h"
 
@@ -15,6 +19,80 @@ using systems::Simulator;
 
 namespace pydrake {
 namespace {
+
+template <typename T>
+class DiagramBuilderTestAdversary final : public systems::DiagramBuilder<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramBuilderTestAdversary);
+
+  DiagramBuilderTestAdversary() = default;
+  // The int-accepting constructor will be annotated in the wrapper.
+  explicit DiagramBuilderTestAdversary(int) {}
+  ~DiagramBuilderTestAdversary() final = default;
+};
+
+// the Arbitrary type exists to test annotations pointing to a wrong-typed
+// argument.
+class Arbitrary {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Arbitrary);
+
+  Arbitrary() = default;
+  ~Arbitrary() = default;
+};
+
+void DeclareBuilderLifeSupportTestHelpers(py::module m) {
+  // the Arbitrary type exists to test annotations pointing to a wrong-typed
+  // argument.
+  py::class_<Arbitrary>(m, "Arbitrary").def(py::init<>());
+
+  type_visit(
+      [&m](auto dummy) {
+        using systems::DiagramBuilder;
+        using T = decltype(dummy);
+        // Use this in tests to approximate a mixed-language program that
+        // populates a DiagramBuilder in Python, but calls the Build() step from
+        // C++.
+        m.def("do_lifetime_oblivious_build_step",
+            [](DiagramBuilder<T>* builder) { return builder->Build(); });
+
+        // Use this in tests to probe the failure modes of programming errors
+        // with builder life support annotations.
+        using internal::builder_life_support_stash;
+        DefineTemplateClassWithDefault<DiagramBuilderTestAdversary<T>,
+            DiagramBuilder<T>>(m, "DiagramBuilderTestAdversary",
+            GetPyParam<T>(), "for testing", std::nullopt, py::dynamic_attr())
+            .def(py::init<>())
+            // The int-accepting constructor exists to test init-time use of
+            // argument index 1.
+            .def(py::init<int>(), builder_life_support_stash<T, 1>())
+            .def(
+                "StashSelf", [](DiagramBuilderTestAdversary<T>*) { return; },
+                builder_life_support_stash<T, 1>())
+            .def(
+                "StashReturnedSelf",
+                [](DiagramBuilderTestAdversary<T>* self) { return self; },
+                builder_life_support_stash<T, 0>())
+            .def(
+                "StashReturnedNull",
+                [](DiagramBuilderTestAdversary<T>*) { return nullptr; },
+                builder_life_support_stash<T, 0>())
+            .def(
+                "StashBadIndex",
+                [](DiagramBuilderTestAdversary<T>*) { return; },
+                builder_life_support_stash<T, 2>())
+            .def(
+                "StashWrongType",
+                [](DiagramBuilderTestAdversary<T>*, Arbitrary*) { return; },
+                builder_life_support_stash<T, 2>())
+            // Use this in case it is needed to undo any test-only immortality
+            // problems.
+            .def("Abandon", [](DiagramBuilderTestAdversary<T>* self) {
+              internal::BuilderLifeSupport<T>::abandon(self);
+            });
+      },
+      CommonScalarPack{});
+}
 
 using T = double;
 
@@ -55,7 +133,6 @@ class MyVector2 : public BasicVector<T> {
     return new MyVector2(this->get_value());
   }
 };
-
 }  // namespace
 
 PYBIND11_MODULE(test_util, m) {
@@ -145,6 +222,8 @@ PYBIND11_MODULE(test_util, m) {
         system.CalcOutput(*context, output.get());
         return output;
       });
+
+  DeclareBuilderLifeSupportTestHelpers(m);
 }
 
 }  // namespace pydrake

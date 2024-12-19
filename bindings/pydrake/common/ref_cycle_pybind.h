@@ -10,8 +10,8 @@ namespace internal {
 
 /* pydrake::internal::ref_cycle is a custom call policy for pybind11.
 
-   For an overview of other call policies, See
-   https://pybind11.readthedocs.io/en/stable/advanced/functions.html#additional-call-policies
+  For an overview of other call policies, See
+  https://pybind11.readthedocs.io/en/stable/advanced/functions.html#additional-call-policies
 
   `ref_cycle` creates a reference count cycle that Python's cyclic garbage
   collection can find and collect, once the cycle's objects are no longer
