@@ -44,13 +44,6 @@ alias(
 
 # === config_setting rules ===
 
-# When this is set, a Drake build will promote some warnings to errors.
-# See drake/tools/cc_toolchain/bazel.rc for details.
-config_setting(
-    name = "drake_werror",
-    values = {"define": "DRAKE_WERROR=ON"},
-)
-
 config_setting(
     name = "with_gurobi",
     values = {"define": "WITH_GUROBI=ON"},
