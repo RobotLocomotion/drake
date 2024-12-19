@@ -239,17 +239,17 @@ std::string RotationalInertia<T>::GetInvalidityReport() const {
 }
 
 template <typename T>
-void RotationalInertia<T>::ThrowNotPhysicallyValid(
+void RotationalInertia<T>::ThrowIfNotPhysicallyValidImpl(
     const char* func_name) const {
-  std::string error_message = fmt::format(
-      "{}(): The rotational inertia\n"
-      "{}did not pass the test CouldBePhysicallyValid().",
-      func_name, *this);
-
-  // Provide additional information if a moment of inertia is non-negative
-  // or if moments of inertia do not satisfy the triangle inequality.
-  error_message += GetInvalidityReport();
-  throw std::logic_error(error_message);
+  DRAKE_DEMAND(func_name != nullptr);
+  const std::string reason_for_invalidity = GetInvalidityReport();
+  if (!reason_for_invalidity.empty()) {
+    const std::string error_message = fmt::format(
+        "{}(): The rotational inertia\n"
+        "{}did not pass the test CouldBePhysicallyValid().{}",
+        func_name, *this, reason_for_invalidity);
+    throw std::logic_error(error_message);
+  }
 }
 
 // TODO(Mitiguy) Consider using this code (or code similar to this) to write

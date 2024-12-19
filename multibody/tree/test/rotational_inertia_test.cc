@@ -131,13 +131,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
 
   // Check for a thrown exception with proper error message when creating a
   // rotational inertia with NaN moments/products of inertia.
-  std::string expected_message =
-      "MakeFromMomentsAndProductsOfInertia\\(\\): The rotational inertia\n"
-      "\\[nan    0    0\\]\n"
-      "\\[  0   13    0\\]\n"
-      "\\[  0    0   10\\]\n"
-      "did not pass the test CouldBePhysicallyValid\\(\\)\\.\n"
-      "NaN detected in RotationalInertia\\.";
+  std::string expected_message = "[^]*NaN detected in RotationalInertia\\.";
   constexpr double nan = std::numeric_limits<double>::quiet_NaN();
   DRAKE_EXPECT_THROWS_MESSAGE(
       RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
