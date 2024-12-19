@@ -31,7 +31,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     # Precede napoleon, since it's greedy on `autodoc-skip-member`
-    'drake.doc.pydrake.pydrake_sphinx_extension',
+    'doc.pydrake.pydrake_sphinx_extension',
     'sphinx.ext.napoleon',
 ]
 
