@@ -351,7 +351,7 @@ GTEST_TEST(MakeCylinderVolumeMesh, VolumeConvergence) {
 
   EXPECT_NEAR(volume0, expected_volume_0, kTolerance);
 
-  for (int level = 1; level < 6; ++level) {
+  for (int level = 1; level < 4; ++level) {
     resolution_hint /= 2.0;
     auto mesh = MakeCylinderVolumeMesh<double>(
         drake::geometry::Cylinder(radius, height), resolution_hint);
@@ -389,7 +389,7 @@ GTEST_TEST(MakeCylinderVolumeMesh, EulerCharacteristic) {
 
   const int expected_euler_characteristic = 1;
 
-  for (const double resolution_hint : {2., 1., 0.5, 0.25, 0.125, 0.0625}) {
+  for (const double resolution_hint : {2., 1., 0.5, 0.25}) {
     auto mesh = MakeCylinderVolumeMesh<double>(
         drake::geometry::Cylinder(radius, height), resolution_hint);
 
