@@ -35,6 +35,9 @@ build:MinSizeRel --compilation_mode=opt --copt=-Os --host_copt=-Os
 build:Release --compilation_mode=opt
 build:RelWithDebInfo --compilation_mode=opt --fission=no --copt=-g --host_copt=-g
 
+# Pass along the compiler version.
+build --@drake//tools/cc_toolchain:compiler_major=@DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR@
+
 # Match CMAKE_BUILD_TYPE as well as the WITH_FOO customizations.
 build @BAZEL_CONFIG@
 
