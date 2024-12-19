@@ -11,17 +11,36 @@ namespace systems {
 namespace controllers {
 namespace {
 
+using Eigen::Matrix2d;
 using Eigen::Vector2d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using multibody::MultibodyPlant;
 
 GTEST_TEST(JointStiffnessControllerTest, SimpleDoublePendulum) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="upper_arm" pos="0 0 2">
+      <joint name="shoulder" type="hinge" axis="0 1 0" damping="0.1"/>
+      <geom name="upper_arm" fromto="0 0 0 0 0 1" size="0.05" type="capsule" mass="1"/>
+      <body name="lower_arm" pos="0 0 1">
+        <joint name="elbow" type="hinge" axis="0 1 0" damping="0.1"/>
+        <geom name="lower_arm" fromto="0 0 0 0 0 1" size="0.049" type="capsule" mass="1"/>
+      </body>
+    </body>
+  </worldbody>
+   <actuator>
+    <!-- intentionally list these in reverse order -->
+    <motor name="elbow" joint="elbow"/>
+    <motor name="shoulder" joint="shoulder"/>
+  </actuator>
+</mujoco>
+)""";
+
   DiagramBuilder<double> builder;
   auto plant = builder.AddSystem<MultibodyPlant>(0.0);
-  multibody::Parser(plant).AddModelsFromUrl(
-      "package://drake/multibody/benchmarks/acrobot/double_pendulum.urdf");
-  plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("base"));
+  multibody::Parser(plant).AddModelsFromString(xml, ".xml");
   plant->Finalize();
 
   Vector2d kp{0.3, 0.4}, kd{0.1, 0.2};
@@ -48,14 +67,25 @@ GTEST_TEST(JointStiffnessControllerTest, SimpleDoublePendulum) {
   // We expect the controller to cancel gravity and damping, and add the
   // stiffness terms.
   const double kDamping = 0.1;  // must match double_pendulum.urdf
-  VectorXd tau_expected = -plant->CalcGravityGeneralizedForces(plant_context) +
-                          kDamping * x.tail<2>() +
-                          (kp.array() * (x_d.head<2>() - x.head<2>()).array() +
-                           kd.array() * (x_d.tail<2>() - x.tail<2>()).array())
-                              .matrix();
-  VectorXd tau = controller->get_output_port().Eval(controller_context);
-
+  const VectorXd tau_expected =
+      -plant->CalcGravityGeneralizedForces(plant_context) +
+      kDamping * x.tail<2>() +
+      (kp.array() * (x_d.head<2>() - x.head<2>()).array() +
+       kd.array() * (x_d.tail<2>() - x.tail<2>()).array())
+          .matrix();
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const VectorXd tau =
+      controller->get_output_port_generalized_force().Eval(controller_context);
   EXPECT_TRUE(CompareMatrices(tau, tau_expected, 1e-14));
+#pragma GCC diagnostic pop
+
+  const Matrix2d Binv =
+      (Matrix2d() << 0, 1, 1, 0)
+          .finished();  // actuators were registered in reverse order.
+  const VectorXd u =
+      controller->get_output_port_actuation().Eval(controller_context);
+  EXPECT_TRUE(CompareMatrices(u, Binv * tau_expected, 1e-14));
 }
 
 GTEST_TEST(JointStiffnessControllerTest, ScalarConversion) {

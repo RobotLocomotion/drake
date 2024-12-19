@@ -150,26 +150,33 @@ PYBIND11_MODULE(controllers, m) {
   {
     using Class = JointStiffnessController<double>;
     constexpr auto& cls_doc = doc.JointStiffnessController;
-    py::class_<Class, LeafSystem<double>>(
-        m, "JointStiffnessController", cls_doc.doc)
-        .def(py::init<const MultibodyPlant<double>&,
-                 const Eigen::Ref<const Eigen::VectorXd>&,
-                 const Eigen::Ref<const Eigen::VectorXd>&>(),
-            py::arg("plant"), py::arg("kp"), py::arg("kd"),
-            // Keep alive, reference: `self` keeps `robot` alive.
-            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
+    py::class_<Class, LeafSystem<double>> cls(
+        m, "JointStiffnessController", cls_doc.doc);
+    cls.def(py::init<const MultibodyPlant<double>&,
+                const Eigen::Ref<const Eigen::VectorXd>&,
+                const Eigen::Ref<const Eigen::VectorXd>&>(),
+           py::arg("plant"), py::arg("kp"), py::arg("kd"),
+           // Keep alive, reference: `self` keeps `robot` alive.
+           py::keep_alive<1, 2>(), cls_doc.ctor.doc)
         .def("get_input_port_estimated_state",
             &Class::get_input_port_estimated_state, py_rvp::reference_internal,
             cls_doc.get_input_port_estimated_state.doc)
         .def("get_input_port_desired_state",
             &Class::get_input_port_desired_state, py_rvp::reference_internal,
             cls_doc.get_input_port_desired_state.doc)
-        .def("get_output_port_generalized_force",
-            &Class::get_output_port_generalized_force,
-            py_rvp::reference_internal,
-            cls_doc.get_output_port_generalized_force.doc)
+        .def("get_output_port_actuation", &Class::get_output_port_actuation,
+            py_rvp::reference_internal, cls_doc.get_output_port_actuation.doc)
         .def("get_multibody_plant", &Class::get_multibody_plant,
             py_rvp::reference_internal, cls_doc.get_multibody_plant.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("get_output_port_generalized_force",
+        WrapDeprecated(cls_doc.get_output_port_generalized_force.doc_deprecated,
+            &Class::get_output_port_generalized_force),
+        py_rvp::reference_internal,
+        cls_doc.get_output_port_generalized_force.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 
   {
