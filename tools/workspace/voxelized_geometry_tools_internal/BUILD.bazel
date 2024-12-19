@@ -3,7 +3,7 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 test_suite(
     name = "test_suite",
     tests = [
-        "@voxelized_geometry_tools//:test_suite",
+        "@voxelized_geometry_tools_internal//:test_suite",
     ],
 )
 

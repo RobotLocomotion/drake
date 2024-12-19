@@ -404,7 +404,7 @@ drake_cc_library(
         "//systems/framework:system",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 

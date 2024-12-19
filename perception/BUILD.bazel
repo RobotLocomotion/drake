@@ -40,7 +40,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         "//common:unused",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@nanoflann_internal//:nanoflann",
     ],
 )
@@ -97,7 +97,7 @@ drake_cc_googletest(
         "//common:random",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -111,7 +111,7 @@ drake_cc_googletest(
         "//common:random",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 

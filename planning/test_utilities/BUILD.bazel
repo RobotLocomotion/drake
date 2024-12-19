@@ -30,7 +30,7 @@ drake_cc_library(
         "//multibody/parsing",
         "//planning:collision_avoidance",
         "//planning:collision_checker",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@gtest//:without_main",
     ],
 )

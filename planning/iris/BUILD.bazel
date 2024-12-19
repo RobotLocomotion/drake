@@ -34,7 +34,7 @@ drake_cc_library(
         "//solvers:mosek_solver",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -54,7 +54,7 @@ drake_cc_library(
         "//solvers:solve",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
