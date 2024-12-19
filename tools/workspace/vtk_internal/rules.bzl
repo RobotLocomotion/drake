@@ -38,6 +38,7 @@ def _vtk_cc_module_impl(
         cmake_defines = [],
         cmake_undefines = [],
         defines_extra = [],
+        includes_extra = [],
         strip_include_prefix_extra = "",
         copts_extra = [],
         linkopts_extra = [],
@@ -149,8 +150,8 @@ def _vtk_cc_module_impl(
             name = objc_lib_name,
             non_arc_srcs = srcs_objc_non_arc,
             hdrs = hdrs,
-            includes = [subdir],
             defines = defines_extra,
+            includes = [subdir] + includes_extra,
             copts = copts,
             linkopts = linkopts,
             deps = deps + [
@@ -174,8 +175,9 @@ def _vtk_cc_module_impl(
         name = module_name,
         srcs = srcs,
         hdrs = hdrs,
-        strip_include_prefix = subdir + strip_include_prefix_extra,
         defines = defines_extra,
+        includes = includes_extra,
+        strip_include_prefix = subdir + strip_include_prefix_extra,
         copts = copts,
         linkopts = linkopts,
         features = features,
@@ -240,6 +242,7 @@ def vtk_cc_module(
         cmake_undefines: When generating a header file, sets these definitions
             to be undefined. See cmake_configure_file() for details.
         defines_extra: Adds `defines = []` to the cc_library.
+        includes_extra: Adds `includes = []` to the cc_library.
         strip_include_prefix_extra: Appends the given string after the default
             strip_include_prefix (i.e., the subdir name).
         copts_extra: Adds `copts = []` to the cc_library.
