@@ -4882,7 +4882,7 @@ GTEST_TEST(MultibodyPlantTest, AutoDiffAcrobotParameters) {
 }
 
 GTEST_TEST(MultibodyPlantTests, GetConstraintIds) {
-  // Set up a plant with 3 constraints with arbitrary parameters.
+  // Set up a plant with each constraint type with arbitrary parameters.
   MultibodyPlant<double> plant(0.01);
 
   EXPECT_EQ(plant.GetConstraintIds().size(), 0);

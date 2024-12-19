@@ -5,6 +5,7 @@
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h"
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_cost.h"
 #include "drake/multibody/inverse_kinematics/com_in_polyhedron_constraint.h"
@@ -165,6 +166,11 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         .def("get_mutable_context", &Class::get_mutable_context,
             py_rvp::reference_internal, cls_doc.get_mutable_context.doc);
   }
+
+  m.def("AddMultibodyPlantConstraints", &AddMultibodyPlantConstraints,
+      py::arg("plant"), py::arg("q"), py::arg("prog"), py::arg("plant_context"),
+      doc.AddMultibodyPlantConstraints.doc);
+
   {
     using Class = AngleBetweenVectorsConstraint;
     constexpr auto& cls_doc = doc.AngleBetweenVectorsConstraint;
