@@ -174,6 +174,7 @@ PYBIND11_MODULE(lcm, m) {
             py::keep_alive<1, 3>(), cls_doc.Add.doc);
   }
 
+  // XXX probably needs annotation
   m.def("ApplyLcmBusConfig",
       py::overload_cast<
           const std::map<std::string, std::optional<DrakeLcmParams>>&,
@@ -246,6 +247,7 @@ PYBIND11_MODULE(lcm, m) {
     constexpr auto& cls_doc = doc.LcmScopeSystem;
     py::class_<Class, LeafSystem<double>>(m, "LcmScopeSystem")
         .def(py::init<int>(), py::arg("size"), cls_doc.ctor.doc)
+        // XXX probably needs annotation
         .def_static(
             "AddToBuilder",
             [](systems::DiagramBuilder<double>* builder,

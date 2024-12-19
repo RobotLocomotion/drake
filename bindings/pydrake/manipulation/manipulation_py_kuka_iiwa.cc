@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
@@ -180,9 +181,9 @@ void DefineManipulationKukaIiwa(py::module m) {
             py::arg("controller_plant"), py::arg("ext_joint_filter_tau"),
             py::arg("desired_iiwa_kp_gains"), py::arg("control_mode"),
             // Keep alive, ownership: `return` keeps `builder` alive.
-            py::keep_alive<0, 1>(),
+            internal::ref_cycle<0, 1>(),
             // Keep alive, reference: `builder` keeps `controller_plant` alive.
-            py::keep_alive<1, 4>(), py_rvp::reference,
+            internal::ref_cycle<1, 4>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc);
   }
 
@@ -198,7 +199,7 @@ void DefineManipulationKukaIiwa(py::module m) {
         py::arg("desired_iiwa_kp_gains") = std::nullopt,
         py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
         // Keep alive, reference: `builder` keeps `controller_plant` alive.
-        py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc);
+        internal::ref_cycle<5, 3>(), doc.BuildIiwaControl.doc);
   }
 }
 
