@@ -25,9 +25,9 @@ namespace internal {
  are equal.
 
  The first linear function f₀:ℝ³→ ℝ is specified by the tetrahedron index
- `element0` into the piecewise-linear field `field_M`, expressed in frame M.
+ `element0` into the piecewise-linear field `field0_M`, expressed in frame M.
  The second function f₁:ℝ³→ ℝ is specified by the tetrahedron index
- `element1` into the piecewise-linear field `field_N`, expressed in frame N.
+ `element1` into the piecewise-linear field `field1_N`, expressed in frame N.
 
  @param[in] X_MN Relative pose of frame N in frame M.
 
@@ -45,16 +45,16 @@ namespace internal {
 
  @note The equilibrium plane may or may not intersect the tetrahedra.
 
- @throw std::runtime_error if `field_M` or `field_N` has no gradient
+ @throw std::runtime_error if `field0_M` or `field1_N` has no gradient
  calculated.
 
  @tparam T A valid Eigen scalar.
  */
 template <typename T>
 bool CalcEquilibriumPlane(int element0,
-                          const VolumeMeshFieldLinear<double, double>& field_M,
+                          const VolumeMeshFieldLinear<double, double>& field0_M,
                           int element1,
-                          const VolumeMeshFieldLinear<double, double>& field_N,
+                          const VolumeMeshFieldLinear<double, double>& field1_N,
                           const math::RigidTransform<T>& X_MN,
                           Plane<T>* plane_M);
 
@@ -72,15 +72,17 @@ bool CalcEquilibriumPlane(int element0,
  the intersecting polygon expressed in frame M. Its unit normal vector in CCW
  winding order convention is in the same direction as the plane's normal vector.
 
-                      `faces` is a sequence of indices of faces of element0 and
-                      element1 that intersect equilibrium_plane_M to produce
-                      polygon_M. faces[i] contains the index of the face that
-                      produced the edge (polygon_M[i], polygon_M[i+1]).
-                      The values of `faces` are encoded to identify whether the
-                      value corresponds to a face of element0 or element1. If
-                      faces[i] ∈ [0, 3], then faces[i] is the index of a face of
-                      element0. If faces[i] ∈ [4, 7], then faces[i] - 4 is the
-                      index of a face of element1.
+ `faces` is a sequence of local indices of faces of element0 and element1, thus
+ polygon_M.size() == faces.size. Each edge of the polygon is associated with one
+ triangular face of a tetrahedron because the polygon is the common intersection
+ of the equilibrium plane with the eight halfspaces from all faces of the two
+ tetrahedra. Some halfspaces are redundant and their corresponding face indices
+ do not show up in `faces`. faces[i] contains the index of the face that
+ produced the edge (polygon_M[i], polygon_M[i+1]). The values of `faces` are
+ encoded to identify whether the value corresponds to a face of element0 or
+ element1. If faces[i] ∈ [0, 3], then faces[i] is the index of a face of
+ element0. If faces[i] ∈ [4, 7], then faces[i] - 4 is the index of a face of
+ element1.
 
  @tparam T A valid Eigen scalar.
  */
@@ -101,7 +103,7 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
  @param nhat_M       The normal to test against, expressed in the same frame M
                      of the piecewise linear field.
  @param tetrahedron  The index of the tetrahedron in the mesh of the field.
- @param field_M      The piecewise linear field expressed in frame M.
+ @param field0_M      The piecewise linear field expressed in frame M.
  @pre  `nhat_M` is unit length.
  @return `true` if the angle between `nhat_M` and the field gradient vector
          lies within a hard-coded tolerance.
@@ -109,7 +111,7 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
 template <typename T>
 bool IsPlaneNormalAlongPressureGradient(
     const Vector3<T>& nhat_M, int tetrahedron,
-    const VolumeMeshFieldLinear<double, double>& field_M);
+    const VolumeMeshFieldLinear<double, double>& field0_M);
 
 /* %VolumeIntersector performs an intersection algorithm between two
  tetrahedral meshes with scalar fields to get a contact surface, on which
@@ -155,14 +157,14 @@ class VolumeIntersector {
    the meshes. The output surface mesh is posed in frame M of the first
    tetrahedral mesh.
 
-   @param[in] field_M  The first geometry represented as a tetrahedral mesh with
-                       scalar field, expressed in frame M.
+   @param[in] field0_M  The first geometry represented as a tetrahedral mesh
+   with scalar field, expressed in frame M.
    @param[in] bvh_M    The bounding volume hierarchy built on the tetrahedral
-                       mesh of `field_M`.
-   @param[in] field_N  The second geometry represented as a tetrahedral mesh
+                       mesh of `field0_M`.
+   @param[in] field1_N  The second geometry represented as a tetrahedral mesh
                        with scalar field, expressed in frame N.
    @param[in] bvh_N    The bounding volume hierarchy built on the tetrahedral
-                       mesh of `field_N`.
+                       mesh of `field1_N`.
    @param[in] X_MN     The pose of frame N in frame M.
    @param[out] surface_M  The output mesh of the contact surface between
                           the two geometries expressed in frame M. The surface
@@ -173,21 +175,20 @@ class VolumeIntersector {
                         frame M.
    @note  The output surface mesh may have duplicate vertices.
    */
-  void IntersectFields(const VolumeMeshFieldLinear<double, double>& field_M,
+  void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
                        const Bvh<BvType, VolumeMesh<double>>& bvh_M,
-                       const VolumeMeshFieldLinear<double, double>& field_N,
+                       const VolumeMeshFieldLinear<double, double>& field1_N,
                        const Bvh<BvType, VolumeMesh<double>>& bvh_N,
                        const math::RigidTransform<T>& X_MN,
                        std::unique_ptr<MeshType>* surface_M,
                        std::unique_ptr<FieldType>* e_M);
 
-  /* Creates the mesh and the scalar field on the contact surface between two
-   tetrahedral meshes with scalar fields using a BVH of the surface triangles of
-   the volume meshes and neighbor traversal. The output surface mesh is posed in
-   frame M of the first tetrahedral mesh.
+  /* Overload of the above version using a BVH of the surface triangles of
+   the volume meshes and neighbor traversal. It takes the same parameters
+   as the above version except that the BVHs are associated with the surface
+   triangles, and it requests these extra parameters to accelerate
+   computation:
 
-   @param[in] field_M  The first geometry represented as a tetrahedral mesh with
-                       scalar field, expressed in frame M.
    @param[in] bvh_M    The bounding volume hierarchy built on the surface mesh
                        of `field_M`.
    @param[in] tri_to_tet_M     A mapping from surface triangle indices in the
@@ -195,8 +196,6 @@ class VolumeIntersector {
                                element indices in the volume mesh of M.
    @param[in] mesh_topology_M  A representation of the topology of the volume
                                mesh M. Used to access neighbor adjacencies.
-   @param[in] field_N  The second geometry represented as a tetrahedral mesh
-                       with scalar field, expressed in frame N.
    @param[in] bvh_N    The bounding volume hierarchy built on the surface mesh
                        of `field_N`.
    @param[in] tri_to_tet_N     A mapping from surface triangle indices in the
@@ -204,21 +203,14 @@ class VolumeIntersector {
                                element indices in the volume mesh of N.
    @param[in] mesh_topology_N  A representation of the topology of the volume
                                mesh N. Used to access neighbor adjacencies.
-   @param[in] X_MN     The pose of frame N in frame M.
-   @param[out] surface_M  The output mesh of the contact surface between
-                          the two geometries expressed in frame M. The surface
-                          normal is in the direction of increasing the
-                          difference field0 - field1. Usually it is the
-                          direction of increasing field0 and decreasing field1.
-   @param[out] e_M      The scalar field on the contact surface, expressed in
-                        frame M.
+
    @note  The output surface mesh may have duplicate vertices.
    */
-  void IntersectFields(const VolumeMeshFieldLinear<double, double>& field_M,
+  void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
                        const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_M,
                        const std::vector<TetFace>& tri_to_tet_M,
                        const VolumeMeshTopology& mesh_topology_M,
-                       const VolumeMeshFieldLinear<double, double>& field_N,
+                       const VolumeMeshFieldLinear<double, double>& field1_N,
                        const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
                        const std::vector<TetFace>& tri_to_tet_N,
                        const VolumeMeshTopology& mesh_topology_N,
@@ -240,9 +232,9 @@ class VolumeIntersector {
   /* Internal function to process a possible contact between two tetrahedra
    in the meshes with scalar fields.
 
-   @param[in] field_M  The first tetrahedral mesh with scalar field, expressed
+   @param[in] field0_M  The first tetrahedral mesh with scalar field, expressed
                         in frame M.
-   @param[in] field_N  The second tetrahedral mesh with scalar field,
+   @param[in] field1_N  The second tetrahedral mesh with scalar field,
                         expressed in frame N.
    @param[in] X_MN      The pose of frame N in frame M.
    @param[in] R_NM      The rotation matrix of frame N in frame M. It is the
@@ -261,8 +253,8 @@ class VolumeIntersector {
             returned vector will be empty.
   */
   std::vector<int> CalcContactPolygon(
-      const VolumeMeshFieldLinear<double, double>& field_M,
-      const VolumeMeshFieldLinear<double, double>& field_N,
+      const VolumeMeshFieldLinear<double, double>& field0_M,
+      const VolumeMeshFieldLinear<double, double>& field1_N,
       const math::RigidTransform<T>& X_MN, const math::RotationMatrix<T>& R_NM,
       int tet0, int tet1, MeshBuilder* builder_M);
 
@@ -299,7 +291,7 @@ class HydroelasticVolumeIntersector {
   @param[in] X_WN            The pose of the second geometry in World.
   @param[in] use_topology    If true, uses the version of
                              VolumeIntersector::IntersectFields() that makes use
-                             of the topology of the compliant geometries.
+                             of the topology of the geometry's surfaces.
   @param[out] contact_surface_W   The contact surface, whose type (e.g.,
                          triangles or polygons) depends on the type parameter
                          MeshBuilder. It is expressed in World frame.

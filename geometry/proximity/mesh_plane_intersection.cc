@@ -139,16 +139,11 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     if (distance[i] > T(0)) intersection_code |= 1 << i;
   }
 
-  const std::array<int, 4>& intersected_edges =
-      kMarchingTetsEdgeTable[intersection_code];
-  const std::array<int, 4>& intersected_faces =
-      kMarchingTetsFaceTable[intersection_code];
-
   // No intersecting edges --> no intersection.
-  if (intersected_edges[0] == -1) return;
+  if (kMarchingTetsEdgeTable[intersection_code][0] == -1) return;
 
   for (int e = 0; e < 4; ++e) {
-    const int edge_index = intersected_edges[e];
+    const int edge_index = kMarchingTetsEdgeTable[intersection_code][e];
     if (edge_index == -1) break;
     const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
     const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
@@ -166,7 +161,7 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
     polygon_vertices->push_back(p_MC);
     if (faces != nullptr) {
-      faces->push_back(intersected_faces[e]);
+      faces->push_back(kMarchingTetsFaceTable[intersection_code][e]);
     }
     if (cut_edges != nullptr) {
       const SortedPair<int> mesh_edge{v0, v1};

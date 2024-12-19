@@ -105,6 +105,11 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
   SliceTetrahedronWithPlane(element0, mesh0_M, equilibrium_plane_M, polygon_M,
                             nullptr /* cut_edges */, faces);
 
+  RemoveNearlyDuplicateVertices(polygon_M);
+  if (polygon_M->size() < 3) {
+    return {};
+  }
+
   // Positions of vertices of tetrahedral element1 in mesh1_N expressed in
   // frame M.
   Vector3<T> p_MVs[4];
@@ -123,6 +128,9 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
     out_M->clear();
     faces_out->clear();
 
+    // 'face' corresponds the the triangle formed by {0, 1, 2, 3} - {face}
+    // so any of (face+1)%4, (face+2)%4, (face+3)%4 are candidates for a
+    // point on the face's plane. We arbitrarily choose (face + 1) % 4.
     const Vector3<T>& p_MA = p_MVs[(face + 1) % 4];
     const Vector3<T> triangle_outward_normal_M =
         X_MN.rotation() * -mesh1_N.inward_normal(element1, face).cast<T>();
@@ -137,7 +145,8 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
     // Walk the vertices checking for intersecting edges.
     for (int i = 0; i < size; ++i) {
       int j = (i + 1) % size;
-      // If the edge out of vertex i is inside, include vertex i and face i
+      // If the edge out of vertex i is at least partially inside, include
+      // vertex i and face i.
       if (distances[i] <= 0) {
         out_M->push_back((*in_M)[i]);
         faces_out->push_back((*faces_in)[i]);
@@ -152,10 +161,10 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
           faces_out->push_back(face + 4);
         }
       } else if (distances[j] <= 0) {
-        // Vertex i is outside, but vertex j is inside. We've discovered another
-        // intersection. Add the intersection point, this point is still on the
-        // edge created by faces_in[i], so include that face for the edge
-        // starting at the intersection point.
+        // Vertex i is outside, but vertex j is at least partially inside. We've
+        // discovered another intersection. Add the intersection point, this
+        // point is still on the edge created by faces_in[i], so include that
+        // face for the edge starting at the intersection point.
         const T wa = distances[j] / (distances[j] - distances[i]);
         const T wb = T(1.0) - wa;
         out_M->push_back(wa * (*in_M)[i] + wb * (*in_M)[j]);
@@ -164,6 +173,11 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
     }
     std::swap(in_M, out_M);
     std::swap(faces_in, faces_out);
+
+    // If we've clipped off the entire polygon, return empty.
+    if (ssize(*in_M) == 0) {
+      return {};
+    }
   }
 
   polygon_M = in_M;
@@ -171,7 +185,6 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
 
   RemoveNearlyDuplicateVertices(polygon_M);
   if (polygon_M->size() < 3) {
-    // return std::make_pair(std::vector<Vector3<T>>(), *faces);
     return {};
   }
 
@@ -254,11 +267,25 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
 
   const math::RigidTransform<double> X_MNd = convert_to_double(X_MN);
 
+  // Keep track of pairs of tet indices that have already been inserted into the
+  // queue.
+  auto pair_hash = [](const std::pair<int, int>& p) -> std::size_t {
+    return std::hash<int>()(p.first) ^ std::hash<int>()(p.second);
+  };
+  std::unordered_set<std::pair<int, int>, decltype(pair_hash)> checked_pairs(
+      8, pair_hash);
+
   std::queue<std::pair<int, int>> candidate_tetrahedra;
-  auto callback = [&candidate_tetrahedra, &tri_to_tet_M, &tri_to_tet_N](
-                      int tri0, int tri1) -> BvttCallbackResult {
-    candidate_tetrahedra.emplace(tri_to_tet_M[tri0].tet_index,
+  auto callback = [&candidate_tetrahedra, &checked_pairs, &tri_to_tet_M,
+                   &tri_to_tet_N](int tri0, int tri1) -> BvttCallbackResult {
+    DRAKE_ASSERT(0 <= tri0 < ssize(tri_to_tet_M));
+    DRAKE_ASSERT(0 <= tri1 < ssize(tri_to_tet_N));
+    std::pair<int, int> tet_pair(tri_to_tet_M[tri0].tet_index,
                                  tri_to_tet_N[tri1].tet_index);
+    if (!checked_pairs.contains(tet_pair)) {
+      candidate_tetrahedra.push(tet_pair);
+      checked_pairs.insert(tet_pair);
+    }
     return BvttCallbackResult::Continue;
   };
 
@@ -271,57 +298,44 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
 
   if (candidate_tetrahedra.empty()) return;
 
-  // Keep track of pairs of tet indices that have already been checked for
-  // intersection.
-  auto pair_hash = [](const std::pair<int, int>& p) -> std::size_t {
-    return std::hash<int>()(p.first) ^ std::hash<int>()(p.second);
-  };
-  std::unordered_set<std::pair<int, int>, decltype(pair_hash)> checked_pairs(
-      8, pair_hash);
-
   MeshBuilder builder_M;
   const math::RotationMatrix<T> R_NM = X_MN.rotation().inverse();
+
+  // The intersected faces of tetM and tetN with the contact polygon.
+  std::vector<int> faces;
 
   // Traverse all overlapping tet pairs and generate contact polygons.
   while (!candidate_tetrahedra.empty()) {
     const std::pair<int, int> pair = candidate_tetrahedra.front();
     candidate_tetrahedra.pop();
 
-    // If we've already processed this pair, continue.
-    if (checked_pairs.contains(pair)) {
-      continue;
-    }
-    checked_pairs.insert(pair);
-
-    const auto& [tet0, tet1] = pair;
+    const auto& [tetM, tetN] = pair;
     // If a pair makes it into the queue, their pressure ranges intersect. But,
     // they may or may not overlap. If they do not overlap and produce a contact
     // surface, we do not have to process any neighbors. Note: the initial set
-    // of of candidate tets are all boundary tets, so their pressure ranges
+    // of candidate tets are all boundary tets, so their pressure ranges
     // necessarily intersect because they all contain 0 and are thus inserted
     // without checking range intersection.
-    const std::vector<int> faces = CalcContactPolygon(
-        field0_M, field1_N, X_MN, R_NM, tet0, tet1, &builder_M);
+    faces = CalcContactPolygon(field0_M, field1_N, X_MN, R_NM, tetM, tetN,
+                               &builder_M);
 
     if (ssize(faces) == 0) {
       continue;
     }
 
     // Loop over all intersected faces.
-    for (int i = 0; i < ssize(faces); ++i) {
-      int face = faces[i];
-
-      // If face ∈ [0, 3], then it is an index of a face of tet0.
+    for (int face : faces) {
+      // If face ∈ [0, 3], then it is an index of a face of tetM.
       if (face < 4) {
-        // The index of the neighbor of tet0 sharing the face with index face.
-        int neighbor = mesh_topology_M.neighbor(tet0, face);
+        // The index of the neighbor of tetM sharing the face with index face.
+        int neighborM = mesh_topology_M.neighbor(tetM, face);
         // If there is no neighbor, continue.
-        if (neighbor < 0) continue;
+        if (neighborM < 0) continue;
 
-        // neighbor and tet1's pressure ranges intersect necessarily (the equal
+        // neighbor and tetN's pressure ranges intersect necessarily (the equal
         // pressure plane intersects a face of neighbor). They may overlap
         // spatially as well, so try to insert them into the queue.
-        std::pair<int, int> neighbor_pair(neighbor, tet1);
+        std::pair<int, int> neighbor_pair(neighborM, tetN);
 
         // If this candidate pair has already been checked, continue.
         if (checked_pairs.contains(neighbor_pair)) {
@@ -329,17 +343,18 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
         }
 
         candidate_tetrahedra.push(neighbor_pair);
+        checked_pairs.insert(neighbor_pair);
 
       } else {
-        // face ∈ [4, 7], thus face - 4 is a face of tet1.
-        int neighbor = mesh_topology_N.neighbor(tet1, face - 4);
+        // face ∈ [4, 7], thus face - 4 is a face of tetN.
+        int neighborN = mesh_topology_N.neighbor(tetN, face - 4);
         // If there is no neighbor, continue.
-        if (neighbor < 0) continue;
+        if (neighborN < 0) continue;
 
-        // neighbor and tet0's pressure ranges intersect necessarily (the equal
+        // neighbor and tetM's pressure ranges intersect necessarily (the equal
         // pressure plane intersects a face of neighbor). They may overlap
         // spatially as well, so try to insert them into the queue.
-        std::pair<int, int> neighbor_pair(tet0, neighbor);
+        std::pair<int, int> neighbor_pair(tetM, neighborN);
 
         // If this candidate pair has already been checked, continue.
         if (checked_pairs.contains(neighbor_pair)) {
@@ -347,6 +362,7 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
         }
 
         candidate_tetrahedra.push(neighbor_pair);
+        checked_pairs.insert(neighbor_pair);
       }
     }
   }

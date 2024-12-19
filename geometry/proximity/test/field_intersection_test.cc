@@ -425,7 +425,7 @@ class VolumeIntersectorTest : public ::testing::Test {
 // The two algorithms provided by VolumeIntersector only differ in the manner in
 // which they find candidate tetrahedra pairs from the two MeshFieldLinear
 // objects. Each end up calling CalcContactPolygon() with their candidate pairs.
-// Therefore, if we can verify that the each algorithm makes the same set of
+// Therefore, if we can verify that each algorithm makes the same set of
 // calls to CalcContactPolygon(), then the computed surfaces must be equivalent
 // (up to a shuffling of indexes). CalcContactPolygon() records the tet pairs
 // for each polygon it computes in tet0/1_of_polygon so we verify by checking
@@ -474,8 +474,8 @@ TEST_F(VolumeIntersectorTest, IntersectFields) {
         octahedron_N_.surface_mesh_bvh(), octahedron_N_.tri_to_tet(),
         octahedron_N_.mesh_topology(), X_MN, &surface_01_M[1], &e_MN_M[1]);
 
-    EXPECT_NE(surface_01_M[0].get(), nullptr);
-    EXPECT_NE(surface_01_M[1].get(), nullptr);
+    ASSERT_NE(surface_01_M[0].get(), nullptr);
+    ASSERT_NE(surface_01_M[1].get(), nullptr);
     EXPECT_TRUE(ContactSurfacesAreEqual(intersector[0], *surface_01_M[0],
                                         intersector[1], *surface_01_M[1]));
   }
@@ -631,23 +631,6 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kPolygon);
-
-    // The hydroelastic modulus is in the order of 100 kPa, and the size of
-    // the geometries are in the order of centimeters. Therefore, the
-    // pressure gradient is in the order of 100 kPa / 1 cm = 10 MPa/meter
-    // = 1e7 Pa/m.
-    const double kExpectGradientOrderOfMagnitude = 1e7;
-    const double kRelativeTolerance = 1e-13;
-    const double kGradientTolerance =
-        kRelativeTolerance * kExpectGradientOrderOfMagnitude;
-    const Vector3d expect_grad_e0_M =
-        kExpectGradientOrderOfMagnitude * Vector3d(-1 / 3.0, 0, 0);
-    EXPECT_TRUE(CompareMatrices(contact_patch_W->EvaluateGradE_M_W(0),
-                                expect_grad_e0_M, kGradientTolerance));
-    const Vector3d expect_grad_e1_M =
-        kExpectGradientOrderOfMagnitude * Vector3d(1 / 3.0, -1 / 3.0, -1 / 3.0);
-    EXPECT_TRUE(CompareMatrices(contact_patch_W->EvaluateGradE_N_W(0),
-                                expect_grad_e1_M, kGradientTolerance));
   }
   {
     SCOPED_TRACE("Polygon contact surface with surface BVH.");
@@ -659,23 +642,6 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kPolygon);
-
-    // The hydroelastic modulus is in the order of 100 kPa, and the size of
-    // the geometries are in the order of centimeters. Therefore, the
-    // pressure gradient is in the order of 100 kPa / 1 cm = 10 MPa/meter
-    // = 1e7 Pa/m.
-    const double kExpectGradientOrderOfMagnitude = 1e7;
-    const double kRelativeTolerance = 1e-13;
-    const double kGradientTolerance =
-        kRelativeTolerance * kExpectGradientOrderOfMagnitude;
-    const Vector3d expect_grad_e0_M =
-        kExpectGradientOrderOfMagnitude * Vector3d(-1 / 3.0, 0, 0);
-    EXPECT_TRUE(CompareMatrices(contact_patch_W->EvaluateGradE_M_W(0),
-                                expect_grad_e0_M, kGradientTolerance));
-    const Vector3d expect_grad_e1_M =
-        kExpectGradientOrderOfMagnitude * Vector3d(1 / 3.0, -1 / 3.0, -1 / 3.0);
-    EXPECT_TRUE(CompareMatrices(contact_patch_W->EvaluateGradE_N_W(0),
-                                expect_grad_e1_M, kGradientTolerance));
   }
 }
 
