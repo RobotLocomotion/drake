@@ -1,6 +1,7 @@
 import gc
 import math
 import unittest
+import weakref
 
 import numpy as np
 
@@ -31,6 +32,7 @@ from pydrake.systems.framework import (
     DiagramBuilder, InputPortSelection, InputPort, OutputPort,
 )
 from pydrake.systems.primitives import Integrator, LinearSystem
+from pydrake.systems.test.test_util import call_build_from_cpp
 from pydrake.trajectories import Trajectory
 
 
@@ -241,15 +243,27 @@ class TestControllers(unittest.TestCase):
         self.assertTrue(np.allclose(output.get_vector_data(0).CopyToVector(),
                                     tau_id))
 
-    def test_issue14355(self):
-        """
-        DiagramBuilder.AddSystem() may not propagate keep alive relationships.
-        We use this test to show resolution at a known concrete point of
-        failure.
-        https://github.com/RobotLocomotion/drake/issues/14355
+    def call_build_from(self, diagram_builder, language):
+        assert language in ["python", "c++"]
+        if language == "python":
+            # The pydrake binding ensures object lifetimes properly.
+            return diagram_builder.Build()
+        else:
+            # Calling build on a python-populated diagram builder from c++ is
+            # dodgy at best, but don't worry -- all will be well if something
+            # retains ownership of the diagram.
+            return call_build_from_cpp(diagram_builder)
+
+    def test_diagram_and_associate_lifetimes(self):
+        """DiagramBuilder's management of object lifetimes has proven tricky to
+        get right. Past implementations have invited either crashes or memory
+        leaks.
+
+        https://github.com/RobotLocomotion/drake/issues/14355 -- crash
+        https://github.com/RobotLocomotion/drake/issues/14387 -- leak
         """
 
-        def make_diagram():
+        def make_diagram(call_build_from_language):
             # Use a nested function to ensure that all locals get garbage
             # collected quickly.
 
@@ -275,18 +289,28 @@ class TestControllers(unittest.TestCase):
             builder.ExportOutput(controller.get_output_port_control(), "u")
             builder.ExportOutput(
                 controller.get_output_port_generalized_force(), "tau")
-            diagram = builder.Build()
+            diagram = self.call_build_from(builder, call_build_from_language)
             return diagram
 
-        diagram = make_diagram()
-        gc.collect()
-        # N.B. Without the workaround for #14355, we get a segfault when
-        # creating the context.
-        context = diagram.CreateDefaultContext()
-        diagram.GetInputPort("x_estimated").FixValue(context, [])
-        diagram.GetInputPort("x_desired").FixValue(context, [])
-        u = diagram.GetOutputPort("u").Eval(context)
-        np.testing.assert_equal(u, [])
+        for call_build_from_language in ["python", "c++"]:
+            diagram = make_diagram(call_build_from_language)
+            gc.collect()
+            # Without necessary lifetime annotations, we get a segfault when
+            # creating the context.
+            context = diagram.CreateDefaultContext()
+            diagram.GetInputPort("x_estimated").FixValue(context, [])
+            diagram.GetInputPort("x_desired").FixValue(context, [])
+            u = diagram.GetOutputPort("u").Eval(context)
+            np.testing.assert_equal(u, [])
+
+            # With too-conservative lifetime annotations, objects become
+            # immortal, and leak memory.
+            spy = weakref.finalize(diagram, lambda: None)
+            del diagram
+            del context
+            del u
+            gc.collect()
+            self.assertFalse(spy.alive)
 
     def test_pid_controlled_system(self):
         controllers = [
