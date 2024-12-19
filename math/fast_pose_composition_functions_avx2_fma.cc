@@ -591,6 +591,121 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   hn::StoreN(stu_, tag, X_AC + 9, 3);  // 3-wide write to stay in bounds
 }
 
+/* Re-express SpatialVector via V_A = R_AB * V_B.
+
+R_AB is 9 consecutive doubles in column-major order, the vectors are 6
+consecutive elements comprising two independent 3-vectors. It is allowable for
+V_A and V_B to be the same memory.
+
+  R_AB = abcdefghi
+  V_B = xyzrst
+  V_A = XYZRST
+
+We want to perform two matrix-vector products:
+
+   V_A     R_AB    V_B
+
+    X     a d g     x
+    Y  =  b e h  @  y      15 flops
+    Z     c f i     z
+
+    R     a d g     r
+    S  =  b e h  @  s      15 flops
+    T     c f i     t
+
+We can do this in 6 SIMD instructions. We end up doing 40 flops and throwing
+10 of them away.
+*/
+void ReexpressSpatialVectorImpl(const double* R_AB, const double* V_B,
+                                double* V_A) {
+  const hn::FixedTag<double, 4> tag;
+
+  const auto abc_ = hn::LoadU(tag, R_AB);      // (d is loaded but unused)
+  const auto def_ = hn::LoadU(tag, R_AB + 3);  // (g is loaded but unused)
+  const auto ghi_ = hn::LoadN(tag, R_AB + 6, 3);
+
+  const auto xxx_ = hn::Set(tag, V_B[0]);
+  const auto yyy_ = hn::Set(tag, V_B[1]);
+  const auto zzz_ = hn::Set(tag, V_B[2]);
+
+  // Vector XYZ:                            X   Y   Z   _
+  auto XYZ_ = hn::Mul(abc_, xxx_);      //  ax  bx  cx  _
+  XYZ_ = hn::MulAdd(def_, yyy_, XYZ_);  // +dy +ey +fy  _
+  XYZ_ = hn::MulAdd(ghi_, zzz_, XYZ_);  // +gz +hz +iz  _
+
+  const auto rrr_ = hn::Set(tag, V_B[3]);
+  const auto sss_ = hn::Set(tag, V_B[4]);
+  const auto ttt_ = hn::Set(tag, V_B[5]);
+
+  // Vector RST:                            R   S   T   _
+  auto RST_ = hn::Mul(abc_, rrr_);      //  ar  br  cr  _
+  RST_ = hn::MulAdd(def_, sss_, RST_);  // +ds +es +fs  _
+  RST_ = hn::MulAdd(ghi_, ttt_, RST_);  // +gt +ht +it  _
+
+  hn::StoreU(XYZ_, tag, V_A);         // 4-wide write temporarily overwrites R
+  hn::StoreN(RST_, tag, V_A + 3, 3);  // 3-wide write to stay in bounds
+}
+
+// w = uvw, r = xyz
+// w X v = vz - wy
+//         wx - uz
+//         uy - vx
+void CrossProductImpl(const double* w, const double* r, double* wXr) {
+  const hn::FixedTag<double, 4> tag;
+
+  const auto uvw_ = hn::LoadN(tag, w, 3);
+  const auto vwu_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(uvw_);  // w120
+  const auto wuv_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(uvw_);  // w201
+
+  const auto xyz_ = hn::LoadN(tag, r, 3);
+  const auto yzx_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(xyz_);  // r120
+  const auto zxy_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(xyz_);  // r201
+
+  const auto right = hn::Mul(wuv_, yzx_);           // w201 * r120
+  const auto wXr_ = hn::MulSub(vwu_, zxy_, right);  // w120*r201 - right
+
+  hn::StoreN(wXr_, tag, wXr, 3);
+}
+
+
+// w x w x r
+void CrossCrossProductImpl(const double* w, const double* r, double* wXwXr) {
+  const hn::FixedTag<double, 4> tag;
+
+  const auto uvw_ = hn::LoadN(tag, w, 3);
+  const auto vwu_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(uvw_);  // w120
+  const auto wuv_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(uvw_);  // w201
+
+  const auto xyz_ = hn::LoadN(tag, r, 3);
+  const auto yzx_ = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(xyz_);  // r120
+  const auto zxy_ = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(xyz_);  // r201
+
+  const auto right = hn::Mul(wuv_, yzx_);           // w201 * r120
+  const auto wXr_ = hn::MulSub(vwu_, zxy_, right);  // w120*r201 - right
+
+  const auto wXr_120 = hn::Per4LaneBlockShuffle<3, 0, 2, 1>(wXr_);
+  const auto wXr_201 = hn::Per4LaneBlockShuffle<3, 1, 0, 2>(wXr_);
+
+  const auto wXwXr_right = hn::Mul(wuv_, wXr_120);             // w201 * wxr_120
+  const auto wXwXr_ = hn::MulSub(vwu_, wXr_201, wXwXr_right);  // w120 * wxr_201
+
+  hn::StoreN(wXwXr_, tag, wXwXr, 3);
+}
+
+// G is a - - but symmetric
+//      b d -
+//      c e f
+void SymTimesVectorImpl(const double* G, const double* w, double* Gw) {
+  const hn::FixedTag<double, 4> tag;
+  const auto uvw_ = hn::LoadN(tag, w, 3);
+  const auto abcx = hn::LoadU(tag, G);
+  const auto cxde = hn::LoadU(tag, G + 2);
+  const auto abde = hn::ConcatUpperLower(tag, cxde, abcx);
+  const auto bde0 = hn::ShiftLeftLanes<1>(tag, abde);
+  hn::StoreU(bde0, tag, Gw);
+  // TODO(sherm1) Need cef_.
+}
+
 #else  // HWY_MAX_BYTES
 
 /* The portable versions are always defined. They should be written to maximize
@@ -698,6 +813,36 @@ void ComposeXinvXImpl(const double* X_BA, const double* X_BC, double* X_AC) {
   std::copy(X_AC_temp, X_AC_temp + 12, X_AC);
 }
 
+void ReexpressSpatialVectorImpl(const double* R_AB, const double* V_B,
+                                double* V_A) {
+  DRAKE_ASSERT(V_A != nullptr);
+  double x, y, z;  // Protect from overlap with V_B.
+  x = row_x_col(&R_AB[0], &V_B[0]);
+  y = row_x_col(&R_AB[1], &V_B[0]);
+  z = row_x_col(&R_AB[2], &V_B[0]);
+  V_A[0] = x;
+  V_A[1] = y;
+  V_A[2] = z;
+  x = row_x_col(&R_AB[0], &V_B[3]);
+  y = row_x_col(&R_AB[1], &V_B[3]);
+  z = row_x_col(&R_AB[2], &V_B[3]);
+  V_A[3] = x;
+  V_A[4] = y;
+  V_A[5] = z;
+}
+
+// w = uvw, r = xyz
+// w X v = vz - wy
+//         wx - uz
+//         uy - vx
+void CrossProductImpl(const double* w, const double* r, double* wXr) {
+  const double vz = w[1] * r[2], wx = w[2] * r[0], uy = w[0] * r[1];
+  const double wy = w[2] * r[1], uz = w[0] * r[2], vx = w[1] * r[0];
+  wXr[0] = vz - wy;
+  wXr[1] = wx - uz;
+  wXr[2] = uy - vx;
+}
+
 #endif  // HWY_MAX_BYTES
 
 }  // namespace HWY_NAMESPACE
@@ -732,6 +877,14 @@ HWY_EXPORT(ComposeXinvXImpl);
 struct ChooseBestComposeXinvX {
   auto operator()() { return HWY_DYNAMIC_POINTER(ComposeXinvXImpl); }
 };
+HWY_EXPORT(ReexpressSpatialVectorImpl);
+struct ChooseBestReexpressSpatialVector {
+  auto operator()() { return HWY_DYNAMIC_POINTER(ReexpressSpatialVectorImpl); }
+};
+HWY_EXPORT(CrossProductImpl);
+struct ChooseBestShuffleVector {
+  auto operator()() { return HWY_DYNAMIC_POINTER(CrossProductImpl); }
+};
 
 // These sugar functions convert C++ types into bare arrays.
 const double* GetRawData(const RotationMatrix<double>& R) {
@@ -749,6 +902,14 @@ double* GetRawData(RigidTransform<double>* X) {
   // In rigid_transform.h we assert that the memory layout is 12 doubles, with
   // the rotation matrix first followed by the translation.
   return const_cast<double*>(X->rotation().matrix().data());
+}
+template <int N>
+const double* GetRawData(const Vector<double, N>& v) {
+  return v.data();
+}
+template <int N>
+double* GetRawData(Vector<double, N>* v) {
+  return v->data();
 }
 
 }  // namespace
@@ -779,6 +940,18 @@ void ComposeXinvX(const RigidTransform<double>& X_BA,
                   RigidTransform<double>* X_AC) {
   LateBoundFunction<ChooseBestComposeXinvX>::Call(
       GetRawData(X_BA), GetRawData(X_BC), GetRawData(X_AC));
+}
+
+void ReexpressSpatialVector(const RotationMatrix<double>& R_AB,
+                            const Vector6<double>& V_B, Vector6<double>* V_A) {
+  LateBoundFunction<ChooseBestReexpressSpatialVector>::Call(
+      GetRawData(R_AB), GetRawData(V_B), GetRawData(V_A));
+}
+
+void CrossProduct(const Vector3<double>& w, const Vector3<double>& r,
+                  Vector3<double>* wXr) {
+  LateBoundFunction<ChooseBestShuffleVector>::Call(GetRawData(w), GetRawData(r),
+                                                   GetRawData(wXr));
 }
 
 }  // namespace internal
