@@ -19,10 +19,6 @@
 namespace drake {
 namespace multibody {
 
-namespace {
-constexpr double kInf = std::numeric_limits<double>::infinity();
-}  // namespace
-
 Eigen::Quaterniond Vector4ToQuaternion(
     const Eigen::Ref<const Eigen::Vector4d>& q) {
   return Eigen::Quaterniond(q(0), q(1), q(2), q(3));
@@ -198,47 +194,55 @@ GTEST_TEST(InverseKinematicsTest, ConstructorLockedJoints) {
 
   // Initialize IK.
   const InverseKinematics ik(plant, &*context);
-  const int nq = ik.q().size();
   const solvers::MathematicalProgram& prog = ik.prog();
 
   // The initial guess is set for the two quaternion floating joints.
   EXPECT_TRUE(CompareMatrices(
       ik.prog().GetInitialGuess(ik.q().segment(joint1.position_start(), 4)),
       Eigen::Vector4d(1, 0, 0, 0)));
+  const Eigen::Vector4d joint2_position(0, 1, 0, 0);
   EXPECT_TRUE(CompareMatrices(
-      ik.prog().GetInitialGuess(ik.q().segment(joint2.position_start(), 4)),
-      Eigen::Vector4d(0, 1, 0, 0)));
+      prog.GetInitialGuess(ik.q().segment(joint2.position_start(), 4)),
+      joint2_position));
 
-  // The unit quaternion constraint is only added to joint1.
+  // We only expect one bounding box constraint, which is the joint limits.
+  ASSERT_EQ(prog.bounding_box_constraints().size(), 1);
+  const solvers::Binding<solvers::BoundingBoxConstraint>& limits =
+      prog.bounding_box_constraints().front();
+
+  // joint 1 is unlocked, we expect a unit quaternion constraint and limits of
+  // [-1, 1].
   ASSERT_EQ(prog.generic_constraints().size(), 1);
   const solvers::Binding<solvers::Constraint>& unit_quat =
       prog.generic_constraints().front();
   ASSERT_EQ(unit_quat.variables().size(), 4);
+  const int j1_start = joint1.position_start();
   EXPECT_EQ(symbolic::Variables(unit_quat.variables()),
-            symbolic::Variables(ik.q().segment(joint1.position_start(), 4)));
+            symbolic::Variables(ik.q().segment(j1_start, 4)));
+  EXPECT_TRUE(
+      CompareMatrices(limits.evaluator()->lower_bound().segment<4>(j1_start),
+                      Eigen::Vector4d(-1, -1, -1, -1)));
+  EXPECT_TRUE(
+      CompareMatrices(limits.evaluator()->upper_bound().segment<4>(j1_start),
+                      Eigen::Vector4d(1, 1, 1, 1)));
 
-  // Check the default bbox constraint.
-  // Prepare our expected values:
-  Eigen::VectorXd lower = Eigen::VectorXd::Constant(nq, -kInf);
-  Eigen::VectorXd upper = Eigen::VectorXd::Constant(nq, +kInf);
-  // - Locked quaternion floating joints obey a single, normalized position.
+  // joint2 is locked, so we expect a limits == joint2_position.
   const int j2_start = joint2.position_start();
-  lower.segment(j2_start, 7) = upper.segment(j2_start, 7) =
-      (Vector<double, 7>() << 0, 1, 0, 0, 0, 0, 0).finished();
-  // - Unlocked revolute joints still obey their position limits.
+  EXPECT_TRUE(CompareMatrices(
+      limits.evaluator()->lower_bound().segment<4>(j2_start), joint2_position));
+  EXPECT_TRUE(CompareMatrices(
+      limits.evaluator()->upper_bound().segment<4>(j2_start), joint2_position));
+
+  // joint3 is unlocked, so we expect the joint limits to be enforced.
   const int j3_start = joint3.position_start();
-  lower[j3_start] = -0.5;
-  upper[j3_start] = +0.5;
-  // - Locked revolute joints obey their initial position, ignoring limits.
+  EXPECT_EQ(limits.evaluator()->lower_bound()[j3_start], -0.5);
+  EXPECT_EQ(limits.evaluator()->upper_bound()[j3_start], +0.5);
+
+  // joint4 is locked. Locked revolute joints obey their initial position,
+  // ignoring limits.
   const int j4_start = joint4.position_start();
-  lower[j4_start] = upper[j4_start] = 1.1;
-  // Now check the expected value against `prog`.
-  ASSERT_EQ(prog.bounding_box_constraints().size(), 1);
-  const solvers::Binding<solvers::BoundingBoxConstraint>& limits =
-      prog.bounding_box_constraints().front();
-  ASSERT_EQ(limits.variables().size(), nq);
-  EXPECT_TRUE(CompareMatrices(limits.evaluator()->lower_bound(), lower));
-  EXPECT_TRUE(CompareMatrices(limits.evaluator()->upper_bound(), upper));
+  EXPECT_EQ(limits.evaluator()->lower_bound()[j4_start], 1.1);
+  EXPECT_EQ(limits.evaluator()->upper_bound()[j4_start], 1.1);
 }
 
 TEST_F(TwoFreeBodiesTest, PositionConstraint) {
@@ -248,17 +252,22 @@ TEST_F(TwoFreeBodiesTest, PositionConstraint) {
   ik_.AddPositionConstraint(body1_frame_, p_BQ, body2_frame_, p_AQ_lower,
                             p_AQ_upper);
 
-  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().head<4>(),
-                                          Eigen::Vector4d(1, 0, 0, 0));
-  ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
-                                          Eigen::Vector4d(1, 0, 0, 0));
+  // min |q|^2 to help IpOpt.
+  ik_.get_mutable_prog()->AddQuadraticCost(
+      Eigen::MatrixXd::Identity(ik_.q().size(), ik_.q().size()),
+      Eigen::VectorXd::Zero(ik_.q().size()), ik_.q(), true);
+
   const auto result = Solve(ik_.prog());
   EXPECT_TRUE(result.is_success());
   RetrieveSolution(result);
-  const Eigen::Vector3d p_AQ = body2_quaternion_sol_.inverse() *
-                               (body1_quaternion_sol_ * p_BQ +
-                                body1_position_sol_ - body2_position_sol_);
-  const double tol = 1E-6;
+  const math::RigidTransformd X_WB(body1_quaternion_sol_, body1_position_sol_);
+  const math::RigidTransformd X_WA(body2_quaternion_sol_, body2_position_sol_);
+  const Eigen::Vector3d p_AQ = X_WA.inverse() * X_WB * p_BQ;
+  const double tol = 1E-5;
+
+  log()->info("{}", fmt_eigen(p_AQ.transpose()));
+  log()->info("{}", fmt_eigen(p_AQ_upper.transpose()));
+  log()->info("{}", fmt_eigen(p_AQ_lower.transpose()));
   EXPECT_TRUE(
       (p_AQ.array() <= p_AQ_upper.array() + Eigen::Array3d::Constant(tol))
           .all());
@@ -312,6 +321,7 @@ TEST_F(TwoFreeBodiesTest, OrientationConstraint) {
                                           Eigen::Vector4d(1, 0, 0, 0));
   ik_.get_mutable_prog()->SetInitialGuess(ik_.q().segment<4>(7),
                                           Eigen::Vector4d(1, 0, 0, 0));
+
   const auto result = Solve(ik_.prog());
   EXPECT_TRUE(result.is_success());
   const auto q_sol = result.GetSolution(ik_.q());
@@ -549,6 +559,11 @@ TEST_F(TwoFreeSpheresTest, MinimumDistanceLowerBoundConstraintTest) {
   ik.get_mutable_prog()->SetInitialGuess(ik.q().tail<3>(),
                                          Eigen::Vector3d(0, 0, -0.01));
 
+  // min |q|^2 to help Ipopt.
+  ik.get_mutable_prog()->AddQuadraticCost(
+      Eigen::MatrixXd::Identity(ik.q().size(), ik.q().size()),
+      Eigen::VectorXd::Zero(ik.q().size()), ik.q(), true);
+
   auto solve_and_check = [&]() {
     const solvers::MathematicalProgramResult result = Solve(ik.prog());
     EXPECT_TRUE(result.is_success());
@@ -600,6 +615,11 @@ TEST_F(TwoFreeSpheresTest, MinimumDistanceUpperBoundConstraintTest) {
                                          Eigen::Vector4d(1, 0, 0, 0));
   ik.get_mutable_prog()->SetInitialGuess(ik.q().tail<3>(),
                                          Eigen::Vector3d(0, 0, -0.01));
+
+  // min |q-1|^2 to help Ipopt.
+  ik.get_mutable_prog()->AddQuadraticErrorCost(
+      Eigen::MatrixXd::Identity(ik.q().size(), ik.q().size()),
+      Eigen::VectorXd::Ones(ik.q().size()), ik.q());
 
   auto solve_and_check = [&]() {
     const solvers::MathematicalProgramResult result = Solve(ik.prog());

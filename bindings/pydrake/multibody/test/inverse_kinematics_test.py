@@ -87,7 +87,7 @@ class TestInverseKinematics(unittest.TestCase):
             q=self.q,
             prog=self.prog,
             plant_context=self.ik_two_bodies.context())
-        self.assertEqual(len(bindings), 4)
+        self.assertEqual(len(bindings), 3)
 
     def test_AddPositionConstraint1(self):
         p_BQ = np.array([0.2, 0.3, 0.5])
@@ -98,6 +98,9 @@ class TestInverseKinematics(unittest.TestCase):
             frameB=self.body1_frame, p_BQ=p_BQ,
             frameA=self.body2_frame,
             p_AQ_lower=p_AQ_lower, p_AQ_upper=p_AQ_upper)
+        # Add a cost to help Ipopt.
+        self.ik_two_bodies.prog().AddQuadraticErrorCost(
+            np.eye(len(self.q)), np.zeros(len(self.q)), self.q)
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
         q_val = result.GetSolution(self.q)
@@ -133,6 +136,9 @@ class TestInverseKinematics(unittest.TestCase):
             frameB=self.body1_frame, p_BQ=p_BQ,
             frameAbar=self.body2_frame, X_AbarA=X_AbarA,
             p_AQ_lower=p_AQ_lower, p_AQ_upper=p_AQ_upper)
+        # Add a cost to help Ipopt.
+        self.ik_two_bodies.prog().AddQuadraticErrorCost(
+            np.eye(len(self.q)), np.zeros(len(self.q)), self.q)
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
         q_val = result.GetSolution(self.q)
@@ -226,6 +232,9 @@ class TestInverseKinematics(unittest.TestCase):
             frameA=self.body1_frame, p_AS=p_AS, n_A=n_A,
             frameB=self.body2_frame, p_BT=p_BT,
             cone_half_angle=cone_half_angle)
+        # Add a cost to help Ipopt.
+        self.ik_two_bodies.prog().AddQuadraticErrorCost(
+            np.eye(len(self.q)), np.ones(len(self.q)), self.q)
 
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
@@ -351,6 +360,9 @@ class TestInverseKinematics(unittest.TestCase):
             frame_point=self.body1_frame, p_B1P=p_B1P,
             frame_line=self.body2_frame, p_B2Q=p_B2Q, n_B2=n_B2,
             distance_lower=distance_lower, distance_upper=distance_upper)
+        # Add a cost to help Ipopt.
+        self.ik_two_bodies.prog().AddQuadraticErrorCost(
+            np.eye(len(self.q)), np.zeros(len(self.q)), self.q)
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
 
@@ -383,6 +395,9 @@ class TestInverseKinematics(unittest.TestCase):
         self.ik_two_bodies.AddPolyhedronConstraint(
             frameF=self.body1_frame, frameG=self.body2_frame,
             p_GP=p_GP, A=A, b=b)
+        # Add a cost to help Ipopt.
+        self.ik_two_bodies.prog().AddQuadraticErrorCost(
+            np.eye(len(self.q)), np.zeros(len(self.q)), self.q)
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
 
@@ -469,6 +484,10 @@ class TestInverseKinematics(unittest.TestCase):
 
         self.assertLess(get_min_distance_actual(), distance_lower - tol)
         self.prog.SetInitialGuess(ik.q(), self.plant.GetPositions(context))
+        # Add a cost to help Ipopt.
+        self.ik_two_bodies.prog().AddQuadraticErrorCost(
+            np.eye(len(self.q)), np.zeros(len(self.q)), self.q)
+
         result = mp.Solve(self.prog)
         self.assertTrue(result.is_success())
         q_val = result.GetSolution(ik.q())
