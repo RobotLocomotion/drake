@@ -3,6 +3,7 @@
 #include <limits>
 #include <utility>
 
+#include "drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h"
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_constraint.h"
 #include "drake/multibody/inverse_kinematics/angle_between_vectors_cost.h"
 #include "drake/multibody/inverse_kinematics/distance_constraint.h"
@@ -20,8 +21,6 @@
 
 namespace drake {
 namespace multibody {
-
-constexpr double kInf = std::numeric_limits<double>::infinity();
 
 InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
                                      bool with_joint_limits)
@@ -51,64 +50,21 @@ InverseKinematics::InverseKinematics(
   }
   DRAKE_DEMAND(context_ != nullptr);  // Sanity check.
 
-  // We're about to add constraints for position limits (if requested), locked
-  // joints, and quaternions (unit norm). When a quaternion is locked, we'll use
-  // the lock constraint instead of the unit norm constraint.
+  AddMultibodyPlantConstraints(plant, q_, prog_.get(), context_);
 
-  // Obey the joint limits (if requested).
-  const int nq = plant.num_positions();
-  Eigen::VectorXd lb;
-  Eigen::VectorXd ub;
-  if (with_joint_limits) {
-    lb = plant.GetPositionLowerLimits();
-    ub = plant.GetPositionUpperLimits();
-  } else {
-    lb = Eigen::VectorXd::Constant(nq, -kInf);
-    ub = Eigen::VectorXd::Constant(nq, +kInf);
-  }
-
-  // Obey joint locking. Joint locking trumps joint limits.
-  const Eigen::VectorXd current_positions = plant.GetPositions(context());
-  VectorX<bool> is_locked = VectorX<bool>::Constant(nq, false);
-  for (JointIndex i : plant.GetJointIndices()) {
-    const Joint<double>& joint = plant.get_joint(i);
-    if (joint.is_locked(context())) {
-      const int start = joint.position_start();
-      const int size = joint.num_positions();
-      lb.segment(start, size) = current_positions.segment(start, size);
-      ub.segment(start, size) = current_positions.segment(start, size);
-      is_locked.segment(start, size).array() = true;
-    }
-  }
-
-  // Add the unit quaternion constraints.
-  for (BodyIndex i{0}; i < plant.num_bodies(); ++i) {
-    const RigidBody<double>& body = plant.get_body(i);
-    if (body.has_quaternion_dofs()) {
-      const int start = body.floating_positions_start();
-      constexpr int size = 4;
-      if (is_locked.segment<size>(start).any()) {
-        // Sanity check the MultibodyTree invariant.
-        DRAKE_DEMAND(is_locked.segment<size>(start).all());
-        // Lock to the normalized value, in lieu of a unit norm constraint.
-        const Eigen::Vector4d quat =
-            current_positions.segment<size>(start).normalized();
-        lb.segment<size>(start) = quat;
-        ub.segment<size>(start) = quat;
-        prog_->SetInitialGuess(q_.segment<size>(start), quat);
-      } else {
-        prog_->AddConstraint(solvers::Binding<solvers::Constraint>(
-            std::make_shared<UnitQuaternionConstraint>(),
-            q_.segment<size>(start)));
-        // Set a non-zero initial guess to help avoid singularities.
-        prog_->SetInitialGuess(q_.segment<size>(start),
-                              Eigen::Vector4d{1, 0, 0, 0});
+  if (!with_joint_limits) {
+    // Remove only the joint limit constraint.
+    const auto& bbox_bindings = prog_->bounding_box_constraints();
+    bool removed_joint_limits = false;
+    for (const auto& binding : bbox_bindings) {
+      if (binding.evaluator()->get_description() == "Joint limits") {
+        prog_->RemoveConstraint(binding);
+        removed_joint_limits = true;
+        break;
       }
     }
+    DRAKE_DEMAND(removed_joint_limits);
   }
-
-  // Now we can finally add the bbox constraint for joint limits and locking.
-  prog_->AddBoundingBoxConstraint(lb, ub, q_);
 }
 
 solvers::Binding<solvers::Constraint> InverseKinematics::AddPositionConstraint(

@@ -19,10 +19,6 @@
 namespace drake {
 namespace multibody {
 
-namespace {
-constexpr double kInf = std::numeric_limits<double>::infinity();
-}  // namespace
-
 Eigen::Quaterniond Vector4ToQuaternion(
     const Eigen::Ref<const Eigen::Vector4d>& q) {
   return Eigen::Quaterniond(q(0), q(1), q(2), q(3));
@@ -198,47 +194,55 @@ GTEST_TEST(InverseKinematicsTest, ConstructorLockedJoints) {
 
   // Initialize IK.
   const InverseKinematics ik(plant, &*context);
-  const int nq = ik.q().size();
   const solvers::MathematicalProgram& prog = ik.prog();
 
   // The initial guess is set for the two quaternion floating joints.
   EXPECT_TRUE(CompareMatrices(
       ik.prog().GetInitialGuess(ik.q().segment(joint1.position_start(), 4)),
       Eigen::Vector4d(1, 0, 0, 0)));
+  const Eigen::Vector4d joint2_position(0, 1, 0, 0);
   EXPECT_TRUE(CompareMatrices(
-      ik.prog().GetInitialGuess(ik.q().segment(joint2.position_start(), 4)),
-      Eigen::Vector4d(0, 1, 0, 0)));
+      prog.GetInitialGuess(ik.q().segment(joint2.position_start(), 4)),
+      joint2_position));
 
-  // The unit quaternion constraint is only added to joint1.
+  // We only expect one bounding box constraint, which is the joint limits.
+  ASSERT_EQ(prog.bounding_box_constraints().size(), 1);
+  const solvers::Binding<solvers::BoundingBoxConstraint>& limits =
+      prog.bounding_box_constraints().front();
+
+  // joint 1 is unlocked, we expect a unit quaternion constraint and limits of
+  // [-1, 1].
   ASSERT_EQ(prog.generic_constraints().size(), 1);
   const solvers::Binding<solvers::Constraint>& unit_quat =
       prog.generic_constraints().front();
   ASSERT_EQ(unit_quat.variables().size(), 4);
+  const int j1_start = joint1.position_start();
   EXPECT_EQ(symbolic::Variables(unit_quat.variables()),
-            symbolic::Variables(ik.q().segment(joint1.position_start(), 4)));
+            symbolic::Variables(ik.q().segment(j1_start, 4)));
+  EXPECT_TRUE(
+      CompareMatrices(limits.evaluator()->lower_bound().segment<4>(j1_start),
+                      Eigen::Vector4d(-1, -1, -1, -1)));
+  EXPECT_TRUE(
+      CompareMatrices(limits.evaluator()->upper_bound().segment<4>(j1_start),
+                      Eigen::Vector4d(1, 1, 1, 1)));
 
-  // Check the default bbox constraint.
-  // Prepare our expected values:
-  Eigen::VectorXd lower = Eigen::VectorXd::Constant(nq, -kInf);
-  Eigen::VectorXd upper = Eigen::VectorXd::Constant(nq, +kInf);
-  // - Locked quaternion floating joints obey a single, normalized position.
+  // joint2 is locked, so we expect a limits == joint2_position.
   const int j2_start = joint2.position_start();
-  lower.segment(j2_start, 7) = upper.segment(j2_start, 7) =
-      (Vector<double, 7>() << 0, 1, 0, 0, 0, 0, 0).finished();
-  // - Unlocked revolute joints still obey their position limits.
+  EXPECT_TRUE(CompareMatrices(
+      limits.evaluator()->lower_bound().segment<4>(j2_start), joint2_position));
+  EXPECT_TRUE(CompareMatrices(
+      limits.evaluator()->upper_bound().segment<4>(j2_start), joint2_position));
+
+  // joint3 is unlocked, so we expect the joint limits to be enforced.
   const int j3_start = joint3.position_start();
-  lower[j3_start] = -0.5;
-  upper[j3_start] = +0.5;
-  // - Locked revolute joints obey their initial position, ignoring limits.
+  EXPECT_EQ(limits.evaluator()->lower_bound()[j3_start], -0.5);
+  EXPECT_EQ(limits.evaluator()->upper_bound()[j3_start], +0.5);
+
+  // joint4 is locked. Locked revolute joints obey their initial position,
+  // ignoring limits.
   const int j4_start = joint4.position_start();
-  lower[j4_start] = upper[j4_start] = 1.1;
-  // Now check the expected value against `prog`.
-  ASSERT_EQ(prog.bounding_box_constraints().size(), 1);
-  const solvers::Binding<solvers::BoundingBoxConstraint>& limits =
-      prog.bounding_box_constraints().front();
-  ASSERT_EQ(limits.variables().size(), nq);
-  EXPECT_TRUE(CompareMatrices(limits.evaluator()->lower_bound(), lower));
-  EXPECT_TRUE(CompareMatrices(limits.evaluator()->upper_bound(), upper));
+  EXPECT_EQ(limits.evaluator()->lower_bound()[j4_start], 1.1);
+  EXPECT_EQ(limits.evaluator()->upper_bound()[j4_start], 1.1);
 }
 
 TEST_F(TwoFreeBodiesTest, PositionConstraint) {
