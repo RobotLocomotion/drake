@@ -1,9 +1,9 @@
 # Disable ccache due to incompatibility with Bazel.
 build --action_env=CCACHE_DISABLE=1
 
-# When compiling with Drake as the main WORKSPACE (i.e., if and only if this
-# rcfile is loaded), we enable -Werror by default for Drake's *own* targets,
-# but not for our externals.
+# When compiling with Drake as the main module (i.e., if and only if this rcfile
+# is loaded), we enable -Werror by default for Drake's *own* targets, but not
+# for our externals.
 #
 # Developers may still disable errors locally by passing --copt=-w on the
 # command line, or promote *any* warnings even from externals to errors via
@@ -11,4 +11,4 @@ build --action_env=CCACHE_DISABLE=1
 #
 # When compiilng Drake as an external package, this rcfile is not loaded and we
 # won't promote warnings to errors by default.
-build --define=DRAKE_WERROR=ON
+build --@drake//tools/cc_toolchain:error_severity=error
