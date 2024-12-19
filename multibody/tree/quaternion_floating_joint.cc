@@ -98,6 +98,21 @@ void QuaternionFloatingJoint<T>::DoAddInDamping(
   t_BMo_F.template tail<3>() -= translational_damping * v_FM;
 }
 
+namespace internal {
+
+template <typename T>
+const QuaternionFloatingJoint<T>*
+DynamicCastJoint<QuaternionFloatingJoint>::cast(const Joint<T>* element) {
+  return dynamic_cast<const QuaternionFloatingJoint<T>*>(element);
+}
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &DynamicCastJoint<QuaternionFloatingJoint>::template cast<T>
+));
+// clang-format on
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
