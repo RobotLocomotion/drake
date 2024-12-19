@@ -8,9 +8,13 @@
 namespace drake {
 namespace multibody {
 
-/** For unit quaternion and (holonomic) constraints registered with `plant` adds
-a corresponding solver::Constraint to `prog`, using decision variables `q` to
-represent the generalized positions of the plant.
+/** For all kinematic constraints associated with `plant` adds a corresponding
+solver::Constraint to `prog`, using decision variables `q` to represent the
+generalized positions of the plant.
+
+Adds joint limits constraints, unit quaternion constraints, and constraints for
+any locked joints (via Joint::Lock()). Note that you must pass a valid
+`plant_context` to use joint locking.
 
 Adds constraints for coupler, distance, ball, and weld constraints. The
 distance constraint is implemented here as a hard kinematic constraint (i.e.,

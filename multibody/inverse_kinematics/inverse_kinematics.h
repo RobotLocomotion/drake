@@ -33,8 +33,8 @@ class InverseKinematics {
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
    * @param with_joint_limits If set to true, then the constructor
-   * imposes the joint limit (obtained from plant.GetPositionLowerLimits()
-   * and plant.GetPositionUpperLimits(). If set to false, then the constructor
+   * imposes the joint limits (obtained from plant.GetPositionLowerLimits()
+   * and plant.GetPositionUpperLimits()). If set to false, then the constructor
    * does not impose the joint limit constraints in the constructor.
    * @note The inverse kinematics problem constructed in this way doesn't permit
    * collision related constraint (such as calling
@@ -77,10 +77,11 @@ class InverseKinematics {
    * result.GetSolution(ik.q()). The user could then use this context to perform
    * kinematic computation (like computing the position of the end-effector
    * etc.).
-   * @param with_joint_limits If set to true, then the constructor
-   * imposes the joint limit (obtained from plant.GetPositionLowerLimits()
-   * and plant.GetPositionUpperLimits(). If set to false, then the constructor
-   * does not impose the joint limit constraints in the constructor.  */
+   * @param with_joint_limits If set to true, then the constructor imposes the
+   * joint limits (obtained from plant.GetPositionLowerLimits() and
+   * plant.GetPositionUpperLimits(), and from any body/joint locks set in
+   * `plant_context`). If set to false, then the constructor does not impose
+   * the joint limit constraints in the constructor.  */
   InverseKinematics(const MultibodyPlant<double>& plant,
                     systems::Context<double>* plant_context,
                     bool with_joint_limits = true);
