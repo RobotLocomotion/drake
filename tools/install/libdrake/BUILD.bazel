@@ -154,26 +154,6 @@ install(
     ],
 )
 
-# Depend on IPOPT's shared library iff IPOPT is enabled and we're on a platform
-# that uses the host OS shared library.
-selects.config_setting_group(
-    name = "ipopt_not_shared",
-    match_any = [
-        "//tools:no_ipopt",
-        "//tools/cc_toolchain:linux",
-    ],
-)
-
-cc_library(
-    name = "ipopt_deps",
-    deps = selects.with_or({
-        "//conditions:default": [
-            "@ipopt",
-        ],
-        ":ipopt_not_shared": [],
-    }),
-)
-
 # Depend on Gurobi's shared library iff Gurobi is enabled.
 cc_library(
     name = "gurobi_deps",
@@ -243,7 +223,6 @@ cc_library(
     name = "libdrake_runtime_so_deps",
     deps = [
         ":gurobi_deps",
-        ":ipopt_deps",
         ":mosek_deps",
         ":usd_deps",
         ":x11_deps",

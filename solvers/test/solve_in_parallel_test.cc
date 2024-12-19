@@ -6,6 +6,7 @@
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/ipopt_solver_internal.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/nlopt_solver.h"
 #include "drake/solvers/osqp_solver.h"
@@ -304,9 +305,15 @@ TEST_P(SolveInParallelIntegrationTest, Gurobi) {
 
 TEST_P(SolveInParallelIntegrationTest, Ipopt) {
   QuadraticProgram1 qp{CostForm::kNonSymbolic, ConstraintForm::kNonSymbolic};
-  // This linear solver is known to not be threadsafe. We want to be sure that
-  // this does not cause SolveInParallel to crash.
-  qp.prog()->SetSolverOption(IpoptSolver::id(), "linear_solver", "mumps");
+  // The MUMPS linear solver is known to not be threadsafe. We want to be sure
+  // that this does not cause SolveInParallel to crash. However, some platforms
+  // don't have MUMPS available, so we need to check before setting it.
+  for (const auto& linear_solver : internal::GetSupportedIpoptLinearSolvers()) {
+    if (linear_solver == "mumps") {
+      qp.prog()->SetSolverOption(IpoptSolver::id(), "linear_solver", "mumps");
+      break;
+    }
+  }
   for (const auto& result : Run(IpoptSolver::id(), *qp.prog())) {
     qp.CheckSolution(result);
   }
