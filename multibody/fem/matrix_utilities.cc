@@ -180,6 +180,18 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
      &AddScaledCofactorMatrixDerivative<T>,      // BR
      &PermuteBlockVector<T>));
 
+template void PolarDecompose<float>(const Matrix3<float>& F,
+                                    EigenPtr<Matrix3<float>> R,
+                                    EigenPtr<Matrix3<float>> S);
+template void AddScaledRotationalDerivative<float>(
+    const Matrix3<float>& R, const Matrix3<float>& S, const float& scale,
+    math::internal::FourthOrderTensor<float>* scaled_dRdF);
+template void CalcCofactorMatrix(const Matrix3<float>& M,
+                                 EigenPtr<Matrix3<float>> cofactor);
+template void AddScaledCofactorMatrixDerivative<float>(
+    const Matrix3<float>& M, const float& scale,
+    math::internal::FourthOrderTensor<float>* scaled_dCdM);
+
 }  // namespace internal
 }  // namespace fem
 }  // namespace multibody

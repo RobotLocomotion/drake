@@ -29,7 +29,7 @@ double CalcConditionNumberOfInvertibleMatrix(
 /* Calculates the polar decomposition of a 3-by-3 matrix F = RS where R is a
  rotation matrix and S is a symmetric matrix. The decomposition is unique when F
  is non-singular.
- @tparam_nonsymbolic_scalar */
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
                     EigenPtr<Matrix3<T>> S);
@@ -44,7 +44,7 @@ void PolarDecompose(const Matrix3<T>& F, EigenPtr<Matrix3<T>> R,
  @param[in,out] scaled_dRdF The variable to which scale * dR/dF is added.
  @pre tr(S)I − S is invertible.
  @pre scaled_dRdF != nullptr.
- @tparam_nonsymbolic_scalar */
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 void AddScaledRotationalDerivative(
     const Matrix3<T>& R, const Matrix3<T>& S, const T& scale,
@@ -52,7 +52,7 @@ void AddScaledRotationalDerivative(
 
 /* Calculates the cofactor matrix of the given input 3-by-3 matrix M.
  @pre cofactor != nullptr.
- @tparam_nonsymbolic_scalar */
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor);
 
@@ -62,7 +62,7 @@ void CalcCofactorMatrix(const Matrix3<T>& M, EigenPtr<Matrix3<T>> cofactor);
  @param[in] scale           The scalar multiple of the result.
  @param[in,out] scaled_dCdF The variable to which scale * dC/dM is added.
  @pre scaled_dCdM != nullptr.
- @tparam_nonsymbolic_scalar */
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 void AddScaledCofactorMatrixDerivative(
     const Matrix3<T>& M, const T& scale,

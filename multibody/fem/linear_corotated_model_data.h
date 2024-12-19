@@ -11,7 +11,7 @@ namespace fem {
 namespace internal {
 
 /* Data supporting calculations in LinearCorotatedModel.
- @tparam_nonsymbolic_scalar */
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 class LinearCorotatedModelData
     : public DeformationGradientData<LinearCorotatedModelData<T>> {
