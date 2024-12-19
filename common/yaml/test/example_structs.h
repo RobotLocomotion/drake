@@ -208,6 +208,24 @@ struct UnorderedMapStruct {
   string_unordered_map<double> value;
 };
 
+struct OptionalBytesStruct {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(value));
+  }
+
+  OptionalBytesStruct() {
+    using b = std::byte;
+    value = std::vector<std::byte>{b(10), b(20), b(30)};
+  }
+  explicit OptionalBytesStruct(
+      const std::optional<std::vector<std::byte>>& value_in) {
+    value = value_in;
+  }
+
+  std::optional<std::vector<std::byte>> value;
+};
+
 struct OptionalStruct {
   template <typename Archive>
   void Serialize(Archive* a) {
