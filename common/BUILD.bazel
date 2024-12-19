@@ -406,7 +406,7 @@ drake_cc_library(
                 # x86: SIMD with the improved 512VL encodings.
                 # TODO(jwnimmer-tri) Enable this once we support opt-out of CPU
                 # targets via NPY_DISABLE_CPU_FEATURES environment variable.
-                # "HWY_AVX3",
+                "HWY_AVX3",
                 # arm: SIMD that has fixed 256-bit lanes.
                 # TODO(jwnimmer-tri) Enable this once we can test it.
                 # "HWY_SVE_256",
