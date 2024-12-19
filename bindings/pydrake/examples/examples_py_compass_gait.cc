@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/examples/examples_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -93,7 +94,7 @@ void DefineExamplesCompassGait(py::module m) {
           py::arg("builder"), py::arg("floating_base_state_port"),
           py::arg("compass_gait_params"), py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
-          py::keep_alive<0, 1>(),
+          internal::ref_cycle<0, 1>(),
           // See #11531 for why `py_rvp::reference` is needed.
           py_rvp::reference, doc.CompassGaitGeometry.AddToBuilder.doc_4args)
       .def_static("AddToBuilder",
@@ -104,7 +105,7 @@ void DefineExamplesCompassGait(py::module m) {
           py::arg("builder"), py::arg("floating_base_state_port"),
           py::arg("scene_graph"),
           // Keep alive, ownership: `return` keeps `builder` alive.
-          py::keep_alive<0, 1>(),
+          internal::ref_cycle<0, 1>(),
           // See #11531 for why `py_rvp::reference` is needed.
           py_rvp::reference, doc.CompassGaitGeometry.AddToBuilder.doc_3args);
 }
