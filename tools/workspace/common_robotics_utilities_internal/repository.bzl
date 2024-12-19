@@ -1,6 +1,18 @@
+load("//tools/workspace:deprecation.bzl", "add_deprecation")
 load("//tools/workspace:github.bzl", "github_archive")
 
 def common_robotics_utilities_repository(
+        name,
+        mirrors = None):
+    add_deprecation(
+        name = name,
+        date = "2025-04-01",
+        cc_aliases = {
+            "common_robotics_utilities": "@common_robotics_utilities_internal//:common_robotics_utilities",  # noqa
+        },
+    )
+
+def common_robotics_utilities_internal_repository(
         name,
         mirrors = None):
     github_archive(

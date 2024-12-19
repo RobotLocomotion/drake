@@ -39,7 +39,7 @@ cc_library(
     includes = ["include"],
     linkstatic = True,
     deps = [
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@eigen",
         "@zlib",
     ],
@@ -61,7 +61,7 @@ cc_library(
     includes = ["include"],
     linkstatic = True,
     deps = [
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@eigen",
     ],
 )
@@ -80,7 +80,7 @@ cc_library(
     linkstatic = True,
     deps = [
         ":cl_hpp",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@eigen",
     ],
 )
@@ -107,7 +107,7 @@ cc_library(
         ":voxelized_geometry_tools",
         ":cuda_voxelization_helpers",
         ":opencl_voxelization_helpers",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@eigen",
         "@zlib",
     ],
@@ -127,7 +127,7 @@ cc_test(
         ":cuda_voxelization_helpers",
         ":opencl_voxelization_helpers",
         ":pointcloud_voxelization",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@gtest//:without_main",
     ],
 )
@@ -143,7 +143,7 @@ cc_test(
     ],
     deps = [
         ":voxelized_geometry_tools",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@gtest//:without_main",
     ],
 )
@@ -159,7 +159,7 @@ cc_test(
     ],
     deps = [
         ":voxelized_geometry_tools",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@gtest//:without_main",
     ],
 )

@@ -121,7 +121,7 @@ drake_cc_library(
         "//geometry/render:render_camera",
         "//geometry/render_vtk:internal_render_engine_vtk",
         "//systems/sensors:image",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@nlohmann_internal//:nlohmann",
         "@vtk_internal//:vtkCommonCore",
         "@vtk_internal//:vtkCommonMath",

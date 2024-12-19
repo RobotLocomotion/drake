@@ -71,7 +71,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":linear_distance_and_interpolation_provider",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -115,7 +115,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         "//common:essential",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -209,7 +209,7 @@ drake_cc_library(
         "//common:parallelism",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -245,7 +245,7 @@ drake_cc_googletest(
         ":unimplemented_collision_checker",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -263,7 +263,7 @@ drake_cc_googletest(
         ":distance_and_interpolation_provider",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -280,7 +280,7 @@ drake_cc_googletest(
         ":planning_test_helpers",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
