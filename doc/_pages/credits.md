@@ -27,6 +27,7 @@ this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.
 * Robin Deits
 * Evan Drumwright
 * Maurice Fallon
+* Ching-Hsin (Zach) Fang
 * Siyuan Feng
 * Moritz Fischer-Gundlach
 * Liang Fok
