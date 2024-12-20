@@ -216,7 +216,8 @@ boolean<T> RotationalInertia<
 }
 
 template <typename T>
-std::string RotationalInertia<T>::GetInvalidityReport() const {
+std::optional<std::string> RotationalInertia<T>::CreateInvalidityReport()
+    const {
   // Default return value is an empty string (this RotationalInertia is valid).
   std::string error_message;
   if (IsNaN()) {
@@ -235,6 +236,7 @@ std::string RotationalInertia<T>::GetInvalidityReport() const {
       }
     }
   }
+  if (error_message.empty()) return std::nullopt;
   return error_message;
 }
 
@@ -242,12 +244,12 @@ template <typename T>
 void RotationalInertia<T>::ThrowIfNotPhysicallyValidImpl(
     const char* func_name) const {
   DRAKE_DEMAND(func_name != nullptr);
-  const std::string reason_for_invalidity = GetInvalidityReport();
-  if (!reason_for_invalidity.empty()) {
+  const std::optional<std::string> invalidity_report = CreateInvalidityReport();
+  if (invalidity_report.has_value()) {
     const std::string error_message = fmt::format(
         "{}(): The rotational inertia\n"
         "{}did not pass the test CouldBePhysicallyValid().{}",
-        func_name, *this, reason_for_invalidity);
+        func_name, *this, *invalidity_report);
     throw std::logic_error(error_message);
   }
 }
