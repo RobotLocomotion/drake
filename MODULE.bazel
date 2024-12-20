@@ -32,3 +32,9 @@ register_toolchains(
 # file, so that downstream projects can consume Drake exclusively via bzlmod
 # (and so that we can delete our WORKSPACE files prior to Bazel 9 which drops
 # suppose for it).
+
+bazel_dep(name = "xacro")
+local_path_override(
+    module_name = "xacro",
+    path = "../xacro",
+)
