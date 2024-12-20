@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -605,7 +606,7 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
-    return boolean<T>(GetInvalidityReport().empty());
+    return boolean<T>(!CreateInvalidityReport().has_value());
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` in place to `I_BP_A`.
@@ -977,15 +978,15 @@ class RotationalInertia {
     return Ixx + epsilon >= 0 && Iyy + epsilon >= 0 && Izz + epsilon >= 0;
   }
 
-  // Returns an error string if `this` RotationalInertia is verifiably invalid
-  // or else returns an empty string (an empty string does not _guarantee_
-  // validity). For numerical type T, validity includes tests that principal
-  // moments of inertia (eigenvalues) are positive and satisfy the triangle
-  // inequality. For symbolic type T, tests are rudimentary (e.g., test for NaN
-  // moments or products of inertia).
-  std::string GetInvalidityReport() const;
+  // Returns an error string if `this` RotationalInertia is verifiably invalid.
+  // Note: Not returning an error string does not _guarantee_ validity.
+  // For numerical type T, validity includes tests that principal moments of
+  // inertia (eigenvalues) are positive and satisfy the triangle inequality.
+  // For symbolic type T, tests are rudimentary (e.g., test for NaN moments or
+  // products of inertia.
+  std::optional<std::string> CreateInvalidityReport() const;
 
-  // Throw an exception if GetInvalidityReport() returns an error string.
+  // Throw an exception if CreateInvalidityReport() returns an error string.
   void ThrowIfNotPhysicallyValidImpl(const char* func_name) const;
 
   // ==========================================================================
