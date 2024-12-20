@@ -986,6 +986,13 @@ class RotationalInertia {
   // products of inertia.
   std::optional<std::string> CreateInvalidityReport() const;
 
+  // No exception is thrown if type T is Symbolic.
+  void ThrowIfNotPhysicallyValid(const char* func_name) {
+    if constexpr (scalar_predicate<T>::is_bool) {
+      ThrowIfNotPhysicallyValidImpl(func_name);
+    }
+  }
+
   // Throw an exception if CreateInvalidityReport() returns an error string.
   void ThrowIfNotPhysicallyValidImpl(const char* func_name) const;
 
@@ -994,18 +1001,6 @@ class RotationalInertia {
   // assertions or demands. We do not try to attempt a smart way throw based on
   // a given symbolic::Formula but instead we make these methods a no-throw
   // for non-numeric types.
-
-  // SFINAE for numeric types. See ThrowIfNotPhysicallyValidImpl().
-  template <typename T1 = T>
-  typename std::enable_if_t<scalar_predicate<T1>::is_bool>
-  ThrowIfNotPhysicallyValid(const char* func_name) {
-    ThrowIfNotPhysicallyValidImpl(func_name);
-  }
-
-  // SFINAE for non-numeric types -- does nothing;
-  template <typename T1 = T>
-  typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
-  ThrowIfNotPhysicallyValid(const char*) {}
 
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.
