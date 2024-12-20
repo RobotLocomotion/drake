@@ -15,7 +15,7 @@ load("//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jid
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository", "common_robotics_utilities_repository")  # noqa
 load("//tools/workspace/commons_io:repository.bzl", "commons_io_repository")
 load("//tools/workspace/conex_internal:repository.bzl", "conex_internal_repository")  # noqa
-load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories")  # noqa
+load("//tools/workspace/crate_universe:repository.bzl", _crate_universe_repositories = "crate_universe_repositories")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
 load("//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
@@ -132,7 +132,7 @@ def add_default_repositories(
         excludes = [],
         mirrors = DEFAULT_MIRRORS,
         *,
-        bzlmod = False):
+        _bzlmod = False):
     """Declares workspace repositories for all externals needed by drake (other
     than those built into Bazel, of course).  This is intended to be loaded and
     called from a WORKSPACE file.
@@ -141,10 +141,10 @@ def add_default_repositories(
         excludes: list of string names of repositories to exclude; this can
           be useful if a WORKSPACE file has already supplied its own external
           of a given name.
-        bzlmod: when True, skips repositories declared in our MODULE.bazel;
-          set this to True if you are using bzlmod.
+        _bzlmod: (Internal use only) when True, skips repositories that are
+          already declared as modules in our MODULE.bazel.
     """
-    if bzlmod:
+    if _bzlmod:
         excludes = excludes + REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES
     if "abseil_cpp_internal" not in excludes:
         abseil_cpp_internal_repository(name = "abseil_cpp_internal", mirrors = mirrors)  # noqa
@@ -181,7 +181,7 @@ def add_default_repositories(
     if "conex_internal" not in excludes:
         conex_internal_repository(name = "conex_internal", mirrors = mirrors)
     if "crate_universe" not in excludes:
-        crate_universe_repositories(mirrors = mirrors, excludes = excludes)
+        _crate_universe_repositories(mirrors = mirrors, excludes = excludes)
     if "csdp_internal" not in excludes:
         csdp_internal_repository(name = "csdp_internal", mirrors = mirrors)
     if "curl_internal" not in excludes:
@@ -377,23 +377,14 @@ def add_default_repositories(
     if "zlib" not in excludes:
         zlib_repository(name = "zlib")
 
-def add_default_toolchains(
-        excludes = [],
-        *,
-        bzlmod = False):
+def add_default_toolchains(excludes = []):
     """Register toolchains for each language (e.g., "py") not explicitly
     excluded and/or not using an automatically generated toolchain.
 
     Args:
         excludes: List of languages for which a toolchain should not be
             registered.
-        bzlmod: when True, skips toolchains declared in our MODULE.bazel;
-          set this to True if you are using bzlmod.
     """
-    if bzlmod:
-        # All toolchains are in MODULE.bazel already.
-        return
-
     if "py" not in excludes:
         native.register_toolchains(
             "//tools/py_toolchain:toolchain",
@@ -407,9 +398,7 @@ def add_default_toolchains(
 def add_default_workspace(
         repository_excludes = [],
         toolchain_excludes = [],
-        mirrors = DEFAULT_MIRRORS,
-        *,
-        bzlmod = False):
+        mirrors = DEFAULT_MIRRORS):
     """Declare repositories in this WORKSPACE for each dependency of @drake
     (e.g., "eigen") that is not explicitly excluded, and register toolchains
     for each language (e.g., "py") not explicitly excluded and/or not using an
@@ -423,16 +412,32 @@ def add_default_workspace(
         mirrors: Dictionary of mirrors from which to download repository files.
             See mirrors.bzl file in this directory for the file format and
             default values.
-        bzlmod: when True, skips repositories and toolchains declared in our
-          MODULE.bazel; set this to True if you are using bzlmod.
     """
 
+    add_default_repositories(excludes = repository_excludes, mirrors = mirrors)
+    add_default_toolchains(excludes = toolchain_excludes)
+
+def _drake_dep_repositories_impl(module_ctx):
     add_default_repositories(
-        excludes = repository_excludes,
-        mirrors = mirrors,
-        bzlmod = bzlmod,
+        excludes = ["crate_universe"],
+        _bzlmod = True,
     )
-    add_default_toolchains(
-        excludes = toolchain_excludes,
-        bzlmod = bzlmod,
-    )
+
+drake_dep_repositories = module_extension(
+    implementation = _drake_dep_repositories_impl,
+    doc = """
+(Internal use only) Wraps the add_default_repositories repository rules to be
+usable as a bzlmod module extension.
+""",
+)
+
+def _crate_universe_repositories_module_extension_impl(module_ctx):
+    _crate_universe_repositories(mirrors = DEFAULT_MIRRORS)
+
+crate_universe_repositories = module_extension(
+    implementation = _crate_universe_repositories_module_extension_impl,
+    doc = """
+(Internal use only) Wraps the crate_universe repository rules to be usable as a
+bzlmod module extension.
+""",
+)
