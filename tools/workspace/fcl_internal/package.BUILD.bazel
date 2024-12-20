@@ -123,7 +123,10 @@ cc_library_vendored(
         x.replace("include/fcl/", "drake_hdr/fcl/")
         for x in _HDRS
     ],
-    copts = ["-fvisibility=hidden"],
+    copts = [
+        "-fvisibility=hidden",
+        "-w",
+    ],
     defines = [
         "FCL_STATIC_DEFINE",
     ],

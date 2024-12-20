@@ -1,4 +1,3 @@
-load("@cc//:compiler.bzl", "COMPILER_ID")
 load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
 load("//tools/install:install.bzl", "install")
 load("//tools/skylark:cc.bzl", "CcInfo", "cc_binary")
@@ -6,15 +5,18 @@ load("//tools/skylark:drake_cc.bzl", "drake_cc_binary", "drake_cc_googletest")
 load("//tools/skylark:drake_py.bzl", "drake_py_library", "drake_py_test")
 load("//tools/skylark:py.bzl", "py_library")
 
-EXTRA_PYBIND_COPTS = [
-    # GCC and Clang don't always agree / succeed when inferring storage
-    # duration (#9600). Workaround it for now.
-    "-Wno-unused-lambda-capture",
-    # pybind11's operator overloading (e.g., .def(py::self + py::self))
-    # spuriously triggers this warning, so we'll suppress it anytime we're
-    # compiling pybind11 modules.
-    "-Wno-self-assign-overloaded",
-] if COMPILER_ID.endswith("Clang") else []
+EXTRA_PYBIND_COPTS = select({
+    "@rules_cc//cc/compiler:clang": [
+        # GCC and Clang don't always agree / succeed when inferring storage
+        # duration (#9600). Workaround it for now.
+        "-Wno-unused-lambda-capture",
+        # pybind11's operator overloading (e.g., .def(py::self + py::self))
+        # spuriously triggers this warning, so we'll suppress it anytime we're
+        # compiling pybind11 modules.
+        "-Wno-self-assign-overloaded",
+    ],
+    "//conditions:default": [],
+})
 
 def pybind_py_library(
         name,
