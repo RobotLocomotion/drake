@@ -282,8 +282,9 @@ GTEST_TEST(TestIpoptSolver, SupportedLinearSolvers) {
   const std::vector<std::string_view> actual = GetSupportedIpoptLinearSolvers();
   std::vector<std::string_view> expected;
   if (kApple) {
-    // Homebrew doesn't provide SPRAL.
-    expected.emplace_back("mumps");
+    // Homebrew doesn't provide a usable MUMPS library for us to build against,
+    // so SPRAL is the only available option.
+    expected.emplace_back("spral");
   } else {
     expected.emplace_back("mumps");
     expected.emplace_back("spral");
