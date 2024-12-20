@@ -43,8 +43,7 @@ cc_library(
     ],
     linkopts = select({
         ":linux": ["-pthread"],
-        # This is a bazel-default rule, and does not need @drake//
-        "@//conditions:default": [],
+        "//conditions:default": [],
     }),
     linkstatic = 1,
     deps = [

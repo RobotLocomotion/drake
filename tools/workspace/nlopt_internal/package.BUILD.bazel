@@ -367,7 +367,7 @@ exports_files(
         "src/api/nlopt-in.hpp",
         "src/api/nlopt.h",
     ],
-    visibility = ["@//tools/workspace/nlopt_internal:__pkg__"],
+    visibility = ["@drake//tools/workspace/nlopt_internal:__pkg__"],
 )
 
 cc_library_vendored(

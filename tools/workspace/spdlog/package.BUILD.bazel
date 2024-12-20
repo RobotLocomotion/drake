@@ -65,8 +65,7 @@ cc_binary(
             "-pthread",
             "-Wl,-soname,libdrake_spdlog.so",
         ],
-        # This is a bazel-default rule, and does not need @drake//
-        "@//conditions:default": [],
+        "//conditions:default": [],
     }),
     # These two lines are how you tell Bazel to create a shared library.
     linkshared = True,
