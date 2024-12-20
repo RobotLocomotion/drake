@@ -3,12 +3,10 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
-#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
@@ -592,35 +590,36 @@ void DefineEventAndEventSubclasses(py::module m) {
 
 template <typename T>
 void DoDefineFrameworkDiagramBuilder(py::module m) {
-  using internal::BuilderLifeSupport;
-  DefineTemplateClassWithDefault<DiagramBuilder<T>>(m, "DiagramBuilder",
-      GetPyParam<T>(), doc.DiagramBuilder.doc, std::nullopt, py::dynamic_attr())
+  DefineTemplateClassWithDefault<DiagramBuilder<T>>(
+      m, "DiagramBuilder", GetPyParam<T>(), doc.DiagramBuilder.doc)
       .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
       .def(
           "AddSystem",
           [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
-            // Using BuilderLifeSupport::stash makes the builder
-            // temporarily immortal (uncollectible self cycle). This will be
-            // resolved by the Build() step. See BuilderLifeSupport for
-            // rationale.
-            BuilderLifeSupport<T>::stash(self);
             return self->AddSystem(std::move(system));
           },
-          py::arg("system"), internal::ref_cycle<1, 2>(),
-          doc.DiagramBuilder.AddSystem.doc)
+          py::arg("system"),
+          // TODO(eric.cousineau): These two keep_alive's purposely form a
+          // reference cycle as a workaround for #14355. We should find a
+          // better way?
+          // Keep alive, reference: `self` keeps `return` alive.
+          py::keep_alive<1, 0>(),
+          // Keep alive, ownership: `system` keeps `self` alive.
+          py::keep_alive<2, 1>(), doc.DiagramBuilder.AddSystem.doc)
       .def(
           "AddNamedSystem",
           [](DiagramBuilder<T>* self, std::string& name,
               unique_ptr<System<T>> system) {
-            // Using BuilderLifeSupport::stash makes the builder
-            // temporarily immortal (uncollectible self cycle). This will be
-            // resolved by the Build() step. See BuilderLifeSupport for
-            // rationale.
-            BuilderLifeSupport<T>::stash(self);
             return self->AddNamedSystem(name, std::move(system));
           },
-          py::arg("name"), py::arg("system"), internal::ref_cycle<1, 3>(),
-          doc.DiagramBuilder.AddNamedSystem.doc)
+          py::arg("name"), py::arg("system"),
+          // TODO(eric.cousineau): These two keep_alive's purposely form a
+          // reference cycle as a workaround for #14355. We should find a
+          // better way?
+          // Keep alive, reference: `self` keeps `return` alive.
+          py::keep_alive<1, 0>(),
+          // Keep alive, ownership: `system` keeps `self` alive.
+          py::keep_alive<3, 1>(), doc.DiagramBuilder.AddNamedSystem.doc)
       .def("RemoveSystem", &DiagramBuilder<T>::RemoveSystem, py::arg("system"),
           doc.DiagramBuilder.RemoveSystem.doc)
       .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
@@ -695,33 +694,12 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def("ExportOutput", &DiagramBuilder<T>::ExportOutput, py::arg("output"),
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportOutput.doc)
-      .def(
-          "Build",
-          [](DiagramBuilder<T>* self) {
-            // The c++ Build() step would pass life support to the
-            // diagram. Instead of relying on its one-way, uncollectible
-            // support here, abandon it in favor of the builder-diagram
-            // ref_cycle invoked below. We can't have both; that would create
-            // an uncollectible builder-diagram cycle and make those objects
-            // immortal.
-            BuilderLifeSupport<T>::abandon(self);
-            return self->Build();
-          },
-          internal::ref_cycle<0, 1>(), doc.DiagramBuilder.Build.doc)
-      .def(
-          "BuildInto",
-          [](DiagramBuilder<T>* self, Diagram<T>* target) {
-            // The c++ BuildInto() step would pass life support to the
-            // diagram. Instead of relying on its one-way, uncollectible
-            // support here, abandon it in favor of the builder-diagram
-            // ref_cycle invoked below. We can't have both; that would create
-            // an uncollectible builder-diagram cycle and make those objects
-            // immortal.
-            BuilderLifeSupport<T>::abandon(self);
-            self->BuildInto(target);
-          },
-          internal::ref_cycle<1, 2>(), py::arg("target"),
-          doc.DiagramBuilder.BuildInto.doc)
+      .def("Build", &DiagramBuilder<T>::Build,
+          // Keep alive, ownership (tr.): `self` keeps `return` alive.
+          py::keep_alive<1, 0>(), doc.DiagramBuilder.Build.doc)
+      .def("BuildInto", &DiagramBuilder<T>::BuildInto, py::arg("target"),
+          // Keep alive, ownership (tr.): `target` keeps `self` alive.
+          py::keep_alive<2, 1>(), doc.DiagramBuilder.BuildInto.doc)
       .def("IsConnectedOrExported", &DiagramBuilder<T>::IsConnectedOrExported,
           py::arg("port"), doc.DiagramBuilder.IsConnectedOrExported.doc)
       .def("num_input_ports", &DiagramBuilder<T>::num_input_ports,

@@ -2,10 +2,8 @@
 
 import pydrake.manipulation as mut
 
-import gc
 import unittest
 import numpy as np
-import weakref
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.lcm import DrakeLcm
@@ -21,9 +19,7 @@ from pydrake.systems.framework import (
     InputPort,
     OutputPort,
 )
-from pydrake.systems.analysis import Simulator
 from pydrake.systems.lcm import LcmBuses
-from pydrake.systems.test.test_util import call_build_from_cpp
 
 
 class TestKukaIiwa(unittest.TestCase):
@@ -191,114 +187,3 @@ class TestKukaIiwa(unittest.TestCase):
         self.assertGreater(dut1.num_input_ports(), 0)
         self.assertGreater(dut1.num_output_ports(), 0)
         self.assertGreater(len(builder.GetSystems()), tare)
-
-    def test_kuka_iiwa_sim_driver_lifetime_init(self):
-
-        def make_diagram():
-            builder, plant, controller_plant = (
-                self.make_builder_plant_controller_plant()
-            )
-            # `dut` is a diagram; its init() promises to keep
-            # `controller_plant` alive.
-            dut = mut.SimIiwaDriver(
-                control_mode=mut.IiwaControlMode.kPositionAndTorque,
-                controller_plant=controller_plant,
-                ext_joint_filter_tau=0.1,
-                kp_gains=np.full(7, 100.0),
-            )
-            return dut
-
-        diagram = make_diagram()
-        gc.collect()
-        # Crashes if controller_plant is not kept alive by bindings.
-        ad_diagram = diagram.ToAutoDiffXd()
-
-    def call_build_from(self, diagram_builder, language):
-        assert language in ["python", "c++"]
-        if language == "python":
-            # The pydrake binding ensures object lifetimes properly.
-            return diagram_builder.Build()
-        else:
-            # Calling build on a python-populated diagram builder from c++ is
-            # dodgy at best, but don't worry -- all will be well if something
-            # retains ownership of the diagram.
-            return call_build_from_cpp(diagram_builder)
-
-    def test_kuka_iiwa_sim_driver_lifetime_add_to_builder(self):
-
-        def make_diagram(call_build_from_language):
-            builder, plant, controller_plant = (
-                self.make_builder_plant_controller_plant()
-            )
-            dut = mut.SimIiwaDriver.AddToBuilder(
-                builder=builder,
-                plant=plant,
-                iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
-                controller_plant=controller_plant,
-                ext_joint_filter_tau=0.1,
-                desired_iiwa_kp_gains=np.full(7, 100.0),
-                control_mode=mut.IiwaControlMode.kPositionAndTorque,
-            )
-            diagram = self.call_build_from(builder, call_build_from_language)
-            return diagram, dut
-
-        for call_build_from_language in ["python", "c++"]:
-            # In either case here, the diagram reference is sufficient to keep
-            # the whole diagram and its dependencies alive.
-            diagram, dut = make_diagram(call_build_from_language)
-            del dut
-            gc.collect()
-            # Crashes if controller_plant is not kept alive by bindings.
-            ad_diagram = diagram.ToAutoDiffXd()
-            # The diagram is mortal.
-            spy = weakref.finalize(diagram, lambda: None)
-            del diagram
-            gc.collect()
-            self.assertFalse(spy.alive)
-
-        # In a python-only program, any subsystem should be sufficient to keep
-        # everything alive.
-        diagram, dut = make_diagram("python")
-        del diagram
-        gc.collect()
-        # Crashes if controller_plant is not kept alive by bindings.
-        ad_dut = dut.ToAutoDiffXd()
-        # The dut is mortal.
-        spy = weakref.finalize(dut, lambda: None)
-        del dut
-        gc.collect()
-        self.assertFalse(spy.alive)
-
-    def test_kuka_iiwa_sim_driver_lifetime_build_iiwa_control(self):
-
-        def make_diagram(oblivious=False):
-            builder, plant, controller_plant = (
-                self.make_builder_plant_controller_plant()
-            )
-            mut.BuildIiwaControl(
-                plant=plant,
-                iiwa_instance=plant.GetModelInstanceByName("iiwa7"),
-                controller_plant=controller_plant, lcm=DrakeLcm(),
-                builder=builder, ext_joint_filter_tau=0.12,
-                desired_iiwa_kp_gains=np.arange(7),
-                control_mode=mut.IiwaControlMode.kPositionAndTorque)
-            if oblivious:
-                diagram = call_build_from_cpp(builder)
-            else:
-                diagram = builder.Build()
-            return diagram, weakref.finalize(controller_plant, lambda: None)
-
-        for call_build_from_language in ["python", "c++"]:
-            # In either case here, the diagram reference is sufficient to keep
-            # the whole diagram and its dependencies alive. In this case, we
-            # care about the lifetime of controller_plant, but we can't use
-            # scalar conversion to flush it out. Use the returned weakref spy
-            # instead.
-            diagram, spy = make_diagram(call_build_from_language)
-            gc.collect()
-            self.assertTrue(spy.alive, (spy.alive, call_build_from_language))
-            # The diagram and its dependencies are mortal.
-            spy = weakref.finalize(diagram, lambda: None)
-            del diagram
-            gc.collect()
-            self.assertFalse(spy.alive)
