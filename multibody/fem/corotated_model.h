@@ -20,7 +20,7 @@ struct CorotatedModelTraits {
 
 /* Implements the fixed corotated hyperelastic constitutive model as
  described in [Stomakhin, 2012].
- @tparam_nonsymbolic_scalar
+ @tparam T The scalar type, can be a double, float, or AutoDiffXd.
 
  [Stomakhin, 2012] Stomakhin, Alexey, et al. "Energetically consistent
  invertible elasticity." Proceedings of the 11th ACM SIGGRAPH/Eurographics
