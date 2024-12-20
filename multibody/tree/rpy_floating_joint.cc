@@ -79,6 +79,21 @@ RpyFloatingJoint<T>::MakeImplementationBlueprint(
   return blue_print;
 }
 
+namespace internal {
+
+template <typename T>
+const RpyFloatingJoint<T>* DynamicCastJoint<RpyFloatingJoint>::cast(
+    const Joint<T>* element) {
+  return dynamic_cast<const RpyFloatingJoint<T>*>(element);
+}
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &DynamicCastJoint<RpyFloatingJoint>::template cast<T>
+));
+// clang-format on
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

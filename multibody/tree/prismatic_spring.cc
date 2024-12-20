@@ -113,6 +113,21 @@ PrismaticSpring<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+namespace internal {
+
+template <typename T>
+const PrismaticSpring<T>* DynamicCastForceElement<PrismaticSpring>::cast(
+    const ForceElement<T>* element) {
+  return dynamic_cast<const PrismaticSpring<T>*>(element);
+}
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &DynamicCastForceElement<PrismaticSpring>::template cast<T>
+));
+// clang-format on
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

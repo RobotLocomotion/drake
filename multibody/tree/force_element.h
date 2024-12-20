@@ -278,5 +278,21 @@ class ForceElement : public MultibodyElement<T> {
   }
 };
 
+namespace internal {
+
+// This helper exists so that concrete force element types can specialize it
+// with non-inline definitions. MbT code (on behalf of MbP) needs to perform
+// dynamic casting, but we want to avoid doing that inline, so MbT calls this
+// helper, which then (if the ToType is a Drake force element) is non-inline.
+// This is the fallback implementation for non-Drake force element types.
+template <template <typename> class ToType>
+struct DynamicCastForceElement {
+  template <typename T>
+  static const ToType<T>* cast(const ForceElement<T>* element) {
+    return dynamic_cast<const ToType<T>*>(element);
+  }
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake

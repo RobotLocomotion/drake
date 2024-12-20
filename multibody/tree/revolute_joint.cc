@@ -107,6 +107,21 @@ RevoluteJoint<T>::MakeImplementationBlueprint(
   return blue_print;
 }
 
+namespace internal {
+
+template <typename T>
+const RevoluteJoint<T>* DynamicCastJoint<RevoluteJoint>::cast(
+    const Joint<T>* element) {
+  return dynamic_cast<const RevoluteJoint<T>*>(element);
+}
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &DynamicCastJoint<RevoluteJoint>::template cast<T>
+));
+// clang-format on
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
