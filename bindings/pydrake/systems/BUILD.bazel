@@ -48,9 +48,11 @@ drake_pybind_library(
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
+        "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
         "//bindings/pydrake/common:wrap_pybind",
+        "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_srcs = [
         "framework_py.cc",
@@ -124,6 +126,7 @@ drake_pybind_library(
     cc_srcs = ["controllers_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":analysis_py",
         ":framework_py",
         ":module_py",
         ":primitives_py",
@@ -198,6 +201,18 @@ drake_py_library(
     srcs = ["drawing.py"],
     imports = PACKAGE_INFO.py_imports,
     deps = [":module_py"],
+)
+
+drake_cc_library(
+    name = "builder_life_support_pybind",
+    hdrs = ["builder_life_support_pybind.h"],
+    declare_installed_headers = False,
+    visibility = ["//bindings/pydrake:__subpackages__"],
+    # Somehow kcov and pybind11 objects interact to spoil reference counting
+    # heuristics. In any case, kcov can't really introspect mixed-language
+    # programs.
+    tags = ["no_kcov"],
+    deps = [],
 )
 
 drake_cc_library(
@@ -390,7 +405,10 @@ drake_pybind_library(
     add_install = False,
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:value_pybind",
+        "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_so_name = "test/test_util",
     cc_srcs = ["test/test_util_py.cc"],
@@ -399,7 +417,7 @@ drake_pybind_library(
         ":framework_py",
         ":primitives_py",
     ],
-    visibility = ["//visibility:private"],
+    visibility = ["//bindings/pydrake:__subpackages__"],
 )
 
 drake_py_unittest(
@@ -409,6 +427,14 @@ drake_py_unittest(
         ":framework_py",
         ":primitives_py",
         "//bindings/pydrake:trajectories_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "builder_life_support_test",
+    deps = [
+        ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
@@ -459,6 +485,7 @@ drake_py_unittest(
     ],
     deps = [
         ":controllers_py",
+        ":test_util_py",
         "//bindings/pydrake/examples",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
