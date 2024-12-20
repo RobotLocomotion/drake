@@ -6,7 +6,7 @@ Captures limitations for the present state of the Python bindings for the
 lifetime of objects, eventually lock down capabilities as they are introduced.
 """
 
-
+import gc
 import unittest
 import numpy as np
 
@@ -47,27 +47,26 @@ class TestLifetime(unittest.TestCase):
         info = Info()
         system = DeleteListenerSystem(info.record_deletion)
         builder = DiagramBuilder()
-        # `system` is now owned by `builder`.
+        # `system` and `builder` are now joined by a ref_cycle. The c++ system
+        # is owned by the c++ builder.
         builder.AddSystem(system)
-        # `system` is now owned by `diagram`.
+        # `system`, `builder`, and `diagram` are now joined by ref_cycles. The
+        # c++ system is owned by the c++ diagram.
         diagram = builder.Build()
-        # Delete the builder. Should still be alive.
+        # Delete the builder. The `system` should still be alive.
         del builder
         self.assertFalse(info.deleted)
-        # Delete the diagram. Should be dead.
+        # Delete the diagram. All are still reachable via `system`.
         del diagram
-        # Using `py::keep_alive`, `system` will keep `builder` alive after
-        # `.AddSystem` is called, and `builder` will keep `diagram` alive after
-        # `.Build` is called.
-        # Transitively, `system` will keep `builder` alive (as its old owner)
-        # and `diagram` (as its new owner, which is kept alive by `builder`).
         self.assertFalse(info.deleted)
         self.assertTrue(system is not None)
         del system
-        # Upon removing this reference, everything should have been cleared up.
-        # However, since we work around #14355 by inducing a keep_alive cycle,
-        # it will not be deleted.
+        # The system-builder-diagram "life raft" is still alive as a
+        # garbage-collectible cycle.
         self.assertFalse(info.deleted)
+        # Collect the garbage. The system should now be gone.
+        gc.collect()
+        self.assertTrue(info.deleted)
 
     def test_ownership_multiple_containers(self):
         info = Info()
