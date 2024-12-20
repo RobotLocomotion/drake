@@ -25,9 +25,7 @@ drake_pybind_library(
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
-        "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",
-        "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_so_name = "__init__",
     cc_srcs = [
@@ -58,7 +56,6 @@ drake_py_unittest(
         ":manipulation",
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
-        "//bindings/pydrake/systems:test_util_py",
     ],
 )
 

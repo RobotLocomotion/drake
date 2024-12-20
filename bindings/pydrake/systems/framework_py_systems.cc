@@ -302,9 +302,8 @@ struct Impl {
     // TODO(eric.cousineau): Show constructor, but somehow make sure `pybind11`
     // knows this is abstract?
     auto system_cls =
-        DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(m,
-            "System", GetPyParam<T>(), doc.System.doc, std::nullopt,
-            py::dynamic_attr());
+        DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(
+            m, "System", GetPyParam<T>(), doc.System.doc);
     system_cls
         // Resource allocation and initialization.
         .def("AllocateContext", &System<T>::AllocateContext,
