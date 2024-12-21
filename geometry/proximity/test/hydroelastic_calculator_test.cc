@@ -592,6 +592,14 @@ TYPED_TEST(MaybeMakeContactSurfaceTests, BothCompliantNonHalfSpace) {
       scene.calculator().MaybeMakeContactSurface(scene.id_A(), scene.id_B());
   EXPECT_EQ(result, ContactSurfaceResult::kCalculated);
   EXPECT_NE(surface, nullptr);
+
+  // Supplying ids in reversed order yields the same result, because the ids
+  // get put in order before constructing the surface.
+  auto [result_reversed, surface_reversed] =
+      scene.calculator().MaybeMakeContactSurface(scene.id_B(), scene.id_A());
+  EXPECT_EQ(result_reversed, ContactSurfaceResult::kCalculated);
+  EXPECT_NE(surface_reversed, nullptr);
+  EXPECT_EQ(surface->id_M(), surface_reversed->id_M());
 }
 
 TYPED_TEST(MaybeMakeContactSurfaceTests, BothHalfSpace) {
