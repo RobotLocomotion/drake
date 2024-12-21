@@ -216,31 +216,42 @@ boolean<T> RotationalInertia<
 }
 
 template <typename T>
-void RotationalInertia<T>::ThrowNotPhysicallyValid(
-    const char* func_name) const {
-  std::string error_message = fmt::format(
-      "{}(): The rotational inertia\n"
-      "{}did not pass the test CouldBePhysicallyValid().",
-      func_name, *this);
-  // Provide additional information if a moment of inertia is non-negative
-  // or if moments of inertia do not satisfy the triangle inequality.
-  if constexpr (scalar_predicate<T>::is_bool) {
-    if (!IsNaN()) {
-      if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality()) {
-        const Vector3<double> p = CalcPrincipalMomentsOfInertia();
-        error_message += fmt::format(
-            "\nThe associated principal moments of inertia:"
-            "\n{}  {}  {}",
-            p(0), p(1), p(2));
-        if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
-          error_message += "\nare invalid since at least one is negative.";
-        } else {
-          error_message += "\ndo not satisfy the triangle inequality.";
-        }
+std::optional<std::string> RotationalInertia<T>::CreateInvalidityReport()
+    const {
+  // Default return value is an empty string (this RotationalInertia is valid).
+  std::string error_message;
+  if (IsNaN()) {
+    error_message = fmt::format("\nNaN detected in RotationalInertia.");
+  } else if constexpr (scalar_predicate<T>::is_bool) {
+    if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality()) {
+      const Vector3<double> p = CalcPrincipalMomentsOfInertia();
+      error_message += fmt::format(
+          "\nThe associated principal moments of inertia:"
+          "\n{}  {}  {}",
+          p(0), p(1), p(2));
+      if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
+        error_message += "\nare invalid since at least one is negative.";
+      } else {
+        error_message += "\ndo not satisfy the triangle inequality.";
       }
     }
   }
-  throw std::logic_error(error_message);
+  if (error_message.empty()) return std::nullopt;
+  return error_message;
+}
+
+template <typename T>
+void RotationalInertia<T>::ThrowIfNotPhysicallyValidImpl(
+    const char* func_name) const {
+  DRAKE_DEMAND(func_name != nullptr);
+  const std::optional<std::string> invalidity_report = CreateInvalidityReport();
+  if (invalidity_report.has_value()) {
+    const std::string error_message = fmt::format(
+        "{}(): The rotational inertia\n"
+        "{}did not pass the test CouldBePhysicallyValid().{}",
+        func_name, *this, *invalidity_report);
+    throw std::logic_error(error_message);
+  }
 }
 
 // TODO(Mitiguy) Consider using this code (or code similar to this) to write
