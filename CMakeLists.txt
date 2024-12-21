@@ -98,6 +98,14 @@ if(C_COMPILER_NAME STREQUAL ccache OR CXX_COMPILER_NAME STREQUAL ccache)
   )
 endif()
 
+# Get the full C++ compiler major version for our cmake/bazel.rc.in.
+string(REGEX MATCH "^([0-9]+)"
+  DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR
+  "${CMAKE_CXX_COMPILER_VERSION}")
+if(NOT DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR)
+  set(DRAKE_CC_TOOLCHAIN_COMPILER_MAJOR "0")
+endif()
+
 # The minimum compiler versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/cc/repository.bzl.
 set(MINIMUM_APPLE_CLANG_VERSION 14)
