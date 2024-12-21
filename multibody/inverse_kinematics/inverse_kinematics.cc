@@ -23,6 +23,35 @@ namespace multibody {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+namespace {
+// Checks if `plant_context` supports distance queries using SceneGraph.
+template <typename T>
+void CheckPlantContextInDistanceQuery(
+    const MultibodyPlant<T>& plant, const systems::Context<T>& plant_context) {
+  if (!plant.geometry_source_is_registered()) {
+    throw std::invalid_argument(
+        "Kinematic constraint: MultibodyPlant has not registered "
+        "with a SceneGraph yet. Please refer to "
+        "AddMultibodyPlantSceneGraph on how to connect MultibodyPlant to "
+        "SceneGraph.");
+  }
+  const auto& query_port = plant.get_geometry_query_input_port();
+  if (!query_port.HasValue(plant_context)) {
+    throw std::invalid_argument(
+        "Inverse Kinematics: Cannot get a valid "
+        "geometry::QueryObject. Either the plant's geometry query input port "
+        "is not properly connected to the SceneGraph's geometry query output "
+        "port, or the plant_context_ is incorrect. Please refer to "
+        "AddMultibodyPlantSceneGraph on connecting MultibodyPlant to "
+        "SceneGraph, and check if the correct plant_context is passed in the "
+        "constructor of InverseKinematics(plant, plant_context). For a sample "
+        "code, please check "
+        "the documentation of InverseKinematics constructor (the overloaded "
+        "one which takes in a Context.");
+  }
+}
+}  // namespace
+
 InverseKinematics::InverseKinematics(const MultibodyPlant<double>& plant,
                                      bool with_joint_limits)
     : InverseKinematics(plant, plant.CreateDefaultContext(), nullptr,
@@ -198,6 +227,7 @@ solvers::Binding<solvers::Cost> InverseKinematics::AddAngleBetweenVectorsCost(
 solvers::Binding<solvers::Constraint>
 InverseKinematics::AddMinimumDistanceLowerBoundConstraint(
     double bound, double influence_distance_offset) {
+  CheckPlantContextInDistanceQuery(plant_, *context_);
   auto constraint = std::shared_ptr<MinimumDistanceLowerBoundConstraint>(
       new MinimumDistanceLowerBoundConstraint(&plant_, bound,
                                               get_mutable_context(), {},
@@ -208,6 +238,7 @@ InverseKinematics::AddMinimumDistanceLowerBoundConstraint(
 solvers::Binding<solvers::Constraint>
 InverseKinematics::AddMinimumDistanceUpperBoundConstraint(
     double bound, double influence_distance_offset) {
+  CheckPlantContextInDistanceQuery(plant_, *context_);
   auto constraint = std::shared_ptr<MinimumDistanceUpperBoundConstraint>(
       new MinimumDistanceUpperBoundConstraint(&plant_, bound,
                                               get_mutable_context(),
@@ -218,6 +249,7 @@ InverseKinematics::AddMinimumDistanceUpperBoundConstraint(
 solvers::Binding<solvers::Constraint> InverseKinematics::AddDistanceConstraint(
     const SortedPair<geometry::GeometryId>& geometry_pair,
     double distance_lower, double distance_upper) {
+  CheckPlantContextInDistanceQuery(plant_, *context_);
   auto constraint = std::make_shared<DistanceConstraint>(
       &plant_, geometry_pair, get_mutable_context(), distance_lower,
       distance_upper);
