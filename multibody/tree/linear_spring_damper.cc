@@ -227,6 +227,21 @@ T LinearSpringDamper<T>::CalcLengthTimeDerivative(
   return length_dot;
 }
 
+namespace internal {
+
+template <typename T>
+const LinearSpringDamper<T>* DynamicCastForceElement<LinearSpringDamper>::cast(
+    const ForceElement<T>* element) {
+  return dynamic_cast<const LinearSpringDamper<T>*>(element);
+}
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &DynamicCastForceElement<LinearSpringDamper>::template cast<T>
+));
+// clang-format on
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 

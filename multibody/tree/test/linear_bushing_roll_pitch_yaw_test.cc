@@ -772,6 +772,13 @@ GTEST_TEST(LinearBushingRollPitchYawTest, BushingParameters) {
   EXPECT_TRUE(CompareMatrices(new_force_damping, new_default_force_damping));
 }
 
+TEST_F(LinearBushingRollPitchYawTester, DynamicCast) {
+  const ForceElement<double>* base = bushing_;
+  EXPECT_EQ(
+      internal::DynamicCastForceElement<LinearBushingRollPitchYaw>::cast(base),
+      bushing_);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
