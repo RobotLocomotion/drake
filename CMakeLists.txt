@@ -13,7 +13,8 @@ project(drake
 # (e.g., `-DCMAKE_BUILD_TYPE=Release`) and install Drake using those settings.
 #
 # We'll do that by converting the settings to generated Bazel inputs:
-# - a `WORKSPACE.bazel` file that specifies dependencies; and
+# - a tweaked copy of our `MODULE.bazel` to opt-out of some dependencies; and
+# - a completely new `WORKSPACE.bzlmod` to replace what we opted-out of; and
 # - a `.bazelrc` file that specifies configuration choices.
 # and then running the `@drake//:install` program from that temporary workspace.
 
@@ -77,8 +78,7 @@ else()
   endif()
 endif()
 
-# The version passed to find_package(Bazel) should match the
-# minimum_bazel_version value in the call to versions.check() in WORKSPACE.
+# This version number should match bazel_compatibility in MODULE.bazel.
 set(MINIMUM_BAZEL_VERSION 7.4)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
 if(NOT Bazel_FOUND)
@@ -350,6 +350,9 @@ endfunction()
 set(BAZEL_WORKSPACE_EXTRA)
 set(BAZEL_WORKSPACE_EXCLUDES)
 
+# Our cmake/WORKSPACE.bzlmod always provides @python.
+list(APPEND BAZEL_WORKSPACE_EXCLUDES "python")
+
 macro(override_repository NAME)
   set(repo "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
   string(APPEND BAZEL_WORKSPACE_EXTRA
@@ -541,10 +544,19 @@ endforeach()
 # name `drake_build_cwd` isn't important, it just needs to be unique. Note,
 # however, that the macOS wheel builds also need to know this path, so if it
 # ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
+file(READ "${PROJECT_SOURCE_DIR}/MODULE.bazel" BAZEL_MODULE_CONTENTS)
+foreach(BAZEL_WORKSPACE_EXCLUDE ${BAZEL_WORKSPACE_EXCLUDES})
+  string(REGEX REPLACE
+    "\"${BAZEL_WORKSPACE_EXCLUDE}\","
+    "# ${BAZEL_WORKSPACE_EXCLUDE} comes from WORKSPACE.bzlmod"
+    BAZEL_MODULE_CONTENTS "${BAZEL_MODULE_CONTENTS}")
+endforeach()
+file(WRITE
+  "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd/MODULE.bazel"
+  "${BAZEL_MODULE_CONTENTS}")
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
 configure_file(cmake/WORKSPACE.bzlmod.in drake_build_cwd/WORKSPACE.bzlmod @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/MODULE.bazel" drake_build_cwd/MODULE.bazel SYMBOLIC)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/WORKSPACE" drake_build_cwd/WORKSPACE SYMBOLIC)
 
 find_package(Git)

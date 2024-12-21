@@ -9,7 +9,7 @@ licenses(%{licenses})
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
-    name = %{name},
+    name = %{library_name},
     srcs = %{srcs},
     hdrs = %{hdrs},
     copts = %{copts},
