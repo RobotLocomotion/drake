@@ -19,7 +19,7 @@ def _runfiles_inventory() -> Iterator[tuple[str, Path]]:
     manifest = runfiles.Create()
     inventory = Path(manifest.Rlocation(
         "drake/tools/workspace/drake_models/inventory.txt"))
-    repo_name = "drake_models/"
+    repo_name = "+drake_dep_repositories+drake_models/"
     for line in inventory.read_text(encoding="utf-8").splitlines():
         assert line.startswith(repo_name), line
         filename = line[len(repo_name):].strip()
