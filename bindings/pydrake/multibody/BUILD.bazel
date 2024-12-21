@@ -1,4 +1,3 @@
-load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install", "install_files")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
@@ -17,10 +16,6 @@ load(
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
-)
-load(
-    "//tools/workspace:cmake_configure_file.bzl",
-    "cmake_configure_file",
 )
 
 package(default_visibility = [
@@ -298,24 +293,6 @@ drake_jupyter_py_binary(
     ],
 )
 
-cmake_configure_file(
-    name = "generate_run_installed_mesh_to_model",
-    src = "run_installed_mesh_to_model.py.in",
-    out = "run_installed_mesh_to_model.py",
-    defines = [
-        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
-    ],
-)
-
-cmake_configure_file(
-    name = "generate_run_installed_fix_inertia",
-    src = "run_installed_fix_inertia.py.in",
-    out = "run_installed_fix_inertia.py",
-    defines = [
-        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
-    ],
-)
-
 install_files(
     name = "install_wrapper_scripts",
     dest = "bin",
@@ -566,7 +543,7 @@ drake_py_unittest(
 
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
-        "run_installed_mesh_to_model.py.in",
-        "run_installed_fix_inertia.py.in",
+        "run_installed_mesh_to_model.py",
+        "run_installed_fix_inertia.py",
     ],
 )
