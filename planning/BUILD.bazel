@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":collision_checker",
         ":collision_checker_context",
         ":collision_checker_params",
+        ":configuration_space_obstacle_collision_checker",
         ":distance_and_interpolation_provider",
         ":linear_distance_and_interpolation_provider",
         ":robot_clearance",
@@ -174,6 +175,16 @@ drake_cc_library(
         ":robot_diagram",
         "//geometry",
         "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "configuration_space_obstacle_collision_checker",
+    srcs = ["configuration_space_obstacle_collision_checker.cc"],
+    hdrs = ["configuration_space_obstacle_collision_checker.h"],
+    deps = [
+        ":collision_checker",
+        "//geometry/optimization:convex_set",
     ],
 )
 
