@@ -104,20 +104,31 @@ part of the "Stable API":
 
 For Drake's dependencies:
 
-* The `add_default_...` macros defined in `@drake//tools/workspace:default.bzl`
-  are all part of the Stable API.
-  * For any Bazel external loaded by these functions (e.g., `"@eigen"`), we
-    will deprecate it prior to removing our definition of the dependency.
-    * Excluding any items documented as "internal use only".
-    * Excluding any items documented with an "experimental" warning.
+* When using Bazel to depend on Drake as a Bazel Module (i.e., using bzlmod):
+  * The extension module
+    `use_extension("@drake//tools/workspace:default.bzl", "drake_dep_repositories")`
+    is part of the Stable API, including the names of the repositories it offers
+	as extensions (e.g., `"eigen"`).
+	* For any repository provided by the extension, we will deprecate
+      it prior to removing it.
+* When using Bazel to depend on Drake via `WORKSPACE.bazel` (i.e., without
+  bzlmod):
+  * The `add_default_...` macros defined in
+    `@drake//tools/workspace:default.bzl` are all part of the Stable API.
+    * For any Bazel external loaded by these functions (e.g., `"@eigen"`), we
+      will deprecate it prior to removing our definition of the dependency.
+      * Excluding any items documented as "internal use only".
+      * Excluding any items documented with an "experimental" warning.
 
 We may upgrade any of our dependencies to a newer version without prior notice.
 If you require an older version, you will need to rebuild Drake from source and
-pin your own WORKSPACE to refer to the older version of the dependency.
+customize your own `WORKSPACE.bazel` or `MODULE.bazel` file to refer to the
+older version of the dependency.
 
 We may add new dependencies without prior notice. All of our dependencies will
 either be installed via the host system via our `install_prereqs` scripts,
-and/or downloaded at build-time via our `add_default_...` macros, and/or
+and/or downloaded at build-time via our `add_default_...` macros (when not
+using `bzlmod`) or our `MODULE.bazel` file (when using bzlmod), and/or
 specified via packaging metadata in the case of `apt` or `pip`.
 
 ## LCM messages
