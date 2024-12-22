@@ -9,11 +9,10 @@ load(
 )
 
 # All of Drake's Python code should depend on our requirements.txt pins, so we
-# add it as a data dependency to every python rule. If this particular build
-# doesn't use a requirements.txt, then the file will be empty (and thus inert).
+# add it as a data dependency to every python rule.
 
 def _add_requirements(data):
-    return (data or []) + ["@python//:requirements.txt"]
+    return (data or []) + ["@drake//tools/workspace/python:requirements"]
 
 def py_binary(name, *, data = None, **kwargs):
     _py_binary(
