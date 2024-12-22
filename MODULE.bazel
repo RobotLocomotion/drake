@@ -4,7 +4,13 @@
 # This file lists Drake's external dependencies as known to bzlmod. It is used
 # in concert with WORKSPACE.bzlmod (which has the workspace-style externals).
 
-module(name = "drake")
+module(
+    name = "drake",
+    # This version number should match MINIMUM_BAZEL_VERSION in CMakeLists.txt.
+    bazel_compatibility = [">=7.4.1"],
+)
+
+# Add starlark rules.
 
 bazel_dep(name = "apple_support", version = "1.17.1", repo_name = "build_bazel_apple_support")  # noqa
 bazel_dep(name = "bazel_features", version = "1.22.0")
@@ -17,6 +23,8 @@ bazel_dep(name = "rules_python", version = "0.40.0")
 bazel_dep(name = "rules_rust", version = "0.56.0")
 bazel_dep(name = "rules_shell", version = "0.3.0")
 
+# Customize our toolchains.
+
 cc_configure = use_extension(
     "@rules_cc//cc:extensions.bzl",
     "cc_configure_extension",
@@ -28,7 +36,186 @@ register_toolchains(
     "//tools/py_toolchain:exec_tools_toolchain",
 )
 
-# TODO(#20731) Move all of our dependencies from WORKSPACE.bzlmod into this
-# file, so that downstream projects can consume Drake exclusively via bzlmod
-# (and so that we can delete our WORKSPACE files prior to Bazel 9 which drops
-# suppose for it).
+# Load dependencies which are "public", i.e., made available to downstream
+# projects.
+#
+# Downstream projects may load the same `drake_dep_repositories` module
+# extension shown below and call its `use_repo` with whatever list of
+# repositories they desire to cite from their project. It's safe to call
+# `use_repo` on a subset of this list, or not call it at all downstream.
+# Its only effect on a downstream project is to make the repository name
+# visible to BUILD rules; Drake's own use of the repository is unaffected.
+
+drake_dep_repositories = use_extension(
+    "@drake//tools/workspace:default.bzl",
+    "drake_dep_repositories",
+)
+use_repo(
+    drake_dep_repositories,
+    "blas",
+    "buildifier",
+    "drake_models",
+    "eigen",
+    "fmt",
+    "gflags",
+    "glib",
+    "glx",
+    "gtest",
+    "gurobi",
+    "lapack",
+    "lcm",
+    "libblas",
+    "liblapack",
+    "meshcat",
+    "mosek",
+    "opencl",
+    "opengl",
+    "pybind11",
+    "pycodestyle",
+    "python",
+    "spdlog",
+    "styleguide",
+    "x11",
+    "zlib",
+)
+
+# Load dependencies which are "private", i.e., not available for use by
+# downstream projects. These are all "internal use only".
+
+internal_repositories = use_extension(
+    "@drake//tools/workspace:default.bzl",
+    "internal_repositories",
+)
+use_repo(
+    internal_repositories,
+    "abseil_cpp_internal",
+    "bazelisk",
+    "cc",
+    "ccd_internal",
+    "clang_cindex_python3_internal",
+    "clarabel_cpp_internal",
+    "clp_internal",
+    "coinutils_internal",
+    "com_jidesoft_jide_oss",
+    "common_robotics_utilities_internal",
+    "commons_io",
+    "conex_internal",
+    "csdp_internal",
+    "curl_internal",
+    "dm_control_internal",
+    "doxygen",
+    "fcl_internal",
+    "gfortran",
+    "github3_py_internal",
+    "gklib_internal",
+    "googlebenchmark",
+    "gymnasium_py",
+    "gz_math_internal",
+    "gz_utils_internal",
+    "highway_internal",
+    "ipopt",
+    "ipopt_internal_fromsource",
+    "libjpeg_turbo_internal",
+    "libpng_internal",
+    "libtiff_internal",
+    "metis_internal",
+    "mpmath_py_internal",
+    "msgpack_internal",
+    "mujoco_menagerie_internal",
+    "mumps_internal",
+    "mypy_extensions_internal",
+    "mypy_internal",
+    "nanoflann_internal",
+    "nasm",
+    "net_sf_jchart2d",
+    "nlohmann_internal",
+    "nlopt_internal",
+    "onetbb_internal",
+    "openusd_internal",
+    "org_apache_xmlgraphics_commons",
+    "osqp_internal",
+    "picosha2_internal",
+    "poisson_disk_sampling_internal",
+    "qdldl_internal",
+    "qhull_internal",
+    "ros_xacro_internal",
+    "rules_python_drake_constants",
+    "scs_internal",
+    "sdformat_internal",
+    "snopt",
+    "spgrid_internal",
+    "spral_internal",
+    "stable_baselines3_internal",
+    "statsjs",
+    "stduuid_internal",
+    "suitesparse_internal",
+    "sympy_py_internal",
+    "tinygltf_internal",
+    "tinyobjloader_internal",
+    "tinyxml2_internal",
+    "tomli_internal",
+    "typing_extensions_internal",
+    "uritemplate_py_internal",
+    "usockets_internal",
+    "uwebsockets_internal",
+    "voxelized_geometry_tools_internal",
+    "vtk_internal",
+    "xmlrunner_py",
+    "yaml_cpp_internal",
+)
+
+internal_crate_universe_repositories = use_extension(
+    "//tools/workspace:default.bzl",
+    "internal_crate_universe_repositories",
+)
+use_repo(
+    internal_crate_universe_repositories,
+    "crate__amd-0.2.2",
+    "crate__autocfg-1.4.0",
+    "crate__blas-0.22.0",
+    "crate__blas-sys-0.7.1",
+    "crate__cfg-if-1.0.0",
+    "crate__clarabel-0.9.0",
+    "crate__darling-0.14.4",
+    "crate__darling_core-0.14.4",
+    "crate__darling_macro-0.14.4",
+    "crate__derive_builder-0.11.2",
+    "crate__derive_builder_core-0.11.2",
+    "crate__derive_builder_macro-0.11.2",
+    "crate__either-1.13.0",
+    "crate__enum_dispatch-0.3.13",
+    "crate__equivalent-1.0.1",
+    "crate__fnv-1.0.7",
+    "crate__hashbrown-0.15.2",
+    "crate__ident_case-1.0.1",
+    "crate__indexmap-2.7.0",
+    "crate__itertools-0.11.0",
+    "crate__itoa-1.0.14",
+    "crate__lapack-0.19.0",
+    "crate__lapack-sys-0.14.0",
+    "crate__lazy_static-1.5.0",
+    "crate__libc-0.2.168",
+    "crate__memchr-2.7.4",
+    "crate__num-complex-0.4.6",
+    "crate__num-traits-0.2.19",
+    "crate__once_cell-1.19.0",
+    "crate__paste-1.0.15",
+    "crate__proc-macro2-1.0.92",
+    "crate__quote-1.0.37",
+    "crate__ryu-1.0.18",
+    "crate__serde-1.0.216",
+    "crate__serde_derive-1.0.216",
+    "crate__serde_json-1.0.133",
+    "crate__strsim-0.10.0",
+    "crate__syn-1.0.109",
+    "crate__syn-2.0.90",
+    "crate__thiserror-1.0.69",
+    "crate__thiserror-impl-1.0.69",
+    "crate__unicode-ident-1.0.14",
+)
+
+# TODO(#20731) More improvements are still needed to our MODULE organization:
+# - Switch public API dependencies (e.g., eigen) to use modules.
+# - Provide better configuation options for choosing dependencies.
+# - Adjust the wheel build to build more dependencies as Bazel modules.
+# - Deprecate non-bzlmod use of Drake downstream.
