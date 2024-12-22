@@ -11,7 +11,6 @@ load(
     "generate_export_header",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
-load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
 
 licenses([
     "notice",  # BSD-3-Clause
@@ -179,6 +178,8 @@ cc_binary(
     ],
 )
 
+PYTHON_EXTENSION_SUFFIX = ".so"
+
 cc_binary(
     name = "_lcm" + PYTHON_EXTENSION_SUFFIX,
     srcs = [
@@ -196,7 +197,8 @@ cc_binary(
     visibility = ["//visibility:private"],
     deps = [
         ":lcm",
-        "@python",
+        "@drake//tools/workspace/python:cc_headers",
+        "@drake//tools/workspace/python:cc_libs",
     ],
 )
 
@@ -308,7 +310,7 @@ install(
         ":_lcm" + PYTHON_EXTENSION_SUFFIX,
         ":lcm-python-upstream",
     ],
-    library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
+    library_dest = "lib/site-packages/python@PYTHON_VERSION@/lcm",
     py_strip_prefix = ["lcm-python"],
 )
 

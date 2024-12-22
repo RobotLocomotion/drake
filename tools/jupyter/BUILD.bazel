@@ -32,7 +32,7 @@ drake_jupyter_py_binary(
 
 drake_py_unittest(
     name = "jupyter_notebook_test",
-    data = ["@python//:venv_bin"],
+    data = ["@python_internal//:venv_bin"],
     deps = [
         "@rules_python//python/runfiles",
     ],

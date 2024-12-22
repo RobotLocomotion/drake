@@ -4,11 +4,7 @@ load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
-load(
-    "@python//:version.bzl",
-    "PYTHON_SITE_PACKAGES_RELPATH",
-    "PYTHON_VERSION",
-)
+load("@python_internal//:version.bzl", "PYTHON_VERSION")
 load(
     "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
     "cc_whole_archive_library",
@@ -62,10 +58,7 @@ cmake_configure_file(
     out = "drake-config.cmake",
     atonly = True,
     cmakelists = ["stamp_version.cmake"],
-    defines = [
-        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
-        "PYTHON_VERSION=" + PYTHON_VERSION,
-    ],
+    defines = ["PYTHON_VERSION=" + PYTHON_VERSION],
 )
 
 install_cmake_config(

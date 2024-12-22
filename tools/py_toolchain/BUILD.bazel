@@ -1,9 +1,8 @@
-load("@python//:version.bzl", "PYTHON_BIN_PATH")
-load("@rules_python//python:defs.bzl", "py_runtime", "py_runtime_pair")
-load(
-    "@rules_python//python:py_exec_tools_toolchain.bzl",
-    "py_exec_tools_toolchain",
-)
+load("@python_internal//:version.bzl", "PYTHON_BIN_PATH", "PYTHON_VERSION")
+load("@rules_python//python:py_exec_tools_toolchain.bzl", "py_exec_tools_toolchain")  # noqa
+load("@rules_python//python:py_runtime.bzl", "py_runtime")
+load("@rules_python//python:py_runtime_pair.bzl", "py_runtime_pair")
+load("@rules_python//python/cc:py_cc_toolchain.bzl", "py_cc_toolchain")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 py_runtime(
@@ -32,6 +31,19 @@ toolchain(
     name = "exec_tools_toolchain",
     toolchain = ":exec_tools",
     toolchain_type = "@rules_python//python:exec_tools_toolchain_type",
+)
+
+py_cc_toolchain(
+    name = "py_cc",
+    headers = "@python_internal//:cc_headers",
+    libs = "@python_internal//:cc_libs",
+    python_version = PYTHON_VERSION,
+)
+
+toolchain(
+    name = "py_cc_toolchain",
+    toolchain = ":py_cc",
+    toolchain_type = "@rules_python//python/cc:toolchain_type",
 )
 
 add_lint_tests()

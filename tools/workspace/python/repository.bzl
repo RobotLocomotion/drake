@@ -4,25 +4,31 @@ This rule configures Python for use by Drake, in two parts:
     makes them available to be used as a C/C++ dependency.
 (b) macOS only: creates (or syncs) a virtual environment for dependencies.
 
-For part (a) there are two available targets:
+-------------------------------------------------------------------------------
 
-(1) "@python//:python" for the typical case where we are creating loadable
-dynamic libraries to be used as Python modules.
+For part (a) our goal is to create a @python_internal//:version.bzl file with
+the details of what we found, which is then loaded by package.BUILD.bazel to
+provide the @python_internal//:cc_headers and @python_internal//:cc_lib
+libraries, which are then given public aliases at //tools/workspace/python,
+which are then cited by our //tools/py_toolchain definitions.
 
-(2) "@python//:python_direct_link" for the unusual case of linking the CPython
-interpreter as a library into an executable with a C++ main() function.
+A couple places in our install scripts also use the PYTHON_VERSION from
+@python_internal//:version.bzl to configure the install paths.
 
-For part (b) the environment is used in all python rules and tests by default,
-but if a test needs to shell out to a venv binary, the `@python//:venv_bin`
-can be used to put the binaries' path into runfiles.
+However, other than the few places listed above, nothing else in Drake should
+be using the @python_internal paths or version number. Everything else should
+be using Bazel's python toolchain information, instead. Using toolchains will
+enables downstream projects to configure which Python they want to use,
+without messing with any of our internal repositories or rules.
 
-If the {macos,linux}_interpreter_path being used only mentions the python major
-version (i.e., it is "/path/to/python3" not "/path/to/python3.##") and if the
-interpreter is changed to a different minor version without any change to the
-path, then you must run `bazel sync --configure` to re-run this repository rule
-in order to make bazel aware of the new minor version. This hazard cannot occur
-on any of Drake's supported platforms with our default values, but if you are
-trying something out of the ordinary, be aware.
+-------------------------------------------------------------------------------
+
+For part (b) the virtual environment is automatically used in all python rules
+and tests by default, but if a test needs to shell out to a venv binary, the
+`@python_internal//:venv_bin` can be used to put the binaries' path into
+runfiles.
+
+-------------------------------------------------------------------------------
 
 Arguments:
     name: A unique name for this rule.
@@ -32,6 +38,14 @@ Arguments:
         when running on macOS. The format substitution "{homebrew_prefix}" is
         available for use in this string.
     requirements_flavor: (Optional) Which choice of requirements.txt to use.
+
+If the {macos,linux}_interpreter_path being used only mentions the python major
+version (i.e., it is "/path/to/python3" not "/path/to/python3.##") and if the
+interpreter is changed to a different minor version without any change to the
+path, then you must run `bazel sync --configure` to re-run this repository rule
+in order to make bazel aware of the new minor version. This hazard cannot occur
+on any of Drake's supported platforms with our default values, but if you are
+trying something out of the ordinary, be aware.
 """
 
 load(
@@ -66,6 +80,7 @@ def _get_python_interpreter(repo_ctx):
     ])]).stdout.strip()
     return (python, version)
 
+# TODO(jwnimmer-tri) Remove with deprecation 2025-05-01.
 def _get_extension_suffix(repo_ctx, python, python_config):
     """Returns the extension suffix, e.g. ".cpython-310-x86_64-linux-gnu.so" as
     queried from python_config. Uses `python` only for error reporting.
@@ -157,6 +172,17 @@ def _prepare_venv(repo_ctx, python):
     return repo_ctx.path("bin/python3")
 
 def _impl(repo_ctx):
+    # This impl function can define either @python or @python_internal.
+    # The @python flavor is deprecated, so maybe prepare a deprecation message.
+    is_drake_internal = repo_ctx.attr.is_drake_internal
+    if is_drake_internal:
+        deprecation = None
+    else:
+        deprecation = (
+            "DRAKE DEPRECATED: The @python external is deprecated " +
+            "and will be removed from Drake on or after 2024-05-01."
+        )
+
     # Add the BUILD file.
     repo_ctx.symlink(
         Label("//tools/workspace/python:package.BUILD.bazel"),
@@ -168,45 +194,63 @@ def _impl(repo_ctx):
     python, version = _get_python_interpreter(repo_ctx)
     site_packages_relpath = "lib/python{}/site-packages".format(version)
 
-    # Get extension_suffix, includes, and linkopts from python_config.
+    # Get includes and linkopts from python_config.
     python_config = "{}-config".format(python)
-    extension_suffix = _get_extension_suffix(repo_ctx, python, python_config)
     includes = _get_includes(repo_ctx, python_config)
     linkopts = _get_linkopts(repo_ctx, python_config)
 
-    # Specialize the the linker options based on whether we're linking a
-    # loadable module or an embedded interpreter. (For details, refer to
-    # the docs for option (1) vs (2) atop this file.)
-    linkopts_embedded = list(linkopts)
-    linkopts_embedded.insert(0, "-lpython" + version)
+    # On macOS, when linking a module (i.e., systems/framework.so) we need to
+    # tweak the linkopts slightly.
     linkopts_module = list(linkopts)
     if repo_ctx.os.name == "mac os x":
         linkopts_module.insert(0, "-undefined dynamic_lookup")
 
-    # Set up (or sync) the venv.
-    bin_path = _prepare_venv(repo_ctx, python)
+    # For the deprecated @python repository only, grab a bit more info.
+    if is_drake_internal:
+        extension_suffix = None
+        linkopts_embedded = None
+    else:
+        extension_suffix = _get_extension_suffix(
+            repo_ctx,
+            python,
+            python_config,
+        )
+        linkopts_embedded = list(linkopts)
+        linkopts_embedded.insert(0, "-lpython" + version)
+
+    # Set up (or sync) the venv, for @python_internal only.
+    if is_drake_internal:
+        bin_path = _prepare_venv(repo_ctx, python)
+    else:
+        bin_path = python
 
     version_content = """
-# DO NOT EDIT: generated by python_repository()
-# WARNING: Avoid using this macro in any repository rules which require
-# `load()` at the WORKSPACE level. Instead, load these constants through
-# `BUILD.bazel` or `package.BUILD.bazel` files.
+# WARNING: Avoid loading this file from repository rules; instead, load these
+# constants through `BUILD.bazel` or `package.BUILD.bazel` files.
 
-PYTHON_BIN_PATH = "{bin_path}"
-PYTHON_EXTENSION_SUFFIX = "{extension_suffix}"
-PYTHON_VERSION = "{version}"
-PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
+# This message is only set for @python (not @python_internal).
+DEPRECATION = {deprecation}
+print(DEPRECATION) if DEPRECATION else None
+
+# These constants are defined for both @python and @python_internal.
+PYTHON_BIN_PATH = {bin_path}
+PYTHON_VERSION = {version}
 PYTHON_INCLUDES = {includes}
-PYTHON_LINKOPTS_EMBEDDED = {linkopts_embedded}
 PYTHON_LINKOPTS_MODULE = {linkopts_module}
+
+# These constants are only set for @python (deprecated).
+PYTHON_EXTENSION_SUFFIX = {extension_suffix}
+PYTHON_SITE_PACKAGES_RELPATH = {site_packages_relpath}
+PYTHON_LINKOPTS_EMBEDDED = {linkopts_embedded}
 """.format(
-        bin_path = bin_path,
-        extension_suffix = extension_suffix,
-        version = version,
-        site_packages_relpath = site_packages_relpath,
-        includes = includes,
-        linkopts_module = linkopts_module,
-        linkopts_embedded = linkopts_embedded,
+        deprecation = repr(deprecation),
+        bin_path = repr(bin_path),
+        version = repr(version),
+        includes = repr(includes),
+        linkopts_module = repr(linkopts_module),
+        extension_suffix = repr(extension_suffix),
+        site_packages_relpath = repr(site_packages_relpath),
+        linkopts_embedded = repr(linkopts_embedded),
     )
     repo_ctx.file(
         "version.bzl",
@@ -214,23 +258,30 @@ PYTHON_LINKOPTS_MODULE = {linkopts_module}
         executable = False,
     )
 
-interpreter_path_attrs = {
-    "linux_interpreter_path": attr.string(
-        default = "/usr/bin/python3",
-    ),
-    "macos_interpreter_path": attr.string(
-        # The version listed here should match what's listed in both the root
-        # CMakeLists.txt and doc/_pages/installation.md.
-        default = "{homebrew_prefix}/bin/python3.12",
-    ),
-    "requirements_flavor": attr.string(
-        default = "test",
-        values = ["build", "test"],
-    ),
-}
-
 python_repository = repository_rule(
     _impl,
-    attrs = interpreter_path_attrs,
+    attrs = {
+        "linux_interpreter_path": attr.string(
+            default = "/usr/bin/python3",
+        ),
+        "macos_interpreter_path": attr.string(
+            # The version listed here should match what's listed in both the
+            # root CMakeLists.txt and doc/_pages/installation.md.
+            default = "{homebrew_prefix}/bin/python3.12",
+        ),
+        "requirements_flavor": attr.string(
+            default = "test",
+            values = ["build", "test"],
+        ),
+        # TODO(jwnimmer-tri) Remove with deprecation 2025-05-01, and then clean
+        # up the code in this file to cull all branches where this was False.
+        "is_drake_internal": attr.bool(
+            # (Internal use only) Drake's workspace setup scripts will pass
+            # this as True when creating the `@python_internal` repository.
+            # When creating the (deprecated) `@python` repository, the default
+            # value of False will be used.
+            default = False,
+        ),
+    },
     configure = True,
 )
