@@ -12,7 +12,9 @@ def main():
     # Ensure that we can import pydrake, accommodating symlinks.
     prefix_dir = dirname(dirname(realpath(__file__)))
     assert isdir(join(prefix_dir, "bin")), f"Bad location: {prefix_dir}"
-    site_dir = join(prefix_dir, "@PYTHON_SITE_PACKAGES_RELPATH@")
+    version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    site_dir = join(prefix_dir, f"lib/python{version}/site-packages")
+    sys.stdout.flush()
     sys.path.insert(0, site_dir)
 
     # Execute the imported main.

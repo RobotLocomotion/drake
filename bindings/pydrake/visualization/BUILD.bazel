@@ -1,4 +1,3 @@
-load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/install:install.bzl", "install", "install_files")
 load(
@@ -12,10 +11,6 @@ load(
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
-)
-load(
-    "//tools/workspace:cmake_configure_file.bzl",
-    "cmake_configure_file",
 )
 
 package(default_visibility = [
@@ -89,24 +84,6 @@ drake_py_library(
     name = "_lcm_image_array_viewer_py",
     srcs = ["_lcm_image_array_viewer.py"],
     deps = [":visualization"],
-)
-
-cmake_configure_file(
-    name = "generate_run_installed_meldis",
-    src = "run_installed_meldis.py.in",
-    out = "run_installed_meldis.py",
-    defines = [
-        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
-    ],
-)
-
-cmake_configure_file(
-    name = "generate_run_installed_model_visualizer",
-    src = "run_installed_model_visualizer.py.in",
-    out = "run_installed_model_visualizer.py",
-    defines = [
-        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
-    ],
 )
 
 install_files(
@@ -256,8 +233,8 @@ drake_py_unittest(
 
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
-        "run_installed_meldis.py.in",
-        "run_installed_model_visualizer.py.in",
+        "run_installed_meldis.py",
+        "run_installed_model_visualizer.py",
         "test/visualization_install_tests.py",
     ],
 )
