@@ -13,7 +13,7 @@ load(
 # doesn't use a requirements.txt, then the file will be empty (and thus inert).
 
 def _add_requirements(data):
-    return (data or []) + ["@python//:requirements.txt"]
+    return (data or []) + ["@drake//tools/workspace/python:requirements"]
 
 def py_binary(name, *, data = None, **kwargs):
     _py_binary(

@@ -2,6 +2,7 @@
 
 load(
     "version.bzl",
+    "DEPRECATION",
     "PYTHON_INCLUDES",
     "PYTHON_LINKOPTS_EMBEDDED",
     "PYTHON_LINKOPTS_MODULE",
@@ -13,7 +14,7 @@ licenses(["notice"])  # Python-2.0
 # included from `python_repository`. This excludes some third-party C headers
 # that may be nested within `/usr/include/python<version>`, such as `numpy`,
 # when installed via `apt` on Ubuntu.
-headers = glob(
+HDRS = glob(
     [
         "include/*/*",
         "include/*/cpython/*",
@@ -23,17 +24,28 @@ headers = glob(
 )
 
 cc_library(
-    name = "python_headers",
-    hdrs = headers,
+    name = "cc_headers",
+    hdrs = HDRS,
     includes = PYTHON_INCLUDES,
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
+    deprecation = DEPRECATION,
+)
+
+cc_library(
+    name = "cc_libs",
+    linkopts = PYTHON_LINKOPTS_MODULE,
+    visibility = ["//visibility:public"],
+    deprecation = DEPRECATION,
 )
 
 cc_library(
     name = "python",
-    linkopts = PYTHON_LINKOPTS_MODULE,
     visibility = ["//visibility:public"],
-    deps = [":python_headers"],
+    deps = [
+        ":cc_headers",
+        ":cc_libs",
+    ],
+    deprecation = DEPRECATION,
 )
 
 cc_library(
@@ -41,6 +53,7 @@ cc_library(
     linkopts = PYTHON_LINKOPTS_EMBEDDED,
     visibility = ["//visibility:public"],
     deps = [":python_headers"],
+    deprecation = DEPRECATION,
 )
 
 exports_files(["requirements.txt"])
@@ -52,4 +65,5 @@ filegroup(
         "bin",
         "requirements.txt",
     ],
+    deprecation = DEPRECATION,
 )

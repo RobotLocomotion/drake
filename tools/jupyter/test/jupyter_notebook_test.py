@@ -10,7 +10,7 @@ class TestJupyterNotebook(unittest.TestCase):
         """Ensures that `jupyter notebook` is installed (#12042)."""
         manifest = runfiles.Create()
         if sys.platform == "darwin":
-            jupyter = manifest.Rlocation("python/bin/jupyter")
+            jupyter = manifest.Rlocation("python_internal/bin/jupyter")
         else:
             jupyter = "jupyter"
 
