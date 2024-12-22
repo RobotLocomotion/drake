@@ -298,6 +298,8 @@ def add_default_repositories(
         pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
     if "python" not in excludes:
         python_repository(name = "python")
+    if "python_internal" not in excludes:
+        python_repository(name = "python_internal", is_drake_internal = True)
     if "qdldl_internal" not in excludes:
         qdldl_internal_repository(name = "qdldl_internal", mirrors = mirrors)
     if "qhull_internal" not in excludes:
@@ -400,6 +402,9 @@ def add_default_toolchains(
         )
         native.register_toolchains(
             "//tools/py_toolchain:exec_tools_toolchain",
+        )
+        native.register_toolchains(
+            "//tools/py_toolchain:py_cc_toolchain",
         )
     if "rust" not in excludes:
         register_rust_toolchains()

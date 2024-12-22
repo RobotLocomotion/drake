@@ -1,4 +1,4 @@
-load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH", "PYTHON_VERSION")
+load("@python_internal//:version.bzl", "PYTHON_VERSION")
 load("@rules_license//rules:providers.bzl", "LicenseInfo")
 load("//tools/skylark:cc.bzl", "CcInfo")
 load("//tools/skylark:drake_java.bzl", "MainClassInfo")
@@ -122,7 +122,7 @@ def _install_action(
 
     dest_replacements = (
         ("@WORKSPACE@", _workspace(ctx)),
-        ("@PYTHON_SITE_PACKAGES@", PYTHON_SITE_PACKAGES_RELPATH),
+        ("@PYTHON_VERSION@", PYTHON_VERSION),
     )
     for old, new in dest_replacements:
         if old in dest:
@@ -590,7 +590,9 @@ _install_rule = rule(
         "runtime_strip_prefix": attr.string_list(),
         "java_dest": attr.string(default = "share/java"),
         "java_strip_prefix": attr.string_list(),
-        "py_dest": attr.string(default = "@PYTHON_SITE_PACKAGES@"),
+        "py_dest": attr.string(
+            default = "lib/python@PYTHON_VERSION@/site-packages",
+        ),
         "py_strip_prefix": attr.string_list(),
         "rename": attr.string_dict(),
         "install_tests": attr.label_list(
@@ -636,8 +638,7 @@ Destination paths may include the following placeholders:
 
 * ``@WORKSPACE@``, replaced with ``workspace`` (if specified) or the name of
   the workspace which invokes ``install``.
-* ``@PYTHON_SITE_PACKAGES``, replaced with the Python version-specific path of
-  "site-packages".
+* ``@PYTHON_VERSION@``, replaced with the Python major.minor version.
 
 Note:
     By default, headers and resource files to be installed must be explicitly

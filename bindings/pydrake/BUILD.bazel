@@ -510,7 +510,7 @@ install(
         ":pydrake_pyi",
         ":pydrake_typed",
     ],
-    data_dest = "@PYTHON_SITE_PACKAGES@",
+    data_dest = "lib/python@PYTHON_VERSION@/site-packages",
     visibility = ["//visibility:public"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL) + [
         # These three modules are a special case.

@@ -1,6 +1,39 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/py_toolchain:defs.bzl", "current_py_cc_libpython")
+
+# All of Drake's Python code should depend on our requirements.txt pin. This
+# filegroup provides a single point of control for any targets in Drake that
+# need to depend on changes to our requirements file. If this particular build
+# doesn't use a requirements.txt, then the file will be empty (and thus inert).
+filegroup(
+    name = "requirements",
+    srcs = [
+        "@python_internal//:requirements.txt",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# Provides a single point of control within Drake for how to compile a native
+# C/C++ Python module (e.g., for pybind11).
+alias(
+    name = "cc_headers",
+    actual = "@rules_python//python/cc:current_py_cc_headers",
+    visibility = ["//visibility:public"],
+)
+
+# Provides a single point of control within Drake for how to link a native
+# C/C++ Python module (e.g., for pybind11).
+alias(
+    name = "cc_libs",
+    actual = "@rules_python//python/cc:current_py_cc_libs",
+    visibility = ["//visibility:public"],
+)
+
+# Provides a single point of control within Drake for how to link a C/C++
+# exectuable that embeds a Python interpreter (e.g., for unit testing).
+current_py_cc_libpython(
+    name = "cc_libpython",
+    visibility = ["//visibility:public"],
+)
 
 add_lint_tests()
