@@ -598,26 +598,34 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
       .def(
           "AddSystem",
-          [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
+          [](DiagramBuilder<T>* self, System<T>& system) {
             // Using BuilderLifeSupport::stash makes the builder
             // temporarily immortal (uncollectible self cycle). This will be
             // resolved by the Build() step. See BuilderLifeSupport for
             // rationale.
             BuilderLifeSupport<T>::stash(self);
-            return self->AddSystem(std::move(system));
+            // The ref_cycle is responsible for object lifetime, so we'll give
+            // the DiagramBuilder an unowned pointer.
+            return self->AddSystem(std::shared_ptr<System<T>>(
+                /* managed object = */ std::shared_ptr<void>{},
+                /* stored pointer = */ &system));
           },
           py::arg("system"), internal::ref_cycle<1, 2>(),
           doc.DiagramBuilder.AddSystem.doc)
       .def(
           "AddNamedSystem",
-          [](DiagramBuilder<T>* self, std::string& name,
-              unique_ptr<System<T>> system) {
+          [](DiagramBuilder<T>* self, std::string& name, System<T>& system) {
             // Using BuilderLifeSupport::stash makes the builder
             // temporarily immortal (uncollectible self cycle). This will be
             // resolved by the Build() step. See BuilderLifeSupport for
             // rationale.
             BuilderLifeSupport<T>::stash(self);
-            return self->AddNamedSystem(name, std::move(system));
+            // The ref_cycle is responsible for object lifetime, so we'll give
+            // the DiagramBuilder an unowned pointer.
+            return self->AddNamedSystem(
+                name, std::shared_ptr<System<T>>(
+                          /* managed object = */ std::shared_ptr<void>{},
+                          /* stored pointer = */ &system));
           },
           py::arg("name"), py::arg("system"), internal::ref_cycle<1, 3>(),
           doc.DiagramBuilder.AddNamedSystem.doc)
