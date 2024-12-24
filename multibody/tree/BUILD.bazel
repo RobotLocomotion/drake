@@ -87,6 +87,8 @@ drake_cc_library(
         "body_node.cc",
         "body_node_impl.cc",
         "body_node_impl_mass_matrix.cc",
+        "curvilinear_joint.cc",
+        "curvilinear_mobilizer.cc",
         "door_hinge.cc",
         "element_collection.cc",
         "fixed_offset_frame.cc",
@@ -130,6 +132,8 @@ drake_cc_library(
         "body_node.h",
         "body_node_impl.h",
         "body_node_world.h",
+        "curvilinear_joint.h",
+        "curvilinear_mobilizer.h",
         "door_hinge.h",
         "element_collection.h",
         "fixed_offset_frame.h",
@@ -183,7 +187,9 @@ drake_cc_library(
         "//common:nice_type_name",
         "//common:string_container",
         "//common:unused",
+        "//common/trajectories:piecewise_constant_curvature_trajectory",
         "//math:geometric_transform",
+        "//math:wrap_to",
         "//multibody/topology",
         "//systems/framework:leaf_system",
     ],
@@ -445,6 +451,15 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "curvilinear_mobilizer_test",
+    deps = [
+        ":mobilizer_tester",
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "planar_mobilizer_test",
     deps = [
         ":mobilizer_tester",
@@ -606,6 +621,14 @@ drake_cc_googletest(
         ":tree",
         "//common/test_utilities:eigen_matrix_compare",
         "//systems/framework:context",
+    ],
+)
+
+drake_cc_googletest(
+    name = "curvilinear_joint_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

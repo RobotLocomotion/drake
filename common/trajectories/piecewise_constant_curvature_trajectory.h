@@ -40,8 +40,8 @@ namespace trajectories {
  For constant curvature paths on a plane, the <a
  href="https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas">Frenet–Serret
  formulas</a> simplify and we can write: <pre>
-     dFx/ds(s) =  ρ(s)⋅ Fy(s)
-     dFy/ds(s) = -ρ(s)⋅ Fx(s)
+     dFx/ds(s) =  ρ(s)⋅Fy(s)
+     dFy/ds(s) = -ρ(s)⋅Fx(s)
      dFz/ds(s) =  0
  </pre>
  for the entire trajectory.
@@ -68,6 +68,9 @@ class PiecewiseConstantCurvatureTrajectory final
 
   /** An empty piecewise constant curvature trajectory. */
   PiecewiseConstantCurvatureTrajectory() = default;
+
+  template <typename U>
+  using ScalarValueConverter = typename systems::scalar_conversion::template ValueConverter<T, U>;
 
   /** Constructs a piecewise constant curvature trajectory.
 
@@ -118,12 +121,12 @@ class PiecewiseConstantCurvatureTrajectory final
             other.get_initial_pose()
                 .rotation()
                 .col(kCurveTangentIndex)
-                .template cast<U>(),
+                .unaryExpr(ScalarValueConverter<U>{}),
             other.get_initial_pose()
                 .rotation()
                 .col(kPlaneNormalIndex)
-                .template cast<U>(),
-            other.get_initial_pose().translation().template cast<U>()) {}
+                .unaryExpr(ScalarValueConverter<U>{}),
+            other.get_initial_pose().translation().unaryExpr(ScalarValueConverter<U>{})) {}
 
   /** @returns the total arclength of the curve in meters. */
   T length() const { return this->end_time(); }
@@ -221,7 +224,7 @@ class PiecewiseConstantCurvatureTrajectory final
   static std::vector<T> ScalarConvertStdVector(
       const std::vector<U>& segment_data) {
     std::vector<T> converted_segment_data;
-    systems::scalar_conversion::ValueConverter<U, T> converter;
+    ScalarValueConverter<U> converter;
     for (const U& segment : segment_data) {
       converted_segment_data.push_back(converter(segment));
     }
