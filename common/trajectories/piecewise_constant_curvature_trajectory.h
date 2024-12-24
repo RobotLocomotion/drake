@@ -40,8 +40,8 @@ namespace trajectories {
  For constant curvature paths on a plane, the <a
  href="https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas">Frenet–Serret
  formulas</a> simplify and we can write: <pre>
-     dFx/ds(s) =  ρ(s)⋅ Fy(s)
-     dFy/ds(s) = -ρ(s)⋅ Fx(s)
+     dFx/ds(s) =  ρ(s)⋅Fy(s)
+     dFy/ds(s) = -ρ(s)⋅Fx(s)
      dFz/ds(s) =  0
  </pre>
  for the entire trajectory.
@@ -69,6 +69,9 @@ class PiecewiseConstantCurvatureTrajectory final
   /** An empty piecewise constant curvature trajectory. */
   PiecewiseConstantCurvatureTrajectory() = default;
 
+  template <typename U>
+  using ScalarValueConverter = typename systems::scalar_conversion::template ValueConverter<T, U>;
+
   /** Constructs a piecewise constant curvature trajectory.
 
    Endpoints of each constant-curvature segments are defined by n breaks
@@ -90,7 +93,7 @@ class PiecewiseConstantCurvatureTrajectory final
    @param turning_rates A vector of n-1 turning rates ρᵢ for each segment.
    @param initial_curve_tangent The initial tangent of the curve expressed in
    the parent frame, t̂_A(s₀).
-   @param   The normal axis of the 2D plane in which the curve
+   @param plane_normal The normal axis of the 2D plane in which the curve
    lies, expressed in the parent frame, p̂_A.
    @param initial_position The initial position of the curve expressed in
    the parent frame, p_AoFo_A(s₀).
@@ -118,12 +121,12 @@ class PiecewiseConstantCurvatureTrajectory final
             other.get_initial_pose()
                 .rotation()
                 .col(kCurveTangentIndex)
-                .template cast<U>(),
+                .unaryExpr(ScalarValueConverter<U>{}),
             other.get_initial_pose()
                 .rotation()
                 .col(kPlaneNormalIndex)
-                .template cast<U>(),
-            other.get_initial_pose().translation().template cast<U>()) {}
+                .unaryExpr(ScalarValueConverter<U>{}),
+            other.get_initial_pose().translation().unaryExpr(ScalarValueConverter<U>{})) {}
 
   /** @returns the number of rows in the output of value(). */
   Eigen::Index rows() const override { return 3; }
@@ -221,7 +224,7 @@ class PiecewiseConstantCurvatureTrajectory final
   static std::vector<T> ScalarConvertStdVector(
       const std::vector<U>& segment_data) {
     std::vector<T> converted_segment_data;
-    systems::scalar_conversion::ValueConverter<U, T> converter;
+    ScalarValueConverter<U> converter;
     for (const U& segment : segment_data) {
       converted_segment_data.push_back(converter(segment));
     }
