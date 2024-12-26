@@ -50,16 +50,15 @@ class LuenbergerObserver final: public LeafSystem<T> {
   /// of @p observed_system.
   ///
   /// @pre The observed_system output port must be vector-valued.
-  ///
-  /// Note: The `observed_system` reference must remain valid for the lifetime
-  /// of this system.
-  LuenbergerObserver(const System<T>& observed_system,
+  LuenbergerObserver(std::shared_ptr<const System<T>> observed_system,
                      const Context<T>& observed_system_context,
                      const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
 
-  /// Constructs the observer, taking ownership of `observed_system`.
+  /// Constructs the observer, without claiming ownership of `observed_system`.
+  /// Note: The `observed_system` reference must remain valid for the lifetime
+  /// of this system.
   /// @exclude_from_pydrake_mkdoc{This constructor is not bound.}
-  LuenbergerObserver(std::unique_ptr<System<T>> observed_system,
+  LuenbergerObserver(const System<T>& observed_system,
                      const Context<T>& observed_system_context,
                      const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
 
@@ -88,13 +87,6 @@ class LuenbergerObserver final: public LeafSystem<T> {
   const Eigen::MatrixXd& L() { return observer_gain_; }
 
  private:
-  // All constructors delegate here.  Exactly one of system or owned_system must
-  // be non-null.
-  LuenbergerObserver(const System<T>* system,
-                     std::unique_ptr<System<T>> owned_system,
-                     const Context<T>& context,
-                     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
-
   // Advance the state estimate using forward dynamics and the observer
   // gains.
   void DoCalcTimeDerivatives(const Context<T>& context,
@@ -107,8 +99,7 @@ class LuenbergerObserver final: public LeafSystem<T> {
   void UpdateObservedSystemContext(const Context<T>& context,
                                    Context<T>* observed_system_context) const;
 
-  const std::unique_ptr<System<T>> owned_system_{};
-  const System<T>* const observed_system_;
+  const std::shared_ptr<const System<T>> observed_system_;
   const Eigen::MatrixXd observer_gain_;  // Gain matrix (often called "L").
 
   const CacheEntry* observed_system_context_cache_entry_{};
