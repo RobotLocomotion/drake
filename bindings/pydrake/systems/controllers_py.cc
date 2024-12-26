@@ -1,4 +1,5 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -173,40 +174,82 @@ PYBIND11_MODULE(controllers, m) {
   }
 
   {
-    using Class = PidControlledSystem<double>;
+    using T = double;
+    using Class = PidControlledSystem<T>;
     constexpr auto& cls_doc = doc.PidControlledSystem;
-    py::class_<Class, Diagram<double>>(m, "PidControlledSystem", cls_doc.doc)
-        .def(py::init<std::unique_ptr<System<double>>, double, double, double,
-                 int, int>(),
+    py::class_<Class, Diagram<T>>(m, "PidControlledSystem", cls_doc.doc)
+        .def(py::init([](System<T>& plant, double Kp, double Ki, double Kd,
+                          int state_output_port_index,
+                          int plant_input_port_index) {
+          return std::make_unique<Class>(
+              // The ref_cycle is responsible for object lifetime, so we'll give
+              // the constructor an unowned pointer.
+              std::shared_ptr<System<T>>(
+                  /* managed object = */ std::shared_ptr<void>{},
+                  /* stored pointer = */ &plant),
+              Kp, Ki, Kd, state_output_port_index, plant_input_port_index);
+        }),
             py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
             py::arg("plant_input_port_index") = 0,
-            // Keep alive, ownership: `plant` keeps `self` alive.
-            py::keep_alive<2, 1>(), cls_doc.ctor.doc_6args_double_gains)
-        .def(py::init<std::unique_ptr<System<double>>, const VectorX<double>&,
-                 const VectorX<double>&, const VectorX<double>&, int, int>(),
+            // `self` and `plant` form a cycle as part of the Diagram.
+            internal::ref_cycle<1, 2>(), cls_doc.ctor.doc_6args_double_gains)
+        .def(py::init([](System<T>& plant, const Eigen::VectorXd& Kp,
+                          const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
+                          int state_output_port_index,
+                          int plant_input_port_index) {
+          return std::make_unique<Class>(
+              // The ref_cycle is responsible for object lifetime, so we'll give
+              // the constructor an unowned pointer.
+              std::shared_ptr<System<T>>(
+                  /* managed object = */ std::shared_ptr<void>{},
+                  /* stored pointer = */ &plant),
+              Kp, Ki, Kd, state_output_port_index, plant_input_port_index);
+        }),
             py::arg("plant"), py::arg("kp"), py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
             py::arg("plant_input_port_index") = 0,
-            // Keep alive, ownership: `plant` keeps `self` alive.
-            py::keep_alive<2, 1>(), cls_doc.ctor.doc_6args_vector_gains)
-        .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
-                 double, double, double, int, int>(),
+            // `self` and `plant` form a cycle as part of the Diagram.
+            internal::ref_cycle<1, 2>(), cls_doc.ctor.doc_6args_vector_gains)
+        .def(py::init(
+                 [](System<T>& plant, const MatrixX<double>& feedback_selector,
+                     double Kp, double Ki, double Kd,
+                     int state_output_port_index, int plant_input_port_index) {
+                   return std::make_unique<Class>(
+                       // The ref_cycle is responsible for object lifetime, so
+                       // we'll give the constructor an unowned pointer.
+                       std::shared_ptr<System<T>>(
+                           /* managed object = */ std::shared_ptr<void>{},
+                           /* stored pointer = */ &plant),
+                       feedback_selector, Kp, Ki, Kd, state_output_port_index,
+                       plant_input_port_index);
+                 }),
             py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
             py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
             py::arg("plant_input_port_index") = 0,
-            // Keep alive, ownership: `plant` keeps `self` alive.
-            py::keep_alive<2, 1>(), cls_doc.ctor.doc_7args_double_gains)
-        .def(py::init<std::unique_ptr<System<double>>, const MatrixX<double>&,
-                 const VectorX<double>&, const VectorX<double>&,
-                 const VectorX<double>&, int, int>(),
+            // `self` and `plant` form a cycle as part of the Diagram.
+            internal::ref_cycle<1, 2>(), cls_doc.ctor.doc_7args_double_gains)
+        .def(py::init(
+                 [](System<T>& plant, const MatrixX<double>& feedback_selector,
+                     const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
+                     const Eigen::VectorXd& Kd, int state_output_port_index,
+                     int plant_input_port_index) {
+                   return std::make_unique<Class>(
+                       // The ref_cycle is responsible for object lifetime, so
+                       // we'll give the constructor an unowned pointer.
+                       std::shared_ptr<System<T>>(
+                           /* managed object = */ std::shared_ptr<void>{},
+                           /* stored pointer = */ &plant),
+                       feedback_selector, Kp, Ki, Kd, state_output_port_index,
+                       plant_input_port_index);
+                 }),
             py::arg("plant"), py::arg("feedback_selector"), py::arg("kp"),
             py::arg("ki"), py::arg("kd"),
             py::arg("state_output_port_index") = 0,
             py::arg("plant_input_port_index") = 0,
-            // Keep alive, ownership: `plant` keeps `self` alive.
-            py::keep_alive<2, 1>(), cls_doc.ctor.doc_7args_vector_gains)
+            // `self` and `plant` form a cycle as part of the Diagram.
+            internal::ref_cycle<1, 2>(), cls_doc.ctor.doc_7args_vector_gains)
         .def("get_control_input_port", &Class::get_control_input_port,
             py_rvp::reference_internal, cls_doc.get_control_input_port.doc)
         .def("get_state_input_port", &Class::get_state_input_port,
