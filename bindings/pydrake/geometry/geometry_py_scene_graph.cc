@@ -280,11 +280,11 @@ void DefineSceneGraph(py::module m, T) {
             cls_doc.collision_filter_manager.doc_0args)
         .def("AddRenderer",
             overload_cast_explicit<void, std::string,
-                std::unique_ptr<render::RenderEngine>>(&Class::AddRenderer),
+                std::shared_ptr<render::RenderEngine>>(&Class::AddRenderer),
             py::arg("name"), py::arg("renderer"), cls_doc.AddRenderer.doc_2args)
         .def("AddRenderer",
             overload_cast_explicit<void, systems::Context<T>*, std::string,
-                std::unique_ptr<render::RenderEngine>>(&Class::AddRenderer),
+                std::shared_ptr<render::RenderEngine>>(&Class::AddRenderer),
             py::arg("context"), py::arg("name"), py::arg("renderer"),
             cls_doc.AddRenderer.doc_3args)
         .def("RemoveRenderer",

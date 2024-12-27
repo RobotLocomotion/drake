@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
+#include "drake/common/scope_exit.h"
 #include "drake/geometry/render/light_parameter.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
@@ -63,7 +64,44 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
   }
 
   std::unique_ptr<RenderEngine> DoClone() const override {
-    PYBIND11_OVERLOAD_PURE(std::unique_ptr<RenderEngine>, Base, DoClone);
+    throw std::logic_error(
+        "Python subclasses of RenderEngine do not support calling "
+        "Clone<std::unique_ptr>; the C++ code which tried to call "
+        "it needs to be updated to call using shared_ptr instead.");
+  }
+
+  std::shared_ptr<RenderEngine> DoCloneShared() const override {
+    py::gil_scoped_acquire guard;
+    // RenderEngine subclasses in Python must implement cloning by defining
+    // either a __deepcopy__ (preferred) or DoClone (legacy) method. We'll try
+    // DoClone first so it has priority, but if it doesn't exist we'll fall back
+    // to __deepcopy__ and just let the "no such method deepcopy" error message
+    // propagate if both were missing. Because the PYBIND11_OVERLOAD_INT macro
+    // embeds a `return ...;` statement, we must wrap it in lambda so that we
+    // can post-process the return value.
+    auto make_python_deepcopy = [&]() -> py::object {
+      PYBIND11_OVERLOAD_INT(py::object, Base, "DoClone");
+      auto deepcopy = py::module_::import("copy").attr("deepcopy");
+      py::object copied = deepcopy(this);
+      if (copied.is_none()) {
+        throw pybind11::type_error(fmt::format(
+            "{}.__deepcopy__ returned None", NiceTypeName::Get(*this)));
+      }
+      return copied;
+    };
+    auto py_engine = std::make_shared<py::object>(make_python_deepcopy());
+    // Convert the py_engine to a shared_ptr<RenderEngine> whose C++ lifetime
+    // keeps the python object alive.
+    RenderEngine* cpp_engine = py::cast<RenderEngine*>(*py_engine);
+    DRAKE_DEMAND(cpp_engine != nullptr);
+    auto py_deleter = std::make_shared<ScopeExit>(
+        [captured_py_engine = std::move(py_engine)]() mutable {
+          py::gil_scoped_acquire deleter_guard;
+          captured_py_engine.reset();
+        });
+    return std::shared_ptr<RenderEngine>(
+        /* managed object = */ std::move(py_deleter),
+        /* stored pointer = */ cpp_engine);
   }
 
   void DoRenderColorImage(ColorRenderCamera const& camera,
@@ -246,11 +284,12 @@ void DoScalarIndependentDefinitions(py::module m) {
   {
     using Class = RenderEngine;
     const auto& cls_doc = doc.RenderEngine;
-    py::class_<Class, PyRenderEngine> cls(m, "RenderEngine");
+    py::class_<Class, PyRenderEngine, std::shared_ptr<Class>> cls(
+        m, "RenderEngine");
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("Clone",
-            static_cast<::std::unique_ptr<Class> (Class::*)() const>(
+            static_cast<std::shared_ptr<Class> (Class::*)() const>(
                 &Class::Clone),
             cls_doc.Clone.doc)
         .def("RegisterVisual",

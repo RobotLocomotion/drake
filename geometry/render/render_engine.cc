@@ -22,8 +22,17 @@ using systems::sensors::ImageRgba8U;
 
 RenderEngine::~RenderEngine() = default;
 
-std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
-  std::unique_ptr<RenderEngine> clone(DoClone());
+template <class Result>
+Result RenderEngine::Clone() const
+  requires std::is_same_v<Result, std::unique_ptr<RenderEngine>> ||
+           std::is_same_v<Result, std::shared_ptr<RenderEngine>>
+{  // NOLINT(whitespace/braces)
+  Result clone;
+  if constexpr (std::is_same_v<Result, std::unique_ptr<RenderEngine>>) {
+    clone = DoClone();
+  } else {
+    clone = DoCloneShared();
+  }
   // Make sure that derived classes have actually overridden DoClone().
   // Particularly important for derivations of derivations.
   // Note: clang considers typeid(*clone) to be an expression with side effects.
@@ -38,6 +47,15 @@ std::unique_ptr<RenderEngine> RenderEngine::Clone() const {
         NiceTypeName::Get(*this)));
   }
   return clone;
+}
+
+// Explicit template instantiations.
+template std::unique_ptr<RenderEngine> RenderEngine::Clone<>() const;
+template std::shared_ptr<RenderEngine> RenderEngine::Clone<>() const;
+
+std::shared_ptr<RenderEngine> RenderEngine::DoCloneShared() const {
+  // When not overriden, we simply delegate to the unique_ptr flavor.
+  return this->DoClone();
 }
 
 bool RenderEngine::RegisterVisual(GeometryId id,

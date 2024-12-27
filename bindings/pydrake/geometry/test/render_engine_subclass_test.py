@@ -36,8 +36,8 @@ class TestRenderEngineSubclass(unittest.TestCase):
             def DoRemoveGeometry(self, id):
                 pass
 
-            def DoClone(self):
-                pass
+            def __deepcopy__(self, memo):
+                return type(self)()
 
         class ColorOnlyEngine(MinimalEngine):
             """Rendering Depth and Label images should throw"""
@@ -70,6 +70,7 @@ class TestRenderEngineSubclass(unittest.TestCase):
             color_only.RenderDepthImage(depth_cam, depth_image)
         with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
             color_only.RenderLabelImage(color_cam, label_image)
+        self.assertIsInstance(color_only.Clone(), ColorOnlyEngine)
 
         depth_only = DepthOnlyEngine()
         with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
@@ -77,6 +78,7 @@ class TestRenderEngineSubclass(unittest.TestCase):
         depth_only.RenderDepthImage(depth_cam, depth_image)
         with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
             depth_only.RenderLabelImage(color_cam, label_image)
+        self.assertIsInstance(depth_only.Clone(), DepthOnlyEngine)
 
         label_only = LabelOnlyEngine()
         with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
@@ -84,3 +86,16 @@ class TestRenderEngineSubclass(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, ".+pure virtual function.+"):
             label_only.RenderDepthImage(depth_cam, depth_image)
         label_only.RenderLabelImage(color_cam, label_image)
+        self.assertIsInstance(label_only.Clone(), LabelOnlyEngine)
+
+    def test_legacy_DoClone(self):
+        """Sanity checks that DoClone (without __deepcopy__) is sufficient."""
+
+        class CloneableEngine(mut.RenderEngine):
+            def DoClone(self):
+                return CloneableEngine()
+
+        dut = CloneableEngine()
+        clone = dut.Clone()
+        self.assertIsInstance(clone, CloneableEngine)
+        self.assertIsNot(clone, dut)

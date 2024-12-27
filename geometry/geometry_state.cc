@@ -96,6 +96,13 @@ void DrivenMeshData::SetMeshes(
   render_meshes_.emplace(id, std::move(render_meshes));
 }
 
+std::unique_ptr<RenderEngineHolder> RenderEngineHolder::Clone() const {
+  return std::make_unique<RenderEngineHolder>(
+      engine_ != nullptr
+          ? engine_->Clone<std::shared_ptr<render::RenderEngine>>()
+          : nullptr);
+}
+
 }  // namespace internal
 
 //-----------------------------------------------------------------------------
@@ -1459,13 +1466,14 @@ SignedDistancePair<T> GeometryState<T>::ComputeSignedDistancePairClosestPoints(
 
 template <typename T>
 void GeometryState<T>::AddRenderer(
-    std::string name, std::unique_ptr<render::RenderEngine> renderer) {
+    std::string name, std::shared_ptr<render::RenderEngine> renderer) {
   if (render_engines_.contains(name)) {
     throw std::logic_error(fmt::format(
         "AddRenderer(): A renderer with the name '{}' already exists", name));
   }
   render::RenderEngine* render_engine = renderer.get();
-  render_engines_[name] = std::move(renderer);
+  render_engines_[name] =
+      std::make_unique<internal::RenderEngineHolder>(std::move(renderer));
   bool accepted = false;
   for (auto& id_geo_pair : geometries_) {
     InternalGeometry& geometry = id_geo_pair.second;
@@ -1962,7 +1970,7 @@ void GeometryState<T>::RemoveFromProximityEngineUnchecked(
 template <typename T>
 bool GeometryState<T>::RemoveFromRendererUnchecked(
     const std::string& renderer_name, GeometryId id) {
-  render::RenderEngine* engine = render_engines_[renderer_name].get_mutable();
+  render::RenderEngine* engine = render_engines_[renderer_name]->get_mutable();
   if (engine->has_geometry(id)) {
     // The engine has reported the belief that it has geometry `id`. Therefore,
     // removal should report true.
@@ -1981,11 +1989,11 @@ bool GeometryState<T>::AddToCompatibleRenderersUnchecked(
       geometry.perception_properties()->GetPropertyOrDefault(
           "renderer", "accepting", set<string>{});
   std::vector<render::RenderEngine*> candidate_renderers;
-  for (auto& [name, engine] : render_engines_) {
+  for (auto& [name, engine_holder] : render_engines_) {
     // If no "accepting_renderer" has been specified, every renderer will be
     // given the chance to register the geometry.
     if (accepting_renderers.empty() || accepting_renderers.contains(name)) {
-      candidate_renderers.emplace_back(engine.get_mutable());
+      candidate_renderers.emplace_back(engine_holder->get_mutable());
     }
   }
   if (candidate_renderers.empty()) return false;
@@ -2165,7 +2173,7 @@ const render::RenderEngine& GeometryState<T>::GetRenderEngineOrThrow(
     const std::string& renderer_name) const {
   auto iter = render_engines_.find(renderer_name);
   if (iter != render_engines_.end()) {
-    return *iter->second;
+    return *iter->second->get();
   }
 
   throw std::logic_error(

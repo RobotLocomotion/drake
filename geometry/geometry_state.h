@@ -131,6 +131,22 @@ class DrivenMeshData {
   std::unordered_map<GeometryId, std::vector<RenderMesh>> render_meshes_;
 };
 
+// A wrapper that calls RenderEngine::Clone() in lieu of copying. When we copy a
+// GeometryState, we must ensure that it's a deep copy.
+class RenderEngineHolder {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RenderEngineHolder);
+  explicit RenderEngineHolder(std::shared_ptr<render::RenderEngine> engine)
+      : engine_(std::move(engine)) {}
+  std::unique_ptr<RenderEngineHolder> Clone() const;
+
+  const render::RenderEngine* get() const { return engine_.get(); }
+  render::RenderEngine* get_mutable() const { return engine_.get(); }
+
+ private:
+  std::shared_ptr<render::RenderEngine> engine_;
+};
+
 }  // namespace internal
 #endif
 
@@ -628,7 +644,7 @@ class GeometryState {
 
   /** Implementation of SceneGraph::AddRenderer().  */
   void AddRenderer(std::string name,
-                   std::unique_ptr<render::RenderEngine> renderer);
+                   std::shared_ptr<render::RenderEngine> renderer);
 
   /** Implementation of SceneGraph::RemoveRenderer(). */
   void RemoveRenderer(const std::string& name);
@@ -642,7 +658,7 @@ class GeometryState {
   const render::RenderEngine* GetRenderEngineByName(
       const std::string& name) const {
     if (render_engines_.contains(name)) {
-      return render_engines_.at(name).get();
+      return render_engines_.at(name)->get();
     }
     return nullptr;
   }
@@ -983,7 +999,7 @@ class GeometryState {
     for (auto& [name, render_engine] : render_engines_) {
       unused(name);
       results.emplace_back(
-          const_cast<render::RenderEngine*>(render_engine.get()));
+          const_cast<render::RenderEngine*>(render_engine->get()));
     }
     return results;
   }
@@ -1068,7 +1084,8 @@ class GeometryState {
   copyable_unique_ptr<internal::ProximityEngine<T>> geometry_engine_;
 
   // The collection of all registered renderers.
-  std::unordered_map<std::string, copyable_unique_ptr<render::RenderEngine>>
+  std::unordered_map<std::string,
+                     copyable_unique_ptr<internal::RenderEngineHolder>>
       render_engines_;
 
   // The version for this geometry data.

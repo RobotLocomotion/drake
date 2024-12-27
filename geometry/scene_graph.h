@@ -727,13 +727,13 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param renderer  The `renderer` to add.
    @throws std::exception if the name is not unique.  */
   void AddRenderer(std::string name,
-                   std::unique_ptr<render::RenderEngine> renderer);
+                   std::shared_ptr<render::RenderEngine> renderer);
 
   /** systems::Context-modifying variant of AddRenderer(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
    the provided context.  */
   void AddRenderer(systems::Context<T>* context, std::string name,
-                   std::unique_ptr<render::RenderEngine> renderer) const;
+                   std::shared_ptr<render::RenderEngine> renderer) const;
 
   /** Removes an existing renderer from this %SceneGraph
    @param name The unique name of the renderer to be removed.
