@@ -1,0 +1,29 @@
+[project]
+name = "drake"
+version = "1.36.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Drake Development Team", email = "drake-users@mit.edu"},
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+dependencies = [
+    "ipywidgets",
+    "matplotlib",
+    "notebook",
+    "Pillow",
+    "pydot",
+    "PyYAML",
+]
+
+[dependency-groups]
+test = [
+    "flask",
+    "six",
+    "u-msgpack-python",
+    "websockets",
+]
+
+[tool.pdm]
+distribution = false
