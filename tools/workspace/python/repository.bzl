@@ -154,7 +154,25 @@ def _prepare_venv(repo_ctx, python):
     ])
     repo_ctx.watch(sync)
 
-    return repo_ctx.path("bin/python3")
+    # Calculate a checksum of the requirements file.
+    execute_or_fail(repo_ctx, [
+        "bin/python3",
+        "-c",
+        """
+        import hashlib
+        from pathlib import Path
+        data = Path("requirements.txt").read_bytes()
+        digest = hashlib.sha256(data).hexdigest()
+        Path("requirements_checksum.txt").write_text(digest, encoding="utf-8")
+        """.replace("        ", ""),
+    ])
+    checksum = repo_ctx.read("requirements_checksum.txt")
+
+    # Symlink our venv bin path with salt for the requirements checksum so that
+    # when it changes Bazel will automatically rebuild all targets that use it.
+    infused_bin = "{}/bin".format(checksum)
+    repo_ctx.symlink("bin", infused_bin)
+    return repo_ctx.path("{}/python3".format(infused_bin))
 
 def _impl(repo_ctx):
     # Add the BUILD file.
