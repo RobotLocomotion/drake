@@ -350,6 +350,9 @@ endfunction()
 set(BAZEL_WORKSPACE_EXTRA)
 set(BAZEL_WORKSPACE_EXCLUDES)
 
+# Our cmake/WORKSPACE.bzlmod always provides @python.
+list(APPEND BAZEL_WORKSPACE_EXCLUDES "python")
+
 macro(override_repository NAME)
   set(repo "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
   string(APPEND BAZEL_WORKSPACE_EXTRA

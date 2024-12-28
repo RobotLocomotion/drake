@@ -4,24 +4,22 @@ This rule configures Python for use by Drake, in two parts:
     makes them available to be used as a C/C++ dependency.
 (b) macOS only: creates (or syncs) a virtual environment for dependencies.
 
-For part (a) there are two available targets:
+-------------------------------------------------------------------------------
 
-(1) "@python//:python" for the typical case where we are creating loadable
-dynamic libraries to be used as Python modules.
+For part (a) our goal is to create a @python//:version.bzl file with the
+details of what we found, which is loaded by package.BUILD.bazel to define
+the @python//:all toolchains, which are loaded by our tools/bazel.rc.
 
-(2) "@python//:python_direct_link" for the unusual case of linking the CPython
-interpreter as a library into an executable with a C++ main() function.
+Anywhere in Drake that needs to *consume* the python toolchain information
+should use the aliases provided by //tools/workspace/python which always cite
+the current toolchain (which might not be Drake's toolchain in case a user
+configured a different toolchain). Nothing in Drake should ever refer to any
+@python//:foo label other than the venv for part (b), explained below.
 
 For part (b) the environment is used in all python rules and tests by default,
 because the python toolchain's interpreter is the venv python3 binary.
 
-If the {macos,linux}_interpreter_path being used only mentions the python major
-version (i.e., it is "/path/to/python3" not "/path/to/python3.##") and if the
-interpreter is changed to a different minor version without any change to the
-path, then you must run `bazel sync --configure` to re-run this repository rule
-in order to make bazel aware of the new minor version. This hazard cannot occur
-on any of Drake's supported platforms with our default values, but if you are
-trying something out of the ordinary, be aware.
+-------------------------------------------------------------------------------
 
 Arguments:
     name: A unique name for this rule.
@@ -31,6 +29,14 @@ Arguments:
         when running on macOS. The format substitution "{homebrew_prefix}" is
         available for use in this string.
     requirements_flavor: (Optional) Which choice of requirements.txt to use.
+
+If the {macos,linux}_interpreter_path being used only mentions the python major
+version (i.e., it is "/path/to/python3" not "/path/to/python3.##") and if the
+interpreter is changed to a different minor version without any change to the
+path, then you must run `bazel sync --configure` to re-run this repository rule
+in order to make bazel aware of the new minor version. This hazard cannot occur
+on any of Drake's supported platforms with our default values, but if you are
+trying something out of the ordinary, be aware.
 """
 
 load(
@@ -64,18 +70,6 @@ def _get_python_interpreter(repo_ctx):
         "print('{}.{}'.format(v.major, v.minor))",
     ])]).stdout.strip()
     return (python, version)
-
-def _get_extension_suffix(repo_ctx, python, python_config):
-    """Returns the extension suffix, e.g. ".cpython-310-x86_64-linux-gnu.so" as
-    queried from python_config. Uses `python` only for error reporting.
-    """
-    if which(repo_ctx, python_config) == None:
-        fail(("Cannot find corresponding config executable: {}\n" +
-              "  From interpreter: {}").format(python_config, python))
-    return execute_or_fail(
-        repo_ctx,
-        [python_config, "--extension-suffix"],
-    ).stdout.strip()
 
 # TODO(jwnimmer-tri): Much of the logic for parsing includes and linkopts is
 # the same or similar to that used in pkg_config.bzl and should be refactored
@@ -182,47 +176,29 @@ def _impl(repo_ctx):
     # Set `python` to the the interpreter path specified by our rule attrs,
     # and `version` to its "major.minor" string.
     python, version = _get_python_interpreter(repo_ctx)
-    site_packages_relpath = "lib/python{}/site-packages".format(version)
 
-    # Get extension_suffix, includes, and linkopts from python_config.
+    # Get includes and linkopts from python_config.
     python_config = "{}-config".format(python)
-    extension_suffix = _get_extension_suffix(repo_ctx, python, python_config)
     includes = _get_includes(repo_ctx, python_config)
     linkopts = _get_linkopts(repo_ctx, python_config)
 
-    # Specialize the the linker options based on whether we're linking a
-    # loadable module or an embedded interpreter. (For details, refer to
-    # the docs for option (1) vs (2) atop this file.)
-    linkopts_embedded = list(linkopts)
-    linkopts_embedded.insert(0, "-lpython" + version)
-    linkopts_module = list(linkopts)
+    # On macOS, we need to tweak the linkopts slightly.
     if repo_ctx.os.name == "mac os x":
-        linkopts_module.insert(0, "-undefined dynamic_lookup")
+        linkopts.insert(0, "-undefined dynamic_lookup")
 
     # Set up (or sync) the venv.
     bin_path = _prepare_venv(repo_ctx, python)
 
     version_content = """
-# DO NOT EDIT: generated by python_repository()
-# WARNING: Avoid using this macro in any repository rules which require
-# `load()` at the WORKSPACE level. Instead, load these constants through
-# `BUILD.bazel` or `package.BUILD.bazel` files.
-
-PYTHON_BIN_PATH = "{bin_path}"
-PYTHON_EXTENSION_SUFFIX = "{extension_suffix}"
-PYTHON_VERSION = "{version}"
-PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
+PYTHON_BIN_PATH = {bin_path}
+PYTHON_VERSION = {version}
 PYTHON_INCLUDES = {includes}
-PYTHON_LINKOPTS_EMBEDDED = {linkopts_embedded}
-PYTHON_LINKOPTS_MODULE = {linkopts_module}
+PYTHON_LINKOPTS = {linkopts}
 """.format(
-        bin_path = bin_path,
-        extension_suffix = extension_suffix,
-        version = version,
-        site_packages_relpath = site_packages_relpath,
-        includes = includes,
-        linkopts_module = linkopts_module,
-        linkopts_embedded = linkopts_embedded,
+        bin_path = repr(bin_path),
+        version = repr(version),
+        includes = repr(includes),
+        linkopts = repr(linkopts),
     )
     repo_ctx.file(
         "version.bzl",
@@ -230,23 +206,21 @@ PYTHON_LINKOPTS_MODULE = {linkopts_module}
         executable = False,
     )
 
-interpreter_path_attrs = {
-    "linux_interpreter_path": attr.string(
-        default = "/usr/bin/python3",
-    ),
-    "macos_interpreter_path": attr.string(
-        # The version listed here should match what's listed in both the root
-        # CMakeLists.txt and doc/_pages/installation.md.
-        default = "{homebrew_prefix}/bin/python3.12",
-    ),
-    "requirements_flavor": attr.string(
-        default = "test",
-        values = ["build", "test"],
-    ),
-}
-
 python_repository = repository_rule(
     _impl,
-    attrs = interpreter_path_attrs,
+    attrs = {
+        "linux_interpreter_path": attr.string(
+            default = "/usr/bin/python3",
+        ),
+        "macos_interpreter_path": attr.string(
+            # The version listed here should match what's listed in both the
+            # root CMakeLists.txt and doc/_pages/installation.md.
+            default = "{homebrew_prefix}/bin/python3.12",
+        ),
+        "requirements_flavor": attr.string(
+            default = "test",
+            values = ["build", "test"],
+        ),
+    },
     configure = True,
 )

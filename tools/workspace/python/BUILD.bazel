@@ -1,6 +1,32 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(":defs.bzl", "current_py_cc_libpython", "python_version_txt")
+
+package(default_visibility = ["//visibility:public"])
+
+# Provides a text file containing the major.minor version number of the current
+# Python toolchain, without any newlines.
+python_version_txt(
+    name = "python_version.txt",
+)
+
+# Provides a single point of control within Drake for how to compile a native
+# C/C++ Python module (e.g., for pybind11).
+alias(
+    name = "cc_headers",
+    actual = "@rules_python//python/cc:current_py_cc_headers",
+)
+
+# Provides a single point of control within Drake for how to link a native
+# C/C++ Python module (e.g., for pybind11).
+alias(
+    name = "cc_libs",
+    actual = "@rules_python//python/cc:current_py_cc_libs",
+)
+
+# Provides a single point of control within Drake for how to link a C/C++
+# exectuable that embeds a Python interpreter (e.g., for unit testing).
+current_py_cc_libpython(
+    name = "cc_libpython",
+)
 
 add_lint_tests()
