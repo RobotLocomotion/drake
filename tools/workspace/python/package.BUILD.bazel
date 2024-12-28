@@ -43,8 +43,6 @@ cc_library(
     deps = [":python_headers"],
 )
 
-exports_files(["requirements.txt"])
-
 filegroup(
     name = "venv_bin",
     visibility = ["//visibility:public"],
