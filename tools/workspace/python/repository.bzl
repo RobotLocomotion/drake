@@ -13,8 +13,7 @@ dynamic libraries to be used as Python modules.
 interpreter as a library into an executable with a C++ main() function.
 
 For part (b) the environment is used in all python rules and tests by default,
-but if a test needs to shell out to a venv binary, the `@python//:venv_bin`
-can be used to put the binaries' path into runfiles.
+because the python toolchain's interpreter is the venv python3 binary.
 
 If the {macos,linux}_interpreter_path being used only mentions the python major
 version (i.e., it is "/path/to/python3" not "/path/to/python3.##") and if the
