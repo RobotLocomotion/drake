@@ -1941,6 +1941,9 @@ class TestPlant(unittest.TestCase):
             plant.SetActuationInArray(
                 model_instance=iiwa_model, u_instance=u_iiwa, u=u)
             numpy_compare.assert_float_equal(u_iiwa, u[:7])
+            numpy_compare.assert_float_equal(
+                u_iiwa, plant.GetActuationFromArray(
+                    model_instance=iiwa_model, u=u))
 
     @numpy_compare.check_all_types
     def test_map_qdot_to_v_and_back(self, T):
