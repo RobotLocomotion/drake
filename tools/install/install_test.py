@@ -29,14 +29,8 @@ class InstallTest(unittest.TestCase):
         self.assertSetEqual(set(['bin', 'include', 'lib', 'share']), content)
 
     def _run_one_command(self, test_command):
-        # On macOS, we must run the install tests against venv's interpreter,
-        # so that necessary libraries are available. On Ubuntu, the libraries
-        # are installed system-wide (without a venv).
-        if sys.platform == "darwin":
-            manifest = runfiles.Create()
-            python = manifest.Rlocation("python/bin/python3")
-        else:
-            python = install_test_helper.get_python_executable()
+        assert test_command.endswith(".py")
+        python = install_test_helper.get_python_executable()
 
         # Our launched processes should be independent, not inherit their
         # runfiles from the install_test.py runner.
@@ -47,7 +41,6 @@ class InstallTest(unittest.TestCase):
 
         # Execute the test_command.
         print("+ {}".format(test_command), file=sys.stderr)
-        assert test_command.endswith(".py")
         subprocess.check_call(
             [python, os.path.join(os.getcwd(), test_command)],
             env=env)
