@@ -42,12 +42,3 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [":python_headers"],
 )
-
-filegroup(
-    name = "venv_bin",
-    visibility = ["//visibility:public"],
-    data = [
-        "bin",
-        "requirements.txt",
-    ],
-)
