@@ -43,13 +43,13 @@ cc_library(
     deps = [":python_headers"],
 )
 
-exports_files(["requirements.txt"])
+exports_files(["pdm.lock"])
 
 filegroup(
     name = "venv_bin",
     visibility = ["//visibility:public"],
     data = [
         "bin",
-        "requirements.txt",
+        "pdm.lock",
     ],
 )

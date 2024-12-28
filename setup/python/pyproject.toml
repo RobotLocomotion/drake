@@ -1,0 +1,22 @@
+[project]
+name = "drake"
+requires-python = ">=3.10"
+dependencies = [
+    "ipywidgets",
+    "matplotlib",
+    "notebook",
+    "Pillow",
+    "pydot",
+    "PyYAML",
+]
+
+[dependency-groups]
+test = [
+    "flask",
+    "six",
+    "u-msgpack-python",
+    "websockets",
+]
+
+[tool.pdm]
+distribution = false

@@ -1,76 +1,82 @@
 #!/bin/bash
 #
 # Drake script to set up the Python venv.
-# Uses https://github.com/jazzband/pip-tools under the hood for setup.
+# Uses https://pdm-project.org/ under the hood for setup.
 #
 # Users must NOT run this manually.
 
 set -eux -o pipefail
 
+# Create virtual environment at specified path (if it doesn't exist).
+mkvenv() {
+    if [ ! -d "$1" ]; then
+        "$python" -m venv "$1"
+    fi
+}
+
 # Process command line arguments.
 python=
 repository=
 while [ "${1:-}" != "" ]; do
-  case "$1" in
-    --python)
-      # The python interpreter to use.
-      readonly python="$2"
-      shift
-      ;;
-    --repository)
-      # The bazel repository rule root to interface with. We'll use the
-      # requirements.txt found there, and write back the `bin` symlink.
-      readonly repository="$2"
-      shift
-      ;;
-    *)
-      echo 'Invalid command line argument' >&2
-      exit 5
-  esac
-  shift
+    case "$1" in
+        --python)
+            # The python interpreter to use.
+            readonly python="$2"
+            shift
+            ;;
+        --repository)
+            # The bazel repository rule root to interface with. We'll use
+            # various files found there, and write back the `bin` symlink.
+            readonly repository="$2"
+            shift
+            ;;
+        *)
+            echo 'Invalid command line argument' >&2
+            exit 5
+    esac
+    shift
 done
 if [[ -z "${python}" ]]; then
-  echo "error: --python is required"
-  exit 1
+    echo "error: --python is required"
+    exit 1
 fi
 if [[ -z "${repository}" ]]; then
-  echo "error: --repository is required"
-  exit 1
+    echo "error: --repository is required"
+    exit 1
 fi
 
 # Place the venv(s) in a sibling directory to the output base. That should be a
 # suitable disk location for build artifacts, but without polluting the actual
 # output base that Bazel owns.
-bazel_output_base=$(cd "${repository}/../.." && pwd)
-venv_base="${bazel_output_base}.venv"
-mkdir -p "${venv_base}"
+readonly drake_root="$(cd "$(dirname $0)/../../.." && pwd)"
+readonly bazel_output_base=$(cd "$repository/../.." && pwd)
+readonly drake_python="$bazel_output_base.drake_python"
+mkdir -p "$drake_python"
 
-# Install pip-tools into a virtual environment. As suggested by the pip-tools
-# docs, we segregate the pip-tools apps from the environment they are managing,
-# so that changes to the managed environment cannot break pip-tools.
-readonly venv_jazzband="${venv_base}/venv.jazzband"
-if [ ! -d "${venv_jazzband}" ]; then
-  "${python}" -m venv "${venv_jazzband}"
-fi
+# Install PDM into a virtual environment. We segregate PDM from the environment
+# it is managing, so that changes to the managed environment cannot break PDM.
+readonly venv_pdm="$drake_python/venv.pdm"
+mkvenv "$venv_pdm"
 # TODO(jeremy.nimmer) Ideally, we also would pin all of the dependencies of
-# pip-tools here, but it's not obvious to me how to do that in a way which is
-# easy to upgrade/re-pin over time.
-"${venv_jazzband}/bin/pip" install -U pip-tools==7.4.1
+# PDM here, but it's not obvious to me how to do that in a way which is easy to
+# upgrade/re-pin over time.
+"$venv_pdm/bin/pip" install -U pdm==2.22.1
+
+# Prepare the PDM "project directory".
+readonly setup="$drake_root/setup/python"
+readonly project="$drake_python/project"
+mkdir -p "$project"
+ln -nsf "$setup/pyproject.toml" "$project/pyproject.toml"
+ln -nsf "$setup/pdm.lock" "$project/pdm.lock"
 
 # Prepare the venv that will hold Drake's requirements.
-readonly venv_drake="${venv_base}/venv.drake"
-if [ ! -d "${venv_drake}" ]; then
-  "${python}" -m venv "${venv_drake}"
-fi
-# Any environment managed by pip-tools requires a sufficiently new version of
-# pip as compared to the Ubuntu 22.04 default.
-"${venv_drake}/bin/pip" install -U pip==24.2
+readonly venv_drake="$drake_python/venv.drake"
+mkvenv "$venv_drake"
+"$venv_pdm/bin/pdm" use -p "$project" -f "$venv_drake"
 
-# Run the pip-sync tool.
-"${venv_jazzband}/bin/pip-sync" \
-    --verbose \
-    --python-executable="${venv_drake}/bin/python3" \
-    "${repository}/requirements.txt"
+# Ask PDM to install whatever dependencies we need.
+readonly install_args=( $(cat "$repository/@pdm-install-args") )
+"$venv_pdm/bin/pdm" sync -p "$project" --clean "${install_args[@]}"
 
 # Symlink our venv bin path for the repository.bzl to use.
-ln -nsf "${venv_drake}/bin" "${repository}/bin"
+ln -nsf "$venv_drake/bin" "$repository/bin"
