@@ -6,7 +6,7 @@ set -eux -o pipefail
 
 # Chdir to the Drake root.
 cd "$(dirname $0)/../../.."
-readonly venv_root="$(bazel info output_base).venv"
+readonly drake_python="$(bazel info output_base).drake_python"
 
 # Remove the venv.
-rm -r "$venv_root"
+rm -r "$drake_python"
