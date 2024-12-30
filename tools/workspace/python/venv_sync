@@ -72,5 +72,22 @@ fi
     --python-executable="${venv_drake}/bin/python3" \
     "${repository}/requirements.txt"
 
-# Symlink our venv bin path for the repository.bzl to use.
-ln -nsf "${venv_drake}/bin" "${repository}/bin"
+# Compute the checksum of our requirements file.
+readonly checksum=$(cd "${repository}" && "${python}" <<EOF
+import hashlib
+from pathlib import Path
+data = Path("requirements.txt").read_bytes()
+digest = hashlib.sha256(data).hexdigest()
+print(digest, end=None, flush=True)
+EOF
+)
+[[ -n "${checksum}" ]]
+
+# Symlink our venv bin path for the repository.bzl to use. We'll salt it with
+# the requirements checksum so that when the it changes Bazel will rebuild all
+# targets that use it.
+mkdir "${repository}/${checksum}"
+ln -nsf "${venv_drake}/bin" "${repository}/${checksum}/bin"
+
+# Tell repository.bzl which path to use.
+echo -n "${checksum}/bin/python3" > "${repository}/venv_python3.txt"
