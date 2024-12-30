@@ -1,8 +1,8 @@
 #include "drake/examples/manipulation_station/manipulation_station_hardware_interface.h"
 
-#include <iostream>
 #include <utility>
 
+#include "drake/common/text_logging.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -144,13 +144,13 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
 void ManipulationStationHardwareInterface::Connect(bool wait_for_cameras) {
   drake::lcm::DrakeLcmInterface* const lcm = owned_lcm_.get();
   auto wait_for_new_message = [lcm](const auto& lcm_sub) {
-    std::cout << "Waiting for " << lcm_sub.get_channel_name()
-              << " message..." << std::flush;
+    drake::log()->info("Waiting for {} message ...",
+                       lcm_sub.get_channel_name());
     const int orig_count = lcm_sub.GetInternalMessageCount();
     LcmHandleSubscriptionsUntil(lcm, [&]() {
         return lcm_sub.GetInternalMessageCount() > orig_count;
       }, 10 /* timeout_millis */);
-    std::cout << "Received!" << std::endl;
+    drake::log()->info("Received!");
   };
 
   wait_for_new_message(*iiwa_status_subscriber_);
