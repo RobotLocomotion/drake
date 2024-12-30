@@ -91,10 +91,10 @@ template <typename T>
 const double InitialValueProblem<T>::kDefaultAccuracy = 1e-4;
 
 template <typename T>
-const T InitialValueProblem<T>::kInitialStepSize = static_cast<T>(1e-4);
+const double InitialValueProblem<T>::kInitialStepSize = 1e-4;
 
 template <typename T>
-const T InitialValueProblem<T>::kMaxStepSize = static_cast<T>(1e-1);
+const double InitialValueProblem<T>::kMaxStepSize = 1e-1;
 
 template <typename T>
 InitialValueProblem<T>::InitialValueProblem(
