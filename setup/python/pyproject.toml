@@ -1,0 +1,26 @@
+[project]
+name = "drake"
+# The supported Python major/minor version should match the minimum listed in
+# the root CMakeLists.txt and doc/_pages/from_source.md.
+requires-python = ">=3.10"
+# WARNING for Drake Developers: This list must be kept in sync with
+# setup/mac/binary_distribution/requirements.txt.
+dependencies = [
+    "ipywidgets",
+    "matplotlib",
+    "notebook",
+    "Pillow",
+    "pydot",
+    "PyYAML",
+]
+
+[dependency-groups]
+test = [
+    "flask",
+    "six",
+    "u-msgpack-python",
+    "websockets",
+]
+
+[tool.pdm]
+distribution = false
