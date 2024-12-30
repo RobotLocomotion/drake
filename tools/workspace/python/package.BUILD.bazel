@@ -44,12 +44,3 @@ cc_library(
 )
 
 exports_files(["requirements.txt"])
-
-filegroup(
-    name = "venv_bin",
-    visibility = ["//visibility:public"],
-    data = [
-        "bin",
-        "requirements.txt",
-    ],
-)
