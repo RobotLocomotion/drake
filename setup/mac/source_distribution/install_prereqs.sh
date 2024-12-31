@@ -12,6 +12,9 @@ with_update=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
+    --developer)
+      with_test_only=1
+      ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
     # bazel { build, run } //:install.

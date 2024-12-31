@@ -1,42 +1,79 @@
 ---
-title: Bazel build system
+title: Developing Drake using Bazel
 ---
 
-Drake's primary build system is Bazel.  For more information about Bazel, see
-[https://bazel.build/](https://bazel.build/).
+# New Users
 
-Drake also offers a CMake build system wrapper that invokes Bazel under the
-hood.
+For first-time users, we strongly suggest using one of the pre-compiled binaries
+described on our [installation](/installation.html) page.
 
-# Bazel Installation
+Or, if you need to install Drake from source please refer to the
+[CMake instructions](from_source.html). Bazel is only used for development;
+there is no way to install Drake from Bazel.
 
-Follow Drake's
-[platform-specific setup instructions](/from_source.html#mandatory-platform-specific-instructions)
-to install bazelisk at ``/usr/bin/bazel``, which will then automatically
-download the correct version of Bazel necessary for the build.
+This page describes how Drake Developers (and contributors making pull requests)
+should develop and test their changes locally.
 
-# Drake clone and platform setup
+# Introduction
 
-* Start with a **git clone** of drake, per the [Getting Drake](/from_source.html#getting-drake)
-  instructions.
-* Continue with the *"Mandatory platform-specific instructions"* on the same
-  page.
+Drake's primary build system is [Bazel](https://bazel.build/), which our
+developers use to build and test locally and in CI. Bazel enables speedy
+development via fine-grained caching of all actions, including tests.
+
+For end users, Drake also offers a CMake build system wrapper that invokes Bazel
+as a subprocess and maps CMake build options into Bazel build options, so that
+users can install Drake via standard tools without knowing anything about Bazel.
+See the [CMake instructions](from_source.html) for details.
+
+# Getting Drake
+
+Run:
+
+```bash
+# Get the sources.
+git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git
+
+# Install the developer dependencies.
+drake/setup/install_prereqs --developer
+```
+
+We suggest you keep the default clone directory name (``drake``) and not rename
+it (e.g., ``drake2``). The CLion integration will suffer if the checkout is not
+named ``drake``. (See [CLion IDE setup](clion.html) for details.)
+
+## Using a fork of Drake
+
+The above ``git clone`` command will configure Drake's primary repository as a
+remote called ``origin``. If you plan to fork Drake for development, we
+recommend that you configure your fork of Drake's primary repository as the
+``origin`` remote and Drake's primary repository as the ``upstream``
+remote. This can be done by executing the following commands:
+
+```bash
+cd drake
+git remote set-url origin git@github.com:[your github user name]/drake.git
+git remote add upstream https://github.com/RobotLocomotion/drake.git
+git remote set-url --push upstream no_push
+```
+
+We recommend that you
+[setup SSH access to github.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
+to avoid needing to type your password each time you access it.
 
 # Developing Drake using Bazel
 
-To build or test Drake, run **bazel build** or **bazel test** with the desired
-target label (and optional configuration options if desired).  We give some
-typical examples below; for more reading about target patterns, see:
-[https://docs.bazel.build/versions/main/user-manual.html#target-patterns](https://docs.bazel.build/versions/main/user-manual.html#target-patterns).
+To build or test Drake, run `bazel build` or `bazel test` with the desired
+target label (and optional configuration options if desired). We give some
+typical examples below; for more reading about target patterns, see
+[target patterns](https://bazel.build/docs/user-manual#target-patterns).
 
-On Ubuntu, the default compiler is the first ``gcc`` compiler in the ``PATH``.
-On macOS, the default compiler is the Apple LLVM compiler. To use Clang on
-Ubuntu, add ``--config=clang`` after any **bazel build**, **bazel test** or any
-other **bazel** commands.
+On Ubuntu, the default compiler is GCC. On macOS, the default compiler is the
+Apple LLVM compiler. To use Clang on Ubuntu, add ``--config=clang`` after any
+`bazel` command.
 
 Cheat sheet for operating on the entire project:
 
-```
+```bash
 cd /path/to/drake
 bazel build //...                 # Build the entire project.
 bazel test //...                  # Build and test the entire project.
@@ -46,17 +83,12 @@ bazel test --config=clang //...   # Build and test using Clang on Ubuntu.
 ```
 
 * The "``//``" means "starting from the root of the project".
-* The "``...``" means "everything including the subdirectories' ``BUILD`` files".
-    * Contrast with, e.g., the "``bazel build common:*``" explained below, where
-      only targets declared *directly* in ``drake/common/BUILD`` are compiled,
-      and not the targets in ``drake/common/trajectories/BUILD``.  The "``*``"
-      matches targets in that directory; the "``...``" also matches down into
-      subdirectories.
+* The "``...``" means "everything, recursing into subdirectories".
 
 You may use relative pathnames if your shell's working directory is not at the
 project root:
 
-```
+```bash
 cd /path/to/drake/common
 bazel build ...                   # Build everything in common and its child subdirectories.
 bazel test ...                    # Test everything in common and its child subdirectories.
@@ -64,7 +96,7 @@ bazel build //...                 # Build the entire project.
 bazel test //...                  # Build and test the entire project.
 ```
 
-* As before, the "``...``" above means "everything including subdirectories".
+* As before, the "``...``" means "everything, recursing into subdirectories".
     * In the first two lines we did not precede "``...``" with "``//``", so the
       search begins in the current directory (``common``) and not from the
       ``drake`` root.
@@ -74,17 +106,17 @@ bazel test //...                  # Build and test the entire project.
 
 Cheat sheet for operating on specific portions of the project:
 
-```
+```bash
 cd /path/to/drake
 bazel build common/...                               # Build everything in common and its child subdirectories.
 bazel build common                                   # Build libcommon.
 bazel build common:polynomial                        # Build libpolynomial.
-bazel build common:*                                 # Build everything in common but NOT its children.
+bazel build common:all                               # Build everything in common but NOT its children.
 
 bazel test common:polynomial_test                    # Run one test.
 bazel test -c dbg common:polynomial_test             # Run one test in debug mode.
 bazel test --config=memcheck common:polynomial_test  # Run one test under memcheck (valgrind).
-bazel test --config=fastmemcheck common:*            # Run common's tests under memcheck, with minimal recompiling.
+bazel test --config=fastmemcheck common:all          # Run common's tests under memcheck, with minimal recompiling.
 bazel test --config=kcov common:polynomial_test      # Run one test under kcov (see instructions below).
 bazel build -c dbg common:polynomial_test && \
   gdb bazel-bin/common/polynomial_test               # Run one test under gdb.
@@ -96,11 +128,10 @@ bazel test --config lint //...                       # Only run style checks; do
 
 * The "``:``" syntax separates target names from the directory path of the
   ``BUILD`` file they appear in. In this case, for example,
-  ``drake/common/BUILD`` specifies ``cc_test(name = "polynomial_test")``.
+  ``drake/common/BUILD`` specifies ``drake_cc_test(name = "polynomial_test")``.
 * Note that the configuration switches (``-c`` and ``--config``) influence the
   entire command. For example, running a test in ``dbg`` mode means that its
   prerequisite libraries are also compiled and linked in ``dbg`` mode.
-* For the definitions of the "``--config``" options see ``drake/tools/bazel.rc``.
 
 ## Running with Flags
 
@@ -109,7 +140,7 @@ bazel test --config lint //...                       # Only run style checks; do
 In general, to figure out what binary-specific arguments are available, add
 "``-- --help``" to your ``bazel run`` command. An an example,
 
-```
+```bash
 bazel run //examples/acrobot:run_passive -- --help
 ```
 
@@ -122,31 +153,34 @@ For running tests, you may pass custom arguments to the test program via
 
 For a C++ unittest that uses ``drake_cc_googletest``, for example:
 
-```
-bazel test multibody/plant:multibody_plant_test --test_output=streamed --nocache_test_results --test_arg=--gtest_filter='*SimpleModelCreation*'
+```bash
+bazel test //multibody/plant:multibody_plant_test --test_output=streamed --nocache_test_results --test_arg=--gtest_filter='*SimpleModelCreation*'
 ```
 
 For a Python unittest that uses ``drake_py_unittest``, for example:
 
-```
-bazel test bindings/pydrake:py/symbolic_test --test_output=streamed --nocache_test_results --test_arg=--trace=user --test_arg=TestSymbolicVariable
+```bash
+bazel test //bindings/pydrake:py/symbolic_test --test_output=streamed --nocache_test_results --test_arg=--trace=user --test_arg=TestSymbolicVariable
 ```
 
 # Updating BUILD files
 
-Please use the "``buildifier``" tool to format edits to ``BUILD`` files (in the
-same spirit as ``clang-format`` formatting C++ code):
+We use the "``buildifier``" tool to auto-format our ``BUILD`` files (in the same
+spirit as ``clang-format`` formatting C++ code):
 
-```
+```bash
 cd /path/to/drake
 bazel-bin/tools/lint/buildifier --all         # Reformat all Bazel files.
 bazel-bin/tools/lint/buildifier common/BUILD  # Only reformat one file.
 ```
 
+If a BUILD file is mis-formatted, you we see a test failure with instructions
+how to fix the problem.
+
 In most cases the ``bazel-bin/tools/lint/buildifier`` will already be compiled
 by the time you need it.  In case it's absent, you can compile it via:
 
-```
+```bash
 cd /path/to/drake
 bazel build //tools/lint:buildifier
 ```

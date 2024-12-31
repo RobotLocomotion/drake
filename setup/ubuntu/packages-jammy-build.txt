@@ -9,6 +9,7 @@ liblapack-dev
 libmumps-seq-dev
 libopengl-dev
 libx11-dev
+locales
 nasm
 ocl-icd-opencl-dev
 opencl-headers

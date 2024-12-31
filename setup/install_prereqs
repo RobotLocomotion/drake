@@ -1,0 +1,23 @@
+#!/bin/bash
+#
+# This script installs Drake's prerequisites, e.g., prior to installing
+# Drake with CMake.
+#
+# Run this program with --help to see the available options.
+
+set -euo pipefail
+
+case "$OSTYPE" in
+  darwin*)
+    # TODO(jwnimmer-tri) Rewrite mac/install_prereqs to have better defaults
+    # so that we don't need to inject any extra options here.
+    exec "${BASH_SOURCE%/*}/mac/install_prereqs.sh" --without-test-only "$@"
+    ;;
+  linux*)
+    exec "${BASH_SOURCE%/*}/ubuntu/install_prereqs" "$@"
+    ;;
+  *)
+    echo 'ERROR: Unsupported OS' >&2
+    exit 1
+    ;;
+esac
