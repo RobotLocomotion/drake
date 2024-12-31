@@ -11,6 +11,8 @@ officially supports:
      CMakeLists.txt. -->
 <!-- The minimum compiler versions should match those listed in both the root
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
+<!-- The minimum Python version(s) should match those listed in both the root
+     CMakeLists.txt and setup/python/pyproject.toml. -->
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java          |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|

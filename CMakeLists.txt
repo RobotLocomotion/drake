@@ -194,7 +194,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 
 # The supported Python major/minor versions should match those listed in
-# doc/_pages/from_source.md.
+# doc/_pages/from_source.md and setup/python/pyproject.toml.
 if(APPLE)
   # The macOS python version should match what's listed in both the
   # tools/workspace/python/repository.bzl and doc/_pages/installation.md.
