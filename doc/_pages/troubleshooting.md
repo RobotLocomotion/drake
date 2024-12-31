@@ -165,6 +165,25 @@ env/bin/pip install drake
 source env/bin/activate
 ```
 
+# Image rendering
+
+## GL and/or DISPLAY {#gl-init}
+
+When performing image rendering (i.e., camera simulation), sometimes you may
+need to configure your computer to provide Drake sufficient access to core
+graphics libraries.
+
+Drake renders images using the
+[RenderEngine](https://drake.mit.edu/doxygen_cxx/classdrake_1_1geometry_1_1render_1_1_render_engine.html)
+abstract base class, which is typically configured using the
+[CameraConfig](https://drake.mit.edu/doxygen_cxx/structdrake_1_1systems_1_1sensors_1_1_camera_config.html)
+data structure via YAML, which can specify a concrete RenderEngine subclass to
+be used. Refer to the
+[hardware_sim](https://github.com/RobotLocomotion/drake/tree/master/examples/hardware_sim)
+example for details.
+
+Depending on the ...
+
 # Build problems
 
 ## Out of memory {#build-oom}
