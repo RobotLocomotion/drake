@@ -9,7 +9,7 @@ namespace systems {
 namespace controllers {
 
 template <typename T>
-PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
+PidControlledSystem<T>::PidControlledSystem(std::shared_ptr<System<T>> plant,
                                             double Kp, double Ki, double Kd,
                                             int state_output_port_index,
                                             int plant_input_port_index)
@@ -26,7 +26,7 @@ PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
 }
 
 template <typename T>
-PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
+PidControlledSystem<T>::PidControlledSystem(std::shared_ptr<System<T>> plant,
                                             const Eigen::VectorXd& Kp,
                                             const Eigen::VectorXd& Ki,
                                             const Eigen::VectorXd& Kd,
@@ -39,7 +39,7 @@ PidControlledSystem<T>::PidControlledSystem(std::unique_ptr<System<T>> plant,
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
-    std::unique_ptr<System<T>> plant, const MatrixX<double>& feedback_selector,
+    std::shared_ptr<System<T>> plant, const MatrixX<double>& feedback_selector,
     double Kp, double Ki, double Kd, int state_output_port_index,
     int plant_input_port_index)
     : state_output_port_index_(state_output_port_index),
@@ -53,7 +53,7 @@ PidControlledSystem<T>::PidControlledSystem(
 
 template <typename T>
 PidControlledSystem<T>::PidControlledSystem(
-    std::unique_ptr<System<T>> plant, const MatrixX<double>& feedback_selector,
+    std::shared_ptr<System<T>> plant, const MatrixX<double>& feedback_selector,
     const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
     const Eigen::VectorXd& Kd, int state_output_port_index,
     int plant_input_port_index)
@@ -64,7 +64,7 @@ PidControlledSystem<T>::PidControlledSystem(
 
 template <typename T>
 void PidControlledSystem<T>::Initialize(
-    std::unique_ptr<System<T>> plant, const MatrixX<double>& feedback_selector,
+    std::shared_ptr<System<T>> plant, const MatrixX<double>& feedback_selector,
     const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
     const Eigen::VectorXd& Kd) {
   DRAKE_DEMAND(plant != nullptr);

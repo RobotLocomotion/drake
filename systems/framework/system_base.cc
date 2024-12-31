@@ -425,6 +425,21 @@ void SystemBase::CreateSourceTrackers(ContextBase* context_ptr) const {
   }
 }
 
+void SystemBase::set_parent_service(
+    SystemBase* child,
+    const internal::SystemParentServiceInterface* parent_service) {
+  DRAKE_DEMAND(child != nullptr);
+  DRAKE_DEMAND(parent_service != nullptr);
+  if (child->parent_service_ != nullptr) {
+    throw std::logic_error(fmt::format(
+        "Cannot build subsystem '{}' into Diagram '{}' because it has already "
+        "been built into a different Diagram '{}'",
+        child->GetSystemName(), parent_service->GetParentPathname(),
+        child->parent_service_->GetParentPathname()));
+  }
+  child->parent_service_ = parent_service;
+}
+
 // The only way for a system to evaluate its own input port is if that
 // port is fixed. In that case the port's value is in the corresponding
 // subcontext and we can just return it. Otherwise, the port obtains its value

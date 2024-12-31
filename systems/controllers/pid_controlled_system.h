@@ -83,8 +83,12 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] plant_input_port_index identifies the input port on the plant
   /// that takes in the input (computed as the output of the PID controller).
   ///
+  /// @warning a System (i.e., `plant`) may only be added to at most one Diagram
+  /// (i.e., this `PidControlledSystem`) so should not be re-used outside of the
+  /// `PidControlledSystem`.
+  ///
   /// @pydrake_mkdoc_identifier{6args_double_gains}
-  PidControlledSystem(std::unique_ptr<System<T>> plant, double Kp, double Ki,
+  PidControlledSystem(std::shared_ptr<System<T>> plant, double Kp, double Ki,
                       double Kd, int state_output_port_index = 0,
                       int plant_input_port_index = 0);
 
@@ -100,12 +104,16 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] plant_input_port_index identifies the input port on the plant
   /// that takes in the input (computed as the output of the PID controller).
   ///
+  /// @warning a System (i.e., `plant`) may only be added to at most one Diagram
+  /// (i.e., this `PidControlledSystem`) so should not be re-used outside of the
+  /// `PidControlledSystem`.
+  ///
   /// @pydrake_mkdoc_identifier{6args_vector_gains}
-  PidControlledSystem(std::unique_ptr<System<T>> plant,
+  PidControlledSystem(std::shared_ptr<System<T>> plant,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
                       int state_output_port_index = 0,
-                      int plant_output_port_index = 0);
+                      int plant_input_port_index = 0);
 
   /// A constructor where the gains are scalar values and some of the plant's
   /// output is part of the feedback signal as specified by
@@ -123,8 +131,12 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] plant_input_port_index identifies the input port on the plant
   /// that takes in the input (computed as the output of the PID controller).
   ///
+  /// @warning a System (i.e., `plant`) may only be added to at most one Diagram
+  /// (i.e., this `PidControlledSystem`) so should not be re-used outside of the
+  /// `PidControlledSystem`.
+  ///
   /// @pydrake_mkdoc_identifier{7args_double_gains}
-  PidControlledSystem(std::unique_ptr<System<T>> plant,
+  PidControlledSystem(std::shared_ptr<System<T>> plant,
                       const MatrixX<double>& feedback_selector, double Kp,
                       double Ki, double Kd, int state_output_port_index = 0,
                       int plant_input_port_index = 0);
@@ -145,8 +157,12 @@ class PidControlledSystem : public Diagram<T> {
   /// @param[in] plant_input_port_index identifies the input port on the plant
   /// that takes in the input (computed as the output of the PID controller).
   ///
+  /// @warning a System (i.e., `plant`) may only be added to at most one Diagram
+  /// (i.e., this `PidControlledSystem`) so should not be re-used outside of the
+  /// `PidControlledSystem`.
+  ///
   /// @pydrake_mkdoc_identifier{7args_vector_gains}
-  PidControlledSystem(std::unique_ptr<System<T>> plant,
+  PidControlledSystem(std::shared_ptr<System<T>> plant,
                       const MatrixX<double>& feedback_selector,
                       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                       const Eigen::VectorXd& Kd,
@@ -229,7 +245,7 @@ class PidControlledSystem : public Diagram<T> {
   // A helper function for the constructors. This is necessary to avoid seg
   // faults caused by simultaneously moving the plant and calling methods on
   // the plant when one constructor delegates to another constructor.
-  void Initialize(std::unique_ptr<System<T>> plant,
+  void Initialize(std::shared_ptr<System<T>> plant,
                   const MatrixX<double>& feedback_selector,
                   const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
                   const Eigen::VectorXd& Kd);

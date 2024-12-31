@@ -10,7 +10,7 @@ namespace drake {
 namespace systems {
 namespace sensors {
 
-RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
+RgbdSensorDiscrete::RgbdSensorDiscrete(std::shared_ptr<RgbdSensor> camera,
                                        double period, bool render_label_image)
     : camera_(camera.get()), period_(period) {
   const auto& color_camera_info =
