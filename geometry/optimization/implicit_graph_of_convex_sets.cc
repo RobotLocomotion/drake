@@ -52,6 +52,60 @@ void ImplicitGraphOfConvexSets::ExpandRecursively(Vertex* start,
   }
 }
 
+ImplicitGraphOfConvexSetsFromExplicit::ImplicitGraphOfConvexSetsFromExplicit(
+    const GraphOfConvexSets& gcs)
+    : explicit_gcs_(gcs) {}
+
+ImplicitGraphOfConvexSetsFromExplicit::
+    ~ImplicitGraphOfConvexSetsFromExplicit() = default;
+
+Vertex* ImplicitGraphOfConvexSetsFromExplicit::ImplicitVertexFromExplicit(
+    const GraphOfConvexSets::Vertex& v_explicit) {
+  auto it = explicit_to_implicit_map_.find(&v_explicit);
+  if (it == explicit_to_implicit_map_.end()) {
+    Vertex* v_implicit = mutable_gcs().AddVertexFromTemplate(v_explicit);
+    explicit_to_implicit_map_[&v_explicit] = v_implicit;
+    implicit_to_explicit_map_[v_implicit] = &v_explicit;
+    return v_implicit;
+  }
+  return it->second;
+}
+
+void ImplicitGraphOfConvexSetsFromExplicit::Expand(Vertex* u_implicit) {
+  DRAKE_THROW_UNLESS(u_implicit != nullptr);
+  DRAKE_THROW_UNLESS(mutable_gcs().IsValid(*u_implicit));
+  // Expand is only called once per vertex, so the outgoing edges should be
+  // empty.
+  DRAKE_DEMAND(u_implicit->outgoing_edges().empty());
+
+  // Find the corresponding explicit vertex. The Successors() method should
+  // only call this with vertices that have been added to the implicit GCS.
+  const Vertex* u_explicit = implicit_to_explicit_map_.at(u_implicit);
+  DRAKE_DEMAND(u_explicit != nullptr);
+
+  // For each outgoing edge from the explicit vertex, add a corresponding edge
+  // the to the implicit GCS.
+  for (const Edge* e_explicit : u_explicit->outgoing_edges()) {
+    DRAKE_DEMAND(e_explicit != nullptr);
+
+    // Add the successor vertex to the implicit GCS if it hasn't been added yet.
+    Vertex* v_implicit{nullptr};
+    auto it = explicit_to_implicit_map_.find(&e_explicit->v());
+    if (it == explicit_to_implicit_map_.end()) {
+      v_implicit = mutable_gcs().AddVertexFromTemplate(e_explicit->v());
+      explicit_to_implicit_map_[&e_explicit->v()] = v_implicit;
+      implicit_to_explicit_map_[v_implicit] = &e_explicit->v();
+    } else {
+      // Then the successor vertex has already been added to the implicit GCS,
+      // but the edge has not been added yet (since Expand is only called once
+      // per vertex)
+      v_implicit = it->second;
+    }
+    DRAKE_DEMAND(v_implicit != nullptr);
+    mutable_gcs().AddEdgeFromTemplate(u_implicit, v_implicit, *e_explicit);
+  }
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
