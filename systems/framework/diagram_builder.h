@@ -77,29 +77,36 @@ class DiagramBuilder {
   DiagramBuilder();
   virtual ~DiagramBuilder();
 
-  /// Takes ownership of @p system and adds it to the builder. Returns a bare
+  /// Takes ownership of `system` and adds it to the builder. Returns a bare
   /// pointer to the System, which will remain valid for the lifetime of the
   /// Diagram built by this builder.
   ///
   /// If the system's name is unset, sets it to System::GetMemoryObjectName()
   /// as a default in order to have unique names within the diagram.
   ///
-  /// @code
-  ///   DiagramBuilder<T> builder;
-  ///   auto foo = builder.AddSystem(std::make_unique<Foo<T>>());
-  /// @endcode
+  /// @warning a System may only be added to at most one DiagramBuilder.
+  /// Multiple Diagram instances cannot share the same System.
+  template<class S>
+  S* AddSystem(std::shared_ptr<S> system) {
+    S* result = system.get();
+    this->AddSystemImpl(std::move(system));
+    return result;
+  }
+
+  /// Takes ownership of `system` and adds it to the builder. Returns a bare
+  /// pointer to the System, which will remain valid for the lifetime of the
+  /// Diagram built by this builder.
   ///
-  /// @tparam S The type of system to add.
+  /// If the system's name is unset, sets it to System::GetMemoryObjectName()
+  /// as a default in order to have unique names within the diagram.
+  ///
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- pydrake only uses the
+  /// shared_ptr overload.}
   template<class S>
   S* AddSystem(std::unique_ptr<S> system) {
-    ThrowIfAlreadyBuilt();
-    if (system->get_name().empty()) {
-      system->set_name(system->GetMemoryObjectName());
-    }
-    S* raw_sys_ptr = system.get();
-    systems_.insert(raw_sys_ptr);
-    registered_systems_.push_back(std::move(system));
-    return raw_sys_ptr;
+    S* result = system.get();
+    this->AddSystemImpl(std::move(system));
+    return result;
   }
 
   /// Constructs a new system with the given @p args, and adds it to the
@@ -119,17 +126,16 @@ class DiagramBuilder {
   ///   auto foo = builder.template AddSystem<Foo<T>>("name", 3.14);
   /// @endcode
   ///
-  /// You may prefer the `unique_ptr` variant instead.
-  ///
-  ///
   /// @tparam S The type of System to construct. Must subclass System<T>.
   ///
   /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
   /// specifying <T> doesn't make sense for that language.}
   template<class S, typename... Args>
   S* AddSystem(Args&&... args) {
-    ThrowIfAlreadyBuilt();
-    return AddSystem(std::make_unique<S>(std::forward<Args>(args)...));
+    auto system = std::make_shared<S>(std::forward<Args>(args)...);
+    S* result = system.get();
+    this->AddSystemImpl(std::move(system));
+    return result;
   }
 
   /// Constructs a new system with the given @p args, and adds it to the
@@ -150,8 +156,6 @@ class DiagramBuilder {
   ///   auto foo = builder.template AddSystem<Foo>("name", 3.14);
   /// @endcode
   ///
-  /// You may prefer the `unique_ptr` variant instead.
-  ///
   /// @tparam S A template for the type of System to construct. The template
   /// will be specialized on the scalar type T of this builder.
   ///
@@ -159,26 +163,36 @@ class DiagramBuilder {
   /// specifying <T> doesn't make sense for that language.}
   template<template<typename Scalar> class S, typename... Args>
   S<T>* AddSystem(Args&&... args) {
-    ThrowIfAlreadyBuilt();
-    return AddSystem(std::make_unique<S<T>>(std::forward<Args>(args)...));
+    auto system = std::make_shared<S<T>>(std::forward<Args>(args)...);
+    S<T>* result = system.get();
+    this->AddSystemImpl(std::move(system));
+    return result;
   }
 
-  /// Takes ownership of @p system, applies @p name to it, and adds it to the
+  /// Takes ownership of `system`, sets its name to `name`, and adds it to the
   /// builder. Returns a bare pointer to the System, which will remain valid
   /// for the lifetime of the Diagram built by this builder.
   ///
-  /// @code
-  ///   DiagramBuilder<T> builder;
-  ///   auto bar = builder.AddNamedSystem("bar", std::make_unique<Bar<T>>());
-  /// @endcode
+  /// @warning a System may only be added to at most one DiagramBuilder.
+  /// Multiple Diagram instances cannot share the same System.
+  template<class S>
+  S* AddNamedSystem(const std::string& name, std::shared_ptr<S> system) {
+    S* result = system.get();
+    this->AddNamedSystemImpl(name, std::move(system));
+    return result;
+  }
+
+  /// Takes ownership of `system`, sets its name to `name`, and adds it to the
+  /// builder. Returns a bare pointer to the System, which will remain valid
+  /// for the lifetime of the Diagram built by this builder.
   ///
-  /// @tparam S The type of system to add.
-  /// @post The system's name is @p name.
+  /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- pydrake only uses the
+  /// shared_ptr overload.}
   template<class S>
   S* AddNamedSystem(const std::string& name, std::unique_ptr<S> system) {
-    ThrowIfAlreadyBuilt();
-    system->set_name(name);
-    return AddSystem(std::move(system));
+    S* result = system.get();
+    this->AddNamedSystemImpl(name, std::move(system));
+    return result;
   }
 
   /// Constructs a new system with the given @p args, applies @p name to it,
@@ -207,9 +221,10 @@ class DiagramBuilder {
   /// specifying <T> doesn't make sense for that language.}
   template<class S, typename... Args>
   S* AddNamedSystem(const std::string& name, Args&&... args) {
-    ThrowIfAlreadyBuilt();
-    return AddNamedSystem(
-        name, std::make_unique<S>(std::forward<Args>(args)...));
+    auto system = std::make_shared<S>(std::forward<Args>(args)...);
+    S* result = system.get();
+    this->AddNamedSystemImpl(name, std::move(system));
+    return result;
   }
 
   /// Constructs a new system with the given @p args, applies @p name to it,
@@ -240,9 +255,10 @@ class DiagramBuilder {
   /// specifying <T> doesn't make sense for that language.}
   template<template<typename Scalar> class S, typename... Args>
   S<T>* AddNamedSystem(const std::string& name, Args&&... args) {
-    ThrowIfAlreadyBuilt();
-    return AddNamedSystem(
-        name, std::make_unique<S<T>>(std::forward<Args>(args)...));
+    auto system = std::make_shared<S<T>>(std::forward<Args>(args)...);
+    S<T>* result = system.get();
+    this->AddNamedSystemImpl(name, std::move(system));
+    return result;
   }
 
   /// Removes the given system from this builder and disconnects any connections
@@ -489,6 +505,10 @@ class DiagramBuilder {
       std::variant<std::string, UseDefaultName> name = kUseDefaultName);
 
   void ThrowIfAlreadyBuilt() const;
+
+  void AddSystemImpl(std::shared_ptr<System<T>>&& system);
+  void AddNamedSystemImpl(const std::string& name,
+                          std::shared_ptr<System<T>>&& system);
 
   // Throws if the given input port (belonging to a child subsystem) has
   // already been connected to an output port, or exported to be an input

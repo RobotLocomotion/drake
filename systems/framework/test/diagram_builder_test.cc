@@ -132,6 +132,22 @@ GTEST_TEST(DiagramBuilderTest, AlreadyBuilt) {
       ".*DiagramBuilder may no longer be used.*");
 }
 
+// Integration test of the Diagram <=> System <=> SystemBase interaction when
+// the same System is added to multiple diagrams.
+GTEST_TEST(DiagramBuilderTest, AddSystemToMultipleDiagrams) {
+  auto adder = std::make_shared<Adder<double>>(1 /* inputs */, 1 /* size */);
+
+  DiagramBuilder<double> builder_1;
+  builder_1.AddSystem(adder);
+  std::unique_ptr<Diagram<double>> diagram_1;
+  EXPECT_NO_THROW(diagram_1 = builder_1.Build());
+
+  DiagramBuilder<double> builder_2;
+  builder_2.AddSystem(adder);
+  DRAKE_EXPECT_THROWS_MESSAGE(builder_2.Build(),
+                              ".*already.*different Diagram.*");
+}
+
 // A special class to distinguish between cycles and algebraic loops. The system
 // has one input and two outputs. One output simply "echoes" the input (direct
 // feedthrough). The other output merely outputs a const value. That means, the
