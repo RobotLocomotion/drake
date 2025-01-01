@@ -223,6 +223,39 @@ GTEST_TEST(ImplicitGraphOfConvexSetsTest, GridGcs) {
   EXPECT_EQ(dut.gcs().num_edges(), 12);
 }
 
+GTEST_TEST(ImplicitGraphOfConvexSetsTest, FromExplicit) {
+  GraphOfConvexSets gcs;
+  Vertex* source = gcs.AddVertex(Point(Vector2d(3., 5.)), "source");
+  Vertex* target = gcs.AddVertex(Point(Vector2d(-2., 4.)), "target");
+  Vertex* sink = gcs.AddVertex(Point(Vector2d(5., -2.3)), "sink");
+  Edge* e_on = gcs.AddEdge(source, target, "e_on");
+  Edge* e_off = gcs.AddEdge(source, sink, "e_off");
+
+  unused(e_on, e_off);
+  ImplicitGraphOfConvexSetsFromExplicit dut(gcs);
+  EXPECT_EQ(dut.gcs().num_vertices(), 0);
+  EXPECT_EQ(dut.gcs().num_edges(), 0);
+
+  Vertex* source_implicit = dut.ImplicitVertexFromExplicit(*source);
+  EXPECT_EQ(dut.gcs().num_vertices(), 1);
+  EXPECT_EQ(dut.gcs().num_edges(), 0);
+
+  // Looking up the same vertex again should not add a new vertex.
+  source_implicit = dut.ImplicitVertexFromExplicit(*source);
+  EXPECT_EQ(dut.gcs().num_vertices(), 1);
+  EXPECT_EQ(dut.gcs().num_edges(), 0);
+
+  dut.ExpandRecursively(source_implicit);
+  EXPECT_EQ(dut.gcs().num_vertices(), 3);
+  EXPECT_EQ(dut.gcs().num_edges(), 2);
+
+  EXPECT_NE(dut.gcs().GetVertexByName("source"), nullptr);
+  EXPECT_NE(dut.gcs().GetVertexByName("target"), nullptr);
+  EXPECT_NE(dut.gcs().GetVertexByName("sink"), nullptr);
+  EXPECT_NE(dut.gcs().GetEdgeByName("e_on"), nullptr);
+  EXPECT_NE(dut.gcs().GetEdgeByName("e_off"), nullptr);
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
