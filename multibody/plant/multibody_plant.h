@@ -534,9 +534,11 @@ get_actuation_input_port()) and for each individual @ref model_instances
 "model instance" in the %MultibodyPlant (see
 @ref get_actuation_input_port(ModelInstanceIndex)const
 "get_actuation_input_port(ModelInstanceIndex)").
-Any actuation input ports not connected are assumed to be zero. Actuation values
-from the full %MultibodyPlant model port (get_actuation_input_port()) and from
-the per model-instance ports (
+- Actuation inputs and actuation effort limits are taken to be in joint
+  coordinates (they are not effected by the actuator gear ratio).
+- Any actuation input ports not connected are assumed to be zero.
+- Actuation values from the full %MultibodyPlant model port
+  (get_actuation_input_port()) and from the per model-instance ports (
 @ref get_actuation_input_port(ModelInstanceIndex)const
 "get_actuation_input_port(ModelInstanceIndex)") are summed up.
 
