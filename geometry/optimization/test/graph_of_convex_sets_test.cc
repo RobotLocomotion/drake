@@ -114,6 +114,11 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   EXPECT_EQ(v->ambient_dimension(), 3);
   EXPECT_EQ(v->name(), "point");
 
+  EXPECT_EQ(g.GetVertexByName("point"), v);
+  EXPECT_EQ(g.GetVertexByName("garbage"), nullptr);
+  EXPECT_EQ(g.GetMutableVertexByName("point"), v);
+  EXPECT_EQ(g.GetMutableVertexByName("garbage"), nullptr);
+
   EXPECT_EQ(v->x().size(), 3);
   EXPECT_EQ(v->x()[0].get_name(), "point(0)");
   EXPECT_TRUE(v->set().PointInSet(p.x()));
@@ -131,6 +136,12 @@ GTEST_TEST(GraphOfConvexSetsTest, AddVertex) {
   const auto const_vertices = const_g->Vertices();
   EXPECT_EQ(const_vertices.size(), 1);
   EXPECT_EQ(const_vertices.at(0), v);
+
+  // We can add a second vertex with the same name; GetVertexByName will return
+  // the first one added.
+  g.AddVertex(p, "point");
+  EXPECT_EQ(g.GetVertexByName("point"), v);
+  EXPECT_EQ(g.GetMutableVertexByName("point"), v);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, GetVertexSolution) {
@@ -161,8 +172,19 @@ GTEST_TEST(GraphOfConvexSetsTest, AddEdge) {
   EXPECT_EQ(e->u().name(), u->name());
   EXPECT_EQ(e->v().name(), v->name());
 
+  EXPECT_EQ(g.GetEdgeByName("e"), e);
+  EXPECT_EQ(g.GetEdgeByName("garbage"), nullptr);
+  EXPECT_EQ(g.GetMutableEdgeByName("e"), e);
+  EXPECT_EQ(g.GetMutableEdgeByName("garbage"), nullptr);
+
   EXPECT_EQ(Variables(e->xu()), Variables(u->x()));
   EXPECT_EQ(Variables(e->xv()), Variables(v->x()));
+
+  // We can add a second edge with the same name; GetEdgeByName will return
+  // the first one added.
+  g.AddEdge(u, v, "e");
+  EXPECT_EQ(g.GetEdgeByName("e"), e);
+  EXPECT_EQ(g.GetMutableEdgeByName("e"), e);
 }
 
 GTEST_TEST(GraphOfConvexSetsTest, RemoveEdge) {
@@ -2096,6 +2118,78 @@ TEST_F(ThreeBoxes, SolveConvexRestriction) {
                                 v->GetSolution(restriction_result).value(),
                                 1e-6));
   }
+}
+
+TEST_F(ThreeBoxes, AddFromTemplate) {
+  const Vector2d b{.5, .3};
+
+  // Vertex cost.
+  source_->AddCost(
+      static_cast<const VectorX<Expression>>(source_->x()).squaredNorm());
+  // Vertex constraint.
+  source_->AddConstraint(source_->x() <= -b);
+
+  // Edge costs.
+  e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
+  e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
+
+  // Edge constraints.
+  e_on_->AddConstraint(e_on_->xv() >= b);
+  e_off_->AddConstraint(e_off_->xv() >= b);
+
+  // Now construct another GCS using g_ as a template.
+  GraphOfConvexSets clone;
+  Vertex* source_clone = clone.AddVertexFromTemplate(*source_);
+  Vertex* target_clone = clone.AddVertexFromTemplate(*target_);
+  Vertex* sink_clone = clone.AddVertexFromTemplate(*sink_);
+  EXPECT_EQ(source_clone->ambient_dimension(), source_->ambient_dimension());
+  EXPECT_EQ(source_clone->GetCosts().size(), source_->GetCosts().size());
+  EXPECT_EQ(source_clone->GetConstraints().size(),
+            source_->GetConstraints().size());
+
+  Edge* e_on_clone =
+      clone.AddEdgeFromTemplate(source_clone, target_clone, *e_on_);
+  clone.AddEdgeFromTemplate(source_clone, sink_clone, *e_off_);
+  EXPECT_EQ(e_on_clone->GetCosts().size(), e_on_->GetCosts().size());
+  EXPECT_EQ(e_on_clone->GetConstraints().size(),
+            e_on_->GetConstraints().size());
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  auto clone_result =
+      clone.SolveShortestPath(*source_clone, *target_clone, options_);
+  ASSERT_TRUE(clone_result.is_success());
+
+  EXPECT_NEAR(result.get_optimal_cost(), clone_result.get_optimal_cost(), 1e-6);
+
+  e_on_->NewSlackVariables(1, "s");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      clone.AddEdgeFromTemplate(source_clone, target_clone, *e_on_),
+      ".*slack variables.*");
+}
+
+TEST_F(ThreeBoxes, Clone) {
+  e_on_->AddCost((e_on_->xu() - e_on_->xv()).squaredNorm());
+  e_off_->AddCost((e_off_->xu() - e_off_->xv()).squaredNorm());
+
+  auto clone = g_.Clone();
+  EXPECT_EQ(clone->Vertices().size(), g_.Vertices().size());
+  EXPECT_EQ(clone->Edges().size(), g_.Edges().size());
+
+  auto result = g_.SolveShortestPath(*source_, *target_, options_);
+  ASSERT_TRUE(result.is_success());
+
+  Vertex* source_clone = clone->GetMutableVertexByName("source");
+  ASSERT_NE(source_clone, nullptr);
+  Vertex* target_clone = clone->GetMutableVertexByName("target");
+  ASSERT_NE(target_clone, nullptr);
+
+  auto clone_result =
+      clone->SolveShortestPath(*source_clone, *target_clone, options_);
+  ASSERT_TRUE(clone_result.is_success());
+
+  EXPECT_NEAR(result.get_optimal_cost(), clone_result.get_optimal_cost(), 1e-6);
 }
 
 // A simple shortest-path problem where the continuous variables do not affect

@@ -671,9 +671,21 @@ class GraphOfConvexSets {
     friend class GraphOfConvexSets;
   };
 
+  /** Returns a deep copy of this graph.
+  @throws std::exception if edges have slack variables. We can add this support
+  once it's needed.
+  */
+  std::unique_ptr<GraphOfConvexSets> Clone() const;
+
   /** Adds a vertex to the graph.  A copy of @p set is cloned and stored inside
   the graph. If @p name is empty then a default name will be provided. */
   Vertex* AddVertex(const ConvexSet& set, std::string name = "");
+
+  /** Adds a new vertex to the graph (and assigns a new unique VertexId) by
+  taking the name, costs, and constraints (but not any edges) from `v`. `v`
+  does not need to be registered with this GCS instance; this method can be
+  used to effectively copy a Vertex from another GCS instance into `this`. */
+  Vertex* AddVertexFromTemplate(const Vertex& template_vertex);
 
   // TODO(russt): Provide helper methods to add multiple vertices which share
   // the same ConvexSet.
@@ -681,8 +693,37 @@ class GraphOfConvexSets {
   /** Adds an edge to the graph from Vertex @p u to Vertex @p v.  The
   vertex references must refer to valid vertices in this graph. If @p name is
   empty then a default name will be provided.
-  */
+  @throws std::exception if `u` or `v` are not valid vertices in this graph. */
   Edge* AddEdge(Vertex* u, Vertex* v, std::string name = "");
+
+  /** Adds an edge to the graph from Vertex @p u to Vertex @p v (and assigns a
+  new unique EdgeId), by taking the name, costs, and constraints from
+  `template_edge`. `template_edge` does not need to be registered with this
+  GCS instance; this method can be used to effectively copy an Edge from
+  another GCS instance into `this`.
+  @throws std::exception if `u` or `v` are not valid vertices in this graph.
+  @throws std::exception if `u` or `v` do not match the sizes of the
+  `template_edge.u()` and `template_edge.v()` vertices.
+  @throws std::exception if edges have slack variables. We can add this support
+  once it's needed.
+  */
+  Edge* AddEdgeFromTemplate(Vertex* u, Vertex* v, const Edge& template_edge);
+
+  /** Returns the first vertex (by the order added to `this`) with the given
+  name, or nullptr if no such vertex exists. */
+  const Vertex* GetVertexByName(const std::string& name) const;
+
+  /** Returns the first vertex (by the order added to `this`) with the given
+  name, or nullptr if no such vertex exists. */
+  Vertex* GetMutableVertexByName(const std::string& name);
+
+  /** Returns the first edge (by the order added to `this`) with the given
+  name, or nullptr if no such edge exists. */
+  const Edge* GetEdgeByName(const std::string& name) const;
+
+  /** Returns the first edge (by the order added to `this`) with the given
+  name, or nullptr if no such edge exists. */
+  Edge* GetMutableEdgeByName(const std::string& name);
 
   /** Removes vertex @p vertex from the graph as well as any edges from or to
   the vertex. Runtime is O(nₑ) where nₑ is the number of edges in the graph.

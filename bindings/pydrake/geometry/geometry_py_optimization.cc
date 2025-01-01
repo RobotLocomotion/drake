@@ -978,12 +978,30 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
         .def("AddVertex", &GraphOfConvexSets::AddVertex, py::arg("set"),
             py::arg("name") = "", py_rvp::reference_internal,
             cls_doc.AddVertex.doc)
+        .def("AddVertexFromTemplate", &GraphOfConvexSets::AddVertexFromTemplate,
+            py::arg("template_vertex"), py_rvp::reference_internal,
+            cls_doc.AddVertexFromTemplate.doc)
         .def("AddEdge",
             py::overload_cast<GraphOfConvexSets::Vertex*,
                 GraphOfConvexSets::Vertex*, std::string>(
                 &GraphOfConvexSets::AddEdge),
             py::arg("u"), py::arg("v"), py::arg("name") = "",
             py_rvp::reference_internal, cls_doc.AddEdge.doc)
+        .def("AddEdgeFromTemplate", &GraphOfConvexSets::AddEdgeFromTemplate,
+            py::arg("u"), py::arg("v"), py::arg("template_edge"),
+            py_rvp::reference_internal, cls_doc.AddEdgeFromTemplate.doc)
+        .def("GetVertexByName", &GraphOfConvexSets::GetVertexByName,
+            py::arg("name"), py_rvp::reference_internal,
+            cls_doc.GetVertexByName.doc)
+        .def("GetMutableVertexByName",
+            &GraphOfConvexSets::GetMutableVertexByName, py::arg("name"),
+            py_rvp::reference_internal, cls_doc.GetMutableVertexByName.doc)
+        .def("GetEdgeByName", &GraphOfConvexSets::GetEdgeByName,
+            py::arg("name"), py_rvp::reference_internal,
+            cls_doc.GetEdgeByName.doc)
+        .def("GetMutableEdgeByName", &GraphOfConvexSets::GetMutableEdgeByName,
+            py::arg("name"), py_rvp::reference_internal,
+            cls_doc.GetMutableEdgeByName.doc)
         .def("RemoveVertex",
             py::overload_cast<GraphOfConvexSets::Vertex*>(
                 &GraphOfConvexSets::RemoveVertex),
@@ -1091,6 +1109,7 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
             py::arg("options") = GraphOfConvexSetsOptions(),
             py::arg("initial_guess") = nullptr,
             cls_doc.SolveConvexRestriction.doc);
+    DefClone(&graph_of_convex_sets);
   }
 
   // Trampoline class to support deriving from ImplicitGraphOfConvexSets in
@@ -1127,6 +1146,22 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
       .def("mutable_gcs", &PyImplicitGraphOfConvexSets::mutable_gcs,
           py_rvp::reference_internal,
           doc.ImplicitGraphOfConvexSets.mutable_gcs.doc);
+
+  // ImplicitGraphOfConvexSetsFromExplicit
+  {
+    const auto& cls_doc = doc.ImplicitGraphOfConvexSetsFromExplicit;
+    py::class_<ImplicitGraphOfConvexSetsFromExplicit,
+        ImplicitGraphOfConvexSets>(
+        m, "ImplicitGraphOfConvexSetsFromExplicit", cls_doc.doc)
+        .def(py::init<const GraphOfConvexSets&>(), py::arg("gcs"),
+            // Keep alive, reference: `self` keeps `gcs` alive.
+            py::keep_alive<1, 2>(),  // BR
+            cls_doc.ctor.doc)
+        .def("ImplicitVertexFromExplicit",
+            &ImplicitGraphOfConvexSetsFromExplicit::ImplicitVertexFromExplicit,
+            py::arg("v"), py_rvp::reference_internal,
+            cls_doc.ImplicitVertexFromExplicit.doc);
+  }
 }
 
 // Definitions for c_iris_collision_geometry.h.

@@ -2,6 +2,7 @@
 
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
@@ -43,7 +44,7 @@ class ImplicitGraphOfConvexSets {
   /** Makes repeated recursive calls to Successors() until no new vertices will
   be added to the graph, or `max_successor_calls` has been reached.
 
-  Note: `v` is mutable because exanding a vertex requires changes to the
+  Note: `v` is mutable because expanding a vertex requires changes to the
   underlying vertex object.
 
   @throws std::exception if `v` is not already registered with the graph.
@@ -78,11 +79,37 @@ class ImplicitGraphOfConvexSets {
   std::set<GraphOfConvexSets::VertexId> expanded_vertices_{};
 };
 
-// TODO(russt): Add an implementation the provides an interface for an implicit
-// GCS given an explicit GCS. Note that this will require something to copy
-// Vertex and Edges; probably something like GCS::CopyVertex(Vertex* v) that
-// copies the sets, costs, and constraints, but not the internal Edge pointers,
-// etc.
+/** Provides an implicit GCS interface given an explicit GCS. Vertices and
+edges are cloned into the implicit GCS as they are expanded. */
+class ImplicitGraphOfConvexSetsFromExplicit final
+    : public ImplicitGraphOfConvexSets {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitGraphOfConvexSetsFromExplicit);
+
+  /** Constructs an implicit GCS from an explicit GCS. `gcs` must remain
+  valid for the lifetime of this object. */
+  explicit ImplicitGraphOfConvexSetsFromExplicit(const GraphOfConvexSets& gcs);
+
+  virtual ~ImplicitGraphOfConvexSetsFromExplicit();
+
+  /** Looks up the implicit vertex corresponding to `v`. If `v` is not
+  already in the implicit GCS, it is added.
+  @throws std::exception if `v` is not registered with the explicit GCS passed
+  in the constructor. */
+  GraphOfConvexSets::Vertex* ImplicitVertexFromExplicit(
+      const GraphOfConvexSets::Vertex& v);
+
+ protected:
+  void Expand(GraphOfConvexSets::Vertex* v) override;
+
+ private:
+  const GraphOfConvexSets& explicit_gcs_{};
+  std::unordered_map<GraphOfConvexSets::VertexId, GraphOfConvexSets::Vertex*>
+      explicit_to_implicit_map_{};
+  std::unordered_map<GraphOfConvexSets::VertexId,
+                     const GraphOfConvexSets::Vertex*>
+      implicit_to_explicit_map_{};
+};
 
 }  // namespace optimization
 }  // namespace geometry
