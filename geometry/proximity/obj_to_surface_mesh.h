@@ -2,14 +2,12 @@
 
 #include <filesystem>
 #include <functional>
-#include <istream>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "drake/common/diagnostic_policy.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/mesh_source.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
@@ -48,16 +46,6 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     const std::filesystem::path& filename, double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});
-
-/** Overload of @ref ReadObjToTriangleSurfaceMesh(const std::string&, double)
- with the Wavefront .obj file given in std::istream. */
-DRAKE_DEPRECATED(
-    "2025-01-01",
-    "Please use ReadObjToTriangleSurfaceMesh(const MeshSource&) instead.")
-TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    std::istream* input_stream, double scale = 1.0,
-    std::function<void(std::string_view)> on_warning = {},
-    std::string_view description = "from_stream");
 
 /** Overload of @ref ReadObjToTriangleSurfaceMesh(const std::filesystem::path&,
  double) with the Wavefront .obj in a Mesh shape specification. */

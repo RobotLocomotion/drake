@@ -58,22 +58,6 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
 }
 
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    std::istream* input_stream, const double scale,
-    std::function<void(std::string_view)> on_warning,
-    std::string_view description) {
-  DRAKE_THROW_UNLESS(input_stream != nullptr);
-  DRAKE_THROW_UNLESS(input_stream->good());
-  std::stringstream content;
-  content << input_stream->rdbuf();
-
-  // We will either throw or return a mesh here (courtesy of ReadObj).
-  return ReadObjToTriangleSurfaceMesh(
-      InMemoryMesh{MemoryFile(std::move(content).str(), ".obj",
-                              std::string(description))},
-      scale, on_warning);
-}
-
-TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     const MeshSource& mesh_source, double scale,
     std::function<void(std::string_view)> on_warning) {
   DiagnosticPolicy policy;
