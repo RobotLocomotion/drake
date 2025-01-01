@@ -218,38 +218,6 @@ const OutputPort<double>& RgbdSensor::image_time_output_port() const {
   return *image_time_output_port_;
 }
 
-const CameraInfo& RgbdSensor::color_camera_info() const {
-  return defaults_.color_camera.core().intrinsics();
-}
-
-const CameraInfo& RgbdSensor::depth_camera_info() const {
-  return defaults_.depth_camera.core().intrinsics();
-}
-
-const ColorRenderCamera& RgbdSensor::color_render_camera() const {
-  return default_color_render_camera();
-}
-
-const DepthRenderCamera& RgbdSensor::depth_render_camera() const {
-  return default_depth_render_camera();
-}
-
-const RigidTransformd& RgbdSensor::X_PB() const {
-  return default_X_PB();
-}
-
-const RigidTransformd& RgbdSensor::X_BC() const {
-  return defaults_.color_camera.core().sensor_pose_in_camera_body();
-}
-
-const RigidTransformd& RgbdSensor::X_BD() const {
-  return defaults_.depth_camera.core().sensor_pose_in_camera_body();
-}
-
-FrameId RgbdSensor::parent_frame_id() const {
-  return default_parent_frame_id();
-}
-
 namespace {
 // If the size of `image` already matches `camera`, then does nothing.
 // Otherwise, resizes the `image` to match `camera`.

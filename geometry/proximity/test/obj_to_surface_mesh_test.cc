@@ -78,20 +78,6 @@ GTEST_TEST(ObjToSurfaceMeshTest, FromPath) {
   EXPECT_TRUE(surface.Equal(MeshForQuadCube()));
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(ObjToSurfaceMeshTest, FromStream) {
-  const fs::path filename =
-      FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  std::ifstream stream(filename);
-  DRAKE_DEMAND(stream.is_open());
-  const TriangleSurfaceMesh<double> surface =
-      ReadObjToTriangleSurfaceMesh(&stream);
-
-  EXPECT_TRUE(surface.Equal(MeshForQuadCube()));
-}
-#pragma GCC diagnostic pop
-
 // Tests the MeshSource-based overload.
 GTEST_TEST(ObjToSurfaceMeshTest, MeshSource) {
   constexpr double kUnitScale = 1.0;

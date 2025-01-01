@@ -6,7 +6,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -115,17 +114,6 @@ drake_cc_library(
         "//multibody/parsing",
         "//systems/framework:leaf_system",
     ],
-)
-
-drake_py_binary(
-    name = "show_model",
-    srcs = ["show_model.py"],
-    deps = ["//bindings/pydrake"],
-)
-
-drake_py_binary(
-    name = "meshlab_to_sdf",
-    srcs = ["meshlab_to_sdf.py"],
 )
 
 drake_cc_binary(

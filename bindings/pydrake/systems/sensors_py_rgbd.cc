@@ -1,4 +1,3 @@
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/camera_info.h"
@@ -136,33 +135,6 @@ void DefineSensorsRgbd(py::module m) {
       .def("SetParentFrameId", &RgbdSensor::SetParentFrameId,
           py::arg("context"), py::arg("id"),
           doc.RgbdSensor.SetParentFrameId.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  rgbd_sensor
-      .def("parent_frame_id",
-          WrapDeprecated(doc.RgbdSensor.parent_frame_id.doc_deprecated,
-              &RgbdSensor::parent_frame_id),
-          doc.RgbdSensor.parent_frame_id.doc_deprecated)
-      .def("X_PB",
-          WrapDeprecated(doc.RgbdSensor.X_PB.doc_deprecated, &RgbdSensor::X_PB),
-          doc.RgbdSensor.X_PB.doc_deprecated)
-      .def("X_BC",
-          WrapDeprecated(doc.RgbdSensor.X_BC.doc_deprecated, &RgbdSensor::X_BC),
-          doc.RgbdSensor.X_BC.doc_deprecated)
-      .def("X_BD",
-          WrapDeprecated(doc.RgbdSensor.X_BD.doc_deprecated, &RgbdSensor::X_BD),
-          doc.RgbdSensor.X_BD.doc_deprecated)
-      .def("color_camera_info",
-          WrapDeprecated(doc.RgbdSensor.color_camera_info.doc_deprecated,
-              &RgbdSensor::color_camera_info),
-          py_rvp::reference_internal,
-          doc.RgbdSensor.color_camera_info.doc_deprecated)
-      .def("depth_camera_info",
-          WrapDeprecated(doc.RgbdSensor.depth_camera_info.doc_deprecated,
-              &RgbdSensor::depth_camera_info),
-          py_rvp::reference_internal,
-          doc.RgbdSensor.depth_camera_info.doc_deprecated);
-#pragma GCC diagnostic pop
   def_camera_ports(&rgbd_sensor, doc.RgbdSensor);
 
   py::class_<RgbdSensorDiscrete, Diagram<double>> rgbd_camera_discrete(
