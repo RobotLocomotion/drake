@@ -50,9 +50,9 @@ namespace controllers {
  * Note that this class assumes the robot is fully actuated, its position and
  * velocity have the same dimension, and it does not have a floating base. If
  * violated, the program will abort. This controller was not designed for use
- * with a constrained plant (e.g. multibody::MultibodyPlant::num_constraints()
- * > 0): the controller does not account for any constraint forces. Use on such
- * systems is not recommended.
+ * with a constrained plant (e.g.
+ * multibody::MultibodyPlant::num_constraints() > 0): the controller does not
+ * account for any constraint forces. Use on such systems is not recommended.
  *
  * @see InverseDynamics for an accounting of all forces incorporated into the
  *      inverse dynamics computation.
