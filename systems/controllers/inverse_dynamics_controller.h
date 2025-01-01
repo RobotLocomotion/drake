@@ -20,7 +20,8 @@ namespace controllers {
 /**
  * A state feedback controller that uses a PidController to generate desired
  * accelerations, which are then converted into MultibodyPlant actuation inputs
- * using InverseDynamics. More specifically, the output of this controller is:
+ * using InverseDynamics (with `mode =` InverseDynamics::kInverseDynamics).
+ * More specifically, the output of this controller is:
  * <pre>
  *   actuation = B⁻¹ generalized_force, and
  *   generalized_force = inverse_dynamics(q, v, vd_command), where
@@ -48,10 +49,10 @@ namespace controllers {
  *
  * Note that this class assumes the robot is fully actuated, its position and
  * velocity have the same dimension, and it does not have a floating base. If
- * violated, the program will abort. This controller was not designed for
- * closed-loop systems: the controller accounts for neither constraint forces
- * nor actuator forces applied at loop constraints. Use on such systems is not
- * recommended.
+ * violated, the program will abort. This controller was not designed for use
+ * with a constrained plant (e.g. multibody::MultibodyPlant::num_constraints()
+ * > 0): the controller does not account for any constraint forces. Use on such
+ * systems is not recommended.
  *
  * @see InverseDynamics for an accounting of all forces incorporated into the
  *      inverse dynamics computation.
