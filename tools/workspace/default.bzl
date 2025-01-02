@@ -159,6 +159,7 @@ def add_default_repositories(
     if "buildifier" not in excludes:
         buildifier_repository(name = "buildifier", mirrors = mirrors)
     if "cc" not in excludes:
+        # Deprecated 2025-05-01.
         cc_repository(name = "cc")
     if "ccd_internal" not in excludes:
         ccd_internal_repository(name = "ccd_internal", mirrors = mirrors)
