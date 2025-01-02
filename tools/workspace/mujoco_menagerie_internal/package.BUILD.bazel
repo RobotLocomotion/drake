@@ -8,11 +8,199 @@ package(default_visibility = ["//visibility:public"])
 # DO NOT ADD new subdirectories here unless and until you vet their LICENSE.
 
 filegroup(
+    name = "menagerie",
+    srcs = [
+        ":agility_cassie",
+        ":aloha",
+        ":anybotics_anymal_b",
+        ":anybotics_anymal_c",
+        ":berkeley_humanoid",
+        ":bitcraze_crazyflie_2",
+        ":boston_dynamics_spot",
+        ":flybody",
+        ":franka_emika_panda",
+        ":franka_fr3",
+        ":google_barkour_v0",
+        ":google_barkour_vb",
+        ":google_robot",
+        ":hello_robot_stretch",
+        ":hello_robot_stretch_3",
+        ":kinova_gen3",
+        ":kuka_iiwa_14",
+        ":leap_hand",
+        ":pal_talos",
+        ":pal_tiago",
+        ":pal_tiago_dual",
+        ":realsense_d435i",
+        ":rethink_robotics_sawyer",
+        ":robotiq_2f85",
+        ":robotiq_2f85_v4",
+        ":robotis_op3",
+        ":shadow_dexee",
+        ":shadow_hand",
+        ":skydio_x2",
+        ":trossen_vx300s",
+        ":trossen_wx250s",
+        ":trs_so_arm100",
+        ":ufactory_lite6",
+        ":ufactory_xarm7",
+        ":unitree_a1",
+        ":unitree_g1",
+        ":unitree_go1",
+        ":unitree_go2",
+        ":unitree_h1",
+        ":unitree_z1",
+        ":universal_robots_ur10e",
+        ":universal_robots_ur5e",
+        ":wonik_allegro",
+    ],
+)
+
+filegroup(
+    name = "agility_cassie",
+    srcs = [
+        "agility_cassie/LICENSE",
+        "agility_cassie/cassie.png",
+        "agility_cassie/cassie.xml",
+        "agility_cassie/scene.xml",
+    ] + glob([
+        "agility_cassie/assets/*.obj",
+        "agility_cassie/assets/*.png",
+    ]),
+)
+
+filegroup(
+    name = "aloha",
+    srcs = [
+        "aloha/LICENSE",
+    ] + glob([
+        "aloha/*.png",
+        "aloha/*.xml",
+        "aloha/assets/*.obj",
+        "aloha/assets/*.png",
+        "aloha/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "anybotics_anymal_b",
+    srcs = [
+        "anybotics_anymal_b/LICENSE",
+        "anybotics_anymal_b/anymal_b.png",
+        "anybotics_anymal_b/anymal_b.xml",
+        "anybotics_anymal_b/scene.xml",
+    ] + glob([
+        "anybotics_anymal_b/assets/*.obj",
+        "anybotics_anymal_b/assets/*.png",
+    ]),
+)
+
+filegroup(
+    name = "anybotics_anymal_c",
+    srcs = [
+        "anybotics_anymal_c/LICENSE",
+    ] + glob([
+        "anybotics_anymal_c/*.png",
+        "anybotics_anymal_c/*.xml",
+        "anybotics_anymal_c/assets/*.obj",
+        "anybotics_anymal_c/assets/*.png",
+    ]),
+)
+
+filegroup(
+    name = "berkeley_humanoid",
+    srcs = [
+        "berkeley_humanoid/LICENSE",
+    ] + glob([
+        "berkeley_humanoid/*.png",
+        "berkeley_humanoid/*.xml",
+        "berkeley_humanoid/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "bitcraze_crazyflie_2",
+    srcs = [
+        "bitcraze_crazyflie_2/LICENSE",
+    ] + glob([
+        "bitcraze_crazyflie_2/*.png",
+        "bitcraze_crazyflie_2/*.xml",
+        "bitcraze_crazyflie_2/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "boston_dynamics_spot",
+    srcs = [
+        "boston_dynamics_spot/LICENSE",
+    ] + glob([
+        "boston_dynamics_spot/*.png",
+        "boston_dynamics_spot/*.xml",
+        "boston_dynamics_spot/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "flybody",
+    srcs = [
+        "flybody/LICENSE",
+    ] + glob([
+        "flybody/*.png",
+        "flybody/*.xml",
+        "flybody/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "franka_emika_panda",
+    srcs = [
+        "franka_emika_panda/LICENSE",
+    ] + glob([
+        "franka_emika_panda/*.png",
+        "franka_emika_panda/*.xml",
+        "franka_emika_panda/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "franka_fr3",
+    srcs = [
+        "franka_fr3/LICENSE",
+    ] + glob([
+        "franka_fr3/*.png",
+        "franka_fr3/*.xml",
+        "franka_fr3/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "google_barkour_v0",
+    srcs = [
+        "google_barkour_v0/LICENSE",
+    ] + glob([
+        "google_barkour_v0/*.xml",
+        "google_barkour_v0/assets/*.png",
+        "google_barkour_v0/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "google_barkour_vb",
+    srcs = [
+        "google_barkour_vb/LICENSE",
+    ] + glob([
+        "google_barkour_vb/*.xml",
+        "google_barkour_vb/assets/*.png",
+        "google_barkour_vb/assets/*.stl",
+    ]),
+)
+
+filegroup(
     name = "google_robot",
     srcs = [
-        "google_robot/robot.xml",
         "google_robot/LICENSE",
     ] + glob([
+        "google_robot/*.xml",
         "google_robot/assets/*.obj",
         "google_robot/assets/*.png",
         "google_robot/assets/*.stl",
@@ -22,9 +210,9 @@ filegroup(
 filegroup(
     name = "hello_robot_stretch",
     srcs = [
-        "hello_robot_stretch/stretch.xml",
         "hello_robot_stretch/LICENSE",
     ] + glob([
+        "hello_robot_stretch/*.xml",
         "hello_robot_stretch/assets/*.obj",
         "hello_robot_stretch/assets/*.png",
         "hello_robot_stretch/assets/*.stl",
@@ -32,19 +220,319 @@ filegroup(
 )
 
 filegroup(
+    name = "hello_robot_stretch_3",
+    srcs = [
+        "hello_robot_stretch_3/LICENSE",
+    ] + glob([
+        "hello_robot_stretch_3/*.xml",
+        "hello_robot_stretch_3/assets/*.obj",
+        "hello_robot_stretch_3/assets/*.png",
+        "hello_robot_stretch_3/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "kinova_gen3",
+    srcs = [
+        "kinova_gen3/LICENSE",
+    ] + glob([
+        "kinova_gen3/*.png",
+        "kinova_gen3/*.xml",
+        "kinova_gen3/assets/*.stl",
+    ]),
+)
+
+filegroup(
     name = "kuka_iiwa_14",
     srcs = [
-        "kuka_iiwa_14/iiwa14.xml",
         "kuka_iiwa_14/LICENSE",
-    ] + glob(["kuka_iiwa_14/assets/*.obj"]),
+    ] + glob([
+        "kuka_iiwa_14/*.xml",
+        "kuka_iiwa_14/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "leap_hand",
+    srcs = [
+        "leap_hand/LICENSE",
+    ] + glob([
+        "leap_hand/*.png",
+        "leap_hand/*.xml",
+        "leap_hand/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "pal_talos",
+    srcs = [
+        "pal_talos/LICENSE",
+    ] + glob([
+        "pal_talos/*.xml",
+        "pal_talos/assets/**/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "pal_tiago",
+    srcs = [
+        "pal_tiago/LICENSE",
+    ] + glob([
+        "pal_tiago/*.xml",
+        "pal_tiago/assets/**/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "pal_tiago_dual",
+    srcs = [
+        "pal_tiago_dual/LICENSE",
+    ] + glob([
+        "pal_tiago_dual/*.xml",
+        "pal_tiago_dual/assets/**/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "realsense_d435i",
+    srcs = [
+        "realsense_d435i/LICENSE",
+    ] + glob([
+        "realsense_d435i/*.png",
+        "realsense_d435i/*.xml",
+        "realsense_d435i/assets/*.obj",
+    ]),
 )
 
 filegroup(
     name = "rethink_robotics_sawyer",
     srcs = [
-        "rethink_robotics_sawyer/sawyer.xml",
         "rethink_robotics_sawyer/LICENSE",
     ] + glob([
+        "rethink_robotics_sawyer/*.xml",
         "rethink_robotics_sawyer/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "robotiq_2f85",
+    srcs = [
+        "robotiq_2f85/LICENSE",
+    ] + glob([
+        "robotiq_2f85/*.png",
+        "robotiq_2f85/*.xml",
+        "robotiq_2f85/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "robotiq_2f85_v4",
+    srcs = [
+        "robotiq_2f85_v4/LICENSE",
+    ] + glob([
+        "robotiq_2f85_v4/*.png",
+        "robotiq_2f85_v4/*.xml",
+        "robotiq_2f85_v4/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "robotis_op3",
+    srcs = [
+        "robotis_op3/LICENSE",
+    ] + glob([
+        "robotis_op3/*.png",
+        "robotis_op3/*.xml",
+        "robotis_op3/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "shadow_dexee",
+    srcs = [
+        "shadow_dexee/LICENSE",
+    ] + glob([
+        "shadow_dexee/*.png",
+        "shadow_dexee/*.xml",
+        "shadow_dexee/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "shadow_hand",
+    srcs = [
+        "shadow_hand/LICENSE",
+    ] + glob([
+        "shadow_hand/*.png",
+        "shadow_hand/*.xml",
+        "shadow_hand/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "skydio_x2",
+    srcs = [
+        "skydio_x2/LICENSE",
+    ] + glob([
+        "skydio_x2/*.png",
+        "skydio_x2/*.xml",
+        "skydio_x2/assets/*.obj",
+        "skydio_x2/assets/*.png",
+    ]),
+)
+
+filegroup(
+    name = "trossen_vx300s",
+    srcs = [
+        "trossen_vx300s/LICENSE",
+    ] + glob([
+        "trossen_vx300s/*.png",
+        "trossen_vx300s/*.xml",
+        "trossen_vx300s/assets/*.png",
+        "trossen_vx300s/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "trossen_wx250s",
+    srcs = [
+        "trossen_wx250s/LICENSE",
+    ] + glob([
+        "trossen_wx250s/*.png",
+        "trossen_wx250s/*.xml",
+        "trossen_wx250s/assets/*.png",
+        "trossen_wx250s/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "trs_so_arm100",
+    srcs = [
+        "trs_so_arm100/LICENSE",
+    ] + glob([
+        "trs_so_arm100/*.png",
+        "trs_so_arm100/*.xml",
+        "trs_so_arm100/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "ufactory_lite6",
+    srcs = [
+        "ufactory_lite6/LICENSE",
+    ] + glob([
+        "ufactory_lite6/*.xml",
+        "ufactory_lite6/assets/**/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "ufactory_xarm7",
+    srcs = [
+        "ufactory_xarm7/LICENSE",
+    ] + glob([
+        "ufactory_xarm7/*.xml",
+        "ufactory_xarm7/assets/**/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "unitree_a1",
+    srcs = [
+        "unitree_a1/LICENSE",
+    ] + glob([
+        "unitree_a1/*.png",
+        "unitree_a1/*.xml",
+        "unitree_a1/assets/*.obj",
+        "unitree_a1/assets/*.png",
+    ]),
+)
+
+filegroup(
+    name = "unitree_g1",
+    srcs = [
+        "unitree_g1/LICENSE",
+    ] + glob([
+        "unitree_g1/*.png",
+        "unitree_g1/*.xml",
+        "unitree_g1/assets/*.STL",
+    ]),
+)
+
+filegroup(
+    name = "unitree_go1",
+    srcs = [
+        "unitree_go1/LICENSE",
+        "unitree_go1/go1.png",
+        "unitree_go1/go1.xml",
+        "unitree_go1/scene.xml",
+    ] + glob([
+        "unitree_go1/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "unitree_go2",
+    srcs = [
+        "unitree_go2/LICENSE",
+    ] + glob([
+        "unitree_go2/*.png",
+        "unitree_go2/*.xml",
+        "unitree_go2/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "unitree_h1",
+    srcs = [
+        "unitree_h1/LICENSE",
+    ] + glob([
+        "unitree_h1/*.png",
+        "unitree_h1/*.xml",
+        "unitree_h1/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "unitree_z1",
+    srcs = [
+        "unitree_z1/LICENSE",
+    ] + glob([
+        "unitree_z1/*.png",
+        "unitree_z1/*.xml",
+        "unitree_z1/assets/*.stl",
+    ]),
+)
+
+filegroup(
+    name = "universal_robots_ur10e",
+    srcs = [
+        "universal_robots_ur10e/LICENSE",
+    ] + glob([
+        "universal_robots_ur10e/*.png",
+        "universal_robots_ur10e/*.xml",
+        "universal_robots_ur10e/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "universal_robots_ur5e",
+    srcs = [
+        "universal_robots_ur5e/LICENSE",
+    ] + glob([
+        "universal_robots_ur5e/*.png",
+        "universal_robots_ur5e/*.xml",
+        "universal_robots_ur5e/assets/*.obj",
+    ]),
+)
+
+filegroup(
+    name = "wonik_allegro",
+    srcs = [
+        "wonik_allegro/LICENSE",
+    ] + glob([
+        "wonik_allegro/*.png",
+        "wonik_allegro/*.xml",
+        "wonik_allegro/assets/*.stl",
     ]),
 )

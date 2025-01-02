@@ -148,10 +148,10 @@ class MujocoParser {
     Vector6d xyaxes;
     if (ParseVectorAttribute(node, "xyaxes", &xyaxes)) {
       Matrix3d R;
-      R.col(0) = xyaxes.head<3>();
-      R.col(1) = xyaxes.tail<3>();
-      R.col(2) = xyaxes.head<3>().cross(xyaxes.tail<3>());
-      return RigidTransformd(RotationMatrixd(R), pos);
+      R.col(0) = xyaxes.head<3>().normalized();
+      R.col(1) = xyaxes.tail<3>().normalized();
+      R.col(2) = R.col(0).cross(R.col(1));
+      return RigidTransformd(RotationMatrixd::ProjectToRotationMatrix(R), pos);
     }
 
     Vector3d zaxis;

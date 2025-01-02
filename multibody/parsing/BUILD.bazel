@@ -669,10 +669,7 @@ drake_cc_googletest(
         ":test_models",
         "//geometry:test_obj_files",
         "//geometry:test_stl_files",
-        "@mujoco_menagerie_internal//:google_robot",
         "@mujoco_menagerie_internal//:hello_robot_stretch",
-        "@mujoco_menagerie_internal//:kuka_iiwa_14",
-        "@mujoco_menagerie_internal//:rethink_robotics_sawyer",
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":detail_mujoco_parser",
@@ -684,6 +681,20 @@ drake_cc_googletest(
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry/test_utilities:meshcat_environment",
         "//visualization",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_mujoco_parser_examples_test",
+    data = [
+        "@mujoco_menagerie_internal//:menagerie",
+    ] + _DM_CONTROL_MUJOCO_FILES,
+    shard_count = 4,
+    deps = [
+        ":detail_mujoco_parser",
+        "//common:find_resource",
+        "//common:find_runfiles",
+        "//common/test_utilities:diagnostic_policy_test_base",
     ],
 )
 
