@@ -45,7 +45,7 @@ void DiagramBuilder<T>::RemoveSystem(const System<T>& system) {
   const size_t system_index = std::distance(
       registered_systems_.begin(),
       std::find_if(registered_systems_.begin(), registered_systems_.end(),
-                   [&system](const std::unique_ptr<System<T>>& item) {
+                   [&system](const std::shared_ptr<System<T>>& item) {
                      return item.get() == &system;
                    }));
   DRAKE_DEMAND(system_index < registered_systems_.size());
@@ -441,6 +441,25 @@ void DiagramBuilder<T>::ThrowIfAlreadyBuilt() const {
         "DiagramBuilder: Build() or BuildInto() has already been called to "
         "create a Diagram; this DiagramBuilder may no longer be used.");
   }
+}
+
+template <typename T>
+void DiagramBuilder<T>::AddSystemImpl(std::shared_ptr<System<T>>&& system) {
+  DRAKE_THROW_UNLESS(system != nullptr);
+  ThrowIfAlreadyBuilt();
+  if (system->get_name().empty()) {
+    system->set_name(system->GetMemoryObjectName());
+  }
+  systems_.insert(system.get());
+  registered_systems_.push_back(std::move(system));
+}
+
+template <typename T>
+void DiagramBuilder<T>::AddNamedSystemImpl(
+    const std::string& name, std::shared_ptr<System<T>>&& system) {
+  DRAKE_THROW_UNLESS(system != nullptr);
+  system->set_name(name);
+  this->AddSystemImpl(std::move(system));
 }
 
 template <typename T>

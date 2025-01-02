@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <utility>
 
 // Here we include a lot of the pybind11 API, to ensure that all code in pydrake
@@ -144,6 +145,16 @@ inline void ExecuteExtraPythonCode(py::module m, bool use_subdir = false) {
       variable##_original = variable;                                     \
     }                                                                     \
   }
+
+/// Given a raw pointer, returns a shared_ptr wrapper around it that doesn't own
+/// anything -- it's managed object is null, so there is no reference counting.
+/// Calling get() on the result will return `raw`.
+template <typename T>
+auto make_unowned_shared_ptr_from_raw(T* raw) {
+  return std::shared_ptr<T>(
+      /* managed object = */ std::shared_ptr<void>{},
+      /* stored pointer = */ raw);
+}
 
 }  // namespace pydrake
 }  // namespace drake

@@ -598,26 +598,31 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
       .def(py::init<>(), doc.DiagramBuilder.ctor.doc)
       .def(
           "AddSystem",
-          [](DiagramBuilder<T>* self, unique_ptr<System<T>> system) {
+          [](DiagramBuilder<T>* self, System<T>& system) {
             // Using BuilderLifeSupport::stash makes the builder
             // temporarily immortal (uncollectible self cycle). This will be
             // resolved by the Build() step. See BuilderLifeSupport for
             // rationale.
             BuilderLifeSupport<T>::stash(self);
-            return self->AddSystem(std::move(system));
+            // The C++ method doesn't offer a bare-pointer overload, only
+            // shared_ptr. Because object lifetime is already handled by the
+            // ref_cycle annotation below, we can pass the `system` as an
+            // unowned shared_ptr.
+            return self->AddSystem(make_unowned_shared_ptr_from_raw(&system));
           },
           py::arg("system"), internal::ref_cycle<1, 2>(),
           doc.DiagramBuilder.AddSystem.doc)
       .def(
           "AddNamedSystem",
-          [](DiagramBuilder<T>* self, std::string& name,
-              unique_ptr<System<T>> system) {
+          [](DiagramBuilder<T>* self, std::string& name, System<T>& system) {
             // Using BuilderLifeSupport::stash makes the builder
             // temporarily immortal (uncollectible self cycle). This will be
             // resolved by the Build() step. See BuilderLifeSupport for
             // rationale.
             BuilderLifeSupport<T>::stash(self);
-            return self->AddNamedSystem(name, std::move(system));
+            // Ditto with "AddSystem" above for how we handle the `&system`.
+            return self->AddNamedSystem(
+                name, make_unowned_shared_ptr_from_raw(&system));
           },
           py::arg("name"), py::arg("system"), internal::ref_cycle<1, 3>(),
           doc.DiagramBuilder.AddNamedSystem.doc)

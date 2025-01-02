@@ -63,10 +63,7 @@ PYBIND11_MODULE(estimators, m) {
           return SteadyStateKalmanFilter(
               // The lifetime of `system` is managed by the keep_alive below,
               // not the C++ shared_ptr.
-              std::shared_ptr<const LinearSystem<double>>(
-                  /* managed object = */ std::shared_ptr<void>{},
-                  /* stored pointer = */ &system),
-              W, V);
+              make_unowned_shared_ptr_from_raw(&system), W, V);
         },
         py::arg("system"), py::arg("W"), py::arg("V"),
         // Keep alive, reference: `result` keeps `system` alive.
@@ -80,10 +77,7 @@ PYBIND11_MODULE(estimators, m) {
           return SteadyStateKalmanFilter(
               // The lifetime of `system` is managed by the keep_alive below,
               // not the C++ shared_ptr.
-              std::shared_ptr<const System<double>>(
-                  /* managed object = */ std::shared_ptr<void>{},
-                  /* stored pointer = */ &system),
-              context, W, V);
+              make_unowned_shared_ptr_from_raw(&system), context, W, V);
         },
         py::arg("system"), py::arg("context"), py::arg("W"), py::arg("V"),
         // Keep alive, reference: `result` keeps `system` alive.

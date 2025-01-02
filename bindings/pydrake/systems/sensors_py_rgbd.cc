@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/camera_info.h"
@@ -140,12 +141,22 @@ void DefineSensorsRgbd(py::module m) {
   py::class_<RgbdSensorDiscrete, Diagram<double>> rgbd_camera_discrete(
       m, "RgbdSensorDiscrete", doc.RgbdSensorDiscrete.doc);
   rgbd_camera_discrete
-      .def(py::init<std::unique_ptr<RgbdSensor>, double, bool>(),
+      .def(py::init(
+               [](RgbdSensor& sensor, double period, bool render_label_image) {
+                 // The C++ constructor doesn't offer a bare-pointer overload,
+                 // only shared_ptr. Because object lifetime is already handled
+                 // by the ref_cycle annotation below (as required for all
+                 // subclasses of Diagram), we can pass the `sensor` as an
+                 // unowned shared_ptr.
+                 return std::make_unique<RgbdSensorDiscrete>(
+                     make_unowned_shared_ptr_from_raw(&sensor), period,
+                     render_label_image);
+               }),
           py::arg("sensor"),
           py::arg("period") = double{RgbdSensorDiscrete::kDefaultPeriod},
           py::arg("render_label_image") = true,
-          // Keep alive, ownership: `sensor` keeps `self` alive.
-          py::keep_alive<2, 1>(), doc.RgbdSensorDiscrete.ctor.doc)
+          // `self` and `sensor` form a cycle as part of the Diagram.
+          internal::ref_cycle<1, 2>(), doc.RgbdSensorDiscrete.ctor.doc)
       // N.B. Since `camera` is already connected, we do not need additional
       // `keep_alive`s.
       .def("sensor", &RgbdSensorDiscrete::sensor, py_rvp::reference_internal,
