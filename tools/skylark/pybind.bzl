@@ -287,8 +287,8 @@ def drake_pybind_cc_googletest(
         deps = cc_deps + [
             "//:drake_shared_library",
             "//bindings/pydrake:pydrake_pybind",
+            "//tools/workspace/python:cc_libpython",
             "@pybind11",
-            "@python//:python_direct_link",
         ],
         copts = cc_copts,
         use_default_main = False,
