@@ -124,7 +124,6 @@ def _prepare_venv(repo_ctx, python):
     # Only macOS uses a venv at the moment.
     os_name = repo_ctx.os.name  # "linux" or "mac os x"
     if os_name != "mac os x":
-        repo_ctx.file("requirements.txt", content = "")
         return python
 
     # Choose which requirements to use.
@@ -152,7 +151,9 @@ def _prepare_venv(repo_ctx, python):
     ])
     repo_ctx.watch(sync)
 
-    return repo_ctx.path("bin/python3")
+    # Read the path to the venv's python3. (This file is created by venv_sync.)
+    venv_python3 = repo_ctx.read("venv_python3.txt")
+    return repo_ctx.path(venv_python3)
 
 def _impl(repo_ctx):
     # Add the BUILD file.
