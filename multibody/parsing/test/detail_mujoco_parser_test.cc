@@ -373,6 +373,8 @@ TEST_F(MujocoParserTest, GeometryPose) {
     <geom name="fromto_cylinder" fromto="-1 -3 -3 -1 -1 -3"
           quat="0.2 0.4 0.3 .1" pos="1 2 3" type="cylinder" size="0.1" />
     <geom name="from_default" type="sphere" size="0.1" class="default_pose" />
+    <geom name="from_default2" type="sphere" size="0.1" class="default_pose"
+          euler="30 45 60"/> <!-- euler should overwrite quat -->
   </worldbody>
 </mujoco>
 )""";
@@ -443,6 +445,9 @@ TEST_F(MujocoParserTest, GeometryPose) {
             RigidTransformd(RotationMatrixd::MakeXRotation(-M_PI / 2.0), -p));
   CheckPose("from_default",
             RigidTransformd(Eigen::Quaternion<double>{0, 1, 0, 0}, p));
+  CheckPose(
+      "from_default2",
+      RigidTransformd(RollPitchYawd{M_PI / 6.0, M_PI / 4.0, M_PI / 3.0}, p));
 
   CheckPose(
       "axisangle_rad",
@@ -461,8 +466,6 @@ TEST_F(MujocoParserTest, GeometryPose) {
                                 RotationMatrixd::MakeZRotation(M_PI / 6.0),
                             p));
 }
-
-
 
 TEST_F(MujocoParserTest, GeometryPoseErrors) {
   const std::string xml = R"""(
