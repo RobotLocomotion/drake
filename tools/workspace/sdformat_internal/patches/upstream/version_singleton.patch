@@ -1,0 +1,99 @@
+[sdformat] Cherry-pick of https://github.com/gazebosim/sdformat/pull/1522
+
+We can drop this patch once we upgrade to a release that contains it.
+
+From: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date: Tue, 31 Dec 2024 07:59:46 -0800
+Subject: [PATCH] Fix initialization and thread-safety of SDF::Version() global
+
+Replace a static global variable that used a pre-main constructor with
+a latch-initialized static local variable and mutex to guard the writes.
+
+This does not change API but it does change ABI.
+
+--- include/sdf/SDFImpl.hh
++++ include/sdf/SDFImpl.hh
+@@ -236,6 +236,8 @@ namespace sdf
+     public: const std::string &OriginalVersion() const;
+ 
+     /// \brief Get the version
++    /// The result will be set to SDF_VERSION by default, unless overridden by a
++    /// call to the Version(const std::string &) function at runtime.
+     /// \return The version as a string
+     public: static std::string Version();
+ 
+@@ -290,10 +292,6 @@ namespace sdf
+     /// \internal
+     /// \brief Pointer to private data.
+     private: std::unique_ptr<SDFPrivate> dataPtr;
+-
+-    /// \brief The SDF version. Set to SDF_VERSION by default, or through
+-    /// the Version function at runtime.
+-    private: static std::string version;
+   };
+   /// \}
+   }
+
+--- src/SDF.cc
++++ src/SDF.cc
+@@ -21,10 +21,13 @@
+ #include <functional>
+ #include <list>
+ #include <map>
++#include <mutex>
+ #include <sstream>
+ #include <string>
+ #include <vector>
+ 
++#include <gz/utils/NeverDestroyed.hh>
++
+ #include "sdf/parser.hh"
+ #include "sdf/Assert.hh"
+ #include "sdf/Console.hh"
+@@ -42,10 +45,6 @@ namespace sdf
+ {
+ inline namespace SDF_VERSION_NAMESPACE
+ {
+-// TODO(azeey) This violates the Google style guide. Change to a function that
+-// returns the version string when possible.
+-std::string SDF::version = SDF_VERSION;  // NOLINT(runtime/string)
+-
+ std::string sdfSharePath()
+ {
+   std::string sharePath = sdf::getSharePath();
+@@ -488,16 +487,33 @@ const std::string &SDF::OriginalVersion() const
+   return this->dataPtr->originalVersion;
+ }
+ 
++/////////////////////////////////////////////////
++namespace {
++// Infrastructe to support the SDF::Version(...) static getter and setter.
++struct GlobalVersion {
++  std::mutex mutex;
++  std::string version{SDF_VERSION};
++};
++GlobalVersion& GetMutableGlobalVersionSingleton() {
++  static gz::utils::NeverDestroyed<GlobalVersion> singleton;
++  return singleton.Access();
++}
++}  // namespace
++
+ /////////////////////////////////////////////////
+ std::string SDF::Version()
+ {
+-  return version;
++  GlobalVersion& singleton = GetMutableGlobalVersionSingleton();
++  std::lock_guard guard{singleton.mutex};
++  return std::string{singleton.version};
+ }
+ 
+ /////////////////////////////////////////////////
+ void SDF::Version(const std::string &_version)
+ {
+-  version = _version;
++  GlobalVersion& singleton = GetMutableGlobalVersionSingleton();
++  std::lock_guard guard{singleton.mutex};
++  singleton.version = _version;
+ }
+ 
+ /////////////////////////////////////////////////

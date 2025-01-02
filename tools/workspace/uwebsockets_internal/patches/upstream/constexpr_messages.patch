@@ -1,0 +1,30 @@
+[uwebsockets] Cherry-pick of https://github.com/uNetworking/uWebSockets/pull/1828
+
+We can drop this patch once we upgrade to a release that contains it.
+
+From: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date: Tue, 31 Dec 2024 06:46:22 -0800
+Subject: [PATCH] Switch error message strings to constexpr
+
+This changes their linkage so that files which include this header
+will avoid having unnecessary static global constructors.
+
+--- src/WebSocketProtocol.h
++++ src/WebSocketProtocol.h
+@@ -28,11 +28,11 @@
+ namespace uWS {
+ 
+ /* We should not overcomplicate these */
+-const std::string_view ERR_TOO_BIG_MESSAGE("Received too big message");
+-const std::string_view ERR_WEBSOCKET_TIMEOUT("WebSocket timed out from inactivity");
+-const std::string_view ERR_INVALID_TEXT("Received invalid UTF-8");
+-const std::string_view ERR_TOO_BIG_MESSAGE_INFLATION("Received too big message, or other inflation error");
+-const std::string_view ERR_INVALID_CLOSE_PAYLOAD("Received invalid close payload");
++constexpr std::string_view ERR_TOO_BIG_MESSAGE("Received too big message");
++constexpr std::string_view ERR_WEBSOCKET_TIMEOUT("WebSocket timed out from inactivity");
++constexpr std::string_view ERR_INVALID_TEXT("Received invalid UTF-8");
++constexpr std::string_view ERR_TOO_BIG_MESSAGE_INFLATION("Received too big message, or other inflation error");
++constexpr std::string_view ERR_INVALID_CLOSE_PAYLOAD("Received invalid close payload");
+ 
+ enum OpCode : unsigned char {
+     CONTINUATION = 0,

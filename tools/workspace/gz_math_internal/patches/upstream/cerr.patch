@@ -1,0 +1,734 @@
+[gz-math] Cherry-picked of https://github.com/gazebosim/gz-math/pull/656
+
+We can drop this patch once we upgrade to a release that contains it.
+
+From: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date: Mon, 30 Dec 2024 13:59:38 -0800
+Subject: [PATCH] Encapsulate std::cerr under a single point of control
+
+When integrating this library into a larger application, downstream
+code doesn't always want to spew onto cerr. To allow customization,
+we'll refactor to encapsulate the destination inside of a function.
+Future work can extent this with a mechanism to redirect it (e.g.,
+to send it to spdlog instead of cerr).
+
+--- BUILD.bazel
++++ BUILD.bazel
+@@ -170,6 +170,7 @@ cc_library(
+     includes = ["include"],
+     deps = [
+         ":Config",
++        ":Error",
+         ":Helpers",
+         ":Vector3",
+     ],
+@@ -217,6 +218,7 @@ cc_library(
+     deps = [
+         ":Angle",
+         ":Config",
++        ":Error",
+         ":Helpers",
+         ":Vector3",
+         "@gz-utils//:ImplPtr",
+@@ -303,6 +305,17 @@ cc_library(
+     ],
+ )
+ 
++cc_library(
++    name = "Error",
++    srcs = ["src/Error.cc"],
++    hdrs = ["include/gz/math/detail/Error.hh"],
++    includes = ["include"],
++    deps = [
++        ":Config",
++        ":Export",
++    ],
++)
++
+ cc_test(
+     name = "Ellipsoid_TEST",
+     srcs = ["src/Ellipsoid_TEST.cc"],
+@@ -398,6 +411,7 @@ cc_library(
+     includes = ["include"],
+     deps = [
+         ":Config",
++        ":Error",
+         ":Helpers",
+         "@gz-utils//:NeverDestroyed",
+     ],
+@@ -472,6 +486,7 @@ cc_library(
+     includes = ["include"],
+     deps = [
+         ":Config",
++        ":Error",
+         ":Graph",
+         ":Helpers",
+     ],
+@@ -577,6 +592,7 @@ cc_library(
+     includes = ["include"],
+     deps = [
+         ":Config",
++        ":Error",
+         ":Helpers",
+         ":Rand",
+         ":Vector3",
+@@ -869,6 +885,7 @@ cc_library(
+     includes = ["include"],
+     deps = [
+         ":Config",
++        ":Error",
+         ":Region3",
+         ":Vector3",
+     ],
+@@ -1103,6 +1120,7 @@ cc_library(
+     includes = ["include"],
+     deps = [
+         ":Config",
++        ":Error",
+         ":Helpers",
+         "@gz-utils//:ImplPtr",
+     ],
+@@ -1176,6 +1194,7 @@ cc_library(
+         ":Angle",
+         ":Config",
+         ":CoordinateVector3",
++        ":Error",
+         ":Helpers",
+         ":Matrix3",
+         ":Vector3",
+
+--- include/gz/math/PiecewiseScalarField3.hh
++++ include/gz/math/PiecewiseScalarField3.hh
+@@ -18,14 +18,15 @@
+ #define GZ_MATH_PIECEWISE_SCALAR_FIELD3_HH_
+ 
+ #include <algorithm>
+-#include <iostream>
+ #include <limits>
++#include <sstream>
+ #include <utility>
+ #include <vector>
+ 
+ #include <gz/math/Region3.hh>
+ #include <gz/math/Vector3.hh>
+ #include <gz/math/config.hh>
++#include <gz/math/detail/Error.hh>
+ 
+ namespace gz::math
+ {
+@@ -77,21 +78,23 @@ namespace gz::math
+       {
+         if (pieces[i].region.Empty())
+         {
+-          std::cerr << "Region #" << i << " (" << pieces[i].region
+-                    << ") in piecewise scalar field definition is empty."
+-                    << std::endl;
++          std::ostringstream error_str;
++          error_str << "Region #" << i << " (" << pieces[i].region
++                    << ") in piecewise scalar field definition is empty.";
++          detail::LogErrorMessage(error_str.str());
+         }
+         for (size_t j = i + 1; j < pieces.size(); ++j)
+         {
+           if (pieces[i].region.Intersects(pieces[j].region))
+           {
+-            std::cerr << "Detected overlap between regions in "
++            std::ostringstream error_str;
++            error_str << "Detected overlap between regions in "
+                       << "piecewise scalar field definition: "
+                       << "region #" << i << " (" << pieces[i].region
+                       << ") overlaps with region #" << j << " ("
+                       << pieces[j].region << "). Region #" << i
+-                      << " will take precedence when overlapping."
+-                      << std::endl;
++                      << " will take precedence when overlapping.";
++            detail::LogErrorMessage(error_str.str());
+           }
+         }
+       }
+
+--- /dev/null
++++ include/gz/math/detail/Error.hh
+@@ -0,0 +1,36 @@
++/*
++ * Copyright (C) 2024 Open Source Robotics Foundation
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ *
++*/
++#ifndef GZ_MATH_DETAIL_ERROR_HH_
++#define GZ_MATH_DETAIL_ERROR_HH_
++
++#include <string>
++
++#include <gz/math/Export.hh>
++#include <gz/math/config.hh>
++
++namespace gz::math
++{
++  // Inline bracket to help doxygen filtering.
++  inline namespace GZ_MATH_VERSION_NAMESPACE {
++  namespace detail {
++    /// Prints the given error message to std::cerr, followed by a newline.
++    /// (In the future, we might provide a function to change the destination.)
++    void GZ_MATH_VISIBLE LogErrorMessage(const std::string& message);
++  }  // namespace detail
++  }  // namespace GZ_MATH_VERSION_NAMESPACE
++}  // namespace gz::math
++#endif  // GZ_MATH_DETAIL_ERROR_HH_
+
+--- include/gz/math/graph/Graph.hh
++++ include/gz/math/graph/Graph.hh
+@@ -18,14 +18,16 @@
+ #define GZ_MATH_GRAPH_GRAPH_HH_
+ 
+ #include <cassert>
+-#include <iostream>
+ #include <map>
++#include <ostream>
+ #include <set>
++#include <sstream>
+ #include <string>
+ #include <utility>
+ #include <vector>
+ 
+ #include <gz/math/config.hh>
++#include "gz/math/detail/Error.hh"
+ #include "gz/math/graph/Edge.hh"
+ #include "gz/math/graph/Vertex.hh"
+ 
+@@ -113,8 +115,9 @@ namespace graph
+       {
+         if (!this->AddVertex(v.Name(), v.Data(), v.Id()).Valid())
+         {
+-          std::cerr << "Invalid vertex with Id [" << v.Id() << "]. Ignoring."
+-                    << std::endl;
++          std::ostringstream error_str;
++          error_str << "Invalid vertex with Id [" << v.Id() << "]. Ignoring.";
++          detail::LogErrorMessage(error_str.str());
+         }
+       }
+ 
+@@ -122,7 +125,7 @@ namespace graph
+       for (auto const &e : _edges)
+       {
+         if (!this->AddEdge(e.vertices, e.data, e.weight).Valid())
+-          std::cerr << "Ignoring edge" << std::endl;
++          detail::LogErrorMessage("Ignoring edge");
+       }
+     }
+ 
+@@ -146,8 +149,9 @@ namespace graph
+         // No space for new Ids.
+         if (id == kNullId)
+         {
+-          std::cerr << "[Graph::AddVertex()] The limit of vertices has been "
+-                    << "reached. Ignoring vertex." << std::endl;
++          detail::LogErrorMessage(
++              "[Graph::AddVertex()] The limit of vertices has been reached. "
++              "Ignoring vertex.");
+           return NullVertex<V>();
+         }
+       }
+@@ -159,8 +163,9 @@ namespace graph
+       // The Id already exists.
+       if (!ret.second)
+       {
+-        std::cerr << "[Graph::AddVertex()] Repeated vertex [" << id << "]"
+-                  << std::endl;
++        std::ostringstream error_str;
++        error_str << "[Graph::AddVertex()] Repeated vertex [" << id << "]";
++        detail::LogErrorMessage(error_str.str());
+         return NullVertex<V>();
+       }
+ 
+@@ -215,8 +220,9 @@ namespace graph
+       // No space for new Ids.
+       if (id == kNullId)
+       {
+-        std::cerr << "[Graph::AddEdge()] The limit of edges has been reached. "
+-                  << "Ignoring edge." << std::endl;
++        detail::LogErrorMessage(
++            "[Graph::AddEdge()] The limit of edges has been reached. "
++            "Ignoring edge.");
+         return NullEdge<E, EdgeType>();
+       }
+ 
+
+--- include/gz/math/graph/GraphAlgorithms.hh
++++ include/gz/math/graph/GraphAlgorithms.hh
+@@ -26,6 +26,7 @@
+ #include <vector>
+ 
+ #include <gz/math/config.hh>
++#include "gz/math/detail/Error.hh"
+ #include "gz/math/graph/Graph.hh"
+ #include "gz/math/Helpers.hh"
+ 
+@@ -217,7 +218,9 @@ namespace graph
+     // Sanity check: The source vertex should exist.
+     if (allVertices.find(_from) == allVertices.end())
+     {
+-      std::cerr << "Vertex [" << _from << "] Not found" << std::endl;
++      std::ostringstream error_str;
++      error_str << "Vertex [" << _from << "] Not found";
++      detail::LogErrorMessage(error_str.str());
+       return {};
+     }
+ 
+@@ -225,7 +228,9 @@ namespace graph
+     if (_to != kNullId &&
+         allVertices.find(_to) == allVertices.end())
+     {
+-      std::cerr << "Vertex [" << _from << "] Not found" << std::endl;
++      std::ostringstream error_str;
++      error_str << "Vertex [" << _from << "] Not found";
++      detail::LogErrorMessage(error_str.str());
+       return {};
+     }
+ 
+
+--- src/Color.cc
++++ src/Color.cc
+@@ -16,9 +16,9 @@
+  */
+ #include <cmath>
+ #include <algorithm>
+-#include <iostream>
+ 
+ #include "gz/math/Color.hh"
++#include "gz/math/detail/Error.hh"
+ 
+ using namespace gz;
+ using namespace math;
+@@ -574,6 +574,6 @@ void Color::Clamp()
+   if (clamped)
+   {
+     // TODO(azeey) Use spdlog when we have it's available.
+-    std::cerr << "Color values were clamped\n";
++    detail::LogErrorMessage("Color values were clamped");
+   }
+ }
+
+--- src/CoordinateVector3.cc
++++ src/CoordinateVector3.cc
+@@ -19,10 +19,10 @@
+ #include "gz/math/CoordinateVector3.hh"
+ #include "gz/math/Vector3.hh"
+ #include "gz/math/Helpers.hh"
++#include "gz/math/detail/Error.hh"
+ #include "gz/utils/ImplPtr.hh"
+ 
+ #include <cmath>
+-#include <iostream>
+ #include <optional>
+ #include <variant>
+ 
+@@ -220,14 +220,16 @@ CoordinateVector3 CoordinateVector3::operator+(
+   {
+     if (this->IsMetric())
+     {
+-      std::cerr << "Spherical coordinates cannot be added to metric. "
+-                   "Returning NaN." << std::endl;
++      detail::LogErrorMessage(
++          "Spherical coordinates cannot be added to metric. "
++          "Returning NaN.");
+       return Metric(NAN_D, NAN_D, NAN_D);
+     }
+     else
+     {
+-      std::cerr << "Metric coordinates cannot be added to spherical. "
+-                   "Returning NaN." << std::endl;
++      detail::LogErrorMessage(
++          "Metric coordinates cannot be added to spherical. "
++          "Returning NaN.");
+       return Spherical(NAN_D, NAN_D, NAN_D);
+     }
+   }
+@@ -258,14 +260,16 @@ const CoordinateVector3& CoordinateVector3::operator+=(
+     if (this->IsMetric())
+     {
+       this->dataPtr->X() = this->dataPtr->Y() = NAN_D;
+-      std::cerr << "Spherical coordinates cannot be added to metric. "
+-                   "Setting the result to NaN." << std::endl;
++      detail::LogErrorMessage(
++          "Spherical coordinates cannot be added to metric. "
++          "Setting the result to NaN.");
+     }
+     else
+     {
+       this->dataPtr->Lat() = this->dataPtr->Lon() = NAN_D;
+-      std::cerr << "Metric coordinates cannot be added to spherical. "
+-                   "Setting the result to NaN." << std::endl;
++      detail::LogErrorMessage(
++          "Metric coordinates cannot be added to spherical. "
++          "Setting the result to NaN.");
+     }
+     return *this;
+   }
+@@ -308,14 +312,16 @@ CoordinateVector3 CoordinateVector3::operator-(
+   {
+     if (this->IsMetric())
+     {
+-      std::cerr << "Spherical coordinates cannot be subtracted from metric. "
+-                   "Returning NaN." << std::endl;
++      detail::LogErrorMessage(
++          "Spherical coordinates cannot be subtracted from metric. "
++          "Returning NaN.");
+       return Metric(NAN_D, NAN_D, NAN_D);
+     }
+     else
+     {
+-      std::cerr << "Metric coordinates cannot be subtracted from spherical. "
+-                   "Returning NaN." << std::endl;
++      detail::LogErrorMessage(
++          "Metric coordinates cannot be subtracted from spherical. "
++          "Returning NaN.");
+       return Spherical(NAN_D, NAN_D, NAN_D);
+     }
+   }
+@@ -346,14 +352,16 @@ const CoordinateVector3& CoordinateVector3::operator-=(
+     if (this->IsMetric())
+     {
+       this->dataPtr->X() = this->dataPtr->Y() = NAN_D;
+-      std::cerr << "Spherical coordinates cannot be subtracted from metric. "
+-                   "Setting the result to NaN." << std::endl;
++      detail::LogErrorMessage(
++          "Spherical coordinates cannot be subtracted from metric. "
++          "Setting the result to NaN.");
+     }
+     else
+     {
+       this->dataPtr->Lat() = this->dataPtr->Lon() = NAN_D;
+-      std::cerr << "Metric coordinates cannot be subtracted from spherical. "
+-                   "Setting the result to NaN." << std::endl;
++      detail::LogErrorMessage(
++          "Metric coordinates cannot be subtracted from spherical. "
++          "Setting the result to NaN.");
+     }
+     return *this;
+   }
+
+--- /dev/null
++++ src/Error.cc
+@@ -0,0 +1,23 @@
++/*
++ * Copyright (C) 2024 Open Source Robotics Foundation
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ *
++*/
++#include <iostream>
++
++#include "gz/math/detail/Error.hh"
++
++void gz::math::detail::LogErrorMessage(const std::string& message) {
++  std::cerr << message << std::endl;
++}
+
+--- src/Kmeans.cc
++++ src/Kmeans.cc
+@@ -17,9 +17,10 @@
+ 
+ #include <gz/math/Kmeans.hh>
+ 
+-#include <iostream>
++#include <sstream>
+ 
+ #include <gz/math/Rand.hh>
++#include <gz/math/detail/Error.hh>
+ #include "KmeansPrivate.hh"
+ 
+ using namespace gz;
+@@ -43,8 +44,8 @@ bool Kmeans::Observations(const std::vector<Vector3d> &_obs)
+ {
+   if (_obs.empty())
+   {
+-    std::cerr << "Kmeans::SetObservations() error: Observations vector is empty"
+-              << std::endl;
++    detail::LogErrorMessage(
++        "Kmeans::SetObservations() error: Observations vector is empty");
+     return false;
+   }
+   this->dataPtr->obs = _obs;
+@@ -56,8 +57,8 @@ bool Kmeans::AppendObservations(const std::vector<Vector3d> &_obs)
+ {
+   if (_obs.empty())
+   {
+-    std::cerr << "Kmeans::AppendObservations() error: input vector is empty"
+-              << std::endl;
++    detail::LogErrorMessage(
++        "Kmeans::AppendObservations() error: input vector is empty");
+     return false;
+   }
+   this->dataPtr->obs.insert(this->dataPtr->obs.end(), _obs.begin(), _obs.end());
+@@ -72,23 +73,26 @@ bool Kmeans::Cluster(int _k,
+   // Sanity check.
+   if (this->dataPtr->obs.empty())
+   {
+-    std::cerr << "Kmeans error: The set of observations is empty" << std::endl;
++    detail::LogErrorMessage("Kmeans error: The set of observations is empty");
+     return false;
+   }
+ 
+   if (_k <= 0)
+   {
+-    std::cerr << "Kmeans error: The number of clusters has to"
+-              << " be positive but its value is [" << _k << "]"
+-              << std::endl;
++    std::ostringstream error_str;
++    error_str << "Kmeans error: The number of clusters has to"
++              << " be positive but its value is [" << _k << "]";
++    detail::LogErrorMessage(error_str.str());
+     return false;
+   }
+ 
+   if (_k > static_cast<int>(this->dataPtr->obs.size()))
+   {
+-    std::cerr << "Kmeans error: The number of clusters [" << _k << "] has to be"
++    std::ostringstream error_str;
++    error_str << "Kmeans error: The number of clusters [" << _k << "] has to be"
+               << " lower or equal to the number of observations ["
+-              << this->dataPtr->obs.size() << "]" << std::endl;
++              << this->dataPtr->obs.size() << "]";
++    detail::LogErrorMessage(error_str.str());
+     return false;
+   }
+ 
+
+--- src/SignalStats.cc
++++ src/SignalStats.cc
+@@ -15,8 +15,9 @@
+  *
+ */
+ #include <cmath>
+-#include <iostream>
++#include <sstream>
+ #include <gz/math/SignalStats.hh>
++#include <gz/math/detail/Error.hh>
+ 
+ using namespace gz;
+ using namespace math;
+@@ -263,10 +264,11 @@ bool SignalStats::InsertStatistic(const std::string &_name)
+     auto map = this->Map();
+     if (map.find(_name) != map.end())
+     {
+-      std::cerr << "Unable to InsertStatistic ["
++      std::ostringstream error_str;
++      error_str << "Unable to InsertStatistic ["
+                 << _name
+-                << "] since it has already been inserted."
+-                << std::endl;
++                << "] since it has already been inserted.";
++      detail::LogErrorMessage(error_str.str());
+       return false;
+     }
+   }
+@@ -299,10 +301,11 @@ bool SignalStats::InsertStatistic(const std::string &_name)
+   else
+   {
+     // Unrecognized name string
+-    std::cerr << "Unable to InsertStatistic ["
++    std::ostringstream error_str;
++    error_str << "Unable to InsertStatistic ["
+               << _name
+-              << "] since it is an unrecognized name."
+-              << std::endl;
++              << "] since it is an unrecognized name.";
++    detail::LogErrorMessage(error_str.str());
+     return false;
+   }
+   this->dataPtr->stats.push_back(stat);
+@@ -314,9 +317,8 @@ bool SignalStats::InsertStatistics(const std::string &_names)
+ {
+   if (_names.empty())
+   {
+-    std::cerr << "Unable to InsertStatistics "
+-              << "since no names were supplied."
+-              << std::endl;
++    detail::LogErrorMessage(
++        "Unable to InsertStatistics since no names were supplied.");
+     return false;
+   }
+ 
+
+--- src/SphericalCoordinates.cc
++++ src/SphericalCoordinates.cc
+@@ -14,11 +14,12 @@
+  * limitations under the License.
+  *
+ */
+-#include <iostream>
++#include <sstream>
+ #include <string>
+ 
+ #include "gz/math/Matrix3.hh"
+ #include "gz/math/SphericalCoordinates.hh"
++#include "gz/math/detail/Error.hh"
+ 
+ using namespace gz;
+ using namespace math;
+@@ -118,8 +119,8 @@ SphericalCoordinates::SurfaceType SphericalCoordinates::Convert(
+   else if ("CUSTOM_SURFACE" == _str)
+     return CUSTOM_SURFACE;
+ 
+-  std::cerr << "SurfaceType string not recognized, "
+-    << "EARTH_WGS84 returned by default" << std::endl;
++  detail::LogErrorMessage(
++      "SurfaceType string not recognized, EARTH_WGS84 returned by default");
+   return EARTH_WGS84;
+ }
+ 
+@@ -134,8 +135,8 @@ std::string SphericalCoordinates::Convert(
+   else if (_type == CUSTOM_SURFACE)
+     return "CUSTOM_SURFACE";
+ 
+-  std::cerr << "SurfaceType not recognized, "
+-    << "EARTH_WGS84 returned by default" << std::endl;
++  detail::LogErrorMessage(
++      "SurfaceType not recognized, EARTH_WGS84 returned by default");
+   return "EARTH_WGS84";
+ }
+ 
+@@ -283,14 +284,16 @@ void SphericalCoordinates::SetSurface(const SurfaceType &_type)
+       }
+     case CUSTOM_SURFACE:
+       {
+-      std::cerr << "For custom surfaces, use SetSurface(type, radius,"
+-        "axisEquatorial, axisPolar)" << std::endl;
++      detail::LogErrorMessage(
++          "For custom surfaces, use SetSurface(type, radius,"
++          "axisEquatorial, axisPolar)");
+       break;
+       }
+     default:
+       {
+-        std::cerr << "Unknown surface type["
+-          << this->dataPtr->surfaceType << "]\n";
++      std::ostringstream error_str;
++      error_str << "Unknown surface type[" << this->dataPtr->surfaceType << "]";
++      detail::LogErrorMessage(error_str.str());
+       break;
+       }
+   }
+@@ -306,8 +309,9 @@ void SphericalCoordinates::SetSurface(
+       (_type != MOON_SCS) &&
+       (_type != CUSTOM_SURFACE))
+   {
+-    std::cerr << "Unknown surface type["
+-      << _type << "]\n";
++    std::ostringstream error_str;
++    error_str << "Unknown surface type[" << _type << "]";
++    detail::LogErrorMessage(error_str.str());
+     return;
+   }
+ 
+@@ -327,8 +331,8 @@ void SphericalCoordinates::SetSurface(
+   }
+   else
+   {
+-    std::cerr << "Invalid parameters found, defaulting to "
+-      "Earth's parameters" << std::endl;
++    detail::LogErrorMessage(
++        "Invalid parameters found, defaulting to Earth's parameters");
+ 
+     this->dataPtr->ellA = g_EarthWGS84AxisEquatorial;
+     this->dataPtr->ellB = g_EarthWGS84AxisPolar;
+@@ -569,8 +573,9 @@ std::optional<CoordinateVector3> PositionTransformTmp(
+ 
+   if ((_in == SphericalCoordinates::SPHERICAL) != _pos.IsSpherical())
+   {
+-    std::cerr << "Invalid input to PositionTransform. "
+-                 "The passed coordinate vector has wrong type.\n";
++    detail::LogErrorMessage(
++        "Invalid input to PositionTransform. "
++        "The passed coordinate vector has wrong type.");
+     return std::nullopt;
+   }
+   Vector3d tmp;
+@@ -642,7 +647,9 @@ std::optional<CoordinateVector3> PositionTransformTmp(
+       break;
+     default:
+       {
+-        std::cerr << "Invalid coordinate type[" << _in << "]\n";
++        std::ostringstream error_str;
++        error_str << "Invalid coordinate type[" << _in << "]";
++        detail::LogErrorMessage(error_str.str());
+         return std::nullopt;
+       }
+   }
+@@ -703,8 +710,12 @@ std::optional<CoordinateVector3> PositionTransformTmp(
+       break;
+ 
+     default:
+-      std::cerr << "Unknown coordinate type[" << _out << "]\n";
+-      return std::nullopt;
++      {
++        std::ostringstream error_str;
++        error_str << "Unknown coordinate type[" << _out << "]";
++        detail::LogErrorMessage(error_str.str());
++        return std::nullopt;
++      }
+   }
+ 
+   return res;
+@@ -772,7 +783,8 @@ std::optional<CoordinateVector3> VelocityTransformTmp(
+       _out == SphericalCoordinates::SPHERICAL ||
+       _vel.IsSpherical())
+   {
+-    std::cerr << "Velocity cannot be expressed in spherical coordinates.\n";
++    detail::LogErrorMessage(
++        "Velocity cannot be expressed in spherical coordinates.");
+     return std::nullopt;
+   }
+ 
+@@ -807,8 +819,12 @@ std::optional<CoordinateVector3> VelocityTransformTmp(
+     case SphericalCoordinates::ECEF:
+       break;
+     default:
+-      std::cerr << "Unknown coordinate type[" << _in << "]\n";
+-      return std::nullopt;
++      {
++        std::ostringstream error_str;
++        error_str << "Unknown coordinate type[" << _in << "]";
++        detail::LogErrorMessage(error_str.str());
++        return std::nullopt;
++      }
+   }
+ 
+   CoordinateVector3 res;
+@@ -840,8 +856,12 @@ std::optional<CoordinateVector3> VelocityTransformTmp(
+       break;
+ 
+     default:
+-      std::cerr << "Unknown coordinate type[" << _out << "]\n";
+-      return std::nullopt;
++      {
++        std::ostringstream error_str;
++        error_str << "Unknown coordinate type[" << _out << "]";
++        detail::LogErrorMessage(error_str.str());
++        return std::nullopt;
++      }
+   }
+ 
+   return res;

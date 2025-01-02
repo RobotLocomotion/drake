@@ -11,6 +11,7 @@ def nlopt_internal_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/repair_luksan_config.patch",
+            ":patches/upstream/specific_iostream_includes.patch",
             ":patches/vendor.patch",
         ],
         mirrors = mirrors,

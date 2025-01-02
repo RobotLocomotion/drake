@@ -13,13 +13,16 @@ def sdformat_internal_repository(
         build_file = ":package.BUILD.bazel",
         sha256 = "9c9b517b390fe6965f76775db67f406b42948ebac433f87fadc680467d45184a",  # noqa
         patches = [
+            ":patches/upstream/root_model_mutable_getter.patch",
+            ":patches/upstream/specific_iostream_includes.patch",
+            ":patches/upstream/support_drake_visual.patch",
+            ":patches/upstream/version_singleton.patch",
             ":patches/console.patch",
             ":patches/deprecation_unit_testing.patch",
             ":patches/environment.patch",
             ":patches/no_global_config.patch",
             ":patches/no_share_path.patch",
             ":patches/no_urdf.patch",
-            ":patches/upstream/support_drake_visual.patch",
         ],
         mirrors = mirrors,
     )

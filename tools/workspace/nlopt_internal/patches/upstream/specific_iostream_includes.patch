@@ -1,0 +1,67 @@
+[nlopt] Cherry-pick of https://github.com/stevengj/nlopt/pull/582
+
+We can drop this patch once we upgrade to a release that contains it.
+
+From: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date: Mon, 30 Dec 2024 18:00:08 -0800
+Subject: [PATCH] Remove unncessary <iostream> includes
+
+Including iostream means introducing the static (global) constructors
+and destructors for std::cin, std::cerr, and std::cout. That extra
+init and fini code is undesirable when those streams are not actually
+used.
+
+--- src/algs/ags/solver.cc
++++ src/algs/ags/solver.cc
+@@ -9,7 +9,6 @@ Copyright (C) 2018 Sovrasov V. - All Rights Reserved
+ 
+ #include <algorithm>
+ #include <cmath>
+-#include <iostream>
+ 
+ using namespace ags;
+ 
+@@ -300,7 +299,6 @@ void NLPSolver::CalculateNextPoints()
+ 
+     if (mNextPoints[i].x >= mNextIntervals[i]->pr.x || mNextPoints[i].x <= mNextIntervals[i]->pl.x)
+       mNeedStop = true;
+-      //std::cout << "Warning: resolution of evolvent is not enough to continue the search";
+ 
+     mEvolvent.GetImage(mNextPoints[i].x, mNextPoints[i].y);
+   }
+
+--- src/algs/stogo/linalg.cc
++++ src/algs/stogo/linalg.cc
+@@ -3,7 +3,7 @@
+    No attempt is made to check if the function arguments are valid
+ */
+ 
+-#include <iostream>
++#include <ostream>
+ #include <cmath>         // for sqrt()
+ 
+ #include "linalg.h"
+
+--- src/algs/stogo/linalg.h
++++ src/algs/stogo/linalg.h
+@@ -6,7 +6,7 @@
+ #ifndef LINALG_H
+ #define LINALG_H
+ 
+-#include <iostream>
++#include <ostream>
+ using namespace std;
+ #include <cmath>         // for sqrt()
+ #include <cfloat>
+
+--- src/algs/stogo/tools.h
++++ src/algs/stogo/tools.h
+@@ -5,7 +5,7 @@
+ #define TOOLS_H
+ 
+ #include <cfloat>
+-#include <iostream>
++#include <ostream>
+ 
+ #include <algorithm>
+ #include <iterator>
