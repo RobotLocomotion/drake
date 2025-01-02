@@ -120,7 +120,7 @@ TEST_F(AddMultibodyPlantConstraintsTest, WeldConstraint) {
     // IPOPT is flakey on this test.
     return;
   }
-  const int expected_num_constraints = 3;  // 1 for quaternion, 2 for weld.
+  const int expected_num_constraints = 4;  // 2 for quaternion, 2 for weld.
   CheckConstraints(expected_num_constraints, /* tol = */ 1e-2);
 }
 

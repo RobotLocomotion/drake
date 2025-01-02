@@ -40,6 +40,7 @@ AddUnitQuaternionConstraintOnPlant(
       bindings.emplace_back(
           prog->AddConstraint(solvers::Binding<solvers::Constraint>(
               std::make_shared<UnitQuaternionConstraint>(), quat_vars)));
+      bindings.emplace_back(prog->AddBoundingBoxConstraint(-1, 1, quat_vars));
       if (prog->GetInitialGuess(quat_vars).array().isNaN().all()) {
         prog->SetInitialGuess(quat_vars, Eigen::Vector4d(1, 0, 0, 0));
       }
