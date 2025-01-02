@@ -64,7 +64,19 @@ class YamlReadArchiveTest : public ::testing::TestWithParam<LoadYamlOptions> {
   // empty string, the result is a map from "value" to Null (not an empty map,
   // nor Null itself, etc.)
   static internal::Node LoadSingleValue(const std::string& value) {
-    return Load("doc:\n  value: " + value + "\n");
+    // The corresponding test in python lacks the `doc:` context. Therefore, the
+    // python-generated yaml has two fewer indenting spaces than the
+    // C++-generated yaml. So, that the test call sites can look the same, we
+    // account for the disparity in indentation here by replacing "\n" in
+    // `value` with "\n  ".
+    std::string indented = value;
+    std::string::size_type n = 0;
+    while ((n = indented.find("\n", n)) != std::string::npos) {
+      indented.replace(n, 1, "\n  ");
+      n += 3;
+    }
+
+    return Load("doc:\n  value: " + indented + "\n");
   }
 
   // Parses root into a Serializable and returns the result of the parse.
@@ -178,9 +190,8 @@ TEST_P(YamlReadArchiveTest, Bytes) {
 
   // Using !!binary on a schema whose type is bytes.
   test("!!binary A3Rlc3Rfc3RyAw==", "\x03test_str\x03");
-  // Note: The number of spaces is critical to producing proper formatted yaml.
-  test("!!binary |\n    A3Rlc3Rfc3RyAw==", "\x03test_str\x03");
-  test("!!binary |\n    A3Rlc3R\n    fc3RyAw==", "\x03test_str\x03");
+  test("!!binary |\n  A3Rlc3Rfc3RyAw==", "\x03test_str\x03");
+  test("!!binary |\n  A3Rlc3R\n  fc3RyAw==", "\x03test_str\x03");
   test("!!binary ", "");
 
   // Malformed base64 value.
@@ -669,10 +680,7 @@ TEST_P(YamlReadArchiveTest, Optional) {
   }
 }
 
-/* Smoke test for compatibility for the odd scalar: vector<byte>. This skips the
- nuance of parsing configuration and default/non-default. We assume that the
- Optional test covers that and there is nothing about vector<bytes> that would
- invalidate it. */
+/* Smoke test for compatibility for the odd scalar: vector<byte>. */
 TEST_P(YamlReadArchiveTest, OptionalBytes) {
   const auto& x = AcceptNoThrow<OptionalBytesStruct>(
       Load("doc:\n  value: !!binary b3RoZXID/3N0dWZm"));
