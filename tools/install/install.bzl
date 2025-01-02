@@ -1,4 +1,3 @@
-load("@python//:version.bzl", "PYTHON_VERSION")
 load("@rules_license//rules:providers.bzl", "LicenseInfo")
 load("//tools/skylark:cc.bzl", "CcInfo")
 load("//tools/skylark:drake_java.bzl", "MainClassInfo")
@@ -47,6 +46,16 @@ def _depset_to_list(x):
     """Helper function to convert depset to list."""
     iter_list = x.to_list() if type(x) == "depset" else x
     return iter_list
+
+#------------------------------------------------------------------------------
+
+_PY_CC_TOOLCHAIN_TYPE = "@rules_python//python/cc:toolchain_type"
+
+def _python_version(ctx):
+    """Returns a string a containing the major.minor version number of the
+    current Python toolchain."""
+    py_cc_toolchain = ctx.toolchains[_PY_CC_TOOLCHAIN_TYPE].py_cc_toolchain
+    return py_cc_toolchain.python_version
 
 #------------------------------------------------------------------------------
 def _output_path(ctx, input_file, strip_prefix = [], ignore_errors = False):
@@ -123,7 +132,7 @@ def _install_action(
     if "@WORKSPACE@" in dest:
         dest = dest.replace("@WORKSPACE@", _workspace(ctx))
     if "@PYTHON_VERSION@" in dest:
-        dest = dest.replace("@PYTHON_VERSION@", PYTHON_VERSION)
+        dest = dest.replace("@PYTHON_VERSION@", _python_version(ctx))
 
     if type(strip_prefixes) == "dict":
         strip_prefix = strip_prefixes.get(
@@ -608,6 +617,10 @@ _install_rule = rule(
     },
     executable = True,
     implementation = _install_impl,
+    toolchains = [
+        # Used to discern the major.minor site-packages path to install into.
+        _PY_CC_TOOLCHAIN_TYPE,
+    ],
 )
 
 def install(tags = [], **kwargs):
