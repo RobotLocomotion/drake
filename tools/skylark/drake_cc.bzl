@@ -566,6 +566,7 @@ def drake_cc_library(
         clang_copts = [],
         gcc_copts = [],
         linkstatic = 1,
+        always_optimize = True,
         internal = False,
         compile_once_per_scalar = False,
         declare_installed_headers = 1,
@@ -595,6 +596,11 @@ def drake_cc_library(
     part of Drake).  In other words, all of Drake's C++ libraries must be
     declared using the drake_cc_library macro.
 
+    Setting `always_optimize = True` builds the library with optimizations
+    enabled even in Debug builds. This can be used (sparingly) for low-level
+    libraries whose performance without optimizations is so bad as to make
+    the whole project suffer.
+
     Setting `internal = True` is convenient sugar to flag code that is never
     used by Drake's installed headers. This is especially helpful when the
     header_lint tool is complaining about third-party dependency pollution.
@@ -618,6 +624,11 @@ def drake_cc_library(
     should be surrounded with `#if DRAKE_ONCE_PER_SCALAR_PHASE == 0`.
     """
     new_copts = _platform_copts(copts, gcc_copts, clang_copts)
+    if always_optimize:
+        new_copts = new_copts + [
+            "-O2",
+            "-DNDEBUG",
+        ]
     new_tags = kwargs.pop("tags", None) or []
     if internal:
         if install_hdrs_exclude != []:
