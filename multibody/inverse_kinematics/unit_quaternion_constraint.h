@@ -51,7 +51,8 @@ class UnitQuaternionConstraint : public solvers::Constraint {
 /**
  Add unit length constraints to all the variables representing quaternion in
  `q_vars`. Namely the quaternions for floating base joints in `plant` will be
- enforced to have a unit length.
+ enforced to have a unit length, and all quaternion variables will be bounded to
+ be within [-1, 1].
 
  Additionally, if the initial guess for the quaternion variables has not been
  set (it is nan), then this method calls MathematicalProgram::SetInitialGuess()
