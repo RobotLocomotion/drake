@@ -147,10 +147,28 @@ class MujocoParser {
 
     Vector6d xyaxes;
     if (ParseVectorAttribute(node, "xyaxes", &xyaxes)) {
+      if (xyaxes.head<3>().norm() < 1e-12) {
+        Error(*node,
+              fmt::format(
+                  "The x axis in the 'xyaxes' attribute '{}' is too small.",
+                  node->Attribute("xyaxes")));
+        return {};
+      }
+      if (xyaxes.tail<3>().norm() < 1e-12) {
+        Error(*node,
+              fmt::format(
+                  "The y axis in the 'xyaxes' attribute '{}' is too small.",
+                  node->Attribute("xyaxes")));
+        return {};
+      }
       Matrix3d R;
-      R.col(0) = xyaxes.head<3>();
-      R.col(1) = xyaxes.tail<3>();
-      R.col(2) = xyaxes.head<3>().cross(xyaxes.tail<3>());
+      // Normalize the x axis.
+      R.col(0) = xyaxes.head<3>().normalized();
+      // Make the y axis orthogonal to the x axis (and normalize).
+      double d = R.col(0).dot(xyaxes.tail<3>());
+      R.col(1) = (xyaxes.tail<3>() - d * R.col(0)).normalized();
+      // Make the z axis orthogonal to the x and y axes (and normalize).
+      R.col(2) = R.col(0).cross(R.col(1)).normalized();
       return RigidTransformd(RotationMatrixd(R), pos);
     }
 
