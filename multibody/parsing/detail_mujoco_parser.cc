@@ -151,7 +151,7 @@ class MujocoParser {
       R.col(0) = xyaxes.head<3>();
       R.col(1) = xyaxes.tail<3>();
       R.col(2) = xyaxes.head<3>().cross(xyaxes.tail<3>());
-      return RigidTransformd(RotationMatrixd(R), pos);
+      return RigidTransformd(RotationMatrixd::ProjectToRotationMatrix(R), pos);
     }
 
     Vector3d zaxis;
