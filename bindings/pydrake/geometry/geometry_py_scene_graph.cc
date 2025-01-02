@@ -229,20 +229,38 @@ void DefineSceneGraph(py::module m, T) {
             cls_doc.RegisterFrame.doc_3args)
         .def("RenameFrame", &Class::RenameFrame, py::arg("frame_id"),
             py::arg("name"), cls_doc.RenameFrame.doc)
-        .def("RegisterGeometry",
-            py::overload_cast<SourceId, FrameId,
-                std::unique_ptr<GeometryInstance>>(&Class::RegisterGeometry),
+        .def(
+            "RegisterGeometry",
+            [](Class& self, SourceId source_id, FrameId frame_id,
+                const GeometryInstance& geometry) {
+              // The `geometry` object offers various reference_internal getters
+              // for its attributes, and if we were to try to move the geometry
+              // into the SceneGraph then trying to reason about the validity of
+              // those lingering python references becomes extremely difficult.
+              // Instead, we'll just copy the geometry when adding it.
+              return self.RegisterGeometry(source_id, frame_id,
+                  std::make_unique<GeometryInstance>(geometry));
+            },
             py::arg("source_id"), py::arg("frame_id"), py::arg("geometry"),
             cls_doc.RegisterGeometry.doc_3args)
-        .def("RegisterGeometry",
-            overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
-                FrameId, std::unique_ptr<GeometryInstance>>(
-                &Class::RegisterGeometry),
+        .def(
+            "RegisterGeometry",
+            [](Class& self, systems::Context<T>* context, SourceId source_id,
+                FrameId frame_id, const GeometryInstance& geometry) {
+              // Ditto the comment on the other overload, immediately above.
+              return self.RegisterGeometry(context, source_id, frame_id,
+                  std::make_unique<GeometryInstance>(geometry));
+            },
             py::arg("context"), py::arg("source_id"), py::arg("frame_id"),
             py::arg("geometry"), cls_doc.RegisterGeometry.doc_4args)
-        .def("RegisterAnchoredGeometry",
-            py::overload_cast<SourceId, std::unique_ptr<GeometryInstance>>(
-                &Class::RegisterAnchoredGeometry),
+        .def(
+            "RegisterAnchoredGeometry",
+            [](Class& self, SourceId source_id,
+                const GeometryInstance& geometry) {
+              // Ditto the comment on RegisterGeometry, above.
+              return self.RegisterAnchoredGeometry(
+                  source_id, std::make_unique<GeometryInstance>(geometry));
+            },
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
         .def("RenameGeometry", &Class::RenameGeometry, py::arg("geometry_id"),
