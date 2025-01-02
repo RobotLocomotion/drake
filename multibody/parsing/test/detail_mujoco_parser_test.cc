@@ -119,6 +119,20 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
 
+// Given a name for a TEST_SUITE_P test case, returns a safe version of the
+// string (i.e., with only alphanumeric characters). Google Test case names
+// must not contain any other kinds of characters.
+std::string MakeSafeTestCaseName(std::string_view name) {
+  std::string result{name};
+  std::replace_if(
+      result.begin(), result.end(),
+      [](char c) {
+        return !std::isalnum(c);
+      },
+      '_');
+  return result;
+}
+
 class DeepMindControlTest : public MujocoParserTest,
                             public testing::WithParamInterface<const char*> {};
 
@@ -142,7 +156,14 @@ const char* dm_control_models[] = {
     "pendulum", "point_mass", "quadruped",    "reacher", "stacker",
     "swimmer",  "walker"};
 INSTANTIATE_TEST_SUITE_P(DeepMindControl, DeepMindControlTest,
-                         testing::ValuesIn(dm_control_models));
+                         testing::ValuesIn(dm_control_models),
+                         ([](const auto& test_info) {
+                           // This lambda provides a nice human-readable test
+                           // case name while running the test, or in case the
+                           // test case fails.
+                           const auto& model = test_info.param;
+                           return MakeSafeTestCaseName(model);
+                         }));
 
 class MujocoMenagerieTest
     : public MujocoParserTest,
@@ -319,8 +340,14 @@ const std::pair<const char*, const char*> mujoco_menagerie_models[] = {
 };
 
 INSTANTIATE_TEST_SUITE_P(MujocoMenagerie, MujocoMenagerieTest,
-                         testing::ValuesIn(mujoco_menagerie_models));
-
+                         testing::ValuesIn(mujoco_menagerie_models),
+                         ([](const auto& test_info) {
+                           // This lambda provides a nice human-readable test
+                           // case name while running the test, or in case the
+                           // test case fails.
+                           const auto& [model, error_regex] = test_info.param;
+                           return MakeSafeTestCaseName(model);
+                         }));
 
 // In addition to confirming that the parser can successfully parse the model,
 // this test can be used to manually inspect the resulting visualization.
