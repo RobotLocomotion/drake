@@ -128,7 +128,6 @@ def _prepare_venv(repo_ctx, python):
 
     # Locate the lock file and mark it to be monitored for changes.
     pylock = repo_ctx.path(Label("@drake//setup:python/pdm.lock")).realpath
-    repo_ctx.symlink(pylock, "pdm.lock")
     repo_ctx.watch(pylock)
 
     # Choose which dependencies to install.
