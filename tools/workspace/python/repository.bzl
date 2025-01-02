@@ -65,18 +65,6 @@ def _get_python_interpreter(repo_ctx):
     ])]).stdout.strip()
     return (python, version)
 
-def _get_extension_suffix(repo_ctx, python, python_config):
-    """Returns the extension suffix, e.g. ".cpython-310-x86_64-linux-gnu.so" as
-    queried from python_config. Uses `python` only for error reporting.
-    """
-    if which(repo_ctx, python_config) == None:
-        fail(("Cannot find corresponding config executable: {}\n" +
-              "  From interpreter: {}").format(python_config, python))
-    return execute_or_fail(
-        repo_ctx,
-        [python_config, "--extension-suffix"],
-    ).stdout.strip()
-
 # TODO(jwnimmer-tri): Much of the logic for parsing includes and linkopts is
 # the same or similar to that used in pkg_config.bzl and should be refactored
 # and shared instead of being duplicated in both places.
@@ -165,11 +153,9 @@ def _impl(repo_ctx):
     # Set `python` to the the interpreter path specified by our rule attrs,
     # and `version` to its "major.minor" string.
     python, version = _get_python_interpreter(repo_ctx)
-    site_packages_relpath = "lib/python{}/site-packages".format(version)
 
-    # Get extension_suffix, includes, and linkopts from python_config.
+    # Get includes and linkopts from python_config.
     python_config = "{}-config".format(python)
-    extension_suffix = _get_extension_suffix(repo_ctx, python, python_config)
     includes = _get_includes(repo_ctx, python_config)
     linkopts = _get_linkopts(repo_ctx, python_config)
 
@@ -192,17 +178,13 @@ def _impl(repo_ctx):
 # `BUILD.bazel` or `package.BUILD.bazel` files.
 
 PYTHON_BIN_PATH = "{bin_path}"
-PYTHON_EXTENSION_SUFFIX = "{extension_suffix}"
 PYTHON_VERSION = "{version}"
-PYTHON_SITE_PACKAGES_RELPATH = "{site_packages_relpath}"
 PYTHON_INCLUDES = {includes}
 PYTHON_LINKOPTS_EMBEDDED = {linkopts_embedded}
 PYTHON_LINKOPTS_MODULE = {linkopts_module}
 """.format(
         bin_path = bin_path,
-        extension_suffix = extension_suffix,
         version = version,
-        site_packages_relpath = site_packages_relpath,
         includes = includes,
         linkopts_module = linkopts_module,
         linkopts_embedded = linkopts_embedded,
@@ -213,23 +195,21 @@ PYTHON_LINKOPTS_MODULE = {linkopts_module}
         executable = False,
     )
 
-interpreter_path_attrs = {
-    "linux_interpreter_path": attr.string(
-        default = "/usr/bin/python3",
-    ),
-    "macos_interpreter_path": attr.string(
-        # The version listed here should match what's listed in both the root
-        # CMakeLists.txt and doc/_pages/installation.md.
-        default = "{homebrew_prefix}/bin/python3.12",
-    ),
-    "requirements_flavor": attr.string(
-        default = "test",
-        values = ["build", "test"],
-    ),
-}
-
 python_repository = repository_rule(
     _impl,
-    attrs = interpreter_path_attrs,
+    attrs = {
+        "linux_interpreter_path": attr.string(
+            default = "/usr/bin/python3",
+        ),
+        "macos_interpreter_path": attr.string(
+            # The version listed here should match what's listed in both the
+            # root CMakeLists.txt and doc/_pages/installation.md.
+            default = "{homebrew_prefix}/bin/python3.12",
+        ),
+        "requirements_flavor": attr.string(
+            default = "test",
+            values = ["build", "test"],
+        ),
+    },
     configure = True,
 )
