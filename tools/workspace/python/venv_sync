@@ -92,20 +92,23 @@ readonly install_args=( $(cat "${repository}/@pdm-install-args") )
     "${install_args[@]}"
 
 # Compute the checksum of our requirements file.
-readonly checksum=$(cd "${repository}" && "${python}" <<EOF
+readonly checksum=$(cd "${project}" && "${python}" <<EOF
 import hashlib
 from pathlib import Path
-data = Path("requirements.txt").read_bytes()
+data = Path("pdm.lock").read_bytes()
 digest = hashlib.sha256(data).hexdigest()
-print(digest, end=None, flush=True)
+print(digest, flush=True)
 EOF
 )
-[[ -n "${checksum}" ]]
+if [[ -z "${checksum}" ]]; then
+    echo "error: computing checksum failed"
+    exit 1
+fi
 
 # Symlink our venv bin path for the repository.bzl to use. We'll salt it with
 # the requirements checksum so that Bazel will invalidate all Python targets
 # when the checksum changes.
-mkdir "${repository}/${checksum}"
+mkdir -p "${repository}/${checksum}"
 ln -nsf "${venv_drake}/bin" "${repository}/${checksum}/bin"
 
 # Tell repository.bzl which path to use.
