@@ -1,9 +1,7 @@
 # PyPI packages to install via pip for binary Drake distributions.
 
-# WARNING for Drake Developers: if you change this file, then you must
-# regenerate the "locked" requirements files via:
-#
-#     tools/workspace/python/venv_upgrade
+# WARNING for Drake Developers: This list must be kept in sync with
+# setup/python/pyproject.toml.
 
 ipywidgets
 matplotlib

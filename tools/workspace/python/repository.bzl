@@ -30,7 +30,7 @@ Arguments:
     macos_interpreter_path: (Optional) Interpreter path for the Python runtime,
         when running on macOS. The format substitution "{homebrew_prefix}" is
         available for use in this string.
-    requirements_flavor: (Optional) Which choice of requirements.txt to use.
+    requirements_flavor: (Optional) Which Python dependencies to install.
 """
 
 load(
@@ -114,19 +114,19 @@ def _prepare_venv(repo_ctx, python):
     if os_name != "mac os x":
         return python
 
-    # Choose which requirements to use.
-    requirements = repo_ctx.path(Label(
-        "@drake//setup:{}/source_distribution/requirements-{}.txt".format(
-            "mac",
-            repo_ctx.attr.requirements_flavor,
-        ),
-    )).realpath
-    repo_ctx.symlink(requirements, "requirements.txt")
-    repo_ctx.watch(requirements)
+    # Locate the lock file and mark it to be monitored for changes.
+    pylock = repo_ctx.path(Label("@drake//setup:python/pdm.lock")).realpath
+    repo_ctx.watch(pylock)
 
-    # Run pip-sync to ensure the venv content matches the requirements.txt; it
-    # will (un)install any packages as necessary, or even create the venv when
-    # it doesn't exist at all yet.
+    # Choose which dependencies to install.
+    if repo_ctx.attr.requirements_flavor == "test":
+        repo_ctx.file("@pdm-install-args", content = "-G test")
+    else:
+        repo_ctx.file("@pdm-install-args", content = "--prod")
+
+    # Run venv_sync to ensure the venv content matches the pdm.lock; it will
+    # (un)install any packages as necessary, or even create the venv when it
+    # doesn't exist at all yet.
     sync_label = Label("@drake//tools/workspace/python:venv_sync")
     sync = repo_ctx.path(sync_label).realpath
     repo_ctx.report_progress("Running venv_sync")
