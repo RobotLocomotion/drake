@@ -105,7 +105,7 @@ rust_library(
     deps = [
         "@crate__darling-0.14.4//:darling",
         "@crate__proc-macro2-1.0.92//:proc_macro2",
-        "@crate__quote-1.0.37//:quote",
+        "@crate__quote-1.0.38//:quote",
         "@crate__syn-1.0.109//:syn",
     ],
 )
