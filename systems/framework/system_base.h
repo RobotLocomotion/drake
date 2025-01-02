@@ -1098,19 +1098,14 @@ class SystemBase : public internal::SystemMessageInterface {
   bool IsObviouslyNotInputDependent(DependencyTicket dependency_ticket) const;
 
   /** (Internal use only) Declares that `parent_service` is the service
-  interface of the Diagram that owns this subsystem. Aborts if the parent
-  service has already been set to something else. */
+  interface of the Diagram that owns this subsystem. Throws if the parent
+  service has already been set. */
   // Use static method so Diagram can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
   static void set_parent_service(
       SystemBase* child,
-      const internal::SystemParentServiceInterface* parent_service) {
-    DRAKE_DEMAND(child != nullptr && parent_service != nullptr);
-    DRAKE_DEMAND(child->parent_service_ == nullptr ||
-                 child->parent_service_ == parent_service);
-    child->parent_service_ = parent_service;
-  }
+      const internal::SystemParentServiceInterface* parent_service);
 
   /** (Internal use only) Given a `port_index`, returns a function to be called
   when validating Context::FixInputPort requests. The function should attempt

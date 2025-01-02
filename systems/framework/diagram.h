@@ -51,7 +51,7 @@ class OwnedSystems {
   decltype(auto) end() const { return vec_.end(); }
   decltype(auto) operator[](size_t i) const { return vec_[i]; }
   decltype(auto) operator[](size_t i) { return vec_[i]; }
-  void push_back(std::unique_ptr<System<T>>&& sys) {
+  void push_back(std::shared_ptr<System<T>>&& sys) {
     vec_.push_back(std::move(sys));
   }
   void pop_back() {
@@ -59,7 +59,7 @@ class OwnedSystems {
   }
 
  private:
-  std::vector<std::unique_ptr<System<T>>> vec_;
+  std::vector<std::shared_ptr<System<T>>> vec_;
 };
 
 // External life support data for the diagram. The data will be moved to the

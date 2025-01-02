@@ -55,8 +55,12 @@ class RgbdSensorDiscrete final : public Diagram<double> {
   @param render_label_image   If true, renders label image (which requires
                               additional overhead). If false,
                               `label_image_output_port` will raise an error if
-                              called. */
-  RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> sensor,
+                              called.
+
+  @warning a System (i.e., `sensor`) may only be added to at most one Diagram
+  (i.e., this `RgbdSensorDiscrete`) so should not be re-used outside of the
+  `RgbdSensorDiscrete`. */
+  RgbdSensorDiscrete(std::shared_ptr<RgbdSensor> sensor,
                      double period = kDefaultPeriod,
                      bool render_label_image = true);
 
