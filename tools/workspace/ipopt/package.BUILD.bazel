@@ -1,0 +1,13 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+_MESSAGE = "DRAKE DEPRECATED: The @ipopt repository alias is no longer available, and there is no replacement. If you still something related to IPOPT, you may wish to copy the repository rule from a prior Drake release into your project. The deprecated code will be removed from Drake on or after 2025-05-01."  # noqa
+
+cc_library(
+    name = "ipopt",
+    deps = ["@ipopt_internal//:ipopt"],
+    deprecation = _MESSAGE,
+)

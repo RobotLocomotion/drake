@@ -19,9 +19,7 @@ drake_py_unittest(
     name = "lint_test",
     data = [
         ":package.BUILD.bazel",
-        "//tools/wheel:image/dependencies/projects.cmake",
-        "@ipopt_internal_fromsource//:drake_repository_metadata.json",
-        "@ipopt_internal_fromsource//:src/Makefile.am",
+        "@ipopt_internal//:src/Makefile.am",
     ],
     tags = ["lint"],
     deps = [

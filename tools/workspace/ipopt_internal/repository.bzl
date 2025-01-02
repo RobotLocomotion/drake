@@ -1,6 +1,6 @@
 load("//tools/workspace:github.bzl", "github_archive")
 
-def ipopt_internal_fromsource_repository(
+def ipopt_internal_repository(
         name,
         mirrors = None):
     github_archive(
