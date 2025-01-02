@@ -16,7 +16,7 @@ def bazelisk_repository(
             bazel-drake/external/bazelisk/bazelisk.py
 
         Additionally, you must manually update the version number in
-          setup/ubuntu/source_distribution/install_bazelisk.sh
+          setup/ubuntu/packages-bazelisk.json
         and adjust the expected checksums accordingly.
         """,
         commit = "v1.25.0",
