@@ -949,7 +949,7 @@ drake_cc_optional_library(
         ":mathematical_program",
         ":mathematical_program_result",
         "//common:drake_export",
-        "@ipopt",
+        "@ipopt_internal//:ipopt",
     ],
 )
 
@@ -974,7 +974,7 @@ drake_cc_variant_library(
         ":ipopt_solver_internal",
         "//common:unused",
         "//math:autodiff",
-        "@ipopt",
+        "@ipopt_internal//:ipopt",
     ],
 )
 
@@ -1486,7 +1486,7 @@ drake_cc_googletest(
     ] + select({
         "//conditions:default": [
             ":ipopt_solver_internal",
-            "@ipopt",
+            "@ipopt_internal//:ipopt",
         ],
         "//tools:no_ipopt": [
         ],
@@ -1514,7 +1514,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
     ] + select({
         "//conditions:default": [
-            "@ipopt",
+            "@ipopt_internal//:ipopt",
         ],
         "//tools:no_ipopt": [
         ],
@@ -1532,7 +1532,9 @@ drake_sh_test(
     srcs = [":ipopt_solver_test"],
     args = select({
         ":osx": [
-            # SPRAL is a Linux-only feature, for now.
+            # SPRAL is the default on macOS, so ipopt_solver_test already has
+            # us covered. Only on Ubuntu (where MUMPS is the default) do we
+            # need to re-run this test.
             "--gtest_filter=-*",
         ],
         "//conditions:default": [
@@ -2069,6 +2071,7 @@ drake_cc_googletest(
         ":csdp_solver",
         ":gurobi_solver",
         ":ipopt_solver",
+        ":ipopt_solver_internal",
         ":linear_program_examples",
         ":mosek_solver",
         ":nlopt_solver",

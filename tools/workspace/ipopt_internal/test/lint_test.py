@@ -24,8 +24,7 @@ class IpoptLintTest(unittest.TestCase):
         """
         result = []
         contents = self._read(
-            "drake/tools/workspace/ipopt_internal_fromsource/"
-            + "package.BUILD.bazel")
+            "drake/tools/workspace/ipopt_internal/package.BUILD.bazel")
         lines = contents.splitlines()
         start_line = f"{varname} = ["
         end_line = "]"
@@ -57,7 +56,7 @@ class IpoptLintTest(unittest.TestCase):
           path/to/file2
         """
         result = []
-        contents = self._read("ipopt_internal_fromsource/src/Makefile.am")
+        contents = self._read("ipopt_internal/src/Makefile.am")
         lines = contents.splitlines()
         if guard_line is None:
             start_line = f"{varname} = \\"
@@ -99,26 +98,3 @@ class IpoptLintTest(unittest.TestCase):
         self.assertSetEqual(self._parse_build("_SRCS_SOLVER_INT32"),
                             self._parse_make("libipopt_la_SOURCES",
                                              guard_line="if !IPOPT_INT64"))
-
-    def test_wheel_verison_pin(self):
-        """Checks that the repository rule and wheel agree on which version of
-        IPOPT we should be using.
-        """
-        # Parse the Bazel version.
-        commit = json.loads(self._read(
-            "ipopt_internal_fromsource/"
-            "drake_repository_metadata.json"))["commit"]
-        prefix = "releases/"
-        self.assertTrue(commit.startswith(prefix), commit)
-        bazel_version = commit[len(prefix):]
-
-        # Parse the Wheel version from the line `set(ipopt_version #.#.#)`.
-        projects = self._read(
-            "drake/tools/wheel/image/dependencies/projects.cmake")
-        prefix = "set(ipopt_version "
-        start = projects.index(prefix) + len(prefix)
-        end = projects.index(")", start)
-        wheel_version = projects[start:end]
-
-        # Exact string match.
-        self.assertEqual(wheel_version, bazel_version)
