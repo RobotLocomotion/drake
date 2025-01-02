@@ -178,3 +178,14 @@ The project is open-sourced to support education and research of brachiation wit
 
 *Source Code:* [AcroMonk](https://github.com/dfki-ric-underactuated-lab/acromonk)
 
+## brom_drake: A Helper Library for Pydrake (Python)
+
+`brom_drake` is a pip-installable library that simplifies the process of debugging algorithms in `pydrake`. Some of its notable features are:
+- The `DiagramWatcher` object which will automatically add loggers to your Drake diagram, simplifying the process of monitoring "what's going on" between systems. (By default, the data from each of these loggers will get saved locally to your machine after the simulation is run.)
+- The `drakeify_my_urdf` function which will use open-source tools to convert many Drake-incompatible `.urdf` files into ones that are compatible with Drake.
+- `Production` objects which are partially complete scenes that you can use to debug common algorithms (for example, motion planning algorithms).
+
+<img class="gallery" height="224px" src="https://raw.githubusercontent.com/kwesiRutledge/brom_drake-py/refs/heads/main/promo/productions/motion_planning/kinematic/Chem-Lab-Demo.gif"/>
+
+*Source Code:* [https://github.com/kwesiRutledge/brom_drake-py](https://github.com/kwesiRutledge/brom_drake-py)
+
