@@ -171,10 +171,8 @@ TEST_P(YamlReadArchiveTest, DoubleMissing) {
 
 TEST_P(YamlReadArchiveTest, Bytes) {
   const auto test = [](const std::string& value, const std::string& expected) {
-    const std::byte* data = reinterpret_cast<const std::byte*>(expected.data());
-    std::vector<std::byte> expected_bytes(data, data + expected.size());
     const auto& x = AcceptNoThrow<BytesStruct>(LoadSingleValue(value));
-    EXPECT_EQ(x.value, expected_bytes)
+    EXPECT_EQ(x.value, StringToByteVector(expected))
         << "Expected string: '" << expected << "'";
   };
 
@@ -324,8 +322,7 @@ doc:
   EXPECT_EQ(x.some_uint64, 105);
   EXPECT_EQ(x.some_string, "foo");
   EXPECT_EQ(x.some_path, "/alternative/path");
-  using b = std::byte;
-  EXPECT_EQ(x.some_bytes, std::vector<b>({b(10), b(20), b(30)}));
+  EXPECT_EQ(x.some_bytes, StringToByteVector("\n\x14\x1e"));
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {
@@ -677,13 +674,10 @@ TEST_P(YamlReadArchiveTest, Optional) {
  Optional test covers that and there is nothing about vector<bytes> that would
  invalidate it. */
 TEST_P(YamlReadArchiveTest, OptionalBytes) {
-  const std::string byte_str("other\x03\xffstuff");
-  const auto* byte_ptr = reinterpret_cast<const std::byte*>(byte_str.data());
-  const std::vector<std::byte> expected(byte_ptr, byte_ptr + byte_str.size());
   const auto& x = AcceptNoThrow<OptionalBytesStruct>(
       Load("doc:\n  value: !!binary b3RoZXID/3N0dWZm"));
   ASSERT_TRUE(x.value.has_value());
-  EXPECT_EQ(x.value.value(), expected);
+  EXPECT_EQ(x.value.value(), StringToByteVector("other\x03\xffstuff"));
 }
 
 TEST_P(YamlReadArchiveTest, Variant) {
@@ -716,10 +710,8 @@ TEST_P(YamlReadArchiveTest, PrimitiveVariant) {
   test("doc:\n  value: !!float '1.0'", 1.0);
   test("doc:\n  value: !!str foo", std::string("foo"));
   test("doc:\n  value: !!str 'foo'", std::string("foo"));
-  const std::string byte_str("\x03test_str\x03");
-  const auto* bytes = reinterpret_cast<const std::byte*>(byte_str.data());
   test("doc:\n  value: !!binary A3Rlc3Rfc3RyAw==",
-       std::vector<std::byte>(bytes, bytes + byte_str.size()));
+       StringToByteVector("\x03test_str\x03"));
 
   // It might be sensible for this case to pass, but for now we'll require that
   // non-0'th variant indices always use a tag even where it could be inferred.

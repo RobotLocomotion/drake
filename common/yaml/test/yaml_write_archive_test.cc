@@ -71,8 +71,7 @@ TEST_F(YamlWriteArchiveTest, Double) {
 
 TEST_F(YamlWriteArchiveTest, Bytes) {
   const auto test = [](const std::string& value, const std::string& expected) {
-    const auto* data = reinterpret_cast<const std::byte*>(value.data());
-    const BytesStruct x{std::vector<std::byte>(data, data + value.size())};
+    const BytesStruct x{StringToByteVector(value)};
     EXPECT_EQ(Save(x), WrapDoc(expected));
   };
 
@@ -129,7 +128,7 @@ TEST_F(YamlWriteArchiveTest, AllScalars) {
   x.some_uint64 = 105;
   x.some_string = "foo";
   x.some_path = "/test/path";
-  x.some_bytes = {std::byte(15), std::byte(20), std::byte(25)};
+  x.some_bytes = StringToByteVector("\n\x14\x1e");
   EXPECT_EQ(Save(x), R"""(doc:
   some_bool: true
   some_float: 100.0
@@ -140,7 +139,7 @@ TEST_F(YamlWriteArchiveTest, AllScalars) {
   some_uint64: 105
   some_string: foo
   some_path: /test/path
-  some_bytes: !!binary DxQZ
+  some_bytes: !!binary ChQe
 )""");
 }
 
@@ -282,18 +281,17 @@ TEST_F(YamlWriteArchiveTest, Optional) {
 
   test(std::nullopt, "doc:\n");
   test(1.0, "doc:\n  value: 1.0\n");
+}
 
+TEST_F(YamlWriteArchiveTest, OptionalBytes) {
   // Smoke test for compatibility for the odd scalar: vector<byte>.
-  using ByteString = std::vector<std::byte>;
-  const auto test_bytes = [](const std::optional<ByteString>& value,
+  const auto test_bytes = [](const std::optional<std::vector<std::byte>>& value,
                              const std::string& expected) {
     const OptionalBytesStruct x(value);
     EXPECT_EQ(Save(x), expected);
   };
   test_bytes(std::nullopt, "doc:\n");
-  const std::string bytes("other\x03\xffstuff");
-  const auto* byte_ptr = reinterpret_cast<const std::byte*>(bytes.data());
-  test_bytes(ByteString(byte_ptr, byte_ptr + bytes.size()),
+  test_bytes(StringToByteVector("other\x03\xffstuff"),
              "doc:\n  value: !!binary b3RoZXID/3N0dWZm\n");
 }
 
@@ -323,11 +321,7 @@ TEST_F(YamlWriteArchiveTest, PrimitiveVariant) {
   test(10, "!!int 10");
   test(1.0, "!!float 1.0");
   test(std::string("foo"), "!!str foo");
-
-  const std::string byte_str("other\x03\xffstuff");
-  const auto* bytes = reinterpret_cast<const std::byte*>(byte_str.data());
-  test(std::vector<std::byte>(bytes, bytes + byte_str.size()),
-       "!!binary b3RoZXID/3N0dWZm");
+  test(StringToByteVector("other\x03\xffstuff"), "!!binary b3RoZXID/3N0dWZm");
 }
 
 TEST_F(YamlWriteArchiveTest, EigenVector) {

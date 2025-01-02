@@ -83,7 +83,7 @@ class InnerStruct:
 
 @dc.dataclass
 class OptionalByteStruct:
-    value: bytes | None = None
+    value: bytes | None = b"\x10\x20\x30"
 
 
 @dc.dataclass
@@ -379,7 +379,7 @@ class TestYamlTypedRead(unittest.TestCase,
     def test_read_all_scalars(self, *, options):
         data = dedent("""
         some_bool: true
-        some_bytes: !!binary ChQe=
+        some_bytes: !!binary ChQe
         some_float: 101.0
         some_int: 102
         some_path: /alternative/path
@@ -918,6 +918,26 @@ class TestYamlTypedWrite(unittest.TestCase):
             expected_doc = f"value: {expected_str}\n"
             self.assertEqual(actual_doc, expected_doc)
 
+    def test_write_all_scalars(self):
+        x = AllScalarsStruct()
+        x.some_bool = True
+        x.some_float = 100.0
+        x.some_int = 102
+        x.some_str = "foo"
+        x.some_path = Path("/test/path")
+        x.some_bytes = b'\n\x14\x1e'
+        actual_doc = yaml_dump_typed(x)
+        expected_doc = dedent("""\
+        some_bool: true
+        some_bytes: !!binary |
+          ChQe
+        some_float: 100.0
+        some_int: 102
+        some_path: /test/path
+        some_str: foo
+        """)
+        self.assertEqual(actual_doc, expected_doc)
+
     def test_write_bytes(self):
         cases = [
             (b"", "!!binary \"\""),
@@ -1053,7 +1073,10 @@ class TestYamlTypedWrite(unittest.TestCase):
             actual_doc = yaml_dump_typed(LegacyOptionalStruct(value=value))
             self.assertEqual(actual_doc, expected_doc)
 
+    def test_write_optional_bytes(self):
         # Smoke test for compatibility for the odd scalar: vector<byte>.
+        actual_doc = yaml_dump_typed(OptionalByteStruct(None))
+        self.assertEqual(actual_doc, "{}\n")
         actual_doc = yaml_dump_typed(OptionalByteStruct(b"other\x03\xffstuff"))
         self.assertEqual(actual_doc, "value: !!binary |\n  b3RoZXID/3N0dWZm\n")
 

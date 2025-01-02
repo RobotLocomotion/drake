@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <optional>
@@ -91,6 +92,13 @@ struct BytesStruct {
 // This is used only for EXPECT_EQ, not by any YAML operations.
 bool operator==(const BytesStruct& a, const BytesStruct& b) {
   return a.value == b.value;
+}
+
+// Sugar that copies a std::string to a std::vector<std::byte>, to make it
+// easier to set or check a BytesStruct::value.
+std::vector<std::byte> StringToByteVector(const std::string& str) {
+  const auto* data = reinterpret_cast<const std::byte*>(str.data());
+  return std::vector<std::byte>(data, data + str.size());
 }
 
 struct PathStruct {
@@ -214,10 +222,8 @@ struct OptionalBytesStruct {
     a->Visit(DRAKE_NVP(value));
   }
 
-  OptionalBytesStruct() {
-    using b = std::byte;
-    value = std::vector<std::byte>{b(10), b(20), b(30)};
-  }
+  OptionalBytesStruct() { value = StringToByteVector("\n\x14\x1e"); }
+
   explicit OptionalBytesStruct(
       const std::optional<std::vector<std::byte>>& value_in) {
     value = value_in;
