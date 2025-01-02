@@ -23,6 +23,8 @@ namespace drake {
 namespace planning {
 namespace trajectory_optimization {
 
+const double kInf = std::numeric_limits<double>::infinity();
+
 using solvers::ExpressionConstraint;
 using solvers::MathematicalProgramResult;
 using solvers::OsqpSolver;
@@ -152,6 +154,50 @@ TEST_F(KinematicTrajectoryOptimizationTest,
   const double kTol = 1e-6;
   EXPECT_TRUE(CompareMatrices(q.value(0.2), x_desired.head<3>(), kTol));
   EXPECT_TRUE(CompareMatrices(qdot->value(0.2), x_desired.tail<3>(), kTol));
+}
+
+TEST_F(KinematicTrajectoryOptimizationTest,
+       AddVelocityLinearConstraintAtNormalizedTime) {
+  EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 0);
+  int num_linear_constraints =
+      static_cast<int>(trajopt_.prog().linear_constraints().size());
+  const Vector3d v_desired_lb1(0.4, -kInf, 0.6);
+  const Vector3d v_desired_ub1(0.4, 0.7, kInf);
+  const double s1 = 0.2;
+  auto binding1 = trajopt_.AddVelocityLinearConstraintAtNormalizedTime(
+      std::make_shared<solvers::BoundingBoxConstraint>(v_desired_lb1,
+                                                       v_desired_ub1),
+      s1);
+  const Vector3d v_desired_lb2(-kInf, 0.5, 0.6);
+  const Vector3d v_desired_ub2(kInf, 0.7, 0.6);
+  const double s2 = 0.7;
+  auto binding2 = trajopt_.AddVelocityLinearConstraintAtNormalizedTime(
+      std::make_shared<solvers::BoundingBoxConstraint>(v_desired_lb2,
+                                                       v_desired_ub2),
+      s2);
+  EXPECT_THAT(binding1.to_string(), HasSubstr("velocity linear constraint"));
+  EXPECT_THAT(binding2.to_string(), HasSubstr("velocity linear constraint"));
+  EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 0);
+  EXPECT_EQ(trajopt_.prog().linear_constraints().size(),
+            num_linear_constraints + 2);
+
+  trajopt_.AddDurationConstraint(1.5, 2);
+  trajopt_.SetInitialGuess(BsplineTrajectory(
+      trajopt_.basis(), math::EigenToStdVector<double>(
+                            MatrixXd::Ones(3, trajopt_.num_control_points()))));
+  auto result = Solve(trajopt_.prog());
+  EXPECT_TRUE(result.is_success());
+  auto q = trajopt_.ReconstructTrajectory(result);
+  auto qdot = q.MakeDerivative();
+  const double kTol = 1e-6;
+  const double T = result.GetSolution(trajopt_.duration());
+  const Eigen::VectorXd qdot_val1 = qdot->value(s1 * T);
+  const Eigen::VectorXd qdot_val2 = qdot->value(s2 * T);
+
+  EXPECT_TRUE((qdot_val1.array() >= v_desired_lb1.array() - kTol).all());
+  EXPECT_TRUE((qdot_val1.array() <= v_desired_ub1.array() + kTol).all());
+  EXPECT_TRUE((qdot_val2.array() >= v_desired_lb2.array() - kTol).all());
+  EXPECT_TRUE((qdot_val2.array() <= v_desired_ub2.array() + kTol).all());
 }
 
 TEST_F(KinematicTrajectoryOptimizationTest, AddPathAccelerationConstraint) {
