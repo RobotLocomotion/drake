@@ -538,9 +538,12 @@ class TestYamlTypedRead(unittest.TestCase,
                     self.assertEqual(actual, schema(expected))
 
     def test_read_optional_bytes(self):
-        """Smoke test for compatibility for the odd scalar: vector<byte>.
-        It skips the nuance of parsing configuration, assuming that is handled
-        by the more general test on Optional.
+        """Smoke test for compatibility for the non-json scalar: binary. This
+        is trivial in python, but awkward in C++. To maintain parity with the
+        C++ tests, we simply mirror the C++ test.
+
+        This skips the nuance of parsing configuration, assuming that is
+        handled by the more general test_read_optional.
         """
         data = "value: !!binary b3RoZXID/3N0dWZm"
         actual = yaml_load_typed(schema=OptionalByteStruct, data=data)
@@ -1074,7 +1077,9 @@ class TestYamlTypedWrite(unittest.TestCase):
             self.assertEqual(actual_doc, expected_doc)
 
     def test_write_optional_bytes(self):
-        # Smoke test for compatibility for the odd scalar: vector<byte>.
+        """Smoke test for compatibility for the non-json scalar: binary. This
+        is trivial in python, but awkward in C++. To maintain parity with the
+        C++ tests, we simply mirror the C++ test."""
         actual_doc = yaml_dump_typed(OptionalByteStruct(None))
         self.assertEqual(actual_doc, "{}\n")
         actual_doc = yaml_dump_typed(OptionalByteStruct(b"other\x03\xffstuff"))
