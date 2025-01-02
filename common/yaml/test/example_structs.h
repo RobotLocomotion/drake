@@ -222,7 +222,7 @@ struct OptionalBytesStruct {
     a->Visit(DRAKE_NVP(value));
   }
 
-  OptionalBytesStruct() { value = StringToByteVector("\n\x14\x1e"); }
+  OptionalBytesStruct() { value = StringToByteVector("\x02\x03\x04"); }
 
   explicit OptionalBytesStruct(
       const std::optional<std::vector<std::byte>>& value_in) {

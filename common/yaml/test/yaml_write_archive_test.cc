@@ -128,7 +128,7 @@ TEST_F(YamlWriteArchiveTest, AllScalars) {
   x.some_uint64 = 105;
   x.some_string = "foo";
   x.some_path = "/test/path";
-  x.some_bytes = StringToByteVector("\n\x14\x1e");
+  x.some_bytes = StringToByteVector("\x05\x06\x07");
   EXPECT_EQ(Save(x), R"""(doc:
   some_bool: true
   some_float: 100.0
@@ -139,7 +139,7 @@ TEST_F(YamlWriteArchiveTest, AllScalars) {
   some_uint64: 105
   some_string: foo
   some_path: /test/path
-  some_bytes: !!binary ChQe
+  some_bytes: !!binary BQYH
 )""");
 }
 

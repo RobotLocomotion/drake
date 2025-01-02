@@ -83,7 +83,7 @@ class InnerStruct:
 
 @dc.dataclass
 class OptionalByteStruct:
-    value: bytes | None = b"\x10\x20\x30"
+    value: bytes | None = b"\x02\x03\x04"
 
 
 @dc.dataclass
@@ -379,7 +379,7 @@ class TestYamlTypedRead(unittest.TestCase,
     def test_read_all_scalars(self, *, options):
         data = dedent("""
         some_bool: true
-        some_bytes: !!binary ChQe
+        some_bytes: !!binary BQYH
         some_float: 101.0
         some_int: 102
         some_path: /alternative/path
@@ -387,7 +387,7 @@ class TestYamlTypedRead(unittest.TestCase,
         """)
         x = yaml_load_typed(schema=AllScalarsStruct, data=data, **options)
         self.assertEqual(x.some_bool, True)
-        self.assertEqual(x.some_bytes, b'\n\x14\x1e')
+        self.assertEqual(x.some_bytes, b'\x05\x06\x07')
         self.assertEqual(x.some_float, 101.0)
         self.assertEqual(x.some_int, 102)
         self.assertEqual(x.some_path, Path("/alternative/path"))
@@ -925,12 +925,12 @@ class TestYamlTypedWrite(unittest.TestCase):
         x.some_int = 102
         x.some_str = "foo"
         x.some_path = Path("/test/path")
-        x.some_bytes = b'\n\x14\x1e'
+        x.some_bytes = b'\x05\x06\x07'
         actual_doc = yaml_dump_typed(x)
         expected_doc = dedent("""\
         some_bool: true
         some_bytes: !!binary |
-          ChQe
+          BQYH
         some_float: 100.0
         some_int: 102
         some_path: /test/path
