@@ -233,35 +233,45 @@ class YamlWriteArchive final {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
     std::string text;
-    std::string tag;
+    // Tag must be set as either json enum, or full tag string.
+    std::variant<std::monostate, JsonSchemaTag, std::string> tag;
     if constexpr (std::is_same_v<T, std::string>) {
       text = value;
-      tag = internal::Node::kTagStr;
+      tag = JsonSchemaTag::kStr;
     } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
       // We'll treat fs::path exactly like a std::string.
       text = value.string();
-      tag = internal::Node::kTagStr;
+      tag = JsonSchemaTag::kStr;
     } else if constexpr (std::is_same_v<T, bool>) {
       text = value ? "true" : "false";
-      tag = internal::Node::kTagBool;
+      tag = JsonSchemaTag::kBool;
     } else if constexpr (std::is_integral_v<T>) {
       text = fmt::to_string(value);
-      tag = internal::Node::kTagInt;
+      tag = JsonSchemaTag::kInt;
     } else if constexpr (std::is_floating_point_v<T>) {
       text = std::isfinite(value) ? fmt_floating_point(value)
              : std::isnan(value)  ? ".nan"
              : (value > 0)        ? ".inf"
                                   : "-.inf";
-      tag = internal::Node::kTagFloat;
+      tag = JsonSchemaTag::kFloat;
     } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
       text = EncodeBase64(value);
-      tag = internal::Node::kTagBinary;
+      tag = std::string(internal::Node::kTagBinary);
     } else {
       text = fmt::format("{}", value);
-      tag = internal::Node::kTagStr;
+      tag = JsonSchemaTag::kStr;
     }
     internal::Node scalar = internal::Node::MakeScalar(std::move(text));
-    scalar.SetTag(tag);
+    std::visit(
+        [&scalar](auto&& arg) {
+          using ArgType = std::remove_cvref_t<decltype(arg)>;
+          if constexpr (std::is_same_v<ArgType, std::monostate>) {
+            DRAKE_UNREACHABLE();
+          } else {
+            scalar.SetTag(std::move(arg));
+          }
+        },
+        tag);
     root_.Add(nvp.name(), std::move(scalar));
   }
 
