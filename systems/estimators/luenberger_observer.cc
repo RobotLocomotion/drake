@@ -10,13 +10,12 @@ namespace estimators {
 
 template <typename T>
 LuenbergerObserver<T>::LuenbergerObserver(
-    const System<T>* system, std::unique_ptr<System<T>> owned_system,
+    std::shared_ptr<const System<T>> observed_system,
     const Context<T>& observed_system_context,
     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain)
-    : owned_system_(std::move(owned_system)),
-      observed_system_(owned_system_ ? owned_system_.get() : system),
+    : observed_system_(std::move(observed_system)),
       observer_gain_(observer_gain) {
-  DRAKE_DEMAND(observed_system_ != nullptr);
+  DRAKE_THROW_UNLESS(observed_system_ != nullptr);
   observed_system_->ValidateContext(observed_system_context);
 
   // Note: Could potentially extend this to MIMO systems.
@@ -83,15 +82,9 @@ template <typename T>
 LuenbergerObserver<T>::LuenbergerObserver(
     const System<T>& observed_system, const Context<T>& observed_system_context,
     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain)
-    : LuenbergerObserver(&observed_system, nullptr, observed_system_context,
-                         observer_gain) {}
-
-template <typename T>
-LuenbergerObserver<T>::LuenbergerObserver(
-    std::unique_ptr<System<T>> observed_system,
-    const Context<T>& observed_system_context,
-    const Eigen::Ref<const Eigen::MatrixXd>& observer_gain)
-    : LuenbergerObserver(nullptr, std::move(observed_system),
+    : LuenbergerObserver(std::shared_ptr<const System<T>>(
+                             /* managed object = */ std::shared_ptr<void>{},
+                             /* stored pointer = */ &observed_system),
                          observed_system_context, observer_gain) {}
 
 template <typename T>

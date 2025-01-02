@@ -44,22 +44,27 @@ GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
 
   // Run the test using both constructors.
   for (int i = 0; i < 2; ++i) {
-    auto plant = std::make_unique<systems::LinearSystem<double>>(A, B, C, D);
+    auto plant = std::make_shared<const LinearSystem<double>>(A, B, C, D);
     auto plant_context = plant->CreateDefaultContext();
-    std::unique_ptr<systems::estimators::LuenbergerObserver<double>> observer{
-        nullptr};
+    std::unique_ptr<LuenbergerObserver<double>> observer{nullptr};
     switch (i) {
-      case 0:  // pass system and context by reference.
-        observer =
-            std::make_unique<systems::estimators::LuenbergerObserver<double>>(
-                *plant, *plant_context, L);
+      case 0: {
+        // Construct using the shared_ptr overload. We move the plant into the
+        // constructor so that the constructor argument is the only thing
+        // keeping it alive.
+        observer = std::make_unique<LuenbergerObserver<double>>(
+            std::move(plant), *plant_context, L);
         break;
-      case 1:  // owned system version.
-        observer =
-            std::make_unique<systems::estimators::LuenbergerObserver<double>>(
-                std::move(plant), *plant_context, L);
+      }
+      case 1: {
+        // Construct using the const-ref overload. The local variable `plant`
+        // must remain intact because the LuenbergerObserver still aliases it.
+        observer = std::make_unique<LuenbergerObserver<double>>(
+            *plant, *plant_context, L);
         break;
+      }
     }
+    plant_context.reset();
 
     auto context = observer->CreateDefaultContext();
     auto derivatives = observer->AllocateTimeDerivatives();

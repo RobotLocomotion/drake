@@ -44,19 +44,17 @@ Eigen::MatrixXd SteadyStateKalmanFilter(
 /// Creates a Luenberger observer system using the optimal steady-state Kalman
 /// filter gain matrix, L, as described above.
 ///
-/// @param system A unique_ptr to a LinearSystem describing the system to be
-/// observed.  The new observer will take and maintain ownership of this
-/// pointer.
+/// @param system The LinearSystem describing the system to be observed.
 /// @param W The process noise covariance matrix, E[ww'], of size num_states x
 /// num_states.
 /// @param V The measurement noise covariance matrix, E[vv'], of size num_.
-/// @returns A unique_ptr to the constructed observer system.
+/// @returns The constructed observer system.
 ///
 /// @throws std::exception if V is not positive definite.
 /// @ingroup estimator_systems
 /// @pydrake_mkdoc_identifier{linear_system}
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
-    std::unique_ptr<LinearSystem<double>> system,
+    std::shared_ptr<const LinearSystem<double>> system,
     const Eigen::Ref<const Eigen::MatrixXd>& W,
     const Eigen::Ref<const Eigen::MatrixXd>& V);
 
@@ -70,24 +68,29 @@ std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
 /// then the resulting observer will have the form
 ///   dx̂/dt = f(x̂,u) + L(y - g(x̂,u)),
 /// where x̂ is the estimated state and the gain matrix, L, is designed
-/// as a steady-state Kalman filter using a linearization of f(x,u) at @p
-/// context as described above.
+/// as a steady-state Kalman filter using a linearization of f(x,u) at
+/// `context` as described above.
 ///
-/// @param system A unique_ptr to a System describing the system to be
-/// observed.  The new observer will take and maintain ownership of this
-/// pointer.
-/// @param context A unique_ptr to the context describing a fixed-point of the
-/// system (plus any additional parameters).  The new observer will take and
-/// maintain ownership of this pointer for use in its internal forward
-/// simulation.
+/// @param system The System describing the system to be observed.
+/// @param context The context describing a fixed-point of the system (plus any
+/// additional parameters).
 /// @param W The process noise covariance matrix, E[ww'], of size num_states x
 /// num_states.
 /// @param V The measurement noise covariance matrix, E[vv'], of size num_.
-/// @returns A unique_ptr to the constructed observer system.
+/// @returns The constructed observer system.
 ///
 /// @throws std::exception if V is not positive definite.
 /// @ingroup estimator_systems
 /// @pydrake_mkdoc_identifier{system}
+std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
+    std::shared_ptr<const System<double>> system,
+    const Context<double>& context,
+    const Eigen::Ref<const Eigen::MatrixXd>& W,
+    const Eigen::Ref<const Eigen::MatrixXd>& V);
+
+// TODO(jwnimmer-tri) Add deprecation marker on or about 2025-02-01.
+/// (To be deprecated) An overload that accepts `context` by unique_ptr.
+/// @exclude_from_pydrake_mkdoc{This is not bound.}
 std::unique_ptr<LuenbergerObserver<double>> SteadyStateKalmanFilter(
     std::unique_ptr<System<double>> system,
     std::unique_ptr<Context<double>> context,
