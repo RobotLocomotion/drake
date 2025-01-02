@@ -202,7 +202,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "joint_stiffness_controller_test",
     data = [
-        "//multibody/benchmarks/acrobot:models",
         "@drake_models//:iiwa_description",
     ],
     deps = [

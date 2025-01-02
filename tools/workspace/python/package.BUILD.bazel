@@ -42,14 +42,3 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [":python_headers"],
 )
-
-exports_files(["pdm.lock"])
-
-filegroup(
-    name = "venv_bin",
-    visibility = ["//visibility:public"],
-    data = [
-        "bin",
-        "pdm.lock",
-    ],
-)

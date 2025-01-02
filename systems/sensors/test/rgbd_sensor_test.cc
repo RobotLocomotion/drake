@@ -539,24 +539,6 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
                               X_BD.GetAsMatrix4()));
 }
 
-TEST_F(RgbdSensorTest, DeprecatedMethods) {
-  RgbdSensor sensor(SceneGraph<double>::world_frame_id(),
-                    RigidTransformd::Identity(), depth_camera_);
-  // Just test that deprecated methods can be called and are vaguely
-  // sane. These tests will be deleted when the deprecated methods are removed.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_GT(sensor.color_camera_info().width(), 0);
-  EXPECT_GT(sensor.depth_camera_info().width(), 0);
-  EXPECT_FALSE(sensor.color_render_camera().show_window());
-  EXPECT_GT(sensor.depth_render_camera().depth_range().min_depth(), 0);
-  EXPECT_EQ(sensor.X_PB().translation().size(), 3);
-  EXPECT_EQ(sensor.X_BC().translation().size(), 3);
-  EXPECT_EQ(sensor.X_BD().translation().size(), 3);
-  EXPECT_TRUE(sensor.parent_frame_id().is_valid());
-#pragma GCC diagnostic pop
-}
-
 // We don't explicitly test any of the image outputs (other than their size).
 // The image outputs simply wrap the corresponding QueryObject call; the only
 // calculations they do is to produce the X_PC matrix (which is implicitly

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_camera.h"
@@ -218,40 +217,6 @@ class RgbdSensor final : public LeafSystem<double> {
    RgbdSensorDiscrete and RgbdSensorAsync (where the image time is not always
    the current time). */
   const OutputPort<double>& image_time_output_port() const;
-
-  DRAKE_DEPRECATED(
-      "2025-01-01",
-      "Use default_color_render_camera().core().intrinsics() instead.")
-  const CameraInfo& color_camera_info() const;
-
-  DRAKE_DEPRECATED(
-      "2025-01-01",
-      "Use default_depth_render_camera().core().intrinsics() instead.")
-  const CameraInfo& depth_camera_info() const;
-
-  DRAKE_DEPRECATED("2025-01-01", "Use default_color_render_camera() instead.")
-  const geometry::render::ColorRenderCamera& color_render_camera() const;
-
-  DRAKE_DEPRECATED("2025-01-01", "Use default_depth_render_camera() instead.")
-  const geometry::render::DepthRenderCamera& depth_render_camera() const;
-
-  DRAKE_DEPRECATED("2025-01-01", "Use default_X_PB() instead.")
-  const math::RigidTransformd& X_PB() const;
-
-  DRAKE_DEPRECATED(
-      "2025-01-01",
-      "Use default_color_render_camera().core().sensor_pose_in_camera_body() "
-      "instead.")
-  const math::RigidTransformd& X_BC() const;
-
-  DRAKE_DEPRECATED(
-      "2025-01-01",
-      "Use default_depth_render_camera().core().sensor_pose_in_camera_body() "
-      "instead.")
-  const math::RigidTransformd& X_BD() const;
-
-  DRAKE_DEPRECATED("2025-01-01", "Use default_parent_frame_id() instead.")
-  geometry::FrameId parent_frame_id() const;
 
  private:
   // The calculator methods for the four output ports.

@@ -13,8 +13,7 @@ dynamic libraries to be used as Python modules.
 interpreter as a library into an executable with a C++ main() function.
 
 For part (b) the environment is used in all python rules and tests by default,
-but if a test needs to shell out to a venv binary, the `@python//:venv_bin`
-can be used to put the binaries' path into runfiles.
+because the python toolchain's interpreter is the venv python3 binary.
 
 If the {macos,linux}_interpreter_path being used only mentions the python major
 version (i.e., it is "/path/to/python3" not "/path/to/python3.##") and if the
@@ -125,8 +124,6 @@ def _prepare_venv(repo_ctx, python):
     # Only macOS uses a venv at the moment.
     os_name = repo_ctx.os.name  # "linux" or "mac os x"
     if os_name != "mac os x":
-        execute_or_fail(repo_ctx, ["mkdir", "bin"])
-        repo_ctx.file("pdm.lock", content = "")
         return python
 
     # Locate the lock file and mark it to be monitored for changes.
@@ -155,7 +152,9 @@ def _prepare_venv(repo_ctx, python):
     ])
     repo_ctx.watch(sync)
 
-    return repo_ctx.path("bin/python3")
+    # Read the path to the venv's python3. (This file is created by venv_sync.)
+    venv_python3 = repo_ctx.read("venv_python3.txt")
+    return repo_ctx.path(venv_python3)
 
 def _impl(repo_ctx):
     # Add the BUILD file.
