@@ -8,10 +8,12 @@ def lcm_repository(
         repository = "lcm-proj/lcm",
         upgrade_advice = """
         When updating, the version numbers within the two lcm-*.cmake files in
-        this directory must also be updated to match the new version.
+        this directory must also be updated to match the new version. Moreover,
+        lcm needs its own pull request separate from the rest of the monthly 
+        upgrades.
         """,
-        commit = "v1.5.0",
-        sha256 = "590a7d996daa3d33a7f3094e4054c35799a3d7a4780d732be78971323e730eeb",  # noqa
+        commit = "v1.5.1",
+        sha256 = "40ba0b7fb7c9ad06d05e06b4787d743cf11be30eb4f1a03abf4a92641c5b1203",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
