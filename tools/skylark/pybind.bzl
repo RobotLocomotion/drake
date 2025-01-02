@@ -1,5 +1,4 @@
 load("@cc//:compiler.bzl", "COMPILER_ID")
-load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
 load("//tools/install:install.bzl", "install")
 load("//tools/skylark:cc.bzl", "CcInfo", "cc_binary")
 load("//tools/skylark:drake_cc.bzl", "drake_cc_binary", "drake_cc_googletest")
@@ -57,7 +56,7 @@ def pybind_py_library(
 
     # TODO(eric.cousineau): See if we can keep non-`*.so` target name, but
     # output a *.so, so that the target name is similar to what is provided.
-    cc_so_target = cc_so_name + PYTHON_EXTENSION_SUFFIX
+    cc_so_target = cc_so_name + ".so"
 
     # Add C++ shared library.
     cc_binary_rule(
@@ -232,7 +231,7 @@ def get_pybind_package_info(base_package, sub_package = None):
     package_info = _get_package_info(base_package, sub_package)
     return struct(
         py_imports = [package_info.base_path_rel],
-        py_dest = "@PYTHON_SITE_PACKAGES@/{}".format(
+        py_dest = "lib/python@PYTHON_VERSION@/site-packages/{}".format(
             package_info.sub_path_rel,
         ),
     )

@@ -11,7 +11,6 @@ load(
     "generate_export_header",
 )
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")
-load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")
 
 licenses([
     "notice",  # BSD-3-Clause
@@ -180,7 +179,7 @@ cc_binary(
 )
 
 cc_binary(
-    name = "_lcm" + PYTHON_EXTENSION_SUFFIX,
+    name = "_lcm.so",
     srcs = [
         "lcm-python/module.c",
         "lcm-python/pyeventlog.c",
@@ -230,20 +229,19 @@ generate_file(
     content = """
 import ctypes
 import os.path
-ctypes.cdll.LoadLibrary(os.path.realpath(
-     __path__[0] + '/_lcm{extension_suffix}'))
+ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/_lcm.so'))
 _filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
 with open(_filename) as f:
     _code = compile(f.read(), _filename, 'exec')
     exec(_code)
-""".format(extension_suffix = PYTHON_EXTENSION_SUFFIX),
+""",
     visibility = ["//visibility:private"],
 )
 
 py_library(
     name = "lcm-python-upstream",
     srcs = ["lcm-python/lcm/__init__.py"],  # Actual code from upstream.
-    data = [":_lcm" + PYTHON_EXTENSION_SUFFIX],
+    data = [":_lcm.so"],
     visibility = ["//visibility:private"],
 )
 
@@ -305,10 +303,10 @@ install_files(
 install(
     name = "install_python",
     targets = [
-        ":_lcm" + PYTHON_EXTENSION_SUFFIX,
+        ":_lcm.so",
         ":lcm-python-upstream",
     ],
-    library_dest = "@PYTHON_SITE_PACKAGES@/lcm",
+    library_dest = "lib/python@PYTHON_VERSION@/site-packages/lcm",
     py_strip_prefix = ["lcm-python"],
 )
 
