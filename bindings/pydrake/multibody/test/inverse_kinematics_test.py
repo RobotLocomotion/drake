@@ -87,7 +87,7 @@ class TestInverseKinematics(unittest.TestCase):
             q=self.q,
             prog=self.prog,
             plant_context=self.ik_two_bodies.context())
-        self.assertEqual(len(bindings), 2)
+        self.assertEqual(len(bindings), 3)
 
     def test_AddPositionConstraint1(self):
         p_BQ = np.array([0.2, 0.3, 0.5])
