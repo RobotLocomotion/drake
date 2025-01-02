@@ -344,7 +344,7 @@ class YamlReadArchive final {
   // Checks if the given yaml type `tag` matches the C++ type `T`.
   template <typename T>
   static bool IsTagMatch(std::string_view tag) {
-    // Check against the JSON schema tags.
+    // Check against the tags Drake supports (e.g., JSON, binary, Drake's, etc.)
     if constexpr (std::is_same_v<T, bool>) {
       return tag == internal::Node::kTagBool;
     } else if constexpr (std::is_integral_v<T>) {
@@ -356,7 +356,7 @@ class YamlReadArchive final {
     } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
       return tag == internal::Node::kTagBinary;
     } else {
-      // Not a JSON schema. Check the drake-specific tag.
+      // Not a Drake-supported YAML tag. Check the drake-specific tag.
       return IsTagMatch(drake::NiceTypeName::GetFromStorage<T>(), tag);
     }
   }

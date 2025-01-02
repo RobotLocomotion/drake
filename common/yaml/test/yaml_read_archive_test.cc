@@ -310,7 +310,7 @@ doc:
   some_uint64: 105
   some_string: foo
   some_path: /alternative/path
-  some_bytes: !!binary ChQe
+  some_bytes: !!binary BQYH
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
@@ -322,7 +322,7 @@ doc:
   EXPECT_EQ(x.some_uint64, 105);
   EXPECT_EQ(x.some_string, "foo");
   EXPECT_EQ(x.some_path, "/alternative/path");
-  EXPECT_EQ(x.some_bytes, StringToByteVector("\n\x14\x1e"));
+  EXPECT_EQ(x.some_bytes, StringToByteVector("\x05\x06\x07"));
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {

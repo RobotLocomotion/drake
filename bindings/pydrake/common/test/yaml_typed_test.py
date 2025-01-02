@@ -387,7 +387,7 @@ class TestYamlTypedRead(unittest.TestCase,
         """)
         x = yaml_load_typed(schema=AllScalarsStruct, data=data, **options)
         self.assertEqual(x.some_bool, True)
-        self.assertEqual(x.some_bytes, b'\n\x14\x1e')
+        self.assertEqual(x.some_bytes, b'\x02\x03\x04')
         self.assertEqual(x.some_float, 101.0)
         self.assertEqual(x.some_int, 102)
         self.assertEqual(x.some_path, Path("/alternative/path"))
@@ -925,7 +925,7 @@ class TestYamlTypedWrite(unittest.TestCase):
         x.some_int = 102
         x.some_str = "foo"
         x.some_path = Path("/test/path")
-        x.some_bytes = b'\n\x14\x1e'
+        x.some_bytes = b'\x02\x03\x04'
         actual_doc = yaml_dump_typed(x)
         expected_doc = dedent("""\
         some_bool: true
