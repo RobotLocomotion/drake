@@ -166,6 +166,12 @@ TEST_F(SpringTester, Power) {
               kTolerance);
 }
 
+TEST_F(SpringTester, DynamicCast) {
+  const ForceElement<double>* base = spring_;
+  EXPECT_EQ(internal::DynamicCastForceElement<RevoluteSpring>::cast(base),
+            spring_);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

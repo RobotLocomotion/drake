@@ -465,6 +465,16 @@ class RpyFloatingJoint final : public Joint<T> {
 template <typename T>
 const char RpyFloatingJoint<T>::kTypeName[] = "rpy_floating";
 
+namespace internal {
+
+// Specialized to provide a non-inline definition.
+template <>
+struct DynamicCastJoint<RpyFloatingJoint> {
+  template <typename T>
+  static const RpyFloatingJoint<T>* cast(const Joint<T>* element);
+};
+
+}  // namespace internal
 }  // namespace multibody
 }  // namespace drake
 
