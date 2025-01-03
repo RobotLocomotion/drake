@@ -95,8 +95,6 @@ constexpr std::string_view kItWorks{""};
 constexpr std::string_view kSkipMe{"skip me"};
 namespace KnownErrors {
 constexpr std::string_view kNonUniformScale{".*non-uniform scale.*"};  // #22046
-constexpr std::string_view kMoreThanOneOrientation{
-    ".*more than one orientation.*"};
 constexpr std::string_view kCapsuleSize{".*size attribute for capsule geom.*"};
 }  // namespace KnownErrors
 
@@ -137,8 +135,8 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"agility_cassie/scene", KnownErrors::kNonUniformScale},
     {"aloha/aloha", kItWorks},
     {"aloha/scene", kItWorks},
-    {"anybotics_anymal_b/anymal_b", KnownErrors::kMoreThanOneOrientation},
-    {"anybotics_anymal_b/scene", KnownErrors::kMoreThanOneOrientation},
+    {"anybotics_anymal_b/anymal_b", kItWorks},
+    {"anybotics_anymal_b/scene", kItWorks},
     {"anybotics_anymal_c/anymal_c", kItWorks},
     {"anybotics_anymal_c/anymal_c_mjx", kItWorks},
     {"anybotics_anymal_c/scene", kItWorks},
