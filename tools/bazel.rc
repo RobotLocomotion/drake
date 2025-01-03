@@ -12,6 +12,9 @@ build -c opt
 build --strip=never
 build --strict_system_includes
 
+# Use the host Python interpreter by default.
+build --extra_toolchains=@python//:all
+
 # Use C++20 by default.
 build --cxxopt=-std=c++20
 build --host_cxxopt=-std=c++20

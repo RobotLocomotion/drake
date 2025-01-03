@@ -10,6 +10,9 @@ startup --output_base="@BAZEL_OUTPUT_BASE@"
 # Environment variables to be used in repository rules (if any).
 common @BAZEL_REPO_ENV@
 
+# Use the Python interpreter from our cmake/WORKSPACE.bzlmod.in.
+build --extra_toolchains=@python//:all
+
 # Disable the "convenience symlinks" intended for Bazel users; they only add
 # confusion for the CMake use case.
 build --symlink_prefix=/
