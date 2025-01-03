@@ -294,6 +294,21 @@ GTEST_TEST(VPolytopeTest, NonconvexMesh) {
   EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value()));
 }
 
+GTEST_TEST(VPolytopeTest, ToShapeConvex) {
+  Eigen::Matrix<double, 3, 4> vertices;
+  vertices.col(0) << 0, 0, 0;
+  vertices.col(1) << 1, 0, 0;
+  vertices.col(2) << 0, 1, 0;
+  vertices.col(3) << 0, 0, 1;
+
+  VPolytope V(vertices);
+  const Convex convex = V.ToShapeConvex();
+
+  int num_vertices_of_convex = convex.GetConvexHull().num_vertices();
+
+  EXPECT_EQ(vertices.cols(), num_vertices_of_convex);
+}
+
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {
   VPolytope V = VPolytope::MakeUnitBox(6);
   EXPECT_EQ(V.ambient_dimension(), 6);

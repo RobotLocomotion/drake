@@ -492,6 +492,11 @@ void VPolytope::WriteObj(const std::filesystem::path& filename) const {
   file.close();
 }
 
+Convex VPolytope::ToShapeConvex() const {
+  DRAKE_THROW_UNLESS(ambient_dimension() == 3);
+  return Convex(vertices_);
+}
+
 std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
   return std::make_unique<VPolytope>(*this);
 }

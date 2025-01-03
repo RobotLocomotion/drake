@@ -286,6 +286,24 @@ class Convex final : public Shape {
    @param scale    An optional scale to coordinates. */
   explicit Convex(MeshSource source, double scale = 1.0);
 
+  /** Constructs a convex shape specification from the given `vertices`.
+
+   The convex hull is computed from the vertices provided. The vertices are
+   expected to be in the canonical frame of the shape. Optionally uniformly
+   scaled by the given scale factor.
+
+   @param vertices      The vertices of the convex hull.
+   @param filename_hint A label for the file. The label is used for warning and
+                        error messages. Otherwise, the label has no other
+                        functional purpose. It need not be a valid file name,
+                        but must consist of a single line (no newlines).
+   @param scale         An optional scale to coordinates.
+
+   @throws std::exception       if filename_hint contains newlines.
+   @throws std::exception       if |scale| < 1e-8. */
+  explicit Convex(const Eigen::Matrix3X<double>& vertices,
+                  const std::string& filename_hint = {}, double scale = 1.0);
+
   ~Convex() final;
 
   /** Returns the source for this specification's mesh data. When working with
