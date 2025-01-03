@@ -4,6 +4,7 @@
 /* clang-format on */
 
 #include "drake/common/default_scalars.h"
+#include "drake/multibody/tree/curvilinear_mobilizer.h"
 #include "drake/multibody/tree/planar_mobilizer.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
@@ -139,6 +140,7 @@ DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6)
 
 // Macro used to explicitly instantiate implementations for every mobilizer.
 #define EXPLICITLY_INSTANTIATE_IMPLS(T)                        \
+  template class BodyNodeImpl<T, CurvilinearMobilizer>;        \
   template class BodyNodeImpl<T, PlanarMobilizer>;             \
   template class BodyNodeImpl<T, PrismaticMobilizer>;          \
   template class BodyNodeImpl<T, QuaternionFloatingMobilizer>; \
