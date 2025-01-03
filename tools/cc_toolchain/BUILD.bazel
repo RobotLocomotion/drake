@@ -1,7 +1,25 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "int_flag", "string_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:sh.bzl", "sh_binary")
 
 package(default_visibility = ["//visibility:public"])
+
+# This cc_toolchain package provides labels that can be used by `select()`
+# statements in our build rules to tweak settings based on which C++ compiler
+# is being used. For example uses, see drake/tools/skylark/drake_cc.bzl.
+
+# When this is set to "error", a Drake build will promote some warnings of our
+# choice to errors. See drake/tools/cc_toolchain/bazel.rc for details. This is
+# intended for internal use only, not for users to configure.
+string_flag(
+    name = "error_severity",
+    build_setting_default = "warning",
+    values = [
+        "warning",
+        "error",
+    ],
+)
 
 config_setting(
     name = "apple",
@@ -9,35 +27,117 @@ config_setting(
 )
 
 config_setting(
-    name = "debug",
-    values = {"compilation_mode": "dbg"},
-)
-
-config_setting(
     name = "linux",
     constraint_values = ["@platforms//os:linux"],
 )
 
-# Capture some bazel cc_toolchain variables into a bash environment file. These
-# values reflect the compiler and flags that Bazel's compilation actions will
-# use. Note that this might refer to Bazel's compiler wrapper, `cc_wrapper.sh`,
-# and thus may only indirectly identify the actual compiler in use. Note also
-# that `$(CC)` may refer to the canonicalized location of the compiler; for
-# example, on Ubuntu, Clang may be `/usr/lib/llvm-<version>/bin/clang`,
-# canonicalized from `/usr/bin/clang-<version>`.
-genrule(
-    name = "capture_cc",
-    outs = ["capture_cc.env"],
-    cmd = "cat <<EOF > '$@'\n" +
-          "BAZEL_CC=\"$(CC)\"\n" +
-          "BAZEL_CC_FLAGS=\"$(CC_FLAGS)\"\n" +
-          "EOF",
-    toolchains = [
-        "@bazel_tools//tools/cpp:cc_flags",
-        "@bazel_tools//tools/cpp:current_cc_toolchain",
-    ],
-    visibility = ["//common:__pkg__"],
+config_setting(
+    name = "error_severity_warning",
+    flag_values = {":error_severity": "warning"},
 )
+
+config_setting(
+    name = "error_severity_error",
+    flag_values = {":error_severity": "error"},
+)
+
+selects.config_setting_group(
+    name = "apple_clang_with_warnings",
+    match_all = [
+        ":apple",
+        "@rules_cc//cc/compiler:clang",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "apple_clang_with_errors",
+    match_all = [
+        ":apple",
+        "@rules_cc//cc/compiler:clang",
+        ":error_severity_error",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gcc_with_warnings",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gcc_with_errors",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":error_severity_error",
+    ],
+)
+
+selects.config_setting_group(
+    name = "linux_clang_with_warnings",
+    match_all = [
+        ":linux",
+        "@rules_cc//cc/compiler:clang",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "linux_clang_with_errors",
+    match_all = [
+        ":linux",
+        "@rules_cc//cc/compiler:clang",
+        ":error_severity_error",
+    ],
+)
+
+config_setting(
+    name = "debug",
+    values = {"compilation_mode": "dbg"},
+)
+
+# In our developer builds and CMake installs, we use this as an optional hint
+# for configuring compiler warnings. It's not strictly necessary to set this,
+# but doing so might reduce warning spam during the build.
+#
+# This is intended for internal use only, not for users to configure.
+#
+# TODO(jwnimmer-tri) Ideally, rules_cc would provide this as a toolchain
+# attribute that we could query, but it doesn't seem to exist there yet.
+int_flag(
+    name = "compiler_major",
+    build_setting_default = 0,
+)
+
+config_setting(
+    name = "compiler_major_13",
+    flag_values = {":compiler_major": "13"},
+)
+
+selects.config_setting_group(
+    name = "gcc_13_with_warnings",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":compiler_major_13",
+        ":error_severity_warning",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gcc_13_with_errors",
+    match_all = [
+        "@rules_cc//cc/compiler:gcc",
+        ":compiler_major_13",
+        ":error_severity_error",
+    ],
+)
+
+# *****************************************************************************
+# The following sh_binary (and its prerequisite genrule) are used by drake-ci's
+# CMake setup logic to sniff out Drake's selected compiler. They are not used
+# by Drake's normal Bazel nor CMake builds.
 
 # Capture bazel's action environment variables into a bash environment file.
 # These values reflect ONLY the command-line (or rcfile) `--action_env`
@@ -53,7 +153,7 @@ genrule(
           "CC=\"$${CC:-}\"\n" +
           "CXX=\"$${CXX:-}\"\n" +
           "EOF",
-    visibility = ["//common:__pkg__"],
+    visibility = ["//visibility:private"],
 )
 
 # Utility script to indicate which compiler is selected by use of
@@ -65,9 +165,8 @@ sh_binary(
     name = "print_compiler_config",
     srcs = ["print_compiler_config.sh"],
     args = ["$(location :capture_compiler_config.env)"],
-    data = [
-        ":capture_compiler_config.env",
-    ],
+    data = [":capture_compiler_config.env"],
+    visibility = ["//visibility:private"],
 )
 
 add_lint_tests()
