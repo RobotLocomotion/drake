@@ -131,6 +131,40 @@ class DrivenMeshData {
   std::unordered_map<GeometryId, std::vector<RenderMesh>> render_meshes_;
 };
 
+// A wrapper around a shared_ptr<T> where copying calls T::Clone() instead of
+// bumping the ref_count with a new alias.
+template <typename T>
+class DeepCopySharedPtr {
+ public:
+  DeepCopySharedPtr() = default;
+  explicit DeepCopySharedPtr(std::shared_ptr<T> value)
+      : value_(std::move(value)) {}
+  DeepCopySharedPtr(const DeepCopySharedPtr& other) {
+    if (other.value_ != nullptr) {
+      const T& other_value = *other.value_;
+      // Use a static_cast<> to obtain a function pointer for Clone, in case it
+      // is templated on the return type.
+      auto Clone = static_cast<std::shared_ptr<T> (T::*)() const>(&T::Clone);
+      value_ = (other_value.*Clone)();
+    }
+  }
+  DeepCopySharedPtr& operator=(const DeepCopySharedPtr& other) {
+    DeepCopySharedPtr other_copy(other);
+    *this = std::move(other_copy);
+  }
+  DeepCopySharedPtr(DeepCopySharedPtr&& other) noexcept {
+    std::swap(value_, other.value_);
+  }
+  DeepCopySharedPtr& operator=(DeepCopySharedPtr&& other) noexcept {
+    std::swap(value_, other.value_);
+  }
+  const T* get() const { return value_.get(); }
+  T* get_mutable() const { return value_.get(); }
+
+ private:
+  std::shared_ptr<T> value_;
+};
+
 }  // namespace internal
 #endif
 
@@ -628,7 +662,7 @@ class GeometryState {
 
   /** Implementation of SceneGraph::AddRenderer().  */
   void AddRenderer(std::string name,
-                   std::unique_ptr<render::RenderEngine> renderer);
+                   std::shared_ptr<render::RenderEngine> renderer);
 
   /** Implementation of SceneGraph::RemoveRenderer(). */
   void RemoveRenderer(const std::string& name);
@@ -1067,8 +1101,10 @@ class GeometryState {
   // and copy it.
   copyable_unique_ptr<internal::ProximityEngine<T>> geometry_engine_;
 
-  // The collection of all registered renderers.
-  std::unordered_map<std::string, copyable_unique_ptr<render::RenderEngine>>
+  // The collection of all registered renderers. When copying a GeometryState,
+  // we must ensure that it's a deep copy via DeepCopySharedPtr.
+  std::unordered_map<std::string,
+                     internal::DeepCopySharedPtr<render::RenderEngine>>
       render_engines_;
 
   // The version for this geometry data.
