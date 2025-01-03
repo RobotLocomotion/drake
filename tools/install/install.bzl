@@ -1,4 +1,3 @@
-load("@python//:version.bzl", "PYTHON_VERSION")
 load("@rules_license//rules:providers.bzl", "LicenseInfo")
 load("//tools/skylark:cc.bzl", "CcInfo")
 load("//tools/skylark:drake_java.bzl", "MainClassInfo")
@@ -23,17 +22,19 @@ InstalledTestInfo = provider()
 def _workspace(ctx):
     """Compute name of current workspace."""
 
-    # Check for override
+    # Check for override.
     if hasattr(ctx.attr, "workspace"):
         if len(ctx.attr.workspace):
             return ctx.attr.workspace
 
-    # Check for meaningful workspace_root
+    # Check for meaningful workspace_root (using the apparent repository name
+    # for brevity, not the canonical repository name with  "+" symbols).
     workspace = ctx.label.workspace_root.split("/")[-1]
+    workspace = workspace.split("+")[-1]
     if len(workspace):
         return workspace
 
-    # If workspace_root is empty, assume we are the root workspace
+    # If workspace_root is empty, assume we are the root workspace.
     return ctx.workspace_name
 
 def _rename(file_dest, rename):
@@ -47,6 +48,16 @@ def _depset_to_list(x):
     """Helper function to convert depset to list."""
     iter_list = x.to_list() if type(x) == "depset" else x
     return iter_list
+
+#------------------------------------------------------------------------------
+
+_PY_CC_TOOLCHAIN_TYPE = "@rules_python//python/cc:toolchain_type"
+
+def _python_version(ctx):
+    """Returns a string a containing the major.minor version number of the
+    current Python toolchain."""
+    py_cc_toolchain = ctx.toolchains[_PY_CC_TOOLCHAIN_TYPE].py_cc_toolchain
+    return py_cc_toolchain.python_version
 
 #------------------------------------------------------------------------------
 def _output_path(ctx, input_file, strip_prefix = [], ignore_errors = False):
@@ -123,7 +134,7 @@ def _install_action(
     if "@WORKSPACE@" in dest:
         dest = dest.replace("@WORKSPACE@", _workspace(ctx))
     if "@PYTHON_VERSION@" in dest:
-        dest = dest.replace("@PYTHON_VERSION@", PYTHON_VERSION)
+        dest = dest.replace("@PYTHON_VERSION@", _python_version(ctx))
 
     if type(strip_prefixes) == "dict":
         strip_prefix = strip_prefixes.get(
@@ -515,11 +526,13 @@ def _install_impl(ctx):
     )
 
     # Generate install script.
+    installer_binary = ctx.attr._installer[DefaultInfo]
     ctx.actions.write(
         output = ctx.outputs.executable,
         content = "\n".join([
             "#!/bin/bash",
-            "tools/install/installer --actions '{}' \"$@\"".format(
+            "{} --actions '{}' \"$@\"".format(
+                installer_binary.files.to_list()[0].short_path,
                 actions_file.short_path,
             ),
         ]),
@@ -543,7 +556,7 @@ def _install_impl(ctx):
         )
 
     # Return actions.
-    installer_runfiles = ctx.attr._installer[DefaultInfo].default_runfiles
+    installer_runfiles = installer_binary.default_runfiles
     action_runfiles = ctx.runfiles(files = (
         [a.src for a in actions if not hasattr(a, "main_class")] +
         [i.src for i in installed_tests] +
@@ -608,6 +621,10 @@ _install_rule = rule(
     },
     executable = True,
     implementation = _install_impl,
+    toolchains = [
+        # Used to discern the major.minor site-packages path to install into.
+        _PY_CC_TOOLCHAIN_TYPE,
+    ],
 )
 
 def install(tags = [], **kwargs):
