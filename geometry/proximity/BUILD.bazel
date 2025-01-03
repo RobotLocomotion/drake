@@ -99,6 +99,7 @@ drake_cc_library(
         "aabb.h",
         "obb.h",
     ],
+    always_optimize = True,
     deps = [
         ":boxes_overlap",
         ":posed_half_space",
