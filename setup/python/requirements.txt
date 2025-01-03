@@ -1,0 +1,12 @@
+# This file describes does NOT describe the requirements for Drake itself, but
+# for setting up the Python virtual environment that Drake will manage. It is
+# used by Drake's @python, and also when preparing a virtual environment to
+# support a Drake installation.
+#
+# Specific version pins in this file are updated automatically by
+# tools/workspace/python/venv_upgrade.
+
+# TODO(jeremy.nimmer) Ideally, we also would pin all of the dependencies of
+# PDM here, but it's not obvious to me how to do that in a way which is easy to
+# upgrade/re-pin over time.
+pdm==2.22.0

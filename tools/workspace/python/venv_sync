@@ -53,18 +53,17 @@ fi
 # Place the venv(s) in a sibling directory to the output base. That should be a
 # suitable disk location for build artifacts, but without polluting the actual
 # output base that Bazel owns.
+readonly drake_root="$(cd "$(dirname $0)/../../.." && pwd)"
 readonly bazel_output_base="$(cd "${repository}/../.." && pwd)"
 readonly drake_python="${bazel_output_base}.drake_python"
 mkdir -p "${drake_python}"
 
 # Install PDM into a virtual environment. We segregate PDM from the environment
 # it is managing, so that changes to the managed environment cannot break PDM.
+readonly setup="${drake_root}/setup/python"
 readonly venv_pdm="${drake_python}/venv.pdm"
 mkvenv "${venv_pdm}"
-# TODO(jeremy.nimmer) Ideally, we also would pin all of the dependencies of
-# PDM here, but it's not obvious to me how to do that in a way which is easy to
-# upgrade/re-pin over time.
-"${venv_pdm}/bin/pip" install -U pdm==2.22.0
+"${venv_pdm}/bin/pip" install -U -r "${setup}/requirements.txt"
 
 # Don't nag about new versions of PDM; we'll update the above pin when we want
 # to use something newer, and otherwise want to use the pinned version, so
@@ -72,12 +71,15 @@ mkvenv "${venv_pdm}"
 export PDM_CHECK_UPDATE=0
 
 # Prepare the PDM "project directory".
-readonly drake_root="$(cd "$(dirname $0)/../../.." && pwd)"
-readonly setup="${drake_root}/setup/python"
 readonly project="${drake_python}/project"
 mkdir -p "${project}"
 ln -nsf "${setup}/pyproject.toml" "${project}/pyproject.toml"
 ln -nsf "${setup}/pdm.lock" "${project}/pdm.lock"
+
+# Don't nag about new versions of PDM; venv_upgrade will check for those.
+# Aside from that, we want to use the pinned version, so being informed about
+# newer versions is just noise.
+export PDM_CHECK_UPDATE=0
 
 # Prepare the venv that will hold Drake's requirements.
 readonly venv_drake="${drake_python}/venv.drake"

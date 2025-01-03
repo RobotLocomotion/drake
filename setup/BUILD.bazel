@@ -13,6 +13,7 @@ exports_files([
     "mac/source_distribution/Brewfile-maintainer-only",
     "python/pdm.lock",
     "python/pyproject.toml",
+    "python/requirements.txt",
     "ubuntu/binary_distribution/packages-jammy.txt",
     "ubuntu/source_distribution/packages-jammy.txt",
     "ubuntu/source_distribution/packages-jammy-clang.txt",
