@@ -390,16 +390,12 @@ def add_default_toolchains(
           set this to True if you are using bzlmod.
     """
     if bzlmod:
-        # All toolchains are in MODULE.bazel already.
+        # The cc toolchain is in MODULE.bazel already.
+        # The py toolchain is in tools/bazel.rc already.
         return
 
     if "py" not in excludes:
-        native.register_toolchains(
-            "//tools/py_toolchain:toolchain",
-        )
-        native.register_toolchains(
-            "//tools/py_toolchain:exec_tools_toolchain",
-        )
+        native.register_toolchains("@python//:all")
     if "rust" not in excludes:
         register_rust_toolchains()
 
