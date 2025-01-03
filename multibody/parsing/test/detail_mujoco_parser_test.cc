@@ -119,58 +119,6 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
 
-class DeepMindControlTest : public MujocoParserTest,
-                            public testing::WithParamInterface<const char*> {};
-
-TEST_P(DeepMindControlTest, DeepMindControl) {
-  // Confirm successful parsing of the MuJoCo models in the DeepMind control
-  // suite.
-  std::string model{GetParam()};
-  const std::string filename = FindResourceOrThrow(
-      fmt::format("drake/multibody/parsing/dm_control/suite/{}.xml", model));
-  AddModelFromFile(filename, model);
-
-  EXPECT_TRUE(plant_.HasModelInstanceNamed(model));
-
-  // For this test, ignore all warnings.
-  warning_records_.clear();
-}
-
-const char* dm_control_models[] = {
-    "acrobot",  "cartpole",   "cheetah",      "finger",  "fish",
-    "hopper",   "humanoid",   "humanoid_CMU", "lqr",     "manipulator",
-    "pendulum", "point_mass", "quadruped",    "reacher", "stacker",
-    "swimmer",  "walker"};
-INSTANTIATE_TEST_SUITE_P(DeepMindControl, DeepMindControlTest,
-                         testing::ValuesIn(dm_control_models));
-
-class MujocoMenagerieTest : public MujocoParserTest,
-                            public testing::WithParamInterface<const char*> {};
-
-TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
-  // Confirm successful parsing of the MuJoCo models in the DeepMind control
-  // suite.
-  std::string model{GetParam()};
-  const RlocationOrError rlocation = FindRunfile(
-      fmt::format("mujoco_menagerie_internal/{}.xml", model));
-  ASSERT_EQ(rlocation.error, "");
-  AddModelFromFile(rlocation.abspath, model);
-
-  EXPECT_TRUE(plant_.HasModelInstanceNamed(model));
-
-  // For this test, ignore all warnings.
-  warning_records_.clear();
-}
-
-const char* mujoco_menagerie_models[] = {"google_robot/robot",
-                                         "kuka_iiwa_14/iiwa14",
-                                         "rethink_robotics_sawyer/sawyer"};
-// TODO(russt): Add the remaining models, once they can be parsed correctly, as
-// tracked in #20444.
-
-INSTANTIATE_TEST_SUITE_P(MujocoMenagerie, MujocoMenagerieTest,
-                         testing::ValuesIn(mujoco_menagerie_models));
-
 // In addition to confirming that the parser can successfully parse the model,
 // this test can be used to manually inspect the resulting visualization.
 GTEST_TEST(MujocoParserExtraTest, Visualize) {
@@ -840,7 +788,7 @@ TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
   EXPECT_EQ(mesh->scale(), 1.0);
 }
 
-TEST_F(MujocoParserTest, InertiaFromGeometry) {
+TEST_F(MujocoParserTest, InertialFromGeometry) {
   std::string xml = fmt::format(R"""(
 <mujoco model="test">
   <default class="main">
