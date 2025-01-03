@@ -4,7 +4,6 @@ load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
-load("@python//:version.bzl", "PYTHON_VERSION")
 load(
     "//third_party:com_github_bazelbuild_rules_cc/whole_archive.bzl",
     "cc_whole_archive_library",
@@ -28,6 +27,13 @@ load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load(":header_lint.bzl", "cc_check_allowed_headers")
 
 package(default_visibility = ["//visibility:private"])
+
+genrule(
+    name = "python_version_cmake",
+    srcs = ["//tools/workspace/python:python_version.txt"],
+    outs = ["python_version.cmake"],
+    cmd = """echo "set(PYTHON_VERSION \\"$$(cat $<)\\")" > $@""",
+)
 
 genrule(
     name = "stamp_version",
@@ -57,9 +63,9 @@ cmake_configure_file(
     src = "drake-config.cmake.in",
     out = "drake-config.cmake",
     atonly = True,
-    cmakelists = ["stamp_version.cmake"],
-    defines = [
-        "PYTHON_VERSION=" + PYTHON_VERSION,
+    cmakelists = [
+        ":python_version.cmake",
+        ":stamp_version.cmake",
     ],
 )
 
