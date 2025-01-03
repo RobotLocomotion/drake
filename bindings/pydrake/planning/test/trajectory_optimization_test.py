@@ -247,6 +247,9 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                                   lb=np.zeros((4, 1)),
                                                   ub=np.zeros((4, 1)))
         trajopt.AddVelocityConstraintAtNormalizedTime(velocity_constraint, s=0)
+        trajopt.AddVelocityLinearConstraintAtNormalizedTime(
+            constraint=mp.LinearConstraint(
+                np.eye(2), lb=np.zeros((2,)), ub=np.ones((2,))), s=0)
         trajopt.AddPathAccelerationConstraint(lb=b, ub=b, s=0)
         trajopt.AddDurationConstraint(1, 1)
         trajopt.AddPositionBounds(lb=b, ub=b)

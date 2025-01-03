@@ -142,6 +142,20 @@ class KinematicTrajectoryOptimization {
   solvers::Binding<solvers::Constraint> AddVelocityConstraintAtNormalizedTime(
       const std::shared_ptr<solvers::Constraint>& constraint, double s);
 
+  /** Adds a linear constraint on trajectory velocity `q̇(t)`, evaluated at
+  `s`. The constraint will be evaluated as if it is bound with variables
+  corresponding to `q̇(T*s)` (as opposed to [q(T*s), q̇(T*s)] in
+  AddVelocityConstraintAtNormalizedTime()).
+
+  This method should be compared with AddPathVelocityConstraint, which only
+  constrains ṙ(s) because it does not reason about the time scaling, T.
+
+  @pre constraint.num_vars() == num_positions()
+  @pre 0 <= `s` <= 1. */
+  solvers::Binding<solvers::LinearConstraint>
+  AddVelocityLinearConstraintAtNormalizedTime(
+      const std::shared_ptr<solvers::LinearConstraint>& constraint, double s);
+
   /** Adds a linear constraint on the second derivative of the path,
   `lb` ≤ r̈(s) ≤ `ub`. Note that this does NOT directly constrain q̈(t).
   @pre 0 <= `s` <= 1. */

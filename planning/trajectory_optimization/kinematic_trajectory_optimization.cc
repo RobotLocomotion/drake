@@ -22,6 +22,8 @@ namespace drake {
 namespace planning {
 namespace trajectory_optimization {
 
+const double kInf = std::numeric_limits<double>::infinity();
+
 using math::BsplineBasis;
 using math::EigenToStdVector;
 using math::ExtractValue;
@@ -205,8 +207,8 @@ KinematicTrajectoryOptimization::KinematicTrajectoryOptimization(
       num_positions_, num_control_points_, "control_point");
   duration_ = prog_.NewContinuousVariables(1, "duration")[0];
   // duration >= 0.
-  auto duration_bbox_binding = prog_.AddBoundingBoxConstraint(
-      0, std::numeric_limits<double>::infinity(), duration_);
+  auto duration_bbox_binding =
+      prog_.AddBoundingBoxConstraint(0, kInf, duration_);
   duration_bbox_binding.evaluator()->set_description(
       "positive duration constraint");
 
@@ -328,6 +330,75 @@ KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
       constraint, std::move(M_pos), std::move(M_vel));
   auto binding = prog_.AddConstraint(wrapped_constraint, duration_and_vars);
   binding.evaluator()->set_description("velocity constraint");
+  return binding;
+}
+
+Binding<LinearConstraint>
+KinematicTrajectoryOptimization::AddVelocityLinearConstraintAtNormalizedTime(
+    const std::shared_ptr<solvers::LinearConstraint>& constraint, double s) {
+  DRAKE_DEMAND(constraint->num_vars() == num_positions_);
+  DRAKE_DEMAND(0 <= s && s <= 1);
+  const VectorX<Expression> rdot = sym_rdot_->value(s);
+  // `constraint` is
+  // lb <= A * qdot <= ub
+  // we have qdot = rdot / T
+  // So the linear constraint we impose is
+  // lb <= A * rdot/T <= ub
+  // Namely
+  // A * rdot - lb * T >= 0
+  // A * rdot - ub * T <= 0
+  auto [vars_vel, _] = symbolic::ExtractVariablesFromExpression(rdot);
+  // TODO(hongkai.dai) call AsLinearInControlPoints in bsplinebasis when it is
+  // ready to compute M_vel.
+  Eigen::MatrixXd M_vel(num_positions(), vars_vel.size());
+  symbolic::DecomposeLinearExpressions(rdot, vars_vel, &M_vel);
+  // The constraint is
+  // A * M_vel * vars_vel - lb * T >= 0
+  // A * M_vel * vars_vel - ub * T <= 0
+  // We call this new constraint as
+  // lb_new <= A_new * vars_all <= ub_new
+  // where vars_all = [vars_vel, T]
+  Eigen::MatrixXd A_new(2 * constraint->num_constraints(), vars_vel.rows() + 1);
+  Eigen::VectorXd lb_new(A_new.rows());
+  Eigen::VectorXd ub_new(A_new.rows());
+  int A_new_row_count = 0;
+  const auto& A = constraint->GetDenseA();
+  for (int i = 0; i < constraint->num_constraints(); ++i) {
+    // If lb(i) == ub(i), then we only add a linear equality constraint
+    // A.row(i) * M_vel * vars_vel - lb(i) * T = 0.
+    // Otherwise, we add the constraint
+    // A.row(i) * M_vel * vars_vel - lb(i) * T >= 0
+    // and
+    // A.row(i) * M_vel * vars_vel - ub(i) * T <= 0
+    if (constraint->lower_bound()(i) == constraint->upper_bound()(i)) {
+      DRAKE_DEMAND(!std::isinf(constraint->lower_bound()(i)));
+      A_new.row(A_new_row_count) << A.row(i) * M_vel,
+          -constraint->lower_bound()(i);
+      lb_new(A_new_row_count) = 0;
+      ub_new(A_new_row_count) = 0;
+      ++A_new_row_count;
+    } else {
+      if (!std::isinf(constraint->lower_bound()(i))) {
+        A_new.row(A_new_row_count) << constraint->GetDenseA().row(i) * M_vel,
+            -constraint->lower_bound()(i);
+        lb_new(A_new_row_count) = 0;
+        ub_new(A_new_row_count) = kInf;
+        ++A_new_row_count;
+      }
+      if (!std::isinf(constraint->upper_bound()(i))) {
+        A_new.row(A_new_row_count) << constraint->GetDenseA().row(i) * M_vel,
+            -constraint->upper_bound()(i);
+        lb_new(A_new_row_count) = -kInf;
+        ub_new(A_new_row_count) = 0;
+        ++A_new_row_count;
+      }
+    }
+  }
+  auto binding = prog_.AddLinearConstraint(
+      A_new.topRows(A_new_row_count), lb_new.topRows(A_new_row_count),
+      ub_new.topRows(A_new_row_count),
+      {vars_vel, Vector1<symbolic::Variable>(duration_)});
+  binding.evaluator()->set_description("velocity linear constraint");
   return binding;
 }
 
