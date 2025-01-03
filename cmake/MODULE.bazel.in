@@ -1,0 +1,26 @@
+module(name = "drake_cmake")
+
+bazel_dep(name = "rules_python", version = "0.40.0")
+
+bazel_dep(name = "drake")
+local_path_override(
+    module_name = "drake",
+    path = "@PROJECT_SOURCE_DIR@",
+)
+
+python_repository = use_repo_rule(
+    "@drake//tools/workspace/python:repository.bzl",
+    "python_repository",
+)
+
+# Use Drake's python repository rule to interrogate the interpreter chosen by
+# the CMake find_program stanza, in support of compiling our C++ bindings.
+python_repository(
+    name = "python_internal",
+    linux_interpreter_path = "@Python_EXECUTABLE@",
+    macos_interpreter_path = "@Python_EXECUTABLE@",
+    requirements_flavor = "build",
+    is_drake_internal = True,
+)
+
+register_toolchains("@python_internal//:all")
