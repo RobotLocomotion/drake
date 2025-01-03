@@ -295,7 +295,6 @@ GTEST_TEST(VPolytopeTest, NonconvexMesh) {
 }
 
 GTEST_TEST(VPolytopeTest, ToShapeConvex) {
-  const int num_vertices = 4;
   Eigen::Matrix<double, 3, 4> vertices;
   vertices.col(0) << 0, 0, 0;
   vertices.col(1) << 1, 0, 0;
@@ -305,9 +304,9 @@ GTEST_TEST(VPolytopeTest, ToShapeConvex) {
   VPolytope V(vertices);
   const Convex convex = V.ToShapeConvex();
 
-  auto num_vertices = convex.GetConvexHull().num_vertices();
+  int num_vertices_of_convex = convex.GetConvexHull().num_vertices();
 
-  EXPECT_EQ(vertices.cols(), num_vertices);
+  EXPECT_EQ(vertices.cols(), num_vertices_of_convex);
 }
 
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {

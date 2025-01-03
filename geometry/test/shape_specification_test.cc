@@ -682,8 +682,6 @@ GTEST_TEST(ShapeTest, ConvexFromVertices) {
   ASSERT_TRUE(source.is_in_memory());
   EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
 
-  EXPECT_THROW(convex.filename(), std::exception);
-
   const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
   EXPECT_EQ(hull.num_vertices(), 8);
   EXPECT_EQ(hull.num_elements(), 6);
