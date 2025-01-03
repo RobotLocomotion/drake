@@ -497,6 +497,8 @@ class NoDoCloneEngine : public CloneableEngine {
 GTEST_TEST(RenderEngine, DetectDoCloneFailure) {
   CloneableEngine cloneable;
   EXPECT_NO_THROW(cloneable.Clone());
+  EXPECT_NO_THROW(cloneable.Clone<std::unique_ptr<RenderEngine>>());
+  EXPECT_NO_THROW(cloneable.Clone<std::shared_ptr<RenderEngine>>());
 
   NoDoCloneEngine not_cloneable;
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -504,6 +506,43 @@ GTEST_TEST(RenderEngine, DetectDoCloneFailure) {
       "Error in cloning RenderEngine class of type .+NoDoCloneEngine; the "
       "clone returns type .+CloneableEngine. .+NoDoCloneEngine::DoClone.. was "
       "probably not implemented");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      not_cloneable.Clone<std::unique_ptr<RenderEngine>>(),
+      ".*not implemented");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      not_cloneable.Clone<std::shared_ptr<RenderEngine>>(),
+      ".*not implemented");
+}
+
+class CloneableAsSharedOnlyEngine final : public RenderEngine {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CloneableAsSharedOnlyEngine);
+  CloneableAsSharedOnlyEngine() = default;
+
+  // Only implement share_ptr cloning.
+  std::unique_ptr<RenderEngine> DoClone() const final {
+    throw std::logic_error("SHARED ONLY");
+  }
+  std::shared_ptr<RenderEngine> DoCloneShared() const final {
+    return std::make_unique<CloneableAsSharedOnlyEngine>(*this);
+  }
+
+  // No-op fluff for the pure virtuals.
+  void UpdateViewpoint(const math::RigidTransformd&) final {}
+  bool DoRegisterVisual(GeometryId, const Shape&, const PerceptionProperties&,
+                        const RigidTransformd&) final {
+    return false;
+  }
+  void DoUpdateVisualPose(GeometryId, const math::RigidTransformd&) final {}
+  bool DoRemoveGeometry(GeometryId) final { return false; }
+};
+
+GTEST_TEST(RenderEngine, CloneOnlySupportsShared) {
+  CloneableAsSharedOnlyEngine dut;
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.Clone(), "SHARED ONLY");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.Clone<std::unique_ptr<RenderEngine>>(),
+                              "SHARED ONLY");
+  EXPECT_NO_THROW(dut.Clone<std::shared_ptr<RenderEngine>>());
 }
 
 // Confirms that sub-classes that don't implement the DoRender*Image API get

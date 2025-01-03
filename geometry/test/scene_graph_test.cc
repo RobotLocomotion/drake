@@ -611,47 +611,65 @@ TEST_F(SceneGraphTest, ModelInspector) {
 // functions work. It relies on GeometryState to properly unit test the
 // full behavior.
 TEST_F(SceneGraphTest, RendererInSceneGraphSmokeTest) {
-  // Test the renderer added to the SceneGraph.
-  const std::string kRendererName = "bob";
+  for (bool add_as_unique : {true, false}) {
+    SCOPED_TRACE(fmt::format("add_as_unique = {}", add_as_unique));
 
-  EXPECT_EQ(scene_graph_.RendererCount(), 0);
-  EXPECT_EQ(scene_graph_.RegisteredRendererNames().size(), 0u);
-  EXPECT_FALSE(scene_graph_.HasRenderer(kRendererName));
+    // Test the renderer added to the SceneGraph.
+    const std::string kRendererName = "bob";
 
-  DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
-      kRendererName, make_unique<DummyRenderEngine>()));
+    EXPECT_EQ(scene_graph_.RendererCount(), 0);
+    EXPECT_EQ(scene_graph_.RegisteredRendererNames().size(), 0u);
+    EXPECT_FALSE(scene_graph_.HasRenderer(kRendererName));
 
-  EXPECT_EQ(scene_graph_.RendererCount(), 1);
-  EXPECT_EQ(scene_graph_.RegisteredRendererNames()[0], kRendererName);
-  EXPECT_TRUE(scene_graph_.HasRenderer(kRendererName));
+    if (add_as_unique) {
+      DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+          kRendererName, std::make_unique<DummyRenderEngine>()));
+    } else {
+      DRAKE_EXPECT_NO_THROW(
+          scene_graph_.AddRenderer(kRendererName, DummyRenderEngine()));
+    }
 
-  DRAKE_EXPECT_NO_THROW(scene_graph_.RemoveRenderer(kRendererName));
-  EXPECT_EQ(scene_graph_.RendererCount(), 0);
-  EXPECT_FALSE(scene_graph_.HasRenderer(kRendererName));
+    EXPECT_EQ(scene_graph_.RendererCount(), 1);
+    EXPECT_EQ(scene_graph_.RegisteredRendererNames()[0], kRendererName);
+    EXPECT_TRUE(scene_graph_.HasRenderer(kRendererName));
+
+    DRAKE_EXPECT_NO_THROW(scene_graph_.RemoveRenderer(kRendererName));
+    EXPECT_EQ(scene_graph_.RendererCount(), 0);
+    EXPECT_FALSE(scene_graph_.HasRenderer(kRendererName));
+  }
 }
 
 TEST_F(SceneGraphTest, RendererInContextSmokeTest) {
-  // Test the renderer added to the context
-  CreateDefaultContext();
-  const std::string kRendererName = "bob";
+  for (bool add_as_unique : {true, false}) {
+    SCOPED_TRACE(fmt::format("add_as_unique = {}", add_as_unique));
+    // Test the renderer added to the context
+    CreateDefaultContext();
+    const std::string kRendererName = "bob";
 
-  EXPECT_EQ(scene_graph_.RendererCount(*context_), 0);
-  EXPECT_EQ(scene_graph_.RegisteredRendererNames(*context_).size(), 0u);
-  EXPECT_FALSE(scene_graph_.HasRenderer(*context_, kRendererName));
+    EXPECT_EQ(scene_graph_.RendererCount(*context_), 0);
+    EXPECT_EQ(scene_graph_.RegisteredRendererNames(*context_).size(), 0u);
+    EXPECT_FALSE(scene_graph_.HasRenderer(*context_, kRendererName));
 
-  DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
-      context_.get(), kRendererName, make_unique<DummyRenderEngine>()));
+    if (add_as_unique) {
+      DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+          context_.get(), kRendererName, make_unique<DummyRenderEngine>()));
+    } else {
+      DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+          context_.get(), kRendererName, DummyRenderEngine()));
+    }
 
-  EXPECT_EQ(scene_graph_.RendererCount(*context_), 1);
-  // No renderer inside SceneGraph since the renderer is added to the context.
-  EXPECT_EQ(scene_graph_.RendererCount(), 0);
-  EXPECT_EQ(scene_graph_.RegisteredRendererNames(*context_)[0], kRendererName);
-  EXPECT_TRUE(scene_graph_.HasRenderer(*context_, kRendererName));
+    EXPECT_EQ(scene_graph_.RendererCount(*context_), 1);
+    // No renderer inside SceneGraph since the renderer is added to the context.
+    EXPECT_EQ(scene_graph_.RendererCount(), 0);
+    EXPECT_EQ(scene_graph_.RegisteredRendererNames(*context_)[0],
+              kRendererName);
+    EXPECT_TRUE(scene_graph_.HasRenderer(*context_, kRendererName));
 
-  DRAKE_EXPECT_NO_THROW(
-      scene_graph_.RemoveRenderer(context_.get(), kRendererName));
-  EXPECT_EQ(scene_graph_.RendererCount(*context_), 0);
-  EXPECT_FALSE(scene_graph_.HasRenderer(*context_, kRendererName));
+    DRAKE_EXPECT_NO_THROW(
+        scene_graph_.RemoveRenderer(context_.get(), kRendererName));
+    EXPECT_EQ(scene_graph_.RendererCount(*context_), 0);
+    EXPECT_FALSE(scene_graph_.HasRenderer(*context_, kRendererName));
+  }
 }
 
 // Query the type name of a render engine. This logic is unique to SceneGraph
