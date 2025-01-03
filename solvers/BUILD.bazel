@@ -1526,19 +1526,18 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
-# Re-run ipopt_solver_test, but with the SPRAL linear solver.
+# Re-run ipopt_solver_test, but with the MUMPS linear solver.
+# Remove on 2025-05-01.
 drake_sh_test(
-    name = "ipopt_solver_spral_test",
+    name = "ipopt_solver_mumps_test",
     srcs = [":ipopt_solver_test"],
     args = select({
         ":osx": [
-            # SPRAL is the default on macOS, so ipopt_solver_test already has
-            # us covered. Only on Ubuntu (where MUMPS is the default) do we
-            # need to re-run this test.
+            # MUMPS only exists on Ubuntu (not macOS).
             "--gtest_filter=-*",
         ],
         "//conditions:default": [
-            "--linear_solver=spral",
+            "--linear_solver=mumps",
         ],
     }),
     data = [":ipopt_solver_test"],
