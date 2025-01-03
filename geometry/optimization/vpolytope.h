@@ -98,6 +98,10 @@ class VPolytope final : public ConvexSet {
   @pre ambient_dimension() == 3. */
   void WriteObj(const std::filesystem::path& filename) const;
 
+  /** Creates a geometry::Convex shape using the vertices of this VPolytope.
+  @pre ambient_dimension() == 3. */
+  Convex ToShapeConvex() const;
+
   /** Computes the volume of this V-Polytope.
   @note this function calls qhull to compute the volume. */
   using ConvexSet::CalcVolume;

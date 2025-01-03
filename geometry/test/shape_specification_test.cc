@@ -662,6 +662,33 @@ GTEST_TEST(ShapeTest, ConvexFromMemory) {
   EXPECT_EQ(hull.num_elements(), 6);
 }
 
+GTEST_TEST(ShapeTest, ConvexFromVertices) {
+  // This will get normalized to ".obj".
+  Eigen::MatrixXd vertices(3, 8);
+  vertices.col(0) << 0, 0, 0;
+  vertices.col(1) << 1, 0, 0;
+  vertices.col(2) << 1, 1, 0;
+  vertices.col(3) << 0, 1, 0;
+  vertices.col(4) << 0, 0, 1;
+  vertices.col(5) << 1, 0, 1;
+  vertices.col(6) << 1, 1, 1;
+  vertices.col(7) << 0, 1, 1;
+  const std::string mesh_name = "a_convex.obj";
+  const Convex convex(vertices, mesh_name, 2.0);
+
+  EXPECT_EQ(convex.scale(), 2.0);
+  EXPECT_EQ(convex.extension(), ".obj");
+  const MeshSource& source = convex.source();
+  ASSERT_TRUE(source.is_in_memory());
+  EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
+
+  EXPECT_THROW(convex.filename(), std::exception);
+
+  const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
+  EXPECT_EQ(hull.num_vertices(), 8);
+  EXPECT_EQ(hull.num_elements(), 6);
+}
+
 GTEST_TEST(ShapeTest, MeshFromMemory) {
   // This will get normalized to ".obj".
   const std::string mesh_name = "a_mesh.OBJ";
