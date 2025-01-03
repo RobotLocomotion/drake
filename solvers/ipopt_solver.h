@@ -45,11 +45,9 @@ struct IpoptSolverDetails {
  * <a href="https://coin-or.github.io/Ipopt/">Ipopt</a>
  * using Drake's MathematicalProgram.
  *
- * The IpoptSolver is NOT threadsafe to call in parallel. This is due to Ipopt's
- * reliance on the MUMPS linear solver which is not safe to call concurrently
- * (see https://github.com/coin-or/Ipopt/issues/733). This can be resolved by
- * enabling the SPRAL solver (see Drake issue
- * https://github.com/RobotLocomotion/drake/issues/21476).
+ * @warning Setting the Ipopt option "linear_solver" to "mumps" is deprecated
+ * and will be removed on or after 2025-05-01. Using MUMPS is NOT threadsafe
+ * (see https://github.com/coin-or/Ipopt/issues/733).
  */
 class IpoptSolver final : public SolverBase {
  public:
@@ -61,6 +59,7 @@ class IpoptSolver final : public SolverBase {
   IpoptSolver();
   ~IpoptSolver() final;
 
+  // Remove on 2025-05-01.
   /// Changes the default value for Ipopt's "linerar_solver" solver option. This
   /// is the lowest precedence default -- setting the "linear_solver" option in
   /// SolverOptions will override this default.
@@ -83,6 +82,7 @@ class IpoptSolver final : public SolverBase {
                 internal::SpecificOptions*,
                 MathematicalProgramResult*) const final;
 
+  // Remove 2025-05-01.
   std::string default_linear_solver_;
 };
 

@@ -29,7 +29,10 @@ drake_cc_googlebench_binary(
     name = "benchmark_ipopt_solver",
     srcs = ["benchmark_ipopt_solver.cc"],
     add_test_rule = True,
-    test_timeout = "moderate",
+    test_args = [
+        # When testing, only run the smallest test.
+        "--benchmark_filter=.*/10$$",
+    ],
     deps = [
         "//common:add_text_logging_gflags",
         "//solvers:ipopt_solver",

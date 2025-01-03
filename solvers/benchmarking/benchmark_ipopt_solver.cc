@@ -8,12 +8,12 @@ namespace {
 
 static void BenchmarkIpoptSolver(benchmark::State& state) {  // NOLINT
   // Number of decision variables.
-  const int nx = 1000;
+  const int nx = state.range(0);
   // Create the mathematical program and the solver.
   MathematicalProgram prog;
   IpoptSolver solver;
   // Create decision variables.
-  auto x = prog.NewContinuousVariables<nx>();
+  auto x = prog.NewContinuousVariables(nx);
   // Add bounding box constraints.
   auto lbx = -1e0 * Eigen::VectorXd::Ones(nx);
   auto ubx = +1e0 * Eigen::VectorXd::Ones(nx);
@@ -42,7 +42,7 @@ static void BenchmarkIpoptSolver(benchmark::State& state) {  // NOLINT
   DRAKE_DEMAND(result.is_success());
 }
 
-BENCHMARK(BenchmarkIpoptSolver);
+BENCHMARK(BenchmarkIpoptSolver)->ArgsProduct({{10, 100, 1000}});
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
