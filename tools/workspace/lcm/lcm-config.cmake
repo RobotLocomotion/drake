@@ -45,7 +45,7 @@ unset(_targetsDefined)
 unset(_targetsNotDefined)
 unset(_expectedTargets)
 
-set(lcm_VERSION "1.5.0")
+set(lcm_VERSION "1.5.1")
 
 add_library(lcm::lcm-coretypes INTERFACE IMPORTED)
 set_target_properties(lcm::lcm-coretypes PROPERTIES

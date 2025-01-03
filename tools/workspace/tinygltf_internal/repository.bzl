@@ -6,8 +6,8 @@ def tinygltf_internal_repository(
     github_archive(
         name = name,
         repository = "syoyo/tinygltf",
-        commit = "v2.9.3",
-        sha256 = "f5f282508609a0098048c8ff25d72f4ef0995bc1d46bc7a5d740e559d80023d2",  # noqa
+        commit = "v2.9.4",
+        sha256 = "16cd37cdfecd5d8204cdbc37d0affbcadf970dbd33da8d8a0feba5028124f946",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/json.patch",
