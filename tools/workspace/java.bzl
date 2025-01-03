@@ -30,7 +30,7 @@ package(default_visibility = ["//visibility:public"])
     else:
         is_local = False
         name = "jar"
-        actual = "@drake_java_internal_maven_{}//jar".format(repo_ctx.name)
+        actual = "@{}//jar".format(repo_ctx.attr.maven_name)
         build_content += "alias(name = {name}, actual = {actual})\n".format(
             name = repr(name),
             actual = repr(actual),
@@ -60,6 +60,7 @@ _internal_drake_java_import = repository_rule(
         "licenses": attr.string_list(mandatory = True),
         "local_os_targets": attr.string_list(mandatory = True),
         "local_jar": attr.string(mandatory = True),
+        "maven_name": attr.string(mandatory = True),
     },
     implementation = _impl,
 )
@@ -79,8 +80,9 @@ def drake_java_import(
     the jar. Otherwise, the maven_jar will be used. The recognized values for
     OSs in the list of targets are either "linux" or "osx".
     """
+    maven_name = "drake_java_internal_maven_{}".format(name)
     java_import_external(
-        name = "drake_java_internal_maven_{}".format(name),
+        name = maven_name,
         licenses = licenses,
         jar_urls = [
             x.format(fulljar = maven_jar)
@@ -94,4 +96,5 @@ def drake_java_import(
         licenses = licenses,
         local_os_targets = local_os_targets,
         local_jar = local_jar,
+        maven_name = maven_name,
     )

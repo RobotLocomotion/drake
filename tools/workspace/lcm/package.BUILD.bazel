@@ -201,40 +201,41 @@ cc_binary(
 )
 
 # Downstream users of lcm-python expect to say "import lcm".  However, in the
-# sandbox the python package is located at lcm/lcm-python/lcm/__init__.py to
-# match the source tree structure of LCM; without any special help the import
-# would fail.
+# sandbox the python package is located at lcm-python/lcm/__init__.py to match
+# the source tree structure of LCM; without declaring an `imports = [...]` path
+# the import would fail.
 #
 # Normally we'd add `imports = ["lcm-python"]` to establish a PYTHONPATH at the
-# correct subdirectory, and that almost works.  However, because the external
-# is named "lcm", Bazel's auto-generated empty "lcm/__init__.py" at the root of
-# the sandbox is found first, and prevents the lcm-python subdirectory from
-# ever being found.
+# correct subdirectory, and that almost works -- except that the native code's
+# RUNPATH entries are not quite correct. Even though `./_lcm.so` (the glue)
+# resolves correctly in the sandbox, it needs to then load the main library
+# `liblcm.so` to operate. That happens via its RUNPATH, but because the RUNPATH
+# is relative, when the lcm module is loaded from the wrong sys.path entry, the
+# RUNPATH no longer works.
 #
-# To repair this, we provide our own init file at the root of the sandbox that
-# overrides the Bazel empty default.  Its implementation just delegates to the
-# lcm-python init file.  (Note that this __init__.py shim is neither used nor
-# present in the installed copy of Drake; once Drake is installed, the paths
-# are standard and there is no aliasing confusion.)
+# To repair this, we'll generate our own init file that pre-loads the shared
+# library (using python ctypes with the realpath to the shared library) before
+# calling the upstream __init__.
 #
-# Relatedly, within the upstream __init__.py there is a `from ._lcm import`
-# statement that loads the compiled C code for LCM python support.  Even though
-# the `./_lcm.so` (the glue) resolves correctly in the sandbox, it needs to
-# then load the main library `liblcm.so` to operate.  That happens via its
-# RUNPATH, but because the RUNPATH is relative, when the lcm module is loaded
-# from the wrong sys.path entry, the RUNPATH no longer works.  To work around
-# that, we pre-load the shared library before calling the upstream __init__,
-# using python ctypes with the realpath to the shared library.
+# Note that this generated __init__.py shim is neither used nor present in the
+# installed copy of Drake; once Drake is installed, the paths are standard and
+# there is no aliasing confusion.
 generate_file(
-    name = "__init__.py",
+    name = "gen/lcm/__init__.py",
     content = """
 import ctypes
-import os.path
-ctypes.cdll.LoadLibrary(os.path.realpath(__path__[0] + '/_lcm.so'))
-_filename = __path__[0] + \"/lcm-python/lcm/__init__.py\"
-with open(_filename) as f:
-    _code = compile(f.read(), _filename, 'exec')
-    exec(_code)
+from pathlib import Path
+# The base_dir refers to the base of our package.BUILD.bazel.
+_base_dir = Path(__path__[0]).resolve().parent.parent
+# Load the native code.
+ctypes.cdll.LoadLibrary(_base_dir / '_lcm.so')
+# We need to tweak the upstream __init__ before we run it.
+_filename = _base_dir / 'lcm-python/lcm/__init__.py'
+_text = _filename.read_text(encoding='utf-8')
+# Respell where the native code comes from.
+_text = _text.replace('from lcm import _lcm', 'import _lcm')
+_text = _text.replace('from lcm._lcm import', 'from _lcm import')
+exec(compile(_text, _filename, 'exec'))
 """,
     visibility = ["//visibility:private"],
 )
@@ -248,7 +249,8 @@ py_library(
 
 py_library(
     name = "lcm-python",
-    srcs = ["__init__.py"],  # Shim, from the genrule above.
+    srcs = ["gen/lcm/__init__.py"],  # Shim, from the genrule above.
+    imports = ["gen"],
     deps = [":lcm-python-upstream"],
 )
 

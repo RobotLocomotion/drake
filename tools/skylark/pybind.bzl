@@ -70,7 +70,7 @@ def pybind_py_library(
         copts = cc_copts + EXTRA_PYBIND_COPTS,
         # Always link to pybind11.
         deps = [
-            "@pybind11",
+            "@drake//tools/workspace/pybind11",
         ] + cc_deps,
         **kwargs
     )
