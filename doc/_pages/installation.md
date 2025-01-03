@@ -35,9 +35,8 @@ with other versions of Python. However, these are not supported so if it doesn't
 work for you then please file a pull request with the fix, not a bug report.
 
 ⁽¹⁾ Drake features that perform image rendering (e.g., camera simulation)
-require a working display server.  Most personal computers will have this
-already built in, but some cloud or docker environments may require extra
-setup steps.
+maybe require extra setup. See the
+[troubleshooting](/troubleshooting.html#gl-init) page for details.
 
 ⁽²⁾ CPython is the only Python implementation supported.
 Drake is not tested regularly with Anaconda, so if you are using Anaconda you
