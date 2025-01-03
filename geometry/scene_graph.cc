@@ -380,6 +380,21 @@ void SceneGraph<T>::RemoveGeometry(Context<T>* context, SourceId source_id,
 }
 
 template <typename T>
+void SceneGraph<T>::AddRenderer(std::string name,
+                                const render::RenderEngine& renderer) {
+  return hub_.mutable_model().AddRenderer(
+      std::move(name), renderer.Clone<std::shared_ptr<render::RenderEngine>>());
+}
+
+template <typename T>
+void SceneGraph<T>::AddRenderer(Context<T>* context, std::string name,
+                                const render::RenderEngine& renderer) const {
+  auto& g_state = mutable_geometry_state(context);
+  g_state.AddRenderer(std::move(name),
+                      renderer.Clone<std::shared_ptr<render::RenderEngine>>());
+}
+
+template <typename T>
 void SceneGraph<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
   return hub_.mutable_model().AddRenderer(

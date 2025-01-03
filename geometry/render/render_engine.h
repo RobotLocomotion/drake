@@ -103,9 +103,18 @@ class RenderEngine {
 
   virtual ~RenderEngine();
 
-  /** Clones the render engine -- making the %RenderEngine compatible with
-   copyable_unique_ptr.  */
-  std::unique_ptr<RenderEngine> Clone() const;
+  /** Clones the render engine.
+
+   @tparam Result must be either `std::unique_ptr<RenderEngine>` or
+   `std::shared_ptr<RenderEngine>`. In C++, it defaults to unique_ptr;
+   in Python, it's hard-coded to shared_ptr.
+
+   @throws std::exception if Result is unique_ptr but this particular class only
+   supports cloning for shared_ptr. */
+  template <class Result = std::unique_ptr<RenderEngine>>
+  Result Clone() const
+    requires std::is_same_v<Result, std::unique_ptr<RenderEngine>> ||
+             std::is_same_v<Result, std::shared_ptr<RenderEngine>>;
 
   /** @name Registering geometry with the engine
 
@@ -345,7 +354,16 @@ class RenderEngine {
             removed, false if it wasn't registered in the first place.  */
   virtual bool DoRemoveGeometry(GeometryId id) = 0;
 
-  /** The NVI-function for cloning this render engine.  */
+  /** The NVI-function for cloning this render engine as a shared_ptr. When not
+   overridden, this base class implementation will call DoClone() to construct a
+   unique_ptr clone and then promote that to a shared_ptr upon return. Note that
+   in Python this is bound as simply "DoClone" not "DoCloneShared", because the
+   unique_ptr flavor is nonsense in Python. */
+  virtual std::shared_ptr<RenderEngine> DoCloneShared() const;
+
+  /** The NVI-function for cloning this render engine as a unique_ptr. It must
+   always be overridden, but in case a subclass does not support cloning into a
+   unique_ptr, it may throw an exception. */
   virtual std::unique_ptr<RenderEngine> DoClone() const = 0;
 
   /** The NVI-function for rendering color with a fully-specified camera.

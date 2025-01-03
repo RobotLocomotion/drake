@@ -699,8 +699,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** @name     Managing RenderEngine instances      */
   //@{
 
-  /** Adds a new render engine to this %SceneGraph. The %SceneGraph owns the
-   render engine. The render engine's name should be referenced in the
+  /** Adds a new render engine to this %SceneGraph.
+   The render engine's name should be referenced in the
    @ref render::ColorRenderCamera "ColorRenderCamera" or
    @ref render::DepthRenderCamera "DepthRenderCamera" provided in the render
    queries (see QueryObject::RenderColorImage() as an example).
@@ -726,12 +726,25 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @param name      The unique name of the renderer.
    @param renderer  The `renderer` to add.
    @throws std::exception if the name is not unique.  */
-  void AddRenderer(std::string name,
-                   std::unique_ptr<render::RenderEngine> renderer);
+  void AddRenderer(std::string name, const render::RenderEngine& renderer);
 
   /** systems::Context-modifying variant of AddRenderer(). Rather than
    modifying %SceneGraph's model, it modifies the copy of the model stored in
    the provided context.  */
+  void AddRenderer(systems::Context<T>* context, std::string name,
+                   const render::RenderEngine& renderer) const;
+
+  /** Non-copying variant of AddRenderer().
+   The %SceneGraph takes ownership the render engine instead of copying it.
+   The calling code must not retain a raw pointer to the renderer.
+   @exclude_from_pydrake_mkdoc{Not bound in pydrake.} */
+  void AddRenderer(std::string name,
+                   std::unique_ptr<render::RenderEngine> renderer);
+
+  /** Non-copying, context-modifying variant of AddRenderer().
+   The %SceneGraph takes ownership the render engine instead of copying it.
+   The calling code must not retain a raw pointer to the renderer.
+   @exclude_from_pydrake_mkdoc{Not bound in pydrake.} */
   void AddRenderer(systems::Context<T>* context, std::string name,
                    std::unique_ptr<render::RenderEngine> renderer) const;
 
