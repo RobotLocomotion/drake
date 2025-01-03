@@ -683,6 +683,17 @@ class MujocoParser {
     }
 
     std::string mesh;
+    bool has_mesh_attribute = ParseStringAttribute(node, "mesh", &mesh);
+    if (has_mesh_attribute && type != "mesh" && type != "hfield" &&
+        type != "plane") {
+      Error(*node,
+            fmt::format(
+                "geom {} specified type '{}' but also has a mesh attribute. "
+                "The intended behavior is to compute the size of the shape "
+                "from the mesh, but this is not supported yet (#22372).",
+                geom.name, type));
+      return geom;
+    }
     if (type == "plane") {
       // We interpret the MuJoCo infinite plane as a half-space.
       geom.shape = std::make_unique<geometry::HalfSpace>();
@@ -771,7 +782,7 @@ class MujocoParser {
             size[0] * 2.0, size[1] * 2.0, size[2] * 2.0);
       }
     } else if (type == "mesh") {
-      if (!ParseStringAttribute(node, "mesh", &mesh)) {
+      if (!has_mesh_attribute) {
         Error(*node, fmt::format("geom {} specified type 'mesh', but did not "
                                  "set the mesh attribute",
                                  geom.name));
