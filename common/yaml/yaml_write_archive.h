@@ -150,6 +150,12 @@ class YamlWriteArchive final {
                             data.empty() ? nullptr : &data.at(0));
   }
 
+  // We treat std::vector<byte> as a base64-encoded scalar.
+  template <typename NVP>
+  void DoVisit(const NVP& nvp, const std::vector<std::byte>&, int32_t) {
+    this->VisitScalar(nvp);
+  }
+
   // For std::array.
   template <typename NVP, typename T, std::size_t N>
   void DoVisit(const NVP& nvp, const std::array<T, N>&, int32_t) {
@@ -218,38 +224,49 @@ class YamlWriteArchive final {
     root_.Add(nvp.name(), std::move(sub_archive.root_));
   }
 
+  // Encodes vector of bytes into a base64 string.
+  static std::string EncodeBase64(const std::vector<std::byte>& bytes);
+
   // This is used for simple types that can be converted to a string.
   template <typename NVP>
   void VisitScalar(const NVP& nvp) {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
     std::string text;
-    JsonSchemaTag tag;
+    // Every scalar must set tag to either json enum or full tag string.
+    std::variant<JsonSchemaTag, std::string> tag;
     if constexpr (std::is_same_v<T, std::string>) {
       text = value;
-      tag = internal::JsonSchemaTag::kStr;
+      tag = JsonSchemaTag::kStr;
     } else if constexpr (std::is_same_v<T, std::filesystem::path>) {
       // We'll treat fs::path exactly like a std::string.
       text = value.string();
-      tag = internal::JsonSchemaTag::kStr;
+      tag = JsonSchemaTag::kStr;
     } else if constexpr (std::is_same_v<T, bool>) {
       text = value ? "true" : "false";
-      tag = internal::JsonSchemaTag::kBool;
+      tag = JsonSchemaTag::kBool;
     } else if constexpr (std::is_integral_v<T>) {
       text = fmt::to_string(value);
-      tag = internal::JsonSchemaTag::kInt;
+      tag = JsonSchemaTag::kInt;
     } else if constexpr (std::is_floating_point_v<T>) {
       text = std::isfinite(value) ? fmt_floating_point(value)
              : std::isnan(value)  ? ".nan"
              : (value > 0)        ? ".inf"
                                   : "-.inf";
-      tag = internal::JsonSchemaTag::kFloat;
+      tag = JsonSchemaTag::kFloat;
+    } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
+      text = EncodeBase64(value);
+      tag = std::string(internal::Node::kTagBinary);
     } else {
       text = fmt::format("{}", value);
-      tag = internal::JsonSchemaTag::kStr;
+      tag = JsonSchemaTag::kStr;
     }
     internal::Node scalar = internal::Node::MakeScalar(std::move(text));
-    scalar.SetTag(tag);
+    std::visit(
+        [&scalar](auto&& arg) {
+          scalar.SetTag(std::move(arg));
+        },
+        tag);
     root_.Add(nvp.name(), std::move(scalar));
   }
 
@@ -288,8 +305,7 @@ class YamlWriteArchive final {
         [this, name, needs_tag](auto&& unwrapped) {
           this->Visit(drake::MakeNameValue(name, &unwrapped));
           if (needs_tag) {
-            // TODO(jwnimmer-tri) Spell this as remove_cvref_t in C++20.
-            using T = std::decay_t<decltype(unwrapped)>;
+            using T = std::remove_cvref_t<decltype(unwrapped)>;
             Node& node = root_.At(name);
             if constexpr (std::is_same_v<T, bool>) {
               node.SetTag(JsonSchemaTag::kBool, /* important = */ true);
@@ -299,6 +315,8 @@ class YamlWriteArchive final {
               node.SetTag(JsonSchemaTag::kFloat, /* important = */ true);
             } else if constexpr (std::is_same_v<T, std::string>) {
               node.SetTag(JsonSchemaTag::kStr, /* important = */ true);
+            } else if constexpr (std::is_same_v<T, std::vector<std::byte>>) {
+              node.SetTag(std::string(internal::Node::kTagBinary));
             } else {
               node.SetTag(YamlWriteArchive::GetVariantTag<T>());
             }
