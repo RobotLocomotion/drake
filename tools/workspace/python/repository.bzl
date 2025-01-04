@@ -94,6 +94,12 @@ def _get_linkopts(repo_ctx, python_config):
     ).stdout.strip().split(" ")
     linkopts = [linkopt for linkopt in linkopts if linkopt]
 
+    # Opt-out of support for the (deprecated) _crypt module. Linking it just
+    # bloats our wheels for no good reason. Once Python 3.13 is our minimum
+    # supported version, we can remove this stanza.
+    if "-lcrypt" in linkopts:
+        linkopts.remove("-lcrypt")
+
     # Undo whitespace splits for options with a positional argument, e.g., we
     # want ["-framework CoreFoundation"] not ["-framework", "CoreFoundation"].
     for i in reversed(range(len(linkopts))):
