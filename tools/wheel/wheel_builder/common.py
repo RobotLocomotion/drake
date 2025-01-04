@@ -2,8 +2,11 @@
 # //tools/wheel:builder for the user interface.
 
 import argparse
+import gzip
+import io
 import locale
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -81,7 +84,8 @@ def create_snopt_tgz(*, snopt_path, output):
         shutil.copy(src=snopt_path, dst=output)
         return
     print('[-] Creating SNOPT archive...', flush=True)
-    tgz = tarfile.open(output, 'w:gz')
+    tar_buffer = io.BytesIO()
+    tar_writer = tarfile.open(mode='w', fileobj=tar_buffer)
 
     # Ask Bazel where it keeps its externals.
     command = ['bazel', 'info', 'output_base']
@@ -97,8 +101,8 @@ def create_snopt_tgz(*, snopt_path, output):
     ]
     subprocess.run(command, check=True, cwd=resource_root)
 
-    # Compress the files into the required tgz format. We only want the files
-    # from these subdirectories (and not recursively):
+    # Compress the files into a tar archive. We only want the files from these
+    # subdirectories (and not recursively):
     keep_dirs = [
         'interfaces/include',
         'interfaces/src',
@@ -122,9 +126,14 @@ def create_snopt_tgz(*, snopt_path, output):
             if tgz_file.endswith('.orig'):
                 tgz_file = tgz_file[:-len('.orig')]
             # Add the file.
-            tgz.add(full_file, tgz_file, recursive=False,
-                    filter=strip_tar_metadata)
-    tgz.close()
+            tar_writer.add(full_file, tgz_file, recursive=False,
+                           filter=strip_tar_metadata)
+    tar_writer.close()
+
+    # Write to disk and gzip (as required by Drake's SNOPT_PATH).
+    tar_buffer.seek(0)
+    tgz_data = gzip.compress(tar_buffer.read(), compresslevel=0, mtime=0)
+    pathlib.Path(output).write_bytes(tgz_data)
 
 
 def find_tests(*test_subdirs):
