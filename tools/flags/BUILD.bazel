@@ -1,0 +1,89 @@
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+# The package introduces flags that Drake developers and users may use to
+# configure Drake's options. A flag may be set either on the command line
+# or equivalently in a `.bazelrc` file (https://bazel.build/run/bazelrc).
+#
+# Command line example:
+#   bazel build //:something --@drake//tools/flags:with_mosek=True
+#
+# bazelrc example:
+#   common --@drake//tools/flags:with_mosek=True
+
+# -----------------------------------------------------------------------------
+# Configuration for solver back-ends.
+#
+# Drake's SolverInterface wraps third-party solver libraries into common API.
+# Drake can be compiled with various third-party solvers enabled or disabled.
+#
+# By default, when building from source, all open-source libraries will be
+# enabled and all proprietary libraries will be disabled. (However, be aware
+# that Drake's packaging builds opt-in to some proprietary libraries by default
+# for our binary releases.)
+#
+# If you build from source and disable one of the open-source libraries that is
+# enabled by default, Drake's Stable API will build and install correctly, but
+# we cannot guarantee that all tests will pass or that all Drake features will
+# operate correctly. In other words, we cannot guarantee Drake's correctness
+# when a default-enabled solver is opted-out of.
+
+# Open-source solvers.
+
+bool_flag(
+    name = "with_clarabel",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "with_clp",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "with_csdp",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "with_ipopt",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "with_nlopt",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "with_osqp",
+    build_setting_default = True,
+)
+
+bool_flag(
+    name = "with_scs",
+    build_setting_default = True,
+)
+
+# Proprietary solvers.
+
+bool_flag(
+    name = "with_gurobi",
+    build_setting_default = False,
+)
+
+bool_flag(
+    name = "with_mosek",
+    build_setting_default = False,
+)
+
+bool_flag(
+    name = "with_snopt",
+    build_setting_default = False,
+)
+
+# -----------------------------------------------------------------------------
+
+add_lint_tests()

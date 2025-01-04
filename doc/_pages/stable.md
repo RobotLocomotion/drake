@@ -102,6 +102,9 @@ part of the "Stable API":
   <a href="https://docs.bazel.build/versions/main/build-ref.html#load">loading</a>
   Drake's bzl macros (e.g., `load("@drake//foo:bar.bzl", "bar_macro")`.
 
+Additionally, Drake's Bazel configuration flags at `@drake//tools/flags:*` are
+part of the Stable API.
+
 For Drake's dependencies:
 
 * The `add_default_...` macros defined in `@drake//tools/workspace:default.bzl`

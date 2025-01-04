@@ -103,8 +103,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "clarabel_solver_test",
     args = select({
-        "//tools:no_clarabel": ["TestClarabelSolver.unavailable"],
-        "//conditions:default": [],
+        "//tools/workspace/clarabel_cpp_internal:enabled": [],
+        "//conditions:default": ["TestClarabelSolver.unavailable"],
     }),
     deps = [
         ":solvers",
@@ -115,8 +115,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "clp_solver_test",
     args = select({
-        "//tools:no_clp": ["TestClpSolver.unavailable"],
-        "//conditions:default": [],
+        "//tools/workspace/clp_internal:enabled": [],
+        "//conditions:default": ["TestClpSolver.unavailable"],
     }),
     deps = [
         ":solvers",
@@ -127,8 +127,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "csdp_solver_test",
     args = select({
-        "//tools:no_csdp": ["TestCsdptSolver.unavailable"],
-        "//conditions:default": [],
+        "//tools/workspace/csdp_internal:enabled": [],
+        "//conditions:default": ["TestCsdptSolver.unavailable"],
     }),
     deps = [
         ":solvers",
@@ -148,8 +148,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "ipopt_solver_test",
     args = select({
-        "//tools:no_ipopt": ["TestIpoptSolver.unavailable"],
-        "//conditions:default": [],
+        "//tools/workspace/ipopt_internal:enabled": [],
+        "//conditions:default": ["TestIpoptSolver.unavailable"],
     }),
     deps = [
         ":solvers",
@@ -184,8 +184,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "nlopt_solver_test",
     args = select({
-        "//tools:no_nlopt": ["TestNloptSolver.unavailable"],
-        "//conditions:default": [],
+        "//tools/workspace/nlopt_internal:enabled": [],
+        "//conditions:default": ["TestNloptSolver.unavailable"],
     }),
     deps = [
         ":solvers",
@@ -196,8 +196,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "osqp_solver_test",
     args = select({
-        "//tools:no_osqp": ["TestOsqpSolver.unavailable"],
-        "//conditions:default": [],
+        "//tools/workspace/osqp_internal:enabled": [],
+        "//conditions:default": ["TestOsqpSolver.unavailable"],
     }),
     deps = [
         ":solvers",
@@ -207,8 +207,8 @@ drake_py_unittest(
 drake_py_unittest(
     name = "scs_solver_test",
     args = select({
-        "//tools:no_scs": ["TestScsSolver.unavailable"],
-        "//conditions:default": [],
+        "//tools/workspace/scs_internal:enabled": [],
+        "//conditions:default": ["TestScsSolver.unavailable"],
     }),
     deps = [
         ":solvers",

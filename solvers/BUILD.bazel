@@ -816,7 +816,7 @@ drake_cc_library(
 # code that fails at runtime.
 drake_cc_variant_library(
     name = "gurobi_solver",
-    opt_in_condition = "//tools:with_gurobi",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     srcs_always = ["gurobi_solver_common.cc"],
     srcs_enabled = ["gurobi_solver.cc"],
     srcs_disabled = ["no_gurobi.cc"],
@@ -842,7 +842,7 @@ drake_cc_variant_library(
 
 drake_cc_optional_library(
     name = "gurobi_solver_internal",
-    opt_in_condition = "//tools:with_gurobi",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     srcs = ["gurobi_solver_internal.cc"],
     hdrs = ["gurobi_solver_internal.h"],
     deps = [":mathematical_program_result"],
@@ -859,7 +859,7 @@ drake_cc_optional_library(
 # code that fails at runtime.
 drake_cc_variant_library(
     name = "mosek_solver",
-    opt_in_condition = "//tools:with_mosek",
+    opt_in_condition = "//tools/workspace/mosek:enabled",
     srcs_always = ["mosek_solver_common.cc"],
     srcs_enabled = ["mosek_solver.cc"],
     srcs_disabled = ["no_mosek.cc"],
@@ -882,7 +882,7 @@ drake_cc_variant_library(
 
 drake_cc_optional_library(
     name = "mosek_solver_internal",
-    opt_in_condition = "//tools:with_mosek",
+    opt_in_condition = "//tools/workspace/mosek:enabled",
     srcs = ["mosek_solver_internal.cc"],
     hdrs = ["mosek_solver_internal.h"],
     deps = [":mathematical_program_result"],
@@ -901,7 +901,7 @@ drake_cc_optional_library(
 # code that fails at runtime.
 drake_cc_variant_library(
     name = "snopt_solver",
-    opt_in_condition = "//tools:with_snopt",
+    opt_in_condition = "//tools/workspace/snopt:enabled",
     srcs_always = ["snopt_solver_common.cc"],
     srcs_enabled = ["snopt_solver.cc"],
     srcs_disabled = ["no_snopt.cc"],
@@ -921,7 +921,7 @@ drake_cc_variant_library(
 
 drake_cc_variant_library(
     name = "clp_solver",
-    opt_out_condition = "//tools:no_clp",
+    opt_in_condition = "//tools/workspace/clp_internal:enabled",
     srcs_always = ["clp_solver_common.cc"],
     srcs_enabled = ["clp_solver.cc"],
     srcs_disabled = ["no_clp.cc"],
@@ -942,7 +942,7 @@ drake_cc_variant_library(
 
 drake_cc_optional_library(
     name = "ipopt_solver_internal",
-    opt_out_condition = "//tools:no_ipopt",
+    opt_in_condition = "//tools/workspace/ipopt_internal:enabled",
     srcs = ["ipopt_solver_internal.cc"],
     hdrs = ["ipopt_solver_internal.h"],
     deps = [
@@ -955,7 +955,7 @@ drake_cc_optional_library(
 
 drake_cc_variant_library(
     name = "ipopt_solver",
-    opt_out_condition = "//tools:no_ipopt",
+    opt_in_condition = "//tools/workspace/ipopt_internal:enabled",
     srcs_always = ["ipopt_solver_common.cc"],
     srcs_enabled = [
         "ipopt_solver.cc",
@@ -980,7 +980,7 @@ drake_cc_variant_library(
 
 drake_cc_variant_library(
     name = "nlopt_solver",
-    opt_out_condition = "//tools:no_nlopt",
+    opt_in_condition = "//tools/workspace/nlopt_internal:enabled",
     srcs_always = ["nlopt_solver_common.cc"],
     srcs_enabled = ["nlopt_solver.cc"],
     srcs_disabled = ["no_nlopt.cc"],
@@ -999,7 +999,7 @@ drake_cc_variant_library(
 
 drake_cc_variant_library(
     name = "osqp_solver",
-    opt_out_condition = "//tools:no_osqp",
+    opt_in_condition = "//tools/workspace/osqp_internal:enabled",
     srcs_always = ["osqp_solver_common.cc"],
     srcs_enabled = ["osqp_solver.cc"],
     srcs_disabled = ["no_osqp.cc"],
@@ -1019,7 +1019,7 @@ drake_cc_variant_library(
 
 drake_cc_variant_library(
     name = "clarabel_solver",
-    opt_out_condition = "//tools:no_clarabel",
+    opt_in_condition = "//tools/workspace/clarabel_cpp_internal:enabled",
     srcs_always = ["clarabel_solver_common.cc"],
     srcs_enabled = ["clarabel_solver.cc"],
     srcs_disabled = ["no_clarabel.cc"],
@@ -1054,7 +1054,7 @@ drake_cc_library(
 
 drake_cc_variant_library(
     name = "scs_solver",
-    opt_out_condition = "//tools:no_scs",
+    opt_in_condition = "//tools/workspace/scs_internal:enabled",
     srcs_always = ["scs_solver_common.cc"],
     srcs_enabled = ["scs_solver.cc"],
     srcs_disabled = ["no_scs.cc"],
@@ -1111,7 +1111,7 @@ drake_cc_library(
 
 drake_cc_optional_library(
     name = "csdp_solver_error_handling",
-    opt_out_condition = "//tools:no_csdp",
+    opt_in_condition = "//tools/workspace/csdp_internal:enabled",
     srcs = ["csdp_solver_error_handling.cc"],
     hdrs = ["csdp_solver_error_handling.h"],
     copts = ["-fvisibility=hidden"],
@@ -1123,7 +1123,7 @@ drake_cc_optional_library(
 
 drake_cc_optional_library(
     name = "csdp_cpp_wrapper",
-    opt_out_condition = "//tools:no_csdp",
+    opt_in_condition = "//tools/workspace/csdp_internal:enabled",
     srcs = ["csdp_cpp_wrapper.cc"],
     hdrs = ["csdp_cpp_wrapper.h"],
     deps = [
@@ -1136,7 +1136,7 @@ drake_cc_optional_library(
 
 drake_cc_optional_library(
     name = "csdp_solver_internal",
-    opt_out_condition = "//tools:no_csdp",
+    opt_in_condition = "//tools/workspace/csdp_internal:enabled",
     srcs = ["csdp_solver_internal.cc"],
     hdrs = ["csdp_solver_internal.h"],
     deps = [
@@ -1147,7 +1147,7 @@ drake_cc_optional_library(
 
 drake_cc_variant_library(
     name = "csdp_solver",
-    opt_out_condition = "//tools:no_csdp",
+    opt_in_condition = "//tools/workspace/csdp_internal:enabled",
     srcs_always = ["csdp_solver_common.cc"],
     srcs_enabled = ["csdp_solver.cc"],
     srcs_disabled = ["no_csdp.cc"],
@@ -1328,7 +1328,7 @@ drake_cc_googletest(
 
 drake_cc_optional_googletest(
     name = "csdp_solver_internal_test",
-    opt_out_condition = "//tools:no_csdp",
+    opt_in_condition = "//tools/workspace/csdp_internal:enabled",
     deps = [
         ":csdp_solver_internal",
         ":csdp_test_examples",
@@ -1338,7 +1338,7 @@ drake_cc_optional_googletest(
 
 drake_cc_optional_googletest(
     name = "csdp_cpp_wrapper_test",
-    opt_out_condition = "//tools:no_csdp",
+    opt_in_condition = "//tools/workspace/csdp_internal:enabled",
     tags = [
         # The longjmp handling definitely leaks memory, and we've decided to
         # just live with that. If we see the longjmp handler triggering when
@@ -1377,6 +1377,23 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "disabled_solvers_test",
+    deps = [
+        ":clarabel_solver_disabled",
+        ":clp_solver_disabled",
+        ":csdp_solver_disabled",
+        ":gurobi_solver_disabled",
+        ":ipopt_solver_disabled",
+        ":mosek_solver_disabled",
+        ":nlopt_solver_disabled",
+        ":osqp_solver_disabled",
+        ":scs_solver_disabled",
+        ":snopt_solver_disabled",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "equality_constrained_qp_solver_test",
     deps = [
         ":equality_constrained_qp_solver",
@@ -1398,7 +1415,7 @@ drake_cc_googletest(
 
 drake_cc_optional_googletest(
     name = "gurobi_solver_internal_test",
-    opt_in_condition = "//tools:with_gurobi",
+    opt_in_condition = "//tools/workspace/gurobi:enabled",
     use_default_main = False,
     deps = [
         ":gurobi_solver",
@@ -1474,33 +1491,30 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "ipopt_solver_internal_test",
     copts = select({
-        "//conditions:default": [
+        "//tools/workspace/ipopt_internal:enabled": [
             "-DDRAKE_IPOPT_SOLVER_INTERNAL_TEST_HAS_IPOPT=1",
         ],
-        "//tools:no_ipopt": [
-        ],
+        "//conditions:default": [],
     }),
     deps = [
         ":mathematical_program",
         "//common/test_utilities:eigen_matrix_compare",
     ] + select({
-        "//conditions:default": [
+        "//tools/workspace/ipopt_internal:enabled": [
             ":ipopt_solver_internal",
             "@ipopt_internal//:ipopt",
         ],
-        "//tools:no_ipopt": [
-        ],
+        "//conditions:default": [],
     }),
 )
 
 drake_cc_googletest(
     name = "ipopt_solver_test",
     copts = select({
-        "//conditions:default": [
+        "//tools/workspace/ipopt_internal:enabled": [
             "-DDRAKE_IPOPT_SOLVER_TEST_HAS_IPOPT=1",
         ],
-        "//tools:no_ipopt": [
-        ],
+        "//conditions:default": [],
     }),
     deps = [
         ":linear_program_examples",
@@ -1513,11 +1527,10 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ] + select({
-        "//conditions:default": [
+        "//tools/workspace/ipopt_internal:enabled": [
             "@ipopt_internal//:ipopt",
         ],
-        "//tools:no_ipopt": [
-        ],
+        "//conditions:default": [],
     }),
 )
 
@@ -1616,7 +1629,7 @@ drake_cc_googletest(
 
 drake_cc_optional_googletest(
     name = "mosek_solver_internal_test",
-    opt_in_condition = "//tools:with_mosek",
+    opt_in_condition = "//tools/workspace/mosek:enabled",
     use_default_main = False,
     deps = [
         ":mosek_solver",

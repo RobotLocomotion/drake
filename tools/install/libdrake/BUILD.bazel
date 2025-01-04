@@ -153,7 +153,7 @@ install(
 cc_library(
     name = "gurobi_deps",
     deps = select({
-        "//tools:with_gurobi": ["@gurobi//:gurobi_c"],
+        "//tools/workspace/gurobi:enabled": ["@gurobi//:gurobi_c"],
         "//conditions:default": [],
     }),
 )
@@ -162,7 +162,7 @@ cc_library(
 cc_library(
     name = "mosek_deps",
     deps = select({
-        "//tools:with_mosek": ["@mosek"],
+        "//tools/workspace/mosek:enabled": ["@mosek"],
         "//conditions:default": [],
     }),
 )
