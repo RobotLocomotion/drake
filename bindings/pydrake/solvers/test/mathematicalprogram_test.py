@@ -1315,13 +1315,22 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.SetSolverOption(solver, "india", 2)
             prog.SetSolverOption(solver, "sierra", "3")
             expected = {"foxtrot": 1.0, "india": 2, "sierra": "3"}
-            self.assertDictEqual(prog.GetSolverOptions(solver), expected)
+            with catch_drake_warnings(expected_count=1):
+                self.assertDictEqual(prog.GetSolverOptions(solver), expected)
             old_options = prog.solver_options()
+            self.assertEqual(old_options.options, {
+                gurobi_id.name(): expected,
+            })
             new_options = copy.deepcopy(old_options)
             new_options.SetOption(gurobi_id, "india", 4)
+            self.assertNotEqual(new_options, old_options)
             prog.SetSolverOptions(new_options)
             expected["india"] = 4
-            self.assertDictEqual(prog.GetSolverOptions(solver), expected)
+            with catch_drake_warnings(expected_count=1):
+                self.assertDictEqual(prog.GetSolverOptions(solver), expected)
+            self.assertEqual(old_options.options, {
+                gurobi_id.name(): expected,
+            })
 
     def test_solver_options(self):
         CSO = mp.CommonSolverOption
@@ -1353,14 +1362,29 @@ class TestMathematicalProgram(unittest.TestCase):
             CSO.kStandaloneReproductionFileName: "repro.txt",
             CSO.kMaxThreads: 4,
         }
-        self.assertDictEqual(dut.GetOptions(solver_id), expected_dummy)
-        self.assertEqual(dut.common_solver_options(), expected_common)
-        self.assertEqual(dut.get_print_to_console(), True)
-        self.assertEqual(dut.get_print_file_name(), "print.log")
-        self.assertEqual(dut.get_standalone_reproduction_file_name(),
-                         "repro.txt")
-        self.assertEqual(dut.get_max_threads(), 4)
+        self.assertEqual(dut.options, {
+            "dummy": expected_dummy,
+            "Drake": dict(
+                (key.name, value)
+                for key, value in expected_common.items()
+            )
+        })
+        with catch_drake_warnings(expected_count=1):
+            self.assertDictEqual(dut.GetOptions(solver_id), expected_dummy)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.common_solver_options(), expected_common)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_print_to_console(), True)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_print_file_name(), "print.log")
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_standalone_reproduction_file_name(),
+                             "repro.txt")
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_max_threads(), 4)
         copy.deepcopy(dut)
+        roundtrip = eval(repr(dut), dict(SolverOptions=SolverOptions))
+        self.assertEqual(roundtrip, dut)
 
     def test_infeasible_constraints(self):
         prog = mp.MathematicalProgram()

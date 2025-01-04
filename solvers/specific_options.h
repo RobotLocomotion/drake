@@ -137,8 +137,9 @@ class SpecificOptions {
   void CheckNoPending() const;
 
   /* Helper function for CopyToSerializableStruct(). Finds the option with the
-  given name, removes it from pending_keys_, and returns it. */
-  std::optional<SolverOptions::OptionValue> PrepareToCopy(const char* name);
+  given name, removes it from pending_keys_, and returns it. If the option was
+  not set, returns nullptr. */
+  const SolverOptions::OptionValue* PrepareToCopy(const char* name);
 
   /* Output helper functions for CopyToSerializableStruct().
   Each one sets its `output` argument to the option value for the given name,
@@ -152,17 +153,23 @@ class SpecificOptions {
   void CopyStringOption(const char* name, std::string* output);
   //@}
 
-  // The solver we're operating on behalf of (as passed to our constructor).
-  const SolverId* const id_;
+  // The common (Drake) options for all solvers.
+  const CommonSolverOptionValues common_options_;
 
-  // The full options for all solvers (as passed to our constructor).
-  const SolverOptions* const all_options_;
+  // The name of the solver we're operating on behalf of.
+  const std::string& solver_name_;
+
+  // The direct options for the solver we're operating on behalf of.
+  // These take precedence over the common_options_.
+  // @warning When looking up options in this map, you must ALWAYS cross-check
+  // the key against popped_ and pretend its missing here when listed there.
+  const string_unordered_map<SolverOptions::OptionValue>& direct_options_;
+
+  // Keys of direct_options_ that have already been popped.
+  string_unordered_set popped_;
 
   // The result of the Respell() callback (or empty, if never called).
   string_unordered_map<SolverOptions::OptionValue> respelled_;
-
-  // Items that have already been popped.
-  string_unordered_set popped_;
 
   // Temporary storage during CopyToSerializableStruct() of option names that
   // are set but haven't yet been processed by Visit().
