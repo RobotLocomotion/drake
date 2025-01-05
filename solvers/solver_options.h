@@ -1,15 +1,18 @@
 #pragma once
 
 #include <optional>
-#include <ostream>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
 #include <variant>
 
-#include "drake/common/drake_assert.h"
-#include "drake/common/drake_copyable.h"
-#include "drake/common/fmt_ostream.h"
+// Remove on 2025-09-01 upon completion of deprecation.
+#include <ostream>
+#include <unordered_map>
+#include <unordered_set>
+
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
+#include "drake/common/name_value.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/solvers/common_solver_option.h"
 #include "drake/solvers/solver_id.h"
 
@@ -62,12 +65,8 @@ boolean options should be passed as integers (0 or 1).
 
 "CSDP" -- Parameter name and values as specified at
 https://manpages.ubuntu.com/manpages/focal/en/man1/csdp-randgraph.1.html */
-class SolverOptions {
+struct SolverOptions final {
  public:
-  SolverOptions() = default;
-
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverOptions);
-
   /** The values stored in SolverOptions can be double, int, or string.
   In the future, we might re-order or add more allowed types without any
   deprecation period, so be sure to use std::visit or std::get<T> to
@@ -84,41 +83,64 @@ class SolverOptions {
   option, the option is ignored. */
   void SetOption(CommonSolverOption key, OptionValue value);
 
-  const std::unordered_map<std::string, double>& GetOptionsDouble(
-      const SolverId& solver_id) const;
+  /** Merges the other solver options into this. If `other` and `this` option
+  both define the same option for the same solver, we ignore then one from
+  `other` and keep the one from `this`. */
+  void Merge(const SolverOptions& other);
 
-  const std::unordered_map<std::string, int>& GetOptionsInt(
-      const SolverId& solver_id) const;
+  bool operator==(const SolverOptions& other) const;
+  bool operator!=(const SolverOptions& other) const;
+  std::string to_string() const;
 
-  const std::unordered_map<std::string, std::string>& GetOptionsStr(
-      const SolverId& solver_id) const;
-
-  /** Gets the common options for all solvers. Refer to CommonSolverOption for
-  more details. */
-  const std::unordered_map<CommonSolverOption, OptionValue>&
-  common_solver_options() const {
-    return common_solver_options_;
+  /** Passes this object to an Archive.
+  Refer to @ref yaml_serialization "YAML Serialization" for background. */
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(options));
   }
 
-  /** Returns the kPrintFileName set via CommonSolverOption, or else an empty
-  string if the option has not been set. */
+  /** The options are indexed first by the solver name and second by the key.
+  In the case of Drake's common options, the solver name is "Drake". */
+  string_unordered_map<string_unordered_map<OptionValue>> options;
+
+  // ==========================================================================
+  // EVERYTHING AFTER THIS POINT IN THIS STRUCT IS DEPRECATION GOOP; IGNORE IT.
+  // ==========================================================================
+
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
+  std::unordered_map<std::string, double> GetOptionsDouble(
+      const SolverId& solver_id) const;
+
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
+  std::unordered_map<std::string, int> GetOptionsInt(
+      const SolverId& solver_id) const;
+
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
+  std::unordered_map<std::string, std::string> GetOptionsStr(
+      const SolverId& solver_id) const;
+
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
+  std::unordered_map<CommonSolverOption, OptionValue> common_solver_options()
+      const;
+
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
   std::string get_print_file_name() const;
 
-  /** Returns the kPrintToConsole set via CommonSolverOption, or else false if
-  the option has not been set. */
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
   bool get_print_to_console() const;
 
-  /** Returns the kStandaloneReproductionFileName set via CommonSolverOption, or
-  else an empty string if the option has not been set. */
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
   std::string get_standalone_reproduction_file_name() const;
 
-  /** Returns the kMaxThreads set via CommonSolverOption. Returns nullopt if
-  kMaxThreads is unset. */
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
   std::optional<int> get_max_threads() const;
 
   template <typename T>
-  const std::unordered_map<std::string, T>& GetOptions(
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
+  std::unordered_map<std::string, T> GetOptions(
       const SolverId& solver_id) const {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     if constexpr (std::is_same_v<T, double>) {
       return GetOptionsDouble(solver_id);
     } else if constexpr (std::is_same_v<T, int>) {
@@ -126,33 +148,14 @@ class SolverOptions {
     } else if constexpr (std::is_same_v<T, std::string>) {
       return GetOptionsStr(solver_id);
     }
+#pragma GCC diagnostic pop
     DRAKE_UNREACHABLE();
   }
 
-  /** Returns the IDs that have any option set. */
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
   std::unordered_set<SolverId> GetSolverIds() const;
 
-  /**  Merges the other solver options into this. If `other` and `this` option
-  both define the same option for the same solver, we ignore then one from
-  `other` and keep the one from `this`. */
-  void Merge(const SolverOptions& other);
-
-  /** Returns true if `this` and `other` have exactly the same solvers, with
-  exactly the same keys and values for the options for each solver. */
-  bool operator==(const SolverOptions& other) const;
-
-  /** Negate operator==. */
-  bool operator!=(const SolverOptions& other) const;
-
-  /** Check if for a given solver_id, the option keys are included in
-  double_keys, int_keys and str_keys.
-  @param solver_id If this SolverOptions has set options for this solver_id,
-  then we check if the option keys are a subset of `double_keys`, `int_keys` and
-  `str_keys`.
-  @param double_keys The set of allowable keys for double options.
-  @param int_keys The set of allowable keys for int options.
-  @param str_keys The set of allowable keys for string options.
-  @throws std::exception if the solver contains un-allowed options. */
+  DRAKE_DEPRECATED("2025-09-01", "Access the 'options' directly, instead.")
   void CheckOptionKeysForSolver(
       const SolverId& solver_id,
       const std::unordered_set<std::string>& allowable_double_keys,
@@ -160,24 +163,22 @@ class SolverOptions {
       const std::unordered_set<std::string>& allowable_str_keys) const;
 
  private:
-  std::unordered_map<SolverId, std::unordered_map<std::string, double>>
-      solver_options_double_{};
-  std::unordered_map<SolverId, std::unordered_map<std::string, int>>
-      solver_options_int_{};
-  std::unordered_map<SolverId, std::unordered_map<std::string, std::string>>
-      solver_options_str_{};
-
-  std::unordered_map<CommonSolverOption, OptionValue> common_solver_options_{};
+  // Remove this field on 2025-09-01 upon completion of deprecation.
+  std::unordered_set<SolverId> solver_ids;
 };
 
+DRAKE_DEPRECATED("2025-09-01", "Use options.to_string(), instead.")
 std::string to_string(const SolverOptions&);
+
+DRAKE_DEPRECATED("2025-09-01", "Use options.to_string(), instead.")
 std::ostream& operator<<(std::ostream&, const SolverOptions&);
+
+namespace internal {
+/* Converts the option_value to a string. */
+std::string OptionValueToString(const SolverOptions::OptionValue& option_value);
+}  // namespace internal
 
 }  // namespace solvers
 }  // namespace drake
 
-// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
-namespace fmt {
-template <>
-struct formatter<drake::solvers::SolverOptions> : drake::ostream_formatter {};
-}  // namespace fmt
+DRAKE_FORMATTER_AS(, drake::solvers, SolverOptions, x, x.to_string())

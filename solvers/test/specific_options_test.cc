@@ -21,6 +21,14 @@ const SolverId& GetSolverId() {
   return result.access();
 }
 
+GTEST_TEST(SpecificOptionsTest, NullChecks) {
+  const SolverId& solver_id = GetSolverId();
+  SolverOptions options;
+  EXPECT_NO_THROW(SpecificOptions(&solver_id, &options));
+  DRAKE_EXPECT_THROWS_MESSAGE(SpecificOptions(nullptr, &options), ".*null.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(SpecificOptions(&solver_id, nullptr), ".*null.*");
+}
+
 GTEST_TEST(SpecificOptionsTest, BasicPop) {
   const SolverId& solver_id = GetSolverId();
   SolverOptions solver_options;
@@ -336,28 +344,28 @@ GTEST_TEST(SpecificOptionsTest, StructNoSuchField) {
 GTEST_TEST(SpecificOptionsTest, StructWrongType) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       CopyOneOptionToSerializableStruct("my_double", "foo"),
-      ".*floating.point.*my_double.*");
+      ".*floating.point.*my_double=\"foo\".*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       CopyOneOptionToSerializableStruct("my_int", "foo"),
-      ".*integer.*my_int.*");
+      ".*integer.*my_int=\"foo\".*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       CopyOneOptionToSerializableStruct("my_string", 0.5),
-      ".*string.*my_string.*");
+      ".*string.*my_string=0.5.*");
 }
 
 GTEST_TEST(SpecificOptionsTest, StructBadBool) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       CopyOneOptionToSerializableStruct("print_to_console", -1),
-      ".*(0 or 1).*print_to_console.*");
+      ".*(0 or 1).*print_to_console=-1.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       CopyOneOptionToSerializableStruct("print_to_console", 2),
-      ".*(0 or 1).*print_to_console.*");
+      ".*(0 or 1).*print_to_console=2.*");
 }
 
 GTEST_TEST(SpecificOptionsTest, StructBadUint32) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       CopyOneOptionToSerializableStruct("max_threads", -1),
-      ".*non-negative.*max_threads.*");
+      ".*non-negative.*max_threads=-1.*");
 }
 
 }  // namespace
