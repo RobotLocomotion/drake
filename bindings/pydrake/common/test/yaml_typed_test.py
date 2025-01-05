@@ -1026,9 +1026,8 @@ class TestYamlTypedWrite(unittest.TestCase):
             ),
             (
                 "foo",
-                # TODO(jwnimmer-tri) We want `value: !!str foo\n` here, but I
-                # can't figure out how to teach pyyaml to emit that.
-                "value: 'foo'\n",
+                # TODO(jwnimmer-tri) Ditto the above (re: quoting).
+                "value: !!str 'foo'\n",
             ),
         ]
         for value, expected_doc in cases:
