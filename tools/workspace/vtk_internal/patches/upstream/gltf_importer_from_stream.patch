@@ -43,7 +43,7 @@ adheres to how kitware would accomplish the same end.
     * glTF defines multiple camera objects, but no default behavior for which camera should be
     * used. The importer will by default apply the asset's first camera. This accessor lets you use
 @@ -156,6 +175,9 @@ protected:
-   void ApplySkinningMorphing();
+   virtual void ApplyArmatureProperties(vtkActor* actor);
  
    char* FileName = nullptr;
 +  vtkSmartPointer<vtkResourceStream> FileStream;
