@@ -74,13 +74,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   PiecewiseQuaternionSlerp(const std::vector<T>& breaks,
                            const std::vector<AngleAxis<T>>& angle_axes);
 
-  ~PiecewiseQuaternionSlerp() override;
-
-  std::unique_ptr<Trajectory<T>> Clone() const override;
-
-  Eigen::Index rows() const override { return 4; }
-
-  Eigen::Index cols() const override { return 1; }
+  ~PiecewiseQuaternionSlerp() final;
 
   /**
    * Interpolates orientation.
@@ -88,11 +82,6 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    * @return The interpolated quaternion at `time`.
    */
   Quaternion<T> orientation(const T& time) const;
-
-  MatrixX<T> value(const T& time) const override {
-    const Quaternion<T> quat = orientation(time);
-    return Vector4<T>(quat.w(), quat.x(), quat.y(), quat.z());
-  }
 
   /**
    * Interpolates angular velocity.
@@ -154,12 +143,18 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   // Computes the interpolation time within each segment. Result is in [0, 1].
   T ComputeInterpTime(int segment_index, const T& time) const;
 
-  bool do_has_derivative() const override;
-
-  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
-
+  // Trajectory overrides.
+  std::unique_ptr<Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& time) const final {
+    const Quaternion<T> quat = orientation(time);
+    return Vector4<T>(quat.w(), quat.x(), quat.y(), quat.z());
+  }
+  bool do_has_derivative() const final;
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final;
   std::unique_ptr<Trajectory<T>> DoMakeDerivative(
-      int derivative_order) const override;
+      int derivative_order) const final;
+  Eigen::Index do_rows() const final { return 4; }
+  Eigen::Index do_cols() const final { return 1; }
 
   std::vector<Quaternion<T>> quaternions_;
   std::vector<Vector3<T>> angular_velocities_;

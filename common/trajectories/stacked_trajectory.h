@@ -47,14 +47,6 @@ class StackedTrajectory final : public Trajectory<T> {
   @throws std::exception if the matrix dimension is incompatible. */
   void Append(const Trajectory<T>& traj);
 
-  // Trajectory overrides.
-  std::unique_ptr<Trajectory<T>> Clone() const final;
-  MatrixX<T> value(const T& t) const final;
-  Eigen::Index rows() const final;
-  Eigen::Index cols() const final;
-  T start_time() const final;
-  T end_time() const final;
-
  private:
   void CheckInvariants() const;
 
@@ -62,10 +54,16 @@ class StackedTrajectory final : public Trajectory<T> {
   void Append(std::unique_ptr<Trajectory<T>> traj);
 
   // Trajectory overrides.
+  std::unique_ptr<Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& t) const final;
   bool do_has_derivative() const final;
   MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final;
   std::unique_ptr<Trajectory<T>> DoMakeDerivative(
       int derivative_order) const final;
+  Eigen::Index do_rows() const final;
+  Eigen::Index do_cols() const final;
+  T do_start_time() const final;
+  T do_end_time() const final;
 
   bool rowwise_{};
   std::vector<copyable_unique_ptr<Trajectory<T>>> children_;

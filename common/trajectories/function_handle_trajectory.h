@@ -58,26 +58,22 @@ class FunctionHandleTrajectory final : public Trajectory<T> {
     derivative_func_ = func;
   }
 
-  // Trajectory overrides.
-  std::unique_ptr<Trajectory<T>> Clone() const final;
-  MatrixX<T> value(const T& t) const final;
-  Eigen::Index rows() const final { return rows_; };
-  Eigen::Index cols() const final { return cols_; };
-  T start_time() const final { return start_time_; };
-  T end_time() const final { return end_time_; };
-
  private:
   // Trajectory overrides.
+  std::unique_ptr<Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& t) const final;
   bool do_has_derivative() const final { return derivative_func_ != nullptr; }
-
   // This method throws a std::exception if derivative_order != 0 and
   // derivative_func_ == nullptr.
-  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
-
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final;
   // This method throws a std::exception if derivative_order != 0 and
   // derivative_func_ == nullptr.
   std::unique_ptr<Trajectory<T>> DoMakeDerivative(
-      int derivative_order) const override;
+      int derivative_order) const final;
+  Eigen::Index do_rows() const final { return rows_; };
+  Eigen::Index do_cols() const final { return cols_; };
+  T do_start_time() const final { return start_time_; };
+  T do_end_time() const final { return end_time_; };
 
   std::function<MatrixX<T>(const T&)> func_{};
   std::function<MatrixX<T>(const T&, int)> derivative_func_{};

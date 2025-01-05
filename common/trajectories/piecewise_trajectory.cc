@@ -51,16 +51,6 @@ T PiecewiseTrajectory<T>::duration(int segment_number) const {
 }
 
 template <typename T>
-T PiecewiseTrajectory<T>::start_time() const {
-  return start_time(0);
-}
-
-template <typename T>
-T PiecewiseTrajectory<T>::end_time() const {
-  return end_time(get_number_of_segments() - 1);
-}
-
-template <typename T>
 int PiecewiseTrajectory<T>::GetSegmentIndexRecursive(const T& time, int start,
                                                      int end) const {
   DRAKE_DEMAND(end >= start);
@@ -119,6 +109,16 @@ std::vector<T> PiecewiseTrajectory<T>::RandomSegmentTimes(
     breaks.push_back(breaks[i] + duration);
   }
   return breaks;
+}
+
+template <typename T>
+T PiecewiseTrajectory<T>::do_start_time() const {
+  return start_time(0);
+}
+
+template <typename T>
+T PiecewiseTrajectory<T>::do_end_time() const {
+  return end_time(get_number_of_segments() - 1);
 }
 
 template <typename T>

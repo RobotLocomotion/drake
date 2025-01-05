@@ -51,32 +51,12 @@ template <typename T>
 CompositeTrajectory<T>::~CompositeTrajectory() = default;
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> CompositeTrajectory<T>::Clone() const {
+std::unique_ptr<Trajectory<T>> CompositeTrajectory<T>::DoClone() const {
   return std::make_unique<CompositeTrajectory<T>>(segments_);
 }
 
 template <typename T>
-Eigen::Index CompositeTrajectory<T>::rows() const {
-  if (segments_.size() > 0) {
-    return segments_[0]->rows();
-  } else {
-    throw std::runtime_error(
-        "CompositeTrajectory has no segments. Number of rows is undefined.");
-  }
-}
-
-template <typename T>
-Eigen::Index CompositeTrajectory<T>::cols() const {
-  if (segments_.size() > 0) {
-    return segments_[0]->cols();
-  } else {
-    throw std::runtime_error(
-        "CompositeTrajectory has no segments. Number of cols is undefined.");
-  }
-}
-
-template <typename T>
-MatrixX<T> CompositeTrajectory<T>::value(const T& time) const {
+MatrixX<T> CompositeTrajectory<T>::do_value(const T& time) const {
   const int segment_index = this->get_segment_index(time);
   DRAKE_DEMAND(static_cast<int>(segments_.size()) > segment_index);
   return this->segments_[segment_index]->value(time);
@@ -111,6 +91,26 @@ std::unique_ptr<Trajectory<T>> CompositeTrajectory<T>::DoMakeDerivative(
     derivative_curves[i] = segments_[i]->MakeDerivative(derivative_order);
   }
   return std::make_unique<CompositeTrajectory<T>>(std::move(derivative_curves));
+}
+
+template <typename T>
+Eigen::Index CompositeTrajectory<T>::do_rows() const {
+  if (segments_.size() > 0) {
+    return segments_[0]->rows();
+  } else {
+    throw std::runtime_error(
+        "CompositeTrajectory has no segments. Number of rows is undefined.");
+  }
+}
+
+template <typename T>
+Eigen::Index CompositeTrajectory<T>::do_cols() const {
+  if (segments_.size() > 0) {
+    return segments_[0]->cols();
+  } else {
+    throw std::runtime_error(
+        "CompositeTrajectory has no segments. Number of cols is undefined.");
+  }
 }
 
 template <typename T>

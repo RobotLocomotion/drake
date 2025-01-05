@@ -22,12 +22,12 @@ template <typename T>
 PathParameterizedTrajectory<T>::~PathParameterizedTrajectory() = default;
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> PathParameterizedTrajectory<T>::Clone() const {
+std::unique_ptr<Trajectory<T>> PathParameterizedTrajectory<T>::DoClone() const {
   return std::make_unique<PathParameterizedTrajectory<T>>(*this);
 }
 
 template <typename T>
-MatrixX<T> PathParameterizedTrajectory<T>::value(const T& t) const {
+MatrixX<T> PathParameterizedTrajectory<T>::do_value(const T& t) const {
   using std::clamp;
   const T time =
       clamp(t, time_scaling_->start_time(), time_scaling_->end_time());
@@ -67,7 +67,7 @@ MatrixX<T> PathParameterizedTrajectory<T>::DoEvalDerivative(
     }
     // Derivative is calculated using Faà di Bruno's formula with Bell
     // polynomials: https://en.wikipedia.org/wiki/Fa%C3%A0_di_Bruno%27s_formula
-    MatrixX<T> derivative = MatrixX<T>::Zero(rows(), cols());
+    MatrixX<T> derivative = MatrixX<T>::Zero(this->rows(), this->cols());
     for (int order = 1; order <= derivative_order; ++order) {
       MatrixX<T> path_partial =
           path_->EvalDerivative(time_scaling_->value(time)(0, 0), order);

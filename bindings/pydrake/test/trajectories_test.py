@@ -8,6 +8,7 @@ import scipy.sparse
 from pydrake.common import ToleranceType
 from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue
 from pydrake.common.yaml import yaml_load_typed
@@ -31,26 +32,71 @@ from pydrake.trajectories import (
 from pydrake.symbolic import Variable, Expression
 
 
-# Custom trajectory class used to test Trajectory subclassing in python.
+# Custom trajectory class used to test Trajectory subclassing in Python.
 class CustomTrajectory(Trajectory):
     def __init__(self):
         Trajectory.__init__(self)
 
+    # TODO(jwnimmer-tri) Should be __deepcopy__ not Clone.
     def Clone(self):
         return CustomTrajectory()
 
+    def do_value(self, t):
+        return np.array([[t + 1.0, t + 2.0]])
+
+    def do_has_derivative(self):
+        return True
+
+    def DoEvalDerivative(self, t, derivative_order):
+        if derivative_order >= 2:
+            return np.zeros((1, 2))
+        elif derivative_order == 1:
+            return np.ones((1, 2))
+        elif derivative_order == 0:
+            return self.value(t)
+
+    def DoMakeDerivative(self, derivative_order):
+        return DerivativeTrajectory_[float](self, derivative_order)
+
+    def do_rows(self):
+        return 1
+
+    def do_cols(self):
+        return 2
+
+    def do_start_time(self):
+        return 3.0
+
+    def do_end_time(self):
+        return 4.0
+
+
+# Legacy custom trajectory class used to test Trajectory subclassing in Python.
+# This uses the old spellings for how to override the NVI functions.
+class LegacyCustomTrajectory(Trajectory):
+    def __init__(self):
+        Trajectory.__init__(self)
+
+    def Clone(self):
+        return LegacyCustomTrajectory()
+
+    # This spelling of the virtual override is deprecated.
     def rows(self):
         return 1
 
+    # This spelling of the virtual override is deprecated.
     def cols(self):
         return 2
 
+    # This spelling of the virtual override is deprecated.
     def start_time(self):
         return 3.0
 
+    # This spelling of the virtual override is deprecated.
     def end_time(self):
         return 4.0
 
+    # This spelling of the virtual override is deprecated.
     def value(self, t):
         return np.array([[t + 1.0, t + 2.0]])
 
@@ -97,6 +143,34 @@ class TestTrajectories(unittest.TestCase):
         deriv = trajectory.MakeDerivative(derivative_order=1)
         numpy_compare.assert_float_equal(
             deriv.value(t=2.3), np.ones((1, 2)))
+
+    def test_legacy_custom_trajectory(self):
+        trajectory = LegacyCustomTrajectory()
+        self.assertEqual(trajectory.rows(), 1)
+        self.assertEqual(trajectory.cols(), 2)
+        self.assertEqual(trajectory.start_time(), 3.0)
+        self.assertEqual(trajectory.end_time(), 4.0)
+        self.assertTrue(trajectory.has_derivative())
+        numpy_compare.assert_float_equal(trajectory.value(t=1.5),
+                                         np.array([[2.5, 3.5]]))
+        numpy_compare.assert_float_equal(
+            trajectory.EvalDerivative(t=2.3, derivative_order=1),
+            np.ones((1, 2)))
+        numpy_compare.assert_float_equal(
+            trajectory.EvalDerivative(t=2.3, derivative_order=2),
+            np.zeros((1, 2)))
+
+        # Use StackedTrajectory to call the deprecated overrides from C++ so
+        # that we trigger the deprecation warnings.
+        stacked = StackedTrajectory_[float]()
+        with catch_drake_warnings(expected_count=2):
+            stacked.Append(trajectory)  # Warns for both rows() and cols().
+        with catch_drake_warnings(expected_count=1):
+            stacked.value(t=1.5)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(stacked.start_time(), 3.0)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(stacked.end_time(), 4.0)
 
     @numpy_compare.check_all_types
     def test_bezier_curve(self, T):

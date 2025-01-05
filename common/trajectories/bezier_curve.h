@@ -41,7 +41,7 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   // TODO(russt): Add support for MatrixX control points, but only if we have a
   // use case for it.
 
-  ~BezierCurve() override;
+  ~BezierCurve() final;
 
   /** Returns the order of the curve (1 for linear, 2 for quadratic, etc.). */
   int order() const { return control_points_.cols() - 1; }
@@ -91,16 +91,15 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   Eigen::SparseMatrix<double> AsLinearInControlPoints(
       int derivative_order = 1) const;
 
-  // Required methods for trajectories::Trajectory interface.
-
-  std::unique_ptr<trajectories::Trajectory<T>> Clone() const override;
-
   /** Evaluates the curve at the given time.
   @warning If t does not lie in the range [start_time(), end_time()], the
            trajectory will silently be evaluated at the closest valid value of
            time to `time`. For example, `value(-1)` will return `value(0)` for
            a trajectory defined over [0, 1]. */
-  MatrixX<T> value(const T& time) const override;
+  MatrixX<T> value(const T& t) const final {
+    // We shadowed the base class to add documentation, not to change logic.
+    return Trajectory<T>::value(t);
+  }
 
   /** Extracts the expanded underlying polynomial expression of this curve in
    terms of variable `time`. */
@@ -112,24 +111,21 @@ class BezierCurve final : public trajectories::Trajectory<T> {
    control points of `this` are modified to obtain the equivalent curve. */
   void ElevateOrder();
 
-  Eigen::Index rows() const override { return control_points_.rows(); }
-
-  Eigen::Index cols() const override { return 1; }
-
-  T start_time() const override { return start_time_; }
-
-  T end_time() const override { return end_time_; }
-
  private:
+  // Trajectory overrides.
+  std::unique_ptr<trajectories::Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& t) const final;
+  bool do_has_derivative() const final { return true; }
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final;
+  std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
+      int derivative_order) const final;
+  Eigen::Index do_rows() const final { return control_points_.rows(); }
+  Eigen::Index do_cols() const final { return 1; }
+  T do_start_time() const final { return start_time_; }
+  T do_end_time() const final { return end_time_; }
+
   /* Calculates the control points of the derivative curve. */
   MatrixX<T> CalcDerivativePoints(int derivative_order) const;
-
-  bool do_has_derivative() const override { return true; }
-
-  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
-
-  std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
-      int derivative_order) const override;
 
   VectorX<T> EvaluateT(const T& time) const;
 

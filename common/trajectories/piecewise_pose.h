@@ -37,7 +37,7 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
   PiecewisePose(const PiecewisePolynomial<T>& position_trajectory,
                 const PiecewiseQuaternionSlerp<T>& orientation_trajectory);
 
-  ~PiecewisePose() override;
+  ~PiecewisePose() final;
 
   /**
    * Constructs a PiecewisePose from given @p times and @p poses. The positions
@@ -67,20 +67,10 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
       const Vector3<T>& start_vel = Vector3<T>::Zero(),
       const Vector3<T>& end_vel = Vector3<T>::Zero());
 
-  std::unique_ptr<Trajectory<T>> Clone() const override;
-
-  Eigen::Index rows() const override { return 4; }
-
-  Eigen::Index cols() const override { return 4; }
-
   /**
    * Returns the interpolated pose at @p time.
    */
   math::RigidTransform<T> GetPose(const T& time) const;
-
-  MatrixX<T> value(const T& t) const override {
-    return GetPose(t).GetAsMatrix4();
-  }
 
   /**
    * Returns the interpolated velocity at @p time or zero if @p time is before
@@ -115,12 +105,17 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
   }
 
  private:
-  bool do_has_derivative() const override;
-
-  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
-
+  // Trajectory overrides.
+  std::unique_ptr<Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& t) const final {
+    return GetPose(t).GetAsMatrix4();
+  }
+  bool do_has_derivative() const final;
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final;
   std::unique_ptr<Trajectory<T>> DoMakeDerivative(
-      int derivative_order) const override;
+      int derivative_order) const final;
+  Eigen::Index do_rows() const final { return 4; }
+  Eigen::Index do_cols() const final { return 4; }
 
   PiecewisePolynomial<T> position_;
   PiecewisePolynomial<T> velocity_;
