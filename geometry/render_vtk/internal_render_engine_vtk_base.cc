@@ -7,8 +7,8 @@
 #include <fmt/format.h>
 
 // To ease build system upkeep, we annotate VTK includes with their deps.
-#include <vtkCapsuleSource.h>                  // vtkFiltersSources
 #include <vtkCellArray.h>                      // vtkCommonDataModel
+#include <vtkCylinderSource.h>                 // vtkFiltersSources
 #include <vtkFloatArray.h>                     // vtkCommonCore
 #include <vtkInformation.h>                    // vtkCommonCore
 #include <vtkInformationVector.h>              // vtkCommonCore
