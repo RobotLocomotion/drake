@@ -82,6 +82,7 @@ drake_pybind_library(
     ],
     py_srcs = [
         "_extra.py",
+        "_solvers_extra.py",
     ],
 )
 

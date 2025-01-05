@@ -40,6 +40,8 @@ top-level documentation for :py:mod:`pydrake.math`.
   internal::DefineSolversScs(m);
   internal::DefineSolversSnopt(m);
   internal::DefineSolversUnrevisedLemke(m);
+
+  ExecuteExtraPythonCode(m, true);
 }
 
 }  // namespace pydrake
