@@ -70,7 +70,7 @@ void TestDrakeSolutionVsExactSolutionForTorqueFreeCylinder(
   // wDt_NB_N  is B's angular acceleration in N, expressed in N, and
   //           is equal to [ẇx, ẇy, ẇz], where [wx, wy, wz] is w_NB_N.
   // xyzDDt is [ẍ  ÿ  z̈] Bcm's acceleration in N, expressed in N.
-  axisymmetric_plant.CalcTimeDerivatives(context, stateDt_drake);
+  axisymmetric_plant.plant().CalcTimeDerivatives(context, stateDt_drake);
   const VectorXd stateDt_as_vector = stateDt_drake->CopyToVector();
   const Vector4d quatDt_NB_drake = stateDt_as_vector.segment<4>(0);
   const Vector3d xyzDt_drake     = stateDt_as_vector.segment<3>(4);
@@ -154,7 +154,8 @@ void  IntegrateForwardWithVariableStepRungeKutta3(
                dt_max > 0.0  &&  t_final > 0.0);
 
   // Integrate with variable-step Runge-Kutta3 integrator.
-  systems::RungeKutta3Integrator<double> rk3(axisymmetric_plant, context);
+  systems::RungeKutta3Integrator<double> rk3(axisymmetric_plant.plant(),
+                                             context);
   rk3.set_maximum_step_size(dt_max);  // Need before Initialize (or exception).
   const double maximum_absolute_error_per_integration_step = 1.0E-3;
   rk3.set_target_accuracy(maximum_absolute_error_per_integration_step);
@@ -302,12 +303,13 @@ void  TestDrakeSolutionForVariousInitialValues(
   // Drake's Simulator will create a Context by calling axisymmetric_plant's
   // CreateDefaultContext(). This in turn will initialize its state by making a
   // call to this system's SetDefaultState().
-  systems::Simulator<double> simulator(axisymmetric_plant);
+  systems::Simulator<double> simulator(axisymmetric_plant.plant(),
+                                       axisymmetric_plant.CreatePlantContext());
   systems::Context<double>& context = simulator.get_mutable_context();
 
   // Allocate space to hold the time-derivative of the Drake state.
   std::unique_ptr<systems::ContinuousState<double>> stateDt =
-      axisymmetric_plant.AllocateTimeDerivatives();
+      axisymmetric_plant.plant().AllocateTimeDerivatives();
   drake::systems::ContinuousState<double>* stateDt_drake = stateDt.get();
 
   // Test a variety of initial normalized quaternions.

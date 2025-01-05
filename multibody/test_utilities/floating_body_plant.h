@@ -13,7 +13,6 @@ namespace drake {
 namespace multibody {
 namespace test {
 
-// TODO(eric.cousineau): Change this to not inherit from `MultibodyPlant`.
 /// This plant models the free motion of a torque free body in space.
 /// This body is axially symmetric with rotational inertia about its axis of
 /// revolution J and with a rotational inertia I about any axis perpendicular to
@@ -21,9 +20,9 @@ namespace test {
 /// analytical solution which we have implemented in
 /// drake::multibody::benchmarks::free_body::FreeBody.
 ///
-/// @tparam_nonsymbolic_scalar
+/// @tparam_double_only
 template<typename T>
-class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
+class AxiallySymmetricFreeBodyPlant {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(AxiallySymmetricFreeBodyPlant);
 
@@ -44,18 +43,16 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
   AxiallySymmetricFreeBodyPlant(double mass, double I, double J, double g,
                                 double time_step = 0.0);
 
-  /// Scalar-converting copy constructor.
-  template <typename U>
-  explicit AxiallySymmetricFreeBodyPlant(
-      const AxiallySymmetricFreeBodyPlant<U>&);
+  ~AxiallySymmetricFreeBodyPlant();
 
-  /// Sets `state` to a default value corresponding to a configuration in which
-  /// the free body frame B is coincident with the world frame W and the angular
-  /// and translational velocities have a value as returned by
-  /// get_default_initial_angular_velocity() and
+  /// Returns the underlying MbP model.
+  const MultibodyPlant<T>& plant() const { return *plant_; }
+
+  /// Returns a MbP context in which the free body frame B is coincident with
+  /// the world frame W and the angular and translational velocities have a
+  /// value as returned by get_default_initial_angular_velocity() and
   /// get_default_initial_translational_velocity(), respectively.
-  void SetDefaultState(const systems::Context<T>& context,
-                       systems::State<T>* state) const override;
+  std::unique_ptr<systems::Context<T>> CreatePlantContext() const;
 
   /// Returns the angular velocity `w_WB` stored in `context` of the free body B
   /// in the world frame W.
@@ -91,13 +88,14 @@ class AxiallySymmetricFreeBodyPlant final : public MultibodyPlant<T> {
 
  private:
   const internal::MultibodyTree<T>& tree() const {
-    return internal::GetInternalTree(*this);
+    return internal::GetInternalTree(*plant_);
   }
 
   double mass_{0};
   double I_{0};
   double J_{0};
   double g_{0};
+  std::unique_ptr<MultibodyPlant<T>> plant_;
   const RigidBody<T>* body_{nullptr};
 };
 
