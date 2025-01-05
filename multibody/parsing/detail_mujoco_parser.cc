@@ -49,16 +49,8 @@ using tinyxml2::XMLNode;
 
 namespace {
 
-// Any attributes from `default` that are not specified in `node` will be added
-// to `node`.
-void ApplyDefaultAttributes(const XMLElement& default_node, XMLElement* node) {
-  for (const XMLAttribute* default_attr = default_node.FirstAttribute();
-       default_attr != nullptr; default_attr = default_attr->Next()) {
-    if (!node->Attribute(default_attr->Name())) {
-      node->SetAttribute(default_attr->Name(), default_attr->Value());
-    }
-  }
-}
+constexpr std::array kOrientationAttributes = {  // BR
+    "quat", "axisangle", "euler", "xyaxes", "zaxis"};
 
 class MujocoParser {
  public:
@@ -72,30 +64,68 @@ class MujocoParser {
     unused(workspace_);
   }
 
+  void ErrorIfMoreThanOneOrientation(const XMLElement& node) {
+    int num_orientation_attrs = 0;
+    for (const char* attr : kOrientationAttributes) {
+      if (node.Attribute(attr) != nullptr) {
+        ++num_orientation_attrs;
+      }
+    }
+    if (num_orientation_attrs > 1) {
+      std::string attributes;
+      for (const XMLAttribute* attr = node.FirstAttribute(); attr;
+            attr = attr->Next()) {
+        attributes += fmt::format("{}={} ", attr->Name(),
+                                  fmt_debug_string(attr->Value()));
+      }
+      Error(node,
+            fmt::format(
+                "Element {} has more than one orientation attribute specified. "
+                "There must be no more than one instance of `quat`, "
+                "`axisangle`, `euler`, `xyaxes`, or `zaxis`. "
+                "Attributes: [{}]",
+                node.Name(), attributes));
+    }
+  }
+
+  // Any attributes from `default` that are not specified in `node` will be
+  // added to `node`. For orientation attributes, we do not apply orientation
+  // attribute defaults if the node already has an orientation attribute.
+  void ApplyDefaultAttributes(const XMLElement& default_node,
+                              XMLElement* node) {
+    bool node_has_orientation_attr = false;
+    for (const char* attr : kOrientationAttributes) {
+      if (node->Attribute(attr) != nullptr) {
+        node_has_orientation_attr = true;
+        break;
+      }
+    }
+
+    for (const XMLAttribute* default_attr = default_node.FirstAttribute();
+         default_attr != nullptr; default_attr = default_attr->Next()) {
+      if (!node->Attribute(default_attr->Name())) {
+        if (node_has_orientation_attr &&
+            std::find_if(kOrientationAttributes.cbegin(),
+                         kOrientationAttributes.cend(),
+                         [&default_attr](const char* attr) {
+                           return strcmp(attr, default_attr->Name()) == 0;
+                         }) != kOrientationAttributes.cend()) {
+          // Don't apply default orientation attributes if the node already has
+          // an orientation attribute.
+          continue;
+        }
+        node->SetAttribute(default_attr->Name(), default_attr->Value());
+      }
+    }
+  }
+
   RigidTransformd ParseTransform(
       XMLElement* node, const RigidTransformd& X_default = RigidTransformd{}) {
     Vector3d pos(X_default.translation());
     ParseVectorAttribute(node, "pos", &pos);
+    ErrorIfMoreThanOneOrientation(*node);
 
-    // Check that only one of the orientation variants are supplied:
-    const int num_orientation_attrs =
-        (node->Attribute("quat") != nullptr ? 1 : 0) +
-        (node->Attribute("axisangle") != nullptr ? 1 : 0) +
-        (node->Attribute("euler") != nullptr ? 1 : 0) +
-        (node->Attribute("xyaxes") != nullptr ? 1 : 0) +
-        (node->Attribute("zaxis") != nullptr ? 1 : 0);
-    if (num_orientation_attrs > 1) {
-      Error(
-          *node,
-          fmt::format(
-              "Element {} has more than one orientation attribute specified "
-              "(perhaps through defaults). There must be no more than one "
-              "instance of `quat`, `axisangle`, `euler`, `xyaxes`, or `zaxis`.",
-              node->Name()));
-      return {};
-    }
-
-    {
+    if (node->Attribute("quat") != nullptr) {
       Vector4d quat;  // MuJoCo uses w,x,y,z order.
       if (ParseVectorAttribute(node, "quat", &quat)) {
         return RigidTransformd(
@@ -1228,7 +1258,7 @@ class MujocoParser {
         std::filesystem::path filename(file);
 
         /* Adapted from the mujoco docs: The full path to a file is determined
-        as follows. If the strippath compiler option is “true”, all path
+        as follows. If the strippath compiler option is "true", all path
         information from the file name is removed. The following checks are
         then applied in order: (1) if the file name contains an absolute path,
         it is used without further changes; (2) if the compiler meshdir
