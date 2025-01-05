@@ -18,7 +18,7 @@ def _fortran_object(
     output_mods: (Optional) List of *.mod files that this module provides.
     fopts: (Optional) Extra options to pass to the fortran compiler.
     """
-    compiler = "@gfortran//:compiler"
+    compiler = "@drake//tools/workspace/gfortran:compiler"
     compiler_args = ["-fPIC"] + fopts
     inputs = [src] + input_mods
     outputs = [obj] + output_mods
@@ -93,7 +93,7 @@ def fortran_library(
     # Provide a cc_library with the final result.
     kwargs = amend(kwargs, "deps", prepend = [
         "_{}_archive_hidden".format(name),
-        "@gfortran//:runtime",
+        "@drake//tools/workspace/gfortran:runtime",
     ])
     cc_library(
         name = name,
