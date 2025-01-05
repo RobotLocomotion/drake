@@ -713,6 +713,24 @@ class MujocoParser {
     }
 
     std::string mesh;
+    bool has_mesh_attribute = ParseStringAttribute(node, "mesh", &mesh);
+    if (has_mesh_attribute && type != "mesh") {
+      if (type == "sphere" || type == "capsule" || type == "cylinder" ||
+          type == "ellipsoid" || type == "box") {
+        Error(*node,
+              fmt::format(
+                  "geom {} specified type '{}' but also has a mesh attribute. "
+                  "The intended behavior is to compute the size of the shape "
+                  "from the mesh, but this is not supported yet (#22372).",
+                  geom.name, type));
+        return geom;
+      } else {
+        Error(*node, fmt::format("geom {} specified a 'mesh', but this is not "
+                                 "allowed for type '{}'.",
+                                 geom.name, type));
+        return geom;
+      }
+    }
     if (type == "plane") {
       // We interpret the MuJoCo infinite plane as a half-space.
       geom.shape = std::make_unique<geometry::HalfSpace>();
@@ -801,7 +819,7 @@ class MujocoParser {
             size[0] * 2.0, size[1] * 2.0, size[2] * 2.0);
       }
     } else if (type == "mesh") {
-      if (!ParseStringAttribute(node, "mesh", &mesh)) {
+      if (!has_mesh_attribute) {
         Error(*node, fmt::format("geom {} specified type 'mesh', but did not "
                                  "set the mesh attribute",
                                  geom.name));
@@ -824,16 +842,6 @@ class MujocoParser {
     } else {
       Error(*node, fmt::format("Unrecognized geom type {}", type));
       return geom;
-    }
-
-    if (type != "mesh") {
-      // TODO(russt): Support the mesh tag for non-mesh geometry. (Presumably
-      // this is how they specify different visual + collision geometry).
-      WarnUnsupportedAttribute(*node, "mesh");
-      /* From the MuJoCo docs: Note that mesh assets can also be referenced
-      from other geom types, causing primitive shapes to be fitted; see below.
-      The size is determined by the mesh asset and the geom size parameters are
-      ignored. */
     }
 
     int contype{1};

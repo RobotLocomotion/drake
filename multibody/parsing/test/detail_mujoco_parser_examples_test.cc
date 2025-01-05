@@ -95,7 +95,8 @@ constexpr std::string_view kItWorks{""};
 constexpr std::string_view kSkipMe{"skip me"};
 namespace KnownErrors {
 constexpr std::string_view kNonUniformScale{".*non-uniform scale.*"};  // #22046
-constexpr std::string_view kCapsuleSize{".*size attribute for capsule geom.*"};
+constexpr std::string_view kSizeFromMesh =
+    ".*size of the shape from the mesh.*";  // #22372
 }  // namespace KnownErrors
 
 class MujocoMenagerieTest : public MujocoParserExamplesTest,
@@ -149,8 +150,9 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"boston_dynamics_spot/scene_arm", kItWorks},
     {"boston_dynamics_spot/spot", kItWorks},
     {"boston_dynamics_spot/spot_arm", kItWorks},
-    {"flybody/fruitfly", kSkipMe},  // works, but too slow in debug mode.
-    {"flybody/scene", kSkipMe},     // works, but too slow in debug mode.
+    {"flybody/fruitfly",
+     kSkipMe},                   // kSizeFromMesh, but too slow in debug mode.
+    {"flybody/scene", kSkipMe},  // kSizeFromMesh, but too slow in debug mode.
     {"franka_emika_panda/hand", kItWorks},
     {"franka_emika_panda/mjx_panda", kItWorks},
     {"franka_emika_panda/mjx_scene", kItWorks},
@@ -211,7 +213,7 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"pal_tiago_dual/tiago_dual_motor", KnownErrors::kNonUniformScale},
     {"pal_tiago_dual/tiago_dual_position", KnownErrors::kNonUniformScale},
     {"pal_tiago_dual/tiago_dual_velocity", KnownErrors::kNonUniformScale},
-    {"realsense_d435i/d435i", KnownErrors::kCapsuleSize},
+    {"realsense_d435i/d435i", KnownErrors::kSizeFromMesh},
     {"rethink_robotics_sawyer/scene", kItWorks},
     {"rethink_robotics_sawyer/sawyer", kItWorks},
     {"robotiq_2f85/2f85", kItWorks},

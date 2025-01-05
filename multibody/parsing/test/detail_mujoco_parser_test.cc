@@ -1483,6 +1483,8 @@ TEST_F(MujocoParserTest, GeomErrors) {
       <geom type="mesh"/>
       <geom type="mesh" mesh="nonsense"/>
       <geom type="hfield"/>
+      <geom type="capsule" mesh="nonsense"/>
+      <geom type="plane" mesh="nonsense"/>
     </body>
   </worldbody>
 </mujoco>
@@ -1515,6 +1517,10 @@ TEST_F(MujocoParserTest, GeomErrors) {
       ".*size.*box.*must have.*three elements.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(
       ".*mesh.*did not set the mesh attribute.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*size of the shape from the mesh.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*specified a 'mesh', but this is not allowed for type 'plane'.*"));
 }
 
 TEST_F(MujocoParserTest, Motor) {
