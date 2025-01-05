@@ -125,12 +125,6 @@ class PiecewiseConstantCurvatureTrajectory final
                 .template cast<U>(),
             other.get_initial_pose().translation().template cast<U>()) {}
 
-  /** @returns the number of rows in the output of value(). */
-  Eigen::Index rows() const override { return 3; }
-
-  /** @returns the number of columns in the output of value(). */
-  Eigen::Index cols() const override { return 1; }
-
   /** @returns the total arclength of the curve in meters. */
   T length() const { return this->end_time(); }
 
@@ -148,12 +142,10 @@ class PiecewiseConstantCurvatureTrajectory final
 
    @param s The query arclength in meters.
    @returns position vector r(s). */
-  MatrixX<T> value(const T& s) const override {
-    return CalcPose(s).translation();
+  MatrixX<T> value(const T& s) const final {
+    // We shadowed the base class to add documentation, not to change logic.
+    return PiecewiseTrajectory<T>::value(s);
   }
-
-  /** @returns a deep copy of `this` trajectory. */
-  std::unique_ptr<Trajectory<T>> Clone() const override;
 
   /** Computes the spatial velocity V_AF_A(s) of frame F measured and expressed
    in the reference frame A. See the class's documentation for frame
@@ -213,6 +205,14 @@ class PiecewiseConstantCurvatureTrajectory final
  private:
   template <typename U>
   friend class PiecewiseConstantCurvatureTrajectory;
+
+  // Trajectory overrides.
+  std::unique_ptr<Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& s) const final {
+    return CalcPose(s).translation();
+  }
+  Eigen::Index do_rows() const final { return 3; }
+  Eigen::Index do_cols() const final { return 1; }
 
   /* Helper function to scalar convert a std::vector<U> into a std::vector<T>.
    @param segment_data std::vector storing types U.

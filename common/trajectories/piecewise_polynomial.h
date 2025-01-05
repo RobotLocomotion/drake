@@ -181,9 +181,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
                       const std::vector<T>& breaks);
   // @}
 
-  ~PiecewisePolynomial() override;
-
-  std::unique_ptr<Trajectory<T>> Clone() const override;
+  ~PiecewisePolynomial() final;
 
   /**
    * @anchor coefficient_construction_methods
@@ -512,9 +510,9 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * @warning See warning in the @ref polynomial_warning "constructor overview"
    *          above.
    */
-  MatrixX<T> value(const T& t) const override {
-    const int derivative_order = 0;
-    return DoEvalDerivative(t, derivative_order);
+  MatrixX<T> value(const T& t) const final {
+    // We shadowed the base class to add documentation, not to change logic.
+    return PiecewiseTrajectory<T>::value(t);
   }
 
   /**
@@ -545,13 +543,19 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * Returns the row count of the output matrices.
    * @throws std::exception if empty().
    */
-  Eigen::Index rows() const override;
+  Eigen::Index rows() const final {
+    // We shadowed the base class to add documentation, not to change logic.
+    return PiecewiseTrajectory<T>::rows();
+  }
 
   /**
    * Returns the column count of the output matrices.
    * @throws std::exception if empty().
    */
-  Eigen::Index cols() const override;
+  Eigen::Index cols() const final {
+    // We shadowed the base class to add documentation, not to change logic.
+    return PiecewiseTrajectory<T>::cols();
+  }
 
   /**
    * Reshapes the dimensions of the Eigen::MatrixX<T> returned by value(),
@@ -804,19 +808,25 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   }
 
  private:
+  // Trajectory overrides.
+  std::unique_ptr<Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& t) const final {
+    const int derivative_order = 0;
+    return DoEvalDerivative(t, derivative_order);
+  }
   // Evaluates the %PiecwisePolynomial derivative at the given time @p t.
   // Returns the nth derivative, where `n` is the value of @p derivative_order.
   //
   // @warning This method comes with the same caveats as value(). See value()
   // @pre derivative_order must be non-negative.
-  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const override;
-
+  MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final;
   std::unique_ptr<Trajectory<T>> DoMakeDerivative(
-      int derivative_order) const override {
+      int derivative_order) const final {
     return derivative(derivative_order).Clone();
   }
-
-  bool do_has_derivative() const override { return true; }
+  bool do_has_derivative() const final { return true; }
+  Eigen::Index do_rows() const final;
+  Eigen::Index do_cols() const final;
 
   T EvaluateSegmentAbsoluteTime(int segment_index, const T& t, Eigen::Index row,
                                 Eigen::Index col,

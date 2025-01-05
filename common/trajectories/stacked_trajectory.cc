@@ -29,15 +29,15 @@ void StackedTrajectory<T>::Append(std::unique_ptr<Trajectory<T>> traj) {
 
   // Check for valid times.
   if (!children_.empty()) {
-    DRAKE_THROW_UNLESS(traj->start_time() == start_time());
-    DRAKE_THROW_UNLESS(traj->end_time() == end_time());
+    DRAKE_THROW_UNLESS(traj->start_time() == this->start_time());
+    DRAKE_THROW_UNLESS(traj->end_time() == this->end_time());
   }
 
   // Check for valid sizes.
   if (rowwise_) {
-    DRAKE_THROW_UNLESS(children_.empty() || traj->cols() == cols());
+    DRAKE_THROW_UNLESS(children_.empty() || traj->cols() == this->cols());
   } else {
-    DRAKE_THROW_UNLESS(children_.empty() || traj->rows() == rows());
+    DRAKE_THROW_UNLESS(children_.empty() || traj->rows() == this->rows());
   }
 
   // Take ownership and update our internal sizes.
@@ -79,13 +79,13 @@ void StackedTrajectory<T>::CheckInvariants() const {
 
   // Sanity-check that the time span is the same for all children.
   for (const auto& child : children_) {
-    DRAKE_DEMAND(child->start_time() == start_time());
-    DRAKE_DEMAND(child->end_time() == end_time());
+    DRAKE_DEMAND(child->start_time() == this->start_time());
+    DRAKE_DEMAND(child->end_time() == this->end_time());
   }
 }
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> StackedTrajectory<T>::Clone() const {
+std::unique_ptr<Trajectory<T>> StackedTrajectory<T>::DoClone() const {
   using Self = StackedTrajectory<T>;
   auto result = std::unique_ptr<Self>(new Self(*this));
   DRAKE_ASSERT_VOID(CheckInvariants());
@@ -94,8 +94,8 @@ std::unique_ptr<Trajectory<T>> StackedTrajectory<T>::Clone() const {
 }
 
 template <typename T>
-MatrixX<T> StackedTrajectory<T>::value(const T& t) const {
-  MatrixX<T> result(rows(), cols());
+MatrixX<T> StackedTrajectory<T>::do_value(const T& t) const {
+  MatrixX<T> result(this->rows(), this->cols());
   Index row = 0;
   Index col = 0;
   for (const auto& child : children_) {
@@ -113,26 +113,6 @@ MatrixX<T> StackedTrajectory<T>::value(const T& t) const {
 }
 
 template <typename T>
-Index StackedTrajectory<T>::rows() const {
-  return rows_;
-}
-
-template <typename T>
-Index StackedTrajectory<T>::cols() const {
-  return cols_;
-}
-
-template <typename T>
-T StackedTrajectory<T>::start_time() const {
-  return children_.empty() ? 0 : children_.front()->start_time();
-}
-
-template <typename T>
-T StackedTrajectory<T>::end_time() const {
-  return children_.empty() ? 0 : children_.front()->end_time();
-}
-
-template <typename T>
 bool StackedTrajectory<T>::do_has_derivative() const {
   return std::all_of(children_.begin(), children_.end(), [](const auto& child) {
     return child->has_derivative();
@@ -142,7 +122,7 @@ bool StackedTrajectory<T>::do_has_derivative() const {
 template <typename T>
 MatrixX<T> StackedTrajectory<T>::DoEvalDerivative(const T& t,
                                                   int derivative_order) const {
-  MatrixX<T> result(rows(), cols());
+  MatrixX<T> result(this->rows(), this->cols());
   Index row = 0;
   Index col = 0;
   for (const auto& child : children_) {
@@ -167,6 +147,26 @@ std::unique_ptr<Trajectory<T>> StackedTrajectory<T>::DoMakeDerivative(
     result->Append(child->MakeDerivative(derivative_order));
   }
   return result;
+}
+
+template <typename T>
+Index StackedTrajectory<T>::do_rows() const {
+  return rows_;
+}
+
+template <typename T>
+Index StackedTrajectory<T>::do_cols() const {
+  return cols_;
+}
+
+template <typename T>
+T StackedTrajectory<T>::do_start_time() const {
+  return children_.empty() ? 0 : children_.front()->start_time();
+}
+
+template <typename T>
+T StackedTrajectory<T>::do_end_time() const {
+  return children_.empty() ? 0 : children_.front()->end_time();
 }
 
 }  // namespace trajectories

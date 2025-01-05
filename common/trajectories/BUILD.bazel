@@ -214,6 +214,8 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
+        # Remove with deprecation 2025-08-01.
+        "//common:nice_type_name",
     ],
 )
 

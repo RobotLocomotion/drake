@@ -29,14 +29,12 @@ class PiecewiseTrajectory : public Trajectory<T> {
   int get_number_of_segments() const;
 
   T start_time(int segment_number) const;
+  using Trajectory<T>::start_time;  // Don't shadow the base class.
 
   T end_time(int segment_number) const;
+  using Trajectory<T>::end_time;  // Don't shadow the base class.
 
   T duration(int segment_number) const;
-
-  T start_time() const override;
-
-  T end_time() const override;
 
   /**
    * Returns true iff `t >= getStartTime() && t <= getEndTime()`.
@@ -60,6 +58,10 @@ class PiecewiseTrajectory : public Trajectory<T> {
 
   /// @p breaks increments must be greater or equal to kEpsilonTime.
   explicit PiecewiseTrajectory(const std::vector<T>& breaks);
+
+  // Trajectory overrides.
+  T do_start_time() const override;
+  T do_end_time() const override;
 
   bool SegmentTimesEqual(const PiecewiseTrajectory& b,
                          double tol = kEpsilonTime) const;

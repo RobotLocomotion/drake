@@ -55,13 +55,13 @@ class ExponentialPlusPiecewisePolynomial final : public PiecewiseTrajectory<T> {
         A_(A),
         alpha_(alpha),
         piecewise_polynomial_part_(piecewise_polynomial_part) {
-    DRAKE_ASSERT(K.rows() == rows());
+    DRAKE_ASSERT(K.rows() == this->rows());
     DRAKE_ASSERT(K.cols() == A.rows());
     DRAKE_ASSERT(A.rows() == A.cols());
     DRAKE_ASSERT(alpha.rows() == A.cols());
     DRAKE_ASSERT(alpha.cols() ==
                  piecewise_polynomial_part.get_number_of_segments());
-    DRAKE_ASSERT(piecewise_polynomial_part.rows() == rows());
+    DRAKE_ASSERT(piecewise_polynomial_part.rows() == this->rows());
     DRAKE_ASSERT(piecewise_polynomial_part.cols() == 1);
   }
 
@@ -69,25 +69,18 @@ class ExponentialPlusPiecewisePolynomial final : public PiecewiseTrajectory<T> {
   ExponentialPlusPiecewisePolynomial(
       const PiecewisePolynomial<T>& piecewise_polynomial_part);
 
-  ~ExponentialPlusPiecewisePolynomial() override;
-
-  std::unique_ptr<Trajectory<T>> Clone() const override;
-
-  MatrixX<T> value(const T& t) const override;
+  ~ExponentialPlusPiecewisePolynomial() final;
 
   ExponentialPlusPiecewisePolynomial derivative(int derivative_order = 1) const;
-
-  Eigen::Index rows() const override;
-
-  Eigen::Index cols() const override;
 
   void shiftRight(double offset);
 
  private:
-  std::unique_ptr<Trajectory<T>> DoMakeDerivative(
-      int derivative_order = 1) const override {
-    return derivative(derivative_order).Clone();
-  };
+  // Trajectory overrides.
+  std::unique_ptr<Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& t) const final;
+  Eigen::Index do_rows() const final;
+  Eigen::Index do_cols() const final;
 
   MatrixX<T> K_;
   MatrixX<T> A_;

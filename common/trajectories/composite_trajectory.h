@@ -33,18 +33,15 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
 
   ~CompositeTrajectory() final;
 
-  std::unique_ptr<trajectories::Trajectory<T>> Clone() const final;
-
   /** Evaluates the curve at the given time.
   @warning If t does not lie in the range [start_time(), end_time()], the
   trajectory will silently be evaluated at the closest valid value of time to
   `time`. For example, `value(-1)` will return `value(0)` for a trajectory
   defined over [0, 1]. */
-  MatrixX<T> value(const T& time) const final;
-
-  Eigen::Index rows() const final;
-
-  Eigen::Index cols() const final;
+  MatrixX<T> value(const T& t) const final {
+    // We shadowed the base class to add documentation, not to change logic.
+    return PiecewiseTrajectory<T>::value(t);
+  }
 
   /** Returns a reference to the `segment_index` trajectory. */
   const Trajectory<T>& segment(int segment_index) const {
@@ -62,12 +59,15 @@ class CompositeTrajectory final : public trajectories::PiecewiseTrajectory<T> {
       const std::vector<copyable_unique_ptr<Trajectory<T>>>& segments);
 
  private:
+  // Trajectory overrides.
+  std::unique_ptr<trajectories::Trajectory<T>> DoClone() const final;
+  MatrixX<T> do_value(const T& t) const final;
   bool do_has_derivative() const final;
-
   MatrixX<T> DoEvalDerivative(const T& t, int derivative_order) const final;
-
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const final;
+  Eigen::Index do_rows() const final;
+  Eigen::Index do_cols() const final;
 
   std::vector<copyable_unique_ptr<Trajectory<T>>> segments_{};
 };

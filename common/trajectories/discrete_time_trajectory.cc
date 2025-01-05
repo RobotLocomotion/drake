@@ -67,13 +67,13 @@ const std::vector<T>& DiscreteTimeTrajectory<T>::get_times() const {
 }
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> DiscreteTimeTrajectory<T>::Clone() const {
+std::unique_ptr<Trajectory<T>> DiscreteTimeTrajectory<T>::DoClone() const {
   return std::make_unique<DiscreteTimeTrajectory<T>>(
       times_, values_, time_comparison_tolerance_);
 }
 
 template <typename T>
-MatrixX<T> DiscreteTimeTrajectory<T>::value(const T& t) const {
+MatrixX<T> DiscreteTimeTrajectory<T>::do_value(const T& t) const {
   using std::abs;
   const double time = ExtractDoubleOrThrow(t);
   static constexpr const char* kNoMatchingTimeStr =
@@ -93,25 +93,25 @@ MatrixX<T> DiscreteTimeTrajectory<T>::value(const T& t) const {
 }
 
 template <typename T>
-Eigen::Index DiscreteTimeTrajectory<T>::rows() const {
+Eigen::Index DiscreteTimeTrajectory<T>::do_rows() const {
   DRAKE_DEMAND(times_.size() > 0);
   return values_[0].rows();
 }
 
 template <typename T>
-Eigen::Index DiscreteTimeTrajectory<T>::cols() const {
+Eigen::Index DiscreteTimeTrajectory<T>::do_cols() const {
   DRAKE_DEMAND(times_.size() > 0);
   return values_[0].cols();
 }
 
 template <typename T>
-T DiscreteTimeTrajectory<T>::start_time() const {
+T DiscreteTimeTrajectory<T>::do_start_time() const {
   DRAKE_DEMAND(times_.size() > 0);
   return times_[0];
 }
 
 template <typename T>
-T DiscreteTimeTrajectory<T>::end_time() const {
+T DiscreteTimeTrajectory<T>::do_end_time() const {
   DRAKE_DEMAND(times_.size() > 0);
   return times_[times_.size() - 1];
 }

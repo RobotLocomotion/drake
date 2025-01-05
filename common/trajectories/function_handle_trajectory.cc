@@ -29,14 +29,14 @@ FunctionHandleTrajectory<T>::FunctionHandleTrajectory(
   // Call value() once to confirm that function returns the correct size. We
   // must do the check in the value() method, because the func_ could produce
   // differently sized outputs at different times.
-  value(start_time);
+  this->value(start_time);
 }
 
 template <typename T>
 FunctionHandleTrajectory<T>::~FunctionHandleTrajectory() = default;
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> FunctionHandleTrajectory<T>::Clone() const {
+std::unique_ptr<Trajectory<T>> FunctionHandleTrajectory<T>::DoClone() const {
   using Self = FunctionHandleTrajectory<T>;
   auto clone =
       std::make_unique<Self>(func_, rows_, cols_, start_time_, end_time_);
@@ -45,7 +45,7 @@ std::unique_ptr<Trajectory<T>> FunctionHandleTrajectory<T>::Clone() const {
 }
 
 template <typename T>
-MatrixX<T> FunctionHandleTrajectory<T>::value(const T& t) const {
+MatrixX<T> FunctionHandleTrajectory<T>::do_value(const T& t) const {
   if (rows_ == 0 || cols_ == 0) {
     // Handle the empty (default) case; which can happen after a move operation.
     return MatrixX<T>::Zero(0, 0);
@@ -65,7 +65,7 @@ template <typename T>
 MatrixX<T> FunctionHandleTrajectory<T>::DoEvalDerivative(
     const T& t, int derivative_order) const {
   if (derivative_order == 0) {
-    return value(t);
+    return this->value(t);
   }
   DRAKE_THROW_UNLESS(derivative_func_ != nullptr);
   MatrixX<T> derivative = derivative_func_(t, derivative_order);
@@ -83,7 +83,7 @@ template <typename T>
 std::unique_ptr<Trajectory<T>> FunctionHandleTrajectory<T>::DoMakeDerivative(
     int derivative_order) const {
   if (derivative_order == 0) {
-    return Clone();
+    return this->Clone();
   }
   DRAKE_THROW_UNLESS(derivative_func_ != nullptr);
   return std::make_unique<DerivativeTrajectory<T>>(*this, derivative_order);

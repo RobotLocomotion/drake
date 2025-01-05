@@ -30,15 +30,15 @@ template <typename T>
 BsplineTrajectory<T>::~BsplineTrajectory() = default;
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::Clone() const {
+std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoClone() const {
   return std::make_unique<BsplineTrajectory<T>>(*this);
 }
 
 template <typename T>
-MatrixX<T> BsplineTrajectory<T>::value(const T& time) const {
+MatrixX<T> BsplineTrajectory<T>::do_value(const T& time) const {
   using std::clamp;
-  return basis().EvaluateCurve(control_points(),
-                               clamp(time, start_time(), end_time()));
+  return basis().EvaluateCurve(
+      control_points(), clamp(time, this->start_time(), this->end_time()));
 }
 
 template <typename T>
@@ -52,10 +52,10 @@ MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(const T& time,
   if (derivative_order == 0) {
     return this->value(time);
   } else if (derivative_order >= basis_.order()) {
-    return MatrixX<T>::Zero(rows(), cols());
+    return MatrixX<T>::Zero(this->rows(), this->cols());
   } else if (derivative_order >= 1) {
     using std::clamp;
-    T clamped_time = clamp(time, start_time(), end_time());
+    T clamped_time = clamp(time, this->start_time(), this->end_time());
     // For a bspline trajectory of order n, the evaluation of k th derivative
     // should take O(k^2) time by leveraging the sparsity of basis value.
     // This differs from DoMakeDerivative, which takes O(nk) time.
@@ -76,7 +76,7 @@ MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(const T& time,
     }
     std::vector<MatrixX<T>> derivative_control_points(
         num_control_points() - derivative_order,
-        MatrixX<T>::Zero(rows(), cols()));
+        MatrixX<T>::Zero(this->rows(), this->cols()));
     for (int i :
          lower_order_basis.ComputeActiveBasisFunctionIndices(clamped_time)) {
       derivative_control_points.at(i) = coefficients.at(i);
@@ -100,7 +100,8 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoMakeDerivative(
     std::vector<T> derivative_knots;
     derivative_knots.push_back(basis_.knots().front());
     derivative_knots.push_back(basis_.knots().back());
-    std::vector<MatrixX<T>> control_points(1, MatrixX<T>::Zero(rows(), cols()));
+    std::vector<MatrixX<T>> control_points(
+        1, MatrixX<T>::Zero(this->rows(), this->cols()));
     return std::make_unique<BsplineTrajectory<T>>(
         BsplineBasis<T>(1, derivative_knots), control_points);
   } else if (derivative_order > 1) {
@@ -133,12 +134,12 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoMakeDerivative(
 
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::InitialValue() const {
-  return value(start_time());
+  return value(this->start_time());
 }
 
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::FinalValue() const {
-  return value(end_time());
+  return value(this->end_time());
 }
 
 template <typename T>
@@ -157,7 +158,7 @@ void BsplineTrajectory<T>::InsertKnots(const std::vector<T>& additional_knots) {
     const std::vector<T>& t = basis_.knots();
     const T& t_bar = additional_knots.front();
     const int k = basis_.order();
-    DRAKE_DEMAND(start_time() <= t_bar && t_bar <= end_time());
+    DRAKE_DEMAND(this->start_time() <= t_bar && t_bar <= this->end_time());
 
     /* Find the index, 𝑙, of the greatest knot that is less than or equal to
     t_bar and strictly less than end_time(). */
@@ -218,7 +219,7 @@ BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(int start_row,
 
 template <typename T>
 BsplineTrajectory<T> BsplineTrajectory<T>::CopyHead(int n) const {
-  DRAKE_DEMAND(cols() == 1);
+  DRAKE_DEMAND(this->cols() == 1);
   DRAKE_DEMAND(n > 0);
   return CopyBlock(0, 0, n, 1);
 }
