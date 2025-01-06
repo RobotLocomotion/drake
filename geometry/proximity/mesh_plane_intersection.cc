@@ -62,14 +62,14 @@ constexpr std::array<std::array<int, 4>, 16> kMarchingTetsEdgeTable = {
     std::array<int, 4>{0, 2, 3, -1},    /* 1110 */
     std::array<int, 4>{-1, -1, -1, -1}  /* 1111 */};
 
-/* Each entry of kMarchingTetsEdgeTable stores a vector of face indices.
+/* Each entry of kMarchingTetsFaceTable stores a vector of face indices.
  Based on the signed distance values, these faces are the ones that intersect
  the plane. Faces are indexed in the following fashion: index i corresponds to
  the face formed by vertices {0, 1, 2, 3} - {i}. For instance face 0 corresponds
  to face {1, 2, 3} etc.
 
- The order of the indices is also constructed to follow to the order of the
- edges listed in the corresponding entry in kMarkingTetsEdgeTable. For instance:
+ The order of the indices is also constructed to follow the order of the edges
+ listed in the corresponding entry in kMarkingTetsEdgeTable. For instance:
 
    kMarchingTetsEdgeTable[0001] = {0, 3, 2, -1}
 
@@ -142,9 +142,15 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
   // No intersecting edges --> no intersection.
   if (kMarchingTetsEdgeTable[intersection_code][0] == -1) return;
 
-  for (int e = 0; e < 4; ++e) {
-    const int edge_index = kMarchingTetsEdgeTable[intersection_code][e];
+  // We have four candidate tet-edges and four candidate tet-faces, so we re-use
+  // `i` for indexing both.
+  for (int i = 0; i < 4; ++i) {
+    const int edge_index = kMarchingTetsEdgeTable[intersection_code][i];
+    // We expect that when we encounter a -1 in the edge table, that marks the
+    // end of the edge list. We also expect that there is always a corresponding
+    // -1 at the same index `e` in kMarchingTetsFaceTable.
     if (edge_index == -1) break;
+
     const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
     const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
     const int v1 = mesh_M.element(tet_index).vertex(tet_edge.second);
@@ -161,7 +167,7 @@ void SliceTetrahedronWithPlane(int tet_index, const VolumeMesh<double>& mesh_M,
     const Vector3<T> p_MC = p_MV0 + t * (p_MV1 - p_MV0);
     polygon_vertices->push_back(p_MC);
     if (faces != nullptr) {
-      faces->push_back(kMarchingTetsFaceTable[intersection_code][e]);
+      faces->push_back(kMarchingTetsFaceTable[intersection_code][i]);
     }
     if (cut_edges != nullptr) {
       const SortedPair<int> mesh_edge{v0, v1};

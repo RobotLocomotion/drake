@@ -287,96 +287,48 @@ TEST_F(FieldIntersectionLowLevelTest, IsPlaneNormalAlongPressureGradient) {
       nhat_M_against_gradient, first_tetrahedron_in_field0, field0_M_));
 }
 
-// Special cases that we may or may not care.
-//
-// This unit test suite shows that in special cases, the two versions of
-// IntersectFields() give different results.  One version can sense the
-// contact, but the other version misses the contact.
-//
-// They are special cases that may or may not affect users depending on their
-// applications.
-class VolumeIntersectorTestSpecialCases : public ::testing::Test {
- public:
-  VolumeIntersectorTestSpecialCases() {
-    std::unique_ptr<VolumeMesh<double>> big_mesh =
+// The tet-based and tri-based algorithms will generally produce the same
+// results. The exception is if one mesh is completely within the other (such
+// that their surfaces don't intersect). In that case, the tri-based algorithm
+// will incorrectly report no contact. This test quantifies that difference.
+// Note: this is not a desirable behavior.
+GTEST_TEST(VolumeIntersectionTest, FullyPenetrated) {
+  auto make_ball = [](double radius) {
+    const Sphere ball(radius);
+    auto mesh =
         std::make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
-            big_sphere_, big_sphere_.radius(),
-            TessellationStrategy::kSingleInteriorVertex));
-    std::unique_ptr<VolumeMeshFieldLinear<double, double>> big_field =
-        std::make_unique<VolumeMeshFieldLinear<double, double>>(
-            MakeSpherePressureField<double>(big_sphere_, big_mesh.get(),
-                                            kElasticModulus_));
+            ball, radius, TessellationStrategy::kSingleInteriorVertex));
+    auto field = std::make_unique<VolumeMeshFieldLinear<double, double>>(
+        MakeSpherePressureField<double>(ball, mesh.get(), 1e5));
+    return SoftMesh(std::move(mesh), std::move(field));
+  };
 
-    std::unique_ptr<VolumeMesh<double>> small_mesh =
-        std::make_unique<VolumeMesh<double>>(MakeSphereVolumeMesh<double>(
-            small_sphere_, small_sphere_.radius(),
-            TessellationStrategy::kSingleInteriorVertex));
+  SoftMesh big_sphere_M = make_ball(1.0);
+  SoftMesh small_sphere_N = make_ball(1.0 / 8.0);
 
-    std::unique_ptr<VolumeMeshFieldLinear<double, double>> small_field =
-        std::make_unique<VolumeMeshFieldLinear<double, double>>(
-            MakeSpherePressureField<double>(small_sphere_, small_mesh.get(),
-                                            kElasticModulus_));
+  // Place the small sphere well within the big sphere, without surfaces
+  // touching.
+  const RigidTransformd X_MN(0.5 * Vector3d::UnitX());
 
-    big_sphere_M_ = SoftMesh(std::move(big_mesh), std::move(big_field));
-    small_sphere_N_ = SoftMesh(std::move(small_mesh), std::move(small_field));
-  }
+  std::array<std::unique_ptr<PolygonSurfaceMesh<double>>, 2> surface_01_M;
+  std::array<std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>>, 2>
+      e_MN_M;
 
- protected:
-  void SetUp() override {
-    // The tessellation needs to be fine enough that the BVH leaf node
-    // (three triangles for TriangleSurfaceMesh and one tetrahedron for
-    // VolumeMesh) can do what we want, i.e., BVH(TriangleSurfaceMesh) and
-    // BVH(VolumeMesh) report empty and non-empty overlaps, respectively.
-    ASSERT_EQ(small_sphere_N_.mesh().num_elements(), 32);
-  }
+  VolumeIntersector<PolyMeshBuilder<double>, Obb>().IntersectFields(
+      big_sphere_M.pressure(), big_sphere_M.bvh(), small_sphere_N.pressure(),
+      small_sphere_N.bvh(), X_MN, &surface_01_M[0], &e_MN_M[0]);
 
-  // Geometry 0 and its field.
-  const Sphere big_sphere_{0.20};
-  SoftMesh big_sphere_M_;
+  VolumeIntersector<PolyMeshBuilder<double>, Obb>().IntersectFields(
+      big_sphere_M.pressure(), big_sphere_M.surface_mesh_bvh(),
+      big_sphere_M.tri_to_tet(), big_sphere_M.mesh_topology(),
+      small_sphere_N.pressure(), small_sphere_N.surface_mesh_bvh(),
+      small_sphere_N.tri_to_tet(), small_sphere_N.mesh_topology(), X_MN,
+      &surface_01_M[1], &e_MN_M[1]);
 
-  // Geometry 1 and its field.
-  const Sphere small_sphere_{0.03};
-  SoftMesh small_sphere_N_;
-
-  const double kElasticModulus_{1.0e5};
-};
-
-TEST_F(VolumeIntersectorTestSpecialCases, IntersectFields) {
-  // The small sphere is completely inside the big sphere. It may or may not
-  // be an interesting case for users.
-  //
-  // The penetration is deep enough that the two BVHs of the two surface
-  // meshes miss the contact.
-  const RigidTransformd X_MN = RigidTransformd(0.10 * Vector3d::UnitX());
-
-  // Compute the contact surface using both algorithms provided by
-  // VolumeIntersector and confirm that they produce different contact
-  // surfaces: an empty one and a non-empty one.
-  {
-    SCOPED_TRACE("Use PolyMeshBuilder.");
-    std::array<std::unique_ptr<PolygonSurfaceMesh<double>>, 2> surface_01_M;
-    std::array<std::unique_ptr<PolygonSurfaceMeshFieldLinear<double, double>>,
-               2>
-        e_MN_M;
-    std::array<VolumeIntersector<PolyMeshBuilder<double>, Obb>, 2> intersector;
-
-    intersector[0].IntersectFields(
-        big_sphere_M_.pressure(), big_sphere_M_.bvh(),
-        small_sphere_N_.pressure(), small_sphere_N_.bvh(), X_MN,
-        &surface_01_M[0], &e_MN_M[0]);
-
-    intersector[1].IntersectFields(
-        big_sphere_M_.pressure(), big_sphere_M_.surface_mesh_bvh(),
-        big_sphere_M_.tri_to_tet(), big_sphere_M_.mesh_topology(),
-        small_sphere_N_.pressure(), small_sphere_N_.surface_mesh_bvh(),
-        small_sphere_N_.tri_to_tet(), small_sphere_N_.mesh_topology(), X_MN,
-        &surface_01_M[1], &e_MN_M[1]);
-
-    // The first version of IntersectFields() can sense the contact.
-    EXPECT_NE(surface_01_M[0].get(), nullptr);
-    // The second version of IntersectFields() cannot.
-    EXPECT_EQ(surface_01_M[1].get(), nullptr);
-  }
+  // Index 0 only uses tets.
+  EXPECT_NE(surface_01_M[0].get(), nullptr);
+  // Index 1 depends on intersection at the surface.
+  EXPECT_EQ(surface_01_M[1].get(), nullptr);
 }
 
 class VolumeIntersectorTest : public ::testing::Test {
@@ -425,11 +377,12 @@ class VolumeIntersectorTest : public ::testing::Test {
 // The two algorithms provided by VolumeIntersector only differ in the manner in
 // which they find candidate tetrahedra pairs from the two MeshFieldLinear
 // objects. Each end up calling CalcContactPolygon() with their candidate pairs.
-// Therefore, if we can verify that each algorithm makes the same set of
-// calls to CalcContactPolygon(), then the computed surfaces must be equivalent
-// (up to a shuffling of indexes). CalcContactPolygon() records the tet pairs
-// for each polygon it computes in tet0/1_of_polygon so we verify by checking
-// that the multiset of tet pairs recorded is identical.
+// Rather than comparing contact surfaces directly -- which is cumbersome
+// because we have to handle equivalent topology variants and floating point
+// issues -- we infer equivalency by looking at the build history. The
+// intersector stores the pair of tets which produce each element in the contact
+// surface mesh. We'll simply confirm that the two sets tet-pairs match (and
+// safely assume that they would produce the same surface).
 template <class MeshBuilder>
 bool ContactSurfacesAreEqual(
     const VolumeIntersector<MeshBuilder, Obb>& intersector_A,
@@ -440,6 +393,11 @@ bool ContactSurfacesAreEqual(
     return false;
   }
 
+  // When computing a triangulated contact surface, a single tet pair can
+  // produce several triangles, in which case the tet0/tet1 pair will be
+  // recorded multiple times. Thus we use a multiset to also check that the
+  // the number of surface elements produced by each tet pair visited in each
+  // algorithm also matches.
   std::multiset<std::pair<int, int>> set_A, set_B;
   for (int i = 0; i < surface_A.num_elements(); ++i) {
     set_A.emplace(intersector_A.tet0_of_polygon(i),
@@ -505,7 +463,7 @@ TEST_F(VolumeIntersectorTest, IntersectFields) {
 }
 
 // Smoke tests that AutoDiffXd can build. No checking on the values of
-// derivatives.
+// derivatives or whether the surfaces are equivalent.
 TEST_F(VolumeIntersectorTest, IntersectFieldsAutoDiffXd) {
   const math::RigidTransform<AutoDiffXd> X_MN(0.03 *
                                               Vector3<AutoDiffXd>::UnitX());
@@ -532,8 +490,6 @@ TEST_F(VolumeIntersectorTest, IntersectFieldsAutoDiffXd) {
 
     EXPECT_NE(surface_01_M[0].get(), nullptr);
     EXPECT_NE(surface_01_M[1].get(), nullptr);
-    EXPECT_TRUE(ContactSurfacesAreEqual(intersector[0], *surface_01_M[0],
-                                        intersector[1], *surface_01_M[1]));
   }
   {
     SCOPED_TRACE("Use PolyMeshBuilder.");
@@ -557,8 +513,6 @@ TEST_F(VolumeIntersectorTest, IntersectFieldsAutoDiffXd) {
 
     EXPECT_NE(surface_01_M[0].get(), nullptr);
     EXPECT_NE(surface_01_M[1].get(), nullptr);
-    EXPECT_TRUE(ContactSurfacesAreEqual(intersector[0], *surface_01_M[0],
-                                        intersector[1], *surface_01_M[1]));
   }
 }
 
@@ -605,7 +559,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
     HydroelasticVolumeIntersector<TriMeshBuilder<double>>()
         .IntersectCompliantVolumes(first_id, box_M_, X_WM, second_id,
                                    octahedron_N_, X_WN, &contact_patch_W,
-                                   false /* use_topology */);
+                                   false /* use_surfaces */);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kTriangle);
@@ -616,7 +570,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
     HydroelasticVolumeIntersector<TriMeshBuilder<double>>()
         .IntersectCompliantVolumes(first_id, box_M_, X_WM, second_id,
                                    octahedron_N_, X_WN, &contact_patch_W,
-                                   true /* use_topology */);
+                                   true /* use_surfaces */);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kTriangle);
@@ -627,7 +581,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
     HydroelasticVolumeIntersector<PolyMeshBuilder<double>>()
         .IntersectCompliantVolumes(first_id, box_M_, X_WM, second_id,
                                    octahedron_N_, X_WN, &contact_patch_W,
-                                   false /* use_topology */);
+                                   false /* use_surfaces */);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kPolygon);
@@ -638,7 +592,7 @@ TEST_F(VolumeIntersectorTest, IntersectCompliantVolumes) {
     HydroelasticVolumeIntersector<PolyMeshBuilder<double>>()
         .IntersectCompliantVolumes(first_id, box_M_, X_WM, second_id,
                                    octahedron_N_, X_WN, &contact_patch_W,
-                                   true /* use_topology */);
+                                   true /* use_surfaces */);
     ASSERT_NE(contact_patch_W.get(), nullptr);
     EXPECT_EQ(contact_patch_W->representation(),
               HydroelasticContactRepresentation::kPolygon);

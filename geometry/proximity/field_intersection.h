@@ -103,7 +103,7 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
  @param nhat_M       The normal to test against, expressed in the same frame M
                      of the piecewise linear field.
  @param tetrahedron  The index of the tetrahedron in the mesh of the field.
- @param field0_M      The piecewise linear field expressed in frame M.
+ @param field0_M     The piecewise linear field expressed in frame M.
  @pre  `nhat_M` is unit length.
  @return `true` if the angle between `nhat_M` and the field gradient vector
          lies within a hard-coded tolerance.
@@ -146,33 +146,43 @@ class VolumeIntersector {
      algorithm for computing the contact surface of two pressure fields
      represented by two VolumeMeshFieldLinear objects. The implementations
      differ in their algorithmic details, but otherwise produce identical
-     contact surfaces (up to a permutation of element/vertex indices).
+     contact surfaces (up to a permutation of element/vertex indices) with one
+     caveat: When the two geometries overlap but their surfaces do not intersect
+     (i.e. one geometry is completely enclosed in the interior of the other) the
+     algorithm that makes use of surface mesh BVHs will return an empty contact
+     surface, where the volume mesh BVH version might return a non-empty contact
+     surface. It is important to note that one geometry that is completely
+     enclosed in the other is a non-physical configuration and a contact surface
+     computed from this configuration is considered degenerate.
 
-     Hydroelastics and deformables use these functions when the scalar fields
-     are pressure fields and signed distance fields, respectively.
+     Either of these functions can be used by Hydroelastics and deformables when
+     the scalar fields are pressure fields and signed distance fields,
+     respectively.
   */
   /* @{ */
   /* Creates the mesh and the scalar field on the contact surface between two
-   tetrahedral meshes with scalar fields using a BVH of the volume elements of
-   the meshes. The output surface mesh is posed in frame M of the first
+   tetrahedral meshes with scalar fields. This approach computes it by
+   intersecting tetrahedra directly (accelerated with a BVH build on the
+   tetrahedra). The output surface mesh is posed in frame M of the first
    tetrahedral mesh.
 
-   @param[in] field0_M  The first geometry represented as a tetrahedral mesh
-   with scalar field, expressed in frame M.
-   @param[in] bvh_M    The bounding volume hierarchy built on the tetrahedral
-                       mesh of `field0_M`.
-   @param[in] field1_N  The second geometry represented as a tetrahedral mesh
-                       with scalar field, expressed in frame N.
-   @param[in] bvh_N    The bounding volume hierarchy built on the tetrahedral
-                       mesh of `field1_N`.
-   @param[in] X_MN     The pose of frame N in frame M.
+   @param[in] field0_M    The first geometry represented as a tetrahedral mesh
+                          with scalar field, expressed in frame M.
+   @param[in] bvh_M       The bounding volume hierarchy built on the tetrahedral
+                          mesh of `field0_M`.
+   @param[in] field1_N    The second geometry represented as a tetrahedral mesh
+                          with scalar field, expressed in frame N.
+   @param[in] bvh_N       The bounding volume hierarchy built on the tetrahedral
+                          mesh of `field1_N`.
+   @param[in] X_MN        The pose of frame N in frame M.
    @param[out] surface_M  The output mesh of the contact surface between
                           the two geometries expressed in frame M. The surface
                           normal is in the direction of increasing the
                           difference field0 - field1. Usually it is the
                           direction of increasing field0 and decreasing field1.
-   @param[out] e_M      The scalar field on the contact surface, expressed in
-                        frame M.
+   @param[out] e_M        The scalar field on the contact surface, expressed in
+                          frame M.
+
    @note  The output surface mesh may have duplicate vertices.
    */
   void IntersectFields(const VolumeMeshFieldLinear<double, double>& field0_M,
@@ -183,21 +193,26 @@ class VolumeIntersector {
                        std::unique_ptr<MeshType>* surface_M,
                        std::unique_ptr<FieldType>* e_M);
 
-  /* Overload of the above version using a BVH of the surface triangles of
-   the volume meshes and neighbor traversal. It takes the same parameters
-   as the above version except that the BVHs are associated with the surface
-   triangles, and it requests these extra parameters to accelerate
-   computation:
+  /* Creates the mesh and the scalar field on the contact surface between two
+   tetrahedral meshes with scalar fields. This approach computes it by finding
+   intersecting surface tetrahedra (accelerated by a BVH of the surface
+   triangles) and traversing intersecting neighbor tetrahedra in a breadth first
+   search fashion. The parameters are similar to the previous overload with the
+   following differences:
 
-   @param[in] bvh_M    The bounding volume hierarchy built on the surface mesh
-                       of `field_M`.
+     - The BVH is built on the volume mesh's surface mesh.
+     - We include additional data relating surface mesh to volume mesh and mesh
+       topology.
+
+   @param[in] bvh_M            The bounding volume hierarchy built on the
+                               surface mesh of `field_M`.
    @param[in] tri_to_tet_M     A mapping from surface triangle indices in the
                                surface mesh of M to their corresponding tet
                                element indices in the volume mesh of M.
    @param[in] mesh_topology_M  A representation of the topology of the volume
                                mesh M. Used to access neighbor adjacencies.
-   @param[in] bvh_N    The bounding volume hierarchy built on the surface mesh
-                       of `field_N`.
+   @param[in] bvh_N            The bounding volume hierarchy built on the
+                               surface mesh of `field_N`.
    @param[in] tri_to_tet_N     A mapping from surface triangle indices in the
                                surface mesh of N to their corresponding tet
                                element indices in the volume mesh of N.
@@ -289,9 +304,9 @@ class HydroelasticVolumeIntersector {
   @param[in] id_N            Id of geometry N.
   @param[in] compliant_N     SoftMesh of geometry N, expressed in frame N.
   @param[in] X_WN            The pose of the second geometry in World.
-  @param[in] use_topology    If true, uses the version of
+  @param[in] use_surfaces    If true, uses the version of
                              VolumeIntersector::IntersectFields() that makes use
-                             of the topology of the geometry's surfaces.
+                             of the topology of the geometries' surfaces.
   @param[out] contact_surface_W   The contact surface, whose type (e.g.,
                          triangles or polygons) depends on the type parameter
                          MeshBuilder. It is expressed in World frame.
@@ -302,7 +317,7 @@ class HydroelasticVolumeIntersector {
       const hydroelastic::SoftMesh& compliant_N,
       const math::RigidTransform<T>& X_WN,
       std::unique_ptr<ContactSurface<T>>* contact_surface_W,
-      const bool use_topology = true);
+      const bool use_surfaces = true);
 };
 
 /* Computes the contact surface between two compliant hydroelastic geometries

@@ -17,6 +17,16 @@ namespace internal {
 
 using Eigen::Vector3d;
 
+namespace {
+
+struct TetPairHasher final {
+  std::size_t operator()(const std::pair<int, int>& p) const {
+    return std::hash<int>()(p.first) ^ std::hash<int>()(p.second);
+  }
+};
+
+}  // namespace
+
 template <typename T>
 bool CalcEquilibriumPlane(int element0,
                           const VolumeMeshFieldLinear<double, double>& field0_M,
@@ -98,15 +108,12 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
   face_buffer[1].reserve(8);
 
   // Intersects the equilibrium plane with the tetrahedron element0.
-  std::vector<Vector3<T>>* polygon_M = &(polygon_buffer[0]);
-  std::vector<int>* faces = &(face_buffer[0]);
-  polygon_M->clear();
-  faces->clear();
-  SliceTetrahedronWithPlane(element0, mesh0_M, equilibrium_plane_M, polygon_M,
-                            nullptr /* cut_edges */, faces);
+  SliceTetrahedronWithPlane(element0, mesh0_M, equilibrium_plane_M,
+                            &polygon_buffer[0], nullptr /* cut_edges */,
+                            &face_buffer[0]);
 
-  RemoveNearlyDuplicateVertices(polygon_M);
-  if (polygon_M->size() < 3) {
+  RemoveNearlyDuplicateVertices(&polygon_buffer[0]);
+  if (polygon_buffer[0].size() < 3) {
     return {};
   }
 
@@ -117,18 +124,18 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
     p_MVs[i] =
         X_MN * mesh1_N.vertex(mesh1_N.element(element1).vertex(i)).cast<T>();
   }
-  std::vector<Vector3<T>>* in_M = polygon_M;
-  std::vector<Vector3<T>>* out_M = &(polygon_buffer[1]);
-  std::vector<int>* faces_in = faces;
-  std::vector<int>* faces_out = &(face_buffer[1]);
+  std::vector<Vector3<T>>* current_polygon = &polygon_buffer[0];
+  std::vector<Vector3<T>>* clipped_polygon = &polygon_buffer[1];
+  std::vector<int>* current_faces = &face_buffer[0];
+  std::vector<int>* clipped_faces = &face_buffer[1];
 
   // Intersects the polygon with the four halfspaces of the four triangles
   // of the tetrahedral element1.
   for (int face = 0; face < 4; ++face) {
-    out_M->clear();
-    faces_out->clear();
+    clipped_polygon->clear();
+    clipped_faces->clear();
 
-    // 'face' corresponds the the triangle formed by {0, 1, 2, 3} - {face}
+    // 'face' corresponds to the triangle formed by {0, 1, 2, 3} - {face}
     // so any of (face+1)%4, (face+2)%4, (face+3)%4 are candidates for a
     // point on the face's plane. We arbitrarily choose (face + 1) % 4.
     const Vector3<T>& p_MA = p_MVs[(face + 1) % 4];
@@ -136,10 +143,10 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
         X_MN.rotation() * -mesh1_N.inward_normal(element1, face).cast<T>();
     PosedHalfSpace<T> half_space_M(triangle_outward_normal_M, p_MA);
 
-    const int size = ssize(*in_M);
+    const int size = ssize(*current_polygon);
 
     for (int i = 0; i < size; ++i) {
-      distances[i] = half_space_M.CalcSignedDistance((*in_M)[i]);
+      distances[i] = half_space_M.CalcSignedDistance((*current_polygon)[i]);
     }
 
     // Walk the vertices checking for intersecting edges.
@@ -148,8 +155,8 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
       // If the edge out of vertex i is at least partially inside, include
       // vertex i and face i.
       if (distances[i] <= 0) {
-        out_M->push_back((*in_M)[i]);
-        faces_out->push_back((*faces_in)[i]);
+        clipped_polygon->push_back((*current_polygon)[i]);
+        clipped_faces->push_back((*current_faces)[i]);
         // If vertex j is outside, we've discovered an intersection. Add the
         // intersection point as well as "face" to the list of faces. (For faces
         // from element1 we insert face + 4, to indicate which element the edge
@@ -157,38 +164,37 @@ std::pair<std::vector<Vector3<T>>, std::vector<int>> IntersectTetrahedra(
         if (distances[j] > 0) {
           const T wa = distances[j] / (distances[j] - distances[i]);
           const T wb = T(1.0) - wa;
-          out_M->push_back(wa * (*in_M)[i] + wb * (*in_M)[j]);
-          faces_out->push_back(face + 4);
+          clipped_polygon->push_back(wa * (*current_polygon)[i] +
+                                     wb * (*current_polygon)[j]);
+          clipped_faces->push_back(face + 4);
         }
       } else if (distances[j] <= 0) {
         // Vertex i is outside, but vertex j is at least partially inside. We've
         // discovered another intersection. Add the intersection point, this
-        // point is still on the edge created by faces_in[i], so include that
-        // face for the edge starting at the intersection point.
+        // point is still on the edge created by current_faces[i], so include
+        // that face for the edge starting at the intersection point.
         const T wa = distances[j] / (distances[j] - distances[i]);
         const T wb = T(1.0) - wa;
-        out_M->push_back(wa * (*in_M)[i] + wb * (*in_M)[j]);
-        faces_out->push_back((*faces_in)[i]);
+        clipped_polygon->push_back(wa * (*current_polygon)[i] +
+                                   wb * (*current_polygon)[j]);
+        clipped_faces->push_back((*current_faces)[i]);
       }
     }
-    std::swap(in_M, out_M);
-    std::swap(faces_in, faces_out);
+    std::swap(current_polygon, clipped_polygon);
+    std::swap(current_faces, clipped_faces);
 
     // If we've clipped off the entire polygon, return empty.
-    if (ssize(*in_M) == 0) {
+    if (ssize(*current_polygon) == 0) {
       return {};
     }
   }
 
-  polygon_M = in_M;
-  faces = faces_in;
-
-  RemoveNearlyDuplicateVertices(polygon_M);
-  if (polygon_M->size() < 3) {
+  RemoveNearlyDuplicateVertices(current_polygon);
+  if (current_polygon->size() < 3) {
     return {};
   }
 
-  return std::make_pair(*polygon_M, *faces);
+  return std::make_pair(*current_polygon, *current_faces);
 }
 
 template <typename T>
@@ -269,22 +275,18 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
 
   // Keep track of pairs of tet indices that have already been inserted into the
   // queue.
-  auto pair_hash = [](const std::pair<int, int>& p) -> std::size_t {
-    return std::hash<int>()(p.first) ^ std::hash<int>()(p.second);
-  };
-  std::unordered_set<std::pair<int, int>, decltype(pair_hash)> checked_pairs(
-      8, pair_hash);
+  std::unordered_set<std::pair<int, int>, TetPairHasher> visited_pairs;
 
   std::queue<std::pair<int, int>> candidate_tetrahedra;
-  auto callback = [&candidate_tetrahedra, &checked_pairs, &tri_to_tet_M,
+  auto callback = [&candidate_tetrahedra, &visited_pairs, &tri_to_tet_M,
                    &tri_to_tet_N](int tri0, int tri1) -> BvttCallbackResult {
     DRAKE_ASSERT(0 <= tri0 && tri0 < ssize(tri_to_tet_M));
     DRAKE_ASSERT(0 <= tri1 && tri1 < ssize(tri_to_tet_N));
     std::pair<int, int> tet_pair(tri_to_tet_M[tri0].tet_index,
                                  tri_to_tet_N[tri1].tet_index);
-    if (!checked_pairs.contains(tet_pair)) {
+    if (!visited_pairs.contains(tet_pair)) {
       candidate_tetrahedra.push(tet_pair);
-      checked_pairs.insert(tet_pair);
+      visited_pairs.insert(tet_pair);
     }
     return BvttCallbackResult::Continue;
   };
@@ -338,12 +340,12 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
         std::pair<int, int> neighbor_pair(neighborM, tetN);
 
         // If this candidate pair has already been checked, continue.
-        if (checked_pairs.contains(neighbor_pair)) {
+        if (visited_pairs.contains(neighbor_pair)) {
           continue;
         }
 
         candidate_tetrahedra.push(neighbor_pair);
-        checked_pairs.insert(neighbor_pair);
+        visited_pairs.insert(neighbor_pair);
 
       } else {
         // face ∈ [4, 7], thus face - 4 is a face of tetN.
@@ -357,12 +359,12 @@ void VolumeIntersector<MeshBuilder, BvType>::IntersectFields(
         std::pair<int, int> neighbor_pair(tetM, neighborN);
 
         // If this candidate pair has already been checked, continue.
-        if (checked_pairs.contains(neighbor_pair)) {
+        if (visited_pairs.contains(neighbor_pair)) {
           continue;
         }
 
         candidate_tetrahedra.push(neighbor_pair);
-        checked_pairs.insert(neighbor_pair);
+        visited_pairs.insert(neighbor_pair);
       }
     }
   }
@@ -432,7 +434,7 @@ void HydroelasticVolumeIntersector<MeshBuilder>::IntersectCompliantVolumes(
     const hydroelastic::SoftMesh& compliant_N,
     const math::RigidTransform<T>& X_WN,
     std::unique_ptr<ContactSurface<T>>* contact_surface_W,
-    const bool use_topology) {
+    const bool use_surfaces) {
   const math::RigidTransform<T> X_MN = X_WM.InvertAndCompose(X_WN);
 
   // The computation will be in Frame M and then transformed to the world frame.
@@ -440,7 +442,7 @@ void HydroelasticVolumeIntersector<MeshBuilder>::IntersectCompliantVolumes(
   std::unique_ptr<typename MeshBuilder::FieldType> field01_M;
   VolumeIntersector<MeshBuilder, Obb> volume_intersector;
 
-  if (use_topology) {
+  if (use_surfaces) {
     volume_intersector.IntersectFields(
         compliant_M.pressure(), compliant_M.surface_mesh_bvh(),
         compliant_M.tri_to_tet(), compliant_M.mesh_topology(),
@@ -507,12 +509,12 @@ std::unique_ptr<ContactSurface<T>> ComputeContactSurfaceFromCompliantVolumes(
     HydroelasticVolumeIntersector<TriMeshBuilder<T>>()
         .IntersectCompliantVolumes(id_M, compliant_M, X_WM, id_N, compliant_N,
                                    X_WN, &contact_surface_W,
-                                   true /* use_topology */);
+                                   true /* use_surfaces */);
   } else {
     HydroelasticVolumeIntersector<PolyMeshBuilder<T>>()
         .IntersectCompliantVolumes(id_M, compliant_M, X_WM, id_N, compliant_N,
                                    X_WN, &contact_surface_W,
-                                   true /* use_topology */);
+                                   true /* use_surfaces */);
   }
   return contact_surface_W;
 }
