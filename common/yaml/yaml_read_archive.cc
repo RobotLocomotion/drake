@@ -316,7 +316,7 @@ void YamlReadArchive::ParseScalar(const internal::Node& scalar,
     // result. If necessary, we can attempt stripping whitespace from encoded.
 
     // Grab the leading snippet of encoded text for the error message.
-    const std::string_view head = encoded.substr(0, 25);
+    const std::string_view head = std::string_view{encoded}.substr(0, 25);
     ReportError(fmt::format("contains invalid base64 text '{}{}'", head,
                             head.size() < encoded.size() ? "..." : ""));
     return;
