@@ -671,10 +671,12 @@ GTEST_TEST(ShapeTest, ConvexFromVertices) {
   points.col(3) << 0, 1, 0;
   points.col(4) << 0, 0, 1;
 
-  const std::string mesh_name = "a_convex";
-  const Convex convex(points, mesh_name, 2.0);
+  const double scale = 2.0;
 
-  EXPECT_EQ(convex.scale(), 2.0);
+  const std::string mesh_name = "a_convex";
+  const Convex convex(points, mesh_name, scale);
+
+  EXPECT_EQ(convex.scale(), scale);
   EXPECT_EQ(convex.extension(), ".obj");
   const MeshSource& source = convex.source();
   ASSERT_TRUE(source.is_in_memory());
@@ -683,6 +685,29 @@ GTEST_TEST(ShapeTest, ConvexFromVertices) {
   const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
   EXPECT_EQ(hull.num_vertices(), 4);
   EXPECT_EQ(hull.num_elements(), 4);
+
+  // Confirm that the vertices of the convex hull are the expected ones.
+  Eigen::Matrix<double, 3, 4> expected_hull_points;
+  expected_hull_points.col(0) << 0, 0, 0;
+  expected_hull_points.col(1) << 1, 0, 0;
+  expected_hull_points.col(2) << 0, 1, 0;
+  expected_hull_points.col(3) << 0, 0, 1;
+
+  expected_hull_points *= scale;
+
+  std::vector<Eigen::VectorXd> hull_points;
+  for (int i = 0; i < hull.num_vertices(); ++i) {
+    hull_points.push_back(hull.vertex(i));
+  }
+
+  for (int i = 0; i < hull.num_vertices(); ++i) {
+    EXPECT_TRUE(
+        std::find_if(hull_points.begin(), hull_points.end(),
+                     [&expected_hull_points, &i](const Eigen::Vector3d& v) {
+                       return CompareMatrices(v, expected_hull_points.col(i),
+                                              1e-14);
+                     }) != hull_points.end());
+  }
 }
 
 GTEST_TEST(ShapeTest, MeshFromMemory) {
