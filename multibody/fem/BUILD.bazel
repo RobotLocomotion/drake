@@ -42,6 +42,7 @@ drake_cc_package_library(
         ":quadrature",
         ":schur_complement",
         ":simplex_gaussian_quadrature",
+        ":tet_subdivision_quadrature",
         ":velocity_newmark_scheme",
         ":volumetric_element",
         ":volumetric_model",
@@ -454,6 +455,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "tet_subdivision_quadrature",
+    srcs = [
+        "tet_subdivision_quadrature.cc",
+    ],
+    hdrs = [
+        "tet_subdivision_quadrature.h",
+    ],
+    deps = [
+        ":quadrature",
+    ],
+)
+
+drake_cc_library(
     name = "velocity_newmark_scheme",
     srcs = [
         "velocity_newmark_scheme.cc",
@@ -748,6 +762,13 @@ drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "tet_subdivision_quadrature_test",
+    deps = [
+        ":tet_subdivision_quadrature",
     ],
 )
 
