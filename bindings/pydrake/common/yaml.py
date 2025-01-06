@@ -115,20 +115,31 @@ _FLOW_STYLE = None
 class _SchemaDumper(yaml.dumper.SafeDumper):
     """Customizes SafeDumper for the purposes of this module."""
 
+    DRAKE_EXPLICIT_TAG_PREFIX = "tag:drake.mit.edu/explicit:"
+
     class ExplicitScalar(typing.NamedTuple):
         """Wrapper type used when dumping a document. When this type is dumped,
         it will always emit the tag, e.g., `!!int 10`. (By default, tags for
         scalars are not emitted by pyyaml.)
         """
         value: typing.Union[bool, int, float, str]
+        schema: type  # One of either bool, int, float, or str.
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Override a superclass class variable with a custom instance variable.
+        prefixes = copy.copy(yaml.dumper.SafeDumper.DEFAULT_TAG_PREFIXES)
+        prefixes[_SchemaDumper.DRAKE_EXPLICIT_TAG_PREFIX] = "!!"
+        self.DEFAULT_TAG_PREFIXES = prefixes
 
     def _represent_explicit_scalar(self, explicit_scalar):
         assert isinstance(explicit_scalar, _SchemaDumper.ExplicitScalar)
         value = explicit_scalar.value
+        schema = explicit_scalar.schema
+        assert schema in _PRIMITIVE_YAML_TYPES
         node = self.yaml_representers[type(value)](self, value)
-        # Encourage pyyaml to emit the secondary tag, e.g., `!!int`.
-        # This does not work for strings.
-        node.style = "'"
+        prefix = _SchemaDumper.DRAKE_EXPLICIT_TAG_PREFIX
+        node.tag = f"{prefix}{schema.__name__}"
         return node
 
     def _represent_dict(self, data):
@@ -665,7 +676,8 @@ def _yaml_dump_typed_item(*, obj, schema):
         result = _yaml_dump_typed_item(obj=obj, schema=union_schema)
         if i != 0:
             if union_schema in _PRIMITIVE_YAML_TYPES:
-                result = _SchemaDumper.ExplicitScalar(result)
+                result = _SchemaDumper.ExplicitScalar(
+                    value=result, schema=union_schema)
             else:
                 class_name_with_args = pretty_class_name(union_schema)
                 class_name = class_name_with_args.split("[", 1)[0]
