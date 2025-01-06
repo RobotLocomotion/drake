@@ -565,7 +565,7 @@ class MujocoParser {
       if (mesh_inertia_->contains(name_)) {
         M_GGo_G_unitDensity = mesh_inertia_->at(name_);
       } else {
-        const CalcSpatialInertiaResult result =
+        CalcSpatialInertiaResult result =
             CalcSpatialInertiaImpl(mesh, 1.0 /* density */);
         if (std::holds_alternative<std::string>(result)) {
           policy_.Warning(std::get<std::string>(result));
@@ -575,9 +575,17 @@ class MujocoParser {
           DRAKE_DEMAND(mesh.source().is_path());
           // As with mujoco, failure leads to using the convex hull.
           // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
-          M_GGo_G_unitDensity = CalcSpatialInertia(
+          result = CalcSpatialInertiaImpl(
               geometry::Convex(mesh.source().path(), mesh.scale()),
               1.0 /* density */);
+          if (std::holds_alternative<std::string>(result)) {
+            policy_.Error(fmt::format(
+                "Failed to compute spatial inertia even for the convex hull of "
+                "{}.\n{}",
+                mesh.source().path(), std::get<std::string>(result)));
+          } else {
+            M_GGo_G_unitDensity = std::get<SpatialInertia<double>>(result);
+          }
           used_convex_hull_fallback_ = true;
         } else {
           M_GGo_G_unitDensity = std::get<SpatialInertia<double>>(result);
