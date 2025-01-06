@@ -220,26 +220,10 @@ internal::Node YamlReadArchive::LoadStringAsNode(
 }
 
 template <typename T>
-void YamlReadArchive::ParseScalarImpl(const internal::Node& scalar, T* result) {
+void YamlReadArchive::ParseScalarImpl(const std::string& value, T* result) {
   DRAKE_DEMAND(result != nullptr);
-
-  // Detect one specific case of tag mismatch. Ideally we should detect any kind
-  // of tag incompatiblity, but for now we'll just check for this one.
-  if (scalar.GetTag() == internal::Node::kTagBinary) {
-    ReportError(
-        fmt::format("has incompatible !!binary tag in yaml document for",
-                    drake::NiceTypeName::Get<T>()));
-    return;
-  }
-
-  if constexpr (std::is_same_v<T, std::string>) {
-    *result = scalar.GetScalar();
-    return;
-  }
-
   // For the decode-able types, see /usr/include/yaml-cpp/node/convert.h.
   // Generally, all of the POD types are supported.
-  const std::string& value = scalar.GetScalar();
   bool success = YAML::convert<T>::decode(YAML::Node(value), *result);
   if (!success) {
     ReportError(
@@ -247,83 +231,46 @@ void YamlReadArchive::ParseScalarImpl(const internal::Node& scalar, T* result) {
   }
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar, bool* result) {
-  ParseScalarImpl<bool>(scalar, result);
+void YamlReadArchive::ParseScalar(const std::string& value, bool* result) {
+  ParseScalarImpl<bool>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar, float* result) {
-  ParseScalarImpl<float>(scalar, result);
+void YamlReadArchive::ParseScalar(const std::string& value, float* result) {
+  ParseScalarImpl<float>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar,
-                                  double* result) {
-  ParseScalarImpl<double>(scalar, result);
+void YamlReadArchive::ParseScalar(const std::string& value, double* result) {
+  ParseScalarImpl<double>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar,
-                                  int32_t* result) {
-  ParseScalarImpl<int32_t>(scalar, result);
+void YamlReadArchive::ParseScalar(const std::string& value, int32_t* result) {
+  ParseScalarImpl<int32_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar,
-                                  uint32_t* result) {
-  ParseScalarImpl<uint32_t>(scalar, result);
+void YamlReadArchive::ParseScalar(const std::string& value, uint32_t* result) {
+  ParseScalarImpl<uint32_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar,
-                                  int64_t* result) {
-  ParseScalarImpl<int64_t>(scalar, result);
+void YamlReadArchive::ParseScalar(const std::string& value, int64_t* result) {
+  ParseScalarImpl<int64_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar,
-                                  uint64_t* result) {
-  ParseScalarImpl<uint64_t>(scalar, result);
+void YamlReadArchive::ParseScalar(const std::string& value, uint64_t* result) {
+  ParseScalarImpl<uint64_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar,
+void YamlReadArchive::ParseScalar(const std::string& value,
                                   std::string* result) {
-  ParseScalarImpl<std::string>(scalar, result);
+  DRAKE_DEMAND(result != nullptr);
+  *result = value;
 }
 
-void YamlReadArchive::ParseScalar(const internal::Node& scalar,
+void YamlReadArchive::ParseScalar(const std::string& value,
                                   std::filesystem::path* result) {
   DRAKE_DEMAND(result != nullptr);
-  std::string string_value;
-  ParseScalarImpl<std::string>(scalar, &string_value);
   // Python deserialization normalizes paths (i.e., a//b becomes a/b). We'll
   // mirror that behavior for consistency's sake.
-  *result = std::filesystem::path(std::move(string_value)).lexically_normal();
-}
-
-void YamlReadArchive::ParseScalar(const internal::Node& scalar,
-                                  std::vector<std::byte>* result) {
-  DRAKE_DEMAND(result != nullptr);
-
-  if (scalar.GetTag() != internal::Node::kTagBinary) {
-    ReportError(fmt::format(
-        "must be base64 encoded with the !!binary tag (not {}) in the",
-        scalar.GetTag()));
-    return;
-  }
-
-  const std::string& encoded = scalar.GetScalar();
-  std::vector<unsigned char> chars = YAML::DecodeBase64(encoded);
-  std::string decoded(chars.begin(), chars.end());
-  if (decoded.empty() != encoded.empty()) {
-    // Decoded should only be empty if the input is empty. This is a good but
-    // imperfect test. If `encoded` were nothing but whitespace, it would
-    // *functionally* be an empty base64 string and *should* produce an empty
-    // result. If necessary, we can attempt stripping whitespace from encoded.
-
-    // Grab the leading snippet of encoded text for the error message.
-    const std::string_view head = encoded.substr(0, 25);
-    ReportError(fmt::format("contains invalid base64 text '{}{}'", head,
-                            head.size() < encoded.size() ? "..." : ""));
-    return;
-  }
-
-  const std::byte* data = reinterpret_cast<const std::byte*>(decoded.data());
-  *result = std::vector<std::byte>(data, data + decoded.size());
+  *result = std::filesystem::path(value).lexically_normal();
 }
 
 const internal::Node* YamlReadArchive::MaybeGetSubNode(const char* name) const {

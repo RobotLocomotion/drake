@@ -64,19 +64,7 @@ class YamlReadArchiveTest : public ::testing::TestWithParam<LoadYamlOptions> {
   // empty string, the result is a map from "value" to Null (not an empty map,
   // nor Null itself, etc.)
   static internal::Node LoadSingleValue(const std::string& value) {
-    // The corresponding test in python lacks the `doc:` context. Therefore, the
-    // python-generated yaml has two fewer indenting spaces than the
-    // C++-generated yaml. So, that the test call sites can look the same, we
-    // account for the disparity in indentation here by replacing "\n" in
-    // `value` with "\n  ".
-    std::string indented = value;
-    std::string::size_type n = 0;
-    while ((n = indented.find("\n", n)) != std::string::npos) {
-      indented.replace(n, 1, "\n  ");
-      n += 3;
-    }
-
-    return Load("doc:\n  value: " + indented + "\n");
+    return Load("doc:\n  value: " + value + "\n");
   }
 
   // Parses root into a Serializable and returns the result of the parse.
@@ -181,84 +169,6 @@ TEST_P(YamlReadArchiveTest, DoubleMissing) {
   EXPECT_EQ(x.value, kNominalDouble);
 }
 
-TEST_P(YamlReadArchiveTest, Bytes) {
-  const auto test = [](const std::string& value, const std::string& expected) {
-    const auto& x = AcceptNoThrow<BytesStruct>(LoadSingleValue(value));
-    EXPECT_EQ(x.value, StringToByteVector(expected))
-        << "Expected string: '" << expected << "'";
-  };
-
-  // Using !!binary on a schema whose type is bytes.
-  test("!!binary A3Rlc3Rfc3RyAw==", "\x03test_str\x03");
-  test("!!binary |\n  A3Rlc3Rfc3RyAw==", "\x03test_str\x03");
-  test("!!binary |\n  A3Rlc3R\n  fc3RyAw==", "\x03test_str\x03");
-  test("!!binary ", "");
-
-  // Malformed base64 value.
-  {
-    // Proper encoding of "\x03t_str\x03" is 'A3Rfc3RyAw=='.
-
-    // Missing character.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AcceptIntoDummy<BytesStruct>(LoadSingleValue("!!binary A3Rfc3RyAw=")),
-        ".*invalid base64.*");
-
-    // Invalid character.
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AcceptIntoDummy<BytesStruct>(LoadSingleValue("!!binary A3Rfc*RyAw==")),
-        ".*invalid base64.*");
-  }
-
-  // Assigning any other type to bytes is rejected.
-  // Note: these various value strings should be converted to various primitive
-  // types (string, int, etc.) before we process the scalar value. However,
-  // this doesn't currently happen so the error message can't complain that the
-  // wrong *type* has been passed to value. When we aggressively convert and
-  // check for mismatch, these error matches will shift to match what is done
-  // in yaml.py.
-  const auto reject = [](const std::string& value,
-                         const std::string& error_regex =
-                             ".*must be base64.*") {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        AcceptIntoDummy<BytesStruct>(LoadSingleValue(value)), error_regex);
-  };
-  // String.
-  reject("test string");
-  reject("!!str 1234");
-  // Int.
-  reject("12");
-  reject("!!int 12");
-  reject("0x3");
-  reject("0o3");
-  reject("00:03");
-  // Float.
-  reject("1234.5");
-  reject("!!float 1234.5");
-  reject(".inf");
-  reject("00:03.3");
-  // Null. Null triggers the more general exception of assigning null to scalar.
-  reject("null", ".*has non-Scalar .Null.*");
-  reject("", ".*has non-Scalar .Null.*");
-  // Bool.
-  reject("true");
-  reject("!!bool true");
-
-  // Using !!binary for non-binary types is bad.
-  const auto reject_bad_target = []<class T>(const std::string& value,
-                                             const T&) {
-    DRAKE_EXPECT_THROWS_MESSAGE(AcceptIntoDummy<T>(LoadSingleValue(value)),
-                                ".*incompatible !!binary tag.*");
-  };  // NOLINT  -- templated lambda confuses cpplint about the semicolon.
-  // These all use valid base64 encoding of what would otherwise be valid string
-  // values for the serializable type.
-  reject_bad_target("!!binary LmluZg==", DoubleStruct{});      // .inf
-  reject_bad_target("!!binary aW5m", DoubleStruct{});          // inf
-  reject_bad_target("!!binary MTIzNC41", DoubleStruct{});      // 1234.5
-  reject_bad_target("!!binary MTIzNA==", IntStruct{});         // 1234
-  reject_bad_target("!!binary dGVzdC9wYXRo", PathStruct{});    // test/path
-  reject_bad_target("!!binary YSBzdHJpbmc=", StringStruct{});  // "a string"
-}
-
 TEST_P(YamlReadArchiveTest, Path) {
   const auto test_valid = [](const std::string& value,
                              const std::string& expected) {
@@ -321,7 +231,6 @@ doc:
   some_uint64: 105
   some_string: foo
   some_path: /alternative/path
-  some_bytes: !!binary BQYH
 )""";
   const auto& x = AcceptNoThrow<AllScalarsStruct>(Load(doc));
   EXPECT_EQ(x.some_bool, true);
@@ -333,7 +242,6 @@ doc:
   EXPECT_EQ(x.some_uint64, 105);
   EXPECT_EQ(x.some_string, "foo");
   EXPECT_EQ(x.some_path, "/alternative/path");
-  EXPECT_EQ(x.some_bytes, StringToByteVector("\x05\x06\x07"));
 }
 
 TEST_P(YamlReadArchiveTest, StdArray) {
@@ -680,14 +588,6 @@ TEST_P(YamlReadArchiveTest, Optional) {
   }
 }
 
-/* Smoke test for compatibility for the odd scalar: vector<byte>. */
-TEST_P(YamlReadArchiveTest, OptionalBytes) {
-  const auto& x = AcceptNoThrow<OptionalBytesStruct>(
-      Load("doc:\n  value: !!binary b3RoZXID/3N0dWZm"));
-  ASSERT_TRUE(x.value.has_value());
-  EXPECT_EQ(x.value.value(), StringToByteVector("other\x03\xffstuff"));
-}
-
 TEST_P(YamlReadArchiveTest, Variant) {
   const auto test = [](const std::string& doc, const Variant4& expected) {
     const auto& x = AcceptNoThrow<VariantStruct>(Load(doc));
@@ -718,8 +618,6 @@ TEST_P(YamlReadArchiveTest, PrimitiveVariant) {
   test("doc:\n  value: !!float '1.0'", 1.0);
   test("doc:\n  value: !!str foo", std::string("foo"));
   test("doc:\n  value: !!str 'foo'", std::string("foo"));
-  test("doc:\n  value: !!binary A3Rlc3Rfc3RyAw==",
-       StringToByteVector("\x03test_str\x03"));
 
   // It might be sensible for this case to pass, but for now we'll require that
   // non-0'th variant indices always use a tag even where it could be inferred.

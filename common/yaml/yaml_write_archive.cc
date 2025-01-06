@@ -118,8 +118,6 @@ void RecursiveEmit(const internal::Node& node, YAML::Emitter* emitter,
       emitted_tag = std::string("!!");
       emitted_tag.append(node_tag.substr(18));
     }
-  } else if (node_tag == internal::Node::kTagBinary) {
-    emitted_tag = "!!binary";
   } else {
     emitted_tag = node_tag;
   }
@@ -407,12 +405,6 @@ void DoEraseMatchingMaps(internal::Node* x, const internal::Node* y) {
 
 void YamlWriteArchive::EraseMatchingMaps(const YamlWriteArchive& other) {
   DoEraseMatchingMaps(&(this->root_), &(other.root_));
-}
-
-std::string YamlWriteArchive::EncodeBase64(
-    const std::vector<std::byte>& bytes) {
-  const auto* data = reinterpret_cast<const unsigned char*>(bytes.data());
-  return YAML::EncodeBase64(data, bytes.size());
 }
 
 }  // namespace internal
