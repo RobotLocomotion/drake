@@ -265,21 +265,22 @@ class TestGeometryRender(unittest.TestCase):
                 DummyRenderEngine.latest_instance = self
                 self.registered_geometries.remove(id)
 
-            def DoClone(self):
+            def __deepcopy__(self, memo):
                 DummyRenderEngine.latest_instance = self
                 new = DummyRenderEngine()
-                new.force_accept = copy.copy(self.force_accept)
-                new.registered_geometries = copy.copy(
-                    self.registered_geometries)
-                new.updated_ids = copy.copy(self.updated_ids)
-                new.include_group_name = copy.copy(self.include_group_name)
-                new.X_WC = copy.copy(self.X_WC)
-                new.color_count = copy.copy(self.color_count)
-                new.depth_count = copy.copy(self.depth_count)
-                new.label_count = copy.copy(self.label_count)
-                new.color_camera = copy.copy(self.color_camera)
-                new.depth_camera = copy.copy(self.depth_camera)
-                new.label_camera = copy.copy(self.label_camera)
+                new.force_accept = copy.deepcopy(self.force_accept, memo=memo)
+                new.registered_geometries = copy.deepcopy(
+                    self.registered_geometries, memo=memo)
+                new.updated_ids = copy.deepcopy(self.updated_ids, memo=memo)
+                new.include_group_name = copy.deepcopy(
+                    self.include_group_name, memo=memo)
+                new.X_WC = copy.deepcopy(self.X_WC, memo=memo)
+                new.color_count = copy.deepcopy(self.color_count, memo=memo)
+                new.depth_count = copy.deepcopy(self.depth_count, memo=memo)
+                new.label_count = copy.deepcopy(self.label_count, memo=memo)
+                new.color_camera = copy.deepcopy(self.color_camera, memo=memo)
+                new.depth_camera = copy.deepcopy(self.depth_camera, memo=memo)
+                new.label_camera = copy.deepcopy(self.label_camera, memo=memo)
                 return new
 
             def DoRenderColorImage(self, camera, color_image_out):
@@ -305,7 +306,6 @@ class TestGeometryRender(unittest.TestCase):
         renderer_name = "renderer"
         builder = DiagramBuilder()
         scene_graph = builder.AddSystem(mut.SceneGraph())
-        # N.B. This passes ownership.
         scene_graph.AddRenderer(renderer_name, engine)
         sensor = builder.AddSystem(RgbdSensor(
             parent_id=scene_graph.world_frame_id(),
