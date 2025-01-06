@@ -744,7 +744,7 @@ TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
   // This obj is known to produce a non-physical spatial inertia in
   // CalcSpatialInertia().
   const RlocationOrError rlocation = FindRunfile(
-      "mujoco_menagerie_internal/hello_robot_stretch/assets/base_link_0.obj");
+      "mujoco_menagerie_internal/hello_robot_stretch/assets/link_head_1.obj");
   ASSERT_EQ(rlocation.error, "");
   const geometry::Mesh bad_mesh(rlocation.abspath, 1.0);
 
