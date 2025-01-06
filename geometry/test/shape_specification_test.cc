@@ -664,27 +664,39 @@ GTEST_TEST(ShapeTest, ConvexFromMemory) {
 
 GTEST_TEST(ShapeTest, ConvexFromVertices) {
   // This will get normalized to ".obj".
-  Eigen::MatrixXd vertices(3, 8);
+  Eigen::Matrix<double, 3, 4> vertices;
   vertices.col(0) << 0, 0, 0;
   vertices.col(1) << 1, 0, 0;
-  vertices.col(2) << 1, 1, 0;
-  vertices.col(3) << 0, 1, 0;
-  vertices.col(4) << 0, 0, 1;
-  vertices.col(5) << 1, 0, 1;
-  vertices.col(6) << 1, 1, 1;
-  vertices.col(7) << 0, 1, 1;
-  const std::string mesh_name = "a_convex.obj";
-  const Convex convex(vertices, mesh_name, 2.0);
+  vertices.col(2) << 0, 1, 0;
+  vertices.col(3) << 0, 0, 1;
 
-  EXPECT_EQ(convex.scale(), 2.0);
-  EXPECT_EQ(convex.extension(), ".obj");
-  const MeshSource& source = convex.source();
+  const std::string mesh_name = "a_convex.obj";
+  const Convex convex_from_verts(vertices, mesh_name, 2.0);
+
+  EXPECT_EQ(convex_from_verts.scale(), 2.0);
+  EXPECT_EQ(convex_from_verts.extension(), ".obj");
+  const MeshSource& source = convex_from_verts.source();
   ASSERT_TRUE(source.is_in_memory());
   EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
 
-  const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
-  EXPECT_EQ(hull.num_vertices(), 8);
-  EXPECT_EQ(hull.num_elements(), 6);
+  const PolygonSurfaceMesh<double>& hull = convex_from_verts.GetConvexHull();
+  EXPECT_EQ(hull.num_vertices(), 4);
+  EXPECT_EQ(hull.num_elements(), 4);
+
+  // make sure the convex hull is automatically taken.
+  Eigen::Matrix<double, 3, 5> points;
+  points.col(0) << 0, 0, 0;
+  points.col(1) << 1, 0, 0;
+  points.col(2) << 0, 1, 0;
+  points.col(3) << 0, 0, 1;
+  points.col(4) << 0.25, 0.25, 0.25;
+
+  const std::string mesh_name2 = "a_convex2.obj";
+  const Convex convex_from_points(points, mesh_name2, 2.0);
+
+  const PolygonSurfaceMesh<double>& hull2 = convex_from_points.GetConvexHull();
+  EXPECT_EQ(hull2.num_vertices(), 4);
+  EXPECT_EQ(hull2.num_elements(), 4);
 }
 
 GTEST_TEST(ShapeTest, MeshFromMemory) {
@@ -785,7 +797,6 @@ TEST_F(OverrideDefaultGeometryTest, UnsupportedGeometry) {
   EXPECT_NO_THROW(this->ImplementGeometry(Sphere(0.5), nullptr));
 }
 
-
 GTEST_TEST(ShapeTest, TypeNameAndToString) {
   // In-memory mesh we'll use on Convex and Mesh.
   const InMemoryMesh in_memory{
@@ -852,7 +863,6 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(base.to_string(), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(fmt::to_string(base), "Box(width=1.5, depth=2.5, height=3.5)");
 }
-
 
 GTEST_TEST(ShapeTest, Volume) {
   EXPECT_NEAR(CalcVolume(Box(1, 2, 3)), 6.0, 1e-14);

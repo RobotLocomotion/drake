@@ -19,13 +19,12 @@
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
 namespace {
-std::string VerticesToString(const Eigen::Matrix3X<double>& vertices) {
+std::string PointsToObjString(const Eigen::Matrix3X<double>& points) {
   std::string result = "";
 
-  result += fmt::format("# Vertices: {}\n", vertices.cols());
-  for (int i = 0; i < vertices.cols(); i++) {
-    result += fmt::format("v {} {} {}\n", vertices(0, i), vertices(1, i),
-                          vertices(2, i));
+  for (int i = 0; i < points.cols(); i++) {
+    result +=
+        fmt::format("v {} {} {}\n", points(0, i), points(1, i), points(2, i));
   }
   result += "\n";
 
@@ -147,12 +146,14 @@ Convex::Convex(MeshSource source, double scale)
   ThrowForBadScale(scale, "Convex");
 }
 
-Convex::Convex(const Eigen::Matrix3X<double>& vertices,
-               const std::string& filename_hint, double scale)
-    : Convex(InMemoryMesh(
-                 MemoryFile(VerticesToString(vertices), ".OBJ", filename_hint),
-                 {}),
-             scale) {}
+Convex::Convex(const Eigen::Matrix3X<double>& points,
+               const std::string& convex_label, double scale)
+    : Convex(
+          InMemoryMesh{
+              .mesh_file =
+                  MemoryFile(PointsToObjString(points), ".obj", convex_label),
+          },
+          scale) {}
 
 std::string Convex::filename() const {
   if (source_.is_path()) {
