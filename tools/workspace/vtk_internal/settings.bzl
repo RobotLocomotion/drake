@@ -485,6 +485,8 @@ MODULE_SETTINGS = {
             ":generated_rendering_opengl2_sources",
         ],
         "srcs_glob_exclude": [
+            # Avoid the dependency on freetype.
+            "**/vtkFastLabeledDataMapper*",
             # This is configure-time setup code, not library code.
             "**/vtkProbe*",
             # This file uses codegen'd embedded vtp files. We don't need it.
@@ -540,6 +542,7 @@ MODULE_SETTINGS = {
         }),
         "module_deps_ignore": [
             "VTK::IOXML",
+            "VTK::RenderingFreeType",
             "VTK::RenderingHyperTreeGrid",
         ],
     },
