@@ -1,5 +1,6 @@
 import copy
 from functools import partial
+import textwrap
 import unittest
 import warnings
 
@@ -10,6 +11,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import kDrakeAssertIsArmed, Parallelism
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
 from pydrake.solvers import (
@@ -1315,13 +1317,22 @@ class TestMathematicalProgram(unittest.TestCase):
             prog.SetSolverOption(solver, "india", 2)
             prog.SetSolverOption(solver, "sierra", "3")
             expected = {"foxtrot": 1.0, "india": 2, "sierra": "3"}
-            self.assertDictEqual(prog.GetSolverOptions(solver), expected)
+            with catch_drake_warnings(expected_count=1):
+                self.assertDictEqual(prog.GetSolverOptions(solver), expected)
             old_options = prog.solver_options()
+            self.assertEqual(old_options.options, {
+                gurobi_id.name(): expected,
+            })
             new_options = copy.deepcopy(old_options)
             new_options.SetOption(gurobi_id, "india", 4)
+            self.assertNotEqual(new_options, old_options)
             prog.SetSolverOptions(new_options)
             expected["india"] = 4
-            self.assertDictEqual(prog.GetSolverOptions(solver), expected)
+            with catch_drake_warnings(expected_count=1):
+                self.assertDictEqual(prog.GetSolverOptions(solver), expected)
+            self.assertEqual(old_options.options, {
+                gurobi_id.name(): expected,
+            })
 
     def test_solver_options(self):
         CSO = mp.CommonSolverOption
@@ -1353,14 +1364,85 @@ class TestMathematicalProgram(unittest.TestCase):
             CSO.kStandaloneReproductionFileName: "repro.txt",
             CSO.kMaxThreads: 4,
         }
-        self.assertDictEqual(dut.GetOptions(solver_id), expected_dummy)
-        self.assertEqual(dut.common_solver_options(), expected_common)
-        self.assertEqual(dut.get_print_to_console(), True)
-        self.assertEqual(dut.get_print_file_name(), "print.log")
-        self.assertEqual(dut.get_standalone_reproduction_file_name(),
-                         "repro.txt")
-        self.assertEqual(dut.get_max_threads(), 4)
+        self.assertEqual(dut.options, {
+            "dummy": expected_dummy,
+            "Drake": dict(
+                (key.name, value)
+                for key, value in expected_common.items()
+            )
+        })
+        with catch_drake_warnings(expected_count=1):
+            self.assertDictEqual(dut.GetOptions(solver_id), expected_dummy)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.common_solver_options(), expected_common)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_print_to_console(), True)
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_print_file_name(), "print.log")
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_standalone_reproduction_file_name(),
+                             "repro.txt")
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.get_max_threads(), 4)
+        self.assertTrue(dut == dut)
+        self.assertFalse(dut != dut)
         copy.deepcopy(dut)
+        roundtrip = eval(repr(dut), dict(SolverOptions=SolverOptions))
+        self.assertEqual(roundtrip, dut)
+
+    def test_solver_options_yaml(self):
+        CSO = mp.CommonSolverOption
+        dut = SolverOptions()
+        id1 = SolverId("id1")
+        id2 = SolverId("id2")
+        dut.SetOption(id1, "some_double", 1.1)
+        dut.SetOption(id1, "some_int", 2)
+        dut.SetOption(id2, "some_string", "foo")
+        dut.SetOption(CSO.kPrintFileName, "foo.txt")
+        dut.SetOption(CSO.kPrintToConsole, 1)
+        dut.SetOption(CSO.kStandaloneReproductionFileName, "bar.py")
+        dut.SetOption(mp.CommonSolverOption.kMaxThreads, 2)
+
+        # If you change either of these two string constants, then you must
+        # make the same change to the C++ solver_options.cc unit test.
+        py_expected = textwrap.dedent("""\
+        options:
+          Drake:
+            kMaxThreads: !!int '2'
+            kPrintFileName: !!str 'foo.txt'
+            kPrintToConsole: !!int '1'
+            kStandaloneReproductionFileName: !!str 'bar.py'
+          id1:
+            some_double: 1.1
+            some_int: !!int '2'
+          id2:
+            some_string: !!str 'foo'
+        """)
+        cxx_expected = textwrap.dedent("""\
+        options:
+          Drake:
+            kMaxThreads: !!int 2
+            kPrintFileName: !!str foo.txt
+            kPrintToConsole: !!int 1
+            kStandaloneReproductionFileName: !!str bar.py
+          id1:
+            some_double: 1.1
+            some_int: !!int 2
+          id2:
+            some_string: !!str foo
+        """)
+
+        # Check that Python can save and then re-load the options.
+        self.maxDiff = None
+        actual_written = yaml_dump_typed(dut)
+        self.assertMultiLineEqual(py_expected, actual_written)
+        readback = yaml_load_typed(data=actual_written, schema=SolverOptions)
+        self.assertEqual(readback, dut)
+
+        # Cross-check that the output written by the C++ unit test can be
+        # re-loaded in Python.
+        cxx_readback = yaml_load_typed(data=cxx_expected, schema=SolverOptions)
+        self.assertEqual(cxx_readback, dut)
 
     def test_infeasible_constraints(self):
         prog = mp.MathematicalProgram()
