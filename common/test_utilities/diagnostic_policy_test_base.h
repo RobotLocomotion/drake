@@ -40,14 +40,20 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
   /// Remove an error from internal records and return its formatted string.
   std::string TakeError() {
     ScopedTrace trace;
-    EXPECT_FALSE(error_records_.empty());
+    if (error_records_.empty()) {
+      EXPECT_FALSE(error_records_.empty());
+      return {};
+    }
     return Take(&error_records_).FormatError();
   }
 
   /// Remove a warning from internal records and return its formatted string.
   std::string TakeWarning() {
     ScopedTrace trace;
-    EXPECT_FALSE(warning_records_.empty());
+    if (warning_records_.empty()) {
+      EXPECT_FALSE(warning_records_.empty());
+      return {};
+    }
     return Take(&warning_records_).FormatWarning();
   }
 
