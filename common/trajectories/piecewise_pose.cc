@@ -59,11 +59,6 @@ PiecewisePose<T> PiecewisePose<T>::MakeCubicLinearWithEndLinearVelocity(
 }
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> PiecewisePose<T>::Clone() const {
-  return std::make_unique<PiecewisePose>(*this);
-}
-
-template <typename T>
 math::RigidTransform<T> PiecewisePose<T>::GetPose(const T& time) const {
   return math::RigidTransform<T>(orientation_.orientation(time),
                                  position_.value(time));
@@ -110,6 +105,11 @@ bool PiecewisePose<T>::IsApprox(const PiecewisePose<T>& other,
 }
 
 template <typename T>
+std::unique_ptr<Trajectory<T>> PiecewisePose<T>::DoClone() const {
+  return std::make_unique<PiecewisePose>(*this);
+}
+
+template <typename T>
 bool PiecewisePose<T>::do_has_derivative() const {
   return true;
 }
@@ -118,7 +118,7 @@ template <typename T>
 MatrixX<T> PiecewisePose<T>::DoEvalDerivative(const T& t,
                                               int derivative_order) const {
   if (derivative_order == 0) {
-    return value(t);
+    return this->value(t);
   }
   Vector6<T> derivative;
   derivative.template head<3>() =

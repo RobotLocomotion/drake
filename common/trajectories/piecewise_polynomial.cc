@@ -61,7 +61,7 @@ template <typename T>
 PiecewisePolynomial<T>::~PiecewisePolynomial() = default;
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> PiecewisePolynomial<T>::Clone() const {
+std::unique_ptr<Trajectory<T>> PiecewisePolynomial<T>::DoClone() const {
   return std::make_unique<PiecewisePolynomial<T>>(*this);
 }
 
@@ -648,7 +648,7 @@ T PiecewisePolynomial<T>::EvaluateSegmentAbsoluteTime(
 }
 
 template <typename T>
-Eigen::Index PiecewisePolynomial<T>::rows() const {
+Eigen::Index PiecewisePolynomial<T>::do_rows() const {
   if (polynomials_.size() > 0) {
     return polynomials_[0].rows();
   } else {
@@ -658,7 +658,7 @@ Eigen::Index PiecewisePolynomial<T>::rows() const {
 }
 
 template <typename T>
-Eigen::Index PiecewisePolynomial<T>::cols() const {
+Eigen::Index PiecewisePolynomial<T>::do_cols() const {
   if (polynomials_.size() > 0) {
     return polynomials_[0].cols();
   } else {

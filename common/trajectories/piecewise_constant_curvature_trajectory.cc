@@ -40,17 +40,6 @@ PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
 }
 
 template <typename T>
-std::unique_ptr<Trajectory<T>> PiecewiseConstantCurvatureTrajectory<T>::Clone()
-    const {
-  auto initial_pose = get_initial_pose();
-  auto initial_frame = initial_pose.rotation();
-  return std::make_unique<PiecewiseConstantCurvatureTrajectory<T>>(
-      this->breaks(), segment_turning_rates_,
-      initial_frame.col(kCurveTangentIndex),
-      initial_frame.col(kPlaneNormalIndex), initial_pose.translation());
-}
-
-template <typename T>
 math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::CalcPose(
     const T& s) const {
   int segment_index = this->get_segment_index(s);
@@ -113,6 +102,17 @@ template <typename T>
 boolean<T> PiecewiseConstantCurvatureTrajectory<T>::IsNearlyPeriodic(
     double tolerance) const {
   return CalcPose(0.).IsNearlyEqualTo(CalcPose(length()), tolerance);
+}
+
+template <typename T>
+std::unique_ptr<Trajectory<T>>
+PiecewiseConstantCurvatureTrajectory<T>::DoClone() const {
+  auto initial_pose = get_initial_pose();
+  auto initial_frame = initial_pose.rotation();
+  return std::make_unique<PiecewiseConstantCurvatureTrajectory<T>>(
+      this->breaks(), segment_turning_rates_,
+      initial_frame.col(kCurveTangentIndex),
+      initial_frame.col(kPlaneNormalIndex), initial_pose.translation());
 }
 
 template <typename T>
