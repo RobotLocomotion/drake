@@ -19,7 +19,7 @@ MosekSolver::MosekSolver()
 MosekSolver::~MosekSolver() = default;
 
 SolverId MosekSolver::id() {
-  static const never_destroyed<SolverId> singleton{"Mosek"};
+  static const never_destroyed<SolverId> singleton{"MOSEK"};
   return singleton.access();
 }
 

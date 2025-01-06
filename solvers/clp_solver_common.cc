@@ -15,7 +15,7 @@ ClpSolver::ClpSolver()
 ClpSolver::~ClpSolver() = default;
 
 SolverId ClpSolver::id() {
-  static const never_destroyed<SolverId> singleton{"CLP"};
+  static const never_destroyed<SolverId> singleton{"Clp"};
   return singleton.access();
 }
 
