@@ -74,11 +74,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // Instantiate the model for the free body in space.
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
       kMass, benchmark_.get_I(), benchmark_.get_J(), kGravity);
-
-  // Simulator will create a Context by calling this system's
-  // CreateDefaultContext(). This in turn will initialize its state by making a
-  // call to this system's SetDefaultState().
-  systems::Simulator<double> simulator(free_body_plant);
+  systems::Simulator<double> simulator(free_body_plant.plant(),
+                                       free_body_plant.CreatePlantContext());
   systems::Context<double>& context = simulator.get_mutable_context();
 
   // The expected initial velocities with non-zero components in all three
@@ -90,7 +87,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
 
   const internal::QuaternionFloatingMobilizer<double>& mobilizer =
       MultibodyTreeTester::get_floating_mobilizer(
-          internal::GetInternalTree(free_body_plant), free_body_plant.body());
+          internal::GetInternalTree(free_body_plant.plant()),
+          free_body_plant.body());
 
   // Unit test QuaternionFloatingMobilizer context dependent setters/getters.
   mobilizer.SetAngularVelocity(&context, 2.0 * w0_WB_expected);
@@ -126,9 +124,8 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   EXPECT_TRUE(CompareMatrices(mobilizer.get_translation(context), p_WB_test,
                               kEpsilon, MatrixCompareType::relative));
 
-  // Reset state to that initially set by
-  // AxiallySymmetricFreeBodyPlant::SetDefaultState().
-  free_body_plant.SetDefaultState(context, &context.get_mutable_state());
+  // Reset state back to the default.
+  context.SetTimeStateAndParametersFrom(*free_body_plant.CreatePlantContext());
   EXPECT_TRUE(CompareMatrices(mobilizer.get_angular_velocity(context),
                               w0_WB_expected, kEpsilon,
                               MatrixCompareType::relative));
@@ -206,7 +203,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // Verify MultibodyTree::MapVelocityToQDot() to compute the quaternion time
   // derivative.
   const internal::MultibodyTree<double>& model =
-      internal::GetInternalTree(free_body_plant);
+      internal::GetInternalTree(free_body_plant.plant());
   VectorX<double> qdot_from_v(model.num_positions());
   // The generalized velocity computed last at time = kEndTime.
   const VectorX<double> v =
@@ -271,10 +268,10 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(kMass, kInertia,
                                                         kInertia, kGravity);
   const internal::MultibodyTree<double>& model =
-      internal::GetInternalTree(free_body_plant);
+      internal::GetInternalTree(free_body_plant.plant());
 
   std::unique_ptr<Context<double>> context =
-      free_body_plant.CreateDefaultContext();
+      free_body_plant.CreatePlantContext();
 
   // Set the pose of the body.
   const Vector3d p_WB(1, 2, 3);  // Position in world.
@@ -338,9 +335,10 @@ GTEST_TEST(QuaternionFloatingMobilizer, InboardJointLocking) {
   AxiallySymmetricFreeBodyPlant<double> free_body_plant(
       kMass, kInertia, kInertia, kGravity, 0.001 /* time_step */);
   const internal::MultibodyTree<double>& model =
-      internal::GetInternalTree(free_body_plant);
+      internal::GetInternalTree(free_body_plant.plant());
 
-  systems::Simulator<double> simulator(free_body_plant);
+  systems::Simulator<double> simulator(free_body_plant.plant(),
+                                       free_body_plant.CreatePlantContext());
   systems::Context<double>& context = simulator.get_mutable_context();
 
   // Set velocities.
@@ -381,12 +379,13 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
   // Simulator will create a Context by calling this system's
   // CreateDefaultContext(). This in turn will initialize its state by making a
   // call to this system's SetDefaultState().
-  systems::Simulator<double> simulator(free_body_plant);
+  systems::Simulator<double> simulator(free_body_plant.plant(),
+                                       free_body_plant.CreatePlantContext());
   systems::Context<double>& context = simulator.get_mutable_context();
 
   // Allocate space to hold the time-derivative of the Drake state.
   std::unique_ptr<systems::ContinuousState<double>> stateDt =
-      free_body_plant.AllocateTimeDerivatives();
+      free_body_plant.plant().AllocateTimeDerivatives();
   drake::systems::ContinuousState<double>* stateDt_ptr = stateDt.get();
 
   // Initial position, translational velocity, and angular velocity are zero.
@@ -401,7 +400,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, ExceptionMessageForInvalidQuaternion) {
 
   // A zero quaternion should throw an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      free_body_plant.CalcTimeDerivatives(context, stateDt_ptr),
+      free_body_plant.plant().CalcTimeDerivatives(context, stateDt_ptr),
       "QuaternionToRotationMatrix\\(\\):"
       " All the elements in a quaternion are zero\\.");
 }

@@ -957,6 +957,9 @@ on deformable bodies.
      instead of dynamic geometry. This is an optimization and the API, and
      pre/post-finalize conditions should not change. -->
 
+@warning Subclassing MultibodyPlant is deprecated; it will be marked `final`
+or or after 2025-05-01.
+
 @anchor mbp_table_of_contents
 
 @anchor mbp_references

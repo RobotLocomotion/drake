@@ -14,31 +14,29 @@ using Eigen::Vector3d;
 template<typename T>
 AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
     double mass, double I, double J, double g, double time_step)
-    : MultibodyPlant<T>(time_step), mass_(mass), I_(I), J_(J), g_(g) {
-
-  // Create the MultibodyPlant model.
+    : mass_(mass),
+      I_(I),
+      J_(J),
+      g_(g),
+      plant_(std::make_unique<MultibodyPlant<T>>(time_step)) {
   // Create the spatial inertia M_Bcm of body B, about Bcm, expressed in B.
   UnitInertia<double> G_Bcm =
       UnitInertia<double>::AxiallySymmetric(J_, I_, Vector3<double>::UnitZ());
   SpatialInertia<double> M_Bcm(mass_, Vector3<double>::Zero(), G_Bcm);
-  body_ = &this->AddRigidBody("FreeBody", M_Bcm);
-  this->mutable_gravity_field().set_gravity_vector(
+  body_ = &plant_->AddRigidBody("FreeBody", M_Bcm);
+  plant_->mutable_gravity_field().set_gravity_vector(
       -g_ * Vector3<double>::UnitZ());
-  this->Finalize();
+  plant_->Finalize();
 
   // Some sanity checks. By default MultibodyPlant uses a quternion free
   // mobilizer for bodies that are not connected by any joint.
-  DRAKE_DEMAND(this->num_positions() == 7);
-  DRAKE_DEMAND(this->num_velocities() == 6);
-  DRAKE_DEMAND(this->num_multibody_states() == 13);
+  DRAKE_DEMAND(plant_->num_positions() == 7);
+  DRAKE_DEMAND(plant_->num_velocities() == 6);
+  DRAKE_DEMAND(plant_->num_multibody_states() == 13);
 }
 
 template<typename T>
-template<typename U>
-AxiallySymmetricFreeBodyPlant<T>::AxiallySymmetricFreeBodyPlant(
-    const AxiallySymmetricFreeBodyPlant<U> &other) :
-    AxiallySymmetricFreeBodyPlant<T>(
-    other.mass_, other.I_, other.J_, other.g_) {}
+AxiallySymmetricFreeBodyPlant<T>::~AxiallySymmetricFreeBodyPlant() = default;
 
 template<typename T>
 Vector3<double>
@@ -53,14 +51,15 @@ AxiallySymmetricFreeBodyPlant<T>::get_default_initial_translational_velocity() {
 }
 
 template<typename T>
-void AxiallySymmetricFreeBodyPlant<T>::SetDefaultState(
-    const systems::Context<T>& context, systems::State<T>* state) const {
-  DRAKE_DEMAND(state != nullptr);
-  MultibodyPlant<T>::SetDefaultState(context, state);
+std::unique_ptr<systems::Context<T>>
+AxiallySymmetricFreeBodyPlant<T>::CreatePlantContext() const {
   const SpatialVelocity<T> V_WB(
       get_default_initial_angular_velocity().template cast<T>(),
       get_default_initial_translational_velocity().template cast<T>());
-  this->tree().SetFreeBodySpatialVelocityOrThrow(body(), V_WB, context, state);
+  std::unique_ptr<systems::Context<T>> context = plant_->CreateDefaultContext();
+  this->tree().SetFreeBodySpatialVelocityOrThrow(body(), V_WB, *context,
+                                                 &context->get_mutable_state());
+  return context;
 }
 
 template<typename T>
@@ -94,9 +93,8 @@ AxiallySymmetricFreeBodyPlant<T>::CalcSpatialVelocityInWorldFrame(
   return vc.get_V_WB(body_->mobod_index());
 }
 
+template class AxiallySymmetricFreeBodyPlant<double>;
+
 }  // namespace test
 }  // namespace multibody
 }  // namespace drake
-
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    class ::drake::multibody::test::AxiallySymmetricFreeBodyPlant);
