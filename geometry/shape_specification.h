@@ -292,7 +292,7 @@ class Convex final : public Shape {
    expected to be in the canonical frame of the shape. Optionally uniformly
    scaled by the given scale factor.
 
-   @param points      The points whose convex hull define the shape.
+   @param points        The points whose convex hull define the shape.
    @param convex_label  A label for the object. The label is used for warning
                         and error messages. Otherwise, the label has no other
                         functional purpose. It must consist of a single line.

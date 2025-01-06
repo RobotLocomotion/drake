@@ -663,40 +663,26 @@ GTEST_TEST(ShapeTest, ConvexFromMemory) {
 }
 
 GTEST_TEST(ShapeTest, ConvexFromVertices) {
-  // This will get normalized to ".obj".
-  Eigen::Matrix<double, 3, 4> vertices;
-  vertices.col(0) << 0, 0, 0;
-  vertices.col(1) << 1, 0, 0;
-  vertices.col(2) << 0, 1, 0;
-  vertices.col(3) << 0, 0, 1;
-
-  const std::string mesh_name = "a_convex.obj";
-  const Convex convex_from_verts(vertices, mesh_name, 2.0);
-
-  EXPECT_EQ(convex_from_verts.scale(), 2.0);
-  EXPECT_EQ(convex_from_verts.extension(), ".obj");
-  const MeshSource& source = convex_from_verts.source();
-  ASSERT_TRUE(source.is_in_memory());
-  EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
-
-  const PolygonSurfaceMesh<double>& hull = convex_from_verts.GetConvexHull();
-  EXPECT_EQ(hull.num_vertices(), 4);
-  EXPECT_EQ(hull.num_elements(), 4);
-
-  // make sure the convex hull is automatically taken.
+  // Make sure the convex hull is automatically taken.
   Eigen::Matrix<double, 3, 5> points;
   points.col(0) << 0, 0, 0;
   points.col(1) << 1, 0, 0;
-  points.col(2) << 0, 1, 0;
-  points.col(3) << 0, 0, 1;
-  points.col(4) << 0.25, 0.25, 0.25;
+  points.col(2) << 0.25, 0.25, 0.25;
+  points.col(3) << 0, 1, 0;
+  points.col(4) << 0, 0, 1;
 
-  const std::string mesh_name2 = "a_convex2.obj";
-  const Convex convex_from_points(points, mesh_name2, 2.0);
+  const std::string mesh_name = "a_convex";
+  const Convex convex(points, mesh_name, 2.0);
 
-  const PolygonSurfaceMesh<double>& hull2 = convex_from_points.GetConvexHull();
-  EXPECT_EQ(hull2.num_vertices(), 4);
-  EXPECT_EQ(hull2.num_elements(), 4);
+  EXPECT_EQ(convex.scale(), 2.0);
+  EXPECT_EQ(convex.extension(), ".obj");
+  const MeshSource& source = convex.source();
+  ASSERT_TRUE(source.is_in_memory());
+  EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
+
+  const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
+  EXPECT_EQ(hull.num_vertices(), 4);
+  EXPECT_EQ(hull.num_elements(), 4);
 }
 
 GTEST_TEST(ShapeTest, MeshFromMemory) {
