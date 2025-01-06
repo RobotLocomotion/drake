@@ -3,12 +3,13 @@
 #include <deque>
 #include <string>
 
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/ssize.h"
-#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace test {
@@ -40,20 +41,14 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
   /// Remove an error from internal records and return its formatted string.
   std::string TakeError() {
     ScopedTrace trace;
-    if (error_records_.empty()) {
-      EXPECT_FALSE(error_records_.empty());
-      return {};
-    }
+    SCOPED_TRACE("in TakeError()");
     return Take(&error_records_).FormatError();
   }
 
   /// Remove a warning from internal records and return its formatted string.
   std::string TakeWarning() {
     ScopedTrace trace;
-    if (warning_records_.empty()) {
-      EXPECT_FALSE(warning_records_.empty());
-      return {};
-    }
+    SCOPED_TRACE("in TakeWarning()");
     return Take(&warning_records_).FormatWarning();
   }
 
@@ -114,34 +109,28 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
   std::string FormatFirstError() {
     ScopedTrace trace;
     if (error_records_.empty()) {
-      for (const auto& warning : warning_records_) {
-        log()->warn(warning.FormatWarning());
-      }
-      EXPECT_GT(error_records_.size(), 0)
-          << "FormatFirstError did not get any errors";
+      auto format_warnings = [this]() {
+        std::deque<std::string> warnings;
+        for (const auto& record : warning_records_) {
+          warnings.push_back(record.FormatWarning());
+        }
+        return warnings;
+      };
+      ADD_FAILURE() << fmt::format(
+          "FormatFirstError did not get any errors\n"
+          "found {} warnings:\n{}",
+          NumWarnings(), fmt::join(format_warnings(), "\n"));
       return {};
     }
     return error_records_[0].FormatError();
   }
 
-  // Returns the first warning as a string (or else fails the test case,
-  // if there were no warnings). Also fails if there were any errors.
-  std::string FormatFirstWarning() {
-    ScopedTrace trace;
-    for (const auto& error : error_records_) {
-      log()->error(error.FormatError());
-    }
-    EXPECT_TRUE(error_records_.empty());
-    if (warning_records_.empty()) {
-      EXPECT_TRUE(warning_records_.size() > 0)
-          << "FormatFirstWarning did not get any warnings";
-      return {};
-    }
-    return warning_records_[0].FormatWarning();
-  }
-
   template <typename T>
   T Take(std::deque<T>* c) {
+    if (c->empty()) {
+      ADD_FAILURE() << "No messages to take!";
+      return {};
+    }
     T result = c->at(0);
     c->pop_front();
     return result;
