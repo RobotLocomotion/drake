@@ -787,6 +787,19 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "volumetric_element_external_force_test",
+    deps = [
+        ":corotated_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        ":tet_subdivision_quadrature",
+        ":volumetric_element",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_googletest(
     name = "velocity_newmark_scheme_test",
     deps = [
         ":acceleration_newmark_scheme",

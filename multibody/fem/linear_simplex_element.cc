@@ -132,6 +132,20 @@ template class LinearSimplexElement<double, 2, 3, 4>;
 template class LinearSimplexElement<double, 3, 3, 1>;
 template class LinearSimplexElement<double, 3, 3, 2>;
 template class LinearSimplexElement<double, 3, 3, 5>;
+
+// TODO(xuchenhan-tri): With the addition of TetSubdivisionQuadrature (which is
+// currently an open template), we need to either make LinearSimplexElement an
+// open template as well, or, make TetSubdivisionQuadrature a closed template
+// (and move stuff to cc file), and limit the number of subdivisions. As it
+// stands now, if we subdivide more than 4 times, the number of quadrature
+// points will exceed 128, and we will miss the necessary explicit instantiation
+// of LinearSimplexElement.
+/* Explicit instantiations for subdivions 1,2,3,4. */
+template class LinearSimplexElement<double, 3, 3, 4>;
+template class LinearSimplexElement<double, 3, 3, 16>;
+template class LinearSimplexElement<double, 3, 3, 64>;
+template class LinearSimplexElement<double, 3, 3, 128>;
+
 template class LinearSimplexElement<AutoDiffXd, 2, 2, 2>;
 template class LinearSimplexElement<AutoDiffXd, 2, 2, 4>;
 template class LinearSimplexElement<AutoDiffXd, 2, 3, 4>;
