@@ -772,6 +772,41 @@ TEST_F(MujocoParserTest, BadMeshSpatialInertiaFallback) {
   // that we're using it (and not choking).
 }
 
+// Some meshes are so broken that even falling back to a convex hull can't save
+// us. Verify we get a useful error message.
+TEST_F(MujocoParserTest, BadMeshSpatialInertiaTotalFail) {
+  // This obj is known to produce a negative volume in CalcSpatialInertia().
+  const RlocationOrError rlocation = FindRunfile(
+      "drake/multibody/parsing/test/neg_volume.obj");
+  ASSERT_EQ(rlocation.error, "");
+  const geometry::Mesh bad_mesh(rlocation.abspath, 1.0);
+
+  // We know the spatial inertia is bad because CalcSpatialInertia()
+  // throws. Keep this confirmation that the mesh in question truly is **bad**.
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcSpatialInertia(bad_mesh, 1.0),
+          ".*volume.*is -1.*");
+
+  std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box" file="{}"/>  </asset>
+  <worldbody>
+    <body name="body1">
+      <geom name="box_geom" type="mesh" mesh="box"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""",  rlocation.abspath);
+
+  EXPECT_NO_THROW(AddModelFromString(xml, "test"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*volume.*is -1.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*fallback.*"));
+  // Note: These errors are reported as a result of attempted fallback to a
+  // convex hull.
+  EXPECT_THAT(TakeError(), MatchesRegex(".*even.*convex hull.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*IsPhysicallyValid.*"));
+}
+
 TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
   const std::string file = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/mjcfs/box.xml");
