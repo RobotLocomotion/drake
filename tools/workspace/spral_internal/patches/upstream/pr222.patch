@@ -1,0 +1,34 @@
+[spral] Cherry-pick of https://github.com/ralna/spral/pull/222
+
+We can drop this patch once we upgrade to a release that contains it.
+
+From: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date: Tue, 7 Jan 2025 10:09:01 -0800
+Subject: [PATCH] Fix undefined behavior in LDLT
+
+When m==n the failed_rect.data() is nullptr, but then we still
+subtract some small integer from it. Doing arithmetic on a null
+pointer is undefined behavior. Clang's undefined Behavior sanitizer
+says ldlt_app.cxx:2420:38: runtime error: applying non-zero offset
+18446744073709551536 to null pointer
+
+The copy_failed_rect ends up being a no-op because m==rfrom, but it's
+still UB to do arithmetic on nullptr, even if never de-referenced.
+
+--- src/ssids/cpu/kernels/ldlt_app.cxx
++++ src/ssids/cpu/kernels/ldlt_app.cxx
+@@ -2415,10 +2415,10 @@ class LDLT {
+             // Rectangular part
+             // (be careful with blocks that contain both diag and rect parts)
+             copy_failed_rect(
+-                  get_nrow(nblk-1, m, block_size), get_ncol(jblk, n, block_size),
+-                  get_ncol(nblk-1, n, block_size), cdata[jblk],
+-                  failed_rect.data() + (jfail*(m-n)+(nblk-1)*block_size-n), m-n,
+-                  &a[jblk*block_size*lda+(nblk-1)*block_size], lda
++                  get_nrow(nblk-1, m, block_size) - get_nrow(nblk-1, n, block_size),
++                  get_ncol(jblk, n, block_size), 0, cdata[jblk],
++                  failed_rect.data() + jfail*(m-n), m-n,
++                  &a[jblk*block_size*lda+n], lda
+                   );
+             for(int iblk=nblk; iblk<mblk; ++iblk) {
+                copy_failed_rect(
