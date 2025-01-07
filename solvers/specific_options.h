@@ -75,21 +75,22 @@ class SpecificOptions {
           string_unordered_map<SolverOptions::OptionValue>* /* respelled */)>&
           respell);
 
-  /* Returns and effectively removes the value of the option named `key`. (To be
-  specific: the `all_option` object passed to our constructor remains unchanged;
+  /* Returns and effectively removes the value of the option named `key`. (To
+  be specific: the `all_options` object passed to our constructor is unchanged;
   instead, the `key` is memorized and future calls to either of the `CopyTo...`
   functions will skip over it.) If the option was not set or was set to a
-  different type), returns nullopt. When checking if an option was set, this
+  different type, returns nullopt. When checking if an option was set, this
   checks `all_options` for our `id` as well as any options added during a
   Respell().
-  @tparam T must be one of: double, int, std::string. */
+  @tparam Result must be one of: double, int, std::string. */
   template <typename Result>
   std::optional<Result> Pop(std::string_view key);
 
   /* Helper for "Method 1 - dynamic", per our class overview. Converts options
   when the solver offers a generic key-value API where options are passed by
   string name. Any of the `set_...` arguments can be nullptr, which implies
-  that the back-end does not support any options of that type. */
+  that the back-end does not support any options of that type, which implies
+  that any options set to such a type will throw an exception. */
   void CopyToCallbacks(
       const std::function<void(const std::string& key, double value)>&
           set_double,
@@ -137,8 +138,9 @@ class SpecificOptions {
   void CheckNoPending() const;
 
   /* Helper function for CopyToSerializableStruct(). Finds the option with the
-  given name, removes it from pending_keys_, and returns it. */
-  std::optional<SolverOptions::OptionValue> PrepareToCopy(const char* name);
+  given name, removes it from pending_keys_, and returns it. If the option was
+  not set, returns nullptr. */
+  const SolverOptions::OptionValue* PrepareToCopy(const char* name);
 
   /* Output helper functions for CopyToSerializableStruct().
   Each one sets its `output` argument to the option value for the given name,
@@ -152,17 +154,23 @@ class SpecificOptions {
   void CopyStringOption(const char* name, std::string* output);
   //@}
 
-  // The solver we're operating on behalf of (as passed to our constructor).
-  const SolverId* const id_;
+  // The common (Drake) options for all solvers.
+  const CommonSolverOptionValues common_options_;
 
-  // The full options for all solvers (as passed to our constructor).
-  const SolverOptions* const all_options_;
+  // The direct options for the solver we're operating on behalf of.
+  // These take precedence over the common_options_.
+  // @warning When looking up options in this map, you must ALWAYS cross-check
+  // the key against popped_ and pretend its missing here when listed there.
+  const string_unordered_map<SolverOptions::OptionValue>& direct_options_;
+
+  // The name of the solver we're operating on behalf of.
+  const std::string& solver_name_;
+
+  // Keys of direct_options_ that have already been popped.
+  string_unordered_set popped_;
 
   // The result of the Respell() callback (or empty, if never called).
   string_unordered_map<SolverOptions::OptionValue> respelled_;
-
-  // Items that have already been popped.
-  string_unordered_set popped_;
 
   // Temporary storage during CopyToSerializableStruct() of option names that
   // are set but haven't yet been processed by Visit().
