@@ -5,6 +5,7 @@ import math
 import functools
 import types
 import typing
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -12,6 +13,7 @@ import yaml
 import yaml.representer
 
 from pydrake.common import pretty_class_name
+from pydrake.common.deprecation import DrakeDeprecationWarning
 
 
 class _SchemaLoader(yaml.loader.SafeLoader):
@@ -292,11 +294,26 @@ def _convert_yaml_primitive_to_schema_type(*, yaml_value, value_schema):
     # Allow exact matches.
     if yaml_value_type is value_schema:
         return yaml_value
-    # All implicit promotion from int -> float.
+    # Allow numeric promotion from int -> float.
     if yaml_value_type is int and value_schema is float:
         return float(yaml_value)
-    # Allow parsing strings to numbers.
+    # Allow numeric demotion from float -> int iff no information loss.
+    if yaml_value_type is float and value_schema is int:
+        if yaml_value.is_integer():
+            return int(yaml_value)
+    # Allow parsing strings to numbers using Python's number parsers.
     if yaml_value_type is str and value_schema in (float, int):
+        return value_schema(yaml_value)
+    # Other conversions between JSON types (like float->str) are deprecated,
+    # beacuse the string might look nothing like the scalar in the document.
+    if (yaml_value_type in _PRIMITIVE_JSON_TYPES
+            and value_schema in _PRIMITIVE_JSON_TYPES):
+        warnings.warn(
+            f"Loading yaml_value {yaml_value!r} into the schema type "
+            f"{value_schema} is deprecated and will be become a parsing "
+            "error in Drake on or after 2025-05-01.",
+            category=DrakeDeprecationWarning,
+        )
         return value_schema(yaml_value)
     # Don't allow any other primitive conversions.
     return None
