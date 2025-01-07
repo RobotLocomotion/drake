@@ -26,8 +26,8 @@ class TestIpoptSolver(unittest.TestCase):
         self.assertEqual(solver.solver_id(), IpoptSolver.id())
         self.assertTrue(solver.available())
         self.assertTrue(solver.enabled())
-        self.assertEqual(solver.solver_id().name(), "IPOPT")
-        self.assertEqual(solver.SolverName(), "IPOPT")
+        self.assertEqual(solver.solver_id().name(), "Ipopt")
+        self.assertEqual(solver.SolverName(), "Ipopt")
         self.assertEqual(solver.solver_type(), SolverType.kIpopt)
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
@@ -45,6 +45,6 @@ class TestIpoptSolver(unittest.TestCase):
             result.get_solver_details().lambda_val, np.array([]))
 
     def unavailable(self):
-        """Per the BUILD file, this test is only run when IPOPT is disabled."""
+        """Per the BUILD file, this test is only run when Ipopt is disabled."""
         solver = IpoptSolver()
         self.assertFalse(solver.available())

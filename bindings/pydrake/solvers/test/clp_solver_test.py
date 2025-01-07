@@ -31,8 +31,8 @@ class TestClpSolver(unittest.TestCase):
         solver = ClpSolver()
         self.assertEqual(solver.solver_id(), ClpSolver.id())
         self.assertTrue(solver.available())
-        self.assertEqual(solver.solver_id().name(), "CLP")
-        self.assertEqual(solver.SolverName(), "CLP")
+        self.assertEqual(solver.solver_id().name(), "Clp")
+        self.assertEqual(solver.SolverName(), "Clp")
         self.assertEqual(solver.solver_type(), SolverType.kClp)
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
@@ -41,6 +41,6 @@ class TestClpSolver(unittest.TestCase):
         self.assertAlmostEqual(result.get_optimal_cost(), -244./3)
 
     def unavailable(self):
-        """Per the BUILD file, this test is only run when CLP is disabled."""
+        """Per the BUILD file, this test is only run when Clp is disabled."""
         solver = ClpSolver()
         self.assertFalse(solver.available())

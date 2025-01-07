@@ -15,7 +15,7 @@ void IpoptSolver::SetDefaultLinearSolver(std::string linear_solver) {
 }
 
 SolverId IpoptSolver::id() {
-  static const never_destroyed<SolverId> singleton{"IPOPT"};
+  static const never_destroyed<SolverId> singleton{"Ipopt"};
   return singleton.access();
 }
 
