@@ -313,6 +313,8 @@ drake_cc_library(
     ],
     deps = [
         ":solver_id",
+        "//common:name_value",
+        "//common:string_container",
     ],
     implementation_deps = [
         "//common:overloaded",
@@ -2098,6 +2100,7 @@ drake_cc_googletest(
         ":solver_options",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
     ],
 )
 

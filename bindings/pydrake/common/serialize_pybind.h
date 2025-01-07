@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -174,13 +175,22 @@ class DefAttributesArchive {
     return GetTemplateClass("List")[u_type];
   }
 
-  // Partial specialization for Dict.
-  template <typename U, typename V, typename C, typename A>
-  static py::object CalcSchemaType(const std::map<U, V, C, A>*) {
-    auto u_type = CalcSchemaType(static_cast<U*>(nullptr));
-    auto v_type = CalcSchemaType(static_cast<V*>(nullptr));
-    auto inner_types = py::make_tuple(u_type, v_type);
+  // Partial specializations for Dict.
+  template <typename Key, typename Value>
+  static py::object MakeDictSchema() {
+    auto key_type = CalcSchemaType(static_cast<Key*>(nullptr));
+    auto value_type = CalcSchemaType(static_cast<Value*>(nullptr));
+    auto inner_types = py::make_tuple(key_type, value_type);
     return GetTemplateClass("Dict")[inner_types];
+  }
+  template <typename Key, typename Value, typename C, typename A>
+  static py::object CalcSchemaType(const std::map<Key, Value, C, A>*) {
+    return MakeDictSchema<Key, Value>();
+  }
+  template <typename Key, typename Value, typename H, typename E, typename A>
+  static py::object CalcSchemaType(
+      const std::unordered_map<Key, Value, H, E, A>*) {
+    return MakeDictSchema<Key, Value>();
   }
 
   // Partial specialization for Optional.

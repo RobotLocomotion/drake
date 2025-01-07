@@ -1,15 +1,44 @@
 #include "drake/solvers/solver_options.h"
 
-// Remove this include on 2025-05-01 upon completion of deprecation.
+#include <limits>
+
+// Remove this include on 2025-09-01 upon completion of deprecation.
 #include <sstream>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace solvers {
+
+using testing::Pair;
+using testing::UnorderedElementsAre;
+
+GTEST_TEST(OptionValueTest, ToString) {
+  using OptionValue = SolverOptions::OptionValue;
+  const OptionValue value_double = 22.0;
+  const OptionValue value_int = 10;
+  const OptionValue value_string = "hello";
+  EXPECT_EQ(internal::OptionValueToString(value_double), "22.0");
+  EXPECT_EQ(internal::OptionValueToString(value_int), "10");
+  EXPECT_EQ(internal::OptionValueToString(value_string), "\"hello\"");
+
+  const OptionValue value_nan = std::numeric_limits<double>::quiet_NaN();
+  const OptionValue value_inf = std::numeric_limits<double>::infinity();
+  const OptionValue value_neg_inf = -std::numeric_limits<double>::infinity();
+  EXPECT_EQ(internal::OptionValueToString(value_nan), "nan");
+  EXPECT_EQ(internal::OptionValueToString(value_inf), "inf");
+  EXPECT_EQ(internal::OptionValueToString(value_neg_inf), "-inf");
+
+  const OptionValue value_needs_escaping = "hello, \n\"world\"";
+  EXPECT_EQ(internal::OptionValueToString(value_needs_escaping),
+            fmt::format("{dq}hello, {bs}n{bs}{dq}world{bs}{dq}{dq}",
+                        fmt::arg("bs", '\\'), fmt::arg("dq", '"')));
+}
 
 GTEST_TEST(SolverOptionsTest, CommonToString) {
   const CommonSolverOption dut = CommonSolverOption::kPrintFileName;
@@ -17,6 +46,7 @@ GTEST_TEST(SolverOptionsTest, CommonToString) {
   EXPECT_EQ(fmt::to_string(dut), "kPrintFileName");
 }
 
+// Deprecated 2025-05-01.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(SolverOptionsTest, DeprecatedCommonStream) {
@@ -27,54 +57,111 @@ GTEST_TEST(SolverOptionsTest, DeprecatedCommonStream) {
 }
 #pragma GCC diagnostic pop
 
-GTEST_TEST(SolverOptionsTest, SetGetOption) {
+GTEST_TEST(SolverOptionsTest, Comparison) {
+  SolverOptions foo;
+  SolverOptions bar;
+  EXPECT_TRUE(foo == bar);
+  EXPECT_TRUE(bar == foo);
+  EXPECT_FALSE(foo != bar);
+  EXPECT_FALSE(bar != foo);
+
+  foo.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  EXPECT_FALSE(foo == bar);
+  EXPECT_FALSE(bar == foo);
+  EXPECT_TRUE(foo != bar);
+  EXPECT_TRUE(bar != foo);
+
+  bar.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  EXPECT_TRUE(foo == bar);
+  EXPECT_TRUE(bar == foo);
+  EXPECT_FALSE(foo != bar);
+  EXPECT_FALSE(bar != foo);
+}
+
+// Deprecated 2025-09-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+GTEST_TEST(SolverOptionsTest, SetGetOptionDeprecated) {
   SolverOptions dut;
-  EXPECT_EQ(to_string(dut), "{SolverOptions empty}");
+  EXPECT_EQ(to_string(dut), "SolverOptions(options={})");
   EXPECT_EQ(dut.get_print_file_name(), "");
   EXPECT_EQ(dut.get_print_to_console(), false);
   EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "");
   EXPECT_EQ(dut.get_max_threads(), std::nullopt);  // The value is unset.
 
-  const SolverId id1("id1");
-  const SolverId id2("id2");
-
-  dut.SetOption(id1, "some_double", 1.1);
-  dut.SetOption(id1, "some_before", 1.2);
-  dut.SetOption(id1, "some_int", 2);
-
-  dut.SetOption(id2, "some_int", "3");
-  dut.SetOption(id2, "some_string", "foo");
-
   dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
   dut.SetOption(CommonSolverOption::kPrintToConsole, 1);
   dut.SetOption(CommonSolverOption::kStandaloneReproductionFileName, "bar.py");
   dut.SetOption(CommonSolverOption::kMaxThreads, 2);
-
-  EXPECT_EQ(to_string(dut),
-            "{SolverOptions,"
-            " CommonSolverOption::kMaxThreads=2,"
-            " CommonSolverOption::kPrintFileName=foo.txt,"
-            " CommonSolverOption::kPrintToConsole=1,"
-            " CommonSolverOption::kStandaloneReproductionFileName=bar.py,"
-            " id1:some_before=1.2,"
-            " id1:some_double=1.1,"
-            " id1:some_int=2,"
-            " id2:some_int=3,"
-            " id2:some_string=foo}");
   EXPECT_EQ(dut.get_print_file_name(), "foo.txt");
   EXPECT_EQ(dut.get_print_to_console(), true);
   EXPECT_EQ(dut.get_standalone_reproduction_file_name(), "bar.py");
   EXPECT_EQ(dut.get_max_threads(), 2);
 
-  const std::unordered_map<CommonSolverOption,
-                           std::variant<double, int, std::string>>
-      common_options_expected(
-          {{CommonSolverOption::kPrintToConsole, 0},
-           {CommonSolverOption::kPrintFileName, "foo.txt"}});
-  // TODO(hongkai.dai): Test GetOption<double>() and `GetOptionDouble()` when
-  // a CommonSolverOption takes a double value.
+  const SolverId id1("id1");
+  const SolverId id2("id2");
+  dut.SetOption(id1, "some_double", 1.1);
+  dut.SetOption(id1, "some_int", 2);
+  dut.SetOption(id2, "some_string", "foo");
+  EXPECT_THAT(dut.template GetOptions<double>(id1),
+              UnorderedElementsAre(Pair("some_double", 1.1)));
+  EXPECT_THAT(dut.template GetOptions<int>(id1),
+              UnorderedElementsAre(Pair("some_int", 2)));
+  EXPECT_TRUE(dut.template GetOptions<std::string>(id1).empty());
+  EXPECT_TRUE(dut.template GetOptions<double>(id2).empty());
+  EXPECT_TRUE(dut.template GetOptions<int>(id2).empty());
+  EXPECT_THAT(dut.template GetOptions<std::string>(id2),
+              UnorderedElementsAre(Pair("some_string", "foo")));
+}
+#pragma GCC diagnostic pop
+
+GTEST_TEST(SolverOptionsTest, SetGetOption) {
+  SolverOptions dut;
+  EXPECT_TRUE(dut.options.empty());
+  EXPECT_EQ(dut.to_string(), "SolverOptions(options={})");
+
+  const SolverId id1("id1");
+  const SolverId id2("id2");
+  dut.SetOption(id1, "some_double", 1.1);
+  dut.SetOption(id1, "some_int", 2);
+  dut.SetOption(id2, "some_string", "foo");
+  dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
+  dut.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  dut.SetOption(CommonSolverOption::kStandaloneReproductionFileName, "bar.py");
+  dut.SetOption(CommonSolverOption::kMaxThreads, 2);
+
+  EXPECT_THAT(
+      dut.options,
+      UnorderedElementsAre(
+          Pair("id1", UnorderedElementsAre(Pair("some_double", 1.1),
+                                           Pair("some_int", 2))),
+          Pair("id2", UnorderedElementsAre(Pair("some_string", "foo"))),
+          Pair("Drake", UnorderedElementsAre(
+                            Pair("kPrintFileName", "foo.txt"),
+                            Pair("kPrintToConsole", 1),
+                            Pair("kStandaloneReproductionFileName", "bar.py"),
+                            Pair("kMaxThreads", 2)))));
+  EXPECT_EQ(dut.to_string(),
+            "SolverOptions(options={"
+            "\"Drake\":{"
+            "\"kMaxThreads\":2,"
+            "\"kPrintFileName\":\"foo.txt\","
+            "\"kPrintToConsole\":1,"
+            "\"kStandaloneReproductionFileName\":\"bar.py\""
+            "},"
+            "\"id1\":{"
+            "\"some_double\":1.1,"
+            "\"some_int\":2"
+            "},"
+            "\"id2\":{"
+            "\"some_string\":\"foo\""
+            "}"
+            "})");
 }
 
+// Deprecated 2025-09-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(SolverOptionsTest, Ids) {
   using Set = std::unordered_set<SolverId>;
 
@@ -98,6 +185,7 @@ GTEST_TEST(SolverOptionsTest, Ids) {
   dut.SetOption(id1, "some_double", 1.0);
   EXPECT_EQ(dut.GetSolverIds(), Set({id1, id2, id3}));
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(SolverOptionsTest, Merge) {
   const SolverId id1("foo1");
@@ -139,6 +227,9 @@ GTEST_TEST(SolverOptionsTest, Merge) {
   EXPECT_EQ(dut, dut_expected);
 }
 
+// Deprecated 2025-09-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
   const SolverId id1("id1");
   const SolverId id2("id2");
@@ -160,27 +251,86 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.CheckOptionKeysForSolver(id1, {"key1"}, {"key2"},
                                               {"key3"}),
-      "key2 is not allowed in the SolverOptions for id1.");
+      "key2 is not allowed in the SolverOptions for id1");
 
   DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
       id1, {"key1", "key2"}, {"key2"}, {"key3"}));
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(SolverOptionsTest, SetOptionError) {
   SolverOptions solver_options;
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kPrintFileName, 1),
-      "SolverOptions::SetOption support kPrintFileName only with std::string "
-      "value.");
+      ".*SetOption.*kPrintFileName.*must be a string, not 1.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kPrintToConsole, 2),
-      "kPrintToConsole expects value either 0 or 1");
+      ".*SetOption.*kPrintToConsole.*must be 0 or 1, not 2.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kMaxThreads, 2.1),
-      "SolverOptions::SetOption support kMaxThreads only with int value.");
+      ".*SetOption.*kMaxThreads.*must be an int > 0, not 2.1.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver_options.SetOption(CommonSolverOption::kMaxThreads, -1),
-      "kMaxThreads must be > 0.*");
+      ".*SetOption.*kMaxThreads.*must be an int > 0, not -1.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_options.SetOption(
+          CommonSolverOption::kStandaloneReproductionFileName, 1),
+      ".*SetOption.*kStandalone.*must be a string, not 1.");
+}
+
+GTEST_TEST(SolverOptionsTest, Serialization) {
+  SolverOptions dut;
+  const SolverId id1("id1");
+  const SolverId id2("id2");
+  dut.SetOption(id1, "some_double", 1.1);
+  dut.SetOption(id1, "some_int", 2);
+  dut.SetOption(id2, "some_string", "foo");
+  dut.SetOption(CommonSolverOption::kPrintFileName, "foo.txt");
+  dut.SetOption(CommonSolverOption::kPrintToConsole, 1);
+  dut.SetOption(CommonSolverOption::kStandaloneReproductionFileName, "bar.py");
+  dut.SetOption(CommonSolverOption::kMaxThreads, 2);
+
+  // If you change either of these two string constants, then you must
+  // make the same change to the Python mathematicalprogram_test.py.
+  const std::string cxx_expected = R"""(options:
+  Drake:
+    kMaxThreads: !!int 2
+    kPrintFileName: !!str foo.txt
+    kPrintToConsole: !!int 1
+    kStandaloneReproductionFileName: !!str bar.py
+  id1:
+    some_double: 1.1
+    some_int: !!int 2
+  id2:
+    some_string: !!str foo
+)""";
+  const std::string py_expected = R"""(options:
+  Drake:
+    kMaxThreads: !!int '2'
+    kPrintFileName: !!str 'foo.txt'
+    kPrintToConsole: !!int '1'
+    kStandaloneReproductionFileName: !!str 'bar.py'
+  id1:
+    some_double: 1.1
+    some_int: !!int '2'
+  id2:
+    some_string: !!str 'foo'
+)""";
+
+  // Check that C++ can save and then re-load the options.
+  const std::string actual_written = yaml::SaveYamlString(dut);
+  EXPECT_EQ(actual_written, cxx_expected);
+  SolverOptions readback;
+  EXPECT_NO_THROW(readback =
+                      yaml::LoadYamlString<SolverOptions>(actual_written));
+  EXPECT_EQ(readback, dut);
+
+  // Cross-check that the output written by the Python unit test can be
+  // re-loaded in C++.
+  SolverOptions py_readback;
+  EXPECT_NO_THROW(py_readback =
+                      yaml::LoadYamlString<SolverOptions>(py_expected));
+  EXPECT_EQ(py_readback, dut);
 }
 
 }  // namespace solvers
