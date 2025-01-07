@@ -92,7 +92,8 @@ def create_snopt_tgz(*, snopt_path, output):
     output_base = subprocess.check_output(
         command, cwd=resource_root,
         stderr=subprocess.DEVNULL, encoding='utf-8').strip()
-    bazel_snopt = os.path.join(output_base, 'external/snopt')
+    bazel_snopt = os.path.join(
+        output_base, 'external/+internal_repositories+snopt')
 
     # Ask Bazel to fetch SNOPT from its default git pin.
     command = [

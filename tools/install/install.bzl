@@ -22,17 +22,19 @@ InstalledTestInfo = provider()
 def _workspace(ctx):
     """Compute name of current workspace."""
 
-    # Check for override
+    # Check for override.
     if hasattr(ctx.attr, "workspace"):
         if len(ctx.attr.workspace):
             return ctx.attr.workspace
 
-    # Check for meaningful workspace_root
+    # Check for meaningful workspace_root (using the apparent repository name
+    # for brevity, not the canonical repository name with  "+" symbols).
     workspace = ctx.label.workspace_root.split("/")[-1]
+    workspace = workspace.split("+")[-1]
     if len(workspace):
         return workspace
 
-    # If workspace_root is empty, assume we are the root workspace
+    # If workspace_root is empty, assume we are the root workspace.
     return ctx.workspace_name
 
 def _rename(file_dest, rename):
@@ -524,11 +526,13 @@ def _install_impl(ctx):
     )
 
     # Generate install script.
+    installer_binary = ctx.attr._installer[DefaultInfo]
     ctx.actions.write(
         output = ctx.outputs.executable,
         content = "\n".join([
             "#!/bin/bash",
-            "tools/install/installer --actions '{}' \"$@\"".format(
+            "{} --actions '{}' \"$@\"".format(
+                installer_binary.files.to_list()[0].short_path,
                 actions_file.short_path,
             ),
         ]),
@@ -552,7 +556,7 @@ def _install_impl(ctx):
         )
 
     # Return actions.
-    installer_runfiles = ctx.attr._installer[DefaultInfo].default_runfiles
+    installer_runfiles = installer_binary.default_runfiles
     action_runfiles = ctx.runfiles(files = (
         [a.src for a in actions if not hasattr(a, "main_class")] +
         [i.src for i in installed_tests] +
