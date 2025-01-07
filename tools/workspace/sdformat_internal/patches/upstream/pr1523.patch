@@ -1,0 +1,78 @@
+[sdformat] Cherry-pick of https://github.com/gazebosim/sdformat/pull/1523
+
+We can drop this patch once we upgrade to a release that contains it.
+
+From: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date: Fri, 3 Jan 2025 07:29:06 -0800
+Subject: [PATCH] Remove unncessary <iostream> includes (#1523)
+
+Including iostream means introducing the static (global) constructors
+and destructors for std::cin, std::cerr, and std::cout. That extra
+init and fini code is undesirable when those streams are not actually
+used.
+
+--- include/sdf/Error.hh
++++ include/sdf/Error.hh
+@@ -17,9 +17,9 @@
+ #ifndef SDF_ERROR_HH_
+ #define SDF_ERROR_HH_
+ 
+-#include <iostream>
+-#include <string>
+ #include <optional>
++#include <ostream>
++#include <string>
+ #include <gz/utils/ImplPtr.hh>
+ #include <sdf/config.hh>
+ #include "sdf/Console.hh"
+
+--- include/sdf/Exception.hh
++++ include/sdf/Exception.hh
+@@ -19,8 +19,8 @@
+ #define SDF_EXCEPTION_HH_
+ 
+ #include <cstdint>
+-#include <iostream>
+ #include <memory>
++#include <ostream>
+ #include <sstream>
+ #include <string>
+ 
+
+--- src/Element.cc
++++ src/Element.cc
+@@ -16,6 +16,7 @@
+  */
+ 
+ #include <algorithm>
++#include <iostream>
+ #include <sstream>
+ #include <string>
+ 
+
+--- src/FrameSemantics.cc
++++ src/FrameSemantics.cc
+@@ -15,6 +15,7 @@
+  *
+ */
+ #include <algorithm>
++#include <iostream>
+ #include <string>
+ #include <set>
+ #include <utility>
+
+--- src/SDF.cc
++++ src/SDF.cc
+@@ -17,10 +17,11 @@
+ 
+ #include <cstdlib>
+ #include <fstream>
+-#include <sstream>
+ #include <functional>
++#include <iostream>
+ #include <list>
+ #include <map>
++#include <sstream>
+ #include <string>
+ #include <vector>
+ 

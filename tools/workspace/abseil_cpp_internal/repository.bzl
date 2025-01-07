@@ -10,6 +10,7 @@ def abseil_cpp_internal_repository(
         sha256 = "01474554fc2981e92fcda71c7ce29d3ed4ee8dd0707b346da3f8978cd349fa33",  # noqa
         patches = [
             ":patches/upstream/civil_time_linkopts.patch",
+            ":patches/upstream/specific_iostream_includes.patch",
             ":patches/disable_int128_on_clang.patch",
             ":patches/hidden_visibility.patch",
             ":patches/inline_namespace.patch",
