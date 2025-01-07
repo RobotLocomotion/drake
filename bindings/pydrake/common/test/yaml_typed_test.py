@@ -15,6 +15,7 @@ import numpy as np
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test.serialize_test_util import MyData2
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,
     run_with_multiple_values,
@@ -253,6 +254,41 @@ class TestYamlTypedRead(unittest.TestCase,
             with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
                 yaml_load_typed(schema=FloatStruct, data="{}",
                                 **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_int(self, *, options):
+        cases = [
+            ("0", 0),
+            ("1", 1),
+            ("-1", -1),
+            ("30000", 30000),
+            ("0.0", 0),
+            ("1.0", 1),
+            ("-1.0", -1),
+            ("3.0e+4", 30000),
+        ]
+        for value, expected in cases:
+            data = f"value: {value}"
+            x = yaml_load_typed(schema=IntStruct, data=data, **options)
+            self.assertEqual(x.value, expected)
+
+        # Deprecated 2025-05-01.
+        with catch_drake_warnings(expected_count=1):
+            x = yaml_load_typed(schema=IntStruct, data="value: 1.1", **options)
+        self.assertEqual(x.value, 1)
+
+    # Deprecated 2025-05-01.
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_string_deprecated(self, *, options):
+        cases = [
+            ("0", "0"),
+            ("3.0e+4", "30000.0"),
+        ]
+        for value, expected in cases:
+            data = f"value: {value}"
+            with catch_drake_warnings(expected_count=1):
+                x = yaml_load_typed(schema=StringStruct, data=data, **options)
+            self.assertEqual(x.value, expected)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_path(self, *, options):
