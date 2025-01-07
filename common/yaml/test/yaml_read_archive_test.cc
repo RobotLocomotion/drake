@@ -181,6 +181,28 @@ TEST_P(YamlReadArchiveTest, DoubleMissing) {
   EXPECT_EQ(x.value, kNominalDouble);
 }
 
+TEST_P(YamlReadArchiveTest, Int) {
+  const auto test = [](const std::string& value, int expected) {
+    const auto& x = AcceptNoThrow<IntStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected);
+  };
+
+  test("0", 0);
+  test("1", 1);
+  test("-1", -1);
+  test("30000", 30000);
+
+  // TODO(jwnimmer-tri) We'd like these to work. (They do in Python.)
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("0.0")), ".*not parse.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("1.0")), ".*not parse.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("-1.0")), ".*not parse.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("3.0e+4")), ".*not parse.*");
+}
+
 TEST_P(YamlReadArchiveTest, Bytes) {
   const auto test = [](const std::string& value, const std::string& expected) {
     const auto& x = AcceptNoThrow<BytesStruct>(LoadSingleValue(value));

@@ -255,6 +255,23 @@ class TestYamlTypedRead(unittest.TestCase,
                                 **options)
 
     @run_with_multiple_values(_all_typed_read_options())
+    def test_read_int(self, *, options):
+        cases = [
+            ("0", 0),
+            ("1", 1),
+            ("-1", -1),
+            ("30000", 30000),
+            ("0.0", 0),
+            ("1.0", 1),
+            ("-1.0", -1),
+            ("3.0e+4", 30000),
+        ]
+        for value, expected in cases:
+            data = f"value: {value}"
+            x = yaml_load_typed(schema=IntStruct, data=data, **options)
+            self.assertEqual(x.value, expected)
+
+    @run_with_multiple_values(_all_typed_read_options())
     def test_read_path(self, *, options):
         # The following should all turn into paths.
         cases = [
