@@ -26,7 +26,6 @@ std::string PointsToObjString(const Eigen::Matrix3X<double>& points) {
     result +=
         fmt::format("v {} {} {}\n", points(0, i), points(1, i), points(2, i));
   }
-  result += "\n";
 
   return result;
 }
