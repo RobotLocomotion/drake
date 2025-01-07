@@ -686,11 +686,16 @@ GTEST_TEST(ShapeTest, ConvexFromVertices) {
   EXPECT_EQ(hull.num_vertices(), 4);
   EXPECT_EQ(hull.num_elements(), 4);
 
-  // Confirm that the cntents of the in-memory mesh file are as expected.
-  EXPECT_EQ(source.in_memory().mesh_file.contents(),
-            std::string("v 0 0 0\n") + std::string("v 1 0 0\n") +
-                std::string("v 0.25 0.25 0.25\n") + std::string("v 0 1 0\n") +
-                std::string("v 0 0 1\n"));
+  // Confirm that the contents of the in-memory mesh file are as expected. Note:
+  // We prefix a "\n" to match leading "\n" in the nicely readable raw string.
+  EXPECT_EQ("\n" + source.in_memory().mesh_file.contents(),
+            R"""(
+v 0 0 0
+v 1 0 0
+v 0.25 0.25 0.25
+v 0 1 0
+v 0 0 1
+)""");
 }
 
 GTEST_TEST(ShapeTest, MeshFromMemory) {
