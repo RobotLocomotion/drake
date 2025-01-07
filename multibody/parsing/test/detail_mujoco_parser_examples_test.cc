@@ -99,6 +99,14 @@ constexpr std::string_view kSizeFromMesh =
     ".*size of the shape from the mesh.*";  // #22372
 }  // namespace KnownErrors
 
+constexpr std::string_view DebugIsTooSlow(std::string_view non_debug_result) {
+  if constexpr (kDrakeAssertIsArmed) {
+    return kTooSlow;
+  } else {
+    return non_debug_result;
+  }
+}
+
 class MujocoMenagerieTest : public MujocoParserExamplesTest,
                             public testing::WithParamInterface<
                                 std::pair<const char*, std::string_view>> {};
@@ -150,17 +158,17 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"boston_dynamics_spot/scene_arm", kItWorks},
     {"boston_dynamics_spot/spot", kItWorks},
     {"boston_dynamics_spot/spot_arm", kItWorks},
-    {"flybody/fruitfly", kTooSlow},  // kSizeFromMesh
-    {"flybody/scene", kTooSlow},     // kSizeFromMesh
+    {"flybody/fruitfly", DebugIsTooSlow(KnownErrors::kSizeFromMesh)},
+    {"flybody/scene", DebugIsTooSlow(KnownErrors::kSizeFromMesh)},
     {"franka_emika_panda/hand", kItWorks},
     {"franka_emika_panda/mjx_panda", kItWorks},
     {"franka_emika_panda/mjx_scene", kItWorks},
     {"franka_emika_panda/mjx_single_cube", kItWorks},
-    {"franka_emika_panda/panda", kTooSlow},         // kItWorks
-    {"franka_emika_panda/panda_nohand", kTooSlow},  // kItWorks
-    {"franka_emika_panda/scene", kTooSlow},         // kItWorks
-    {"franka_fr3/fr3", kTooSlow},                   // kItWorks
-    {"franka_fr3/scene", kTooSlow},                 // kItWorks
+    {"franka_emika_panda/panda", DebugIsTooSlow(kItWorks)},
+    {"franka_emika_panda/panda_nohand", DebugIsTooSlow(kItWorks)},
+    {"franka_emika_panda/scene", DebugIsTooSlow(kItWorks)},
+    {"franka_fr3/fr3", DebugIsTooSlow(kItWorks)},
+    {"franka_fr3/scene", DebugIsTooSlow(kItWorks)},
     {"google_barkour_v0/barkour_v0", kItWorks},
     {"google_barkour_v0/barkour_v0_mjx", kItWorks},
     {"google_barkour_v0/scene", kItWorks},
@@ -173,10 +181,14 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"google_barkour_vb/scene_mjx", kItWorks},
     {"google_robot/robot", kItWorks},
     {"google_robot/scene", kItWorks},
-    {"hello_robot_stretch/scene", kTooSlow},      // kNonUniformScale,
-    {"hello_robot_stretch/stretch", kTooSlow},    // kNonUniformScale,
-    {"hello_robot_stretch_3/scene", kTooSlow},    // kNonUniformScale,
-    {"hello_robot_stretch_3/stretch", kTooSlow},  // kNonUniformScale,
+    {"hello_robot_stretch/scene",
+     DebugIsTooSlow(KnownErrors::kNonUniformScale)},
+    {"hello_robot_stretch/stretch",
+     DebugIsTooSlow(KnownErrors::kNonUniformScale)},
+    {"hello_robot_stretch_3/scene",
+     DebugIsTooSlow(KnownErrors::kNonUniformScale)},
+    {"hello_robot_stretch_3/stretch",
+     DebugIsTooSlow(KnownErrors::kNonUniformScale)},
     {"kinova_gen3/gen3", kItWorks},
     {"kinova_gen3/scene", kItWorks},
     {"kuka_iiwa_14/iiwa14", kItWorks},
