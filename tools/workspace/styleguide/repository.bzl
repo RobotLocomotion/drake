@@ -6,8 +6,8 @@ def styleguide_repository(
     github_archive(
         name = name,
         repository = "RobotLocomotion/styleguide",
-        commit = "b474ba15c0f0487c2944a79ba880549dba291457",
-        sha256 = "d5cf0a3567392e5c3f0a30bbda852a30d945eced6858b3d6749226d02d5ef7eb",  # noqa
+        commit = "b914285784092231fab393c2b8d79f8e3495b297",
+        sha256 = "d496a290e0d189c60af142211911f7dbee0c9fe1e835b219ce7b522c9f0e7c31",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/sre_deprecation.patch",
