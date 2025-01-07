@@ -1997,6 +1997,8 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
       R"(.*(attached_to|relative_to) name\[world\] specified by frame )"
       R"(with name\[.*\] does not match a nested model, link, joint, or )"
       R"(frame name in model with name\[bad\].*)"));
+  // Ignore additional errors for this test.
+  EXPECT_EQ(NumErrors(), 5);
   ClearDiagnostics();
 
   ParseTestString(R"""(
@@ -2011,6 +2013,8 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
       R"(.*(attached_to|relative_to) name\[world\] specified by frame )"
       R"(with name\[.*\] does not match a nested model, link, joint, or )"
       R"(frame name in model with name\[bad\].*)"));
+  // Ignore additional errors for this test.
+  EXPECT_EQ(NumErrors(), 2);
   ClearDiagnostics();
 
   for (std::string bad_name : {"world", "__model__", "__anything__"}) {
@@ -2023,6 +2027,7 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
 )""", bad_name));
     EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
         R"(.*The supplied frame name \[.*\] is reserved..*)"));
+    // Ignore additional errors for this test. The number ignored varies.
     ClearDiagnostics();
   }
 
@@ -2034,6 +2039,8 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       R"(.*Attribute //pose\[@relative_to\] of top level model )"
       R"(must be left empty.*)"));
+  // Ignore additional errors for this test.
+  EXPECT_EQ(NumErrors(), 2);
   ClearDiagnostics();
 
   ParseTestString(R"""(
@@ -3216,9 +3223,8 @@ TEST_F(SdfParserTest, ErrorsFromIncludedUrdf) {
     <name>arm</name>
  </include>
 </model>)""", "1.8");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*bad.urdf.*XML_ERROR.*"));
-  ClearDiagnostics();
 }
 
 // TODO(SeanCurtis-TRI) The logic testing for collision filter group parsing
@@ -3647,9 +3653,8 @@ TEST_F(SdfParserTest, TestSingleModelEnforcement) {
   resolver.Resolve(diagnostic_policy_);
   EXPECT_FALSE(result.has_value());
 
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*Root object can only contain one model.*"));
-  ClearDiagnostics();
 }
 
 // Verify merge-include works with Interface API.
