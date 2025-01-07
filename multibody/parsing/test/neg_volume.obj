@@ -1,0 +1,8 @@
+# An adversarially bad mesh that produces a negative volume in
+# CalcSpatialInertia(). The single triangle has an implied normal pointing
+# toward the origin.
+
+v 1 0 0
+v 1 2 0
+v 1 0 3
+f 3 2 1
