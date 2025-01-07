@@ -1,5 +1,10 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+config_setting(
+    name = "enabled",
+    flag_values = {"//tools/flags:with_clp": "True"},
+)
+
 # Drake must redistribute any code changes, per Clp's EPL-2.0 license.
 # Here we'll glob all of the patch files from their conventional home.
 #

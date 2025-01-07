@@ -1,3 +1,8 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+config_setting(
+    name = "enabled",
+    flag_values = {"//tools/flags:with_csdp": "True"},
+)
+
 add_lint_tests()

@@ -1,8 +1,25 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+
+selects.config_setting_group(
+    name = "enabled",
+    match_any = [
+        ":enabled_via_flag",
+        ":enabled_via_define",
+    ],
+)
+
+config_setting(
+    name = "enabled_via_flag",
+    flag_values = {"//tools/flags:with_snopt": "True"},
+)
+
+config_setting(
+    name = "enabled_via_define",
+    # N.B. This is the legacy spelling. Users shouldn't use this in new code.
+    values = {"define": "WITH_SNOPT=ON"},
+)
 
 # Install our (custom) license file.
 install(

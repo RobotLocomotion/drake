@@ -21,9 +21,9 @@ build:kcov --test_timeout=1200,6000,19000,72000
 
 ### Kcov everything build. ###
 build:kcov_everything --build_tests_only
-build:kcov_everything --define=WITH_GUROBI=ON
-build:kcov_everything --define=WITH_MOSEK=ON
-build:kcov_everything --define=WITH_SNOPT=ON
+build:kcov_everything --@drake//tools/flags:with_gurobi=True
+build:kcov_everything --@drake//tools/flags:with_mosek=True
+build:kcov_everything --@drake//tools/flags:with_snopt=True
 build:kcov_everything --copt -g
 build:kcov_everything --copt -O0
 build:kcov_everything --strategy=TestRunner=local
@@ -69,9 +69,9 @@ build:asan --auto_output_filter=all
 build:asan_everything --build_tests_only
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
-build:asan_everything --define=WITH_GUROBI=OFF
-build:asan_everything --define=WITH_MOSEK=OFF
-build:asan_everything --define=WITH_SNOPT=ON
+build:asan_everything --@drake//tools/flags:with_gurobi=False
+build:asan_everything --@drake//tools/flags:with_mosek=False
+build:asan_everything --@drake//tools/flags:with_snopt=True
 build:asan_everything --copt=-g
 # https://github.com/google/sanitizers/wiki/AddressSanitizer#faq
 build:asan_everything --copt=-fno-common
@@ -120,9 +120,9 @@ build:lsan --define=USING_SANITIZER=ON
 build:lsan_everything --build_tests_only
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
-build:lsan_everything --define=WITH_GUROBI=OFF
-build:lsan_everything --define=WITH_MOSEK=OFF
-build:lsan_everything --define=WITH_SNOPT=ON
+build:lsan_everything --@drake//tools/flags:with_gurobi=False
+build:lsan_everything --@drake//tools/flags:with_mosek=False
+build:lsan_everything --@drake//tools/flags:with_snopt=True
 build:lsan_everything --copt=-g
 build:lsan_everything --copt=-fno-common
 build:lsan_everything --copt=-fsanitize=leak
@@ -163,9 +163,9 @@ build:tsan --define=USING_SANITIZER=ON
 build:tsan_everything --build_tests_only
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
-build:tsan_everything --define=WITH_GUROBI=OFF
-build:tsan_everything --define=WITH_MOSEK=OFF
-build:tsan_everything --define=WITH_SNOPT=ON
+build:tsan_everything --@drake//tools/flags:with_gurobi=False
+build:tsan_everything --@drake//tools/flags:with_mosek=False
+build:tsan_everything --@drake//tools/flags:with_snopt=True
 build:tsan_everything --copt -g
 build:tsan_everything --copt -fsanitize=thread
 build:tsan_everything --copt -O1
@@ -213,9 +213,9 @@ build:ubsan --define=USING_SANITIZER=ON
 build:ubsan_everything --build_tests_only
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
-build:ubsan_everything --define=WITH_GUROBI=OFF
-build:ubsan_everything --define=WITH_MOSEK=OFF
-build:ubsan_everything --define=WITH_SNOPT=ON
+build:ubsan_everything --@drake//tools/flags:with_gurobi=False
+build:ubsan_everything --@drake//tools/flags:with_mosek=False
+build:ubsan_everything --@drake//tools/flags:with_snopt=True
 build:ubsan_everything --copt -g
 build:ubsan_everything --copt -fsanitize=undefined
 # Since Bazel uses clang instead of clang++, enabling -fsanitize=function,vptr
@@ -260,9 +260,9 @@ build:memcheck --define=USING_MEMCHECK=ON
 build:memcheck_everything --build_tests_only
 # We cannot reasonably use binary-only GUROBI and MOSEK libraries,
 # since they lack the sanitizer instrumentation.
-build:memcheck_everything --define=WITH_GUROBI=OFF
-build:memcheck_everything --define=WITH_MOSEK=OFF
-build:memcheck_everything --define=WITH_SNOPT=ON
+build:memcheck_everything --@drake//tools/flags:with_gurobi=False
+build:memcheck_everything --@drake//tools/flags:with_mosek=False
+build:memcheck_everything --@drake//tools/flags:with_snopt=True
 build:memcheck_everything --copt -gdwarf-4
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck_everything --copt -O2
@@ -306,9 +306,9 @@ build:drd --config=_drd
 build:drd --test_tag_filters=-lint,-gurobi,-mosek,-snopt,-no_drd,-no_valgrind_tools
 
 build:drd_everything --config=_drd
-build:drd_everything --define=WITH_GUROBI=OFF
-build:drd_everything --define=WITH_MOSEK=OFF
-build:drd_everything --define=WITH_SNOPT=ON
+build:drd_everything --@drake//tools/flags:with_gurobi=False
+build:drd_everything --@drake//tools/flags:with_mosek=False
+build:drd_everything --@drake//tools/flags:with_snopt=True
 build:drd_everything --test_tag_filters=-lint,-gurobi,-mosek,-no_drd,-no_valgrind_tools
 
 ### Helgrind: A Valgrind thread error detector ###
@@ -325,7 +325,7 @@ build:helgrind --config=_helgrind
 build:helgrind --test_tag_filters=-gurobi,-lint,-mosek,-snopt,-no_helgrind,-no_valgrind_tools
 
 build:helgrind_everything --config=_helgrind
-build:helgrind_everything --define=WITH_GUROBI=OFF
-build:helgrind_everything --define=WITH_MOSEK=OFF
-build:helgrind_everything --define=WITH_SNOPT=ON
+build:helgrind_everything --@drake//tools/flags:with_gurobi=False
+build:helgrind_everything --@drake//tools/flags:with_mosek=False
+build:helgrind_everything --@drake//tools/flags:with_snopt=True
 build:helgrind_everything --test_tag_filters=-lint,-gurobi,-mosek,-no_helgrind,-no_valgrind_tools
