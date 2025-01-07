@@ -120,8 +120,8 @@ rust_library(
         "@crate__lapack-0.19.0//:lapack",
         "@crate__lazy_static-1.5.0//:lazy_static",
         "@crate__num-traits-0.2.19//:num_traits",
-        "@crate__serde-1.0.216//:serde",
-        "@crate__serde_json-1.0.133//:serde_json",
+        "@crate__serde-1.0.217//:serde",
+        "@crate__serde_json-1.0.134//:serde_json",
         "@crate__thiserror-1.0.69//:thiserror",
     ],
 )
