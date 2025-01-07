@@ -55,8 +55,6 @@ using DeformationGradientDataType =
 const double kYoungsModulus{1};
 const double kPoissonRatio{0.25};
 const double kDensity{1.23};
-const double kMassDamping{1e-4};
-const double kStiffnessDamping{1e-3};
 
 class VolumetricElementTest : public ::testing::Test {
  protected:

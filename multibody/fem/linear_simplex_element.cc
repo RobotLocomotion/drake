@@ -144,7 +144,7 @@ template class LinearSimplexElement<double, 3, 3, 5>;
 template class LinearSimplexElement<double, 3, 3, 4>;
 template class LinearSimplexElement<double, 3, 3, 16>;
 template class LinearSimplexElement<double, 3, 3, 64>;
-template class LinearSimplexElement<double, 3, 3, 128>;
+template class LinearSimplexElement<double, 3, 3, 256>;
 
 template class LinearSimplexElement<AutoDiffXd, 2, 2, 2>;
 template class LinearSimplexElement<AutoDiffXd, 2, 2, 4>;

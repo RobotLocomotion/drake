@@ -2,8 +2,8 @@
 
 #include <utility>
 
-#include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace multibody {
@@ -63,36 +63,43 @@ class DeformableBodyConfig {
 
   /** @pre youngs_modulus > 0. */
   void set_youngs_modulus(T youngs_modulus) {
-    DRAKE_DEMAND(youngs_modulus > 0);
+    DRAKE_THROW_UNLESS(youngs_modulus > 0);
     youngs_modulus_ = std::move(youngs_modulus);
   }
 
   /** @pre -1 < poissons_ratio < 0.5. */
   void set_poissons_ratio(T poissons_ratio) {
-    DRAKE_DEMAND(-1 < poissons_ratio && poissons_ratio < 0.5);
+    DRAKE_THROW_UNLESS(-1 < poissons_ratio && poissons_ratio < 0.5);
     poissons_ratio_ = std::move(poissons_ratio);
   }
 
   /** @pre mass_damping_coefficient >= 0. */
   void set_mass_damping_coefficient(T mass_damping_coefficient) {
-    DRAKE_DEMAND(mass_damping_coefficient_ >= 0);
+    DRAKE_THROW_UNLESS(mass_damping_coefficient_ >= 0);
     mass_damping_coefficient_ = std::move(mass_damping_coefficient);
   }
 
   /**  @pre stiffness_damping_coefficient >= 0. */
   void set_stiffness_damping_coefficient(T stiffness_damping_coefficient) {
-    DRAKE_DEMAND(stiffness_damping_coefficient_ >= 0);
+    DRAKE_THROW_UNLESS(stiffness_damping_coefficient_ >= 0);
     stiffness_damping_coefficient_ = std::move(stiffness_damping_coefficient);
   }
 
   /**  @pre mass_density > 0. */
   void set_mass_density(T mass_density) {
-    DRAKE_DEMAND(mass_density > 0);
+    DRAKE_THROW_UNLESS(mass_density > 0);
     mass_density_ = std::move(mass_density);
   }
 
   void set_material_model(MaterialModel material_model) {
     material_model_ = material_model;
+  }
+
+  /** @pre 0 <= element_subdivision <= 4. */
+  void set_element_subdivision(int element_subdivision) {
+    DRAKE_THROW_UNLESS(element_subdivision >= 0);
+    DRAKE_THROW_UNLESS(element_subdivision <= 4);
+    element_subdivision_ = element_subdivision;
   }
 
   /** Returns the Young's modulus, with unit of N/m². */
@@ -111,6 +118,10 @@ class DeformableBodyConfig {
   const T& mass_density() const { return mass_density_; }
   /** Returns the constitutive model of the material. */
   MaterialModel material_model() const { return material_model_; }
+  /** Returns the number of times each element is subdivided when evaluating the
+   external forces. Useful when elements are too coarse to resolve external
+   force fields. */
+  int element_subdivision() const { return element_subdivision_; }
 
  private:
   T youngs_modulus_{1e8};
@@ -119,6 +130,7 @@ class DeformableBodyConfig {
   T stiffness_damping_coefficient_{0};
   T mass_density_{1.5e3};
   MaterialModel material_model_{MaterialModel::kLinearCorotated};
+  int element_subdivision_{0};
 };
 
 }  // namespace fem

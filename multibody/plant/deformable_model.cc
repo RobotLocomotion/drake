@@ -10,6 +10,7 @@
 #include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
+#include "drake/multibody/fem/tet_subdivision_quadrature.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -352,16 +353,15 @@ DeformableModel<T>::BuildLinearVolumetricModel(
   }
   switch (config.material_model()) {
     case MaterialModel::kLinear:
-      BuildLinearVolumetricModelHelper<fem::internal::LinearConstitutiveModel>(
-          id, mesh, config);
-      break;
-    case MaterialModel::kCorotated:
-      BuildLinearVolumetricModelHelper<fem::internal::CorotatedModel>(id, mesh,
+      ConstitutiveModelHelper<fem::internal::LinearConstitutiveModel>(id, mesh,
                                                                       config);
       break;
+    case MaterialModel::kCorotated:
+      ConstitutiveModelHelper<fem::internal::CorotatedModel>(id, mesh, config);
+      break;
     case MaterialModel::kLinearCorotated:
-      BuildLinearVolumetricModelHelper<fem::internal::LinearCorotatedModel>(
-          id, mesh, config);
+      ConstitutiveModelHelper<fem::internal::LinearCorotatedModel>(id, mesh,
+                                                                   config);
       break;
   }
 }
@@ -369,7 +369,32 @@ DeformableModel<T>::BuildLinearVolumetricModel(
 template <typename T>
 template <template <typename> class Model, typename T1>
 typename std::enable_if_t<std::is_same_v<T1, double>, void>
-DeformableModel<T>::BuildLinearVolumetricModelHelper(
+DeformableModel<T>::ConstitutiveModelHelper(
+    DeformableBodyId id, const geometry::VolumeMesh<double>& mesh,
+    const fem::DeformableBodyConfig<T>& config) {
+  switch (config.element_subdivision()) {
+    case 0:
+      SubdElementlHelper<Model, 0>(id, mesh, config);
+      break;
+    case 1:
+      SubdElementlHelper<Model, 1>(id, mesh, config);
+      break;
+    case 2:
+      SubdElementlHelper<Model, 2>(id, mesh, config);
+      break;
+    case 3:
+      SubdElementlHelper<Model, 3>(id, mesh, config);
+      break;
+    case 4:
+      SubdElementlHelper<Model, 4>(id, mesh, config);
+      break;
+  }
+}
+
+template <typename T>
+template <template <typename> class Model, int num_subd, typename T1>
+typename std::enable_if_t<std::is_same_v<T1, double>, void>
+DeformableModel<T>::SubdElementlHelper(
     DeformableBodyId id, const geometry::VolumeMesh<double>& mesh,
     const fem::DeformableBodyConfig<T>& config) {
   constexpr int kNaturalDimension = 3;
@@ -383,6 +408,14 @@ DeformableModel<T>::BuildLinearVolumetricModelHelper(
       fem::internal::LinearSimplexElement<T, kNaturalDimension,
                                           kSpatialDimension, kNumQuads>;
   using ConstitutiveModelType = Model<T>;
+  using SubdQuadratureType =
+      std::conditional_t<(num_subd <= 0), QuadratureType,
+                         fem::internal::TetSubdivisionQuadrature<num_subd>>;
+  using SubdIsoparametricElementType =
+      std::conditional_t<(num_subd <= 0), IsoparametricElementType,
+                         fem::internal::LinearSimplexElement<
+                             T, kNaturalDimension, kSpatialDimension,
+                             SubdQuadratureType::num_quadrature_points>>;
   static_assert(
       std::is_base_of_v<
           fem::internal::ConstitutiveModel<
@@ -390,9 +423,9 @@ DeformableModel<T>::BuildLinearVolumetricModelHelper(
           ConstitutiveModelType>,
       "The template parameter 'Model' must be derived from "
       "ConstitutiveModel.");
-  using FemElementType =
-      fem::internal::VolumetricElement<IsoparametricElementType, QuadratureType,
-                                       ConstitutiveModelType>;
+  using FemElementType = fem::internal::VolumetricElement<
+      IsoparametricElementType, QuadratureType, ConstitutiveModelType,
+      SubdIsoparametricElementType, SubdQuadratureType>;
   using FemModelType = fem::internal::VolumetricModel<FemElementType>;
 
   const fem::DampingModel<T> damping_model(
