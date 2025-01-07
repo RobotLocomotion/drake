@@ -104,27 +104,6 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
         });
   }
 
-  // Returns the first error as a string (or else fails the test case,
-  // if there were no errors).
-  std::string FormatFirstError() {
-    ScopedTrace trace;
-    if (error_records_.empty()) {
-      auto format_warnings = [this]() {
-        std::deque<std::string> warnings;
-        for (const auto& record : warning_records_) {
-          warnings.push_back(record.FormatWarning());
-        }
-        return warnings;
-      };
-      ADD_FAILURE() << fmt::format(
-          "FormatFirstError did not get any errors\n"
-          "found {} warnings:\n{}",
-          NumWarnings(), fmt::join(format_warnings(), "\n"));
-      return {};
-    }
-    return error_records_[0].FormatError();
-  }
-
   template <typename T>
   T Take(std::deque<T>* c) {
     if (c->empty()) {
