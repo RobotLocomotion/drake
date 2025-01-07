@@ -179,12 +179,6 @@ def _impl(repo_ctx):
         # This case uses deferred error handling, since doing so is easy.
         _setup_local_archive(repo_ctx, snopt_path)
 
-    # Add in the helper.
-    repo_ctx.symlink(
-        Label("@drake//tools/workspace/snopt:fortran.bzl"),
-        "fortran.bzl",
-    )
-
     return updated_attrs
 
 _attrs = {

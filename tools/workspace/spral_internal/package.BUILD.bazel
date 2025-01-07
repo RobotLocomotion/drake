@@ -2,7 +2,7 @@
 
 load("@drake//tools/install:install.bzl", "install")
 load("@drake//tools/skylark:cc.bzl", "cc_library")
-load("@drake//tools/workspace/snopt:fortran.bzl", "fortran_module")
+load("@drake//tools/workspace/gfortran:fortran.bzl", "fortran_module")
 
 licenses(["notice"])  # BSD-3-Clause
 

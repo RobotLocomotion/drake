@@ -1,8 +1,7 @@
 # -*- bazel -*-
 
 load("@drake//tools/skylark:cc.bzl", "cc_library")
-load("@gfortran//:version.bzl", COMPILER_MAJOR = "MAJOR")
-load(":fortran.bzl", "fortran_library")
+load("@drake//tools/workspace/gfortran:fortran.bzl", "fortran_library")
 
 licenses(["by_exception_only"])  # SNOPT
 
@@ -32,7 +31,7 @@ fortran_library(
         "-fopenmp",
     ] + [
         # We need this for SNOPT 7.6 which has non-conforming code.
-        "-fallow-argument-mismatch" if COMPILER_MAJOR >= 10 else "",
+        "-fallow-argument-mismatch",
     ],
     # Link statically per note (1) above.
     linkstatic = 1,
