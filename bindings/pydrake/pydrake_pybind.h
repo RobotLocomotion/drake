@@ -177,5 +177,11 @@ std::shared_ptr<T> make_shared_ptr_from_py_object(py::object py_object) {
 }  // namespace pydrake
 }  // namespace drake
 
-#define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
-  PYBIND11_NUMPY_OBJECT_DTYPE(Type)
+#define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type)     \
+  namespace pybind11 {                              \
+  namespace detail {                                \
+  template <>                                       \
+  struct npy_format_descriptor<Type>                \
+      : public npy_format_descriptor<PyObject*> {}; \
+  } /* namespace detail */                          \
+  } /* namespace pybind11 */
