@@ -12,5 +12,8 @@ def gz_math_internal_repository(
         commit = "gz-math8_8.1.0",
         sha256 = "0f27c86008b7d23a0d98e58d1987801ad2ba05e99998d0ad143ad399ee47e745",  # noqa
         build_file = ":package.BUILD.bazel",
+        patches = [
+            ":patches/upstream/pr656.patch",
+        ],
         mirrors = mirrors,
     )

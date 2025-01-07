@@ -1,0 +1,133 @@
+[sfformat] Cherry-pick of https://github.com/gazebosim/sdformat/pull/1524
+
+We can drop this patch once we upgrade to a release that contains it.
+
+From: Jeremy Nimmer <jeremy.nimmer@tri.global>
+Date: Mon, 6 Jan 2025 01:42:23 -0800
+Subject: [PATCH] Add non-const overload for Root::Model() getter (#1524)
+
+This is consistent with the getters for World which also overload on
+const-ness.
+
+Co-authored-by: Sean Curtis <sean.curtis@tri.global>
+
+--- include/sdf/Root.hh
++++ include/sdf/Root.hh
+@@ -170,6 +170,11 @@ namespace sdf
+     /// \return A pointer to the model, nullptr if it doesn't exist
+     public: const sdf::Model *Model() const;
+ 
++    /// \brief Get a mutable pointer to the model object if it exists.
++    ///
++    /// \return A pointer to the model; nullptr if it doesn't exist.
++    public: sdf::Model *Model();
++
+     /// \brief Set the model object. This will override any existing model,
+     /// actor, and light object.
+     /// \param[in] _model The model to use.
+
+--- python/src/sdf/pyRoot.cc
++++ python/src/sdf/pyRoot.cc
+@@ -83,7 +83,7 @@ void defineRoot(pybind11::object module)
+          "Get a world based on an index.")
+      .def("world_name_exists", &sdf::Root::WorldNameExists,
+           "Get whether a world name exists.")
+-    .def("model", &sdf::Root::Model,
++    .def("model", pybind11::overload_cast<>(&sdf::Root::Model),
+          pybind11::return_value_policy::reference_internal,
+          "Get a model object if it exists.")
+     .def("set_model", &sdf::Root::SetModel,
+
+--- src/Root.cc
++++ src/Root.cc
+@@ -475,6 +475,12 @@ const Model *Root::Model() const
+   return std::get_if<sdf::Model>(&this->dataPtr->modelLightOrActor);
+ }
+ 
++/////////////////////////////////////////////////
++Model *Root::Model()
++{
++  return std::get_if<sdf::Model>(&this->dataPtr->modelLightOrActor);
++}
++
+ /////////////////////////////////////////////////
+ void Root::SetModel(const sdf::Model &_model)
+ {
+
+--- src/Root_TEST.cc
++++ src/Root_TEST.cc
+@@ -46,6 +46,9 @@ TEST(DOMRoot, Construction)
+   EXPECT_EQ(nullptr, root.Model());
+   EXPECT_EQ(nullptr, root.Light());
+   EXPECT_EQ(nullptr, root.Actor());
++
++  const sdf::Root &const_root = root;
++  EXPECT_EQ(nullptr, const_root.Model());
+ }
+ 
+ /////////////////////////////////////////////////
+@@ -424,6 +427,7 @@ TEST(DOMRoot, ToElementEmpty)
+ TEST(DOMRoot, ToElementModel)
+ {
+   sdf::Root root;
++  const sdf::Root &const_root = root;
+ 
+   sdf::Actor actor1;
+   actor1.SetName("actor1");
+@@ -438,6 +442,7 @@ TEST(DOMRoot, ToElementModel)
+   root.SetModel(model1);
+ 
+   ASSERT_NE(nullptr, root.Model());
++  ASSERT_NE(nullptr, const_root.Model());
+   ASSERT_EQ(nullptr, root.Light());
+   ASSERT_EQ(nullptr, root.Actor());
+   EXPECT_EQ(0u, root.WorldCount());
+@@ -447,12 +452,15 @@ TEST(DOMRoot, ToElementModel)
+   ASSERT_NE(nullptr, elem);
+ 
+   sdf::Root root2;
++  const sdf::Root &const_root2 = root2;
+   root2.LoadSdfString(elem->ToString(""));
+ 
+   EXPECT_EQ(SDF_VERSION, root2.Version());
+ 
+   ASSERT_NE(nullptr, root2.Model());
++  ASSERT_NE(nullptr, const_root2.Model());
+   EXPECT_EQ("model1", root2.Model()->Name());
++  EXPECT_EQ("model1", const_root2.Model()->Name());
+ 
+   ASSERT_EQ(nullptr, root2.Actor());
+   ASSERT_EQ(nullptr, root2.Light());
+@@ -651,24 +659,25 @@ TEST(DOMRoot, CopyConstructor)
+ TEST(DOMRoot, WorldByName)
+ {
+   sdf::Root root;
+-  EXPECT_EQ(0u, root.WorldCount());
++  const sdf::Root &const_root = root;
++  EXPECT_EQ(0u, const_root.WorldCount());
+ 
+   sdf::World world;
+   world.SetName("world1");
+   EXPECT_TRUE(root.AddWorld(world).empty());
+-  EXPECT_EQ(1u, root.WorldCount());
++  EXPECT_EQ(1u, const_root.WorldCount());
+ 
+-  EXPECT_TRUE(root.WorldNameExists("world1"));
+-  const sdf::World *wPtr = root.WorldByName("world1");
+-  EXPECT_NE(nullptr, wPtr);
++  EXPECT_TRUE(const_root.WorldNameExists("world1"));
++  EXPECT_NE(nullptr, root.WorldByName("world1"));
++  EXPECT_NE(nullptr, const_root.WorldByName("world1"));
+ 
+   // Modify the world
+   sdf::World *w = root.WorldByName("world1");
+   ASSERT_NE(nullptr, w);
+   EXPECT_EQ("world1", w->Name());
+   w->SetName("world2");
+-  ASSERT_TRUE(root.WorldNameExists("world2"));
+-  EXPECT_EQ("world2", root.WorldByName("world2")->Name());
++  ASSERT_TRUE(const_root.WorldNameExists("world2"));
++  EXPECT_EQ("world2", const_root.WorldByName("world2")->Name());
+ }
+ 
+ /////////////////////////////////////////////////
