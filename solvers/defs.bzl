@@ -4,23 +4,10 @@ load("//tools/skylark:drake_cc.bzl", "drake_cc_googletest", "drake_cc_library")
 # This file contains macros that help abbreviate patterns that frequently
 # appear in the solvers folder.
 
-def _sync_conditions(condition1, condition2):
-    """Asserts that one and only one condition is given. Sets the other
-    condition to "//conditions:default" and returns them in the same order
-    as they were given.
-    """
-    if int(bool(condition1)) + int(bool(condition2)) != 1:
-        fail("Specify exactly one of opt-in or opt-out")
-    return (
-        condition1 or "//conditions:default",
-        condition2 or "//conditions:default",
-    )
-
 def drake_cc_variant_library(
         name,
         *,
-        opt_in_condition = None,
-        opt_out_condition = None,
+        opt_in_condition,
         srcs_always,
         srcs_enabled,
         srcs_disabled,
@@ -38,11 +25,8 @@ def drake_cc_variant_library(
     The same hdrs are used unconditionally. The deps should list the
     dependencies for the header file(s), and thus are also unconditional.
 
-    Exactly one of opt_in_condition or opt_out_condition must be provided, to
-    specify the configuration setting that chooses which cc files to use.
-
-    Open-source solvers are usually ON by default (so, will use opt_out_...).
-    Commercial solvers are usually OFF by default (so, will use opt_in_...).
+    The opt_in_condition specifies the configuration setting that chooses
+    which cc files to use.
 
     The sources listed in srcs_always contain definitions that are appropriate
     whether or not a back-end is enabled. This usually contains things such as
@@ -59,16 +43,16 @@ def drake_cc_variant_library(
     This rule enables linting of all of the mentioned source files, even if
     the compiler will not build them in the current configuration. We want all
     files to be lint-free, even when the commercial solvers are disabled.
+
+    Additionally, declares a library {name}_disabled with the disabled flavor,
+    intended for use by unit test checks of stub implementation even when the
+    full implementation is enabled.
     """
-    opt_in_condition, opt_out_condition = _sync_conditions(
-        opt_in_condition,
-        opt_out_condition,
-    )
     drake_cc_library(
         name = name,
         srcs = select({
             opt_in_condition: srcs_always + srcs_enabled,
-            opt_out_condition: srcs_always + srcs_disabled,
+            "//conditions:default": srcs_always + srcs_disabled,
         }),
         hdrs = hdrs,
         deps = deps,
@@ -76,10 +60,20 @@ def drake_cc_variant_library(
             opt_in_condition: (
                 implementation_deps_always + implementation_deps_enabled
             ),
-            opt_out_condition: implementation_deps_always,
+            "//conditions:default": implementation_deps_always,
         }),
         internal = internal,
         visibility = visibility,
+    )
+    drake_cc_library(
+        name = name + "_disabled",
+        srcs = srcs_always + srcs_disabled,
+        hdrs = hdrs,
+        deps = deps,
+        implementation_deps = implementation_deps_always,
+        testonly = True,
+        tags = ["manual"],
+        visibility = ["//visibility:private"],
     )
     cpplint_extra(
         name = name + "_cpplint",
@@ -89,8 +83,7 @@ def drake_cc_variant_library(
 def drake_cc_optional_library(
         name,
         *,
-        opt_in_condition = None,
-        opt_out_condition = None,
+        opt_in_condition,
         srcs,
         hdrs,
         copts = None,
@@ -102,47 +95,40 @@ def drake_cc_optional_library(
     totally empty (but still a valid library label). This is used for helper
     or utility code that's called by a fully-feataured back-end implementation.
 
-    Exactly one of opt_in_condition or opt_out_condition must be provided, to
-    specify the configuration setting that chooses which cc files to use.
-
-    Open-source solvers are usually ON by default (so, will use opt_out_...).
-    Commercial solvers are usually OFF by default (so, will use opt_in_...).
+    The opt_in_condition specifies the configuration setting that chooses
+    which cc files to use.
 
     This rule enables linting of all of the mentioned source files, even if
     the compiler will not build them in the current configuration. We want all
     files to be lint-free, even when the commercial solvers are disabled.
     """
-    opt_in_condition, opt_out_condition = _sync_conditions(
-        opt_in_condition,
-        opt_out_condition,
-    )
     drake_cc_library(
         name = name,
         srcs = select({
             opt_in_condition: srcs,
-            opt_out_condition: [],
+            "//conditions:default": [],
         }),
         hdrs = select({
             opt_in_condition: hdrs,
-            opt_out_condition: [],
+            "//conditions:default": [],
         }),
         install_hdrs_exclude = select({
             opt_in_condition: hdrs,
-            opt_out_condition: [],
+            "//conditions:default": [],
         }),
         copts = select({
             opt_in_condition: copts or [],
-            opt_out_condition: [],
+            "//conditions:default": [],
         }),
         tags = ["exclude_from_package"],
         visibility = visibility,
         deps = select({
             opt_in_condition: deps or [],
-            opt_out_condition: [],
+            "//conditions:default": [],
         }),
         implementation_deps = None if implementation_deps == None else select({
             opt_in_condition: implementation_deps,
-            opt_out_condition: [],
+            "//conditions:default": [],
         }),
     )
     cpplint_extra(
@@ -153,8 +139,7 @@ def drake_cc_optional_library(
 def drake_cc_optional_googletest(
         name,
         *,
-        opt_in_condition = None,
-        opt_out_condition = None,
+        opt_in_condition,
         tags = None,
         deps,
         use_default_main = True):
@@ -165,20 +150,13 @@ def drake_cc_optional_googletest(
     For testing a drake_cc_variant_library, the header(s) should always be
     available, so there is no reason we avoid compiling the unit test.
 
-    Exactly one of opt_in_condition or opt_out_condition must be provided, to
-    specify the configuration setting that chooses which cc files to use.
-
-    Open-source solvers are usually ON by default (so, will use opt_out_...).
-    Commercial solvers are usually OFF by default (so, will use opt_in_...).
+    The opt_in_condition specifies the configuration setting that chooses
+    which cc files to use.
 
     This rule enables linting of all of the mentioned source files, even if
     the compiler will not build them in the current configuration. We want all
     files to be lint-free, even when the commercial solvers are disabled.
     """
-    opt_in_condition, opt_out_condition = _sync_conditions(
-        opt_in_condition,
-        opt_out_condition,
-    )
     srcs = ["test/{}.cc".format(name)]
     if use_default_main:
         opt_out_deps = []
@@ -190,12 +168,12 @@ def drake_cc_optional_googletest(
         name = name,
         srcs = select({
             opt_in_condition: srcs,
-            opt_out_condition: [],
+            "//conditions:default": [],
         }),
         tags = tags,
         deps = select({
             opt_in_condition: deps,
-            opt_out_condition: opt_out_deps,
+            "//conditions:default": opt_out_deps,
         }),
         use_default_main = use_default_main,
     )

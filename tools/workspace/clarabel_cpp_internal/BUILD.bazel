@@ -2,6 +2,11 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_cc.bzl", "drake_cc_library")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 
+config_setting(
+    name = "enabled",
+    flag_values = {"//tools/flags:with_clarabel": "True"},
+)
+
 drake_cc_library(
     name = "serialize",
     hdrs = [":serialize.h"],
