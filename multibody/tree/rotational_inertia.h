@@ -980,10 +980,6 @@ class RotationalInertia {
 
   // Returns an error string if `this` RotationalInertia is verifiably invalid.
   // Note: Not returning an error string does not _guarantee_ validity.
-  // For numerical type T, validity includes tests that principal moments of
-  // inertia (eigenvalues) are positive and satisfy the triangle inequality.
-  // For symbolic type T, tests are rudimentary (e.g., test for NaN moments or
-  // products of inertia.
   std::optional<std::string> CreateInvalidityReport() const;
 
   // No exception is thrown if type T is Symbolic.
