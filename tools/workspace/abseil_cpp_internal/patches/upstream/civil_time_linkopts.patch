@@ -1,9 +1,14 @@
-Add a missing linkopts setting to a library, so the subsequent patch
-command to set all libraries to static linking will indeed find all
-libraries.
+[abseil-cpp] Add missing linkopts setting to a cctz library
 
-This patch is sufficient for Drake's purposes. A patch suitable for
-upstreaming would likely import default link flags and use them.
+This ensures that Drake's subsequent patch_cmds script to set all
+libraries to static linking will indeed find all libraries.
+
+Submitted upstream as https://github.com/google/cctz/pull/305 but
+Google requested to implement this themselves a different way (with
+Copybara magic).
+
+If we don't see them fix it the next few months, maybe we can try re-
+pinging them.
 
 --- absl/time/internal/cctz/BUILD.bazel
 +++ absl/time/internal/cctz/BUILD.bazel

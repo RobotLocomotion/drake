@@ -13,10 +13,11 @@ def clarabel_cpp_internal_repository(
         sha256 = "4dfff59667623bf4264ba27f25eef08bda64899a4e443f8d1993d5d5a9a36ab0",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            ":patches/upstream/allow_unused_must_use.patch",
+            ":patches/upstream/pr52.patch",
             ":patches/extern_c.patch",
             ":patches/git_submodule.patch",
             ":patches/sdp.patch",
-            ":patches/upstream/allow_unused_must_use.patch",
         ],
         mirrors = mirrors,
     )
