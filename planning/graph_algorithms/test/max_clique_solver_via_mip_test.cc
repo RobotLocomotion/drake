@@ -77,6 +77,9 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, TestConstructorSettersAndGetters) {
   EXPECT_EQ(solver2.GetSolverOptions(), options);
 }
 
+// Deprecated 2025-05-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(MaxCliqueSolverViaMipTest, TestClone) {
   const Eigen::Vector2d initial_guess = Eigen::Vector2d::Ones();
   solvers::SolverOptions options{};
@@ -90,6 +93,7 @@ GTEST_TEST(MaxCliqueSolverViaMipTest, TestClone) {
                               solver_clone_mip->GetInitialGuess().value()));
   EXPECT_EQ(solver_clone_mip->GetSolverOptions(), options);
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(MaxCliqueSolverViaMipTest, CompleteGraph) {
   for (const auto n : {3, 8}) {

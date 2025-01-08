@@ -37,10 +37,22 @@ void MakeFalseRowsAndColumns(const VectorX<bool>& mask, bool partition,
 }  // namespace
 
 MinCliqueCoverSolverViaGreedy::MinCliqueCoverSolverViaGreedy(
-    const MaxCliqueSolverBase& max_clique_solver, int min_clique_size)
+    std::shared_ptr<const MaxCliqueSolverBase> max_clique_solver,
+    int min_clique_size)
     : MinCliqueCoverSolverBase(),
-      max_clique_solver_(max_clique_solver.Clone()),
-      min_clique_size_(min_clique_size) {}
+      max_clique_solver_(std::move(max_clique_solver)),
+      min_clique_size_(min_clique_size) {
+  DRAKE_THROW_UNLESS(max_clique_solver_ != nullptr);
+}
+
+// Deprecated 2025-05-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+MinCliqueCoverSolverViaGreedy::MinCliqueCoverSolverViaGreedy(
+    const MaxCliqueSolverBase& max_clique_solver, int min_clique_size)
+    : MinCliqueCoverSolverViaGreedy(max_clique_solver.Clone(),
+                                    min_clique_size) {}
+#pragma GCC diagnostic pop
 
 std::vector<std::set<int>> MinCliqueCoverSolverViaGreedy::DoSolveMinCliqueCover(
     const Eigen::SparseMatrix<bool>& original_matrix, bool partition) {

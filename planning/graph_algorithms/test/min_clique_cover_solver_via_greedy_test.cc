@@ -50,11 +50,27 @@ void TestMinCliqueCover(
   EXPECT_TRUE(solution_match_found);
 }
 
+// Deprecated 2025-05-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 GTEST_TEST(MinCliqueCoverSolverViaGreedyTest,
-           TestConstructorSettersAndGetters) {
+           DeprecatedTestConstructorSettersAndGetters) {
   // Test the default constructor.
   MaxCliqueSolverViaGreedy max_clique_solver{};
   MinCliqueCoverSolverViaGreedy solver{max_clique_solver, 3};
+
+  EXPECT_EQ(solver.get_min_clique_size(), 3);
+
+  solver.set_min_clique_size(5);
+  EXPECT_EQ(solver.get_min_clique_size(), 5);
+}
+#pragma GCC diagnostic pop
+
+GTEST_TEST(MinCliqueCoverSolverViaGreedyTest,
+           TestConstructorSettersAndGetters) {
+  // Test the default constructor.
+  MinCliqueCoverSolverViaGreedy solver{
+      std::make_unique<MaxCliqueSolverViaGreedy>(), 3};
 
   EXPECT_EQ(solver.get_min_clique_size(), 3);
 
@@ -76,7 +92,8 @@ GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, CompleteGraph) {
   std::vector<comparable_clique_solution_type> possible_solutions;
   possible_solutions.push_back(solution);
 
-  MinCliqueCoverSolverViaGreedy solver{MaxCliqueSolverViaGreedy(), 1};
+  MinCliqueCoverSolverViaGreedy solver{
+      std::make_unique<MaxCliqueSolverViaGreedy>(), 1};
 
   // There is only one clique so the min clique cover is the whole graph.
   TestMinCliqueCover(graph, false, possible_solutions, &solver);
@@ -85,7 +102,8 @@ GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, CompleteGraph) {
 
 GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, BullGraph) {
   Eigen::SparseMatrix<bool> graph = internal::BullGraph();
-  MinCliqueCoverSolverViaGreedy solver{MaxCliqueSolverViaGreedy(), 1};
+  MinCliqueCoverSolverViaGreedy solver{
+      std::make_unique<MaxCliqueSolverViaGreedy>(), 1};
 
   // The solution when vertices are allowed to be repeated.
   comparable_clique_solution_type solution;
@@ -117,7 +135,8 @@ GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, BullGraph) {
 
 GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, ButterflyGraph) {
   Eigen::SparseMatrix<bool> graph = internal::ButterflyGraph();
-  MinCliqueCoverSolverViaGreedy solver{MaxCliqueSolverViaGreedy(), 1};
+  MinCliqueCoverSolverViaGreedy solver{
+      std::make_unique<MaxCliqueSolverViaGreedy>(), 1};
 
   comparable_clique_solution_type solution;
   solution.insert(std::initializer_list<int>{0, 1, 2});
@@ -164,7 +183,8 @@ GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, ButterflyGraph) {
 
 GTEST_TEST(MinCliqueCoverSolverViaGreedyTestTest, PetersenGraph) {
   Eigen::SparseMatrix<bool> graph = internal::PetersenGraph();
-  MinCliqueCoverSolverViaGreedy solver{MaxCliqueSolverViaGreedy(), 1};
+  MinCliqueCoverSolverViaGreedy solver{
+      std::make_unique<MaxCliqueSolverViaGreedy>(), 1};
 
   // The largest clique is of size 2, so if we ask for a cover which allows
   // repeated vertices, we will get all the edges of the adjacency matrix.

@@ -27,9 +27,10 @@ void DefinePlanningGraphAlgorithms(py::module m) {
             DoSolveMaxClique, adjacency_matrix);
       }
 
+      // Deprecated 2025-05-01.
       std::unique_ptr<MaxCliqueSolverBase> DoClone() const override {
-        PYBIND11_OVERRIDE_PURE(
-            std::unique_ptr<MaxCliqueSolverBase>, MaxCliqueSolverBase, DoClone);
+        throw std::logic_error(
+            "Python subclasses of MaxCliqueSolverBase do not support Clone()");
       };
     };
     const auto& cls_doc = doc.MaxCliqueSolverBase;
@@ -91,9 +92,17 @@ void DefinePlanningGraphAlgorithms(py::module m) {
     const auto& cls_doc = doc.MinCliqueCoverSolverViaGreedy;
     py::class_<MinCliqueCoverSolverViaGreedy, MinCliqueCoverSolverBase>(
         m, "MinCliqueCoverSolverViaGreedy", cls_doc.doc)
-        .def(py::init<const MaxCliqueSolverBase&, int>(),
+        .def(py::init([](const MaxCliqueSolverBase& max_clique_solver,
+                          int min_clique_size) {
+          // The keep_alive is responsible for object lifetime, so we'll give
+          // the constructor an unowned pointer.
+          return std::make_unique<MinCliqueCoverSolverViaGreedy>(
+              make_unowned_shared_ptr_from_raw(&max_clique_solver),
+              min_clique_size);
+        }),
             py::arg("max_clique_solver"), py::arg("min_clique_size") = 1,
-            cls_doc.ctor.doc)
+            // Keep alive, reference: `self` keeps `max_clique_solver` alive.
+            py::keep_alive<1, 2>(), cls_doc.ctor.doc)
         .def("set_min_clique_size",
             &MinCliqueCoverSolverViaGreedy::set_min_clique_size,
             py::arg("min_clique_size"), cls_doc.set_min_clique_size.doc)

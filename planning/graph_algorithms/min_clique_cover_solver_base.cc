@@ -6,6 +6,8 @@ namespace drake {
 namespace planning {
 namespace graph_algorithms {
 
+MinCliqueCoverSolverBase::~MinCliqueCoverSolverBase() = default;
+
 std::vector<std::set<int>> MinCliqueCoverSolverBase::SolveMinCliqueCover(
     const Eigen::SparseMatrix<bool>& adjacency_matrix, bool partition) {
   DRAKE_THROW_UNLESS(adjacency_matrix.rows() == adjacency_matrix.cols());
