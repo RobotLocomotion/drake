@@ -2,9 +2,11 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt.h"
+#include "drake/common/name_value.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/common/sha256.h"
 
@@ -67,14 +69,44 @@ class MemoryFile final {
    any number less than or equal to zero. */
   std::string to_string(int contents_limit = 100) const;
 
-  /** Serialization stub.
+  /** Passes this object to an Archive.
 
-   %MemoryFile cannot actually be serialized yet. Attempting to do will throw.
-   This stub merely permits FileSource to be serialized (when it contains a
-   `std::filesystem::path`). */
+   When used in yaml, it is important to specify _all_ fields. Applications may
+   depend on the `extension` value to determine what to do with the file
+   contents. Omitting `extension` would make it unusable in those cases.
+
+   Omitting `filename_hint` is less dangerous; error messages would lack a
+   helpful identifier, but things would otherwise function.
+
+   The value of contents should be a base64-encoded string of the file contents.
+   Yaml's `!!binary` tag is required to declare the value is such a string.
+   Serializing the %MemoryFile will produce such a string. Writing a yaml file
+   by hand will be more challenging.
+
+   The following yaml would produce a %MemoryFile with contents equal to:
+
+       This is an example of memory file test contents.
+
+   ```yaml
+   contents: !!binary VGhpcyBpcyBhbiBleGFtcGxlIG9mIG1
+           lbW9yeSBmaWxlIHRlc3QgY29udGVudHMu
+   extension: .txt
+   filename_hint: payload.txt
+   ```
+   */
   template <typename Archive>
   void Serialize(Archive* a) {
-    throw std::runtime_error("Serialization for MemoryFile not yet supported.");
+    // vector<bytes> get serialized to !!binary yaml values. We don't know if
+    // we're reading or writing, so we'll mindlessly convert to and from a byte
+    // string.
+    auto* data = reinterpret_cast<std::byte*>(contents_.value().data());
+    std::vector<std::byte> bytes(data, data + contents_.value().size());
+    a->Visit(MakeNameValue("contents", &bytes));
+    contents_ =
+        std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+
+    a->Visit(MakeNameValue("extension", &extension_.value()));
+    a->Visit(MakeNameValue("filename_hint", &filename_hint_.value()));
   }
 
  private:
