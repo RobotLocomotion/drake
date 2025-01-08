@@ -1459,13 +1459,13 @@ SignedDistancePair<T> GeometryState<T>::ComputeSignedDistancePairClosestPoints(
 
 template <typename T>
 void GeometryState<T>::AddRenderer(
-    std::string name, std::unique_ptr<render::RenderEngine> renderer) {
+    std::string name, std::shared_ptr<render::RenderEngine> renderer) {
   if (render_engines_.contains(name)) {
     throw std::logic_error(fmt::format(
         "AddRenderer(): A renderer with the name '{}' already exists", name));
   }
   render::RenderEngine* render_engine = renderer.get();
-  render_engines_[name] = std::move(renderer);
+  render_engines_.emplace(name, std::move(renderer));
   bool accepted = false;
   for (auto& id_geo_pair : geometries_) {
     InternalGeometry& geometry = id_geo_pair.second;
@@ -2165,7 +2165,7 @@ const render::RenderEngine& GeometryState<T>::GetRenderEngineOrThrow(
     const std::string& renderer_name) const {
   auto iter = render_engines_.find(renderer_name);
   if (iter != render_engines_.end()) {
-    return *iter->second;
+    return *iter->second.get();
   }
 
   throw std::logic_error(
