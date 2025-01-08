@@ -984,6 +984,7 @@ class MujocoParser {
       if (!M_GGo_G.IsPhysicallyValid()) {
         Error(*node, fmt::format("geom {} {}", geom.name,
                                  M_GGo_G.CriticizeNotPhysicallyValid()));
+        return geom;
       }
 
       // Shift spatial inertia from Go to Bo and express it in the B frame.
