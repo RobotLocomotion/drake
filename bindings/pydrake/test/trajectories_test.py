@@ -27,7 +27,8 @@ from pydrake.trajectories import (
     PiecewiseQuaternionSlerp_,
     StackedTrajectory_,
     Trajectory,
-    Trajectory_
+    Trajectory_,
+    _WrappedTrajectory_,
 )
 from pydrake.symbolic import Variable, Expression
 
@@ -37,9 +38,11 @@ class CustomTrajectory(Trajectory):
     def __init__(self):
         Trajectory.__init__(self)
 
-    # TODO(jwnimmer-tri) Should be __deepcopy__ not Clone.
-    def Clone(self):
+    def __deepcopy__(self, memo):
         return CustomTrajectory()
+
+    def __repr__(self):
+        return "CustomTrajectory()"
 
     def do_value(self, t):
         return np.array([[t + 1.0, t + 2.0]])
@@ -129,6 +132,7 @@ class TestTrajectories(unittest.TestCase):
         self.assertEqual(trajectory.start_time(), 3.0)
         self.assertEqual(trajectory.end_time(), 4.0)
         self.assertTrue(trajectory.has_derivative())
+        self.assertEqual(repr(trajectory), "CustomTrajectory()")
         numpy_compare.assert_float_equal(trajectory.value(t=1.5),
                                          np.array([[2.5, 3.5]]))
         numpy_compare.assert_float_equal(
@@ -137,12 +141,18 @@ class TestTrajectories(unittest.TestCase):
         numpy_compare.assert_float_equal(
             trajectory.EvalDerivative(t=2.3, derivative_order=2),
             np.zeros((1, 2)))
+
         clone = trajectory.Clone()
         numpy_compare.assert_float_equal(clone.value(t=1.5),
                                          np.array([[2.5, 3.5]]))
+        self.assertEqual(repr(clone), "_WrappedTrajectory(CustomTrajectory())")
+
         deriv = trajectory.MakeDerivative(derivative_order=1)
         numpy_compare.assert_float_equal(
             deriv.value(t=2.3), np.ones((1, 2)))
+        self.assertIn(
+            "_WrappedTrajectory(<pydrake.trajectories.DerivativeTrajectory",
+            repr(deriv))
 
     def test_legacy_custom_trajectory(self):
         trajectory = LegacyCustomTrajectory()
@@ -164,10 +174,10 @@ class TestTrajectories(unittest.TestCase):
         # that we trigger the deprecation warnings.
         stacked = StackedTrajectory_[float]()
         with catch_drake_warnings():
-            # The C++ code calls rows() and cols() -- both of which cause
-            # deprecation warnings with the legacy overrides -- but the total
-            # number of calls varies between Debug and Release, so we don't
-            # check the exact tally here.
+            # The C++ code calls rows() and cols() and Clone() -- all of which
+            # cause deprecation warnings with the legacy overrides -- but the
+            # total number of calls varies between Debug and Release, so we
+            # don't check the exact tally here.
             stacked.Append(trajectory)
         with catch_drake_warnings(expected_count=1):
             stacked.value(t=1.5)
@@ -798,3 +808,18 @@ class TestTrajectories(unittest.TestCase):
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
+
+    @numpy_compare.check_all_types
+    def test_wrapped_trajectory(self, T):
+        breaks = [0, 1, 2]
+        samples = [[[0]], [[1]], [[2]]]
+        zoh = PiecewisePolynomial_[T].ZeroOrderHold(breaks, samples)
+        dut = _WrappedTrajectory_[T](trajectory=zoh)
+        self.assertEqual(dut.rows(), 1)
+        self.assertEqual(dut.cols(), 1)
+        dut.Clone()
+        if T is float:
+            self.assertIn("_WrappedTrajectory(", repr(dut))
+        else:
+            self.assertIn("_WrappedTrajectory_[", repr(dut))
+        self.assertIn("PiecewisePolynomial", repr(dut))
