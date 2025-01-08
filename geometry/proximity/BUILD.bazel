@@ -85,7 +85,7 @@ drake_cc_library(
     ],
     implementation_deps = [
         "//common:hwy_dynamic",
-        "@highway_internal//:hwy",
+        "//tools/workspace/highway_internal",
     ],
 )
 
