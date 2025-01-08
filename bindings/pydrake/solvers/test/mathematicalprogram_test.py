@@ -212,9 +212,10 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), x, is_convex=True)
         prog.AddQuadraticCost(np.eye(2), np.zeros(2), 1, x, is_convex=True)
         prog.AddQuadraticCost(x.dot(x) + 2, is_convex=True)
-        # Redundant cost just to check the spelling.
+        # Redundant costs just to check the spelling.
         prog.AddQuadraticErrorCost(vars=x, Q=np.eye(2),
                                    x_desired=np.zeros(2))
+        prog.AddQuadraticErrorCost(vars=x, w=1, x_desired=np.ones(2))
         prog.Add2NormSquaredCost(A=np.eye(2), b=np.zeros(2), vars=x)
 
         result = mp.Solve(prog)

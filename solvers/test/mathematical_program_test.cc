@@ -3340,6 +3340,23 @@ GTEST_TEST(TestMathematicalProgram, Test2NormSquaredCost) {
   }
 }
 
+GTEST_TEST(TestMathematicalProgram, AddQuadraticErrorCost) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  const Eigen::Vector2d x_desired(1.24, 2.3);
+  const double w1 = 3.4;
+  auto obj1 = prog.AddQuadraticErrorCost(w1, x_desired, x);
+  const double w2 = -1.23;
+  auto obj2 = prog.AddQuadraticErrorCost(w2, x_desired, x);
+  const Eigen::Vector2d x_test(7.6, 8.7);
+  Eigen::VectorXd y(1);
+  obj1.evaluator()->Eval(x_test, &y);
+  const double tol = 1e-13;
+  EXPECT_NEAR(y[0], w1 * (x_test - x_desired).squaredNorm(), tol);
+  obj2.evaluator()->Eval(x_test, &y);
+  EXPECT_NEAR(y[0], w2 * (x_test - x_desired).squaredNorm(), tol);
+}
+
 GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
