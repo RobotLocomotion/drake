@@ -155,6 +155,7 @@ drake_cc_library(
         "//common:essential",
         "//common:pointer_cast",
         "//math:geometric_transform",
+        "//math:wrap_to",
         "//multibody/math:spatial_algebra",
         "//systems/framework:system_scalar_converter",
     ],

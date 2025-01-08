@@ -64,8 +64,6 @@ class CurvilinearJoint final : public Joint<T> {
    The additional parameters are:
    @param[in] curvilinear_path The curvilinear path for this joint, along which
    the child frame M moves relative to the parent frame F.
-   @param[in] is_periodic A boolean indicating whether the curvilinear path is
-   periodic.
    @param[in] damping Viscous damping coefficient, in N⋅s/m, used to model
    losses within the joint. The damping force (in N) is modeled as `f =
    -damping⋅v`, i.e. opposing motion, with v the tangential velocity for `this`
@@ -74,15 +72,15 @@ class CurvilinearJoint final : public Joint<T> {
   CurvilinearJoint(
       const std::string& name, const Frame<T>& frame_on_parent,
       const Frame<T>& frame_on_child,
-      const trajectories::PiecewiseConstantCurvatureTrajectory<double>
-          curvilinear_path,
-      bool is_periodic, double damping = 0)
+      const trajectories::PiecewiseConstantCurvatureTrajectory<double>&
+          trajectory,
+      double damping = 0)
       : CurvilinearJoint<T>(
-            name, frame_on_parent, frame_on_child, curvilinear_path,
-            is_periodic,
-            is_periodic ? -std::numeric_limits<double>::infinity() : 0.,
-            is_periodic ? std::numeric_limits<double>::infinity()
-                        : curvilinear_path.length(),
+            name, frame_on_parent, frame_on_child, trajectory,
+            trajectory.is_periodic() ? -std::numeric_limits<double>::infinity()
+                                     : 0.,
+            trajectory.is_periodic() ? std::numeric_limits<double>::infinity()
+                                     : trajectory.length(),
             damping) {}
 
   /** Constructor to create a curvilinear joint between two bodies so that
@@ -93,10 +91,8 @@ class CurvilinearJoint final : public Joint<T> {
    The first three arguments to this constructor are those of the Joint class
    constructor. See the Joint class's documentation for details.
    The additional parameters are:
-   @param[in] curvilinear_path The curvilinear path for this joint, along which
+   @param[in] trajectory The curvilinear path for this joint, along which
    the child frame M moves relative to the parent frame F.
-   @param[in] is_periodic A boolean indicating whether the curvilinear path is
-   periodic.
    @param[in] pos_lower_limit Lower position limit, in meters, for the distance
    coordinate (see get_distance()).
    @param[in] pos_upper_limit Upper position limit, in meters, for the distance
@@ -111,9 +107,8 @@ class CurvilinearJoint final : public Joint<T> {
       const std::string& name, const Frame<T>& frame_on_parent,
       const Frame<T>& frame_on_child,
       const trajectories::PiecewiseConstantCurvatureTrajectory<double>
-          curvilinear_path,
-      bool is_periodic, double pos_lower_limit, double pos_upper_limit,
-      double damping = 0);
+          trajectory,
+      double pos_lower_limit, double pos_upper_limit, double damping = 0);
 
   ~CurvilinearJoint() override;
 
@@ -346,8 +341,7 @@ class CurvilinearJoint final : public Joint<T> {
     // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
     auto curvilinear_mobilizer =
         std::make_unique<internal::CurvilinearMobilizer<T>>(
-            mobod, *inboard_frame, *outboard_frame, curvilinear_path_,
-            is_periodic_);
+            mobod, *inboard_frame, *outboard_frame, curvilinear_path_);
     curvilinear_mobilizer->set_default_position(this->default_positions());
     blue_print->mobilizer = std::move(curvilinear_mobilizer);
     return blue_print;
@@ -390,7 +384,6 @@ class CurvilinearJoint final : public Joint<T> {
       const internal::MultibodyTree<ToScalar>& tree_clone) const;
 
   trajectories::PiecewiseConstantCurvatureTrajectory<double> curvilinear_path_;
-  bool is_periodic_;
 };
 
 template <typename T>

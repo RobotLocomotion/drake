@@ -22,43 +22,38 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Tolerance used to check joint periodicity.
-static constexpr double kCurvilinearJointPeriodicityTolerance =
-    1e3 * std::numeric_limits<double>::epsilon();
+/** A Mobilizer that describes the motion of the mobilized frame M along a
+ piecewise constant curvature path contained in a plane.
 
-/** A Mobilizer which allows two frames to translate and rotate relatively to
- one another along a curvilinear path composed of line segments and circular
- arcs within a plane.
+ The path is specified as a PiecewiseConstantCurvatureTrajectory, refer to that
+ class documentation for further details on parameterization, conventions and
+ notation used.
 
- The path is specified as a PiecewiseConstantCurvatureTrajectory.
+ This mobilizer grants a single degree of freedom q that corresponds to the
+ length s (in meters) along the path. The generalized velocity v = q̇
+ corresponds to the magnitude of the tangential velocity. The mobilized frame M
+ is defined according to the convention documented in
+ PiecewiseConstantCurvatureTrajectory. That is, axis Mx is the tangent to the
+ trajectory, Mz equals the (constant) normal p̂ to the plane, and My = Mz x Mx.
+ It is not required that M coincides with F at distance q = 0.
 
- The mobilizer may be specified to be periodic, representing a path shaped as a
- closed loop. In this case, the path must return to the starting pose at its end
- distance s_f [m]. The transfrom X_FM(q) from the CurvilinearMobilizer's inboard
- frame F to the outboard frame M in this case is periodic with period s_f
- (X_FM(q) = X_FM(q + s_f)).
+ If the specified trajectory is periodic, the mobilizer describes a trajectory
+ of length s_f that satisfies X_FM(q) = X_FM(q + s_f).
 
- The single generalized coordinate q [m] introduced by this mobilizer
- corresponds to the distance of travel along the path. The transfrom X_FM(q)
- from the CurvilinearMobilizer's inboard frame F to the outboard frame M is set
- to be the path-aligned pose at distance s(q) [m], available through
- PiecewiseConstantCurvatureTrajectory::CalcPose. For aperiodic trajectories,
- s(q) = q. For periodic trajectories, s(q) is wrapped using modular arithmetic,
- i.e. s(q) = q - s_f⋅floor(q/s_f) [m].  The generalized velocity v = q̇ [m/s] is
- the tangential velocity along the path.
+ At any given point along the path, the turning rate ρ(q) (units of 1/m) is
+ defined such the angular velocity is given by w_FM = ρ⋅v⋅Mz_F, i.e. |ρ(q)|
+ corresponds to the path's curvature and its sign is defined via the right-hand
+ rule about the plane's normal Mz.
 
- The path lies within a plane with normal axis p̂, equal to the z axis of the
- mobilized frame Mz. p̂ is not necessarily equal to Fz, but p̂_F is constant.
+ Therefore the hinge matrix H_FM ∈ ℝ⁶ˣ¹ and its time derivative are
 
- At any given point along the path, a scalar turning rate ρ(q) [1/m] is defined
- via right-hand rule about the planar axis p̂, such that the angular velocity
- across the mobilizer is w_FM = ρ⋅p̂⋅v. The hinge matrix and time derivative
- are
+    H_FM(q) = [ρ(q)⋅Mz_F(q)]     Hdot_FM(q) = [       0      ]
+              [     Mx_F(q)],                 [ρ(q)⋅v⋅My_F(q)].
 
-    H_FM₆ₓ₁(q) = [       Mx_F(q),     Hdot_FM₆ₓ₁(q) = [ρ(q)⋅My_F(q)⋅v,
-                    ρ(q)⋅Mz_F(q)],                                  0].
+where the angular component of Hdot_FM is zero since ρ(q) is constant within
+each piecewise segment in PiecewiseConstantCurvatureTrajectory.
 
-  @tparam_default_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
  public:
@@ -72,38 +67,22 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
   template <typename U>
   using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
-  /** Constructor for a CurvilinearMobilizer between the inboard frame F
-   and the outboard frame M granting a single degree of freedom expressed by the
-   pose X_FM(q) of the path `curvilinear_path` at distance q [m] along the path.
-   The path is required to be a closed loop if the parameter `is_periodic` is
-   set to `true`.
+  /** Constructor for a CurvilinearMobilizer describing the motion of outboard
+   frame M along `curvilinear_path` with pose X_FM in the inboard frame F. Refer
+   to the class documentation for further details on notation and conventions.
 
-   @param mobod information for the mobilized body attached to frame M
-   @param inboard_frame_F the inboard frame F
-   @param outboard_frame_M the outboard frame M
-   @param curvilinear_path the curvilinear path defining X_FM
-   @param is_periodic if true, the mobilizer is periodic, and the path must be a
-   closed loop.
+   `curvilinear_path` provides the pose X_FM(s) along a piecewise constant
+   curvature trajectory. In particular, X_FM(s=0) does not need to be identity
+   matrix.
 
-   @throws std::exception if `is_periodic` is true, but `curvilinear_path` is
-   not (nearly) periodic. */
+   @param mobod Topological information for this mobilizer.
+   @param inboard_frame_F the inboard frame F.
+   @param outboard_frame_M the outboard frame M.
+   @param curvilinear_path the curvilinear path defining X_FM(q). */
   CurvilinearMobilizer(
       const SpanningForest::Mobod& mobod, const Frame<T>& inboard_frame_F,
       const Frame<T>& outboard_frame_M,
-      const PiecewiseConstantCurvatureTrajectory<double>& curvilinear_path,
-      bool is_periodic)
-      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M),
-        curvilinear_path_(curvilinear_path),
-        is_periodic_(is_periodic) {
-    bool path_is_periodic = curvilinear_path.IsNearlyPeriodic(
-        kCurvilinearJointPeriodicityTolerance);
-    if (is_periodic_ && !path_is_periodic) {
-      // The path not periodic, but the mobilizer is.
-      throw std::runtime_error(
-          "CurvilinearMobilizer: Periodic mobilizer must be constructed with "
-          "periodic path.");
-    }
-  }
+      const PiecewiseConstantCurvatureTrajectory<double>& curvilinear_path);
 
   ~CurvilinearMobilizer() final;
 
@@ -145,34 +124,11 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
   const CurvilinearMobilizer<T>& SetTangentialVelocity(
       systems::Context<T>* context, const T& tangential_velocity) const;
 
-  /** Calculates the distance along the path s(q) [m] associated with a
-   generalized coordinate q [m].
-
-   For aperiodic paths, this function is the identity (s(q) = q).
-
-   For periodic paths of length s_f [m], the mobilizer returns to the start of
-   the path after each full length of travel, meaning that s must be "wrapped"
-   to the path domain [0, s_f):
-
-   <pre>
-      s(q) = q mod s_f.
-   </pre>
-
-   @param q The generalized coordinate of the mobilizer.
-   @returns The position s along the path associated with q. */
-  T calc_s(const T& q) const {
-    return is_periodic_ ? math::wrap_to(q, T(0.), curvilinear_path_.length())
-                        : q;
-  }
-
   /** Computes the across-mobilizer transform X_FM(q) as a function of the
    distance traveled along the mobilizer's path.
    @param q The distance traveled along the mobilizer's path in meters.
    @returns The across-mobilizer transform X_FM(q). */
-  math::RigidTransform<T> calc_X_FM(const T* q) const {
-    const T s = calc_s(q[0]);
-    return curvilinear_path_.CalcPose(s);
-  }
+  math::RigidTransform<T> calc_X_FM(const T* q) const;
 
   /** Computes the across-mobilizer spatial velocity V_FM(q, v) as a function of
    the distance traveled and tangential velocity along the mobilizer's path.
@@ -180,10 +136,7 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
    @param v The tangential velocity along the mobilizer's path in meters per
    second.
    @returns The across-mobilizer spatial velocity V_FM(q, v). */
-  SpatialVelocity<T> calc_V_FM(const T* q, const T* v) const {
-    const T s = calc_s(q[0]);
-    return curvilinear_path_.CalcSpatialVelocity(s, v[0]);
-  }
+  SpatialVelocity<T> calc_V_FM(const T* q, const T* v) const;
 
   /** Computes the across-mobilizer spatial acceleration A_FM(q, v, v̇) as a
    function of the distance traveled, tangential velocity, and tangential
@@ -194,94 +147,34 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
    @param vdot The tangential acceleration along the mobilizer's path in meters
    per second squared.
    @returns The across-mobilizer spatial acceleration A_FM(q, v, v̇). */
-  SpatialAcceleration<T> calc_A_FM(const T* q, const T* v,
-                                   const T* vdot) const {
-    const T s = calc_s(q[0]);
-    return curvilinear_path_.CalcSpatialAcceleration(s, v[0], vdot[0]);
-  }
+  SpatialAcceleration<T> calc_A_FM(const T* q, const T* v, const T* vdot) const;
 
   /** Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
-   frame M onto the path tangent. Mathematically,
-   this is the dot product of `F_Mo_F` with the spatial derivative of
-   the path w.r.t. distance traveled q: F_Mo_F⋅H_FM.
+   frame M onto the path tangent. Mathematically, tau = F_Mo_F⋅H_FMᵀ.
 
-   For this mobilizer, H_FM(q) = d/dv V_FM_F(q, v) is numerically equal to the
-   spatial velocity V_FM_F(q, 1) evaluated at the unit velocity v = 1 [m/s]:
-
-   <pre>
-      tau = F_BMo_F.dot(V_FM_F(q, 1))
-   </pre>
-
-   The result of this method is the scalar equivalent to
-   a force applied on the path, pointed along the path's tangential axis and
-   measured in Newtons.
-
+   The result of this projection is the magnitude of a force (in N) along
+   the path that would cause the same acceleration than F_Mo_F.
 
    @param q The distance traveled along the mobilizer's path in meters.
-   @param F_BMo_F The spatial force applied to the child body at Mo, expressed
-   in F.
+   @param F_BMo_F The spatial force applied to the mobilized body B at Mo,
+   expressed in F.
    @param[out] tau A pointer to store the resulting generalized force in
    Newtons.
-  */
-  void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const {
-    DRAKE_ASSERT(tau != nullptr);
-    const T v(1.);
-    // Computes tau = H_FM(q)⋅F_Mo_F, equivalent to V_FM(q, 1)⋅F_Mo_F.
-    tau[0] = calc_V_FM(q, &v).dot(F_BMo_F);
-  }
+   @pre tau is not the nullptr.
+   @pre tau->size() equals one. */
+  void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const;
 
-  /** Calculates and stores the across-mobilizer transform X_FM given
-   the generalized coordinate stored in a given context.
-   @param context The context of the model this mobilizer belongs to.
-   @returns The across-mobilizer transform X_FM(q). */
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const final;
 
-  /** Calculates and stores the across-mobilizer spatial velocity V_FM given
-   the generalized coordinate stored in a given context and a provided
-   tangential velocity.
-   @param context The context of the model this mobilizer belongs to.
-   @param v The tangential velocity along the mobilizer's path in meters per
-   second.
-   @returns The across-mobilizer spatial velocity V_FM(q, v).
-   @note This method aborts in Debug builds if v.size() is not one. */
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v) const final;
 
-  /** Calculates and stores the across-mobilizer spatial acceleration A_FM given
-   the generalized coordinate and velocity stored in a given context and a
-   provided tangential acceleration.
-   @param context The context of the model this mobilizer belongs to.
-   @param vdot The tangential acceleration along the mobilizer's path in meters
-   per second squared.
-   @returns The across-mobilizer spatial acceleration A_FM(q, v, v̇).
-   @note This method aborts in Debug builds if vdot.size() is not one. */
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& vdot) const override;
 
-  /** Projects the spatial force `F_Mo_F` on `this` mobilizer's outboard
-   frame M onto the path tangent. Mathematically,
-   this is the dot product of `F_Mo_F` with the spatial derivative of
-   the path w.r.t. distance traveled q: F_Mo_F⋅H_FM.
-
-   For this mobilizer, H_FM(q) = d/dv V_FM(q, v) is numerically equal to the
-   spatial velocity V_FM(q, 1) evaluated at the unit velocity v = 1 [m/s]:
-
-   <pre>
-      tau = F_Mo_F.dot(V_FM(q, 1)).
-   </pre>
-
-   The result of this method is the scalar equivalent to
-   a force applied on the path, pointed along the path's tangential axis and
-   measured in Newtons.
-   @param context The context of the model this mobilizer belongs to.
-   @param F_BMo_F The spatial force applied to the child body at Mo, expressed
-   in F.
-   @param[out] tau A reference to store the resulting generalized force in
-   Newtons.
-   @note This method aborts in Debug builds if `tau.size()` is not one.*/
   void ProjectSpatialForce(const systems::Context<T>& context,
                            const SpatialForce<T>& F_BMo_F,
                            Eigen::Ref<VectorX<T>> tau) const override;
@@ -318,7 +211,6 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 
   PiecewiseConstantCurvatureTrajectory<T> curvilinear_path_;
-  bool is_periodic_;
 };
 
 }  // namespace internal
