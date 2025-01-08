@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/trajectories/bezier_curve.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
 #include "drake/common/trajectories/composite_trajectory.h"
@@ -19,6 +20,7 @@
 #include "drake/common/trajectories/piecewise_quaternion.h"
 #include "drake/common/trajectories/stacked_trajectory.h"
 #include "drake/common/trajectories/trajectory.h"
+#include "drake/common/trajectories/wrapped_trajectory.h"
 
 namespace drake {
 namespace pydrake {
@@ -184,13 +186,57 @@ struct Impl {
           "2025-08-01");
     }
 
+    // Utility function that takes a Python object which is-a Trajectory and
+    // wraps it in a unique_ptr that manages object lifetime when returned back
+    // to C++.
+    static std::unique_ptr<Trajectory<T>> WrapPyTrajectory(py::object py_traj) {
+      DRAKE_THROW_UNLESS(!py_traj.is_none());
+      // Convert py_traj to a shared_ptr<Trajectory<T>> whose C++ lifetime keeps
+      // the python object alive.
+      Trajectory<T>* cpp_traj = py::cast<Trajectory<T>*>(py_traj);
+      DRAKE_THROW_UNLESS(cpp_traj != nullptr);
+      std::shared_ptr<Trajectory<T>> shared_cpp_traj(
+          /* stored pointer = */ cpp_traj,
+          /* deleter = */ [captured_py_traj = std::move(py_traj)](  // BR
+                              void*) mutable {
+            py::gil_scoped_acquire deleter_guard;
+            captured_py_traj = py::none();
+          });
+      // Wrap it in a unique_ptr to meet out required return signature.
+      return std::make_unique<trajectories::internal::WrappedTrajectory<T>>(
+          std::move(shared_cpp_traj));
+    }
+
     // Trampoline virtual methods.
 
     std::unique_ptr<Trajectory<T>> DoClone() const final {
-      // TODO(jwnimmer-tri) Rewrite cloning to use __deepcopy__ in lieu of
-      // Clone (or DoClone).
-      PYBIND11_OVERLOAD_PURE(
-          std::unique_ptr<Trajectory<T>>, Trajectory<T>, Clone);
+      py::gil_scoped_acquire guard;
+      // Trajectory subclasses in Python must implement cloning by defining
+      // either a __deepcopy__ (preferred) or Clone (legacy) method. We'll try
+      // Clone first so it has priority, but if it doesn't exist we'll fall back
+      // to __deepcopy__ and just let the "no such method deepcopy" error
+      // message propagate if both were missing. Because the
+      // PYBIND11_OVERLOAD_INT macro embeds a conditional `return ...;`
+      // statement, we must wrap it in lambda so that we can post-process the
+      // return value in case it does return.
+      bool used_legacy_clone = true;
+      auto make_python_deepcopy = [&]() -> py::object {
+        PYBIND11_OVERLOAD_INT(py::object, Trajectory<T>, "Clone");
+        used_legacy_clone = false;
+        auto deepcopy = py::module_::import("copy").attr("deepcopy");
+        return deepcopy(this);
+      };
+      py::object copied = make_python_deepcopy();
+      if (used_legacy_clone) {
+        WarnDeprecated(
+            fmt::format(
+                "Support for overriding {}.Clone as a virtual function is "
+                "deprecated. Subclasses should implement __deepcopy__, "
+                "instead.",
+                NiceTypeName::Get(*this)),
+            "2025-08-01");
+      }
+      return WrapPyTrajectory(std::move(copied));
     }
 
     MatrixX<T> do_value(const T& t) const final {
@@ -216,10 +262,18 @@ struct Impl {
 
     std::unique_ptr<Trajectory<T>> DoMakeDerivative(
         int derivative_order) const final {
-      PYBIND11_OVERLOAD_INT(std::unique_ptr<Trajectory<T>>, Trajectory<T>,
-          "DoMakeDerivative", derivative_order);
-      // If the macro did not return, use default functionality.
-      return Base::DoMakeDerivative(derivative_order);
+      py::gil_scoped_acquire guard;
+      // Because the PYBIND11_OVERLOAD_INT macro embeds a `return ...;`
+      // statement, we must wrap it in lambda so that we can post-process the
+      // return value.
+      auto make_python_derivative = [&]() -> py::object {
+        PYBIND11_OVERLOAD_INT(
+            py::object, Trajectory<T>, "DoMakeDerivative", derivative_order);
+        // If the macro did not return, use the base class error message.
+        Base::DoMakeDerivative(derivative_order);
+        DRAKE_UNREACHABLE();
+      };
+      return WrapPyTrajectory(make_python_derivative());
     }
 
     T do_start_time() const final {
@@ -759,6 +813,23 @@ struct Impl {
               /* N.B. We choose to omit any py::arg name here. */
               cls_doc.Append.doc);
       DefCopyAndDeepCopy(&cls);
+    }
+
+    {
+      using Class = trajectories::internal::WrappedTrajectory<T>;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "_WrappedTrajectory", param, "(Internal use only)");
+      cls  // BR
+          .def(py::init([](const Trajectory<T>& trajectory) {
+            // The keep_alive is responsible for object lifetime, so we'll give
+            // the constructor an unowned pointer.
+            return std::make_unique<Class>(
+                make_unowned_shared_ptr_from_raw(&trajectory));
+          }),
+              py::arg("trajectory"),
+              // Keep alive, ownership: `return` keeps `trajectory` alive.
+              py::keep_alive<0, 1>())
+          .def("unwrap", &Class::unwrap, py_rvp::reference_internal);
     }
   }
 };
