@@ -18,8 +18,7 @@ CurvilinearJoint<T>::CurvilinearJoint(
     const Frame<T>& frame_on_child,
     const trajectories::PiecewiseConstantCurvatureTrajectory<double>
         curvilinear_path,
-    bool is_periodic, double pos_lower_limit, double pos_upper_limit,
-    double damping)
+    double pos_lower_limit, double pos_upper_limit, double damping)
     : Joint<T>(
           name, frame_on_parent, frame_on_child,
           VectorX<double>::Constant(1, damping),
@@ -32,8 +31,7 @@ CurvilinearJoint<T>::CurvilinearJoint(
                                     -std::numeric_limits<double>::infinity()),
           VectorX<double>::Constant(1,
                                     std::numeric_limits<double>::infinity())),
-      curvilinear_path_(curvilinear_path),
-      is_periodic_(is_periodic) {}
+      curvilinear_path_(curvilinear_path) {}
 
 template <typename T>
 CurvilinearJoint<T>::~CurvilinearJoint() = default;
@@ -56,7 +54,7 @@ std::unique_ptr<Joint<ToScalar>> CurvilinearJoint<T>::TemplatedDoCloneToScalar(
   // Make the Joint<T> clone.
   auto joint_clone = std::make_unique<CurvilinearJoint<ToScalar>>(
       this->name(), frame_on_parent_body_clone, frame_on_child_body_clone,
-      curvilinear_path_, is_periodic_, this->position_lower_limit(),
+      curvilinear_path_, this->position_lower_limit(),
       this->position_upper_limit(), this->default_damping());
 
   joint_clone->set_velocity_limits(this->velocity_lower_limits(),

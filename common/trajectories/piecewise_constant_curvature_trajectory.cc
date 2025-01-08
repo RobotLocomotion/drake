@@ -10,7 +10,7 @@ template <typename T>
 PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
     const std::vector<T>& breaks, const std::vector<T>& turning_rates,
     const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
-    const Vector3<T>& initial_position)
+    const Vector3<T>& initial_position, double periodicity_tolerance)
     : PiecewiseTrajectory<T>(breaks), segment_turning_rates_(turning_rates) {
   if (turning_rates.size() != breaks.size() - 1) {
     throw std::logic_error(
@@ -37,6 +37,7 @@ PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
   segment_start_poses_ = MakeSegmentStartPoses(
       MakeInitialPose(initial_curve_tangent, plane_normal, initial_position),
       breaks, turning_rates);
+  is_periodic_ = IsNearlyPeriodic(periodicity_tolerance);
 }
 
 template <typename T>
@@ -53,10 +54,11 @@ std::unique_ptr<Trajectory<T>> PiecewiseConstantCurvatureTrajectory<T>::Clone()
 template <typename T>
 math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::CalcPose(
     const T& s) const {
-  int segment_index = this->get_segment_index(s);
+  const T w = maybe_wrap(s);
+  int segment_index = this->get_segment_index(w);
   const math::RigidTransform<T> X_FiF =
       CalcRelativePoseInSegment(segment_turning_rates_[segment_index],
-                                s - this->start_time(segment_index));
+                                w - this->start_time(segment_index));
   return segment_start_poses_[segment_index] * X_FiF;
 }
 
@@ -64,8 +66,9 @@ template <typename T>
 multibody::SpatialVelocity<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialVelocity(
     const T& s, const T& s_dot) const {
-  const math::RotationMatrix<T> R_AF = CalcPose(s).rotation();
-  const T& rho_i = segment_turning_rates_[this->get_segment_index(s)];
+  const T w = maybe_wrap(s);
+  const math::RotationMatrix<T> R_AF = CalcPose(w).rotation();
+  const T& rho_i = segment_turning_rates_[this->get_segment_index(w)];
 
   multibody::SpatialVelocity<T> spatial_velocity;
   // From Frenet–Serret analysis and the class doc for
@@ -84,8 +87,9 @@ template <typename T>
 multibody::SpatialAcceleration<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
     const T& s, const T& s_dot, const T& s_ddot) const {
-  const math::RotationMatrix<T> R_AF = CalcPose(s).rotation();
-  const T& rho_i = segment_turning_rates_[this->get_segment_index(s)];
+  const T w = maybe_wrap(s);
+  const math::RotationMatrix<T> R_AF = CalcPose(w).rotation();
+  const T& rho_i = segment_turning_rates_[this->get_segment_index(w)];
 
   // The spatial acceleration is the time derivative of the spatial velocity.
   // We compute the acceleration by applying the chain rule to the formulas
