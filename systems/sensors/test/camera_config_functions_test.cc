@@ -449,9 +449,9 @@ TEST_F(CameraConfigFunctionsTest, AsyncCamera) {
 
   const auto& sensor = builder_.GetDowncastSubsystemByName<RgbdSensorAsync>(
       "rgbd_sensor_test_camera");
-  EXPECT_EQ(sensor.fps(), config.fps);
-  EXPECT_EQ(sensor.capture_offset(), config.capture_offset);
-  EXPECT_EQ(sensor.output_delay(), config.output_delay);
+  EXPECT_EQ(sensor.default_fps(), config.fps);
+  EXPECT_EQ(sensor.default_capture_offset(), config.capture_offset);
+  EXPECT_EQ(sensor.default_output_delay(), config.output_delay);
 
   const auto& publisher =
       builder_.GetDowncastSubsystemByName<LcmPublisherSystem>(
