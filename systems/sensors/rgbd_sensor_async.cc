@@ -50,6 +50,7 @@ using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRange;
 using geometry::render::DepthRenderCamera;
 using geometry::render::RenderCameraCore;
+using internal::RgbdSensorAsyncParameters;
 using math::RigidTransformd;
 
 namespace {
@@ -170,14 +171,17 @@ class Worker {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Worker);
 
   Worker(std::shared_ptr<const SnapshotSensor> sensor, bool color, bool depth,
-         bool label)
+         bool label, uint64_t parameters_version)
       : sensor_{std::move(sensor)},
         color_{color},
         depth_{depth},
-        label_{label} {
+        label_{label},
+        parameters_version_{parameters_version} {
     DRAKE_DEMAND(sensor_ != nullptr);
     sensor_context_ = sensor_->CreateDefaultContext();
   }
+
+  uint64_t parameters_version() const { return parameters_version_; }
 
   /* Begins rendering the given geometry as an async task. */
   void Start(double context_time, const QueryObject<double>& query);
@@ -193,6 +197,7 @@ class Worker {
   const bool color_;
   const bool depth_;
   const bool label_;
+  const uint64_t parameters_version_;
   std::unique_ptr<Context<double>> sensor_context_;
   std::future<RenderedImages> future_;
 };
@@ -219,21 +224,21 @@ RgbdSensorAsync::RgbdSensorAsync(const SceneGraph<double>* scene_graph,
                                  std::optional<DepthRenderCamera> depth_camera,
                                  bool render_label_image)
     : scene_graph_{scene_graph},
-      parent_id_{parent_id},
-      X_PB_{X_PB},
       fps_{fps},
       capture_offset_{capture_offset},
       output_delay_{output_delay},
-      color_camera_{std::move(color_camera)},
-      depth_camera_{std::move(depth_camera)},
+      defaults_{.parent_frame_id = parent_id,
+                .X_PB = X_PB,
+                .color_camera = std::move(color_camera),
+                .depth_camera = std::move(depth_camera)},
       render_label_image_{render_label_image} {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
   DRAKE_THROW_UNLESS(std::isfinite(fps) && (fps > 0));
   DRAKE_THROW_UNLESS(std::isfinite(capture_offset) && (capture_offset >= 0));
   DRAKE_THROW_UNLESS(std::isfinite(output_delay) && (output_delay > 0));
   DRAKE_THROW_UNLESS(output_delay < (1 / fps));
-  DRAKE_THROW_UNLESS(color_camera_.has_value() || depth_camera_.has_value());
-  DRAKE_THROW_UNLESS(!render_label_image || color_camera_.has_value());
+  DRAKE_THROW_UNLESS(HasColorCamera() || HasDepthCamera());
+  DRAKE_THROW_UNLESS(!render_label_image || HasColorCamera());
   // TODO(jwnimmer-tri) Check that the render engine named by either of the two
   // cameras is not the (known non-threadsafe) VTK engine.
 
@@ -251,10 +256,10 @@ RgbdSensorAsync::RgbdSensorAsync(const SceneGraph<double>* scene_graph,
 
   // Output. These port names are intended to match RgbdSensor's port names.
   const std::set<DependencyTicket> state = {abstract_state_ticket(state_index)};
-  if (color_camera_.has_value()) {
+  if (HasColorCamera()) {
     DeclareAbstractOutputPort("color_image", &Self::CalcColor, state);
   }
-  if (depth_camera_.has_value()) {
+  if (HasDepthCamera()) {
     DeclareAbstractOutputPort("depth_image_32f", &Self::CalcDepth32F, state);
     DeclareAbstractOutputPort("depth_image_16u", &Self::CalcDepth16U, state);
   }
@@ -263,6 +268,100 @@ RgbdSensorAsync::RgbdSensorAsync(const SceneGraph<double>* scene_graph,
   }
   DeclareAbstractOutputPort("body_pose_in_world", &Self::CalcX_WB, state);
   DeclareVectorOutputPort("image_time", 1, &Self::CalcImageTime, state);
+
+  parameter_index_ = AbstractParameterIndex{this->DeclareAbstractParameter(
+      Value<RgbdSensorAsyncParameters>(defaults_))};
+}
+
+geometry::FrameId RgbdSensorAsync::default_parent_frame_id() const {
+  return defaults_.parent_frame_id;
+}
+
+void RgbdSensorAsync::set_default_parent_frame_id(geometry::FrameId id) {
+  defaults_.parent_frame_id = id;
+}
+
+geometry::FrameId RgbdSensorAsync::GetParentFrameId(
+    const Context<double>& context) const {
+  this->ValidateContext(context);
+  return GetParameters(context).parent_frame_id;
+}
+
+void RgbdSensorAsync::SetParentFrameId(Context<double>* context,
+                                       geometry::FrameId id) const {
+  this->ValidateContext(context);
+  GetMutableParameters(context)->parent_frame_id = id;
+}
+
+const math::RigidTransformd& RgbdSensorAsync::default_X_PB() const {
+  return defaults_.X_PB;
+}
+
+void RgbdSensorAsync::set_default_X_PB(
+    const math::RigidTransformd& sensor_pose) {
+  defaults_.X_PB = sensor_pose;
+}
+
+const math::RigidTransformd& RgbdSensorAsync::GetX_PB(
+    const Context<double>& context) const {
+  this->ValidateContext(context);
+  return GetParameters(context).X_PB;
+}
+
+void RgbdSensorAsync::SetX_PB(Context<double>* context,
+                              const math::RigidTransformd& sensor_pose) const {
+  this->ValidateContext(context);
+  GetMutableParameters(context)->X_PB = sensor_pose;
+}
+
+const std::optional<geometry::render::ColorRenderCamera>&
+RgbdSensorAsync::default_color_render_camera() const {
+  return defaults_.color_camera;
+}
+
+void RgbdSensorAsync::set_default_color_render_camera(
+    const geometry::render::ColorRenderCamera& color_camera) {
+  DRAKE_THROW_UNLESS(HasColorCamera());
+  defaults_.color_camera = std::move(color_camera);
+}
+
+const std::optional<geometry::render::ColorRenderCamera>&
+RgbdSensorAsync::GetColorRenderCamera(const Context<double>& context) const {
+  this->ValidateContext(context);
+  return GetParameters(context).color_camera;
+}
+
+void RgbdSensorAsync::SetColorRenderCamera(
+    Context<double>* context,
+    const geometry::render::ColorRenderCamera& color_camera) const {
+  DRAKE_THROW_UNLESS(HasColorCamera());
+  this->ValidateContext(context);
+  GetMutableParameters(context)->color_camera = color_camera;
+}
+
+const std::optional<geometry::render::DepthRenderCamera>&
+RgbdSensorAsync::default_depth_render_camera() const {
+  return defaults_.depth_camera;
+}
+
+void RgbdSensorAsync::set_default_depth_render_camera(
+    const geometry::render::DepthRenderCamera& depth_camera) {
+  DRAKE_THROW_UNLESS(HasDepthCamera());
+  defaults_.depth_camera = std::move(depth_camera);
+}
+
+const std::optional<geometry::render::DepthRenderCamera>&
+RgbdSensorAsync::GetDepthRenderCamera(const Context<double>& context) const {
+  this->ValidateContext(context);
+  return GetParameters(context).depth_camera;
+}
+
+void RgbdSensorAsync::SetDepthRenderCamera(
+    Context<double>* context,
+    const geometry::render::DepthRenderCamera& depth_camera) const {
+  DRAKE_THROW_UNLESS(HasDepthCamera());
+  this->ValidateContext(context);
+  GetMutableParameters(context)->depth_camera = depth_camera;
 }
 
 const OutputPort<double>& RgbdSensorAsync::color_image_output_port() const {
@@ -307,23 +406,31 @@ RgbdSensorAsync::TickTockState& RgbdSensorAsync::get_mutable_state(
   return state->template get_mutable_abstract_state<TickTockState>(0);
 }
 
+bool RgbdSensorAsync::HasColorCamera() const {
+  return defaults_.color_camera.has_value();
+}
+
+bool RgbdSensorAsync::HasDepthCamera() const {
+  return defaults_.depth_camera.has_value();
+}
+
 EventStatus RgbdSensorAsync::Initialize(const Context<double>& context,
                                         State<double>* state) const {
   // Grab the downcast reference from our argument.
-  unused(context);
   TickTockState& next_state = get_mutable_state(state);
+  const RgbdSensorAsyncParameters& params = GetParameters(context);
 
   // If we are only going to render one of color or depth, invent dummy
   // properties for the other one to simplify the SnapshotSensor code.
-  std::optional<ColorRenderCamera> color = color_camera_;
-  std::optional<DepthRenderCamera> depth = depth_camera_;
-  if (!color.has_value()) {
-    DRAKE_DEMAND(depth.has_value());
+  std::optional<ColorRenderCamera> color = params.color_camera;
+  std::optional<DepthRenderCamera> depth = params.depth_camera;
+  if (!HasColorCamera()) {
+    DRAKE_DEMAND(HasDepthCamera());
     const RenderCameraCore& core = depth->core();
     color.emplace(core);
   }
-  if (!depth.has_value()) {
-    DRAKE_DEMAND(color.has_value());
+  if (!HasDepthCamera()) {
+    DRAKE_DEMAND(HasColorCamera());
     const RenderCameraCore& core = color->core();
     const ClippingRange& clip = core.clipping();
     // N.B. Avoid using clip.far() here; it can trip the "16 bit mm depth"
@@ -336,10 +443,11 @@ EventStatus RgbdSensorAsync::Initialize(const Context<double>& context,
   // job during initialization is to reset the nested system and any prior
   // output.
   auto sensor = std::make_shared<const SnapshotSensor>(
-      scene_graph_, parent_id_, X_PB_, std::move(*color), std::move(*depth));
-  next_state.worker =
-      std::make_shared<Worker>(std::move(sensor), color_camera_.has_value(),
-                               depth_camera_.has_value(), render_label_image_);
+      scene_graph_, params.parent_frame_id, params.X_PB, std::move(*color),
+      std::move(*depth));
+  next_state.worker = std::make_shared<Worker>(
+      std::move(sensor), HasColorCamera(), HasDepthCamera(),
+      render_label_image_, params.version);
   next_state.output = {};
   return EventStatus::Succeeded();
 }
@@ -357,8 +465,11 @@ void RgbdSensorAsync::CalcTick(const Context<double>& context,
   // launch a worker task, without any changes to our output.
   next_state.output = prior_state.output;
 
-  // Latch-initialize a worker we didn't have one yet.
-  if (prior_state.worker == nullptr) {
+  // Latch-initialize a worker if we didn't have one yet, or if the parameters
+  // are out of date.
+  if (prior_state.worker == nullptr ||
+      (prior_state.worker->parameters_version() !=
+       GetParameters(context).version)) {
     Initialize(context, state);
   } else {
     next_state.worker = prior_state.worker;
@@ -391,6 +502,18 @@ void RgbdSensorAsync::CalcTock(const Context<double>& context,
 }
 
 namespace {
+/* If the size of `image` already matches `camera`, then does nothing.
+Otherwise, resizes the `image` to match `camera`. */
+template <typename SomeImage>
+void Resize(const RenderCameraCore& camera, SomeImage* image) {
+  const int width = camera.intrinsics().width();
+  const int height = camera.intrinsics().height();
+  if (image->width() == width && image->height() == height) {
+    return;
+  }
+  image->resize(width, height);
+}
+
 /* If the rendered image is non-null, copy it to output. Otherwise, set the
 the output to be empty (i.e., zero-sized width and height). */
 template <typename ImageIn, typename ImageOut>
@@ -410,25 +533,33 @@ void CopyImage(const ImageIn* rendered, ImageOut* output) {
 
 void RgbdSensorAsync::CalcColor(const Context<double>& context,
                                 ImageRgba8U* output) const {
-  DRAKE_DEMAND(color_camera_.has_value());
+  const std::optional<ColorRenderCamera>& camera =
+      GetColorRenderCamera(context);
+  Resize(camera->core(), output);
   CopyImage(get_state(context).output.color.get(), output);
 }
 
 void RgbdSensorAsync::CalcLabel(const Context<double>& context,
                                 ImageLabel16I* output) const {
-  DRAKE_DEMAND(color_camera_.has_value());
+  const std::optional<ColorRenderCamera>& camera =
+      GetColorRenderCamera(context);
+  Resize(camera->core(), output);
   CopyImage(get_state(context).output.label.get(), output);
 }
 
 void RgbdSensorAsync::CalcDepth32F(const Context<double>& context,
                                    ImageDepth32F* output) const {
-  DRAKE_DEMAND(depth_camera_.has_value());
+  const std::optional<DepthRenderCamera>& camera =
+      GetDepthRenderCamera(context);
+  Resize(camera->core(), output);
   CopyImage(get_state(context).output.depth.get(), output);
 }
 
 void RgbdSensorAsync::CalcDepth16U(const Context<double>& context,
                                    ImageDepth16U* output) const {
-  DRAKE_DEMAND(depth_camera_.has_value());
+  const std::optional<DepthRenderCamera>& camera =
+      GetDepthRenderCamera(context);
+  Resize(camera->core(), output);
   CopyImage(get_state(context).output.depth.get(), output);
 }
 
@@ -440,6 +571,28 @@ void RgbdSensorAsync::CalcX_WB(const Context<double>& context,
 void RgbdSensorAsync::CalcImageTime(const Context<double>& context,
                                     BasicVector<double>* output) const {
   output->SetFromVector(Vector1d{get_state(context).output.time});
+}
+
+void RgbdSensorAsync::SetDefaultParameters(
+    const Context<double>& context, Parameters<double>* parameters) const {
+  LeafSystem<double>::SetDefaultParameters(context, parameters);
+  parameters->get_mutable_abstract_parameter(parameter_index_)
+      .set_value(defaults_);
+}
+
+const RgbdSensorAsyncParameters& RgbdSensorAsync::GetParameters(
+    const Context<double>& context) const {
+  return context.get_abstract_parameter(parameter_index_)
+      .get_value<RgbdSensorAsyncParameters>();
+}
+
+RgbdSensorAsyncParameters* RgbdSensorAsync::GetMutableParameters(
+    Context<double>* context) const {
+  auto* params =
+      &(context->get_mutable_abstract_parameter(parameter_index_)
+            .template get_mutable_value<RgbdSensorAsyncParameters>());
+  ++params->version;
+  return params;
 }
 
 namespace {
