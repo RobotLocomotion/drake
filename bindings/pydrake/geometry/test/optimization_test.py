@@ -531,6 +531,18 @@ class TestGeometryOptimization(unittest.TestCase):
         vpoly.WriteObj(filename=temp_file_name)
         self.assertTrue(os.path.isfile(temp_file_name))
 
+        convex_named = vpoly.ToShapeConvex(convex_label="my_name")
+        self.assertTrue(convex_named.source().is_in_memory())
+        self.assertEqual(
+            convex_named.source().in_memory().mesh_file.filename_hint(),
+            "my_name")
+
+        convex_default = vpoly.ToShapeConvex()
+        self.assertTrue(convex_default.source().is_in_memory())
+        self.assertEqual(
+            convex_default.source().in_memory().mesh_file.filename_hint(),
+            "convex_from_vpolytope")
+
     def _calculate_path_length(self, vertices):
         n = vertices.shape[1]
         length = 0

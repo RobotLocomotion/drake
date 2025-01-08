@@ -538,6 +538,9 @@ void DefineConvexSetBaseClassAndSubclasses(py::module m) {
             cls_doc.MakeUnitBox.doc)
         .def("WriteObj", &VPolytope::WriteObj, py::arg("filename"),
             cls_doc.WriteObj.doc)
+        .def("ToShapeConvex", &VPolytope::ToShapeConvex,
+            py::arg("convex_label") = "convex_from_vpolytope",
+            cls_doc.ToShapeConvex.doc)
         .def(py::pickle([](const VPolytope& self) { return self.vertices(); },
             [](Eigen::MatrixXd arg) { return VPolytope(arg); }));
   }
