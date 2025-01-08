@@ -114,9 +114,13 @@ def _prepare_venv(repo_ctx, python):
     if os_name != "mac os x":
         return python
 
-    # Locate the lock file and mark it to be monitored for changes.
-    pylock = repo_ctx.path(Label("@drake//setup:python/pdm.lock")).realpath
-    repo_ctx.watch(pylock)
+    # Locate lock files and mark them to be monitored for changes.
+    requirements = repo_ctx.path(
+        Label("@drake//setup:python/requirements.txt"),
+    ).realpath
+    pdmlock = repo_ctx.path(Label("@drake//setup:python/pdm.lock")).realpath
+    repo_ctx.watch(requirements)
+    repo_ctx.watch(pdmlock)
 
     # Choose which dependencies to install.
     if repo_ctx.attr.requirements_flavor == "test":
