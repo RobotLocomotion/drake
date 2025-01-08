@@ -1118,6 +1118,23 @@ class MathematicalProgram {
       std::optional<bool> is_convex = std::nullopt);
 
   /**
+   * Adds a cost term of the form w*|x-x_desired|^2.
+   */
+  Binding<QuadraticCost> AddQuadraticErrorCost(
+      double w, const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+      const VariableRefList& vars) {
+    return AddQuadraticErrorCost(w, x_desired,
+                                 ConcatenateVariableRefList(vars));
+  }
+
+  /**
+   * Adds a cost term of the form w*|x-x_desired|^2.
+   */
+  Binding<QuadraticCost> AddQuadraticErrorCost(
+      double w, const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   Binding<QuadraticCost> AddQuadraticErrorCost(

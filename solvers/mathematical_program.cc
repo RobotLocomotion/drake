@@ -518,6 +518,14 @@ Binding<QuadraticCost> MathematicalProgram::AddQuadraticCost(
 }
 
 Binding<QuadraticCost> MathematicalProgram::AddQuadraticErrorCost(
+    double w, const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+  return AddQuadraticErrorCost(
+      w * Eigen::MatrixXd::Identity(x_desired.size(), x_desired.size()),
+      x_desired, vars);
+}
+
+Binding<QuadraticCost> MathematicalProgram::AddQuadraticErrorCost(
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::VectorXd>& x_desired,
     const Eigen::Ref<const VectorXDecisionVariable>& vars) {
