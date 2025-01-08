@@ -24,6 +24,7 @@ drake_cc_package_library(
         ":bit_cast",
         ":cond",
         ":copyable_unique_ptr",
+        ":cpu_capabilities",
         ":default_scalars",
         ":diagnostic_policy",
         ":double",
@@ -125,6 +126,16 @@ drake_cc_library(
     hdrs = ["cond.h"],
     deps = [
         ":double",
+    ],
+)
+
+drake_cc_library(
+    name = "cpu_capabilities",
+    srcs = ["cpu_capabilities.cc"],
+    hdrs = ["cpu_capabilities.h"],
+    implementation_deps = [
+        ":essential",
+        "@highway_internal//:hwy",
     ],
 )
 
@@ -386,6 +397,9 @@ drake_cc_library(
         # default list of targets and write down the CPUs we care about one by
         # one so that the test / support burden is better matched to our needs.
         #
+        # If you change this list, you must also fix common/cpu_capabilities.cc
+        # to allow opt-out of the new CPU feature with an environment variable.
+        #
         # Highway represents target sets using a bitmask. Each target is given
         # a single bit (e.g., '#define HWY_AVX2 (1LL << 9)'). To express a set
         # of targets (e.g., to set HWY_DISABLED_TARGETS) we must binary-or the
@@ -404,9 +418,7 @@ drake_cc_library(
                 # x86: SIMD with 256-bit lanes and FMA.
                 "HWY_AVX2",
                 # x86: SIMD with the improved 512VL encodings.
-                # TODO(jwnimmer-tri) Enable this once we support opt-out of CPU
-                # targets via NPY_DISABLE_CPU_FEATURES environment variable.
-                # "HWY_AVX3",
+                "HWY_AVX3",
                 # arm: SIMD that has fixed 256-bit lanes.
                 # TODO(jwnimmer-tri) Enable this once we can test it.
                 # "HWY_SVE_256",
@@ -416,6 +428,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//:__subpackages__"],
     deps = [
+        ":cpu_capabilities",
         ":essential",
     ],
 )
@@ -738,6 +751,26 @@ drake_cc_googletest(
     name = "bit_cast_test",
     deps = [
         ":bit_cast",
+    ],
+)
+
+drake_cc_binary(
+    name = "cpu_capabilities_test_device",
+    testonly = True,
+    srcs = ["test/cpu_capabilities_test_device.cc"],
+    deps = [
+        ":cpu_capabilities",
+        "@highway_internal//:hwy",
+    ],
+)
+
+drake_py_unittest(
+    name = "cpu_capabilities_test",
+    data = [
+        ":cpu_capabilities_test_device",
+    ],
+    deps = [
+        "@rules_python//python/runfiles",
     ],
 )
 
