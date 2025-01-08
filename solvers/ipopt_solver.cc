@@ -61,14 +61,6 @@ void SetAppOptions(const std::string& default_linear_solver,
     set_string_option("linear_solver", default_linear_solver);
   }
 
-  // The default tolerance.
-  const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
-  // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
-  // constr_viol_tol
-  set_double_option("tol", tol);
-  set_double_option("constr_viol_tol", tol);
-  set_double_option("acceptable_tol", tol);
-  set_double_option("acceptable_constr_viol_tol", tol);
   set_string_option("hessian_approximation", "limited-memory");
 
   // Any user-supplied options handled below will overwrite the above defaults.
