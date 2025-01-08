@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -7,6 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/wrap_to.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
@@ -70,7 +72,8 @@ class PiecewiseConstantCurvatureTrajectory final
   PiecewiseConstantCurvatureTrajectory() = default;
 
   template <typename U>
-  using ScalarValueConverter = typename systems::scalar_conversion::template ValueConverter<T, U>;
+  using ScalarValueConverter =
+      typename systems::scalar_conversion::template ValueConverter<T, U>;
 
   /** Constructs a piecewise constant curvature trajectory.
 
@@ -97,6 +100,10 @@ class PiecewiseConstantCurvatureTrajectory final
    lies, expressed in the parent frame, p̂_A.
    @param initial_position The initial position of the curve expressed in
    the parent frame, p_AoFo_A(s₀).
+   @param periodicity_tolerance Tolerance used to determine if the resulting
+   trajectory is periodic, according to the metric defined by
+   IsNearlyPeriodic(). If IsNearlyPeriodic(periodicity_tolerance) is true, then
+   calling is_periodic() on the new object will return `true`.
 
    @throws std::exception if the number of turning rates does not match
    the number of segments
@@ -105,11 +112,12 @@ class PiecewiseConstantCurvatureTrajectory final
    norm.
    @throws std::exception if initial_curve_tangent is not perpendicular to
    plane_normal. */
-  PiecewiseConstantCurvatureTrajectory(const std::vector<T>& breaks,
-                                       const std::vector<T>& turning_rates,
-                                       const Vector3<T>& initial_curve_tangent,
-                                       const Vector3<T>& plane_normal,
-                                       const Vector3<T>& initial_position);
+  PiecewiseConstantCurvatureTrajectory(
+      const std::vector<T>& breaks, const std::vector<T>& turning_rates,
+      const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
+      const Vector3<T>& initial_position,
+      double periodicity_tolerance = 1.0e3 *
+                                     std::numeric_limits<double>::epsilon());
 
   /** Scalar conversion constructor. See @ref system_scalar_conversion. */
   template <typename U>
@@ -126,10 +134,14 @@ class PiecewiseConstantCurvatureTrajectory final
                 .rotation()
                 .col(kPlaneNormalIndex)
                 .unaryExpr(ScalarValueConverter<U>{}),
-            other.get_initial_pose().translation().unaryExpr(ScalarValueConverter<U>{})) {}
+            other.get_initial_pose().translation().unaryExpr(
+                ScalarValueConverter<U>{})) {}
 
   /** @returns the total arclength of the curve in meters. */
   T length() const { return this->end_time(); }
+
+  /* Returns `true` if `this` trajectory is periodic. */
+  boolean<T> is_periodic() const { return is_periodic_; }
 
   /** Calculates the trajectory's pose X_AF(s) at the given arclength s.
 
@@ -231,6 +243,12 @@ class PiecewiseConstantCurvatureTrajectory final
     return converted_segment_data;
   }
 
+  /* If the trajectory is periodic, this helper wraps the distance coordinate s
+   to the path's length. If not periodic, then it simply returns s. */
+  T maybe_wrap(const T& s) const {
+    return is_periodic_ ? math::wrap_to(s, T(0.), length()) : s;
+  }
+
   /* Calculates pose X_FiF of the frame F at distance ds from the start of the
    i-th segment, relative to frame Fi at the start of the segment.
 
@@ -292,6 +310,7 @@ class PiecewiseConstantCurvatureTrajectory final
 
   std::vector<T> segment_turning_rates_;
   std::vector<math::RigidTransform<T>> segment_start_poses_;
+  boolean<T> is_periodic_{false};
 
   static inline constexpr size_t kCurveTangentIndex = 0;
   static inline constexpr size_t kCurveNormalIndex = 1;

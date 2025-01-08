@@ -11,6 +11,14 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+CurvilinearMobilizer<T>::CurvilinearMobilizer(
+    const SpanningForest::Mobod& mobod, const Frame<T>& inboard_frame_F,
+    const Frame<T>& outboard_frame_M,
+    const PiecewiseConstantCurvatureTrajectory<double>& curvilinear_path)
+    : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M),
+      curvilinear_path_(curvilinear_path) {}
+
+template <typename T>
 CurvilinearMobilizer<T>::~CurvilinearMobilizer() = default;
 
 template <typename T>
@@ -71,6 +79,40 @@ const CurvilinearMobilizer<T>& CurvilinearMobilizer<T>::SetTangentialVelocity(
   DRAKE_ASSERT(v.size() == kNv);
   v[0] = tangential_velocity;
   return *this;
+}
+
+template <typename T>
+math::RigidTransform<T> CurvilinearMobilizer<T>::calc_X_FM(const T* q) const {
+  return curvilinear_path_.CalcPose(*q);
+}
+
+template <typename T>
+SpatialVelocity<T> CurvilinearMobilizer<T>::calc_V_FM(const T* q,
+                                                      const T* v) const {
+  return curvilinear_path_.CalcSpatialVelocity(*q, *v);
+}
+
+template <typename T>
+SpatialAcceleration<T> CurvilinearMobilizer<T>::calc_A_FM(const T* q,
+                                                          const T* v,
+                                                          const T* vdot) const {
+  return curvilinear_path_.CalcSpatialAcceleration(*q, *v, *vdot);
+}
+
+template <typename T>
+void CurvilinearMobilizer<T>::calc_tau(const T* q,
+                                       const SpatialForce<T>& F_BMo_F,
+                                       T* tau) const {
+  DRAKE_ASSERT(tau != nullptr);
+
+  /* For this mobilizer, H_FM(q) = d/dv V_FM_F(q, v) is numerically equal to the
+   spatial velocity V_FM_F(q, 1) evaluated at the unit velocity v = 1 [m/s]:
+
+      tau = F_BMo_F.dot(V_FM_F(q, 1))
+  */
+  const T v(1.);
+  // Computes tau = H_FM(q)⋅F_Mo_F, equivalent to V_FM(q, 1)⋅F_Mo_F.
+  tau[0] = calc_V_FM(q, &v).dot(F_BMo_F);
 }
 
 template <typename T>
@@ -154,8 +196,7 @@ CurvilinearMobilizer<T>::TemplatedDoCloneToScalar(
   return std::make_unique<CurvilinearMobilizer<ToScalar>>(
       tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
       outboard_frame_clone,
-      PiecewiseConstantCurvatureTrajectory<double>(curvilinear_path_),
-      is_periodic_);
+      PiecewiseConstantCurvatureTrajectory<double>(curvilinear_path_));
 }
 
 template <typename T>

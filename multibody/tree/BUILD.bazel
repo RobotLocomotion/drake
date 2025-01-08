@@ -189,7 +189,6 @@ drake_cc_library(
         "//common:unused",
         "//common/trajectories:piecewise_constant_curvature_trajectory",
         "//math:geometric_transform",
-        "//math:wrap_to",
         "//multibody/topology",
         "//systems/framework:leaf_system",
     ],

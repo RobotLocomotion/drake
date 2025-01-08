@@ -29,7 +29,7 @@ using std::sqrt;
 using std::unique_ptr;
 using systems::Context;
 
-constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 // Fixture to setup a simple model containing a curvilinear mobilizer.
 class CurvilinearMobilizerTest : public MobilizerTester {
@@ -37,16 +37,20 @@ class CurvilinearMobilizerTest : public MobilizerTester {
   void SetUp() override {
     std::unique_ptr<CurvilinearJoint<double>> joint =
         std::make_unique<CurvilinearJoint<double>>(
-            "joint1=0", tree().world_body().body_frame(), body_->body_frame(),
-            trajectory_, true);
+            "joint1", tree().world_body().body_frame(), body_->body_frame(),
+            trajectory_);
     mobilizer_ = &AddJointAndFinalize<CurvilinearJoint, CurvilinearMobilizer>(
         std::move(joint));
   }
 
  protected:
   const CurvilinearMobilizer<double>* mobilizer_{nullptr};
-  const double k_ = 1.0;
-  const double l_ = 1.0;
+  // We specify a trajectory that draws a "stadium curve" (a rectangle with two
+  // semicircle caps). The Rectangular section has length l_ and the circular
+  // sections have radii 1/k_. This trajectory is periodic, of total length 2*l_
+  // + 2*pi/k_.
+  const double k_ = 1.0;  // Rectangular region length.
+  const double l_ = 1.0;  // Radius of the circular end caps.
   const std::vector<double> breaks_{0, M_PI / k_, l_ + M_PI / k_,
                                     l_ + 2 * M_PI / k_, 2 * l_ + 2 * M_PI / k_};
   const std::vector<double> turning_rates_{k_, 0, k_, 0};
@@ -107,7 +111,7 @@ TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerTransform) {
   // Expect the mobilizer pose to be the trajectory pose, modulo curve length.
   const RigidTransformd X_FM_expected = trajectory_.CalcPose(wrapped_distance);
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
-                              X_FM_expected.GetAsMatrix34(), kTolerance,
+                              X_FM_expected.GetAsMatrix34(), kEpsilon,
                               MatrixCompareType::relative));
 }
 
@@ -124,7 +128,7 @@ TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialVelocity) {
   // velocity, modulo curve length.
   const SpatialVelocity<double> V_FM_expected =
       trajectory_.CalcSpatialVelocity(wrapped_distance, tangential_velocity);
-  EXPECT_TRUE(V_FM.IsApprox(V_FM_expected, kTolerance));
+  EXPECT_TRUE(V_FM.IsApprox(V_FM_expected, kEpsilon));
 }
 
 TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
@@ -144,7 +148,7 @@ TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
 
   // Expect the mobilizer spatial acceleration to be the trajectory spatial
   // acceleration, modulo curve length.
-  EXPECT_TRUE(A_FM.IsApprox(A_FM_expected, kTolerance));
+  EXPECT_TRUE(A_FM.IsApprox(A_FM_expected, kEpsilon));
 }
 
 TEST_F(CurvilinearMobilizerTest, ProjectSpatialForce) {
@@ -152,8 +156,8 @@ TEST_F(CurvilinearMobilizerTest, ProjectSpatialForce) {
   const Vector3d force_Mo_F(1.0, 2.0, 3.0);
   const SpatialForce<double> F_Mo_F(torque_Mo_F, force_Mo_F);
   Vector1d tau;
-  const double distance = breaks_[1] / 2.;
-  // Set mobilizer to initial position.
+  const double distance = breaks_[1] / 2.3;
+  // Set an arbitrary position.
   mobilizer_->SetDistance(context_.get(), distance);
   mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
@@ -168,7 +172,7 @@ TEST_F(CurvilinearMobilizerTest, ProjectSpatialForce) {
   const double translational_component_expected = force_Mo_F.dot(tangent_axis);
   const double tau_expected =
       rotational_component_expected + translational_component_expected;
-  EXPECT_NEAR(tau(0), tau_expected, kTolerance);
+  EXPECT_NEAR(tau(0), tau_expected, 4.0 * kEpsilon);
 }
 
 TEST_F(CurvilinearMobilizerTest, MapVelocityToQDotAndBack) {
@@ -177,11 +181,11 @@ TEST_F(CurvilinearMobilizerTest, MapVelocityToQDotAndBack) {
   Vector1d v(1.5);
   Vector1d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
-  EXPECT_NEAR(qdot(0), v(0), kTolerance);
+  EXPECT_EQ(qdot(0), v(0));
 
   qdot(0) = -std::sqrt(2);
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
-  EXPECT_NEAR(v(0), qdot(0), kTolerance);
+  EXPECT_EQ(v(0), qdot(0));
 }
 
 TEST_F(CurvilinearMobilizerTest, KinematicMapping) {
@@ -200,40 +204,6 @@ TEST_F(CurvilinearMobilizerTest, KinematicMapping) {
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus(0, 0), 1.0);
-}
-
-TEST_F(CurvilinearMobilizerTest, MapUsesN) {
-  // Set an arbitrary non-zero state.
-  mobilizer_->SetDistance(context_.get(), 1.5);
-
-  // Set arbitrary v and MapVelocityToQDot.
-  Vector1d v(2.5);
-  Vector1d qdot;
-  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
-
-  // Compute N.
-  MatrixX<double> N(1, 1);
-  mobilizer_->CalcNMatrix(*context_, &N);
-
-  // Ensure N(q) is used in q̇ = N(q)⋅v.
-  EXPECT_EQ(qdot, N * v);
-}
-
-TEST_F(CurvilinearMobilizerTest, MapUsesNplus) {
-  // Set an arbitrary "non-zero" state.
-  mobilizer_->SetDistance(context_.get(), 1.5);
-
-  // Set arbitrary q̇ and MapQDotToVelocity.
-  Vector1d qdot(2.5);
-  Vector1d v;
-  mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
-
-  // Compute Nplus.
-  MatrixX<double> Nplus(1, 1);
-  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
-
-  // Ensure N⁺(q) is used in v = N⁺(q)⋅q̇.
-  EXPECT_EQ(v, Nplus * qdot);
 }
 
 }  // namespace
