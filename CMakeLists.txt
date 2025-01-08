@@ -562,11 +562,6 @@ find_package(Git)
 
 set(GIT_DIR "${PROJECT_SOURCE_DIR}/.git")
 
-execute_process(
-  COMMAND "${Bazel_EXECUTABLE}" info --announce_rc
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
-)
-
 set(GENERATE_DRAKE_VERSION_ARGS)
 if(DEFINED DRAKE_VERSION_OVERRIDE)
   list(APPEND GENERATE_DRAKE_VERSION_ARGS

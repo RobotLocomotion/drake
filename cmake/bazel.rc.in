@@ -4,6 +4,9 @@
 # The scratch directory Bazel will use for the build.
 startup --output_base="@BAZEL_OUTPUT_BASE@"
 
+# Be verbose.
+common --announce_rc
+
 # Inherit Drake's default options.
 @BAZELRC_IMPORT@
 
