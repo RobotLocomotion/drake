@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_camera.h"
@@ -15,6 +16,22 @@
 namespace drake {
 namespace systems {
 namespace sensors {
+namespace internal {
+
+// TOOD(jwnimmer-tri) Maybe we should make this public at some point?  Is it
+// helpful for users?
+struct RgbdSensorAsyncParameters {
+  // The default identifier for the parent frame `P`.
+  geometry::FrameId parent_frame_id;
+  // The position of the camera's B frame relative to its parent frame P.
+  math::RigidTransformd X_PB;
+  // The camera specification for color & label.
+  std::optional<geometry::render::ColorRenderCamera> color_camera;
+  // The camera specification for depth.
+  std::optional<geometry::render::DepthRenderCamera> depth_camera;
+};
+
+}  // namespace internal
 
 /** A sensor similar to RgbdSensorDiscrete but the rendering occurs on a
 background thread to offer improved performance.
@@ -85,7 +102,14 @@ it responds to are changes to geometry poses. If you change anything beyond
 poses, you must manually call Simulator::Initialize() to reset things before
 resuming the simulation, or else you'll get an exception. This holds true for
 changes to both SceneGraph's model geometry and the copy of the geometry in a
-scene graph Context. */
+scene graph Context.
+
+@note As with geometry changes, if you change configuration parameters with the
+Set*(context, ...) methods, you must manually call Simulator::Initialize() for
+the updates to take effect. It is not permitted to add or remove a color or
+depth camera after contruction, because that would imply a change in the output
+ports offered. However, it is possible to change the properties of the cameras
+via the Set*(context, ...) methods. */
 class RgbdSensorAsync final : public LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdSensorAsync);
@@ -124,35 +148,99 @@ class RgbdSensorAsync final : public LeafSystem<double> {
       std::optional<geometry::render::DepthRenderCamera> depth_camera = {},
       bool render_label_image = false);
 
-  // TODO(#21872): update the APIs for parent id, X_PB, and the cameras to
-  // align with RgbdSensor.
+  DRAKE_DEPRECATED("2025-05-01", "Use default_parent_frame_id() instead.")
+  geometry::FrameId parent_id() const { return default_parent_frame_id(); }
 
-  /** Returns the `parent_id` passed to the constructor. */
-  geometry::FrameId parent_id() const { return parent_id_; }
+  DRAKE_DEPRECATED("2025-05-01", "Use default_X_PB() instead.")
+  const math::RigidTransformd& X_PB() const { return default_X_PB(); }
 
-  /** Returns the `X_PB` passed to the constructor. */
-  const math::RigidTransformd& X_PB() const { return X_PB_; }
-
-  /** Returns the `fps` passed to the constructor. */
-  double fps() const { return fps_; }
-
-  /** Returns the `capture_offset` passed to the constructor. */
-  double capture_offset() const { return capture_offset_; }
-
-  /** Returns the `output_delay` passed to the constructor. */
-  double output_delay() const { return output_delay_; }
-
-  /** Returns the `color_camera` passed to the constructor. */
+  DRAKE_DEPRECATED("2025-05-01", "Use default_color_render_camera() instead.")
   const std::optional<geometry::render::ColorRenderCamera>& color_camera()
       const {
-    return color_camera_;
+    return default_color_render_camera();
   }
 
-  /** Returns the `depth_camera` passed to the constructor. */
+  DRAKE_DEPRECATED("2025-05-01", "Use default_depth_render_camera() instead.")
   const std::optional<geometry::render::DepthRenderCamera>& depth_camera()
       const {
-    return depth_camera_;
+    return default_depth_render_camera();
   }
+
+  /** Returns the frame rate provided at construction. */
+  double fps() const { return fps_; }
+
+  /** Returns the capture offset provided at construction. */
+  double capture_offset() const { return capture_offset_; }
+
+  /** Returns the output delay provided at construction. */
+  double output_delay() const { return output_delay_; }
+
+  /** Returns the default id of the frame to which the body is affixed.  */
+  geometry::FrameId default_parent_frame_id() const;
+
+  /** Sets the default id of the frame to which the body is affixed.  */
+  void set_default_parent_frame_id(geometry::FrameId id);
+
+  /** Returns the context dependent id of the frame to which the body is
+  affixed. */
+  geometry::FrameId GetParentFrameId(const Context<double>& context) const;
+
+  /** Sets the id of the frame to which the body is affixed, as stored as
+  parameters in `context`. */
+  void SetParentFrameId(Context<double>* context, geometry::FrameId id) const;
+
+  /** Returns the default `X_PB`.  */
+  const math::RigidTransformd& default_X_PB() const;
+
+  /** Sets the default `X_PB`.  */
+  void set_default_X_PB(const math::RigidTransformd& sensor_pose);
+
+  /** Returns the context dependent `X_PB`. */
+  const math::RigidTransformd& GetX_PB(const Context<double>& context) const;
+
+  /** Sets the `X_PB`, as stored as parameters in `context`. */
+  void SetX_PB(Context<double>* context,
+               const math::RigidTransformd& sensor_pose) const;
+
+  /** Returns the default render camera for color renderings.  */
+  const std::optional<geometry::render::ColorRenderCamera>&
+  default_color_render_camera() const;
+
+  /** Sets the default render camera for color/label renderings.
+  @throws std::exception if no color camera was provided at construction. */
+  void set_default_color_render_camera(
+      const geometry::render::ColorRenderCamera& color_camera);
+
+  /** Returns the context dependent render camera for color/label renderings. */
+  const std::optional<geometry::render::ColorRenderCamera>&
+  GetColorRenderCamera(const Context<double>& context) const;
+
+  /** Sets the render camera for color/label renderings, as stored as
+  parameters in `context`.
+  @throws std::exception if no color camera was provided at construction. */
+  void SetColorRenderCamera(
+      Context<double>* context,
+      const geometry::render::ColorRenderCamera& color_camera) const;
+
+  /** Returns the default render camera for depth renderings.  */
+  const std::optional<geometry::render::DepthRenderCamera>&
+  default_depth_render_camera() const;
+
+  /** Sets the default render camera for depth renderings.
+  @throws std::exception if no depth camera was provided at construction. */
+  void set_default_depth_render_camera(
+      const geometry::render::DepthRenderCamera& depth_camera);
+
+  /** Returns the context dependent render camera for depth renderings. */
+  const std::optional<geometry::render::DepthRenderCamera>&
+  GetDepthRenderCamera(const Context<double>& context) const;
+
+  /** Sets the render camera for depth renderings, as stored as parameters in
+  `context`.
+  @throws std::exception if no depth camera was provided at construction. */
+  void SetDepthRenderCamera(
+      Context<double>* context,
+      const geometry::render::DepthRenderCamera& depth_camera) const;
 
   // TODO(jwnimmer-tri) Add an output port for the timestamp associated with
   // the other output ports (images, etc.) to make it easier for the user to
@@ -190,6 +278,9 @@ class RgbdSensorAsync final : public LeafSystem<double> {
   const TickTockState& get_state(const Context<double>&) const;
   TickTockState& get_mutable_state(State<double>*) const;
 
+  bool HasColorCamera() const;
+  bool HasDepthCamera() const;
+
   EventStatus Initialize(const Context<double>&, State<double>*) const;
   void CalcTick(const Context<double>&, State<double>*) const;
   void CalcTock(const Context<double>&, State<double>*) const;
@@ -200,14 +291,22 @@ class RgbdSensorAsync final : public LeafSystem<double> {
   void CalcX_WB(const Context<double>&, math::RigidTransformd*) const;
   void CalcImageTime(const Context<double>&, BasicVector<double>*) const;
 
+  // Writes the current default values to the context's parameters.
+  void SetDefaultParameters(const Context<double>& context,
+                            Parameters<double>* parameters) const override;
+
   const geometry::SceneGraph<double>* const scene_graph_;
-  const geometry::FrameId parent_id_;
-  const math::RigidTransformd X_PB_;
-  const double fps_;
-  const double capture_offset_;
-  const double output_delay_;
-  const std::optional<geometry::render::ColorRenderCamera> color_camera_;
-  const std::optional<geometry::render::DepthRenderCamera> depth_camera_;
+
+  // How often to sample the `geometry_query` input and render images.
+  double fps_;
+  // The time of the first sample of `geometry_query` input.
+  double capture_offset_;
+  // How long after input sampling that the outputs will be updated.
+  double output_delay_;
+
+  internal::RgbdSensorAsyncParameters defaults_;
+  AbstractParameterIndex parameter_index_;
+
   const bool render_label_image_;
 };
 

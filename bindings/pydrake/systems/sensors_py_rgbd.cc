@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
@@ -170,7 +171,9 @@ void DefineSensorsRgbd(py::module m) {
   {
     using Class = RgbdSensorAsync;
     constexpr auto& cls_doc = doc.RgbdSensorAsync;
-    py::class_<Class, LeafSystem<double>>(m, "RgbdSensorAsync", cls_doc.doc)
+    py::class_<Class, LeafSystem<double>> rgbd_sensor_async(
+        m, "RgbdSensorAsync", cls_doc.doc);
+    rgbd_sensor_async
         .def(py::init<const geometry::SceneGraph<double>*, geometry::FrameId,
                  const math::RigidTransformd&, double, double, double,
                  std::optional<ColorRenderCamera>,
@@ -179,14 +182,48 @@ void DefineSensorsRgbd(py::module m) {
             py::arg("fps"), py::arg("capture_offset"), py::arg("output_delay"),
             py::arg("color_camera"), py::arg("depth_camera") = std::nullopt,
             py::arg("render_label_image") = false, cls_doc.ctor.doc)
-        .def("parent_id", &Class::parent_id, cls_doc.parent_id.doc)
-        .def("X_PB", &Class::X_PB, cls_doc.X_PB.doc)
         .def("fps", &Class::fps, cls_doc.fps.doc)
         .def("capture_offset", &Class::capture_offset,
             cls_doc.capture_offset.doc)
         .def("output_delay", &Class::output_delay, cls_doc.output_delay.doc)
-        .def("color_camera", &Class::color_camera, cls_doc.color_camera.doc)
-        .def("depth_camera", &Class::depth_camera, cls_doc.depth_camera.doc)
+        .def("default_parent_frame_id", &Class::default_parent_frame_id,
+            cls_doc.default_parent_frame_id.doc)
+        .def("set_default_parent_frame_id", &Class::set_default_parent_frame_id,
+            py::arg("id"), cls_doc.set_default_parent_frame_id.doc)
+        .def("GetParentFrameId", &Class::GetParentFrameId, py::arg("context"),
+            cls_doc.GetParentFrameId.doc)
+        .def("SetParentFrameId", &Class::SetParentFrameId, py::arg("context"),
+            py::arg("id"), cls_doc.SetParentFrameId.doc)
+        .def("default_X_PB", &Class::default_X_PB, py_rvp::reference_internal,
+            cls_doc.default_X_PB.doc)
+        .def("set_default_X_PB", &Class::set_default_X_PB,
+            py::arg("sensor_pose"), cls_doc.set_default_X_PB.doc)
+        .def("GetX_PB", &Class::GetX_PB, py::arg("context"),
+            py_rvp::reference_internal, cls_doc.GetX_PB.doc)
+        .def("SetX_PB", &Class::SetX_PB, py::arg("context"),
+            py::arg("sensor_pose"), cls_doc.SetX_PB.doc)
+        .def("default_color_render_camera", &Class::default_color_render_camera,
+            py_rvp::reference_internal, cls_doc.default_color_render_camera.doc)
+        .def("set_default_color_render_camera",
+            &Class::set_default_color_render_camera, py::arg("color_camera"),
+            cls_doc.set_default_color_render_camera.doc)
+        .def("GetColorRenderCamera", &Class::GetColorRenderCamera,
+            py::arg("context"), py_rvp::reference_internal,
+            cls_doc.GetColorRenderCamera.doc)
+        .def("SetColorRenderCamera", &Class::SetColorRenderCamera,
+            py::arg("context"), py::arg("color_camera"),
+            cls_doc.SetColorRenderCamera.doc)
+        .def("default_depth_render_camera", &Class::default_depth_render_camera,
+            py_rvp::reference_internal, cls_doc.default_depth_render_camera.doc)
+        .def("set_default_depth_render_camera",
+            &Class::set_default_depth_render_camera, py::arg("depth_camera"),
+            cls_doc.set_default_depth_render_camera.doc)
+        .def("GetDepthRenderCamera", &Class::GetDepthRenderCamera,
+            py::arg("context"), py_rvp::reference_internal,
+            cls_doc.GetDepthRenderCamera.doc)
+        .def("SetDepthRenderCamera", &Class::SetDepthRenderCamera,
+            py::arg("context"), py::arg("depth_camera"),
+            cls_doc.SetDepthRenderCamera.doc)
         .def("color_image_output_port", &Class::color_image_output_port,
             py_rvp::reference_internal, cls_doc.color_image_output_port.doc)
         .def("depth_image_32F_output_port", &Class::depth_image_32F_output_port,
@@ -200,6 +237,23 @@ void DefineSensorsRgbd(py::module m) {
             cls_doc.body_pose_in_world_output_port.doc)
         .def("image_time_output_port", &Class::image_time_output_port,
             py_rvp::reference_internal, cls_doc.image_time_output_port.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    rgbd_sensor_async  // BR
+        .def("parent_id",
+            WrapDeprecated(cls_doc.parent_id.doc_deprecated, &Class::parent_id),
+            cls_doc.parent_id.doc_deprecated)
+        .def("X_PB", WrapDeprecated(cls_doc.X_PB.doc_deprecated, &Class::X_PB),
+            cls_doc.X_PB.doc_deprecated)
+        .def("color_camera",
+            WrapDeprecated(
+                cls_doc.color_camera.doc_deprecated, &Class::color_camera),
+            cls_doc.color_camera.doc_deprecated)
+        .def("depth_camera",
+            WrapDeprecated(
+                cls_doc.depth_camera.doc_deprecated, &Class::depth_camera),
+            cls_doc.depth_camera.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 }
 
