@@ -111,27 +111,11 @@ load("//tools/workspace/xmlrunner_py:repository.bzl", "xmlrunner_py_repository")
 load("//tools/workspace/yaml_cpp_internal:repository.bzl", "yaml_cpp_internal_repository")  # noqa
 load("//tools/workspace/zlib:repository.bzl", "zlib_repository")
 
-# This is the list of modules that our MODULE.bazel already incorporates.
-# It is cross-checked by the workspace_bzlmod_sync_test.py test.
-REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
-    "build_bazel_apple_support",
-    "bazel_features",
-    "bazel_skylib",
-    "platforms",
-    "rust_toolchain",
-    "rules_cc",
-    "rules_java",
-    "rules_license",
-    "rules_python",
-    "rules_rust",
-    "rules_shell",
-]
+# =============================================================================
+# For Bazel projects using Drake as a depedency via the WORKSPACE mechanism.
+# =============================================================================
 
-def add_default_repositories(
-        excludes = [],
-        mirrors = DEFAULT_MIRRORS,
-        *,
-        bzlmod = False):
+def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     """Declares workspace repositories for all externals needed by drake (other
     than those built into Bazel, of course).  This is intended to be loaded and
     called from a WORKSPACE file.
@@ -140,11 +124,7 @@ def add_default_repositories(
         excludes: list of string names of repositories to exclude; this can
           be useful if a WORKSPACE file has already supplied its own external
           of a given name.
-        bzlmod: when True, skips repositories declared in our MODULE.bazel;
-          set this to True if you are using bzlmod.
     """
-    if bzlmod:
-        excludes = excludes + REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES
     if "abseil_cpp_internal" not in excludes:
         abseil_cpp_internal_repository(name = "abseil_cpp_internal", mirrors = mirrors)  # noqa
     if "bazelisk" not in excludes:
@@ -377,24 +357,14 @@ def add_default_repositories(
     if "zlib" not in excludes:
         zlib_repository(name = "zlib")
 
-def add_default_toolchains(
-        excludes = [],
-        *,
-        bzlmod = False):
+def add_default_toolchains(excludes = []):
     """Register toolchains for each language (e.g., "py") not explicitly
     excluded and/or not using an automatically generated toolchain.
 
     Args:
         excludes: List of languages for which a toolchain should not be
             registered.
-        bzlmod: when True, skips toolchains declared in our MODULE.bazel;
-          set this to True if you are using bzlmod.
     """
-    if bzlmod:
-        # The cc toolchain is in MODULE.bazel already.
-        # The py toolchain is in tools/bazel.rc already.
-        return
-
     if "py" not in excludes:
         native.register_toolchains("@python//:all")
     if "rust" not in excludes:
@@ -403,9 +373,7 @@ def add_default_toolchains(
 def add_default_workspace(
         repository_excludes = [],
         toolchain_excludes = [],
-        mirrors = DEFAULT_MIRRORS,
-        *,
-        bzlmod = False):
+        mirrors = DEFAULT_MIRRORS):
     """Declare repositories in this WORKSPACE for each dependency of @drake
     (e.g., "eigen") that is not explicitly excluded, and register toolchains
     for each language (e.g., "py") not explicitly excluded and/or not using an
@@ -419,16 +387,120 @@ def add_default_workspace(
         mirrors: Dictionary of mirrors from which to download repository files.
             See mirrors.bzl file in this directory for the file format and
             default values.
-        bzlmod: when True, skips repositories and toolchains declared in our
-          MODULE.bazel; set this to True if you are using bzlmod.
     """
 
-    add_default_repositories(
-        excludes = repository_excludes,
-        mirrors = mirrors,
-        bzlmod = bzlmod,
+    add_default_repositories(excludes = repository_excludes, mirrors = mirrors)
+    add_default_toolchains(excludes = toolchain_excludes)
+
+# =============================================================================
+# For Bazel projects using Drake as a depedency via the MODULE mechanism.
+# =============================================================================
+
+# This is the list of modules that our MODULE.bazel already incorporates.
+# It is cross-checked by the workspace_bzlmod_sync_test.py test.
+REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
+    "build_bazel_apple_support",
+    "bazel_features",
+    "bazel_skylib",
+    "platforms",
+    "rust_toolchain",
+    "rules_cc",
+    "rules_java",
+    "rules_license",
+    "rules_python",
+    "rules_rust",
+    "rules_shell",
+]
+
+# This is the list of repositories that Drake provides as a module extension
+# for downstream projects; see comments in drake/MODULE.bazel for details.
+# It is cross-checked by the workspace_bzlmod_sync_test.py test.
+REPOS_EXPORTED = [
+    "blas",
+    "buildifier",
+    "drake_models",
+    "eigen",
+    "fmt",
+    "gflags",
+    "glib",
+    "glx",
+    "gtest",
+    "gurobi",
+    "lapack",
+    "lcm",
+    "libblas",
+    "liblapack",
+    "meshcat",
+    "mosek",
+    "opencl",
+    "opengl",
+    "pybind11",
+    "pycodestyle",
+    "python",
+    "snopt",
+    "spdlog",
+    "styleguide",
+    "x11",
+    "zlib",
+]
+
+def _drake_dep_repositories_impl(module_ctx):
+    # This sequence should match REPOS_EXPORTED exactly.
+    # Mismatches will be reported as errors by Bazel.
+    mirrors = DEFAULT_MIRRORS
+    blas_repository(name = "blas")
+    buildifier_repository(name = "buildifier", mirrors = mirrors)
+    drake_models_repository(name = "drake_models", mirrors = mirrors)
+    eigen_repository(name = "eigen")
+    fmt_repository(name = "fmt", mirrors = mirrors)
+    gflags_repository(name = "gflags", mirrors = mirrors)
+    glib_repository(name = "glib")
+    glx_repository(name = "glx")
+    gtest_repository(name = "gtest", mirrors = mirrors)
+    gurobi_repository(name = "gurobi")
+    lapack_repository(name = "lapack")
+    lcm_repository(name = "lcm", mirrors = mirrors)
+    libblas_repository(name = "libblas")
+    liblapack_repository(name = "liblapack")
+    meshcat_repository(name = "meshcat", mirrors = mirrors)
+    mosek_repository(name = "mosek", mirrors = mirrors)
+    opencl_repository(name = "opencl")
+    opengl_repository(name = "opengl")
+    pybind11_repository(name = "pybind11", mirrors = mirrors)
+    pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
+    python_repository(name = "python")
+    snopt_repository(name = "snopt")
+    spdlog_repository(name = "spdlog", mirrors = mirrors)
+    styleguide_repository(name = "styleguide", mirrors = mirrors)
+    x11_repository(name = "x11")
+    zlib_repository(name = "zlib")
+
+drake_dep_repositories = module_extension(
+    implementation = _drake_dep_repositories_impl,
+    doc = """(Stable API) Provides access to Drake's dependencies for use by
+    downstream projects. See comments in drake/MODULE.bazel for details.""",
+)
+
+def _internal_repositories_impl(module_ctx):
+    excludes = (
+        REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES +
+        REPOS_EXPORTED +
+        ["crate_universe"]
     )
-    add_default_toolchains(
-        excludes = toolchain_excludes,
-        bzlmod = bzlmod,
-    )
+    add_default_repositories(excludes = excludes)
+
+internal_repositories = module_extension(
+    implementation = _internal_repositories_impl,
+    doc = """(Internal use only) Wraps the add_default_repositories repository
+    rule into a bzlmod module extension, excluding repositories that are
+    already covered by modules, drake_dep_repositories, and crate_universe.""",
+)
+
+def _internal_crate_universe_repositories_impl(module_ctx):
+    crate_universe_repositories(mirrors = DEFAULT_MIRRORS)
+
+internal_crate_universe_repositories = module_extension(
+    implementation = _internal_crate_universe_repositories_impl,
+    doc = """(Internal use only) Wraps the crate_universe repository rules to
+    be usable as a bzlmod module extension.""",
+)
