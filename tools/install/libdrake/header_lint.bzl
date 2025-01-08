@@ -10,13 +10,12 @@ load("//tools/skylark:sh.bzl", "sh_test")
 # without consulting Drake's build system maintainers (see #7451). Keep this
 # list in sync with test/header_dependency_test.py.
 _ALLOWED_EXTERNALS = [
-    "eigen",
-    "fmt",
-    "lcm",
-    "spdlog",
-
-    # The entries that follow are defects; we should work to remove them.
-    "zlib",
+    "+drake_dep_repositories+eigen",
+    "+drake_dep_repositories+fmt",
+    "+drake_dep_repositories+spdlog",
+    # N.B. LCM is not allowed by the header_dependency_test; our allowed use
+    # of LCM is only for linking to, not for direct inclusion in our headers.
+    "+drake_dep_repositories+lcm",
 ]
 
 # Drake's allowed list of public preprocessor definitions. The only things

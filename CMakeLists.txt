@@ -13,7 +13,8 @@ project(drake
 # (e.g., `-DCMAKE_BUILD_TYPE=Release`) and install Drake using those settings.
 #
 # We'll do that by converting the settings to generated Bazel inputs:
-# - a `WORKSPACE.bazel` file that specifies dependencies; and
+# - a generated `MODULE.bazel` that depends on the Drake module and customizes
+#   the toolchain selection.
 # - a `.bazelrc` file that specifies configuration choices.
 # and then running the `@drake//:install` program from that temporary workspace.
 
@@ -77,9 +78,8 @@ else()
   endif()
 endif()
 
-# The version passed to find_package(Bazel) should match the
-# minimum_bazel_version value in the call to versions.check() in WORKSPACE.
-set(MINIMUM_BAZEL_VERSION 7.4)
+# This version number should match bazel_compatibility in MODULE.bazel.
+set(MINIMUM_BAZEL_VERSION 7.4.1)
 find_package(Bazel ${MINIMUM_BAZEL_VERSION} MODULE)
 if(NOT Bazel_FOUND)
   set(Bazel_EXECUTABLE "${PROJECT_SOURCE_DIR}/third_party/com_github_bazelbuild_bazelisk/bazelisk.py")
@@ -355,17 +355,10 @@ function(symlink_external_repository_libs NAME TARGET)
   file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
 endfunction()
 
-set(BAZEL_WORKSPACE_EXTRA)
-set(BAZEL_WORKSPACE_EXCLUDES)
-
-# Our cmake/WORKSPACE.bzlmod always provides @python.
-list(APPEND BAZEL_WORKSPACE_EXCLUDES "python")
-
 macro(override_repository NAME)
   set(repo "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
-  string(APPEND BAZEL_WORKSPACE_EXTRA
-    "local_repository(name = '${NAME}', path = '${repo}')\n")
-  list(APPEND BAZEL_WORKSPACE_EXCLUDES "${NAME}")
+  string(APPEND BAZEL_REPO_ENV
+      " --override_repository=+drake_dep_repositories+${NAME}=${repo}")
 endmacro()
 
 option(WITH_USER_EIGEN "Use user-provided Eigen3" OFF)
@@ -507,7 +500,7 @@ endif()
 # N.B. If you are testing the CMake API and making changes to `installer.py`,
 # you can change this target to something more lightweight, such as
 # `//tools/install/dummy:install`.
-set(BAZEL_INSTALL_TARGET //:install)
+set(BAZEL_INSTALL_TARGET "@drake//:install")
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install" CACHE STRING
@@ -553,10 +546,8 @@ endforeach()
 # however, that the macOS wheel builds also need to know this path, so if it
 # ever changes, tools/wheel/macos/build-wheel.sh will also need to be updated.
 configure_file(cmake/bazel.rc.in drake_build_cwd/.bazelrc @ONLY)
-configure_file(cmake/WORKSPACE.bzlmod.in drake_build_cwd/WORKSPACE.bzlmod @ONLY)
+configure_file(cmake/MODULE.bazel.in drake_build_cwd/MODULE.bazel @ONLY)
 file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc SYMBOLIC)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/MODULE.bazel" drake_build_cwd/MODULE.bazel SYMBOLIC)
-file(CREATE_LINK "${PROJECT_SOURCE_DIR}/WORKSPACE" drake_build_cwd/WORKSPACE SYMBOLIC)
 
 find_package(Git)
 

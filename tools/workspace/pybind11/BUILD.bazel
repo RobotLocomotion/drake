@@ -15,6 +15,14 @@ load(
     "generate_pybind_documentation_header",
 )
 
+# This alias provides a single point of control for defining which pybind11
+# library our tools/skylark/pybind.bzl macro should use.
+alias(
+    name = "pybind11",
+    actual = "@pybind11",
+    visibility = ["//visibility:public"],
+)
+
 exports_files(
     [
         "pybind11-config.cmake",
