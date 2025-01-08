@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -18,15 +19,19 @@ namespace systems {
 namespace sensors {
 namespace {
 
+using Eigen::Vector3d;
 using geometry::FrameId;
+using geometry::GeometryFrame;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::PerceptionProperties;
 using geometry::SceneGraph;
+using geometry::SourceId;
 using geometry::Sphere;
 using geometry::internal::DummyRenderEngine;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
 using geometry::render::RenderLabel;
 using math::RigidTransform;
 using multibody::AddMultibodyPlantSceneGraph;
@@ -119,8 +124,13 @@ class RgbdSensorAsyncTest : public ::testing::Test {
 
   /* Checks that all four image output ports of the given system are producing a
   "clear" image of the correct size, and the output_time is expected_time. */
-  void ExpectClearImages(const System<double>& system,
-                         const Context<double>& context, double expected_time) {
+  void ExpectClearImages(
+      const System<double>& system, const Context<double>& context,
+      double expected_time,
+      std::optional<geometry::render::ColorRenderCamera> color_camera =
+          std::nullopt,
+      std::optional<geometry::render::DepthRenderCamera> depth_camera =
+          std::nullopt) {
     SCOPED_TRACE(fmt::format("... at context.time = {}", context.get_time()));
 
     const auto& color_image =
@@ -134,13 +144,19 @@ class RgbdSensorAsyncTest : public ::testing::Test {
     const Eigen::VectorXd& image_time =
         system.GetOutputPort("image_time").Eval(context);
 
-    const auto& color_intrinsics = color_camera_.core().intrinsics();
+    if (!color_camera) {
+      color_camera = color_camera_;
+    }
+    const auto& color_intrinsics = color_camera->core().intrinsics();
     ASSERT_EQ(color_image.width(), color_intrinsics.width());
     ASSERT_EQ(color_image.height(), color_intrinsics.height());
     ASSERT_EQ(label_image.width(), color_intrinsics.width());
     ASSERT_EQ(label_image.height(), color_intrinsics.height());
 
-    const auto& depth_intrinsics = depth_camera_.core().intrinsics();
+    if (!depth_camera) {
+      depth_camera = depth_camera_;
+    }
+    const auto& depth_intrinsics = depth_camera->core().intrinsics();
     ASSERT_EQ(depth32_image.width(), depth_intrinsics.width());
     ASSERT_EQ(depth32_image.height(), depth_intrinsics.height());
     ASSERT_EQ(depth16_image.width(), depth_intrinsics.width());
@@ -179,13 +195,13 @@ TEST_F(RgbdSensorAsyncTest, ConstructorAndSimpleAccessors) {
                             output_delay, color_camera_, depth_camera_,
                             render_label_image);
 
-  EXPECT_EQ(dut.parent_id(), parent_id);
-  EXPECT_EQ(dut.X_PB().GetAsMatrix34(), X_PB.GetAsMatrix34());
+  EXPECT_EQ(dut.default_parent_frame_id(), parent_id);
+  EXPECT_EQ(dut.default_X_PB().GetAsMatrix34(), X_PB.GetAsMatrix34());
   EXPECT_EQ(dut.fps(), fps);
   EXPECT_EQ(dut.capture_offset(), capture_offset);
   EXPECT_EQ(dut.output_delay(), output_delay);
-  EXPECT_TRUE(dut.color_camera().has_value());
-  EXPECT_TRUE(dut.depth_camera().has_value());
+  EXPECT_TRUE(dut.default_color_render_camera().has_value());
+  EXPECT_TRUE(dut.default_depth_render_camera().has_value());
 
   EXPECT_EQ(dut.get_input_port().get_name(), "geometry_query");
   EXPECT_EQ(dut.color_image_output_port().get_name(), "color_image");
@@ -199,7 +215,118 @@ TEST_F(RgbdSensorAsyncTest, ConstructorAndSimpleAccessors) {
   simulator.Initialize();
 }
 
-// Confirm that we fail-fast when geometry changes post-initialze.
+TEST_F(RgbdSensorAsyncTest, DeprecatedMethods) {
+  SceneGraph<double> scene_graph;
+  const FrameId parent_id = SceneGraph<double>::world_frame_id();
+  const RigidTransform<double> X_PB(Eigen::Vector3d(1, 2, 3));
+  const double fps = 4;
+  const double capture_offset = 0.001;
+  const double output_delay = 0.200;
+  const bool render_label_image = true;
+  const RgbdSensorAsync dut(&scene_graph, parent_id, X_PB, fps, capture_offset,
+                            output_delay, color_camera_, depth_camera_,
+                            render_label_image);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  EXPECT_EQ(dut.parent_id(), parent_id);
+  EXPECT_EQ(dut.X_PB().GetAsMatrix34(), X_PB.GetAsMatrix34());
+  EXPECT_EQ(dut.fps(), fps);
+  EXPECT_EQ(dut.capture_offset(), capture_offset);
+  EXPECT_EQ(dut.output_delay(), output_delay);
+  EXPECT_TRUE(dut.color_camera().has_value());
+  EXPECT_TRUE(dut.depth_camera().has_value());
+#pragma GCC diagnostic pop
+}
+
+TEST_F(RgbdSensorAsyncTest, Parameters) {
+  SceneGraph<double> scene_graph;
+  const FrameId parent_id = SceneGraph<double>::world_frame_id();
+  const RigidTransform<double> X_PB(Eigen::Vector3d(1, 2, 3));
+  const double fps = 4;
+  const double capture_offset = 0.001;
+  const double output_delay = 0.200;
+  const bool render_label_image = true;
+  RgbdSensorAsync dut(&scene_graph, parent_id, X_PB, fps, capture_offset,
+                      output_delay, color_camera_, depth_camera_,
+                      render_label_image);
+
+  // Prepare some replacement value items.
+  SourceId source_id;
+  const GeometryFrame frame("some_frame");
+  source_id = scene_graph.RegisterSource("source");
+  scene_graph.RegisterFrame(source_id, frame);
+  // Replacement cameras have arbitrary tiny width and height.
+  ColorRenderCamera tiny_color_camera(
+      {kRendererName,
+       {16, 12, M_PI / 4},
+       {0.1, 10.0},
+       RigidTransform<double>{Vector3d{1, 0, 0}}},
+      false);
+  DepthRenderCamera tiny_depth_camera(
+      {kRendererName,
+       {8, 6, M_PI / 6},
+       {0.1, 10.0},
+       RigidTransform<double>{Vector3d{-1, 0, 0}}},
+      {0.1, 10});
+
+  // Define some local sugar to extract camera intrinsics width.
+  auto width = [](const auto& camera) {
+    return camera->core().intrinsics().width();
+  };
+
+  // Create a context with the constructed default values.
+  auto context = dut.CreateDefaultContext();
+
+  // Change the default values.
+  dut.set_default_parent_frame_id(frame.id());
+  dut.set_default_X_PB(RigidTransform<double>::Identity());
+  dut.set_default_color_render_camera(tiny_color_camera);
+  dut.set_default_depth_render_camera(tiny_depth_camera);
+
+  // Defaults now differ from the parameters in the context created above.
+  EXPECT_NE(dut.default_parent_frame_id(), dut.GetParentFrameId(*context));
+  EXPECT_FALSE(CompareMatrices(dut.default_X_PB().GetAsMatrix4(),
+                               dut.GetX_PB(*context).GetAsMatrix4()));
+  EXPECT_NE(width(dut.default_color_render_camera()),
+            width(dut.GetColorRenderCamera(*context)));
+  EXPECT_NE(width(dut.default_depth_render_camera()),
+            width(dut.GetDepthRenderCamera(*context)));
+
+  // Create a new context with the changed default values.
+  auto other_context = dut.CreateDefaultContext();
+
+  // The new context matches the changed defaults.
+  EXPECT_EQ(dut.default_parent_frame_id(),
+            dut.GetParentFrameId(*other_context));
+  EXPECT_TRUE(CompareMatrices(dut.default_X_PB().GetAsMatrix4(),
+                              dut.GetX_PB(*other_context).GetAsMatrix4()));
+  EXPECT_EQ(width(dut.default_color_render_camera()),
+            width(dut.GetColorRenderCamera(*other_context)));
+  EXPECT_EQ(width(dut.default_depth_render_camera()),
+            width(dut.GetDepthRenderCamera(*other_context)));
+
+  // Push the parameter values from the original context into the new context,
+  // to test parameter mutating methods.
+  dut.SetParentFrameId(other_context.get(), dut.GetParentFrameId(*context));
+  dut.SetX_PB(other_context.get(), dut.GetX_PB(*context));
+  dut.SetColorRenderCamera(other_context.get(),
+                           *dut.GetColorRenderCamera(*context));
+  dut.SetDepthRenderCamera(other_context.get(),
+                           *dut.GetDepthRenderCamera(*context));
+
+  // Now, the new context differs from the changed defaults.
+  EXPECT_NE(dut.default_parent_frame_id(),
+            dut.GetParentFrameId(*other_context));
+  EXPECT_FALSE(CompareMatrices(dut.default_X_PB().GetAsMatrix4(),
+                               dut.GetX_PB(*other_context).GetAsMatrix4()));
+  EXPECT_NE(width(dut.default_color_render_camera()),
+            width(dut.GetColorRenderCamera(*other_context)));
+  EXPECT_NE(width(dut.default_depth_render_camera()),
+            width(dut.GetDepthRenderCamera(*other_context)));
+}
+
+// Confirm that we fail-fast when geometry changes post-initialize.
 TEST_F(RgbdSensorAsyncTest, GeometryVersionFailFast) {
   // Prepare a full simulation.
   DiagramBuilder<double> builder;
@@ -251,10 +378,10 @@ TEST_F(RgbdSensorAsyncTest, ConstructorColorOnly) {
                             output_delay, color_camera_, std::nullopt,
                             render_label_image);
 
-  EXPECT_TRUE(dut.color_camera().has_value());
+  EXPECT_TRUE(dut.default_color_render_camera().has_value());
   EXPECT_NO_THROW(dut.color_image_output_port());
 
-  EXPECT_FALSE(dut.depth_camera().has_value());
+  EXPECT_FALSE(dut.default_depth_render_camera().has_value());
   EXPECT_THROW(dut.depth_image_32F_output_port(), std::exception);
   EXPECT_THROW(dut.depth_image_16U_output_port(), std::exception);
   EXPECT_THROW(dut.label_image_output_port(), std::exception);
@@ -275,11 +402,11 @@ TEST_F(RgbdSensorAsyncTest, ConstructorDepthOnly) {
                             output_delay, std::nullopt, depth_camera_,
                             render_label_image);
 
-  EXPECT_TRUE(dut.depth_camera().has_value());
+  EXPECT_TRUE(dut.default_depth_render_camera().has_value());
   EXPECT_NO_THROW(dut.depth_image_32F_output_port());
   EXPECT_NO_THROW(dut.depth_image_16U_output_port());
 
-  EXPECT_FALSE(dut.color_camera().has_value());
+  EXPECT_FALSE(dut.default_color_render_camera().has_value());
   EXPECT_THROW(dut.color_image_output_port(), std::exception);
   EXPECT_THROW(dut.label_image_output_port(), std::exception);
 
@@ -410,6 +537,89 @@ TEST_F(RgbdSensorAsyncTest, RenderBackgroundColor) {
                   .CalcUnrestrictedUpdate(simulator.get_context(),
                                           update_events, next_state_out.get())
                   .succeeded());
+}
+
+// Check that processed image sizes match the configured camera parameters in
+// the context. The default images returned during initialization are still 0
+// size.
+TEST_F(RgbdSensorAsyncTest, ChangeImageSize) {
+  // Add the plant, scene_graph, and renderer.
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0);
+  scene_graph.AddRenderer(kRendererName,
+                          std::make_unique<SimpleRenderEngine>());
+
+  // Add the RgbdSensorAsync and export all of its output ports.
+  const FrameId parent_id = SceneGraph<double>::world_frame_id();
+  const RigidTransform<double> X_PB(Eigen::Vector3d(1, 2, 3));
+  const double fps = 4;
+  const double capture_offset = 0.001;
+  const double output_delay = 0.200;
+  const bool render_label_image = true;
+  const auto* dut = builder.AddSystem<RgbdSensorAsync>(
+      &scene_graph, parent_id, X_PB, fps, capture_offset, output_delay,
+      color_camera_, depth_camera_, render_label_image);
+  builder.Connect(scene_graph.get_query_output_port(), dut->get_input_port());
+  for (OutputPortIndex i{0}; i < dut->num_output_ports(); ++i) {
+    const auto& output_port = dut->get_output_port(i);
+    builder.ExportOutput(output_port, output_port.get_name());
+  }
+
+  // Prepare the simulation.
+  plant.Finalize();
+  Simulator<double> simulator(builder.Build());
+
+  // Change the image size parameter in the context.
+  const int new_width = 404;
+  const int new_height = 202;
+  auto& context = simulator.get_system().GetMutableSubsystemContext(
+      *dut, &simulator.get_mutable_context());
+  const auto& old_color_camera = dut->GetColorRenderCamera(context);
+  const auto& old_depth_camera = dut->GetDepthRenderCamera(context);
+  const ColorRenderCamera new_color_camera{RenderCameraCore(
+      old_color_camera->core().renderer_name(),
+      CameraInfo{new_width, new_height,
+                 old_color_camera->core().intrinsics().fov_y()},
+      old_color_camera->core().clipping(),
+      old_color_camera->core().sensor_pose_in_camera_body())};
+  const DepthRenderCamera new_depth_camera{
+      RenderCameraCore(
+          old_depth_camera->core().renderer_name(),
+          CameraInfo{new_width, new_height,
+                     old_depth_camera->core().intrinsics().fov_y()},
+          old_depth_camera->core().clipping(),
+          old_depth_camera->core().sensor_pose_in_camera_body()),
+      old_depth_camera->depth_range()};
+  dut->SetColorRenderCamera(&context, new_color_camera);
+  dut->SetDepthRenderCamera(&context, new_depth_camera);
+
+  // Confirm that rendering uses the new image size.  The timing sequence of
+  // simulation is cribbed from the RenderBackgroundColor test.
+
+  // Prior to initialization, the output image is empty.
+  simulator.get_mutable_context().SetTime(0.100);
+  ExpectDefaultImages(simulator.get_system(), simulator.get_context());
+
+  // The output image is still empty as we pass through various initialization
+  // and update events.
+  for (double time : {0.101, 0.202, 0.252, 0.450}) {
+    simulator.AdvanceTo(time);
+    ExpectDefaultImages(simulator.get_system(), simulator.get_context());
+  }
+
+  // After the second tock event, we see the engine's "clear" color, rendered
+  // at the new sizes.
+  simulator.AdvanceTo(0.452);
+  ExpectClearImages(simulator.get_system(), simulator.get_context(), 0.251,
+                    new_color_camera, new_depth_camera);
+
+  // Revert to original camera size; see output size change back.
+  dut->SetColorRenderCamera(&context, *old_color_camera);
+  dut->SetDepthRenderCamera(&context, *old_depth_camera);
+
+  simulator.AdvanceTo(0.702);
+  ExpectClearImages(simulator.get_system(), simulator.get_context(), 0.501,
+                    old_color_camera, old_depth_camera);
 }
 
 }  // namespace
