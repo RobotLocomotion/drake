@@ -112,7 +112,7 @@ class TestBazelWrapper(unittest.TestCase):
         self.assertEqual(detail.exception.name, "bazel")
         self.assertSequenceEqual(
             detail.exception.args,
-            ["bazel", new_magic, "dummy_arg"])
+            ["bazel", "--enable_workspace=true", new_magic, "dummy_arg"])
         self.assertEqual("", self._stderr.decode("utf-8"))
 
     def test_subprocess(self):

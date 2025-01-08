@@ -1,6 +1,3 @@
-# TODO(#20731) Stop using WORKSPACE (and WORKSPACE.bzlmod).
-common --enable_workspace=true
-
 # Require all rules to be loaded in MODULE.bazel -- don't allow any legacy
 # implicit loads built-in to Bazel itself to take effect.
 common --incompatible_autoload_externally=
