@@ -39,6 +39,8 @@ cd "$(dirname $0)/../../.."
 readonly drake_python="$(bazel info output_base).drake_python"
 readonly project="${drake_python}/project"
 readonly venv_pdm="${drake_python}/venv.pdm"
+readonly python="${venv_pdm}/bin/python"
+readonly workspace="$(pwd)/tools/workspace/python"
 
 # If committing, check that the working tree is clean (enough). Note that the
 # lock file is ignored.
@@ -47,11 +49,20 @@ readonly venv_pdm="${drake_python}/venv.pdm"
 # Ensure venv exists.
 bazel fetch @python --force
 
+# Determine if PDM itself is up to date; if not, update its pin.
+readonly venv_requirements="./setup/python/requirements.txt"
+files_to_commit+=( "$(
+    "${python}" "${workspace}/update_requirements.py" "${venv_requirements}"
+)" )
+
+# Ensure venv is up to date (e.g. if the previous step updated PDM).
+bazel fetch @python
+
 # Remove and recreate the lock file.
 readonly lockfile="./setup/python/pdm.lock"
 rm -f "${lockfile}"
 "${venv_pdm}/bin/pdm" lock -p "${project}" -L "${lockfile}"
-files_to_commit+=($(git diff --name-only HEAD -- "${lockfile}"))
+files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then
