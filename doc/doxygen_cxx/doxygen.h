@@ -236,6 +236,7 @@ namespace solvers {
  This section provides an inventory of environment variables relevant to Drake.
 
  - <b>\ref allow_network "DRAKE_ALLOW_NETWORK"</b>
+ - <b>\ref drake_disable_cpu_features "DRAKE_DISABLE_CPU_FEATURES"</b>
  - <b>\ref drake::Parallelism "DRAKE_NUM_THREADS"</b>
  - <b>\ref pydrake_python_logging "DRAKE_PYTHON_LOGGING"</b>
  - <b>\ref drake::common::FindResource() "DRAKE_RESOURCE_ROOT"</b>
@@ -246,6 +247,7 @@ namespace solvers {
  - <b>HOME</b>
  - <b>\ref drake::solvers::MosekSolver "MOSEKLM_LICENSE_FILE"</b> (see also
    <a href="https://docs.mosek.com/latest/licensing/client-setup.html">upstream documentation</a>)
+ - <b>\ref drake_disable_cpu_features "NPY_DISABLE_CPU_FEATURES"</b>
  - <b>OMP_NUM_THREADS</b> (see
    <a href="https://www.openmp.org/spec-html/5.0/openmpse50.html">upstream documentation</a>)
  - <b>\ref drake::multibody::PackageMap::PopulateFromRosPackagePath() "ROS_PACKAGE_PATH"</b> (see also
