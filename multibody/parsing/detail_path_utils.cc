@@ -78,6 +78,22 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
 
   result = result.lexically_normal();
 
+  // Expand user home directory if exists.
+  if (result.string().find('~') != std::string::npos) {
+    const char* home = getenv("HOME");
+    if (home) {
+        std::string result_str = result.string();
+        result_str.replace(result_str.find('~'), 1, home);
+        result = fs::path(result_str);
+    } else {
+      diagnostic.Error(fmt::format(
+          "URI '{}' refers to a home directory, but the HOME environment "
+          "variable is not set.",
+          uri));
+      return {};
+    }
+  }
+
   if (!fs::exists(result)) {
       diagnostic.Error(fmt::format(
           "URI '{}' resolved to '{}' which does not exist.",
