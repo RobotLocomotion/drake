@@ -1,3 +1,8 @@
+# When compiling Drake as the main module (i.e., not as a Bazel dependency of
+# something else) we will default to using pkg-config to locate our public
+# C++ dependencies (eigen, fmt, spdlog).
+common --@drake//tools/flags:public_repo_default=pkgconfig
+
 # Require all rules to be loaded in MODULE.bazel -- don't allow any legacy
 # implicit loads built-in to Bazel itself to take effect.
 common --incompatible_autoload_externally=

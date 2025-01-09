@@ -25,7 +25,7 @@ def _run_pkg_config(repository_ctx, command_line, pkg_config_paths):
     tokens = [x for x in result.stdout.strip().split(" ") if x]
     return struct(tokens = tokens, error = None)
 
-def setup_pkg_config_repository(repository_ctx):
+def _maybe_setup_pkg_config_repository(repository_ctx):
     """This is the macro form of the pkg_config_repository() rule below.
     Refer to that rule's API documentation for details.
 
@@ -68,26 +68,6 @@ def setup_pkg_config_repository(repository_ctx):
     # Check if we can find the required *.pc file of any version.
     result = _run_pkg_config(repository_ctx, args, pkg_config_paths)
     if result.error != None:
-        defer_error_os_names = getattr(
-            repository_ctx.attr,
-            "defer_error_os_names",
-            [],
-        )
-        if repository_ctx.os.name in defer_error_os_names:
-            repository_ctx.file(
-                "BUILD.bazel",
-                """
-load("@drake//tools/skylark:cc.bzl", "cc_library")
-cc_library(
-    name = {library_name},
-    srcs = ["pkg_config_failed.cc"],
-    visibility = ["//visibility:public"],
-)
-                """.format(
-                    library_name = repr(library_name),
-                ),
-            )
-            return struct(value = True, error = None)
         return result
 
     # If we have a minimum version, enforce that.
@@ -306,7 +286,45 @@ cc_library(
     )
     repository_ctx.template("BUILD.bazel", template, substitutions)
 
-    return struct(value = True, error = None)
+    return struct(error = None)
+
+def setup_pkg_config_repository(repository_ctx):
+    # Check if pkg-config works.
+    error = _maybe_setup_pkg_config_repository(repository_ctx).error
+    if error == None:
+        return struct(error = None)
+
+    # If not, still emit a valid BUILD file but with a library that will fail
+    # at build-time (not analysis-time) with the error message.
+    library_name = repository_ctx.name.split("+")[-1]
+    repository_ctx.file("error.log", """
+******************************************************************************
+Error in Drake pkg_config repository rule for @{library_name}:
+{error}
+******************************************************************************
+""".format(library_name = library_name, error = error).strip())
+    repository_ctx.file("BUILD.bazel", """
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+genrule(
+    name = "_",
+    srcs = ["error.log"],
+    outs = ["error.h"],
+    cmd = "cat $< 2>&1 && false",
+)
+cc_library(
+    name = {library_name},
+    srcs = [":error.h"],
+    visibility = ["//visibility:public"],
+)""".format(library_name = repr(library_name), error = repr(error)))
+
+    defer_error_os_names = getattr(
+        repository_ctx.attr,
+        "defer_error_os_names",
+        [],
+    )
+    if repository_ctx.os.name in defer_error_os_names:
+        error = None
+    return struct(error = error)
 
 def _impl(repository_ctx):
     result = setup_pkg_config_repository(repository_ctx)
