@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -605,8 +606,7 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
-    return !IsNaN() &&
-           AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality();
+    return boolean<T>(!CreateInvalidityReport().has_value());
   }
 
   /// Re-expresses `this` rotational inertia `I_BP_E` in place to `I_BP_A`.
@@ -978,32 +978,25 @@ class RotationalInertia {
     return Ixx + epsilon >= 0 && Iyy + epsilon >= 0 && Izz + epsilon >= 0;
   }
 
+  // Returns an error string if `this` RotationalInertia is verifiably invalid.
+  // Note: Not returning an error string does not _guarantee_ validity.
+  std::optional<std::string> CreateInvalidityReport() const;
+
+  // No exception is thrown if type T is Symbolic.
+  void ThrowIfNotPhysicallyValid(const char* func_name) {
+    if constexpr (scalar_predicate<T>::is_bool) {
+      ThrowIfNotPhysicallyValidImpl(func_name);
+    }
+  }
+
+  // Throw an exception if CreateInvalidityReport() returns an error string.
+  void ThrowIfNotPhysicallyValidImpl(const char* func_name) const;
+
   // ==========================================================================
   // The following set of methods, ThrowIfSomeCondition(), are used within
   // assertions or demands. We do not try to attempt a smart way throw based on
   // a given symbolic::Formula but instead we make these methods a no-throw
   // for non-numeric types.
-
-  // This method is used to demand the physical validity of a RotationalInertia
-  // at either construction or after an operation that could lead to
-  // non-physical results when a user provides data that is not valid. For
-  // numerical T-types this would imply computing the rotational inertia
-  // eigenvalues and checking if they are positive and satisfy the triangle
-  // inequality.
-  template <typename T1 = T>
-  typename std::enable_if_t<scalar_predicate<T1>::is_bool>
-  ThrowIfNotPhysicallyValid(const char* func_name) {
-    DRAKE_DEMAND(func_name != nullptr);
-    if (!CouldBePhysicallyValid()) ThrowNotPhysicallyValid(func_name);
-  }
-
-  // SFINAE for non-numeric types. See documentation in the implementation for
-  // numeric types.
-  template <typename T1 = T>
-  typename std::enable_if_t<!scalar_predicate<T1>::is_bool>
-  ThrowIfNotPhysicallyValid(const char*) {}
-
-  [[noreturn]] void ThrowNotPhysicallyValid(const char* func_name) const;
 
   // Throws an exception if a rotational inertia is multiplied by a negative
   // number - which implies that the resulting rotational inertia is invalid.

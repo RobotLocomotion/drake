@@ -193,9 +193,8 @@ class GeometryStateTester {
     return *state_->geometry_engine_;
   }
 
-  const unordered_map<string, copyable_unique_ptr<render::RenderEngine>>&
-  render_engines() const {
-    return state_->render_engines_;
+  int RendererCount() const {
+    return state_->RendererCount();
   }
 
   const GeometryVersion& geometry_version() const {
@@ -4956,7 +4955,7 @@ class GeometryStateNoRendererTest : public GeometryStateTestBase,
 // is no renderer.
 TEST_F(GeometryStateNoRendererTest, PerceptionRoleWithoutRenderer) {
   const InternalGeometry& geometry = *gs_tester_.GetGeometry(geometries_[0]);
-  ASSERT_EQ(gs_tester_.render_engines().size(), 0u);
+  ASSERT_EQ(gs_tester_.RendererCount(), 0);
   EXPECT_TRUE(geometry.has_perception_role());
 
   EXPECT_EQ(

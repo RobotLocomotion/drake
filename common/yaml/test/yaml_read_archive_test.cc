@@ -181,6 +181,58 @@ TEST_P(YamlReadArchiveTest, DoubleMissing) {
   EXPECT_EQ(x.value, kNominalDouble);
 }
 
+TEST_P(YamlReadArchiveTest, Int) {
+  const auto test = [](const std::string& value, int expected) {
+    const auto& x = AcceptNoThrow<IntStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected);
+  };
+
+  // Plain scalars.
+  test("0", 0);
+  test("1", 1);
+  test("-1", -1);
+  test("30000", 30000);
+
+  // Strings.
+  test("'0'", 0);
+  test("'1'", 1);
+  test("'-1'", -1);
+  test("'30000'", 30000);
+
+  // Float scalars.
+  // TODO(jwnimmer-tri) We'd like these to work. (They do in Python.)
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("0.0")), ".*not parse.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("1.0")), ".*not parse.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("-1.0")), ".*not parse.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<IntStruct>(LoadSingleValue("3.0e+4")), ".*not parse.*");
+}
+
+TEST_P(YamlReadArchiveTest, Bool) {
+  const auto test = [](const std::string& value, bool expected) {
+    const auto& x = AcceptNoThrow<BoolStruct>(LoadSingleValue(value));
+    EXPECT_EQ(x.value, expected);
+  };
+
+  // Plain scalars in canonical form.
+  test("true", true);
+  test("false", false);
+
+  // Strings.
+  test("'true'", true);
+  test("'false'", false);
+
+  // Yaml's insane non-canonical plain scalars. (This is not the complete set,
+  // rather just a couple as a sanity check.)
+  // TODO(jwnimmer-tri) Our Python parser uses YAML 1.2 not YAML 1.1, so ends
+  // up rejecting these. We should probably agree one way or another?
+  test("yes", true);
+  test("no", false);
+}
+
 TEST_P(YamlReadArchiveTest, Bytes) {
   const auto test = [](const std::string& value, const std::string& expected) {
     const auto& x = AcceptNoThrow<BytesStruct>(LoadSingleValue(value));

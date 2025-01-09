@@ -51,6 +51,7 @@ def main(argv, execvp, write_stderr, popen):
     new_magic = "--aspects=@drake//tools/clion:aspect.bzl%intellij_info_aspect"
     if old_magic in args:
         args[args.index(old_magic)] = new_magic
+        args.insert(0, "--enable_workspace=true")
 
     # If stream editing is disabled, just delegate everything to Bazel.
     nostream_magic = "--nodrake_error_rewriting"

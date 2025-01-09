@@ -1,7 +1,8 @@
+import os
 import unittest
 import warnings
 
-from lcm import LCM
+from lcm import EventLog, LCM
 
 
 class Test(unittest.TestCase):
@@ -14,3 +15,11 @@ class Test(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             lcm.publish("TEST_CHANNEL", b"")
+
+    def test_event_log(self):
+        """
+        Ensures no crashes on construction / destruction.
+        """
+        dut = EventLog(path=f"{os.environ['TEST_TMPDIR']}/lcm.log", mode="w")
+        dut.close()
+        del dut

@@ -268,9 +268,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
   unique_ptr<Shape> shape_no_radius =
       MakeShapeFromSdfGeometry(*no_radius_geometry);
   EXPECT_EQ(shape_no_radius, nullptr);
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*Element <radius> is required within element <drake:capsule>."));
-  ClearDiagnostics();
 
   unique_ptr<sdf::Geometry> no_length_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
@@ -279,9 +278,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
   unique_ptr<Shape> shape_no_length =
       MakeShapeFromSdfGeometry(*no_length_geometry);
   EXPECT_EQ(shape_no_length, nullptr);
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*Element <length> is required within element <drake:capsule>."));
-  ClearDiagnostics();
 }
 
 // Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
@@ -342,9 +340,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "</drake:ellipsoid>");
   unique_ptr<Shape> shape_no_a = MakeShapeFromSdfGeometry(*no_a_geometry);
   EXPECT_EQ(shape_no_a, nullptr);
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*Element <a> is required within element <drake:ellipsoid>."));
-  ClearDiagnostics();
 
   unique_ptr<sdf::Geometry> no_b_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -353,9 +350,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "</drake:ellipsoid>");
   unique_ptr<Shape> shape_no_b = MakeShapeFromSdfGeometry(*no_b_geometry);
   EXPECT_EQ(shape_no_b, nullptr);
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*Element <b> is required within element <drake:ellipsoid>."));
-  ClearDiagnostics();
 
   unique_ptr<sdf::Geometry> no_c_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
@@ -364,9 +360,8 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "</drake:ellipsoid>");
   unique_ptr<Shape> shape_no_c = MakeShapeFromSdfGeometry(*no_c_geometry);
   EXPECT_EQ(shape_no_c, nullptr);
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*Element <c> is required within element <drake:ellipsoid>."));
-  ClearDiagnostics();
 }
 
 
@@ -441,10 +436,9 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometryIsotropicError) {
       "</mesh>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   EXPECT_EQ(shape, nullptr);
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*Drake meshes only support isotropic scaling. Therefore"
       " all three scaling factors must be exactly equal."));
-  ClearDiagnostics();
 }
 
 // Verify MakeShapeFromSdfGeometry can make a convex mesh from an sdf::Geometry.
@@ -1071,9 +1065,8 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
     internal::MakeVisualPropertiesFromSdfVisual(sdf_diagnostic_,
         *sdf_visual, [](const SDFormatDiagnostic&, std::string filename)
             -> std::string {return {};});
-    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
         ".*Unable to locate the texture file: empty.png"));
-    ClearDiagnostics();
   }
 
   // Case: drake:{illustration|perception}_properties is missing the enabled
@@ -1244,7 +1237,7 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
           "  <drake:accepting_renderer> </drake:accepting_renderer>"
           "</visual>");
     MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
         ".*<drake:accepting_renderer> tag given without any name"));
   }
 
@@ -1260,8 +1253,6 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
     EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
         ".*<drake:accepting_renderer> specified .* disabled perception role."));
   }
-
-  ClearDiagnostics();
 }
 
 // Verify that the <drake:*_properties> are accounted for in disabling sets of
@@ -1548,11 +1539,10 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     std::optional<ProximityProperties> properties =
         MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
     EXPECT_FALSE(properties.has_value());
-    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
         ".*A <collision> geometry has defined the unsupported tag "
         "<drake:soft_hydroelastic>. Please change it to "
         "<drake:compliant_hydroelastic>."));
-    ClearDiagnostics();
   }
 
   // Case: specifies both -- should be an error.
@@ -1565,10 +1555,9 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     std::optional<ProximityProperties> properties =
         MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
     EXPECT_FALSE(properties.has_value());
-    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
         ".*A <collision> geometry has defined mutually-exclusive tags "
         ".*rigid.* and .*compliant.*"));
-    ClearDiagnostics();
   }
 
   // Case: has no drake coefficients, only mu & m2 in ode: contains mu, mu2

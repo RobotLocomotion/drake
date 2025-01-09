@@ -14,10 +14,6 @@ common @BAZEL_REPO_ENV@
 # confusion for the CMake use case.
 build --symlink_prefix=/
 
-# Use the source code and BUILD files from the Drake source tree.
-# The WORKSPACE lives in the build directory, so by has no packages otherwise.
-build --package_path="%workspace%:@PROJECT_SOURCE_DIR@"
-
 # Fix macOS per https://github.com/bazelbuild/bazel/issues/14294.
 build --notrim_test_configuration
 

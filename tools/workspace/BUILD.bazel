@@ -151,32 +151,32 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "highway_internal",
     "libjpeg_turbo_internal",
 ]] + select({
-    "//conditions:default": ["@csdp_internal//:install"],
-    "//tools:no_csdp": [],
+    "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],
+    "//conditions:default": [],
 }) + select({
-    "//conditions:default": [
+    "//tools/workspace/clarabel_cpp_internal:enabled": [
         "//tools/workspace/crate_universe:install",
         "@clarabel_cpp_internal//:install",
     ],
-    "//tools:no_clarabel": [],
-}) + select({
-    "//tools:with_gurobi": ["@gurobi//:install"],
     "//conditions:default": [],
 }) + select({
-    "//tools:with_mosek": ["@mosek//:install"],
+    "//tools/workspace/gurobi:enabled": ["@gurobi//:install"],
     "//conditions:default": [],
 }) + select({
-    "//tools:with_snopt": ["//tools/workspace/snopt:install"],
+    "//tools/workspace/mosek:enabled": ["@mosek//:install"],
     "//conditions:default": [],
 }) + select({
-    "//conditions:default": [
+    "//tools/workspace/snopt:enabled": ["//tools/workspace/snopt:install"],
+    "//conditions:default": [],
+}) + select({
+    "//tools/workspace/osqp_internal:enabled": [
         "@osqp_internal//:install",
         "@qdldl_internal//:install",
     ],
-    "//tools:no_osqp": [],
+    "//conditions:default": [],
 }) + select({
-    "//conditions:default": ["@scs_internal//:install"],
-    "//tools:no_scs": [],
+    "//tools/workspace/scs_internal:enabled": ["@scs_internal//:install"],
+    "//conditions:default": [],
 }) + select({
     "//tools:with_usd": ["@onetbb_internal//:install"],
     "//conditions:default": [],

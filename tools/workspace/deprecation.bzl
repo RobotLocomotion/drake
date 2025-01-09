@@ -7,7 +7,7 @@ def _impl(repo_ctx):
 
     build = "load(\"@drake//tools/skylark:cc.bzl\", \"cc_library\")\n"
     build += "load(\"@drake//tools/skylark:py.bzl\", \"py_library\")\n"
-    build = "package(default_visibility = [\"//visibility:public\"])\n"
+    build += "package(default_visibility = [\"//visibility:public\"])\n"
     deprecation = "".join([
         "DRAKE DEPRECATED: The @{} external is deprecated".format(name),
         " and will be removed from Drake on or after {}.".format(date),

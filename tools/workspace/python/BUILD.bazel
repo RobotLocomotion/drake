@@ -1,6 +1,42 @@
-# This file exists to make our directory into a Bazel package, so that our
-# neighboring *.bzl file can be loaded elsewhere.
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load(":defs.bzl", "current_py_cc_libpython", "python_version_txt")
+
+package(default_visibility = ["//visibility:public"])
+
+# Provides a text file containing the major.minor version number of the current
+# Python toolchain, without any newlines. This file may be used as srcs or data
+# for any other rule whose action needs to know the current python version.
+python_version_txt(
+    name = "python_version.txt",
+)
+
+# Provides a single point of control within Drake for how to compile a native
+# C/C++ Python module (e.g., for pybind11) for the current Python toolchain.
+# This may be used like it was a cc_library target that listed hdrs= and
+# includes= for the current Python's header files.
+alias(
+    name = "cc_headers",
+    actual = "@rules_python//python/cc:current_py_cc_headers",
+)
+
+# Provides a single point of control within Drake for how to link a native
+# C/C++ Python module (e.g., for pybind11) for the current Python toolchain.
+# This may be used like it was a cc_library target that listed linkopts= for
+# any libraries use by a Python module. Note that this is intended for linking
+# native modules, and does NOT link the libpython embedded runtime; for that,
+# use cc_libpython below.
+alias(
+    name = "cc_libs",
+    actual = "@rules_python//python/cc:current_py_cc_libs",
+)
+
+# Provides a single point of control within Drake for how to link a C/C++
+# executable that embeds the current Python toolchain's interpreter (e.g., for
+# Python unit tests which are implemented as C++ programs). This alias may be
+# used like it was a cc_library target that listed linkopts= for the libpython
+# embedded runtime.
+current_py_cc_libpython(
+    name = "cc_libpython",
+)
 
 add_lint_tests()

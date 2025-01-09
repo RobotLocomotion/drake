@@ -186,17 +186,17 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
   //     and go get the six terms we actually care about.
   C /= volume;
   const double trace_C = C.trace();
-  const UnitInertia G_GGo_G(trace_C - C(0, 0), trace_C - C(1, 1),
-                            trace_C - C(2, 2), -C(1, 0), -C(2, 0), -C(2, 1));
+  const UnitInertia G_GGo_G(
+      RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+          trace_C - C(0, 0), trace_C - C(1, 1), trace_C - C(2, 2), -C(1, 0),
+          -C(2, 0), -C(2, 1),
+          /* skip_validity_check = */ true));
 
   auto result = SpatialInertia<double>{mass, p_GoGcm, G_GGo_G,
                                        /* skip_validity_check = */ true};
-  if (!result.IsPhysicallyValid()) {
-    std::string message = result.CriticizeNotPhysicallyValid();
-    if (!message.empty()) {
-      return message;
-    }
-    return result;
+  std::string message = result.CriticizeNotPhysicallyValid();
+  if (!message.empty()) {
+    return message;
   }
   return result;
 }

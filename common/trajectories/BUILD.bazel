@@ -26,6 +26,7 @@ drake_cc_package_library(
         ":piecewise_trajectory",
         ":stacked_trajectory",
         ":trajectory",
+        ":wrapped_trajectory",
     ],
 )
 
@@ -219,6 +220,15 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "wrapped_trajectory",
+    srcs = ["wrapped_trajectory.cc"],
+    hdrs = ["wrapped_trajectory.h"],
+    deps = [
+        ":trajectory",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -384,6 +394,15 @@ drake_cc_googletest(
     name = "trajectory_test",
     deps = [
         ":trajectory",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wrapped_trajectory_test",
+    deps = [
+        ":function_handle_trajectory",
+        ":wrapped_trajectory",
         "//common/test_utilities:expect_throws_message",
     ],
 )

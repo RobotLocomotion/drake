@@ -509,6 +509,7 @@ def _raw_drake_cc_library(
             deps = [":" + compiled_name],
             visibility = ["//visibility:private"],
             tags = tags,
+            testonly = testonly,
         )
         cc_library(
             name = name,
