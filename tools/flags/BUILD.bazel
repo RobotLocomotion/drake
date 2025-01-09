@@ -1,4 +1,4 @@
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "string_flag")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
@@ -12,6 +12,107 @@ package(default_visibility = ["//visibility:public"])
 #
 # bazelrc example:
 #   common --@drake//tools/flags:with_mosek=True
+
+# -----------------------------------------------------------------------------
+# Configuration for public (i.e., exported) dependencies of Drake.
+#
+# Broadly, we allow resolving these dependencies using either a Bazel module
+# (typically from the Bazel Central Registry) or by calling pkg-config on the
+# local system.
+#
+# By default, Drake uses the Bazel module (`bazel_dep()` in `MODULE.bazel`).
+# Note that when Drake is used as dependency (i.e., it is not the main module),
+# then downstream Bazel projects can influence which version of the module is
+# chosen; for details, see https://bazel.build/external/module#overrides and
+# https://bazel.build/external/module#version-selection.
+#
+# As an opt-in alternative, Drake can use a repository rule to call pkg-config
+# on the local system to find the include path (if any) and library to link (if
+# any). Note that pkg-config libraries typically will be dynamically linked.
+#
+# Drake's configured selection for each public dependency is made available
+# under an alias (documented below for each public dependency). Downstream
+# projects that wish to depend on the same library as Drake should use that
+# alias instead of a specific repository name.
+#
+# There are two ways to opt-in to pkg-config.
+#
+# (1) To opt-in for all public dependencies set :public_repo_default to
+# "pkgconfig".
+#
+# (2) To opt-in for specific public dependencies one by one, set :foobar_repo
+# to "pkgconfig" for the desired repositories.
+#
+# The more specific flag (option 2) takes precedence, e.g., you can set
+# :eigen_repo to "module" and :public_repo_default to "pkgconfig" and then
+# eigen will come from a module but everything else will come from pkg-config.
+
+# The :public_repo_default configures what happens when a specific :foobar_repo
+# flag is set to "default". See the section header documentation above for the
+# full details.
+string_flag(
+    name = "public_repo_default",
+    build_setting_default = "module",
+    values = [
+        "module",
+        "pkgconfig",
+    ],
+)
+
+# The :eigen_repo flag configures where Drake obtains eigen from.
+# See the section header documentation above for the full details.
+# The public dependency alias is `@drake//tools/workspace/eigen` or use the
+# public_dep_repositories() module extension at //tools/workspace:default.bzl.
+string_flag(
+    name = "eigen_repo",
+    build_setting_default = "default",
+    values = [
+        "default",
+        "module",
+        "pkgconfig",
+    ],
+)
+
+# The :fmt_repo flag configures where Drake obtains fmt from.
+# See the section header documentation above for the full details.
+# The public dependency alias is `@drake//tools/workspace/fmt` or use the
+# public_dep_repositories() module extension at //tools/workspace:default.bzl.
+#
+# Note that fmt is typically a dependency of spdlog, so be careful to configure
+# them in a sensible pairing; setting one to module and the other to pkgconfig
+# is probably a mistake.
+string_flag(
+    name = "fmt_repo",
+    build_setting_default = "default",
+    values = [
+        "default",
+        "module",
+        "pkgconfig",
+    ],
+)
+
+# The :spdlog_repo flag configures where Drake obtains spdlog from.
+# See the section header documentation above for the full details.
+# The public dependency alias is `@drake//tools/workspace/spdlog` or use the
+# public_dep_repositories() module extension at //tools/workspace:default.bzl.
+#
+# This flag also offers an additional value: the value "disabled" will turn the
+# `@drake//tools/workspace/spdlog` library into a no-op and Drake will be built
+# without any text_logging infrastructure; all log messages will be discarded.
+#
+# Note that fmt is typically a dependency of spdlog, so be careful to configure
+# them in a sensible pairing; setting one to module and the other to pkgconfig
+# is probably a mistake.
+string_flag(
+    name = "spdlog_repo",
+    build_setting_default = "default",
+    values = [
+        "default",
+        "disabled",
+        "module",
+        "pkgconfig",
+    ],
+)
 
 # -----------------------------------------------------------------------------
 # Configuration for solver back-ends.

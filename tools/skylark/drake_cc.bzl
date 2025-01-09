@@ -364,6 +364,35 @@ i.e., include paths and preprocessor definitions.
     fragments = ["cpp"],
 )
 
+def _cc_nolink_library_impl(ctx):
+    deps_cc_infos = cc_common.merge_cc_infos(
+        cc_infos = [dep[CcInfo] for dep in ctx.attr.deps],
+    )
+    return [
+        DefaultInfo(
+            runfiles = ctx.runfiles(
+                collect_data = True,
+                collect_default = True,
+            ),
+        ),
+        CcInfo(
+            compilation_context = deps_cc_infos.compilation_context,
+            linking_context = None,
+        ),
+    ]
+
+cc_nolink_library = rule(
+    implementation = _cc_nolink_library_impl,
+    doc = """
+Provides access to the header files and preprocess definitions from the given
+dependencies but discards all linked libraries and linker options.
+""",
+    attrs = {
+        "deps": attr.label_list(providers = [CcInfo]),
+    },
+    fragments = ["cpp"],
+)
+
 def _raw_drake_cc_library(
         name,
         srcs = None,  # Cannot list any headers here.

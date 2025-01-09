@@ -1,11 +1,58 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//tools/install:install.bzl", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-exports_files(
-    [
-        "fmt-config.cmake",
-        "fmt-config-version.cmake",
+config_setting(
+    name = "flag_fmt_repo_pkgconfig",
+    flag_values = {
+        "//tools/flags:fmt_repo": "pkgconfig",
+    },
+)
+
+config_setting(
+    name = "flag_fmt_repo_default",
+    flag_values = {
+        "//tools/flags:fmt_repo": "default",
+    },
+)
+
+config_setting(
+    name = "flag_public_repo_default_pkgconfig",
+    flag_values = {
+        "//tools/flags:public_repo_default": "pkgconfig",
+    },
+)
+
+selects.config_setting_group(
+    name = "flag_fmt_repo_default_pkgconfig",
+    match_all = [
+        ":flag_fmt_repo_default",
+        ":flag_public_repo_default_pkgconfig",
     ],
-    visibility = ["@fmt//:__pkg__"],
+)
+
+selects.config_setting_group(
+    name = "use_pkgconfig",
+    match_any = [
+        ":flag_fmt_repo_pkgconfig",
+        ":flag_fmt_repo_default_pkgconfig",
+    ],
+)
+
+alias(
+    name = "fmt",
+    actual = select({
+        ":use_pkgconfig": "@pkgconfig_fmt",
+        "//conditions:default": "@module_fmt//:fmt",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+install_license(
+    name = "install",
+    doc_dest = "share/doc/fmt",
+    licenses = ["@module_fmt//:license"],
+    visibility = ["//tools/workspace:__pkg__"],
 )
 
 add_lint_tests()
