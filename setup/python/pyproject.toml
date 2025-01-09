@@ -20,6 +20,9 @@ dependencies = [
 ]
 
 [dependency-groups]
+pdm = [
+    "pdm",
+]
 test = [
     "flask",
     "six",
