@@ -358,7 +358,7 @@ endfunction()
 macro(override_repository NAME)
   set(repo "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
   string(APPEND BAZEL_REPO_ENV
-      " --override_repository=+drake_dep_repositories+${NAME}=${repo}")
+      " --override_repository=drake++drake_dep_repositories+${NAME}=${repo}")
 endmacro()
 
 option(WITH_USER_EIGEN "Use user-provided Eigen3" OFF)
