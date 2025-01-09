@@ -80,38 +80,25 @@ ln -s "$(bazel info bazel-bin)" "$build_root"/bazel-bin
 find "$build_root" -type d -print0 | xargs -0 chmod u+w
 
 # -----------------------------------------------------------------------------
-# Set up a Python virtual environment.
+# Obtain and activate Drake's Python virtual environment.
 # -----------------------------------------------------------------------------
 
-readonly pyvenv_root="/opt/drake-wheel-build/$python/python"
+readonly drake_python="$(bazel info output_base).drake_python"
+readonly venv_drake="$drake_python/venv.drake"
 
-# NOTE: Xcode ships python3, make sure to use the one from brew.
-"$python_executable" -m venv "$pyvenv_root"
-
-# We also need pythonX.Y-config, which isn't created as of writing (see also
-# https://github.com/pypa/virtualenv/issues/169). Don't fail if it already
-# exists, though, e.g. if the bug has been fixed.
-ln -s "$python_prefix/bin/$python-config" \
-      "$pyvenv_root/bin/$python-config" || true # Allowed to already exist.
-
-. "$pyvenv_root/bin/activate"
+. "$venv_drake/bin/activate"
 
 # -----------------------------------------------------------------------------
-# Install tools to build the wheel.
+# "Install" additional tools to build the wheel.
 # -----------------------------------------------------------------------------
-
-pip install --upgrade \
-    delocate \
-    setuptools \
-    wheel
 
 ln -s \
     "$build_root/bazel-bin/tools/wheel/strip_rpath" \
-    "$pyvenv_root/bin/strip_rpath"
+    "$venv_drake/bin/strip_rpath"
 
 ln -s \
     "$build_root/bazel-bin/tools/wheel/change_lpath" \
-    "$pyvenv_root/bin/change_lpath"
+    "$venv_drake/bin/change_lpath"
 
 # -----------------------------------------------------------------------------
 # Build the Drake wheel.
