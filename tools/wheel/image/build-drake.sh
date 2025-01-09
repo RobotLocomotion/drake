@@ -23,6 +23,9 @@ EOF
 
 # Install Drake using our wheel-build-specific Python interpreter.
 cmake ../drake \
+    -DWITH_USER_EIGEN=OFF \
+    -DWITH_USER_FMT=OFF \
+    -DWITH_USER_SPDLOG=OFF \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
     -DDRAKE_GIT_SHA_OVERRIDE="${DRAKE_GIT_SHA}" \
     -DCMAKE_INSTALL_PREFIX=/opt/drake \
