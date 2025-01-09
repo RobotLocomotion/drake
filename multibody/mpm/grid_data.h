@@ -108,8 +108,7 @@ struct GridData {
   static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>,
                 "T must be float or double.");
 
-  /* Resets `this` GridData to its default state where all floating point values
-   are set to NAN and the index is inactive. */
+  /* Resets all floating point data to zero and the index to be inactive.*/
   void reset() { *this = {}; }
 
   /* Returns true iff `this` GridData is bit-wise equal to `other`. */
@@ -117,24 +116,12 @@ struct GridData {
     return std::memcmp(this, &other, sizeof(GridData<T>)) == 0;
   }
 
-  Vector3<T> v{Vector3<T>::Constant(nan_with_all_bits_set())};
-  T m{nan_with_all_bits_set()};
-  Vector3<T> scratch{Vector3<T>::Constant(nan_with_all_bits_set())};
+  Vector3<T> v{Vector3<T>::Zero()};
+  T m{0};
+  Vector3<T> scratch{Vector3<T>::Zero()};
   std::conditional_t<std::is_same_v<T, float>, IndexOrFlag<int32_t>,
                      IndexOrFlag<int64_t>>
       index_or_flag{};
-
- private:
-  /* Returns a floating point NaN value with all bits set to one. This choice
-   makes the reset() function more efficient. In particlar, it allows the
-   generated machine code to memset all bits to 1 instead of handling each field
-   individually. */
-  static T nan_with_all_bits_set() {
-    using IntType =
-        std::conditional_t<std::is_same_v<T, float>, int32_t, int64_t>;
-    constexpr IntType kAllBitsOn = -1;
-    return drake::internal::bit_cast<T>(kAllBitsOn);
-  }
 };
 
 /* With T = float, GridData is expected to be 32 bytes. With T = double,

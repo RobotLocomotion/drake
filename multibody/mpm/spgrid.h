@@ -24,6 +24,16 @@ namespace internal {
 template <typename T>
 using Pad = std::array<std::array<std::array<T, 3>, 3>, 3>;
 
+/* A subset of SPGrid flags and configs we care about. */
+struct SpGridFlags {
+  int log2_page{12};            // 4KB page size.
+  int log2_max_grid_size{10};   // Largest grid size is 1024 x 1024 x 1024.
+  int data_bits{6};             // Number of bits to represent GridData.
+  int num_nodes_in_block_x{4};  // Number of nodes in a block in x direction.
+  int num_nodes_in_block_y{4};  // Number of nodes in a block in y direction.
+  int num_nodes_in_block_z{4};  // Number of nodes in a block in z direction.
+};
+
 /* SpGrid is a wrapper class around the SPGrid library designed for managing
  sparse grid data in 3D space.
 
@@ -58,7 +68,7 @@ using Pad = std::array<std::array<std::array<T, 3>, 3>, 3>;
  @tparam GridData The type of data stored in the grid. It must satisfy the
  following requirements:
   - It must have a default constructor.
-  - It must have a member function `set_zero()` that sets the data to zero.
+  - It must have a member function `reset()`.
   - Its size must be less than or equal to 4KB.
  @tparam log2_max_grid_size
  SPGrid imposes a limit on the maximum number of grid points per dimension,
@@ -181,7 +191,7 @@ class SpGrid {
     }
     blocks_.Update_Block_Offsets();
     IterateGrid([](GridData* node_data) {
-      node_data->set_zero();
+      node_data->reset();
     });
   }
 
@@ -190,6 +200,9 @@ class SpGrid {
   Offset CoordinateToOffset(int x, int y, int z) const {
     const uint64_t world_space_offset = Mask::Linear_Offset(x, y, z);
     return Mask::Packed_Add(world_space_offset, origin_offset_);
+  }
+  Offset CoordinateToOffset(const Vector3<int>& coord) const {
+    return CoordinateToOffset(coord[0], coord[1], coord[2]);
   }
 
   /* Returns the 3D grid coordinates in world space given the offset (1D
@@ -314,6 +327,27 @@ class SpGrid {
         }
       }
     }
+  }
+
+  /* Returns the flags associated with `this` SpGrid. */
+  SpGridFlags flags() const {
+    return SpGridFlags{.log2_page = kLog2Page,
+                       .log2_max_grid_size = log2_max_grid_size,
+                       .data_bits = kDataBits,
+                       .num_nodes_in_block_x = kNumNodesInBlockX,
+                       .num_nodes_in_block_y = kNumNodesInBlockY,
+                       .num_nodes_in_block_z = kNumNodesInBlockZ};
+  }
+
+  /* Returns the color of the block given the page bits of the node offset.
+   Blocks with different colors are guaranteed to be non-adjacent. */
+  static int get_color(uint64_t page) {
+    /* According to [Setaluri et al. 2014], the blocks are arranged in a 3D
+    space using Z-order curve. Blocks with 8 blocks apart are guaranteed to be
+    non-adjacent. */
+    constexpr int kNumColors = 8;
+    int color = (page & (kNumColors - 1));
+    return color;
   }
 
  private:
