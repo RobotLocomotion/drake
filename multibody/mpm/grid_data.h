@@ -112,6 +112,14 @@ struct GridData {
    are set to NAN and the index is inactive. */
   void reset() { *this = {}; }
 
+  /* Sets all floating point data to zero, and set the index to be inactive.*/
+  void set_zero() {
+    v.setZero();
+    m = 0;
+    scratch.setZero();
+    index_or_flag.set_inactive();
+  }
+
   /* Returns true iff `this` GridData is bit-wise equal to `other`. */
   bool operator==(const GridData<T>& other) const {
     return std::memcmp(this, &other, sizeof(GridData<T>)) == 0;

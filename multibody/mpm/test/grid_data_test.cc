@@ -97,6 +97,21 @@ TYPED_TEST(GridDataTest, Reset) {
   EXPECT_TRUE(std::isnan(data.m));
 }
 
+TYPED_TEST(GridDataTest, SetZero) {
+  using T = TypeParam;
+  GridData<T> data;
+  data.index_or_flag.set_index(123);
+  data.scratch = Vector3<T>::Ones();
+  data.v = Vector3<T>::Ones();
+  data.m = 1;
+
+  data.set_zero();
+  EXPECT_TRUE(data.index_or_flag.is_inactive());
+  EXPECT_EQ(data.scratch, Vector3<T>::Zero());
+  EXPECT_EQ(data.v, Vector3<T>::Zero());
+  EXPECT_EQ(data.m, 0);
+}
+
 TYPED_TEST(GridDataTest, Equality) {
   using T = TypeParam;
   GridData<T> data1;
