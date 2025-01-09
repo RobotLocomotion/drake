@@ -11,6 +11,19 @@ problems.
 
 # MultibodyPlant
 
+## Parsing {#mbp-parsing}
+
+If you have a model file (e.g., .urdf, .sdf, .xml, .usd, etc.) that you are loading into a `MultibodyPlant` using the `Parser` class, and the model is not loading properly, then there are a few useful resources you might consider.
+
+Documentation for the specific XML elements and attributes supported by the parser can be found [here](https://drake.mit.edu/doxygen_cxx/group__multibody__parsing.html).
+
+If you do run into some of the known limitations in Drake's parsing support, you may consider using the [`make_drake_compatible_model`](https://manipulation.mit.edu/python/make_drake_compatible_model.html) tool to convert your model file and assets into a format that Drake can parse. It is available in the [manipulation](https://manipulation.mit.edu/) Python package, and be used via e.g.:
+```bash
+python3 -m venv venv
+venv/bin/pip install manipulation[mesh] --extra-index-url https://drake-packages.csail.mit.edu/whl/nightly/
+venv/bin/python -m manipulation.make_drake_compatible_model {input_file} {output_file}
+```
+
 ## Unconnected QueryObject port {#mbp-unconnected-query-object-port}
 
 The error message will include the message, "The provided context doesn't show a
