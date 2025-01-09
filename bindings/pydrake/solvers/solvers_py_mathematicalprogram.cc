@@ -729,13 +729,22 @@ void BindMathematicalProgram(py::module m) {
           py::arg("is_convex") = py::none(),
           doc.MathematicalProgram.AddQuadraticCost.doc_5args)
       .def("AddQuadraticErrorCost",
+          static_cast<Binding<QuadraticCost> (MathematicalProgram::*)(double,
+              const Eigen::Ref<const Eigen::VectorXd>&,
+              const Eigen::Ref<const VectorXDecisionVariable>&)>(
+              &MathematicalProgram::AddQuadraticErrorCost),
+          py::arg("w"), py::arg("x_desired"), py::arg("vars"),
+          doc.MathematicalProgram.AddQuadraticErrorCost
+              .doc_3args_w_x_desired_vars)
+      .def("AddQuadraticErrorCost",
           overload_cast_explicit<Binding<QuadraticCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&>(
               &MathematicalProgram::AddQuadraticErrorCost),
           py::arg("Q"), py::arg("x_desired"), py::arg("vars"),
-          doc.MathematicalProgram.AddQuadraticErrorCost.doc)
+          doc.MathematicalProgram.AddQuadraticErrorCost
+              .doc_3args_Q_x_desired_vars)
       .def("Add2NormSquaredCost",
           overload_cast_explicit<Binding<QuadraticCost>,
               const Eigen::Ref<const Eigen::MatrixXd>&,
