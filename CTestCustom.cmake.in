@@ -13,9 +13,23 @@ string(ASCII 27 ESC)
 # (i.e., [ without matching ]) and that element must be the last element of the
 # list.
 
-# Never ever EVER _**EVER**_ should CTest fail the build of its own accord.
+# "DEBUG" emitted by Bazel may be colored yellow (CSI 33m), "WARNING" emitted
+# by Bazel may be colored magenta (CSI 35m), and "warning" emitted by Clang may
+# be colored magenta (CSI 35m) and bolded (CSI 1m).
 list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
-  ".*"
+  "^DEBUG: "
+  ": DrakeDeprecationWarning: "
+  ": SyntaxWarning: invalid escape sequence "
+  "^WARNING: "
+  ": warning: "
+  ":[0-9]+: Failure$"
+  "(^${ESC}\\[33mDEBUG|^${ESC}\\[35mWARNING|: ${ESC}\\[0m${ESC}\\[0\;1\;35mwarning): ${ESC}\\[0m"
+)
+
+# "ERROR" emitted by Bazel may be colored red (CSI 31m) and bolded (CSI 1m).
+list(APPEND CTEST_CUSTOM_ERROR_MATCH
+  "^ERROR: "
+  "^${ESC}\\[31m${ESC}\\[1mERROR: ${ESC}\\[0m"
 )
 
 # Ignore various Mac CROSSTOOL-related warnings.
