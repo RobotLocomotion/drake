@@ -27,11 +27,18 @@ is YAML based, and follows a limited data schema.  See
 
 @section multibody_parsing_mjcf MJCF (Mujoco XML) Support
 
-There is limited, undocumented support for parsing MJCF (Mujoco XML) files. The
-files are recognized by an .xml file extension. The scope of features that are
-actually supported still need to be documented.
+There is basic support for parsing MJCF (Mujoco XML) files. The files are
+recognized by an .xml file extension. The scope of features that are actually
+supported still need to be documented here, but the parser does log warnings
+for any unsupported MuJoCo XML elements or attributes at runtime. 
 
 <!-- TODO(rpoyner-tri): document mujoco format support -->
+
+@section multibody_parsing_usd USD Support
+
+There is very limited support for parsing Universal Scene Description (USD) files, recognized by the .usd or .usda file extension.
+
+<!-- TODO(rpoyner-tri): document usd format support -->
 
 @section multibody_parsing_sdf SDFormat Support
 Drake supports SDFormat files following the specification at
