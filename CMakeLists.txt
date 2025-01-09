@@ -361,7 +361,7 @@ macro(override_repository NAME)
       " --override_repository=+drake_dep_repositories+${NAME}=${repo}")
 endmacro()
 
-option(WITH_USER_EIGEN "Use user-provided Eigen3" OFF)
+option(WITH_USER_EIGEN "Use user-provided Eigen3" ON)
 
 if(WITH_USER_EIGEN)
   find_package(Eigen3 CONFIG REQUIRED)
@@ -375,7 +375,7 @@ if(WITH_USER_EIGEN)
   override_repository(eigen)
 endif()
 
-option(WITH_USER_FMT "Use user-provided fmt" OFF)
+option(WITH_USER_FMT "Use user-provided fmt" ON)
 
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
@@ -390,7 +390,7 @@ if(WITH_USER_FMT)
   override_repository(fmt)
 endif()
 
-option(WITH_USER_SPDLOG "Use user-provided spdlog" OFF)
+option(WITH_USER_SPDLOG "Use user-provided spdlog" ON)
 
 if(WITH_USER_SPDLOG)
   if(NOT WITH_USER_FMT)
