@@ -147,9 +147,8 @@ Convex::Convex(MeshSource source, double scale)
 
 Convex::Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
                double scale)
-    : Convex(InMemoryMesh{.mesh_file = MemoryFile(
-                              PointsToObjString(points), ".obj",
-                              label.empty() ? "convex-from-points" : label)},
+    : Convex(InMemoryMesh{.mesh_file = MemoryFile(PointsToObjString(points),
+                                                  ".obj", label)},
              scale) {}
 
 std::string Convex::filename() const {

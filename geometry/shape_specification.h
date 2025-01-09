@@ -301,7 +301,7 @@ class Convex final : public Shape {
    @throws std::exception       if label contains newlines.
    @throws std::exception       if |scale| < 1e-8. */
   explicit Convex(const Eigen::Matrix3X<double>& points,
-                  const std::string& label = {}, double scale = 1.0);
+                  const std::string& label, double scale = 1.0);
 
   ~Convex() final;
 
