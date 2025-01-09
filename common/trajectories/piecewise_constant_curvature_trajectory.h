@@ -34,6 +34,11 @@ namespace trajectories {
  are used to define a frame F along the curve with basis vectors Fx, Fy, Fz
  coincident with vectors t̂, n̂, p̂, respectively.
 
+ A trajectory is said to be periodic if the pose X_AF of frame F is a periodic
+ function of arclength, i.e. X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L is the
+ length of a single cycle along the trajectory. Periodicity is determined
+ at construction.
+
  @note Though similar, frame F is distinct from the Frenet–Serret frame defined
  by the tangent-normal-binormal vectors T̂, N̂, B̂ See <a
  href="https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas">Frenet–Serret
@@ -103,7 +108,9 @@ class PiecewiseConstantCurvatureTrajectory final
    @param periodicity_tolerance Tolerance used to determine if the resulting
    trajectory is periodic, according to the metric defined by
    IsNearlyPeriodic(). If IsNearlyPeriodic(periodicity_tolerance) is true, then
-   calling is_periodic() on the new object will return `true`.
+   the newly constructed trajectory will be periodic. That is,
+   X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). Subsequent calls to
+   is_periodic() will return `true`.
 
    @throws std::exception if the number of turning rates does not match
    the number of segments
@@ -112,12 +119,12 @@ class PiecewiseConstantCurvatureTrajectory final
    norm.
    @throws std::exception if initial_curve_tangent is not perpendicular to
    plane_normal. */
-  PiecewiseConstantCurvatureTrajectory(
-      const std::vector<T>& breaks, const std::vector<T>& turning_rates,
-      const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
-      const Vector3<T>& initial_position,
-      double periodicity_tolerance = 1.0e3 *
-                                     std::numeric_limits<double>::epsilon());
+  PiecewiseConstantCurvatureTrajectory(const std::vector<T>& breaks,
+                                       const std::vector<T>& turning_rates,
+                                       const Vector3<T>& initial_curve_tangent,
+                                       const Vector3<T>& plane_normal,
+                                       const Vector3<T>& initial_position,
+                                       double periodicity_tolerance = 1e-8);
 
   /** Scalar conversion constructor. See @ref system_scalar_conversion. */
   template <typename U>
@@ -143,10 +150,13 @@ class PiecewiseConstantCurvatureTrajectory final
   /** @returns the number of columns in the output of value(). */
   Eigen::Index cols() const override { return 1; }
 
-  /** @returns the total arclength of the curve in meters. */
+  /** @returns the total arclength of the curve in meters. For periodic
+   trajectories, this corresponds to the length of a single cycle along the
+   trajectory. */
   T length() const { return this->end_time(); }
 
-  /* Returns `true` if `this` trajectory is periodic. */
+  /* Returns `true` if `this` trajectory is periodic.
+   That is, X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). */
   boolean<T> is_periodic() const { return is_periodic_; }
 
   /** Calculates the trajectory's pose X_AF(s) at the given arclength s.
