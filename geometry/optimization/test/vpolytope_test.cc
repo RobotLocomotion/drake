@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 
 #include <limits>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -301,12 +302,16 @@ GTEST_TEST(VPolytopeTest, ToShapeConvex) {
   vertices.col(2) << 0, 1, 0;
   vertices.col(3) << 0, 0, 1;
 
+  const std::string convex_label = "a_convex";
+
   const VPolytope V(vertices);
-  const Convex convex = V.ToShapeConvex();
+  const Convex convex = V.ToShapeConvex(convex_label);
 
   int num_vertices_of_convex = convex.GetConvexHull().num_vertices();
 
   EXPECT_EQ(vertices.cols(), num_vertices_of_convex);
+  EXPECT_EQ(convex.source().in_memory().mesh_file.filename_hint(),
+            convex_label);
 }
 
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {
