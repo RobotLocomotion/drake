@@ -26,6 +26,11 @@ test = [
     "u-msgpack-python",
     "websockets",
 ]
+wheel = [
+    "delocate",
+    "setuptools",
+    "wheel",
+]
 
 [tool.pdm]
 distribution = false
