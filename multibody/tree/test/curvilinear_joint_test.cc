@@ -53,7 +53,7 @@ class CurvilinearJointTest : public ::testing::Test {
     // Add a prismatic joint between the world and body1.
     joint1_ = &model->AddJoint<CurvilinearJoint>(
         "Joint1", model->world_body(), std::nullopt, *body1_, std::nullopt,
-        trajectory_, kIsPeriodic, kDamping);
+        trajectory_, kDamping);
     Joint<double>& mutable_joint = model->get_mutable_joint(joint1_->index());
     mutable_joint1_ = dynamic_cast<CurvilinearJoint<double>*>(&mutable_joint);
     mutable_joint1_->set_position_limits(
@@ -82,6 +82,10 @@ class CurvilinearJointTest : public ::testing::Test {
   CurvilinearJoint<double>* mutable_joint1_{nullptr};
 
  protected:
+  // We specify a trajectory that draws a "stadium curve" (a rectangle with two
+  // semicircle caps). The Rectangular section has length l_ and the circular
+  // sections have radii 1/k_. This trajectory is periodic, of total length 2*l_
+  // + 2*pi/k_.
   const double k_ = 1.0;
   const double l_ = 1.0;
   const std::vector<double> breaks_{0, M_PI / k_, l_ + M_PI / k_,
@@ -249,7 +253,7 @@ TEST_F(CurvilinearJointTest, NameSuffix) {
 }
 
 TEST_F(CurvilinearJointTest, RandomTranslationTest) {
-  // Calling SetRandomContext before setting the distribution results in the
+  // Calling SetRandomState before setting the distribution results in the
   // zero state.
   RandomGenerator generator;
   tree().SetRandomState(*context_, &context_->get_mutable_state(), &generator);

@@ -31,7 +31,12 @@ CurvilinearJoint<T>::CurvilinearJoint(
                                     -std::numeric_limits<double>::infinity()),
           VectorX<double>::Constant(1,
                                     std::numeric_limits<double>::infinity())),
-      curvilinear_path_(curvilinear_path) {}
+      curvilinear_path_(curvilinear_path) {
+  if (damping < 0) {
+    throw std::logic_error(
+        "CurvilinearJoint joint damping must be nonnegative.");
+  }
+}
 
 template <typename T>
 CurvilinearJoint<T>::~CurvilinearJoint() = default;
@@ -83,6 +88,22 @@ std::unique_ptr<Joint<symbolic::Expression>>
 CurvilinearJoint<T>::DoCloneToScalar(
     const internal::MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T>
+std::unique_ptr<typename Joint<T>::BluePrint>
+CurvilinearJoint<T>::MakeImplementationBlueprint(
+    const internal::SpanningForest::Mobod& mobod) const {
+  auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
+  const auto [inboard_frame, outboard_frame] =
+      this->tree_frames(mobod.is_reversed());
+  // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
+  auto curvilinear_mobilizer =
+      std::make_unique<internal::CurvilinearMobilizer<T>>(
+          mobod, *inboard_frame, *outboard_frame, curvilinear_path_);
+  curvilinear_mobilizer->set_default_position(this->default_positions());
+  blue_print->mobilizer = std::move(curvilinear_mobilizer);
+  return blue_print;
 }
 
 }  // namespace multibody
