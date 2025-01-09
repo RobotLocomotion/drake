@@ -15,7 +15,7 @@ const int kLog2MaxGridSize = 5;
 
 struct GridData {
   Vector4d data;
-  void set_zero() { data.setZero(); }
+  void reset() { data.setZero(); }
 };
 
 bool operator==(const GridData& lhs, const GridData& rhs) {
@@ -93,6 +93,10 @@ GTEST_TEST(SpGridTest, CoordinateOffsetConversion) {
   EXPECT_EQ(coordinate1, Vector3<int>(10, 0, 0));
   Vector3<int> coordinate2 = grid.OffsetToCoordinate(offset2);
   EXPECT_EQ(coordinate2, Vector3<int>(0, 10, 0));
+
+  /* Test the two flavors of CoordinateToOffset. */
+  EXPECT_EQ(grid.CoordinateToOffset(Vector3<int>(1, 2, 3)),
+            grid.CoordinateToOffset(1, 2, 3));
 }
 
 GTEST_TEST(SpGridTest, SetPadDataAndGetPadData) {
