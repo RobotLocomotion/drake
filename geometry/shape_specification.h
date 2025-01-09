@@ -292,16 +292,16 @@ class Convex final : public Shape {
    expected to be in the canonical frame of the shape. Optionally uniformly
    scaled by the given scale factor.
 
-   @param points        The points whose convex hull define the shape.
-   @param convex_label  A label for the object. The label is used for warning
-                        and error messages. Otherwise, the label has no other
-                        functional purpose. It must consist of a single line.
-   @param scale         An optional scale to coordinates.
+   @param points  The points whose convex hull define the shape.
+   @param label   A label for the object. The label is used for warning and
+                  error messages. Otherwise, the label has no other functional
+                  purpose. It must consist of a single line.
+   @param scale   An optional scale to coordinates.
 
-   @throws std::exception       if convex_label contains newlines.
+   @throws std::exception       if label contains newlines.
    @throws std::exception       if |scale| < 1e-8. */
   explicit Convex(const Eigen::Matrix3X<double>& points,
-                  const std::string& convex_label = {}, double scale = 1.0);
+                  const std::string& label = {}, double scale = 1.0);
 
   ~Convex() final;
 

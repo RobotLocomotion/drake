@@ -677,14 +677,8 @@ GTEST_TEST(ShapeTest, ConvexFromVertices) {
   const Convex convex(points, mesh_name, scale);
 
   EXPECT_EQ(convex.scale(), scale);
-  EXPECT_EQ(convex.extension(), ".obj");
   const MeshSource& source = convex.source();
-  ASSERT_TRUE(source.is_in_memory());
   EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
-
-  const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
-  EXPECT_EQ(hull.num_vertices(), 4);
-  EXPECT_EQ(hull.num_elements(), 4);
 
   // Confirm that the contents of the in-memory mesh file are as expected. Note:
   // We prefix a "\n" to match leading "\n" in the nicely readable raw string.

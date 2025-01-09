@@ -22,7 +22,7 @@ namespace {
 std::string PointsToObjString(const Eigen::Matrix3X<double>& points) {
   std::string result = "";
 
-  for (int i = 0; i < points.cols(); i++) {
+  for (int i = 0; i < points.cols(); ++i) {
     result +=
         fmt::format("v {} {} {}\n", points(0, i), points(1, i), points(2, i));
   }
@@ -145,14 +145,12 @@ Convex::Convex(MeshSource source, double scale)
   ThrowForBadScale(scale, "Convex");
 }
 
-Convex::Convex(const Eigen::Matrix3X<double>& points,
-               const std::string& convex_label, double scale)
-    : Convex(
-          InMemoryMesh{
-              .mesh_file =
-                  MemoryFile(PointsToObjString(points), ".obj", convex_label),
-          },
-          scale) {}
+Convex::Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
+               double scale)
+    : Convex(InMemoryMesh{.mesh_file = MemoryFile(
+                              PointsToObjString(points), ".obj",
+                              label.empty() ? "convex-from-points" : label)},
+             scale) {}
 
 std::string Convex::filename() const {
   if (source_.is_path()) {

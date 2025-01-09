@@ -301,7 +301,7 @@ GTEST_TEST(VPolytopeTest, ToShapeConvex) {
   vertices.col(2) << 0, 1, 0;
   vertices.col(3) << 0, 0, 1;
 
-  VPolytope V(vertices);
+  const VPolytope V(vertices);
   const Convex convex = V.ToShapeConvex();
 
   int num_vertices_of_convex = convex.GetConvexHull().num_vertices();
