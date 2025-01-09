@@ -39,7 +39,7 @@ def _build(*, out_dir, temp_dir):
         "drake/doc/styleguide/jekyll_input.txt", temp_dir, copy=True,
         strip_prefix=[
             "drake/doc/styleguide/",
-            "styleguide/",
+            "+drake_dep_repositories+styleguide/",
         ])
 
     # Prepare the files for Jekyll.
