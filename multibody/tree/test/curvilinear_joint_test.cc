@@ -23,7 +23,6 @@ constexpr double kVelocityUpperLimit = 1.6;
 constexpr double kAccelerationLowerLimit = -1.2;
 constexpr double kAccelerationUpperLimit = 1.7;
 constexpr double kDamping = 3;
-constexpr bool kIsPeriodic = true;
 
 class CurvilinearJointTest : public ::testing::Test {
  public:
