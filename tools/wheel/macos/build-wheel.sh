@@ -70,8 +70,8 @@ make install
 # Build wheel tools.
 cd "$build_root/drake_build_cwd"
 
-bazel build //tools/wheel:strip_rpath
-bazel build //tools/wheel:change_lpath
+bazel build @drake//tools/wheel:strip_rpath
+bazel build @drake//tools/wheel:change_lpath
 
 ln -s "$(bazel info bazel-bin)" "$build_root"/bazel-bin
 
@@ -106,11 +106,11 @@ pip install --upgrade \
     wheel
 
 ln -s \
-    "$build_root/bazel-bin/tools/wheel/strip_rpath" \
+    "$build_root/bazel-bin/external/drake+/tools/wheel/strip_rpath" \
     "$pyvenv_root/bin/strip_rpath"
 
 ln -s \
-    "$build_root/bazel-bin/tools/wheel/change_lpath" \
+    "$build_root/bazel-bin/external/drake+/tools/wheel/change_lpath" \
     "$pyvenv_root/bin/change_lpath"
 
 # -----------------------------------------------------------------------------
