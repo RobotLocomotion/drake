@@ -662,6 +662,36 @@ GTEST_TEST(ShapeTest, ConvexFromMemory) {
   EXPECT_EQ(hull.num_elements(), 6);
 }
 
+GTEST_TEST(ShapeTest, ConvexFromVertices) {
+  // Make sure the convex hull is automatically taken.
+  Eigen::Matrix<double, 3, 5> points;
+  points.col(0) << 0, 0, 0;
+  points.col(1) << 1, 0, 0;
+  points.col(2) << 0.25, 0.25, 0.25;
+  points.col(3) << 0, 1, 0;
+  points.col(4) << 0, 0, 1;
+
+  const double scale = 2.0;
+
+  const std::string mesh_name = "a_convex";
+  const Convex convex(points, mesh_name, scale);
+
+  EXPECT_EQ(convex.scale(), scale);
+  const MeshSource& source = convex.source();
+  EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
+
+  // Confirm that the contents of the in-memory mesh file are as expected. Note:
+  // We prefix a "\n" to match leading "\n" in the nicely readable raw string.
+  EXPECT_EQ("\n" + source.in_memory().mesh_file.contents(),
+            R"""(
+v 0 0 0
+v 1 0 0
+v 0.25 0.25 0.25
+v 0 1 0
+v 0 0 1
+)""");
+}
+
 GTEST_TEST(ShapeTest, MeshFromMemory) {
   // This will get normalized to ".obj".
   const std::string mesh_name = "a_mesh.OBJ";
@@ -760,7 +790,6 @@ TEST_F(OverrideDefaultGeometryTest, UnsupportedGeometry) {
   EXPECT_NO_THROW(this->ImplementGeometry(Sphere(0.5), nullptr));
 }
 
-
 GTEST_TEST(ShapeTest, TypeNameAndToString) {
   // In-memory mesh we'll use on Convex and Mesh.
   const InMemoryMesh in_memory{
@@ -827,7 +856,6 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   EXPECT_EQ(base.to_string(), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(fmt::to_string(base), "Box(width=1.5, depth=2.5, height=3.5)");
 }
-
 
 GTEST_TEST(ShapeTest, Volume) {
   EXPECT_NEAR(CalcVolume(Box(1, 2, 3)), 6.0, 1e-14);
