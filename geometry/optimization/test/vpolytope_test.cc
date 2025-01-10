@@ -312,6 +312,12 @@ GTEST_TEST(VPolytopeTest, ToShapeConvex) {
   EXPECT_EQ(vertices.cols(), num_vertices_of_convex);
   EXPECT_EQ(convex.source().in_memory().mesh_file.filename_hint(),
             convex_label);
+
+  // When no convex label is specified, a default label gets applied.
+  const Convex convex2 = V.ToShapeConvex();
+  ASSERT_TRUE(convex2.source().is_in_memory());
+  EXPECT_EQ(convex2.source().in_memory().mesh_file.filename_hint(),
+            "convex_from_vpolytope");
 }
 
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {
