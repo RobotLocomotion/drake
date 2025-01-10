@@ -17,9 +17,12 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
+#include "drake/common/trajectories/trajectory.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/curvilinear_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -37,6 +40,8 @@ using ::testing::MatchesRegex;
 
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
+using drake::trajectories::PiecewiseConstantCurvatureTrajectory;
+using drake::trajectories::Trajectory;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::GeometryId;
@@ -1092,6 +1097,94 @@ TEST_F(UrdfParserTest, JointParsingTest) {
   // These must be kept in sync with the values in joint_parsing_test.urdf.
   EXPECT_EQ(specs[1].gear_ratio, 6.54);
   EXPECT_EQ(specs[1].offset, 3.21);
+
+  // periodic curvilinear joint
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName<CurvilinearJoint>("curvilinear_periodic"));
+  const CurvilinearJoint<double>& curvilinear_joint =
+      plant_.GetJointByName<CurvilinearJoint>("curvilinear_periodic");
+  EXPECT_EQ(curvilinear_joint.name(), "curvilinear_periodic");
+  EXPECT_EQ(curvilinear_joint.parent_body().name(), "link12");
+  EXPECT_EQ(curvilinear_joint.child_body().name(), "link13");
+  EXPECT_EQ(curvilinear_joint.default_damping(), 0.1);
+  EXPECT_TRUE(
+      CompareMatrices(curvilinear_joint.position_lower_limits(),
+                      Vector1d(-std::numeric_limits<double>::infinity())));
+  EXPECT_TRUE(
+      CompareMatrices(curvilinear_joint.position_upper_limits(),
+                      Vector1d(std::numeric_limits<double>::infinity())));
+  EXPECT_TRUE(
+      CompareMatrices(curvilinear_joint.velocity_lower_limits(),
+                      Vector1d(-std::numeric_limits<double>::infinity())));
+  EXPECT_TRUE(
+      CompareMatrices(curvilinear_joint.velocity_upper_limits(),
+                      Vector1d(std::numeric_limits<double>::infinity())));
+  std::unique_ptr<Trajectory<double>> joint_curve_base =
+      curvilinear_joint.get_curve_clone();
+  PiecewiseConstantCurvatureTrajectory<double>* joint_curve =
+      dynamic_cast<PiecewiseConstantCurvatureTrajectory<double>*>(
+          joint_curve_base.get());
+  EXPECT_EQ(joint_curve->is_periodic(), true);
+  std::vector<double> breaks_expected{0., 1., 1. + M_PI, 1. + 2 * M_PI};
+  std::vector<double> turning_rates_expected{0., 2., -2.};
+
+  PiecewiseConstantCurvatureTrajectory<double> joint_curve_expected{
+      breaks_expected,   turning_rates_expected, Vector3d::UnitZ(),
+      Vector3d::UnitX(), Vector3d::Zero(),       true};
+  const double curve_length = joint_curve->length();
+  const double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
+  EXPECT_NEAR(curve_length, joint_curve_expected.length(), kEpsilon);
+  EXPECT_TRUE(joint_curve->CalcPose(0.).IsNearlyEqualTo(
+      joint_curve_expected.CalcPose(0.), kEpsilon));
+  EXPECT_TRUE(joint_curve->CalcPose(curve_length - kEpsilon)
+                  .IsNearlyEqualTo(
+                      joint_curve_expected.CalcPose(curve_length - kEpsilon),
+                      kEpsilon));
+  EXPECT_TRUE(
+      joint_curve->CalcPose(curve_length * 1.5)
+          .IsNearlyEqualTo(joint_curve_expected.CalcPose(curve_length * 1.5),
+                           kEpsilon));
+
+  // non-periodic curvilinear planar joint
+  DRAKE_EXPECT_NO_THROW(
+      plant_.GetJointByName<CurvilinearJoint>("curvilinear_aperiodic"));
+  const CurvilinearJoint<double>& curvilinear_joint2 =
+      plant_.GetJointByName<CurvilinearJoint>("curvilinear_aperiodic");
+  std::unique_ptr<Trajectory<double>> joint2_curve_base =
+      curvilinear_joint2.get_curve_clone();
+  PiecewiseConstantCurvatureTrajectory<double>* joint2_curve =
+      dynamic_cast<PiecewiseConstantCurvatureTrajectory<double>*>(
+          joint2_curve_base.get());
+  EXPECT_EQ(curvilinear_joint2.name(), "curvilinear_aperiodic");
+  EXPECT_EQ(curvilinear_joint2.parent_body().name(), "link13");
+  EXPECT_EQ(curvilinear_joint2.child_body().name(), "link14");
+  EXPECT_EQ(curvilinear_joint2.default_damping(), 0.1);
+  EXPECT_TRUE(CompareMatrices(curvilinear_joint2.position_lower_limits(),
+                              Vector1d(0.)));
+  EXPECT_TRUE(CompareMatrices(curvilinear_joint2.position_upper_limits(),
+                              Vector1d(joint2_curve->length())));
+  EXPECT_TRUE(
+      CompareMatrices(curvilinear_joint2.velocity_lower_limits(),
+                      Vector1d(-std::numeric_limits<double>::infinity())));
+  EXPECT_TRUE(
+      CompareMatrices(curvilinear_joint2.velocity_upper_limits(),
+                      Vector1d(std::numeric_limits<double>::infinity())));
+  PiecewiseConstantCurvatureTrajectory<double> joint2_curve_expected{
+      breaks_expected,   turning_rates_expected, Vector3d::UnitZ(),
+      Vector3d::UnitX(), Vector3d::Zero(),       false};
+  EXPECT_EQ(joint2_curve->is_periodic(), false);
+  const double curve2_length = joint2_curve->length();
+  EXPECT_NEAR(curve2_length, joint2_curve_expected.length(), kEpsilon);
+  EXPECT_TRUE(joint2_curve->CalcPose(0.).IsNearlyEqualTo(
+      joint2_curve_expected.CalcPose(0.), kEpsilon));
+  EXPECT_TRUE(joint2_curve->CalcPose(curve_length - kEpsilon)
+                  .IsNearlyEqualTo(
+                      joint2_curve_expected.CalcPose(curve_length - kEpsilon),
+                      kEpsilon));
+  EXPECT_TRUE(
+      joint2_curve->CalcPose(curve_length * 1.5)
+          .IsNearlyEqualTo(joint2_curve_expected.CalcPose(curve_length * 1.5),
+                           kEpsilon));
 }
 
 // Custom planar joints were not necessary, but long supported. See #18730.
