@@ -10,8 +10,10 @@ template <typename T>
 PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
     const std::vector<T>& breaks, const std::vector<T>& turning_rates,
     const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
-    const Vector3<T>& initial_position, double periodicity_tolerance)
-    : PiecewiseTrajectory<T>(breaks), segment_turning_rates_(turning_rates) {
+    const Vector3<T>& initial_position, bool is_periodic)
+    : PiecewiseTrajectory<T>(breaks),
+      segment_turning_rates_(turning_rates),
+      is_periodic_(is_periodic) {
   if (turning_rates.size() != breaks.size() - 1) {
     throw std::logic_error(
         "The number of turning rates must be equal to the number of segments.");
@@ -37,7 +39,6 @@ PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
   segment_start_poses_ = MakeSegmentStartPoses(
       MakeInitialPose(initial_curve_tangent, plane_normal, initial_position),
       breaks, turning_rates);
-  is_periodic_ = IsNearlyPeriodic(periodicity_tolerance);
 }
 
 template <typename T>
@@ -103,7 +104,7 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
 }
 
 template <typename T>
-boolean<T> PiecewiseConstantCurvatureTrajectory<T>::IsNearlyPeriodic(
+boolean<T> PiecewiseConstantCurvatureTrajectory<T>::EndpointsAreNearlyEqual(
     double tolerance) const {
   return CalcPose(0.).IsNearlyEqualTo(CalcPose(length()), tolerance);
 }
@@ -116,7 +117,7 @@ PiecewiseConstantCurvatureTrajectory<T>::DoClone() const {
   return std::make_unique<PiecewiseConstantCurvatureTrajectory<T>>(
       this->breaks(), segment_turning_rates_,
       initial_frame.col(kCurveTangentIndex),
-      initial_frame.col(kPlaneNormalIndex), initial_pose.translation());
+      initial_frame.col(kPlaneNormalIndex), initial_pose.translation(), is_periodic_);
 }
 
 template <typename T>

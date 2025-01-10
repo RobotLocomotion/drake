@@ -105,12 +105,9 @@ class PiecewiseConstantCurvatureTrajectory final
    lies, expressed in the parent frame, p̂_A.
    @param initial_position The initial position of the curve expressed in
    the parent frame, p_AoFo_A(s₀).
-   @param periodicity_tolerance Tolerance used to determine if the resulting
-   trajectory is periodic, according to the metric defined by
-   IsNearlyPeriodic(). If IsNearlyPeriodic(periodicity_tolerance) is true, then
-   the newly constructed trajectory will be periodic. That is,
-   X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). Subsequent calls to
-   is_periodic() will return `true`.
+   @param is_periodic If true, then the newly constructed trajectory will be
+   periodic. That is, X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length().
+   Subsequent calls to is_periodic() will return `true`.
 
    @throws std::exception if the number of turning rates does not match
    the number of segments
@@ -124,7 +121,7 @@ class PiecewiseConstantCurvatureTrajectory final
                                        const Vector3<T>& initial_curve_tangent,
                                        const Vector3<T>& plane_normal,
                                        const Vector3<T>& initial_position,
-                                       double periodicity_tolerance = 1e-8);
+                                       bool is_periodic = false);
 
   /** Scalar conversion constructor. See @ref system_scalar_conversion. */
   template <typename U>
@@ -142,19 +139,21 @@ class PiecewiseConstantCurvatureTrajectory final
                 .col(kPlaneNormalIndex)
                 .unaryExpr(ScalarValueConverter<U>{}),
             other.get_initial_pose().translation().unaryExpr(
-                ScalarValueConverter<U>{})) {}
+                ScalarValueConverter<U>{}),
+            other.is_periodic()) {}
 
   /** @returns the total arclength of the curve in meters. */
   T length() const { return this->end_time(); }
 
-  /* Returns `true` if `this` trajectory is periodic.
+  /** @returns `true` if `this` trajectory is periodic.
    That is, X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). */
-  boolean<T> is_periodic() const { return is_periodic_; }
+  bool is_periodic() const { return is_periodic_; }
 
   /** Calculates the trajectory's pose X_AF(s) at the given arclength s.
 
-   @note For s < 0 and s > length() the pose is extrapolated as if the curve
-   continued with the curvature of the corresponding end segment.
+   @note If the trajectory is aperiodic, for s < 0 and s > length() the pose is
+   extrapolated as if the curve continued with the curvature of the
+   corresponding end segment.
 
    @param s The query arclength in meters.
    @returns the pose X_AF(s). */
@@ -216,14 +215,14 @@ class PiecewiseConstantCurvatureTrajectory final
   multibody::SpatialAcceleration<T> CalcSpatialAcceleration(
       const T& s, const T& s_dot, const T& s_ddot) const;
 
-  /** @returns `true` if the trajectory is periodic within a given `tolerance`.
+  /** @returns `true` if and only if the trajectory's endpoints are equal within
+   a given `tolerance`.
 
-   Periodicity is defined as the beginning and end poses X_AF(s₀) and
-   X_AF(sₙ) being equal up to the same tolerance, checked via
-   RigidTransform::IsNearlyEqualTo() using `tolerance`.
+   The beginning and end poses X_AF(s₀) and X_AF(sₙ) are checked for equality up
+   to the given `tolerance`, checked via RigidTransform::IsNearlyEqualTo().
 
-   @param tolerance The tolerance for periodicity check. */
-  boolean<T> IsNearlyPeriodic(double tolerance) const;
+   @param tolerance The tolerance for the pose equality check. */
+  boolean<T> EndpointsAreNearlyEqual(double tolerance) const;
 
  private:
   template <typename U>
@@ -317,8 +316,8 @@ class PiecewiseConstantCurvatureTrajectory final
   }
 
   std::vector<T> segment_turning_rates_;
+  bool is_periodic_;
   std::vector<math::RigidTransform<T>> segment_start_poses_;
-  boolean<T> is_periodic_{false};
 
   static inline constexpr size_t kCurveTangentIndex = 0;
   static inline constexpr size_t kCurveNormalIndex = 1;
