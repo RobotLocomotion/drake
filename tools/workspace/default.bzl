@@ -1,3 +1,4 @@
+load("//tools/workspace:alias.bzl", "alias_repository")
 load("//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
 load("//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_repository")  # noqa
@@ -403,6 +404,8 @@ REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
     "build_bazel_apple_support",
     "bazel_features",
     "bazel_skylib",
+    "eigen",
+    "fmt",
     "platforms",
     "rust_toolchain",
     "rules_cc",
@@ -411,6 +414,7 @@ REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
     "rules_python",
     "rules_rust",
     "rules_shell",
+    "spdlog",
 ]
 
 # This is the list of repositories that Drake provides as a module extension
@@ -452,8 +456,6 @@ def _drake_dep_repositories_impl(module_ctx):
     blas_repository(name = "blas")
     buildifier_repository(name = "buildifier", mirrors = mirrors)
     drake_models_repository(name = "drake_models", mirrors = mirrors)
-    eigen_repository(name = "eigen")
-    fmt_repository(name = "fmt", mirrors = mirrors)
     gflags_repository(name = "gflags", mirrors = mirrors)
     glib_repository(name = "glib")
     glx_repository(name = "glx")
@@ -471,10 +473,14 @@ def _drake_dep_repositories_impl(module_ctx):
     pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
     python_repository(name = "python")
     snopt_repository(name = "snopt")
-    spdlog_repository(name = "spdlog", mirrors = mirrors)
     styleguide_repository(name = "styleguide", mirrors = mirrors)
     x11_repository(name = "x11")
     zlib_repository(name = "zlib")
+    for name in ["eigen", "fmt", "spdlog"]:
+        alias_repository(
+            name = name,
+            aliases = {name: "@drake//tools/workspace/" + name},
+        )
 
 drake_dep_repositories = module_extension(
     implementation = _drake_dep_repositories_impl,

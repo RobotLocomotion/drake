@@ -1,0 +1,8 @@
+module(
+    name = "spdlog",
+)
+
+bazel_dep(name = "fmt")
+
+bazel_dep(name = "bazel_skylib", version = "1.0.3")
+bazel_dep(name = "rules_license", version = "1.0.0")
