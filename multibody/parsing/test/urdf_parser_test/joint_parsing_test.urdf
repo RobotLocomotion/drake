@@ -75,6 +75,18 @@ Defines a URDF model with various types of joints.
       <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
     </inertial>
   </link>
+  <link name="link13">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+    </inertial>
+  </link>
+  <link name="link14">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
+    </inertial>
+  </link>
   <joint name="fixed_joint" type="fixed">
     <parent link="world"/>
     <child link="link1"/>
@@ -151,6 +163,34 @@ Defines a URDF model with various types of joints.
     <child link="link12"/>
     <mimic joint="revolute_joint_to_mimic" multiplier="6.54" offset="3.21"/>
   </joint>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="link12"/>
+    <child link="link13"/>
+		<drake:initial_curve_tangent xyz="0 0 1"/>
+		<drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+		<drake:curves>
+			<drake:line_segment length="1.0"/>
+			<drake:circular_arc length="3.14159265358979323846" radius="0.5" direction="counterclockwise"/>
+      <drake:circular_arc length="3.14159265358979323846" radius="0.5" direction="clockwise"/>
+		</drake:curves>
+  </drake:joint>
+  <drake:joint name="curvilinear_aperiodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="link13"/>
+    <child link="link14"/>
+		<drake:initial_curve_tangent xyz="0 0 1"/>
+		<drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="false"/>
+    <dynamics damping="0.1"/>
+		<drake:curves>
+			<drake:line_segment length="1.0"/>
+			<drake:circular_arc length="3.14159265358979323846" radius="0.5" direction="counterclockwise"/>
+      <drake:circular_arc length="3.14159265358979323846" radius="0.5" direction="clockwise"/>
+		</drake:curves>
+  </drake:joint>
   <!-- Normal transmission/joint, should be created with appropriate
   effort limit. -->
   <transmission>

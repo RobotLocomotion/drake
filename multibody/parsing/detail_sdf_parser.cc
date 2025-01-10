@@ -21,6 +21,7 @@
 #include <sdf/World.hh>
 
 #include "drake/common/text_logging.h"
+#include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
@@ -32,6 +33,7 @@
 #include "drake/multibody/parsing/detail_urdf_parser.h"
 #include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/curvilinear_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -1265,6 +1267,121 @@ Eigen::Vector3d ParseVector3(const SDFormatDiagnostic& diagnostic,
   return ToVector3(value);
 }
 
+bool ParseBoolean(const SDFormatDiagnostic& diagnostic,
+                  const sdf::ElementPtr node, const char* element_name) {
+  if (!node->HasElement(element_name)) {
+    std::string message =
+        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
+                    element_name);
+    diagnostic.Error(node, message);
+    return false;
+  }
+
+  const std::string value = node->Get<std::string>(element_name);
+
+  if (value != "true" && value != "false") {
+    std::string message =
+        fmt::format("<{}>: boolean node contains non-boolean value '{}'.",
+                    node->GetName(), value);
+    diagnostic.Error(node, message);
+    return false;
+  }
+
+  return value == "true" ? true : false;
+}
+
+double ParseDouble(const SDFormatDiagnostic& diagnostic,
+                   const sdf::ElementPtr node, const char* element_name) {
+  if (!node->HasElement(element_name)) {
+    std::string message =
+        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
+                    element_name);
+    diagnostic.Error(node, message);
+    return 0.0;
+  }
+
+  const double value = node->Get<double>(element_name);
+
+  return value;
+}
+
+void ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
+                      const sdf::ElementPtr node, std::vector<double>* breaks,
+                      std::vector<double>* turning_rates) {
+  if (!node->HasElement("drake:curves")) {
+    std::string message = fmt::format(
+        "<{}>: Unable to find the <drake:curves> child node.", node->GetName());
+    diagnostic.Error(node, message);
+  }
+
+  breaks->clear();
+  turning_rates->clear();
+  breaks->push_back(0.0);
+
+  for (sdf::ElementPtr curve_node =
+           node->GetElement("drake:curves")->GetFirstElement();
+       curve_node != NULL; curve_node = curve_node->GetNextElement()) {
+    const auto name = curve_node->GetName();
+    if (name != "drake:line_segment" && name != "drake:circular_arc") {
+      std::string message =
+          fmt::format("<{}>: drake:curves node contains an invalid child node.",
+                      node->GetName());
+      diagnostic.Error(node, message);
+      breaks->clear();
+      turning_rates->clear();
+      return;
+    }
+    double length = ParseDouble(diagnostic, curve_node, "drake:length");
+    if (length <= 0.0) {
+      std::string message = fmt::format(
+          "<{}>: A drake:line_segment or drake:circular_arc node has a 0 or "
+          "negative drake:length.",
+          curve_node->GetName());
+      diagnostic.Error(node, message);
+      breaks->clear();
+      turning_rates->clear();
+      return;
+    }
+    double turning_rate = 0.0;
+    if (name == "drake:circular_arc") {
+      double radius = ParseDouble(diagnostic, curve_node, "drake:radius");
+      if (radius <= 0.0) {
+        std::string message = fmt::format(
+            "<{}>: A drake:circular_arc node has a 0 or negative drake:radius.",
+            curve_node->GetName());
+        diagnostic.Error(node, message);
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+      if (!curve_node->HasElement("drake:direction")) {
+        std::string message = fmt::format(
+            "<{}>: A drake:circular_arc node is did not specify a "
+            "drake:direction.",
+            curve_node->GetName());
+        diagnostic.Error(node, message);
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+      std::string direction = curve_node->Get<std::string>("drake:direction");
+      if (direction != "counterclockwise" && direction != "clockwise") {
+        std::string message = fmt::format(
+            "<{}>: A drake:circular_arc node has an invalid drake:direction "
+            "value '{}', valid options: 'clockwise', 'counterclockwise'.",
+            curve_node->GetName(), direction);
+        diagnostic.Error(node, message);
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+      turning_rate = direction == "counterclockwise" ? 1 / radius : -1 / radius;
+    }
+    breaks->push_back(breaks->back() + length);
+    turning_rates->push_back(turning_rate);
+  }
+}
+
 const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
                                 const sdf::ElementPtr node,
                                 ModelInstanceIndex model_instance,
@@ -1353,7 +1470,19 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
                                     ModelInstanceIndex model_instance,
                                     MultibodyPlant<double>* plant) {
   const std::set<std::string> supported_joint_elements{
-      "drake:parent", "drake:child", "drake:damping", "pose"};
+      "drake:parent",
+      "drake:child",
+      "drake:damping",
+      "drake:initial_curve_tangent",
+      "drake:plane_normal",
+      "drake:is_periodic",
+      "drake:curves",
+      "drake:line_segment",
+      "drake:circular_arc",
+      "drake:length",
+      "drake:radius",
+      "drake:direction",
+      "pose"};
   CheckSupportedElements(diagnostic, node, supported_joint_elements);
 
   if (!node->HasAttribute("type")) {
@@ -1393,6 +1522,48 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     Vector3d damping = ParseVector3(diagnostic, node, "drake:damping");
     plant->AddJoint(std::make_unique<PlanarJoint<double>>(
         joint_name, *parent_frame, *child_frame, damping));
+  } else if (joint_type == "curvilinear") {
+    // Defaults for optional tags
+    Vector3d plane_normal(0, 0, 1);
+    Vector3d initial_curve_tangent(1, 0, 0);
+    bool is_periodic = false;
+    double damping = 0.0;
+    if (node->HasElement("drake:plane_normal")) {
+      plane_normal = ParseVector3(
+          diagnostic, node->GetElement("drake:plane_normal"), "xyz");
+    }
+    if (node->HasElement("drake:initial_curve_tangent")) {
+      initial_curve_tangent = ParseVector3(
+          diagnostic, node->GetElement("drake:initial_curve_tangent"), "xyz");
+    }
+    if (node->HasElement("drake:is_periodic")) {
+      is_periodic = ParseBoolean(diagnostic, node, "drake:is_periodic");
+    }
+    if (node->HasElement("drake:damping")) {
+      damping = ParseDouble(diagnostic, node, "drake:damping");
+      if (damping < 0) {
+        std::string message = "ERROR: <drake:joint> '" + joint_name +
+                              "' has negative value for 'damping' attribute: " +
+                              std::to_string(damping);
+        diagnostic.Error(node, std::move(message));
+        return false;
+      }
+    }
+
+    std::vector<double> breaks;
+    std::vector<double> turning_rates;
+    ParseDrakeCurves(diagnostic, node, &breaks, &turning_rates);
+    if (breaks.size() == 0 || turning_rates.size() == 0) {
+      std::string message = "ERROR: <drake:joint> '" + joint_name +
+                            "' failed to parse 'drake:curves'.";
+      diagnostic.Error(node, std::move(message));
+      return false;
+    }
+    PiecewiseConstantCurvatureTrajectory<double> trajectory(
+        breaks, turning_rates, initial_curve_tangent, plane_normal,
+        Vector3d::Zero(), is_periodic);
+    plant->AddJoint(std::make_unique<CurvilinearJoint<double>>(
+        joint_name, *parent_frame, *child_frame, trajectory, damping));
   } else {
     std::string message =
         "ERROR: <drake:joint> '" + joint_name +

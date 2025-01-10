@@ -251,6 +251,11 @@ class CurvilinearJoint final : public Joint<T> {
     this->AddInOneForce(context, 0, force, forces);
   }
 
+  /** @returns copy of underlying curve of joint. */
+  std::unique_ptr<trajectories::Trajectory<double>> get_curve_clone() const {
+    return curvilinear_path_.Clone();
+  }
+
  protected:
   /** Joint<T> override called through public NVI, Joint::AddInForce().
    Arguments already checked to be valid by Joint::AddInForce().

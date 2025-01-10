@@ -226,16 +226,16 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestPeriodicity) {
   const Vector3d curve_tangent = Vector3d::UnitX();
   const PiecewiseConstantCurvatureTrajectory<double> periodic_trajectory(
       segment_breaks_periodic, turning_rates, curve_tangent, plane_normal,
-      Vector3d::Zero());
+      Vector3d::Zero(), true);
 
   const PiecewiseConstantCurvatureTrajectory<double> aperiodic_trajectory(
       segment_breaks_aperiodic, turning_rates, curve_tangent, plane_normal,
       Vector3d::Zero());
 
   EXPECT_TRUE(periodic_trajectory.is_periodic());
-  EXPECT_TRUE(periodic_trajectory.IsNearlyPeriodic(kTolerance));
+  EXPECT_TRUE(periodic_trajectory.EndpointsAreNearlyEqual(kTolerance));
   EXPECT_FALSE(aperiodic_trajectory.is_periodic());
-  EXPECT_FALSE(aperiodic_trajectory.IsNearlyPeriodic(kTolerance));
+  EXPECT_FALSE(aperiodic_trajectory.EndpointsAreNearlyEqual(kTolerance));
 
   // Test periodicity for at arbitrary value.
   const double s = 1.5;
@@ -253,11 +253,17 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {
   const Vector3d plane_normal = Vector3d::UnitZ();
   const Vector3d curve_tangent = Vector3d::UnitX();
   const PiecewiseConstantCurvatureTrajectory<double> double_trajectory(
-      breaks, turning_rates, curve_tangent, plane_normal, Vector3d::Zero());
+      breaks, turning_rates, curve_tangent, plane_normal, Vector3d::Zero(),
+      true);
   const PiecewiseConstantCurvatureTrajectory<AutoDiffXd> autodiff_trajectory(
       double_trajectory);
   const PiecewiseConstantCurvatureTrajectory<symbolic::Expression>
       expression_trajectory(double_trajectory);
+
+  EXPECT_TRUE(autodiff_trajectory.is_periodic() ==
+              double_trajectory.is_periodic());
+  EXPECT_TRUE(expression_trajectory.is_periodic() ==
+              double_trajectory.is_periodic());
 
   const double s_dot = 2.;
   const double s_ddot = 3.;
