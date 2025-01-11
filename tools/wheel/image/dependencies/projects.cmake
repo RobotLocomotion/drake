@@ -5,13 +5,6 @@ set(zlib_md5 "9d6a627693163bbbf3f26403a3a0b0b1")
 set(zlib_dlname "zlib-${zlib_version}.zip")
 list(APPEND ALL_PROJECTS zlib)
 
-# eigen
-set(eigen_version 3.4.0)
-set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/${eigen_version}/eigen-${eigen_version}.tar.gz")
-set(eigen_md5 "4c527a9171d71a72a9d4186e65bea559")
-set(eigen_dlname "eigen-${eigen_version}.tar.gz")
-list(APPEND ALL_PROJECTS eigen)
-
 # lapack (blas)
 if(NOT APPLE)
   set(lapack_version 3.10.0)
