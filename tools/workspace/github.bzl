@@ -1,3 +1,8 @@
+load(
+    "@bazel_tools//tools/build_defs/repo:local.bzl",
+    "local_repository",
+    "new_local_repository",
+)
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "patch")
 load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
 
@@ -77,12 +82,12 @@ def github_archive(
         if extra_strip_prefix:
             path += "/" + extra_strip_prefix
         if build_file == None:
-            native.local_repository(
+            local_repository(
                 name = name,
                 path = path,
             )
         else:
-            native.new_local_repository(
+            new_local_repository(
                 name = name,
                 build_file = build_file,
                 path = path,
