@@ -503,6 +503,7 @@ TEST_F(MujocoParserTest, GeometryProperties) {
           class="default_rgba"/>
     <geom name="no_collision" contype="0" conaffinity="0" />
     <geom name="no_visual" size="0.1" group="3" />
+    <geom name="rgba_out_of_range" type="sphere" size="0.1" rgba="2 0 0 1"/>
   </worldbody>
 </mujoco>
 )""";
@@ -578,6 +579,8 @@ TEST_F(MujocoParserTest, GeometryProperties) {
                   false /* has collision */, true /* has visual */);
   CheckProperties("no_visual", 1.0, Vector4d{.5, .5, .5, 1},
                   true /* has collision */, false /* has visual */);
+  // Rgba(2,0,0,1) is clamped to (1,0,0,1).
+  CheckProperties("rgba_out_of_range", 1.0, Vector4d{1, 0, 0, 1});
 
   // Confirm that the default geometry is a zero-radius sphere.
   GeometryId no_collision_id = inspector.GetGeometryIdByName(

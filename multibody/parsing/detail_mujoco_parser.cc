@@ -918,6 +918,9 @@ class MujocoParser {
     }
     // rgba takes precedence over materials, so must be parsed after.
     ParseVectorAttribute(node, "rgba", &geom.rgba);
+    // Clamp rgba values to [0, 1]. (The MuJoCo parser passively allows values
+    // outside of this range, but Drake's Rgba will throw.)
+    geom.rgba = geom.rgba.cwiseMax(0.0).cwiseMin(1.0);
 
     // Note: The documentation suggests that at least 3 friction parameters
     // should be specified.  But humanoid_CMU.xml in the DeepMind suite
