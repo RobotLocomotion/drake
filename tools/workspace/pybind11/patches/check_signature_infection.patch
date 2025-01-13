@@ -1,0 +1,83 @@
+[pybind11] Add option to flag unregistered types in signatures
+
+This feature is opt-in using a Drake preprocessor symbol (for internal
+use only by Drake).
+
+--- include/pybind11/pybind11.h
++++ include/pybind11/pybind11.h
+@@ -37,6 +37,47 @@
+ #    include <cxxabi.h>
+ #endif
+ 
++#ifdef DRAKE_PYBIND11_CHECK_SIGNATURE_INFECTION
++namespace {
++// As bindings are being loaded, any functions that operate on C++ types that
++// have not been registered yet will notify this function for disposition.
++void OnCppUnregisteredTypeInFunctionSignature(const std::string& signature) {
++  // For now, we only flag Drake types (not, e.g., Eigen types).
++  if (signature.find(" drake::") == std::string::npos) {
++    return;
++  }
++  // This is the baseline set of defects that we allow for now.
++  const std::string_view known_bugs[] = {
++      // Lots of stuff uses the plant without importing it due to cycles.
++      "multibody::MultibodyPlant",
++      // IRIS stuff forms a geometry <=> multibody module cycle.
++      "multibody::RigidBodyTag",
++      // The DeformableModel <=> MultibodyPlant classes form a class cycle.
++      "multibody::DeformableModel",
++      // The rendering <=> sensors modules have lots of inter-module cycles.
++      "sensors::CameraInfo",
++      "sensors::Image",
++      // Some multibody tree bindings still have class cycles within the module.
++      "-> drake::multibody::RigidBody",
++      "bodyB: drake::multibody::RigidBody",
++      // Multibody tree <=> math is a module cycle for geometry_spatial_inertia.
++      "density: float) -> drake::multibody::SpatialInertia",
++      // Meshcat crosses a module boundary.
++      "Meshcat, path: str, cloud: drake::perception::PointCloud",
++  };
++  for (const std::string_view& known_bug : known_bugs) {
++    if (signature.find(known_bug) != std::string::npos) {
++      return;
++    }
++  }
++  throw std::runtime_error(
++      std::string("C++ found in signature: ") + signature +
++      "... either an import is missing, or the Drake functions being bound are"
++      " not declared in proper bottom-up topological order.");
++}
++}  // namespace
++#endif  // DRAKE_PYBIND11_CHECK_SIGNATURE_INFECTION
++
+ PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
+ 
+ /* https://stackoverflow.com/questions/46798456/handling-gccs-noexcept-type-warning
+@@ -445,6 +445,7 @@
+         std::string signature;
+         size_t type_index = 0, arg_index = 0;
+         bool is_starred = false;
++        bool is_cpp_infected = false;
+         for (const auto *pc = text; *pc != '\0'; ++pc) {
+             const auto c = *pc;
+ 
+@@ -497,6 +498,7 @@
+                                  + rec->scope.attr("__qualname__").cast<std::string>();
+                 } else {
+                     signature += detail::quote_cpp_type_name(detail::clean_type_id(t->name()));
++                    is_cpp_infected = true;
+                 }
+             } else {
+                 signature += c;
+@@ -506,6 +508,11 @@
+         if (arg_index != args - rec->has_args - rec->has_kwargs || types[type_index] != nullptr) {
+             pybind11_fail("Internal error while parsing type signature (2)");
+         }
++        if (is_cpp_infected) {
++#ifdef DRAKE_PYBIND11_CHECK_SIGNATURE_INFECTION
++            OnCppUnregisteredTypeInFunctionSignature(signature);
++#endif
++        }
+ 
+         rec->signature = guarded_strdup(signature.c_str());
+         rec->args.shrink_to_fit();

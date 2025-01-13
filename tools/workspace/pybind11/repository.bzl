@@ -21,6 +21,9 @@ def pybind11_repository(
         commit = _COMMIT,
         sha256 = _SHA256,
         build_file = ":package.BUILD.bazel",
+        patches = [
+            ":patches/check_signature_infection.patch",
+        ],
         mirrors = mirrors,
     )
 
