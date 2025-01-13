@@ -60,6 +60,7 @@ drake_pybind_library(
         "solvers_py_csdp.cc",
         "solvers_py_evaluators.cc",
         "solvers_py_gurobi.cc",
+        "solvers_py_ids.cc",
         "solvers_py_ipopt.cc",
         "solvers_py_mathematicalprogram.cc",
         "solvers_py_mixed_integer_optimization_util.cc",
