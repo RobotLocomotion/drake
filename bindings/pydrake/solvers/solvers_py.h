@@ -33,6 +33,9 @@ void DefineSolversEvaluators(py::module m);
 /* Defines the GUROBI bindings. See solvers_py_gurobi.cc. */
 void DefineSolversGurobi(py::module m);
 
+/* Defines bindings per solvers_py_ids.cc */
+void DefineSolversIds(py::module m);
+
 /* Defines the IPOPT bindings. See solvers_py_ipopt.cc. */
 void DefineSolversIpopt(py::module m);
 
