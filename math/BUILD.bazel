@@ -149,15 +149,13 @@ drake_cc_library(
 drake_cc_library(
     name = "geometric_transform",
     srcs = [
+        "fast_pose_composition_functions.cc",
         "hopf_coordinate.cc",
         "quaternion.cc",
         "random_rotation.cc",
         "rigid_transform.cc",
         "roll_pitch_yaw.cc",
         "rotation_matrix.cc",
-        # TODO(jeremy.nimmer) For now, this filename is inconsistent with its
-        # header name. We plan to rename it after the editing churn finishes.
-        "fast_pose_composition_functions_avx2_fma.cc",
     ],
     hdrs = [
         "fast_pose_composition_functions.h",
