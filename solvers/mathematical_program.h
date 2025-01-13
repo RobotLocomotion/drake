@@ -3095,7 +3095,8 @@ class MathematicalProgram {
   /**
    * Adds an exponential cone constraint, that z = A * vars + b should be in
    * the exponential cone. Namely {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ >
-   * 0}.
+   * 0}, or equivalently (using the logarithm function), {z₀, z₁, z₂ | z₂ ≤ z₁ *
+   * log(z₀ / z₁), z₀ > 0, z₁ > 0}.
    * @param A The A matrix in the documentation above. A must have 3 rows.
    * @param b The b vector in the documentation above.
    * @param vars The variables bound with this constraint.
