@@ -3,13 +3,23 @@
 # Drake script to upgrade our requirements lockfile.
 # - Users should make edits to pyproject.toml, and then
 # - run this script to compile pyproject.toml to pdm.lock.
+#
+# The --reuse option may be given to apply changes to pyproject.toml while
+# attempting to preserve existing version pins.
+#
+# This script should also be run periodically to update pinned Python packages
+# to the latest available versions.
 
 set -eux -o pipefail
 
 commit=
 files_to_commit=()
+lock_args=()
 while [ "${1:-}" != "" ]; do
     case "$1" in
+        --reuse)
+            lock_args+=( --update-reuse )
+            ;;
         --commit)
             commit=1
             ;;
@@ -34,11 +44,19 @@ check_working_tree() {
     fi
 }
 
+update_requirements() {
+    sed $'/will be generated/{s/will be/is/\nq\n}' < "$1.in" > "$1"
+    "${venv_pdm}/bin/pdm" export -p "${project}" -G pdm --no-default |
+        grep -vE '^#' >> "$1"
+}
+
 # Chdir to the Drake root.
 cd "$(dirname $0)/../../.."
 readonly drake_python="$(bazel info output_base).drake_python"
 readonly project="${drake_python}/project"
 readonly venv_pdm="${drake_python}/venv.pdm"
+readonly python="${venv_pdm}/bin/python"
+readonly workspace="$(pwd)/tools/workspace/python"
 
 # If committing, check that the working tree is clean (enough). Note that the
 # lock file is ignored.
@@ -47,11 +65,27 @@ readonly venv_pdm="${drake_python}/venv.pdm"
 # Ensure venv exists.
 bazel fetch @python --force
 
-# Remove and recreate the lock file.
+# Update the lock file.
 readonly lockfile="./setup/python/pdm.lock"
-rm -f "${lockfile}"
-"${venv_pdm}/bin/pdm" lock -p "${project}" -L "${lockfile}"
-files_to_commit+=($(git diff --name-only HEAD -- "${lockfile}"))
+lock_args+=( -d -p "${project}" -L "${lockfile}" )
+"${venv_pdm}/bin/pdm" lock "${lock_args[@]}"
+
+# Update pins for PDM itself
+readonly requirements="./setup/python/requirements.txt"
+update_requirements "${requirements}"
+files_to_commit+=( "$(git diff --name-only HEAD -- "${requirements}")" )
+
+if [ ${#files_to_commit[@]} -gt 0 ]; then
+    # PDM needs to be updated.
+    bazel fetch @python
+
+    # Update the lock files (again).
+    update_requirements "${requirements}"
+    "${venv_pdm}/bin/pdm" lock "${lock_args[@]}"
+fi
+
+# Check for changes to the lock file.
+files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
 
 # If committing, do the commit.
 if [ -n "${commit}" ]; then
