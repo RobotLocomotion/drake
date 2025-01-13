@@ -165,20 +165,56 @@ void DoScalarIndependentDefinitions(py::module m) {
             enum_doc.kReachedTermination.doc)
         .value("kFailed", Enum::kFailed, enum_doc.kFailed.doc);
 
-    DefCopyAndDeepCopy(&cls);
     cls  // BR
         .def_static("DidNothing", &Class::DidNothing, cls_doc.DidNothing.doc)
         .def_static("Succeeded", &Class::Succeeded, cls_doc.Succeeded.doc)
-        .def_static("ReachedTermination", &Class::ReachedTermination,
+        .def_static(
+            "ReachedTermination",
+            [](py::object system, std::string message) {
+              // The `class System` is not bound yet, so we must use a dynamic
+              // argument type to avoid referring to a class that doesn't exist.
+              // TODO(jwnimmer-tri) With major surgery to the bindings we could
+              // change the order of operations to work around this, but at the
+              // moment that's too much churn to for the payoff.
+              const SystemBase* system_base = system.cast<SystemBase*>();
+              return EventStatus::ReachedTermination(
+                  system_base, std::move(message));
+            },
             py::arg("system"), py::arg("message"),
             cls_doc.ReachedTermination.doc)
-        .def_static("Failed", &Class::Failed, py::arg("system"),
-            py::arg("message"), cls_doc.Failed.doc)
+        .def_static(
+            "Failed",
+            [](py::object system, std::string message) {
+              // The `class System` is not bound yet, so we must use a dynamic
+              // argument type to avoid referring to a class that doesn't exist.
+              // TODO(jwnimmer-tri) With major surgery to the bindings we could
+              // change the order of operations to work around this, but at the
+              // moment that's too much churn to for the payoff.
+              const SystemBase* system_base = system.cast<SystemBase*>();
+              return EventStatus::Failed(system_base, std::move(message));
+            },
+            py::arg("system"), py::arg("message"), cls_doc.Failed.doc)
         .def("severity", &Class::severity, cls_doc.severity.doc)
-        .def("system", &Class::system, py_rvp::reference, cls_doc.system.doc)
+        .def(
+            "system",
+            [](const Class& self) -> py::object {
+              // The `class System` is not bound yet, so we must use a dynamic
+              // return type to avoid referring to a class that doesn't exist.
+              // TODO(jwnimmer-tri) With major surgery to the bindings we could
+              // change the order of operations to work around this, but at the
+              // moment that's too much churn to for the payoff.
+              const SystemBase* result = self.system();
+              if (result == nullptr) {
+                return py::none();
+              }
+              py::object self_py = py::cast(self, py_rvp::reference);
+              return py::cast(result, py_rvp::reference_internal, self_py);
+            },
+            cls_doc.system.doc)
         .def("message", &Class::message, cls_doc.message.doc)
         .def("KeepMoreSevere", &Class::KeepMoreSevere, py::arg("candidate"),
             cls_doc.KeepMoreSevere.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   py::class_<ContextBase>(m, "ContextBase", doc.ContextBase.doc)
@@ -778,7 +814,18 @@ void DefineRemainingScalarDependentDefinitions(py::module m) {
           "into some other API that only accepts a BasicVector.",
           py_rvp::reference_internal)
       .def("Allocate", &OutputPort<T>::Allocate, doc.OutputPort.Allocate.doc)
-      .def("get_system", &OutputPort<T>::get_system, py_rvp::reference,
+      .def(
+          "get_system",
+          [](const OutputPort<T>& self) {
+            // The `class System` is not bound yet, so we must use a dynamic
+            // return type to avoid referring to a class that doesn't exist.
+            // TODO(jwnimmer-tri) With major surgery to the bindings we could
+            // change the order of operations to work around this, but at the
+            // moment that's too much churn to for the payoff.
+            const System<T>& result = self.get_system();
+            py::object self_py = py::cast(self, py_rvp::reference);
+            return py::cast(&result, py_rvp::reference_internal, self_py);
+          },
           doc.OutputPort.get_system.doc);
 
   DefineTemplateClassWithDefault<LeafOutputPort<T>, OutputPort<T>>(
@@ -866,7 +913,19 @@ void DefineRemainingScalarDependentDefinitions(py::module m) {
       .def("HasValue", &InputPort<T>::HasValue, py::arg("context"),
           doc.InputPort.HasValue.doc)
       .def("Allocate", &InputPort<T>::Allocate, doc.InputPortBase.Allocate.doc)
-      .def("get_system", &InputPort<T>::get_system, py_rvp::reference,
+      .def(
+          "get_system",
+          [](const InputPort<T>& self) {
+            // The `class System` is not bound yet, so we must use a dynamic
+            // return type to avoid referring to a class that doesn't exist.
+            // TODO(jwnimmer-tri) With major surgery to the bindings we could
+            // change the order of operations to work around this, but at the
+            // moment that's too much churn to for the payoff.
+            const System<T>& result = self.get_system();
+            py::object self_py = py::cast(self, py_rvp::reference);
+            return py::cast(&result, py_rvp::reference_internal, self_py);
+          },
+
           doc.InputPort.get_system.doc);
 
   // TODO(russt): Bind relevant WitnessFunction methods.  This is the
@@ -1155,7 +1214,7 @@ void DefineFrameworkDiagramBuilder(py::module m) {
 }
 
 void DefineFrameworkPySemantics(py::module m) {
-  // This list of calls to helpers must remain in topological dependency order.
+  // This list of calls to helpers must remain in topological order.
   DoScalarIndependentDefinitions(m);
   type_visit(
       [m](auto dummy) {
