@@ -1,0 +1,58 @@
+[pybind11] Add option to flag unregistered types in signatures
+
+This feature is opt-in using a Drake preprocessor symbolic (for
+internal use only by Drake).
+
+--- include/pybind11/pybind11.h
++++ include/pybind11/pybind11.h
+@@ -37,6 +37,19 @@
+ #    include <cxxabi.h>
+ #endif
+ 
++namespace drake {
++namespace pydrake {
++namespace internal {
++// As bindings are being loaded, any functions that operate on C++ types that
++// have not been registered yet will notify this function for disposition.
++// This is declared here (in pybind11) and defined in pydrake.
++struct NoteCppUnregisteredTypeInFunctionSignature {
++  static inline void (*callback)(const std::string& signature);
++};
++}  // namespace internal
++}  // namespace pydrake
++}  // namespace drake
++
+ PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
+ 
+ /* https://stackoverflow.com/questions/46798456/handling-gccs-noexcept-type-warning
+@@ -445,6 +445,7 @@
+         std::string signature;
+         size_t type_index = 0, arg_index = 0;
+         bool is_starred = false;
++        bool is_cpp_infected = false;
+         for (const auto *pc = text; *pc != '\0'; ++pc) {
+             const auto c = *pc;
+ 
+@@ -497,6 +498,7 @@
+                                  + rec->scope.attr("__qualname__").cast<std::string>();
+                 } else {
+                     signature += detail::quote_cpp_type_name(detail::clean_type_id(t->name()));
++                    is_cpp_infected = true;
+                 }
+             } else {
+                 signature += c;
+@@ -506,6 +508,14 @@
+         if (arg_index != args - rec->has_args - rec->has_kwargs || types[type_index] != nullptr) {
+             pybind11_fail("Internal error while parsing type signature (2)");
+         }
++        if (is_cpp_infected) {
++#ifdef DRAKE_PYBIND11_CHECK_SIGNATURE_INFECTION
++            using Container = ::drake::pydrake::internal::NoteCppUnregisteredTypeInFunctionSignature;
++            if (Container::callback != nullptr) {
++                (*Container::callback)(signature);
++            }
++#endif
++        }
+ 
+         rec->signature = guarded_strdup(signature.c_str());
+         rec->args.shrink_to_fit();

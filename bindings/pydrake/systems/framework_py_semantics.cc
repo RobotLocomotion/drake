@@ -1214,7 +1214,7 @@ void DefineFrameworkDiagramBuilder(py::module m) {
 }
 
 void DefineFrameworkPySemantics(py::module m) {
-  // This list of calls to helpers must remain in topological order.
+  // This list of calls to helpers must remain in topological dependency order.
   DoScalarIndependentDefinitions(m);
   type_visit(
       [m](auto dummy) {

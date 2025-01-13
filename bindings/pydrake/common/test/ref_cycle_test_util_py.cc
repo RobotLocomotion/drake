@@ -34,10 +34,14 @@ class TestDummyBase {
 }  // namespace
 
 PYBIND11_MODULE(ref_cycle_test_util, m) {
+  // The classes refer to each other so we must declare both before defining.
+  py::class_<IsDynamic> cls_is_dynamic(m, "IsDynamic", py::dynamic_attr());
+  py::class_<NotDynamic> cls_not_dynamic(m, "NotDynamic");
+
   using internal::ref_cycle;
   {
     using Class = NotDynamic;
-    py::class_<Class>(m, "NotDynamic")
+    cls_not_dynamic  // BR
         .def(py::init<>())
         .def("AddIs", &Class::AddIs)
         .def("AddIsCycle", &Class::AddIs, ref_cycle<1, 2>())
@@ -49,7 +53,7 @@ PYBIND11_MODULE(ref_cycle_test_util, m) {
 
   {
     using Class = IsDynamic;
-    py::class_<Class>(m, "IsDynamic", py::dynamic_attr())
+    cls_is_dynamic  // BR
         .def(py::init<>())
         .def(py::init<IsDynamic*>(), py::arg("thing"), ref_cycle<1, 2>())
         .def("AddNot", &Class::AddNot)
