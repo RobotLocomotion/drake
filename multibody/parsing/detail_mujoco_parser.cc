@@ -472,7 +472,12 @@ class MujocoParser {
       if (limited) {
         plant_->get_mutable_joint(index).set_position_limits(
             Vector1d{range[0]}, Vector1d{range[1]});
+        // Note: MuJoCo does not clamp the reference position to stay inside
+        // the limits.
       }
+      double ref{0.0};
+      ParseScalarAttribute(node, "ref", &ref);
+      plant_->get_mutable_joint(index).set_default_positions(Vector1d{ref});
     } else if (type == "hinge") {
       index = plant_
                   ->AddJoint<RevoluteJoint>(name, parent, X_PJ, child, X_CJ,
@@ -484,7 +489,15 @@ class MujocoParser {
         }
         plant_->get_mutable_joint(index).set_position_limits(
             Vector1d{range[0]}, Vector1d{range[1]});
+        // Note: MuJoCo does not clamp the reference position to stay inside
+        // the limits. This is important when the reference position defines
+        // constraints (as in the Cassie model in the menagerie.)
       }
+      double ref{0.0};
+      if (ParseScalarAttribute(node, "ref", &ref) && angle_ == kDegree) {
+        ref *= (M_PI / 180.0);
+      }
+      plant_->get_mutable_joint(index).set_default_positions(Vector1d{ref});
     } else {
       Error(*node, "Unknown joint type " + type);
       return;
@@ -511,7 +524,6 @@ class MujocoParser {
     WarnUnsupportedAttribute(*node, "solimpfriction");
     WarnUnsupportedAttribute(*node, "stiffness");
     WarnUnsupportedAttribute(*node, "margin");
-    WarnUnsupportedAttribute(*node, "ref");
     WarnUnsupportedAttribute(*node, "springref");
     WarnUnsupportedAttribute(*node, "frictionloss");
     WarnUnsupportedAttribute(*node, "user");
