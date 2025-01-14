@@ -94,7 +94,7 @@ class CIrisCollisionGeometry {
    @param y_slack The slack variable y in the documentation above, used for
    non-polytopic geometries. For spheres and capsules, y_slack has size 3. For
    cylinders, y_slack has size 2.
-   @param[in/out] rationals We append new rational functions to `rationals`.
+   @param[in,out] rationals We append new rational functions to `rationals`.
    If these new rational functions are positive, then the geometry is on a given
    side of the plane.
    @pre rationals != nullptr

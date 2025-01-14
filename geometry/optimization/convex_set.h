@@ -351,7 +351,7 @@ class ConvexSet {
   and are projected to themselves.
 
   @param[in] points are the points which we wish to project to the convex set.
-  @param[in/out] projected_points are the projection of @p points onto the
+  @param[in,out] projected_points are the projection of @p points onto the
   convex set.
   @return A vector `distances` which is the same size as @p points.cols().These
   are the distances from @p points to the convex set. If distances[i] has a

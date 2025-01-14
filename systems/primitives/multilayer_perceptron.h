@@ -80,10 +80,10 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    activation function does *not* count as an additional layer). The first
    element specifies the number of inputs, and the last layer specifies the
    number of outputs.
-   @param activation_type specifies the activation function, σ(), used in
+   @param activation_types specifies the activation function, σ(), used in
    _each_ non-input layer of the network (including the last layer).
 
-   `activation_type` should have one less element than `layers`.
+   `activation_types` should have one less element than `layers`.
    @pydrake_mkdoc_identifier{vector_activation} */
   MultilayerPerceptron(
       const std::vector<int>& layers,
@@ -113,10 +113,10 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    network (the activation function does *not* count as an additional layer).
    The first element specifies the size of the first hidden layer, and the last
    layer specifies the number of outputs.
-   @param activation_type specifies the activation function, σ(), used in
+   @param activation_types specifies the activation function, σ(), used in
    _each_ non-input layer of the network (including the last layer).
 
-   `activation_type` should have the same number of elements as
+   `activation_types` should have the same number of elements as
    `remaining_layers`.
    @pydrake_mkdoc_identifier{sin_cos_features} */
   MultilayerPerceptron(
@@ -212,6 +212,10 @@ class MultilayerPerceptron final : public LeafSystem<T> {
   void SetBiases(EigenPtr<VectorX<T>> params, int layer,
                  const Eigen::Ref<const VectorX<T>>& b) const;
 
+  /** Helper function signature for Backpropagation(). */
+  using ScalarLossFunction = std::function<T(
+      const Eigen::Ref<const MatrixX<T>>& Y, EigenPtr<MatrixX<T>> dloss_dY)>;
+
   /** Implements the Backpropagation algorithm for the MLP to compute the
    gradients of a scalar loss function with respect to the network parameters.
 
@@ -234,8 +238,7 @@ class MultilayerPerceptron final : public LeafSystem<T> {
    */
   T Backpropagation(const Context<T>& context,
                     const Eigen::Ref<const MatrixX<T>>& X,
-                    const std::function<T(const Eigen::Ref<const MatrixX<T>>& Y,
-                                          EigenPtr<MatrixX<T>> dloss_dY)>& loss,
+                    const ScalarLossFunction& loss,
                     EigenPtr<VectorX<T>> dloss_dparams) const;
 
   /** Calls Backpropagation with the mean-squared error loss function:

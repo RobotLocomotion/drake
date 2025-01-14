@@ -32,11 +32,11 @@ struct ZmpTestTraj {
 /**
  * Forward simulation using the linear policy from `zmp_planner` starting from
  * the initial condition `x0` using explicit Euler integration.
- * @param zmp_planner, Contains planned center of mass trajectory,
+ * @param zmp_planner Contains planned center of mass trajectory,
  * value function, and linear policy.
- * @param x0, Initial condition.
- * @param dt, Time step.
- * @param extra_time_at_the_end, Simulate `extra_time_at_the_end` seconds past
+ * @param x0 Initial condition.
+ * @param dt Time step.
+ * @param extra_time_at_the_end Simulate `extra_time_at_the_end` seconds past
  * the end of the trajectories for convergence.
  * @return ZmpTestTraj that contains all the information.
  */
@@ -58,9 +58,9 @@ ZmpTestTraj SimulateZmpPolicy(const ZmpPlanner& zmp_planner,
  * </pre>
  * ss stands for `single_support_duration`,
  * and ds for `double_support_duration`.
- * @param footsteps, X Y pair
- * @param double_support_duration, Duration for double support.
- * @param single_support_duration, Duration for single support.
+ * @param footsteps X Y pair
+ * @param double_support_duration Duration for double support.
+ * @param single_support_duration Duration for single support.
  * @return Three trajectories: 0 is zero-order-hold, 1 is linear, 2 is cubic.
  */
 std::vector<trajectories::PiecewisePolynomial<double>> GenerateDesiredZmpTrajs(

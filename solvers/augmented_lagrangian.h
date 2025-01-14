@@ -46,7 +46,7 @@ class AugmentedLagrangianNonsmooth {
 
   /**
    * @param prog The mathematical program we will evaluate.
-   * @param include_x_bounds. Whether the Lagrangian and the penalty for the
+   * @param include_x_bounds Whether the Lagrangian and the penalty for the
    * bounds x_lo <= x <= x_up are included in the augmented Lagrangian L(x, λ,
    * μ) or not.
    */
@@ -162,7 +162,7 @@ class AugmentedLagrangianSmooth {
 
   /**
    * @param prog The mathematical program we will evaluate.
-   * @param include_x_bounds. Whether the Lagrangian and the penalty for the
+   * @param include_x_bounds Whether the Lagrangian and the penalty for the
    * bounds x_lo <= x <= x_up are included in the augmented Lagrangian L(x, s,
    * λ, μ) or not.
    */

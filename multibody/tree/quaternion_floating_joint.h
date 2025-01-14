@@ -259,7 +259,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// velocity of the child frame M's origin in the parent frame F is `v_FM`.
   /// @param[in,out] context
   ///   A Context for the MultibodyPlant this joint belongs to.
-  /// @param[in] w_FM
+  /// @param[in] v_FM
   ///   A vector in ℝ³ with the translational velocity of the child frame M's
   ///   origin in the parent frame F, expressed in F. Refer to this class's
   ///   documentation for further details and definitions of these frames.

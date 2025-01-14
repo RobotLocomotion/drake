@@ -9,7 +9,7 @@
 
 #ifdef DRAKE_DOXYGEN_CXX
 /// @p DRAKE_ASSERT(condition) is similar to the built-in @p assert(condition)
-/// from the C++ system header @p <cassert>.  Unless Drake's assertions are
+/// from the C++ system header `<cassert>`.  Unless Drake's assertions are
 /// disarmed by the pre-processor definitions listed below, @p DRAKE_ASSERT
 /// will evaluate @p condition and iff the value is false will trigger an
 /// assertion failure with a message showing at least the condition text,

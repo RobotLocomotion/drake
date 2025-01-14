@@ -52,7 +52,7 @@ variables to `vars` if they are not included in `vars` yet.
 @param[in,out] vars  As an input, `vars` contain the variables before
 extracting expression `e`. As an output, the variables in `e` that were not
 included in `vars`, will be appended to the end of `vars`.
-@param[in,out] map_var_to_index. map_var_to_index is of the same size as
+@param[in,out] map_var_to_index is of the same size as
 `vars`, and map_var_to_index[vars(i).get_id()] = i. This invariance holds for
 map_var_to_index both as the input and as the output.
 */
@@ -88,11 +88,11 @@ ExtractVariablesFromExpression(
 @param[in] poly Quadratic polynomial to decompose.
 @param[in] map_var_to_index maps variables in `poly.GetVariables()` to the
 index in the vector `x`.
-@param Q[out] The Hessian of the quadratic expression. @pre The size of Q
+@param[out] Q The Hessian of the quadratic expression. @pre The size of Q
 should be `num_variables x num_variables`. Q is a symmetric matrix.
-@param b[out] The linear term of the quadratic expression. @pre The size of `b`
+@param[out] b linear term of the quadratic expression. @pre The size of `b`
 should be `num_variables`.
-@param c[out] The constant term of the quadratic expression. */
+@param[out] c The constant term of the quadratic expression. */
 void DecomposeQuadraticPolynomial(
     const symbolic::Polynomial& poly,
     const std::unordered_map<symbolic::Variable::Id, int>& map_var_to_index,

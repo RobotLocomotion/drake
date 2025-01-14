@@ -218,8 +218,8 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
 
   /**
    * Version of ZeroOrderHold(breaks, samples) that uses vector samples and
-   * Eigen VectorXd/MatrixX<T> arguments. Each column of `samples` represents a
-   * sample point.
+   * `Eigen::VectorX<T>/MatrixX<T>` arguments. Each column of `samples`
+   * represents a sample point.
    *
    * @pre `samples.cols() == breaks.size()`
    * @throws std::exception under the conditions specified under

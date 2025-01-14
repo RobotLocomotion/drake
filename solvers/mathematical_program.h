@@ -731,7 +731,7 @@ class MathematicalProgram {
    * existing indeterminates.
    * @tparam rows  The number of rows in the new indeterminates.
    * @tparam cols  The number of columns in the new indeterminates.
-   * @param names A vector of strings containing the name for each variable.
+   * @param name All variables will share the same name, but different index.
    * @return The MatrixIndeterminate of size rows x cols, containing the
    * new vars (not all the vars stored).
    *
@@ -2385,7 +2385,7 @@ class MathematicalProgram {
       const symbolic::Expression& quadratic_expression, double tol = 0);
 
   /**
-   * Adds a constraint that a symbolic expression @param v is in the rotated
+   * Adds a constraint that a symbolic expression `v` is in the rotated
    * Lorentz cone, i.e.,
    * \f[
    * v_0v_1 \ge v_2^2 + ... + v_{n-1}^2\\
@@ -3493,7 +3493,6 @@ class MathematicalProgram {
   /**
    * Evaluates a set of bindings (plural version of `EvalBinding`).
    * @param bindings List of bindings.
-   * @param prog
    * @param prog_var_vals The value of all the decision variables in this
    * program.
    * @return All binding values, concatenated into a single vector.

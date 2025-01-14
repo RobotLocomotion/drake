@@ -29,7 +29,7 @@ class InverseKinematics {
 
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant.
-   * This constructor will create and own a context for @param plant.
+   * This constructor will create and own a context for `plant`.
    * @param plant The robot on which the inverse kinematics problem will be
    * solved.
    * @param with_joint_limits If set to true, then the constructor

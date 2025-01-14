@@ -31,8 +31,8 @@ class PiecewisePose final : public PiecewiseTrajectory<T> {
 
   /**
    * Constructor.
-   * @param pos_traj Position trajectory.
-   * @param rot_traj Orientation trajectory.
+   * @param position_trajectory Position trajectory.
+   * @param orientation_trajectory Orientation trajectory.
    */
   PiecewisePose(const PiecewisePolynomial<T>& position_trajectory,
                 const PiecewiseQuaternionSlerp<T>& orientation_trajectory);

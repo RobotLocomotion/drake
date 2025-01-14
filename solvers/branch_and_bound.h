@@ -351,7 +351,7 @@ class MixedIntegerBranchAndBound {
    * Each solution is found in a separate node in the branch-and-bound tree, so
    * the values of the binary variables are different in each solution.
    * @param mip_var A variable in the original MIP.
-   * @param nth_best_solution. The index of the best integral solution.
+   * @param nth_best_solution The index of the best integral solution.
    * @pre `mip_var` is a variable in the original MIP.
    * @pre `nth_best_solution` is between 0 and solutions().size().
    * @throws std::exception if the preconditions are not satisfied.
@@ -364,7 +364,7 @@ class MixedIntegerBranchAndBound {
    * The best solutions are sorted in the ascending order based on their costs.
    * Each solution is found in a separate node in the branch-and-bound tree, so
    * @param mip_vars Variables in the original MIP.
-   * @param nth_best_solution. The index of the best integral solution.
+   * @param nth_best_solution The index of the best integral solution.
    * @pre `mip_vars` are variables in the original MIP.
    * @pre `nth_best_solution` is between 0 and solutions().size().
    * @throws std::exception if the preconditions are not satisfied.

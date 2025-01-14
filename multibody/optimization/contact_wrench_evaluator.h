@@ -160,7 +160,6 @@ class ContactWrenchFromForceInWorldFrameEvaluator final
    * @param geometry_id_pair The pair of geometries for which the contact wrench
    * is computed. Notice that the order of the geometries in the pair should
    * match with that in SceneGraphInspector::GetCollisionCandidates().
-   * @param description The description of this evaluator. Default to none.
    */
   ContactWrenchFromForceInWorldFrameEvaluator(
       const MultibodyPlant<AutoDiffXd>* plant,

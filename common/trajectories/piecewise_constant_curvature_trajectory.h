@@ -90,7 +90,7 @@ class PiecewiseConstantCurvatureTrajectory final
    @param turning_rates A vector of n-1 turning rates ρᵢ for each segment.
    @param initial_curve_tangent The initial tangent of the curve expressed in
    the parent frame, t̂_A(s₀).
-   @param   The normal axis of the 2D plane in which the curve
+   @param plane_normal The normal axis of the 2D plane in which the curve
    lies, expressed in the parent frame, p̂_A.
    @param initial_position The initial position of the curve expressed in
    the parent frame, p_AoFo_A(s₀).

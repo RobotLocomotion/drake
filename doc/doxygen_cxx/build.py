@@ -152,6 +152,10 @@ def _is_important_warning(line):
         # Broken link.
         return True
 
+    # Check for failing `@param` commands (e.g., typos in the identifier name).
+    if "@param" in line:
+        return True
+
     # All good.
     return False
 

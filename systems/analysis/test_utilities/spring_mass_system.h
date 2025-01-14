@@ -66,7 +66,7 @@ class SpringMassSystem : public LeafSystem<T> {
   /// Constructs a spring-mass system with a fixed spring constant and given
   /// mass. Subclasses must use the protected constructor, not this one.
   /// @param[in] spring_constant_N_per_m The spring constant in N/m.
-  /// @param[in] mass_Kg The actual value in Kg of the mass attached to the
+  /// @param[in] mass_kg The actual value in kg of the mass attached to the
   /// spring.
   /// @param[in] system_is_forced If `true`, the system has an input port for an
   /// external force. If `false`, the system has no inputs.

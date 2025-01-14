@@ -156,7 +156,7 @@ void hash_append(HashAlgorithm& hasher,
 
 /// Provides @ref hash_append for std::set.
 ///
-/// Note that there is no `hash_append` overload for `std::unordered_set. See
+/// Note that there is no `hash_append` overload for `std::unordered_set`. See
 /// [N3980](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html#unordered)
 /// for details.
 template <class HashAlgorithm, class Key, class Compare, class Allocator>
