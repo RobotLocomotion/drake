@@ -65,6 +65,7 @@ from pydrake.systems.primitives import (
     PassThrough, PassThrough_,
     ZeroOrderHold,
     )
+from pydrake.systems.test.test_util import MyVector2
 
 # TODO(eric.cousineau): The scope of this test file and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
@@ -318,7 +319,21 @@ class TestGeneral(unittest.TestCase):
 
     def test_continuous_state_api(self):
         self.assertEqual(ContinuousState().size(), 0)
-        self.assertEqual(ContinuousState(state=BasicVector(2)).size(), 2)
+        custom_vector = MyVector2(np.ones(2))
+        state = ContinuousState(state=custom_vector)
+        self.assertIsInstance(state.get_vector(), MyVector2)
+        self.assertEqual(state.size(), 2)
+        self.assertEqual(state.num_q(), 0)
+        self.assertEqual(state.num_v(), 0)
+        self.assertEqual(state.num_z(), 2)
+        state = ContinuousState(state=custom_vector, num_q=1, num_v=1, num_z=0)
+        self.assertIsInstance(state.get_vector(), MyVector2)
+        self.assertEqual(state.size(), 2)
+        self.assertEqual(state.num_q(), 1)
+        self.assertEqual(state.num_v(), 1)
+        self.assertEqual(state.num_z(), 0)
+        state = ContinuousState(state=BasicVector(2))
+        self.assertEqual(state.size(), 2)
         state = ContinuousState(state=BasicVector(np.arange(6)), num_q=3,
                                 num_v=2, num_z=1)
         state_clone = state.Clone()
