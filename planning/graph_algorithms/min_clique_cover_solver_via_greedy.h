@@ -6,6 +6,7 @@
 
 #include <Eigen/Sparse>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/planning/graph_algorithms/max_clique_solver_base.h"
 #include "drake/planning/graph_algorithms/min_clique_cover_solver_base.h"
 
@@ -28,8 +29,14 @@ class MinCliqueCoverSolverViaGreedy final : public MinCliqueCoverSolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MinCliqueCoverSolverViaGreedy);
 
-  MinCliqueCoverSolverViaGreedy(const MaxCliqueSolverBase& max_clique_solver,
-                                int min_clique_size = 1);
+  /** Constructs using the given max clique solver. */
+  explicit MinCliqueCoverSolverViaGreedy(
+      std::shared_ptr<MaxCliqueSolverBase> max_clique_solver,
+      int min_clique_size = 1);
+
+  DRAKE_DEPRECATED("2025-05-01", "Pass the solver by shared_ptr not const-ref")
+  explicit MinCliqueCoverSolverViaGreedy(
+      const MaxCliqueSolverBase& max_clique_solver, int min_clique_size = 1);
 
   /**
    * Set the minimum clique size. Throws if this is less than 1.
@@ -47,7 +54,7 @@ class MinCliqueCoverSolverViaGreedy final : public MinCliqueCoverSolverBase {
       const Eigen::SparseMatrix<bool>& adjacency_matrix,
       bool partition = false) final;
 
-  std::unique_ptr<MaxCliqueSolverBase> max_clique_solver_;
+  std::shared_ptr<MaxCliqueSolverBase> max_clique_solver_;
 
   int min_clique_size_{1};
 };
