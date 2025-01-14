@@ -64,8 +64,10 @@ if [[ "$(uname)" == "Linux" ]]; then
 fi
 
 # Copy the license files from third party dependencies we vendor.
-cp -r -t ${WHEEL_DIR}/pydrake/doc \
-    /opt/drake-dependencies/licenses/*
+if [[ "$(uname)" == "Linux" ]]; then
+  cp -r -t ${WHEEL_DIR}/pydrake/doc \
+      /opt/drake-dependencies/licenses/*
+fi
 
 # MOSEK is "sort of" third party, but is procured as part of Drake's build and
 # ends up in /opt/drake.
