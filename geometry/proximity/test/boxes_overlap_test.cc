@@ -2,9 +2,15 @@
 
 #include <string>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include "hwy/tests/hwy_gtest.h"
+#pragma GCC diagnostic pop
+
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/hwy_dynamic.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/rgba.h"
@@ -19,7 +25,14 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransformd;
 
-class BoxesOverlapTest : public ::testing::Test {
+// TODO(jwnimmer-tri) This similar of fixture (using hwy_gtest.h) is duplicated
+// in two other places (//common and //geometry/proximity). We should probably
+// seek a more elegant way to do this, instead of copying it to more places.
+
+/* This hwy-infused test fixture replicates every test case to be run against
+every target architecture variant (e.g., SSE4, AVX2, AVX512VL, etc). When run,
+it filters the suite to only run tests that the current CPU can handle. */
+class BoxesOverlapTest : public hwy::TestWithParamTarget {
  public:
   // TODO(SeanCurtis-TRI): Make this a parameterized unit test and parameterize
   // the various test cases in AllCases so a user can choose to execute just the
@@ -37,6 +50,13 @@ class BoxesOverlapTest : public ::testing::Test {
   }
 
  protected:
+  void SetUp() override {
+    // Reset Drake's dispatcher, to be sure that we run all of the target
+    // architectures.
+    drake::internal::HwyDynamicReset();
+    hwy::TestWithParamTarget::SetUp();
+  }
+
   // Tests to see if the two oriented bounding boxes overlap. The boxes are
   // represented with vectors containing their half sizes as measured in their
   // own frames. This tests A against B and B against A. If the two queries
@@ -68,13 +88,16 @@ class BoxesOverlapTest : public ::testing::Test {
 
 std::unique_ptr<Meshcat> BoxesOverlapTest::meshcat_{nullptr};
 
+// Instatiate the suite for all CPU targets (using the HWY macro).
+HWY_TARGET_INSTANTIATE_TEST_SUITE_P(BoxesOverlapTest);
+
 // Tests whether OBBs overlap. There are 15 unique possibilities for
 // non-overlap. Therefore, there are 15 cases to test, each covering a different
 // separating axis between the two bounding boxes. The first 3 cases use the
 // axes of Frame A, the next 3 cases use the axes of Frame B, and the remaining
 // 9 cases use the axes defined by the cross product of axes from Frame A and
 // Frame B. We also test that it is robust for the case of parallel boxes.
-TEST_F(BoxesOverlapTest, AllCases) {
+TEST_P(BoxesOverlapTest, AllCases) {
   // Each box simply gets posed in a common frame, G.
   const char* axes[] = {"x", "y", "z"};
 
