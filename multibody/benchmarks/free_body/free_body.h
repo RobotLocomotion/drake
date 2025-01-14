@@ -43,11 +43,11 @@ class FreeBody {
   /// to right-handed orthonormal unit vectors Bx, By, Bz fixed in B (body).
   /// Note: The unit vector Bz is parallel to body B's symmetry axis.
   /// Note: The quaternion should already be normalized before it is passed.
-  /// @param[in] initial_W_NB_B Value at time t = 0 of the angular velocity in N
+  /// @param[in] initial_w_NB_B Value at time t = 0 of the angular velocity in N
   /// of body B, expressed in N.
   /// @param[in] initial_p_NoBcm_N Value at time t = 0 of the position vector
   /// from No (origin of world N) to Bcm (B's center of mass), expressed in N.
-  /// @param[in] initial_v_NBcm_N Value at time t = 0 of the velocity in N
+  /// @param[in] initial_v_NBcm_B Value at time t = 0 of the velocity in N
   /// of Bcm (B's center of mass), expressed in N.
   /// @param[in] gravity_N Local gravitational acceleration, expressed in N.
   FreeBody(const Eigen::Quaterniond& initial_quat_NB,

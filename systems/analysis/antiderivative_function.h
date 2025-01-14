@@ -63,7 +63,7 @@ class AntiderivativeFunction {
   /// @p integrable_function, parameterized with @p k.
   ///
   /// @param integrable_function The function f(x; 𝐤) to be integrated.
-  /// @param 𝐤 ∈ ℝᵐ is the vector of parameters.  The default is the empty
+  /// @param k 𝐤 ∈ ℝᵐ is the vector of parameters.  The default is the empty
   /// vector (indicating no parameters).
   AntiderivativeFunction(const IntegrableFunction& integrable_function,
                          const Eigen::Ref<const VectorX<T>>& k = Vector0<T>{});

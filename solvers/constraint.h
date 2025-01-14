@@ -51,8 +51,8 @@ class Constraint : public EvaluatorBase {
   /**
    * Constructs a constraint which has `num_constraints` rows, with an input
    * `num_vars` x 1 vector.
-   * @param num_constraints. The number of rows in the constraint output.
-   * @param num_vars. The number of rows in the input.
+   * @param num_constraints The number of rows in the constraint output.
+   * @param num_vars The number of rows in the input.
    * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
    * @param lb Lower bound, which must be a `num_constraints` x 1 vector, lb
    * cannot contain NAN.
@@ -76,8 +76,8 @@ class Constraint : public EvaluatorBase {
   /**
    * Constructs a constraint which has `num_constraints` rows, with an input
    * `num_vars` x 1 vector, with no bounds.
-   * @param num_constraints. The number of rows in the constraint output.
-   * @param num_vars. The number of rows in the input.
+   * @param num_constraints The number of rows in the constraint output.
+   * @param num_vars The number of rows in the input.
    * If the input dimension is unknown, then set `num_vars` to Eigen::Dynamic.
    * @see Eval(...)
    */
@@ -144,8 +144,8 @@ class Constraint : public EvaluatorBase {
 
   /**
    * Set the upper and lower bounds of the constraint.
-   * @param new_lb . A `num_constraints` x 1 vector.
-   * @param new_ub. A `num_constraints` x 1 vector.
+   * @param new_lb A `num_constraints` x 1 vector.
+   * @param new_ub A `num_constraints` x 1 vector.
    * @note If the users want to expose this method in a sub-class, do
    * using Constraint::set_bounds, as in LinearConstraint.
    */
@@ -657,7 +657,7 @@ class LinearConstraint : public Constraint {
    *
    * @param new_A new linear term
    * @param new_lb new lower bound
-   * @param new_up new upper bound
+   * @param new_ub new upper bound
    * @pydrake_mkdoc_identifier{dense_A}
    */
   void UpdateCoefficients(const Eigen::Ref<const Eigen::MatrixXd>& new_A,

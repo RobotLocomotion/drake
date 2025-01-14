@@ -26,7 +26,7 @@ class TriangleQuadrature {
  public:
   /// Numerically integrates the function f over a triangle using the given
   /// quadrature rule and the initial value.
-  /// @param f(p) a function that returns a numerical value for point p in the
+  /// @param f a function f(p) that returns a numerical value for point p in the
   ///        domain of the triangle, specified in barycentric coordinates.
   ///        The barycentric coordinates are given by
   ///        (p[0], p[1], 1 - p[0] - p[1]).
@@ -38,7 +38,7 @@ class TriangleQuadrature {
 
   /// Alternative signature for Integrate() that uses three-dimensional
   /// barycentric coordinates.
-  /// @param f(p) a function that returns a numerical value for point p in the
+  /// @param f a function f(p) that returns a numerical value for point p in the
   ///        domain of the triangle, specified in barycentric coordinates.
   ///        The barycentric coordinates are given by
   ///        (p[0], p[1], p[2]).

@@ -31,7 +31,7 @@ class StaticFrictionConeConstraint : public solvers::Constraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StaticFrictionConeConstraint);
 
   /**
-   * @param contact_wrench_evaluator. The evaluator takes in the generalized
+   * @param contact_wrench_evaluator The evaluator takes in the generalized
    * position q, and a parameterization of the contact wrench λ, and evaluates
    * the contact wrench from body A to body B applied at the witness point of
    * geometry B expressed in the world frame, i.e., computes the contact wrench

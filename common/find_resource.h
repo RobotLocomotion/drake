@@ -41,7 +41,7 @@ class FindResourceResult {
   /// Returns a success result (the requested resource was found).
   /// @pre neither string parameter is empty
   /// @param resource_path the value passed to FindResource
-  /// @param base_path an absolute base path that precedes resource_path
+  /// @param absolute_path an absolute base path that precedes resource_path
   static FindResourceResult make_success(std::string resource_path,
                                          std::string absolute_path);
 

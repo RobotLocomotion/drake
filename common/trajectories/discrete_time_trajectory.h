@@ -35,7 +35,7 @@ of a solution to a discrete-time finite-horizon linear quadratic regulator
 DiscreteTimeTrajectory, K(t).  Implementing
 @verbatim
 x(t) -> MatrixGain(-K(t)) -> u(t)
-@verbatim
+@endverbatim
 in a block diagram is perfectly correct, and if the u(t) is only connected to
 the original system that it was designed for, then K(t) will only get evaluated
 at the defined sample times, and all is well.  But if you wire it up to a
@@ -44,7 +44,7 @@ throw.  If one wishes to use the K(t) solution on a continuous-time system, then
 we can use
 @verbatim
 x(t) -> MatrixGain(-K(t)) -> ZOH -> u(t).
-@verbatim
+@endverbatim
 This is different, and *more correct* than implementing K(t) as a zero-order
 hold trajectory, because in this version, both K(t) and the inputs x(t) will
 only be evaluated at the discrete-time input.  If `t_s` was the most recent

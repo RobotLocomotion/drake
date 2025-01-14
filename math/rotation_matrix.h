@@ -147,7 +147,6 @@ class RotationMatrix {
   /// makes the %RotationMatrix for a Space-fixed (extrinsic) X-Y-Z rotation by
   /// "roll-pitch-yaw" angles `[r, p, y]`, which is equivalent to a Body-fixed
   /// (intrinsic) Z-Y-X rotation by "yaw-pitch-roll" angles `[y, p, r]`.
-  /// @param[in] rpy radian measures of three angles [roll, pitch, yaw].
   /// @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
   /// rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
   /// fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
@@ -629,7 +628,7 @@ class RotationMatrix {
   /// where `i = 1:3, j = 1:3`, subject to `R * Rᵀ = I`.  The square-root of
   /// this double-summation is called the Frobenius norm.
   /// @param[in] M a 3x3 matrix.
-  /// @param[out] quality_factor.  The quality of M as a rotation matrix.
+  /// @param[out] quality_factor The quality of M as a rotation matrix.
   /// `quality_factor` = 1 is perfect (M = R). `quality_factor` = 1.25 means
   /// that when M multiplies a unit vector (magnitude 1), a vector of magnitude
   /// as large as 1.25 may result.  `quality_factor` = 0.8 means that when M

@@ -122,7 +122,7 @@ class GripperCommandEncoder : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperCommandEncoder);
 
   /// Constructor.
-  /// @param num_joints The total number of fingers used on the planar-gripper.
+  /// @param num_fingers The total number of fingers used on the planar-gripper.
   explicit GripperCommandEncoder(int num_fingers = kGripperDefaultNumFingers);
 
   const systems::InputPort<double>& get_state_input_port() const {
@@ -226,7 +226,7 @@ class GripperStatusEncoder : public systems::LeafSystem<double> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GripperStatusEncoder);
 
   /// Constructor.
-  /// @param num_joints The total number of fingers used on the planar-gripper.
+  /// @param num_fingers The total number of fingers used on the planar-gripper.
   explicit GripperStatusEncoder(int num_fingers = kGripperDefaultNumFingers);
 
   const systems::InputPort<double>& get_state_input_port() const {

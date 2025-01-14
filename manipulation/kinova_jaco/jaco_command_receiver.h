@@ -37,6 +37,7 @@ namespace kinova_jaco {
 /// - position
 /// - velocity
 /// - time
+/// @endsystem
 ///
 /// @par Output prior to receiving a valid lcmt_jaco_command message: The
 /// "position" output initially feeds through from the "position_measured"
@@ -47,8 +48,6 @@ namespace kinova_jaco {
 /// the "position" input.  Alternatively, the LatchInitialPosition() method is
 /// available to achieve the same effect without using events. The "time"
 /// output will be a vector of a single zero.
-///
-/// @endsystem
 class JacoCommandReceiver : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JacoCommandReceiver);

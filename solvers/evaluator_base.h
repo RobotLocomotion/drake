@@ -151,8 +151,8 @@ class EvaluatorBase {
  protected:
   /**
    * Constructs a evaluator.
-   * @param num_outputs. The number of rows in the output.
-   * @param num_vars. The number of rows in the input.
+   * @param num_outputs The number of rows in the output.
+   * @param num_vars The number of rows in the input.
    * If the input dimension is not known, then set `num_vars` to Eigen::Dynamic.
    * @param description A human-friendly description.
    * @see Eval(...)

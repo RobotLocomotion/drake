@@ -91,9 +91,6 @@ class LcmPublisherSystem : public LeafSystem<double> {
    *
    * @param[in] channel The LCM channel on which to publish.
    *
-   * @param[in] serializer The serializer that converts between byte vectors
-   * and LCM message objects.
-   *
    * @param lcm A pointer to the LCM subsystem to use, which must
    * remain valid for the lifetime of this object. If null, a
    * drake::lcm::DrakeLcm object is allocated and maintained internally, but

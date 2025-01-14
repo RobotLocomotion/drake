@@ -39,7 +39,7 @@ namespace drake {
       be changed as well. -->
 
  Generally, the API is modeled as closely as possible on the C++ standard
- `std::unique_ptr` API and %copyable_unique_ptr<T> is interoperable with
+ `std::unique_ptr` API and %copyable_unique_ptr is interoperable with
  `unique_ptr<T>` wherever that makes sense. However, there are some differences:
 
  1. It always uses a default deleter.
