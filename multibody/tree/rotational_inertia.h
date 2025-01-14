@@ -781,7 +781,7 @@ class RotationalInertia {
   // @param mass_p_PQ_E The mass of particle Q multiplied by `p_PQ_E`.
   //                    If unit mass, this argument is simply p_PQ_E.
   // @retval I_QP_E, Q's rotational inertia about-point Q expressed-in frame E.
-  RotationalInertia(const Vector3<T>& mass_p_PQ_E, const Vector3<T>& p_PQ_E);;
+  RotationalInertia(const Vector3<T>& mass_p_PQ_E, const Vector3<T>& p_PQ_E);
 
   // Constructor from an Eigen expression that represents a matrix in ℝ³ˣ³ with
   // entries corresponding to inertia moments and products as described in this
