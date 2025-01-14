@@ -116,6 +116,9 @@ struct GridData {
     return std::memcmp(this, &other, sizeof(GridData<T>)) == 0;
   }
 
+  /* Returns true iff `this` GridData is inactive. */
+  bool is_inactive() const { return index_or_flag.is_inactive(); }
+
   Vector3<T> v{Vector3<T>::Zero()};
   T m{0};
   Vector3<T> scratch{Vector3<T>::Zero()};
