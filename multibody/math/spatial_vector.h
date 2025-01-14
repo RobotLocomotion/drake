@@ -178,7 +178,7 @@ class SpatialVector {
   /// Determines whether all six corresponding elements of two spatial vectors
   /// are equal to each other to within a specified tolerance epsilon.
   /// @param[in] other spatial vector to compare to `this` spatial vector.
-  /// @param[in] epsilon specified tolerance for this test.
+  /// @param[in] tolerance specified tolerance for this test.
   /// @returns true if ‖this - other‖∞ < epsilon, otherwise returns false.
   /// Note: the infinity norm ‖this - other‖∞ is simply the maximum of the six
   /// absolute values in (this - other).
@@ -246,8 +246,8 @@ class SpatialVector {
 
   /// Subtracts two spatial vectors by simply subtracting their 6 underlying
   /// elements.
-  /// @param[in] V1_E spatial vector expressed in the same frame E as V2_E.
-  /// @param[in] V2_E spatial vector expressed in the same frame E as V1_E.
+  /// @param[in] V1 spatial vector expressed in the same frame V2.
+  /// @param[in] V2 spatial vector expressed in the same frame V1.
   /// @note The general utility of this operator-() function is questionable
   /// and it should only be used if you are sure it makes sense.  Please refer
   /// to documentation for the appropriate spatial quantity subclass (e.g.,

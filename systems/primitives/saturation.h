@@ -87,13 +87,11 @@ class Saturation final : public LeafSystem<T> {
   /// - y0
   /// @endsystem
   ///
-  /// @param[in] u_min the lower (vector) limit to the
-  /// saturation.
-  /// @param[in] u_max the upper (vector) limit to the
-  /// saturation.
+  /// @param[in] min_value the lower (vector) limit to the saturation.
+  /// @param[in] max_value the upper (vector) limit to the saturation.
   ///
   /// Please consult this class's description for the requirements of
-  /// @p u_min and @p u_max.
+  /// @p min_value and @p max_value.
   Saturation(const VectorX<T>& min_value, const VectorX<T>& max_value);
 
   /// Returns the input port.

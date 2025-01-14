@@ -917,12 +917,6 @@ class GcsTrajectoryOptimization final {
   /** Returns a Graphviz string describing the graph vertices and edges.  If
   `result` is supplied, then the graph will be annotated with the solution
   values.
-  @param show_slacks determines whether the values of the intermediate
-  (slack) variables are also displayed in the graph.
-  @param precision sets the floating point precision (how many digits are
-  generated) of the annotations.
-  @param scientific sets the floating point formatting to scientific (if true)
-  or fixed (if false).
   */
   std::string GetGraphvizString(
       const solvers::MathematicalProgramResult* result = nullptr,

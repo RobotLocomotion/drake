@@ -81,7 +81,6 @@ class Acrobot {
   /// Computes the pose of the center of mass of link 1 measured and expressed
   /// in the world frame.
   /// @param theta1 The shoulder angle in radians.
-  /// @param theta2 The elbow angle in radians.
   /// @returns X_WL1 the pose of link 1 measured and expressed in the world
   /// frame.
   math::RigidTransform<T> CalcLink1PoseInWorldFrame(const T& theta1) const;

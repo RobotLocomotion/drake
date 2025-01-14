@@ -297,7 +297,7 @@ class RollPitchYaw {
 
   /// Uses angular velocity to compute the 1ˢᵗ time-derivative of `this`
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
-  /// @param[in] w_AD_A, frame D's angular velocity in frame A, expressed in A.
+  /// @param[in] w_AD_A frame D's angular velocity in frame A, expressed in A.
   /// @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note Enhanced documentation for this method and its gimbal-lock (divide-
@@ -317,7 +317,7 @@ class RollPitchYaw {
 
   /// Uses angular velocity to compute the 1ˢᵗ time-derivative of `this`
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
-  /// @param[in] w_AD_D, frame D's angular velocity in frame A, expressed in D.
+  /// @param[in] w_AD_D frame D's angular velocity in frame A, expressed in D.
   /// @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note Enhanced documentation for this method and its gimbal-lock (divide-
@@ -345,7 +345,6 @@ class RollPitchYaw {
   /// | ṗ | = Np | ωy |     Np = |   −sin(y)          cos(y)      0 |
   /// ⌊ ẏ ⌋      ⌊ ωz ⌋ᴀ         ⌊ cos(y)*tan(p)   sin(y)*tan(p)  1 ⌋
   /// ```
-  /// @param[in] function_name name of the calling function/method.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
@@ -369,7 +368,6 @@ class RollPitchYaw {
   /// | ṗ | = Nc | ω1 |     Nc = | 0      cos(r)        −sin(r)    |
   /// ⌊ ẏ ⌋      ⌊ ω2 ⌋ᴅ         ⌊ 0  sin(r)/cos(p)  cos(r)/cos(p) ⌋
   /// ```
-  /// @param[in] function_name name of the calling function/method.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
   /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
@@ -386,7 +384,7 @@ class RollPitchYaw {
   /// Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   /// @param[in] rpyDt time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
-  /// @param[in] alpha_AD_A, frame D's angular acceleration in frame A,
+  /// @param[in] alpha_AD_A frame D's angular acceleration in frame A,
   /// expressed in frame A.
   /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
@@ -401,7 +399,7 @@ class RollPitchYaw {
   /// Uses angular acceleration to compute the 2ⁿᵈ time-derivative of `this`
   /// %RollPitchYaw whose angles `[r; p; y]` orient two generic frames A and D.
   /// @param[in] rpyDt time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
-  /// @param[in] alpha_AD_D, frame D's angular acceleration in frame A,
+  /// @param[in] alpha_AD_D frame D's angular acceleration in frame A,
   /// expressed in frame D.
   /// @returns `[r̈, p̈, ÿ]`, the 2ⁿᵈ time-derivative of `this` %RollPitchYaw.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).

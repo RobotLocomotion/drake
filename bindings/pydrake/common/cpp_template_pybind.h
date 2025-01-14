@@ -122,7 +122,7 @@ py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
 /// @param name Name of the template.
 /// @param func Function to be added.
 /// @param param Parameters for the instantiation.
-/// @param extra... Additional arguments to pass to `py::cpp_function`.
+/// @param extra Additional arguments to pass to `py::cpp_function`.
 template <typename Func, typename... Extra>
 py::object AddTemplateFunction(py::handle scope, const std::string& name,
     Func&& func, py::tuple param, Extra&&... extra) {
@@ -143,7 +143,7 @@ py::object AddTemplateFunction(py::handle scope, const std::string& name,
 /// @param name Name of the template.
 /// @param method Method to be added.
 /// @param param Parameters for the instantiation.
-/// @param extra... Additional arguments to pass to `py::cpp_function`.
+/// @param extra Additional arguments to pass to `py::cpp_function`.
 template <typename Method, typename... Extra>
 py::object AddTemplateMethod(  // BR
     py::handle scope, const std::string& name, Method&& method, py::tuple param,

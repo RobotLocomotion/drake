@@ -134,7 +134,7 @@ class GlobalInverseKinematics {
    * body frame B.
    * @param box_lb_F The lower bound of the box in frame `F`.
    * @param box_ub_F The upper bound of the box in frame `F`.
-   * @param X_WF. The frame in which the box is specified. This
+   * @param X_WF The frame in which the box is specified. This
    * frame is represented by a RigidTransform X_WF, the transform from
    * the constraint frame F to the world frame W. Namely if the position of
    * the point `Q` in the world frame is `p_WQ`, then the constraint is
@@ -173,7 +173,7 @@ class GlobalInverseKinematics {
    * frame A.
    * @param box_lb_F The lower bound of the box in frame `F`.
    * @param box_ub_F The upper bound of the box in frame `F`.
-   * @param X_WF. Defines the frame in which the box is specified. @default is
+   * @param X_WF Defines the frame in which the box is specified. @default is
    * the identity transform.
    * @retval binding The newly added constraint, together with the bound
    * variables.
@@ -328,7 +328,7 @@ class GlobalInverseKinematics {
    * @param body_index The index of the body to which the sphere is attached.
    * @param p_BQ The position of the sphere center in the body frame B.
    * @param radius The radius of the sphere.
-   * @param polytopes. polytopes[i] = (Aᵢ, bᵢ). We assume that Aᵢx≤ bᵢ is a
+   * @param polytopes polytopes[i] = (Aᵢ, bᵢ). We assume that Aᵢx≤ bᵢ is a
    * bounded polytope. It is the user's responsibility to guarantee the
    * boundedness.
    * @retval z The newly added binary variables. If z(i) = 1, then the sphere is

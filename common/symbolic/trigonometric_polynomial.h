@@ -55,8 +55,9 @@ using SinCosSubstitution = std::unordered_map<Variable, SinCos>;
  @endverbatim
  will result in the expression `x * (sx*cy + cx*sy)`.
 
- @param half_angle If true, then the same workflow replaces instances of
- sin(q/2) and cos(q/2) in `e` will be replaced with `s`, and `c`.
+ @param subs When set to one of the half_angle options, then the same workflow
+ replaces instances of sin(q/2) and cos(q/2) in `e` will be replaced with `s`,
+ and `c`.
  @default false.
 
  The half-angle representation is more natural in many analysis computations
