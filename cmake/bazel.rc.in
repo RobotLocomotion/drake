@@ -10,7 +10,12 @@ common --announce_rc
 # Inherit Drake's default options.
 @BAZELRC_IMPORT@
 
-# Environment variables to be used in repository rules (if any).
+# Switch to using module dependencies (not pkg-config). If the user sets one of
+# the CMake options for WITH_USER_... then BAZEL_REPO_ENV below will override
+# the module path to refer to what the user provided.
+common --@drake//tools/flags:public_repo_default=module
+
+# Flags that tweak repository rules (if any).
 common @BAZEL_REPO_ENV@
 
 # Disable the "convenience symlinks" intended for Bazel users; they only add

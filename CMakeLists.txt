@@ -313,17 +313,6 @@ set(BAZEL_OUTPUT_BASE
   "${BAZEL_OUTPUT_BASE}/_bazel_$ENV{USER}/${PROJECT_BINARY_DIR_MD5}"
 )
 
-function(generate_external_repository_file OUTPUT)
-  set(out_path
-    ${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${OUTPUT})
-  if(ARGN)
-    file(GENERATE OUTPUT ${out_path}
-      INPUT ${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${ARGN})
-  else()
-    file(GENERATE OUTPUT ${out_path} CONTENT "")
-  endif()
-endfunction()
-
 # Symlinks the C++ include path for TARGET as workspace/NAME/include, e.g.
 #  workspace/eigen/include -> .../build/install/include/eigen3
 function(symlink_external_repository_includes NAME TARGET)
@@ -355,39 +344,34 @@ function(symlink_external_repository_libs NAME TARGET)
   file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
 endfunction()
 
-macro(override_repository NAME)
-  set(repo "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
-  string(APPEND BAZEL_REPO_ENV
-      " --override_repository=drake++drake_dep_repositories+${NAME}=${repo}")
+macro(override_module NAME)
+  set(local_path "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
+  string(APPEND BAZEL_REPO_ENV " --override_module=${NAME}=${local_path}")
+  file(GENERATE OUTPUT "${local_path}/MODULE.bazel"
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/MODULE.bazel.in")
+  file(GENERATE OUTPUT "${local_path}/BUILD.bazel"
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/BUILD.bazel.in")
+  file(CREATE_LINK
+    "${PROJECT_SOURCE_DIR}/cmake/external/workspace/conversion.bzl"
+    "${local_path}/conversion.bzl"
+    SYMBOLIC)
 endmacro()
 
 option(WITH_USER_EIGEN "Use user-provided Eigen3" ON)
 
 if(WITH_USER_EIGEN)
   find_package(Eigen3 CONFIG REQUIRED)
-
   symlink_external_repository_includes(eigen Eigen3::Eigen)
-  generate_external_repository_file(eigen/WORKSPACE)
-  generate_external_repository_file(
-    eigen/BUILD.bazel
-    eigen/BUILD.bazel.in)
-
-  override_repository(eigen)
+  override_module(eigen)
 endif()
 
 option(WITH_USER_FMT "Use user-provided fmt" ON)
 
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
-
   symlink_external_repository_includes(fmt fmt::fmt)
   symlink_external_repository_libs(fmt fmt::fmt)
-  generate_external_repository_file(fmt/WORKSPACE)
-  generate_external_repository_file(
-    fmt/BUILD.bazel
-    fmt/BUILD.bazel.in)
-
-  override_repository(fmt)
+  override_module(fmt)
 endif()
 
 option(WITH_USER_SPDLOG "Use user-provided spdlog" ON)
@@ -398,17 +382,10 @@ if(WITH_USER_SPDLOG)
       "User-provided spdlog (WITH_USER_SPDLOG) "
       "requires user-provided fmt (WITH_USER_FMT).")
   endif()
-
   find_package(spdlog CONFIG REQUIRED)
-
   symlink_external_repository_includes(spdlog spdlog::spdlog)
   symlink_external_repository_libs(spdlog spdlog::spdlog)
-  generate_external_repository_file(spdlog/WORKSPACE)
-  generate_external_repository_file(
-    spdlog/BUILD.bazel
-    spdlog/BUILD.bazel.in)
-
-  override_repository(spdlog)
+  override_module(spdlog)
 endif()
 
 set(BAZEL_CONFIG)
