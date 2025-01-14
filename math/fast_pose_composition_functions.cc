@@ -7,7 +7,7 @@
 
 // This is the magic juju that compiles our impl functions for multiple CPUs.
 #undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "math/fast_pose_composition_functions_avx2_fma.cc"
+#define HWY_TARGET_INCLUDE "math/fast_pose_composition_functions.cc"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #include "hwy/foreach_target.h"

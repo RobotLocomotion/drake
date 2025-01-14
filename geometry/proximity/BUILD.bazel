@@ -1059,11 +1059,13 @@ drake_cc_googletest(
     name = "boxes_overlap_test",
     deps = [
         ":boxes_overlap",
+        "//common:hwy_dynamic",
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry:meshcat",
         "//geometry:rgba",
         "//geometry:shape_specification",
         "//geometry/test_utilities:boxes_overlap_transforms",
+        "@highway_internal//:hwy_test_util",
     ],
 )
 
