@@ -1,4 +1,3 @@
-#ifdef HAVE_SPDLOG
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
 
 #include <atomic>
@@ -11,13 +10,14 @@
 #include "drake/common/text_logging.h"
 // clang-format on
 
+#ifdef HAVE_SPDLOG
 #include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
+#endif
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_assert.h"
-#endif
 
 namespace drake {
 namespace pydrake {
