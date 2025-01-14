@@ -13,6 +13,8 @@ spdlog_repository = repository_rule(
         "modname": attr.string(default = "spdlog"),
         # Offered for backwards compatibility, but ignored.
         "mirrors": attr.string_list_dict(),
+        # TODO(jwnimmer-tri) Remove this line when we drop WORKSPACE support.
+        "extra_defines": attr.string_list(default = ["HAVE_SPDLOG"]),
     },
     local = True,
     configure = True,
