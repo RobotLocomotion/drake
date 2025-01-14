@@ -68,7 +68,7 @@ having been tested on Continuous Integration.
 
 Due to how the Debian ``apt`` and Homebrew package managers work, you may not
 have these exact versions on your system when (re)running
-``install_prereqs.sh``. In general, later minor versions for more stable
+``install_prereqs``. In general, later minor versions for more stable
 packages (e.g. CMake, compilers) should not prove to be too much of an issue.
 
 If you have tried and are unable to configure your system by
