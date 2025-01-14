@@ -18,6 +18,19 @@
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 
+namespace {
+std::string PointsToObjString(const Eigen::Matrix3X<double>& points) {
+  std::string result = "";
+
+  for (int i = 0; i < points.cols(); ++i) {
+    result +=
+        fmt::format("v {} {} {}\n", points(0, i), points(1, i), points(2, i));
+  }
+
+  return result;
+}
+}  // namespace
+
 namespace drake {
 namespace geometry {
 namespace {
@@ -131,6 +144,12 @@ Convex::Convex(MeshSource source, double scale)
   // mesh of unsupported type is used, but only processed by client code.
   ThrowForBadScale(scale, "Convex");
 }
+
+Convex::Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
+               double scale)
+    : Convex(InMemoryMesh{.mesh_file = MemoryFile(PointsToObjString(points),
+                                                  ".obj", label)},
+             scale) {}
 
 std::string Convex::filename() const {
   if (source_.is_path()) {

@@ -1118,15 +1118,29 @@ class MathematicalProgram {
       std::optional<bool> is_convex = std::nullopt);
 
   /**
+   * Adds a cost term of the form w*|x-x_desired|^2.
+   */
+  Binding<QuadraticCost> AddQuadraticErrorCost(
+      double w, const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+      const VariableRefList& vars) {
+    return AddQuadraticErrorCost(w, x_desired,
+                                 ConcatenateVariableRefList(vars));
+  }
+
+  /**
+   * Adds a cost term of the form w*|x-x_desired|^2.
+   */
+  Binding<QuadraticCost> AddQuadraticErrorCost(
+      double w, const Eigen::Ref<const Eigen::VectorXd>& x_desired,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars);
+
+  /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
    */
   Binding<QuadraticCost> AddQuadraticErrorCost(
       const Eigen::Ref<const Eigen::MatrixXd>& Q,
       const Eigen::Ref<const Eigen::VectorXd>& x_desired,
-      const VariableRefList& vars) {
-    return AddQuadraticErrorCost(Q, x_desired,
-                                 ConcatenateVariableRefList(vars));
-  }
+      const VariableRefList& vars);
 
   /**
    * Adds a cost term of the form (x-x_desired)'*Q*(x-x_desired).
@@ -3081,7 +3095,8 @@ class MathematicalProgram {
   /**
    * Adds an exponential cone constraint, that z = A * vars + b should be in
    * the exponential cone. Namely {z₀, z₁, z₂ | z₀ ≥ z₁ * exp(z₂ / z₁), z₁ >
-   * 0}.
+   * 0}, or equivalently (using the logarithm function), {z₀, z₁, z₂ | z₂ ≤ z₁ *
+   * log(z₀ / z₁), z₀ > 0, z₁ > 0}.
    * @param A The A matrix in the documentation above. A must have 3 rows.
    * @param b The b vector in the documentation above.
    * @param vars The variables bound with this constraint.

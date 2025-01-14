@@ -13,7 +13,6 @@ namespace solvers {
 namespace {
 
 const double epsilon = 1e-6;
-const bool verbose = false;
 
 /// Run all non-regularized solvers.  If @p expected_z is an empty
 /// vector, outputs will only be compared against each other.
@@ -21,7 +20,6 @@ template <typename Derived>
 void RunBasicLcp(const Eigen::MatrixBase<Derived>& M, const Eigen::VectorXd& q,
                  const Eigen::VectorXd& expected_z_in, bool expect_fast_pass) {
   MobyLCPSolver<double> l;
-  l.SetLoggingEnabled(verbose);
 
   Eigen::VectorXd expected_z = expected_z_in;
 
@@ -60,7 +58,6 @@ void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
                        const Eigen::VectorXd& expected_z_in,
                        bool expect_fast_pass) {
   MobyLCPSolver<double> l;
-  l.SetLoggingEnabled(verbose);
 
   Eigen::VectorXd expected_z = expected_z_in;
 
@@ -145,7 +142,6 @@ GTEST_TEST(testMobyLCP, testAutoDiffTrivial) {
 
   // Attempt to compute the solution using both "fast" and Lemke algorithms.
   MobyLCPSolver<Scalar> l;
-  l.SetLoggingEnabled(verbose);
   bool result = l.SolveLcpFast(M, q, &fast_z);
   EXPECT_TRUE(result);
   result = l.SolveLcpLemke(M, q, &lemke_z);
@@ -266,7 +262,6 @@ GTEST_TEST(testMobyLCP, testProblem4) {
   z << 1. / 90., 2. / 45., 1. / 90., 2. / 45.;
 
   MobyLCPSolver<double> l;
-  l.SetLoggingEnabled(verbose);
 
   Eigen::VectorXd fast_z;
   bool result = l.SolveLcpFast(M, q, &fast_z);
@@ -326,7 +321,6 @@ GTEST_TEST(testMobyLCP, testEmpty) {
   Eigen::VectorXd empty_q(0);
   Eigen::VectorXd z;
   MobyLCPSolver<double> l;
-  l.SetLoggingEnabled(verbose);
 
   bool result = l.SolveLcpFast(empty_M, empty_q, &z);
   EXPECT_TRUE(result);
@@ -356,7 +350,6 @@ GTEST_TEST(testMobyLCP, testFailure) {
   neg_q[0] = -1;
   Eigen::VectorXd z;
   MobyLCPSolver<double> l;
-  l.SetLoggingEnabled(verbose);
 
   bool result = l.SolveLcpFast(neg_M, neg_q, &z);
   EXPECT_FALSE(result);

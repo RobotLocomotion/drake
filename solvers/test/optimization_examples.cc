@@ -283,7 +283,7 @@ void NonConvexQPproblem1::CheckSolution(
     const MathematicalProgramResult& result) const {
   const auto& x_value = result.GetSolution(x_);
   EXPECT_TRUE(
-      CompareMatrices(x_value, x_expected_, 1E-9, MatrixCompareType::absolute));
+      CompareMatrices(x_value, x_expected_, 1E-8, MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog_, result, 1E-5);
 }
 

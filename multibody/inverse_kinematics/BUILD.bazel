@@ -135,6 +135,7 @@ drake_cc_library(
     ],
     visibility = ["//visibility:private"],
     deps = [
+        ":add_multibody_plant_constraints",
         ":kinematic_evaluators",
         "//multibody/plant",
         "//solvers:mathematical_program",
@@ -167,6 +168,7 @@ drake_cc_googletest(
     srcs = ["test/add_multibody_plant_constraints_test.cc"],
     deps = [
         ":add_multibody_plant_constraints",
+        "//common/test_utilities:eigen_matrix_compare",
         "//solvers:snopt_solver",
         "//solvers:solve",
     ],

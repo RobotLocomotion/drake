@@ -1194,6 +1194,12 @@ TEST_F(MujocoParserTest, Joint) {
     <body name="hinge_w_joint_defaults" pos="1 2 3" euler="30 45 60">
       <joint type="hinge" name="hinge_w_joint_defaults" class="default_joint" />
     </body>
+    <body name="slide_w_ref">
+      <joint type="slide" name="slide_w_ref" ref="1.1"/>
+    </body>
+    <body name="hinge_w_ref">
+      <joint type="hinge" name="hinge_w_ref" ref="15"/>
+    </body>
     <body name="default" pos="1 2 3" euler="30 45 60">
       <!-- without the limited=true tag -->
       <joint name="default" damping="0.4" range="-20 15"/>
@@ -1259,10 +1265,10 @@ TEST_F(MujocoParserTest, Joint) {
   EXPECT_TRUE(
       plant_.GetBodyByName("slide").EvalPoseInWorld(*context).IsNearlyEqualTo(
           X_WB, 1e-14));
-  EXPECT_TRUE(CompareMatrices(
-      plant_.GetJointByName("slide").position_lower_limits(), Vector1d{-2.0}));
-  EXPECT_TRUE(CompareMatrices(
-      plant_.GetJointByName("slide").position_upper_limits(), Vector1d{1.5}));
+  EXPECT_TRUE(
+      CompareMatrices(slide_joint.position_lower_limits(), Vector1d{-2.0}));
+  EXPECT_TRUE(
+      CompareMatrices(slide_joint.position_upper_limits(), Vector1d{1.5}));
 
   const RevoluteJoint<double>& hinge_joint =
       plant_.GetJointByName<RevoluteJoint>("hinge");
@@ -1275,11 +1281,10 @@ TEST_F(MujocoParserTest, Joint) {
       plant_.GetBodyByName("hinge").EvalPoseInWorld(*context).IsNearlyEqualTo(
           X_WB, 1e-14));
   EXPECT_TRUE(
-      CompareMatrices(plant_.GetJointByName("hinge").position_lower_limits(),
+      CompareMatrices(hinge_joint.position_lower_limits(),
                       Vector1d{-M_PI / 6.0}, 1e-14));
-  EXPECT_TRUE(
-      CompareMatrices(plant_.GetJointByName("hinge").position_upper_limits(),
-                      Vector1d{M_PI / 3.0}, 1e-14));
+  EXPECT_TRUE(CompareMatrices(hinge_joint.position_upper_limits(),
+                              Vector1d{M_PI / 3.0}, 1e-14));
 
   const RevoluteJoint<double>& hinge_w_joint_defaults_joint =
       plant_.GetJointByName<RevoluteJoint>("hinge_w_joint_defaults");
@@ -1299,6 +1304,15 @@ TEST_F(MujocoParserTest, Joint) {
   EXPECT_TRUE(CompareMatrices(
       plant_.GetJointByName("hinge_w_joint_defaults").position_upper_limits(),
       Vector1d{M_PI / 3.0}, 1e-14));
+
+  const RevoluteJoint<double>& hinge_w_ref_joint =
+      plant_.GetJointByName<RevoluteJoint>("hinge_w_ref");
+  EXPECT_NEAR(hinge_w_ref_joint.get_default_angle(), 15.0 * M_PI / 180.0,
+              1e-14);
+
+  const PrismaticJoint<double>& slide_w_ref_joint =
+      plant_.GetJointByName<PrismaticJoint>("slide_w_ref");
+  EXPECT_EQ(slide_w_ref_joint.get_default_translation(), 1.1);
 
   const RevoluteJoint<double>& default_joint =
       plant_.GetJointByName<RevoluteJoint>("default");

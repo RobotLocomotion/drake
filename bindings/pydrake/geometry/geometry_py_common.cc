@@ -503,6 +503,10 @@ void DefineShapes(py::module m) {
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_mesh_data_scale)
         .def(py::init<MeshSource, double>(), py::arg("source"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_source_scale)
+        .def(py::init<const Eigen::Matrix3X<double>&, const std::string&,
+                 double>(),
+            py::arg("points"), py::arg("label"), py::arg("scale") = 1.0,
+            doc.Convex.ctor.doc_3args_points_label_scale)
         .def("source", &Convex::source, doc.Convex.source.doc)
         .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)

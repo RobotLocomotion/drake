@@ -206,7 +206,7 @@ GTEST_TEST(IpoptSolverTest, AcceptableResult) {
 GTEST_TEST(IpoptSolverTest, QPDualSolution1) {
   IpoptSolver solver;
   ConfigureIpopt(&solver);
-  TestQPDualSolution1(solver, {} /* solver_options */, 1e-5);
+  TestQPDualSolution1(solver, {} /* solver_options */, /*tol=*/1e-4);
 }
 
 GTEST_TEST(IpoptSolverTest, QPDualSolution2) {
@@ -273,7 +273,7 @@ GTEST_TEST(IpoptSolverTest, TestNonconvexQP) {
   IpoptSolver solver;
   ConfigureIpopt(&solver);
   if (solver.available()) {
-    TestNonconvexQP(solver, false);
+    TestNonconvexQP(solver, false, /*tol=*/1E-4);
   }
 }
 

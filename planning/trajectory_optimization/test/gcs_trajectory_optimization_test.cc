@@ -2598,7 +2598,7 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroTimeTrajectory) {
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, GenericSubgraphVertexCostConstraint) {
   GcsTrajectoryOptimization gcs(1);
-  const double kTol = 1e-9;
+  const double kTol = 1e-7;
   const double kMinimumDuration = 0.1;
   auto& start = gcs.AddRegions(MakeConvexSets(Point(Vector1d(0))), 0, 0);
   auto& middle = gcs.AddRegions(

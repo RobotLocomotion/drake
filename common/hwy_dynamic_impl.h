@@ -3,6 +3,7 @@
 #include <atomic>
 #include <utility>
 
+#include "drake/common/cpu_capabilities.h"
 #include "drake/common/hwy_dynamic.h"
 
 // This file should only ever be included from `*.cc` implementation files,
@@ -63,7 +64,8 @@ class LateBoundFunction {
     drake::internal::HwyDynamicRegisterResetFunction(&Reset);
     // Force highway to select a CPU target, if it hasn't already.
     if (auto& target = hwy::GetChosenTarget(); !target.IsInitialized()) {
-      target.Update(hwy::SupportedTargets());
+      target.Update(hwy::SupportedTargets() &
+                    drake::internal::GetHighwayAllowedTargetMask());
     }
     // Retrieve the CPU-specific function pointer from the table of pointers.
     auto impl = ChooseFunctor()();

@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 
 #include <limits>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -292,6 +293,31 @@ GTEST_TEST(VPolytopeTest, NonconvexMesh) {
 
   ASSERT_TRUE(V.MaybeGetFeasiblePoint().has_value());
   EXPECT_TRUE(V.PointInSet(V.MaybeGetFeasiblePoint().value()));
+}
+
+GTEST_TEST(VPolytopeTest, ToShapeConvex) {
+  Eigen::Matrix<double, 3, 4> vertices;
+  vertices.col(0) << 0, 0, 0;
+  vertices.col(1) << 1, 0, 0;
+  vertices.col(2) << 0, 1, 0;
+  vertices.col(3) << 0, 0, 1;
+
+  const std::string convex_label = "a_convex";
+
+  const VPolytope V(vertices);
+  const Convex convex = V.ToShapeConvex(convex_label);
+
+  int num_vertices_of_convex = convex.GetConvexHull().num_vertices();
+
+  EXPECT_EQ(vertices.cols(), num_vertices_of_convex);
+  EXPECT_EQ(convex.source().in_memory().mesh_file.filename_hint(),
+            convex_label);
+
+  // When no convex label is specified, a default label gets applied.
+  const Convex convex2 = V.ToShapeConvex();
+  ASSERT_TRUE(convex2.source().is_in_memory());
+  EXPECT_EQ(convex2.source().in_memory().mesh_file.filename_hint(),
+            "convex_from_vpolytope");
 }
 
 GTEST_TEST(VPolytopeTest, UnitBox6DTest) {

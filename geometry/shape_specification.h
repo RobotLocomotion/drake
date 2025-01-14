@@ -286,6 +286,23 @@ class Convex final : public Shape {
    @param scale    An optional scale to coordinates. */
   explicit Convex(MeshSource source, double scale = 1.0);
 
+  /** Constructs an in-memory convex shape specification from the given points.
+
+   The convex hull is computed from the points provided. The points are
+   expected to be in the canonical frame of the shape. Optionally uniformly
+   scaled by the given scale factor.
+
+   @param points  The points whose convex hull define the shape.
+   @param label   A label for the object. The label is used for warning and
+                  error messages. Otherwise, the label has no other functional
+                  purpose. It must consist of a single line.
+   @param scale   An optional scale to coordinates.
+
+   @throws std::exception       if label contains newlines.
+   @throws std::exception       if |scale| < 1e-8. */
+  explicit Convex(const Eigen::Matrix3X<double>& points,
+                  const std::string& label, double scale = 1.0);
+
   ~Convex() final;
 
   /** Returns the source for this specification's mesh data. When working with

@@ -358,10 +358,10 @@ endfunction()
 macro(override_repository NAME)
   set(repo "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
   string(APPEND BAZEL_REPO_ENV
-      " --override_repository=+drake_dep_repositories+${NAME}=${repo}")
+      " --override_repository=drake++drake_dep_repositories+${NAME}=${repo}")
 endmacro()
 
-option(WITH_USER_EIGEN "Use user-provided Eigen3" OFF)
+option(WITH_USER_EIGEN "Use user-provided Eigen3" ON)
 
 if(WITH_USER_EIGEN)
   find_package(Eigen3 CONFIG REQUIRED)
@@ -375,7 +375,7 @@ if(WITH_USER_EIGEN)
   override_repository(eigen)
 endif()
 
-option(WITH_USER_FMT "Use user-provided fmt" OFF)
+option(WITH_USER_FMT "Use user-provided fmt" ON)
 
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
@@ -390,7 +390,7 @@ if(WITH_USER_FMT)
   override_repository(fmt)
 endif()
 
-option(WITH_USER_SPDLOG "Use user-provided spdlog" OFF)
+option(WITH_USER_SPDLOG "Use user-provided spdlog" ON)
 
 if(WITH_USER_SPDLOG)
   if(NOT WITH_USER_FMT)
@@ -552,11 +552,6 @@ file(CREATE_LINK "${PROJECT_SOURCE_DIR}/.bazeliskrc" drake_build_cwd/.bazeliskrc
 find_package(Git)
 
 set(GIT_DIR "${PROJECT_SOURCE_DIR}/.git")
-
-execute_process(
-  COMMAND "${Bazel_EXECUTABLE}" info --announce_rc
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
-)
 
 set(GENERATE_DRAKE_VERSION_ARGS)
 if(DEFINED DRAKE_VERSION_OVERRIDE)

@@ -589,8 +589,20 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(capsule.length(), 2.0)
         assert_pickle(self, capsule, repr)
 
-        # Note: Convex has been rolled in with Mesh because of their common
-        # APIs. See below.
+        # Note: Convex has generally been rolled in with Mesh because of their
+        # common APIs (below). This test covers the Convex-only constructor
+        # from point cloud (which gets converted to an in-memory .obj).
+        convex = mut.Convex(points=np.array(((0, 0, 0),
+                                             (1, 0, 0),
+                                             (0, 1, 0),
+                                             (0, 0, 1))).T,
+                            label="test_label", scale=2.0)
+        self.assertEqual(".obj", convex.extension())
+        self.assertEqual(convex.scale(), 2.0)
+        self.assertTrue(convex.source().is_in_memory())
+        convex_file = convex.source().in_memory().mesh_file
+        self.assertTrue(convex_file.filename_hint(), "test_label")
+        self.assertTrue(convex_file.contents().startswith(b'v 0 0 0'))
 
         cylinder = mut.Cylinder(radius=1.0, length=2.0)
         assert_shape_api(cylinder)
