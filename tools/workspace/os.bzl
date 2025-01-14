@@ -1,15 +1,5 @@
 """A collection of OS-related utilities intended for use in repository rules,
 i.e., rules used by WORKSPACE files, not BUILD files.
-
-To opt-in to the "manylinux" or "macos_wheel" build variants, set the
-environment variable (e.g.) `DRAKE_OS=manylinux` before running the build.  The
-most precise way to do this is to add a `user.bazelrc` file to the root of the
-Drake source tree with the following content:
-
-  common --repo_env=DRAKE_OS=manylinux
-
-Alternatively, you may pass `--repo_env=DRAKE_OS=manylinux` on the bazel
-command line. (Replace "manylinux" with "macos_wheel" as appropriate.)
 """
 
 load("//tools/workspace:execute.bzl", "which")
@@ -51,8 +41,7 @@ def is_wheel_build(repository_ctx):
     """
     Returns true iff this build is a Python wheel flavor.
     """
-    drake_os = repository_ctx.getenv("DRAKE_OS", "")
-    return drake_os in ["manylinux", "macos_wheel"]
+    return repository_ctx.getenv("DRAKE_WHEEL", "") == "1"
 
 def os_specific_alias(repository_ctx, mapping):
     """

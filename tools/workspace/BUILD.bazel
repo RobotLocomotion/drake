@@ -111,7 +111,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "commons_io",
     "curl_internal",
     "fcl_internal",
-    "fmt",
     "gklib_internal",
     "gz_math_internal",
     "gz_utils_internal",
@@ -132,7 +131,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "pybind11",
     "qhull_internal",
     "sdformat_internal",
-    "spdlog",
     "spral_internal",
     "statsjs",
     "stduuid_internal",
@@ -147,9 +145,12 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "abseil_cpp_internal",
     "conex_internal",
+    "eigen",
+    "fmt",
     "gflags",
     "highway_internal",
     "libjpeg_turbo_internal",
+    "spdlog",
 ]] + select({
     "//tools/workspace/csdp_internal:enabled": ["@csdp_internal//:install"],
     "//conditions:default": [],
