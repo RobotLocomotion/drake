@@ -173,7 +173,11 @@ def drake_pybind_library(
             "//:drake_shared_library",
             "//bindings/pydrake:pydrake_pybind",
         ],
-        cc_copts = cc_copts,
+        cc_copts = cc_copts + [
+            # tools/workspace/pybind11/patches/check_signature_infection.patch
+            # tweaks our copy of pybind11 to obey this option.
+            "-DDRAKE_PYBIND11_CHECK_SIGNATURE_INFECTION=1",
+        ],
         cc_binary_rule = drake_cc_binary,
         py_srcs = py_srcs,
         py_deps = py_deps,
