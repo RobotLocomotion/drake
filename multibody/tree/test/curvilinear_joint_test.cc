@@ -26,7 +26,7 @@ constexpr double kDamping = 3;
 
 class CurvilinearJointTest : public ::testing::Test {
  public:
-  // Creates a simple model consisting of a single body with a prismatic joint
+  // Creates a simple model consisting of a single body with a curvilinear joint
   // with the sole purpose of testing the CurvilinearJoint user facing API.
   void SetUp() override {
     std::unique_ptr<internal::MultibodyTree<double>> model = MakeModel();
@@ -49,7 +49,7 @@ class CurvilinearJointTest : public ::testing::Test {
     // Add a body so we can add joint to it.
     body1_ = &model->AddRigidBody("Body", M_B);
 
-    // Add a prismatic joint between the world and body1.
+    // Add a curvilinear joint between the world and body1.
     joint1_ = &model->AddJoint<CurvilinearJoint>(
         "Joint1", model->world_body(), std::nullopt, *body1_, std::nullopt,
         trajectory_, kDamping);
