@@ -10,7 +10,6 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/curvilinear_joint.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
-#include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/test/mobilizer_tester.h"
 #include "drake/systems/framework/context.h"
 
@@ -20,10 +19,8 @@ namespace internal {
 namespace {
 
 using drake::trajectories::PiecewiseConstantCurvatureTrajectory;
-using Eigen::AngleAxisd;
 using Eigen::Vector3d;
 using math::RigidTransformd;
-using math::RotationMatrixd;
 using std::make_unique;
 using std::sqrt;
 using std::unique_ptr;
