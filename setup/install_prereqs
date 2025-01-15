@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# Install Drake prerequisites.
+
+set -euo pipefail
+
+# This script should be run as the normal user (i.e., not under sudo).
+if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
+  echo 'This script must NOT be run through sudo as root' >&2
+  exit 1
+fi
+
+# We'll default to installing only the prerequisites necessary to build Drake.
+# To run tests, developers should pass the "--developer" flag. For details, see
+# https://drake.mit.edu/bazel.html and https://drake.mit.edu/from_source.html.
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  exec "${BASH_SOURCE%/*}/mac/install_prereqs.sh" \
+    --without-test-only "$@"
+else
+  maybe_sudo=
+  if [[ "${EUID}" -ne 0 ]]; then
+    maybe_sudo=sudo
+  fi
+  exec ${maybe_sudo} "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" \
+    --without-test-only --without-bazel --without-clang "$@"
+fi
