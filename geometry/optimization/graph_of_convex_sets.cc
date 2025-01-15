@@ -15,6 +15,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/parallelism.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/create_constraint.h"

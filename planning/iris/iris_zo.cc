@@ -6,6 +6,7 @@
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/vpolytope.h"

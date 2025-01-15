@@ -14,6 +14,7 @@
 #include <fmt/format.h>
 #include <tinyxml2.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"

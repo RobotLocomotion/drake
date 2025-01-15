@@ -20,6 +20,7 @@
 #include <sdf/Root.hh>
 #include <sdf/World.hh>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"

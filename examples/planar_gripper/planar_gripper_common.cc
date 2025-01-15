@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/text_logging.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {

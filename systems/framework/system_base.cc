@@ -12,6 +12,7 @@
 #include <fmt/ranges.h>
 
 #include "drake/common/hash.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
 

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "drake/common/text_logging.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/parsing/scoped_names.h"

@@ -6,6 +6,7 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/math/compute_numerical_gradient.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"

@@ -5,6 +5,7 @@
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/text_logging.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"

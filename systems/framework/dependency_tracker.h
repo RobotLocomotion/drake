@@ -13,7 +13,6 @@ trackers. */
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/text_logging.h"
 #include "drake/systems/framework/cache.h"
 #include "drake/systems/framework/framework_common.h"
 
@@ -344,14 +343,12 @@ class DependencyTracker {
     if (!has_associated_cache_entry_ && owning_subcontext != nullptr)
       cache_value_ = &owning_subcontext->dummy_cache_entry_value();
 
-    DRAKE_LOGGER_DEBUG(
-        "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
-        description_, has_associated_cache_entry_ ? "with" : "without",
-        size_t(cache_value),
-        has_associated_cache_entry_
-            ? " cache entry " + std::to_string(cache_value->cache_index())
-            : "");
+#ifndef NDEBUG
+    LogConstructorCall();
+#endif
   }
+
+  void LogConstructorCall() const;
 
   // Copies the current tracker but with all pointers set to null, and all
   // counters reset to their default-constructed values (0 for statistics, an

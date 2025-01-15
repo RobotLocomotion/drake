@@ -11,6 +11,7 @@
 #include "drake/common/autodiff_overloads.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/scope_exit.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/meshcat_graphviz.h"
 

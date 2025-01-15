@@ -4,6 +4,7 @@
 #include <forward_list>
 #include <limits>
 
+#include "drake/common/text_logging.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/mathematical_program_result.h"

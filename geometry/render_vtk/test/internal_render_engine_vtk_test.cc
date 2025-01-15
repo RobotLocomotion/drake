@@ -26,6 +26,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"

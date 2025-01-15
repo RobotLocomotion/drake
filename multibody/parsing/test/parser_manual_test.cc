@@ -2,6 +2,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/multibody/parsing/parser.h"
 
 DEFINE_bool(scene_graph, true, "include/exclude scene graph");

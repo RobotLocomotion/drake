@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -208,6 +209,16 @@ void DependencyTracker::ThrowIfBadDependencyTracker(
     throw std::logic_error(FormatName(__func__) +
         "a counter has a negative value.");
   }
+}
+
+void DependencyTracker::LogConstructorCall() const {
+  DRAKE_LOGGER_DEBUG(
+      "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
+      description_, has_associated_cache_entry_ ? "with" : "without",
+      size_t(cache_value_),
+      has_associated_cache_entry_
+          ? " cache entry " + std::to_string(cache_value_->cache_index())
+          : "");
 }
 
 void DependencyTracker::RepairTrackerPointers(

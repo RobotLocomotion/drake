@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/text_logging.h"
 
 namespace drake {
 

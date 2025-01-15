@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "drake/common/symbolic/expression.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/affine_ball.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"

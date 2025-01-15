@@ -4,6 +4,7 @@
 
 #include <common_robotics_utilities/print.hpp>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/planning/collision_avoidance.h"
 
