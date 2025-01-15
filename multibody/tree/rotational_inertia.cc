@@ -70,44 +70,6 @@ math::RotationMatrix<double> CalcCanonicalPrincipalDirections(
 }  // namespace
 
 template <typename T>
-RotationalInertia<T>::RotationalInertia(const Vector3<T>& mass_p_PQ_E,
-                                        const Vector3<T>& p_PQ_E) {
-  const T& mx = mass_p_PQ_E(0);
-  const T& my = mass_p_PQ_E(1);
-  const T& mz = mass_p_PQ_E(2);
-  const T& x = p_PQ_E(0);
-  const T& y = p_PQ_E(1);
-  const T& z = p_PQ_E(2);
-  const T mxx = mx * x;
-  const T myy = my * y;
-  const T mzz = mz * z;
-  set_moments_and_products_no_validity_check(myy + mzz, mxx + mzz, mxx + myy,
-                                             -mx * y, -mx * z, -my * z);
-  DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
-}
-
-template <typename T>
-Vector3<T> RotationalInertia<T>::operator*(const Vector3<T>& w_E) const {
-  // Eigen's symmetric multiply can be slow. Do this by hand instead:
-  //     [a (b) (c)]   [x]   [ ax+by+cz ]
-  //     [b  d  (e)] * [y] = [ bx+dy+ez ]
-  //     [c  e   f ]   [z]   [ cx+ey+fz ]
-  const T& a = I_SP_E_(0, 0);  // Access only lower triangle.
-  const T& b = I_SP_E_(1, 0);
-  const T& c = I_SP_E_(2, 0);
-  const T& d = I_SP_E_(1, 1);
-  const T& e = I_SP_E_(2, 1);
-  const T& f = I_SP_E_(2, 2);
-  const T& x = w_E(0);
-  const T& y = w_E(1);
-  const T& z = w_E(2);
-
-  const Vector3<T> Iw(a * x + b * y + c * z, b * x + d * y + e * z,
-                      c * x + e * y + f * z);
-  return Iw;
-}
-
-template <typename T>
 Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
     math::RotationMatrix<double>* principal_directions) const {
   Vector3<double> principal_moments;

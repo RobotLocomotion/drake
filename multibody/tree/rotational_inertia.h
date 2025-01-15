@@ -423,7 +423,25 @@ class RotationalInertia {
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
   // TODO(sherm1) Consider promoting this to a general utility if there
   //  are similar symmetric*vector cases elsewhere.
-  Vector3<T> operator*(const Vector3<T>& w_E) const;
+  Vector3<T> operator*(const Vector3<T>& w_E) const {
+    // Eigen's symmetric multiply can be slow. Do this by hand instead:
+    //     [a (b) (c)]   [x]   [ ax+by+cz ]
+    //     [b  d  (e)] * [y] = [ bx+dy+ez ]
+    //     [c  e   f ]   [z]   [ cx+ey+fz ]
+    const T& a = I_SP_E_(0, 0);  // Access only lower triangle.
+    const T& b = I_SP_E_(1, 0);
+    const T& c = I_SP_E_(2, 0);
+    const T& d = I_SP_E_(1, 1);
+    const T& e = I_SP_E_(2, 1);
+    const T& f = I_SP_E_(2, 2);
+    const T& x = w_E(0);
+    const T& y = w_E(1);
+    const T& z = w_E(2);
+
+    const Vector3<T> Iw(a * x + b * y + c * z, b * x + d * y + e * z,
+                        c * x + e * y + f * z);
+    return Iw;
+  }
 
   /// Divides `this` rotational inertia by a positive scalar (> 0).
   /// In debug builds, throws std::exception if `positive_scalar` <= 0.
@@ -781,7 +799,20 @@ class RotationalInertia {
   // @param mass_p_PQ_E The mass of particle Q multiplied by `p_PQ_E`.
   //                    If unit mass, this argument is simply p_PQ_E.
   // @retval I_QP_E, Q's rotational inertia about-point Q expressed-in frame E.
-  RotationalInertia(const Vector3<T>& mass_p_PQ_E, const Vector3<T>& p_PQ_E);
+  RotationalInertia(const Vector3<T>& mass_p_PQ_E, const Vector3<T>& p_PQ_E) {
+    const T& mx = mass_p_PQ_E(0);
+    const T& my = mass_p_PQ_E(1);
+    const T& mz = mass_p_PQ_E(2);
+    const T& x = p_PQ_E(0);
+    const T& y = p_PQ_E(1);
+    const T& z = p_PQ_E(2);
+    const T mxx = mx * x;
+    const T myy = my * y;
+    const T mzz = mz * z;
+    set_moments_and_products_no_validity_check(myy + mzz, mxx + mzz, mxx + myy,
+                                               -mx * y, -mx * z, -my * z);
+    DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
+  }
 
   // Constructor from an Eigen expression that represents a matrix in ℝ³ˣ³ with
   // entries corresponding to inertia moments and products as described in this
