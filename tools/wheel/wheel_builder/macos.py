@@ -8,7 +8,7 @@ import platform
 import shutil
 import subprocess
 
-from .common import create_snopt_tgz, die, wheel_name
+from .common import create_snopt_tgz, die, gripe, wheel_name
 from .common import build_root, resource_root, wheel_root, wheelhouse
 from .common import test_root, find_tests
 

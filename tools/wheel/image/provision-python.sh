@@ -47,8 +47,5 @@ pip install \
     semantic-version \
     setuptools \
     wheel \
-    auditwheel
-
-if [[ "$(uname)" == "Linux" ]]; then
-    pip install patchelf
-fi
+    auditwheel \
+    patchelf

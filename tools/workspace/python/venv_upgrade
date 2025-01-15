@@ -45,6 +45,16 @@ check_working_tree() {
 }
 
 update_requirements() {
+    # Once it's installed from a basic 'bootstrap' requirements.txt (see
+    # setup/python/requirements.txt.in), we can use our dependency management
+    # tool (PDM) to generate a complete lock file for itself. We do this by
+    # mentioning it in a separate dependency group (which will get updated
+    # along with the other groups) that we here export to a requirements.txt.
+    # Note the use of --no-default to restrict what we export to *only* the
+    # named group, excluding the usual dependencies needed to build Drake.
+    #
+    # The 'bootstrap' file also contains a custom header that, with some slight
+    # tweaking, we will use for the generated file.
     sed $'/will be generated/{s/will be/is/\nq\n}' < "$1.in" > "$1"
     "${venv_pdm}/bin/pdm" export -p "${project}" -G pdm --no-default |
         grep -vE '^#' >> "$1"
