@@ -2,12 +2,20 @@
 # the "locked" pdm output file via:
 #
 #     tools/workspace/python/venv_upgrade
+#
+# This file primarily defines the set of Python dependencies that are used by
+# Drake in various ways and are managed by tools/workspace/python/venv_sync.
+# It is the responsibility of tools/workspace/python/repository.bzl to decide
+# which dependency groups need to be installed.
 
 [project]
 name = "drake"
 # The supported Python major/minor version should match the minimum listed in
 # the root CMakeLists.txt and doc/_pages/from_source.md.
 requires-python = ">=3.10"
+
+# Dependencies needed to build Drake.
+#
 # WARNING for Drake Developers: This list must be kept in sync with
 # setup/mac/binary_distribution/requirements.txt.
 dependencies = [
@@ -20,11 +28,18 @@ dependencies = [
 ]
 
 [dependency-groups]
+# (Additional) dependencies needed to run Drake's tests.
 test = [
     "flask",
     "six",
     "u-msgpack-python",
     "websockets",
+]
+# (Additional) dependencies needed to build a Drake wheel.
+wheel = [
+    "delocate",
+    "setuptools",
+    "wheel",
 ]
 
 [tool.pdm]
