@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/scope_exit.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/meshcat_graphviz.h"
 

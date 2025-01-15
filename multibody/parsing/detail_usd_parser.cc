@@ -18,6 +18,7 @@
 
 #include "drake/common/find_runfiles.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"

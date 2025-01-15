@@ -6,6 +6,8 @@
 
 #include <common_robotics_utilities/parallelism.hpp>
 
+#include "drake/common/text_logging.h"
+
 using common_robotics_utilities::parallelism::DegreeOfParallelism;
 using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
 using common_robotics_utilities::parallelism::ParallelForBackend;

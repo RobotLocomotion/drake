@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/text_logging.h"
 #include "drake/planning/linear_distance_and_interpolation_provider.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/test/planning_test_helpers.h"

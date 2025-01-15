@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "drake/common/text_logging.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/solvers/choose_best_solver.h"

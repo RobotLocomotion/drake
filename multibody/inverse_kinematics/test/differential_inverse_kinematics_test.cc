@@ -11,6 +11,7 @@
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/text_logging.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/parser.h"

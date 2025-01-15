@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -208,6 +209,28 @@ void DependencyTracker::ThrowIfBadDependencyTracker(
     throw std::logic_error(FormatName(__func__) +
         "a counter has a negative value.");
   }
+}
+
+DependencyTracker::DependencyTracker(
+    DependencyTicket ticket, std::string description,
+    const internal::ContextMessageInterface* owning_subcontext,
+    CacheEntryValue* cache_value)
+    : ticket_(ticket),
+      description_(std::move(description)),
+      owning_subcontext_(owning_subcontext),  // may be nullptr
+      has_associated_cache_entry_(cache_value != nullptr),
+      cache_value_(cache_value) {
+  // If we can, connect non-cache tracker to the dummy cache entry value now.
+  if (!has_associated_cache_entry_ && owning_subcontext != nullptr)
+    cache_value_ = &owning_subcontext->dummy_cache_entry_value();
+
+  DRAKE_LOGGER_DEBUG(
+      "Tracker #{} '{}' constructed {} invalidation {:#x}{}.", ticket_,
+      description_, has_associated_cache_entry_ ? "with" : "without",
+      size_t(cache_value),
+      has_associated_cache_entry_
+          ? " cache entry " + std::to_string(cache_value->cache_index())
+          : "");
 }
 
 void DependencyTracker::RepairTrackerPointers(

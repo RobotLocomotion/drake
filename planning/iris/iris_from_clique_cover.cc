@@ -14,6 +14,7 @@
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/ssize.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/iris.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/scene_graph_collision_checker.h"

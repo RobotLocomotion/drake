@@ -7,6 +7,7 @@
 #include <thread>
 #include <utility>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/cspace_free_internal.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 

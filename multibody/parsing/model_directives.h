@@ -18,7 +18,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
 #include "drake/common/schema/transform.h"
-#include "drake/common/text_logging.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 
@@ -28,30 +27,7 @@ namespace parsing {
 
 /// Directive to add a weld between two named frames, a parent and a child.
 struct AddWeld {
-  bool IsValid() const {
-    if (parent.empty()) {
-      drake::log()->error("add_weld: `parent` must be non-empty");
-      return false;
-    } else if (child.empty()) {
-      drake::log()->error("add_weld: `child` must be non-empty");
-      return false;
-    }
-    if (X_PC) {
-      if (X_PC->base_frame) {
-        drake::log()->error(
-            "add_weld: `X_PC` must not specify a `base_frame`; the pose is "
-            "always in the parent frame.");
-        return false;
-      }
-      if (!X_PC->IsDeterministic()) {
-        drake::log()->error(
-            "add_weld: `X_PC` must specify a deterministic transform, not a "
-            "distribution.");
-        return false;
-      }
-    }
-    return true;
-  }
+  bool IsValid() const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -72,24 +48,7 @@ struct AddWeld {
 /// Directive to add a model from a URDF or SDFormat file to a scene, using a
 /// given name for the added instance.
 struct AddModel {
-  bool IsValid() const {
-    if (file.empty()) {
-      drake::log()->error("add_model: `file` must be non-empty");
-      return false;
-    } else if (name.empty()) {
-      drake::log()->error("add_model: `name` must be non-empty");
-      return false;
-    }
-    for (const auto& [body_name, pose] : default_free_body_pose) {
-      if (!pose.IsDeterministic()) {
-        drake::log()->error(
-            "add_model: `default_free_body_pose` must specify a "
-            "deterministic transform, not a distribution.");
-        return false;
-      }
-    }
-    return true;
-  }
+  bool IsValid() const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -148,13 +107,7 @@ struct AddModel {
 
 /// Directive to add an empty, named model instance to a scene.
 struct AddModelInstance {
-  bool IsValid() const {
-    if (name.empty()) {
-      drake::log()->error("add_model_instance: `name` must be non-empty");
-      return false;
-    }
-    return true;
-  }
+  bool IsValid() const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -168,21 +121,7 @@ struct AddModelInstance {
 /// Directive to add a Frame to the scene.  The added frame must have a name
 /// and a transform with a base frame and offset.
 struct AddFrame {
-  bool IsValid() const {
-    if (name.empty()) {
-      drake::log()->error("add_frame: `name` must be non-empty");
-      return false;
-    } else if (!X_PF.base_frame || X_PF.base_frame->empty()) {
-      drake::log()->error("add_frame: `X_PF.base_frame` must be defined");
-      return false;
-    } else if (!X_PF.IsDeterministic()) {
-      drake::log()->error(
-          "add_frame: `X_PF` must specify a deterministic transform, not a "
-          "distribution.");
-      return false;
-    }
-    return true;
-  }
+  bool IsValid() const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -201,19 +140,7 @@ struct AddFrame {
 /// Directive to add a collision filter group.  This directive is analogous to
 /// @ref tag_drake_collision_filter_group in XML model formats.
 struct AddCollisionFilterGroup {
-  bool IsValid() const {
-    if (name.empty()) {
-      drake::log()->error(
-          "add_collision_filter_group: `name` must be non-empty");
-      return false;
-    } else if (members.empty() && member_groups.empty()) {
-      drake::log()->error(
-          "add_collision_filter_group:"
-          " at least one of `members` or `member_groups` must be non-empty");
-      return false;
-    }
-    return true;
-  }
+  bool IsValid() const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -251,13 +178,7 @@ struct AddCollisionFilterGroup {
 /// Directive to incorporate another model directives file, optionally with
 /// its elements prefixed with a namespace.
 struct AddDirectives {
-  bool IsValid() const {
-    if (file.empty()) {
-      drake::log()->error("add_directives: `file` must be non-empty");
-      return false;
-    }
-    return true;
-  }
+  bool IsValid() const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -290,31 +211,7 @@ struct AddDirectives {
 /// and thus we used a parent field, rather than a YAML tag, to designate the
 /// intended type for the directive.
 struct ModelDirective {
-  bool IsValid() const {
-    const bool unique =
-        (add_model.has_value() + add_model_instance.has_value() +
-         add_frame.has_value() + add_weld.has_value() +
-         add_collision_filter_group.has_value() +
-         add_directives.has_value()) == 1;
-    if (!unique) {
-      drake::log()->error(
-          "directive: Specify one of `add_model`, `add_model_instance`, "
-          "`add_frame`, `add_collision_filter_group`, or `add_directives`");
-      return false;
-    } else if (add_model) {
-      return add_model->IsValid();
-    } else if (add_model_instance) {
-      return add_model_instance->IsValid();
-    } else if (add_frame) {
-      return add_frame->IsValid();
-    } else if (add_weld) {
-      return add_weld->IsValid();
-    } else if (add_collision_filter_group) {
-      return add_collision_filter_group->IsValid();
-    } else {
-      return add_directives->IsValid();
-    }
-  }
+  bool IsValid() const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
@@ -336,12 +233,7 @@ struct ModelDirective {
 
 /// Top-level structure for a model directives yaml file schema.
 struct ModelDirectives {
-  bool IsValid() const {
-    for (auto& directive : directives) {
-      if (!directive.IsValid()) return false;
-    }
-    return true;
-  }
+  bool IsValid() const;
 
   template <typename Archive>
   void Serialize(Archive* a) {
