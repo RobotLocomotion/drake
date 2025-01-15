@@ -254,8 +254,8 @@ class CurvilinearJoint final : public Joint<T> {
   }
 
   /** @returns copy of underlying curve of joint. */
-  std::unique_ptr<trajectories::Trajectory<double>> get_curve_clone() const {
-    return curvilinear_path_.Clone();
+  const PiecewiseConstantCurvatureTrajectory<double>& get_trajectory() const {
+    return curvilinear_path_;
   }
 
  protected:

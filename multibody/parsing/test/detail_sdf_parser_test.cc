@@ -1654,29 +1654,26 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(
       CompareMatrices(curvilinear_joint.velocity_upper_limits(),
                       Vector1d(std::numeric_limits<double>::infinity())));
-  std::unique_ptr<Trajectory<double>> joint_curve_base =
-      curvilinear_joint.get_curve_clone();
-  PiecewiseConstantCurvatureTrajectory<double>* joint_curve =
-      dynamic_cast<PiecewiseConstantCurvatureTrajectory<double>*>(
-          joint_curve_base.get());
-  EXPECT_EQ(joint_curve->is_periodic(), true);
+  const PiecewiseConstantCurvatureTrajectory<double> joint_curve =
+      curvilinear_joint.get_trajectory();
+  EXPECT_EQ(joint_curve.is_periodic(), true);
   std::vector<double> breaks_expected{0., 1., 1. + M_PI, 1. + 2 * M_PI};
   std::vector<double> turning_rates_expected{0., 2., -2.};
 
   PiecewiseConstantCurvatureTrajectory<double> joint_curve_expected{
       breaks_expected,   turning_rates_expected, Vector3d::UnitZ(),
       Vector3d::UnitX(), Vector3d::Zero(),       true};
-  const double curve_length = joint_curve->length();
+  const double curve_length = joint_curve.length();
   const double kEpsilon = 10 * std::numeric_limits<double>::epsilon();
   EXPECT_NEAR(curve_length, joint_curve_expected.length(), kEpsilon);
-  EXPECT_TRUE(joint_curve->CalcPose(0.).IsNearlyEqualTo(
+  EXPECT_TRUE(joint_curve.CalcPose(0.).IsNearlyEqualTo(
       joint_curve_expected.CalcPose(0.), kEpsilon));
-  EXPECT_TRUE(joint_curve->CalcPose(curve_length - kEpsilon)
+  EXPECT_TRUE(joint_curve.CalcPose(curve_length - kEpsilon)
                   .IsNearlyEqualTo(
                       joint_curve_expected.CalcPose(curve_length - kEpsilon),
                       kEpsilon));
   EXPECT_TRUE(
-      joint_curve->CalcPose(curve_length * 1.5)
+      joint_curve.CalcPose(curve_length * 1.5)
           .IsNearlyEqualTo(joint_curve_expected.CalcPose(curve_length * 1.5),
                            kEpsilon));
 
@@ -1685,11 +1682,8 @@ TEST_F(SdfParserTest, JointParsingTest) {
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_joint_aperiodic"));
   const CurvilinearJoint<double>& curvilinear_joint2 =
       plant_.GetJointByName<CurvilinearJoint>("curvilinear_joint_aperiodic");
-  std::unique_ptr<Trajectory<double>> joint2_curve_base =
-      curvilinear_joint2.get_curve_clone();
-  PiecewiseConstantCurvatureTrajectory<double>* joint2_curve =
-      dynamic_cast<PiecewiseConstantCurvatureTrajectory<double>*>(
-          joint2_curve_base.get());
+  const PiecewiseConstantCurvatureTrajectory<double> joint2_curve =
+      curvilinear_joint2.get_trajectory();
   EXPECT_EQ(curvilinear_joint2.name(), "curvilinear_joint_aperiodic");
   EXPECT_EQ(curvilinear_joint2.parent_body().name(), "link10");
   EXPECT_EQ(curvilinear_joint2.child_body().name(), "link11");
@@ -1697,7 +1691,7 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(curvilinear_joint2.position_lower_limits(),
                               Vector1d(0.)));
   EXPECT_TRUE(CompareMatrices(curvilinear_joint2.position_upper_limits(),
-                              Vector1d(joint2_curve->length())));
+                              Vector1d(joint2_curve.length())));
   EXPECT_TRUE(
       CompareMatrices(curvilinear_joint2.velocity_lower_limits(),
                       Vector1d(-std::numeric_limits<double>::infinity())));
@@ -1707,17 +1701,17 @@ TEST_F(SdfParserTest, JointParsingTest) {
   PiecewiseConstantCurvatureTrajectory<double> joint2_curve_expected{
       breaks_expected,   turning_rates_expected, Vector3d::UnitZ(),
       Vector3d::UnitX(), Vector3d::Zero(),       false};
-  EXPECT_EQ(joint2_curve->is_periodic(), false);
-  const double curve2_length = joint2_curve->length();
+  EXPECT_EQ(joint2_curve.is_periodic(), false);
+  const double curve2_length = joint2_curve.length();
   EXPECT_NEAR(curve2_length, joint2_curve_expected.length(), kEpsilon);
-  EXPECT_TRUE(joint2_curve->CalcPose(0.).IsNearlyEqualTo(
+  EXPECT_TRUE(joint2_curve.CalcPose(0.).IsNearlyEqualTo(
       joint2_curve_expected.CalcPose(0.), kEpsilon));
-  EXPECT_TRUE(joint2_curve->CalcPose(curve_length - kEpsilon)
+  EXPECT_TRUE(joint2_curve.CalcPose(curve_length - kEpsilon)
                   .IsNearlyEqualTo(
                       joint2_curve_expected.CalcPose(curve_length - kEpsilon),
                       kEpsilon));
   EXPECT_TRUE(
-      joint2_curve->CalcPose(curve_length * 1.5)
+      joint2_curve.CalcPose(curve_length * 1.5)
           .IsNearlyEqualTo(joint2_curve_expected.CalcPose(curve_length * 1.5),
                            kEpsilon));
 }
