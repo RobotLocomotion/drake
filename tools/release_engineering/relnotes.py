@@ -131,9 +131,9 @@ def _format_commit(gh, drake, commit):
                 continue
             severity = label["name"][len(label_needle):]
             severities.append(severity)
-    # If we failed to associate the commit with a PR, ask the user to manually
-    # check the label.
     else:
+        # If we failed to associate the commit with a PR, ask the user to
+        # manually check the label.
         severities = ["check label"]
     if severities == ["none"]:
         return [], ["none"], ""
