@@ -207,6 +207,7 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestRandomizedTrajectory) {
 
 GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestPeriodicity) {
   const double r = 2;
+  const double length = 2 * M_PI * r;
   const double kappa = 1 / r;
   const int num_segments = 10;
   std::vector<double> segment_breaks_periodic(num_segments + 1);
@@ -231,8 +232,19 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestPeriodicity) {
       segment_breaks_aperiodic, turning_rates, curve_tangent, plane_normal,
       Vector3d::Zero());
 
+  EXPECT_TRUE(periodic_trajectory.is_periodic());
   EXPECT_TRUE(periodic_trajectory.IsNearlyPeriodic(kTolerance));
+  EXPECT_FALSE(aperiodic_trajectory.is_periodic());
   EXPECT_FALSE(aperiodic_trajectory.IsNearlyPeriodic(kTolerance));
+
+  // Test periodicity for at arbitrary value.
+  const double s = 1.5;
+  const RigidTransformd X_AF_s0 = periodic_trajectory.CalcPose(s);
+  const RigidTransformd X_AF_s1 = periodic_trajectory.CalcPose(s + length);
+  const RigidTransformd X_AF_s3 =
+      periodic_trajectory.CalcPose(s + 3.0 * length);
+  EXPECT_TRUE(X_AF_s0.IsNearlyEqualTo(X_AF_s1, kTolerance));
+  EXPECT_TRUE(X_AF_s0.IsNearlyEqualTo(X_AF_s3, kTolerance));
 }
 
 GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {

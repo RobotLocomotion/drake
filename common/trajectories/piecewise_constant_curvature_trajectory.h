@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -7,6 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/wrap_to.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/systems/framework/scalar_conversion_traits.h"
 
@@ -32,6 +34,11 @@ namespace trajectories {
  are used to define a frame F along the curve with basis vectors Fx, Fy, Fz
  coincident with vectors t̂, n̂, p̂, respectively.
 
+ A trajectory is said to be periodic if the pose X_AF of frame F is a periodic
+ function of arclength, i.e. X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L is the
+ length of a single cycle along the trajectory. Periodicity is determined
+ at construction.
+
  @note Though similar, frame F is distinct from the Frenet–Serret frame defined
  by the tangent-normal-binormal vectors T̂, N̂, B̂ See <a
  href="https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas">Frenet–Serret
@@ -40,8 +47,8 @@ namespace trajectories {
  For constant curvature paths on a plane, the <a
  href="https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas">Frenet–Serret
  formulas</a> simplify and we can write: <pre>
-     dFx/ds(s) =  ρ(s)⋅ Fy(s)
-     dFy/ds(s) = -ρ(s)⋅ Fx(s)
+     dFx/ds(s) =  ρ(s)⋅Fy(s)
+     dFy/ds(s) = -ρ(s)⋅Fx(s)
      dFz/ds(s) =  0
  </pre>
  for the entire trajectory.
@@ -69,6 +76,10 @@ class PiecewiseConstantCurvatureTrajectory final
   /** An empty piecewise constant curvature trajectory. */
   PiecewiseConstantCurvatureTrajectory() = default;
 
+  template <typename U>
+  using ScalarValueConverter =
+      typename systems::scalar_conversion::template ValueConverter<T, U>;
+
   /** Constructs a piecewise constant curvature trajectory.
 
    Endpoints of each constant-curvature segments are defined by n breaks
@@ -94,6 +105,12 @@ class PiecewiseConstantCurvatureTrajectory final
    lies, expressed in the parent frame, p̂_A.
    @param initial_position The initial position of the curve expressed in
    the parent frame, p_AoFo_A(s₀).
+   @param periodicity_tolerance Tolerance used to determine if the resulting
+   trajectory is periodic, according to the metric defined by
+   IsNearlyPeriodic(). If IsNearlyPeriodic(periodicity_tolerance) is true, then
+   the newly constructed trajectory will be periodic. That is,
+   X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). Subsequent calls to
+   is_periodic() will return `true`.
 
    @throws std::exception if the number of turning rates does not match
    the number of segments
@@ -106,7 +123,8 @@ class PiecewiseConstantCurvatureTrajectory final
                                        const std::vector<T>& turning_rates,
                                        const Vector3<T>& initial_curve_tangent,
                                        const Vector3<T>& plane_normal,
-                                       const Vector3<T>& initial_position);
+                                       const Vector3<T>& initial_position,
+                                       double periodicity_tolerance = 1e-8);
 
   /** Scalar conversion constructor. See @ref system_scalar_conversion. */
   template <typename U>
@@ -118,15 +136,20 @@ class PiecewiseConstantCurvatureTrajectory final
             other.get_initial_pose()
                 .rotation()
                 .col(kCurveTangentIndex)
-                .template cast<U>(),
+                .unaryExpr(ScalarValueConverter<U>{}),
             other.get_initial_pose()
                 .rotation()
                 .col(kPlaneNormalIndex)
-                .template cast<U>(),
-            other.get_initial_pose().translation().template cast<U>()) {}
+                .unaryExpr(ScalarValueConverter<U>{}),
+            other.get_initial_pose().translation().unaryExpr(
+                ScalarValueConverter<U>{})) {}
 
   /** @returns the total arclength of the curve in meters. */
   T length() const { return this->end_time(); }
+
+  /* Returns `true` if `this` trajectory is periodic.
+   That is, X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). */
+  boolean<T> is_periodic() const { return is_periodic_; }
 
   /** Calculates the trajectory's pose X_AF(s) at the given arclength s.
 
@@ -221,11 +244,17 @@ class PiecewiseConstantCurvatureTrajectory final
   static std::vector<T> ScalarConvertStdVector(
       const std::vector<U>& segment_data) {
     std::vector<T> converted_segment_data;
-    systems::scalar_conversion::ValueConverter<U, T> converter;
+    ScalarValueConverter<U> converter;
     for (const U& segment : segment_data) {
       converted_segment_data.push_back(converter(segment));
     }
     return converted_segment_data;
+  }
+
+  /* If the trajectory is periodic, this helper wraps the distance coordinate s
+   to the path's length. If not periodic, then it simply returns s. */
+  T maybe_wrap(const T& s) const {
+    return is_periodic_ ? math::wrap_to(s, T(0.), length()) : s;
   }
 
   /* Calculates pose X_FiF of the frame F at distance ds from the start of the
@@ -289,6 +318,7 @@ class PiecewiseConstantCurvatureTrajectory final
 
   std::vector<T> segment_turning_rates_;
   std::vector<math::RigidTransform<T>> segment_start_poses_;
+  boolean<T> is_periodic_{false};
 
   static inline constexpr size_t kCurveTangentIndex = 0;
   static inline constexpr size_t kCurveNormalIndex = 1;
