@@ -270,8 +270,17 @@ class Simulator {
   /// @exclude_from_pydrake_mkdoc{The prior overload's docstring is better, and
   /// we only need one of the two -- overloading on ownership doesn't make
   /// sense for pydrake.}
-  Simulator(std::unique_ptr<const System<T>> system,
-            std::unique_ptr<Context<T>> context = nullptr);
+  explicit Simulator(std::unique_ptr<const System<T>> system,
+                     std::unique_ptr<Context<T>> context = nullptr);
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Create a Simulator which accepts a context via shared
+  // pointer.
+  //
+  // The shared pointer signature is useful for implementing pydrake memory
+  // management, because it permits supplying a custom deleter.
+  Simulator(const System<T>& system, std::shared_ptr<Context<T>> context);
+#endif
 
   // TODO(sherm1) Make Initialize() attempt to satisfy constraints.
 
@@ -608,15 +617,27 @@ class Simulator {
     initialization_done_ = false;
   }
 
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Replace the internally-maintained context with a
+  // different one, via shared pointer.  The current Context is deleted.  This
+  // is useful for supplying a new set of initial conditions.  You should
+  // invoke Initialize() after replacing the Context.
+  //
+  // The shared pointer signature is useful for implementing pydrake memory
+  // management, because it permits supplying a custom deleter.
+  //
+  // @param context The new context, which may be null. If the context is
+  //                null, a new context must be set before attempting to step
+  //                the system forward.
+  // @sa reset_context()
+  void reset_context_from_shared(std::shared_ptr<Context<T>> context);
+#endif
+
   /// Transfer ownership of this %Simulator's internal Context to the caller.
   /// The %Simulator will no longer contain a Context. The caller must not
   /// attempt to advance the simulator in time after that point.
   /// @sa reset_context()
-  std::unique_ptr<Context<T>> release_context() {
-    integrator_->reset_context(nullptr);
-    initialization_done_ = false;
-    return std::move(context_);
-  }
+  std::unique_ptr<Context<T>> release_context();
 
   /// Forget accumulated statistics. Statistics are reset to the values they
   /// have post construction or immediately after `Initialize()`.
@@ -753,7 +774,7 @@ class Simulator {
   Simulator(
       const System<T>* system,
       std::unique_ptr<const System<T>> owned_system,
-      std::unique_ptr<Context<T>> context);
+      std::shared_ptr<Context<T>> context);
 
   [[nodiscard]] EventStatus HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
@@ -824,7 +845,9 @@ class Simulator {
   const std::unique_ptr<const System<T>> owned_system_;
 
   const System<T>& system_;              // Just a reference; not owned.
-  std::unique_ptr<Context<T>> context_;  // The trajectory Context.
+  // Context ownership is still unique, but we store a shared pointer to
+  // accommodate custom memory management for python bindings.
+  std::shared_ptr<Context<T>> context_;  // The trajectory Context.
 
   // Temporaries used for witness function isolation.
   std::vector<const WitnessFunction<T>*> triggered_witnesses_;

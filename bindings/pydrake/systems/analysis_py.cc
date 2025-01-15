@@ -18,8 +18,6 @@
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/analysis/simulator_python_internal.h"
 
-using std::unique_ptr;
-
 namespace drake {
 namespace pydrake {
 
@@ -34,6 +32,7 @@ void ThrowIfPythonHasPendingSignals() {
     throw py::error_already_set();
   }
 }
+
 }  // namespace
 
 PYBIND11_MODULE(analysis, m) {
@@ -238,12 +237,14 @@ PYBIND11_MODULE(analysis, m) {
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
-        .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
+        .def(py::init([](const System<T>& system, Context<T>* context) {
+          auto py_context = py::cast(context);
+          return std::make_unique<Simulator<T>>(
+              system, make_shared_ptr_from_py_object<Context<T>>(py_context));
+        }),
             py::arg("system"), py::arg("context") = nullptr,
             // Keep alive, reference: `self` keeps `system` alive.
-            py::keep_alive<1, 2>(),
-            // Keep alive, ownership: `context` keeps `self` alive.
-            py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
+            py::keep_alive<1, 2>())
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc,
             py::arg("params") = InitializeParams{})
@@ -308,9 +309,14 @@ Parameter ``interruptible``:
             py_rvp::reference_internal, doc.Simulator.get_mutable_context.doc)
         .def("has_context", &Simulator<T>::has_context,
             doc.Simulator.has_context.doc)
-        .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
-            // Keep alive, ownership: `context` keeps `self` alive.
-            py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc)
+        .def(
+            "reset_context",
+            [](Simulator<T>* self, Context<T>* context) {
+              auto py_context = py::cast(context);
+              self->reset_context_from_shared(
+                  make_shared_ptr_from_py_object<Context<T>>(py_context));
+            },
+            py::arg("context"), doc.Simulator.reset_context.doc)
         // TODO(eric.cousineau): Bind `release_context` once some form of the
         // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
         .def("set_publish_every_time_step",
