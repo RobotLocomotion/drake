@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <exception>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -570,8 +571,7 @@ class SpatialInertia {
   }
 
   /// Performs a number of checks to verify that this is a physically valid
-  /// spatial inertia.
-  /// The checks performed are:
+  /// spatial inertia. The checks performed include:
   ///
   /// - No NaN entries.
   /// - Non-negative mass.
@@ -587,7 +587,9 @@ class SpatialInertia {
   /// condition when performed on a rotational inertia about a body's center of
   /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
-  boolean<T> IsPhysicallyValid() const;
+  boolean<T> IsPhysicallyValid() const {
+    return boolean<T>(!CreateInvalidityReport().has_value());
+  }
 
   /// Performs the same checks as the boolean typed IsPhysicallyValid().
   /// @returns empty string if valid, otherwise, a detailed error message.
@@ -917,6 +919,10 @@ class SpatialInertia {
   // Throws an exception with a detailed error message.
   // @pre !IsPhysicallyValid() (not checked).
   [[noreturn]] void ThrowNotPhysicallyValid() const;
+
+  // Returns an error string if `this` RotationalInertia is verifiably invalid.
+  // Note: Not returning an error string does not _guarantee_ validity.
+  std::optional<std::string> CreateInvalidityReport() const;
 
   // Returns a detailed error message.
   // @pre !IsPhysicallyValid() (not checked).
