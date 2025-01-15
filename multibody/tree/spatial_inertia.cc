@@ -335,20 +335,43 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
 }
 
 template <typename T>
-boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
-  // This spatial inertia is not physically valid if the mass is negative or
-  // non-finite or the center of mass or unit inertia matrix have NaN elements.
-  boolean<T> ret_value = is_nonnegative_finite(mass_);
-  if (ret_value) {
-    // Form a rotational inertia about the body's center of mass and then use
-    // the well-documented tests in RotationalInertia to test validity.
-    const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
-    const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
-    const RotationalInertia<T> I_SScm_E =
-        G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
-    ret_value = I_SScm_E.CouldBePhysicallyValid();
+std::optional<std::string> SpatialInertia<T>::CreateInvalidityReport() const {
+  // Default return value is an empty string (this SpatialInertia is valid).
+  std::string error_message;
+  const Vector3<T>& p_PBcm = get_com();
+
+  // Is invalid if the mass is negative or non-finite.
+  const T& mass = get_mass();
+  if (!is_nonnegative_finite(mass)) {
+    error_message +=
+        fmt::format("\nmass = {} is negative or not finite.\n", mass);
+
+  } else if (p_PBcm.array().isNaN().any()) {
+      error_message +=
+        fmt::format("\nPosition vector [{}  {}  {}] has non-finite elements.\n",
+            p_PBcm(0), p_PBcm(1), p_PBcm(2));
+  } else {
+     // Is invalid if rotational inertia about-point P is invalid.
+     // Note: If mass = 0, `this` spatial inertia's unit inertia may be invalid,
+     // but the rotational inertia is valid (due to multiplying by zero).
+     const RotationalInertia<T> I_SP_E =
+       get_unit_inertia().MultiplyByScalarSkipValidityCheck(mass);
+     if(!I_SP_E.CouldBePhysicallyValid())
+       WriteExtraCentralInertiaProperties(&error_message);
+     else {
+       // Is invalid if rotational inertia about Bcm is invalid.
+       // To avoid a validity check in RotationalInertia::ShiftToCenterOfMass()
+       // that throws an exception, use SpatialInertia::ShiftToCenterOfMass().
+       const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
+       const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
+       const RotationalInertia<T> I_SScm_E =
+           G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
+       if(!I_SScm_E.CouldBePhysicallyValid())
+         WriteExtraCentralInertiaProperties(&error_message);
+     }
   }
-  return ret_value;
+  if (error_message.empty()) return std::nullopt;
+  return error_message;
 }
 
 template <typename T>
