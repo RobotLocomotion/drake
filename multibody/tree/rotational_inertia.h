@@ -423,6 +423,8 @@ class RotationalInertia {
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
   // TODO(sherm1) Consider promoting this to a general utility if there
   //  are similar symmetric*vector cases elsewhere.
+  // Note: Keep this function inline (in the header file) since it needs to
+  // execute quickly as it is used in an inner loop.
   Vector3<T> operator*(const Vector3<T>& w_E) const {
     // Eigen's symmetric multiply can be slow. Do this by hand instead:
     //     [a (b) (c)]   [x]   [ ax+by+cz ]
@@ -799,6 +801,8 @@ class RotationalInertia {
   // @param mass_p_PQ_E The mass of particle Q multiplied by `p_PQ_E`.
   //                    If unit mass, this argument is simply p_PQ_E.
   // @retval I_QP_E, Q's rotational inertia about-point Q expressed-in frame E.
+  // Note: Keep this function inline (in the header file) since it needs to
+  // execute quickly as it is used in an inner loop.
   RotationalInertia(const Vector3<T>& mass_p_PQ_E, const Vector3<T>& p_PQ_E) {
     const T& mx = mass_p_PQ_E(0);
     const T& my = mass_p_PQ_E(1);
