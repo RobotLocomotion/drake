@@ -41,6 +41,7 @@ load(
     "homebrew_prefix",
     "which",
 )
+load("//tools/workspace:os.bzl", "is_wheel_build")
 
 def _get_python_interpreter(repo_ctx):
     """Returns the tuple (python_interpreter_path, major_minor_version) based
@@ -131,7 +132,9 @@ def _prepare_venv(repo_ctx, python):
     repo_ctx.watch(pdmlock)
 
     # Choose which dependencies to install.
-    if repo_ctx.attr.requirements_flavor == "test":
+    if is_wheel_build(repo_ctx):
+        repo_ctx.file("@pdm-install-args", content = "-G wheel")
+    elif repo_ctx.attr.requirements_flavor == "test":
         repo_ctx.file("@pdm-install-args", content = "-G test")
     else:
         repo_ctx.file("@pdm-install-args", content = "--prod")
