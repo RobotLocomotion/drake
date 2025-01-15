@@ -9,6 +9,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/inflate_mesh.h"
 #include "drake/geometry/proximity/make_box_field.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
@@ -311,6 +312,14 @@ class NonNegativeDouble : public Validator<double> {
 
 }  // namespace
 
+void WarnNoRigidRepresentation(std::string_view shape_type_name) {
+  static const logging::Warn log_once(
+      "Rigid {} shapes are not currently supported for hydroelastic "
+      "contact; registration is allowed, but an error will be thrown "
+      "during contact.",
+      shape_type_name);
+}
+
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace& hs, const ProximityProperties&) {
   return RigidGeometry(hs);
@@ -401,6 +410,13 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   // Simply use the Convex's GetConvexHull().
   return RigidGeometry(RigidMesh(make_unique<TriangleSurfaceMesh<double>>(
       MakeTriangleFromPolygonMesh(convex_spec.GetConvexHull()))));
+}
+
+void WarnNoSoftRepresentation(std::string_view shape_type_name) {
+  static const logging::Warn log_once(
+      "Soft {} shapes are not currently supported for hydroelastic contact; "
+      "registration is allowed, but an error will be thrown during contact.",
+      shape_type_name);
 }
 
 std::optional<SoftGeometry> MakeSoftRepresentation(

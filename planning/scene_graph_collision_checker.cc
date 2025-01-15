@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"

@@ -8,6 +8,7 @@
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/hyperrectangle.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/choose_best_solver.h"

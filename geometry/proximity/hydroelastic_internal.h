@@ -10,7 +10,6 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
-#include "drake/common/text_logging.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity/bvh.h"
@@ -460,16 +459,15 @@ class Geometries final : public ShapeReifier {
  type is declared below.  */
 //@{
 
+/* Warning utility function for MakeRigidRepresentation(). */
+void WarnNoRigidRepresentation(std::string_view shape_type_name);
+
 /* Generic interface for handling unsupported rigid Shapes. Unsupported
  geometries will return a std::nullopt.  */
 template <typename Shape>
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Shape& shape, const ProximityProperties&) {
-  static const logging::Warn log_once(
-      "Rigid {} shapes are not currently supported for hydroelastic "
-      "contact; registration is allowed, but an error will be thrown "
-      "during contact.",
-      shape.type_name());
+  WarnNoRigidRepresentation(shape.type_name());
   return {};
 }
 
@@ -513,15 +511,15 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const HalfSpace& half_space, const ProximityProperties& props);
 
+/* Warning utility function for MakeSoftRepresentation(). */
+void WarnNoSoftRepresentation(std::string_view shape_type_name);
+
 /* Generic interface for handling unsupported soft Shapes. Unsupported
  geometries will return a std::nullopt.  */
 template <typename Shape>
 std::optional<SoftGeometry> MakeSoftRepresentation(const Shape& shape,
                                                    const ProximityProperties&) {
-  static const logging::Warn log_once(
-      "Soft {} shapes are not currently supported for hydroelastic contact; "
-      "registration is allowed, but an error will be thrown during contact.",
-      shape.type_name());
+  WarnNoSoftRepresentation(shape.type_name());
   return {};
 }
 

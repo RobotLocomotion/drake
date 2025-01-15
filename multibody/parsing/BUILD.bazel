@@ -420,6 +420,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "model_directives",
+    srcs = ["model_directives.cc"],
     hdrs = ["model_directives.h"],
     visibility = ["//visibility:public"],
     deps = [

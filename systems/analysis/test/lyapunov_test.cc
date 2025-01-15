@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/text_logging.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/systems/framework/vector_system.h"
 

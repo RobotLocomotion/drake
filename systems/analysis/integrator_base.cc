@@ -462,6 +462,28 @@ typename IntegratorBase<T>::StepResult
   }
 }
 
+template <typename T>
+void IntegratorBase<T>::ValidateSmallerStepSize(const T& current_step_size,
+                                                const T& new_step_size) const {
+  if (new_step_size < get_working_minimum_step_size() &&
+      new_step_size < current_step_size &&  // Verify step adjusted downward.
+      min_step_exceeded_throws_) {
+    DRAKE_LOGGER_DEBUG(
+        "Integrator wants to select too small step "
+        "size of {}; working minimum is ",
+        new_step_size, get_working_minimum_step_size());
+    std::ostringstream str;
+    // TODO(russt): Link to the "debugging dynamical systems" tutorial
+    // (#17249) once it exists.
+    str << "Error control wants to select step smaller than minimum"
+        << " allowed (" << get_working_minimum_step_size()
+        << "). This is typically an indication that some part of your system "
+           "*with continuous state* is going unstable and/or is producing "
+           "excessively large derivatives.";
+    throw std::runtime_error(str.str());
+  }
+}
+
 }  // namespace systems
 }  // namespace drake
 
