@@ -1,0 +1,52 @@
+[highway_internal] Disable all targets except what Drake wants
+
+Reasoning for not upstreaming this patch: Drake-specific build configuration.
+
+--- BUILD
++++ BUILD
+@@ -138,7 +138,44 @@
+     ":compiler_msvc": ["HWY_SHARED_DEFINE"],
+     ":compiler_clangcl": ["HWY_SHARED_DEFINE"],
+     "//conditions:default": [],
+-})
++}) + [
++    # Highway automatically compiles our code that uses it for multiple CPU
++    # targets, so that the code is tuned as best as possible for the user's
++    # CPU that it will run on.
++    #
++    # By default Highway compiles to a ~dozen different CPU targets, but
++    # in practice Drake only cares about a few of them. We'll disable the
++    # default list of targets and write down the CPUs we care about one by
++    # one so that the test / support burden is better matched to our needs.
++    #
++    # If you change this list, you must also fix common/cpu_capabilities.cc
++    # to allow opt-out of the new CPU feature with an environment variable.
++    #
++    # Highway represents target sets using a bitmask. Each target is given
++    # a single bit (e.g., '#define HWY_AVX2 (1LL << 9)'). To express a set
++    # of targets (e.g., to set HWY_DISABLED_TARGETS) we must binary-or the
++    # per-target constants together.
++    #
++    # Highway only offers a deny-list for targets, so we'll need to deny
++    # everything and then un-deny what we want to allow. Per De Morgan's
++    # law, an ENABLE list folded over OR is the same as the negation of the
++    # same list folded over NAND; to end up with a DISABLE list, we can
++    # just drop the outermost negation, i.e., ENABLE list folded over NAND.
++    "HWY_DISABLED_TARGETS=(" + "&".join([
++        "(~({}))".format(name)
++        for name in [
++            # We must always provide a portable fallback.
++            "HWY_BASELINE_SCALAR",
++            # x86: SIMD with 256-bit lanes and FMA.
++            "HWY_AVX2",
++            # x86: SIMD with the improved 512VL encodings.
++            "HWY_AVX3",
++            # arm: SIMD that has fixed 256-bit lanes.
++            # TODO(jwnimmer-tri) Enable this once we can test it.
++            # "HWY_SVE_256",
++        ]
++    ]) + ")",
++]
+ 
+ # Unused on Bazel builds, where this is not defined/known; Copybara replaces
+ # usages with an empty list.

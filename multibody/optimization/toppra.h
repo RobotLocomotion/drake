@@ -69,7 +69,7 @@ class Toppra {
 
   /**
    * Constructs an inverse kinematics problem for a MultibodyPlant.
-   * This constructor will create and own a context for @param plant.
+   * This constructor will create and own a context for `plant`.
    * @param path The trajectory on which the TOPPRA problem will be solved.
    * @param plant The robot that will follow the solved trajectory.  Used for
    *              enforcing torque and frame specific constraints.

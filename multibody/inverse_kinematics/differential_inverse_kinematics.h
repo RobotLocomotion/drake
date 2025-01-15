@@ -186,7 +186,7 @@ class DifferentialInverseKinematicsParameters {
 
   /**
    * Sets the joint velocity limits.
-   * @param q_bounds The first element is the lower bound, and the second is
+   * @param v_bounds The first element is the lower bound, and the second is
    * the upper bound.
    * @throws std::exception if the first or second element of @p q_bounds has
    * the wrong dimension or any element of the second element is smaller than
@@ -203,7 +203,7 @@ class DifferentialInverseKinematicsParameters {
 
   /**
    * Sets the joint acceleration limits.
-   * @param q_bounds The first element is the lower bound, and the second is
+   * @param vd_bounds The first element is the lower bound, and the second is
    * the upper bound.
    * @throws std::exception if the first or second element of @p q_bounds has
    * the wrong dimension or any element of the second element is smaller than
@@ -247,7 +247,7 @@ class DifferentialInverseKinematicsParameters {
 
   /**
    * Adds a linear velocity constraint.
-   * @param linear_velocity_constraint A linear constraint on joint velocities.
+   * @param constraint A linear constraint on joint velocities.
    * @throws std::exception if `constraint->num_vars !=
    * this->get_num_velocities()`.
    */

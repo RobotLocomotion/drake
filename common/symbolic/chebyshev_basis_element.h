@@ -69,7 +69,7 @@ class ChebyshevBasisElement : public PolynomialBasisElement {
    * We use the fact that
    * ∫ Tₙ(x)dx = 1/(2n+2)Tₙ₊₁(x) − 1/(2n−2)Tₙ₋₁(x)
    * A special case is ∫ T₀(x)dx = T₁(x)
-   * @param var The variable to integrate. If @param var is not a variable in
+   * @param var The variable to integrate. If `var` is not a variable in
    * this ChebyshevBasisElement, then the integration result is *this * T₁(var).
    * @retval result sum(key * result[key]) is the integration result. For
    * example, ∫ T₂(x)T₃(y)dx = 1/6*T₃(x)T₃(y) − 1/2 * T₁(x)T₃(y), then the

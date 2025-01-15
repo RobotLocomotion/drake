@@ -703,7 +703,7 @@ class RigidBody : public MultibodyElement<T> {
 
   /// (Advanced) Extract acceleration of this body's origin in world, expressed
   /// in world.
-  /// @param[in] vc velocity kinematics cache.
+  /// @param[in] ac acceleration kinematics cache.
   /// @retval a_WBo_W acceleration of body origin Bo in world W, expressed in W.
   const Vector3<T>& get_origin_acceleration_in_world(
       const internal::AccelerationKinematicsCache<T>& ac) const {

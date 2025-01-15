@@ -338,7 +338,7 @@ inline bool operator!=(double a, const AutoDiff& b) {
 /// https://en.cppreference.com/w/cpp/algorithm#Minimum.2Fmaximum_operations
 //@{
 
-/** ADL overload to mimic std::max from <algorithm>.
+/** ADL overload to mimic std::max from `<algorithm>`.
 Note that like std::max, this function returns a reference to whichever
 argument was chosen; it does not make a copy. When `a` and `b` are equal,
 retains the derivatives of `a` (by returning `a`) unless `a` has empty
@@ -350,7 +350,7 @@ inline const AutoDiff& max(const AutoDiff& a, const AutoDiff& b) {
   return a.value() < b.value() ? b : a;
 }
 
-/** ADL overload to mimic std::max from <algorithm>.
+/** ADL overload to mimic std::max from `<algorithm>`.
 When `a` and `b` are equal, retains the derivatives of `a`. */
 inline AutoDiff max(AutoDiff a, double b) {
   if (a.value() < b) {
@@ -359,7 +359,7 @@ inline AutoDiff max(AutoDiff a, double b) {
   return a;
 }
 
-/** ADL overload to mimic std::max from <algorithm>.
+/** ADL overload to mimic std::max from `<algorithm>`.
 When `a` and `b` are equal, retains the derivatives of `b`. */
 inline AutoDiff max(double a, AutoDiff b) {
   if (a < b.value()) {
@@ -369,7 +369,7 @@ inline AutoDiff max(double a, AutoDiff b) {
   return b;
 }
 
-/** ADL overload to mimic std::min from <algorithm>.
+/** ADL overload to mimic std::min from `<algorithm>`.
 Note that like std::min, this function returns a reference to whichever
 argument was chosen; it does not make a copy. When `a` and `b` are equal,
 retains the derivatives of `a` (by returning `a`) unless `a` has empty
@@ -381,7 +381,7 @@ inline const AutoDiff& min(const AutoDiff& a, const AutoDiff& b) {
   return b.value() < a.value() ? b : a;
 }
 
-/** ADL overload to mimic std::min from <algorithm>.
+/** ADL overload to mimic std::min from `<algorithm>`.
 When `a` and `b` are equal, retains the derivatives of `a`. */
 inline AutoDiff min(AutoDiff a, double b) {
   if (b < a.value()) {
@@ -390,7 +390,7 @@ inline AutoDiff min(AutoDiff a, double b) {
   return a;
 }
 
-/** ADL overload to mimic std::min from <algorithm>.
+/** ADL overload to mimic std::min from `<algorithm>`.
 When `a` and `b` are equal, retains the derivatives of `b`. */
 // NOLINTNEXTLINE(build/include_what_you_use) false positive.
 inline AutoDiff min(double a, AutoDiff b) {
@@ -407,7 +407,7 @@ inline AutoDiff min(double a, AutoDiff b) {
 /// https://en.cppreference.com/w/cpp/numeric/math#Basic_operations
 //@{
 
-/** ADL overload to mimic std::abs from <cmath>. */
+/** ADL overload to mimic std::abs from `<cmath>`. */
 inline AutoDiff abs(AutoDiff x) {
   // Conditionally negate negative numbers.
   if (x.value() < 0) {
@@ -433,13 +433,13 @@ inline AutoDiff abs2(AutoDiff x) {
 /// https://en.cppreference.com/w/cpp/numeric/math#Power_functions
 //@{
 
-/** ADL overload to mimic std::exp from <cmath>. */
+/** ADL overload to mimic std::exp from `<cmath>`. */
 AutoDiff exp(AutoDiff x);
 
-/** ADL overload to mimic std::log from <cmath>. */
+/** ADL overload to mimic std::log from `<cmath>`. */
 AutoDiff log(AutoDiff x);
 
-/** ADL overload to mimic std::pow from <cmath>.
+/** ADL overload to mimic std::pow from `<cmath>`.
 
 The resulting partial derivative ∂/∂vᵢ is undefined (i.e., NaN) for all of the
 following cases:
@@ -457,15 +457,15 @@ In all other cases, if the base and exp partial derivatives were well-defined
 then the resulting partial derivatives will also be well-defined. */
 AutoDiff pow(AutoDiff base, const AutoDiff& exp);
 
-/** ADL overload to mimic std::pow from <cmath>.
+/** ADL overload to mimic std::pow from `<cmath>`.
 Refer to pow(AutoDiff,const AutoDiff&) for an explanation of special cases. */
 AutoDiff pow(double base, const AutoDiff& exp);
 
-/** ADL overload to mimic std::pow from <cmath>.
+/** ADL overload to mimic std::pow from `<cmath>`.
 Refer to pow(AutoDiff,const AutoDiff&) for an explanation of special cases. */
 AutoDiff pow(AutoDiff base, double exp);
 
-/** ADL overload to mimic std::sqrt from <cmath>. */
+/** ADL overload to mimic std::sqrt from `<cmath>`. */
 AutoDiff sqrt(AutoDiff x);
 
 //@}
@@ -475,31 +475,31 @@ AutoDiff sqrt(AutoDiff x);
 /// https://en.cppreference.com/w/cpp/numeric/math#Trigonometric_functions
 //@{
 
-/** ADL overload to mimic std::sin from <cmath>. */
+/** ADL overload to mimic std::sin from `<cmath>`. */
 AutoDiff sin(AutoDiff x);
 
-/** ADL overload to mimic std::cos from <cmath>. */
+/** ADL overload to mimic std::cos from `<cmath>`. */
 AutoDiff cos(AutoDiff x);
 
-/** ADL overload to mimic std::tan from <cmath>. */
+/** ADL overload to mimic std::tan from `<cmath>`. */
 AutoDiff tan(AutoDiff x);
 
-/** ADL overload to mimic std::asin from <cmath>. */
+/** ADL overload to mimic std::asin from `<cmath>`. */
 AutoDiff asin(AutoDiff x);
 
-/** ADL overload to mimic std::acos from <cmath>. */
+/** ADL overload to mimic std::acos from `<cmath>`. */
 AutoDiff acos(AutoDiff x);
 
-/** ADL overload to mimic std::atan from <cmath>. */
+/** ADL overload to mimic std::atan from `<cmath>`. */
 AutoDiff atan(AutoDiff x);
 
-/** ADL overload to mimic std::atan2 from <cmath>. */
+/** ADL overload to mimic std::atan2 from `<cmath>`. */
 AutoDiff atan2(AutoDiff a, const AutoDiff& b);
 
-/** ADL overload to mimic std::atan2 from <cmath>. */
+/** ADL overload to mimic std::atan2 from `<cmath>`. */
 AutoDiff atan2(AutoDiff a, double b);
 
-/** ADL overload to mimic std::atan2 from <cmath>. */
+/** ADL overload to mimic std::atan2 from `<cmath>`. */
 AutoDiff atan2(double a, AutoDiff b);
 
 //@}
@@ -509,13 +509,13 @@ AutoDiff atan2(double a, AutoDiff b);
 /// https://en.cppreference.com/w/cpp/numeric/math#Hyperbolic_functions
 //@{
 
-/** ADL overload to mimic std::sinh from <cmath>. */
+/** ADL overload to mimic std::sinh from `<cmath>`. */
 AutoDiff sinh(AutoDiff x);
 
-/** ADL overload to mimic std::cosh from <cmath>. */
+/** ADL overload to mimic std::cosh from `<cmath>`. */
 AutoDiff cosh(AutoDiff x);
 
-/** ADL overload to mimic std::tanh from <cmath>. */
+/** ADL overload to mimic std::tanh from `<cmath>`. */
 AutoDiff tanh(AutoDiff x);
 
 //@}
@@ -527,35 +527,35 @@ AutoDiff tanh(AutoDiff x);
 /// https://en.cppreference.com/w/cpp/numeric/math#Floating_point_manipulation_functions
 //@{
 
-/** ADL overload to mimic std::ceil from <cmath>.
+/** ADL overload to mimic std::ceil from `<cmath>`.
 The result's derivatives are always zero. */
 AutoDiff ceil(AutoDiff x);
 
-/** ADL overload to mimic std::floor from <cmath>.
+/** ADL overload to mimic std::floor from `<cmath>`.
 The result's derivatives are always zero. */
 AutoDiff floor(AutoDiff x);
 
-/** ADL overload to mimic std::round from <cmath>.
+/** ADL overload to mimic std::round from `<cmath>`.
 The result's derivatives are always zero. */
 AutoDiff round(AutoDiff x);
 
-/** ADL overload to mimic std::nexttoward from <cmath>.
+/** ADL overload to mimic std::nexttoward from `<cmath>`.
 The result's derivatives are always zero. */
 AutoDiff nexttoward(AutoDiff from, long double to);
 
-/** ADL overload to mimic std::isfinite from <cmath>.
+/** ADL overload to mimic std::isfinite from `<cmath>`.
 Because the return type is `bool`, the derivatives are not preserved. */
 inline bool isfinite(const AutoDiff& x) {
   return std::isfinite(x.value());
 }
 
-/** ADL overload to mimic std::isinf from <cmath>.
+/** ADL overload to mimic std::isinf from `<cmath>`.
 Because the return type is `bool`, the derivatives are not preserved. */
 inline bool isinf(const AutoDiff& x) {
   return std::isinf(x.value());
 }
 
-/** ADL overload to mimic std::isnan from <cmath>.
+/** ADL overload to mimic std::isnan from `<cmath>`.
 Because the return type is `bool`, the derivatives are not preserved. */
 inline bool isnan(const AutoDiff& x) {
   return std::isnan(x.value());

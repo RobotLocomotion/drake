@@ -83,20 +83,20 @@ class reset_on_copy {
                 "reset_on_copy<T> is permitted only for integral, "
                 "floating point, and pointer types T.");
 
-  /// Constructs a reset_on_copy<T> with a value-initialized wrapped value.
+  /// Constructs a %reset_on_copy with a value-initialized wrapped value.
   reset_on_copy() noexcept(std::is_nothrow_default_constructible_v<T>) {}
 
-  /// Constructs a %reset_on_copy<T> with a copy of the given value. This is
-  /// an implicit conversion, so that %reset_on_copy<T> behaves more like
+  /// Constructs a %reset_on_copy with a copy of the given value. This is
+  /// an implicit conversion, so that %reset_on_copy behaves more like
   /// the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
   reset_on_copy(const T& value) noexcept(
       std::is_nothrow_copy_constructible_v<T>)
       : value_(value) {}
 
-  /// Constructs a %reset_on_copy<T> with the given wrapped value, by move
+  /// Constructs a %reset_on_copy with the given wrapped value, by move
   /// construction if possible. This is an implicit conversion, so that
-  /// %reset_on_copy<T> behaves more like the unwrapped type.
+  /// %reset_on_copy behaves more like the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
   reset_on_copy(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
       : value_(std::move(value)) {}

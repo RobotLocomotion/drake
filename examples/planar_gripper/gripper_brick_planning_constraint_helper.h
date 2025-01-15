@@ -107,8 +107,8 @@ void AddFingerNoSlidingConstraint(
  * @param rolling_angle_lower The lower bound on the rolling angle.
  * @param rolling_angle_upper The upper bound on the rolling angle.
  * @param prog The optimization program to which the constraint is added.
- * @param from_context The context containing posture, from which the finger
- * should stick to (or roll).
+ * @param from_fixed_context The context containing posture, from which the
+ * finger should stick to (or roll).
  * @param to_context The context that contains the value of the posture after
  * rolling (sticking).
  * @param q_to The variable representing the "to" posture.

@@ -215,6 +215,128 @@ boolean<T> RotationalInertia<
   return are_moments_near_positive && is_triangle_inequality_satisfied;
 }
 
+// (This implementation is adapted from Simbody's Rotation::reexpressSymMat33.)
+// Use sneaky tricks from Featherstone to rotate a symmetric dyadic matrix.
+// See Featherstone 2008, Appendix A.5, pg 254.
+//
+// Let the current rotational inertia matrix be I=I_EE, meaning it is a dyadic
+// expressed in E (only the expressed-in frame matters here so we're switching
+// notation to emphasize that). We're given a rotation matrix R_AE and would
+// like to efficiently calculate I' = I_AA = R_AE I_EE R_AEᵀ, writing the result
+// in place.
+//
+// If the calculation were actually performed by multiplying three generic 3x3
+// matrices, it would take 90 flops (as used here a "flop" is a floating-point
+// multiply or add), or 75 flops if we leveraged the symmetry of the I_AA and
+// I_EE inertia matrices (each matrix only has 6 unique elements). However,
+// with the clever algorithm below, the calculation cost is only 57 flops.
+//
+// We'll work with I's elements: I =[ a d e ]
+//                                  [ d b f ]
+//                                  [ e f c ]
+//
+// First, split I into I=L+D+v× with v=[-f e 0]ᵀ (× means cross product matrix):
+//        [a-c   d   0]       [c 0 0]        [ 0  0  e]
+//    L = [ d   b-c  0]   D = [0 c 0]   v× = [ 0  0  f]
+//        [2e   2f   0]       [0 0 c]        [-e -f  0]
+// (4 flops to calculate L)
+//
+// A cross product matrix identity says R v× Rᵀ=(Rv)×, so:
+//    I' = R I Rᵀ = R L Rᵀ + D + (Rv)×.
+// Let Y' = R L, Z = Y' Rᵀ. We only need the lower triangle of Z and a
+// 2x2 square of Y'.
+//
+// Don't-care's below are marked "-". Below we'll use square bracket [i]
+// index of a matrix to mean "row i", round bracket (j) means "column j".
+//
+//        [  -   -  0 ]
+//   Y' = [ Y00 Y01 0 ]   Y = [ R[1]•L(0)  R[1]•L(1) ]     20 flops
+//        [ Y10 Y11 0 ]       [ R[2]•L(0)  R[2]•L(1) ]
+//
+//   Z = [   Z00          -          -     ]
+//       [ Y[0]•R[0]  Y[0]•R[1]      -     ]   15 flops (use only 2
+//       [ Y[1]•R[0]  Y[1]•R[1]  Y[1]•R[2] ]   elements of R's rows)
+//
+//   Z00 = (L00+L11)-(Z11+Z22)  3 flops (because rotation preserves trace)
+//
+//         [e R01 - f R00]           [  0       -    -  ]
+//    Rv = [e R11 - f R10]   (Rv)× = [ Rv[2]    0    -  ]
+//         [e R21 - f R20]           [-Rv[1]  Rv[0]  0  ]
+// (Rv is 9 flops)
+//
+//        [ Z00 + c          -           -    ]
+//   I' = [ Z10 + Rv[2]  Z11 + c         -    ]
+//        [ Z20 - Rv[1]  Z21 + Rv[0]  Z22 + c ]
+//
+// which takes 6 more flops. Total 6 + 9Rv + 18Z + 20Y + 4L = 57.
+//
+// (Looking at the generated assembly code for gcc 7.5 -O2 in Drake showed
+// exactly 57 flops. clang 9.0 -O2 generated a few extra flops but in many fewer
+// instructions since it was able to make much better use of SSE2 packed
+// instructions. Both compilers were fully able to inline the Eigen methods here
+// so there are no loops or function calls.)
+template <typename T>
+void RotationalInertia<T>::ReExpressInPlace(
+    const math::RotationMatrix<T>& R_AE) {
+  const Matrix3<T>& R = R_AE.matrix();
+
+  // We're going to write back into this lower triangle.
+  T& a = I_SP_E_(0, 0);
+  T& d = I_SP_E_(1, 0);
+  T& b = I_SP_E_(1, 1);
+  T& e = I_SP_E_(2, 0);
+  T& f = I_SP_E_(2, 1);
+  T& c = I_SP_E_(2, 2);
+
+  // Avoid use of Eigen's comma initializer since the compilers don't
+  // reliably inline it.
+  Eigen::Matrix<T, 3, 2> L;
+  L(0, 0) = a - c;
+  L(0, 1) = d;
+  L(1, 0) = d;
+  L(1, 1) = b - c;
+  L(2, 0) = 2 * e;
+  L(2, 1) = 2 * f;
+
+  // For convenience below, the first two rows of Rᵀ.
+  Eigen::Matrix<T, 2, 3> Rt;
+  Rt(0, 0) = R(0, 0);
+  Rt(0, 1) = R(1, 0);
+  Rt(0, 2) = R(2, 0);
+  Rt(1, 0) = R(0, 1);
+  Rt(1, 1) = R(1, 1);
+  Rt(1, 2) = R(2, 1);
+
+  const Vector3<T> Rv(e * Rt.row(1) - f * Rt.row(0));
+
+  Matrix2<T> Y;
+  Y(0, 0) = R.row(1).dot(L.col(0));
+  Y(0, 1) = R.row(1).dot(L.col(1));
+  Y(1, 0) = R.row(2).dot(L.col(0));
+  Y(1, 1) = R.row(2).dot(L.col(1));
+
+  // We'll do Z elementwise due to element interdependence.
+  const T Z11 = Y.row(0) * Rt.col(1);
+  const T Z22 = Y.row(1) * Rt.col(2);
+  const T Z00 = (L(0, 0) + L(1, 1)) - (Z11 + Z22);
+  const T Z10 = Y.row(0) * Rt.col(0);
+  const T Z20 = Y.row(1) * Rt.col(0);
+  const T Z21 = Y.row(1) * Rt.col(1);
+
+  // Assign result back into lower triangle. Don't set c until we're done
+  // with the previous value!
+  a = Z00 + c;
+  d = Z10 + Rv[2];
+  b = Z11 + c;
+  e = Z20 - Rv[1];
+  f = Z21 + Rv[0];
+  c += Z22;
+
+  // If both `this` and `R_AE` were valid upon entry to this method, the
+  // returned rotational inertia should be valid.  Otherwise, it may not be.
+  DRAKE_ASSERT_VOID(ThrowIfNotPhysicallyValid(__func__));
+}
+
 template <typename T>
 std::optional<std::string> RotationalInertia<T>::CreateInvalidityReport()
     const {

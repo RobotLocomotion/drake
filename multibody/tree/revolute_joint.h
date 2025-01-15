@@ -195,13 +195,13 @@ class RevoluteJoint final : public Joint<T> {
   }
 
   /// Sets the rate of change, in radians per second, of this `this` joint's
-  /// angle to `theta_dot`. The new rate of change `theta_dot` gets stored in
+  /// angle to `angle`. The new rate of change `angle` gets stored in
   /// `context`.
   /// @param[in] context
   ///   The context of the MultibodyTree this joint belongs to.
-  /// @param[in] theta_dot
+  /// @param[in] angle
   ///   The desired rate of change of `this` joints's angle in radians per
-  ///   second.
+  ///   second. (Should have been named `rate` or `angular_rate`.)
   /// @returns a constant reference to `this` joint.
   const RevoluteJoint<T>& set_angular_rate(Context<T>* context,
                                            const T& angle) const {

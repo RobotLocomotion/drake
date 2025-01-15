@@ -310,7 +310,6 @@ class UnitInertia : public RotationalInertia<T> {
   /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
   /// about a point A, from which position vectors to B's 4 vertices B0, B1, B2,
   /// B3 are measured (position vectors are all expressed in a common frame E).
-  /// @param[in] density mass per volume (kg/m³).
   /// @param[in] p0 position vector p_AB0_E from point A to B0, expressed in E.
   /// @param[in] p1 position vector p_AB1_E from point A to B1, expressed in E.
   /// @param[in] p2 position vector p_AB2_E from point A to B2, expressed in E.

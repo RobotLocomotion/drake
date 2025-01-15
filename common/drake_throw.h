@@ -7,7 +7,7 @@
 /// @file
 /// Provides a convenient wrapper to throw an exception when a condition is
 /// unmet.  This is similar to an assertion, but uses exceptions instead of
-/// ::abort(), and cannot be disabled.
+/// `::abort()`, and cannot be disabled.
 
 namespace drake {
 namespace internal {

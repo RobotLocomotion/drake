@@ -344,7 +344,7 @@ class GraphOfConvexSets {
             Transcription::kRestriction});
 
     /** Adds a constraint to this vertex.
-    @param bindings must contain *only* elements of x() as variables.
+    @param binding must contain *only* elements of x() as variables.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
     @throws std::exception if binding.variables() is not a subset of x().
@@ -564,7 +564,7 @@ class GraphOfConvexSets {
             Transcription::kRestriction});
 
     /** Adds a constraint to this edge.
-    @param bindings must contain *only* elements of xu() and xv() as variables.
+    @param binding must contain *only* elements of xu() and xv() as variables.
     @param use_in_transcription specifies the components of the problem to
     which the constraint should be added.
 

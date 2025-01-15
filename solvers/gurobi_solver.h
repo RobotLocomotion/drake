@@ -132,8 +132,6 @@ class GurobiSolver final : public SolverBase {
   /// Registers a callback to be called at intermediate solutions
   /// during the solve.
   /// @param callback User callback function.
-  /// @param user_data Arbitrary data that will be passed to the user
-  /// callback function.
   void AddMipNodeCallback(const MipNodeCallbackFunction& callback) {
     mip_node_callback_ = callback;
   }
@@ -159,8 +157,6 @@ class GurobiSolver final : public SolverBase {
   /// Registers a callback to be called at feasible solutions
   /// during the solve.
   /// @param callback User callback function.
-  /// @param usrdata Arbitrary data that will be passed to the user
-  /// callback function.
   void AddMipSolCallback(const MipSolCallbackFunction& callback) {
     mip_sol_callback_ = callback;
   }

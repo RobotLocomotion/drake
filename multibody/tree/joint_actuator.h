@@ -89,7 +89,7 @@ class JointActuator final : public MultibodyElement<T> {
   ///   Index specifying one of the degrees of freedom for this joint. The index
   ///   must be in the range `0 <= joint_dof < num_inputs()` or otherwise
   ///   this method will throw an exception.
-  /// @param[in] joint_tau
+  /// @param[in] tau
   ///   Generalized force corresponding to the degree of freedom indicated by
   ///   `joint_dof` to be added into `forces`. Refer to the specific Joint
   ///   sub-class documentation for details on the meaning and units for this

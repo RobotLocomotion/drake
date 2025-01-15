@@ -191,7 +191,8 @@ class ManipulationStation : public systems::Diagram<T> {
       SchunkCollisionModel schunk_model = SchunkCollisionModel::kBox);
 
   /// Sets the default State for the chosen setup.
-  /// @param context A const reference to the ManipulationStation context.
+  /// @param station_context A const reference to the ManipulationStation
+  /// context.
   /// @param state A pointer to the State of the ManipulationStation system.
   /// @pre `state` must be the systems::State<T> object contained in
   /// `station_context`.
@@ -199,7 +200,8 @@ class ManipulationStation : public systems::Diagram<T> {
                        systems::State<T>* state) const override;
 
   /// Sets a random State for the chosen setup.
-  /// @param context A const reference to the ManipulationStation context.
+  /// @param station_context A const reference to the ManipulationStation
+  /// context.
   /// @param state A pointer to the State of the ManipulationStation system.
   /// @param generator is the random number generator.
   /// @pre `state` must be the systems::State<T> object contained in
@@ -220,7 +222,7 @@ class ManipulationStation : public systems::Diagram<T> {
   /// @param iiwa_instance Identifies the IIWA model.
   /// @param parent_frame Identifies frame P (the parent frame) in the
   /// MultibodyPlant that the IIWA model has been attached to.
-  /// @param child_frame_name Identifies frame C (the child frame) in the IIWA
+  /// @param child_frame Identifies frame C (the child frame) in the IIWA
   /// model that is welded to frame P.
   /// @param X_PC Transformation between frame P and C.
   /// @throws If @p parent_frame is not the world frame.
@@ -388,7 +390,7 @@ class ManipulationStation : public systems::Diagram<T> {
   VectorX<T> GetIiwaVelocity(const systems::Context<T>& station_context) const;
 
   /// Convenience method for setting all of the joint velocities of the Kuka
-  /// IIWA. @v must have size num_iiwa_joints().
+  /// IIWA. `v` must have size num_iiwa_joints().
   /// @pre `state` must be the systems::State<T> object contained in
   /// `station_context`.
   void SetIiwaVelocity(const systems::Context<T>& station_context,
@@ -396,7 +398,7 @@ class ManipulationStation : public systems::Diagram<T> {
                        const Eigen::Ref<const VectorX<T>>& v) const;
 
   /// Convenience method for setting all of the joint velocities of the Kuka
-  /// IIWA. @v must have size num_iiwa_joints().
+  /// IIWA. `v` must have size num_iiwa_joints().
   void SetIiwaVelocity(systems::Context<T>* station_context,
                        const Eigen::Ref<const VectorX<T>>& v) const {
     SetIiwaVelocity(*station_context, &station_context->get_mutable_state(), v);

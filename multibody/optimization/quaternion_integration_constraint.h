@@ -59,7 +59,7 @@ class QuaternionEulerIntegrationConstraint final : public solvers::Constraint {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionEulerIntegrationConstraint);
 
   /**
-   * @param allow_quaternion_negation. Refer to the class documentation.
+   * @param allow_quaternion_negation Refer to the class documentation.
    */
   explicit QuaternionEulerIntegrationConstraint(bool allow_quaternion_negation);
 

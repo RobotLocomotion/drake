@@ -79,7 +79,7 @@ class MinimumValueLowerBoundConstraint final : public solvers::Constraint {
   And we set ub to infinity in min(v) <= ub.
 
   @param num_vars The number of inputs to `value_function`
-  @param minimum_value The minimum allowed value, lb, for all elements
+  @param minimum_value_lower The minimum allowed value, lb, for all elements
   of the vector returned by `value_function`.
   @param influence_value_offset The difference between the
   influence value, v_influence, and the minimum value, lb (see class
@@ -111,7 +111,7 @@ class MinimumValueLowerBoundConstraint final : public solvers::Constraint {
       std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&,
                                   double)>
           value_function,
-      std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
+      std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>&,
                                     double)>
           value_function_double = {});
 
@@ -226,7 +226,7 @@ class MinimumValueUpperBoundConstraint final : public solvers::Constraint {
       std::function<AutoDiffVecXd(const Eigen::Ref<const AutoDiffVecXd>&,
                                   double)>
           value_function,
-      std::function<VectorX<double>(const Eigen::Ref<const VectorX<double>>&,
+      std::function<Eigen::VectorXd(const Eigen::Ref<const Eigen::VectorXd>&,
                                     double)>
           value_function_double = {});
 

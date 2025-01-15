@@ -76,6 +76,10 @@ struct Param {
   }
 };
 
+// TODO(jwnimmer-tri) This similar of fixture (using hwy_gtest.h) is duplicated
+// in two other places (//common and //geometry/proximity). We should probably
+// seek a more elegant way to do this, instead of copying it to more places.
+
 /* This hwy-infused test fixture replicates every test case to be run against
 every target architecture variant (e.g., SSE4, AVX2, AVX512VL, etc). When run,
 it filters the suite to only run tests that the current CPU can handle. */
@@ -102,6 +106,8 @@ auto MakePermutations() {
                            Param{.args = "AAA", .inverse = true});
 }
 
+// Instatiate the suite for all CPU targets (using the HWY macro), crossed with
+// all Param permutations from MakePermutations().
 HWY_TARGET_INSTANTIATE_TEST_SUITE_P_T(FastPoseCompositionFunctions,
                                       MakePermutations());
 
