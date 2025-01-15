@@ -19,6 +19,8 @@ build --repo_env=DRAKE_WHEEL=1
 build --repo_env=SNOPT_PATH=${SNOPT_PATH}
 build --config=packaging
 build --define=LCM_INSTALL_JAVA=OFF
+# TODO(jwnimmer-tri) Ideally this would be automatically inferred.
+common --@drake//tools/install/libdrake:spdlog_dynamic=False
 EOF
 
 # Install Drake using our wheel-build-specific Python interpreter.

@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@bazel_skylib//rules:run_binary.bzl", "run_binary")
 load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
@@ -220,7 +221,8 @@ cc_library(
 #
 # TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
 # *.so files for us, without us having to know up-front here which dependencies
-# are coming from the WORKSPACE in the form of *.so.
+# are coming from the WORKSPACE in the form of *.so. This leaks out into the
+# hacky ":is_spdlog_dynamic_true" immediately below.
 cc_library(
     name = "libdrake_runtime_so_deps",
     deps = [
@@ -230,7 +232,23 @@ cc_library(
         ":x11_deps",
         "//common:drake_marker_shared_library",
         "@lcm",
-    ],
+    ] + select({
+        ":is_spdlog_dynamic_true": ["@spdlog"],
+        "//conditions:default": [],
+    }),
+)
+
+# TODO(jwnimmer-tri) This is a hack. Find a better solution.
+bool_flag(
+    name = "spdlog_dynamic",
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "is_spdlog_dynamic_true",
+    flag_values = {
+        ":spdlog_dynamic": "True",
+    },
 )
 
 # The list of depended-on header-only libraries that libdrake's header files
