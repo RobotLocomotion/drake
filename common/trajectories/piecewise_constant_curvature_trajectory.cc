@@ -36,7 +36,7 @@ PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
         "The initial curve's tangent vector must be perpendicular to the "
         "plane's normal.");
   }
-  segment_start_poses_ = MakeSegmentStartPoses(
+  break_poses_ = MakeBreakPoses(
       MakeInitialPose(initial_curve_tangent, plane_normal, initial_position),
       breaks, turning_rates);
 }
@@ -49,7 +49,7 @@ math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::CalcPose(
   const math::RigidTransform<T> X_FiF =
       CalcRelativePoseInSegment(segment_turning_rates_[segment_index],
                                 w - this->start_time(segment_index));
-  return segment_start_poses_[segment_index] * X_FiF;
+  return break_poses_[segment_index] * X_FiF;
 }
 
 template <typename T>
@@ -106,7 +106,7 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
 template <typename T>
 boolean<T> PiecewiseConstantCurvatureTrajectory<T>::EndpointsAreNearlyEqual(
     double tolerance) const {
-  return CalcPose(0.).IsNearlyEqualTo(CalcPose(length()), tolerance);
+  return break_poses_.front().IsNearlyEqualTo(break_poses_.back(), tolerance);
 }
 
 template <typename T>
@@ -117,7 +117,8 @@ PiecewiseConstantCurvatureTrajectory<T>::DoClone() const {
   return std::make_unique<PiecewiseConstantCurvatureTrajectory<T>>(
       this->breaks(), segment_turning_rates_,
       initial_frame.col(kCurveTangentIndex),
-      initial_frame.col(kPlaneNormalIndex), initial_pose.translation(), is_periodic_);
+      initial_frame.col(kPlaneNormalIndex), initial_pose.translation(),
+      is_periodic_);
 }
 
 template <typename T>
@@ -178,7 +179,7 @@ PiecewiseConstantCurvatureTrajectory<T>::MakeInitialPose(
 
 template <typename T>
 std::vector<math::RigidTransform<T>>
-PiecewiseConstantCurvatureTrajectory<T>::MakeSegmentStartPoses(
+PiecewiseConstantCurvatureTrajectory<T>::MakeBreakPoses(
     const math::RigidTransform<T>& initial_pose, const std::vector<T>& breaks,
     const std::vector<T>& turning_rates) {
   const size_t num_breaks = breaks.size();
@@ -192,10 +193,10 @@ PiecewiseConstantCurvatureTrajectory<T>::MakeSegmentStartPoses(
 
   // Build frames for the start of each segment.
   std::vector<math::RigidTransform<T>> segment_start_poses;
-  segment_start_poses.reserve(num_segments);
+  segment_start_poses.reserve(num_breaks);
   segment_start_poses.push_back(initial_pose);
 
-  for (size_t i = 0; i < (num_segments - 1); i++) {
+  for (size_t i = 0; i < (num_breaks - 1); i++) {
     math::RigidTransform<T> X_FiFip1 =
         CalcRelativePoseInSegment(turning_rates[i], segment_durations[i]);
     segment_start_poses.push_back(segment_start_poses.back() * X_FiFip1);

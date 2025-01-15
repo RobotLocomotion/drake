@@ -292,18 +292,18 @@ class PiecewiseConstantCurvatureTrajectory final
       const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
       const Vector3<T>& initial_position);
 
-  /* Calculates pose X_AF at the beginning of each segment.
+  /* Calculates pose X_AF at each break.
 
-   For each segment i, the returned vector's i-th element contains the
-   relative transform X_AFi = X_AF(sᵢ), for 0 <= i < to turning_rates.size().
+   For each break sᵢ, the returned vector's i-th element contains the
+   relative transform X_AFi = X_AF(sᵢ), for 0 <= i < to breaks.size().
 
    @param initial_pose The initial pose of the trajectory (at s₀ = 0).
    @param breaks The vector of break points sᵢ between segments.
    @param turning_rates The vector of turning rates ρᵢ for each segment.
 
-   @returns A vector with as many entries as segments, storing at element i the
-   pose X_AFi at the beginning of the i-th segment. */
-  static std::vector<math::RigidTransform<T>> MakeSegmentStartPoses(
+   @returns A vector with as many entries as breaks, storing at element i the
+   pose X_AFi at the i-th break. */
+  static std::vector<math::RigidTransform<T>> MakeBreakPoses(
       const math::RigidTransform<T>& initial_pose, const std::vector<T>& breaks,
       const std::vector<T>& turning_rates);
 
@@ -312,12 +312,12 @@ class PiecewiseConstantCurvatureTrajectory final
    @pre Trajectory must not be empty.
   */
   const math::RigidTransform<T>& get_initial_pose() const {
-    return segment_start_poses_[0];
+    return break_poses_[0];
   }
 
   std::vector<T> segment_turning_rates_;
   bool is_periodic_;
-  std::vector<math::RigidTransform<T>> segment_start_poses_;
+  std::vector<math::RigidTransform<T>> break_poses_;
 
   static inline constexpr size_t kCurveTangentIndex = 0;
   static inline constexpr size_t kCurveNormalIndex = 1;
