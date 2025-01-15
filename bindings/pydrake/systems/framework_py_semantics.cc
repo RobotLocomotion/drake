@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
+#include "drake/bindings/pydrake/systems/value_producer_pybind.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/event.h"
@@ -253,10 +254,11 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = ValueProducer;
     constexpr auto& cls_doc = doc.ValueProducer;
     py::class_<Class>(m, "ValueProducer", cls_doc.doc)
-        .def(py::init(WrapCallbacks([](ValueProducer::AllocateCallback allocate,
-                                        ValueProducer::CalcCallback calc) {
-          return Class(allocate, calc);
-        })),
+        .def(py::init([](py::function allocate,
+                          std::function<void(py::object, py::object)> calc) {
+          return Class(MakeCppCompatibleAllocateCallback(std::move(allocate)),
+              MakeCppCompatibleCalcCallback(std::move(calc)));
+        }),
             py::arg("allocate"), py::arg("calc"), cls_doc.ctor.doc_overload_5d)
         .def_static("NoopCalc", &Class::NoopCalc, cls_doc.NoopCalc.doc);
   }

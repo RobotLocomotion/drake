@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/value_producer_pybind.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/framework/system.h"
@@ -570,8 +571,6 @@ Note: The above is for the C++ documentation. For Python, use
   }
 
   static void DefineLeafSystem(py::module m) {
-    using AllocCallback = typename LeafOutputPort<T>::AllocCallback;
-    using CalcCallback = typename LeafOutputPort<T>::CalcCallback;
     using CalcVectorCallback = typename LeafOutputPort<T>::CalcVectorCallback;
     auto leaf_system_cls =
         DefineTemplateClassWithDefault<LeafSystem<T>, PyLeafSystem, System<T>>(
@@ -599,13 +598,17 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclareAbstractParameter.doc)
         .def("DeclareNumericParameter", &PyLeafSystem::DeclareNumericParameter,
             py::arg("model_vector"), doc.LeafSystem.DeclareNumericParameter.doc)
-        .def("DeclareAbstractOutputPort",
-            WrapCallbacks([](PyLeafSystem* self, const std::string& name,
-                              AllocCallback arg1, CalcCallback arg2,
-                              const std::set<DependencyTicket>& arg3)
-                              -> const OutputPort<T>& {
-              return self->DeclareAbstractOutputPort(name, arg1, arg2, arg3);
-            }),
+        .def(
+            "DeclareAbstractOutputPort",
+            [](PyLeafSystem* self, const std::string& name, py::function alloc,
+                std::function<void(py::object, py::object)> calc,
+                const std::set<DependencyTicket>& prerequisites_of_calc)
+                -> const OutputPort<T>& {
+              return self->DeclareAbstractOutputPort(name,
+                  MakeCppCompatibleAllocateCallback(std::move(alloc)),
+                  MakeCppCompatibleCalcCallback(std::move(calc)),
+                  prerequisites_of_calc);
+            },
             py_rvp::reference_internal, py::arg("name"), py::arg("alloc"),
             py::arg("calc"),
             py::arg("prerequisites_of_calc") =
