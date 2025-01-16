@@ -45,15 +45,16 @@ check_working_tree() {
 }
 
 update_requirements() {
+    # Use PDM to generate a lock file for itself.
+    "${venv_pdm}/bin/pdm" lock -p "${project_pdm}"
     sed $'/will be generated/{s/will be/is/\nq\n}' < "$1.in" > "$1"
-    "${venv_pdm}/bin/pdm" export -p "${project}" -G pdm --no-default |
-        grep -vE '^#' >> "$1"
+    "${venv_pdm}/bin/pdm" export -p "${project_pdm}" | grep -vE '^#' >> "$1"
 }
 
 # Chdir to the Drake root.
 cd "$(dirname $0)/../../.."
 readonly drake_python="$(bazel info output_base).drake_python"
-readonly project="${drake_python}/project"
+readonly project_drake="${drake_python}/project"
 readonly venv_pdm="${drake_python}/venv.pdm"
 readonly python="${venv_pdm}/bin/python"
 readonly workspace="$(pwd)/tools/workspace/python"
@@ -65,12 +66,21 @@ readonly workspace="$(pwd)/tools/workspace/python"
 # Ensure venv exists.
 bazel fetch @python --force
 
-# Update the lock file.
-readonly lockfile="./setup/python/pdm.lock"
-lock_args+=( -d -p "${project}" -L "${lockfile}" )
-"${venv_pdm}/bin/pdm" lock "${lock_args[@]}"
+# Create a temporary project used to pin PDM itself.
+readonly project_pdm="$(mktemp -d)"
+cleanup() { rm -rf "${project_pdm}"; }
+trap cleanup EXIT
 
-# Update pins for PDM itself
+cat > "${project_pdm}/pyproject.toml" <<EOF
+[project]
+name = "pdm-for-drake"
+$(grep -E '^requires-python' "${project_drake}/pyproject.toml")
+dependencies = [ "pdm" ]
+EOF
+
+(cd "${project_pdm}" && "${venv_pdm}/bin/pdm" use -f "${venv_pdm}")
+
+# Generate lock file for PDM and update requirements.txt.
 readonly requirements="./setup/python/requirements.txt"
 update_requirements "${requirements}"
 files_to_commit+=( "$(git diff --name-only HEAD -- "${requirements}")" )
@@ -79,10 +89,15 @@ if [ ${#files_to_commit[@]} -gt 0 ]; then
     # PDM needs to be updated.
     bazel fetch @python
 
-    # Update the lock files (again).
+    # Update the PDM lock files (again). This probably won't do anything, but
+    # we do it just in case the newer PDM produces different pins.
     update_requirements "${requirements}"
-    "${venv_pdm}/bin/pdm" lock "${lock_args[@]}"
 fi
+
+# Update the Drake lock file.
+readonly lockfile="./setup/python/pdm.lock"
+lock_args+=( -d -p "${project_drake}" -L "${lockfile}" )
+"${venv_pdm}/bin/pdm" lock "${lock_args[@]}"
 
 # Check for changes to the lock file.
 files_to_commit+=( "$(git diff --name-only HEAD -- "${lockfile}")" )
