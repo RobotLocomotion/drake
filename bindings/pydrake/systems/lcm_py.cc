@@ -40,9 +40,18 @@ class PySerializerInterface : public py::wrapper<SerializerInterface> {
   // `PySerializerInterface`). C++ implementations will use the bindings on the
   // interface below.
 
-  std::unique_ptr<AbstractValue> CreateDefaultValue() const override {
-    PYBIND11_OVERLOAD_PURE(std::unique_ptr<AbstractValue>, SerializerInterface,
-        CreateDefaultValue);
+  std::unique_ptr<AbstractValue> CreateDefaultValue() const final {
+    // Our required unique_ptr return type cannot be directly fulfilled by a
+    // Python override, so we only ask the Python override for a py::object and
+    // then just Clone it to obtain the necessary C++ signature. Because the
+    // PYBIND11_OVERLOAD_PURE macro embeds a `return ...;` statement, we must
+    // wrap it in lambda so that we can post-process the return value.
+    py::object default_value = [this]() -> py::object {
+      PYBIND11_OVERLOAD_PURE(
+          py::object, SerializerInterface, CreateDefaultValue);
+    }();
+    DRAKE_THROW_UNLESS(!default_value.is_none());
+    return default_value.template cast<const AbstractValue*>()->Clone();
   }
 
   void Deserialize(const void* message_bytes, int message_length,
