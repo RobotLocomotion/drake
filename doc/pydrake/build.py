@@ -118,7 +118,7 @@ def _build(*, out_dir, temp_dir, modules):
 
     sphinx_build = "/usr/share/sphinx/scripts/python3/sphinx-build"
     if not os.path.isfile(sphinx_build):
-        print("Please re-run 'sudo setup/ubuntu/install_prereqs.sh' with the "
+        print("Please re-run 'setup/install_prereqs' with the "
               "'--with-doc-only' flag")
         sys.exit(1)
 

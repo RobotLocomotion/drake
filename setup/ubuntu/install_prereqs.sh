@@ -30,6 +30,9 @@ source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
+    --developer)
+      source_distribution_args+=(--developer)
+      ;;
     # Install prerequisites that are only needed to build documentation,
     # i.e., those prerequisites that are dependencies of bazel run //doc:build.
     --with-doc-only)

@@ -22,7 +22,7 @@ Before getting started, install Drake's prerequisites with the additional
 ``--with-doc-only`` command line option, i.e.:
 
 ```sh
-$ sudo setup/ubuntu/install_prereqs.sh --with-doc-only
+$ setup/install_prereqs --with-doc-only
 ```
 
 # Previewing changes
