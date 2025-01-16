@@ -391,8 +391,13 @@ class ValueProducer final {
       : ValueProducer(make_allocate_mode_c(instance, allocate),
                       std::move(calc)) {}
 
-  /** Overload (5d). Refer to the
-  @ref ValueProducer_constructors "Constructor overloads" for details.
+  /** Overload (5d). Refer to the C++
+  @ref ValueProducer_constructors "Constructor overloads" for further details.
+  @param allocate Callback function that allocates storage for the value. It
+  takes no arguments and must return an AbstractValue.
+  @param calc Callback function that computes the value. It takes two arguments
+  (context, value) and does not return anything; instead, it should mutate the
+  AbstractValue object pointed to by `value` with the new result.
   @pydrake_mkdoc_identifier{overload_5d} */
   ValueProducer(AllocateCallback allocate, CalcCallback calc);
 

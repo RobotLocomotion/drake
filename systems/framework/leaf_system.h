@@ -1457,6 +1457,11 @@ class LeafSystem : public System<T> {
   /** (Advanced) Declares an abstract-valued output port using the given
   allocator and calculator functions provided in their most generic forms.
   If you have a member function available use one of the other signatures.
+  @param alloc Callback function that allocates storage for the value. It takes
+  no arguments and must return an AbstractValue.
+  @param calc Callback function that computes the value. It takes two arguments
+  (context, value) and does not return anything; instead, it should mutate the
+  AbstractValue object pointed to by `value` with the new result.
   @see LeafOutputPort::AllocCallback, LeafOutputPort::CalcCallback */
   LeafOutputPort<T>& DeclareAbstractOutputPort(
       std::variant<std::string, UseDefaultName> name,

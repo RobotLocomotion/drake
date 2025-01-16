@@ -62,6 +62,8 @@ drake_pybind_library(
         "framework_py_systems.h",
         "framework_py_values.cc",
         "framework_py_values.h",
+        "value_producer_pybind.cc",
+        "value_producer_pybind.h",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
