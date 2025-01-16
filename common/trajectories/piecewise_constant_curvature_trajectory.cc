@@ -45,61 +45,75 @@ math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::CalcPose(
     const T& s) const {
   const T w = maybe_wrap(s);
   int segment_index = this->get_segment_index(w);
-  const math::RigidTransform<T> X_FiF =
+  const math::RigidTransform<T> X_MiM =
       CalcRelativePoseInSegment(segment_turning_rates_[segment_index],
                                 w - this->start_time(segment_index));
-  return segment_start_poses_[segment_index] * X_FiF;
+  return segment_start_poses_[segment_index] * X_MiM;  // = X_AM
 }
 
 template <typename T>
 multibody::SpatialVelocity<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialVelocity(
     const T& s, const T& s_dot) const {
-  const T w = maybe_wrap(s);
-  const math::RotationMatrix<T> R_AF = CalcPose(w).rotation();
-  const T& rho_i = segment_turning_rates_[this->get_segment_index(w)];
+  const math::RotationMatrix<T> R_AM = CalcPose(s).rotation();
+  return R_AM * CalcSpatialVelocityInM(s, s_dot);  // V_AM_A
+}
+
+template <typename T>
+multibody::SpatialVelocity<T>
+PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialVelocityInM(
+    const T& s, const T& s_dot) const {
+  const T& rho_i = curvature(s);
 
   multibody::SpatialVelocity<T> spatial_velocity;
   // From Frenet–Serret analysis and the class doc for
   // PiecewiseConstantCurvatureTrajectory, the rotational velocity is equal to
-  // the Darboux vector times the tangential velocity: ρ⋅Fz⋅ds/dt.
-  spatial_velocity.rotational() = rho_i * R_AF.col(kPlaneNormalIndex) * s_dot;
+  // the Darboux vector (plane normal p̂ (= Mz)) times the tangential velocity:
+  // ρ⋅Mz⋅ds/dt. But Mz expressed in M is just [0 0 1].
+  spatial_velocity.rotational() = Vector3<T>(0, 0, rho_i * s_dot);
 
   // The translational velocity is equal to the tangent direction times the
-  // tangential velocity: dr(s)/dt = t̂(s)⋅ds/dt = Fx(s)⋅ds/dt.
-  spatial_velocity.translational() = R_AF.col(kCurveTangentIndex) * s_dot;
+  // tangential velocity: dr(s)/dt = t̂(s)⋅ds/dt = Mx(s)⋅ds/dt. But Mx
+  // expressed in M is just [1 0 0].
+  spatial_velocity.translational() = Vector3<T>(s_dot, 0, 0);
 
-  return spatial_velocity;
+  return spatial_velocity;  // V_AM_M
 }
 
 template <typename T>
 multibody::SpatialAcceleration<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAcceleration(
     const T& s, const T& s_dot, const T& s_ddot) const {
-  const T w = maybe_wrap(s);
-  const math::RotationMatrix<T> R_AF = CalcPose(w).rotation();
-  const T& rho_i = segment_turning_rates_[this->get_segment_index(w)];
+  const math::RotationMatrix<T> R_AM = CalcPose(s).rotation();
+  return R_AM * CalcSpatialAccelerationInM(s, s_dot, s_ddot);
+}
+
+template <typename T>
+multibody::SpatialAcceleration<T>
+PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAccelerationInM(
+    const T& s, const T& s_dot, const T& s_ddot) const {
+  const T& rho_i = curvature(s);
 
   // The spatial acceleration is the time derivative of the spatial velocity.
   // We compute the acceleration by applying the chain rule to the formulas
   // in CalcSpatialVelocity.
   multibody::SpatialAcceleration<T> spatial_acceleration;
 
-  // The angular velocity is ρᵢ⋅Fz⋅ds/dt. As Fz and ρᵢ are constant
-  // everywhere except the breaks, the angular acceleration is then equal to
-  // ρᵢ⋅Fz⋅d²s/dt².
-  spatial_acceleration.rotational() =
-      rho_i * R_AF.col(kPlaneNormalIndex) * s_ddot;
+  // The angular velocity is ρᵢ⋅Mz⋅ds/dt. As Mz is constant everywyere, and ρᵢ
+  // constant everywhere except the breaks, the angular acceleration is then
+  // equal to ρᵢ⋅Mz⋅d²s/dt². But Mz expressed in M is just [0 0 1].
+  spatial_acceleration.rotational() = Vector3<T>(0, 0, rho_i * s_ddot);
 
-  // The translational velocity is dr(s)/dt = Fx(s)⋅ds/dt. Thus by product and
+  // The translational velocity is dr(s)/dt = Mx(s)⋅ds/dt. Thus by product and
   // chain rule, the translational acceleration is:
-  //    a(s) = d²r(s)/ds² = dFx(s)/ds⋅(ds/dt)² + Fx⋅d²s/dt².
-  // From the class doc, we know dFx/ds = ρᵢ⋅Fy.
-  // Thus the translational acceleration is a(s) = ρᵢ⋅Fy⋅(ds/dt)² + Fx⋅d²s/dt².
+  //    a(s) = d²r(s)/ds² = dMx(s)/ds⋅(ds/dt)² + Mx⋅d²s/dt².
+  // From the class doc, we know dMx/ds = ρᵢ⋅My.
+  // Thus the translational acceleration is a(s) = ρᵢ⋅My⋅(ds/dt)² + Mx⋅d²s/dt².
+  // But expressed in M, Mx=[1 0 0] and My=[0 1 0].
   spatial_acceleration.translational() =
-      rho_i * R_AF.col(kCurveNormalIndex) * s_dot * s_dot +
-      R_AF.col(kCurveTangentIndex) * s_ddot;
-  return spatial_acceleration;
+      Vector3<T>(s_ddot, rho_i * s_dot * s_dot, 0);
+
+  return spatial_acceleration;  // A_AM_M
 }
 
 template <typename T>
@@ -123,23 +137,23 @@ template <typename T>
 math::RigidTransform<T>
 PiecewiseConstantCurvatureTrajectory<T>::CalcRelativePoseInSegment(
     const T& rho_i, const T& ds) {
-  Vector3<T> p_FioFo_Fi = Vector3<T>::Zero();
+  Vector3<T> p_MioMo_Mi = Vector3<T>::Zero();
   // Calculate rotation angle.
   const T theta = ds * rho_i;
-  math::RotationMatrix<T> R_FiF = math::RotationMatrix<T>::MakeZRotation(theta);
+  math::RotationMatrix<T> R_MiM = math::RotationMatrix<T>::MakeZRotation(theta);
   if (rho_i == T(0)) {
     // Case 1: zero curvature (straight line)
     //
-    // The tangent axis is constant, thus the displacement p_FioFo_Fi is just
+    // The tangent axis is constant, thus the displacement p_MioMo_Mi is just
     // t̂_Fi⋅Δs.
-    p_FioFo_Fi(kCurveTangentIndex) = ds;
+    p_MioMo_Mi(kCurveTangentIndex) = ds;
   } else {
     // Case 2: non-zero curvature (circular arc)
     //
-    // The entire trajectory lies in a plane with normal Fiz, and thus
-    // the arc is embedded in the Fix-Fiy plane.
+    // The entire trajectory lies in a plane with normal Miz, and thus
+    // the arc is embedded in the Mix-Miy plane.
     //
-    //     Fiy
+    //     Miy
     //      ↑
     //    C o             x
     //      │\            x
@@ -148,19 +162,19 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcRelativePoseInSegment(
     //      │   \       x
     //      │    \     x
     //      │     \  xx
-    //      │ p_Fo ox
+    //      │ p_Mo ox
     //      │   xxx
-    //      └xxx───────────────→ Fix
-    //     p_Fio
+    //      └xxx───────────────→ Mix
+    //     p_Mio
     //
-    // The circular arc's centerpoint C is located at p_FioC = (1/ρᵢ)⋅Fiy,
-    // with initial direction Fix and radius abs(1/ρᵢ). Thus the angle traveled
+    // The circular arc's centerpoint C is located at p_MioC = (1/ρᵢ)⋅Miy,
+    // with initial direction Mix and radius abs(1/ρᵢ). Thus the angle traveled
     // along the arc is θ = ρᵢ⋅Δs, with the sign of ρᵢ handling the
     // clockwise/counterclockwise direction. The ρᵢ > 0 case is shown above.
-    p_FioFo_Fi(kCurveNormalIndex) = (T(1) - cos(theta)) / rho_i;
-    p_FioFo_Fi(kCurveTangentIndex) = sin(theta) / rho_i;
+    p_MioMo_Mi(kCurveNormalIndex) = (T(1) - cos(theta)) / rho_i;
+    p_MioMo_Mi(kCurveTangentIndex) = sin(theta) / rho_i;
   }
-  return math::RigidTransform<T>(R_FiF, p_FioFo_Fi);
+  return math::RigidTransform<T>(R_MiM, p_MioMo_Mi);
 }
 
 template <typename T>
@@ -168,11 +182,11 @@ math::RigidTransform<T>
 PiecewiseConstantCurvatureTrajectory<T>::MakeInitialPose(
     const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
     const Vector3<T>& initial_position) {
-  const Vector3<T> initial_Fy_A = plane_normal.cross(initial_curve_tangent);
-  const auto R_WF = math::RotationMatrix<T>::MakeFromOrthonormalColumns(
-      initial_curve_tangent.normalized(), initial_Fy_A.normalized(),
+  const Vector3<T> initial_My_A = plane_normal.cross(initial_curve_tangent);
+  const auto R_AM = math::RotationMatrix<T>::MakeFromOrthonormalColumns(
+      initial_curve_tangent.normalized(), initial_My_A.normalized(),
       plane_normal.normalized());
-  return math::RigidTransform<T>(R_WF, initial_position);
+  return math::RigidTransform<T>(R_AM, initial_position);  // X_AM
 }
 
 template <typename T>
@@ -192,12 +206,13 @@ PiecewiseConstantCurvatureTrajectory<T>::MakeSegmentStartPoses(
   // Build frames for the start of each segment.
   std::vector<math::RigidTransform<T>> segment_start_poses;
   segment_start_poses.reserve(num_segments);
-  segment_start_poses.push_back(initial_pose);
+  segment_start_poses.push_back(initial_pose);  // X_AM(0)
 
-  for (size_t i = 0; i < (num_segments - 1); i++) {
-    math::RigidTransform<T> X_FiFip1 =
+  for (size_t i = 0; i < (num_segments - 1); ++i) {
+    math::RigidTransform<T> X_MiMip1 =
         CalcRelativePoseInSegment(turning_rates[i], segment_durations[i]);
-    segment_start_poses.push_back(segment_start_poses.back() * X_FiFip1);
+    // X_AM(i+1)
+    segment_start_poses.push_back(segment_start_poses.back() * X_MiMip1);
   }
 
   return segment_start_poses;
