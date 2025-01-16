@@ -192,7 +192,7 @@ drake_cc_library(
     testonly = True,
     srcs = ["test/planning_test_helpers.cc"],
     hdrs = ["test/planning_test_helpers.h"],
-    visibility = ["//visibility:private"],
+    visibility = ["//planning/dev:__pkg__"],
     deps = [
         ":collision_checker",
         ":robot_diagram_builder",
