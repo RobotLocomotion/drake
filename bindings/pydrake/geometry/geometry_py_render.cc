@@ -88,18 +88,8 @@ class PyRenderEngine : public py::wrapper<RenderEngine> {
       }
       return copied;
     };
-    py::object py_engine = make_python_deepcopy();
-    // Convert the py_engine to a shared_ptr<RenderEngine> whose C++ lifetime
-    // keeps the python object alive.
-    RenderEngine* cpp_engine = py::cast<RenderEngine*>(py_engine);
-    DRAKE_DEMAND(cpp_engine != nullptr);
-    return std::shared_ptr<RenderEngine>(
-        /* stored pointer = */ cpp_engine,
-        /* deleter = */ [captured_py_engine = std::move(py_engine)](
-                            void*) mutable {
-          py::gil_scoped_acquire deleter_guard;
-          captured_py_engine = py::none();
-        });
+    py::object result = make_python_deepcopy();
+    return make_shared_ptr_from_py_object<RenderEngine>(result);
   }
 
   void DoRenderColorImage(ColorRenderCamera const& camera,
