@@ -15,8 +15,8 @@
 namespace drake {
 namespace trajectories {
 
-/** A piecewise constant curvature trajectory within an arbitrary
- three-dimensional plane.
+/** A piecewise constant curvature trajectory in a plane, where the plane is
+ posed arbitrarily in three dimensions.
 
  The trajectory is defined by the position vector r(s): ℝ → ℝ³, parameterized by
  arclength s, and lies in a plane with normal vector p̂. The parameterization is
@@ -31,15 +31,15 @@ namespace trajectories {
 
  Given the tangent vector t̂(s) = dr(s)/ds and the plane's normal p̂, we define
  the _normal_ vector along the curve as n̂(s) = p̂ × t̂(s). These three vectors
- are used to define a frame F along the curve with basis vectors Fx, Fy, Fz
- coincident with vectors t̂, n̂, p̂, respectively.
+ are used to define a moving frame M along the curve with basis vectors
+ Mx, My, Mz coincident with vectors t̂, n̂, p̂, respectively.
 
- A trajectory is said to be periodic if the pose X_AF of frame F is a periodic
- function of arclength, i.e. X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L is the
+ A trajectory is said to be periodic if the pose X_AM of frame M is a periodic
+ function of arclength, i.e. X_AM(s) = X_AM(s + k⋅L) ∀ k ∈ ℤ, where L is the
  length of a single cycle along the trajectory. Periodicity is determined
  at construction.
 
- @note Though similar, frame F is distinct from the Frenet–Serret frame defined
+ @note Though similar, frame M is distinct from the Frenet–Serret frame defined
  by the tangent-normal-binormal vectors T̂, N̂, B̂ See <a
  href="https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas">Frenet–Serret
  formulas</a> for further reading.
@@ -47,18 +47,20 @@ namespace trajectories {
  For constant curvature paths on a plane, the <a
  href="https://en.wikipedia.org/wiki/Frenet%E2%80%93Serret_formulas">Frenet–Serret
  formulas</a> simplify and we can write: <pre>
-     dFx/ds(s) =  ρ(s)⋅Fy(s)
-     dFy/ds(s) = -ρ(s)⋅Fx(s)
-     dFz/ds(s) =  0
+     dMx/ds(s) =  ρ(s)⋅My(s)
+     dMy/ds(s) = -ρ(s)⋅Mx(s)
+     dMz/ds(s) =  0
  </pre>
  for the entire trajectory.
 
  The spatial orientation of the curve is defined by the plane's normal p̂ and
  the initial tangent vector t̂₀ at s = 0. At construction, these are provided
- in a reference frame A, defining the pose X_AF₀ at s = 0. This class provides
- functions to compute the curve's kinematics given by its position vector
- r(s) = p_AoFo_A(s), pose X_AF(s), spatial velocity V_AF(s) and spatial
- acceleration A_AF(s).
+ in a reference frame A, defining the pose X_AM₀ at s = 0. This class provides
+ functions to compute the curve's kinematics given by its pose X_AM (comprising
+ position vector r(s) = p_AoMo_A(s) and orientation R_AM(s)), spatial velocity
+ V_AM_A(s) and spatial acceleration A_AM_A(s). We also provide functions to
+ return these quantities in the M frame (where they are much simpler), i.e.
+ V_AM_M(s) and A_AM_M(s).
 
  @warning Note that this class models a curve parameterized by arclength,
  rather than time as the Trajectory class and many of its inheriting types
@@ -66,7 +68,9 @@ namespace trajectories {
  for externally provided values of velocity ṡ and acceleration s̈ along the
  curve.
 
-  @tparam_default_scalar */
+ @see multibody::CurvilinearJoint
+
+ @tparam_default_scalar */
 template <typename T>
 class PiecewiseConstantCurvatureTrajectory final
     : public PiecewiseTrajectory<T> {
@@ -92,24 +96,24 @@ class PiecewiseConstantCurvatureTrajectory final
    the same reference frame A.
 
    The `initial_curve_tangent` t̂₀ and the `plane_normal` p̂, along with the
-   inital curve's normal n̂₀ = p̂ × t̂₀, define the initial orientation R_AF₀ of
-   frame F at s = 0.
+   initial curve's normal n̂₀ = p̂ × t̂₀, define the initial orientation R_AM₀ of
+   frame M at s = 0.
 
    @param breaks A vector of n break values sᵢ between segments. The parent
    class, PiecewiseTrajectory, enforces that the breaks increase by at least
    PiecewiseTrajectory::kEpsilonTime.
    @param turning_rates A vector of n-1 turning rates ρᵢ for each segment.
    @param initial_curve_tangent The initial tangent of the curve expressed in
-   the parent frame, t̂_A(s₀).
+   the parent frame, t̂_A(s₀) = Mx_A(s₀).
    @param plane_normal The normal axis of the 2D plane in which the curve
-   lies, expressed in the parent frame, p̂_A.
+   lies, expressed in the parent frame, p̂_A = Mz_A (constant).
    @param initial_position The initial position of the curve expressed in
-   the parent frame, p_AoFo_A(s₀).
+   the parent frame, p_AoMo_A(s₀).
    @param periodicity_tolerance Tolerance used to determine if the resulting
    trajectory is periodic, according to the metric defined by
    IsNearlyPeriodic(). If IsNearlyPeriodic(periodicity_tolerance) is true, then
    the newly constructed trajectory will be periodic. That is,
-   X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). Subsequent calls to
+   X_AM(s) = X_AM(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). Subsequent calls to
    is_periodic() will return `true`.
 
    @throws std::exception if the number of turning rates does not match
@@ -147,20 +151,20 @@ class PiecewiseConstantCurvatureTrajectory final
   /** @returns the total arclength of the curve in meters. */
   T length() const { return this->end_time(); }
 
-  /* Returns `true` if `this` trajectory is periodic.
-   That is, X_AF(s) = X_AF(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). */
+  /** Returns `true` if `this` trajectory is periodic.
+   That is, X_AM(s) = X_AM(s + k⋅L) ∀ k ∈ ℤ, where L equals length(). */
   boolean<T> is_periodic() const { return is_periodic_; }
 
-  /** Calculates the trajectory's pose X_AF(s) at the given arclength s.
+  /** Calculates the trajectory's pose X_AM(s) at the given arclength s.
 
    @note For s < 0 and s > length() the pose is extrapolated as if the curve
    continued with the curvature of the corresponding end segment.
 
    @param s The query arclength in meters.
-   @returns the pose X_AF(s). */
+   @returns the pose X_AM(s). */
   math::RigidTransform<T> CalcPose(const T& s) const;
 
-  /** Computes r(s), the trajectory's position p_AoFo_A(s) expressed in
+  /** Computes r(s), the trajectory's position p_AoMo_A(s) expressed in
    reference frame A, at the given arclength s.
 
    @param s The query arclength in meters.
@@ -170,8 +174,8 @@ class PiecewiseConstantCurvatureTrajectory final
     return PiecewiseTrajectory<T>::value(s);
   }
 
-  /** Computes the spatial velocity V_AF_A(s) of frame F measured and expressed
-   in the reference frame A. See the class's documentation for frame
+  /** Computes the spatial velocity V_AM_A(s,ṡ) of frame M measured and
+   expressed in the reference frame A. See the class's documentation for frame
    definitions.
 
    In frame invariant notation, the angular velocity ω(s) and translational
@@ -184,12 +188,26 @@ class PiecewiseConstantCurvatureTrajectory final
 
    @param s The query arclength, in meters.
    @param s_dot The magnitude ṡ of the tangential velocity along the curve, in
-   meters per second.
-   @returns The spatial velocity V_AF_A(s) at s. */
+     meters per second.
+   @retval V_AM_A The spatial velocity of M in A, expressed in A. */
   multibody::SpatialVelocity<T> CalcSpatialVelocity(const T& s,
                                                     const T& s_dot) const;
 
-  /** Returns the spatial acceleration A_AF_A(s) of frame F measured and
+  /** Computes the spatial velocity V_AM_M(s,ṡ) of frame M measured in frame A
+   but expressed in frame M.
+
+   See CalcSpatialVelocity() for details. Note that when expressed in frame M,
+   both p̂ and t̂ are constant, with p̂_M = [0 0 1]ᵀ and t̂_M = [1 0 0]ᵀ so the
+   returned spatial velocity is just `V_AM_M = [0 0 ṡ⋅ρ(s) ṡ 0 0]ᵀ`.
+
+   @param s The query arclength, in meters.
+   @param s_dot The magnitude ṡ of the tangential velocity along the curve, in
+     meters per second.
+   @retval V_AM_M The spatial velocity of M in A, expressed in M. */
+  multibody::SpatialVelocity<T> CalcSpatialVelocityInM(const T& s,
+                                                       const T& s_dot) const;
+
+  /** Computes the spatial acceleration A_AM_A(s,ṡ,s̈) of frame M measured and
    expressed in the reference frame A. See the class's documentation for frame
    definitions.
 
@@ -208,18 +226,36 @@ class PiecewiseConstantCurvatureTrajectory final
 
    @param s The query arclength, in meters.
    @param s_dot The magnitude ṡ of the tangential velocity along the curve, in
-   meters per second.
+     meters per second.
    @param s_ddot The magnitude s̈ of the tangential acceleration along the
-   curve, in meters per second squared.
+     curve, in meters per second squared.
 
-   @returns The spatial acceleration A_AF_A(s) at s. */
+   @retval A_AM_A The spatial acceleration of M in A, expressed in A. */
   multibody::SpatialAcceleration<T> CalcSpatialAcceleration(
+      const T& s, const T& s_dot, const T& s_ddot) const;
+
+  /** Computes the spatial acceleration A_AM_M(s,ṡ,s̈) of frame M measured in
+   frame A but expressed in frame M.
+
+   See CalcSpatialAcceleration() for details. Note that when expressed in frame
+   M, the vectors p̂, t̂, and n̂ are constant, with p̂_M = [0 0 1]ᵀ, t̂_M = [1 0 0]ᵀ,
+   and n̂_M = [0 1 0]ᵀ so the returned spatial acceleration is just
+   `A_AM_M = [0 0 s̈⋅ρ(s) s̈ ṡ²⋅ρ(s) 0]ᵀ`.
+
+   @param s The query arclength, in meters.
+   @param s_dot The magnitude ṡ of the tangential velocity along the curve, in
+     meters per second.
+   @param s_ddot The magnitude s̈ of the tangential acceleration along the
+     curve, in meters per second squared.
+
+   @retval A_AM_M The spatial acceleration of M in A, expressed in M. */
+  multibody::SpatialAcceleration<T> CalcSpatialAccelerationInM(
       const T& s, const T& s_dot, const T& s_ddot) const;
 
   /** @returns `true` if the trajectory is periodic within a given `tolerance`.
 
-   Periodicity is defined as the beginning and end poses X_AF(s₀) and
-   X_AF(sₙ) being equal up to the same tolerance, checked via
+   Periodicity is defined as the beginning and end poses X_AM(s₀) and
+   X_AM(sₙ) being equal up to the same tolerance, checked via
    RigidTransform::IsNearlyEqualTo() using `tolerance`.
 
    @param tolerance The tolerance for periodicity check. */
@@ -257,58 +293,58 @@ class PiecewiseConstantCurvatureTrajectory final
     return is_periodic_ ? math::wrap_to(s, T(0.), length()) : s;
   }
 
-  /* Calculates pose X_FiF of the frame F at distance ds from the start of the
-   i-th segment, relative to frame Fi at the start of the segment.
+  /* Calculates pose X_MiM of the frame M at distance ds from the start of the
+   i-th segment, relative to frame Mi at the start of the segment.
 
-   That is, X_FiF = X_AFi⁻¹ * X_AF(sᵢ + ds). As X_AF(s) defines the normal of
-   the plane as the z axis of F, this pose consists of a circular arc or line
+   That is, X_MiM = X_AMi⁻¹ * X_AM(sᵢ + ds). As X_AM(s) defines the normal of
+   the plane as the z axis of M, this pose consists of a circular arc or line
    segment in the x-y plane, and a corresponding z-axis rotation.
 
    @param rho_i The turning rate of the segment.
    @param ds The length within the segment.
-   @returns X_FiF. */
+   @retval X_MiM. */
   static math::RigidTransform<T> CalcRelativePoseInSegment(const T& rho_i,
                                                            const T& ds);
 
-  /* Builds the initial pose, X_AF₀, from the given tangent and plane axes,
+  /* Builds the initial pose, X_AM₀, from the given tangent and plane axes,
    expressed in a same reference frame A.
 
-   p_AoFo_A(s₀) is given by `initial_position`, and R_AF₀ is
-   calculated as follows: The plane normal p̂ is defined as the z axis Fz; the
-   initial heading is the x axis Fx; and the y axis is determined by cross
-   product. R_AF is constructed by passing normalized versions of these
+   p_AoMo_A(s₀) is given by `initial_position`, and R_AM₀ is
+   calculated as follows: The plane normal p̂ is defined as the z axis Mz; the
+   initial heading is the x axis Mx; and the y axis is determined by cross
+   product. R_AM is constructed by passing normalized versions of these
    vectors to RotationMatrix::MakeFromOrthonormalColumns, which may fail if
    the provided axes are not unit norm and orthogonal.
 
    @param initial_curve_tangent The tangent of the curve at arclength s₀ = 0.
    @param plane_normal The normal axis of the plane.
-   @param initial_position The initial position of the curve, p_AoFo_A(s₀).
+   @param initial_position The initial position of the curve, p_AoMo_A(s₀).
 
    @pre Norm of initial_curve_tangent is not zero.
    @pre Norm of plane_normal is not zero.
    @pre initial_curve_tangent is orthogonal to plane_normal.
 
-   @returns The initial pose X_AF. */
+   @returns The initial pose X_AM. */
   static math::RigidTransform<T> MakeInitialPose(
       const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
       const Vector3<T>& initial_position);
 
-  /* Calculates pose X_AF at the beginning of each segment.
+  /* Calculates pose X_AM at the beginning of each segment.
 
    For each segment i, the returned vector's i-th element contains the
-   relative transform X_AFi = X_AF(sᵢ), for 0 <= i < to turning_rates.size().
+   relative transform X_AMi = X_AM(sᵢ), for 0 <= i < to turning_rates.size().
 
    @param initial_pose The initial pose of the trajectory (at s₀ = 0).
    @param breaks The vector of break points sᵢ between segments.
    @param turning_rates The vector of turning rates ρᵢ for each segment.
 
    @returns A vector with as many entries as segments, storing at element i the
-   pose X_AFi at the beginning of the i-th segment. */
+            pose X_AMi at the beginning of the i-th segment. */
   static std::vector<math::RigidTransform<T>> MakeSegmentStartPoses(
       const math::RigidTransform<T>& initial_pose, const std::vector<T>& breaks,
       const std::vector<T>& turning_rates);
 
-  /** @returns the initial pose X_AF₀ at s = 0.
+  /* @returns the initial pose X_AM₀ at s = 0.
 
    @pre Trajectory must not be empty.
   */

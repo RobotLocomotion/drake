@@ -93,10 +93,23 @@ SpatialVelocity<T> CurvilinearMobilizer<T>::calc_V_FM(const T* q,
 }
 
 template <typename T>
+SpatialVelocity<T> CurvilinearMobilizer<T>::calc_V_FM_M(
+    const math::RigidTransform<T>&, const T* q, const T* v) const {
+  return curvilinear_path_.CalcSpatialVelocityInM(*q, *v);
+}
+
+template <typename T>
 SpatialAcceleration<T> CurvilinearMobilizer<T>::calc_A_FM(const T* q,
                                                           const T* v,
                                                           const T* vdot) const {
   return curvilinear_path_.CalcSpatialAcceleration(*q, *v, *vdot);
+}
+
+template <typename T>
+SpatialAcceleration<T> CurvilinearMobilizer<T>::calc_A_FM_M(
+    const math::RigidTransform<T>&, const T* q, const T* v,
+    const T* vdot) const {
+  return curvilinear_path_.CalcSpatialAccelerationInM(*q, *v, *vdot);
 }
 
 template <typename T>
@@ -105,14 +118,26 @@ void CurvilinearMobilizer<T>::calc_tau(const T* q,
                                        T* tau) const {
   DRAKE_ASSERT(tau != nullptr);
 
-  /* For this mobilizer, H_FM(q) = d/dv V_FM_F(q, v) is numerically equal to the
-   spatial velocity V_FM_F(q, 1) evaluated at the unit velocity v = 1 [m/s]:
-
-      tau = F_BMo_F.dot(V_FM_F(q, 1))
-  */
+  /* For this mobilizer, H_FM_F(q) = d/dv V_FM_F(q, v) is numerically equal to
+   the spatial velocity V_FM_F(q, 1) evaluated at the unit velocity v = 1 [m/s]:
+      tau = F_BMo_F.dot(V_FM_F(q, 1)) */
   const T v(1.);
-  // Computes tau = H_FM(q)⋅F_Mo_F, equivalent to V_FM(q, 1)⋅F_Mo_F.
+  // Computes tau = H_FM_F(q)⋅F_BMo_F, equivalent to V_FM_F(q, 1)⋅F_BMo_F.
   tau[0] = calc_V_FM(q, &v).dot(F_BMo_F);
+}
+
+template <typename T>
+void CurvilinearMobilizer<T>::calc_tau_from_M(
+    const math::RigidTransform<T>& X_FM, const T* q,
+    const SpatialForce<T>& F_BMo_M, T* tau) const {
+  DRAKE_ASSERT(tau != nullptr);
+
+  /* For this mobilizer, H_FM_M(q) = d/dv V_FM_M(q, v) is numerically equal to
+   the spatial velocity V_FM_M(q, 1) evaluated at the unit velocity v = 1 [m/s]:
+      tau = F_BMo_M.dot(V_FM_M(q, 1)) */
+  const T v(1.);
+  // Computes tau = H_FM_M(q)⋅F_Mo_M, equivalent to V_FM_M(q, 1)⋅F_BMo_M.
+  tau[0] = calc_V_FM_M(X_FM, q, &v).dot(F_BMo_M);
 }
 
 template <typename T>
