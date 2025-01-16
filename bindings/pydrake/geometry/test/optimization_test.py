@@ -823,8 +823,12 @@ class TestGeometryOptimization(unittest.TestCase):
         spp = mut.GraphOfConvexSets()
         source = spp.AddVertex(set=mut.Point([0.1]), name="source")
         source_cost = source.AddCost(1.23)
+        self.assertEqual(spp.GetVertexByName(name="source"), source)
+        self.assertEqual(spp.GetMutableVertexByName(name="source"), source)
         target = spp.AddVertex(set=mut.Point([0.2]), name="target")
         edge0 = spp.AddEdge(u=source, v=target, name="edge0")
+        self.assertEqual(spp.GetEdgeByName(name="edge0"), edge0)
+        self.assertEqual(spp.GetMutableEdgeByName(name="edge0"), edge0)
         edge0_cost = edge0.AddCost(2.34)
         edge1 = spp.AddEdge(u=source, v=target, name="edge1")
         edge1.AddCost(3.45)
@@ -1055,19 +1059,30 @@ class TestGeometryOptimization(unittest.TestCase):
         edge1.AddPhiConstraint(phi_value=True)
         spp.ClearAllPhiConstraints()
 
+        # AddFromTemplate
+        second_target = spp.AddVertexFromTemplate(template_vertex=target)
+        self.assertEqual(second_target.name(), "target")
+        second_edge0 = spp.AddEdgeFromTemplate(
+            u=source, v=second_target, template_edge=edge0)
+        self.assertEqual(second_edge0.name(), "edge0")
+
+        clone = spp.Clone()
+        self.assertEqual(clone.num_vertices(), 3)
+        self.assertEqual(clone.num_edges(), 3)
+
         # Remove Edges
-        self.assertEqual(len(spp.Edges()), 2)
+        self.assertEqual(len(spp.Edges()), 3)
         spp.RemoveEdge(edge0)
-        self.assertEqual(len(spp.Edges()), 1)
+        self.assertEqual(len(spp.Edges()), 2)
         spp.RemoveEdge(edge1)
-        self.assertEqual(len(spp.Edges()), 0)
+        self.assertEqual(len(spp.Edges()), 1)
 
         # Remove Vertices
-        self.assertEqual(len(spp.Vertices()), 2)
+        self.assertEqual(len(spp.Vertices()), 3)
         spp.RemoveVertex(source)
-        self.assertEqual(len(spp.Vertices()), 1)
+        self.assertEqual(len(spp.Vertices()), 2)
         spp.RemoveVertex(target)
-        self.assertEqual(len(spp.Vertices()), 0)
+        self.assertEqual(len(spp.Vertices()), 1)
 
     def test_implicit_graph_of_convex_sets(self):
         # A simple loop graph, a -> b -> c -> a, where the vertices are
@@ -1100,6 +1115,17 @@ class TestGeometryOptimization(unittest.TestCase):
         dut.ExpandRecursively(start=dut.GetVertex("b"), max_successor_calls=10)
         self.assertEqual(dut.gcs().num_vertices(), 3)
         self.assertEqual(dut.gcs().num_edges(), 3)
+
+    def test_implicit_graph_of_convex_sets_from_explicit(self):
+        gcs = mut.GraphOfConvexSets()
+        source = gcs.AddVertex(set=mut.Point([0.0]), name="source")
+        target = gcs.AddVertex(set=mut.Point([1.0]), name="target")
+        gcs.AddEdge(u=source, v=target, name="edge")
+        dut = mut.ImplicitGraphOfConvexSetsFromExplicit(gcs=gcs)
+        implicit_source = dut.ImplicitVertexFromExplicit(v_explicit=source)
+        dut.ExpandRecursively(start=implicit_source, max_successor_calls=10)
+        self.assertEqual(dut.gcs().num_vertices(), 2)
+        self.assertEqual(dut.gcs().num_edges(), 1)
 
 
 class TestCspaceFreePolytope(unittest.TestCase):

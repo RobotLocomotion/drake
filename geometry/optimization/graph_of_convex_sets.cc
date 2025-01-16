@@ -474,6 +474,21 @@ std::optional<Eigen::VectorXd> Edge::GetSolutionPhiXv(
   }
 }
 
+std::unique_ptr<GraphOfConvexSets> GraphOfConvexSets::Clone() const {
+  auto clone = std::make_unique<GraphOfConvexSets>();
+  // Map from original vertices to cloned vertices.
+  std::unordered_map<const Vertex*, Vertex*> original_to_cloned;
+
+  for (const auto& [v_id, v] : vertices_) {
+    original_to_cloned.emplace(v.get(), clone->AddVertexFromTemplate(*v));
+  }
+  for (const auto& [e_id, e] : edges_) {
+    clone->AddEdgeFromTemplate(original_to_cloned.at(&e->u()),
+                               original_to_cloned.at(&e->v()), *e);
+  }
+  return clone;
+}
+
 Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
   if (name.empty()) {
     name = fmt::format("v{}", vertices_.size());
@@ -484,9 +499,59 @@ Vertex* GraphOfConvexSets::AddVertex(const ConvexSet& set, std::string name) {
   return iter->second.get();
 }
 
+namespace {
+
+template <typename C>
+std::vector<std::pair<solvers::Binding<C>, std::unordered_set<Transcription>>>
+ReplaceVariables(
+    const std::vector<std::pair<Binding<C>, std::unordered_set<Transcription>>>&
+        bindings,
+    const std::unordered_map<Variable::Id, Variable>& subs) {
+  std::vector<std::pair<Binding<C>, std::unordered_set<Transcription>>>
+      new_bindings;
+  for (const auto& pair : bindings) {
+    const Binding<C>& binding = pair.first;
+    const std::unordered_set<Transcription>& transcriptions = pair.second;
+    VectorX<Variable> new_vars(ssize(binding.variables()));
+    for (int i = 0; i < ssize(binding.variables()); ++i) {
+      auto it = subs.find(binding.variables()[i].get_id());
+      if (it == subs.end()) {
+        throw std::runtime_error(fmt::format(
+            "ReplaceVariables: variable {} (id: {}) was not found in the "
+            "substitution map. Probably the Drake implementation of "
+            "AddVertexFromTemplate or AddEdgeFromTemplate needs to be updated.",
+            binding.variables()[i].get_name(),
+            binding.variables()[i].get_id()));
+      }
+      new_vars[i] = it->second;
+    }
+    new_bindings.push_back(std::make_pair(
+        Binding<C>(binding.evaluator(), new_vars), transcriptions));
+  }
+  return new_bindings;
+}
+
+}  // namespace
+
+Vertex* GraphOfConvexSets::AddVertexFromTemplate(const Vertex& v) {
+  Vertex* v_new = AddVertex(v.set(), v.name());
+  v_new->ell_ = symbolic::MakeVectorContinuousVariable(
+      v.ell_.size(), "v_ell");  // These would normally be created by AddCost.
+  std::unordered_map<Variable::Id, Variable> subs;
+  for (int i = 0; i < ssize(v.ell_); ++i) {
+    subs.emplace(v.ell_[i].get_id(), v_new->ell_[i]);
+  }
+  for (int i = 0; i < ssize(v.placeholder_x_); ++i) {
+    subs.emplace(v.placeholder_x_[i].get_id(), v_new->placeholder_x_[i]);
+  }
+  v_new->costs_ = ReplaceVariables(v.costs_, subs);
+  v_new->constraints_ = ReplaceVariables(v.constraints_, subs);
+  return v_new;
+}
+
 Edge* GraphOfConvexSets::AddEdge(Vertex* u, Vertex* v, std::string name) {
-  DRAKE_DEMAND(u != nullptr);
-  DRAKE_DEMAND(v != nullptr);
+  DRAKE_DEMAND(u != nullptr && IsValid(*u));
+  DRAKE_DEMAND(v != nullptr && IsValid(*v));
   if (name.empty()) {
     name = fmt::format("e{}", edges_.size());
   }
@@ -497,6 +562,76 @@ Edge* GraphOfConvexSets::AddEdge(Vertex* u, Vertex* v, std::string name) {
   u->AddOutgoingEdge(e);
   v->AddIncomingEdge(e);
   return e;
+}
+
+Edge* GraphOfConvexSets::AddEdgeFromTemplate(Vertex* u, Vertex* v,
+                                             const Edge& e) {
+  DRAKE_DEMAND(u != nullptr && IsValid(*u));
+  DRAKE_DEMAND(v != nullptr && IsValid(*v));
+
+  Edge* e_new = AddEdge(u, v, e.name());
+  e_new->ell_ = symbolic::MakeVectorContinuousVariable(
+      e.ell_.size(),
+      e.name() + "ell");  // These would normally be created by AddCost.
+  std::unordered_map<Variable::Id, Variable> subs;
+  subs.emplace(e.phi_.get_id(), e_new->phi_);
+  for (int i = 0; i < ssize(e.ell_); ++i) {
+    subs.emplace(e.ell_[i].get_id(), e_new->ell_[i]);
+  }
+  for (int i = 0; i < ssize(e.xu()); ++i) {
+    subs.emplace(e.xu()[i].get_id(), e_new->xu()[i]);
+  }
+  for (int i = 0; i < ssize(e.xv()); ++i) {
+    subs.emplace(e.xv()[i].get_id(), e_new->xv()[i]);
+  }
+  if (e.slacks_.size() > 0) {
+    // Slacks get created and inserted into the other variable lists in a way
+    // that's slightly annoying to deal with. We can add this once it's needed.
+    throw std::runtime_error(
+        "AddEdgeFromTemplate: templates with slack variables are not supported "
+        "yet (but could be).");
+  }
+  e_new->costs_ = ReplaceVariables(e.costs_, subs);
+  e_new->constraints_ = ReplaceVariables(e.constraints_, subs);
+  e_new->phi_value_ = e.phi_value_;
+  return e_new;
+}
+
+const Vertex* GraphOfConvexSets::GetVertexByName(
+    const std::string& name) const {
+  for (const auto& [v_id, v] : vertices_) {
+    if (v->name() == name) {
+      return v.get();
+    }
+  }
+  return nullptr;
+}
+
+Vertex* GraphOfConvexSets::GetMutableVertexByName(const std::string& name) {
+  for (auto& [v_id, v] : vertices_) {
+    if (v->name() == name) {
+      return v.get();
+    }
+  }
+  return nullptr;
+}
+
+const Edge* GraphOfConvexSets::GetEdgeByName(const std::string& name) const {
+  for (const auto& [e_id, e] : edges_) {
+    if (e->name() == name) {
+      return e.get();
+    }
+  }
+  return nullptr;
+}
+
+Edge* GraphOfConvexSets::GetMutableEdgeByName(const std::string& name) {
+  for (auto& [e_id, e] : edges_) {
+    if (e->name() == name) {
+      return e.get();
+    }
+  }
+  return nullptr;
 }
 
 void GraphOfConvexSets::RemoveVertex(Vertex* vertex) {
