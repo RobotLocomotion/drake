@@ -32,7 +32,7 @@ drake_cc_library(
         "//planning:collision_checker",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -46,7 +46,7 @@ drake_cc_library(
         "//planning:collision_checker",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -66,8 +66,8 @@ drake_cc_library(
         "//math:geometric_transform",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
-        "@voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -90,8 +90,8 @@ drake_cc_library(
         ":voxel_signed_distance_field",
         ":voxel_tagged_object_collision_map",
         "//common:essential",
-        "@common_robotics_utilities",
-        "@voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -108,8 +108,8 @@ drake_cc_library(
         "//common:parallelism",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
-        "@voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -129,8 +129,8 @@ drake_cc_library(
         "//math:geometric_transform",
     ],
     implementation_deps = [
-        "@common_robotics_utilities",
-        "@voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -148,8 +148,8 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":voxel_grid_internal",
-        "@common_robotics_utilities",
-        "@voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -170,8 +170,8 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":voxel_grid_internal",
-        "@common_robotics_utilities",
-        "@voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -191,8 +191,8 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":voxel_grid_internal",
-        "@common_robotics_utilities",
-        "@voxelized_geometry_tools",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -253,12 +253,12 @@ drake_cc_googletest(
         ":voxel_grid_internal",
         ":voxelized_environment_builder",
         "//planning:planning_test_helpers",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@drake//common:essential",
         "@drake//geometry",
         "@drake//multibody/plant",
         "@drake//systems/framework:diagram",
-        "@voxelized_geometry_tools",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
@@ -275,13 +275,13 @@ drake_cc_googletest(
         ":voxel_self_filter",
         ":voxelized_environment_collision_checker",
         "//planning:planning_test_helpers",
-        "@common_robotics_utilities",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@drake//common:essential",
         "@drake//geometry",
         "@drake//multibody/plant",
         "@drake//planning:collision_checker",
         "@drake//systems/framework:diagram",
-        "@voxelized_geometry_tools",
+        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 

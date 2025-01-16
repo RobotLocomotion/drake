@@ -14,6 +14,7 @@
 #include <common_robotics_utilities/openmp_helpers.hpp>
 #include <common_robotics_utilities/print.hpp>
 
+#include "drake/common/text_logging.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"

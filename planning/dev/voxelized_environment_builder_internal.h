@@ -17,6 +17,7 @@
 #include <voxelized_geometry_tools/tagged_object_collision_map.hpp>
 
 #include "drake/common/parallelism.h"
+#include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 

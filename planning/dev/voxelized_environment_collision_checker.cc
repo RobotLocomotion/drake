@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/text_logging.h"
 #include "drake/planning/dev/voxel_grid_internal.h"
 
 namespace drake {
