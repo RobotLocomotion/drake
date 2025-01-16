@@ -192,17 +192,17 @@ PiecewiseConstantCurvatureTrajectory<T>::MakeBreakPoses(
       breaks_eigen.tail(num_segments) - breaks_eigen.head(num_segments);
 
   // Build frames for the start of each segment.
-  std::vector<math::RigidTransform<T>> segment_start_poses;
-  segment_start_poses.reserve(num_breaks);
-  segment_start_poses.push_back(initial_pose);
+  std::vector<math::RigidTransform<T>> segment_break_poses;
+  segment_break_poses.reserve(num_breaks);
+  segment_break_poses.push_back(initial_pose);
 
   for (size_t i = 0; i < (num_breaks - 1); i++) {
     math::RigidTransform<T> X_FiFip1 =
         CalcRelativePoseInSegment(turning_rates[i], segment_durations[i]);
-    segment_start_poses.push_back(segment_start_poses.back() * X_FiFip1);
+    segment_break_poses.push_back(segment_break_poses.back() * X_FiFip1);
   }
 
-  return segment_start_poses;
+  return segment_break_poses;
 }
 
 // Explicit instantiation for the types specified in the header

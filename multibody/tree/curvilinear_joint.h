@@ -251,7 +251,7 @@ class CurvilinearJoint final : public Joint<T> {
     this->AddInOneForce(context, 0, force, forces);
   }
 
-  /** @returns copy of underlying curve of joint. */
+  /** @returns A reference to the underlying trajectory. */
   const PiecewiseConstantCurvatureTrajectory<double>& get_trajectory() const {
     return curvilinear_path_;
   }
