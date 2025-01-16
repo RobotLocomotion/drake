@@ -96,22 +96,35 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestAnalytical) {
     const Vector3d expected_tangent =
         RotationMatrixd::MakeZRotation(-M_PI / 2) * expected_normal;
 
-    const SpatialVelocity<double> expected_velocity(
+    const SpatialVelocity<double> expected_velocity_A(
         s_dot * kappa * Vector3d::UnitZ(), s_dot * expected_tangent);
 
-    const SpatialAcceleration<double> expected_acceleration(
+    const SpatialVelocity<double> expected_velocity_M(
+        Vector3d(0, 0, s_dot * kappa), Vector3d(s_dot, 0, 0));
+
+    const SpatialAcceleration<double> expected_acceleration_A(
         s_ddot * kappa * Vector3d::UnitZ(),
-        s_ddot * expected_tangent + s_dot * s_dot * expected_normal / r);
+        s_ddot * expected_tangent + s_dot * s_dot * kappa * expected_normal);
+
+    const SpatialAcceleration<double> expected_acceleration_M(
+        Vector3d(0, 0, s_ddot * kappa),
+        Vector3d(s_ddot, s_dot * s_dot * kappa, 0));
 
     const RigidTransformd pose = trajectory.CalcPose(s);
-    const SpatialVelocity<double> velocity =
+    const SpatialVelocity<double> velocity_A =
         trajectory.CalcSpatialVelocity(s, s_dot);
-    const SpatialAcceleration<double> acceleration =
+    const SpatialVelocity<double> velocity_M =
+        trajectory.CalcSpatialVelocityInM(s, s_dot);
+    const SpatialAcceleration<double> acceleration_A =
         trajectory.CalcSpatialAcceleration(s, s_dot, s_ddot);
+    const SpatialAcceleration<double> acceleration_M =
+        trajectory.CalcSpatialAccelerationInM(s, s_dot, s_ddot);
 
     EXPECT_TRUE(pose.IsNearlyEqualTo(expected_pose, kTolerance));
-    EXPECT_TRUE(velocity.IsApprox(expected_velocity, kTolerance));
-    EXPECT_TRUE(acceleration.IsApprox(expected_acceleration, kTolerance));
+    EXPECT_TRUE(velocity_A.IsApprox(expected_velocity_A, kTolerance));
+    EXPECT_TRUE(velocity_M.IsApprox(expected_velocity_M, kTolerance));
+    EXPECT_TRUE(acceleration_A.IsApprox(expected_acceleration_A, kTolerance));
+    EXPECT_TRUE(acceleration_M.IsApprox(expected_acceleration_M, kTolerance));
   }
 }
 
@@ -153,6 +166,13 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestRandomizedTrajectory) {
   const PiecewiseConstantCurvatureTrajectory<double> trajectory(
       breaks, turning_rates, initial_curve_tangent, initial_plane_normal,
       Vector3d::Zero());
+
+  // Check that curvatures are reported properly.
+  for (int i = 0; i < num_segments; ++i) {
+    const double s = (breaks[i + 1] + breaks[i]) / 2;  // middle of segment
+    EXPECT_EQ(trajectory.curvature(s), turning_rates[i]);
+  }
+
   const Vector3d initial_position =
       trajectory.CalcPose(breaks.front()).translation();
   // Check dense interpolated quaternions.
@@ -245,6 +265,15 @@ GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestPeriodicity) {
       periodic_trajectory.CalcPose(s + 3.0 * length);
   EXPECT_TRUE(X_AF_s0.IsNearlyEqualTo(X_AF_s1, kTolerance));
   EXPECT_TRUE(X_AF_s0.IsNearlyEqualTo(X_AF_s3, kTolerance));
+
+  // Check that curvature for periodic trajectory is properly wrapped.
+  for (int i = 0; i < num_segments; ++i) {
+    // Should be at the middle of each segment after wrapping.
+    const double s2 =
+        2 * length +
+        (segment_breaks_periodic[i + 1] + segment_breaks_periodic[i]) / 2;
+    EXPECT_EQ(periodic_trajectory.curvature(s2), turning_rates[i]);
+  }
 }
 
 GTEST_TEST(TestPiecewiseConstantCurvatureTrajectory, TestScalarConversion) {

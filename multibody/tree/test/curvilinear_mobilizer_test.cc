@@ -21,6 +21,7 @@ namespace {
 using drake::trajectories::PiecewiseConstantCurvatureTrajectory;
 using Eigen::Vector3d;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using std::make_unique;
 using std::sqrt;
 using std::unique_ptr;
@@ -110,6 +111,12 @@ TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerTransform) {
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
                               X_FM_expected.GetAsMatrix34(), kEpsilon,
                               MatrixCompareType::relative));
+
+  // The low-level function should give the same result.
+  const RigidTransformd X_FM_inline = mobilizer_->calc_X_FM(&distance);
+  EXPECT_TRUE(CompareMatrices(X_FM_inline.GetAsMatrix34(),
+                              X_FM_expected.GetAsMatrix34(), kEpsilon,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialVelocity) {
@@ -117,15 +124,27 @@ TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialVelocity) {
   const double wrapped_distance = 0.5 * M_PI / k_;
   const double distance = wrapped_distance + trajectory_.end_time();
   mobilizer_->SetDistance(context_.get(), distance);
-  const SpatialVelocity<double> V_FM =
+  const SpatialVelocity<double> V_FM_F =
       mobilizer_->CalcAcrossMobilizerSpatialVelocity(
           *context_, Vector1d(tangential_velocity));
 
   // Expect the mobilizer spatial velocity to be the trajectory spatial
   // velocity, modulo curve length.
-  const SpatialVelocity<double> V_FM_expected =
+  const SpatialVelocity<double> V_FM_F_expected =
       trajectory_.CalcSpatialVelocity(wrapped_distance, tangential_velocity);
-  EXPECT_TRUE(V_FM.IsApprox(V_FM_expected, kEpsilon));
+  EXPECT_TRUE(V_FM_F.IsApprox(V_FM_F_expected, kEpsilon));
+
+  // The low-level function should give the same result.
+  const SpatialVelocity<double> V_FM_F_inline =
+      mobilizer_->calc_V_FM(&distance, &tangential_velocity);
+  EXPECT_TRUE(V_FM_F_inline.IsApprox(V_FM_F_expected, kEpsilon));
+
+  // The low-level M-frame function should match the trajectory M-frame result.
+  const SpatialVelocity<double> V_FM_M_expected =
+      trajectory_.CalcSpatialVelocityInM(wrapped_distance, tangential_velocity);
+  const SpatialVelocity<double> V_FM_M_inline = mobilizer_->calc_V_FM_M(
+      RigidTransformd() /*not used*/, &distance, &tangential_velocity);
+  EXPECT_TRUE(V_FM_M_inline.IsApprox(V_FM_M_expected, kEpsilon));
 }
 
 TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
@@ -135,17 +154,31 @@ TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
   const double distance = wrapped_distance + trajectory_.end_time();
   mobilizer_->SetDistance(context_.get(), distance);
   mobilizer_->SetTangentialVelocity(context_.get(), tangential_velocity);
-  const SpatialAcceleration<double> A_FM =
+  const SpatialAcceleration<double> A_FM_F =
       mobilizer_->CalcAcrossMobilizerSpatialAcceleration(
           *context_, Vector1d(tangential_acceleration));
 
-  const SpatialAcceleration<double> A_FM_expected =
+  const SpatialAcceleration<double> A_FM_F_expected =
       trajectory_.CalcSpatialAcceleration(wrapped_distance, tangential_velocity,
                                           tangential_acceleration);
 
   // Expect the mobilizer spatial acceleration to be the trajectory spatial
   // acceleration, modulo curve length.
-  EXPECT_TRUE(A_FM.IsApprox(A_FM_expected, kEpsilon));
+  EXPECT_TRUE(A_FM_F.IsApprox(A_FM_F_expected, kEpsilon));
+
+  // The low-level function should give the same result.
+  const SpatialAcceleration<double> A_FM_F_inline = mobilizer_->calc_A_FM(
+      &distance, &tangential_velocity, &tangential_acceleration);
+  EXPECT_TRUE(A_FM_F_inline.IsApprox(A_FM_F_expected, kEpsilon));
+
+  // The low-level M-frame function should match the trajectory M-frame result.
+  const SpatialAcceleration<double> A_FM_M_expected =
+      trajectory_.CalcSpatialAccelerationInM(
+          wrapped_distance, tangential_velocity, tangential_acceleration);
+  const SpatialAcceleration<double> A_FM_M_inline =
+      mobilizer_->calc_A_FM_M(RigidTransformd() /*not used*/, &distance,
+                              &tangential_velocity, &tangential_acceleration);
+  EXPECT_TRUE(A_FM_M_inline.IsApprox(A_FM_M_expected, kEpsilon));
 }
 
 TEST_F(CurvilinearMobilizerTest, ProjectSpatialForce) {
@@ -163,13 +196,25 @@ TEST_F(CurvilinearMobilizerTest, ProjectSpatialForce) {
   const double rotational_component_expected =
       k_ * torque_Mo_F.dot(plane_axis_.normalized());
 
+  const RotationMatrixd R_FM = trajectory_.CalcPose(distance).rotation();
   // The force should be projected along the tangent (x) axis.
-  const Vector3d tangent_axis =
-      trajectory_.CalcPose(distance).rotation().col(0);
+  const Vector3d tangent_axis = R_FM.col(0);
   const double translational_component_expected = force_Mo_F.dot(tangent_axis);
   const double tau_expected =
       rotational_component_expected + translational_component_expected;
   EXPECT_NEAR(tau(0), tau_expected, 4.0 * kEpsilon);
+
+  // The low-level function should give the same result.
+  double tau_from_F{};
+  mobilizer_->calc_tau(&distance, F_Mo_F, &tau_from_F);
+  EXPECT_NEAR(tau_from_F, tau_expected, 4.0 * kEpsilon);
+
+  // Taking the force in the M frame shouldn't change the result.
+  const SpatialForce<double> F_Mo_M = R_FM.transpose() * F_Mo_F;
+  double tau_from_M{};
+  mobilizer_->calc_tau_from_M(RigidTransformd() /*not used*/, &distance, F_Mo_M,
+                              &tau_from_M);
+  EXPECT_NEAR(tau_from_M, tau_expected, 4.0 * kEpsilon);
 }
 
 TEST_F(CurvilinearMobilizerTest, MapVelocityToQDotAndBack) {
