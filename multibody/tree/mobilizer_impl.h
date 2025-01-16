@@ -31,24 +31,26 @@ dynamic memory allocations.
 Every concrete Mobilizer derived from MobilizerImpl must implement the
 following (ideally inline) methods.
 
+@note The coordinate pointers q and v are guaranteed to point to the kNq or kNv
+state variables for the particular mobilizer. They are only 8-byte aligned so be
+careful when interpreting them as Eigen vectors for computation purposes.
+
   // Returns X_FM(q)
   math::RigidTransform<T> calc_X_FM(const T* q) const;
 
-  // Returns H_FM(q)⋅v
+  // Returns V_FM_F = H_FM_F(q)⋅v
   SpatialVelocity<T> calc_V_FM(const T* q,
                                const T* v) const;
 
-  // Returns H_FM(q)⋅vdot + Hdot_FM(q,v)⋅v
+  // Returns A_FM_F = H_FM_F(q)⋅vdot + Hdot_FM_F(q,v)⋅v
   SpatialAcceleration<T> calc_A_FM(const T* q,
                                    const T* v,
                                    const T* vdot) const;
 
-  // Returns tau = H_FMᵀ(q)⋅F_BMo_F
+  // Returns tau = H_FM_Fᵀ(q)⋅F_BMo_F
   void calc_tau(const T* q, const SpatialForce<T>& F_BMo_F, T* tau) const;
 
-The coordinate pointers are guaranteed to point to the kNq or kNv state
-variables for the particular mobilizer. They are only 8-byte aligned so
-be careful when interpreting them as Eigen vectors for computation purposes.
+  // TODO(sherm1) More to come (see #22253)
 
 MobilizerImpl also provides a number of size specific methods to retrieve
 multibody quantities of interest from caching structures. These are common
