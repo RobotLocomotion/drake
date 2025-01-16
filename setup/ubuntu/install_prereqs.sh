@@ -25,7 +25,7 @@ me='The Drake source distribution prerequisite setup script'
 
 trap at_exit EXIT
 
-binary_distribution_args=()
+binary_distribution_args=(--without-python-dependencies)
 source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do

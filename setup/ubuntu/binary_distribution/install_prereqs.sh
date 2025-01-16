@@ -7,6 +7,7 @@ set -euo pipefail
 
 with_update=1
 with_asking=1
+with_python_dependencies=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
@@ -17,6 +18,10 @@ while [ "${1:-}" != "" ]; do
     # Pass -y along to apt-get.
     -y)
       with_asking=0
+      ;;
+    # Do NOT install Python (pip) dependencies.
+    --without-python-dependencies)
+      with_python_dependencies=0
       ;;
     *)
       echo 'Invalid command line argument' >&2
@@ -80,3 +85,10 @@ EOF
 
 packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}.txt")
 apt-get install ${maybe_yes} --no-install-recommends ${packages}
+
+if [[ "${with_python_dependencies}" -eq 1 ]]; then
+  readonly setup="${BASH_SOURCE%/*}"
+  readonly venv_root="$(cd "${setup}/../../.." && pwd)"
+  readonly drake_user="$(stat -c %U "${setup}")"
+  sudo -u "${drake_user}" python3.12 -m venv "${venv_root}"
+fi

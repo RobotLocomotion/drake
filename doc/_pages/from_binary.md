@@ -66,13 +66,11 @@ Download the binary release ``*.tar.gz`` file, using one of the links above.
 In the example below, we'll use ``drake.tar.gz`` to refer to it, but your
 download will have a more version-specific filename.
 
-Create and activate the environment:
+Create the environment:
 
 ```bash
 mkdir -p env
 tar -xvzf drake.tar.gz -C env --strip-components=1
-python3 -m venv env --system-site-packages
-source env/bin/activate
 ```
 
 Install dependencies within the environment:
@@ -82,6 +80,12 @@ env/share/drake/setup/install_prereqs
 ````
 
 (On Ubuntu, the script might ask to be run under ``sudo``.)
+
+Activate the environment:
+
+```bash
+source env/bin/activate
+```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
