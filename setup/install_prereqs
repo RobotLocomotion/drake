@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Install Drake prerequisites.
+
+set -euo pipefail
+
+# This script should be run as the normal user (i.e., `setup/install_prereqs`),
+# not under sudo (i.e., not `sudo setup/install_prereqs`). On the other hand, if
+# the normal user *is* the root user (e.g., inside Docker) then we allow it, or
+# if sudo is being used to switch users (i.e., `sudo -u otheruser ...`) then we
+# allow it. The only mistake we're trying to catch here is accidentally using
+# `sudo` out of habit (since that's what Drake previously required).
+if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
+  echo 'This script must NOT be run through sudo' >&2
+  exit 1
+fi
+
+# We'll default to installing only the prerequisites necessary to build Drake.
+# To run tests, developers should pass the "--developer" flag. For details, see
+# https://drake.mit.edu/bazel.html and https://drake.mit.edu/from_source.html.
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  exec "${BASH_SOURCE%/*}/mac/install_prereqs.sh" \
+    --without-test-only "$@"
+else
+  maybe_sudo=
+  if [[ "${EUID}" -ne 0 ]]; then
+    maybe_sudo=sudo
+  fi
+  exec ${maybe_sudo} "${BASH_SOURCE%/*}/ubuntu/install_prereqs.sh" \
+    --without-test-only --without-bazel --without-clang "$@"
+fi

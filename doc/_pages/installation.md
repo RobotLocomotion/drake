@@ -106,7 +106,10 @@ To use Gurobi, you must build Drake from source.
 For Python, refer to
 [Using the Python Bindings](/python_bindings.html#using-the-python-bindings).
 
-For C++, refer to either the
+For C++ sample projects that show how to import Drake as a CMake external
+project, please see our gallery of
+[external examples](https://github.com/RobotLocomotion/drake-external-examples),
+specifically either the
 [example CMake project for apt (deb)](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed_apt)
 or the
 [example CMake project for tar.gz download](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed).

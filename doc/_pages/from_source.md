@@ -2,10 +2,16 @@
 title: Source Installation
 ---
 
+# New Users
+
+For first-time users, we strongly suggest using one of the pre-compiled binaries
+described on our [installation](/installation.html) page. This page explains how
+to build Drake from source, which is somewhat more challenging.
+
 # Supported Configurations
 
 The following table shows the configurations and platforms that Drake
-officially supports:
+officially supports when building from source:
 
 <!-- The operating system requirements should match those listed in the root
      CMakeLists.txt. -->
@@ -41,113 +47,93 @@ setup steps.
 
 ⁽³⁾ Drake requires a compiler running in C++20 (or greater) mode.
 
-# Getting Drake
+# Building with CMake
 
-Run:
+For sample projects that show how to import Drake as a CMake external project
+(either by building Drake from source, or by downloading a pre-compiled Drake
+release) please see our gallery of
+[external examples](https://github.com/RobotLocomotion/drake-external-examples).
 
-```
-git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git
-```
-
-Note: we suggest you keep the default clone directory name (``drake``) and not
-rename it (such as ``drake2``).  The CLion integration will suffer if the
-checkout directory is not named ``drake``.  (See [CLion IDE setup](clion.html) for details.)
-
-Note: the build process may encounter problems if you have unusual characters
-like parentheses in the absolute path to the drake directory
-(see [#394](https://github.com/RobotLocomotion/drake/issues/394)).
-
-## Using a fork of Drake
-
-The above ``git clone`` command will configure Drake's primary repository as a
-remote called ``origin``. If you plan to fork Drake for development, we
-recommend that you configure your fork of Drake's primary repository as the
-``origin`` remote and Drake's primary repository as the ``upstream``
-remote. This can be done by executing the following commands:
-
-```
-cd drake
-git remote set-url origin git@github.com:[your github user name]/drake.git
-git remote add upstream https://github.com/RobotLocomotion/drake.git
-git remote set-url --push upstream no_push
-```
-
-We recommend that you
-[setup SSH access to github.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
-to avoid needing to type your password each time you access it.
-
-# Mandatory platform-specific instructions
-
-Before running the build, you must follow some one-time platform-specific
-setup steps.
-
-*Ubuntu:*
-
-```
-sudo ./setup/ubuntu/install_prereqs.sh
-```
-
-*macOS:*
-
-We assume that you have already installed Xcode
-([from the Mac App Store](https://itunes.apple.com/us/app/xcode/id497799835)).
-
-After that, run:
-
-```
-./setup/mac/install_prereqs.sh
-```
-
-# Build with Bazel
-
-For instructions, jump to
-[Developing Drake using Bazel](/bazel.html#developing-drake-using-bazel),
-or check out the full details at:
-
-* [Bazel build system](/bazel.html)
-
-## Building the Python Bindings
-
-To use the Python bindings from Drake externally, we recommend using CMake.
-As an example:
+Otherwise, you can run a build from source by hand like this:
 
 ```bash
-git clone https://github.com/RobotLocomotion/drake.git
+# Get the sources.
+git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git
+
+# Install the build dependencies.
+drake/setup/install_prereqs
+
+# Build and install using standard CMake commands.
 mkdir drake-build
 cd drake-build
 cmake ../drake
 make install
 ```
 
-Note that a concurrency limit passed to `make` (e.g., `make -j 2`) has almost no
-effect on the Drake build. You might need to add a bazel configuration dotfile
+To change the build options, you can run one of the standard CMake GUIs (e.g.,
+`ccmake` or `cmake-gui`) or specify command-line options with `-D` to `cmake`.
+
+## CMake options which are Drake-specific
+
+These options can be set using `-DFOO=bar` on the CMake command line, or in one
+of the CMake GUIs.
+
+Adjusting open-source dependencies:
+
+* WITH_USER_EIGEN (default OFF). When ON, uses `find_package(Eigen3)`
+  to locate a user-provided `Eigen3::Eigen` library
+  instead of hard-coding to the operating system version.
+* WITH_USER_FMT (default OFF). When ON, uses `find_package(fmt)`
+  to locate a user-provided `fmt::fmt` library
+  instead of hard-coding to the operating system version.
+* WITH_USER_SPDLOG (default OFF). When ON, uses `find_package(spdlog)`
+  to locate a user-provided `spdlog::spdlog` library
+  instead of hard-coding to the operating system version.
+
+Adjusting closed-source (commercial) software dependencies:
+
+* WITH_GUROBI (default OFF). When ON, enables the `GurobiSolver` in the build.
+  * When enabled, you must download and install Gurobi 10.0 yourself prior to
+    running Drake's CMake configure script; Drake does not automatically
+    download Gurobi. If Gurobi is not installed to its standard location, you
+    must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64`
+    in your terminal so that `find_package(Gurobi)` will be able to find it.
+* WITH_MOSEK (default OFF). When ON, enables the `MosekSolver` in the build.
+  * When enabled, Drake automatically downloads the MOSEK™ software from
+    `mosek.com` and installs it as part of the Drake build. The selected
+    version is hard-coded in Drake and cannot be configured.
+* WITH_SNOPT (default OFF). When ON, enables the `SnoptSolver` in the build.
+  * This option is mutally exclusive with `WITH_ROBOTLOCOMOTION_SNOPT`.
+* SNOPT_PATH (no default). When `WITH_SNOPT` is ON, this must be set to a SNOPT
+  source code archive path (e.g., `/home/user/Downloads/snopt7.4.tar.gz`) with
+  SNOPT version 7.4 (recommended) or version 7.6.
+  * Drake does not support using a SNOPT binary release (i.e., shared library);
+    it requires a source archive (i.e., the Fortran code).
+* WITH_ROBOTLOCOMOTION_SNOPT (default OFF). When ON, enables the `SnoptSolver`
+  in the build, using a hard-coded and access-controlled download of SNOPT.
+  This option is only valid for MIT- or TRI-affiliated Drake developers.
+  * This option is mutally exclusive with `WITH_SNOPT`.
+
+## CMake caveats
+
+Note that a concurrency limit passed to `make` (e.g., `make -j 2`) for a Drake
+build has almost no effect. You might need to add a bazel configuration dotfile
 to your home directory if your build is running out of memory. See the
 [troubleshooting](/troubleshooting.html#build-oom) page for details.
 
 Be aware that repeatedly running `make install` will install the recompiled
 version of Drake *on top of* the prior version. This will lead to disaster
 unless the set of installed filenames is exactly the same (because old files
-will be hanging around polluting your PYTHONPATH). It is safe if you are merely
-tweaking a source code file and repeatedly installing, without any changes to
-the build system. For any kind of larger change (e.g., upgrading to a newer
-Drake), we strongly advise that you delete the prior tree (within the `install`
-sub-directory) before running `make`.
+will be hanging around, e.g., polluting your PYTHONPATH). It is safe if you are
+merely tweaking a source code file and repeatedly installing, without any
+changes to the build system. For any kind of larger change (e.g., upgrading to a
+newer Drake), we strongly advise that you delete the prior tree (within the
+`install` sub-directory) before running `make`.
 
-Please note the additional CMake options which affect the Python bindings:
+## Running the Python Bindings after a CMake install
 
-* ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
-* ``-DWITH_MOSEK={ON, [OFF]}`` - Build with MOSEK™ enabled.
-* ``-DWITH_SNOPT={ON, [OFF]}`` - Build with SNOPT enabled.
-
-``{...}`` means a list of options, and the option surrounded by ``[...]`` is
-the default option. An example of building ``pydrake`` with both Gurobi and
-MOSEK™, without building tests:
-
-```bash
-cmake -DWITH_GUROBI=ON -DWITH_MOSEK=ON ../drake
-```
-
-You will also need to have your ``PYTHONPATH`` configured correctly.
+To run the installed copy of `pydrake`, you will also need to have your
+``PYTHONPATH`` configured correctly.
 
 *Ubuntu 22.04 (Jammy):*
 
@@ -169,3 +155,32 @@ export PYTHONPATH=${PWD}/install/lib/python3.12/site-packages:${PYTHONPATH}
 cd drake-build
 export PYTHONPATH=${PWD}/install/lib/python3.12/site-packages:${PYTHONPATH}
 ```
+
+# Building with Bazel
+
+If your organization already uses Bazel for its builds, you can build Drake as
+a Bazel external. For sample projects that show how to import Drake as a Bazel
+external (either by building Drake from source, or by downloading a pre-compiled
+Drake release) please see our gallery of
+[drake-external-examples](https://github.com/RobotLocomotion/drake-external-examples),
+either
+[drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_external)
+(to build from source) or
+[drake_bazel_download](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_download)
+(to download a precompiled release).
+
+When building Drake from source as a Bazel external, we offer flags for
+customization. Refer to the comments in
+[drake/tools/flags/BUILD.bazel](https://github.com/RobotLocomotion/drake/blob/master/tools/flags/BUILD.bazel)
+for details. The `drake_bazel_external` example demonstrates a few of the flags.
+If you enable any of proprietary solvers flags, then you must first install
+the solver and set environment variables per the
+[Proprietary Solvers](/bazel.html#proprietary-solvers) instructions.
+
+There is no way to install Drake from Bazel. To install Drake, use CMake (see
+above).
+
+# Making changes to Drake
+
+Drake developers use Bazel for development. Refer to our [Bazel
+instructions](/bazel.html) for details.

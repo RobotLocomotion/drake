@@ -2,8 +2,8 @@
 # documentation targets (i.e., these should only be used for BUILD files
 # within @drake//doc/...).
 
-# Unless `setup/ubuntu/install_prereqs.sh --with-doc-only` has been run, most
-# tests in //doc/... will fail to pass, so by default we'll disable them.
+# Unless `setup/install_prereqs --with-doc-only` has been run, most tests
+# in //doc/... will fail to pass, so by default we'll disable them.
 #
 # A developer will have to explicitly opt-in in order to test these.
 DEFAULT_TEST_TAGS = [
