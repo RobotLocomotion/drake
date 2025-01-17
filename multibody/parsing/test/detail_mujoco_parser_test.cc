@@ -673,17 +673,6 @@ TEST_F(BoxMeshTest, MeshFileDirect) {
   TestBoxMesh(box_obj_, mesh_asset);
 }
 
-TEST_F(BoxMeshTest, MeshFileStlOrObj) {
-  // Absolute path, referencing an stl with an obj replacement available.
-  std::string quad_cube_stl =
-      FindResourceOrThrow("drake/geometry/test/quad_cube.stl");
-  std::string quad_cube_obj = std::filesystem::canonical(
-      FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
-  std::string mesh_asset =
-      fmt::format(R"""(<mesh name="box" file="{}"/>)""", quad_cube_stl);
-  TestBoxMesh(quad_cube_obj, mesh_asset);
-}
-
 TEST_F(BoxMeshTest, MeshFileRelativePath) {
   // Relative path (from string, so path is relative to cwd).
   std::string mesh_asset = R"""(
@@ -1111,22 +1100,27 @@ TEST_F(MujocoParserTest, CompilerErrorsShortEulerSeq) {
 }
 
 TEST_F(MujocoParserTest, AssetErrors) {
+  std::string quad_cube_stl =
+      FindResourceOrThrow("drake/geometry/test/quad_cube.stl");
+
   std::string xml = fmt::format(R"""(
 <mujoco model="test">
   <asset>
     <mesh name="box_mesh" file="{}" scale="1 3 5"/>
-    <mesh name="wrong-format" file="{}"/>
-    <mesh name="missing-file" file="{}QQQ"/>
-    <mesh name="no-file-name"/>
+    <mesh name="wrong_format" file="{}"/>
+    <mesh name="missing_file" file="bad_file_name"/>
+    <mesh name="no_file_name"/>
+    <texture name="bad_texture" file="bad_file_name"/>
   </asset>
 </mujoco>
-)""", box_obj_, box_urdf_, box_urdf_);
+)""", box_obj_, quad_cube_stl);
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*only supports.*obj format.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*not.*found.*nor.*replacement.*"));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*not specify.*file.*ignored.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*non-uniform scale.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*only supports.*obj format.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*not.*found.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*not specify.*file.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*texture.*troubleshooting.*"));
 }
 
 TEST_F(MujocoParserTest, AssetDirErrors) {
@@ -1143,7 +1137,7 @@ TEST_F(MujocoParserTest, AssetDirErrors) {
 )""";
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeWarning(),
+  EXPECT_THAT(TakeError(),
               MatchesRegex(".*mesh asset.*could not be found.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*specified unknown mesh.*"));
 }
