@@ -5,10 +5,12 @@ def generate_repository_metadata(repository_ctx, **kwargs):
     dict entry of name="" using the repository_ctx.name.  This information can
     be loaded later using the tools/workspace/metadata.py library.
     """
+    canonical_name = repository_ctx.name
+    apparent_name = canonical_name.split("+")[-1]
     repository_ctx.file(
         "drake_repository_metadata.json",
         content = json.encode(struct(
-            name = repository_ctx.name,
+            name = apparent_name,
             **kwargs
         )),
         executable = False,
