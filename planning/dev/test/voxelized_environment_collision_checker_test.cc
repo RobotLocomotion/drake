@@ -89,7 +89,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     VoxelizedEnvironmentCollisionCheckerTest2,
     SphereRobotModelCollisionCheckerAbstractTestSuite,
-    testing::Values(MakeVoxelizedEnvironmentCollisionCheckerParams().checker));
+    testing::Values(SphereRobotModelCollisionCheckerTestParams{
+        MakeVoxelizedEnvironmentCollisionCheckerParams().checker}));
 
 }  // namespace test
 }  // namespace planning

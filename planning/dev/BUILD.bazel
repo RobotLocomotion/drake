@@ -207,6 +207,7 @@ drake_cc_library(
     ],
     deps = [
         ":sphere_robot_model_collision_checker",
+        "//common:nice_type_name",
         "//planning:collision_checker",
         "@gtest//:without_main",
     ],
