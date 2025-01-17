@@ -76,7 +76,6 @@ class TestWorkspaceBzlmodSync(unittest.TestCase):
         del modules["spdlog"]
 
         # Don't check modules that are documented to skew versions on purpose.
-        del modules["rules_cc"]
         del modules["rules_python"]
 
         # Check that the module version matches the workspace version.

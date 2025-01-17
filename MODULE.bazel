@@ -16,7 +16,7 @@ bazel_dep(name = "apple_support", version = "1.17.1", repo_name = "build_bazel_a
 bazel_dep(name = "bazel_features", version = "1.22.0")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "rules_cc", version = "0.1.0")
+bazel_dep(name = "rules_cc", version = "0.0.17")
 bazel_dep(name = "rules_java", version = "8.6.1")
 bazel_dep(name = "rules_license", version = "1.0.0")
 bazel_dep(name = "rules_python", version = "0.40.0")
@@ -50,7 +50,7 @@ use_repo(cc_configure, "local_config_cc")
 
 bazel_dep(name = "eigen", version = "3.4.0.bcr.2", repo_name = "module_eigen")
 bazel_dep(name = "fmt", version = "11.0.2.bcr.1", repo_name = "module_fmt")
-bazel_dep(name = "spdlog", version = "1.15.0.bcr.3", repo_name = "module_spdlog")  # noqa
+bazel_dep(name = "spdlog", version = "1.15.0.bcr.4", repo_name = "module_spdlog")  # noqa
 
 eigen_repository = use_repo_rule(
     "@drake//tools/workspace/eigen:repository.bzl",
