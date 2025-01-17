@@ -44,7 +44,9 @@ install_files(
         "//tools/cc_toolchain:apple": [
             "mac/binary_distribution/Brewfile",
             "mac/binary_distribution/install_prereqs.sh",
-            "mac/binary_distribution/requirements.txt",
+            "python/pdm.lock",
+            "python/pyproject.toml",
+            "python/requirements.txt",
         ],
         "//tools/cc_toolchain:linux": [
             "deepnote/install_nginx",
