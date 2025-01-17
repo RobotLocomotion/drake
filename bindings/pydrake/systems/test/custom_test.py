@@ -329,6 +329,34 @@ class TestCustom(unittest.TestCase):
         data_const = cache_entry_value_const.GetValueOrThrow()
         self.assertIs(data_const, data)
 
+    def test_value_producer_error_reporting_allocate_none(self):
+        def broken_alloc_callback():
+            pass
+        system = LeafSystem()
+        cache_entry = system.DeclareCacheEntry(
+            description="",
+            value_producer=ValueProducer(
+                allocate=broken_alloc_callback,
+                calc=lambda context, output: None))
+        with self.assertRaisesRegex(
+                RuntimeError,
+                "broken_alloc_callback.*Value.*not None"):
+            system.CreateDefaultContext()
+
+    def test_value_producer_error_reporting_allocate_mistyped(self):
+        def broken_alloc_callback():
+            return "hello"
+        system = LeafSystem()
+        cache_entry = system.DeclareCacheEntry(
+            description="",
+            value_producer=ValueProducer(
+                allocate=broken_alloc_callback,
+                calc=lambda context, output: None))
+        with self.assertRaisesRegex(
+                RuntimeError,
+                "broken_alloc_callback.*return.*Value.*not.*str"):
+            system.CreateDefaultContext()
+
     def test_leaf_system_issue13792(self):
         """
         Ensures that users get a better error when forgetting to explicitly
