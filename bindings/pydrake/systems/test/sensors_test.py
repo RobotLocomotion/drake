@@ -8,6 +8,7 @@ import unittest
 import numpy as np
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -465,25 +466,31 @@ class TestSensors(unittest.TestCase):
 
         for constructor in [construct, construct_single]:
             sensor = constructor(parent_id, X_WB)
+
+            # Check default accessors.
             check_info(sensor.default_color_render_camera()
                        .core().intrinsics())
             check_info(sensor.default_depth_render_camera()
                        .core().intrinsics())
             self.assertIsInstance(sensor.default_X_PB(), RigidTransform)
             self.assertEqual(sensor.default_parent_frame_id(), parent_id)
-            sensor.set_default_parent_frame_id(parent_id)
+            sensor.set_default_parent_frame_id(id=parent_id)
+            sensor.set_default_X_PB(sensor_pose=RigidTransform())
+            color_camera = sensor.default_color_render_camera()
+            sensor.set_default_color_render_camera(color_camera=color_camera)
+            depth_camera = sensor.default_depth_render_camera()
+            sensor.set_default_depth_render_camera(depth_camera=depth_camera)
 
             check_ports(sensor)
+
             # Check parameter API.
             context = sensor.CreateDefaultContext()
             self.assertIsInstance(sensor.GetColorRenderCamera(context=context),
                                   ColorRenderCamera)
-            color_camera = sensor.default_color_render_camera()
             sensor.SetColorRenderCamera(context=context,
                                         color_camera=color_camera)
             self.assertIsInstance(sensor.GetDepthRenderCamera(context=context),
                                   DepthRenderCamera)
-            depth_camera = sensor.default_depth_render_camera()
             sensor.SetDepthRenderCamera(context=context,
                                         depth_camera=depth_camera)
             self.assertIsInstance(sensor.GetX_PB(context=context),
@@ -520,8 +527,9 @@ class TestSensors(unittest.TestCase):
         camera_core = self._make_render_camera_core()
         color_camera = ColorRenderCamera(camera_core)
         depth_camera = DepthRenderCamera(camera_core, DepthRange(0.1, 5.5))
+        parent_id = FrameId.get_new_id()
         dut = mut.RgbdSensorAsync(scene_graph=scene_graph,
-                                  parent_id=FrameId.get_new_id(),
+                                  parent_id=parent_id,
                                   X_PB=RigidTransform(),
                                   fps=1.0,
                                   capture_offset=0.1,
@@ -529,13 +537,49 @@ class TestSensors(unittest.TestCase):
                                   color_camera=color_camera,
                                   depth_camera=depth_camera,
                                   render_label_image=True)
-        dut.parent_id()
-        dut.X_PB()
-        dut.fps()
-        dut.capture_offset()
-        dut.output_delay()
-        dut.color_camera()
-        dut.depth_camera()
+
+        # Test deprecated methods.
+        with catch_drake_warnings(expected_count=1):
+            dut.parent_id()
+        with catch_drake_warnings(expected_count=1):
+            dut.X_PB()
+        with catch_drake_warnings(expected_count=1):
+            dut.color_camera()
+        with catch_drake_warnings(expected_count=1):
+            dut.depth_camera()
+
+        # Check const configuration accessors.
+        self.assertIsInstance(dut.fps(), float)
+        self.assertIsInstance(dut.capture_offset(), float)
+        self.assertIsInstance(dut.output_delay(), float)
+
+        # Check default accessors.
+        self.assertEqual(dut.default_parent_frame_id(), parent_id)
+        self.assertIsInstance(dut.default_X_PB(), RigidTransform)
+        self.assertIsInstance(dut.default_color_render_camera(),
+                              ColorRenderCamera)
+        self.assertIsInstance(dut.default_depth_render_camera(),
+                              DepthRenderCamera)
+        dut.set_default_parent_frame_id(id=parent_id)
+        dut.set_default_X_PB(sensor_pose=RigidTransform())
+        color_camera = dut.default_color_render_camera()
+        dut.set_default_color_render_camera(color_camera=color_camera)
+        depth_camera = dut.default_depth_render_camera()
+        dut.set_default_depth_render_camera(depth_camera=depth_camera)
+
+        # Check parameter API.
+        context = dut.CreateDefaultContext()
+        self.assertEqual(dut.GetParentFrameId(context=context), parent_id)
+        dut.SetParentFrameId(context=context, id=parent_id)
+        self.assertIsInstance(dut.GetX_PB(context=context), RigidTransform)
+        dut.SetX_PB(context=context, sensor_pose=RigidTransform())
+        self.assertIsInstance(dut.GetColorRenderCamera(context=context),
+                              ColorRenderCamera)
+        dut.SetColorRenderCamera(context=context, color_camera=color_camera)
+        self.assertIsInstance(dut.GetDepthRenderCamera(context=context),
+                              DepthRenderCamera)
+        dut.SetDepthRenderCamera(context=context, depth_camera=depth_camera)
+
         dut.color_image_output_port()
         dut.depth_image_32F_output_port()
         dut.depth_image_16U_output_port()
