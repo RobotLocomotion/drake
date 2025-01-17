@@ -4,6 +4,7 @@
 
 #include <common_robotics_utilities/print.hpp>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/planning/collision_avoidance.h"
@@ -42,7 +43,7 @@ multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene() {
 
 std::ostream& operator<<(std::ostream& out,
                          const CollisionCheckerTestParams& p) {
-  out << "checker = " << p.checker;
+  out << "checker = " << NiceTypeName::Get(*p.checker);
   out << ", supports_added_world_obstacles = "
       << p.supports_added_world_obstacles;
   out << ", thread_stress_iterations = " << p.thread_stress_iterations;

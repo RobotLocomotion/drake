@@ -3,12 +3,20 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/nice_type_name.h"
+
 namespace drake {
 namespace planning {
 namespace test {
 
+std::ostream& operator<<(std::ostream& out,
+                         const SphereRobotModelCollisionCheckerTestParams& p) {
+  out << drake::NiceTypeName::Get(*p.checker);
+  return out;
+}
+
 TEST_P(SphereRobotModelCollisionCheckerAbstractTestSuite, SphereChecker) {
-  std::shared_ptr<CollisionChecker> checker = GetParam();
+  std::shared_ptr<CollisionChecker> checker = GetParam().checker;
   auto& sphere_checker =
       dynamic_cast<SphereRobotModelCollisionChecker&>(*checker);
 

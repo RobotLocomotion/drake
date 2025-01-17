@@ -36,7 +36,8 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     MbpEnvironmentCollisionCheckerTest2,
     SphereRobotModelCollisionCheckerAbstractTestSuite,
-    testing::Values(MakeMbpEnvironmentCollisionCheckerParams().checker));
+    testing::Values(SphereRobotModelCollisionCheckerTestParams{
+        MakeMbpEnvironmentCollisionCheckerParams().checker}));
 
 }  // namespace test
 }  // namespace planning

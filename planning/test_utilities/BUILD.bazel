@@ -27,6 +27,7 @@ drake_cc_library(
         "@drake_models//:iiwa_description",
     ],
     deps = [
+        "//common:nice_type_name",
         "//multibody/parsing",
         "//planning:collision_avoidance",
         "//planning:collision_checker",
