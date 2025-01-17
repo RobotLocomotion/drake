@@ -112,7 +112,12 @@ class System : public SystemBase {
 
   // This is just an intentional shadowing of the base class method to return
   // a more convenient type.
-  /** Returns a Context<T> suitable for use with this System<T>. */
+  /** (Advanced) Returns an **uninitialized** Context<T> suitable for use with
+  this System<T>. Most users should use CreateDefaultContext(), instead.
+  @warning The returned context is uninitialized (contains invalid data). It is
+  useful for pre-allocating storage which will later be overwritten (e.g., by
+  SetDefaultContext() or Context<T>::SetTimeStateAndParametersFrom()) and **must
+  not** be used for any calculations until it's been overwritten. */
   std::unique_ptr<Context<T>> AllocateContext() const;
 
   /** Allocates a CompositeEventCollection for this system. The allocated
