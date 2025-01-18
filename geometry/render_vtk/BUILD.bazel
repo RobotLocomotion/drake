@@ -60,6 +60,7 @@ drake_cc_library(
         ":render_engine_vtk_params",
         "//common:essential",
         "//common:unused",
+        "//geometry/render_gl:internal_loaders",
         "@vtk_internal//:vtkRenderingCore",
         "@vtk_internal//:vtkRenderingOpenGL2",
         "@vtk_internal//:vtkglad",

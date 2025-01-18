@@ -653,9 +653,6 @@ MODULE_SETTINGS = {
         "includes_extra": [
             "ThirdParty/glad/vtkglad/include",
         ],
-        "deps_extra": [
-            "@opengl",
-        ],
     },
     "VTK::pugixml": {
         # TODO(jwnimmer-tri) The only user of pugixml is vtkDataAssembly.

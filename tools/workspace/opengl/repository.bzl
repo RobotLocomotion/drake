@@ -1,3 +1,5 @@
+# Deprecated 2025-01-01.
+
 def _impl(repository_ctx):
     repository_ctx.symlink(
         Label("@drake//tools/workspace/opengl:package.BUILD.bazel"),
