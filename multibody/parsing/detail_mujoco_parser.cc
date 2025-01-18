@@ -1278,8 +1278,11 @@ class MujocoParser {
           if (scale[0] != scale[1] || scale[1] != scale[2]) {
             Error(
                 *node,
-                fmt::format("mesh {} was defined with a non-uniform scale; but "
-                            "Drake currently only supports uniform scaling",
+                fmt::format("mesh {} was defined with a non-uniform scale; "
+                            "but Drake currently only supports uniform "
+                            "scaling. See "
+                            "https://drake.mit.edu/troubleshooting.html for "
+                            "additional resources.",
                             name));
             continue;
           }
@@ -1311,59 +1314,43 @@ class MujocoParser {
         }
         filename = std::filesystem::weakly_canonical(filename);
 
-        std::filesystem::path original_filename = filename;
-
-        // TODO(russt): Support .vtk files.
-
-        // Replace the extension with obj, unless tolower(extension) == "obj".
-        std::string extension = filename.extension();
-        std::transform(extension.begin(), extension.end(), extension.begin(),
-                       [](unsigned char c) {
-                         return std::tolower(c);
-                       });
-        if (extension != ".obj") {
-          filename.replace_extension("obj");
-        }
-
         if (std::filesystem::exists(filename)) {
-          mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
-        } else if (std::filesystem::exists(original_filename)) {
-          Warning(
-              *node,
-              fmt::format(
-                  "Drake's MuJoCo parser currently only supports mesh files in "
-                  ".obj format. The meshfile \"{}\" was requested; Drake "
-                  "attempted to load \"{}\", but that file does not exist.",
-                  original_filename.string(), filename.string()));
-          std::string original_extension = original_filename.extension();
-          std::transform(original_extension.begin(), original_extension.end(),
-                         original_extension.begin(), [](unsigned char c) {
-                           return std::tolower(c);
-                         });
-          if (original_extension == ".stl") {
-            Warning(*node,
-                    fmt::format("If you have built Drake from source, "
-                                "running\n\n bazel run "
-                                "//manipulation/util:stl2obj -- --input \"{}\" "
-                                "--output \"{}\"\n\nonce will resolve this.",
-                                original_filename.string(), filename.string()));
+          std::string extension = filename.extension();
+          std::transform(extension.begin(), extension.end(), extension.begin(),
+                         ::tolower);
+          // TODO(russt): Support .vtk files.
+          if (extension == ".obj") {
+            mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
+          } else {
+            Error(
+                *node,
+                fmt::format(
+                  "Drake's MuJoCo parser currently only supports mesh files "
+                  "in .obj format, but the meshfile \"{}\" was requested. See "
+                  "https://drake.mit.edu/troubleshooting.html for additional "
+                  "resources.", filename.string()));
+            continue;
           }
         } else {
-          Warning(*node,
-                  fmt::format("The mesh asset \"{}\" could not be found, nor "
-                              "could its .obj replacement \"{}\".",
-                              original_filename.string(), filename.string()));
+          Error(*node,
+                  fmt::format("The mesh asset \"{}\" could not be found.",
+                              filename.string()));
+          continue;
         }
       } else {
-        std::string name{};
+        std::string name;
         ParseStringAttribute(mesh_node, "name", &name);
         Warning(*node, fmt::format("The mesh asset named {} did not specify a "
-                                   "'file' attribute and so will be ignored.",
-                                   name));
+                                    "'file' attribute and so will be ignored.",
+                                    name));
       }
     }
 
-    WarnUnsupportedElement(*node, "texture");
+    if (node->FirstChildElement("texture") != nullptr) {
+      Warning(*node, "The texture element is not supported, see "
+                     "https://drake.mit.edu/troubleshooting.html for "
+                     "additional resources.");
+    }
     WarnUnsupportedElement(*node, "hfield");
     WarnUnsupportedElement(*node, "skin");
   }

@@ -159,6 +159,7 @@ filegroup(
         "franka_emika_panda/*.png",
         "franka_emika_panda/*.xml",
         "franka_emika_panda/assets/*.obj",
+        "franka_emika_panda/assets/*.stl",
     ]),
 )
 
@@ -170,6 +171,7 @@ filegroup(
         "franka_fr3/*.png",
         "franka_fr3/*.xml",
         "franka_fr3/assets/*.obj",
+        "franka_fr3/assets/*.stl",
     ]),
 )
 
