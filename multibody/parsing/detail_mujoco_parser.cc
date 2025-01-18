@@ -395,10 +395,16 @@ class MujocoParser {
          position_node = position_node->NextSiblingElement("position")) {
       ParseMotorOrPosition(position_node);
     }
+    // Unsupported elements are listed in the order from the MuJoCo docs:
+    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#actuator
     WarnUnsupportedElement(*node, "general");
     WarnUnsupportedElement(*node, "velocity");
+    WarnUnsupportedElement(*node, "intvelocity");
+    WarnUnsupportedElement(*node, "damper");
     WarnUnsupportedElement(*node, "cylinder");
     WarnUnsupportedElement(*node, "muscle");
+    WarnUnsupportedElement(*node, "adhesion");
+    WarnUnsupportedElement(*node, "plugin");
   }
 
   void ParseJoint(XMLElement* node, const RigidBody<double>& parent,
@@ -519,12 +525,7 @@ class MujocoParser {
 
     WarnUnsupportedAttribute(*node, "group");
     WarnUnsupportedAttribute(*node, "springdamper");
-    WarnUnsupportedAttribute(*node, "solreflimit");
-    WarnUnsupportedAttribute(*node, "solimplimit");
-    WarnUnsupportedAttribute(*node, "solreffriction");
-    WarnUnsupportedAttribute(*node, "solimpfriction");
     WarnUnsupportedAttribute(*node, "stiffness");
-    WarnUnsupportedAttribute(*node, "margin");
     WarnUnsupportedAttribute(*node, "springref");
     WarnUnsupportedAttribute(*node, "frictionloss");
     WarnUnsupportedAttribute(*node, "user");
@@ -913,8 +914,6 @@ class MujocoParser {
       // that mjcf authors can configure this behavior.
     }
 
-    WarnUnsupportedAttribute(*node, "priority");
-
     std::string material;
     if (ParseStringAttribute(node, "material", &material)) {
       if (material_.contains(material)) {
@@ -957,11 +956,6 @@ class MujocoParser {
       }
     }
 
-    WarnUnsupportedAttribute(*node, "solmix");
-    WarnUnsupportedAttribute(*node, "solref");
-    WarnUnsupportedAttribute(*node, "solimp");
-    WarnUnsupportedAttribute(*node, "margin");
-    WarnUnsupportedAttribute(*node, "gap");
     WarnUnsupportedAttribute(*node, "fitscale");
     WarnUnsupportedAttribute(*node, "user");
 
@@ -1122,13 +1116,19 @@ class MujocoParser {
       }
     }
 
+    // Unsupported attributes are listed in the order from the MuJoCo docs:
+    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#body
     WarnUnsupportedAttribute(*node, "mocap");
+    WarnUnsupportedAttribute(*node, "gravcomp");
     WarnUnsupportedAttribute(*node, "user");
-
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "composite");
+    WarnUnsupportedElement(*node, "flexcomp");
+    WarnUnsupportedElement(*node, "plugin");
+    WarnUnsupportedElement(*node, "attach");
+    WarnUnsupportedElement(*node, "frame");
 
     // Parses child body elements.
     for (XMLElement* link_node = node->FirstChildElement("body"); link_node;
@@ -1157,10 +1157,19 @@ class MujocoParser {
       }
     }
 
+    // Unsupported attributes are listed in the order from the MuJoCo docs:
+    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#body
+    WarnUnsupportedAttribute(*node, "mocap");
+    WarnUnsupportedAttribute(*node, "gravcomp");
+    WarnUnsupportedAttribute(*node, "user");
     WarnUnsupportedElement(*node, "site");
     WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "composite");
+    WarnUnsupportedElement(*node, "flexcomp");
+    WarnUnsupportedElement(*node, "plugin");
+    WarnUnsupportedElement(*node, "attach");
+    WarnUnsupportedElement(*node, "frame");
 
     // Parses child body elements.
     for (XMLElement* link_node = node->FirstChildElement("body"); link_node;
@@ -1224,8 +1233,6 @@ class MujocoParser {
 
     WarnUnsupportedElement(*node, "material");
     WarnUnsupportedElement(*node, "site");
-    WarnUnsupportedElement(*node, "camera");
-    WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "pair");
     WarnUnsupportedElement(*node, "tendon");
     WarnUnsupportedElement(*node, "general");
@@ -1258,11 +1265,13 @@ class MujocoParser {
         ApplyDefaultAttributes(*default_mesh_.at(class_name), mesh_node);
       }
       WarnUnsupportedAttribute(*mesh_node, "smoothnormal");
+      WarnUnsupportedAttribute(*mesh_node, "maxhullvert");
       WarnUnsupportedAttribute(*mesh_node, "vertex");
-      // Note: "normal" and "face" are not supported either, but that lack of
-      // support is implied by us not supporting "vertex".
+      // Note: "normal", "face", and "texcoord" are not supported either, but
+      // that lack of support is implied by us not supporting "vertex".
       WarnUnsupportedAttribute(*mesh_node, "refpos");
       WarnUnsupportedAttribute(*mesh_node, "refquat");
+      WarnUnsupportedElement(*mesh_node, "plugin");
 
       std::string file;
       if (ParseStringAttribute(mesh_node, "file", &file)) {
@@ -1356,10 +1365,6 @@ class MujocoParser {
   }
 
   void ParseOption(XMLElement* node) {
-    WarnUnsupportedAttribute(*node, "timestep");
-    WarnUnsupportedAttribute(*node, "apirate");
-    WarnUnsupportedAttribute(*node, "impratio");
-
     Vector3d gravity;
     if (ParseVectorAttribute(node, "gravity", &gravity)) {
       // Note: This changes gravity for the entire plant (including models that
@@ -1367,33 +1372,26 @@ class MujocoParser {
       plant_->mutable_gravity_field().set_gravity_vector(gravity);
     }
 
+    // Unsupported attributes are listed in the order from the MuJoCo docs:
+    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#option
+
+    // Silently ignored: apirate, impratio, jacobian, o_margin, o_solref,
+    // o_solimp, o_friction, solver, iterations, tolerance, ls_iterations,
+    // ls_tolerance, noslip_iterations, noslip_tolerance, ccd_iterations,
+    // ccd_tolerance, sdf_iterations, sdf_tolerance, sdf_initpoints, flag.
+    WarnUnsupportedAttribute(*node, "timestep");
     WarnUnsupportedAttribute(*node, "wind");
     WarnUnsupportedAttribute(*node, "magnetic");
     WarnUnsupportedAttribute(*node, "density");
     WarnUnsupportedAttribute(*node, "viscosity");
-    WarnUnsupportedAttribute(*node, "o_margin");
-    WarnUnsupportedAttribute(*node, "o_solref");
-    WarnUnsupportedAttribute(*node, "o_solimp");
     WarnUnsupportedAttribute(*node, "integrator");
-    WarnUnsupportedAttribute(*node, "collision");
     WarnUnsupportedAttribute(*node, "cone");
-    WarnUnsupportedAttribute(*node, "jacobian");
-    WarnUnsupportedAttribute(*node, "solver");
-    WarnUnsupportedAttribute(*node, "iterations");
-    WarnUnsupportedAttribute(*node, "tolerance");
-    WarnUnsupportedAttribute(*node, "noslip_iterations");
-    WarnUnsupportedAttribute(*node, "noslip_tolerance");
-    WarnUnsupportedAttribute(*node, "mpr_iterations");
-    WarnUnsupportedAttribute(*node, "mpr_tolerance");
+    WarnUnsupportedAttribute(*node, "collision");
   }
 
   void ParseCompiler(XMLElement* node) {
     autolimits_ = node->BoolAttribute("autolimits", true);
-    WarnUnsupportedAttribute(*node, "boundmass");
-    WarnUnsupportedAttribute(*node, "boundinertia");
-    WarnUnsupportedAttribute(*node, "settotalmass");
-    WarnUnsupportedAttribute(*node, "balanceinertia");
-    WarnUnsupportedAttribute(*node, "strippath");
+
     std::string coordinate;
     if (ParseStringAttribute(node, "coordinate", &coordinate)) {
       if (coordinate != "local") {
@@ -1434,8 +1432,6 @@ class MujocoParser {
       meshdir_ = meshdir;
     }
 
-    WarnUnsupportedAttribute(*node, "fitaabb");
-
     std::string eulerseq;
     if (ParseStringAttribute(node, "eulerseq", &eulerseq)) {
       if (eulerseq.size() != 3 ||
@@ -1451,12 +1447,6 @@ class MujocoParser {
         eulerseq_ = eulerseq;
       }
     }
-
-    WarnUnsupportedAttribute(*node, "texturedir");
-    WarnUnsupportedAttribute(*node, "discardvisual");
-    WarnUnsupportedAttribute(*node, "convexhull");
-    // Note: we intentionally (silently) ignore "usethread" attribute.
-    WarnUnsupportedAttribute(*node, "fusestatic");
 
     bool flag;
     switch (node->QueryBoolAttribute("inertiafromgeom", &flag)) {
@@ -1479,6 +1469,18 @@ class MujocoParser {
         // Ok. No attribute to set.
         break;
     }
+
+    // Silently ignored: usethread, alignfree.
+    WarnUnsupportedAttribute(*node, "boundmass");
+    WarnUnsupportedAttribute(*node, "boundinertia");
+    WarnUnsupportedAttribute(*node, "settotalmass");
+    WarnUnsupportedAttribute(*node, "balanceinertia");
+    WarnUnsupportedAttribute(*node, "strippath");
+    WarnUnsupportedAttribute(*node, "fitaabb");
+    WarnUnsupportedAttribute(*node, "texturedir");
+    WarnUnsupportedAttribute(*node, "discardvisual");
+    WarnUnsupportedAttribute(*node, "convexhull");
+    WarnUnsupportedAttribute(*node, "fusestatic");
     WarnUnsupportedAttribute(*node, "exactmeshinertia");
     WarnUnsupportedAttribute(*node, "inertiagrouprange");
     WarnUnsupportedElement(*node, "lengthrange");
@@ -1555,13 +1557,10 @@ class MujocoParser {
         continue;
       }
 
+      // Silently ignored: solref, solimp, solreffriction, margin, gap.
       WarnUnsupportedAttribute(*pair_node, "class");
       WarnUnsupportedAttribute(*pair_node, "condim");
       WarnUnsupportedAttribute(*pair_node, "friction");
-      WarnUnsupportedAttribute(*pair_node, "solref");
-      WarnUnsupportedAttribute(*pair_node, "solimp");
-      WarnUnsupportedAttribute(*pair_node, "margin");
-      WarnUnsupportedAttribute(*pair_node, "gap");
 
       if (plant_->get_adjacent_bodies_collision_filters()) {
         // If true, then Finalize will declare a collision filter which
@@ -1703,9 +1702,8 @@ class MujocoParser {
         }
       }
 
+      // Silently ignored: solref, solimp.
       WarnUnsupportedAttribute(*connect_node, "active");
-      WarnUnsupportedAttribute(*connect_node, "solref");
-      WarnUnsupportedAttribute(*connect_node, "solimp");
     }
 
     // TODO(russt): "weld" and "distance" constraints are already supported by
@@ -1881,13 +1879,16 @@ class MujocoParser {
       ParseEquality(equality_node);
     }
 
-    WarnUnsupportedElement(*node, "size");
-    WarnUnsupportedElement(*node, "visual");
+    // Unsupported elements are listed in the order from the MuJoCo docs:
+    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#mjcf-reference
+    // Silently ignored: size, custom.
     WarnUnsupportedElement(*node, "statistic");
-    WarnUnsupportedElement(*node, "custom");
+    WarnUnsupportedElement(*node, "deformable");
     WarnUnsupportedElement(*node, "tendon");
     WarnUnsupportedElement(*node, "sensor");
     WarnUnsupportedElement(*node, "keyframe");
+    WarnUnsupportedElement(*node, "visual");
+    WarnUnsupportedElement(*node, "extension");
 
     return std::make_pair(model_instance_, model_name);
   }
