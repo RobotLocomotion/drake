@@ -330,7 +330,7 @@ class SpecialDiagram<T> final : public Diagram<T> {
   // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
   explicit SpecialDiagram(const SpecialDiagram<U>& other)
-      : SpecialDiagram<T>(SystemTypeTag<SpecialDiagram>{}, other) {}
+      : Diagram<T>(SystemTypeTag<SpecialDiagram>{}, other) {}
 };
 @endcode
 

@@ -1385,6 +1385,13 @@ Diagram<T>::ConvertScalarType() const {
         template Convert<NewType>(*old_system);
     DRAKE_DEMAND(new_system != nullptr);
 
+    // Because we called the scalar converter directly without going through
+    // System::ToScalarTypeMaybe, we need to re-implement its logic to copy any
+    // external constraints. Note that we must call this function on Diagram for
+    // reasons of access control, but it's really a System<NewType> function.
+    Diagram<NewType>::HandlePostConstructionScalarConversion(*old_system,
+                                                             new_system.get());
+
     // Update our mapping and take ownership.
     old_to_new_map[old_system.get()] = new_system.get();
     new_systems.push_back(std::move(new_system));
