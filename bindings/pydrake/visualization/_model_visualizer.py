@@ -3,6 +3,7 @@ from enum import Enum
 import logging
 import os
 from pathlib import Path
+import sys
 import time
 from webbrowser import open as _webbrowser_open
 
@@ -18,6 +19,7 @@ from pydrake.geometry import (
     Rgba,
     StartMeshcat,
 )
+from pydrake.geometry import RenderEngineVtkParams
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
 from pydrake.multibody.tree import (
@@ -351,7 +353,12 @@ class ModelVisualizer:
             camera_config.z_far = 3  # Show 3m of frustum.
             camera_config.fps = 1.0  # Ignored -- we're not simulating.
             is_unit_test = "TEST_SRCDIR" in os.environ
-            camera_config.show_rgb = not is_unit_test  # Pop up a local window.
+            if not is_unit_test:
+                # Pop up a local window.
+                camera_config.show_rgb = True
+                camera_config.renderer_class = RenderEngineVtkParams()
+                if "darwin" not in sys.platform:
+                    camera_config.renderer_class.backend = "GLX"
             ApplyCameraConfig(
                 config=camera_config,
                 builder=self._builder.builder())
