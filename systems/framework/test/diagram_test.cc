@@ -3783,9 +3783,12 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
   systems::DiagramBuilder<double> builder;
   auto sys1 = builder.AddSystem<ConstraintTestSystem<double>>();
   auto sys2 = builder.AddSystem<ConstraintTestSystem<double>>();
-
+  sys2->AddExternalConstraint(ExternalSystemConstraint{});
   auto diagram = builder.Build();
-  EXPECT_EQ(diagram->num_constraints(), 4);  // two from each system
+
+  // We have two constraints from each system, plus one external.
+  const int expected_num_constraints = 5;
+  EXPECT_EQ(diagram->num_constraints(), expected_num_constraints);
 
   auto context = diagram->CreateDefaultContext();
 
@@ -3845,7 +3848,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
 
   // Check that constraints survive ToAutoDiffXd.
   auto autodiff_diagram = diagram->ToAutoDiffXd();
-  EXPECT_EQ(autodiff_diagram->num_constraints(), 4);
+  EXPECT_EQ(autodiff_diagram->num_constraints(), expected_num_constraints);
   auto autodiff_context = autodiff_diagram->CreateDefaultContext();
   autodiff_context->SetTimeStateAndParametersFrom(*context);
   const SystemConstraint<AutoDiffXd>& autodiff_constraint =
@@ -3856,7 +3859,7 @@ GTEST_TEST(DiagramConstraintTest, SystemConstraintsTest) {
 
   // Check that constraints survive ToSymbolic.
   auto symbolic_diagram = diagram->ToSymbolic();
-  EXPECT_EQ(symbolic_diagram->num_constraints(), 4);
+  EXPECT_EQ(symbolic_diagram->num_constraints(), expected_num_constraints);
   auto symbolic_context = symbolic_diagram->CreateDefaultContext();
   symbolic_context->SetTimeStateAndParametersFrom(*context);
   const SystemConstraint<symbolic::Expression>& symbolic_constraint =

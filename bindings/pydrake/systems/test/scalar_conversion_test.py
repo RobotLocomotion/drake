@@ -1,14 +1,17 @@
 import pydrake.systems.scalar_conversion as mut
 
 import copy
+import itertools
 import unittest
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     DiagramBuilder,
+    DiagramBuilder_,
     LeafSystem_,
     SystemScalarConverter,
+    _ExternalSystemConstraint,
 )
 from pydrake.common.cpp_template import TemplateClass
 
@@ -54,6 +57,15 @@ class TestScalarConversion(unittest.TestCase):
             SystemScalarConverter.SupportedConversionPairs,
             conversion_pairs)
 
+    def _check_scalar_converted_example(self, system_T, system_U, T):
+        """Check that the ExampleSystem system_T is a correctly scalar-
+        converted copy of system_U and that it's scalar type is T."""
+        self.assertIsInstance(system_T, Example_[T])
+        self.assertIs(system_T.copied_from, system_U)
+        self.assertEqual(system_T.value, system_U.value)
+        self.assertEqual(system_T.get_name(), system_U.get_name())
+        self.assertEqual(system_T.num_constraints(), 1)
+
     def test_example_system(self):
         """Tests the Example_ system."""
         # Test template.
@@ -83,35 +95,62 @@ class TestScalarConversion(unittest.TestCase):
             self.assertTrue(converter.IsConvertible[T, U]())
 
         # Test calls that we have available for scalar conversion.
-        for T, U in SystemScalarConverter.SupportedConversionPairs:
+        for (T, U), use_maybe_variation in itertools.product(
+                SystemScalarConverter.SupportedConversionPairs, [False, True]):
             system_U = Example_[U](100)
+            system_T.set_name("example")
+            system_U._AddExternalConstraint(_ExternalSystemConstraint())
             self.assertIs(system_U.copied_from, None)
-            system_T = system_U.ToScalarType[T]()
-            self.assertIsInstance(system_T, Example_[T])
-            self.assertEqual(system_T.value, 100)
-            self.assertIs(system_T.copied_from, system_U)
+            if use_maybe_variation:
+                system_T = system_U.ToScalarTypeMaybe[T]()
+            else:
+                system_T = system_U.ToScalarType[T]()
+            self._check_scalar_converted_example(system_T, system_U, T)
             if T == AutoDiffXd:
-                system_ad = system_U.ToAutoDiffXd()
-                self.assertIsInstance(system_ad, Example_[T])
-                self.assertEqual(system_ad.value, 100)
-                self.assertIs(system_ad.copied_from, system_U)
-            if T == Expression:
-                system_sym = system_U.ToSymbolic()
-                self.assertIsInstance(system_sym, Example_[T])
-                self.assertEqual(system_sym.value, 100)
-                self.assertIs(system_sym.copied_from, system_U)
+                if use_maybe_variation:
+                    system_ad = system_U.ToAutoDiffXdMaybe()
+                else:
+                    system_ad = system_U.ToAutoDiffXd()
+                self._check_scalar_converted_example(system_ad, system_U, T)
+            elif T == Expression:
+                if use_maybe_variation:
+                    system_sym = system_U.ToSymbolicMaybe()
+                else:
+                    system_sym = system_U.ToSymbolic()
+                self._check_scalar_converted_example(system_sym, system_U, T)
 
     def test_example_system_in_diagram(self):
-        system_f = Example(value=10)
-        system_f.set_name("example")
-        builder_f = DiagramBuilder()
-        builder_f.AddSystem(system_f)
-        diagram_f = builder_f.Build()
-
-        diagram_ad = diagram_f.ToAutoDiffXd()
-        system_ad = diagram_ad.GetSubsystemByName(system_f.get_name())
-        self.assertIsInstance(system_ad, Example_[AutoDiffXd])
-        self.assertIs(system_ad.copied_from, system_f)
+        """Tests scalar conversion of a LeafSystem implemented in Python when
+        placed inside of a C++ Diagram."""
+        for (T, U), use_maybe_variation in itertools.product(
+                SystemScalarConverter.SupportedConversionPairs, [False, True]):
+            system_U = Example_[U](100)
+            system_U.set_name("example")
+            system_U._AddExternalConstraint(_ExternalSystemConstraint())
+            builder_U = DiagramBuilder_[U]()
+            builder_U.AddSystem(system_U)
+            diagram_U = builder_U.Build()
+            if use_maybe_variation:
+                diagram_T = diagram_U.ToScalarTypeMaybe[T]()
+            else:
+                diagram_T = diagram_U.ToScalarType[T]()
+            self.assertEqual(diagram_T.num_constraints(), 1)
+            (system_T,) = diagram_T.GetSystems()
+            self._check_scalar_converted_example(system_T, system_U, T)
+            if T == AutoDiffXd:
+                if use_maybe_variation:
+                    diagram_ad = diagram_U.ToAutoDiffXdMaybe()
+                else:
+                    diagram_ad = diagram_U.ToAutoDiffXd()
+                (system_ad,) = diagram_ad.GetSystems()
+                self._check_scalar_converted_example(system_ad, system_U, T)
+            elif T == Expression:
+                if use_maybe_variation:
+                    diagram_sym = diagram_U.ToSymbolicMaybe()
+                else:
+                    diagram_sym = diagram_U.ToSymbolic()
+                (system_sym,) = diagram_sym.GetSystems()
+                self._check_scalar_converted_example(system_sym, system_U, T)
 
     def test_define_convertible_system_api(self):
         """Tests more advanced API of `TemplateSystem.define`, both

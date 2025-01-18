@@ -55,6 +55,7 @@ from pydrake.systems.framework import (
     VectorBase, VectorBase_,
     TriggerType,
     VectorSystem, VectorSystem_,
+    _ExternalSystemConstraint,
     )
 from pydrake.systems.primitives import (
     Adder, Adder_,
@@ -846,6 +847,15 @@ class TestGeneral(unittest.TestCase):
         system = PassThrough_[T](Value("a"))
         value = system.AllocateInputAbstract(system.get_input_port())
         self.assertIsInstance(value, Value[str])
+
+    @numpy_compare.check_all_types
+    def test_constaints_api(self, T):
+        system = PassThrough_[T](1)
+        self.assertEqual(system.num_constraints(), 0)
+        system._AddExternalConstraint(constraint=_ExternalSystemConstraint())
+        self.assertEqual(system.num_constraints(), 1)
+        cloned = system.Clone()
+        self.assertEqual(cloned.num_constraints(), 1)
 
     def test_event_status(self):
         system = ZeroOrderHold(period_sec=0.1, vector_size=1)
