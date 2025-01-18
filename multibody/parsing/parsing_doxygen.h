@@ -34,6 +34,65 @@ for any unsupported MuJoCo XML elements or attributes at runtime.
 
 <!-- TODO(rpoyner-tri): document mujoco format support -->
 
+@subsection mjcf_ignored_silent Tags ignored silently
+
+The following attributes are specific to the MuJoCo solver; we have no plans to support them:
+- `/option/@jacobian`
+- `/option/@solver`
+- `/option/@impratio`
+- `/option/@o_margin`
+- `/option/@o_solref`
+- `/option/@o_solimp`
+- `/option/@iterations`
+- `/option/@tolerance`
+- `/option/@ls_iterations`
+- `/option/@ls_tolerance`
+- `/option/@noslip_iterations`
+- `/option/@noslip_tolerance`
+- `/option/@ccd_iterations`
+- `/option/@ccd_tolerance`
+- `/option/@sdf_iterations`
+- `/option/@sdf_tolerance`
+- `/option/@sdf_initpoints`
+- `/option/flag`
+- `/compiler/@usethread`
+- `/compiler/@alignfree`
+- `/size`
+- `/body/joint/@solreflimit`
+- `/body/joint/@solimplimit`
+- `/body/joint/@solreffriction`
+- `/body/joint/@solimpfriction`
+- `/body/joint/@margin`
+- `/body/geom/@priority`
+- `/body/geom/@solmix`
+- `/body/geom/@solref`
+- `/body/geom/@solimp`
+- `/body/geom/@margin`
+- `/body/geom/@gap`
+- `/contact/pair/@solref`
+- `/contact/pair/@solimp`
+- `/contact/pair/@solreffriction`
+- `/contact/pair/@margin`
+- `/contact/pair/@gap`
+- `/equality/connect/@solref`
+- `/equality/connect/@solimp`
+
+The following elements and attributes will not be supported by the MultibodyPlant parser (the require changes outside of MultibodyPlant):
+- `/option/@timestep`
+- `/option/@apirate`
+- `/option/@integrator`
+- `/option/@cone`
+- `/body/camera`
+- `/body/light`
+- `/body/@mocap`
+- `/body/plugin`
+- `/sensor`
+- `/keyframe`
+- `/visual`
+- `/custom`
+- `/extension`
+- `/actuator/plugin`
+
 @section multibody_parsing_sdf SDFormat Support
 Drake supports SDFormat files following the specification at
 http://sdformat.org/spec. As of this writing, the supported spec version is
