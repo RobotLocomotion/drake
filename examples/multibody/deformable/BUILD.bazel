@@ -120,7 +120,7 @@ drake_cc_binary(
         ":parallel_gripper_controller",
         "//geometry",
         "//geometry/proximity",
-        "//geometry/render_gl",
+        "//geometry/render_vtk",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",

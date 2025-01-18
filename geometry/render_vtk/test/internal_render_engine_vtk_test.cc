@@ -94,6 +94,7 @@ using Eigen::AngleAxisd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using Eigen::VectorXd;
 using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
@@ -1416,6 +1417,146 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
   expected_color_ = TestColor(renderer.default_diffuse());
 
   PerformCenterShapeTest(&renderer, "Default properties; don't care label");
+}
+
+// Performs the shape-centered-in-the-image test with a deformable mesh. In
+// particular, we register a deformable geometry with a single mesh (with or
+// without texture) and update the vertex positions and normals with some
+// curated values. We then render color, depth, and label images to verify they
+// match our expectations at certain pixel locations. Though this doesn't
+// explicitly confirm the vertex positions and normals of all vertices are
+// correctly updated, it proves some updates happened and provides strong
+// indications that the updates are as expected. Note that this only tests a
+// deformable geometry with a single render mesh, and we use the success of that
+// test to indicate vertices are correctly updated for all meshes.
+TEST_F(RenderEngineVtkTest, DeformableTest) {
+  for (const bool use_texture : {false, true}) {
+    Init(X_WC_, true /* add terrain*/);
+    ResetExpectations();
+    const fs::path filename =
+        use_texture
+            ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
+            : FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/box_no_mtl.obj");
+    const RenderLabel deformable_label(847);
+    expected_label_ = deformable_label;
+    const PerceptionProperties material = simple_material(use_texture);
+    // This is a dummy placeholder to allow invoking LoadRenderMeshesFromObj(),
+    // the actual diffuse color either comes from the mtl file or the
+    // perception properties.
+    const Rgba unused_diffuse_color(1, 1, 1, 1);
+    std::vector<geometry::internal::RenderMesh> render_meshes =
+        geometry::internal::LoadRenderMeshesFromObj(filename, material,
+                                                    unused_diffuse_color);
+    ASSERT_EQ(render_meshes.size(), 1);
+
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterDeformableVisual(id, render_meshes, material);
+    expected_color_ = use_texture ? kTextureColor : default_color_;
+    PerformCenterShapeTest(
+        renderer_.get(),
+        fmt::format("Deformable test, initial pose, has texture: {}",
+                    use_texture)
+            .c_str());
+
+    const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>&
+        initial_q_WG = render_meshes[0].positions;
+    const Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>&
+        initial_nhat_W = render_meshes[0].normals;
+    // Helper lambda to translate all vertex positions by the same vector.
+    auto translate_all_vertices = [&initial_q_WG](const Vector3d& t_W) {
+      auto result = initial_q_WG;
+      for (int i = 0; i < result.rows(); ++i) {
+        result.row(i) += t_W;
+      }
+      return result;
+    };
+    // Helper lambda to reshape an Nx3 matrix to a flat vector with 3N entries.
+    auto flatten = [](const Eigen::Matrix<double, Eigen::Dynamic, 3,
+                                          Eigen::RowMajor>& input) {
+      return VectorXd(Eigen::Map<const VectorXd>(input.data(), input.size()));
+    };
+
+    // The box has half edge length 1.0 and has its center and the center of the
+    // image. Assuming infinite resolution, when the box is translated by (t_x,
+    // 0, 0), we expect the center of the image to be part of the box if t_x is
+    // in the interval (-1, 1) and part of the terrain if t_x < -1 or if
+    // t_x > 1. With finite resolution, the boundary is somewhat "blurred".
+
+    // Pixel at center renders box.
+    renderer_->UpdateDeformableConfigurations(
+        id,
+        std::vector<VectorXd>{
+            flatten(translate_all_vertices(Vector3d(0.99, 0, 0)))},
+        std::vector<VectorXd>{flatten(initial_nhat_W)});
+    PerformCenterShapeTest(
+        renderer_.get(),
+        fmt::format("Deformable test, translation 1, has texture: {}",
+                    use_texture)
+            .c_str());
+
+    // Pixel at center renders the terrain.
+    expected_color_ = expected_outlier_color_;
+    expected_object_depth_ = expected_outlier_depth_;
+    expected_label_ = expected_outlier_label_;
+    renderer_->UpdateDeformableConfigurations(
+        id,
+        std::vector<VectorXd>{
+            flatten(translate_all_vertices(Vector3d(1.01, 0, 0.0)))},
+        std::vector<VectorXd>{flatten(initial_nhat_W)});
+    PerformCenterShapeTest(
+        renderer_.get(),
+        fmt::format("Deformable test, translation 2, has texture: {}",
+                    use_texture)
+            .c_str());
+
+    // Test normals are updated by making all vertex normals point along the
+    // direction of (1, 0, 1) in the world frame. As a result, angle between the
+    // normal and the light direction is 45 degrees.
+    auto new_nhat_W = initial_nhat_W;
+    for (int r = 0; r < new_nhat_W.rows(); ++r) {
+      new_nhat_W.row(r) = Vector3d(1, 0, 1).normalized();
+    }
+
+    // With the prescribed normals, we expect to see rgb values scaled by
+    // cos(π/4). We also expect the object depth to increase by 0.5 as we
+    // translate all vertices in the -z direction by 0.5.
+    ResetExpectations();
+    const TestColor original_color =
+        use_texture ? kTextureColor : default_color_;
+    const Vector3d original_rgb(original_color.r, original_color.g,
+                                original_color.b);
+    const Vector3d expected_rgb = original_rgb * std::cos(M_PI / 4.0);
+    expected_color_ = TestColor(static_cast<int>(expected_rgb[0]),
+                                static_cast<int>(expected_rgb[1]),
+                                static_cast<int>(expected_rgb[2]));
+    expected_label_ = deformable_label;
+    expected_object_depth_ += 0.5;
+
+    renderer_->UpdateDeformableConfigurations(
+        id,
+        std::vector<VectorXd>{
+            flatten(translate_all_vertices(Vector3d(0, 0, -0.5)))},
+        std::vector<VectorXd>{flatten(new_nhat_W)});
+    PerformCenterShapeTest(
+        renderer_.get(),
+        fmt::format("Deformable test, rotation, has texture: {}", use_texture)
+            .c_str());
+
+    // Now we remove the geometry, and the center pixel should again render the
+    // terrain.
+    renderer_->RemoveGeometry(id);
+    expected_color_ = expected_outlier_color_;
+    expected_object_depth_ = expected_outlier_depth_;
+    expected_label_ = expected_outlier_label_;
+    PerformCenterShapeTest(
+        renderer_.get(),
+        fmt::format("Deformable test, reset, has texture: {}", use_texture)
+            .c_str());
+
+    // Confirm that we can still add the geometry back.
+    renderer_->RegisterDeformableVisual(id, render_meshes, material);
+  }
 }
 
 // This class exists solely for the purpose of injecting an arbitrary texture
