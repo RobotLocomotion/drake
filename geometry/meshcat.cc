@@ -1635,7 +1635,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void AddSlider(std::string name, double min, double max, double step,
+  double AddSlider(std::string name, double min, double max, double step,
                  double value, std::string decrement_keycode,
                  std::string increment_keycode) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
@@ -1683,10 +1683,11 @@ class Meshcat::Impl {
       msgpack::pack(message_stream, data);
       app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
     });
+    return value;
   }
 
   // This function is public via the PIMPL.
-  void SetSliderValue(std::string name, double value) {
+  double SetSliderValue(std::string name, double value) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     {
@@ -1714,6 +1715,7 @@ class Meshcat::Impl {
       msgpack::pack(message_stream, data);
       app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
     });
+    return value;
   }
 
   // This function is public via the PIMPL.
@@ -2783,15 +2785,16 @@ bool Meshcat::DeleteButton(std::string name, bool strict) {
   return impl().DeleteButton(std::move(name), strict);
 }
 
-void Meshcat::AddSlider(std::string name, double min, double max, double step,
+double Meshcat::AddSlider(std::string name, double min, double max, double step,
                         double value, std::string decrement_keycode,
                         std::string increment_keycode) {
-  impl().AddSlider(std::move(name), min, max, step, value,
-                   std::move(decrement_keycode), std::move(increment_keycode));
+  return impl().AddSlider(std::move(name), min, max, step, value,
+                          std::move(decrement_keycode),
+                          std::move(increment_keycode));
 }
 
-void Meshcat::SetSliderValue(std::string name, double value) {
-  impl().SetSliderValue(std::move(name), value);
+double Meshcat::SetSliderValue(std::string name, double value) {
+  return impl().SetSliderValue(std::move(name), value);
 }
 
 double Meshcat::GetSliderValue(std::string_view name) const {

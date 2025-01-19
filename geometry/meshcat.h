@@ -783,9 +783,10 @@ class Meshcat {
    then keydown callbacks will be registered in the GUI that will move the
    slider by @p step (within the limits) when those buttons are pressed.
 
+   @returns the truncated and rounded value that was actually set.
    @throws std::exception if `name` has already been added as any type of
    control (e.g., either button or slider). */
-  void AddSlider(std::string name, double min, double max, double step,
+  double AddSlider(std::string name, double min, double max, double step,
                  double value, std::string decrement_keycode = "",
                  std::string increment_keycode = "");
 
@@ -793,8 +794,9 @@ class Meshcat {
    to the slider range and rounded to the nearest increment specified by the
    slider `step`. This will update the slider element in all connected meshcat
    browsers.
+   @returns the truncated and rounded value that was actually set.
    @throws std::exception if `name` is not a registered slider. */
-  void SetSliderValue(std::string name, double value);
+  double SetSliderValue(std::string name, double value);
 
   /** Gets the current `value` of the slider `name`.
    @throws std::exception if `name` is not a registered slider. */

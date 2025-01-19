@@ -986,6 +986,14 @@ GTEST_TEST(MeshcatTest, Sliders) {
 
   slider_names = meshcat.GetSliderNames();
   EXPECT_EQ(slider_names.size(), 0);
+
+  // AddSlider and SetSliderValue return the rounded/truncated values.
+  EXPECT_NEAR(meshcat.AddSlider("slider_rounded1", 0.2, 1.5, 0.1, 0.512), 0.5,
+              1e-14);
+  EXPECT_NEAR(meshcat.AddSlider("slider_rounded2", 0.2, 1.5, 0.1, 0.1), 0.2,
+              1e-14);
+  EXPECT_NEAR(meshcat.SetSliderValue("slider_rounded1", 1.7), 1.5, 1e-14);
+  EXPECT_NEAR(meshcat.SetSliderValue("slider_rounded2", 1.234), 1.2, 1e-14);
 }
 
 GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
