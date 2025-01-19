@@ -5,11 +5,14 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
 #include "drake/geometry/meshcat.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/solver_interface.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -31,14 +34,12 @@ output_ports:
 The output port is of size `plant.num_positions()`, and the order of its
 elements matches `plant.GetPositions()`.
 
-Only positions associated with joints get sliders. All other positions are fixed
-at nominal values.
-
-Beware that the output port of this system always provides the sliders' current
-values, even if evaluated by multiple different downstream input ports during a
-single computation.  If you need to have a synchronized view of the slider data,
-place a systems::ZeroOrderHold system between the sliders and downstream
-calculations.
+If the plant has constraints (@see AddMultibodyPlantConstraints), then a
+MathematicalProgram is used to resolve those constraints. The sliders in the
+gui will be updated (via a periodic or forced publish event) to reflect the
+resolved values. There is one nuance: the slider values in the gui only take
+values that are integer multiples of the slider step size; the constraint
+resolver solves to normal precision and publishes the nearest rounded values.
 
 @tparam_nonsymbolic_scalar
 @ingroup visualization */
@@ -80,6 +81,9 @@ class JointSliders final : public systems::LeafSystem<T> {
   @param increment_keycodes (Optional) A vector of length plant.num_positions()
   with keycodes to assign to increment the value of each individual joint
   slider. See Meshcat::AddSlider for more details.
+
+  @param time_step (Optional). The slider values are updated at discrete
+  intervals of this duration.
   */
   JointSliders(
       std::shared_ptr<geometry::Meshcat> meshcat,
@@ -89,7 +93,8 @@ class JointSliders final : public systems::LeafSystem<T> {
       std::variant<std::monostate, double, Eigen::VectorXd> upper_limit = {},
       std::variant<std::monostate, double, Eigen::VectorXd> step = {},
       std::vector<std::string> decrement_keycodes = {},
-      std::vector<std::string> increment_keycodes = {});
+      std::vector<std::string> increment_keycodes = {},
+      double time_step = 1 / 32.0);
 
   /** Removes our sliders from the associated meshcat instance.
 
@@ -131,20 +136,46 @@ class JointSliders final : public systems::LeafSystem<T> {
                       std::optional<double> timeout = std::nullopt,
                       std::string stop_button_keycode = "Escape") const;
 
-  /** Sets all robot positions (corresponding to joint positions and potentially
-  positions not associated with any joint) to the values in `q`.  The meshcat
-  sliders associated with any joint positions described by `q` will have their
-  value updated.  Additionally, the "initial state" vector of positions tracked
-  by this instance will be updated to the values in `q`.  This "initial state"
-  vector update will persist even if sliders are removed (e.g., via Delete).
+  /** Sets all robot positions (corresponding to joint positions and
+  potentially positions not associated with any joint) to the values in `q`.
+  The meshcat sliders associated with any joint positions described by `q`
+  will have their value updated. This _does not_ update the value of the
+  sliders in the context; see the SetPositions() overload which takes a
+  Context for that.
 
   @param q A vector whose length is equal to the associated
   MultibodyPlant::num_positions().
   */
+  DRAKE_DEPRECATED("2025-05-01", "Use SetPositions(context, q) instead.")
   void SetPositions(const Eigen::VectorXd& q);
 
+  /** Sets all robot positions (corresponding to joint positions and potentially
+  positions not associated with any joint) to the values in `q`.  The meshcat
+  sliders associated with any joint positions described by `q` will have their
+  value updated.
+
+  @param q A vector whose length is equal to the associated
+  MultibodyPlant::num_positions().
+  */
+  void SetPositions(systems::Context<T>* context, const Eigen::VectorXd& q);
+
+  /** Returns true if the sliders have constraints to solve, not including the
+  slider range limits which are enforced automatically. */
+  bool has_constraints_to_solve() const { return has_constraints_to_solve_; }
+
  private:
-  void CalcOutput(const systems::Context<T>&, systems::BasicVector<T>*) const;
+  std::pair<Eigen::VectorXd, solvers::SolutionResult> ResolveConstraints(
+      const Eigen::Ref<const Eigen::VectorXd>& target_values,
+      const Eigen::Ref<const Eigen::VectorXd>& previous_values,
+      const Eigen::Ref<const Eigen::VectorXd>& initial_guess) const;
+
+  Eigen::VectorXd RoundSliderValues(
+      const Eigen::Ref<const Eigen::VectorXd>& values) const;
+
+  systems::EventStatus Update(const systems::Context<T>& context,
+                              systems::DiscreteValues<T>* updates) const;
+
+  systems::EventStatus Publish(const systems::Context<T>& context) const;
 
   typename systems::LeafSystem<T>::GraphvizFragment DoGetGraphvizFragment(
       const typename systems::LeafSystem<T>::GraphvizFragmentParams& params)
@@ -152,11 +183,23 @@ class JointSliders final : public systems::LeafSystem<T> {
 
   std::shared_ptr<geometry::Meshcat> meshcat_;
   const MultibodyPlant<T>* const plant_;
+  std::shared_ptr<const MultibodyPlant<double>> double_plant_{nullptr};
   const std::map<int, std::string> position_names_;
-  /* The nominal values for all positions; positions with sliders will not use
-   their nominal value except for defining the slider's initial value. */
-  Eigen::VectorXd nominal_value_;
+  Eigen::VectorXd lower_{}, upper_{}, step_{};
   std::atomic<bool> is_registered_;
+  bool has_constraints_to_solve_{false};
+  systems::DiscreteStateIndex slider_values_index_;
+  /* If has_constraints_to_solve_ == true, then we keep an additional copy of
+  the positions as state. The slider values are restricted to multiples of the
+  step size, but may not satisfy the plant constraints. The constrained_values
+  are approximations of the slider values which do satisfy the plant
+  constraints. */
+  systems::DiscreteStateIndex constrained_values_index_;
+  systems::DiscreteStateIndex result_index_;
+  mutable solvers::MathematicalProgram prog_;
+  solvers::VectorXDecisionVariable q_;
+  std::unique_ptr<const solvers::SolverInterface> solver_{};
+  std::unique_ptr<systems::Context<double>> double_plant_context_{};
 };
 
 }  // namespace meshcat

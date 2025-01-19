@@ -406,7 +406,8 @@ class ModelVisualizer:
             self._diagram.plant().SetPositions(
                 self._diagram.plant().GetMyContextFromRoot(self._context),
                 position)
-            self._sliders.SetPositions(position)
+            self._sliders.SetPositions(
+                self._sliders.GetMyContextFromRoot(self._context), position)
 
         # Use Simulator to dispatch initialization events.
         # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
@@ -523,8 +524,14 @@ class ModelVisualizer:
                 self._diagram.plant().SetPositions(
                     self._diagram.plant().GetMyContextFromRoot(self._context),
                     position)
-                self._sliders.SetPositions(position)
+                self._sliders.SetPositions(
+                    self._sliders.GetMyContextFromRoot(self._context),
+                    position)
                 self._diagram.ForcedPublish(self._context)
+
+        sliders_context = self._sliders.GetMyContextFromRoot(self._context)
+        plant_context = self._diagram.plant().GetMyContextFromRoot(
+            self._context)
 
         # Everything is finally fully configured. We can open the window now.
         # TODO(jwnimmer-tri) The browser_new config knob would probably make
@@ -564,13 +571,17 @@ class ModelVisualizer:
                     self._meshcat.DeleteButton(stop_button_name)
                     slider_values = self._get_slider_values()
                     self._reload()
+                    sliders_context = self._sliders.GetMyContextFromRoot(
+                        self._context)
+                    plant_context = self._diagram.plant().GetMyContextFromRoot(
+                        self._context)
                     self._set_slider_values(slider_values)
                     self._meshcat.AddButton(stop_button_name, "Escape")
-                q = self._sliders.get_output_port().Eval(
-                    self._sliders.GetMyContextFromRoot(self._context))
-                self._diagram.plant().SetPositions(
-                    self._diagram.plant().GetMyContextFromRoot(self._context),
-                    q)
+                updated = self._sliders.EvalUniquePeriodicDiscreteUpdate(
+                    sliders_context)
+                sliders_context.SetDiscreteState(updated)
+                q = self._sliders.get_output_port().Eval(sliders_context)
+                self._diagram.plant().SetPositions(plant_context, q)
                 self._diagram.ForcedPublish(self._context)
                 if loop_once or has_clicks(stop_button_name):
                     break

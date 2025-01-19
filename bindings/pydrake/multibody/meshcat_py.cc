@@ -1,5 +1,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -167,20 +168,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
   {
     using Class = JointSliders<T>;
     constexpr auto& cls_doc = doc.JointSliders;
-    DefineTemplateClassWithDefault<JointSliders<T>, LeafSystem<T>>(
-        m, "JointSliders", param, doc.JointSliders.doc)
+    auto cls = DefineTemplateClassWithDefault<JointSliders<T>, LeafSystem<T>>(
+        m, "JointSliders", param, doc.JointSliders.doc);
+    cls  // BR
         .def(py::init<std::shared_ptr<geometry::Meshcat>,
                  const MultibodyPlant<T>*, std::optional<Eigen::VectorXd>,
                  std::variant<std::monostate, double, Eigen::VectorXd>,
                  std::variant<std::monostate, double, Eigen::VectorXd>,
                  std::variant<std::monostate, double, Eigen::VectorXd>,
-                 std::vector<std::string>, std::vector<std::string>>(),
+                 std::vector<std::string>, std::vector<std::string>, double>(),
             py::arg("meshcat"), py::arg("plant"),
             py::arg("initial_value") = py::none(),
             py::arg("lower_limit") = py::none(),
             py::arg("upper_limit") = py::none(), py::arg("step") = py::none(),
             py::arg("decrement_keycodes") = std::vector<std::string>(),
             py::arg("increment_keycodes") = std::vector<std::string>(),
+            py::arg("time_step") = 1.0 / 32.0,
             // Keep alive, reference: `self` keeps `plant` alive.
             py::keep_alive<1, 3>(),  // BR
             cls_doc.ctor.doc)
@@ -191,8 +194,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
             // This is a long-running function that sleeps; for both reasons, we
             // must release the GIL.
             py::call_guard<py::gil_scoped_release>(), cls_doc.Run.doc)
-        .def("SetPositions", &Class::SetPositions, py::arg("q"),
-            cls_doc.SetPositions.doc);
+        .def("SetPositions",
+            py::overload_cast<systems::Context<T>*, const Eigen::VectorXd&>(
+                &Class::SetPositions),
+            py::arg("context"), py::arg("q"), cls_doc.SetPositions.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("SetPositions",
+        WrapDeprecated(doc.JointSliders.SetPositions.doc_deprecated,
+            py::overload_cast<const Eigen::VectorXd&>(&Class::SetPositions)),
+        py::arg("q"), doc.JointSliders.SetPositions.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 }
 }  // namespace
