@@ -167,6 +167,7 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
     ],
@@ -446,6 +447,7 @@ drake_py_unittest(
     deps = [
         ":meshcat_py",
         ":parsing_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
