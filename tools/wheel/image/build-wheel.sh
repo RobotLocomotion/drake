@@ -37,6 +37,18 @@ chrpath()
     done
 }
 
+# Helper function to copy the copyright text from an Ubuntu package into the
+# wheel's documentation.
+copy_ubuntu_license()
+{
+    package_name=$1
+    mkdir -p ${WHEEL_DIR}/pydrake/doc/${package_name}
+    # TODO(jwnimmer-tri) Is there a simple way to install something slightly
+    # more direct (e.g., LICENSE text itself) instead of the copyright file?
+    cp /usr/share/doc/${package_name}/copyright \
+        ${WHEEL_DIR}/pydrake/doc/${package_name}/copyright
+}
+
 ###############################################################################
 
 readonly WHEEL_DIR=/opt/drake-wheel-build/wheel
@@ -65,8 +77,12 @@ fi
 
 # Copy the license files from third party dependencies we vendor.
 if [[ "$(uname)" == "Linux" ]]; then
-  cp -r -t ${WHEEL_DIR}/pydrake/doc \
-      /opt/drake-dependencies/licenses/*
+    # The drake/tools/wheel/test/tests/libs-test.py must be kept in sync with
+    # this list. The library name in that test is commented here as an EOL hint.
+    copy_ubuntu_license libblas-dev    # libblas
+    copy_ubuntu_license liblapack-dev  # liblapack
+    copy_ubuntu_license libgl1         # libOpenGL, libGLdispatch, libGLX
+    copy_ubuntu_license libgfortran5   # libgfortran, libquadmath, libgomp
 fi
 
 # MOSEK is "sort of" third party, but is procured as part of Drake's build and
