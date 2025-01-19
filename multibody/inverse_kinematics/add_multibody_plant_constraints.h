@@ -10,11 +10,12 @@ namespace multibody {
 
 /** For all kinematic constraints associated with `plant` adds a corresponding
 solver::Constraint to `prog`, using decision variables `q` to represent the
-generalized positions of the plant.
+generalized positions of the plant. The `plant` must stay alive for the
+lifetime of the added constraints.
 
-Adds joint limits constraints, unit quaternion constraints, and constraints for
-any locked joints (via Joint::Lock()). Note that you must pass a valid
-`plant_context` to use joint locking.
+Adds joint limits constraints (always), unit quaternion constraints, and
+constraints for any locked joints (via Joint::Lock()). Note that you must pass
+a valid `plant_context` to use joint locking.
 
 Adds constraints for coupler, distance, ball, and weld constraints. The
 distance constraint is implemented here as a hard kinematic constraint (i.e.,

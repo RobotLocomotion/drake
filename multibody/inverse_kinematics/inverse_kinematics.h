@@ -71,12 +71,12 @@ class InverseKinematics {
    * auto plant_context = &(diagram->GetMutableSubsystemContext(items.plant,
    * diagram_context.get()));
    * ```
-   * This context will be modified during calling ik.prog.Solve(...). When
-   * Solve() returns `result`, context will store the optimized posture, namely
-   * plant.GetPositions(*context) will be the same as in
-   * result.GetSolution(ik.q()). The user could then use this context to perform
-   * kinematic computation (like computing the position of the end-effector
-   * etc.).
+   * This context will be modified during calling solvers::Solve(ik.prog, ...).
+   * When Solve() returns `result`, context will store the optimized posture,
+   * namely plant.GetPositions(*context) will be the same as in
+   * result.GetSolution(ik.q()). The user could then use this context to
+   * perform kinematic computation (like computing the position of the
+   * end-effector etc.).
    * @param with_joint_limits If set to true, then the constructor imposes the
    * joint limits (obtained from plant.GetPositionLowerLimits() and
    * plant.GetPositionUpperLimits(), and from any body/joint locks set in

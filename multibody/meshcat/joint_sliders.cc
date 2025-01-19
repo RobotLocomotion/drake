@@ -14,6 +14,8 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/meshcat_graphviz.h"
+#include "drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h"
+#include "drake/solvers/choose_best_solver.h"
 
 namespace drake {
 namespace multibody {
@@ -64,8 +66,7 @@ bool HasAnyDuplicatedValues(const std::map<int, std::string>& data) {
 // "true".
 template <typename T>
 std::map<int, std::string> GetPositionNames(
-    const MultibodyPlant<T>* plant,
-    bool use_model_instance_name = false) {
+    const MultibodyPlant<T>* plant, bool use_model_instance_name = false) {
   DRAKE_THROW_UNLESS(plant != nullptr);
 
   // Map all joints into the positions-to-name result.
@@ -76,17 +77,17 @@ std::map<int, std::string> GetPositionNames(
       const int position_index = joint.position_start() + j;
       std::string description;
       if (joint.num_positions() > 1) {
-        description = fmt::format("{}_{}",
-            joint.name(), joint.position_suffix(j));
+        description =
+            fmt::format("{}_{}", joint.name(), joint.position_suffix(j));
       } else {
         description = joint.name();
       }
       if (use_model_instance_name) {
-        description += fmt::format("/{}",
-            plant->GetModelInstanceName(joint.model_instance()));
+        description += fmt::format(
+            "/{}", plant->GetModelInstanceName(joint.model_instance()));
       }
-      const bool inserted = result.insert({
-          position_index, std::move(description)}).second;
+      const bool inserted =
+          result.insert({position_index, std::move(description)}).second;
       DRAKE_DEMAND(inserted);
     }
   }
@@ -105,25 +106,27 @@ std::map<int, std::string> GetPositionNames(
 // If a VectorXd is given, it's checked for size and then returned unchanged.
 // If a double is given, it's broadcast to size and returned.
 // If no value is given, then the default_value is broadcast instead.
-VectorXd Broadcast(
-    const char* diagnostic_name, double default_value, int num_positions,
-    std::variant<std::monostate, double, VectorXd> value) {
-  return std::visit<VectorXd>(overloaded{
-    [num_positions, default_value](std::monostate) {
-      return VectorXd::Constant(num_positions, default_value);
-    },
-    [num_positions](double arg) {
-      return VectorXd::Constant(num_positions, arg);
-    },
-    [num_positions, diagnostic_name](VectorXd&& arg) {
-      if (arg.size() != num_positions) {
-        throw std::logic_error(fmt::format(
-            "Expected {} of size {}, but got size {} instead",
-            diagnostic_name, num_positions, arg.size()));
-      }
-      return std::move(arg);
-    },
-  }, std::move(value));
+VectorXd Broadcast(const char* diagnostic_name, double default_value,
+                   int num_positions,
+                   std::variant<std::monostate, double, VectorXd> value) {
+  return std::visit<VectorXd>(
+      overloaded{
+          [num_positions, default_value](std::monostate) {
+            return VectorXd::Constant(num_positions, default_value);
+          },
+          [num_positions](double arg) {
+            return VectorXd::Constant(num_positions, arg);
+          },
+          [num_positions, diagnostic_name](VectorXd&& arg) {
+            if (arg.size() != num_positions) {
+              throw std::logic_error(
+                  fmt::format("Expected {} of size {}, but got size {} instead",
+                              diagnostic_name, num_positions, arg.size()));
+            }
+            return std::move(arg);
+          },
+      },
+      std::move(value));
 }
 
 }  // namespace
@@ -136,30 +139,29 @@ JointSliders<T>::JointSliders(
     std::variant<std::monostate, double, VectorXd> upper_limit,
     std::variant<std::monostate, double, VectorXd> step,
     std::vector<std::string> decrement_keycodes,
-    std::vector<std::string> increment_keycodes)
+    std::vector<std::string> increment_keycodes, double time_step)
     : meshcat_(std::move(meshcat)),
       plant_(plant),
       position_names_(GetPositionNames(plant)),
-      nominal_value_(
-          std::move(initial_value).value_or(GetDefaultPositions(plant))),
       is_registered_{true} {
   DRAKE_THROW_UNLESS(meshcat_ != nullptr);
   DRAKE_THROW_UNLESS(plant_ != nullptr);
 
   const int nq = plant->num_positions();
-  if (nominal_value_.size() != nq) {
+  Eigen::VectorXd nominal_value =
+      std::move(initial_value).value_or(GetDefaultPositions(plant));
+  if (nominal_value.size() != nq) {
     throw std::logic_error(fmt::format(
-        "Expected initial_value of size {}, but got size {} instead",
-        nq, nominal_value_.size()));
+        "Expected initial_value of size {}, but got size {} instead", nq,
+        nominal_value.size()));
   }
 
   // Default any missing arguments; check (or widen) them to be of size == nq.
-  const VectorXd lower_broadcast = Broadcast(
-      "lower_limit", -10.0,  nq, std::move(lower_limit));
-  const VectorXd upper_broadcast = Broadcast(
-      "upper_limit",  10.0,  nq, std::move(upper_limit));
-  const VectorXd step_broadcast = Broadcast(
-      "step",          0.01, nq, std::move(step));
+  const VectorXd lower_broadcast =
+      Broadcast("lower_limit", -10.0, nq, std::move(lower_limit));
+  const VectorXd upper_broadcast =
+      Broadcast("upper_limit", 10.0, nq, std::move(upper_limit));
+  step_ = Broadcast("step", 0.01, nq, std::move(step));
 
   if (decrement_keycodes.size() &&
       static_cast<int>(decrement_keycodes.size()) != nq) {
@@ -178,19 +180,16 @@ JointSliders<T>::JointSliders(
   }
 
   // Add one slider per joint position.
-  const VectorXd lower_plant = plant_->GetPositionLowerLimits();
-  const VectorXd upper_plant = plant_->GetPositionUpperLimits();
+  lower_ = plant_->GetPositionLowerLimits();
+  upper_ = plant_->GetPositionUpperLimits();
   for (const auto& [position_index, slider_name] : position_names_) {
     DRAKE_DEMAND(position_index >= 0);
     DRAKE_DEMAND(position_index < nq);
-    const double one_min = std::max(
-        lower_broadcast[position_index],
-        lower_plant[position_index]);
-    const double one_max = std::min(
-        upper_broadcast[position_index],
-        upper_plant[position_index]);
-    const double one_step = step_broadcast[position_index];
-    const double one_value = nominal_value_[position_index];
+    lower_[position_index] =
+        std::max(lower_broadcast[position_index], lower_[position_index]);
+    upper_[position_index] =
+        std::min(upper_broadcast[position_index], upper_[position_index]);
+    const double one_value = nominal_value[position_index];
     const std::string one_decrement_keycode =
         decrement_keycodes.size()
             ? std::move(decrement_keycodes[position_index])
@@ -199,17 +198,120 @@ JointSliders<T>::JointSliders(
         increment_keycodes.size()
             ? std::move(increment_keycodes[position_index])
             : "";
-    meshcat_->AddSlider(slider_name, one_min, one_max, one_step, one_value,
-                        one_decrement_keycode, one_increment_keycode);
+    meshcat_->AddSlider(slider_name, lower_[position_index],
+                        upper_[position_index], step_[position_index],
+                        one_value, one_decrement_keycode,
+                        one_increment_keycode);
   }
 
-  // Declare the output port.
-  auto& output = this->DeclareVectorOutputPort(
-      "positions", nq, &JointSliders<T>::CalcOutput);
+  slider_values_index_ = this->DeclareDiscreteState(nominal_value.cast<T>());
 
-  // The port is always marked out-of-date, so that the slider values will be
-  // fetched every time the output port is needed in a computation.
-  output.disable_caching_by_default();
+  this->DeclarePeriodicDiscreteUpdateEvent(time_step, 0.0,
+                                           &JointSliders<T>::Update);
+
+  // Setup a mathematical program to resolve constraints.
+  const MultibodyPlant<double>* double_plant{nullptr};
+  if constexpr (std::is_same_v<T, double>) {
+    double_plant = plant_;
+  } else {
+    owned_plant_ = systems::System<T>::template ToScalarType<double>(*plant_);
+    double_plant = owned_plant_.get();
+  }
+  plant_context_ = double_plant->CreateDefaultContext();
+  q_ = prog_.NewContinuousVariables(nq, "q");
+  auto bindings = AddMultibodyPlantConstraints(*double_plant, q_, &prog_,
+                                               plant_context_.get());
+  // AddMultibodyPlantConstraints always added joint limit constraints. If the
+  // only constraint added is the joint limits, then we don't need to call
+  // Solve() in Update(). The sliders will trivially respect the joint limits.
+  has_constraints_to_solve_ = bindings.size() > 1;
+
+  if (has_constraints_to_solve_) {
+    // Replace the joint limits from AddMultibodyPlantConstraints with the
+    // potentially tighter limits from the sliders.
+    bool removed_joint_limits = false;
+    for (const auto& binding : prog_.bounding_box_constraints()) {
+      if (binding.evaluator()->get_description() == "Joint limits") {
+        prog_.RemoveConstraint(binding);
+        removed_joint_limits = true;
+        break;
+      }
+    }
+    DRAKE_DEMAND(removed_joint_limits);
+    prog_.AddBoundingBoxConstraint(lower_, upper_, q_)
+        .evaluator()
+        ->set_description("Slider limits");
+
+    // Make the solver.
+    const solvers::SolverId solver_id = solvers::ChooseBestSolver(prog_);
+    drake::log()->debug("JointSliders will use solver_id {}", solver_id);
+    solver_ = solvers::MakeSolver(solver_id);
+
+    // Solve the problem once.
+    Eigen::VectorXd constrained_values(nq);
+    solvers::SolutionResult result;
+    std::tie(constrained_values, result) =
+        ResolveConstraints(nominal_value, nominal_value, nominal_value);
+    if (result != solvers::SolutionResult::kSolutionFound) {
+      throw std::runtime_error(
+          "JointSliders failed to resolve the constraints at startup.");
+    }
+    constrained_values_index_ =
+        this->DeclareDiscreteState(constrained_values.cast<T>());
+    result_index_ =
+        this->DeclareDiscreteState(Vector1<T>{static_cast<T>(result)});
+    this->DeclareStateOutputPort("positions", constrained_values_index_);
+
+    // We only need to publish updated values if ResolveConstraints() is making
+    // changes.
+    this->DeclarePeriodicPublishEvent(time_step, 0.0,
+                                      &JointSliders<T>::Publish);
+    this->DeclareForcedPublishEvent(&JointSliders<T>::Publish);
+  } else {
+    this->DeclareStateOutputPort("positions", slider_values_index_);
+  }
+}
+
+template <typename T>
+std::pair<Eigen::VectorXd, solvers::SolutionResult>
+JointSliders<T>::ResolveConstraints(
+    const Eigen::Ref<const VectorXd>& target_values,
+    const Eigen::Ref<const VectorXd>& previous_values,
+    const Eigen::Ref<const VectorXd>& initial_guess) const {
+  // To resolve constraints, we'll use an IK problem formulated as:
+  // min_q |q - q_sliders|^2
+  // s.t. q[just_updated_index] == q_sliders[just_updated_index]
+  //      additional constraints from AddMultibodyPlantConstraints already
+  //      added to prog_ in the constructor.
+  solvers::Binding<solvers::QuadraticCost> cost =
+      prog_.AddQuadraticErrorCost(1.0, target_values, q_);
+  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+  for (int i = 0; i < plant_->num_positions(); ++i) {
+    if (target_values[i] != previous_values[i]) {
+      constraints.push_back(prog_.AddBoundingBoxConstraint(
+          target_values[i], target_values[i], q_[i]));
+    }
+  }
+  solvers::MathematicalProgramResult result{};
+  solver_->Solve(prog_, initial_guess, {}, &result);
+  prog_.RemoveCost(cost);
+  for (const auto& constraint : constraints) {
+    prog_.RemoveConstraint(constraint);
+  }
+  return {result.GetSolution(q_), result.get_solution_result()};
+}
+
+template <typename T>
+Eigen::VectorXd JointSliders<T>::RoundSliderValues(
+    const Eigen::Ref<const Eigen::VectorXd>& values) const {
+  Eigen::VectorXd result = values;
+  // This should match the logic in meshcat_->SetSliderValue.
+  for (int i = 0; i < plant_->num_positions(); ++i) {
+    result[i] = std::max(result[i], lower_[i]);
+    result[i] = std::min(result[i], upper_[i]);
+    result[i] = std::round(result[i] / step_[i]) * step_[i];
+  }
+  return result;
 }
 
 template <typename T>
@@ -235,20 +337,70 @@ JointSliders<T>::~JointSliders() {
 }
 
 template <typename T>
-void JointSliders<T>::CalcOutput(
-    const Context<T>&, BasicVector<T>* output) const {
-  const int nq = plant_->num_positions();
-  DRAKE_DEMAND(output->size() == nq);
-  for (int i = 0; i < nq; ++i) {
-    (*output)[i] = nominal_value_[i];
-  }
+systems::EventStatus JointSliders<T>::Update(
+    const systems::Context<T>& context,
+    systems::DiscreteValues<T>* updates) const {
+  const VectorX<T>& slider_values =
+      context.get_discrete_state().value(slider_values_index_);
+  Eigen::VectorBlock<VectorX<T>> new_slider_values =
+      updates->get_mutable_value(slider_values_index_);
+
+  new_slider_values = slider_values;
   if (is_registered_) {
     for (const auto& [position_index, slider_name] : position_names_) {
       // TODO(jwnimmer-tri) If CalcOutput is in flight concurrently with a
       // call to Delete, we might race and ask for a deleted slider value.
-      (*output)[position_index] = meshcat_->GetSliderValue(slider_name);
+      new_slider_values[position_index] = meshcat_->GetSliderValue(slider_name);
     }
   }
+
+  if (has_constraints_to_solve_) {
+    const VectorX<T>& constrained_values =
+        context.get_discrete_state().value(constrained_values_index_);
+    Eigen::VectorBlock<VectorX<T>> new_constrained_values =
+        updates->get_mutable_value(constrained_values_index_);
+    VectorXd solved_values(new_constrained_values.size());
+
+    if (new_slider_values != slider_values) {
+      // Then something changed in the gui. Resolve the constraints.
+      solvers::SolutionResult result;
+      std::tie(solved_values, result) =
+          ResolveConstraints(ExtractDoubleOrThrow(new_slider_values.eval()),
+                             ExtractDoubleOrThrow(slider_values),
+                             ExtractDoubleOrThrow(constrained_values));
+      T previous_result = context.get_discrete_state().value(result_index_)[0];
+      // We only log a warning if we've switched from success to failure.
+      if (static_cast<T>(result) != previous_result &&
+          result != solvers::SolutionResult::kSolutionFound) {
+        log()->warn("JointSliders failed to resolve the constraints.");
+      }
+      updates->set_value(result_index_, Vector1<T>{static_cast<T>(result)});
+      new_constrained_values = solved_values;
+      new_slider_values = RoundSliderValues(solved_values);
+    } else {
+      new_constrained_values = constrained_values;
+    }
+  }
+  return systems::EventStatus::Succeeded();
+}
+
+template <typename T>
+systems::EventStatus JointSliders<T>::Publish(
+    const systems::Context<T>& context) const {
+  if (is_registered_) {
+    const VectorX<T>& slider_values =
+        context.get_discrete_state().value(slider_values_index_);
+    for (const auto& [position_index, slider_name] : position_names_) {
+      // TODO(russt): I considered publishing only the slider values which did
+      // _not_ change in the last Update(), reasoning that the changed values
+      // are the ones being actively modified by the user in the gui. I don't
+      // want to fight with the user. But preliminary testing suggests that
+      // setting all values is fine; and it's certainly simpler.
+      meshcat_->SetSliderValue(
+          slider_name, ExtractDoubleOrThrow(slider_values[position_index]));
+    }
+  }
+  return systems::EventStatus::Succeeded();
 }
 
 template <typename T>
@@ -266,8 +418,8 @@ JointSliders<T>::DoGetGraphvizFragment(
 
 template <typename T>
 Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
-                                std::optional<double> timeout,
-                                std::string stop_button_keycode) const {
+                                     std::optional<double> timeout,
+                                     std::string stop_button_keycode) const {
   // Make a context and create reference shortcuts to some pieces of it.
   // TODO(jwnimmer-tri) If the user has forgotten to add the plant or sliders
   // to the diagram, our error message here is awful. Ideally, we should be
@@ -276,8 +428,8 @@ Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
   // question.
   std::unique_ptr<Context<T>> root_context = diagram.CreateDefaultContext();
   const auto& diagram_context = *root_context;
-  const auto& sliders_context = this->GetMyContextFromRoot(*root_context);
-  auto& plant_context = plant_->GetMyMutableContextFromRoot(&*root_context);
+  auto& sliders_context = this->GetMyMutableContextFromRoot(root_context.get());
+  auto& plant_context = plant_->GetMyMutableContextFromRoot(root_context.get());
 
   // Add the Stop button.
   constexpr char kButtonName[] = "Stop JointSliders";
@@ -313,9 +465,12 @@ Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
 
     // If the sliders have not changed, avoid invalidating the context.
     const auto& old_positions = plant_->GetPositions(plant_context);
+    const systems::DiscreteValues<T>& updated =
+        this->EvalUniquePeriodicDiscreteUpdate(sliders_context);
+    sliders_context.SetDiscreteState(updated);
     const auto& new_positions = this->get_output_port().Eval(sliders_context);
     if (new_positions == old_positions) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      std::this_thread::sleep_for(std::chrono::duration<double>(1.0 / 32.0));
       continue;
     }
 
@@ -332,19 +487,53 @@ void JointSliders<T>::SetPositions(const Eigen::VectorXd& q) {
   const int nq = plant_->num_positions();
   if (q.size() != nq) {
     throw std::logic_error(fmt::format(
-        "Expected q of size {}, but got size {} instead",
-        nq, q.size()));
+        "Expected q of size {}, but got size {} instead", nq, q.size()));
   }
-  /* For *all* positions provided in q, update their value in nominal_value_. */
-  nominal_value_ = q;
   if (is_registered_) {
     // For items with an associated slider, update the meshcat UI.
     // TODO(jwnimmer-tri) If SetPositions is in flight concurrently with a
     // call to Delete, we might race and ask for a deleted slider value.
     for (const auto& [position_index, slider_name] : position_names_) {
-      meshcat_->SetSliderValue(slider_name, q[position_index]);
+      const double rounded_value =
+          meshcat_->SetSliderValue(slider_name, q[position_index]);
+      // This is a sanity check to make sure that the rounding logic in
+      // RoundSliderValues() stays in sync with the rounding in
+      // Meshcat::SetSliderValue().
+      DRAKE_ASSERT(rounded_value == q[position_index]);
     }
   }
+}
+
+template <typename T>
+void JointSliders<T>::SetPositions(systems::Context<T>* context,
+                                   const Eigen::VectorXd& q) {
+  this->ValidateContext(context);
+  const int nq = plant_->num_positions();
+  if (q.size() != nq) {
+    throw std::logic_error(fmt::format(
+        "Expected q of size {}, but got size {} instead", nq, q.size()));
+  }
+  Eigen::VectorBlock<VectorX<T>> slider_values =
+      context->get_mutable_discrete_state().get_mutable_value(
+          slider_values_index_);
+  if (has_constraints_to_solve_) {
+    Eigen::VectorBlock<VectorX<T>> constrained_values =
+        context->get_mutable_discrete_state().get_mutable_value(
+            constrained_values_index_);
+    VectorXd solved_values(nq);
+    solvers::SolutionResult result;
+    std::tie(solved_values, result) = ResolveConstraints(
+        q, q, ExtractDoubleOrThrow(constrained_values.eval()));
+    if (result != solvers::SolutionResult::kSolutionFound) {
+      throw std::runtime_error(
+          "JointSliders failed to resolve the constraints.");
+    }
+    constrained_values = solved_values;
+    slider_values = RoundSliderValues(solved_values);
+  } else {
+    slider_values = RoundSliderValues(q);
+  }
+  Publish(*context);
 }
 
 }  // namespace meshcat

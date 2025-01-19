@@ -7,8 +7,11 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
+#include "drake/multibody/inverse_kinematics/add_multibody_plant_constraints.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/revolute_joint.h"
+#include "drake/solvers/mathematical_program.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/test_utilities/initialization_test_system.h"
 
@@ -18,17 +21,19 @@ namespace meshcat {
 namespace {
 
 using Eigen::Vector2d;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 using geometry::Meshcat;
 using geometry::MeshcatVisualizer;
 using geometry::SceneGraph;
+using math::RigidTransformd;
 
 class JointSlidersTest : public ::testing::Test {
  public:
   JointSlidersTest()
       : meshcat_{geometry::GetTestEnvironmentMeshcat()},
         builder_{},
-        plant_and_scene_graph_{AddMultibodyPlantSceneGraph(&builder_, 0.0)},
+        plant_and_scene_graph_{AddMultibodyPlantSceneGraph(&builder_, 0.001)},
         plant_{plant_and_scene_graph_.plant},
         scene_graph_{plant_and_scene_graph_.scene_graph} {}
 
@@ -78,6 +83,7 @@ TEST_F(JointSlidersTest, NarrowConstructor) {
   // Add the sliders.
   const JointSliders<double> dut(meshcat_, &plant_);
   auto context = dut.CreateDefaultContext();
+  EXPECT_FALSE(dut.has_constraints_to_solve());
 
   // Sliders start at their default context value.
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), default_angle_1);
@@ -90,6 +96,7 @@ TEST_F(JointSlidersTest, NarrowConstructor) {
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), min_angle_1);
   meshcat_->SetSliderValue(kAcrobotJoint1, 9999);
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), max_angle_1);
+  context->SetDiscreteState(dut.EvalUniquePeriodicDiscreteUpdate(*context));
   EXPECT_EQ(dut.get_output_port().Eval(*context),
             Vector2d(max_angle_1, default_angle_2));
 
@@ -137,6 +144,7 @@ TEST_F(JointSlidersTest, WideConstructorWithVectors) {
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), min_angle_1);
   meshcat_->SetSliderValue(kAcrobotJoint1, 9999);
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), max_angle_1);
+  context->SetDiscreteState(dut.EvalUniquePeriodicDiscreteUpdate(*context));
   EXPECT_EQ(dut.get_output_port().Eval(*context),
             Vector2d(max_angle_1, default_angle_2));
 
@@ -175,6 +183,7 @@ TEST_F(JointSlidersTest, WideConstructorWithScalars) {
   meshcat_->SetSliderValue(kAcrobotJoint2, 9999);
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), max_angle);
   EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint2), max_angle);
+  context->SetDiscreteState(dut.EvalUniquePeriodicDiscreteUpdate(*context));
   EXPECT_EQ(dut.get_output_port().Eval(*context),
             Vector2d::Constant(max_angle));
 
@@ -228,8 +237,9 @@ TEST_F(JointSlidersTest, MultiDofJoint) {
   Add("package://drake/multibody/meshcat/test/universal_joint.sdf");
   plant_.Finalize();
   const JointSliders<double> dut(meshcat_, &plant_);
+  EXPECT_FALSE(dut.has_constraints_to_solve());
 
-  // Confirm the names hasve the per-dof suffix.
+  // Confirm the names have the per-dof suffix.
   EXPECT_EQ(meshcat_->GetSliderValue("charlie_qx"), 0.0);
   EXPECT_EQ(meshcat_->GetSliderValue("charlie_qy"), 0.0);
 }
@@ -241,6 +251,7 @@ TEST_F(JointSlidersTest, FreeBody) {
   Add("package://drake/multibody/models/box.urdf");
   plant_.Finalize();
   const JointSliders<double> dut(meshcat_, &plant_);
+  EXPECT_TRUE(dut.has_constraints_to_solve());  // unit quaternion constraint.
   EXPECT_EQ(dut.get_output_port().size(), 7);
 }
 
@@ -324,8 +335,9 @@ TEST_F(JointSlidersTest, Run) {
 TEST_F(JointSlidersTest, SetPositionsWrongNumPositions) {
   AddAcrobot();
   JointSliders<double> dut(meshcat_, &plant_);
+  auto context = dut.CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.SetPositions(Vector1d::Zero()),
+      dut.SetPositions(context.get(), Vector1d::Zero()),
       "Expected q of size 2, but got size 1 instead");
 }
 
@@ -349,7 +361,7 @@ TEST_F(JointSlidersTest, SetPositionsAcrobot) {
    Do not initialize q to something outside of (lower_limit, upper_limit), which
    defaults to (-10, 10). */
   const Vector2d q{-4, 7};
-  dut.SetPositions(q);
+  dut.SetPositions(context.get(), q);
   positions = dut.get_output_port().Eval(*context);
   EXPECT_EQ(positions[0], q[0]);
   EXPECT_EQ(positions[1], q[1]);
@@ -368,6 +380,120 @@ TEST_F(JointSlidersTest, SetPositionsAcrobot) {
 /* Tests the "SetPositions" function with the Kuka IIWA Robot model (number of
  positions on the MultibodyPlant not equal to the number of joints). */
 TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
+  // Kuka IIWA has 14 positions, 7 of them are joints.
+  static constexpr char kKukaIiwaJoint1[] = "iiwa_joint_1";  // Index: 7
+  static constexpr char kKukaIiwaJoint2[] = "iiwa_joint_2";  // Index: 8
+  static constexpr char kKukaIiwaJoint3[] = "iiwa_joint_3";  // Index: 9
+  static constexpr char kKukaIiwaJoint4[] = "iiwa_joint_4";  // Index: 10
+  static constexpr char kKukaIiwaJoint5[] = "iiwa_joint_5";  // Index: 11
+  static constexpr char kKukaIiwaJoint6[] = "iiwa_joint_6";  // Index: 12
+  static constexpr char kKukaIiwaJoint7[] = "iiwa_joint_7";  // Index: 13
+  Add("package://drake_models/iiwa_description/urdf/"
+      "iiwa14_primitive_collision.urdf");
+  plant_.Finalize();
+  JointSliders<double> dut(meshcat_, &plant_);
+  EXPECT_TRUE(dut.has_constraints_to_solve());  // unit quaternion constraint.
+  auto context = dut.CreateDefaultContext();
+  EXPECT_EQ(dut.get_output_port().size(), 14);
+
+  /* The initial configuration should should be [1, 0, ..., 0] -- the first
+   index should be 1, everything else 0.  Therefore, every joint slider should
+   have a value of 0 as well. */
+  VectorXd initial = VectorXd::Zero(14);
+  initial[0] = 1;
+  auto positions = dut.get_output_port().Eval(*context);
+  EXPECT_TRUE(CompareMatrices(positions, initial));
+  VectorXd slider_values = VectorXd(7);
+  slider_values << meshcat_->GetSliderValue(kKukaIiwaJoint1),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint2),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint3),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint4),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint5),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint6),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint7);
+  EXPECT_TRUE(CompareMatrices(slider_values, VectorXd::Zero(7)));
+
+  // Setting the positions should update both the initial value and sliders.
+  VectorXd q(14);
+  q << 0, 0, 0, 1,  // floating base quaternion
+       -3, -2, -1,  // floating base position
+       0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07;  // iiwa joints
+  dut.SetPositions(context.get(), q);
+  positions = dut.get_output_port().Eval(*context);
+  EXPECT_TRUE(CompareMatrices(positions, q, 1e-6));
+  slider_values << meshcat_->GetSliderValue(kKukaIiwaJoint1),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint2),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint3),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint4),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint5),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint6),
+                   meshcat_->GetSliderValue(kKukaIiwaJoint7);
+  EXPECT_TRUE(CompareMatrices(slider_values, q.tail<7>()));
+
+  // Deleting should remove the sliders, but the positions should remain.
+  dut.Delete();
+  positions = dut.get_output_port().Eval(*context);
+  EXPECT_TRUE(CompareMatrices(positions, q, 1e-6));
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint1), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint2), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint3), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint4), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint5), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint6), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint7), std::exception);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Tests that SetPositions diagnoses num_positions mismatches.
+TEST_F(JointSlidersTest, DeprecatedSetPositionsWrongNumPositions) {
+  AddAcrobot();
+  JointSliders<double> dut(meshcat_, &plant_);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.SetPositions(Vector1d::Zero()),
+      "Expected q of size 2, but got size 1 instead");
+}
+
+/* Tests the "SetPositions" function with the Acrobot model (number of positions
+ on the MultibodyPlant equal to the number of joints). */
+TEST_F(JointSlidersTest, DeprecatedSetPositionsAcrobot) {
+  // Acrobot has two positions, both of them joints.
+  AddAcrobot();
+  JointSliders<double> dut(meshcat_, &plant_);
+  auto context = dut.CreateDefaultContext();
+  ASSERT_EQ(dut.get_output_port().size(), 2);
+
+  // The initial configuration should set both joints to 0.
+  auto positions = dut.get_output_port().Eval(*context);
+  EXPECT_EQ(positions[0], 0);
+  EXPECT_EQ(positions[1], 0);
+  EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), 0);
+  EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint2), 0);
+
+  /* Setting the positions should update both the initial value and sliders.
+   Do not initialize q to something outside of (lower_limit, upper_limit), which
+   defaults to (-10, 10). */
+  const Vector2d q{-4, 7};
+  dut.SetPositions(q);
+  context->SetDiscreteState(dut.EvalUniquePeriodicDiscreteUpdate(*context));
+  positions = dut.get_output_port().Eval(*context);
+  EXPECT_EQ(positions[0], q[0]);
+  EXPECT_EQ(positions[1], q[1]);
+  EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint1), q[0]);
+  EXPECT_EQ(meshcat_->GetSliderValue(kAcrobotJoint2), q[1]);
+
+  // Deleting should remove the sliders, but the positions should remain.
+  dut.Delete();
+  positions = dut.get_output_port().Eval(*context);
+  EXPECT_EQ(positions[0], q[0]);
+  EXPECT_EQ(positions[1], q[1]);
+  EXPECT_THROW(meshcat_->GetSliderValue(kAcrobotJoint1), std::exception);
+  EXPECT_THROW(meshcat_->GetSliderValue(kAcrobotJoint2), std::exception);
+}
+
+/* Tests the "SetPositions" function with the Kuka IIWA Robot model (number of
+ positions on the MultibodyPlant not equal to the number of joints). */
+TEST_F(JointSlidersTest, DeprecatedSetPositionsKukaIiwaRobot) {
   // Kuka IIWA has 14 positions, 7 of them are joints.
   static constexpr char kKukaIiwaJoint1[] = "iiwa_joint_1";  // Index: 7
   static constexpr char kKukaIiwaJoint2[] = "iiwa_joint_2";  // Index: 8
@@ -406,8 +532,9 @@ TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
        -3, -2, -1,  // floating base position
        0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07;  // iiwa joints
   dut.SetPositions(q);
+  context->SetDiscreteState(dut.EvalUniquePeriodicDiscreteUpdate(*context));
   positions = dut.get_output_port().Eval(*context);
-  EXPECT_TRUE(CompareMatrices(positions, q));
+  EXPECT_TRUE(CompareMatrices(positions, q, 1e-6));
   slider_values << meshcat_->GetSliderValue(kKukaIiwaJoint1),
                    meshcat_->GetSliderValue(kKukaIiwaJoint2),
                    meshcat_->GetSliderValue(kKukaIiwaJoint3),
@@ -420,7 +547,7 @@ TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
   // Deleting should remove the sliders, but the positions should remain.
   dut.Delete();
   positions = dut.get_output_port().Eval(*context);
-  EXPECT_TRUE(CompareMatrices(positions, q));
+  EXPECT_TRUE(CompareMatrices(positions, q, 1e-6));
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint1), std::exception);
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint2), std::exception);
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint3), std::exception);
@@ -428,6 +555,65 @@ TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint5), std::exception);
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint6), std::exception);
   EXPECT_THROW(meshcat_->GetSliderValue(kKukaIiwaJoint7), std::exception);
+}
+#pragma GCC diagnostic pop
+
+TEST_F(JointSlidersTest, ConstraintsTest) {
+  const RigidBody<double>* body_A = &plant_.AddRigidBody(
+      "body_A", SpatialInertia<double>::SolidBoxWithMass(1, 1, 1, 1));
+  const RigidBody<double>* body_B = &plant_.AddRigidBody(
+      "body_B", SpatialInertia<double>::SolidBoxWithMass(1, 1, 1, 1));
+  plant_.AddJoint<RevoluteJoint>("world_A", plant_.world_body(),
+                                 RigidTransformd(Vector3d(-1, 0, 0)), *body_A,
+                                 RigidTransformd(), Vector3d::UnitZ());
+  plant_.AddJoint<RevoluteJoint>("A_B", *body_A,
+                                 RigidTransformd(Vector3d(1, 0, 0)), *body_B,
+                                 RigidTransformd(), Vector3d::UnitZ());
+  plant_.AddDistanceConstraint(*body_A, Vector3d(0.0, 1.0, 0.0), *body_B,
+                              Vector3d(0.0, 1.0, 0.0), 1.5);
+  plant_.Finalize();
+  JointSliders<double> dut(meshcat_, &plant_);
+  auto context = dut.CreateDefaultContext();
+  EXPECT_TRUE(dut.has_constraints_to_solve());
+
+  // Create a program for easily checking the constraints.
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(plant_.num_positions());
+  auto plant_context = plant_.CreateDefaultContext();
+  AddMultibodyPlantConstraints(plant_, q, &prog, plant_context.get());
+  EXPECT_EQ(prog.generic_constraints().size(), 1);  // distance constraint.
+  auto distance_binding = prog.generic_constraints()[0];
+
+  // The initial configuration satisfies the constraint.
+  VectorXd q0 = dut.get_output_port().Eval(*context);
+  EXPECT_TRUE(distance_binding.evaluator()->CheckSatisfied(q0));
+
+  // Create an arbitrary configuration that does not satisfy the constraint.
+  VectorXd q_invalid = Vector2d{1.1, 2.3};
+  EXPECT_FALSE(distance_binding.evaluator()->CheckSatisfied(q_invalid));
+
+  // Set the sliders to the invalid configuration.
+  dut.SetPositions(context.get(), q_invalid);
+  // The sliders are updated, but still satisfy the constraint.
+  VectorXd q_resolved = dut.get_output_port().Eval(*context);
+  EXPECT_TRUE(distance_binding.evaluator()->CheckSatisfied(q_resolved));
+  // The slider values are updated, but are rounded to the nearest 0.1.
+  EXPECT_NEAR(meshcat_->GetSliderValue("world_A"), q_resolved[0], 0.1);
+  EXPECT_NEAR(meshcat_->GetSliderValue("A_B"), q_resolved[1], 0.1);
+
+  // After changing the slider in meshcat, JointSliders resolves the constraint
+  // but respects the most recently changed slider.
+  meshcat_->SetSliderValue("world_A", 1.1);
+  context->SetDiscreteState(dut.EvalUniquePeriodicDiscreteUpdate(*context));
+  VectorXd q_resolved2 = dut.get_output_port().Eval(*context);
+  EXPECT_NEAR(q_resolved2[0], 1.1, 1e-6);
+  EXPECT_TRUE(distance_binding.evaluator()->CheckSatisfied(q_resolved));
+
+  // Until publishing, the other slider still has its previous value.
+  EXPECT_NEAR(meshcat_->GetSliderValue("A_B"), q_resolved[1], 0.1);
+  dut.ForcedPublish(*context);
+  // After publishing, it has the newly resolved value.
+  EXPECT_NEAR(meshcat_->GetSliderValue("A_B"), q_resolved2[1], 0.1);
 }
 
 TEST_F(JointSlidersTest, Graphviz) {
