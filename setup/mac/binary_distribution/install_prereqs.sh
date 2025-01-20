@@ -67,5 +67,10 @@ if ! command -v pip3.12 &>/dev/null; then
 fi
 
 if [[ "${with_python_dependencies}" -eq 1 ]]; then
-  pip3.12 install --break-system-packages -r "${BASH_SOURCE%/*}/requirements.txt"
+  readonly setup="${BASH_SOURCE%/*}"
+  readonly venv_root="$(cd "${setup}/../../.." && pwd)"
+  python3.12 -m venv "${venv_root}"
+  "${venv_root}/bin/pip3" install -U -r "${setup}/requirements.txt"
+  "${venv_root}/bin/pdm" use -p "${setup}" -f "${venv_root}"
+  "${venv_root}/bin/pdm" sync -p "${setup}" --prod
 fi
