@@ -32,8 +32,7 @@ class JointSlidersTest : public ::testing::Test {
         plant_{plant_and_scene_graph_.plant},
         scene_graph_{plant_and_scene_graph_.scene_graph} {}
 
-  void Add(const std::string& url,
-           const std::string& model_name = {}) {
+  void Add(const std::string& url, const std::string& model_name = {}) {
     Parser parser(&plant_, model_name);
     parser.AddModelsFromUrl(url);
   }
@@ -162,8 +161,7 @@ TEST_F(JointSlidersTest, WideConstructorWithScalars) {
   const double min_angle = -1.0;
   const double max_angle = 1.0;
   const double step = 0.1;
-  const JointSliders dut(
-      meshcat_, &plant_, {}, min_angle, max_angle, step);
+  const JointSliders dut(meshcat_, &plant_, {}, min_angle, max_angle, step);
   auto context = dut.CreateDefaultContext();
 
   // Slider obey their configured limits.
@@ -188,17 +186,17 @@ TEST_F(JointSlidersTest, WideConstructorWithScalars) {
 // Test that the constructor diagnoses num_positions mismatches.
 TEST_F(JointSlidersTest, WrongNumPositions) {
   AddAcrobot();
-  DRAKE_EXPECT_THROWS_MESSAGE(JointSliders(
-      meshcat_, &plant_, Vector1d::Zero(), {}, {}, {}),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      JointSliders(meshcat_, &plant_, Vector1d::Zero(), {}, {}, {}),
       "Expected initial_value of size 2, but got size 1 instead");
-  DRAKE_EXPECT_THROWS_MESSAGE(JointSliders(
-      meshcat_, &plant_, {}, Vector1d::Zero(), {}, {}),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      JointSliders(meshcat_, &plant_, {}, Vector1d::Zero(), {}, {}),
       "Expected lower_limit of size 2, but got size 1 instead");
-  DRAKE_EXPECT_THROWS_MESSAGE(JointSliders(
-      meshcat_, &plant_, {}, {}, Vector1d::Zero(), {}),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      JointSliders(meshcat_, &plant_, {}, {}, Vector1d::Zero(), {}),
       "Expected upper_limit of size 2, but got size 1 instead");
-  DRAKE_EXPECT_THROWS_MESSAGE(JointSliders(
-      meshcat_, &plant_, {}, {}, {}, Vector1d::Zero()),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      JointSliders(meshcat_, &plant_, {}, {}, {}, Vector1d::Zero()),
       "Expected step of size 2, but got size 1 instead");
 }
 
@@ -324,9 +322,8 @@ TEST_F(JointSlidersTest, Run) {
 TEST_F(JointSlidersTest, SetPositionsWrongNumPositions) {
   AddAcrobot();
   JointSliders<double> dut(meshcat_, &plant_);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.SetPositions(Vector1d::Zero()),
-      "Expected q of size 2, but got size 1 instead");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.SetPositions(Vector1d::Zero()),
+                              "Expected q of size 2, but got size 1 instead");
 }
 
 /* Tests the "SetPositions" function with the Acrobot model (number of positions
@@ -392,29 +389,29 @@ TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
   EXPECT_TRUE(CompareMatrices(positions, initial));
   VectorXd slider_values = VectorXd(7);
   slider_values << meshcat_->GetSliderValue(kKukaIiwaJoint1),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint2),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint3),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint4),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint5),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint6),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint7);
+      meshcat_->GetSliderValue(kKukaIiwaJoint2),
+      meshcat_->GetSliderValue(kKukaIiwaJoint3),
+      meshcat_->GetSliderValue(kKukaIiwaJoint4),
+      meshcat_->GetSliderValue(kKukaIiwaJoint5),
+      meshcat_->GetSliderValue(kKukaIiwaJoint6),
+      meshcat_->GetSliderValue(kKukaIiwaJoint7);
   EXPECT_TRUE(CompareMatrices(slider_values, VectorXd::Zero(7)));
 
   // Setting the positions should update both the initial value and sliders.
   VectorXd q(14);
-  q << 0, 0, 0, 1,  // floating base quaternion
-       -3, -2, -1,  // floating base position
-       0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07;  // iiwa joints
+  q << 0, 0, 0, 1,                               // floating base quaternion
+      -3, -2, -1,                                // floating base position
+      0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07;  // iiwa joints
   dut.SetPositions(q);
   positions = dut.get_output_port().Eval(*context);
   EXPECT_TRUE(CompareMatrices(positions, q));
   slider_values << meshcat_->GetSliderValue(kKukaIiwaJoint1),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint2),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint3),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint4),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint5),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint6),
-                   meshcat_->GetSliderValue(kKukaIiwaJoint7);
+      meshcat_->GetSliderValue(kKukaIiwaJoint2),
+      meshcat_->GetSliderValue(kKukaIiwaJoint3),
+      meshcat_->GetSliderValue(kKukaIiwaJoint4),
+      meshcat_->GetSliderValue(kKukaIiwaJoint5),
+      meshcat_->GetSliderValue(kKukaIiwaJoint6),
+      meshcat_->GetSliderValue(kKukaIiwaJoint7);
   EXPECT_TRUE(CompareMatrices(slider_values, q.tail<7>()));
 
   // Deleting should remove the sliders, but the positions should remain.
@@ -433,8 +430,7 @@ TEST_F(JointSlidersTest, SetPositionsKukaIiwaRobot) {
 TEST_F(JointSlidersTest, Graphviz) {
   AddAcrobot();
   const JointSliders<double> dut(meshcat_, &plant_);
-  EXPECT_THAT(dut.GetGraphvizString(),
-              testing::HasSubstr("meshcat_out ->"));
+  EXPECT_THAT(dut.GetGraphvizString(), testing::HasSubstr("meshcat_out ->"));
 }
 
 }  // namespace
