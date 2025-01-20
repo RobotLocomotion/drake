@@ -336,6 +336,8 @@ class CurvilinearJoint final : public Joint<T> {
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+  std::unique_ptr<Joint<T>> DoShallowClone() const override;
+
   // Make CurvilinearJoint templated on every other scalar type a friend of
   // CurvilinearJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of CurvilinearJoint<T>.

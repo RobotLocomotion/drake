@@ -439,6 +439,8 @@ class RpyFloatingJoint final : public Joint<T> {
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const final;
 
+  std::unique_ptr<Joint<T>> DoShallowClone() const final;
+
   // Make RpyFloatingJoint templated on every other scalar type a friend of
   // RpyFloatingJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of RpyFloatingJoint<T>.

@@ -89,6 +89,14 @@ std::unique_ptr<Joint<symbolic::Expression>> PrismaticJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<Joint<T>> PrismaticJoint<T>::DoShallowClone() const {
+  return std::make_unique<PrismaticJoint<T>>(
+      this->name(), this->frame_on_parent(), this->frame_on_child(),
+      this->translation_axis(), this->position_lower_limit(),
+      this->position_upper_limit(), this->default_damping());
+}
+
 }  // namespace multibody
 }  // namespace drake
 

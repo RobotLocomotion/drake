@@ -185,28 +185,31 @@ TEST_F(UniversalJointTest, AddInDamping) {
 
 TEST_F(UniversalJointTest, Clone) {
   auto model_clone = tree().CloneToScalar<AutoDiffXd>();
-  const auto& joint_clone = dynamic_cast<const UniversalJoint<AutoDiffXd>&>(
+  const auto& joint_clone1 = dynamic_cast<const UniversalJoint<AutoDiffXd>&>(
       model_clone->get_variant(*joint_));
 
-  EXPECT_EQ(joint_clone.name(), joint_->name());
-  EXPECT_EQ(joint_clone.frame_on_parent().index(),
-            joint_->frame_on_parent().index());
-  EXPECT_EQ(joint_clone.frame_on_child().index(),
-            joint_->frame_on_child().index());
-  EXPECT_EQ(joint_clone.position_lower_limits(),
-            joint_->position_lower_limits());
-  EXPECT_EQ(joint_clone.position_upper_limits(),
-            joint_->position_upper_limits());
-  EXPECT_EQ(joint_clone.velocity_lower_limits(),
-            joint_->velocity_lower_limits());
-  EXPECT_EQ(joint_clone.velocity_upper_limits(),
-            joint_->velocity_upper_limits());
-  EXPECT_EQ(joint_clone.acceleration_lower_limits(),
-            joint_->acceleration_lower_limits());
-  EXPECT_EQ(joint_clone.acceleration_upper_limits(),
-            joint_->acceleration_upper_limits());
-  EXPECT_EQ(joint_clone.default_damping(), joint_->default_damping());
-  EXPECT_EQ(joint_clone.get_default_angles(), joint_->get_default_angles());
+  const std::unique_ptr<Joint<AutoDiffXd>> shallow =
+      joint_clone1.ShallowClone();
+  const auto& joint_clone2 =
+      dynamic_cast<const UniversalJoint<AutoDiffXd>&>(*shallow);
+
+  for (const auto* clone : {&joint_clone1, &joint_clone2}) {
+    EXPECT_EQ(clone->name(), joint_->name());
+    EXPECT_EQ(clone->frame_on_parent().index(),
+              joint_->frame_on_parent().index());
+    EXPECT_EQ(clone->frame_on_child().index(),
+              joint_->frame_on_child().index());
+    EXPECT_EQ(clone->position_lower_limits(), joint_->position_lower_limits());
+    EXPECT_EQ(clone->position_upper_limits(), joint_->position_upper_limits());
+    EXPECT_EQ(clone->velocity_lower_limits(), joint_->velocity_lower_limits());
+    EXPECT_EQ(clone->velocity_upper_limits(), joint_->velocity_upper_limits());
+    EXPECT_EQ(clone->acceleration_lower_limits(),
+              joint_->acceleration_lower_limits());
+    EXPECT_EQ(clone->acceleration_upper_limits(),
+              joint_->acceleration_upper_limits());
+    EXPECT_EQ(clone->default_damping(), joint_->default_damping());
+    EXPECT_EQ(clone->get_default_angles(), joint_->get_default_angles());
+  }
 }
 
 TEST_F(UniversalJointTest, SetVelocityAndAccelerationLimits) {

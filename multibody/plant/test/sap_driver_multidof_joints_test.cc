@@ -143,6 +143,9 @@ class MultiDofJointWithLimits final : public Joint<T> {
       const internal::MultibodyTree<symbolic::Expression>&) const override {
     DRAKE_UNREACHABLE();
   }
+  std::unique_ptr<Joint<T>> DoShallowClone() const override {
+    DRAKE_UNREACHABLE();
+  }
 };
 
 // Verify that SapDriver throws when the model contains multi-DOF

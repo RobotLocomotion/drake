@@ -42,6 +42,14 @@ std::unique_ptr<Frame<symbolic::Expression>> RigidBodyFrame<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<Frame<T>> RigidBodyFrame<T>::DoShallowClone() const {
+  // RigidBodyFrame's constructor cannot be called from std::make_unique since
+  // it is private and therefore we use "new".
+  return std::unique_ptr<RigidBodyFrame<T>>(
+      new RigidBodyFrame<T>(this->body()));
+}
+
 // RigidBody function definitions.
 
 template <typename T>

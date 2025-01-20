@@ -170,13 +170,25 @@ TEST_F(SpringTester, Clone) {
    force element we have, which is the PrismaticSpring. */
   const auto& force_element_clone =
       model_clone->get_force_element(ForceElementIndex(1));
-  const PrismaticSpring<AutoDiffXd>* spring_clone =
+  const PrismaticSpring<AutoDiffXd>* spring_clone1 =
       dynamic_cast<const PrismaticSpring<AutoDiffXd>*>(&force_element_clone);
-  ASSERT_NE(spring_clone, nullptr);
+  ASSERT_NE(spring_clone1, nullptr);
+
+  /* Clone just the element (shallow), once more. */
+  std::unique_ptr<ForceElement<AutoDiffXd>> shallow =
+      spring_clone1->ShallowClone();
+  const PrismaticSpring<AutoDiffXd>* spring_clone2 =
+      dynamic_cast<const PrismaticSpring<AutoDiffXd>*>(shallow.get());
+  ASSERT_NE(spring_clone2, nullptr);
+
   /* Verify all quantities are truthfully copied. */
-  EXPECT_EQ(spring_->joint().index(), spring_clone->joint().index());
-  EXPECT_EQ(spring_->stiffness(), spring_clone->stiffness());
-  EXPECT_EQ(spring_->nominal_position(), spring_clone->nominal_position());
+  for (const auto* clone : {spring_clone1, spring_clone2}) {
+    if (clone != spring_clone2) {
+      EXPECT_EQ(spring_->joint().index(), clone->joint().index());
+    }
+    EXPECT_EQ(spring_->stiffness(), clone->stiffness());
+    EXPECT_EQ(spring_->nominal_position(), clone->nominal_position());
+  }
 }
 
 }  // namespace

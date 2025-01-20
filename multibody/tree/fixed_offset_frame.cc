@@ -77,6 +77,12 @@ FixedOffsetFrame<T>::DoCloneToScalar(
 }
 
 template <typename T>
+std::unique_ptr<Frame<T>> FixedOffsetFrame<T>::DoShallowClone() const {
+  return std::make_unique<FixedOffsetFrame<T>>(this->name(), parent_frame_,
+                                               X_PF_);
+}
+
+template <typename T>
 math::RigidTransform<T> FixedOffsetFrame<T>::DoCalcPoseInBodyFrame(
     const systems::Parameters<T>& parameters) const {
   // X_BF = X_BP * X_PF
