@@ -21,10 +21,9 @@ using geometry::MeshcatCone;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 
-PointContactVisualizer::PointContactVisualizer(
-    std::shared_ptr<Meshcat> meshcat, ContactVisualizerParams params)
-    : meshcat_(std::move(meshcat)),
-      params_(std::move(params)) {
+PointContactVisualizer::PointContactVisualizer(std::shared_ptr<Meshcat> meshcat,
+                                               ContactVisualizerParams params)
+    : meshcat_(std::move(meshcat)), params_(std::move(params)) {
   DRAKE_DEMAND(meshcat_ != nullptr);
 }
 
@@ -48,8 +47,8 @@ void PointContactVisualizer::Update(
   // Process the new contacts to find the active ones.
   for (const PointContactVisualizerItem& item : items) {
     // Find our meshcat state for this contact pair.
-    const std::string path = fmt::format(
-        "{}/{}+{}", params_.prefix, item.body_A, item.body_B);
+    const std::string path =
+        fmt::format("{}/{}+{}", params_.prefix, item.body_A, item.body_B);
     VisibilityStatus& status = FindOrAdd(path);
 
     // Decide whether the contact should be shown.
@@ -111,8 +110,8 @@ PointContactVisualizer::VisibilityStatus& PointContactVisualizer::FindOrAdd(
   meshcat_->SetObject(path + "/cylinder", cylinder, params_.color);
   const double arrowhead_height = params_.radius * 2.0;
   const double arrowhead_width = params_.radius * 2.0;
-  const MeshcatCone arrowhead(
-      arrowhead_height, arrowhead_width, arrowhead_width);
+  const MeshcatCone arrowhead(arrowhead_height, arrowhead_width,
+                              arrowhead_width);
   meshcat_->SetObject(path + "/head", arrowhead, params_.color);
   meshcat_->SetObject(path + "/tail", arrowhead, params_.color);
 

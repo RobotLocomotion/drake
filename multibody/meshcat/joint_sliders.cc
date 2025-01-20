@@ -64,8 +64,7 @@ bool HasAnyDuplicatedValues(const std::map<int, std::string>& data) {
 // "true".
 template <typename T>
 std::map<int, std::string> GetPositionNames(
-    const MultibodyPlant<T>* plant,
-    bool use_model_instance_name = false) {
+    const MultibodyPlant<T>* plant, bool use_model_instance_name = false) {
   DRAKE_THROW_UNLESS(plant != nullptr);
 
   // Map all joints into the positions-to-name result.
@@ -76,17 +75,17 @@ std::map<int, std::string> GetPositionNames(
       const int position_index = joint.position_start() + j;
       std::string description;
       if (joint.num_positions() > 1) {
-        description = fmt::format("{}_{}",
-            joint.name(), joint.position_suffix(j));
+        description =
+            fmt::format("{}_{}", joint.name(), joint.position_suffix(j));
       } else {
         description = joint.name();
       }
       if (use_model_instance_name) {
-        description += fmt::format("/{}",
-            plant->GetModelInstanceName(joint.model_instance()));
+        description += fmt::format(
+            "/{}", plant->GetModelInstanceName(joint.model_instance()));
       }
-      const bool inserted = result.insert({
-          position_index, std::move(description)}).second;
+      const bool inserted =
+          result.insert({position_index, std::move(description)}).second;
       DRAKE_DEMAND(inserted);
     }
   }
@@ -105,25 +104,27 @@ std::map<int, std::string> GetPositionNames(
 // If a VectorXd is given, it's checked for size and then returned unchanged.
 // If a double is given, it's broadcast to size and returned.
 // If no value is given, then the default_value is broadcast instead.
-VectorXd Broadcast(
-    const char* diagnostic_name, double default_value, int num_positions,
-    std::variant<std::monostate, double, VectorXd> value) {
-  return std::visit<VectorXd>(overloaded{
-    [num_positions, default_value](std::monostate) {
-      return VectorXd::Constant(num_positions, default_value);
-    },
-    [num_positions](double arg) {
-      return VectorXd::Constant(num_positions, arg);
-    },
-    [num_positions, diagnostic_name](VectorXd&& arg) {
-      if (arg.size() != num_positions) {
-        throw std::logic_error(fmt::format(
-            "Expected {} of size {}, but got size {} instead",
-            diagnostic_name, num_positions, arg.size()));
-      }
-      return std::move(arg);
-    },
-  }, std::move(value));
+VectorXd Broadcast(const char* diagnostic_name, double default_value,
+                   int num_positions,
+                   std::variant<std::monostate, double, VectorXd> value) {
+  return std::visit<VectorXd>(
+      overloaded{
+          [num_positions, default_value](std::monostate) {
+            return VectorXd::Constant(num_positions, default_value);
+          },
+          [num_positions](double arg) {
+            return VectorXd::Constant(num_positions, arg);
+          },
+          [num_positions, diagnostic_name](VectorXd&& arg) {
+            if (arg.size() != num_positions) {
+              throw std::logic_error(
+                  fmt::format("Expected {} of size {}, but got size {} instead",
+                              diagnostic_name, num_positions, arg.size()));
+            }
+            return std::move(arg);
+          },
+      },
+      std::move(value));
 }
 
 }  // namespace
@@ -149,17 +150,16 @@ JointSliders<T>::JointSliders(
   const int nq = plant->num_positions();
   if (nominal_value_.size() != nq) {
     throw std::logic_error(fmt::format(
-        "Expected initial_value of size {}, but got size {} instead",
-        nq, nominal_value_.size()));
+        "Expected initial_value of size {}, but got size {} instead", nq,
+        nominal_value_.size()));
   }
 
   // Default any missing arguments; check (or widen) them to be of size == nq.
-  const VectorXd lower_broadcast = Broadcast(
-      "lower_limit", -10.0,  nq, std::move(lower_limit));
-  const VectorXd upper_broadcast = Broadcast(
-      "upper_limit",  10.0,  nq, std::move(upper_limit));
-  const VectorXd step_broadcast = Broadcast(
-      "step",          0.01, nq, std::move(step));
+  const VectorXd lower_broadcast =
+      Broadcast("lower_limit", -10.0, nq, std::move(lower_limit));
+  const VectorXd upper_broadcast =
+      Broadcast("upper_limit", 10.0, nq, std::move(upper_limit));
+  const VectorXd step_broadcast = Broadcast("step", 0.01, nq, std::move(step));
 
   if (decrement_keycodes.size() &&
       static_cast<int>(decrement_keycodes.size()) != nq) {
@@ -183,12 +183,10 @@ JointSliders<T>::JointSliders(
   for (const auto& [position_index, slider_name] : position_names_) {
     DRAKE_DEMAND(position_index >= 0);
     DRAKE_DEMAND(position_index < nq);
-    const double one_min = std::max(
-        lower_broadcast[position_index],
-        lower_plant[position_index]);
-    const double one_max = std::min(
-        upper_broadcast[position_index],
-        upper_plant[position_index]);
+    const double one_min =
+        std::max(lower_broadcast[position_index], lower_plant[position_index]);
+    const double one_max =
+        std::min(upper_broadcast[position_index], upper_plant[position_index]);
     const double one_step = step_broadcast[position_index];
     const double one_value = nominal_value_[position_index];
     const std::string one_decrement_keycode =
@@ -204,8 +202,8 @@ JointSliders<T>::JointSliders(
   }
 
   // Declare the output port.
-  auto& output = this->DeclareVectorOutputPort(
-      "positions", nq, &JointSliders<T>::CalcOutput);
+  auto& output = this->DeclareVectorOutputPort("positions", nq,
+                                               &JointSliders<T>::CalcOutput);
 
   // The port is always marked out-of-date, so that the slider values will be
   // fetched every time the output port is needed in a computation.
@@ -235,8 +233,8 @@ JointSliders<T>::~JointSliders() {
 }
 
 template <typename T>
-void JointSliders<T>::CalcOutput(
-    const Context<T>&, BasicVector<T>* output) const {
+void JointSliders<T>::CalcOutput(const Context<T>&,
+                                 BasicVector<T>* output) const {
   const int nq = plant_->num_positions();
   DRAKE_DEMAND(output->size() == nq);
   for (int i = 0; i < nq; ++i) {
@@ -266,8 +264,8 @@ JointSliders<T>::DoGetGraphvizFragment(
 
 template <typename T>
 Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
-                                std::optional<double> timeout,
-                                std::string stop_button_keycode) const {
+                                     std::optional<double> timeout,
+                                     std::string stop_button_keycode) const {
   // Make a context and create reference shortcuts to some pieces of it.
   // TODO(jwnimmer-tri) If the user has forgotten to add the plant or sliders
   // to the diagram, our error message here is awful. Ideally, we should be
@@ -332,8 +330,7 @@ void JointSliders<T>::SetPositions(const Eigen::VectorXd& q) {
   const int nq = plant_->num_positions();
   if (q.size() != nq) {
     throw std::logic_error(fmt::format(
-        "Expected q of size {}, but got size {} instead",
-        nq, q.size()));
+        "Expected q of size {}, but got size {} instead", nq, q.size()));
   }
   /* For *all* positions provided in q, update their value in nominal_value_. */
   nominal_value_ = q;

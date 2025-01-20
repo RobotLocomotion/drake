@@ -191,7 +191,8 @@ using ContactVisualizerd = ContactVisualizer<double>;
 
 namespace systems {
 namespace scalar_conversion {
-template <> struct Traits<drake::multibody::meshcat::ContactVisualizer>
+template <>
+struct Traits<drake::multibody::meshcat::ContactVisualizer>
     : public NonSymbolicTraits {};
 }  // namespace scalar_conversion
 }  // namespace systems

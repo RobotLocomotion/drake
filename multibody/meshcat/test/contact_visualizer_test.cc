@@ -27,10 +27,9 @@ class ContactVisualizerTest : public ::testing::Test {
   //
   // @param add_to_builder_overload must be 0, 1, or 2 to select which
   // "AddToBuilder" overload will be used.
-  void SetUpDiagram(
-      int add_to_builder_overload = 0,
-      bool add_second_geometry = false,
-      const ContactVisualizerParams& params = {}) {
+  void SetUpDiagram(int add_to_builder_overload = 0,
+                    bool add_second_geometry = false,
+                    const ContactVisualizerParams& params = {}) {
     // Create the systems.
     systems::DiagramBuilder<double> builder;
     auto [plant, scene_graph] =
@@ -56,7 +55,7 @@ class ContactVisualizerTest : public ::testing::Test {
       auto shape = std::make_unique<geometry::Sphere>(0.04);
       const math::RigidTransformd X(Eigen::Vector3d(0.0, 0.0, 0.025));
       plant.RegisterCollisionGeometry(sphere2, X, *shape, "bonus",
-          multibody::CoulombFriction<double>());
+                                      multibody::CoulombFriction<double>());
     }
 
     // Add the hydroelastic spheres and joints between them.
@@ -65,13 +64,13 @@ class ContactVisualizerTest : public ::testing::Test {
     multibody::Parser parser(&plant);
     parser.AddModelsFromUrl(hydro_url);
     const auto& body1 = plant.GetBodyByName("body1");
-    plant.AddJoint<multibody::PrismaticJoint>(
-        "body1", plant.world_body(), std::nullopt, body1, std::nullopt,
-        Eigen::Vector3d::UnitZ());
+    plant.AddJoint<multibody::PrismaticJoint>("body1", plant.world_body(),
+                                              std::nullopt, body1, std::nullopt,
+                                              Eigen::Vector3d::UnitZ());
     const auto& body2 = plant.GetBodyByName("body2");
-    plant.AddJoint<multibody::PrismaticJoint>(
-        "body2", plant.world_body(), std::nullopt, body2, std::nullopt,
-        Eigen::Vector3d::UnitX());
+    plant.AddJoint<multibody::PrismaticJoint>("body2", plant.world_body(),
+                                              std::nullopt, body2, std::nullopt,
+                                              Eigen::Vector3d::UnitX());
 
     auto geometry_ids = plant.GetCollisionGeometriesForBody(body1);
 
@@ -84,23 +83,22 @@ class ContactVisualizerTest : public ::testing::Test {
 
     // Add the visualizer.
     switch (add_to_builder_overload) {
-     case 0:
-      visualizer_ = &ContactVisualizerd::AddToBuilder(
-          &builder, plant, meshcat_, params);
-      break;
-     case 1:
-      visualizer_ = &ContactVisualizerd::AddToBuilder(
-          &builder, plant.get_contact_results_output_port(),
-          scene_graph.get_query_output_port(),
-          meshcat_, params);
-      break;
-     case 2:
-      visualizer_ = &ContactVisualizerd::AddToBuilder(
-          &builder, plant.get_contact_results_output_port(),
-          meshcat_, params);
-      break;
-     default:
-      DRAKE_UNREACHABLE();
+      case 0:
+        visualizer_ = &ContactVisualizerd::AddToBuilder(&builder, plant,
+                                                        meshcat_, params);
+        break;
+      case 1:
+        visualizer_ = &ContactVisualizerd::AddToBuilder(
+            &builder, plant.get_contact_results_output_port(),
+            scene_graph.get_query_output_port(), meshcat_, params);
+        break;
+      case 2:
+        visualizer_ = &ContactVisualizerd::AddToBuilder(
+            &builder, plant.get_contact_results_output_port(), meshcat_,
+            params);
+        break;
+      default:
+        DRAKE_UNREACHABLE();
     }
 
     // Start the two point contact spheres in contact, but not completely
@@ -111,18 +109,17 @@ class ContactVisualizerTest : public ::testing::Test {
                        Eigen::Vector4d{-0.03, 0.03, 0.1, 0.3});
   }
 
-  void PublishAndCheck(
-      bool expect_geometry_names = false) {
+  void PublishAndCheck(bool expect_geometry_names = false) {
     EXPECT_EQ(visualizer_->get_name(), "meshcat_contact_visualizer");
     diagram_->ForcedPublish(*context_);
     if (expect_geometry_names) {
-      EXPECT_TRUE(meshcat_->HasPath(
-          "contact_forces/point/sphere1::sphere.base_link+"
-          "sphere2::sphere.base_link.bonus"));
+      EXPECT_TRUE(
+          meshcat_->HasPath("contact_forces/point/sphere1::sphere.base_link+"
+                            "sphere2::sphere.base_link.bonus"));
     } else {
-      EXPECT_TRUE(meshcat_->HasPath(
-                      "contact_forces/point/sphere1::sphere.base_link+"
-                      "sphere2::sphere.base_link"));
+      EXPECT_TRUE(
+          meshcat_->HasPath("contact_forces/point/sphere1::sphere.base_link+"
+                            "sphere2::sphere.base_link"));
     }
 
     // If the query object port is not connected, the geometry names will
@@ -175,8 +172,7 @@ TEST_F(ContactVisualizerTest, InsaneAddToBuilder0) {
   systems::DiagramBuilder<double> builder;
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0.001);
   plant->Finalize();
-  visualizer_ = &ContactVisualizerd::AddToBuilder(
-      &builder, *plant, meshcat_);
+  visualizer_ = &ContactVisualizerd::AddToBuilder(&builder, *plant, meshcat_);
 }
 
 // Test that per-geometry names make it through.
