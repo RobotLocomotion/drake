@@ -19,6 +19,12 @@ build --repo_env=DRAKE_WHEEL=1
 build --repo_env=SNOPT_PATH=${SNOPT_PATH}
 build --config=packaging
 build --define=LCM_INSTALL_JAVA=OFF
+# The JDK mentioned here is not actually used, but must not be local_jdk
+# because we don't have any local JDK installed and rules_java fails fast
+# when that option is selected but no JDK can be found.
+# TODO(jwnimmer-tri) Offer an official //tools/flags and CMake option to
+# disable Drake's Java support, and use it here.
+build --java_runtime_version=remotejdk_11
 # TODO(jwnimmer-tri) Ideally this would be automatically inferred.
 common --@drake//tools/install/libdrake:spdlog_dynamic=False
 EOF
