@@ -66,6 +66,8 @@ Download the binary release ``*.tar.gz`` file, using one of the links above.
 In the example below, we'll use ``drake.tar.gz`` to refer to it, but your
 download will have a more version-specific filename.
 
+#### Ubuntu
+
 Create and activate the environment:
 
 ```bash
@@ -78,10 +80,31 @@ source env/bin/activate
 Install dependencies within the environment:
 
 ```bash
+sudo env/share/drake/setup/install_prereqs
+````
+
+Refer to [Quickstart](/installation.html#quickstart) for next steps.
+
+#### macOS
+
+Create the environment:
+
+```bash
+mkdir -p env
+tar -xvzf drake.tar.gz -C env --strip-components=1
+```
+
+Install dependencies within the environment:
+
+```bash
 env/share/drake/setup/install_prereqs
 ````
 
-(On Ubuntu, the script might ask to be run under ``sudo``.)
+Activate the environment:
+
+```bash
+source env/bin/activate
+```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
