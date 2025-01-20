@@ -61,8 +61,8 @@ class AddMultibodyPlantConstraintsTest : public ::testing::Test {
         MatrixXd::Identity(plant_.num_positions(), plant_.num_positions()), q0,
         q);
 
-    auto constraints =
-        AddMultibodyPlantConstraints(plant_, q, &prog, plant_context_.get());
+    auto constraints = AddMultibodyPlantConstraints(plant_shared_, q, &prog,
+                                                    plant_context_.get());
     EXPECT_EQ(constraints.size(), expected_num_constraints);
     auto result = solvers::Solve(prog);
     EXPECT_TRUE(result.is_success());
@@ -80,6 +80,9 @@ class AddMultibodyPlantConstraintsTest : public ::testing::Test {
 
  protected:
   MultibodyPlant<double> plant_{0.1};
+  std::shared_ptr<const MultibodyPlant<double>> plant_shared_{
+      /* managed object = */ std::shared_ptr<void>{},
+      /* stored pointer = */ &plant_};
   std::unique_ptr<systems::Context<double>> plant_context_{};
   const RigidBody<double>* body_A_{nullptr};
   const RigidBody<double>* body_B_{nullptr};
@@ -95,7 +98,7 @@ TEST_F(AddMultibodyPlantConstraintsTest, CouplerConstraint) {
   // nullptr.
   solvers::MathematicalProgram prog;
   auto q = prog.NewContinuousVariables(plant_.num_positions());
-  EXPECT_NO_THROW(AddMultibodyPlantConstraints(plant_, q, &prog));
+  EXPECT_NO_THROW(AddMultibodyPlantConstraints(plant_shared_, q, &prog));
 }
 
 TEST_F(AddMultibodyPlantConstraintsTest, DistanceConstraint) {
@@ -129,6 +132,9 @@ TEST_F(AddMultibodyPlantConstraintsTest, WeldConstraint) {
 
 GTEST_TEST(AdditionalTests, QuaternionsAndJointLimitsAndLocks) {
   MultibodyPlant<double> plant(0);
+  std::shared_ptr<const MultibodyPlant<double>> plant_shared{
+      /* managed object = */ std::shared_ptr<void>{},
+      /* stored pointer = */ &plant};
 
   // Create a plant with four bodies.
   const auto& world = plant.world_body();
@@ -174,7 +180,7 @@ GTEST_TEST(AdditionalTests, QuaternionsAndJointLimitsAndLocks) {
 
   solvers::MathematicalProgram prog;
   auto q = prog.NewContinuousVariables(plant.num_positions());
-  AddMultibodyPlantConstraints(plant, q, &prog, context.get());
+  AddMultibodyPlantConstraints(plant_shared, q, &prog, context.get());
 
   // The initial guess is set for the two quaternion floating joints.
   EXPECT_TRUE(CompareMatrices(
@@ -227,7 +233,7 @@ GTEST_TEST(AdditionalTests, QuaternionsAndJointLimitsAndLocks) {
   // If we don't pass in the context, then we will not get the locked joints.
   solvers::MathematicalProgram prog2;
   auto q2 = prog2.NewContinuousVariables(plant.num_positions());
-  AddMultibodyPlantConstraints(plant, q2, &prog2);
+  AddMultibodyPlantConstraints(plant_shared, q2, &prog2);
   EXPECT_EQ(prog2.linear_equality_constraints().size(), 0);
 }
 
