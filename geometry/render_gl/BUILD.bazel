@@ -32,6 +32,22 @@ drake_cc_package_library(
     ],
 )
 
+drake_cc_library(
+    name = "internal_loaders",
+    srcs = ["internal_loaders.cc"],
+    hdrs = ["internal_loaders.h"],
+    internal = True,
+    visibility = [
+        "//geometry/render_vtk:__pkg__",
+    ],
+    deps = [
+        "//common:essential",
+        "//common:unused",
+        "@vtk_internal//:vtkglad",
+        "@x11",
+    ],
+)
+
 drake_cc_library_linux_only(
     name = "internal_opengl_context",
     srcs = ["internal_opengl_context.cc"],
@@ -40,11 +56,10 @@ drake_cc_library_linux_only(
         "internal_opengl_includes.h",
     ],
     deps = [
+        ":internal_loaders",
         "//common:essential",
         "//common:scope_exit",
-        "@glx",
-        "@opengl",
-        "@x11",
+        "//common:unused",
     ],
 )
 

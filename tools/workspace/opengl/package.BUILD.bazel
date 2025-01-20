@@ -4,6 +4,8 @@ load("@drake//tools/skylark:cc.bzl", "cc_library")
 
 licenses(["notice"])  # SGI-B-2.0
 
+_DEPRECATION = "DRAKE DEPRECATED: The @opengl repository rule is deprecated. If you still need it, you may wish to copy the code for it into your project. The deprecated code will be removed from Drake on or after 2025-05-01."  # noqa
+
 cc_library(
     name = "opengl",
     linkopts = select({
@@ -14,5 +16,6 @@ cc_library(
             "-lOpenGL",
         ],
     }),
+    deprecation = _DEPRECATION,
     visibility = ["//visibility:public"],
 )

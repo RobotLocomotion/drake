@@ -178,6 +178,34 @@ env/bin/pip install drake
 source env/bin/activate
 ```
 
+# Image rendering
+
+## GL and/or DISPLAY {#gl-init}
+
+When performing image rendering (i.e., camera simulation), sometimes you may
+need to configure your computer to provide Drake sufficient access to core
+graphics libraries.
+
+Drake renders images using the
+[RenderEngine](https://drake.mit.edu/doxygen_cxx/classdrake_1_1geometry_1_1render_1_1_render_engine.html)
+abstract base class, which is typically configured using the
+[CameraConfig](https://drake.mit.edu/doxygen_cxx/structdrake_1_1systems_1_1sensors_1_1_camera_config.html)
+data structure via YAML, which can specify a concrete `RenderEngine` subclass to
+be used. Refer to the
+[hardware_sim](https://github.com/RobotLocomotion/drake/tree/master/examples/hardware_sim)
+example for details.
+
+If you are using either `RenderEngineGl`, or `RenderEngineVtk` under the
+(non-default) setting `backend = "GLX"`, then you must ensure that prior to
+using Drake the `$DISPLAY` environment variable is set to an available X11
+display server (e.g., `":1"`). If you are running as desktop user (not over
+ssh), then `$DISPLAY` will probably already be set correctly.
+
+For remote rendering (e.g., in the cloud) we recommend avoiding needing any
+`$DISPLAY` by using only `RenderEngineVtk` and only with its default `backend`.
+If you do need a display in the cloud, you'll need to run a program such as
+`PyVirtualDisplay`, `Xvfb`, or a full `Xorg` server to provide it.
+
 # Build problems
 
 ## Out of memory {#build-oom}

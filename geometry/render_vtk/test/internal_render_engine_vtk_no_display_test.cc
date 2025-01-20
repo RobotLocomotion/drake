@@ -34,7 +34,7 @@ GTEST_TEST(RenderEngineVtkNoDisplayTest, MissingDisplay) {
 
   // With GLX, rendering should throw.
   DRAKE_EXPECT_THROWS_MESSAGE(TryToRenderSomething("GLX"),
-                              ".*vtkWindow.*RenderEngineVtk.*");
+                              ".*not open.*DISPLAY=;.*");
 
   // With EGL, everything still works.
   EXPECT_NO_THROW(TryToRenderSomething("EGL"));
@@ -47,7 +47,7 @@ GTEST_TEST(RenderEngineVtkNoDisplayTest, BadDisplay) {
 
   // With GLX, rendering should throw.
   DRAKE_EXPECT_THROWS_MESSAGE(TryToRenderSomething("GLX"),
-                              ".*vtkWindow.*RenderEngineVtk.*");
+                              ".*not open.*DISPLAY=Hello;.*");
 
   // With EGL, everything still works.
   EXPECT_NO_THROW(TryToRenderSomething("EGL"));
