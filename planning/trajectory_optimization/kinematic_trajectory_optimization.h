@@ -9,6 +9,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -204,6 +205,38 @@ class KinematicTrajectoryOptimization {
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+  /** Adds generic (nonlinear) constraints to enforce the effort limits defined
+  in the plant at a sequence of normalized times, `s`:
+  @verbatim
+  B lb ≤ M(q)v̇ + C(q, v)v - τ_g(q) - τ_app ≤ B ub
+  @endverbatim
+  where q, v, and v̇ are evaluated at s. B is the plant's actuation matrix, and
+  M, C, τ_g, and τ_app are the plant's mass matrix, Coriolis force, gravity,
+  and applied force, respectively. `ub` and `lb` are the upper and lower effort
+  bounds, respectively; if they are not provided then
+  plant.GetEffortLowerLimits() and plant.GetEffortUpperLimits() are used.
+
+  Pass `plant_context` if you have non-default parameters in the context. Note
+  that there are no lifetime requirements on `plant` nsor `plant_context`.
+
+  Note that the convex hull property of the B-splines is not guaranteed to hold
+  here -- effort limits maybe be violated away from the normalized times `s`.
+
+  @pre plant.is_finalized()
+  @pre plant.num_positions() == num_positions()
+  @pre s[i] ∈ [0, 1] for all i
+  @pre B lb ≤ B ub
+
+  @returns A vector of bindings with one effort limit constraint for each `s`.
+  */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddEffortBoundsAtNormalizedTimes(
+      const multibody::MultibodyPlant<double>& plant,
+      const Eigen::Ref<const Eigen::VectorXd>& s,
+      const std::optional<Eigen::Ref<const Eigen::VectorXd>>& lb = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::VectorXd>>& ub = std::nullopt,
+      const systems::Context<double>* plant_context = nullptr);
+
   /** Adds a linear cost on the duration of the trajectory. */
   solvers::Binding<solvers::LinearCost> AddDurationCost(double weight = 1.0);
 
@@ -234,6 +267,9 @@ class KinematicTrajectoryOptimization {
 
   /* TODO(russt):
   - Support additional (non-convex) costs/constraints on q(t) directly.
+  - AddMultibodyPlantConstraints which adds joint, velocity, acceleration, and
+    effort limits + multibody constraints. Presumably we can't have quaternions
+    in a fully-actuated system.
   */
 
  private:
