@@ -27,6 +27,7 @@ namespace {
 
 using ::testing::MatchesRegex;
 
+using Eigen::AngleAxisd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -432,7 +433,7 @@ TEST_F(MujocoParserTest, GeometryPose) {
   CheckPose("quat", RigidTransformd(Eigen::Quaternion<double>{0, 1, 0, 0}, p));
   CheckPose("axisangle",
             RigidTransformd(
-                Eigen::AngleAxis<double>(M_PI / 6.0, Vector3d{4, 5, 6}), p));
+                AngleAxisd(M_PI / 6.0, Vector3d{4, 5, 6}), p));
   CheckPose("euler", RigidTransformd(
                          RollPitchYawd{M_PI / 6.0, M_PI / 4.0, M_PI / 3.0}, p));
   CheckPose("xyaxes",
@@ -451,15 +452,14 @@ TEST_F(MujocoParserTest, GeometryPose) {
 
   CheckPose(
       "axisangle_rad",
-      RigidTransformd(Eigen::AngleAxis<double>(0.5, Vector3d{4, 5, 6}), p));
+      RigidTransformd(AngleAxisd(0.5, Vector3d{4, 5, 6}), p));
   CheckPose("euler_rad",
             RigidTransformd(RotationMatrixd::MakeXRotation(0.5) *
                                 RotationMatrixd::MakeYRotation(0.7) *
                                 RotationMatrixd::MakeZRotation(1.05),
                             p));
   CheckPose("axisangle_deg",
-            RigidTransformd(
-                Eigen::AngleAxis<double>(M_PI / 6.0, Vector3d{4, 5, 6}), p));
+            RigidTransformd(AngleAxisd(M_PI / 6.0, Vector3d{4, 5, 6}), p));
   CheckPose("euler_deg",
             RigidTransformd(RotationMatrixd::MakeZRotation(M_PI / 3.0) *
                                 RotationMatrixd::MakeYRotation(M_PI / 4.0) *
@@ -1301,12 +1301,32 @@ TEST_F(MujocoParserTest, Joint) {
 
   const RevoluteJoint<double>& hinge_w_ref_joint =
       plant_.GetJointByName<RevoluteJoint>("hinge_w_ref");
-  EXPECT_NEAR(hinge_w_ref_joint.get_default_angle(), 15.0 * M_PI / 180.0,
-              1e-14);
+  const double hinge_ref = 15.0 * M_PI / 180.0;
+  EXPECT_NEAR(hinge_w_ref_joint.get_default_angle(), hinge_ref, 1e-14);
+  EXPECT_TRUE(plant_.GetBodyByName("hinge_w_ref")
+                  .EvalPoseInWorld(*context)
+                  .IsNearlyIdentity(1e-14));
+  hinge_w_ref_joint.set_angle(context.get(), 0.0);
+  EXPECT_TRUE(
+      CompareMatrices(plant_.GetBodyByName("hinge_w_ref")
+                          .EvalPoseInWorld(*context)
+                          .GetAsMatrix34(),
+                      RigidTransformd(AngleAxisd(-hinge_ref, Vector3d{0, 0, 1}),
+                                      Vector3d{0, 0, 0})
+                          .GetAsMatrix34(),
+                      1e-14));
 
   const PrismaticJoint<double>& slide_w_ref_joint =
       plant_.GetJointByName<PrismaticJoint>("slide_w_ref");
   EXPECT_EQ(slide_w_ref_joint.get_default_translation(), 1.1);
+  EXPECT_TRUE(plant_.GetBodyByName("slide_w_ref")
+                  .EvalPoseInWorld(*context)
+                  .IsNearlyIdentity(1e-14));
+  slide_w_ref_joint.set_translation(context.get(), 0.0);
+  EXPECT_TRUE(CompareMatrices(plant_.GetBodyByName("slide_w_ref")
+                                  .EvalPoseInWorld(*context)
+                                  .translation(),
+                              Vector3d{0, 0, -1.1}, 1e-14));
 
   const RevoluteJoint<double>& default_joint =
       plant_.GetJointByName<RevoluteJoint>("default");

@@ -35,6 +35,7 @@ namespace multibody {
 namespace internal {
 
 using drake::internal::DiagnosticPolicy;
+using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -139,8 +140,8 @@ class MujocoParser {
       if (angle_ == kDegree) {
         axisangle[3] *= (M_PI / 180.0);
       }
-      return RigidTransformd(
-          Eigen::AngleAxis<double>(axisangle[3], axisangle.head<3>()), pos);
+      return RigidTransformd(AngleAxisd(axisangle[3], axisangle.head<3>()),
+                             pos);
     }
 
     Vector3d euler;
@@ -423,11 +424,12 @@ class MujocoParser {
     ParseVectorAttribute(node, "pos", &pos);
     // Drake wants the joint position in the parent frame, but MuJoCo specifies
     // it in the child body frame.
-    const RigidTransformd X_CJ(pos);
+    RigidTransformd X_CJ(pos);
     const RigidTransformd X_PJ = X_PC * X_CJ;
 
     Vector3d axis = Vector3d::UnitZ();
     ParseVectorAttribute(node, "axis", &axis);
+    axis.normalize();
     // Drake wants the axis in the parent frame, but MuJoCo specifies it in the
     // child body frame. But, by definition, these are always the same for
     // revolute(hinge) joint and prismatic(slide) joint because the axis is the
@@ -464,6 +466,12 @@ class MujocoParser {
         WarnUnsupportedAttribute(*node, "range");
       }
     } else if (type == "slide") {
+      double ref{0.0};
+      ParseScalarAttribute(node, "ref", &ref);
+      // The current configuration should be treated as position = ref instead
+      // of position = 0. This is equivalent to translating the joint origin by
+      // -ref*axis and setting the default position to ref (which we do below).
+      X_CJ = X_CJ * RigidTransformd(ref*axis);
       index = plant_
                   ->AddJoint<PrismaticJoint>(
                       name, parent, X_PJ, child, X_CJ, axis,
@@ -473,13 +481,17 @@ class MujocoParser {
       if (limited) {
         plant_->get_mutable_joint(index).set_position_limits(
             Vector1d{range[0]}, Vector1d{range[1]});
-        // Note: MuJoCo does not clamp the reference position to stay inside
-        // the limits.
       }
-      double ref{0.0};
-      ParseScalarAttribute(node, "ref", &ref);
       plant_->get_mutable_joint(index).set_default_positions(Vector1d{ref});
     } else if (type == "hinge") {
+      double ref{0.0};
+      if (ParseScalarAttribute(node, "ref", &ref) && angle_ == kDegree) {
+        ref *= (M_PI / 180.0);
+      }
+      // The current configuration should be treated as position = ref instead
+      // of position = 0. This is equivalent to rotating the joint frame by
+      // -ref and setting the default position to ref (which we do below).
+      X_CJ = X_CJ * RigidTransformd(AngleAxisd(ref, axis), Vector3d::Zero());
       index = plant_
                   ->AddJoint<RevoluteJoint>(name, parent, X_PJ, child, X_CJ,
                                             axis, damping)
@@ -490,13 +502,6 @@ class MujocoParser {
         }
         plant_->get_mutable_joint(index).set_position_limits(
             Vector1d{range[0]}, Vector1d{range[1]});
-        // Note: MuJoCo does not clamp the reference position to stay inside
-        // the limits. This is important when the reference position defines
-        // constraints (as in the Cassie model in the menagerie.)
-      }
-      double ref{0.0};
-      if (ParseScalarAttribute(node, "ref", &ref) && angle_ == kDegree) {
-        ref *= (M_PI / 180.0);
       }
       plant_->get_mutable_joint(index).set_default_positions(Vector1d{ref});
     } else {
