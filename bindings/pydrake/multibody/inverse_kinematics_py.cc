@@ -167,8 +167,17 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py_rvp::reference_internal, cls_doc.get_mutable_context.doc);
   }
 
-  m.def("AddMultibodyPlantConstraints", &AddMultibodyPlantConstraints,
-      py::arg("plant"), py::arg("q"), py::arg("prog"), py::arg("plant_context"),
+  m.def(
+      "AddMultibodyPlantConstraints",
+      [](py::object plant, const solvers::VectorXDecisionVariable& q,
+          solvers::MathematicalProgram* prog,
+          systems::Context<double>* plant_context) {
+        return AddMultibodyPlantConstraints(
+            make_shared_ptr_from_py_object<MultibodyPlant<double>>(plant), q,
+            prog, plant_context);
+      },
+      py::arg("plant"), py::arg("q"), py::arg("prog"),
+      py::arg("plant_context") = py::none(),
       doc.AddMultibodyPlantConstraints.doc);
 
   {

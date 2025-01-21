@@ -50,7 +50,11 @@ InverseKinematics::InverseKinematics(
   }
   DRAKE_DEMAND(context_ != nullptr);  // Sanity check.
 
-  AddMultibodyPlantConstraints(plant, q_, prog_.get(), context_);
+  AddMultibodyPlantConstraints(
+      std::shared_ptr<const MultibodyPlant<double>>(
+          /* managed object = */ std::shared_ptr<void>{},
+          /* stored pointer = */ &plant_),
+      q_, prog_.get(), context_);
 
   if (!with_joint_limits) {
     // Remove only the joint limit constraint.

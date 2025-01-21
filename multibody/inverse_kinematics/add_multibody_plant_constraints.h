@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
@@ -31,7 +32,7 @@ MultibodyPlant constraints requires it. (unit quaternion constraints and coupler
 constraints do not).
 */
 std::vector<solvers::Binding<solvers::Constraint>> AddMultibodyPlantConstraints(
-    const MultibodyPlant<double>& plant,
+    const std::shared_ptr<const MultibodyPlant<double>>& plant,
     const solvers::VectorXDecisionVariable& q,
     solvers::MathematicalProgram* prog,
     systems::Context<double>* plant_context = nullptr);
