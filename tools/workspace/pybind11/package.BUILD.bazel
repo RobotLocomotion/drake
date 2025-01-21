@@ -51,7 +51,7 @@ _HDRS = [
 check_lists_consistency(
     files = _HDRS,
     glob_include = [
-        "include/**",
+        "include/**/*.h",
     ],
 )
 
