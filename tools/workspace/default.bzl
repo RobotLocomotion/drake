@@ -241,6 +241,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         mujoco_menagerie_internal_repository(name = "mujoco_menagerie_internal", mirrors = mirrors)  # noqa
     if "mumps_internal" not in excludes:
         # Remove on 2025-05-01.
+        # Likewise remove mumps from setup/**.txt files.
         mumps_internal_repository(name = "mumps_internal")
     if "mypy_extensions_internal" not in excludes:
         mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa

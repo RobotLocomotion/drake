@@ -1,6 +1,10 @@
+load("//tools/workspace:os.bzl", "is_wheel_build")
+
+# This repository is deprecated for removal on 2025-05-01.
+
 def _impl(repo_ctx):
-    # We are enabled only on linux, not macOS.
-    enabled = repo_ctx.os.name == "linux"
+    # We are enabled only on linux, not macOS -- and never for wheels.
+    enabled = repo_ctx.os.name == "linux" and not is_wheel_build(repo_ctx)
     repo_ctx.file("defs.bzl", content = "ENABLED = {}\n".format(enabled))
     if not enabled:
         repo_ctx.file("error.txt", content = """
