@@ -355,7 +355,8 @@ def _push_deb(state: _State):
     """
     for deb in state.find_artifacts(_Manifest.RE_DEB):
         dest_path_suffix = f'{deb.version}_{deb.arch}-{deb.platform}.{deb.ext}'
-        state.push_artifact(deb, _AWS_BUCKET, f'drake/release/drake-dev_{dest_path_suffix}')
+        state.push_artifact(deb, _AWS_BUCKET,
+                            f'drake/release/drake-dev_{dest_path_suffix}')
 
 
 def _push_docker(state: _State):
