@@ -35,10 +35,15 @@ void TestMaxCliqueViaGreedy(
   EXPECT_TRUE(solution_match_found);
 }
 
-GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestConstructorAndClone) {
+GTEST_TEST(MaxCliqueSolverViaGreedyTest, TestConstructor) {
   // Test the default constructor.
   MaxCliqueSolverViaGreedy solver{};
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Deprecated 2025-05-01.
   std::unique_ptr<MaxCliqueSolverBase> solver_clone = solver.Clone();
+#pragma GCC diagnostic pop
   // Clone provides a deep copy.
   EXPECT_NE(&solver, solver_clone.get());
 }

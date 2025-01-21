@@ -3,6 +3,7 @@
 
 #include <Eigen/Sparse>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -16,7 +17,7 @@ namespace graph_algorithms {
  */
 class MaxCliqueSolverBase {
  public:
-  virtual ~MaxCliqueSolverBase() {}
+  virtual ~MaxCliqueSolverBase();
 
   /**
    * Given the adjacency matrix of an undirected graph, find the maximum clique
@@ -38,7 +39,7 @@ class MaxCliqueSolverBase {
   [[nodiscard]] VectorX<bool> SolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const;
 
-  /** Creates a unique deep copy of this set. */
+  DRAKE_DEPRECATED("2025-05-01", "Clone is not useful and so is being removed")
   [[nodiscard]] std::unique_ptr<MaxCliqueSolverBase> Clone() const;
 
  protected:
@@ -52,6 +53,8 @@ class MaxCliqueSolverBase {
   virtual VectorX<bool> DoSolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const = 0;
 
+  DRAKE_DEPRECATED("2025-05-01",
+                   "Clone and DoClone are not useful and so are being removed")
   [[nodiscard]] virtual std::unique_ptr<MaxCliqueSolverBase> DoClone()
       const = 0;
 };

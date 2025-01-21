@@ -13,7 +13,7 @@ namespace graph_algorithms {
 
 class MinCliqueCoverSolverBase {
  public:
-  virtual ~MinCliqueCoverSolverBase() {}
+  virtual ~MinCliqueCoverSolverBase();
 
   /**
    * Given the adjacency matrix of an undirected graph, finds a (potentially
