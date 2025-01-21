@@ -368,6 +368,12 @@ struct Impl {
             py::arg("context"), py::arg("port_index"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.EvalVectorInput.doc)
+        // Constraints.
+        .def("num_constraints", &System<T>::num_constraints,
+            doc.System.num_constraints.doc)
+        // (For now, bind privately since ExternalSystemConstraint is private.)
+        .def("_AddExternalConstraint", &System<T>::AddExternalConstraint,
+            py::arg("constraint"), doc.System.AddExternalConstraint.doc)
         // Calculations.
         .def("CalcTimeDerivatives", &System<T>::CalcTimeDerivatives,
             py::arg("context"), py::arg("derivatives"),

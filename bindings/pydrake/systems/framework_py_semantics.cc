@@ -99,6 +99,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   BindTypeSafeIndex<AbstractStateIndex>(m, "AbstractStateIndex");
   BindTypeSafeIndex<NumericParameterIndex>(m, "NumericParameterIndex");
   BindTypeSafeIndex<AbstractParameterIndex>(m, "AbstractParameterIndex");
+  BindTypeSafeIndex<SystemConstraintIndex>(m, "SystemConstraintIndex");
 
   py::class_<FixedInputPortValue>(
       m, "FixedInputPortValue", doc.FixedInputPortValue.doc)
@@ -330,6 +331,17 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("ticket", &Class::ticket, cls_doc.ticket.doc)
         .def("has_default_prerequisites", &Class::has_default_prerequisites,
             cls_doc.has_default_prerequisites.doc);
+  }
+
+  {
+    // Binding this full feature in pydrake is non-trivial effort. For now,
+    // we'll just provide the default constructor for use in our unit tests,
+    // and mark the class itself with private visibility since it's not very
+    // useful without the full bindings.
+    using Class = ExternalSystemConstraint;
+    constexpr auto& cls_doc = doc.ExternalSystemConstraint;
+    py::class_<Class>(m, "_ExternalSystemConstraint", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args);
   }
 }
 

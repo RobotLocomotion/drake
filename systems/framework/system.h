@@ -1433,7 +1433,9 @@ class System : public SystemBase {
   template <typename U>
   std::unique_ptr<System<U>> ToScalarTypeMaybe() const {
     auto result = system_scalar_converter_.Convert<U, T>(*this);
-    if (result) { result->AddExternalConstraints(external_constraints_); }
+    if (result) {
+      result->HandlePostConstructionScalarConversion(*this, result.get());
+    }
     return result;
   }
   //@}
@@ -1942,6 +1944,16 @@ class System : public SystemBase {
   /** Returns the SystemScalarConverter for `this` system. */
   SystemScalarConverter& get_mutable_system_scalar_converter() {
     return system_scalar_converter_;
+  }
+
+  /** (Internal use only) Scalar conversion (e.g., ToAutoDiffXd) will first
+  call the SystemScalarConverter to construct the converted system, and then
+  call this function for any post-construction cleanup. */
+  template <typename U>
+  static void HandlePostConstructionScalarConversion(const System<U>& from,
+                                                     System<T>* to) {
+    DRAKE_DEMAND(to != nullptr);
+    to->AddExternalConstraints(from.external_constraints_);
   }
 
  private:
