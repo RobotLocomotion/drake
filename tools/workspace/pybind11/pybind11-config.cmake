@@ -24,7 +24,7 @@ if(${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX STREQUAL "/")
 endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR};${CMAKE_MODULE_PATH}")
-find_package(Python3)
+find_package(Python3 ${drake_PYTHON_VERSION} EXACT REQUIRED COMPONENTS Interpreter Development)
 set(_expectedTargets pybind11::embed pybind11::module pybind11::pybind11 pybind11::lto pybind11::thin_lto pybind11::python_link_helper pybind11::python2_no_register pybind11::windows_extras pybind11::opt_size)
 
 set(_targetsDefined)
