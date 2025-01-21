@@ -14,6 +14,7 @@
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/system_constraint.h"
 #include "drake/systems/framework/system_visitor.h"
+#include "drake/systems/framework/wrapped_system.h"
 
 namespace drake {
 namespace systems {
@@ -1380,10 +1381,29 @@ Diagram<T>::ConvertScalarType() const {
   std::map<const System<T>*, const System<NewType>*> old_to_new_map;
   for (const auto& old_system : registered_systems_) {
     // Convert old_system to new_system using the old_system's converter.
-    std::unique_ptr<System<NewType>> new_system =
+    std::shared_ptr<System<NewType>> new_system =
         old_system->get_system_scalar_converter().
         template Convert<NewType>(*old_system);
     DRAKE_DEMAND(new_system != nullptr);
+
+    // Special case to work around Python difficulties -- if the new_system is a
+    // leaf system implemented in Python, then undo the wrapping that helped it
+    // survive the SystemScalarConverter. Refer to the pydrake/bindings/systems
+    // helper function DefineSystemScalarConverter() to understand where the
+    // WrappedSystem was originally injected into this control flow.
+    if (auto* wrapped =
+            dynamic_cast<internal::WrappedSystem<NewType>*>(new_system.get())) {
+      // Extract the inner system.
+      const std::string name = new_system->get_name();
+      DRAKE_DEMAND(wrapped->registered_systems_.size() == 1);
+      std::shared_ptr<System<NewType>> inner = wrapped->registered_systems_[0];
+      // Discard the wrapper.
+      SystemBase::set_parent_service(inner.get(), nullptr);
+      new_system.reset();
+      // Use the inner system when creating this Diagram.
+      new_system = inner;
+      new_system->set_name(name);
+    }
 
     // Because we called the scalar converter directly without going through
     // System::ToScalarTypeMaybe, we need to re-implement its logic to copy any

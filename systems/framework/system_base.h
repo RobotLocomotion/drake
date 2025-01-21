@@ -1099,7 +1099,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** (Internal use only) Declares that `parent_service` is the service
   interface of the Diagram that owns this subsystem. Throws if the parent
-  service has already been set. */
+  service has already been set and parent_service is non-null. */
   // Use static method so Diagram can invoke this on behalf of a child.
   // Output argument is listed first because it is serving as the 'this'
   // pointer here.
