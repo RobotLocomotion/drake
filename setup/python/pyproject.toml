@@ -37,7 +37,10 @@ test = [
 ]
 # (Additional) dependencies needed to build a Drake wheel.
 wheel = [
-    "delocate",
+    "auditwheel; sys_platform == 'linux'",
+    "delocate; sys_platform == 'darwin'",
+    "patchelf; sys_platform == 'linux'",
+    # "semantic-version; sys_platform == 'linux'", # TODO is this still needed
     "setuptools",
     "wheel",
 ]

@@ -120,7 +120,7 @@ def _get_linkopts(repo_ctx, python_config):
 def _prepare_venv(repo_ctx, python):
     # Only macOS uses a venv at the moment.
     os_name = repo_ctx.os.name  # "linux" or "mac os x"
-    if os_name != "mac os x":
+    if os_name != "mac os x" and not is_wheel_build(repo_ctx):
         return python
 
     # Locate lock files and mark them to be monitored for changes.
