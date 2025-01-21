@@ -1,5 +1,3 @@
-# JDK (for Bazel).
-default-jdk
 # GNU autotools.
 autoconf
 automake
@@ -21,6 +19,7 @@ make
 ninja-build
 pkg-config
 # Other general tools.
+ca-certificates
 file
 patch
 wget
