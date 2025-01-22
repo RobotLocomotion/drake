@@ -61,7 +61,7 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
       diagnostic.Error(fmt::format(
           "URI '{}' is invalid when parsing a string instead of a filename.",
           uri));
-      return {};
+      return uri;
     }
     // Strictly speaking a URI should not just be a bare filename, but we allow
     // this for backward compatibility and user convenience.
@@ -82,7 +82,6 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
       diagnostic.Error(fmt::format(
           "URI '{}' resolved to '{}' which does not exist.",
           uri, result.string()));
-    return {};
   }
 
   return result.string();

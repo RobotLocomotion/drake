@@ -51,7 +51,6 @@ std::string ResolveBadUri(
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
   const std::string result = ResolveUri(
       diagnostic, uri, package_map, root_dir);
-  EXPECT_EQ(result, "");
   return error.FormatError();
 }
 
@@ -228,6 +227,31 @@ GTEST_TEST(ResolveUriTest, DeprecatedPackage) {
   EXPECT_EQ(result, "multibody");
   EXPECT_THAT(warning.message, ::testing::MatchesRegex(
       ".*package://bar/multibody.*is deprecated.*"));
+}
+
+// Verifies that ResolveUri() returns path even for non-existent files.
+GTEST_TEST(ResolveUriTest, NonExistentFiles) {
+  PackageMap package_map;
+  DiagnosticPolicy diagnostic;
+  DiagnosticDetail error;
+  diagnostic.SetActionForErrors([&error](const DiagnosticDetail& detail) {
+    error = detail;
+  });
+
+  // Test with absolute path.
+  const string abs_bad_path = "/no/such/file.sdf";
+  string result = ResolveUri(diagnostic, abs_bad_path, package_map, "");
+  EXPECT_EQ(result, abs_bad_path);
+  EXPECT_THAT(error.message, ::testing::HasSubstr(
+    "when parsing a string instead of a filename."));
+
+  // Test with relative path.
+  error = {};
+  const string rel_path = "nonexistent.urdf";
+  const string root_dir = "/some/root";
+  result = ResolveUri(diagnostic, rel_path, package_map, root_dir);
+  EXPECT_EQ(result, root_dir + "/" + rel_path);
+  EXPECT_THAT(error.message, ::testing::HasSubstr("does not exist"));
 }
 
 }  // namespace
