@@ -1,0 +1,33 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_binary(
+    name = "clutter",
+    srcs = [
+        "clutter.cc",
+    ],
+    copts = ["-Wno-error=deprecated-declarations","-Wno-deprecated-declarations","-Wno-error=unused-variable"],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//geometry:meshcat_visualizer",
+        "//multibody/meshcat:contact_visualizer",
+        "//geometry:drake_visualizer",
+        "//multibody/plant:contact_results_to_lcm",
+        "//multibody/contact_solvers/sap:sap_solver",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram",
+        "//systems/analysis:simulator_print_stats",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
