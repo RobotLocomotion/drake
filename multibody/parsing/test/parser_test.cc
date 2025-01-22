@@ -222,7 +222,7 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   // URDF parser, shown here by it generating a different exception message).
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModels("acrobot.SDF"),
-      "error: Error finding file.*");
+      "error: File .* doesn't exist.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModels("acrobot.URDF"),
       "/.*/acrobot.URDF:0: error: "
