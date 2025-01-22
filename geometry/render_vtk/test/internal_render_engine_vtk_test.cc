@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <limits>
 #include <optional>
+#include <source_location>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -403,21 +404,17 @@ class RenderEngineVtkTest : public ::testing::Test {
   // This interface allows that to be completely reconfigured by the calling
   // test.
   //
-  // When call_line_number is non-zero, the rendered image is saved to disk for
-  // inspection after the fact. In case the line number is not unique on its own
-  // (e.g., inside of a loop), then the caller_description must be used to
-  // disambiguate each render.
-  //
-  // TODO(jwnimmer-tri) Once we drop macOS Ventura support, we can probably
-  // replace line_number and caller_description with source_location and
-  // simplify this code.
+  // When save_images is true, the rendered image(s) are saved to disk for
+  // inspection after the fact. In case the line number in `caller` is not
+  // unique on its own (e.g., inside of a loop), then the caller_description
+  // must be used to disambiguate each render.
   void Render(
-      int caller_line_number,
       const std::optional<std::string>& caller_description = std::nullopt,
       RenderEngineVtk* renderer = nullptr,
       const DepthRenderCamera* camera_in = nullptr,
       ImageRgba8U* color_out = nullptr, ImageDepth32F* depth_out = nullptr,
-      ImageLabel16I* label_out = nullptr) {
+      ImageLabel16I* label_out = nullptr, bool save_images = true,
+      const std::source_location& caller = std::source_location::current()) {
     if (!renderer) renderer = renderer_.get();
     const DepthRenderCamera& depth_camera =
         camera_in ? *camera_in : depth_camera_;
@@ -431,12 +428,12 @@ class RenderEngineVtkTest : public ::testing::Test {
     EXPECT_NO_THROW(renderer->RenderColorImage(color_camera, color));
 
     // Persist test images for every test for offline inspection.
-    if (caller_line_number != 0) {
+    if (save_images) {
       const std::string stem =
           caller_description.has_value()
-              ? fmt::format("line_{:0>4}_{}", caller_line_number,
+              ? fmt::format("line_{:0>4}_{}", caller.line(),
                             SafeFilename(*caller_description))
-              : fmt::format("line_{:0>4}", caller_line_number);
+              : fmt::format("line_{:0>4}", caller.line());
       SaveTestOutputImage(*depth, fmt::format("{0}_depth.png", stem));
       SaveTestOutputImage(*label, fmt::format("{0}_label.png", stem));
       SaveTestOutputImage(*color, fmt::format("{0}_color.png", stem));
@@ -657,9 +654,10 @@ class RenderEngineVtkTest : public ::testing::Test {
   // Performs the work to test the rendering with a shape centered in the
   // image. To pass, the renderer will have to have been populated with a
   // compatible shape and camera configuration (e.g., PopulateSphereTest()).
-  void PerformCenterShapeTest(int caller_line_number, RenderEngineVtk* renderer,
-                              const std::string& name,
-                              const DepthRenderCamera* camera = nullptr) {
+  void PerformCenterShapeTest(
+      RenderEngineVtk* renderer, const std::string& name,
+      const DepthRenderCamera* camera = nullptr,
+      const std::source_location& caller = std::source_location::current()) {
     const DepthRenderCamera& cam = camera ? *camera : depth_camera_;
     const int w = cam.core().intrinsics().width();
     const int h = cam.core().intrinsics().height();
@@ -668,7 +666,7 @@ class RenderEngineVtkTest : public ::testing::Test {
     ImageRgba8U color(w, h);
     ImageDepth32F depth(w, h);
     ImageLabel16I label(w, h);
-    Render(caller_line_number, name, renderer, &cam, &color, &depth, &label);
+    Render(name, renderer, &cam, &color, &depth, &label, true, caller);
 
     VerifyCenterShapeTest(*renderer, name.c_str(), cam, color, depth, label);
   }
@@ -724,7 +722,7 @@ class RenderEngineVtkTest : public ::testing::Test {
 // use of "inlier" or "outlier" pixel locations.
 TEST_F(RenderEngineVtkTest, NoBodyTest) {
   Init(RigidTransformd::Identity());
-  Render(__LINE__);
+  Render();
 
   VerifyUniformColor(kBgColor);
   VerifyUniformLabel(RenderLabel::kEmpty);
@@ -741,7 +739,7 @@ TEST_F(RenderEngineVtkTest, ControlBackgroundColor) {
         .backend = FLAGS_backend,
     };
     RenderEngineVtk engine(params);
-    Render(__LINE__, fmt::to_string(fmt_streamed(bg)), &engine);
+    Render(fmt::to_string(fmt_streamed(bg)), &engine);
     VerifyUniformColor(bg);
   }
 }
@@ -782,7 +780,7 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
 
     expected_color_ = use_texture ? kTextureColor : default_color_;
     PerformCenterShapeTest(
-        __LINE__, renderer_.get(),
+        renderer_.get(),
         fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
   }
 }
@@ -807,14 +805,14 @@ TEST_F(RenderEngineVtkTest, InMemoryMesh) {
     renderer_->RegisterVisual(id, file_mesh, props, RigidTransformd::Identity(),
                               false);
     ImageRgba8U file_image(kWidth, kHeight);
-    Render(__LINE__, fmt::format("{}_file", file_prefix), nullptr, nullptr,
-           &file_image, nullptr, nullptr);
+    Render(fmt::format("{}_file", file_prefix), nullptr, nullptr, &file_image,
+           nullptr, nullptr);
 
     renderer_->RemoveGeometry(id);
     renderer_->RegisterVisual(id, memory_mesh, props,
                               RigidTransformd::Identity(), false);
     ImageRgba8U memory_image(kWidth, kHeight);
-    Render(__LINE__, fmt::format("{}_memory", file_prefix), nullptr, nullptr,
+    Render(fmt::format("{}_memory", file_prefix), nullptr, nullptr,
            &memory_image, nullptr, nullptr);
 
     EXPECT_TRUE(file_image == memory_image) << fmt::format(
@@ -931,8 +929,8 @@ TEST_F(RenderEngineVtkTest, GltfAssetFormats) {
 
     // Render an image of it.
     images[i].resize(kWidth, kHeight);
-    Render(__LINE__, fmt::format("i={}", i), nullptr, nullptr, &images[i],
-           nullptr, nullptr);
+    Render(fmt::format("i={}", i), nullptr, nullptr, &images[i], nullptr,
+           nullptr);
 
     // Compare against the prior image.
     if (i > 0) {
@@ -1032,8 +1030,7 @@ TEST_F(RenderEngineVtkTest, MultiMaterialObjects) {
     ImageRgba8U color(w, h);
     ImageDepth32F depth(w, h);
     ImageLabel16I label(w, h);
-    this->Render(__LINE__, name, renderer_.get(), &camera, &color, &depth,
-                 &label);
+    this->Render(name, renderer_.get(), &camera, &color, &depth, &label);
 
     SCOPED_TRACE(name);
     // The image was made from the glTF file. glTF files get rendered using
@@ -1246,8 +1243,7 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   const GeometryId id1 = GeometryId::get_new_id();
   std::tie(label1, depth1) = add_sphere(color1, 0.75, id1);
   set_expectations(color1, depth1, label1);
-  PerformCenterShapeTest(__LINE__, renderer_.get(),
-                         "First sphere added in remove test");
+  PerformCenterShapeTest(renderer_.get(), "First sphere added in remove test");
 
   // Add a _third_ sphere in front of the second.
   const TestColor color2(128, 255, 128, 255);
@@ -1256,22 +1252,20 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   const GeometryId id2 = GeometryId::get_new_id();
   std::tie(label2, depth2) = add_sphere(color2, 1.0, id2);
   set_expectations(color2, depth2, label2);
-  PerformCenterShapeTest(__LINE__, renderer_.get(),
-                         "Second sphere added in remove test");
+  PerformCenterShapeTest(renderer_.get(), "Second sphere added in remove test");
 
   // Remove the first sphere added; should report "true" and the render test
   // should pass without changing expectations.
   bool removed = renderer_->RemoveGeometry(id1);
   EXPECT_TRUE(removed);
-  PerformCenterShapeTest(__LINE__, renderer_.get(),
-                         "First added sphere removed");
+  PerformCenterShapeTest(renderer_.get(), "First added sphere removed");
 
   // Remove the second added sphere; should report true and rendering should
   // return to its default configuration.
   removed = renderer_->RemoveGeometry(id2);
   EXPECT_TRUE(removed);
   set_expectations(default_color, default_depth, default_label);
-  PerformCenterShapeTest(__LINE__, renderer_.get(),
+  PerformCenterShapeTest(renderer_.get(),
                          "Default image restored by removing extra geometries");
 }
 
@@ -1283,11 +1277,11 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
 TEST_F(RenderEngineVtkTest, SimpleClone) {
   Init(X_WC_, true);
   PopulateSphereTest(renderer_.get());
-  PerformCenterShapeTest(__LINE__, renderer_.get(), "base_case");
+  PerformCenterShapeTest(renderer_.get(), "base_case");
 
   unique_ptr<RenderEngine> clone = renderer_->Clone();
   EXPECT_NE(dynamic_cast<RenderEngineVtk*>(clone.get()), nullptr);
-  PerformCenterShapeTest(__LINE__, static_cast<RenderEngineVtk*>(clone.get()),
+  PerformCenterShapeTest(static_cast<RenderEngineVtk*>(clone.get()),
                          "Simple clone");
 }
 
@@ -1301,7 +1295,7 @@ TEST_F(RenderEngineVtkTest, ClonePersistence) {
   // This causes the original renderer copied from to be destroyed.
   renderer_.reset();
   ASSERT_EQ(nullptr, renderer_);
-  PerformCenterShapeTest(__LINE__, static_cast<RenderEngineVtk*>(clone.get()),
+  PerformCenterShapeTest(static_cast<RenderEngineVtk*>(clone.get()),
                          "Clone persistence");
 }
 
@@ -1316,7 +1310,7 @@ TEST_F(RenderEngineVtkTest, CloneIndependence) {
   RigidTransformd X_WT_new{Vector3d{0, 0, 10}};
   renderer_->UpdatePoses(
       unordered_map<GeometryId, RigidTransformd>{{geometry_id_, X_WT_new}});
-  PerformCenterShapeTest(__LINE__, static_cast<RenderEngineVtk*>(clone.get()),
+  PerformCenterShapeTest(static_cast<RenderEngineVtk*>(clone.get()),
                          "Clone independence");
 }
 
@@ -1337,7 +1331,7 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
 
   // Baseline -- confirm that all of the defaults in this test still produce
   // the expected outcome.
-  PerformCenterShapeTest(__LINE__, renderer_.get(), "Camera change - baseline",
+  PerformCenterShapeTest(renderer_.get(), "Camera change - baseline",
                          &depth_camera_);
 
   // Test changes in sensor sizes.
@@ -1346,15 +1340,15 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
     const DepthRenderCamera small_camera{
         {ref_name, {ref_w / 2, ref_h / 2, ref_fov_y}, ref_clipping, ref_X_BS},
         depth_camera_.depth_range()};
-    PerformCenterShapeTest(__LINE__, renderer_.get(),
-                           "Camera change - small camera", &small_camera);
+    PerformCenterShapeTest(renderer_.get(), "Camera change - small camera",
+                           &small_camera);
 
     // Now run it again with a camera with a bigger sensor (4X area).
     const DepthRenderCamera big_camera{
         {ref_name, {ref_w * 2, ref_h * 2, ref_fov_y}, ref_clipping, ref_X_BS},
         depth_camera_.depth_range()};
-    PerformCenterShapeTest(__LINE__, renderer_.get(),
-                           "Camera change - big camera", &big_camera);
+    PerformCenterShapeTest(renderer_.get(), "Camera change - big camera",
+                           &big_camera);
   }
 
   // Test changes in fov (larger and smaller).
@@ -1362,14 +1356,14 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
     const DepthRenderCamera narrow_fov{
         {ref_name, {ref_w, ref_h, ref_fov_y / 2}, ref_clipping, ref_X_BS},
         depth_camera_.depth_range()};
-    PerformCenterShapeTest(__LINE__, renderer_.get(),
-                           "Camera change - narrow fov", &narrow_fov);
+    PerformCenterShapeTest(renderer_.get(), "Camera change - narrow fov",
+                           &narrow_fov);
 
     const DepthRenderCamera wide_fov{
         {ref_name, {ref_w, ref_h, ref_fov_y * 2}, ref_clipping, ref_X_BS},
         depth_camera_.depth_range()};
-    PerformCenterShapeTest(__LINE__, renderer_.get(),
-                           "Camera change - wide fov", &wide_fov);
+    PerformCenterShapeTest(renderer_.get(), "Camera change - wide fov",
+                           &wide_fov);
   }
 
   // Test changes to depth range.
@@ -1380,7 +1374,7 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
         {depth_range.min_depth(), expected_outlier_depth_ - 0.1}};
     const float old_outlier_depth = expected_outlier_depth_;
     expected_outlier_depth_ = std::numeric_limits<float>::infinity();
-    PerformCenterShapeTest(__LINE__, renderer_.get(),
+    PerformCenterShapeTest(renderer_.get(),
                            "Camera change - z far clips terrain",
                            &clipping_far_plane);
     // NOTE: Need to restored expected outlier depth for next test.
@@ -1390,8 +1384,7 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
         depth_camera_.core(),
         {expected_object_depth_ + 0.1, depth_range.max_depth()}};
     expected_object_depth_ = 0;
-    PerformCenterShapeTest(__LINE__, renderer_.get(),
-                           "Camera change - z near clips mesh",
+    PerformCenterShapeTest(renderer_.get(), "Camera change - z near clips mesh",
                            &clipping_near_plane);
   }
 }
@@ -1422,8 +1415,7 @@ TEST_F(RenderEngineVtkTest, DefaultProperties_RenderLabel) {
   expected_label_ = RenderLabel::kDontCare;
   expected_color_ = TestColor(renderer.default_diffuse());
 
-  PerformCenterShapeTest(__LINE__, &renderer,
-                         "Default properties; don't care label");
+  PerformCenterShapeTest(&renderer, "Default properties; don't care label");
 }
 
 // This class exists solely for the purpose of injecting an arbitrary texture
@@ -1971,9 +1963,9 @@ TEST_F(RenderEngineVtkTest, EnvironmentMap) {
 // (3) is confirmed in TEST_F(RenderEngineVtkTest,
 // PbrMaterialSettingSurvivesCloning).
 TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
-  auto test_sphere_color = [this](int caller_line_number,
-                                  const TestColor expected_color,
-                                  RenderEngineVtk* renderer) {
+  auto test_sphere_color = [this](const TestColor expected_color,
+                                  RenderEngineVtk* renderer,
+                                  const std::source_location& caller) {
     const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
     ImageRgba8U image(camera.core().intrinsics().width(),
                       camera.core().intrinsics().height());
@@ -1982,8 +1974,7 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     const int cy = image.height() / 2;
 
     renderer->RenderColorImage(camera, &image);
-    SaveTestOutputImage(image,
-                        fmt::format("line_{:0>4}.png", caller_line_number));
+    SaveTestOutputImage(image, fmt::format("line_{:0>4}.png", caller.line()));
 
     const TestColor sampled_color(image.at(cx, cy));
     EXPECT_TRUE(IsColorNear(sampled_color, expected_color))
@@ -2007,7 +1998,8 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     auto renderer = make_unique<RenderEngineVtk>(params);
     InitializeRenderer(X_WC_, /* add_terrain = */ true, renderer.get());
     PopulateSphereTest(renderer.get(), true);
-    test_sphere_color(__LINE__, kTextureColor, renderer.get());
+    test_sphere_color(kTextureColor, renderer.get(),
+                      std::source_location::current());
   }
 
   // Add a glTF file; material promoted to PBR no longer matches Phong color.
@@ -2029,7 +2021,8 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
     // We should still basically be green (because of the green texture), but
     // the saturation and brightness changes in the presence of PBR material.
     const TestColor pbr_texture_color(66, 152, 68, 255);
-    test_sphere_color(__LINE__, pbr_texture_color, renderer_.get());
+    test_sphere_color(pbr_texture_color, renderer_.get(),
+                      std::source_location::current());
   }
 }
 
@@ -2094,16 +2087,15 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
   renderer_20002.RegisterVisual(id, cube, props, RigidTransformd(), false);
 
   ImageRgba8U reference_image(w, h);
-  Render(__LINE__, "phong", &phong_renderer, &camera, &reference_image, &depth,
-         &label);
+  Render("phong", &phong_renderer, &camera, &reference_image, &depth, &label);
   ImageRgba8U pbr_image(w, h);
-  Render(__LINE__, "pbr", &pbr_renderer, &camera, &pbr_image, &depth, &label);
+  Render("pbr", &pbr_renderer, &camera, &pbr_image, &depth, &label);
 
   // The images don't match because the `force_to_pbr` changed the light model.
   EXPECT_NE(reference_image, pbr_image);
 
   // Make sure the back up renderer matches.
-  Render(0, "", &renderer_20002, &camera, &reference_image, &depth, &label);
+  Render({}, &renderer_20002, &camera, &reference_image, &depth, &label, false);
   EXPECT_EQ(reference_image, pbr_image);
 
   // Test post-cloning logic.
@@ -2113,8 +2105,8 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
   // TODO(20002): The known issue of clone vs source render engine fighting
   // can be *mitigated* by performing a throw-away rendering. So, we'll do an
   // extra rendering and then do one for real.
-  Render(0, "", clone, &camera, &clone_image, &depth, &label);
-  Render(__LINE__, "clone", clone, &camera, &clone_image, &depth, &label);
+  Render({}, clone, &camera, &clone_image, &depth, &label, false);
+  Render("clone", clone, &camera, &clone_image, &depth, &label);
 
   // The cloned engine still renders images with PBR materials.
   EXPECT_EQ(clone_image, pbr_image);
@@ -2128,10 +2120,8 @@ TEST_F(RenderEngineVtkTest, PbrMaterialSettingSurvivesCloning) {
   renderer_20002.RegisterVisual(ball_id, sphere, props, X_WS, false);
   clone->RegisterVisual(ball_id, sphere, props, X_WS, false);
 
-  Render(__LINE__, "pbr with ball", &renderer_20002, &camera, &pbr_image,
-         &depth, &label);
-  Render(__LINE__, "clone with ball", clone, &camera, &clone_image, &depth,
-         &label);
+  Render("pbr with ball", &renderer_20002, &camera, &pbr_image, &depth, &label);
+  Render("clone with ball", clone, &camera, &clone_image, &depth, &label);
   EXPECT_EQ(clone_image, pbr_image);
 }
 
@@ -2753,8 +2743,7 @@ TEST_F(RenderEngineVtkTest, WholeImageDefaultParams) {
   ImageRgba8U color(w, h);
   ImageDepth32F depth(w, h);
   ImageLabel16I label(w, h);
-  this->Render(__LINE__, "whole_image_default", &engine, &camera, &color,
-               &depth, &label);
+  this->Render("whole_image_default", &engine, &camera, &color, &depth, &label);
 
   {
     SCOPED_TRACE("Color image");
@@ -2852,8 +2841,7 @@ TEST_F(RenderEngineVtkTest, WholeImageCustomParams) {
     ImageRgba8U color(w, h);
     ImageDepth32F depth(w, h);
     ImageLabel16I label(w, h);
-    this->Render(__LINE__,
-                 fmt::format("whole_image_custom_color_{}", lights[0].frame),
+    this->Render(fmt::format("whole_image_custom_color_{}", lights[0].frame),
                  &engine, &camera, &color, &depth, &label);
 
     {
@@ -2961,8 +2949,8 @@ TEST_F(RenderEngineVtkTest, WholeImageVerticalAspectRatio) {
   ImageRgba8U tall_color(w, h);
   ImageDepth32F tall_depth(w, h);
   ImageLabel16I tall_label(w, h);
-  this->Render(__LINE__, "whole_image_custom_color_vertical_ar", &engine,
-               &camera, &tall_color, &tall_depth, &tall_label);
+  this->Render("whole_image_custom_color_vertical_ar", &engine, &camera,
+               &tall_color, &tall_depth, &tall_label);
 
   // Now clip down to reference size. We only need to clip the color image;
   // label and depth images don't get the render-as-square treatment because
