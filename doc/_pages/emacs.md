@@ -26,6 +26,7 @@ On Ubuntu ``sudo apt install elpa-magit``.
 
 Use ``(require 'clang-format)`` to enable the ``M-x clang-format-...`` family of
 functions. Also check that the customize variable ``clang-format-executable`` is
-set to Drake's preferred value ``clang-format-15``.
+set to Drake's preferred value
+``/path/to/drake/bazel-bin/tools/lint/clang-format``.
 
 <!--- TODO(jwnimmer-tri) Explain 'google-c-style from the styleguide. -->
