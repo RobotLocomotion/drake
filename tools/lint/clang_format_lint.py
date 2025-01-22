@@ -31,7 +31,8 @@ def _check_clang_format_idempotence(filename):
     if not changes:
         return 0
     print("ERROR: {} needs clang-format".format(filename))
-    print("note: fix via {} -style=file -i {}".format(clang_format, filename))
+    print("note: fix via {} -style=file -i {}".format(
+        "bazel-bin/tools/lint/clang-format", filename))
     return 1
 
 

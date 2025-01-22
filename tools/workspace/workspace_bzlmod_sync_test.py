@@ -68,6 +68,7 @@ class TestWorkspaceBzlmodSync(unittest.TestCase):
 
         # Don't check modules that are known to be module-only.
         del modules["bazel_features"]
+        del modules["toolchains_llvm"]
 
         # Don't check modules whose repository rule twin is pkgconfig (and thus
         # doesn't have a github pinned version that we need to keep in sync).
