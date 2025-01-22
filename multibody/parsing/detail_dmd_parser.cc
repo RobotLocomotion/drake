@@ -135,7 +135,7 @@ void ParseModelDirectivesImpl(
           ScopedName::Join(model_namespace, model.name).to_string();
       drake::log()->debug("  add_model: {}\n    {}", name, model.file);
       const std::string file =
-          ResolveUri(diagnostic, model.file, package_map, {});
+          std::get<0>(ResolveUri(diagnostic, model.file, package_map, {}));
       std::optional<ModelInstanceIndex> child_model_instance_id =
           parser_selector(diagnostic, file).AddModel(
               {DataSource::kFilename, &file},
@@ -256,7 +256,8 @@ void ParseModelDirectivesImpl(
             "Namespace '{}' does not exist as model instance",
             new_model_namespace));
       }
-      std::string filename = ResolveUri(diagnostic, sub.file, package_map, {});
+      std::string filename =
+        std::get<0>(ResolveUri(diagnostic, sub.file, package_map, {}));
       auto sub_directives =
           LoadModelDirectives({DataSource::kFilename, &filename});
       ParseModelDirectivesImpl(sub_directives, new_model_namespace, workspace,

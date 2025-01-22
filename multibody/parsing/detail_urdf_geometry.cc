@@ -148,16 +148,13 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
   std::optional<std::string> texture_path;
   const XMLElement* texture_node = node->FirstChildElement("texture");
   if (texture_node) {
-    // TODO(rpoyner-tri): error for empty texture tag?
     std::string texture_name;
     if (ParseStringAttribute(texture_node, "filename", &texture_name) &&
         !texture_name.empty()) {
-      texture_path = ResolveUri(diagnostic.MakePolicyForNode(texture_node),
-                                texture_name, package_map, root_dir);
-      if (texture_path->empty()) {
-        // ResolveUri already emitted an error message.
-        return {};
-      }
+      // ResolveUri will emit an error message.
+      texture_path = std::get<0>(
+        ResolveUri(diagnostic.MakePolicyForNode(texture_node), texture_name,
+                    package_map, root_dir));
     }
   }
 
@@ -292,13 +289,9 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
     return {};
   }
 
-  const std::string resolved_filename = ResolveUri(
+  const std::string resolved_filename = std::get<0>(ResolveUri(
       diagnostic.MakePolicyForNode(shape_node), filename, package_map,
-      root_dir);
-  if (resolved_filename.empty()) {
-    // ResolveUri already emitted an error message.
-    return {};
-  }
+      root_dir));
 
   double scale = 1.0;
   // Obtains the scale of the mesh if it exists.

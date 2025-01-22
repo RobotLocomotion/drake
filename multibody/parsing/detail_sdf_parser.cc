@@ -2113,7 +2113,12 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
     debug_log.SetActionForErrors([](const DiagnosticDetail& detail) {
       drake::log()->debug(detail.FormatError());
     });
-    return ResolveUri(debug_log, _input, workspace.package_map, ".");
+    auto [result, exists] =
+        ResolveUri(debug_log, _input, workspace.package_map, ".");
+    if (!exists) {
+      return std::string{};
+    }
+    return result;
   });
 
   parser_config.RegisterCustomModelParser(
