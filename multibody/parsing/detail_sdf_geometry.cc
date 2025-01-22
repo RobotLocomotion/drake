@@ -166,7 +166,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       // parsing should handle the case of this missing.
       DRAKE_DEMAND(mesh_uri.has_value());
       if (!mesh_uri.has_value()) return nullptr;
-      const std::string file_name = resolve_filename(diagnostic, *mesh_uri);
+      const std::string file_name =
+        std::get<0>(resolve_filename(diagnostic, *mesh_uri));
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
         std::optional<gz::math::Vector3d> scale_vector =
@@ -416,13 +417,12 @@ VisualProperties MakeVisualPropertiesFromSdfVisual(
       auto [texture_name, has_value] =
           material_element->Get<std::string>("drake:diffuse_map", {});
       if (has_value) {
-        const std::string resolved_path =
+        auto [resolved_path, file_exists] =
             resolve_filename(diagnostic, texture_name);
-        if (resolved_path.empty()) {
+        if (!file_exists) {
           std::string message = std::string(fmt::format(
               "Unable to locate the texture file: {}", texture_name));
           diagnostic.Error(visual_element, std::move(message));
-          return {std::nullopt, std::nullopt};
         }
         properties->AddProperty("phong", "diffuse_map", resolved_path);
       }

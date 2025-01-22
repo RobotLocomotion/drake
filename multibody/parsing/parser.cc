@@ -96,9 +96,9 @@ std::vector<ModelInstanceIndex> Parser::AddModels(
 
 std::vector<ModelInstanceIndex> Parser::AddModelsFromUrl(
     const std::string& url) {
-  const std::string file_name = internal::ResolveUri(
+  auto [file_name, file_exits] = internal::ResolveUri(
       diagnostic_policy_, url, package_map_, {});
-  if (file_name.empty()) {
+  if (!file_exits) {
     return {};
   }
   return AddModels(file_name);
