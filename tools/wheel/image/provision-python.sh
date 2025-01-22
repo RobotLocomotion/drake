@@ -37,15 +37,3 @@ ln -s ${PREFIX}/bin/${PYTHON}-config /usr/local/bin/python-config
 ln -s ${PREFIX}/include/${PYTHON} /usr/local/include/
 ln -s ${PREFIX}/include/${PYTHON}m /usr/local/include/
 ln -s /usr/local/bin/python /usr/bin/python
-
-# TODO(jwnimmer-tri): Should these be version-pinned? What's the process for
-# keeping them up to date if they are?
-pip install \
-    matplotlib \
-    numpy \
-    pyyaml \
-    semantic-version \
-    setuptools \
-    wheel \
-    auditwheel \
-    patchelf
