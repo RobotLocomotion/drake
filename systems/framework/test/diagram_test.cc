@@ -19,6 +19,7 @@
 #include "drake/systems/framework/test_utilities/initialization_test_system.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
+#include "drake/systems/framework/wrapped_system.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -1233,6 +1234,29 @@ TEST_F(DiagramTest, Clone) {
   // Check that the context that was cloned is unaffected.
   diagram_->CalcOutput(*context_, output_.get());
   ExpectDefaultOutputs();
+}
+
+// Tests that the special handling of WrappedSystem is effective.
+GTEST_TEST(PythonDiagramTest, Unwrap) {
+  // Directly create a diagram using a wrapped system. (This doesn't really
+  // match the control flow that Python actually uses, but it's the simplest
+  // way to inject a WrappedSystem into Diagram's scalar conversion logic.)
+  DiagramBuilder<double> builder;
+  auto adder = std::make_shared<Adder<double>>(1, 1);
+  adder->set_name("my_adder");
+  builder.AddSystem<internal::WrappedSystem<double>>(std::move(adder));
+  auto diagram_double = builder.Build();
+  ASSERT_EQ(diagram_double->GetSystems().size(), 1);
+
+  // Convert double -> AutoDiffXd.
+  auto diagram_autodiff = Diagram<double>::ToAutoDiffXd(*diagram_double);
+  ASSERT_EQ(diagram_autodiff->GetSystems().size(), 1);
+
+  // Check that the child is an Adder, not a WrappedSystem.
+  const System<AutoDiffXd>* child = diagram_autodiff->GetSystems().at(0);
+  ASSERT_THAT(child, testing::WhenDynamicCastTo<const Adder<AutoDiffXd>*>(
+                         testing::NotNull()));
+  EXPECT_EQ(child->get_name(), "my_adder");
 }
 
 // Tests that, when asked for the state derivatives of Systems that are
