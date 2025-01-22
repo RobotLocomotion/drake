@@ -1,0 +1,27 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/performance:defs.bzl",
+    "drake_cc_googlebench_binary",
+    "drake_py_experiment_binary",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_googlebench_binary(
+    name = "benchmark",
+    srcs = ["benchmark.cc"],
+    add_test_rule = True,
+    deps = [
+        "//lcm",
+        "//lcmtypes:lcmtypes_drake_cc",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "experiment",
+    googlebench_binary = ":benchmark",
+)
+
+add_lint_tests()
