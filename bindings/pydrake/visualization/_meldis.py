@@ -864,7 +864,7 @@ class Meldis:
                         handler=illustration_viewer.on_viewer_draw)
         self._subscribe(channel="DRAKE_VIEWER_DEFORMABLE_ILLUSTRATION",
                         message_type=lcmt_viewer_link_data,
-                        handler=default_viewer.on_viewer_draw_deformable)
+                        handler=illustration_viewer.on_viewer_draw_deformable)
         self._poll(handler=illustration_viewer.on_poll)
 
         proximity_viewer = _ViewerApplet(meshcat=self.meshcat,
@@ -880,7 +880,7 @@ class Meldis:
                         handler=proximity_viewer.on_viewer_draw)
         self._subscribe(channel="DRAKE_VIEWER_DEFORMABLE_PROXIMITY",
                         message_type=lcmt_viewer_link_data,
-                        handler=default_viewer.on_viewer_draw_deformable)
+                        handler=proximity_viewer.on_viewer_draw_deformable)
         self._poll(handler=proximity_viewer.on_poll)
 
         contact = _ContactApplet(meshcat=self.meshcat)
