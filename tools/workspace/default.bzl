@@ -191,6 +191,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "glib" not in excludes:
         glib_repository(name = "glib")
     if "glx" not in excludes:
+        # Deprecated 2025-05-01.
         glx_repository(name = "glx")
     if "googlebenchmark" not in excludes:
         googlebenchmark_repository(name = "googlebenchmark", mirrors = mirrors)
@@ -261,6 +262,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "opencl" not in excludes:
         opencl_repository(name = "opencl")
     if "opengl" not in excludes:
+        # Deprecated 2025-05-01.
         opengl_repository(name = "opengl")
     if "openusd_internal" not in excludes:
         openusd_internal_repository(name = "openusd_internal", mirrors = mirrors)  # noqa
@@ -428,7 +430,6 @@ REPOS_EXPORTED = [
     "fmt",
     "gflags",
     "glib",
-    "glx",
     "gtest",
     "gurobi",
     "lapack",
@@ -438,7 +439,6 @@ REPOS_EXPORTED = [
     "meshcat",
     "mosek",
     "opencl",
-    "opengl",
     "pybind11",
     "pycodestyle",
     "python",
@@ -458,7 +458,6 @@ def _drake_dep_repositories_impl(module_ctx):
     drake_models_repository(name = "drake_models", mirrors = mirrors)
     gflags_repository(name = "gflags", mirrors = mirrors)
     glib_repository(name = "glib")
-    glx_repository(name = "glx")
     gtest_repository(name = "gtest", mirrors = mirrors)
     gurobi_repository(name = "gurobi")
     lapack_repository(name = "lapack")
@@ -468,7 +467,6 @@ def _drake_dep_repositories_impl(module_ctx):
     meshcat_repository(name = "meshcat", mirrors = mirrors)
     mosek_repository(name = "mosek", mirrors = mirrors)
     opencl_repository(name = "opencl")
-    opengl_repository(name = "opengl")
     pybind11_repository(name = "pybind11", mirrors = mirrors)
     pycodestyle_repository(name = "pycodestyle", mirrors = mirrors)
     python_repository(name = "python")

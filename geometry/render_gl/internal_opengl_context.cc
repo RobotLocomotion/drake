@@ -10,12 +10,14 @@
 // Note: This is intentionally included here since it's only needed at the
 // implementation level, and not in a grouping of more generic headers like
 // opengl_includes.h. See opengl_context.h for where pimpl is applied.
-#include <GL/glx.h>
+#include <vtkglad/include/glad/glx.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/unused.h"
+#include "drake/geometry/render_gl/internal_loaders.h"
 
 namespace drake {
 namespace geometry {
@@ -73,18 +75,7 @@ void GlDebugCallback(GLenum, GLenum type, GLuint, GLenum severity, GLsizei,
 }
 
 static Display* display() {
-  // Turn Display into a singleton to make CI happy, since when we close and
-  // reopen the display on CI, we can't request a new OpenGL context.
-  // This pattern won't call the corresponding `XCloseDisplay()` when the
-  // program exits, but it seems not so evil to skip that.
-  // (https://linux.die.net/man/3/xclosedisplay)
-  // If problems crop up in the future, this can/should be investigated.
-  static Display* g_display = []() {
-    XInitThreads();
-    Display* display = XOpenDisplay(0);
-    DRAKE_THROW_UNLESS(display != nullptr);
-    return display;
-  }();
+  static Display* g_display = static_cast<Display*>(GladLoaderLoadGlx());
   return g_display;
 }
 
@@ -224,6 +215,15 @@ class OpenGlContext::Impl {
         !glXMakeCurrent(display(), window_, context_)) {
       throw std::runtime_error("Error making an OpenGL context current");
     }
+    // After the first time we call glXMakeCurrent, we need to load OpenGL.
+    static const int kGlVersion = []() {
+      const int version = gladLoaderLoadGL();
+      if (version == 0) {
+        throw std::runtime_error("Could not dlopen libGL.so.1");
+      }
+      return version;
+    }();
+    unused(kGlVersion);
   }
 
   bool IsCurrent() const { return glXGetCurrentContext() == context_; }

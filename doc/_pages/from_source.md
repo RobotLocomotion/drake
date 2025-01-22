@@ -39,9 +39,8 @@ report.
 All else being equal, we would recommend developers use Ubuntu 22.04 (Jammy).
 
 ⁽¹⁾ Drake features that perform image rendering (e.g., camera simulation)
-require a working display server. Most personal computers will have this
-already built in, but some cloud or docker environments may require extra
-setup steps.
+maybe require extra setup. See the
+[troubleshooting](/troubleshooting.html#gl-init) page for details.
 
 ⁽²⁾ CPython is the only Python implementation supported.
 

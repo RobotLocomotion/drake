@@ -27,7 +27,6 @@ unzip
 zip
 
 # Build dependencies (general).
-libgl1-mesa-dev
 libglib2.0-dev
 libxt-dev
 # Build dependencies (OpenCL).
