@@ -2107,13 +2107,20 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
     // Drake's specific messages about *why* the file wasn't found into a
     // debug-only log.
     DiagnosticPolicy debug_log;
+    int num_errors = 0;
     debug_log.SetActionForWarnings([](const DiagnosticDetail& detail) {
       drake::log()->debug(detail.FormatWarning());
     });
-    debug_log.SetActionForErrors([](const DiagnosticDetail& detail) {
+    debug_log.SetActionForErrors([&num_errors](const DiagnosticDetail& detail) {
+      ++num_errors;
       drake::log()->debug(detail.FormatError());
     });
-    return ResolveUri(debug_log, _input, workspace.package_map, ".");
+    std::string result =
+        ResolveUri(debug_log, _input, workspace.package_map, ".");
+    if (num_errors > 0) {
+      return std::string{};
+    }
+    return result;
   });
 
   parser_config.RegisterCustomModelParser(

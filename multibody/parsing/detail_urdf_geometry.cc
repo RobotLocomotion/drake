@@ -22,6 +22,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+namespace fs = std::filesystem;
+
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
@@ -148,15 +150,16 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
   std::optional<std::string> texture_path;
   const XMLElement* texture_node = node->FirstChildElement("texture");
   if (texture_node) {
-    // TODO(rpoyner-tri): error for empty texture tag?
     std::string texture_name;
     if (ParseStringAttribute(texture_node, "filename", &texture_name) &&
         !texture_name.empty()) {
       texture_path = ResolveUri(diagnostic.MakePolicyForNode(texture_node),
                                 texture_name, package_map, root_dir);
-      if (texture_path->empty()) {
-        // ResolveUri already emitted an error message.
-        return {};
+
+      if (!fs::exists(texture_path.value())) {
+        std::string message = std::string(fmt::format(
+            "Unable to locate the texture file: {}", texture_name));
+        diagnostic.Error(*texture_node, std::move(message));
       }
     }
   }
@@ -295,10 +298,6 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
   const std::string resolved_filename = ResolveUri(
       diagnostic.MakePolicyForNode(shape_node), filename, package_map,
       root_dir);
-  if (resolved_filename.empty()) {
-    // ResolveUri already emitted an error message.
-    return {};
-  }
 
   double scale = 1.0;
   // Obtains the scale of the mesh if it exists.

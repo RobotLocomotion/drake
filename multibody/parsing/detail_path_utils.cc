@@ -82,7 +82,6 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
       diagnostic.Error(fmt::format(
           "URI '{}' resolved to '{}' which does not exist.",
           uri, result.string()));
-    return {};
   }
 
   return result.string();

@@ -14,10 +14,10 @@ namespace internal {
 // Otherwise, iff a root_dir was provided then @p uri is appended to the end
 // of @p root_dir (if it's not already an absolute path) and checked for
 // existence.  If the file does not exist or is not found, an error is posted
-// to @p diagnostic and an empty string is returned. The returned path
-// will be lexically normalized. In other words, a path like
-// `/some//path/to/ignored/../file.txt` (with duplicate slashes, directory
-// changes, etc.) would be boiled down to `/some/path/to/file.txt`.
+// to @p diagnostic. The returned path will be lexically normalized. In other
+// words, a path like `/some//path/to/ignored/../file.txt` (with duplicate
+// slashes, directory changes, etc.) would be boiled down to
+// `/some/path/to/file.txt`.
 //
 // @param diagnostic The error-reporting channel.
 //

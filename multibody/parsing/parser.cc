@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/parser.h"
 
+#include <filesystem>
 #include <optional>
 #include <set>
 #include <utility>
@@ -15,6 +16,8 @@
 
 namespace drake {
 namespace multibody {
+
+namespace fs = std::filesystem;
 
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
@@ -98,7 +101,7 @@ std::vector<ModelInstanceIndex> Parser::AddModelsFromUrl(
     const std::string& url) {
   const std::string file_name = internal::ResolveUri(
       diagnostic_policy_, url, package_map_, {});
-  if (file_name.empty()) {
+  if (!fs::exists(file_name)) {
     return {};
   }
   return AddModels(file_name);

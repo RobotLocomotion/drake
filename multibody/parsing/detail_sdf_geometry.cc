@@ -1,5 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_geometry.h"
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <set>
@@ -27,6 +28,8 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+namespace fs = std::filesystem;
 
 using Eigen::Vector3d;
 using std::make_unique;
@@ -418,11 +421,10 @@ VisualProperties MakeVisualPropertiesFromSdfVisual(
       if (has_value) {
         const std::string resolved_path =
             resolve_filename(diagnostic, texture_name);
-        if (resolved_path.empty()) {
+        if (!fs::exists(resolved_path)) {
           std::string message = std::string(fmt::format(
               "Unable to locate the texture file: {}", texture_name));
           diagnostic.Error(visual_element, std::move(message));
-          return {std::nullopt, std::nullopt};
         }
         properties->AddProperty("phong", "diffuse_map", resolved_path);
       }
