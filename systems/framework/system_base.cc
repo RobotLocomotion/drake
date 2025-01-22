@@ -430,8 +430,7 @@ void SystemBase::set_parent_service(
     SystemBase* child,
     const internal::SystemParentServiceInterface* parent_service) {
   DRAKE_DEMAND(child != nullptr);
-  DRAKE_DEMAND(parent_service != nullptr);
-  if (child->parent_service_ != nullptr) {
+  if (parent_service != nullptr && child->parent_service_ != nullptr) {
     throw std::logic_error(fmt::format(
         "Cannot build subsystem '{}' into Diagram '{}' because it has already "
         "been built into a different Diagram '{}'",

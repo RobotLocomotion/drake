@@ -58,6 +58,7 @@ drake_cc_package_library(
         ":vector",
         ":vector_system",
         ":witness_function",
+        ":wrapped_system",
     ],
 )
 
@@ -609,7 +610,16 @@ drake_cc_library(
 
 drake_cc_library(
     name = "diagram",
-    srcs = ["diagram.cc"],
+    srcs = [
+        "diagram.cc",
+        # The internal-use-only wrapped_system is a close friend of Diagram.
+        # It subclasses Diagram and Diagram's implementation uses it, so we
+        # must group that dependency cycle into a single library. However, note
+        # that one constructor is defined in wrapped_system_builder.cc as part
+        # of the actual :wrapped_system library.
+        "wrapped_system.cc",
+        "wrapped_system.h",
+    ],
     hdrs = ["diagram.h"],
     deps = [
         ":diagram_context",
@@ -617,11 +627,11 @@ drake_cc_library(
         ":system",
         "//common:default_scalars",
         "//common:essential",
+        "//common:string_container",
     ],
     implementation_deps = [
         ":abstract_value_cloner",
         "//common:pointer_cast",
-        "//common:string_container",
     ],
 )
 
@@ -693,6 +703,22 @@ drake_cc_library(
         ":leaf_system",
         "//common:default_scalars",
         "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "wrapped_system",
+    srcs = [
+        # This file just defines one constructor. Most functions are defined in
+        # wrapped_system.cc which is necessarily part of the :diagram library.
+        "wrapped_system_builder.cc",
+    ],
+    hdrs = ["wrapped_system.h"],
+    deps = [
+        ":diagram",
+    ],
+    implementation_deps = [
+        ":diagram_builder",
     ],
 )
 
@@ -1093,6 +1119,16 @@ drake_cc_googletest(
     deps = [
         ":vector_system",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "wrapped_system_test",
+    deps = [
+        ":wrapped_system",
+        "//common/test_utilities",
+        "//systems/framework/test_utilities:scalar_conversion",
+        "//systems/primitives:adder",
     ],
 )
 
