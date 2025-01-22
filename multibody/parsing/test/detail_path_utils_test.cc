@@ -230,6 +230,47 @@ GTEST_TEST(ResolveUriTest, DeprecatedPackage) {
       ".*package://bar/multibody.*is deprecated.*"));
 }
 
+// Verifies that ResolveUri() returns path even for non-existent files.
+GTEST_TEST(ResolveUriTest, NonExistentFiles) {
+  PackageMap package_map;
+  package_map.Add("test_package", ".");
+
+  DiagnosticPolicy diagnostic;
+  DiagnosticDetail error;
+  diagnostic.SetActionForErrors([&error](const DiagnosticDetail& detail) {
+    error = detail;
+  });
+
+  // Test with relative path.
+  const string rel_path = "nonexistent.urdf";
+  const string root_dir = "/some/root";
+  string result = ResolveUri(diagnostic, rel_path, package_map, root_dir);
+  EXPECT_EQ(result, root_dir + "/" + rel_path);
+  EXPECT_THAT(error.message, ::testing::HasSubstr("does not exist"));
+
+  // Test model:// scheme.
+  error = {};
+  const string model_uri = "model://test_package/" + rel_path;
+  result = ResolveUri(diagnostic, model_uri, package_map, "");
+  EXPECT_EQ(result, rel_path);
+  EXPECT_THAT(error.message, ::testing::HasSubstr("does not exist"));
+
+  // Test package:// scheme.
+  error = {};
+  const string package_uri = "package://test_package/" + rel_path;
+  result = ResolveUri(diagnostic, package_uri, package_map, "");
+  EXPECT_EQ(result, rel_path);
+  EXPECT_THAT(error.message, ::testing::HasSubstr("does not exist"));
+
+  // Absolute paths without a root_dir should still throw.
+  error = {};
+  const string abs_path = "/some/other/root/" + rel_path;
+  result = ResolveUri(diagnostic, abs_path, package_map, "");
+  EXPECT_EQ(result, "");
+  EXPECT_THAT(error.message, ::testing::HasSubstr(
+    "is invalid when parsing a string instead of a filename."));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
