@@ -7,6 +7,7 @@
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/render_gl/factory.h"
+#include "drake/geometry/render_vtk/factory.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/parsing/parser.h"
@@ -35,6 +36,7 @@ using drake::geometry::Mesh;
 using drake::geometry::PerceptionProperties;
 using drake::geometry::ProximityProperties;
 using drake::geometry::RenderEngineGlParams;
+using drake::geometry::RenderEngineVtkParams;
 using drake::geometry::Rgba;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
@@ -79,11 +81,10 @@ int do_main() {
   auto [plant, scene_graph] = AddMultibodyPlant(plant_config, &builder);
 
   if (FLAGS_render_bubble) {
-    /* Add a renderer to render the inside dot pattern of the bubble gripper.
-     Currently (April 2024), deformable rendering is only supported by
-     RenderEngineGl. */
-    scene_graph.AddRenderer(
-        "gl_renderer", geometry::MakeRenderEngineGl(RenderEngineGlParams{}));
+    /* Add a renderer to render the inside dot pattern of the bubble gripper. */
+    const RenderEngineVtkParams vtk_params{.backend = "GLX"};
+    scene_graph.AddRenderer("vtk_renderer",
+                            geometry::MakeRenderEngineVtk(vtk_params));
   }
 
   /* Minimum required proximity properties for rigid bodies to interact with
@@ -244,8 +245,10 @@ int do_main() {
   geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph, nullptr,
                                            params);
   /* We want to look in the -Py direction so we line up Bz with -Py.*/
+  // TODO(xuchenhan-tri): Do we need to flip_y for the texture in
+  // RenderEngineGl?
   const Vector3d Bz_P = -Vector3d::UnitY();
-  const Vector3d Bx_P = Vector3d::UnitZ();
+  const Vector3d Bx_P = -Vector3d::UnitZ();
   const Vector3d By_P = Bz_P.cross(Bx_P);  // Already a unit vector.
   const Vector3d p_PB(0, 0.06, -0.11);
   const RotationMatrixd R_PB =
@@ -260,7 +263,7 @@ int do_main() {
                                      .focal{CameraConfig::FovDegrees{.y = 90}},
                                      .clipping_near = 0.001,
                                      .X_PB = schema_X_PB,
-                                     .renderer_name = "gl_renderer",
+                                     .renderer_name = "vtk_renderer",
                                      .show_rgb = true};
     ApplyCameraConfig(camera_config, &builder);
   }
