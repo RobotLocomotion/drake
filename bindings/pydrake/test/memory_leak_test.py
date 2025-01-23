@@ -16,7 +16,7 @@ import weakref
 
 from pydrake.planning import RobotDiagramBuilder
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import DiagramBuilder
+from pydrake.systems.framework import DiagramBuilder, LeafSystem
 from pydrake.systems.primitives import ConstantVectorSource
 
 from pydrake.common import RandomGenerator
@@ -269,6 +269,18 @@ def _dut_full_example():
     return _make_sentinels_from_locals("full_example", locals())
 
 
+class MyPyLeafSystem(LeafSystem):
+    def __init__(self):
+        super().__init__()  # Don't forget to initialize the base class.
+        # Comment/uncomment this one line to turn leak off or on.
+        self._a_port = self.DeclareVectorInputPort(name="a", size=2)
+
+
+def _dut_mypyleafsystem():
+    mypyleafsystem = MyPyLeafSystem()
+    return _make_sentinels_from_locals("mypyleafsystem", locals())
+
+
 def _repeat(*, dut: callable, count: int):
     """Calls dut() for count times in a row, performing a full garbage
     collection before and after each call. Tracks memory leaks of interest; the
@@ -324,3 +336,8 @@ class TestMemoryLeaks(unittest.TestCase):
     def test_full_example(self):
         # Note: this test doesn't invoke the #14355 deliberate cycle.
         self.do_test(dut=_dut_full_example, count=1)
+
+    def test_mypyleafsystem(self):
+        # TODO(#22515): Fix this family of leaks.
+        self.do_test(dut=_dut_mypyleafsystem, count=1, leaks_allowed=1,
+                     leaks_required=1)
