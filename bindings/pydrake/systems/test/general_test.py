@@ -52,6 +52,7 @@ from pydrake.systems.framework import (
     SystemVisitor,
     SystemBase,
     SystemOutput, SystemOutput_,
+    SystemScalarConverter,
     VectorBase, VectorBase_,
     TriggerType,
     VectorSystem, VectorSystem_,
@@ -439,6 +440,8 @@ class TestGeneral(unittest.TestCase):
         float_system.get_input_port(0).FixValue(float_context, 1.)
         for T in [float, AutoDiffXd, Expression]:
             system = Adder_[T](1, 1)
+            self.assertIsInstance(system.get_system_scalar_converter(),
+                                  SystemScalarConverter)
             # N.B. Current scalar conversion does not permit conversion to and
             # from the same type.
             if T != float:
