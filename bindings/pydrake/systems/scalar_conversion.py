@@ -3,7 +3,9 @@
 import copy
 from functools import partial
 
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import pretty_class_name
+from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     LeafSystem_,
     SystemScalarConverter,
@@ -11,6 +13,7 @@ from pydrake.systems.framework import (
 from pydrake.common.cpp_template import (
     _get_module_from_stack,
     TemplateClass,
+    TemplateMethod,
 )
 
 
@@ -194,6 +197,30 @@ class TemplateSystem(TemplateClass):
                     self, *args, converter=converter, **kwargs)
 
         cls.__init__ = system_init
+
+        # Patch the scalar-conversion functions (only when called from Python,
+        # not when called from C++) to return the Python type instead of the
+        # WrappedSystem shim.
+        cls.ToScalarType = TemplateMethod(
+            cls=cls, name="ToScalarType")
+        cls.ToScalarTypeMaybe = TemplateMethod(
+            cls=cls, name="ToScalarTypeMaybe")
+        for U in SystemScalarConverter.SupportedScalars:
+            new_method = template._make_new_to_scalar_type_method(
+                T=U, U=T, maybe=False)
+            new_method_maybe = template._make_new_to_scalar_type_method(
+                T=U, U=T, maybe=True)
+            if U == AutoDiffXd:
+                cls.ToAutoDiffXd = new_method
+                cls.ToAutoDiffXdMaybe = new_method_maybe
+            elif U == Expression:
+                cls.ToSymbolic = new_method
+                cls.ToSymbolicMaybe = new_method_maybe
+            cls.ToScalarType.add_instantiation(
+                param=[U,], instantiation=new_method)
+            cls.ToScalarTypeMaybe.add_instantiation(
+                param=[U,], instantiation=new_method_maybe)
+
         return cls
 
     def _check_if_copying(self, obj, *args, **kwargs):
@@ -222,5 +249,27 @@ class TemplateSystem(TemplateClass):
         # to when the conversion is called.
         for (T, U) in self._T_pairs:
             conversion = partial(self._make, T, U)
-            converter._Add[T, U](conversion)
+            converter._AddConstructor[T, U](conversion)
         return converter
+
+    def _make_new_to_scalar_type_method(self, *, T, U, maybe):
+        # Helper for _on_add for replacing the ToScalarType{Maybe}_ methods
+        # with pure-python implementations that avoid C++ lifetime challenges.
+        # U is the "from" type (the type of the System being called).
+        # T is the "to" type (the type of System to return).
+        def _to_scalar_type(system_U):
+            converter = system_U.get_system_scalar_converter()
+            if not converter.IsConvertible[U, T]():
+                if maybe:
+                    return None
+                raise RuntimeError(
+                    f"System {system_U.GetSystemPathname()} "
+                    f"of type {type(system_U)} "
+                    f"does not support scalar conversion to type {T}")
+            result = self._make(T=T, U=U, system_U=system_U)
+            result._HandlePostConstructionScalarConversion[U](system_U)
+            return result
+        _to_scalar_type.T = T
+        _to_scalar_type.U = U
+        _to_scalar_type.maybe = maybe
+        return _to_scalar_type

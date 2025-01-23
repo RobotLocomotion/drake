@@ -37,6 +37,25 @@ def Example_(T):
 Example = Example_[None]
 
 
+@mut.TemplateSystem.define("NonsymbolicExample_", T_list=(float, AutoDiffXd))
+def NonsymbolicExample_(T):
+
+    class Impl(LeafSystem_[T]):
+        """Testing non-symbolic example."""
+
+        def _construct(self, value, converter=None):
+            LeafSystem_[T].__init__(self, converter=converter)
+            self.value = value
+
+        def _construct_copy(self, other, converter=None):
+            Impl._construct(self, other.value, converter=converter)
+
+    return Impl
+
+
+NonsymbolicExample = NonsymbolicExample_[None]
+
+
 class TestScalarConversion(unittest.TestCase):
     def test_converter_attributes(self):
         conversion_scalars = (
@@ -206,6 +225,43 @@ class TestScalarConversion(unittest.TestCase):
         ]
         with self.assertRaises(AssertionError):
             mut.TemplateSystem.define("C", T_pairs=T_pairs_unsupported)
+
+    def test_nonsymbolic_example(self):
+        """Tests the NonsymbolicExample_ system."""
+        # Test private properties (do NOT use these in your code!).
+        self.assertEqual(len(NonsymbolicExample_._T_list), 2)
+        self.assertEqual(len(NonsymbolicExample_._T_pairs), 2)
+
+        # Test calls that we have available for scalar conversion.
+        for (T, U), use_maybe_variation in itertools.product(
+                SystemScalarConverter.SupportedConversionPairs, [False, True]):
+            if U is Expression:
+                continue
+            expected_is_convertible = T is not Expression
+            system_U = NonsymbolicExample_[U](2)
+            system_U._AddExternalConstraint(_ExternalSystemConstraint())
+            if expected_is_convertible:
+                if use_maybe_variation:
+                    system_T = system_U.ToScalarTypeMaybe[T]()
+                else:
+                    system_T = system_U.ToScalarType[T]()
+                self.assertEqual(system_T.value, system_U.value)
+                if T is AutoDiffXd:
+                    if use_maybe_variation:
+                        system_ad = system_U.ToAutoDiffXdMaybe()
+                    else:
+                        system_ad = system_U.ToAutoDiffXd()
+                self.assertEqual(system_ad.value, system_U.value)
+                continue
+            # Carefully check when happens when NOT convertible.
+            if use_maybe_variation:
+                system_T = system_U.ToScalarTypeMaybe[T]()
+                self.assertIsNone(system_T)
+                continue
+            with self.assertRaisesRegex(
+                    RuntimeError,
+                    ".*NonsymbolicExample.*not support.*Expression"):
+                system_U.ToScalarType[T]()
 
     def test_inheritance(self):
 
