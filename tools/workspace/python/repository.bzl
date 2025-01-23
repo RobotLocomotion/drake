@@ -120,7 +120,7 @@ def _get_linkopts(repo_ctx, python_config):
 def _prepare_venv(repo_ctx, python):
     # Only macOS uses a venv at the moment.
     os_name = repo_ctx.os.name  # "linux" or "mac os x"
-    if os_name != "mac os x":
+    if os_name != "mac os x" and not is_wheel_build(repo_ctx):
         return python
 
     # Locate lock files and mark them to be monitored for changes.
@@ -144,14 +144,16 @@ def _prepare_venv(repo_ctx, python):
     # doesn't exist at all yet.
     sync_label = Label("@drake//tools/workspace/python:venv_sync")
     sync = repo_ctx.path(sync_label).realpath
-    repo_ctx.report_progress("Running venv_sync")
-    execute_or_fail(repo_ctx, [
-        sync,
+    sync_args = [
         "--python",
         python,
         "--repository",
         repo_ctx.path("").realpath,
-    ])
+    ]
+    if is_wheel_build:
+        sync_args.append("--symlink")
+    repo_ctx.report_progress("Running venv_sync")
+    execute_or_fail(repo_ctx, [sync] + sync_args)
     repo_ctx.watch(sync)
 
     # Read the path to the venv's python3. (This file is created by venv_sync.)
