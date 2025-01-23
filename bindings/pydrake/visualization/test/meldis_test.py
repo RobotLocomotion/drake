@@ -659,7 +659,7 @@ Kd 1 1 0
 
     def test_deformable(self):
         """Checks that _ViewerApplet doesn't crash for deformable geometries
-        in DRAKE_VIEWER_DEFORMABLE channel.
+        in DRAKE_VIEWER_DEFORMABLE(_{GEOMETRY_ROLE}) channel.
         """
 
         # Create the device under test.
@@ -696,17 +696,32 @@ Kd 1 1 0
 
         dut._lcm.Publish(channel="DRAKE_VIEWER_DEFORMABLE",
                          buffer=message.encode())
+        dut._lcm.Publish(channel="DRAKE_VIEWER_DEFORMABLE_ILLUSTRATION",
+                         buffer=message.encode())
+        dut._lcm.Publish(channel="DRAKE_VIEWER_DEFORMABLE_PROXIMITY",
+                         buffer=message.encode())
 
-        meshcat_path = f"/DRAKE_VIEWER/{message.robot_num}/{message.name}"
+        meshcat_default = f"/DRAKE_VIEWER/{message.robot_num}/{message.name}"
+        meshcat_proximity = (
+            f"/Collision Geometry/{message.robot_num}/{message.name}"
+        )
+        meshcat_illustration = (
+            f"/Visual Geometry/{message.robot_num}/{message.name}"
+        )
+
         # Before the subscribed handlers are called, there is no meshcat path
         # from the published lcm message.
-        self.assertEqual(dut.meshcat.HasPath(meshcat_path), False)
+        self.assertEqual(dut.meshcat.HasPath(meshcat_default), False)
+        self.assertEqual(dut.meshcat.HasPath(meshcat_proximity), False)
+        self.assertEqual(dut.meshcat.HasPath(meshcat_illustration), False)
 
         dut._lcm.HandleSubscriptions(timeout_millis=1)
         dut._invoke_subscriptions()
 
         # After the handlers are called, we have the expected meshcat path.
-        self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
+        self.assertEqual(dut.meshcat.HasPath(meshcat_default), True)
+        self.assertEqual(dut.meshcat.HasPath(meshcat_proximity), True)
+        self.assertEqual(dut.meshcat.HasPath(meshcat_illustration), True)
 
     def test_point_cloud(self):
         """Checks that _PointCloudApplet doesn't crash when receiving point
