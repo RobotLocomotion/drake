@@ -98,13 +98,13 @@ if [[ "${push_apt}" -ne 0 ]]; then
     mkdir -p "${platform}"
     pushd "${platform}"
 
-    filename="drake-dev_${source_version}-1_amd64-${platform}.deb"
+    filename_prefix="drake-dev_${source_version}-1_amd64"
 
     curl --fail --location --remote-name \
-      "https://drake-packages.csail.mit.edu/drake/release/${filename}"
+      "https://drake-packages.csail.mit.edu/drake/release/${filename_prefix}-${platform}.deb"
 
     # Add the Debian package to the aptly database.
-    aptly repo add "drake-${platform}" "${filename}"
+    aptly repo add "drake-${platform}" "${filename_prefix}.deb"
     aptly snapshot create "drake-${platform}-${source_version}" \
       from repo "drake-${platform}"
 
