@@ -151,7 +151,15 @@ drake_cc_googletest(
         # Most tests do not render correctly on macOS CI. Instead of trying to
         # select the few that randomly happen to pass, we'll skip everything.
         # TODO(#19424) Re-enable the tests.
-        ":osx": ["--gtest_filter=-RenderEngineVtkTest.NoBodyTest"],
+        ":osx": [
+            "--gtest_filter=-" + ":".join([
+                "RenderEngineVtkTest.FallbackLight",
+                "RenderEngineVtkTest.GltfAssetFormats",
+                "RenderEngineVtkTest.InMemoryMesh",
+                "RenderEngineVtkTest.MeshTest",
+                "RenderEngineVtkTest.WholeImageDefaultParams",
+            ]),
+        ],
         "//conditions:default": [],
     }),
     data = [
