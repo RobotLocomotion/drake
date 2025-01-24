@@ -14,7 +14,6 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load(
     "//tools/skylark:drake_cc.bzl",
-    "cc_nolink_library",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_test",
@@ -260,21 +259,11 @@ config_setting(
 cc_library(
     name = "libdrake_header_only_deps",
     deps = [
-        ":fmt_headers",
-        ":spdlog_headers",
         "//lcmtypes:lcmtypes_drake_cc",
+        "//tools/workspace/fmt:hdrs",
+        "//tools/workspace/spdlog:hdrs",
         "@eigen",
     ],
-)
-
-cc_nolink_library(
-    name = "fmt_headers",
-    deps = ["@fmt"],
-)
-
-cc_nolink_library(
-    name = "spdlog_headers",
-    deps = ["@spdlog"],
 )
 
 drake_cc_test(

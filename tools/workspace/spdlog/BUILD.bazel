@@ -1,7 +1,8 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
-load("//tools/install:install.bzl", "install_license")
+load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_library")
+load("//tools/skylark:drake_cc.bzl", "cc_nolink_library")
 
 config_setting(
     name = "flag_spdlog_repo_disabled",
@@ -62,11 +63,37 @@ cc_library(
     }),
 )
 
+cc_nolink_library(
+    name = "hdrs",
+    visibility = ["//tools/install/libdrake:__pkg__"],
+    deps = ["@spdlog"],
+)
+
+install(
+    name = "install_hdrs",
+    targets = select({
+        ":use_pkgconfig": [],
+        "//conditions:default": [":hdrs"],
+    }),
+    hdr_dest = "include",
+    hdr_strip_prefix = ["include"],
+    guess_hdrs = "ALLOWED_EXTERNALS",
+    allowed_externals = ["@module_spdlog//:spdlog"],
+)
+
 install_license(
-    name = "install",
+    name = "install_license",
     doc_dest = "share/doc/spdlog",
     licenses = ["@module_spdlog//:license"],
+)
+
+install(
+    name = "install",
     visibility = ["//tools/workspace:__pkg__"],
+    deps = [
+        ":install_hdrs",
+        ":install_license",
+    ],
 )
 
 add_lint_tests()

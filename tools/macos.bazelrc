@@ -6,6 +6,10 @@
 # For background, see https://bazel.build/docs/bazel-and-java.
 build --java_runtime_version=remotejdk_11
 
+# When making a *.tar.gz binary release, don't use Homebrew for C++ dependencies
+# (eigen, fmt, spdlog), because it offers absolutely no version stability.
+common:packaging --@drake//tools/flags:public_repo_default=module
+
 # Suppress numerous "'_FORTIFY_SOURCE' macro redefined" warnings when using
 # sanitizers.
 build:asan --copt=-Wno-macro-redefined

@@ -90,7 +90,12 @@ def _output_path(ctx, input_file, strip_prefix = [], ignore_errors = False):
     return input_file.basename
 
 #------------------------------------------------------------------------------
-def _guess_files(target, candidates, scope, attr_name):
+def _guess_files(
+        target,
+        candidates,
+        scope,
+        attr_name,
+        allowed_externals = None):
     if scope == "EVERYTHING":
         return candidates
 
@@ -107,6 +112,17 @@ def _guess_files(target, candidates, scope, attr_name):
             for f in _depset_to_list(candidates)
             if (target.label.workspace_root == f.owner.workspace_root and
                 target.label.package == f.owner.package)
+        ]
+
+    elif allowed_externals != None and scope == "ALLOWED_EXTERNALS":
+        return [
+            f
+            for f in _depset_to_list(candidates)
+            if f.is_source and any([
+                allowed.label.workspace_root == f.owner.workspace_root and
+                allowed.label.package == f.owner.package
+                for allowed in allowed_externals
+            ])
         ]
 
     else:
@@ -256,6 +272,7 @@ def _install_cc_actions(ctx, target):
             target[CcInfo].compilation_context.headers,
             ctx.attr.guess_hdrs,
             "guess_hdrs",
+            getattr(ctx.attr, "allowed_externals"),
         )
         actions += _install_actions(
             ctx,
@@ -668,6 +685,9 @@ Note:
       target and owned by a target in the same package.
     * ``WORKSPACE``: For each target, install those files which are used by the
       target and owned by a target in the same workspace.
+    * ``ALLOWED_EXTERNALS``: (For guess_hdrs only) for each target, install
+      source files which are used by the target and owned by a target in the
+      at least one of the `allowed_externals = ...` list of labels.
     * ``EVERYTHING``: Install all headers/resources used by the target.
 
     The headers and resource files considered are *all* headers or resource

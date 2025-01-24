@@ -1,5 +1,5 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
-load("//tools/install:install.bzl", "install_license")
+load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 config_setting(
@@ -48,8 +48,19 @@ alias(
     visibility = ["//visibility:public"],
 )
 
+install(
+    name = "install_hdrs",
+    targets = select({
+        ":use_pkgconfig": [],
+        "//conditions:default": ["@module_eigen//:eigen"],
+    }),
+    hdr_dest = "include",
+    guess_hdrs = "PACKAGE",
+    allowed_externals = ["@module_eigen//:eigen"],
+)
+
 install_license(
-    name = "install",
+    name = "install_license",
     doc_dest = "share/doc/eigen",
     licenses = [
         "@module_eigen//:license.APACHE",
@@ -57,7 +68,15 @@ install_license(
         "@module_eigen//:license.MINPACK",
         "@module_eigen//:license.MPL2",
     ],
+)
+
+install(
+    name = "install",
     visibility = ["//tools/workspace:__pkg__"],
+    deps = [
+        ":install_hdrs",
+        ":install_license",
+    ],
 )
 
 add_lint_tests()
