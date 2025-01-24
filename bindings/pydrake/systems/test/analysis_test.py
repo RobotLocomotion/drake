@@ -258,6 +258,10 @@ class TestAnalysis(unittest.TestCase):
 
         self.assertIs(simulator.get_system(), system)
 
+        got = simulator.release_context()
+        self.assertIsInstance(got, Context_[T])
+        self.assertFalse(simulator.has_context())
+
     def test_simulator_status(self):
         SimulatorStatus.ReturnReason.kReachedBoundaryTime
         SimulatorStatus.ReturnReason.kReachedTerminationCondition
