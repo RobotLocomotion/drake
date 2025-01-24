@@ -813,25 +813,25 @@ GTEST_TEST(SimulatorTest, WitnessAndTimedSequences) {
 
 GTEST_TEST(SimulatorTest, SecondConstructor) {
   // Create the spring-mass system and context.
-  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
   auto context = spring_mass.CreateDefaultContext();
 
   // Mark the context with an arbitrary value.
-  context->SetTime(3.);
+  context->SetTime(3.0);
 
-  /// Construct the simulator with the created context.
+  // Construct the simulator with the created context.
   Simulator<double> simulator(spring_mass, std::move(context));
 
   // Verify that context pointers are equivalent.
-  EXPECT_EQ(simulator.get_context().get_time(), 3.);
+  EXPECT_EQ(simulator.get_context().get_time(), 3.0);
 }
 
 GTEST_TEST(SimulatorTest, MiscAPI) {
-  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Default realtime rate should be zero.
-  EXPECT_TRUE(simulator.get_target_realtime_rate() == 0.);
+  EXPECT_TRUE(simulator.get_target_realtime_rate() == 0.0);
 
   simulator.set_target_realtime_rate(1.25);
   EXPECT_TRUE(simulator.get_target_realtime_rate() == 1.25);
@@ -849,7 +849,7 @@ GTEST_TEST(SimulatorTest, MiscAPI) {
 }
 
 GTEST_TEST(SimulatorTest, ContextAccess) {
-  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Set the integrator default step size.
@@ -862,8 +862,8 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   simulator.Initialize();
 
   // Try some other context stuff.
-  simulator.get_mutable_context().SetTime(3.);
-  EXPECT_EQ(simulator.get_context().get_time(), 3.);
+  simulator.get_mutable_context().SetTime(3.0);
+  EXPECT_EQ(simulator.get_context().get_time(), 3.0);
   EXPECT_TRUE(simulator.has_context());
   simulator.release_context();
   EXPECT_FALSE(simulator.has_context());
@@ -872,9 +872,9 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
 
   // Create another context.
   auto ucontext = spring_mass.CreateDefaultContext();
-  ucontext->SetTime(3.);
+  ucontext->SetTime(3.0);
   simulator.reset_context(std::move(ucontext));
-  EXPECT_EQ(simulator.get_context().get_time(), 3.);
+  EXPECT_EQ(simulator.get_context().get_time(), 3.0);
   EXPECT_TRUE(simulator.has_context());
   simulator.reset_context(nullptr);
   EXPECT_FALSE(simulator.has_context());
@@ -888,7 +888,7 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   // Set the integrator default step size.
   const double h = 1e-3;
 
-  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Set initial condition using the Simulator's internal Context.
@@ -906,9 +906,9 @@ GTEST_TEST(SimulatorTest, SpringMassNoSample) {
   simulator.Initialize();
 
   // Simulate for 1 second.
-  simulator.AdvanceTo(1.);
+  simulator.AdvanceTo(1.0);
 
-  EXPECT_NEAR(simulator.get_context().get_time(), 1., 1e-8);
+  EXPECT_NEAR(simulator.get_context().get_time(), 1.0, 1e-8);
   EXPECT_EQ(simulator.get_num_steps_taken(), 1000);
   EXPECT_EQ(simulator.get_num_discrete_updates(), 0);
 
@@ -927,7 +927,7 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
   // set the integrator default step size
   const double h = 1e-3;
 
-  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Set initial condition using the Simulator's internal Context.
@@ -949,9 +949,9 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
   simulator.reset_integrator<RungeKutta2Integrator<double>>(h);
 
   // Simulate to 1 second..
-  simulator.AdvanceTo(1.);
+  simulator.AdvanceTo(1.0);
 
-  EXPECT_NEAR(context.get_time(), 1., 1e-8);
+  EXPECT_NEAR(context.get_time(), 1.0, 1e-8);
 
   // Number of steps will have been reset.
   EXPECT_EQ(simulator.get_num_steps_taken(), 500);
@@ -961,38 +961,38 @@ GTEST_TEST(SimulatorTest, ResetIntegratorTest) {
 // the realtime rate control. However, we can at least say that the simulation
 // should not proceed much *faster* than the rate we select.
 GTEST_TEST(SimulatorTest, RealtimeRate) {
-  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
-  simulator.set_target_realtime_rate(1.);  // No faster than 1X real time.
+  simulator.set_target_realtime_rate(1.0);  // No faster than 1X real time.
   simulator.get_mutable_integrator().set_maximum_step_size(0.001);
-  simulator.get_mutable_context().SetTime(0.);
+  simulator.get_mutable_context().SetTime(0.0);
   simulator.Initialize();
-  simulator.AdvanceTo(1.);  // Simulate for 1 simulated second.
+  simulator.AdvanceTo(1.0);  // Simulate for 1 simulated second.
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 1.1);
 
-  simulator.set_target_realtime_rate(5.);  // No faster than 5X real time.
-  simulator.get_mutable_context().SetTime(0.);
+  simulator.set_target_realtime_rate(5.0);  // No faster than 5X real time.
+  simulator.get_mutable_context().SetTime(0.0);
   simulator.Initialize();
-  simulator.AdvanceTo(1.);  // Simulate for 1 more simulated second.
+  simulator.AdvanceTo(1.0);  // Simulate for 1 more simulated second.
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
 // Tests that if publishing every time step is disabled and publish on
 // initialization is enabled, publish only happens on initialization.
 GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
-  analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
+  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
   simulator.set_publish_at_initialization(true);
   simulator.set_publish_every_time_step(false);
 
-  simulator.get_mutable_context().SetTime(0.);
+  simulator.get_mutable_context().SetTime(0.0);
   simulator.Initialize();
   // Publish should happen on initialization.
   EXPECT_EQ(1, simulator.get_num_publishes());
 
   // Simulate for 1 simulated second.  Publish should not happen.
-  simulator.AdvanceTo(1.);
+  simulator.AdvanceTo(1.0);
   EXPECT_EQ(1, simulator.get_num_publishes());
 }
 
@@ -1007,7 +1007,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   const double h = 1e-3;
 
   // Create the mass spring system and the simulator.
-  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 30.);
+  analysis_test::MySpringMassSystem<double> spring_mass(kSpring, kMass, 30.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
 
   // Set initial condition using the Simulator's internal context.
@@ -1022,7 +1022,7 @@ GTEST_TEST(SimulatorTest, SpringMass) {
   simulator.Initialize();
 
   // Simulate to one second.
-  simulator.AdvanceTo(1.);
+  simulator.AdvanceTo(1.0);
 
   EXPECT_GT(simulator.get_num_steps_taken(), 1000);
   EXPECT_EQ(simulator.get_num_discrete_updates(), 30);
@@ -1061,14 +1061,14 @@ class ExampleDiscreteSystem : public LeafSystem<double> {
     DeclareVectorOutputPort("Sn", 1, &ExampleDiscreteSystem::Output);
   }
 
-  static constexpr double kPeriod = 1 / 50.;  // Update at 50Hz (h=1/50).
-  static constexpr double kOffset = 0.;       // Trigger events at n=0.
+  static constexpr double kPeriod = 1 / 50.0;  // Update at 50Hz (h=1/50).
+  static constexpr double kOffset = 0.0;       // Trigger events at n=0.
 
  private:
   void Update(const systems::Context<double>& context,
               systems::DiscreteValues<double>* xd) const {
     const double x_n = context.get_discrete_state()[0];
-    (*xd)[0] = x_n + 1.;
+    (*xd)[0] = x_n + 1.0;
   }
 
   void Output(const systems::Context<double>& context,
@@ -1296,7 +1296,7 @@ class DeltaFunction : public LeafSystem<double> {
  private:
   void Output(
       const Context<double>& context, BasicVector<double>* output) const {
-    (*output)[0] = context.get_time() == spike_time_ ? 1. : 0.;
+    (*output)[0] = context.get_time() == spike_time_ ? 1.0 : 0.0;
   }
 
   double spike_time_{};
@@ -1330,7 +1330,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
   const std::vector<double>& result() const { return result_; }
 
   static constexpr double kPeriod = 0.125;
-  static constexpr double kPublishOffset = 0.;
+  static constexpr double kPublishOffset = 0.0;
 
  private:
   // Sets initial condition x_0 = 0, and clears the result.
@@ -1376,7 +1376,7 @@ class DiscreteInputAccumulator : public LeafSystem<double> {
 GTEST_TEST(SimulatorTest, SpikeTest) {
   DiagramBuilder<double> builder;
 
-  auto delta = builder.AddSystem<DeltaFunction>(0.);
+  auto delta = builder.AddSystem<DeltaFunction>(0.0);
   auto hybrid_system = builder.AddSystem<DiscreteInputAccumulator>();
   builder.Connect(delta->get_output_port(0), hybrid_system->get_input_port(0));
   auto diagram = builder.Build();
@@ -1390,14 +1390,14 @@ GTEST_TEST(SimulatorTest, SpikeTest) {
 
   // Test with spike time = 3*h.
   delta->set_spike_time(3 * DiscreteInputAccumulator::kPeriod);
-  simulator.get_mutable_context().SetTime(0.);
+  simulator.get_mutable_context().SetTime(0.0);
   simulator.Initialize();
   simulator.AdvanceTo(5 * DiscreteInputAccumulator::kPeriod);
   EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 1, 1}));
 
   // Test with spike time not coinciding with a sample time.
   delta->set_spike_time(2.7 * DiscreteInputAccumulator::kPeriod);
-  simulator.get_mutable_context().SetTime(0.);
+  simulator.get_mutable_context().SetTime(0.0);
   simulator.Initialize();
   simulator.AdvanceTo(5 * DiscreteInputAccumulator::kPeriod);
   EXPECT_EQ(hybrid_system->result(), std::vector<double>({0, 0, 0, 0, 0, 0}));
@@ -1478,7 +1478,7 @@ GTEST_TEST(SimulatorTest, ExactUpdateTime) {
 
   // Simulate forward.
   simulator.Initialize();
-  simulator.AdvanceTo(1.);
+  simulator.AdvanceTo(1.0);
 
   // Check that the update occurs at exactly the desired time.
   EXPECT_EQ(updates.size(), 1u);
@@ -1742,7 +1742,7 @@ GTEST_TEST(SimulatorTest, UpdateThenPublishThenIntegrate) {
 
 // A basic sanity check that AutoDiff works.
 GTEST_TEST(SimulatorTest, AutodiffBasic) {
-  SpringMassSystem<AutoDiffXd> spring_mass(1., 1., 0.);
+  SpringMassSystem<AutoDiffXd> spring_mass(1.0, 1.0, 0.0);
   Simulator<AutoDiffXd> simulator(spring_mass);
   simulator.Initialize();
   simulator.AdvanceTo(1);
@@ -1754,7 +1754,7 @@ GTEST_TEST(SimulatorTest, StretchedStep) {
   // Setting the update rate to 1.0 will cause the spring mass to update at
   // 1.0s.
   analysis_test::MySpringMassSystem<double> spring_mass(
-      1., 1., 1. /* update rate */);
+      1.0, 1.0, 1.0 /* update rate */);
   Simulator<double> simulator(spring_mass);
 
   // We will direct the integrator to take a single step of t_final, which
@@ -1837,7 +1837,7 @@ GTEST_TEST(SimulatorTest, NoStretchedStep) {
   // Setting the update rate to 1.0 will cause the spring mass to update at
   // 1.0s.
   analysis_test::MySpringMassSystem<double> spring_mass(
-      1., 1., 1. /* update rate */);
+      1.0, 1.0, 1.0 /* update rate */);
   Simulator<double> simulator(spring_mass);
 
   // We will direct the integrator to take a single step of 0.9, which
@@ -1870,7 +1870,7 @@ GTEST_TEST(SimulatorTest, ArtificalLimitingStep) {
   // Setting the update rate to 1.0 will cause the spring mass to update at
   // 1.0s.
   analysis_test::MySpringMassSystem<double> spring_mass(
-    1., 1., 1. /* update rate */);
+    1.0, 1.0, 1.0 /* update rate */);
   Simulator<double> simulator(spring_mass);
 
   // Set initial condition using the Simulator's internal Context.
@@ -1930,7 +1930,7 @@ GTEST_TEST(SimulatorTest, StretchedStepPerfectStorm) {
   // Setting the update rate to 1.0 will cause the spring mass to update at
   // 1.0s.
   analysis_test::MySpringMassSystem<double> spring_mass(
-      1., 1., 1. /* update rate */);
+      1.0, 1.0, 1.0 /* update rate */);
   Simulator<double> simulator(spring_mass);
 
   // We will direct the integrator to take a single step of t_final, which
@@ -2245,18 +2245,18 @@ class WastefulIntegrator final : public IntegratorBase<double> {
 // above whose only "virtue" is that it makes multiple calls to derivatives
 // without changing the context so only the first of those should count.
 GTEST_TEST(SimulatorTest, EvalDerivativesCounter) {
-  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  SpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
 
   Simulator<double> simulator(spring_mass);
   Context<double>& context = simulator.get_mutable_context();
   context.DisableCaching();
   simulator.reset_integrator<WastefulIntegrator>(0.125);
-  simulator.AdvanceTo(1.);  // 8 steps, but 16 evaluations since no caching.
+  simulator.AdvanceTo(1.0);  // 8 steps, but 16 evaluations since no caching.
   EXPECT_EQ(simulator.get_integrator().get_num_steps_taken(), 8);
   EXPECT_EQ(simulator.get_integrator().get_num_derivative_evaluations(), 16);
 
   context.EnableCaching();
-  simulator.AdvanceTo(2.);  // 8 more steps, but only 8 more evaluations.
+  simulator.AdvanceTo(2.0);  // 8 more steps, but only 8 more evaluations.
   EXPECT_EQ(simulator.get_integrator().get_num_steps_taken(), 16);
   EXPECT_EQ(simulator.get_integrator().get_num_derivative_evaluations(), 24);
 }
@@ -2264,7 +2264,7 @@ GTEST_TEST(SimulatorTest, EvalDerivativesCounter) {
 // Verify correct functioning of the monitor() API and runtime monitor
 // behavior, including correct monitor status reporting from the Simulator.
 GTEST_TEST(SimulatorTest, MonitorFunctionAndStatusReturn) {
-  SpringMassSystem<double> spring_mass(1., 1., 0.);
+  SpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
   spring_mass.set_name("my_spring_mass");
   Simulator<double> simulator(spring_mass);
   simulator.reset_integrator<ExplicitEulerIntegrator<double>>(0.125);
@@ -2280,7 +2280,7 @@ GTEST_TEST(SimulatorTest, MonitorFunctionAndStatusReturn) {
   simulator.set_monitor(monitor);
   EXPECT_TRUE(simulator.get_monitor());
 
-  SimulatorStatus status = simulator.AdvanceTo(1.);  // Initialize + 8 steps.
+  SimulatorStatus status = simulator.AdvanceTo(1.0);  // Initialize + 8 steps.
   EXPECT_EQ(status.reason(), SimulatorStatus::kReachedBoundaryTime);
   EXPECT_EQ(simulator.get_num_steps_taken(), 8);
   EXPECT_EQ(states.size(), 9u);
@@ -2289,21 +2289,21 @@ GTEST_TEST(SimulatorTest, MonitorFunctionAndStatusReturn) {
       "Simulator successfully reached the boundary time.*1.*"));
 
   // Check that some of the timestamps are right.
-  EXPECT_EQ(states[0](0), 0.);
+  EXPECT_EQ(states[0](0), 0.0);
   EXPECT_EQ(states[1](0), 0.125);
-  EXPECT_EQ(states[8](0), 1.);
+  EXPECT_EQ(states[8](0), 1.0);
 
   simulator.clear_monitor();
   EXPECT_FALSE(simulator.get_monitor());
-  simulator.AdvanceTo(2.);
+  simulator.AdvanceTo(2.0);
   EXPECT_EQ(simulator.get_num_steps_taken(), 16);
   EXPECT_EQ(states.size(), 9u);
 
   simulator.set_monitor(monitor);
-  simulator.AdvanceTo(3.);  // 8 more steps.
+  simulator.AdvanceTo(3.0);  // 8 more steps.
   EXPECT_EQ(simulator.get_num_steps_taken(), 24);
   EXPECT_EQ(states.size(), 17u);
-  EXPECT_EQ(states[16](0), 3.);
+  EXPECT_EQ(states[16](0), 3.0);
 
   // This monitor should provide a clean termination that is properly
   // reported through the Simulator's status return.
@@ -2315,7 +2315,7 @@ GTEST_TEST(SimulatorTest, MonitorFunctionAndStatusReturn) {
   };
 
   simulator.set_monitor(good_monitor);
-  status = simulator.AdvanceTo(10.);
+  status = simulator.AdvanceTo(10.0);
   EXPECT_EQ(status.reason(), SimulatorStatus::kReachedTerminationCondition);
   // Time should be exactly 3.5 due to our choice of step size.
   EXPECT_EQ(simulator.get_context().get_time(), 3.5);
@@ -2336,7 +2336,7 @@ GTEST_TEST(SimulatorTest, MonitorFunctionAndStatusReturn) {
   };
   simulator.set_monitor(bad_monitor);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      simulator.AdvanceTo(10.),
+      simulator.AdvanceTo(10.0),
       ".*Simulator stopped at time 6.*because.*"
       "SpringMassSystem.*my_spring_mass.*"
       "failed with message.*Something terrible happened.*");
@@ -2944,7 +2944,7 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
   class PeriodicEventSystem : public LeafSystem<double> {
    public:
     PeriodicEventSystem() {
-      this->DeclarePeriodicPublishEvent(0.25, 0.,
+      this->DeclarePeriodicPublishEvent(0.25, 0.0,
                                         &PeriodicEventSystem::MakeItCount);
     }
 
@@ -2988,7 +2988,7 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
   // the offset time 0, we should get just the periodic event. This has always
   // worked properly.
   right_now_system->set_message_is_waiting(false);  // Deactivate event.
-  simulator.get_mutable_context().SetTime(0.);
+  simulator.get_mutable_context().SetTime(0.0);
   simulator.Initialize();
   EXPECT_EQ(right_now_system->publish_count(), 0);
   EXPECT_EQ(periodic_system->publish_count(), 1);
@@ -2999,7 +2999,7 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
   // Although this wasn't reported in #13296, it did not work correctly before
   // the fix in PR #13438.
   right_now_system->set_message_is_waiting(true);
-  simulator.get_mutable_context().SetTime(-1.);
+  simulator.get_mutable_context().SetTime(-1.0);
   simulator.Initialize();
   EXPECT_EQ(right_now_system->publish_count(), 1);
   EXPECT_EQ(periodic_system->publish_count(), 0);
@@ -3010,7 +3010,7 @@ GTEST_TEST(SimulatorTest, MissedPublishEventIssue13296) {
   // perturbed time (slightly before zero), hiding the periodic event, and
   // its handler would not get called either since that isn't the current time.
   right_now_system->set_message_is_waiting(true);
-  simulator.get_mutable_context().SetTime(0.);
+  simulator.get_mutable_context().SetTime(0.0);
   simulator.Initialize();
   EXPECT_EQ(right_now_system->publish_count(), 1);
   EXPECT_EQ(periodic_system->publish_count(), 1);
