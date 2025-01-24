@@ -21,9 +21,17 @@ Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
     : Simulator(nullptr, std::move(owned_system), std::move(context)) {}
 
 template <typename T>
+std::unique_ptr<Simulator<T>> Simulator<T>::make_with_shared_context(
+    const System<T>& system, std::shared_ptr<Context<T>> context) {
+  // This slightly odd spelling allows access to the private constructor.
+  return std::unique_ptr<Simulator<T>>(
+      new Simulator(&system, nullptr, std::move(context)));
+}
+
+template <typename T>
 Simulator<T>::Simulator(const System<T>* system,
                         std::unique_ptr<const System<T>> owned_system,
-                        std::unique_ptr<Context<T>> context)
+                        std::shared_ptr<Context<T>> context)
     : owned_system_(std::move(owned_system)),
       system_(owned_system_ ? *owned_system_ : *system),
       context_(std::move(context)) {
@@ -863,6 +871,23 @@ double Simulator<T>::get_actual_realtime_rate() const {
   const Duration realtime_passed = Clock::now() - initial_realtime_;
   const double rate = (simtime_passed / realtime_passed.count());
   return rate;
+}
+
+template <typename T>
+void Simulator<T>::reset_context_from_shared(
+    std::shared_ptr<Context<T>> context) {
+  context_ = std::move(context);
+  integrator_->reset_context(context_.get());
+  initialization_done_ = false;
+}
+
+template <typename T>
+std::unique_ptr<Context<T>> Simulator<T>::release_context() {
+  integrator_->reset_context(nullptr);
+  initialization_done_ = false;
+  auto cloned = context_->Clone();
+  context_.reset();
+  return cloned;
 }
 
 template <typename T>
