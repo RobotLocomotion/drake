@@ -21,17 +21,25 @@ Simulator<T>::Simulator(std::unique_ptr<const System<T>> owned_system,
     : Simulator(nullptr, std::move(owned_system), std::move(context)) {}
 
 template <typename T>
+std::unique_ptr<Simulator<T>> Simulator<T>::MakeWithSharedContext(
+    const System<T>& system, std::shared_ptr<Context<T>> context) {
+  // This slightly odd spelling allows access to the private constructor.
+  return std::unique_ptr<Simulator<T>>(
+      new Simulator(&system, nullptr, std::move(context)));
+}
+
+template <typename T>
 Simulator<T>::Simulator(const System<T>* system,
                         std::unique_ptr<const System<T>> owned_system,
-                        std::unique_ptr<Context<T>> context)
+                        std::shared_ptr<Context<T>> context)
     : owned_system_(std::move(owned_system)),
       system_(owned_system_ ? *owned_system_ : *system),
-      context_(std::move(context)) {
+      context_{std::move(context)} {
   // TODO(dale.mcconachie) move this default to SimulatorConfig
   constexpr double kDefaultInitialStepSizeTarget = 1e-4;
 
   // Create a context if necessary.
-  if (!context_) context_ = system_.CreateDefaultContext();
+  if (context_ == nullptr) context_.ptr = system_.CreateDefaultContext();
 
   // Create a default integrator and initialize it.
   DRAKE_DEMAND(SimulatorConfig{}.integration_scheme == "runge_kutta3");
@@ -60,7 +68,7 @@ template <typename T>
 SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
-  if (!context_)
+  if (context_ == nullptr)
     throw std::logic_error("Initialize(): Context has not been set.");
 
   initialization_done_ = false;
@@ -863,6 +871,29 @@ double Simulator<T>::get_actual_realtime_rate() const {
   const Duration realtime_passed = Clock::now() - initial_realtime_;
   const double rate = (simtime_passed / realtime_passed.count());
   return rate;
+}
+
+template <typename T>
+void Simulator<T>::reset_context_from_shared(
+    std::shared_ptr<Context<T>> context) {
+  context_.ptr = std::move(context);
+  integrator_->reset_context(context_.get());
+  initialization_done_ = false;
+}
+
+template <typename T>
+std::unique_ptr<Context<T>> Simulator<T>::release_context() {
+  integrator_->reset_context(nullptr);
+  initialization_done_ = false;
+  std::unique_ptr<Context<T>> result;
+  if (std::holds_alternative<std::shared_ptr<Context<T>>>(context_.ptr)) {
+    result = context_.get()->Clone();
+    context_.ptr = std::unique_ptr<Context<T>>();
+  } else if (std::holds_alternative<std::unique_ptr<Context<T>>>(
+                 context_.ptr)) {
+    result = std::move(std::get<std::unique_ptr<Context<T>>>(context_.ptr));
+  }
+  return result;
 }
 
 template <typename T>
