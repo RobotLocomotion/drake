@@ -10,6 +10,7 @@ set -eux -o pipefail
 # Globals (will be set from command line arguments).
 python=
 repository=
+symlink=
 
 # Create virtual environment at specified path (if it doesn't exist).
 mkvenv() {
@@ -34,6 +35,13 @@ while [ "${1:-}" != "" ]; do
             # location, containing the path to our venv.drake/bin/python3.
             readonly repository="$2"
             shift
+            ;;
+        --symlink)
+            # Create a symlink to the virtual environment in the Drake source
+            # tree. This is intended to be used by wheel builds, which may,
+            # outside of the Bazel build, need access to tools installed in the
+            # virtual environment.
+            readonly symlink="venv"
             ;;
         *)
             echo 'Invalid command line argument' >&2
@@ -107,11 +115,16 @@ if [[ -z "${checksum}" ]]; then
     exit 1
 fi
 
-# Symlink our venv bin path for the repository.bzl to use. We'll salt it with
-# the requirements checksum so that Bazel will invalidate all Python targets
-# when the checksum changes.
-mkdir -p "${repository}/${checksum}"
-ln -nsf "${venv_drake}/bin" "${repository}/${checksum}/bin"
+# Symlink our venv path for the repository.bzl to use. It's directory name
+# inside of our repository is a hash of the requirements file so that Bazel
+# will invalidate all Python targets when the checksum changes.
+ln -nsf "${venv_drake}" "${repository}/${checksum}"
 
 # Tell repository.bzl which path to use.
 echo -n "${checksum}/bin/python3" > "${repository}/venv_python3.txt"
+
+# Symlink our venv path for wheel builds to use (if requested; see
+# documentation of --symlink, above).
+if [[ -n "${symlink}" ]]; then
+    ln -nsf "${venv_drake}" "${drake_root}/${symlink}"
+fi
