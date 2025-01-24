@@ -12,15 +12,3 @@ cmake -G Ninja \
     /opt/drake-wheel-build/dependencies/src
 
 ninja
-
-if [[ "$(uname)" == "Linux" ]]; then
-    # Libraries we get from the distro that get bundled into the wheel need to
-    # have their licenses bundled also.
-    # Remove mumps install on 2025-05-01.
-    mkdir -p /opt/drake-dependencies/licenses/mumps
-    cp -t /opt/drake-dependencies/licenses/mumps \
-        /usr/share/doc/libmumps-seq-dev/copyright
-    mkdir -p /opt/drake-dependencies/licenses/gcc
-    cp -t /opt/drake-dependencies/licenses/gcc \
-        /usr/share/doc/libgomp1/copyright
-fi
