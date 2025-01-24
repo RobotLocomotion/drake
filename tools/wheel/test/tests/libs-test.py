@@ -21,6 +21,14 @@ _ALLOWED_LIBS = {
     "libtbb",
 }
 
+# TODO(jwnimmer-tri) Install the license texts for these (or stop using the
+# library entirely).
+_EXTRA_MACOS_LIBS = {
+    "libgcc_s",
+    "libglib",
+    "libintl",
+    "libpcre2",
+}
 
 def get_all_files_in_wheel(wheel_path: Path):
     """Returns and iterator over all (relative) paths the wheel."""
@@ -41,6 +49,13 @@ def is_good_file(path):
         # Don't allow any other top-level files.
         return False
 
+    # Only allow expected shared libraries to be shipped.
+    if any([str(path).startswith("drake.libs/"),
+            str(path).startswith("drake/.dylibs/")]):
+        stem = path.name.split(".")[0]  # Remove filename extension(s).
+        stem = stem.split("-")[0]       # Remove anything after the '-'.
+        return stem in _ALLOWED_LIBS | _EXTRA_MACOS_LIBS
+
     # Branch on the top-level directory name.
     top_dir = str(path.parents[-2])
     if top_dir.endswith(".dist-info"):
@@ -49,10 +64,6 @@ def is_good_file(path):
     elif top_dir in ("drake", "pydrake"):
         # All of our actual code and data is allowed.
         return True
-    elif top_dir == "drake.libs":
-        # Only allow expected shared libraries to be shipped.
-        stem = path.name.split("-")[0]
-        return stem in _ALLOWED_LIBS
     else:
         return False
 
@@ -72,6 +83,5 @@ def check_files(wheel_path: Path):
     sys.exit(1)
 
 
-# Only run this test on Linux (for now?).
-if 'darwin' not in sys.platform:
-    check_files(wheel_path=Path(sys.argv[1]))
+assert __name__ == "__main__"
+check_files(wheel_path=Path(sys.argv[1]))

@@ -49,6 +49,7 @@ mkdir -p "$build_root"
 cd "$build_root"
 
 # Add wheel-specific bazel options.
+# N.B. When you change anything here, also fix wheel/image/build-drake.sh.
 cat > "$build_root/drake.bazelrc" << EOF
 build --disk_cache=$HOME/.cache/drake-wheel-build/bazel/disk_cache
 build --repository_cache=$HOME/.cache/drake-wheel-build/bazel/repository_cache
@@ -63,7 +64,11 @@ common --@drake//tools/install/libdrake:spdlog_dynamic=False
 EOF
 
 # Install Drake.
+# N.B. When you change anything here, also fix wheel/image/build-drake.sh.
 cmake "$git_root" \
+    -DWITH_USER_EIGEN=OFF \
+    -DWITH_USER_FMT=OFF \
+    -DWITH_USER_SPDLOG=OFF \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
     -DCMAKE_INSTALL_PREFIX="/opt/drake-dist/$python" \
     -DPython_EXECUTABLE="$python_executable"
