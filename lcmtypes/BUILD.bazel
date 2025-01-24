@@ -317,17 +317,10 @@ drake_transitive_installed_hdrs_filegroup(
     deps = LCMTYPES_CC,
 )
 
-# The drake-lcmtypes-cpp library is distinct from (but required by) the drake
-# library; refer to `tools/install/libdrake/drake.cps` for library structure.
-# Therefore, we install Drake's lcmtypes C++ headers to a different directory
-# than the drake library's include path; this ensures that downstream code is
-# using the correct include paths for the libraries they need.  The path to
-# `include/drake_lcmtypes` is provided to downstream code via `drake.cps` and
-# its generated cmake config `lib/cmake/drake/drake-config.cmake.
 install(
     name = "install_drake_cc_headers",
     hdrs = [":lcmtypes_drake_cc_headers"],
-    hdr_dest = "include/drake_lcmtypes",
+    hdr_dest = "include",
     visibility = ["//visibility:private"],
 )
 
