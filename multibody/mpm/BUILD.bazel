@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":grid_data",
         ":particle_data",
         ":particle_sorter",
+        ":spgrid_flags",
     ],
 )
 
@@ -71,6 +72,7 @@ drake_cc_library(
     ],
     deps = [
         ":bspline_weights",
+        ":spgrid_flags",
         "//common:essential",
         "//math:gradient",
     ],
@@ -88,8 +90,21 @@ drake_cc_library_linux_only(
         "spgrid.h",
     ],
     deps = [
+        ":spgrid_flags",
         "//common:essential",
         "@spgrid_internal",
+    ],
+)
+
+drake_cc_library(
+    name = "spgrid_flags",
+    hdrs = [
+        "spgrid_flags.h",
+    ],
+    deps = [
+        ":bspline_weights",
+        "//common:essential",
+        "//math:gradient",
     ],
 )
 

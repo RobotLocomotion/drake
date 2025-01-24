@@ -14,6 +14,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/mpm/spgrid_flags.h"
 
 namespace drake {
 namespace multibody {
@@ -23,16 +24,6 @@ namespace internal {
 /* A Pad is a 3x3x3 subgrid. */
 template <typename T>
 using Pad = std::array<std::array<std::array<T, 3>, 3>, 3>;
-
-/* A subset of SPGrid flags and configs we care about. */
-struct SpGridFlags {
-  int log2_page{12};            // 4KB page size.
-  int log2_max_grid_size{10};   // Largest grid size is 1024 x 1024 x 1024.
-  int data_bits{6};             // Number of bits to represent GridData.
-  int num_nodes_in_block_x{4};  // Number of nodes in a block in x direction.
-  int num_nodes_in_block_y{4};  // Number of nodes in a block in y direction.
-  int num_nodes_in_block_z{4};  // Number of nodes in a block in z direction.
-};
 
 /* SpGrid is a wrapper class around the SPGrid library designed for managing
  sparse grid data in 3D space.
@@ -342,9 +333,9 @@ class SpGrid {
   /* Returns the color of the block given the page bits of the node offset.
    Blocks with different colors are guaranteed to be non-adjacent. */
   static int get_color(uint64_t page) {
-    /* According to [Setaluri et al. 2014], the blocks are arranged in a 3D
-    space using Z-order curve. Blocks with 8 blocks apart are guaranteed to be
-    non-adjacent. */
+    /* According to [Setaluri et al. 2014], the blocks are arranged in 3D space
+     along a Z-order curve, ensuring that any two blocks whose Z-order indices
+     are eight apart are guaranteed to be non-adjacent. */
     constexpr int kNumColors = 8;
     int color = (page & (kNumColors - 1));
     return color;

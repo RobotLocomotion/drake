@@ -21,27 +21,27 @@ GTEST_TEST(ConvertToRangeVectorTest, ConvertToRangeVector) {
   RangeVector ranges;
   ConvertToRangeVector(data, &ranges);
   ASSERT_EQ(ranges.size(), 3);
-  EXPECT_EQ(ranges[0].start, 1);
-  EXPECT_EQ(ranges[0].end, 3);
-  EXPECT_EQ(ranges[1].start, 3);
-  EXPECT_EQ(ranges[1].end, 6);
-  EXPECT_EQ(ranges[2].start, 6);
-  EXPECT_EQ(ranges[2].end, 9);
+  EXPECT_EQ(ranges[0].start(), 1);
+  EXPECT_EQ(ranges[0].end(), 3);
+  EXPECT_EQ(ranges[1].start(), 3);
+  EXPECT_EQ(ranges[1].end(), 6);
+  EXPECT_EQ(ranges[2].start(), 6);
+  EXPECT_EQ(ranges[2].end(), 9);
 }
 
-/* Sample N^3 points in the box [0, 1] x [0, 1] x [0, 1]*/
-std::vector<Vector3<double>> SamplePoints(int N) {
+/* Sample n^3 points in the box [0, 1] x [0, 1] x [0, 1]*/
+std::vector<Vector3<double>> SamplePoints(int n) {
   std::vector<Vector3<double>> points;
-  for (int i = 0; i < N; ++i) {
-    /* Multiply by a large prime number and mod by N to avoid the sampled points
+  for (int i = 0; i < n; ++i) {
+    /* Multiply by a large prime number and mod by n to avoid the sampled points
      to be ordered in any obvious way. */
-    int ii = (17 * i) % N;
-    for (int j = 0; j < N; ++j) {
-      int jj = (23 * j) % N;
-      for (int k = 0; k < N; ++k) {
-        int kk = (29 * k) % N;
+    int ii = (17 * i) % n;
+    for (int j = 0; j < n; ++j) {
+      int jj = (23 * j) % n;
+      for (int k = 0; k < n; ++k) {
+        int kk = (29 * k) % n;
         points.push_back(
-            Vector3<double>(ii / (N - 1.0), jj / (N - 1.0), kk / (N - 1.0)));
+            Vector3<double>(ii / (n - 1.0), jj / (n - 1.0), kk / (n - 1.0)));
       }
     }
   }
@@ -100,8 +100,8 @@ GTEST_TEST(ParticleSorterTest, Sort) {
       for (int j = i + 1; j < ssize(ranges); ++j) {
         const Range& range_i = ranges[i];
         const Range& range_j = ranges[j];
-        for (int p = range_i.start; p < range_i.end; ++p) {
-          for (int q = range_j.start; q < range_j.end; ++q) {
+        for (int p = range_i.start(); p < range_i.end(); ++p) {
+          for (int q = range_j.start(); q < range_j.end(); ++q) {
             const Vector3i base_node_p =
                 spgrid.OffsetToCoordinate(base_node_offsets[p]);
             const Vector3i base_node_q =
