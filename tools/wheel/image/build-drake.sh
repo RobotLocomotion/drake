@@ -12,6 +12,7 @@ cd /opt/drake-wheel-build/drake-build
 export BAZELISK_HOME=/var/cache/bazel/bazelisk
 
 # Add wheel-specific bazel options.
+# N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
 cat > /opt/drake-wheel-build/drake-build/drake.bazelrc << EOF
 build --disk_cache=/var/cache/bazel/disk_cache
 build --repository_cache=/var/cache/bazel/repository_cache
@@ -30,6 +31,7 @@ common --@drake//tools/install/libdrake:spdlog_dynamic=False
 EOF
 
 # Install Drake using our wheel-build-specific Python interpreter.
+# N.B. When you change anything here, also fix wheel/macos/build-wheel.sh.
 cmake ../drake \
     -DWITH_USER_EIGEN=OFF \
     -DWITH_USER_FMT=OFF \

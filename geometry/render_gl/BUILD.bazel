@@ -43,9 +43,13 @@ drake_cc_library(
     deps = [
         "//common:essential",
         "//common:unused",
-        "@vtk_internal//:vtkglad",
-        "@x11",
-    ],
+    ] + select({
+        "@drake//tools/skylark:linux": [
+            "@vtk_internal//:vtkglad",
+            "@x11",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 drake_cc_library_linux_only(
