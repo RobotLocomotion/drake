@@ -60,14 +60,14 @@ set_target_properties(drake::drake PROPERTIES
   IMPORTED_LOCATION "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/libdrake.so"
   IMPORTED_SONAME "${_apple_soname_prologue}libdrake.so"
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "drake::drake-lcmtypes-cpp;drake::drake-marker;Eigen3::Eigen;fmt::fmt-header-only;lcm::lcm;spdlog::spdlog"
+  INTERFACE_LINK_LIBRARIES "drake::drake-marker;Eigen3::Eigen;fmt::fmt-header-only;lcm::lcm;spdlog::spdlog"
   INTERFACE_COMPILE_FEATURES "cxx_std_20"
   INTERFACE_COMPILE_DEFINITIONS "HAVE_SPDLOG"
 )
 
 add_library(drake::drake-lcmtypes-cpp INTERFACE IMPORTED)
 set_target_properties(drake::drake-lcmtypes-cpp PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include/drake_lcmtypes"
+  INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "lcm::lcm-coretypes"
 )
 
