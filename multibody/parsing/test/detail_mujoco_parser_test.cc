@@ -52,7 +52,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_name, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     auto result = wrapper_.AddModel({DataSource::kFilename, &file_name},
                                     model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
@@ -63,7 +64,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_contents, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     auto result = wrapper_.AddModel({DataSource::kContents, &file_contents},
                                     model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
@@ -75,7 +77,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     auto result = wrapper_.AddAllModels({DataSource::kFilename, &file_name},
                                         parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
@@ -87,7 +90,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     auto result = wrapper_.AddAllModels({DataSource::kContents, &file_contents},
                                         parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
@@ -132,6 +136,7 @@ GTEST_TEST(MujocoParserExtraTest, Visualize) {
       options,
       package_map,
       diagnostic_policy,
+      nullptr,
       &plant,
       &resolver,
       [](const drake::internal::DiagnosticPolicy&,
