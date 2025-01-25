@@ -41,6 +41,7 @@ load("//tools/workspace/highway_internal:repository.bzl", "highway_internal_repo
 load("//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
+load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
 load("//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("//tools/workspace/libblas:repository.bzl", "libblas_repository")
 load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
@@ -214,13 +215,17 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)  # noqa
     if "lapack" not in excludes:
         lapack_repository(name = "lapack")
+    if "lapack_internal" not in excludes:
+        lapack_internal_repository(name = "lapack_internal", mirrors = mirrors)
     if "lcm" not in excludes:
         lcm_repository(name = "lcm", mirrors = mirrors)
     if "libblas" not in excludes:
+        # Deprecated 2025-05-01.
         libblas_repository(name = "libblas")
     if "libjpeg_turbo_internal" not in excludes:
         libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
     if "liblapack" not in excludes:
+        # Deprecated 2025-05-01.
         liblapack_repository(name = "liblapack")
     if "libpfm" not in excludes:
         libpfm_repository(name = "libpfm")
@@ -273,6 +278,14 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         osqp_internal_repository(name = "osqp_internal", mirrors = mirrors)
     if "picosha2_internal" not in excludes:
         picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)  # noqa
+    if "pkgconfig_blas_internal" not in excludes:
+        # On 2025-05-01 rename libblas_repository to something more
+        # appropriate with "internal" in the name.
+        libblas_repository(name = "pkgconfig_blas_internal", extra_deprecation = "")  # noqa
+    if "pkgconfig_lapack_internal" not in excludes:
+        # On 2025-05-01 rename liblapack_repository to something more
+        # appropriate with "internal" in the name.
+        liblapack_repository(name = "pkgconfig_lapack_internal", extra_deprecation = "")  # noqa
     if "platforms" not in excludes:
         platforms_repository(name = "platforms", mirrors = mirrors)
     if "poisson_disk_sampling_internal" not in excludes:
@@ -435,8 +448,6 @@ REPOS_EXPORTED = [
     "gurobi",
     "lapack",
     "lcm",
-    "libblas",
-    "liblapack",
     "meshcat",
     "mosek",
     "opencl",
@@ -463,8 +474,6 @@ def _drake_dep_repositories_impl(module_ctx):
     gurobi_repository(name = "gurobi")
     lapack_repository(name = "lapack")
     lcm_repository(name = "lcm", mirrors = mirrors)
-    libblas_repository(name = "libblas")
-    liblapack_repository(name = "liblapack")
     meshcat_repository(name = "meshcat", mirrors = mirrors)
     mosek_repository(name = "mosek", mirrors = mirrors)
     opencl_repository(name = "opencl")

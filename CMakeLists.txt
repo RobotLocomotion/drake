@@ -1,7 +1,7 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
@@ -346,7 +346,6 @@ endfunction()
 
 macro(override_module NAME)
   set(local_path "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
-  string(APPEND BAZEL_REPO_ENV " --override_module=${NAME}=${local_path}")
   file(GENERATE OUTPUT "${local_path}/MODULE.bazel"
     INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/MODULE.bazel.in")
   file(GENERATE OUTPUT "${local_path}/BUILD.bazel"
@@ -355,6 +354,17 @@ macro(override_module NAME)
     "${PROJECT_SOURCE_DIR}/cmake/external/workspace/conversion.bzl"
     "${local_path}/conversion.bzl"
     SYMBOLIC)
+  string(APPEND BAZEL_REPO_ENV " --override_module=${NAME}=${local_path}")
+endmacro()
+
+macro(override_repository NAME)
+  set(local_path "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
+  file(MAKE_DIRECTORY "${local_path}")
+  file(GENERATE OUTPUT "${local_path}/MODULE.bazel"
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/MODULE.bazel.in")
+  file(GENERATE OUTPUT "${local_path}/BUILD.bazel"
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/BUILD.bazel.in")
+  string(APPEND BAZEL_REPO_ENV " --override_repository=drake++drake_dep_repositories+${NAME}=${local_path}")
 endmacro()
 
 option(WITH_USER_EIGEN "Use user-provided Eigen3" ON)
@@ -386,6 +396,32 @@ if(WITH_USER_SPDLOG)
   symlink_external_repository_includes(spdlog spdlog::spdlog)
   symlink_external_repository_libs(spdlog spdlog::spdlog)
   override_module(spdlog)
+endif()
+
+if(NOT APPLE)
+  option(WITH_USER_BLAS "Use user-provided BLAS" ON)
+
+  if(WITH_USER_BLAS)
+    find_package(BLAS REQUIRED)
+    override_repository(blas)
+    list(GET BLAS_LIBRARIES 0 FIRST_BLAS_LIBRARY)
+    file(CREATE_LINK
+      "${FIRST_BLAS_LIBRARY}"
+      "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/blas/libblas.so"
+      SYMBOLIC)
+  endif()
+
+  option(WITH_USER_LAPACK "Use user-provided LAPACK" ON)
+
+  if(WITH_USER_LAPACK)
+    find_package(LAPACK REQUIRED)
+    override_repository(lapack)
+    list(GET LAPACK_LIBRARIES 0 FIRST_LAPACK_LIBRARY)
+    file(CREATE_LINK
+      "${FIRST_LAPACK_LIBRARY}"
+      "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/lapack/liblapack.so"
+      SYMBOLIC)
+  endif()
 endif()
 
 set(BAZEL_CONFIG)
