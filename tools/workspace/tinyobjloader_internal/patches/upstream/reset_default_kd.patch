@@ -1,0 +1,18 @@
+Every material should default to a white material for Kd if none is specified
+but a map_Kd *is* specified. However, tinyobj forgot to reset the test for
+whether or not Kd had been set with each new material.
+
+This patch is tested in render_mesh_test.cc as
+GTEST_TEST(TinyObjReaderRegression, DefaultDiffuseIsWhiteWithMap)
+That test can probably be removed when this gets upstreamed.
+
+--- tiny_obj_loader.h
++++ tiny_obj_loader.h
+@@ -2134,6 +2134,7 @@ void LoadMtl(std::map<std::string, int> *material_map,
+ 
+       has_d = false;
+       has_tr = false;
++      has_kd = false;
+ 
+       // set new mtl name
+       token += 7;
