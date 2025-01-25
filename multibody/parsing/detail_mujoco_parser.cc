@@ -29,6 +29,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/scoped_name.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/systems/sensors/camera_config_functions.h"
 
 namespace drake {
 namespace multibody {
@@ -60,11 +61,9 @@ class MujocoParser {
                         const DataSource& data_source)
       : workspace_(workspace),
         diagnostic_(&workspace.diagnostic, &data_source),
-        plant_(workspace.plant) {
-    // Clang complains that the workspace_ field is unused. Nerf the warning
-    // for now; it will be used soon.
-    unused(workspace_);
-  }
+        builder_(workspace.builder),
+        plant_(workspace.plant),
+        scene_graph_(workspace.scene_graph) {}
 
   void ErrorIfMoreThanOneOrientation(const XMLElement& node) {
     int num_orientation_attrs = 0;
@@ -1038,6 +1037,86 @@ class MujocoParser {
     return geom;
   }
 
+  void ParseCamera(XMLElement* node, const RigidBody<double>& parent,
+                   const std::string& child_class = "") {
+    if (builder_ == nullptr || scene_graph_ == nullptr) {
+      Warning(*node,
+              "camera element ignored; to register cameras, you must pass a "
+              "DiagramBuilder to the Parser and the plant must be registered "
+              "with a scene graph.");
+      return;
+    }
+
+    std::string class_name;
+    if (!ParseStringAttribute(node, "class", &class_name)) {
+      class_name = child_class.empty() ? "main" : child_class;
+    }
+    ApplyDefaultAttributes("camera", class_name, node);
+
+    systems::sensors::CameraConfig config;
+    config.lcm_bus = systems::lcm::LcmBuses::kLcmUrlMemqNull;
+
+    if (!ParseStringAttribute(node, "name", &config.name)) {
+      config.name = fmt::format("camera{}", num_cameras_);
+    }
+    // We add the model instance name as a prefix to the camera name.
+    config.name = fmt::format(
+        "{}/{}", plant_->GetModelInstanceName(model_instance_), config.name);
+
+    std::string mode;
+    if (ParseStringAttribute(node, "mode", &mode)) {
+      if (mode != "fixed") {
+        Warning(*node,
+                fmt::format("camera {} requested mode '{}', which is not "
+                            "supported yet. A fixed mode will be used instead.",
+                            config.name, mode));
+      }
+    }
+
+    std::string orthographic;
+    if (ParseStringAttribute(node, "orthographic", &orthographic)) {
+      if (orthographic == "true") {
+        Warning(
+            *node,
+            fmt::format(
+                "camera {} requested orthographic projection, which is not "
+                "supported yet. A perspective projection will be used instead.",
+                config.name));
+      }
+    }
+
+    config.X_PB = schema::Transform(ParseTransform(node));
+    config.X_PB.base_frame = parent.body_frame().scoped_name().get_full();
+
+    double fovy{45};
+    ParseScalarAttribute(node, "fovy", &fovy);
+    // MuJoCo's fovy is always in degrees; it does not follow the
+    // compiler/angle setting.
+    config.focal = systems::sensors::CameraConfig::FovDegrees{.y = fovy};
+
+    Vector2d resolution{1, 1};
+    ParseVectorAttribute(node, "resolution", &resolution);
+    config.width = resolution[0];
+    config.height = resolution[1];
+
+    // TODO(russt): Support drake-specific elements/attributes to e.g. set the
+    // renderer name and other Drake camera configurable parameters.
+
+    ApplyCameraConfig(config, builder_, nullptr, plant_, scene_graph_);
+    ++num_cameras_;
+
+    // Unsupported elements are listed in the order from the MuJoCo docs:
+    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#body-camera
+    WarnUnsupportedAttribute(*node, "target");
+    WarnUnsupportedAttribute(*node, "focal");
+    WarnUnsupportedAttribute(*node, "focalpixel");
+    WarnUnsupportedAttribute(*node, "principal");
+    WarnUnsupportedAttribute(*node, "principalpixel");
+    WarnUnsupportedAttribute(*node, "sensorsize");
+    WarnUnsupportedAttribute(*node, "ipd");
+    WarnUnsupportedAttribute(*node, "user");
+  }
+
   void ParseBody(XMLElement* node, const RigidBody<double>& parent,
                  const RigidTransformd& X_WP,
                  const std::string& parent_class = "") {
@@ -1152,13 +1231,17 @@ class MujocoParser {
       }
     }
 
+    for (XMLElement* camera_node = node->FirstChildElement("camera");
+         camera_node; camera_node = camera_node->NextSiblingElement("camera")) {
+      ParseCamera(camera_node, body, child_class);
+    }
+
     // Unsupported attributes are listed in the order from the MuJoCo docs:
     // https://mujoco.readthedocs.io/en/stable/XMLreference.html#body
     WarnUnsupportedAttribute(*node, "mocap");
     WarnUnsupportedAttribute(*node, "gravcomp");
     WarnUnsupportedAttribute(*node, "user");
     WarnUnsupportedElement(*node, "site");
-    WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "composite");
     WarnUnsupportedElement(*node, "flexcomp");
@@ -1193,13 +1276,17 @@ class MujocoParser {
       }
     }
 
+    for (XMLElement* camera_node = node->FirstChildElement("camera");
+         camera_node; camera_node = camera_node->NextSiblingElement("camera")) {
+      ParseCamera(camera_node, plant_->world_body());
+    }
+
     // Unsupported attributes are listed in the order from the MuJoCo docs:
     // https://mujoco.readthedocs.io/en/stable/XMLreference.html#body
     WarnUnsupportedAttribute(*node, "mocap");
     WarnUnsupportedAttribute(*node, "gravcomp");
     WarnUnsupportedAttribute(*node, "user");
     WarnUnsupportedElement(*node, "site");
-    WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "composite");
     WarnUnsupportedElement(*node, "flexcomp");
@@ -1547,12 +1634,10 @@ class MujocoParser {
       return;
     }
 
-    geometry::SceneGraph<double>* scene_graph =
-        plant_->GetMutableSceneGraphPreFinalize();
     geometry::CollisionFilterManager manager =
-        scene_graph->collision_filter_manager();
+        scene_graph_->collision_filter_manager();
     const geometry::SceneGraphInspector<double>& inspector =
-        scene_graph->model_inspector();
+        scene_graph_->model_inspector();
     const auto geom_ids = inspector.GetGeometryIds(
         geometry::GeometrySet(inspector.GetAllGeometryIds()),
         geometry::Role::kProximity);
@@ -1997,7 +2082,9 @@ class MujocoParser {
  private:
   const ParsingWorkspace& workspace_;
   TinyXml2Diagnostic diagnostic_;
+  systems::DiagramBuilder<double>* builder_;
   MultibodyPlant<double>* plant_;
+  geometry::SceneGraph<double>* scene_graph_{nullptr};
   ModelInstanceIndex model_instance_{};
   std::filesystem::path main_mjcf_path_{};
   bool autolimits_{true};
@@ -2013,6 +2100,7 @@ class MujocoParser {
   // Spatial inertia of mesh assets assuming density = 1.
   std::map<std::string, SpatialInertia<double>> mesh_inertia_{};
   std::map<JointIndex, double> armature_{};
+  int num_cameras_{0};
 };
 
 std::pair<std::optional<ModelInstanceIndex>, std::string>

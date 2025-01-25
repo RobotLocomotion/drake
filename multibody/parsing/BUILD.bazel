@@ -324,6 +324,7 @@ drake_cc_library(
         ":detail_misc",
         ":detail_parsing_workspace",
         "//multibody/plant",
+        "//systems/sensors:camera_config_functions",
         "@fmt",
         "@tinyxml2_internal//:tinyxml2",
     ],
