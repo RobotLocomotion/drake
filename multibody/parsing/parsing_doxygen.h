@@ -34,6 +34,18 @@ for any unsupported MuJoCo XML elements or attributes at runtime.
 
 <!-- TODO(rpoyner-tri): document mujoco format support -->
 
+@subsection mjcf_camera MuJoCo camera support
+
+The MuJoCo camera element is supported (with any unsupported attributes
+emmitting the standard parser warnings). To parse cameras, you must register a
+DiagramBuilder with the Parser, and the MultibodyPlant must have a registered
+SceneGraph. The parser will call ApplyCameraConfig() to produce a camera named
+"{model_instance_name}/{mjcf_camera_name}", where a default {mjcf_camera_name}
+of "camera{i}" for the ith camera (starting from 0) will be provided if no name
+is specified in the xml. Note that calling
+`MultibodyPlant::RenameModelInstance` after parsing will not update the camera
+name.
+
 @subsection mjcf_ignored_silent Tags ignored silently
 
 The following attributes are specific to the MuJoCo solver (listed here in the
