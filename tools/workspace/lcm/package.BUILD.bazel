@@ -313,6 +313,14 @@ install(
     py_strip_prefix = ["lcm-python"],
 )
 
+# Drake's install of LCM alongside Drake (both as part of our CMake install,
+# and in our binary packages) is deprecated and will be removed on 2025-05-01.
+#
+# If you still need LCM tools in your own project, add LCM as a CMake external
+# to your project.
+#
+# On 2025-05-01 we will remove everything from this target except for the
+# C++ runtime shared library and its license.
 install(
     name = "install",
     install_tests = [
