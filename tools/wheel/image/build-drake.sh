@@ -26,8 +26,6 @@ build --define=LCM_INSTALL_JAVA=OFF
 # TODO(jwnimmer-tri) Offer an official //tools/flags and CMake option to
 # disable Drake's Java support, and use it here.
 build --java_runtime_version=remotejdk_11
-# TODO(jwnimmer-tri) Ideally this would be automatically inferred.
-common --@drake//tools/install/libdrake:spdlog_dynamic=False
 EOF
 
 # Install Drake using our wheel-build-specific Python interpreter.

@@ -59,8 +59,6 @@ build --config=packaging
 build --define=LCM_INSTALL_JAVA=OFF
 # See tools/wheel/wheel_builder/macos.py for more on this env variable.
 build --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
-# TODO(jwnimmer-tri) Ideally this would be automatically inferred.
-common --@drake//tools/install/libdrake:spdlog_dynamic=False
 EOF
 
 # Install Drake.
