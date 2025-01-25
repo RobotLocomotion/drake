@@ -23,7 +23,7 @@ class MakeModelNameTest : public testing::Test {
   DiagnosticPolicy policy_;
   MultibodyPlant<double> plant_{0.0};
   CollisionFilterGroupResolver resolver_{&plant_};
-  ParsingWorkspace workspace_{options_, package_map_, policy_,
+  ParsingWorkspace workspace_{options_, package_map_, policy_, nullptr,
                               &plant_,  &resolver_,   NoSelect};
 };
 
