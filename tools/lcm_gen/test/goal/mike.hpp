@@ -69,7 +69,7 @@ class mike {
   int64_t encode(void* buf, int64_t offset, int64_t maxlen) const {
     uint8_t* const _begin = static_cast<uint8_t*>(buf);
     uint8_t* const _start = _begin + offset;
-    uint8_t* const _end = _begin + maxlen;
+    uint8_t* const _end = _start + maxlen;
     uint8_t* _cursor = _start;
     return this->_encode<with_hash>(&_cursor, _end) ? (_cursor - _start) : -1;
   }
@@ -80,7 +80,7 @@ class mike {
   int64_t decode(const void* buf, int64_t offset, int64_t maxlen) {
     const uint8_t* const _begin = static_cast<const uint8_t*>(buf);
     const uint8_t* const _start = _begin + offset;
-    const uint8_t* const _end = _begin + maxlen;
+    const uint8_t* const _end = _start + maxlen;
     const uint8_t* _cursor = _start;
     return this->_decode<with_hash>(&_cursor, _end) ? (_cursor - _start) : -1;
   }
