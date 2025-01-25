@@ -18,6 +18,7 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/systems/sensors/rgbd_sensor.h"
 #include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
@@ -52,7 +53,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_name, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     auto result = wrapper_.AddModel({DataSource::kFilename, &file_name},
                                     model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
@@ -63,7 +65,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_contents, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     auto result = wrapper_.AddModel({DataSource::kContents, &file_contents},
                                     model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
@@ -75,7 +78,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     auto result = wrapper_.AddAllModels({DataSource::kFilename, &file_name},
                                         parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
@@ -87,7 +91,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     auto result = wrapper_.AddAllModels({DataSource::kContents, &file_contents},
                                         parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
@@ -132,6 +137,7 @@ GTEST_TEST(MujocoParserExtraTest, Visualize) {
       options,
       package_map,
       diagnostic_policy,
+      nullptr,
       &plant,
       &resolver,
       [](const drake::internal::DiagnosticPolicy&,
@@ -1731,6 +1737,73 @@ TEST_F(MujocoParserTest, Motor) {
                                           // "motor{}" as the default name.
   EXPECT_EQ(position2.joint().name(), "hinge9");
   EXPECT_EQ(position2.effort_limit(), 2);  // from the mypositions default.
+}
+
+GTEST_TEST(MujocoParserExtraTest, Camera) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <default>
+    <geom type="sphere" size="1"/>
+    <default class="mycameras">
+      <camera name="from_default" pos="1 2 3"/>
+    </default>
+  </default>
+  <worldbody>
+    <camera name="world_camera" fovy="30" resolution="100 100"/>
+    <body name="camera_body">
+      <camera name="body_camera" resolution="200 200"/>
+      <camera class="mycameras"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+  systems::DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+
+  ParsingOptions options;
+  PackageMap package_map;
+  MujocoParserWrapper wrapper;
+  internal::CollisionFilterGroupResolver resolver{&plant};
+  internal::DiagnosticPolicy diagnostic_policy;
+  ParsingWorkspace w{
+      options,
+      package_map,
+      diagnostic_policy,
+      &builder,
+      &plant,
+      &resolver,
+      [](const drake::internal::DiagnosticPolicy&,
+         const std::string&) -> drake::multibody::internal::ParserInterface& {
+        DRAKE_UNREACHABLE();
+      }};
+  wrapper.AddModel({DataSource::kContents, &xml}, "test", {}, w);
+  resolver.Resolve(diagnostic_policy);
+
+  auto& world_camera =
+      builder.GetDowncastSubsystemByName<systems::sensors::RgbdSensor>(
+          "rgbd_sensor_test/world_camera");
+  systems::sensors::CameraInfo info =
+      world_camera.default_color_render_camera().core().intrinsics();
+  EXPECT_EQ(info.width(), 100);
+  EXPECT_EQ(info.height(), 100);
+  EXPECT_NEAR(info.fov_y(), 30 * M_PI / 180, 1e-14);
+
+  auto& body_camera =
+      builder.GetDowncastSubsystemByName<systems::sensors::RgbdSensor>(
+          "rgbd_sensor_test/body_camera");
+  info = body_camera.default_color_render_camera().core().intrinsics();
+  EXPECT_EQ(info.width(), 200);
+  EXPECT_EQ(info.height(), 200);
+
+  auto& from_default =
+      builder.GetDowncastSubsystemByName<systems::sensors::RgbdSensor>(
+          "rgbd_sensor_test/from_default");
+  info = from_default.default_color_render_camera().core().intrinsics();
+  EXPECT_EQ(info.width(), 640);
+  EXPECT_EQ(info.height(), 480);
+  const math::RigidTransformd& X_PB = from_default.default_X_PB();
+  EXPECT_EQ(X_PB.translation(), Vector3d(1, 2, 3));
 }
 
 class ContactTest : public MujocoParserTest,
