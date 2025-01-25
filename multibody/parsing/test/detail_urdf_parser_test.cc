@@ -55,7 +55,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromUrdfFile(
       const std::string& file_name, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_,  &resolver,    NoSelect};
     auto result = AddModelFromUrdf({DataSource::kFilename, &file_name},
                                    model_name, {}, w);
@@ -67,7 +67,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   std::optional<ModelInstanceIndex> AddModelFromUrdfString(
       const std::string& file_contents, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_,  &resolver,    NoSelect};
     auto result = AddModelFromUrdf({DataSource::kContents, &file_contents},
                                    model_name, {}, w);

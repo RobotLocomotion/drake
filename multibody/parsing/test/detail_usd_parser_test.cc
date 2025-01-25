@@ -23,8 +23,8 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
   std::vector<ModelInstanceIndex> ParseFile(const DataSource& source) {
     const std::optional<std::string> parent_model_name;
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
+                       &plant_, &resolver, NoSelect};
     UsdParserWrapper dut;
     auto result = dut.AddAllModels(source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);

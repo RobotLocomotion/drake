@@ -54,8 +54,9 @@ class DmdParserTest : public test::DiagnosticPolicyTestBase {
   std::vector<ModelInstanceInfo> ParseModelDirectives(
       const ModelDirectives& directives) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    const ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                             &plant_,  &resolver,    TestingSelect};
+    const ParsingWorkspace w{options_,     package_map_, diagnostic_policy_,
+                             nullptr,      &plant_,      &resolver,
+                             TestingSelect};
     auto result =
         multibody::internal::ParseModelDirectives(directives, std::nullopt, w);
     resolver.Resolve(diagnostic_policy_);

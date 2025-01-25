@@ -17,7 +17,7 @@ class SelectParserTest : public test::DiagnosticPolicyTestBase {
   MultibodyPlant<double> plant_{0.0};
   CollisionFilterGroupResolver resolver_{&plant_};
   ParsingOptions options_;
-  ParsingWorkspace w_{options_, {}, diagnostic_policy_, &plant_,
+  ParsingWorkspace w_{options_, {}, diagnostic_policy_, nullptr, &plant_,
                       &resolver_, SelectParser};
 };
 

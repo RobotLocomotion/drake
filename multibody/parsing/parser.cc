@@ -36,16 +36,26 @@ struct Parser::ParserInternalData {
 
 Parser::Parser(MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph)
-    : Parser(plant, scene_graph, {}) {}
+    : Parser(nullptr, plant, scene_graph, {}) {}
 
 Parser::Parser(MultibodyPlant<double>* plant,
                std::string_view model_name_prefix)
-    : Parser(plant, nullptr, model_name_prefix) {}
+    : Parser(nullptr, plant, nullptr, model_name_prefix) {}
 
 Parser::Parser(MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph,
                std::string_view model_name_prefix)
-    : plant_(plant), data_(new Parser::ParserInternalData) {
+    : Parser(nullptr, plant, scene_graph, model_name_prefix) {}
+
+Parser::Parser(systems::DiagramBuilder<double>* builder,
+               MultibodyPlant<double>* plant,
+               geometry::SceneGraph<double>* scene_graph,
+               std::string_view model_name_prefix)
+    : builder_(builder), plant_(plant), data_(new Parser::ParserInternalData) {
+  if (builder != nullptr && plant == nullptr) {
+    plant_ =
+        &builder_->GetMutableDowncastSubsystemByName<MultibodyPlant>("plant");
+  }
   DRAKE_THROW_UNLESS(plant != nullptr);
 
   if (!model_name_prefix.empty()) {
