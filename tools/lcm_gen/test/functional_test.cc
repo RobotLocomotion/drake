@@ -123,6 +123,40 @@ GTEST_TEST(PapaTest, LimaRoundTrip) {
   EXPECT_EQ(send.encode(data.data(), 0, data.size()), -1);
 }
 
+// Check passing a non-zero offset to encode and decode.
+GTEST_TEST(PapaTest, LimaNonZeroOffset) {
+  papa::lima send{};
+  send.golf = true;
+  send.bravo = 22;
+  send.delta = 2.25;
+  send.foxtrot = 22.125;
+  send.india8 = 22;
+  send.india16 = 22222;
+  send.india32 = 22222222;
+  send.india64 = 222222222222222222;
+
+  // Encode, but starting at a non-zero offset into the destination buffer.
+  const int64_t num_bytes = send.getEncodedSize();
+  const int offset = 3;
+  std::vector<uint8_t> data(static_cast<size_t>(offset + num_bytes), uint8_t{});
+  const int64_t used_bytes = send.encode(data.data(), offset, num_bytes);
+  ASSERT_EQ(used_bytes, num_bytes);
+
+  // Decode, but starting from a non-zero offset the input buffer.
+  papa::lima receive{};
+  const int64_t read_bytes =
+      receive.decode(data.data(), offset, ssize(data) - offset);
+  ASSERT_EQ(read_bytes, num_bytes);
+  EXPECT_EQ(receive.golf, true);
+  EXPECT_EQ(receive.bravo, 22);
+  EXPECT_EQ(receive.delta, 2.25);
+  EXPECT_EQ(receive.foxtrot, 22.125);
+  EXPECT_EQ(receive.india8, 22);
+  EXPECT_EQ(receive.india16, 22222);
+  EXPECT_EQ(receive.india32, 22222222);
+  EXPECT_EQ(receive.india64, 222222222222222222);
+}
+
 // With the old lcm-gen, partially-fixed-size arrays are typed as std::vector so
 // need manual size bookkeeping.
 template <class T>
