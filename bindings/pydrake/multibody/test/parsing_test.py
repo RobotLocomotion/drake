@@ -32,8 +32,10 @@ from pydrake.multibody.tree import (
     ModelInstanceIndex,
 )
 from pydrake.multibody.plant import (
+    AddMultibodyPlantSceneGraph,
     MultibodyPlant,
 )
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestParsing(unittest.TestCase):
@@ -225,6 +227,16 @@ class TestParsing(unittest.TestCase):
         parser = Parser(plant=plant)
         groups = parser.GetCollisionFilterGroups()
         self.assertTrue(groups.empty())
+
+    def test_parser_diagram_builder(self):
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(
+            builder, time_step=0.0)
+        parser = Parser(builder=builder, plant=plant, scene_graph=scene_graph,
+                        model_name_prefix="prefix")
+        self.assertEqual(parser.builder(), builder)
+        self.assertEqual(parser.plant(), plant)
+        self.assertEqual(parser.scene_graph(), scene_graph)
 
     def test_model_instance_info(self):
         """Checks that ModelInstanceInfo bindings exist."""

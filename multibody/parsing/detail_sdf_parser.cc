@@ -2139,8 +2139,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     const ParsingWorkspace& workspace, const sdf::NestedInclude& include,
     sdf::Errors* errors) {
   const sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
-  auto& [options, package_map, diagnostic, plant, collision_resolver,
-         parser_selector] = workspace;
+  auto& [options, package_map, diagnostic, builder, plant, scene_graph,
+         collision_resolver, parser_selector] = workspace;
   const std::string resolved_filename{include.ResolvedFileName()};
 
   // Do not attempt to parse anything other than URDF and MuJoCo xml files.
@@ -2171,8 +2171,9 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   const bool is_merge_include = include.IsMerge().value_or(false);
 
   InterfaceModelHelper interface_model_helper(*plant);
-  ParsingWorkspace subworkspace{options, package_map,        subdiagnostic,
-                                plant,   collision_resolver, parser_selector};
+  ParsingWorkspace subworkspace{options,        package_map, subdiagnostic,
+                                builder,        plant,       collision_resolver,
+                                parser_selector};
 
   std::string model_frame_name = "__model__";
   std::string model_name;

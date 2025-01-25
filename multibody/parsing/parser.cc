@@ -36,23 +36,54 @@ struct Parser::ParserInternalData {
 
 Parser::Parser(MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph)
-    : Parser(plant, scene_graph, {}) {}
+    : Parser(nullptr, plant, scene_graph, {}) {}
 
 Parser::Parser(MultibodyPlant<double>* plant,
                std::string_view model_name_prefix)
-    : Parser(plant, nullptr, model_name_prefix) {}
+    : Parser(nullptr, plant, nullptr, model_name_prefix) {}
 
 Parser::Parser(MultibodyPlant<double>* plant,
                geometry::SceneGraph<double>* scene_graph,
                std::string_view model_name_prefix)
-    : plant_(plant), data_(new Parser::ParserInternalData) {
-  DRAKE_THROW_UNLESS(plant != nullptr);
+    : Parser(nullptr, plant, scene_graph, model_name_prefix) {}
+
+Parser::Parser(systems::DiagramBuilder<double>* builder,
+               MultibodyPlant<double>* plant,
+               geometry::SceneGraph<double>* scene_graph,
+               std::string_view model_name_prefix)
+    : builder_(builder), plant_(plant), data_(new Parser::ParserInternalData) {
+  if (builder_ != nullptr) {
+    if (plant_ == nullptr) {
+      plant_ =
+          &builder_->GetMutableDowncastSubsystemByName<MultibodyPlant>("plant");
+    }
+
+    bool found_plant = false;
+    bool found_scene_graph = false;
+    for (const systems::System<double>* system : builder_->GetSystems()) {
+      if (system == plant_) {
+        found_plant = true;
+      }
+      if (system == scene_graph) {
+        found_scene_graph = true;
+      }
+    }
+    if (!found_plant) {
+      throw std::runtime_error(
+          "The provided plant must be one of the systems in the builder");
+    }
+    if (scene_graph != nullptr && !found_scene_graph) {
+      throw std::runtime_error(
+          "The provided scene_graph must be one of the systems in the builder");
+    }
+  }
+  DRAKE_THROW_UNLESS(plant_ != nullptr);
 
   if (!model_name_prefix.empty()) {
     model_name_prefix_ = std::string(model_name_prefix);
   }
 
-  if (scene_graph != nullptr && !plant->geometry_source_is_registered()) {
+  if (scene_graph != nullptr && !plant_->geometry_source_is_registered()) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
   }
 
