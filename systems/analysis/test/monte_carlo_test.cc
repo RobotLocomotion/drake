@@ -20,7 +20,7 @@ namespace {
 // Checks that RandomSimulation repeatedly produces the same output sample
 // when given the same RandomGenerator, but produces different output samples
 // when given different generators.
-void CheckConsistentReplay(const SimulatorFactory& make_simulator,
+void CheckConsistentReplay(const RandomSimulatorFactory& make_simulator,
                            const ScalarSystemFunction& output,
                            double final_time) {
   RandomGenerator generator;
@@ -52,8 +52,24 @@ double GetScalarOutput(const System<double>& system,
 }
 
 // Check that we get the expected deterministic result if our
-// SimulatorFactory is deterministic.
+// RandomSimulatorFactory is deterministic.
 GTEST_TEST(RandomSimulationTest, DeterministicSimulator) {
+  RandomGenerator generator;
+  const double final_time = 0.1;
+  const double value = 1.432;
+  const RandomSimulatorFactory make_simulator = [value](RandomGenerator*) {
+    auto system = std::make_unique<ConstantVectorSource<double>>(value);
+    return std::make_unique<Simulator<double>>(std::move(system));
+  };
+  EXPECT_EQ(RandomSimulation(make_simulator, &GetScalarOutput, final_time,
+                             &generator),
+            value);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Ditto but using the deprecated SimulatorFactory callback.
+GTEST_TEST(RandomSimulationTest, DeprecatedDeterministicSimulator) {
   RandomGenerator generator;
   const double final_time = 0.1;
   const double value = 1.432;
@@ -65,13 +81,14 @@ GTEST_TEST(RandomSimulationTest, DeterministicSimulator) {
                              &generator),
             value);
 }
+#pragma GCC diagnostic pop
 
 // Ensure that RandomSimulation provides deterministic results when
-// the "randomness" is in the SimulatorFactory.
+// the "randomness" is in the RandomSimulatorFactory.
 GTEST_TEST(RandomSimulationTest, WithRandomSimulator) {
   // Factory for a simple system output value is different in each simulator
   // (but constant over the duration of each simulation).
-  const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
+  const RandomSimulatorFactory make_simulator = [](RandomGenerator* generator) {
     std::normal_distribution<> distribution;
     auto system = std::make_unique<ConstantVectorSource<double>>(
         distribution(*generator));
@@ -114,7 +131,7 @@ class RandomContextSystem : public VectorSystem<double> {
 GTEST_TEST(RandomSimulationTest, WithRandomContext) {
   // Factory for a simple system output value is different in each simulator
   // (but constant over the duration of each simulation).
-  const SimulatorFactory make_simulator = [](RandomGenerator*) {
+  const RandomSimulatorFactory make_simulator = [](RandomGenerator*) {
     auto system = std::make_unique<RandomContextSystem>();
     return std::make_unique<Simulator<double>>(std::move(system));
   };
@@ -125,9 +142,9 @@ GTEST_TEST(RandomSimulationTest, WithRandomContext) {
 
 // Ensure that RandomSimulation provides correct/deterministic results when
 // the "randomness" comes from random input ports.  (Also provides coverage
-// for using a DiagramBuilder in a SimulatorFactory).
+// for using a DiagramBuilder in a RandomSimulatorFactory).
 GTEST_TEST(RandomSimulationTest, WithRandomInputs) {
-  const SimulatorFactory make_simulator = [](RandomGenerator*) {
+  const RandomSimulatorFactory make_simulator = [](RandomGenerator*) {
     DiagramBuilder<double> builder;
     const int kNumOutputs = 1;
     const double sampling_interval = 0.1;
@@ -146,7 +163,7 @@ GTEST_TEST(RandomSimulationTest, WithRandomInputs) {
 }
 
 GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
-  const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
+  const RandomSimulatorFactory make_simulator = [](RandomGenerator* generator) {
     auto system = std::make_unique<RandomContextSystem>();
     return std::make_unique<Simulator<double>>(std::move(system));
   };
@@ -231,7 +248,7 @@ class ThrowingRandomContextSystem : public VectorSystem<double> {
 };
 
 GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
-  const SimulatorFactory make_simulator = [](RandomGenerator* generator) {
+  const RandomSimulatorFactory make_simulator = [](RandomGenerator* generator) {
     auto system = std::make_unique<ThrowingRandomContextSystem>();
     return std::make_unique<Simulator<double>>(std::move(system));
   };
