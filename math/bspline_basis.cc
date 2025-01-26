@@ -90,6 +90,54 @@ std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
 }
 
 template <typename T>
+template <typename T_control_point>
+T_control_point BsplineBasis<T>::EvaluateCurve(
+    const std::vector<T_control_point>& control_points,
+    const T& parameter_value) const {
+  /* This function implements the de Boor algorithm. It uses the notation
+  from Patrikalakis et al. [1]. Since the depth of recursion is known
+  a-priori, the algorithm is flattened along the lines described in [2] to
+  avoid duplicate computations.
+
+    [1] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node18.html
+    [2] De Boor, Carl. "On calculating with B-splines." Journal of
+        Approximation theory 6.1 (1972): 50-62.
+  */
+  DRAKE_DEMAND(static_cast<int>(control_points.size()) ==
+               num_basis_functions());
+  DRAKE_DEMAND(parameter_value >= initial_parameter_value());
+  DRAKE_DEMAND(parameter_value <= final_parameter_value());
+
+  // Define short names to match notation in [1].
+  const std::vector<T>& t = knots();
+  const T& t_bar = parameter_value;
+  const int k = order();
+
+  /* Find the index, 𝑙, of the greatest knot that is less than or equal to
+  t_bar and strictly less than final_parameter_value(). */
+  const int ell = FindContainingInterval(t_bar);
+  // The vector that stores the intermediate de Boor points (the pᵢʲ in [1]).
+  std::vector<T_control_point> p(order());
+  /* For j = 0, i goes from ell down to ell - (k - 1). Define r such that
+  i = ell - r. */
+  for (int r = 0; r < k; ++r) {
+    const int i = ell - r;
+    p.at(r) = control_points.at(i);
+  }
+  /* For j = 1, ..., k - 1, i goes from ell down to ell - (k - j - 1). Again,
+  i = ell - r. */
+  for (int j = 1; j < k; ++j) {
+    for (int r = 0; r < k - j; ++r) {
+      const int i = ell - r;
+      // α = (t_bar - t[i]) / (t[i + k - j] - t[i]);
+      const T alpha = (t_bar - t.at(i)) / (t.at(i + k - j) - t.at(i));
+      p.at(r) = (1.0 - alpha) * p.at(r + 1) + alpha * p.at(r);
+    }
+  }
+  return p.front();
+}
+
+template <typename T>
 std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
     const T& parameter_value) const {
   return ComputeActiveBasisFunctionIndices(
@@ -148,6 +196,27 @@ bool BsplineBasis<T>::CheckInvariants() const {
 }
 }  // namespace math
 }  // namespace drake
+
+// Explicit instantiations for EvaluateCurve.
+#define BSPLINE_INSTANTIATE_EVALUATE_CURVE(T, T_control_point)  \
+  template T_control_point                                      \
+  drake::math::BsplineBasis<T>::EvaluateCurve<T_control_point>( \
+      const std::vector<T_control_point>&, const T&) const;
+
+#define BSPLINE_INSTANTIATE_EVALUATE_CURVE_S(T, S)         \
+  BSPLINE_INSTANTIATE_EVALUATE_CURVE(T, S)                 \
+  BSPLINE_INSTANTIATE_EVALUATE_CURVE(T, drake::VectorX<S>) \
+  BSPLINE_INSTANTIATE_EVALUATE_CURVE(T, drake::MatrixX<S>)
+
+BSPLINE_INSTANTIATE_EVALUATE_CURVE_S(double, double)
+BSPLINE_INSTANTIATE_EVALUATE_CURVE_S(double, drake::AutoDiffXd)
+BSPLINE_INSTANTIATE_EVALUATE_CURVE_S(drake::AutoDiffXd, drake::AutoDiffXd)
+BSPLINE_INSTANTIATE_EVALUATE_CURVE_S(double, drake::symbolic::Expression)
+BSPLINE_INSTANTIATE_EVALUATE_CURVE_S(drake::symbolic::Expression,
+                                     drake::symbolic::Expression)
+
+#undef BSPLINE_INSTANTIATE_EVALUATE_CURVE
+#undef BSPLINE_INSTANTIATE_EVALUATE_CURVE_S
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::math::BsplineBasis);

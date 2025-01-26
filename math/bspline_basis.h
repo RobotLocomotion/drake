@@ -129,55 +129,18 @@ class BsplineBasis final {
   curve defined by `this` and `control_points`.
   @pre control_points.size() == num_basis_functions()
   @pre parameter_value ≥ initial_parameter_value()
-  @pre parameter_value ≤ final_parameter_value() */
+  @pre parameter_value ≤ final_parameter_value()
+
+  @tparam T_control_point Type of the control points. Explicit instantiations
+  are provided for: <T,S> pairs <double, double>, <double, AutoDiffXd>,
+  <AutoDiffXd, AutoDiffXd>, <double, Expression>, <Expression, Expression>, and
+  for each S we instantiate T_control_point = S, T_control_point = VectorX<S>
+  and T_control_point = MatrixX<S>.
+  */
   template <typename T_control_point>
   T_control_point EvaluateCurve(
       const std::vector<T_control_point>& control_points,
-      const T& parameter_value) const {
-    /* This function implements the de Boor algorithm. It uses the notation
-    from Patrikalakis et al. [1]. Since the depth of recursion is known
-    a-priori, the algorithm is flattened along the lines described in [2] to
-    avoid duplicate computations.
-
-     [1] https://web.mit.edu/hyperbook/Patrikalakis-Maekawa-Cho/node18.html
-     [2] De Boor, Carl. "On calculating with B-splines." Journal of
-         Approximation theory 6.1 (1972): 50-62.
-
-    NOTE: The implementation of this method is included in the header so that
-    it can be used with custom values of T_control_point. */
-    DRAKE_DEMAND(static_cast<int>(control_points.size()) ==
-                 num_basis_functions());
-    DRAKE_DEMAND(parameter_value >= initial_parameter_value());
-    DRAKE_DEMAND(parameter_value <= final_parameter_value());
-
-    // Define short names to match notation in [1].
-    const std::vector<T>& t = knots();
-    const T& t_bar = parameter_value;
-    const int k = order();
-
-    /* Find the index, 𝑙, of the greatest knot that is less than or equal to
-    t_bar and strictly less than final_parameter_value(). */
-    const int ell = FindContainingInterval(t_bar);
-    // The vector that stores the intermediate de Boor points (the pᵢʲ in [1]).
-    std::vector<T_control_point> p(order());
-    /* For j = 0, i goes from ell down to ell - (k - 1). Define r such that
-    i = ell - r. */
-    for (int r = 0; r < k; ++r) {
-      const int i = ell - r;
-      p.at(r) = control_points.at(i);
-    }
-    /* For j = 1, ..., k - 1, i goes from ell down to ell - (k - j - 1). Again,
-    i = ell - r. */
-    for (int j = 1; j < k; ++j) {
-      for (int r = 0; r < k - j; ++r) {
-        const int i = ell - r;
-        // α = (t_bar - t[i]) / (t[i + k - j] - t[i]);
-        const T alpha = (t_bar - t.at(i)) / (t.at(i + k - j) - t.at(i));
-        p.at(r) = (1.0 - alpha) * p.at(r + 1) + alpha * p.at(r);
-      }
-    }
-    return p.front();
-  }
+      const T& parameter_value) const;
 
   /** Returns the value of the `i`-th basis function evaluated at
   `parameter_value`. */
