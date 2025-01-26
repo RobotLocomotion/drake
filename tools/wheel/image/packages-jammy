@@ -20,7 +20,3 @@ wget
 # Build dependencies (general).
 libglib2.0-dev
 libxt-dev
-
-# TODO(jwnimmer-tri) Build these from source instead of using Ubuntu.
-libblas-dev
-liblapack-dev
