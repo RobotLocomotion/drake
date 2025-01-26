@@ -15,9 +15,6 @@ common --announce_rc
 # the module path to refer to what the user provided.
 common --@drake//tools/flags:public_repo_default=module
 
-# TODO(jwnimmer-tri) Ideally this would be automatically inferred.
-common --@drake//tools/install/libdrake:spdlog_dynamic=True
-
 # Flags that tweak repository rules (if any).
 common @BAZEL_REPO_ENV@
 
