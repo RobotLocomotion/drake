@@ -167,28 +167,28 @@ Defines a URDF model with various types of joints.
     <origin xyz="3 2 1" rpy="0 0 0"/>
     <parent link="link12"/>
     <child link="link13"/>
-    <drake:initial_curve_tangent xyz="0 0 1"/>
+    <drake:initial_tangent xyz="0 0 1"/>
     <drake:plane_normal xyz="1 0 0"/>
     <drake:is_periodic value="true"/>
     <dynamics damping="0.1"/>
     <drake:curves>
-      <drake:line_segment length="1.0"/>
-      <drake:circular_arc length="3.14159265358979323846" radius="0.5" direction="counterclockwise"/>
-      <drake:circular_arc length="3.14159265358979323846" radius="0.5" direction="clockwise"/>
+      <drake:curve length="1.0" angle="0.0"/>
+      <drake:curve length="3.14159265358979323846" angle="1.57079632679489661923"/>
+      <drake:curve length="3.14159265358979323846" angle="-1.57079632679489661923"/>
     </drake:curves>
   </drake:joint>
   <drake:joint name="curvilinear_aperiodic" type="curvilinear">
     <origin xyz="3 2 1" rpy="0 0 0"/>
     <parent link="link13"/>
     <child link="link14"/>
-    <drake:initial_curve_tangent xyz="0 0 1"/>
+    <drake:initial_tangent xyz="0 0 1"/>
     <drake:plane_normal xyz="1 0 0"/>
     <drake:is_periodic value="false"/>
     <dynamics damping="0.1"/>
     <drake:curves>
-      <drake:line_segment length="1.0"/>
-      <drake:circular_arc length="3.14159265358979323846" radius="0.5" direction="counterclockwise"/>
-      <drake:circular_arc length="3.14159265358979323846" radius="0.5" direction="clockwise"/>
+      <drake:curve length="1.0" angle="0.0"/>
+      <drake:curve length="3.14159265358979323846" angle="1.57079632679489661923"/>
+      <drake:curve length="3.14159265358979323846" angle="-1.57079632679489661923"/>
     </drake:curves>
   </drake:joint>
   <!-- Normal transmission/joint, should be created with appropriate

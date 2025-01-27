@@ -1658,7 +1658,7 @@ TEST_F(SdfParserTest, JointParsingTest) {
       curvilinear_joint.get_trajectory();
   EXPECT_EQ(joint_curve.is_periodic(), true);
   std::vector<double> breaks_expected{0., 1., 1. + M_PI, 1. + 2 * M_PI};
-  std::vector<double> turning_rates_expected{0., 2., -2.};
+  std::vector<double> turning_rates_expected{0., 0.5, -0.5};
 
   PiecewiseConstantCurvatureTrajectory<double> joint_curve_expected{
       breaks_expected,   turning_rates_expected, Vector3d::UnitZ(),

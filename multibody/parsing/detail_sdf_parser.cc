@@ -1322,7 +1322,7 @@ void ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
            node->GetElement("drake:curves")->GetFirstElement();
        curve_node != NULL; curve_node = curve_node->GetNextElement()) {
     const auto name = curve_node->GetName();
-    if (name != "drake:line_segment" && name != "drake:circular_arc") {
+    if (name != "drake:curve") {
       std::string message =
           fmt::format("<{}>: drake:curves node contains an invalid child node.",
                       node->GetName());
@@ -1334,7 +1334,7 @@ void ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
     double length = ParseDouble(diagnostic, curve_node, "drake:length");
     if (length <= 0.0) {
       std::string message = fmt::format(
-          "<{}>: A drake:line_segment or drake:circular_arc node has a 0 or "
+          "<{}>: A drake:curve node has a 0 or "
           "negative drake:length.",
           curve_node->GetName());
       diagnostic.Error(node, message);
@@ -1342,43 +1342,9 @@ void ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
       turning_rates->clear();
       return;
     }
-    double turning_rate = 0.0;
-    if (name == "drake:circular_arc") {
-      double radius = ParseDouble(diagnostic, curve_node, "drake:radius");
-      if (radius <= 0.0) {
-        std::string message = fmt::format(
-            "<{}>: A drake:circular_arc node has a 0 or negative drake:radius.",
-            curve_node->GetName());
-        diagnostic.Error(node, message);
-        breaks->clear();
-        turning_rates->clear();
-        return;
-      }
-      if (!curve_node->HasElement("drake:direction")) {
-        std::string message = fmt::format(
-            "<{}>: A drake:circular_arc node is did not specify a "
-            "drake:direction.",
-            curve_node->GetName());
-        diagnostic.Error(node, message);
-        breaks->clear();
-        turning_rates->clear();
-        return;
-      }
-      std::string direction = curve_node->Get<std::string>("drake:direction");
-      if (direction != "counterclockwise" && direction != "clockwise") {
-        std::string message = fmt::format(
-            "<{}>: A drake:circular_arc node has an invalid drake:direction "
-            "value '{}', valid options: 'clockwise', 'counterclockwise'.",
-            curve_node->GetName(), direction);
-        diagnostic.Error(node, message);
-        breaks->clear();
-        turning_rates->clear();
-        return;
-      }
-      turning_rate = direction == "counterclockwise" ? 1 / radius : -1 / radius;
-    }
+    double angle = ParseDouble(diagnostic, curve_node, "drake:angle");
     breaks->push_back(breaks->back() + length);
-    turning_rates->push_back(turning_rate);
+    turning_rates->push_back(angle / length);
   }
 }
 
@@ -1473,15 +1439,13 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       "drake:parent",
       "drake:child",
       "drake:damping",
-      "drake:initial_curve_tangent",
+      "drake:initial_tangent",
       "drake:plane_normal",
       "drake:is_periodic",
       "drake:curves",
-      "drake:line_segment",
-      "drake:circular_arc",
+      "drake:curve",
       "drake:length",
-      "drake:radius",
-      "drake:direction",
+      "drake:angle",
       "pose"};
   CheckSupportedElements(diagnostic, node, supported_joint_elements);
 
@@ -1525,16 +1489,16 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   } else if (joint_type == "curvilinear") {
     // Defaults for optional tags
     Vector3d plane_normal(0, 0, 1);
-    Vector3d initial_curve_tangent(1, 0, 0);
+    Vector3d initial_tangent(1, 0, 0);
     bool is_periodic = false;
     double damping = 0.0;
     if (node->HasElement("drake:plane_normal")) {
       plane_normal = ParseVector3(
           diagnostic, node->GetElement("drake:plane_normal"), "xyz");
     }
-    if (node->HasElement("drake:initial_curve_tangent")) {
-      initial_curve_tangent = ParseVector3(
-          diagnostic, node->GetElement("drake:initial_curve_tangent"), "xyz");
+    if (node->HasElement("drake:initial_tangent")) {
+      initial_tangent = ParseVector3(
+          diagnostic, node->GetElement("drake:initial_tangent"), "xyz");
     }
     if (node->HasElement("drake:is_periodic")) {
       is_periodic = ParseBoolean(diagnostic, node, "drake:is_periodic");
@@ -1560,7 +1524,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       return false;
     }
     PiecewiseConstantCurvatureTrajectory<double> trajectory(
-        breaks, turning_rates, initial_curve_tangent, plane_normal,
+        breaks, turning_rates, initial_tangent, plane_normal,
         Vector3d::Zero(), is_periodic);
     plant->AddJoint(std::make_unique<CurvilinearJoint<double>>(
         joint_name, *parent_frame, *child_frame, trajectory, damping));
