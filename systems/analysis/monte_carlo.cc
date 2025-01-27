@@ -12,9 +12,10 @@ namespace drake {
 namespace systems {
 namespace analysis {
 
-double RandomSimulation(
-    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    const double final_time, RandomGenerator* const generator) {
+double RandomSimulation(const RandomSimulatorFactory& make_simulator,
+                        const ScalarSystemFunction& output,
+                        const double final_time,
+                        RandomGenerator* const generator) {
   auto simulator = make_simulator(generator);
 
   const System<double>& system = simulator->get_system();
@@ -29,9 +30,9 @@ namespace {
 
 // Serial (single-threaded) implementation of MonteCarloSimulation.
 std::vector<RandomSimulationResult> MonteCarloSimulationSerial(
-    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    const double final_time, const int num_samples,
-    RandomGenerator* const generator) {
+    const RandomSimulatorFactory& make_simulator,
+    const ScalarSystemFunction& output, const double final_time,
+    const int num_samples, RandomGenerator* const generator) {
   std::vector<RandomSimulationResult> simulation_results;
   simulation_results.reserve(num_samples);
 
@@ -57,9 +58,10 @@ bool IsFutureReady(const std::future<T>& future) {
 
 // Parallel (multi-threaded) implementation of MonteCarloSimulation.
 std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
-    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    const double final_time, const int num_samples,
-    RandomGenerator* const generator, const int num_threads) {
+    const RandomSimulatorFactory& make_simulator,
+    const ScalarSystemFunction& output, const double final_time,
+    const int num_samples, RandomGenerator* const generator,
+    const int num_threads) {
   // Initialize storage for all simulation results. The full vector must be
   // constructed up front (i.e. we can't use reserve()) to avoid a race
   // condition on checking the size of the vector when the worker threads write
@@ -129,8 +131,9 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
 }  // namespace
 
 std::vector<RandomSimulationResult> MonteCarloSimulation(
-    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    const double final_time, const int num_samples, RandomGenerator* generator,
+    const RandomSimulatorFactory& make_simulator,
+    const ScalarSystemFunction& output, const double final_time,
+    const int num_samples, RandomGenerator* generator,
     const Parallelism parallelism) {
   // Create a generator if the user didn't provide one.
   std::unique_ptr<RandomGenerator> owned_generator;

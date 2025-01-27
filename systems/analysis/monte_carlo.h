@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/parallelism.h"
 #include "drake/systems/analysis/simulator.h"
 
@@ -16,8 +17,8 @@ namespace analysis {
  * Defines a factory method that constructs a Simulator (with an owned System)
  * using the supplied RandomGenerator as the only source of randomness.
  *
- * Note that in many interesting cases, the SimulatorFactory may simply ignore
- * the RandomGenerator argument and return the Simulator object
+ * Note that in many interesting cases, the RandomSimulatorFactory may simply
+ * ignore the RandomGenerator argument and return the Simulator object
  * deterministically, because randomness may also be introduced *inside* the
  * simulation (by SetRandomContext and/or random input ports).
  *
@@ -26,9 +27,14 @@ namespace analysis {
  * Having the Simulator own the System (by calling the unique_ptr version of
  * the constructor) is one convenient solution.
  */
-typedef std::function<std::unique_ptr<Simulator<double>>(
-    RandomGenerator* generator)>
-    SimulatorFactory;
+using RandomSimulatorFactory = std::function<std::shared_ptr<Simulator<double>>(
+    RandomGenerator* generator)>;
+
+/** (Deprecated.) */
+using SimulatorFactory DRAKE_DEPRECATED("2025-05-01",
+                                        "Use RandomSimulatorFactory instead.") =
+    std::function<
+        std::unique_ptr<Simulator<double>>(RandomGenerator* generator)>;
 
 /***
  * Defines an arbitrary scalar function of the Context.  This is used in the
@@ -83,7 +89,7 @@ typedef std::function<double(const System<double>& system,
  *
  * @ingroup analysis
  */
-double RandomSimulation(const SimulatorFactory& make_simulator,
+double RandomSimulation(const RandomSimulatorFactory& make_simulator,
                         const ScalarSystemFunction& output, double final_time,
                         RandomGenerator* generator);
 
@@ -163,9 +169,9 @@ struct RandomSimulationResult {
 // TODO(russt): Consider generalizing this with options (e.g. setting the
 // number of simulators, number of samples per simulator, ...).
 std::vector<RandomSimulationResult> MonteCarloSimulation(
-    const SimulatorFactory& make_simulator, const ScalarSystemFunction& output,
-    double final_time, int num_samples, RandomGenerator* generator = nullptr,
-    Parallelism parallelism = false);
+    const RandomSimulatorFactory& make_simulator,
+    const ScalarSystemFunction& output, double final_time, int num_samples,
+    RandomGenerator* generator = nullptr, Parallelism parallelism = false);
 
 // The below functions are exposed for unit testing only.
 namespace internal {
