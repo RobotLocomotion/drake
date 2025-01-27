@@ -1,5 +1,4 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
-load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 load("@bazel_skylib//rules:run_binary.bzl", "run_binary")
 load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
@@ -14,7 +13,6 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:cc.bzl", "cc_binary", "cc_library")
 load(
     "//tools/skylark:drake_cc.bzl",
-    "cc_nolink_library",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_test",
@@ -25,6 +23,7 @@ load(
     "drake_py_binary",
     "drake_py_unittest",
 )
+load("//tools/workspace:generate_file.bzl", "generate_file")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
 load(":header_lint.bzl", "cc_check_allowed_headers")
 
@@ -60,6 +59,42 @@ run_binary(
     tool = "parse_version",
 )
 
+generate_file(
+    name = "with_user_eigen.cmake",
+    content = select({
+        "//tools/workspace/eigen:is_external": (
+            "set(WITH_USER_EIGEN ON)"
+        ),
+        "//conditions:default": (
+            "set(WITH_USER_EIGEN OFF)"
+        ),
+    }),
+)
+
+generate_file(
+    name = "with_user_fmt.cmake",
+    content = select({
+        "//tools/workspace/fmt:is_external": (
+            "set(WITH_USER_FMT ON)"
+        ),
+        "//conditions:default": (
+            "set(WITH_USER_FMT OFF)"
+        ),
+    }),
+)
+
+generate_file(
+    name = "with_user_spdlog.cmake",
+    content = select({
+        "//tools/workspace/spdlog:is_external": (
+            "set(WITH_USER_SPDLOG ON)"
+        ),
+        "//conditions:default": (
+            "set(WITH_USER_SPDLOG OFF)"
+        ),
+    }),
+)
+
 cmake_configure_file(
     name = "drake_config_cmake_expand",
     src = "drake-config.cmake.in",
@@ -68,6 +103,9 @@ cmake_configure_file(
     cmakelists = [
         ":python_version.cmake",
         ":stamp_version.cmake",
+        ":with_user_eigen.cmake",
+        ":with_user_fmt.cmake",
+        ":with_user_spdlog.cmake",
     ],
 )
 
@@ -221,8 +259,7 @@ cc_library(
 #
 # TODO(jwnimmer-tri) Ideally, Bazel should be able to handle the depended-on
 # *.so files for us, without us having to know up-front here which dependencies
-# are coming from the WORKSPACE in the form of *.so. This leaks out into the
-# hacky ":is_spdlog_dynamic_true" immediately below.
+# are coming from the WORKSPACE in the form of *.so.
 cc_library(
     name = "libdrake_runtime_so_deps",
     deps = [
@@ -231,24 +268,10 @@ cc_library(
         ":usd_deps",
         ":x11_deps",
         "//common:drake_marker_shared_library",
+        "//tools/workspace/fmt:shared_library_maybe",
+        "//tools/workspace/spdlog:shared_library_maybe",
         "@lcm",
-    ] + select({
-        ":is_spdlog_dynamic_true": ["@spdlog"],
-        "//conditions:default": [],
-    }),
-)
-
-# TODO(jwnimmer-tri) This is a hack. Find a better solution.
-bool_flag(
-    name = "spdlog_dynamic",
-    build_setting_default = False,
-)
-
-config_setting(
-    name = "is_spdlog_dynamic_true",
-    flag_values = {
-        ":spdlog_dynamic": "True",
-    },
+    ],
 )
 
 # The list of depended-on header-only libraries that libdrake's header files
@@ -260,21 +283,11 @@ config_setting(
 cc_library(
     name = "libdrake_header_only_deps",
     deps = [
-        ":fmt_headers",
-        ":spdlog_headers",
         "//lcmtypes:lcmtypes_drake_cc",
+        "//tools/workspace/fmt:hdrs",
+        "//tools/workspace/spdlog:hdrs",
         "@eigen",
     ],
-)
-
-cc_nolink_library(
-    name = "fmt_headers",
-    deps = ["@fmt"],
-)
-
-cc_nolink_library(
-    name = "spdlog_headers",
-    deps = ["@spdlog"],
 )
 
 drake_cc_test(
