@@ -18,7 +18,8 @@ CompositeParse::CompositeParse(Parser* parser)
       resolver_(&parser->plant()),
       options_({parser->GetAutoRenaming()}),
       workspace_(options_, parser->package_map(), parser->diagnostic_policy_,
-                 &parser->plant(), &resolver_, SelectParser) {}
+                 parser->builder(), &parser->plant(), &resolver_,
+                 SelectParser) {}
 
 CompositeParse::~CompositeParse() = default;
 

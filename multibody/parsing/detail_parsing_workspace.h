@@ -137,12 +137,14 @@ struct ParsingWorkspace {
       const ParsingOptions& options_in,
       const PackageMap& package_map_in,
       const drake::internal::DiagnosticPolicy& diagnostic_in,
+      systems::DiagramBuilder<double>* builder_in,
       MultibodyPlant<double>* plant_in,
       internal::CollisionFilterGroupResolver* collision_resolver_in,
       ParserSelector parser_selector_in)
       : options(options_in),
         package_map(package_map_in),
         diagnostic(diagnostic_in),
+        builder(builder_in),
         plant(plant_in),
         collision_resolver(collision_resolver_in),
         parser_selector(parser_selector_in) {
@@ -154,6 +156,7 @@ struct ParsingWorkspace {
   const ParsingOptions& options;
   const PackageMap& package_map;
   const drake::internal::DiagnosticPolicy& diagnostic;
+  systems::DiagramBuilder<double>* const builder;
   MultibodyPlant<double>* const plant;
   internal::CollisionFilterGroupResolver* const collision_resolver;
   const ParserSelector parser_selector;

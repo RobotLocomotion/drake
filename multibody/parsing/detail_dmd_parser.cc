@@ -118,7 +118,7 @@ void ParseModelDirectivesImpl(
     std::vector<ModelInstanceInfo>* added_models) {
   drake::log()->debug("ParseModelDirectivesImpl(MultibodyPlant)");
   DRAKE_DEMAND(added_models != nullptr);
-  auto& [options, package_map, diagnostic, plant,
+  auto& [options, package_map, diagnostic, builder, plant,
          collision_resolver, parser_selector] = workspace;
   DRAKE_DEMAND(plant != nullptr);
   auto get_scoped_frame = [_plant = plant, &model_namespace](

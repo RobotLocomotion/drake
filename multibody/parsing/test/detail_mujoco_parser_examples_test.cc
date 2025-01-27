@@ -23,7 +23,7 @@ class MujocoParserExamplesTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_name,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_, &resolver, NoSelect};
     auto result = wrapper_.AddModel(
         {DataSource::kFilename, &file_name}, model_name, {}, w);
