@@ -90,7 +90,7 @@ has `<version>` tags for each supported configuration (e.g. jammy and noble).
 
 1. The `*.deb` files are in AWS
 [s3://drake-packages/drake/release](https://s3.console.aws.amazon.com/s3/buckets/drake-packages?region=us-east-1&prefix=drake/release/&showversions=false)
-`/<configuration>/drake-dev_<version>-1_amd64.deb` for each supported configuration (e.g. jammy and noble)
+`/drake-dev_<version>-1_amd64-<configuration>.deb` for each supported configuration (e.g. jammy and noble)
 
 ## Run script for apt
 

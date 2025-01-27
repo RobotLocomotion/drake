@@ -354,8 +354,8 @@ def _push_deb(state: _State):
     Downloads .deb artifacts and push them to S3.
     """
     for deb in state.find_artifacts(_Manifest.RE_DEB):
-        dest_name = f'drake-dev_{deb.version}_{deb.arch}.{deb.ext}'
-        dest_path = f'drake/release/{deb.platform}/{dest_name}'
+        dest_path_suffix = f'{deb.version}_{deb.arch}-{deb.platform}.{deb.ext}'
+        dest_path = f'drake/release/drake-dev_{dest_path_suffix}'
         state.push_artifact(deb, _AWS_BUCKET, dest_path)
 
 
