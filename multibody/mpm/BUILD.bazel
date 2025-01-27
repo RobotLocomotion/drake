@@ -17,6 +17,8 @@ drake_cc_package_library(
         ":bspline_weights",
         ":grid_data",
         ":particle_data",
+        ":particle_sorter",
+        ":spgrid_flags",
     ],
 )
 
@@ -60,6 +62,22 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "particle_sorter",
+    srcs = [
+        "particle_sorter.cc",
+    ],
+    hdrs = [
+        "particle_sorter.h",
+    ],
+    deps = [
+        ":bspline_weights",
+        ":spgrid_flags",
+        "//common:essential",
+        "//math:gradient",
+    ],
+)
+
 # TODO(xuchenhan-tri): when we enable SPGrid in our releases, we also need to
 # install its license file in drake/tools/workspace/BUILD.bazel.
 
@@ -72,8 +90,21 @@ drake_cc_library_linux_only(
         "spgrid.h",
     ],
     deps = [
+        ":spgrid_flags",
         "//common:essential",
         "@spgrid_internal",
+    ],
+)
+
+drake_cc_library(
+    name = "spgrid_flags",
+    hdrs = [
+        "spgrid_flags.h",
+    ],
+    deps = [
+        ":bspline_weights",
+        "//common:essential",
+        "//math:gradient",
     ],
 )
 
@@ -96,6 +127,16 @@ drake_cc_googletest(
     deps = [
         ":particle_data",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest_linux_only(
+    name = "particle_sorter_test",
+    deps = [
+        ":bspline_weights",
+        ":grid_data",
+        ":particle_sorter",
+        ":spgrid",
     ],
 )
 
