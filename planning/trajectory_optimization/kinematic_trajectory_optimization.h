@@ -74,7 +74,7 @@ class KinematicTrajectoryOptimization {
   int num_control_points() const { return num_control_points_; }
 
   /** Returns the basis used to represent the path, r(s), over s∈[0,1]. */
-  const math::BsplineBasis<double>& basis() const { return basis_; }
+  const math::BsplineBasis<double>& basis() const { return bspline_.basis(); }
 
   /** Returns the control points defining the path as an M-by-N matrix, where M
   is the number of positions and N is the number of control points. */
@@ -167,35 +167,40 @@ class KinematicTrajectoryOptimization {
                     const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   /** Adds linear constraints to enforce upper and lower bounds on the velocity
-  trajectory, q̇(t). These bounds will be respected at all times. Note this
-  does NOT directly constrain ṙ(s).
+  trajectory, q̇(t). By leveraging the convex hull property of B-splines, these
+  bounds are applied at the (derivative) control points, but will be respected
+  for all times, t ∈ [0,T]. Note this does NOT directly constrain ṙ(s).
 
-  @returns A vector of bindings with the ith element adding a constraint to the
-  ith control point of the derivative trajectory. */
+  @returns A vector of bindings with interleaved lower and then upper bounds,
+  constraining all of the control points for one element of q̇ (e.g. the
+  velocity of the ith joint at all times). */
   std::vector<solvers::Binding<solvers::LinearConstraint>> AddVelocityBounds(
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   /** Adds generic (nonlinear) constraints to enforce the upper and lower
-  bounds to the acceleration trajectory, q̈(t).  These constraints will be
-  respected at all times.  Note that this does NOT directly constrain r̈(s).
+  bounds to the acceleration trajectory, q̈(t).  By leveraging the convex hull
+  property of B-splines, these bounds are applied at the (derivative) control
+  points, but will be respected for all times, t ∈ [0,T].  Note that this does
+  NOT directly constrain r̈(s).
 
-  @returns A vector of bindings with the ith element is itself a vector of
-  constraints (one per dof) adding a constraint to the ith control point of the
-  acceleration trajectory. */
-  std::vector<std::vector<solvers::Binding<solvers::Constraint>>>
-  AddAccelerationBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
-                        const Eigen::Ref<const Eigen::VectorXd>& ub);
+  @returns A vector of bindings with interleaved lower and then upper bounds,
+  constraining all of the control points for one element of q̈ (e.g. the
+  acceleration of the ith joint at all times). */
+  std::vector<solvers::Binding<solvers::Constraint>> AddAccelerationBounds(
+      const Eigen::Ref<const Eigen::VectorXd>& lb,
+      const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   /** Adds generic (nonlinear) constraints to enforce the upper and lower
-  bounds to the jerk trajectory, d³qdt³(t).  These constraints will be
-  respected at all times.  Note that this does NOT directly constrain
-  d³rds³(s).
+  bounds to the jerk trajectory, d³qdt³(t).  By leveraging the convex hull
+  property of B-splines, these bounds are applied at the (derivative) control
+  points, but will be respected for all times, t ∈ [0,T]. Note that this does
+  NOT directly constrain d³rds³(s).
 
-  @returns A vector of bindings with the ith element is itself a vector of
-  constraints (one per dof) adding a constraint to the ith control point of the
-  jerk trajectory. */
-  std::vector<std::vector<solvers::Binding<solvers::Constraint>>> AddJerkBounds(
+  @returns A vector of bindings with interleaved lower and then upper bounds,
+  constraining all of the control points for one element of d³qdt³ (e.g. the
+  jerk of the ith joint at all times). */
+  std::vector<solvers::Binding<solvers::Constraint>> AddJerkBounds(
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub);
 
@@ -236,23 +241,9 @@ class KinematicTrajectoryOptimization {
   int num_positions_{};
   int num_control_points_{};
 
-  math::BsplineBasis<double> basis_;
+  trajectories::BsplineTrajectory<double> bspline_;
   solvers::MatrixXDecisionVariable control_points_;
   symbolic::Variable duration_;
-
-  /* TODO(russt): Minimize the use of symbolic to construct the constraints.
-  This is inefficient, and the B-spline math should all have closed-form
-  solutions for most everything we need.*/
-
-  // r(s) is the path.
-  copyable_unique_ptr<trajectories::BsplineTrajectory<symbolic::Expression>>
-      sym_r_{};
-  copyable_unique_ptr<trajectories::BsplineTrajectory<symbolic::Expression>>
-      sym_rdot_{};
-  copyable_unique_ptr<trajectories::BsplineTrajectory<symbolic::Expression>>
-      sym_rddot_{};
-  copyable_unique_ptr<trajectories::BsplineTrajectory<symbolic::Expression>>
-      sym_rdddot_{};
 };
 
 }  // namespace trajectory_optimization
