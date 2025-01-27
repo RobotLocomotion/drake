@@ -35,9 +35,9 @@ clone) **must** be named ``drake``.
 
 The most recent versions that we have tested for compatibility are:
 * Ubuntu 22.04 (Jammy)
-* Bazel 6.4.0
-* CLion 2023.3.2
-    * Bazel plugin 2023.11.23.0.1-api-version-233
+* Bazel 8.0.0
+* CLion 2024.3.2
+    * Bazel plugin 2025.01.07.0.1-api-version-243
 
 Different CLion versions will normally choose a compatible Bazel plugin.
 

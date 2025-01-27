@@ -17,5 +17,5 @@ targets:
   //...:all
 
 build_flags:
-  --experimental_google_legacy_api
-
+  --enable_workspace=true
+  --incompatible_autoload_externally=+java_common,+JavaInfo,+JavaPluginInfo,ProguardSpecProvider,java_binary,java_import,java_library,java_plugin,java_test,java_runtime,java_toolchain,java_package_configuration
