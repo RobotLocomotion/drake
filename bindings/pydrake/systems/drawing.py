@@ -3,11 +3,21 @@ Provides general visualization utilities. This is NOT related to `rendering`.
 """
 
 from tempfile import NamedTemporaryFile
+from IPython import get_ipython
+from IPython.display import SVG, display
 
 from pydrake.common import temp_directory
 
+
 # TODO(eric.cousineau): Move `plot_graphviz` to something more accessible to
 # `call_python_client`.
+
+# Use a global variable here because some calls to IPython will actually cause
+# an interpreter to be created.  This file needs to be imported BEFORE that
+# happens.
+running_as_notebook = (
+    get_ipython() and hasattr(get_ipython(), "kernel")
+)
 
 
 def _plt():
@@ -55,11 +65,14 @@ def plot_graphviz(dot_text):
         # Handle this case for now.
         assert len(g) == 1
         g = g[0]
-    f = NamedTemporaryFile(suffix='.png', dir=temp_directory())
-    g.write_png(f.name)
-    plt.axis('off')
+    if running_as_notebook:
+        return display(SVG(g.create_svg()))
+    else:
+        f = NamedTemporaryFile(suffix='.png', dir=temp_directory())
+        g.write_png(f.name)
+        plt.axis('off')
 
-    return plt.imshow(plt.imread(f.name), aspect="equal")
+        return plt.imshow(plt.imread(f.name), aspect="equal")
 
 
 def plot_system_graphviz(system, **kwargs):
