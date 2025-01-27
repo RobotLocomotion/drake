@@ -362,13 +362,15 @@ struct Impl {
               cls_doc.BernsteinBasis.doc)
           .def("control_points", &Class::control_points,
               cls_doc.control_points.doc)
-          .def("AsLinearInControlPoints", &Class::AsLinearInControlPoints,
-              py::arg("derivative_order") = 1,
-              cls_doc.AsLinearInControlPoints.doc)
           .def("GetExpression", &Class::GetExpression,
               py::arg("time") = symbolic::Variable("t"),
               cls_doc.GetExpression.doc)
           .def("ElevateOrder", &Class::ElevateOrder, cls_doc.ElevateOrder.doc);
+      if constexpr (std::is_same_v<T, double>) {  // #19712
+        cls.def("AsLinearInControlPoints", &Class::AsLinearInControlPoints,
+            py::arg("derivative_order") = 1,
+            cls_doc.AsLinearInControlPoints.doc);
+      }
       DefCopyAndDeepCopy(&cls);
     }
 
@@ -390,6 +392,10 @@ struct Impl {
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
+          .def("EvaluateLinearInControlPoints",
+              &Class::EvaluateLinearInControlPoints, py::arg("parameter_value"),
+              py::arg("derivative_order") = 0,
+              cls_doc.EvaluateLinearInControlPoints.doc)
           .def("num_control_points", &Class::num_control_points,
               cls_doc.num_control_points.doc)
           .def("control_points", &Class::control_points,
@@ -411,6 +417,11 @@ struct Impl {
                       args) {
                 return Class(std::get<0>(args), std::get<1>(args));
               }));
+      if constexpr (std::is_same_v<T, double>) {  // #19712
+        cls.def("AsLinearInControlPoints", &Class::AsLinearInControlPoints,
+            py::arg("derivative_order") = 1,
+            cls_doc.AsLinearInControlPoints.doc);
+      }
       DefCopyAndDeepCopy(&cls);
     }
 

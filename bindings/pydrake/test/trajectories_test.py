@@ -206,9 +206,10 @@ class TestTrajectories(unittest.TestCase):
         self.assertIsInstance(b, T)
         numpy_compare.assert_float_equal(curve.control_points(), points)
 
-        M = curve.AsLinearInControlPoints(derivative_order=1)
-        self.assertEqual(M.shape, (2, 1))
-        self.assertIsInstance(M, scipy.sparse.csc_matrix)
+        if T == float:  # See Drake#19712
+            M = curve.AsLinearInControlPoints(derivative_order=1)
+            self.assertEqual(M.shape, (2, 1))
+            self.assertIsInstance(M, scipy.sparse.csc_matrix)
 
         curve_expression = curve.GetExpression(time=Variable("t"))
         self.assertEqual(curve_expression.shape, (2,))
@@ -232,6 +233,14 @@ class TestTrajectories(unittest.TestCase):
                                     control_points=np.zeros((4, 2)))
         self.assertEqual(bspline.rows(), 4)
         self.assertEqual(bspline.cols(), 1)
+        self.assertEqual(bspline.num_control_points(), 2)
+        if T == float:  # See Drake#19712
+            M = bspline.AsLinearInControlPoints(derivative_order=1)
+            self.assertEqual(M.shape, (2, 1))
+            self.assertIsInstance(M, scipy.sparse.csc_matrix)
+        M = bspline.EvaluateLinearInControlPoints(
+            parameter_value=1.5, derivative_order=1)
+        self.assertEqual(M.shape, (2,))
         # Call the vector<MatrixX<T>> constructor.
         bspline = BsplineTrajectory(
             basis=BsplineBasis(2, [0, 1, 2, 3]),

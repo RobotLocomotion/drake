@@ -418,6 +418,9 @@ void DoMiscScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("control_points"), py::arg("parameter_value"),
             cls_doc.EvaluateCurve.doc)
+        .def("EvaluateLinearInControlPoints",
+            &Class::EvaluateLinearInControlPoints, py::arg("parameter_value"),
+            cls_doc.EvaluateLinearInControlPoints.doc)
         .def("EvaluateBasisFunctionI", &Class::EvaluateBasisFunctionI,
             py::arg("i"), py::arg("parameter_value"),
             cls_doc.EvaluateBasisFunctionI.doc)
