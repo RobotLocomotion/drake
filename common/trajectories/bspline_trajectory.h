@@ -3,6 +3,8 @@
 #include <memory>
 #include <vector>
 
+#include <Eigen/Sparse>
+
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
@@ -59,6 +61,31 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
     // We shadowed the base class to add documentation, not to change logic.
     return Trajectory<T>::value(t);
   }
+
+  /** Supports writing optimizations using the control points as decision
+  variables.  This method returns the matrix, `M`, defining the control points
+  of the `order` derivative in the form:
+  <pre>
+  derivative.control_points() = this.control_points() * M
+  </pre>
+  See `BezierCurve::AsLinearInControlPoints()` for more details.
+  @pre derivative_order >= 0. */
+  Eigen::SparseMatrix<T> AsLinearInControlPoints(
+      int derivative_order = 1) const;
+
+  /** Returns the vector, M, such that
+  @verbatim
+  EvalDerivative(t, derivative_order) = control_points() * M
+  @endverbatim
+  where cols()==1 (so control_points() is a matrix). This is useful for
+  writing linear constraints on the control points. Note that if the derivative
+  order is greater than or equal to the order of the basis, then the result is
+  a zero vector.
+
+  @pre t ≥ start_time()
+  @pre t ≤ end_time() */
+  VectorX<T> EvaluateLinearInControlPoints(const T& t,
+                                           int derivative_order = 0) const;
 
   /** Returns the number of control points in this curve. */
   int num_control_points() const { return basis_.num_basis_functions(); }

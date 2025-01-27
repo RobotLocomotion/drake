@@ -454,6 +454,8 @@ class TestMath(unittest.TestCase):
         val = bspline.EvaluateCurve(control_points=[[1, 2], [2, 3], [3, 4]],
                                     parameter_value=5.7)
         self.assertEqual(val.shape, (2,))
+        val = bspline.EvaluateLinearInControlPoints(parameter_value=5.7)
+        self.assertEqual(val.shape, (3,))
         numpy_compare.assert_float_equal(
             bspline.EvaluateBasisFunctionI(i=0, parameter_value=5.7), 0.)
         assert_pickle(self, bspline, BsplineBasis.knots, T=T)
