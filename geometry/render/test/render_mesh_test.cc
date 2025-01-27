@@ -1285,20 +1285,20 @@ GTEST_TEST(TinyObjReaderRegression, DefaultDiffuseIsWhiteWithMap) {
 
   const std::vector<RenderMesh> meshes =
       LoadRenderMeshesFromObj(source, PerceptionProperties(), {});
+
   ASSERT_EQ(meshes.size(), 2);
 
-  for (const auto& mesh : meshes) {
-    ASSERT_TRUE(mesh.material.has_value());
-    const RenderMaterial& material = *mesh.material;
-    if (std::holds_alternative<std::monostate>(material.diffuse_map)) {
-      // One mesh is red with no texture.
-      EXPECT_EQ(material.diffuse, Rgba(1, 0, 0, 1));
-    } else if (std::holds_alternative<std::filesystem::path>(
-                   material.diffuse_map)) {
-      // The other mesh has a texture and a white color.
-      EXPECT_EQ(material.diffuse, Rgba(1, 1, 1, 1));
-    }
-  }
+  // No texture has red diffuse color.
+  ASSERT_TRUE(meshes[0].material.has_value());
+  ASSERT_TRUE(
+      std::holds_alternative<std::monostate>(meshes[0].material->diffuse_map));
+  EXPECT_EQ(meshes[0].material->diffuse, Rgba(1, 0, 0, 1));
+
+  // Texture implies white diffuse color.
+  ASSERT_TRUE(meshes[1].material.has_value());
+  ASSERT_TRUE(
+      std::holds_alternative<MemoryFile>(meshes[1].material->diffuse_map));
+  EXPECT_EQ(meshes[1].material->diffuse, Rgba(1, 1, 1, 1));
 }
 
 }  // namespace
