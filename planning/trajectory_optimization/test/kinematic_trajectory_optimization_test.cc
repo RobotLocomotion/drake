@@ -251,9 +251,10 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddVelocityBounds) {
   EXPECT_EQ(trajopt_.prog().linear_constraints().size(), 0);
   auto binding = trajopt_.AddVelocityBounds(-VectorXd::Ones(num_positions_),
                                             VectorXd::Ones(num_positions_));
-  EXPECT_THAT(binding[0].to_string(), HasSubstr("velocity bound"));
+  EXPECT_THAT(binding[0].to_string(), HasSubstr("velocity lower bound"));
+  EXPECT_THAT(binding[1].to_string(), HasSubstr("velocity upper bound"));
   EXPECT_EQ(trajopt_.prog().linear_constraints().size(),
-            trajopt_.num_control_points() - 1);
+            trajopt_.num_positions() * 2);
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
@@ -292,9 +293,9 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddAccelerationBounds) {
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 0);
   auto binding =
       trajopt_.AddAccelerationBounds(-Vector3d::Ones(), Vector3d::Ones());
-  EXPECT_THAT(binding[0][0].to_string(), HasSubstr("acceleration bound"));
+  EXPECT_THAT(binding[0].to_string(), HasSubstr("acceleration bound"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(),
-            trajopt_.num_positions() * (trajopt_.num_control_points() - 2));
+            trajopt_.num_positions());
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
@@ -340,9 +341,9 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddJerkBounds) {
 
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 0);
   auto binding = trajopt_.AddJerkBounds(-Vector3d::Ones(), Vector3d::Ones());
-  EXPECT_THAT(binding[0][0].to_string(), HasSubstr("jerk bound"));
+  EXPECT_THAT(binding[0].to_string(), HasSubstr("jerk bound"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(),
-            trajopt_.num_positions() * (trajopt_.num_control_points() - 3));
+            trajopt_.num_positions());
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
