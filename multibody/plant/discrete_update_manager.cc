@@ -280,7 +280,8 @@ VectorX<T> DiscreteUpdateManager<T>::AssembleActuationInput(
 }
 
 template <typename T>
-VectorX<T> DiscreteUpdateManager<T>::AssembleDesiredStateInput(
+std::pair<VectorX<T>, std::vector<bool>>
+DiscreteUpdateManager<T>::AssembleDesiredStateInput(
     const systems::Context<T>& context) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::AssembleDesiredStateInput(plant(), context);

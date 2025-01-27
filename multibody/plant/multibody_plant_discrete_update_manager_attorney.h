@@ -83,7 +83,7 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.AssembleActuationInput(context);
   }
 
-  static VectorX<T> AssembleDesiredStateInput(
+  static std::pair<VectorX<T>, std::vector<bool>> AssembleDesiredStateInput(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.AssembleDesiredStateInput(context);
   }

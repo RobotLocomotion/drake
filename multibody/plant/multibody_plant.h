@@ -642,8 +642,8 @@ connected or not:
 
 |               Port               |   without PD control  | with PD control |
 | :------------------------------: | :-------------------: | :-------------: |
-|  get_actuation_input_port()      |          yes          |       no¹       |
-|  get_desired_state_input_port()  |          no²          |       yes       |
+|  get_actuation_input_port()      |           no          |       no¹       |
+|  get_desired_state_input_port()  |           no²         |       no³       |
 
 ¹ Feed-forward actuation is not required for models with PD controlled
   actuators. This simplifies the diagram wiring for models that only rely on PD
@@ -651,6 +651,10 @@ connected or not:
 
 ² This port is always declared, though it will be zero sized for model instances
   with no PD controllers.
+
+³ Controllers for a model instance with this port disconnected have their
+  actuators "disarmed". This means PD controllers have no effect on the
+  resulting dynamics for these model instances.
 
   #### Net actuation
 
@@ -5718,11 +5722,18 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // For models with joint actuators with PD control, this method helps to
   // assemble desired states for the full model from the input ports for
   // individual model instances.
+  // The return is the pair {xd, model_instance_has_armed_pds}, where xd is the
+  // vector of desired states and model_instance_has_armed_pds indicates whether
+  // a particular model instance has actuation armed/disarmed. Actuators whose
+  // desired state is not connected are considered "disarmed". Since partially
+  // PD actuated model instances are not allowed, the entire model instance is
+  // marked as armed or disarmed.
   // The return stacks desired state as xd = [qd, vd].
   // The actuation value for a particular actuator can be found at offset
   // JointActuator::input_start() in both qd and vd (see
-  // MultibodyPlant::get_actuation_input_port()).
-  VectorX<T> AssembleDesiredStateInput(
+  // MultibodyPlant::get_actuation_input_port()). A model instance is "armed" if
+  // model_instance_has_armed_pds[JointActuator::model_instance()] is `true`.
+  std::pair<VectorX<T>, std::vector<bool>> AssembleDesiredStateInput(
       const systems::Context<T>& context) const;
 
   // Computes all non-contact applied forces including:

@@ -33,8 +33,8 @@ class MultibodyPlantTester {
     return plant.AssembleActuationInput(context);
   }
 
-  static VectorXd AssembleDesiredStateInput(const MultibodyPlant<double>& plant,
-                                            const Context<double>& context) {
+  static std::pair<VectorXd, std::vector<bool>> AssembleDesiredStateInput(
+      const MultibodyPlant<double>& plant, const Context<double>& context) {
     return plant.AssembleDesiredStateInput(context);
   }
 };
@@ -433,16 +433,22 @@ TEST_F(ActuatedIiwaArmTest,
       "Model iiwa7 is partially PD controlled. .*");
 }
 
-TEST_F(ActuatedIiwaArmTest,
-       AssembleDesiredStateInput_ThrowsIfDesiredStateNotConnected) {
+// Only the gripper has PD actuation. Hover its desired state input port is
+// disconnected and we expect the model instance to be marked as "disarmed".
+TEST_F(ActuatedIiwaArmTest, AssembleDesiredStateInput_DisarmedModel) {
   SetUpModel();
 
-  // The input port for desired states for the gripper is required to be
-  // connected.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_),
-      "Desired state input port for model instance Schunk_Gripper not "
-      "connected.");
+  const auto [_, model_instance_has_armed_pds] =
+      MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_);
+
+  // Only the gripper has PD controle, but it's marked disarmed given its
+  // desired states input port is disconnected. By default all other entries are
+  // marked as disarmed as well.
+  EXPECT_EQ(ssize(model_instance_has_armed_pds), plant_->num_model_instances());
+  EXPECT_FALSE(model_instance_has_armed_pds[acrobot_model_]);
+  EXPECT_FALSE(model_instance_has_armed_pds[arm_model_]);
+  EXPECT_FALSE(model_instance_has_armed_pds[gripper_model_]);
+  EXPECT_FALSE(model_instance_has_armed_pds[box_model_]);
 }
 
 // Verify the assembly of desired states for a plant with a single PD controlled
@@ -454,8 +460,15 @@ TEST_F(ActuatedIiwaArmTest,
   const VectorXd gripper_xd = (VectorXd(4) << 1.0, 2.0, 3.0, 4.0).finished();
   plant_->get_desired_state_input_port(gripper_model_)
       .FixValue(context_.get(), gripper_xd);
-  const VectorXd full_xd =
+  const auto [full_xd, model_instance_has_armed_pds] =
       MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_);
+
+  // Only the gripper model is "armed".
+  EXPECT_EQ(ssize(model_instance_has_armed_pds), plant_->num_model_instances());
+  EXPECT_FALSE(model_instance_has_armed_pds[acrobot_model_]);
+  EXPECT_FALSE(model_instance_has_armed_pds[arm_model_]);
+  EXPECT_TRUE(model_instance_has_armed_pds[gripper_model_]);
+  EXPECT_FALSE(model_instance_has_armed_pds[box_model_]);
 
   const int nu = plant_->num_actuated_dofs();
   // AssembleDesiredStateInput will always return a vector of size 2 * nu. It
@@ -496,8 +509,17 @@ TEST_F(ActuatedIiwaArmTest,
   plant_->get_desired_state_input_port(arm_model_)
       .FixValue(context_.get(), arm_xd);
 
-  const VectorXd full_xd =
+  const auto [full_xd, model_instance_has_armed_pds] =
       MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_);
+
+  // Both gripper and arm have their desired state input ports connected. Thus
+  // they are "armed".
+  EXPECT_EQ(ssize(model_instance_has_armed_pds), plant_->num_model_instances());
+  EXPECT_FALSE(model_instance_has_armed_pds[acrobot_model_]);
+  EXPECT_TRUE(model_instance_has_armed_pds[arm_model_]);
+  EXPECT_TRUE(model_instance_has_armed_pds[gripper_model_]);
+  EXPECT_FALSE(model_instance_has_armed_pds[box_model_]);
+
   // Desired states must be assembled according to model instance order,
   // therefore in this case arm first followed by gripper. All qd values go
   // first, followed by vd values.
@@ -512,6 +534,52 @@ TEST_F(ActuatedIiwaArmTest,
         0.0, /* Acrobot elbow */
         // Desired velocities.
         arm_xd.tail<7>(),
+        0.0, /* Acrobot shoulder */
+        gripper_xd.tail<2>(),
+        0.0 /* Acrobot elbow */).finished();
+  // clang-format on
+
+  EXPECT_EQ(full_xd, expected_xd);
+}
+
+// Verify the assembly of desired states for a plant with two PD controlled
+// model instances. The desired state input for the arm is left disconnected and
+// thus we expect this model instance to be marked as "disarmed".
+TEST_F(ActuatedIiwaArmTest,
+       AssembleDesiredStateInput_VerifyAssemblyWithTwoModelsAndArmDisarmed) {
+  SetUpModel(ModelConfiguration::kArmIsControlled);
+
+  // Fixed desired state input ports to known values.
+  // Both arm and gripper are required to be connected.
+  const VectorXd gripper_xd = (VectorXd(4) << 1.0, 2.0, 3.0, 4.0).finished();
+  plant_->get_desired_state_input_port(gripper_model_)
+      .FixValue(context_.get(), gripper_xd);
+
+  const auto [full_xd, model_instance_has_armed_pds] =
+      MultibodyPlantTester::AssembleDesiredStateInput(*plant_, *context_);
+
+  // Only the gripper model is "armed".
+  EXPECT_EQ(ssize(model_instance_has_armed_pds), plant_->num_model_instances());
+  EXPECT_FALSE(model_instance_has_armed_pds[acrobot_model_]);
+  EXPECT_FALSE(model_instance_has_armed_pds[arm_model_]);
+  EXPECT_TRUE(model_instance_has_armed_pds[gripper_model_]);
+  EXPECT_FALSE(model_instance_has_armed_pds[box_model_]);
+
+  const int nu = plant_->num_actuated_dofs();
+  // AssembleDesiredStateInput will always return a vector of size 2 * nu. It
+  // fills in values for those models with PD control and set all other entries
+  // to zero, including those entries for disarmed model instances.
+  const int arm_nu = plant_->num_actuated_dofs(arm_model_);
+  // clang-format off
+  VectorXd expected_xd =
+      (VectorXd(2 * nu) <<
+        // Desired positions.
+        VectorXd::Zero(arm_nu),
+        0.0, /* Acrobot shoulder */
+        gripper_xd.head<2>(),
+        0.0, /* Acrobot elbow */
+        // Desired velocities.
+        VectorXd::Zero(arm_nu),
         0.0, /* Acrobot shoulder */
         gripper_xd.tail<2>(),
         0.0 /* Acrobot elbow */).finished();
