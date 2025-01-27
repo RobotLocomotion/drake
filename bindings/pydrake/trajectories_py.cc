@@ -390,6 +390,13 @@ struct Impl {
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
           .def(py::init<math::BsplineBasis<T>, std::vector<MatrixX<T>>>(),
               py::arg("basis"), py::arg("control_points"), cls_doc.ctor.doc)
+          .def("AsLinearInControlPoints", &Class::AsLinearInControlPoints,
+              py::arg("derivative_order") = 1,
+              cls_doc.AsLinearInControlPoints.doc)
+          .def("EvaluateLinearInControlPoints",
+              &Class::EvaluateLinearInControlPoints, py::arg("parameter_value"),
+              py::arg("derivative_order") = 0,
+              cls_doc.EvaluateLinearInControlPoints.doc)
           .def("num_control_points", &Class::num_control_points,
               cls_doc.num_control_points.doc)
           .def("control_points", &Class::control_points,

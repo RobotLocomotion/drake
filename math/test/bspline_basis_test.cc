@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 
@@ -308,6 +309,27 @@ TYPED_TEST(BsplineBasisTests, OperatorEqualsTest) {
   // Test that objects with different orders and different knots are not equal.
   EXPECT_NE(BsplineBasis<T>(order, knots),
             BsplineBasis<T>(order + 1, other_knots));
+}
+
+TYPED_TEST(BsplineBasisTests, EvaluateLinearInControlPointsTest) {
+  using T = TypeParam;
+  const int order = 4;
+  const std::vector<T> arbitrary_knots = {-5, 0, 0.1, 0.2, 0.4, 0.9, 1.2, 4.0};
+  BsplineBasis<T> dut(order, arbitrary_knots);
+
+  const int num_control_points = arbitrary_knots.size() - order;
+  std::vector<VectorX<T>> control_points(num_control_points);
+  MatrixX<T> control_points_matrix(2, num_control_points);
+  for (int i = 0; i < num_control_points; ++i) {
+    control_points[i] = Vector2<T>{2.4 * i, 3.1 * i};
+    control_points_matrix.col(i) = control_points[i];
+  }
+  for (T s = dut.initial_parameter_value();
+       s < dut.final_parameter_value() - 0.05; s += 0.05) {
+    const VectorX<T> value = dut.EvaluateCurve(control_points, s);
+    const VectorX<T> M = dut.EvaluateLinearInControlPoints(s);
+    EXPECT_TRUE(CompareMatrices(value, control_points_matrix * M, 1e-14));
+  }
 }
 
 const char* const good = R"""(

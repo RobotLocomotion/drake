@@ -7,6 +7,7 @@
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
 #include "drake/math/knot_vector_type.h"
 
@@ -178,6 +179,17 @@ class BsplineBasis final {
     }
     return p.front();
   }
+
+  /** Returns the vector, M, such that
+  @verbatim
+  EvaluateCurve(control_points, parameter_value) = control_points * M
+  @endverbatim
+  where T_control_points==VectorX<T> (so control_points is a matrix). This is
+  useful for writing linear constraints on the control points.
+
+  @pre parameter_value ≥ initial_parameter_value()
+  @pre parameter_value ≤ final_parameter_value() */
+  VectorX<T> EvaluateLinearInControlPoints(const T& parameter_value) const;
 
   /** Returns the value of the `i`-th basis function evaluated at
   `parameter_value`. */
