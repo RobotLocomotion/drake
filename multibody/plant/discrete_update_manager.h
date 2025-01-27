@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
@@ -17,6 +18,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/deformable_driver.h"
 #include "drake/multibody/plant/deformable_model.h"
+#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/discrete_step_memory.h"
@@ -313,7 +315,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
-  VectorX<T> AssembleDesiredStateInput(
+  DesiredStateInput<T> AssembleDesiredStateInput(
       const systems::Context<T>& context) const;
 
   const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&

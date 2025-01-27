@@ -304,6 +304,10 @@ class JointActuator final : public MultibodyElement<T> {
 
   /// Returns `true` if controller gains have been specified with a call to
   /// set_controller_gains().
+  ///
+  /// @note A controller for a given model instance can be _disarmed_ if the
+  /// desired states input port relevant to that model instance is not
+  /// connected. See @ref pd_controllers_and_ports for further details.
   bool has_controller() const { return pd_controller_gains_.has_value(); }
 
   /// Returns a reference to the controller gains for this actuator.

@@ -2695,7 +2695,7 @@ void MultibodyPlant<T>::CalcInstanceNetActuationOutput(
 }
 
 template <typename T>
-VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
+internal::DesiredStateInput<T> MultibodyPlant<T>::AssembleDesiredStateInput(
     const systems::Context<T>& context) const {
   this->ValidateContext(context);
 
@@ -2703,9 +2703,12 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
   // TODO(amcastro-tri): Heap allocation here. Get rid of it. Make it EvalFoo().
   // Desired states of size 2 * num_actuators() for the full model packed as xd
   // = [qd, vd].
-  VectorX<T> xd = VectorX<T>::Zero(2 * num_actuated_dofs());
-  auto qd = xd.head(num_actuated_dofs());
-  auto vd = xd.tail(num_actuated_dofs());
+  internal::DesiredStateInput<T> input;
+  input.xd = VectorX<T>::Zero(2 * num_actuated_dofs());
+  input.instance_is_armed =
+      VectorX<bool>::Constant(num_model_instances(), false);
+  auto qd = input.xd.head(num_actuated_dofs());
+  auto vd = input.xd.tail(num_actuated_dofs());
 
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
@@ -2731,15 +2734,11 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
                           "instance {} contains NaN.",
                           GetModelInstanceName(model_instance_index)));
         }
+        input.instance_is_armed[model_instance_index] = true;
         const auto qd_instance = xd_instance.head(instance_num_u);
         SetActuationInArray(model_instance_index, qd_instance, &qd);
         const auto vd_instance = xd_instance.tail(instance_num_u);
         SetActuationInArray(model_instance_index, vd_instance, &vd);
-      } else {
-        throw std::runtime_error(
-            fmt::format("Desired state input port for model "
-                        "instance {} not connected.",
-                        GetModelInstanceName(model_instance_index)));
       }
     } else if (0 < num_pd_controlled_actuators &&
                num_pd_controlled_actuators < instance_num_u) {
@@ -2751,7 +2750,7 @@ VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
     }
   }
 
-  return xd;
+  return input;
 }
 
 template <typename T>

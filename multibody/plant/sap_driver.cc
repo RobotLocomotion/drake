@@ -730,44 +730,48 @@ void SapDriver<T>::AddPdControllerConstraints(
 
   // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
   // allocations.
-  const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
+  const DesiredStateInput<T> input =
+      manager_->AssembleDesiredStateInput(context);
   const VectorX<T> feed_forward_actuation =
       manager_->AssembleActuationInput(context);
 
   for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         plant().get_joint_actuator(actuator_index);
-    if (actuator.has_controller()) {
-      const Joint<T>& joint = actuator.joint();
-      // There is no point in modeling PD controllers if the joint is locked.
-      // Therefore we do not add these constraints and actuation due to PD
-      // controllers on locked joints is considered to be zero.
-      if (!joint.is_locked(context)) {
-        const double effort_limit = actuator.effort_limit();
-        const T& qd = desired_state[actuator.input_start()];
-        const T& vd = desired_state[num_actuated_dofs + actuator.input_start()];
-        const T& u0 = feed_forward_actuation[actuator.input_start()];
+    const bool has_armed_controller =
+        actuator.has_controller() &&
+        input.instance_is_armed[actuator.model_instance()];
+    if (!has_armed_controller) continue;
 
-        const T& q0 = joint.GetOnePosition(context);
-        const int dof = joint.velocity_start();
-        const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
-        const int tree_dof =
-            dof - tree_topology().tree_velocities_start_in_v(tree);
-        const int tree_nv = tree_topology().num_tree_velocities(tree);
+    const Joint<T>& joint = actuator.joint();
+    // There is no point in modeling PD controllers if the joint is locked.
+    // Therefore we do not add these constraints and actuation due to PD
+    // controllers on locked joints is considered to be zero.
+    if (!joint.is_locked(context)) {
+      const double effort_limit = actuator.effort_limit();
+      const T& qd = input.xd[actuator.input_start()];
+      const T& vd = input.xd[num_actuated_dofs + actuator.input_start()];
+      const T& u0 = feed_forward_actuation[actuator.input_start()];
 
-        // Controller gains.
-        const PdControllerGains& gains = actuator.get_controller_gains();
-        const T& Kp = gains.p;
-        const T& Kd = gains.d;
+      const T& q0 = joint.GetOnePosition(context);
+      const int dof = joint.velocity_start();
+      const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
+      const int tree_dof =
+          dof - tree_topology().tree_velocities_start_in_v(tree);
+      const int tree_nv = tree_topology().num_tree_velocities(tree);
 
-        typename SapPdControllerConstraint<T>::Parameters parameters{
-            Kp, Kd, effort_limit};
-        typename SapPdControllerConstraint<T>::Configuration configuration{
-            tree, tree_dof, tree_nv, q0, qd, vd, u0};
+      // Controller gains.
+      const PdControllerGains& gains = actuator.get_controller_gains();
+      const T& Kp = gains.p;
+      const T& Kd = gains.d;
 
-        problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
-            std::move(configuration), std::move(parameters)));
-      }
+      typename SapPdControllerConstraint<T>::Parameters parameters{
+          Kp, Kd, effort_limit};
+      typename SapPdControllerConstraint<T>::Configuration configuration{
+          tree, tree_dof, tree_nv, q0, qd, vd, u0};
+
+      problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
+          std::move(configuration), std::move(parameters)));
     }
   }
 }
