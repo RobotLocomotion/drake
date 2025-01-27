@@ -464,6 +464,10 @@ if(WITH_ROBOTLOCOMOTION_SNOPT OR WITH_SNOPT)
   endif()
 endif()
 
+if(DRAKE_CI_ENABLE_PACKAGING)
+  string(APPEND BAZEL_CONFIG " --config=packaging")
+endif()
+
 if(BUILD_TYPE_LOWER STREQUAL debug)
   string(APPEND BAZEL_CONFIG " --config=Debug")
 elseif(BUILD_TYPE_LOWER STREQUAL minsizerel)
