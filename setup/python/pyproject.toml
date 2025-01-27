@@ -15,13 +15,11 @@ name = "drake"
 requires-python = ">=3.10"
 
 # Dependencies needed to build Drake.
-#
-# WARNING for Drake Developers: This list must be kept in sync with
-# setup/mac/binary_distribution/requirements.txt.
 dependencies = [
     "ipywidgets",
     "matplotlib",
     "notebook",
+    "numpy",
     "Pillow",
     "pydot",
     "PyYAML",
