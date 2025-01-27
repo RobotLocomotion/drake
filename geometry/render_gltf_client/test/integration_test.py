@@ -37,11 +37,6 @@ DEPTH_PIXEL_THRESHOLD = 0.001  # Depth measurement tolerance in meters.
 LABEL_PIXEL_THRESHOLD = 0
 INVALID_PIXEL_FRACTION = 0.2
 
-# TODO(#19305) Remove this once the skipped tests reliably pass on macOS.
-_SKIP = False
-if "darwin" in sys.platform:
-    _SKIP = True
-
 
 class TestIntegration(unittest.TestCase):
     def setUp(self):
@@ -234,7 +229,6 @@ class TestIntegration(unittest.TestCase):
             shutil.copy(source_path,
                         os.path.join(output_dir, prefix + source_path.name))
 
-    @unittest.skipIf(_SKIP, "Skipped on macOS, see #19305")
     def test_integration(self):
         """Quantitatively compares the images rendered by RenderEngineVtk and
         RenderEngineGltfClient via a fully exercised RPC pipeline.
@@ -295,7 +289,6 @@ class TestIntegration(unittest.TestCase):
             )
             self.assert_error_fraction_less(label_diff, INVALID_PIXEL_FRACTION)
 
-    @unittest.skipIf(_SKIP, "Skipped on macOS, see #19305")
     def test_gltf_conversion(self):
         """Checks that the fundamental structure of the generated glTF files is
         preserved.  The comparison of the exact texture information is not in
