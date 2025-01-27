@@ -255,32 +255,31 @@ Defines an SDF model with various types of joints used for testing the parser.
         </inertial>
       </link>
       <frame name='frame9' attached_to='link9'/>
-      <frame name='frame10' attached_to='link10'/>      
+      <frame name='frame10' attached_to='link10'/>
       <drake:joint name="curvilinear_joint_periodic" type="curvilinear">
         <drake:parent>frame9</drake:parent>
         <drake:child>frame10</drake:child>
         <drake:damping>0.1</drake:damping>
-        <drake:initial_curve_tangent>
+        <drake:initial_tangent>
           <xyz>0 0 1</xyz>
-        </drake:initial_curve_tangent>
+        </drake:initial_tangent>
         <drake:plane_normal>
           <xyz>1 0 0</xyz>
         </drake:plane_normal>
         <drake:is_periodic>true</drake:is_periodic>
         <drake:curves>
-          <drake:line_segment>
+          <drake:curve>
             <drake:length>1.0</drake:length>
-          </drake:line_segment>
-          <drake:circular_arc>
+            <drake:angle>0.0</drake:angle>
+          </drake:curve>
+          <drake:curve>
             <drake:length>3.14159265358979323846</drake:length>
-            <drake:radius>0.5</drake:radius>
-            <drake:direction>counterclockwise</drake:direction>
-          </drake:circular_arc>
-          <drake:circular_arc>
+            <drake:angle>1.57079632679489661923</drake:angle>
+          </drake:curve>
+          <drake:curve>
             <drake:length>3.14159265358979323846</drake:length>
-            <drake:radius>0.5</drake:radius>
-            <drake:direction>clockwise</drake:direction>
-          </drake:circular_arc>
+            <drake:angle>-1.57079632679489661923</drake:angle>
+          </drake:curve>
         </drake:curves>
       </drake:joint>
       <link name="link11">
@@ -301,27 +300,26 @@ Defines an SDF model with various types of joints used for testing the parser.
         <drake:parent>frame10</drake:parent>
         <drake:child>frame11</drake:child>
         <drake:damping>0.1</drake:damping>
-        <drake:initial_curve_tangent>
+        <drake:initial_tangent>
           <xyz>0 0 1</xyz>
-        </drake:initial_curve_tangent>
+        </drake:initial_tangent>
         <drake:plane_normal>
           <xyz>1 0 0</xyz>
         </drake:plane_normal>
         <drake:is_periodic>false</drake:is_periodic>
         <drake:curves>
-          <drake:line_segment>
+          <drake:curve>
             <drake:length>1.0</drake:length>
-          </drake:line_segment>
-          <drake:circular_arc>
+            <drake:angle>0.0</drake:angle>
+          </drake:curve>
+          <drake:curve>
             <drake:length>3.14159265358979323846</drake:length>
-            <drake:radius>0.5</drake:radius>
-            <drake:direction>counterclockwise</drake:direction>
-          </drake:circular_arc>
-          <drake:circular_arc>
+            <drake:angle>1.57079632679489661923</drake:angle>
+          </drake:curve>
+          <drake:curve>
             <drake:length>3.14159265358979323846</drake:length>
-            <drake:radius>0.5</drake:radius>
-            <drake:direction>clockwise</drake:direction>
-          </drake:circular_arc>
+            <drake:angle>-1.57079632679489661923</drake:angle>
+          </drake:curve>
         </drake:curves>
       </drake:joint>
     </model>

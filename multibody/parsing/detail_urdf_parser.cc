@@ -438,8 +438,7 @@ void UrdfParser::ParseCurvilinearJointCurves(
   for (XMLElement* curveNode = root->FirstChildElement(); curveNode != NULL;
        curveNode = curveNode->NextSiblingElement()) {
     std::string nodeValue = curveNode->Value();
-    if (nodeValue != "drake:line_segment" &&
-        nodeValue != "drake:circular_arc") {
+    if (nodeValue != "drake:curve") {
       Error(*root, "A curvilinear joint contains an invalid curve node.");
       breaks->clear();
       turning_rates->clear();
@@ -448,65 +447,32 @@ void UrdfParser::ParseCurvilinearJointCurves(
     double length = 0.0;
     if (!ParseScalarAttribute(curveNode, "length", &length)) {
       Error(*curveNode,
-            "A curvilinear joint contains a <drake:line_segment> that is "
+            "A curvilinear joint contains a <drake:curve> that is "
             "missing the 'length' attribute.");
       breaks->clear();
       turning_rates->clear();
       return;
     } else if (length <= 0.0) {
       Error(*curveNode,
-            "A curvilinear joint contains a <drake:line_segment> with an zero "
+            "A curvilinear joint contains a <drake:curve> with an zero "
             "or negative 'length' attribute.");
       breaks->clear();
       turning_rates->clear();
       return;
     }
 
-    double turning_rate = 0.0;
-    if (nodeValue == "drake:circular_arc") {
-      double radius = 0.0;
-      std::string direction = "";
-
-      if (!ParseScalarAttribute(curveNode, "radius", &radius)) {
-        Error(*curveNode,
-              "A curvilinear joint contains a <drake:circular_arc> that is "
-              "missing the 'radius' attribute.");
-        breaks->clear();
-        turning_rates->clear();
-        return;
-      } else if (radius <= 0.0) {
-        Error(*curveNode,
-              "A curvilinear joint contains a <drake:circular_arc> with an "
-              "zero or negative 'radius' attribute.");
-        breaks->clear();
-        turning_rates->clear();
-        return;
-      }
-
-      if (!ParseStringAttribute(curveNode, "direction", &direction)) {
-        Error(*curveNode,
-              fmt::format("A curvilinear joint contains a <drake:circular_arc> "
-                          "that is missing the 'direction' attribute",
-                          direction));
-        breaks->clear();
-        turning_rates->clear();
-        return;
-      }
-      if (direction != "clockwise" && direction != "counterclockwise") {
-        Error(*curveNode,
-              fmt::format("A curvilinear joint contains a <drake:circular_arc> "
-                          "with a direction attribute which is neither "
-                          "'clockwise' nor 'counterclockwise': '{}'",
-                          direction));
-        breaks->clear();
-        turning_rates->clear();
-        return;
-      }
-      turning_rate = direction == "counterclockwise" ? 1 / radius : -1 / radius;
+    double angle = 0.0;
+    if (!ParseScalarAttribute(curveNode, "angle", &angle)) {
+      Error(*curveNode,
+            "A curvilinear joint contains a <drake:curve> that is "
+            "missing the 'angle' attribute.");
+      breaks->clear();
+      turning_rates->clear();
+      return;
     }
 
     breaks->push_back(breaks->back() + length);
-    turning_rates->push_back(turning_rate);  // lines have zero curvature
+    turning_rates->push_back(angle / length);
   }
 
   if (breaks->size() == 1) {
@@ -733,13 +699,13 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
   } else if (type.compare("curvilinear") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);
-    Vector3d initial_curve_tangent(1, 0, 0);
+    Vector3d initial_tangent(1, 0, 0);
     Vector3d plane_normal(0, 0, 1);
-    XMLElement* initial_curve_tangent_node =
-        node->FirstChildElement("drake:initial_curve_tangent");
-    if (initial_curve_tangent_node) {
-      ParseVectorAttribute(initial_curve_tangent_node, "xyz",
-                           &initial_curve_tangent);
+    XMLElement* initial_tangent_node =
+        node->FirstChildElement("drake:initial_tangent");
+    if (initial_tangent_node) {
+      ParseVectorAttribute(initial_tangent_node, "xyz",
+                           &initial_tangent);
     }
     XMLElement* planar_normal_node =
         node->FirstChildElement("drake:plane_normal");
@@ -759,7 +725,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // Note: Using initial_position = [0, 0, 0], as origin in parent frame
     // already allows user to place start of trajectory.
     PiecewiseConstantCurvatureTrajectory<double> trajectory(
-        breaks, turning_rates, initial_curve_tangent, plane_normal,
+        breaks, turning_rates, initial_tangent, plane_normal,
         Vector3d::Zero(), is_periodic);
     const RigidTransformd& X_PF = X_PB;
     index =
