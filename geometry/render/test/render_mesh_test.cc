@@ -1293,10 +1293,14 @@ GTEST_TEST(TinyObjReaderRegression, DefaultDiffuseIsWhiteWithMap) {
     if (std::holds_alternative<std::monostate>(material.diffuse_map)) {
       // One mesh is red with no texture.
       EXPECT_EQ(material.diffuse, Rgba(1, 0, 0, 1));
-    } else if (std::holds_alternative<std::filesystem::path>(
+    } else if (std::holds_alternative<MemoryFile>(
                    material.diffuse_map)) {
       // The other mesh has a texture and a white color.
       EXPECT_EQ(material.diffuse, Rgba(1, 1, 1, 1));
+    } else {
+      // In case there's an error in the test, we don't want to pass by
+      // accident.
+      GTEST_FAIL();
     }
   }
 }
