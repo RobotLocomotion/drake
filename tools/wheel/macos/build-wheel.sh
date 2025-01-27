@@ -87,17 +87,12 @@ ln -s "$(bazel info bazel-bin)" "$build_root"/bazel-bin
 find "$build_root" -type d -print0 | xargs -0 chmod u+w
 
 # -----------------------------------------------------------------------------
-# Obtain and activate Drake's Python virtual environment.
-# -----------------------------------------------------------------------------
-
-readonly drake_python="$(bazel info output_base).drake_python"
-readonly venv_drake="$drake_python/venv.drake"
-
-. "$venv_drake/bin/activate"
-
-# -----------------------------------------------------------------------------
 # "Install" additional tools to build the wheel.
 # -----------------------------------------------------------------------------
+
+ln -nsf "$git_root" "/opt/drake-wheel-build/drake"
+
+readonly venv_drake="/opt/drake-wheel-build/drake/venv"
 
 ln -s \
     "$build_root/bazel-bin/external/drake+/tools/wheel/strip_rpath" \

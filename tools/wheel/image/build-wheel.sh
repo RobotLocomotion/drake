@@ -51,6 +51,10 @@ copy_ubuntu_license()
 
 ###############################################################################
 
+# Activate Drake's virtual environment, which provides some of the tools that
+# we need to build the wheels.
+. /opt/drake-wheel-build/drake/venv/bin/activate
+
 readonly WHEEL_DIR=/opt/drake-wheel-build/wheel
 readonly WHEEL_SHARE_DIR=${WHEEL_DIR}/pydrake/share
 

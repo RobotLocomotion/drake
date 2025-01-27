@@ -16,6 +16,7 @@ pkg-config
 ca-certificates
 file
 patch
+patchelf
 wget
 # Build dependencies (general).
 libglib2.0-dev
