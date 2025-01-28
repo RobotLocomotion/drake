@@ -70,9 +70,10 @@ class BezierCurve final : public trajectories::Trajectory<T> {
    @code
    auto M = curve.AsLinearInControlPoints(n);
    for (int i=0; i<curve.rows(); ++i) {
-     auto c = std::make_shared<solvers::LinearConstraint>(
-       M.col(k).transpose(), Vector1d(lb(i)), Vector1d(ub(i)));
-     prog.AddConstraint(c, curve.row(i).transpose());
+    prog.AddLinearConstraint(M.col(i).transpose(),
+                             Vector1d(lb(i)),
+                             Vector1d(ub(i)),
+                             curve.row(i).transpose());
    }
    @endcode
    Iterating over the rows of the control points is the natural sparsity pattern

@@ -13,6 +13,8 @@ namespace drake {
 namespace math {
 namespace {
 
+using Eigen::VectorXd;
+
 template <typename T>
 std::vector<T> MakeKnotVector(int order, int num_basis_functions,
                               KnotVectorType type,
@@ -87,6 +89,49 @@ std::vector<int> BsplineBasis<T>::ComputeActiveBasisFunctionIndices(
     active_control_point_indices.push_back(i);
   }
   return active_control_point_indices;
+}
+
+template <typename T>
+VectorX<T> BsplineBasis<T>::EvaluateLinearInControlPoints(
+    const T& parameter_value) const {
+  DRAKE_THROW_UNLESS(parameter_value >= initial_parameter_value());
+  DRAKE_THROW_UNLESS(parameter_value <= final_parameter_value());
+
+  // The recipe from EvaluateCurve (and the reference [1] cited therein) is
+  // pᵢ⁰ = pᵢ, for i ∈ [ell - k + 1, ell] (zero otherwise),
+  // pᵢʲ = (1 - αᵢʲ) pᵢ₋₁ʲ⁻¹ + αᵢʲ pᵢʲ⁻¹.
+  // We compute instead, Mʲ, such that pʲ = p Mʲ, and therefore pᵢʲ = p Mᵢʲ
+  // where Mᵢʲ is the ith column of Mʲ. The corresponding recursion is
+  // M⁰[i,i] = 1 iff i ∈ [ell - k + 1, ell], so that p⁰ = p M⁰,
+  // p Mᵢʲ = (1 - αᵢʲ) p Mᵢ₋₁ʲ⁻¹ + αᵢʲ p Mᵢʲ⁻¹, or
+  // Mᵢʲ = (1 - αᵢʲ) Mᵢ₋₁ʲ⁻¹ + αᵢʲ Mᵢʲ⁻¹.
+
+  const std::vector<T>& t = knots();
+  const T& t_bar = parameter_value;
+  const int k = order();
+
+  /* Find the index, 𝑙, of the greatest knot that is less than or equal to
+  t_bar and strictly less than final_parameter_value(). */
+  const int ell = FindContainingInterval(t_bar);
+  // Following EvaluateCurve, Mʲ only includes the active control points.
+  std::vector<VectorX<T>> Mj(order(), VectorX<T>::Zero(num_basis_functions()));
+  /* For j = 0, i goes from ell down to ell - (k - 1). Define r such that
+  i = ell - r. */
+  for (int r = 0; r < k; ++r) {
+    const int i = ell - r;
+    Mj.at(r)(i) = 1.0;
+  }
+  /* For j = 1, ..., k - 1, i goes from ell down to ell - (k - j - 1). Again,
+  i = ell - r. */
+  for (int j = 1; j < k; ++j) {
+    for (int r = 0; r < k - j; ++r) {
+      const int i = ell - r;
+      // α = (t_bar - t[i]) / (t[i + k - j] - t[i]);
+      const T alpha = (t_bar - t.at(i)) / (t.at(i + k - j) - t.at(i));
+      Mj.at(r) = (1.0 - alpha) * Mj.at(r + 1) + alpha * Mj.at(r);
+    }
+  }
+  return Mj.front();
 }
 
 template <typename T>

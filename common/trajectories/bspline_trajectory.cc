@@ -30,6 +30,86 @@ template <typename T>
 BsplineTrajectory<T>::~BsplineTrajectory() = default;
 
 template <typename T>
+Eigen::SparseMatrix<T> BsplineTrajectory<T>::AsLinearInControlPoints(
+    int derivative_order) const {
+  DRAKE_THROW_UNLESS(derivative_order >= 0);
+  if (derivative_order == 0) {
+    Eigen::SparseMatrix<T> M(num_control_points(), num_control_points());
+    M.setIdentity();
+    return M;
+  } else if (derivative_order >= basis_.order()) {
+    // In this case, MakeDerivative will return a zero trajectory using a
+    // single control point.
+    return Eigen::SparseMatrix<T>(num_control_points(), 1);
+  } else {
+    // First compute the control points of the kth derivative, pᵏ, relative
+    // to the original control points, p: pᵏ = p * Mᵏ.
+    Eigen::SparseMatrix<T> M_k(num_control_points(), num_control_points());
+    M_k.setIdentity();
+    for (int j = 1; j <= derivative_order; ++j) {
+      for (int i = 0; i < num_control_points() - j; ++i) {
+        // pᵢᵏ⁺¹ = αᵢ * (pᵢ₊₁ᵏ - pᵢᵏ), and pᵢᵏ = p * Mᵢᵏ, where the i subscript
+        // denotes the ith column. so p * Mᵢᵏ⁺¹ = αᵢ * (p * Mᵢ₊₁ᵏ - p * Mᵢᵏ), or
+        // Mᵢᵏ⁺¹ = αᵢ * (Mᵢ₊₁ᵏ - Mᵢᵏ).
+        M_k.col(i) =
+            (basis_.order() - j) /
+            (basis_.knots()[i + basis_.order()] - basis_.knots()[i + j]) *
+            (M_k.col(i + 1) - M_k.col(i));
+      }
+    }
+    return M_k.leftCols(num_control_points() - derivative_order);
+  }
+}
+
+template <typename T>
+VectorX<T> BsplineTrajectory<T>::EvaluateLinearInControlPoints(
+    const T& t, int derivative_order) const {
+  using std::clamp;
+  T clamped_time = clamp(t, this->start_time(), this->end_time());
+  DRAKE_THROW_UNLESS(derivative_order >= 0);
+  DRAKE_THROW_UNLESS(this->cols() == 1);
+  if (derivative_order == 0) {
+    return basis_.EvaluateLinearInControlPoints(clamped_time);
+  } else if (derivative_order >= basis_.order()) {
+    return VectorX<T>::Zero(num_control_points());
+  } else {
+    // First compute the control points of the kth derivative, pᵏ, relative
+    // to the original control points, p: pᵏ = p * Mᵏ.
+    std::vector<T> derivative_knots(basis_.knots().begin() + derivative_order,
+                                    basis_.knots().end() - derivative_order);
+    BsplineBasis<T> lower_order_basis =
+        BsplineBasis<T>(basis_.order() - derivative_order, derivative_knots);
+    MatrixX<T> M_k =
+        MatrixX<T>::Identity(num_control_points(), num_control_points());
+    // This is similar to the code in AsLinearInControlPoints, but here we can
+    // restrict ourselves to only computing the terms for the active basis
+    // functions.
+    std::vector<int> base_indices =
+        basis_.ComputeActiveBasisFunctionIndices(clamped_time);
+    for (int j = 1; j <= derivative_order; ++j) {
+      for (int i = base_indices.front(); i <= base_indices.back() - j; ++i) {
+        // pᵢᵏ⁺¹ = αᵢ * (pᵢ₊₁ᵏ - pᵢᵏ), and pᵢᵏ = p * Mᵢᵏ, where the i subscript
+        // denotes the ith column. so p * Mᵢᵏ⁺¹ = αᵢ * (p * Mᵢ₊₁ᵏ - p * Mᵢᵏ), or
+        // Mᵢᵏ⁺¹ = αᵢ * (Mᵢ₊₁ᵏ - Mᵢᵏ).
+        M_k.col(i) =
+            (basis_.order() - j) /
+            (basis_.knots()[i + basis_.order()] - basis_.knots()[i + j]) *
+            (M_k.col(i + 1) - M_k.col(i));
+      }
+    }
+    // Now value = p * M_to_deriv * M_deriv
+    VectorX<T> M_deriv =
+        lower_order_basis.EvaluateLinearInControlPoints(clamped_time);
+    VectorX<T> M = VectorX<T>::Zero(num_control_points());
+    for (int i :
+         lower_order_basis.ComputeActiveBasisFunctionIndices(clamped_time)) {
+      M += M_k.col(i) * M_deriv(i);
+    }
+    return M;
+  }
+}
+
+template <typename T>
 std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoClone() const {
   return std::make_unique<BsplineTrajectory<T>>(*this);
 }
@@ -73,6 +153,7 @@ MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(const T& time,
             (basis_.knots()[i + basis_.order()] - basis_.knots()[i + j]) *
             (coefficients[i + 1] - coefficients[i]);
       }
+      coefficients.pop_back();
     }
     std::vector<MatrixX<T>> derivative_control_points(
         num_control_points() - derivative_order,
@@ -104,26 +185,22 @@ std::unique_ptr<Trajectory<T>> BsplineTrajectory<T>::DoMakeDerivative(
         1, MatrixX<T>::Zero(this->rows(), this->cols()));
     return std::make_unique<BsplineTrajectory<T>>(
         BsplineBasis<T>(1, derivative_knots), control_points);
-  } else if (derivative_order > 1) {
-    return this->MakeDerivative(1)->MakeDerivative(derivative_order - 1);
-  } else if (derivative_order == 1) {
-    std::vector<T> derivative_knots;
-    const int num_derivative_knots = basis_.knots().size() - 2;
-    derivative_knots.reserve(num_derivative_knots);
-    for (int i = 1; i <= num_derivative_knots; ++i) {
-      derivative_knots.push_back(basis_.knots()[i]);
-    }
-    std::vector<MatrixX<T>> derivative_control_points;
-    derivative_control_points.reserve(num_control_points() - 1);
-    for (int i = 0; i < num_control_points() - 1; ++i) {
-      derivative_control_points.push_back(
-          basis_.degree() /
-          (basis_.knots()[i + basis_.order()] - basis_.knots()[i + 1]) *
-          (control_points()[i + 1] - control_points()[i]));
+  } else if (derivative_order >= 1) {
+    std::vector<T> derivative_knots(basis_.knots().begin() + derivative_order,
+                                    basis_.knots().end() - derivative_order);
+    std::vector<MatrixX<T>> coefficients(control_points());
+    for (int j = 1; j <= derivative_order; ++j) {
+      for (int i = 0; i < num_control_points() - j; ++i) {
+        coefficients.at(i) =
+            (basis_.order() - j) /
+            (basis_.knots()[i + basis_.order()] - basis_.knots()[i + j]) *
+            (coefficients[i + 1] - coefficients[i]);
+      }
+      coefficients.pop_back();
     }
     return std::make_unique<BsplineTrajectory<T>>(
-        BsplineBasis<T>(basis_.order() - 1, derivative_knots),
-        derivative_control_points);
+        BsplineBasis<T>(basis_.order() - derivative_order, derivative_knots),
+        coefficients);
   } else {
     throw std::invalid_argument(
         fmt::format("Invalid derivative order ({}). The derivative order must "

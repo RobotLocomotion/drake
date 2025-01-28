@@ -309,6 +309,38 @@ TYPED_TEST(BsplineTrajectoryTests, InsertKnotsTest) {
   }
 }
 
+TYPED_TEST(BsplineTrajectoryTests, LinearInControlPointsTest) {
+  using T = TypeParam;
+  BsplineTrajectory<T> dut = MakeCircleTrajectory<T>();
+
+  MatrixX<T> control_points(dut.rows(), dut.num_control_points());
+  for (int i = 0; i < dut.num_control_points(); ++i) {
+    control_points.col(i) = dut.control_points()[i].col(0);
+  }
+
+  // Note: we intentionally test order > basis.order().
+  for (int order = 0; order < dut.basis().order() + 1; ++order) {
+    // EvaluateLinearInControlPoints()
+    for (T t = dut.start_time(); t < dut.end_time() - 0.05; t += 0.05) {
+      const VectorX<T> value = dut.EvalDerivative(t, order);
+      const VectorX<T> M = dut.EvaluateLinearInControlPoints(t, order);
+      EXPECT_TRUE(CompareMatrices(value, control_points * M, 1e-12));
+    }
+    // AsLinearInControlPoints()
+    const Eigen::SparseMatrix<T> M = dut.AsLinearInControlPoints(order);
+    auto derivative = std::unique_ptr<BsplineTrajectory<T>>(
+        dynamic_cast<BsplineTrajectory<T>*>(
+            dut.MakeDerivative(order).release()));
+    MatrixX<T> derivative_control_points(dut.rows(),
+                                         derivative->num_control_points());
+    for (int i = 0; i < derivative->num_control_points(); ++i) {
+      derivative_control_points.col(i) = derivative->control_points()[i].col(0);
+    }
+    EXPECT_TRUE(
+        CompareMatrices(derivative_control_points, control_points * M, 1e-12));
+  }
+}
+
 // Verifies that the derivatives obtained by evaluating a
 // `BsplineTrajectory<AutoDiffXd>` and extracting the gradient of the result
 // match those obtained by taking the derivative of the whole trajectory and
