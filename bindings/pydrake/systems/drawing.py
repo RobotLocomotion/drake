@@ -3,8 +3,6 @@ Provides general visualization utilities. This is NOT related to `rendering`.
 """
 
 from tempfile import NamedTemporaryFile
-from IPython import get_ipython
-from IPython.display import SVG, display
 
 from pydrake.common import temp_directory
 
@@ -15,9 +13,16 @@ from pydrake.common import temp_directory
 # Use a global variable here because some calls to IPython will actually cause
 # an interpreter to be created.  This file needs to be imported BEFORE that
 # happens.
-running_as_notebook = (
-    get_ipython() and hasattr(get_ipython(), "kernel")
-)
+try:
+    # IPython module may not be available; in which case, we're definitely
+    # *not* running as a notebook.
+    from IPython import get_ipython
+    from IPython.display import SVG, display
+    running_as_notebook = (
+        get_ipython() and hasattr(get_ipython(), "kernel")
+    )
+except ModuleNotFoundError:
+    running_as_notebook = False
 
 
 def _plt():
