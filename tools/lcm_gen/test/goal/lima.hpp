@@ -153,6 +153,53 @@ class lima {
     }
   }
 
+  // Returns true iff T has a "slab" layout in memory, where all of its data
+  // lives in one block of contiguous memory. The template arguments are the
+  // same as _encode_field().
+  template <typename T, int ndims>
+  static constexpr bool _is_slab() {
+    if constexpr (ndims == 0) {
+      return false;
+    } else {
+      using Element = typename T::value_type;
+      if constexpr (!std::is_trivial_v<Element>) {
+        return false;
+      } else if constexpr (ndims == 1) {
+        return std::is_fundamental_v<Element>;
+      } else {
+        return _is_slab<Element, ndims - 1>();
+      }
+    }
+  }
+
+  // Returns the size of the ndims'th element type of the given containter T.
+  // (This tells us how big of a byteswap we'll need while copying T's slab.)
+  template <typename T, int ndims>
+  static constexpr size_t _get_slab_step() {
+    if constexpr (ndims > 0) {
+      return _get_slab_step<typename T::value_type, ndims - 1>();
+    }
+    return sizeof(T);
+  }
+
+  // Copies _bytes amount of data from _src to _dst. While copying, each group
+  // of N bytes is byteswapped. The number of _bytes must be a multiple of N.
+  template <size_t N>
+  static void _memcpy_byteswap(void* _dst, const void* _src, size_t _bytes) {
+    if constexpr (N == 1) {
+      if (_bytes > 0) [[likely]] {
+        std::memcpy(_dst, _src, _bytes);
+      }
+    } else {
+      for (size_t _i = 0; _i < _bytes; _i += N) {
+        auto _swapped = _byteswap<N>(_src);
+        std::memcpy(_dst, &_swapped, N);
+        _dst = static_cast<uint8_t*>(_dst) + N;
+        _src = static_cast<const uint8_t*>(_src) + N;
+      }
+    }
+  }
+
   // The dimensions of an array, for use during encoding / decoding, e.g., for
   // a message field `int8_t image[6][4]` we'd use `ArrayDims<2>{6, 4}`.
   template <size_t ndims>
@@ -214,10 +261,21 @@ class lima {
       if (static_cast<int64_t>(_input.size()) != _dims[0]) {
         return false;
       }
-      // Encode each sub-item in turn, forwarding all the _dims but the first.
-      for (const auto& _child : _input) {
-        if (!_encode_field(_child, _cursor, _end, _cdr(_dims))) {
+      if constexpr (_is_slab<T, ndims>()){
+        // Encode a slab of POD memory.
+        const size_t _raw_size = _input.size() * sizeof(_input[0]);
+        if ((*_cursor + _raw_size) > _end) {
           return false;
+        }
+        constexpr size_t N = _get_slab_step<T, ndims>();
+        _memcpy_byteswap<N>(*_cursor, _input.data(), _raw_size);
+        *_cursor += _raw_size;
+      } else {
+        // Encode each sub-item in turn, forwarding all _dims but the first.
+        for (const auto& _child : _input) {
+          if (!_encode_field(_child, _cursor, _end, _cdr(_dims))) {
+            return false;
+          }
         }
       }
       return true;
@@ -265,10 +323,21 @@ class lima {
       if constexpr (std::is_same_v<T, std::vector<typename T::value_type>>) {
         _output->resize(_dims[0]);
       }
-      // Decode each sub-item in turn.
-      for (auto& _child : *_output) {
-        if (!_decode_field(&_child, _cursor, _end, _cdr(_dims))) {
+      if constexpr (_is_slab<T, ndims>()) {
+        // Decode a slab of POD memory.
+        const size_t _raw_size = _dims[0] * sizeof((*_output)[0]);
+        if ((*_cursor + _raw_size) > _end) {
           return false;
+        }
+        constexpr size_t N = _get_slab_step<T, ndims>();
+        _memcpy_byteswap<N>(_output->data(), *_cursor, _raw_size);
+        *_cursor += _raw_size;
+      } else {
+        // Decode each sub-item in turn.
+        for (auto& _child : *_output) {
+          if (!_decode_field(&_child, _cursor, _end, _cdr(_dims))) {
+            return false;
+          }
         }
       }
       return true;
