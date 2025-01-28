@@ -88,6 +88,12 @@ Adjusting open-source dependencies:
 * WITH_USER_SPDLOG (default ON). When ON, uses `find_package(spdlog)`
   to locate a user-provided `spdlog::spdlog` library
   instead of hard-coding to the operating system version.
+* WITH_USER_BLAS (default ON). When ON, uses `FindBlas()` to locate a
+  user-provided `BLAS::BLAS` library instead of building from source.
+  This option is not available on macOS.
+* WITH_USER_LAPACK (default ON). When ON, uses `FindLapack()` to locate a
+  user-provided `LAPACK::LAPACK` library instead of building from source.
+  This option is not available on macOS.
 
 Adjusting closed-source (commercial) software dependencies:
 

@@ -1,0 +1,21 @@
+# -*- bazel -*-
+
+load("@bazel_skylib//rules:write_file.bzl", "write_file")
+load("@rules_license//rules:license.bzl", "license")
+
+write_file(
+    name = "unknown_license",
+    out = "LICENSE",
+    content = ["Unknown license (Drake used CMake find_package).\n"],
+)
+
+license(
+    name = "license",
+    license_text = "LICENSE",
+)
+
+cc_library(
+    name = "blas",
+    srcs = ["libblas.so"],
+    visibility = ["//visibility:public"],
+)

@@ -1,13 +1,7 @@
-load("//tools/workspace:os.bzl", "os_specific_alias_repository")
+load("//tools/workspace:alias.bzl", "alias_repository")
 
-# Use this repository (@blas) in the deps of your target, instead of @libblas
-# or Accelerate. We use a different implementation depending on the operating
-# system; this alias selects the correct implementation.
 def blas_repository(name):
-    os_specific_alias_repository(
+    alias_repository(
         name = name,
-        mapping = {
-            "linux": ["blas=@libblas"],
-            "osx": ["blas=@drake//tools/workspace/blas:accelerate"],
-        },
+        aliases = {"blas": "@drake//tools/workspace/blas"},
     )
