@@ -19,7 +19,9 @@ namespace internal {
  (SpGrid) data structure (see multibody::mpm::internal::SpGrid). The SparseGrid
  class is used to allocate, set, and access grid data in an MPM simulation.
  Usually, there is only one SparseGrid in an entire MPM simulation, and all
- particles interact with this grid.
+ particles interact with this grid. The MPM algorithm should use this class to
+ perform operations like particle-to-grid (P2G) and grid-to-particle (G2P)
+ transfers, instead of directly accessing underlying SpGrid.
 
  Here we recall a few terminologies (defined elsewhere) and define a few new
  ones that are used in the documentation below.
@@ -99,8 +101,7 @@ class SparseGrid {
   std::vector<std::pair<Vector3<int>, GridData<T>>> GetGridData() const;
 
   /* Computes the mass, linear momentum, and angular momentum (about world
-   origin) on the grid.
-   @note Testing only. */
+   origin) on the grid. */
   MassAndMomentum<T> ComputeTotalMassAndMomentum() const;
 
   /* Returns the SpGrid underlying this SparseGrid. */
