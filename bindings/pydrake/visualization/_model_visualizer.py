@@ -404,7 +404,8 @@ class ModelVisualizer:
         if position is not None and len(position) > 0:
             self._raise_if_invalid_positions(position)
             self._diagram.plant().SetPositions(
-                self._diagram.plant().GetMyContextFromRoot(self._context),
+                self._diagram.plant().GetMyMutableContextFromRoot(
+                    self._context),
                 position)
             self._sliders.SetPositions(position)
 
@@ -495,7 +496,8 @@ class ModelVisualizer:
 
         frame = self._diagram.plant().GetFrameByName("$rgbd_sensor_offset")
         frame.SetPoseInParentFrame(
-            context=self._diagram.plant().GetMyContextFromRoot(self._context),
+            context=self._diagram.plant().GetMyMutableContextFromRoot(
+                self._context),
             X_PF=X_WC)
         self._diagram.GetOutputPort("preview_image").Eval(self._context)
 
@@ -521,7 +523,8 @@ class ModelVisualizer:
             if position is not None and len(position) > 0:
                 self._raise_if_invalid_positions(position)
                 self._diagram.plant().SetPositions(
-                    self._diagram.plant().GetMyContextFromRoot(self._context),
+                    self._diagram.plant().GetMyMutableContextFromRoot(
+                        self._context),
                     position)
                 self._sliders.SetPositions(position)
                 self._diagram.ForcedPublish(self._context)
@@ -569,7 +572,8 @@ class ModelVisualizer:
                 q = self._sliders.get_output_port().Eval(
                     self._sliders.GetMyContextFromRoot(self._context))
                 self._diagram.plant().SetPositions(
-                    self._diagram.plant().GetMyContextFromRoot(self._context),
+                    self._diagram.plant().GetMyMutableContextFromRoot(
+                        self._context),
                     q)
                 self._diagram.ForcedPublish(self._context)
                 if loop_once or has_clicks(stop_button_name):
