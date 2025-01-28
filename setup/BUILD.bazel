@@ -8,8 +8,6 @@ package(default_visibility = ["//visibility:public"])
 exports_files([
     "mac/binary_distribution/Brewfile",
     "mac/source_distribution/Brewfile",
-    "mac/source_distribution/Brewfile-doc-only",
-    "mac/source_distribution/Brewfile-maintainer-only",
     "python/pdm.lock",
     "python/pyproject.toml",
     "python/requirements.txt",
