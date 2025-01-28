@@ -93,10 +93,23 @@ SpatialVelocity<T> CurvilinearMobilizer<T>::calc_V_FM(const T* q,
 }
 
 template <typename T>
+SpatialVelocity<T> CurvilinearMobilizer<T>::calc_V_FM_M(
+    const math::RigidTransform<T>&, const T* q, const T* v) const {
+  return curvilinear_path_.CalcSpatialVelocityInM(*q, *v);
+}
+
+template <typename T>
 SpatialAcceleration<T> CurvilinearMobilizer<T>::calc_A_FM(const T* q,
                                                           const T* v,
                                                           const T* vdot) const {
   return curvilinear_path_.CalcSpatialAcceleration(*q, *v, *vdot);
+}
+
+template <typename T>
+SpatialAcceleration<T> CurvilinearMobilizer<T>::calc_A_FM_M(
+    const math::RigidTransform<T>&, const T* q, const T* v,
+    const T* vdot) const {
+  return curvilinear_path_.CalcSpatialAccelerationInM(*q, *v, *vdot);
 }
 
 template <typename T>
@@ -105,14 +118,27 @@ void CurvilinearMobilizer<T>::calc_tau(const T* q,
                                        T* tau) const {
   DRAKE_ASSERT(tau != nullptr);
 
-  /* For this mobilizer, H_FM(q) = d/dv V_FM_F(q, v) is numerically equal to the
-   spatial velocity V_FM_F(q, 1) evaluated at the unit velocity v = 1 [m/s]:
-
-      tau = F_BMo_F.dot(V_FM_F(q, 1))
-  */
+  /* For this mobilizer, H_FM_F(q) = d/dv V_FM_F(q, v) is numerically equal to
+   the spatial velocity V_FM_F(q, 1) evaluated at the unit velocity v = 1 [m/s]:
+      tau = F_BMo_F.dot(V_FM_F(q, 1)) */
   const T v(1.);
-  // Computes tau = H_FM(q)⋅F_Mo_F, equivalent to V_FM(q, 1)⋅F_Mo_F.
+  // Computes tau = H_FM_F(q)⋅F_BMo_F, equivalent to V_FM_F(q, 1)⋅F_BMo_F.
   tau[0] = calc_V_FM(q, &v).dot(F_BMo_F);
+}
+
+// Computes tau = H_FM_Mᵀ(q)⋅F_Mo_M
+//              = [0 0 ρ(q) 1 0 0]⋅[t_Mᵀ f_Mᵀ]ᵀ
+//              = ρ(q)⋅tz_M + fx_M
+template <typename T>
+void CurvilinearMobilizer<T>::calc_tau_from_M(const math::RigidTransform<T>&,
+                                              const T* q,
+                                              const SpatialForce<T>& F_BMo_M,
+                                              T* tau) const {
+  DRAKE_ASSERT(tau != nullptr);
+  const T& rho = curvilinear_path_.curvature(*q);
+  const Vector3<T>& t_M = F_BMo_M.rotational();
+  const Vector3<T>& f_M = F_BMo_M.translational();
+  tau[0] = rho * t_M[2] + f_M[0];
 }
 
 template <typename T>

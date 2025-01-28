@@ -39,6 +39,8 @@ namespace multibody {
  By default, the joint position limits are the endpoints for aperiodic paths,
  and (-∞, ∞) for periodic paths.
 
+ @see trajectories::PiecewiseConstantCurvatureTrajectory
+
  @tparam_default_scalar */
 template <typename T>
 class CurvilinearJoint final : public Joint<T> {
