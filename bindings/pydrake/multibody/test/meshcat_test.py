@@ -17,6 +17,7 @@ from pydrake.common import (
 from pydrake.common.test_utilities import (
     numpy_compare,
 )
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import (
     Meshcat,
     Rgba,
@@ -93,7 +94,9 @@ class TestMeshcat(unittest.TestCase):
             step=[0.25, 0.50],
             decrement_keycodes=["ArrowLeft", "ArrowDown"],
             increment_keycodes=["ArrowRight", "ArrowUp"],
+            time_step=0.01,
         )
+        self.assertFalse(dut.has_constraints_to_solve())
 
         # Various methods should not crash.
         dut.get_output_port()
@@ -134,7 +137,11 @@ class TestMeshcat(unittest.TestCase):
         np.testing.assert_equal(q, [0, 0])
 
         # The SetPositions function doesn't crash (Acrobot has two positions).
-        dut.SetPositions(q=[1, 2])
+        context = dut.CreateDefaultContext()
+        dut.SetPositions(context=context, q=[1, 2])
+        with catch_drake_warnings(expected_count=1) as w:
+            dut.SetPositions(q=[1, 2])
+            self.assertIn("SetPositions(context", str(w[0].message))
 
     def test_internal_point_contact_visualizer(self):
         """A very basic existence test, since this class is internal use only.

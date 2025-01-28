@@ -406,7 +406,8 @@ class ModelVisualizer:
             self._diagram.plant().SetPositions(
                 self._diagram.plant().GetMyContextFromRoot(self._context),
                 position)
-            self._sliders.SetPositions(position)
+            self._sliders.SetPositions(
+                self._sliders.GetMyContextFromRoot(self._context), position)
 
         # Use Simulator to dispatch initialization events.
         # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
@@ -521,9 +522,12 @@ class ModelVisualizer:
             if position is not None and len(position) > 0:
                 self._raise_if_invalid_positions(position)
                 self._diagram.plant().SetPositions(
-                    self._diagram.plant().GetMyContextFromRoot(self._context),
+                    self._diagram.plant().GetMyMutableContextFromRoot(
+                        self._context),
                     position)
-                self._sliders.SetPositions(position)
+                self._sliders.SetPositions(
+                    self._sliders.GetMyMutableContextFromRoot(self._context),
+                    position)
                 self._diagram.ForcedPublish(self._context)
 
         # Everything is finally fully configured. We can open the window now.
@@ -566,11 +570,15 @@ class ModelVisualizer:
                     self._reload()
                     self._set_slider_values(slider_values)
                     self._meshcat.AddButton(stop_button_name, "Escape")
+                updated = self._sliders.EvalUniquePeriodicDiscreteUpdate(
+                    self._sliders.GetMyContextFromRoot(self._context))
+                self._sliders.GetMyMutableContextFromRoot(
+                    self._context).SetDiscreteState(updated)
                 q = self._sliders.get_output_port().Eval(
                     self._sliders.GetMyContextFromRoot(self._context))
                 self._diagram.plant().SetPositions(
-                    self._diagram.plant().GetMyContextFromRoot(self._context),
-                    q)
+                    self._diagram.plant().GetMyMutableContextFromRoot(
+                        self._context), q)
                 self._diagram.ForcedPublish(self._context)
                 if loop_once or has_clicks(stop_button_name):
                     break
