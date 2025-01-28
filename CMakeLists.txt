@@ -347,6 +347,8 @@ endfunction()
 macro(override_module NAME)
   set(local_path "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
   string(APPEND BAZEL_REPO_ENV " --override_module=${NAME}=${local_path}")
+  string(APPEND BAZEL_REPO_ENV
+      " --@drake//tools/workspace/${NAME}:with_user_${NAME}=True")
   file(GENERATE OUTPUT "${local_path}/MODULE.bazel"
     INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/MODULE.bazel.in")
   file(GENERATE OUTPUT "${local_path}/BUILD.bazel"

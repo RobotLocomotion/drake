@@ -79,13 +79,13 @@ of the CMake GUIs.
 
 Adjusting open-source dependencies:
 
-* WITH_USER_EIGEN (default OFF). When ON, uses `find_package(Eigen3)`
+* WITH_USER_EIGEN (default ON). When ON, uses `find_package(Eigen3)`
   to locate a user-provided `Eigen3::Eigen` library
   instead of hard-coding to the operating system version.
-* WITH_USER_FMT (default OFF). When ON, uses `find_package(fmt)`
+* WITH_USER_FMT (default ON). When ON, uses `find_package(fmt)`
   to locate a user-provided `fmt::fmt` library
   instead of hard-coding to the operating system version.
-* WITH_USER_SPDLOG (default OFF). When ON, uses `find_package(spdlog)`
+* WITH_USER_SPDLOG (default ON). When ON, uses `find_package(spdlog)`
   to locate a user-provided `spdlog::spdlog` library
   instead of hard-coding to the operating system version.
 

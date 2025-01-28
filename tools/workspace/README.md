@@ -1,7 +1,64 @@
 
 This `//tools/workspace/...` package tree contains files related to Drake's
 Bazel build system, specifically files relating to downloading and/or compiling
-third-party software, as cited by Drake's top-level `/WORKSPACE` file.
+third-party software, used by Drake's top-level `/MODULE.bazel` file.
+
+# Overview of external dependencies
+
+Drake's primary build system is Bazel, so we'll first explain how Drake's
+externals are expressed to Bazel, and then in the next sub-section explain
+the CMake interface wrapped around Bazel.
+
+## Bazel modules and module extensions
+
+Drake declares its dependencies using Bazel Modules and Module Extensions:
+- https://bazel.build/external/overview
+- https://bazel.build/external/extension
+
+When the Bazel Central Registry (https://registry.bazel.build/) contains the
+module we need, we prefer to use that mechanism. Otherwise, we write our own
+module extension to incorporate the external. Either way, our `MODULE.bazel`
+file lists every external that we directly use; refer to its comments for more
+details.
+
+Drake also offers configuration flags to govern the externals, e.g., to:
+- select where (groups of) externals come from, or
+- opt-in to (or opt-out) of a specific external.
+Refer to the documentation in `tools/flags/BUILD.bazel` for details. Note that
+the `BUILD.bazel` file specifies default values, but when Drake is the main
+module (not a dependency), Drake changes some defaults using bazelrc files.
+
+When an external has flag(s) that govern where it comes from, that detail is
+encapsulated under an alias. For example, where Eigen comes from is governed by
+flags, but the following text in `MODULE.bazel` (either in Drake, or any
+downstream project that uses Drake) is the same no matter the flag.
+
+```
+drake_dep_repositories = use_extension(
+    "@drake//tools/workspace:default.bzl",
+    "drake_dep_repositories",
+)
+use_repo(drake_dep_repositories, "eigen")
+```
+
+## CMake interface
+
+For projects that use Drake as an external but prefer CMake, Drake also provides
+a `CMakeLists.txt` wrapper that configures and installs Drake. The wrapper
+offers not only standard options (e.g., `CMAKE_BUILD_TYPE`) but also options
+unique to Drake. Refer to https://drake.mit.edu/from_source.html for details.
+
+On the front end, the CMake wrapper converts CMake options to Bazel flags by
+generating custom bazelrc, MODULE, and BUILD files using the templates in
+`drake/cmake/...`, as well as build command(s) that shell out to Bazel to
+run the `//:install` command.
+
+The `//:install` command uses Drake's `install.bzl` logic to gather and copy
+files to their destination. One key part is the `//tools/install/libdrake` rules
+to generate and install a `drake-config.cmake` script. Downstream projects will
+use that script to find details about the installed copy of Drake, including the
+version number, include paths and library paths, additional dependencies, and
+available libraries.
 
 # File layout
 
@@ -16,15 +73,12 @@ in the case of the `//tools/workspace/...` packages, these are largely just
 visibility declarations.
 
 Files named `package.BUILD.bazel` are Drake-specific build rules for external
-libraries or tools that do not natively support Bazel:
-  https://docs.bazel.build/versions/master/external.html#depending-on-non-bazel-projects
+libraries or tools that do not natively support Bazel.
 
-Files named `repository.bzl` are repository rules, and intended to be a stable
-entry point for other Bazel projects to refer to the same dependencies that
-Drake is using:
-  https://docs.bazel.build/versions/master/skylark/concepts.html
-  https://docs.bazel.build/versions/master/be/workspace.html
-  https://docs.bazel.build/versions/master/skylark/repository_rules.html
+Files named `repository.bzl` are repository rules, and (when their name doesn't
+contain "internal") are intended to be a stable entry point for other Bazel
+projects to refer to the same dependencies that Drake is using:
+  https://bazel.build/extending/repo
 
 Per the [Stability Guidelines](https://drake.mit.edu/stable.html), externals
 named as "internal" or otherwise documented to be "internal use only" are
@@ -220,16 +274,13 @@ The best guide for incorporating new third-party software is to mimic what
 Drake does for other third-party software it already uses.  There are roughly
 three general approaches, in order of preference:
 
-- Use a library or tool from the host operating system;
+- Use a program (not library) from the host operating system (e.g., a compiler).
 - Download a library or tool as source code and compile it;
 - Download a library or tool as binaries.
 
-When the host operating system (macOS, Ubuntu) offers a version of the
-software, its best to use that version in order to remain compatible with the
-wider software ecosystem.  If the host version is problematic, contact the
-Drake developers for advice.
+For libraries, compiling from source is preferred. Typically the library should
+be named "internal" and build with hidden and/or namespace-mangled symbols.
 
-When the host doesn't offer the software, compiling from source is preferred.
 Downloading binaries is a last resort, because they are difficult to patch and
 difficult to support on multiple platforms.
 
@@ -254,27 +305,11 @@ it into Drake are roughly:
   `foo_repository()` macro or rule.  The details are given below.
 - Edit `tools/workspace/default.bzl` to load and conditionally call the new
   `foo_repository()` macro or rule.
+- Load the module extension in `MODULE.bazel`.
 - Add a courtesy mention of the software in `doc/_pages/credits.md`.
 
 When indicating licenses in the source, use the identifier from the
 [SPDX License List](https://spdx.org/licenses/).
-
-## When using a library from the host operating system
-
-See `glib` for an example.
-
-Update the package setup lists to mention the new package:
-
-- `setup/ubuntu/binary_distribution/packages-DIST.txt` with the `libfoo0`
-  runtime library;
-- `setup/ubuntu/source_distribution/packages-DIST.txt` with the `libfoo-dev`
-  library;
-- `setup/mac/binary_distribution/Brewfile` if used in Drake's installed copy;
-- `setup/mac/source_distribution/Brewfile` if only used during development (not
-  install).
-
-In `tools/workspace/foo/repository.bzl`, use `pkg_config_repository` to locate
-a library from the host.
 
 ## When downloading a library or tool as source code
 
@@ -290,5 +325,5 @@ commit on a monthly basis.
 consult Drake's build system maintainers for advice.
 
 Mimic an existing example to complete the process, e.g., look at
-`//tools/workspace/tinyobjloader` and mimic the `repository.bzl` and
+`//tools/workspace/tinyobjloader_internal` and mimic the `repository.bzl` and
 `package.BUILD.bazel` files.
