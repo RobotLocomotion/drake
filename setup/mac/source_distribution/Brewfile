@@ -3,4 +3,8 @@
 
 brew 'bazelisk'
 brew 'cmake'
+brew 'eigen'
+brew 'fmt'
 brew 'nasm'
+brew 'pkg-config'
+brew 'spdlog'

@@ -3,13 +3,9 @@
 
 cask 'temurin'
 
-brew 'eigen'
 brew 'gcc'
-brew 'fmt'
 brew 'glib'
 brew 'graphviz'
-brew 'pkg-config'
 brew 'python@3.12'
-brew 'spdlog'
 
 mas 'Xcode', id: 497799835 unless File.exist? '/Applications/Xcode.app'
