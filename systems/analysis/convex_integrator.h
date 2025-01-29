@@ -26,9 +26,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   /**
    * Constructs the experimental convex integrator.
    *
-   * @param system the overall system diagram to simulate.
-   * @param plant the MbP model we'll use for constructing the SAP problem. It
-   *              should be part of the overall system.
+   * @param system the overall system diagram to simulate. Must be a Diagram
+   *               with a MultibodyPlant as a subsystem (and MbP must be the
+   *               only subsystem with interesting dynamics.)
    * @param context context for the overall system.
    *
    * N.B. Although this is an implicit integration scheme, we inherit from
@@ -36,9 +36,16 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    * the Jacobian (Hessian for us) is completely different, and MultibodyPlant
    * specific.
    */
-  ConvexIntegrator(const System<T>& system, MultibodyPlant<T>* plant,
-                   Context<T>* context = nullptr)
-      : IntegratorBase<T>(system, context), plant_(plant) {
+  explicit ConvexIntegrator(const System<T>& system,
+                            Context<T>* context = nullptr)
+      : IntegratorBase<T>(system, context) {
+    // Check that the system we're simulating is a diagram with a plant in it
+    const Diagram<T>* diagram = dynamic_cast<const Diagram<T>*>(&system);
+    DRAKE_DEMAND(diagram != nullptr);
+
+    // Extract the plant that we're dealing with
+    plant_ = dynamic_cast<const MultibodyPlant<T>*>(
+        &diagram->GetSubsystemByName("plant"));
     DRAKE_DEMAND(plant_ != nullptr);
   }
 
@@ -56,7 +63,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   bool DoStep(const T& h) override;
 
   // Plant model, since convex integration is specific to MbP
-  MultibodyPlant<T>* plant_;
+  const MultibodyPlant<T>* plant_;
 };
 
 }  // namespace systems

@@ -601,6 +601,22 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "convex_integrator_test",
+    deps = [
+        ":convex_integrator",
+        ":simulator",
+        ":simulator_config_functions",
+        ":simulator_print_stats",
+        "//geometry:meshcat_visualizer",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis/test_utilities",
+        "//systems/framework:diagram",
+        "//visualization:visualization_config_functions",
+    ],
+)
+
+drake_cc_googletest(
     name = "explicit_euler_integrator_test",
     timeout = "moderate",
     deps = [

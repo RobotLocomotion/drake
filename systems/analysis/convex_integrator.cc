@@ -9,8 +9,9 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   VectorBase<T>& x = context.get_mutable_continuous_state_vector();
 
   // TODO(vincekurtz): update the state
-  (void)h;
-  (void)x;
+  // For now just some placeholder nonesense so we can see some dynamics
+  const T x0 = x.GetAtIndex(0);
+  x.SetAtIndex(0, x0 + h);
 
   return true;  // step was successful
 }
