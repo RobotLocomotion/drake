@@ -1080,13 +1080,13 @@ class TamsiSolver {
     int nc_, nv_;
     VectorX<T> Delta_vn_;  // Δvₙᵏ = Jₙ Δvᵏ, in ℝⁿᶜ, for the k-th iteration.
     VectorX<T> Delta_vt_;  // Δvₜᵏ = Jₜ Δvᵏ, in ℝ²ⁿᶜ, for the k-th iteration.
-    VectorX<T> vn_;      // vₙᵏ, in ℝⁿᶜ.
-    VectorX<T> vt_;      // vₜᵏ, in ℝ²ⁿᶜ.
-    VectorX<T> fn_;      // fₙᵏ, in ℝⁿᶜ.
-    VectorX<T> ft_;      // fₜᵏ, in ℝ²ⁿᶜ.
-    VectorX<T> t_hat_;   // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.
-    VectorX<T> v_slip_;  // vₛᵏ = ‖vₜᵏ‖, in ℝⁿᶜ.
-    VectorX<T> mus_;     // (modified) regularized friction, in ℝⁿᶜ.
+    VectorX<T> vn_;        // vₙᵏ, in ℝⁿᶜ.
+    VectorX<T> vt_;        // vₜᵏ, in ℝ²ⁿᶜ.
+    VectorX<T> fn_;        // fₙᵏ, in ℝⁿᶜ.
+    VectorX<T> ft_;        // fₜᵏ, in ℝ²ⁿᶜ.
+    VectorX<T> t_hat_;     // Tangential directions, t̂ᵏ. In ℝ²ⁿᶜ.
+    VectorX<T> v_slip_;    // vₛᵏ = ‖vₜᵏ‖, in ℝⁿᶜ.
+    VectorX<T> mus_;       // (modified) regularized friction, in ℝⁿᶜ.
     // Vector of size nc storing ∂fₜ/∂vₜ (in ℝ²ˣ²) for each contact point.
     std::vector<Matrix2<T>> dft_dv_;
     MatrixX<T> Gn_;  // ∇ᵥfₙ(xˢ⁺¹, vₙˢ⁺¹), in ℝⁿᶜˣⁿᵛ

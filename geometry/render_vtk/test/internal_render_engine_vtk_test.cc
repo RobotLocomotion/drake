@@ -1221,14 +1221,14 @@ TEST_F(RenderEngineVtkTest, RemoveVisual) {
   };
 
   // Sets the expected values prior to calling PerformCenterShapeTest().
-  auto set_expectations = [this](const TestColor& color, float depth,
-                                 RenderLabel label)
+  auto set_expectations =
+      [this](const TestColor& color, float depth, RenderLabel label)
 // Optimizers on some platforms break code and cause test failures. Worse
 // still, there is no agreement on attribute spelling.
 #ifdef __clang__
-      __attribute__((optnone))
+          __attribute__((optnone))
 #else
-      __attribute__((optimize("-O0")))
+          __attribute__((optimize("-O0")))
 #endif
   {
     expected_color_ = color;

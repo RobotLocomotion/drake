@@ -8,10 +8,10 @@ namespace drake {
 namespace math {
 
 enum class NumericalGradientMethod {
-  kForward,  ///< Compute the gradient as (f(x + Δx) - f(x)) / Δx, with Δx > 0
+  kForward,   ///< Compute the gradient as (f(x + Δx) - f(x)) / Δx, with Δx > 0
   kBackward,  ///< Compute the gradient as (f(x) - f(x - Δx)) / Δx, with Δx > 0
-  kCentral,  ///< Compute the gradient as (f(x + Δx) - f(x - Δx)) / (2Δx), with
-             ///< Δx > 0
+  kCentral,   ///< Compute the gradient as (f(x + Δx) - f(x - Δx)) / (2Δx), with
+              ///< Δx > 0
 };
 
 class NumericalGradientOption {

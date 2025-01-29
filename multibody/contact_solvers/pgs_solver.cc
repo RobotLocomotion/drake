@@ -95,8 +95,8 @@ ContactSolverStatus PgsSolver<T>::SolveWithGuess(
     // Update generalized velocities; v = v* + A⁻¹⋅Jᵀ⋅γ.
     contact_data.get_Jc().MultiplyByTranspose(gamma_kp,
                                               &tau_c_);  // tau_c = Jᵀ⋅γ
-    dynamics_data.get_Ainv().Multiply(tau_c_, &v_kp);  // v_kp = A⁻¹⋅Jᵀ⋅γ
-    v_kp += v_star;  // v_kp = v* + A⁻¹⋅Jᵀ⋅γ
+    dynamics_data.get_Ainv().Multiply(tau_c_, &v_kp);    // v_kp = A⁻¹⋅Jᵀ⋅γ
+    v_kp += v_star;                                      // v_kp = v* + A⁻¹⋅Jᵀ⋅γ
     // Update contact velocities; vc = J⋅v.
     contact_data.get_Jc().Multiply(v_kp, &vc_kp);
 

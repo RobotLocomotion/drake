@@ -100,14 +100,14 @@ std::vector<std::array<int, 3>> IdentifyBoundaryFaces(
 
    has its right-handed normal pointing outwards from the tetrahedron. We encode
    those triangles (with tet-local face indices in the fourth slot) below. */
+  // clang-format off
   const int tetrahedron_faces[4][4] = {
-      // clang-format off
       {1, 2, 3, 0},
       {3, 2, 0, 1},
       {1, 3, 0, 2},
       {2, 1, 0, 3}
-      // clang-format on
   };
+  // clang-format on
 
   for (int tet_index = 0; tet_index < ssize(tetrahedra); ++tet_index) {
     const VolumeElement& tetrahedron = tetrahedra[tet_index];

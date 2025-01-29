@@ -390,7 +390,8 @@ py::class_<Context<T>, ContextBase> DefineContext(py::module m) {
               &Context<T>::get_abstract_state),
           py_rvp::reference_internal, doc.Context.get_abstract_state.doc_0args)
       .def(
-          "get_abstract_state", [](const Context<T>* self, int index) -> auto& {
+          "get_abstract_state",
+          [](const Context<T>* self, int index) -> auto& {
             return self->get_abstract_state().get_value(index);
           },
           py::arg("index"), py_rvp::reference_internal,

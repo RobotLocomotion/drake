@@ -2381,7 +2381,9 @@ TEST_F(SymbolicExpressionTest, NormalDistribution) {
             symbolic_distribution.stddev().Evaluate());
 
   // Exceptions at construction.
-  { EXPECT_THROW(normal_distribution<Expression>(1.0, -1.0), runtime_error); }
+  {
+    EXPECT_THROW(normal_distribution<Expression>(1.0, -1.0), runtime_error);
+  }
 
   RandomGenerator generator{};
   RandomGenerator generator_copy{generator};
@@ -2529,7 +2531,9 @@ TEST_F(SymbolicExpressionTest, ExponentialDistribution) {
             symbolic_distribution.lambda().Evaluate());
 
   // Exceptions at construction.
-  { EXPECT_THROW(exponential_distribution<Expression>(-3.0), runtime_error); }
+  {
+    EXPECT_THROW(exponential_distribution<Expression>(-3.0), runtime_error);
+  }
 
   RandomGenerator generator{};
   RandomGenerator generator_copy{generator};

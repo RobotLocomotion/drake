@@ -100,7 +100,7 @@ TEST_F(SymbolicGenericPolynomialTest, DefaultConstructors) {
 
 TEST_F(SymbolicGenericPolynomialTest, ConstructFromMapType1) {
   GenericPolynomial<ChebyshevBasisElement>::MapType map1;
-  map1.emplace(ChebyshevBasisElement{var_x_}, -2.0 * a_);  // T₁(x) → −2a
+  map1.emplace(ChebyshevBasisElement{var_x_}, -2.0 * a_);    // T₁(x) → −2a
   map1.emplace(ChebyshevBasisElement{var_y_, 3}, 4.0 * b_);  // T₃(y) → 4b
   // p=−2aT₁(x)+4bT₃(y)
   const GenericPolynomial<ChebyshevBasisElement> p1(map1);
