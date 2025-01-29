@@ -50,7 +50,7 @@ drake_py_library(
     srcs = ["clang_format.py"],
     data = [
         "//:.clang-format",
-        "@llvm_toolchain//:clang-format",
+        "@llvm//:bin/clang-format",
     ],
     deps = [
         ":module_py",
