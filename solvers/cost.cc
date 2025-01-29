@@ -301,19 +301,19 @@ void L2NormCost::UpdateCoefficients(
 void L2NormCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
                         Eigen::VectorXd* y) const {
   y->resize(1);
-  (*y)(0) = (A_.GetAsDense() * x + b_).norm();
+  (*y)(0) = (A_.get_as_sparse() * x + b_).norm();
 }
 
 void L2NormCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
                         AutoDiffVecXd* y) const {
   y->resize(1);
-  (*y)(0) = math::DifferentiableNorm(A_.GetAsDense() * x + b_);
+  (*y)(0) = math::DifferentiableNorm(A_.get_as_sparse() * x + b_);
 }
 
 void L2NormCost::DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
                         VectorX<symbolic::Expression>* y) const {
   y->resize(1);
-  (*y)(0) = sqrt((A_.GetAsDense() * x + b_).squaredNorm());
+  (*y)(0) = sqrt((A_.get_as_sparse() * x + b_).squaredNorm());
 }
 
 std::ostream& L2NormCost::DoDisplay(
@@ -325,7 +325,7 @@ std::string L2NormCost::DoToLatex(const VectorX<symbolic::Variable>& vars,
                                   int precision) const {
   return fmt::format(
       "\\left|{}\\right|_2",
-      symbolic::ToLatex((A_.GetAsDense() * vars + b_).eval(), precision));
+      symbolic::ToLatex((A_.get_as_sparse() * vars + b_).eval(), precision));
 }
 
 LInfNormCost::LInfNormCost(const Eigen::Ref<const Eigen::MatrixXd>& A,
