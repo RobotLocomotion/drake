@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -124,6 +125,23 @@ struct IrisZoOptions {
   /** Number of mixing steps used for hit-and-run sampling. */
   int mixing_steps{50};
 
+  /** Whether or not the parametrization function is thread-safe. */
+  bool parametrization_is_threadsafe{true};
+
+  /** The dimension of the parametrized subspace (and therefore, the input to
+   * the parametrization function). If not specified, the full dimension of the
+   * configuration space is used. */
+  std::optional<int> parametrization_dimension{std::nullopt};
+
+  /** A function describing a parametrized subspace of the full configuration
+   * space, along which to grow the region. Default value is just the identity
+   * function, indicating that the regions should be grow in the full
+   * configuration space (in the standard coordinate system). */
+  std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parametrization{
+      [](const Eigen::VectorXd& q) -> Eigen::VectorXd {
+        return q;
+      }};
+
   /** Passing a meshcat instance may enable debugging visualizations; this
   currently and when the
   configuration space is <= 3 dimensional.*/
@@ -160,7 +178,9 @@ box representing joint limits (e.g. from HPolyhedron::MakeBox).
 fraction, confidence level, and various algorithmic settings.
 
 The @p starting_ellipsoid and @p domain must describe elements in the same
-ambient dimension as the configuration space of the robot.
+ambient dimension as the configuration space of the robot, unless a
+parametrization is specified (in which case, they must match
+`options.parametrization_dimension`).
 @return A HPolyhedron representing the computed collision-free region in
 configuration space.
 @ingroup robot_planning
