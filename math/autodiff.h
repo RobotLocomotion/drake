@@ -222,12 +222,11 @@ auto InitializeAutoDiffTuple(const Eigen::MatrixBase<Deriveds>&... args) {
   // Set the values and gradients of the result using InitializeAutoDiff from
   // each Matrix in 'args...'. This is a "constexpr for" loop for 0 <= I < N.
   auto args_tuple = std::forward_as_tuple(args...);
-  [&]<size_t... I>(std::integer_sequence<size_t, I...> &&) {
+  [&]<size_t... I>(std::integer_sequence<size_t, I...>&&) {
     (InitializeAutoDiff(std::get<I>(args_tuple), num_derivatives,
                         std::get<I>(deriv_num_starts), &std::get<I>(result)),
      ...);
-  }
-  (std::make_index_sequence<N>{});
+  }(std::make_index_sequence<N>{});
 
   return result;
 }

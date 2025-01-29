@@ -246,7 +246,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.RenameModelInstance.doc)
         .def(
             "AddRigidBody",
-            [](Class * self, const std::string& name,
+            [](Class* self, const std::string& name,
                 const SpatialInertia<double>& s) -> auto& {
               return self->AddRigidBody(name, s);
             },
@@ -901,7 +901,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.GetJointByName.doc)
         .def(
             "GetMutableJointByName",
-            [](Class * self, string_view name,
+            [](Class* self, string_view name,
                 std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetMutableJointByName(name, model_instance);
             },
