@@ -34,7 +34,8 @@ using symbolic::Variable;
 // Helper method for testing FastIris from a urdf string.
 HPolyhedron IrisZoFromUrdf(const std::string urdf,
                            const Hyperellipsoid& starting_ellipsoid,
-                           const IrisZoOptions& options) {
+                           const IrisZoOptions& options,
+                           const HPolyhedron* maybe_domain = nullptr) {
   CollisionCheckerParams params;
   RobotDiagramBuilder<double> builder(0.0);
 
@@ -48,8 +49,10 @@ HPolyhedron IrisZoFromUrdf(const std::string urdf,
 
   params.model = builder.Build();
   params.edge_step_size = 0.01;
-  HPolyhedron domain = HPolyhedron::MakeBox(
-      plant_ptr->GetPositionLowerLimits(), plant_ptr->GetPositionUpperLimits());
+  HPolyhedron domain =
+      maybe_domain ? *maybe_domain
+                   : HPolyhedron::MakeBox(plant_ptr->GetPositionLowerLimits(),
+                                          plant_ptr->GetPositionUpperLimits());
   planning::SceneGraphCollisionChecker checker(std::move(params));
   return IrisZo(checker, starting_ellipsoid, domain, options);
 }
@@ -396,6 +399,50 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
     meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
     meshcat->SetTransform("Test point", math::RigidTransform(Eigen::Vector3d(
                                             z_test, theta_test, 0)));
+
+    MaybePauseForUser();
+  }
+
+  // We now test an example of a region grown along a subspace.
+  options.parametrization_is_threadsafe = true;
+  options.parametrization_dimension = 1;
+  options.parametrization = [](const Vector1d& q) -> Vector2d {
+    return Vector2d{q[0], 2 * q[0] + 1};
+  };
+  const Vector1d sample2{-0.5};
+  starting_ellipsoid = Hyperellipsoid::MakeHypersphere(1e-2, sample2);
+  // This domain matches the "x" dimension of C-space, so the region generated
+  // will respect the joint limits.
+  HPolyhedron domain = HPolyhedron::MakeBox(Vector1d(-1.5), Vector1d(0));
+  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain);
+
+  EXPECT_EQ(region.ambient_dimension(), 1);
+  Vector1d region_query_point_1(-0.75);
+  Vector1d region_query_point_2(-0.1);
+  EXPECT_TRUE(region.PointInSet(region_query_point_1));
+  EXPECT_TRUE(region.PointInSet(region_query_point_2));
+
+  {
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    for (int i = 0; i < vregion.vertices().cols(); ++i) {
+      Vector2d point = options.parametrization(vregion.vertices().col(i));
+      // TODO(cohnt): Vectorize?
+      points.col(i).head(2) = point;
+      if (i == 0) {
+        points.topRightCorner(2, 1) = point;
+      }
+    }
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
+
+    Vector2d ambient_query_point =
+        options.parametrization(region_query_point_1);
+    meshcat->SetTransform(
+        "Test point", math::RigidTransform(Eigen::Vector3d(
+                          ambient_query_point[0], ambient_query_point[1], 0)));
 
     MaybePauseForUser();
   }
