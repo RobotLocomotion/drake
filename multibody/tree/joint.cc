@@ -74,6 +74,27 @@ Eigen::Ref<const VectorX<T>> Joint<T>::GetVelocities(
 }
 
 template <typename T>
+std::unique_ptr<Joint<T>> Joint<T>::ShallowClone() const {
+  std::unique_ptr<Joint<T>> result = DoShallowClone();
+  DRAKE_THROW_UNLESS(result != nullptr);
+  // N.B. We can't call set_default_damping_vector because it segfaults when
+  // there's no parent tree.
+  result->damping_ = this->damping_;
+  result->set_position_limits(position_lower_limits(), position_upper_limits());
+  result->set_velocity_limits(velocity_lower_limits(), velocity_upper_limits());
+  result->set_acceleration_limits(acceleration_lower_limits(),
+                                  acceleration_upper_limits());
+  result->set_default_positions(default_positions());
+  return result;
+}
+
+template <typename T>
+std::unique_ptr<Joint<T>> Joint<T>::DoShallowClone() const {
+  throw std::logic_error(fmt::format(
+      "The {} joint failed to override DoShallowClone()", type_name()));
+}
+
+template <typename T>
 void Joint<T>::SetSpatialVelocityImpl(systems::Context<T>* context,
                                       const SpatialVelocity<T>& V_FM,
                                       const char* func) const {

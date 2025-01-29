@@ -498,6 +498,11 @@ class Frame : public MultibodyElement<T> {
     return DoCloneToScalar(tree_clone);
   }
 
+  /// (Internal use only) Returns a shallow clone (i.e., dependent elements such
+  /// as bodies are aliased, not copied) that is not associated with any MbT (so
+  /// the assigned index, if any, is discarded).
+  std::unique_ptr<Frame<T>> ShallowClone() const;
+
   /// @name Internal use only
   /// These functions work directly with the frame body pose cache entry.
   //@{
@@ -562,9 +567,10 @@ class Frame : public MultibodyElement<T> {
   /// to set their sub-class specific parameters.
   virtual void DoSetDefaultFrameParameters(systems::Parameters<T>*) const {}
 
-  /// @name Methods to make a clone templated on different scalar types.
+  /// @name Methods to make a clone, optionally templated on different scalar
+  /// types.
   ///
-  /// These methods are meant to be called by MultibodyTree::CloneToScalar()
+  /// The first three are meant to be called by MultibodyTree::CloneToScalar()
   /// when making a clone of the entire tree or a new instance templated on a
   /// different scalar type. The only const argument to these methods is the
   /// new MultibodyTree clone under construction. Specific %Frame subclasses
@@ -584,6 +590,9 @@ class Frame : public MultibodyElement<T> {
 
   virtual std::unique_ptr<Frame<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
+
+  /// NVI for ShallowClone().
+  virtual std::unique_ptr<Frame<T>> DoShallowClone() const;
   /// @}
 
   // NVI for CalcPoseInBodyFrame.

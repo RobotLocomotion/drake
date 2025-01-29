@@ -604,6 +604,8 @@ class LinearBushingRollPitchYaw final : public ForceElement<T> {
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+  std::unique_ptr<ForceElement<T>> DoShallowClone() const override;
+
   // Calculate R_AC, the rotation matrix that relates frames A and C.
   // @param[in] context The state of the multibody system.
   math::RotationMatrix<T> CalcR_AC(const systems::Context<T>& context) const {

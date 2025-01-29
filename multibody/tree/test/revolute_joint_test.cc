@@ -202,29 +202,32 @@ TEST_F(RevoluteJointTest, AddInDampingForces) {
 
 TEST_F(RevoluteJointTest, Clone) {
   auto model_clone = tree().CloneToScalar<AutoDiffXd>();
-  const auto& joint1_clone = dynamic_cast<const RevoluteJoint<AutoDiffXd>&>(
+  const auto& joint1_clone1 = dynamic_cast<const RevoluteJoint<AutoDiffXd>&>(
       model_clone->get_variant(*joint1_));
 
-  EXPECT_EQ(joint1_clone.name(), joint1_->name());
-  EXPECT_EQ(joint1_clone.frame_on_parent().index(),
-            joint1_->frame_on_parent().index());
-  EXPECT_EQ(joint1_clone.frame_on_child().index(),
-            joint1_->frame_on_child().index());
-  EXPECT_EQ(joint1_clone.revolute_axis(), joint1_->revolute_axis());
-  EXPECT_EQ(joint1_clone.position_lower_limits(),
-            joint1_->position_lower_limits());
-  EXPECT_EQ(joint1_clone.position_upper_limits(),
-            joint1_->position_upper_limits());
-  EXPECT_EQ(joint1_clone.velocity_lower_limits(),
-            joint1_->velocity_lower_limits());
-  EXPECT_EQ(joint1_clone.velocity_upper_limits(),
-            joint1_->velocity_upper_limits());
-  EXPECT_EQ(joint1_clone.acceleration_lower_limits(),
-            joint1_->acceleration_lower_limits());
-  EXPECT_EQ(joint1_clone.acceleration_upper_limits(),
-            joint1_->acceleration_upper_limits());
-  EXPECT_EQ(joint1_clone.default_damping(), joint1_->default_damping());
-  EXPECT_EQ(joint1_clone.get_default_angle(), joint1_->get_default_angle());
+  const std::unique_ptr<Joint<AutoDiffXd>> shallow =
+      joint1_clone1.ShallowClone();
+  const auto& joint1_clone2 =
+      dynamic_cast<const RevoluteJoint<AutoDiffXd>&>(*shallow);
+
+  for (const auto* clone : {&joint1_clone1, &joint1_clone2}) {
+    EXPECT_EQ(clone->name(), joint1_->name());
+    EXPECT_EQ(clone->frame_on_parent().index(),
+              joint1_->frame_on_parent().index());
+    EXPECT_EQ(clone->frame_on_child().index(),
+              joint1_->frame_on_child().index());
+    EXPECT_EQ(clone->revolute_axis(), joint1_->revolute_axis());
+    EXPECT_EQ(clone->position_lower_limits(), joint1_->position_lower_limits());
+    EXPECT_EQ(clone->position_upper_limits(), joint1_->position_upper_limits());
+    EXPECT_EQ(clone->velocity_lower_limits(), joint1_->velocity_lower_limits());
+    EXPECT_EQ(clone->velocity_upper_limits(), joint1_->velocity_upper_limits());
+    EXPECT_EQ(clone->acceleration_lower_limits(),
+              joint1_->acceleration_lower_limits());
+    EXPECT_EQ(clone->acceleration_upper_limits(),
+              joint1_->acceleration_upper_limits());
+    EXPECT_EQ(clone->default_damping(), joint1_->default_damping());
+    EXPECT_EQ(clone->get_default_angle(), joint1_->get_default_angle());
+  }
 }
 
 TEST_F(RevoluteJointTest, SetVelocityAndAccelerationLimits) {

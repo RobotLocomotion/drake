@@ -772,6 +772,8 @@ GTEST_TEST(LinearBushingRollPitchYawTest, BushingParameters) {
   EXPECT_TRUE(CompareMatrices(new_force_damping, new_default_force_damping));
 }
 
+// TODO(jwnimmer-tri) This file is missing tests of the clone-related functions.
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

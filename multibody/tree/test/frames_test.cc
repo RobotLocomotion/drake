@@ -338,6 +338,9 @@ TEST_F(FrameTests, HasFrameNamed) {
   }
 }
 
+// TODO(jwnimmer-tri) This file is missing tests of the clone-related functions,
+// for RigidBodyFrame and FixedOffsetFrame.
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

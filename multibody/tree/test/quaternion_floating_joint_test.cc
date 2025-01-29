@@ -383,6 +383,8 @@ TEST_F(QuaternionFloatingJointTest, RandomState) {
   EXPECT_FALSE(joint_->GetPose(*context_).IsExactlyIdentity());
 }
 
+// TODO(jwnimmer-tri) This file is missing tests of the clone-related functions.
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

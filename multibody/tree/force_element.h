@@ -166,6 +166,13 @@ class ForceElement : public MultibodyElement<T> {
   }
   /// @endcond
 
+  /// @cond
+  // (Internal use only) Returns a shallow clone (i.e., dependent elements such
+  // as joints are aliased, not copied) that is not associated with any MbT (so
+  // the assigned index, if any, is discarded).
+  std::unique_ptr<ForceElement<T>> ShallowClone() const;
+  /// @endcond
+
  protected:
   /// This method is called only from the public non-virtual
   /// CalcAndAddForceContributions() which will already have error-checked
@@ -259,6 +266,9 @@ class ForceElement : public MultibodyElement<T> {
   virtual std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
   /// @}
+
+  /// NVI for ShallowClone().
+  virtual std::unique_ptr<ForceElement<T>> DoShallowClone() const;
 
  private:
   // Implementation for MultibodyElement::DoSetTopology().

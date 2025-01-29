@@ -116,6 +116,8 @@ class LinearSpringDamper final : public ForceElement<T> {
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+  std::unique_ptr<ForceElement<T>> DoShallowClone() const override;
+
  private:
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
