@@ -237,8 +237,14 @@ KinematicTrajectoryOptimization::KinematicTrajectoryOptimization(
 KinematicTrajectoryOptimization::KinematicTrajectoryOptimization(
     const trajectories::BsplineTrajectory<double>& trajectory)
     : num_positions_(trajectory.rows()),
-      num_control_points_(trajectory.num_control_points()) {
-  // basis = trajectory.basis() normalized to s∈[0,1].
+      num_control_points_(trajectory.num_control_points()),
+      placeholder_q_vars_(
+          symbolic::MakeVectorContinuousVariable(num_positions_, "q")),
+      placeholder_qdot_vars_(
+          symbolic::MakeVectorContinuousVariable(num_positions_, "qdot")),
+      placeholder_qddot_vars_(
+          symbolic::MakeVectorContinuousVariable(num_positions_, "qddot")) {
+  // basis_ = trajectory.basis() normalized to s∈[0,1].
   const double duration = trajectory.end_time() - trajectory.start_time();
   std::vector<double> normalized_knots = trajectory.basis().knots();
   for (auto& knot : normalized_knots) {
@@ -360,6 +366,111 @@ KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
   binding.evaluator()->set_description(
       fmt::format("velocity constraint at s={}", s));
   return binding;
+}
+
+namespace {
+std::optional<int> FindVariableIndex(
+    const symbolic::Variable& var, const VectorX<symbolic::Variable>& var_vec) {
+  // Find the index of var in var_vec. If var isn't found in var_vec, return
+  // std::nullopt. We assume var_vec doesn't contain repeated variables.
+  for (int i = 0; i < var_vec.rows(); ++i) {
+    if (var.equal_to(var_vec(i))) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+}  // namespace
+
+Binding<LinearConstraint>
+KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
+    const Binding<LinearConstraint>& binding, double s) {
+  // binding.variables() might be a subset of placeholder_qdot_vars, and might
+  // not be in the same order as the placeholder variables. So I first need to
+  // get the mapping from binding.variables() to placeholder_qdot_vars
+  // P * qdot = binding.variables()
+  // where P is a selection matrix.
+  std::vector<Eigen::Triplet<double>> P_triplets;
+  for (int i = 0; i < binding.variables().size(); ++i) {
+    const symbolic::Variable& var = binding.variables()(i);
+    const std::optional<int> var_to_qdot =
+        FindVariableIndex(var, placeholder_qdot_vars_);
+    if (!var_to_qdot.has_value()) {
+      throw std::runtime_error(fmt::format(
+          "AddVelocityConstraintAtNormalizedTime(): placeholder {} is used for "
+          "the constraint. Currently we can only accept constraints depending "
+          "on placeholder qdot variable.",
+          binding.variables()[i].get_name()));
+    }
+    P_triplets.emplace_back(i, var_to_qdot.value(), 1);
+  }
+  Eigen::SparseMatrix<double> P(binding.variables().size(), num_positions_);
+  P.setFromTriplets(P_triplets.begin(), P_triplets.end());
+  DRAKE_DEMAND(0 <= s && s <= 1);
+  // Since binding is a linear constraint on a subset of qdot (let's denote it
+  // as P * qdot, where P is a selection matrix with one and only one 1 each
+  // row and 0 otherwise), namely
+  // lb <= A * P * qdot(s) <= ub,
+  // we have qdot = rdot / T,
+  // so the constraint is
+  // lb <= A * P * rdot / T <= ub
+  // Namely
+  // A * P * rdot - lb * T >= 0
+  // A * P * rdot - ub * T <= 0
+  // I call these new constraints as
+  // lb_new <= A_new * vars <= ub_new
+
+  // rdot = control_points_ * a_vel
+  const VectorXd a_vel =
+      bspline_.EvaluateLinearInControlPoints(s, /* derivative_order= */ 1);
+  // rdot = M * x
+  const auto [M, x] = RewriteXa(control_points_, a_vel);
+  VectorXDecisionVariable vars(x.rows() + 1);
+  vars.head(x.rows()) = x;
+  vars(x.rows()) = duration_;
+  const Eigen::MatrixXd A = binding.evaluator()->GetDenseA();
+  Eigen::MatrixXd A_new(A.rows() * 2, vars.rows());
+  Eigen::VectorXd lb_new(A.rows() * 2);
+  Eigen::VectorXd ub_new(A.rows() * 2);
+  int A_new_row_count = 0;
+  const int x_size = x.rows();
+
+  auto set_A_new_bound_new = [&A_new, &lb_new, &ub_new, &A_new_row_count,
+                              x_size](const Eigen::RowVectorXd& x_coeff,
+                                      double T_coeff, double lb, double ub) {
+    A_new.block(A_new_row_count, 0, 1, x_size) = x_coeff;
+    A_new(A_new_row_count, x_size) = T_coeff;
+    lb_new(A_new_row_count) = lb;
+    ub_new(A_new_row_count) = ub;
+    A_new_row_count++;
+  };
+  // A * P * rdot = A * P * M * x
+  for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
+    if (!std::isinf(binding.evaluator()->lower_bound()(i)) &&
+        binding.evaluator()->lower_bound()(i) ==
+            binding.evaluator()->upper_bound()(i)) {
+      // Constraint A * P * M * x - lb * T = 0
+      set_A_new_bound_new(A.row(i) * P * M,
+                          -binding.evaluator()->lower_bound()(i), 0, 0);
+    } else {
+      if (!std::isinf(binding.evaluator()->lower_bound()(i))) {
+        // Constraint A * P * M * x - lb * T >= 0
+        set_A_new_bound_new(A.row(i) * P * M,
+                            -binding.evaluator()->lower_bound()(i), 0, kInf);
+      }
+      if (!std::isinf(binding.evaluator()->upper_bound()(i))) {
+        // Constraint A * P * M * x - ub * T <= 0
+        set_A_new_bound_new(A.row(i) * P * M,
+                            -binding.evaluator()->upper_bound()(i), -kInf, 0);
+      }
+    }
+  }
+  auto ret = prog_.AddLinearConstraint(A_new.topRows(A_new_row_count),
+                                       lb_new.head(A_new_row_count),
+                                       ub_new.head(A_new_row_count), vars);
+  ret.evaluator()->set_description(
+      fmt::format("velocity constraint at s={}", s));
+  return ret;
 }
 
 Binding<LinearConstraint>
