@@ -10,7 +10,7 @@ from python import runfiles
 
 def get_clang_format_path():
     manifest = runfiles.Create()
-    path = Path(manifest.Rlocation("llvm_toolchain/clang-format"))
+    path = Path(manifest.Rlocation("llvm/bin/clang-format"))
     if not path.is_file():
         raise RuntimeError(f"Could not find required clang-format at {path}")
     return path
