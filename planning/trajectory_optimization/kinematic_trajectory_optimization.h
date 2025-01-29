@@ -142,6 +142,21 @@ class KinematicTrajectoryOptimization {
   solvers::Binding<solvers::Constraint> AddVelocityConstraintAtNormalizedTime(
       const std::shared_ptr<solvers::Constraint>& constraint, double s);
 
+  /** Adds a linear constraint on some (or all) of the placeholder variables
+   qdot, evaluated at a normalized time s.
+
+   @pre binding Can only associate with placeholder_qdot_vars().
+   @pre 0 <= `s` <= 1.
+
+   @code{cpp}
+   Binding<LinearConstraint> b(LinearConstraint(A, b), trajopt.qdot());
+   trajopt.AddVelocityConstraintAtNormalizedTime(b, 0);
+   @endcode
+  */
+  std::vector<solvers::Binding<solvers::LinearConstraint>>
+  AddVelocityConstraintAtNormalizedTime(
+      const solvers::Binding<solvers::LinearConstraint>& binding, double s);
+
   /** Adds a linear constraint on the second derivative of the path,
   `lb` ≤ r̈(s) ≤ `ub`. Note that this does NOT directly constrain q̈(t).
   @pre 0 <= `s` <= 1. */
@@ -238,6 +253,35 @@ class KinematicTrajectoryOptimization {
   std::vector<solvers::Binding<solvers::Cost>> AddPathEnergyCost(
       double weight = 1.0);
 
+  /** Returns the placeholder variable for generalized position q. Note these
+   are NOT decision variables in the MathematicalProgram. These variables will
+   be substituted for the real decision variables at particular times. Passing
+   these variables directily into objective/constraints for the
+   MathematicalProgram will result in an error.
+   */
+  const VectorX<symbolic::Variable>& q() const { return placeholder_q_vars_; }
+
+  /** Returns the placeholder variable for the time derivative of generalized
+   position. Note these are NOT decision variables in the MathematicalProgram.
+   These variables will be substituted for the real decision variables at
+   particular times. Passing these variables directily into
+   objective/constraints for the MathematicalProgram will result in an error.
+   */
+  const VectorX<symbolic::Variable>& qdot() const {
+    return placeholder_qdot_vars_;
+  }
+
+  /** Returns the placeholder variable for the second time derivative of
+   generalized position. Note these are NOT decision variables in the
+   MathematicalProgram. These variables will be substituted for the real
+   decision variables at particular times. Passing these variables directily
+   into objective/constraints for the MathematicalProgram will result in an
+   error.
+   */
+  const VectorX<symbolic::Variable>& qddot() const {
+    return placeholder_qddot_vars_;
+  }
+
   /* TODO(russt):
   - Support additional (non-convex) costs/constraints on q(t) directly.
   */
@@ -250,6 +294,9 @@ class KinematicTrajectoryOptimization {
   trajectories::BsplineTrajectory<double> bspline_;
   solvers::MatrixXDecisionVariable control_points_;
   symbolic::Variable duration_;
+  VectorX<symbolic::Variable> placeholder_q_vars_;
+  VectorX<symbolic::Variable> placeholder_qdot_vars_;
+  VectorX<symbolic::Variable> placeholder_qddot_vars_;
 };
 
 }  // namespace trajectory_optimization
