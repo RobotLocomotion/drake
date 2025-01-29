@@ -429,6 +429,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+  std::unique_ptr<Joint<T>> DoShallowClone() const override;
+
   // Make QuaternionFloatingJoint templated on every other scalar type a friend
   // of QuaternionFloatingJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can
   // access private members of QuaternionFloatingJoint<T>.

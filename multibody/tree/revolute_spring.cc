@@ -112,6 +112,13 @@ RevoluteSpring<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<ForceElement<T>> RevoluteSpring<T>::DoShallowClone() const {
+  // N.B. We use the private constructor since joint() requires a MbT pointer.
+  return std::unique_ptr<ForceElement<T>>(new RevoluteSpring<T>(
+      this->model_instance(), joint_index_, nominal_angle(), stiffness()));
+}
+
 }  // namespace multibody
 }  // namespace drake
 

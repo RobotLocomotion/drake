@@ -283,6 +283,8 @@ TEST_F(SpringDamperTester, Power) {
   EXPECT_EQ(plant_.EvalNonConservativePower(*context_), non_conservative_power);
 }
 
+// TODO(jwnimmer-tri) This file is missing tests of the clone-related functions.
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

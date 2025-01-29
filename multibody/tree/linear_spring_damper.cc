@@ -176,6 +176,12 @@ LinearSpringDamper<T>::DoCloneToScalar(
 }
 
 template <typename T>
+std::unique_ptr<ForceElement<T>> LinearSpringDamper<T>::DoShallowClone() const {
+  return std::make_unique<LinearSpringDamper<T>>(
+      bodyA(), p_AP(), bodyB(), p_BQ(), free_length(), stiffness(), damping());
+}
+
+template <typename T>
 T LinearSpringDamper<T>::SafeSoftNorm(const Vector3<T>& x) const {
   using std::sqrt;
   const double epsilon_length =

@@ -375,6 +375,17 @@ LinearBushingRollPitchYaw<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<ForceElement<T>> LinearBushingRollPitchYaw<T>::DoShallowClone()
+    const {
+  // N.B. We use the private constructor since the frameA() and frameC()
+  // accessors require a MbT pointer.
+  return std::unique_ptr<ForceElement<T>>(new LinearBushingRollPitchYaw<T>(
+      this->model_instance(), frameA_index_, frameC_index_,
+      torque_stiffness_constants(), torque_damping_constants(),
+      force_stiffness_constants(), force_damping_constants()));
+}
+
 }  // namespace multibody
 }  // namespace drake
 

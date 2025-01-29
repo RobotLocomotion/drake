@@ -342,6 +342,8 @@ class RevoluteJoint final : public Joint<T> {
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+  std::unique_ptr<Joint<T>> DoShallowClone() const override;
+
   // Make RevoluteJoint templated on every other scalar type a friend of
   // RevoluteJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
   // private members of RevoluteJoint<T>.

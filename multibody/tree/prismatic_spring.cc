@@ -113,6 +113,13 @@ PrismaticSpring<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<ForceElement<T>> PrismaticSpring<T>::DoShallowClone() const {
+  // N.B. We use the private constructor since joint() requires a MbT pointer.
+  return std::unique_ptr<ForceElement<T>>(new PrismaticSpring<T>(
+      this->model_instance(), joint_index_, nominal_position(), stiffness()));
+}
+
 }  // namespace multibody
 }  // namespace drake
 

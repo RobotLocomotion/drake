@@ -227,6 +227,13 @@ UniformGravityFieldElement<T>::DoCloneToScalar(
       gravity_vector(), disabled_model_instances_);
 }
 
+template <typename T>
+std::unique_ptr<ForceElement<T>> UniformGravityFieldElement<T>::DoShallowClone()
+    const {
+  return std::make_unique<UniformGravityFieldElement<T>>(
+      gravity_vector(), disabled_model_instances_);
+}
+
 }  // namespace multibody
 }  // namespace drake
 
