@@ -1,7 +1,6 @@
 #pragma once
 
 #include <atomic>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -16,6 +15,18 @@
 namespace drake {
 namespace multibody {
 namespace meshcat {
+
+namespace internal {
+struct SliderDetail {
+  std::string name;
+  double min{};
+  double max{};
+  double step{};
+  /* The nominal value for this slider. Only used for defining the slider's
+  initial value, or after Delete() after the slider has been removed. */
+  double nominal_value{};
+};
+}  // namespace internal
 
 /** %JointSliders adds slider bars to the Meshcat control panel for the joints
 of a MultibodyPlant. These might be useful for interactive or teleoperation
@@ -84,10 +95,12 @@ class JointSliders final : public systems::LeafSystem<T> {
   JointSliders(
       std::shared_ptr<geometry::Meshcat> meshcat,
       const MultibodyPlant<T>* plant,
-      std::optional<Eigen::VectorXd> initial_value = {},
-      std::variant<std::monostate, double, Eigen::VectorXd> lower_limit = {},
-      std::variant<std::monostate, double, Eigen::VectorXd> upper_limit = {},
-      std::variant<std::monostate, double, Eigen::VectorXd> step = {},
+      const std::optional<Eigen::VectorXd>& initial_value = {},
+      const std::variant<std::monostate, double, Eigen::VectorXd>& lower_limit =
+          {},
+      const std::variant<std::monostate, double, Eigen::VectorXd>& upper_limit =
+          {},
+      const std::variant<std::monostate, double, Eigen::VectorXd>& step = {},
       std::vector<std::string> decrement_keycodes = {},
       std::vector<std::string> increment_keycodes = {});
 
@@ -152,10 +165,7 @@ class JointSliders final : public systems::LeafSystem<T> {
 
   std::shared_ptr<geometry::Meshcat> meshcat_;
   const MultibodyPlant<T>* const plant_;
-  const std::map<int, std::string> position_names_;
-  /* The nominal values for all positions; positions with sliders will not use
-   their nominal value except for defining the slider's initial value. */
-  Eigen::VectorXd nominal_value_;
+  std::vector<internal::SliderDetail> slider_details_;
   std::atomic<bool> is_registered_;
 };
 

@@ -20,11 +20,39 @@ namespace multibody {
 namespace meshcat {
 
 using Eigen::VectorXd;
+using internal::SliderDetail;
 using systems::BasicVector;
 using systems::Context;
 using systems::Diagram;
 
 namespace {
+
+// Returns a vector of size num_positions, based on the given value variant.
+// If a VectorXd is given, it's checked for size and then returned unchanged.
+// If a double is given, it's broadcast to size and returned.
+// If no value is given, then the default_value is broadcast instead.
+VectorXd Broadcast(
+    const char* diagnostic_name, double default_value, int num_positions,
+    const std::variant<std::monostate, double, VectorXd>& value) {
+  return std::visit<VectorXd>(
+      overloaded{
+          [num_positions, default_value](std::monostate) {
+            return VectorXd::Constant(num_positions, default_value);
+          },
+          [num_positions](double arg) {
+            return VectorXd::Constant(num_positions, arg);
+          },
+          [num_positions, diagnostic_name](const VectorXd& arg) {
+            if (arg.size() != num_positions) {
+              throw std::logic_error(
+                  fmt::format("Expected {} of size {}, but got size {} instead",
+                              diagnostic_name, num_positions, arg.size()));
+            }
+            return arg;
+          },
+      },
+      value);
+}
 
 // Returns the plant's default positions.
 template <typename T>
@@ -40,12 +68,11 @@ VectorXd GetDefaultPositions(const MultibodyPlant<T>* plant) {
   return result;
 }
 
-// Returns true iff data has any duplicated values.
-bool HasAnyDuplicatedValues(const std::map<int, std::string>& data) {
+// Returns true iff slider_details has any duplicated names.
+bool HasAnyDuplicatedNames(const std::vector<SliderDetail>& slider_details) {
   std::unordered_set<std::string_view> values_seen;
-  for (const auto& iter : data) {
-    const std::string& one_value = iter.second;
-    const bool inserted = values_seen.insert(one_value).second;
+  for (const auto& slider_detail : slider_details) {
+    const bool inserted = values_seen.insert(slider_detail.name).second;
     if (!inserted) {
       return true;
     }
@@ -53,24 +80,40 @@ bool HasAnyDuplicatedValues(const std::map<int, std::string>& data) {
   return false;
 }
 
-// Returns a mapping from an index within the plant's position vector to the
-// slider name that refers to it. The map only includes positions associated
-// with *joints*. Positions without joints (e.g., deformable vertex positions)
-// are not represented here.
-//
+// Returns vector of slider details indexed the same way the plant's positions.
+// (The result.size() == nq and the slider for the i'th position is result[i].)
 // When use_model_instance_name is set, both the joint name and model name will
-// be used to to form the slider name; otherwise, only the joint name is used,
-// unless there are duplicate joint names in which case this is forced to be
-// "true".
+// be used to to form the slider name.
 template <typename T>
-std::map<int, std::string> GetPositionNames(
-    const MultibodyPlant<T>* plant, bool use_model_instance_name = false) {
+std::vector<SliderDetail> MakeSliderDetails(
+    const MultibodyPlant<T>* plant,
+    const std::optional<VectorXd>& initial_value,
+    const std::variant<std::monostate, double, Eigen::VectorXd>& lower_limit,
+    const std::variant<std::monostate, double, Eigen::VectorXd>& upper_limit,
+    const std::variant<std::monostate, double, Eigen::VectorXd>& step,
+    bool use_model_instance_name) {
   DRAKE_THROW_UNLESS(plant != nullptr);
+  const int nq = plant->num_positions();
 
-  // Map all joints into the positions-to-name result.
-  std::map<int, std::string> result;
-  for (JointIndex i : plant->GetJointIndices()) {
-    const Joint<T>& joint = plant->get_joint(i);
+  // Default any missing arguments; check (or widen) them to be of size == nq.
+  if (initial_value.has_value() && initial_value->size() != nq) {
+    throw std::logic_error(fmt::format(
+        "Expected initial_value of size {}, but got size {} instead", nq,
+        initial_value->size()));
+  }
+  const VectorXd nominal_positions =
+      initial_value.has_value() ? *initial_value : GetDefaultPositions(plant);
+  const VectorXd lower_broadcast =
+      Broadcast("lower_limit", -10.0, nq, lower_limit);
+  const VectorXd upper_broadcast =
+      Broadcast("upper_limit", 10.0, nq, upper_limit);
+  const VectorXd step_broadcast = Broadcast("step", 0.01, nq, step);
+
+  // Map all joints' positions into the result.
+  std::vector<SliderDetail> result(nq);
+  VectorX<bool> seen = VectorX<bool>::Constant(nq, false);
+  for (JointIndex joint_index : plant->GetJointIndices()) {
+    const Joint<T>& joint = plant->get_joint(joint_index);
     for (int j = 0; j < joint.num_positions(); ++j) {
       const int position_index = joint.position_start() + j;
       std::string description;
@@ -84,47 +127,50 @@ std::map<int, std::string> GetPositionNames(
         description += fmt::format(
             "/{}", plant->GetModelInstanceName(joint.model_instance()));
       }
-      const bool inserted =
-          result.insert({position_index, std::move(description)}).second;
-      DRAKE_DEMAND(inserted);
+      result[position_index].name = std::move(description);
+      seen[position_index] = true;
     }
   }
 
-  // Check for duplicate names.  If we had a name collision, then we'll need
-  // need to use the model_instance_name to make them unique.
-  if (HasAnyDuplicatedValues(result)) {
-    DRAKE_DEMAND(use_model_instance_name == false);
-    return GetPositionNames(plant, true);
+  // Cross-check the plant invariant that all positions are covered by joints.
+  DRAKE_DEMAND(seen == VectorX<bool>::Constant(nq, true));
+
+  // Populate the limits for each slider.
+  const VectorXd lower_plant = plant->GetPositionLowerLimits();
+  const VectorXd upper_plant = plant->GetPositionUpperLimits();
+  for (int i = 0; i < nq; ++i) {
+    SliderDetail& detail = result[i];
+    detail.min = std::max(lower_broadcast[i], lower_plant[i]);
+    detail.max = std::min(upper_broadcast[i], upper_plant[i]);
+    detail.step = step_broadcast[i];
+    detail.nominal_value = nominal_positions[i];
   }
 
   return result;
 }
 
-// Returns a vector of size num_positions, based on the given value variant.
-// If a VectorXd is given, it's checked for size and then returned unchanged.
-// If a double is given, it's broadcast to size and returned.
-// If no value is given, then the default_value is broadcast instead.
-VectorXd Broadcast(const char* diagnostic_name, double default_value,
-                   int num_positions,
-                   std::variant<std::monostate, double, VectorXd> value) {
-  return std::visit<VectorXd>(
-      overloaded{
-          [num_positions, default_value](std::monostate) {
-            return VectorXd::Constant(num_positions, default_value);
-          },
-          [num_positions](double arg) {
-            return VectorXd::Constant(num_positions, arg);
-          },
-          [num_positions, diagnostic_name](VectorXd&& arg) {
-            if (arg.size() != num_positions) {
-              throw std::logic_error(
-                  fmt::format("Expected {} of size {}, but got size {} instead",
-                              diagnostic_name, num_positions, arg.size()));
-            }
-            return std::move(arg);
-          },
-      },
-      std::move(value));
+// Same contract as MakeSliderDetails() above, but tries to avoid using the
+// model instance name unless required.
+template <typename T>
+std::vector<SliderDetail> MakeBestSliderDetails(
+    const MultibodyPlant<T>* plant,
+    const std::optional<VectorXd>& initial_value,
+    const std::variant<std::monostate, double, Eigen::VectorXd>& lower_limit,
+    const std::variant<std::monostate, double, Eigen::VectorXd>& upper_limit,
+    const std::variant<std::monostate, double, Eigen::VectorXd>& step) {
+  bool use_model_instance_name = false;
+  std::vector<SliderDetail> result =
+      MakeSliderDetails(plant, initial_value, lower_limit, upper_limit, step,
+                        use_model_instance_name);
+  if (!HasAnyDuplicatedNames(result)) {
+    return result;
+  }
+  // We must blend in the the model_instance_name to obtain unique names.
+  use_model_instance_name = true;
+  result = MakeSliderDetails(plant, initial_value, lower_limit, upper_limit,
+                             step, use_model_instance_name);
+  DRAKE_DEMAND(!HasAnyDuplicatedNames(result));
+  return result;
 }
 
 }  // namespace
@@ -132,73 +178,46 @@ VectorXd Broadcast(const char* diagnostic_name, double default_value,
 template <typename T>
 JointSliders<T>::JointSliders(
     std::shared_ptr<geometry::Meshcat> meshcat, const MultibodyPlant<T>* plant,
-    std::optional<VectorXd> initial_value,
-    std::variant<std::monostate, double, VectorXd> lower_limit,
-    std::variant<std::monostate, double, VectorXd> upper_limit,
-    std::variant<std::monostate, double, VectorXd> step,
+    const std::optional<VectorXd>& initial_value,
+    const std::variant<std::monostate, double, VectorXd>& lower_limit,
+    const std::variant<std::monostate, double, VectorXd>& upper_limit,
+    const std::variant<std::monostate, double, VectorXd>& step,
     std::vector<std::string> decrement_keycodes,
     std::vector<std::string> increment_keycodes)
     : meshcat_(std::move(meshcat)),
       plant_(plant),
-      position_names_(GetPositionNames(plant)),
-      nominal_value_(
-          std::move(initial_value).value_or(GetDefaultPositions(plant))),
+      slider_details_(MakeBestSliderDetails(plant, initial_value, lower_limit,
+                                            upper_limit, step)),
       is_registered_{true} {
   DRAKE_THROW_UNLESS(meshcat_ != nullptr);
   DRAKE_THROW_UNLESS(plant_ != nullptr);
-
   const int nq = plant->num_positions();
-  if (nominal_value_.size() != nq) {
-    throw std::logic_error(fmt::format(
-        "Expected initial_value of size {}, but got size {} instead", nq,
-        nominal_value_.size()));
-  }
-
-  // Default any missing arguments; check (or widen) them to be of size == nq.
-  const VectorXd lower_broadcast =
-      Broadcast("lower_limit", -10.0, nq, std::move(lower_limit));
-  const VectorXd upper_broadcast =
-      Broadcast("upper_limit", 10.0, nq, std::move(upper_limit));
-  const VectorXd step_broadcast = Broadcast("step", 0.01, nq, std::move(step));
-
-  if (decrement_keycodes.size() &&
-      static_cast<int>(decrement_keycodes.size()) != nq) {
+  if (!decrement_keycodes.empty() && ssize(decrement_keycodes) != nq) {
     throw std::logic_error(
         fmt::format("Expected decrement_keycodes of size zero or {}, but got "
                     "size {} instead",
                     nq, decrement_keycodes.size()));
   }
-
-  if (increment_keycodes.size() &&
-      static_cast<int>(increment_keycodes.size()) != nq) {
+  if (!increment_keycodes.empty() && ssize(increment_keycodes) != nq) {
     throw std::logic_error(
         fmt::format("Expected increment_keycodes of size zero or {}, but got "
                     "size {} instead",
                     nq, increment_keycodes.size()));
   }
 
-  // Add one slider per joint position.
-  const VectorXd lower_plant = plant_->GetPositionLowerLimits();
-  const VectorXd upper_plant = plant_->GetPositionUpperLimits();
-  for (const auto& [position_index, slider_name] : position_names_) {
-    DRAKE_DEMAND(position_index >= 0);
-    DRAKE_DEMAND(position_index < nq);
-    const double one_min =
-        std::max(lower_broadcast[position_index], lower_plant[position_index]);
-    const double one_max =
-        std::min(upper_broadcast[position_index], upper_plant[position_index]);
-    const double one_step = step_broadcast[position_index];
-    const double one_value = nominal_value_[position_index];
-    const std::string one_decrement_keycode =
-        decrement_keycodes.size()
-            ? std::move(decrement_keycodes[position_index])
-            : "";
-    const std::string one_increment_keycode =
-        increment_keycodes.size()
-            ? std::move(increment_keycodes[position_index])
-            : "";
-    meshcat_->AddSlider(slider_name, one_min, one_max, one_step, one_value,
-                        one_decrement_keycode, one_increment_keycode);
+  // Add one slider for each plant position.
+  for (int i = 0; i < nq; ++i) {
+    const auto& slider_detail = slider_details_[i];
+    std::string decrement_keycode = !decrement_keycodes.empty()
+                                        ? std::move(decrement_keycodes[i])
+                                        : std::string{};
+    std::string increment_keycode = !increment_keycodes.empty()
+                                        ? std::move(increment_keycodes[i])
+                                        : std::string{};
+    meshcat_->AddSlider(
+        slider_detail.name, slider_detail.min, slider_detail.max,
+        slider_detail.step, slider_detail.nominal_value,
+        std::move(decrement_keycode), std::move(increment_keycode));
   }
 
   // Declare the output port.
@@ -214,9 +233,8 @@ template <typename T>
 void JointSliders<T>::Delete() {
   const auto was_registered = is_registered_.exchange(false);
   if (was_registered) {
-    for (const auto& [position_index, slider_name] : position_names_) {
-      unused(position_index);
-      meshcat_->DeleteSlider(slider_name, /*strict = */ false);
+    for (const auto& slider_detail : slider_details_) {
+      meshcat_->DeleteSlider(slider_detail.name, /*strict = */ false);
     }
   }
 }
@@ -237,14 +255,17 @@ void JointSliders<T>::CalcOutput(const Context<T>&,
                                  BasicVector<T>* output) const {
   const int nq = plant_->num_positions();
   DRAKE_DEMAND(output->size() == nq);
-  for (int i = 0; i < nq; ++i) {
-    (*output)[i] = nominal_value_[i];
-  }
   if (is_registered_) {
-    for (const auto& [position_index, slider_name] : position_names_) {
+    for (int i = 0; i < nq; ++i) {
+      const auto& slider_detail = slider_details_[i];
       // TODO(jwnimmer-tri) If CalcOutput is in flight concurrently with a
       // call to Delete, we might race and ask for a deleted slider value.
-      (*output)[position_index] = meshcat_->GetSliderValue(slider_name);
+      (*output)[i] = meshcat_->GetSliderValue(slider_detail.name);
+    }
+  } else {
+    for (int i = 0; i < nq; ++i) {
+      const auto& slider_detail = slider_details_[i];
+      (*output)[i] = slider_detail.nominal_value;
     }
   }
 }
@@ -333,13 +354,15 @@ void JointSliders<T>::SetPositions(const Eigen::VectorXd& q) {
         "Expected q of size {}, but got size {} instead", nq, q.size()));
   }
   /* For *all* positions provided in q, update their value in nominal_value_. */
-  nominal_value_ = q;
+  for (int i = 0; i < nq; ++i) {
+    slider_details_[i].nominal_value = q[i];
+  }
   if (is_registered_) {
     // For items with an associated slider, update the meshcat UI.
     // TODO(jwnimmer-tri) If SetPositions is in flight concurrently with a
     // call to Delete, we might race and ask for a deleted slider value.
-    for (const auto& [position_index, slider_name] : position_names_) {
-      meshcat_->SetSliderValue(slider_name, q[position_index]);
+    for (int i = 0; i < nq; ++i) {
+      meshcat_->SetSliderValue(slider_details_[i].name, q[i]);
     }
   }
 }
