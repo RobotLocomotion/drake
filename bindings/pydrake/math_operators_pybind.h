@@ -146,8 +146,7 @@ void BindMathOperators(PyObject* obj) {
                 return CalcMatrixInverse(X.template cast<Promoted>().eval());
               }
             })
-        .def(
-            "isnan", [](const T& x) { return isnan(x); }, py::arg("x"));
+        .def("isnan", [](const T& x) { return isnan(x); }, py::arg("x"));
   } else {
     auto& cls = *obj;
     cls  // BR

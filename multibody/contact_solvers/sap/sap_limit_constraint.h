@@ -246,7 +246,7 @@ class SapLimitConstraint final : public SapConstraint<T> {
       EigenPtr<VectorX<T>> tau) const final;
   // no-op for this constraint.
   void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
-                                   SpatialForce<T>*) const final{};
+                                   SpatialForce<T>*) const final {};
 
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.

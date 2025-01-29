@@ -105,7 +105,7 @@ struct SapSolverParameters {
   // SapStatistics::optimality_condition_reached indicates if this condition
   // was reached.
   double abs_tolerance{1.e-14};  // Absolute tolerance εₐ, square root of Joule.
-  double rel_tolerance{1.e-6};  // Relative tolerance εᵣ.
+  double rel_tolerance{1.e-6};   // Relative tolerance εᵣ.
 
   // Cost condition criterion: We monitor the decrease of the cost on each
   // iteration. It is not worth it to keep iterating if round-off errors do not

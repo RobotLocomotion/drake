@@ -399,8 +399,8 @@ void AddSixTetrahedraOfCell(const Vector3<int>& lowest,
   // tetrahedron. The six tetrahedra form a cycle around the diagonal v₀v₇
   // of the cell. Refer to:
   // http://www.baumanneduard.ch/Splitting%20a%20cube%20in%20tetrahedras2.htm
+  // clang-format off
   const int tetrahedron[6][4]{
-      // clang-format off
       {v[0], v[7], v[4], v[6]},
       {v[0], v[7], v[6], v[2]},
       {v[0], v[7], v[2], v[3]},

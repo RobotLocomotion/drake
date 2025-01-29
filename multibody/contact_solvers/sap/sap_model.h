@@ -88,7 +88,7 @@ struct MomentumGainCache {
 template <typename T>
 struct CostCache {
   T cost{NAN};  // Total primal cost, = momentum_cost + regularizer_cost.
-  T momentum_cost{NAN};  // Momentum cost, = 1/2⋅(v−v*)ᵀ⋅A⋅(v−v*).
+  T momentum_cost{NAN};     // Momentum cost, = 1/2⋅(v−v*)ᵀ⋅A⋅(v−v*).
   T regularizer_cost{NAN};  // Regularizer cost, = 1/2⋅γᵀ⋅R⋅γ.
 };
 
