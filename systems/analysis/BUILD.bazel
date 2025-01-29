@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":antiderivative_function",
         ":batch_eval",
         ":bogacki_shampine3_integrator",
+        ":convex_integrator",
         ":dense_output",
         ":explicit_euler_integrator",
         ":hermitian_dense_output",
@@ -107,6 +108,16 @@ drake_cc_library(
     hdrs = ["bogacki_shampine3_integrator.h"],
     deps = [
         ":integrator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "convex_integrator",
+    srcs = ["convex_integrator.cc"],
+    hdrs = ["convex_integrator.h"],
+    deps = [
+        ":integrator_base",
+        "//multibody/plant",
     ],
 )
 

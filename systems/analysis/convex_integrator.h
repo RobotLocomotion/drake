@@ -1,0 +1,66 @@
+#pragma once
+
+#include <memory>
+
+#include "drake/common/default_scalars.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/analysis/integrator_base.h"
+
+namespace drake {
+namespace systems {
+
+using multibody::MultibodyPlant;
+
+/**
+ * An experimental implicit integrator that solves a convex SAP problem to
+ * advance the state, rather than relying on non-convex Newton-Raphson.
+ */
+template <class T>
+class ConvexIntegrator final : public IntegratorBase<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConvexIntegrator);
+
+  ~ConvexIntegrator() override = default;
+
+  /**
+   * Constructs the experimental convex integrator.
+   *
+   * @param system the overall system diagram to simulate.
+   * @param plant the MbP model we'll use for constructing the SAP problem. It
+   *              should be part of the overall system.
+   * @param context context for the overall system.
+   *
+   * N.B. Although this is an implicit integration scheme, we inherit from
+   * IntegratorBase rather than ImplicitIntegrator because the way we compute
+   * the Jacobian (Hessian for us) is completely different, and MultibodyPlant
+   * specific.
+   */
+  ConvexIntegrator(const System<T>& system, MultibodyPlant<T>* plant,
+                   Context<T>* context = nullptr)
+      : IntegratorBase<T>(system, context), plant_(plant) {
+    DRAKE_DEMAND(plant_ != nullptr);
+  }
+
+  // TODO(vincekurtz): add error estimation
+  bool supports_error_estimation() const override { return false; }
+
+  // TODO(vincekurtz): add error estimation
+  int get_error_estimate_order() const override { return 0; }
+
+  // Get a reference to the plant used for SAP computations
+  const MultibodyPlant<T>& plant() const { return *plant_; }
+
+ private:
+  // The main integration step, sets x_{t+h} in this->context.
+  bool DoStep(const T& h) override;
+
+  // Plant model, since convex integration is specific to MbP
+  MultibodyPlant<T>* plant_;
+};
+
+}  // namespace systems
+}  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::systems::ConvexIntegrator);
