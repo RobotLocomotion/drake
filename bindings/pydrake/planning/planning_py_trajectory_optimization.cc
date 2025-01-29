@@ -315,10 +315,25 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddPathVelocityConstraint", &Class::AddPathVelocityConstraint,
             py::arg("lb"), py::arg("ub"), py::arg("s"),
             cls_doc.AddPathVelocityConstraint.doc)
-        .def("AddVelocityConstraintAtNormalizedTime",
-            &Class::AddVelocityConstraintAtNormalizedTime,
+        .def(
+            "AddVelocityConstraintAtNormalizedTime",
+            [](Class* self,
+                const std::shared_ptr<solvers::Constraint> constraint,
+                double s) {
+              return self->AddVelocityConstraintAtNormalizedTime(constraint, s);
+            },
             py::arg("constraint"), py::arg("s"),
-            cls_doc.AddVelocityConstraintAtNormalizedTime.doc)
+            cls_doc.AddVelocityConstraintAtNormalizedTime
+                .doc_2args_constraint_s)
+        .def(
+            "AddVelocityConstraintAtNormalizedTime",
+            [](Class* self,
+                const solvers::Binding<solvers::LinearConstraint> binding,
+                double s) {
+              return self->AddVelocityConstraintAtNormalizedTime(binding, s);
+            },
+            py::arg("binding"), py::arg("s"),
+            cls_doc.AddVelocityConstraintAtNormalizedTime.doc_2args_binding_s)
         .def("AddPathAccelerationConstraint",
             &Class::AddPathAccelerationConstraint, py::arg("lb"), py::arg("ub"),
             py::arg("s"), cls_doc.AddPathAccelerationConstraint.doc)
@@ -338,7 +353,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("weight") = 1.0, py::arg("use_conic_constraint") = false,
             cls_doc.AddPathLengthCost.doc)
         .def("AddPathEnergyCost", &Class::AddPathEnergyCost,
-            py::arg("weight") = 1.0, cls_doc.AddPathEnergyCost.doc);
+            py::arg("weight") = 1.0, cls_doc.AddPathEnergyCost.doc)
+        .def("q", &Class::q, cls_doc.q.doc)
+        .def("qdot", &Class::qdot, cls_doc.qdot.doc)
+        .def("qddot", &Class::qddot, cls_doc.qddot.doc);
   }
 
   {
