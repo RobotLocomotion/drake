@@ -1252,9 +1252,9 @@ TEST_F(PendulumKinematicTests, CalcVelocityKinematicsWithAutoDiffXd) {
           const double Pc_from_autodiff = -V.derivatives()[0];
           EXPECT_NEAR(Pc, Pc_from_autodiff, kTolerance);
         }  // ielbow
-      }    // ishoulder
-    }      // iw_elbow
-  }        // iw_shoulder
+      }  // ishoulder
+    }  // iw_elbow
+  }  // iw_shoulder
 }
 
 TEST_F(PendulumKinematicTests, PointsPositionsAndRelativeTransform) {

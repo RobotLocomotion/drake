@@ -70,13 +70,10 @@ PYBIND11_MODULE(ref_cycle_test_util, m) {
         .def("ReturnNullIsCycle", &Class::ReturnNullIs, ref_cycle<0, 1>());
   }
 
-  m.def(
-      "free_function", [](IsDynamic*, IsDynamic*) {}, ref_cycle<1, 2>());
-  m.def(
-      "invalid_arg_index", [] {}, ref_cycle<0, 1>());
+  m.def("free_function", [](IsDynamic*, IsDynamic*) {}, ref_cycle<1, 2>());
+  m.def("invalid_arg_index", [] {}, ref_cycle<0, 1>());
   // Returns its argument and creates a self-cycle.
-  m.def(
-      "ouroboros", [](IsDynamic* x) { return x; }, ref_cycle<0, 1>());
+  m.def("ouroboros", [](IsDynamic* x) { return x; }, ref_cycle<0, 1>());
   m.def("arbitrary_ok", []() {
     auto d1 = py::cast(new IsDynamic);
     auto d2 = py::cast(new IsDynamic);
