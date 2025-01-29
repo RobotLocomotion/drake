@@ -23,6 +23,7 @@ namespace {
 
 using common::MaybePauseForUser;
 using Eigen::Vector2d;
+using Eigen::VectorXd;
 using geometry::Meshcat;
 using geometry::Rgba;
 using geometry::Sphere;
@@ -199,6 +200,86 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
     points.topRightCorner(2, 1) = vregion.vertices().col(0);
     points.bottomRows<1>().setZero();
     meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    MaybePauseForUser();
+  }
+
+  // We now test an example of a region grown along a parametrization of the
+  // space. We use the rational parametrization s=tan(θ/2), so our
+  // parametrization function is θ=2arctan(s).
+  options.parametrization_is_threadsafe = true;
+  options.parametrization = [](const VectorXd& q) -> VectorXd {
+    return (2 * q.array().atan()).matrix();
+  };
+  options.configuration_space_margin = 1e-4;
+  // Note that we don't specify the parametrization dimension. This is unneeded,
+  // since it will just match the ambient dimension.
+  const Vector2d sample2{0.0, 0.0};
+  starting_ellipsoid = Hyperellipsoid::MakeHypersphere(1e-2, sample2);
+  // This domain matches the joint limits under the transformation.
+  HPolyhedron domain =
+      HPolyhedron::MakeBox(Vector2d(-1.0, -1.0), Vector2d(1.0, 1.0));
+  region = IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options,
+                          &domain);
+
+  EXPECT_EQ(region.ambient_dimension(), 2);
+  Vector2d region_query_point_1(-0.1, 0.3);
+  Vector2d region_query_point_2(0.1, -0.3);
+  EXPECT_TRUE(region.PointInSet(region_query_point_1));
+  EXPECT_TRUE(region.PointInSet(region_query_point_2));
+
+  {
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+
+    // Region boundaries appear "curved" in the ambient space, so we use many
+    // points per boundary segment to make a more faithful visualization.
+    int n_points_per_edge = 10;
+    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(
+        3, n_points_per_edge * vregion.vertices().cols() + 1);
+    int next_point_index = 0;
+
+    // Order vertices in counterclockwise order. Thanks claude.ai for the help.
+    Eigen::Vector2d centroid = vregion.vertices().rowwise().mean();
+    Eigen::Matrix2Xd centered = vregion.vertices().colwise() - centroid;
+    Eigen::VectorXd angles = centered.row(1).array().binaryExpr(
+        centered.row(0).array(), [](double y, double x) {
+          return std::atan2(y, x);
+        });
+    Eigen::VectorXi indices = Eigen::VectorXi::LinSpaced(
+        vregion.vertices().cols(), 0, vregion.vertices().cols() - 1);
+    std::sort(indices.data(), indices.data() + vregion.vertices().cols(),
+              [&angles](int i1, int i2) {
+                return angles(i1) < angles(i2);
+              });
+    Eigen::Matrix2Xd sorted_vertices = vregion.vertices()(Eigen::all, indices);
+
+    for (int i1 = 0; i1 < sorted_vertices.cols(); ++i1) {
+      int i2 = i1 + 1;
+      if (i2 == sorted_vertices.cols()) {
+        i2 = 0;
+      }
+      Vector2d q1 = sorted_vertices.col(i1);
+      Vector2d q2 = sorted_vertices.col(i2);
+      for (int j = 0; j < n_points_per_edge; ++j) {
+        double t =
+            static_cast<double>(j) / static_cast<double>(n_points_per_edge);
+        Vector2d q = t * q2 + (1 - t) * q1;
+        points.col(next_point_index).head(2) = options.parametrization(q);
+        ++next_point_index;
+      }
+    }
+    points.topRightCorner(2, 1) =
+        options.parametrization(sorted_vertices.col(0));
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
+
+    Vector2d ambient_query_point =
+        options.parametrization(region_query_point_1);
+    meshcat->SetTransform(
+        "Test point", math::RigidTransform(Eigen::Vector3d(
+                          ambient_query_point[0], ambient_query_point[1], 0)));
 
     MaybePauseForUser();
   }
@@ -427,7 +508,6 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
     points.resize(3, vregion.vertices().cols() + 1);
     for (int i = 0; i < vregion.vertices().cols(); ++i) {
       Vector2d point = options.parametrization(vregion.vertices().col(i));
-      // TODO(cohnt): Vectorize?
       points.col(i).head(2) = point;
       if (i == 0) {
         points.topRightCorner(2, 1) = point;
