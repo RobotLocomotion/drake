@@ -89,7 +89,6 @@ load("//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")
 load("//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
-load("//tools/workspace/spgrid_internal:repository.bzl", "spgrid_internal_repository")  # noqa
 load("//tools/workspace/spral_internal:repository.bzl", "spral_internal_repository")  # noqa
 load("//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
@@ -315,8 +314,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         snopt_repository(name = "snopt")
     if "spdlog" not in excludes:
         spdlog_repository(name = "spdlog", mirrors = mirrors)
-    if "spgrid_internal" not in excludes:
-        spgrid_internal_repository(name = "spgrid_internal")
     if "spral_internal" not in excludes:
         spral_internal_repository(name = "spral_internal", mirrors = mirrors)
     if "stable_baselines3_internal" not in excludes:

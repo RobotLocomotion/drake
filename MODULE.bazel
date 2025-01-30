@@ -192,7 +192,6 @@ use_repo(
     "rules_python_drake_constants",
     "scs_internal",
     "sdformat_internal",
-    "spgrid_internal",
     "spral_internal",
     "stable_baselines3_internal",
     "statsjs",
@@ -211,6 +210,15 @@ use_repo(
     "vtk_internal",
     "xmlrunner_py",
     "yaml_cpp_internal",
+)
+
+spgrid_internal_module_extension = use_extension(
+    "@drake//tools/workspace/spgrid_internal:repository.bzl",
+    "spgrid_internal_module_extension",
+)
+use_repo(
+    spgrid_internal_module_extension,
+    "spgrid_internal",
 )
 
 internal_crate_universe_repositories = use_extension(
