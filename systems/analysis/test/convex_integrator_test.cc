@@ -44,6 +44,20 @@ const char double_pendulum_xml[] = R"""(
 </mujoco> 
 )""";
 
+// MJCF model of a cylinder falling on a table
+const char cylinder_xml[] = R"""(
+<?xml version="1.0"?>
+<mujoco model="robot">
+<worldbody>
+  <geom name="table_top" type="box" pos="0.0 0.0 0.0" size="0.55 1.1 0.05" rgba="0.9 0.8 0.7 1"/>
+  <body>
+    <joint type="free"/>
+    <geom name="object" type="cylinder" pos="0.0 0.0 0.5" euler="80 0 0" size="0.1 0.1" rgba="1.0 1.0 1.0 1.0"/>
+  </body>
+</worldbody>
+</mujoco>
+)""";
+
 // Simulate a simple double pendulum system with the convex integrator. Play
 // the sim back over meshcat so we can see what's going on.
 GTEST_TEST(ConvexIntegratorTest, DoublePendulumSim) {
@@ -123,6 +137,46 @@ GTEST_TEST(ConvexIntegratorTest, ShortSim) {
   simulator.Initialize();
 
   simulator.AdvanceTo(0.1);
+}
+
+
+// Simulate a cylinder falling on a table with the convex integrator. Play
+// the sim back over meshcat so we can see what's going on.
+GTEST_TEST(ConvexIntegratorTest, CylinderSim) {
+  // Start meshcat
+  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
+
+  // Set up the system diagram
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant, &scene_graph).AddModelsFromString(cylinder_xml, "xml");
+  plant.Finalize();
+  AddDefaultVisualization(&builder, meshcat);
+  auto diagram = builder.Build();
+
+  // Set up the simulator
+  Simulator<double> simulator(*diagram);
+  SimulatorConfig config;
+  config.target_realtime_rate = 1.0;
+  config.publish_every_time_step = true;
+  ApplySimulatorConfig(config, &simulator);
+
+  // Set the integrator
+  ConvexIntegrator<double>& integrator =
+      simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.set_maximum_step_size(0.001);
+  simulator.Initialize();
+
+  // Simulate for a few seconds
+  const int fps = 64;
+  meshcat->StartRecording(fps);
+  simulator.AdvanceTo(10.0);
+  meshcat->StopRecording();
+  meshcat->PublishRecording();
+
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
 }
 
 }  // namespace analysis_test
