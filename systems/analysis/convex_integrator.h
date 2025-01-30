@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
@@ -14,6 +15,8 @@ namespace systems {
 
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
+using multibody::internal::GetInternalTree;
+using multibody::internal::MultibodyTreeTopology;
 
 /**
  * An experimental implicit integrator that solves a convex SAP problem to
@@ -72,9 +75,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void CalcFreeMotionVelocities(const Context<T>& context, const T& h,
                                 VectorX<T>* v_star);
 
-  // Compute the linearized momentum equation matrix A for the SAP problem.
-  void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
+  // Compute the linearized momentum matrix A = M + h D for the SAP problem.
+  void CalcLinearDynamicsMatrix(const systems::Context<T>& context, const T& h,
                                 std::vector<MatrixX<T>>* A);
+
+  // Tree topology used for defining the sparsity pattern in A.
+  const MultibodyTreeTopology& tree_topology() const {
+    return GetInternalTree(plant()).get_topology();
+  }
 
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;
@@ -82,8 +90,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Scratch space for intermediate calculations
   struct Workspace {
     // Used in DoStep
-    VectorX<T> q;  // generalized positions to set
-    VectorX<T> v_star;  // velocities of the unconstrained system
+    VectorX<T> q;               // generalized positions to set
+    VectorX<T> v_star;          // velocities of the unconstrained system
+    std::vector<MatrixX<T>> A;  // Linear dynamics matrix
 
     // Used in CalcFreeMotionVelocities
     MatrixX<T> M;  // mass matrix
