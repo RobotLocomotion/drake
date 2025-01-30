@@ -210,6 +210,13 @@ std::unique_ptr<ForceElement<Expression>> DoorHinge<T>::DoCloneToScalar(
   return TemplatedClone(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<ForceElement<T>> DoorHinge<T>::DoShallowClone() const {
+  // N.B. We use the private constructor since joint() requires a MbT pointer.
+  return std::unique_ptr<ForceElement<T>>(
+      new DoorHinge<T>(this->model_instance(), joint_index_, config_));
+}
+
 }  // namespace multibody
 }  // namespace drake
 

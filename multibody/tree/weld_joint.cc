@@ -51,6 +51,12 @@ std::unique_ptr<Joint<symbolic::Expression>> WeldJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+template <typename T>
+std::unique_ptr<Joint<T>> WeldJoint<T>::DoShallowClone() const {
+  return std::make_unique<WeldJoint<T>>(this->name(), this->frame_on_parent(),
+                                        this->frame_on_child(), X_FM());
+}
+
 // N.B. Due to esoteric linking errors on Mac (see #9345) involving
 // `MobilizerImpl`, we must place this implementation in the source file, not
 // in the header file.

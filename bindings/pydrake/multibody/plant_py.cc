@@ -220,8 +220,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.SetUseSampledOutputPorts.doc)
         .def(
             "AddJoint",
-            [](Class * self, std::unique_ptr<Joint<T>> joint) -> auto& {
-              return self->AddJoint(std::move(joint));
+            [](Class* self, const Joint<T>& joint) {
+              return &self->AddJoint(joint.ShallowClone());
             },
             py::arg("joint"), py_rvp::reference_internal,
             cls_doc.AddJoint.doc_1args)
@@ -235,8 +235,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("actuator"), cls_doc.RemoveJointActuator.doc)
         .def(
             "AddFrame",
-            [](Class * self, std::unique_ptr<Frame<T>> frame) -> auto& {
-              return self->AddFrame(std::move(frame));
+            [](Class* self, const Frame<T>& frame) {
+              return &self->AddFrame(frame.ShallowClone());
             },
             py_rvp::reference_internal, py::arg("frame"), cls_doc.AddFrame.doc)
         .def("AddModelInstance", &Class::AddModelInstance, py::arg("name"),
@@ -246,7 +246,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.RenameModelInstance.doc)
         .def(
             "AddRigidBody",
-            [](Class * self, const std::string& name,
+            [](Class* self, const std::string& name,
                 const SpatialInertia<double>& s) -> auto& {
               return self->AddRigidBody(name, s);
             },
@@ -265,10 +265,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.WeldFrames.doc)
         .def(
             "AddForceElement",
-            [](Class * self,
-                std::unique_ptr<ForceElement<T>> force_element) -> auto& {
-              return self->template AddForceElement<ForceElement>(
-                  std::move(force_element));
+            [](Class* self, const ForceElement<T>& force_element) {
+              return &(self->template AddForceElement<ForceElement>(
+                  force_element.ShallowClone()));
             },
             py::arg("force_element"), py_rvp::reference_internal,
             cls_doc.AddForceElement.doc)
@@ -902,7 +901,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.GetJointByName.doc)
         .def(
             "GetMutableJointByName",
-            [](Class * self, string_view name,
+            [](Class* self, string_view name,
                 std::optional<ModelInstanceIndex> model_instance) -> auto& {
               return self->GetMutableJointByName(name, model_instance);
             },
@@ -948,10 +947,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("diffuse_color"),
             cls_doc.RegisterVisualGeometry
                 .doc_5args_body_X_BG_shape_name_diffuse_color)
-        .def("RegisterVisualGeometry",
-            py::overload_cast<const RigidBody<T>&,
-                std::unique_ptr<geometry::GeometryInstance>>(
-                &Class::RegisterVisualGeometry),
+        .def(
+            "RegisterVisualGeometry",
+            [](Class& self, const RigidBody<T>& body,
+                const geometry::GeometryInstance& geometry_instance) {
+              return self.RegisterVisualGeometry(
+                  body, std::make_unique<geometry::GeometryInstance>(
+                            geometry_instance));
+            },
             py::arg("body"), py::arg("geometry_instance"),
             cls_doc.RegisterVisualGeometry.doc_2args_body_geometry_instance)
         .def("RegisterCollisionGeometry",
@@ -1654,7 +1657,16 @@ PYBIND11_MODULE(plant, m) {
     cls  // BR
         .def(py::init<MultibodyPlant<T>*>(), cls_doc.ctor.doc)
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
-        .def("RegisterDeformableBody", &Class::RegisterDeformableBody,
+        .def(
+            "RegisterDeformableBody",
+            [](Class& self, const geometry::GeometryInstance& geometry_instance,
+                const fem::DeformableBodyConfig<T>& config,
+                double resolution_hint) {
+              return self.RegisterDeformableBody(
+                  std::make_unique<geometry::GeometryInstance>(
+                      geometry_instance),
+                  config, resolution_hint);
+            },
             py::arg("geometry_instance"), py::arg("config"),
             py::arg("resolution_hint"), cls_doc.RegisterDeformableBody.doc)
         .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,

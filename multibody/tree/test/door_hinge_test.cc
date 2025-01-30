@@ -211,17 +211,25 @@ TEST_F(DoorHingeTest, CloneTest) {
   const DoorHinge<AutoDiffXd>& door_hinge_ad =
       plant_ad->GetForceElement<DoorHinge>(ForceElementIndex(1));
 
-  EXPECT_EQ(door_hinge_ad.config().spring_zero_angle_rad,
-            config.spring_zero_angle_rad);
-  EXPECT_EQ(door_hinge_ad.config().spring_constant, config.spring_constant);
-  EXPECT_EQ(door_hinge_ad.config().dynamic_friction_torque,
-            config.dynamic_friction_torque);
-  EXPECT_EQ(door_hinge_ad.config().static_friction_torque,
-            config.static_friction_torque);
-  EXPECT_EQ(door_hinge_ad.config().viscous_friction, config.viscous_friction);
-  EXPECT_EQ(door_hinge_ad.config().catch_width, config.catch_width);
-  EXPECT_EQ(door_hinge_ad.config().catch_torque, config.catch_torque);
-  EXPECT_EQ(door_hinge_ad.config().motion_threshold, config.motion_threshold);
+  // Clone just the hinge again (shallow).
+  std::unique_ptr<ForceElement<AutoDiffXd>> shallow =
+      door_hinge_ad.ShallowClone();
+  const DoorHinge<AutoDiffXd>& door_hinge_ad_shallow =
+      dynamic_cast<const DoorHinge<AutoDiffXd>&>(*shallow);
+
+  for (const auto* clone : {&door_hinge_ad, &door_hinge_ad_shallow}) {
+    EXPECT_EQ(clone->config().spring_zero_angle_rad,
+              config.spring_zero_angle_rad);
+    EXPECT_EQ(clone->config().spring_constant, config.spring_constant);
+    EXPECT_EQ(clone->config().dynamic_friction_torque,
+              config.dynamic_friction_torque);
+    EXPECT_EQ(clone->config().static_friction_torque,
+              config.static_friction_torque);
+    EXPECT_EQ(clone->config().viscous_friction, config.viscous_friction);
+    EXPECT_EQ(clone->config().catch_width, config.catch_width);
+    EXPECT_EQ(clone->config().catch_torque, config.catch_torque);
+    EXPECT_EQ(clone->config().motion_threshold, config.motion_threshold);
+  }
 }
 
 // Test with only the torsional spring torque, the corresponding energy

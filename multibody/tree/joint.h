@@ -763,6 +763,11 @@ class Joint : public MultibodyElement<T> {
     return joint_clone;
   }
 
+  // (Internal use only) Returns a shallow clone (i.e., dependent elements such
+  // as frames are aliased, not copied) that is not associated with any MbT (so
+  // the assigned index, if any, is discarded).
+  std::unique_ptr<Joint<T>> ShallowClone() const;
+
   const internal::Mobilizer<T>& GetMobilizerInUse() const {
     // Currently we model each joint with a mobilizer.
     DRAKE_DEMAND(get_implementation().has_mobilizer());
@@ -949,7 +954,8 @@ class Joint : public MultibodyElement<T> {
   // though we could require them to have one in the future.
   void DoSetTopology(const internal::MultibodyTreeTopology&) override {}
 
-  /// @name Methods to make a clone templated on different scalar types.
+  /// @name Methods to make a clone, optionally templated on different scalar
+  /// types.
   /// @{
   /// Clones this %Joint (templated on T) to a joint templated on `double`.
   virtual std::unique_ptr<Joint<double>> DoCloneToScalar(
@@ -961,6 +967,12 @@ class Joint : public MultibodyElement<T> {
 
   virtual std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const = 0;
+
+  /// NVI for ShallowClone(). The public Joint::ShallowClone in this base class
+  /// is responsible for copying the mutable Joint data (damping, all limits,
+  /// default positions, etc.) into the return value. The subclass only needs to
+  /// handle subclass-specific details.
+  virtual std::unique_ptr<Joint<T>> DoShallowClone() const;
   /// @}
 
   /// This method must be implemented by derived classes in order to provide

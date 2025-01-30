@@ -95,6 +95,26 @@ TEST_F(WeldJointTest, Damping) {
   EXPECT_EQ(joint_->default_damping_vector().size(), 0);
 }
 
+TEST_F(WeldJointTest, Clone) {
+  auto model_clone = tree().CloneToScalar<AutoDiffXd>();
+  const auto& joint_clone1 = dynamic_cast<const WeldJoint<AutoDiffXd>&>(
+      model_clone->get_variant(*joint_));
+
+  const std::unique_ptr<Joint<AutoDiffXd>> shallow =
+      joint_clone1.ShallowClone();
+  const auto& joint_clone2 =
+      dynamic_cast<const WeldJoint<AutoDiffXd>&>(*shallow);
+
+  for (const auto* clone : {&joint_clone1, &joint_clone2}) {
+    EXPECT_EQ(clone->name(), joint_->name());
+    EXPECT_EQ(clone->frame_on_parent().index(),
+              joint_->frame_on_parent().index());
+    EXPECT_EQ(clone->frame_on_child().index(),
+              joint_->frame_on_child().index());
+    EXPECT_TRUE(clone->X_FM().IsExactlyEqualTo(joint_->X_FM()));
+  }
+}
+
 TEST_F(WeldJointTest, JointLocking) {
   // Joint locking on a weld joint does nothing; still, invoking it should not
   // be an error.

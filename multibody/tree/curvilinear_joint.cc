@@ -91,6 +91,14 @@ CurvilinearJoint<T>::DoCloneToScalar(
 }
 
 template <typename T>
+std::unique_ptr<Joint<T>> CurvilinearJoint<T>::DoShallowClone() const {
+  return std::make_unique<CurvilinearJoint<T>>(
+      this->name(), this->frame_on_parent(), this->frame_on_child(),
+      curvilinear_path_, this->position_lower_limit(),
+      this->position_upper_limit(), this->default_damping());
+}
+
+template <typename T>
 std::unique_ptr<typename Joint<T>::BluePrint>
 CurvilinearJoint<T>::MakeImplementationBlueprint(
     const internal::SpanningForest::Mobod& mobod) const {

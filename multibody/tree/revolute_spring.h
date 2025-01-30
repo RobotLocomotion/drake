@@ -73,6 +73,8 @@ class RevoluteSpring final : public ForceElement<T> {
   std::unique_ptr<ForceElement<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
+  std::unique_ptr<ForceElement<T>> DoShallowClone() const override;
+
  private:
   // Allow different specializations to access each other's private data for
   // scalar conversion.

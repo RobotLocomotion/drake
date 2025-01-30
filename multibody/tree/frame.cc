@@ -1,7 +1,7 @@
 #include "drake/multibody/tree/frame.h"
 
 #include "drake/common/identifier.h"
-#include "drake/common/text_logging.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/multibody/tree/rigid_body.h"
 
 namespace drake {
@@ -175,6 +175,19 @@ SpatialAcceleration<T> Frame<T>::CalcSpatialAcceleration(
   const math::RotationMatrix<T> R_WE =
       frame_E.CalcRotationMatrixInWorld(context);
   return R_WE.inverse() * A_MF_W;  // returns A_MF_E.
+}
+
+template <typename T>
+std::unique_ptr<Frame<T>> Frame<T>::ShallowClone() const {
+  std::unique_ptr<Frame<T>> result = DoShallowClone();
+  DRAKE_THROW_UNLESS(result != nullptr);
+  return result;
+}
+
+template <typename T>
+std::unique_ptr<Frame<T>> Frame<T>::DoShallowClone() const {
+  throw std::logic_error(fmt::format("{} failed to override DoShallowClone()",
+                                     NiceTypeName::Get(*this)));
 }
 
 }  // namespace multibody

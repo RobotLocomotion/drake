@@ -166,6 +166,8 @@ TEST_F(SpringTester, Power) {
               kTolerance);
 }
 
+// TODO(jwnimmer-tri) This file is missing tests of the clone-related functions.
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
