@@ -8,9 +8,9 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
-#include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -21,10 +21,10 @@ using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
-using multibody::internal::GetInternalTree;
-using multibody::internal::MultibodyTreeTopology;
 using multibody::internal::DiscreteContactData;
 using multibody::internal::DiscreteContactPair;
+using multibody::internal::GetInternalTree;
+using multibody::internal::MultibodyTreeTopology;
 
 /**
  * An experimental implicit integrator that solves a convex SAP problem to
@@ -102,7 +102,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void AppendDiscreteContactPairsForPointContact(
       const Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
-  
+
   // Copied from DiscreteContactManager, but using the continuous state
   void AppendDiscreteContactPairsForHydroelasticContact(
       const Context<T>& context,
