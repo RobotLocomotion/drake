@@ -4,7 +4,7 @@
 #include <mutex>
 #include <utility>
 
-#ifdef HAVE_SPDLOG
+#ifndef DRAKE_TEXT_LOGGING_NO_SPDLOG
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
 #endif
@@ -13,7 +13,7 @@
 
 namespace drake {
 
-#ifdef HAVE_SPDLOG
+#ifndef DRAKE_TEXT_LOGGING_NO_SPDLOG
 
 namespace {
 // Returns the default logger.  NOTE: This function assumes that it is mutexed,
@@ -121,7 +121,7 @@ const char* const logging::kSetLogPatternHelpMessage =
     "sets the spdlog pattern for formatting; for more information, see "
     "https://github.com/gabime/spdlog/wiki/3.-Custom-formatting";
 
-#else  // HAVE_SPDLOG
+#else  // DRAKE_TEXT_LOGGING_NO_SPDLOG
 
 logging::logger::logger() {}
 
@@ -151,7 +151,7 @@ void logging::set_log_pattern(const std::string&) {}
 const char* const logging::kSetLogPatternHelpMessage =
     "(Text logging is unavailable.)";
 
-#endif  // HAVE_SPDLOG
+#endif  // DRAKE_TEXT_LOGGING_NO_SPDLOG
 
 const char* const logging::kSetLogLevelUnchanged = "unchanged";
 

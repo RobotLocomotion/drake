@@ -45,7 +45,7 @@ DRAKE_FORMATTER_AS(). Grep around in Drake's existing code to find examples. */
 #include "drake/common/fmt.h"
 
 #ifndef DRAKE_DOXYGEN_CXX
-#ifdef HAVE_SPDLOG
+#ifndef DRAKE_TEXT_LOGGING_NO_SPDLOG
 #ifndef NDEBUG
 
 // When in Debug builds, before including spdlog we set the compile-time
@@ -84,14 +84,17 @@ DRAKE_FORMATTER_AS(). Grep around in Drake's existing code to find examples. */
 
 #include <spdlog/spdlog.h>
 
-#endif  // HAVE_SPDLOG
+#endif  // DRAKE_TEXT_LOGGING_NO_SPDLOG
 #endif  // DRAKE_DOXYGEN_CXX
 
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
 
-#ifdef HAVE_SPDLOG
+// N.B. The guard DRAKE_TEXT_LOGGING_NO_SPDLOG is for internal use only
+// by Drake. Downstream projects should not rely on it being defined.
+// Use drake::kHaveSpdlog, instead.
+#ifndef DRAKE_TEXT_LOGGING_NO_SPDLOG
 namespace logging {
 
 // If we have spdlog, just alias logger into our namespace.
@@ -108,7 +111,7 @@ constexpr bool kHaveSpdlog = true;
 
 }  // namespace logging
 
-#else  // HAVE_SPDLOG
+#else  // DRAKE_TEXT_LOGGING_NO_SPDLOG
 // If we don't have spdlog, we need to stub out logger.
 
 namespace logging {
@@ -149,7 +152,7 @@ class sink {
 #define DRAKE_LOGGER_TRACE(...)
 #define DRAKE_LOGGER_DEBUG(...)
 
-#endif  // HAVE_SPDLOG
+#endif  // DRAKE_TEXT_LOGGING_NO_SPDLOG
 
 /// Retrieve an instance of a logger to use for logging; for example:
 /// <pre>

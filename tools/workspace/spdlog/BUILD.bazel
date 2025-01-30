@@ -55,7 +55,11 @@ cc_library(
     name = "spdlog",
     defines = select({
         ":flag_spdlog_repo_disabled": [],
-        "//conditions:default": ["HAVE_SPDLOG"],
+        "//conditions:default": [
+            # This definition is deprecated and will be removed from Drake on
+            # or after 2025-06-01.
+            "HAVE_SPDLOG",
+        ],
     }),
     tags = ["nolint"],
     visibility = ["//visibility:public"],

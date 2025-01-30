@@ -72,6 +72,8 @@ set_target_properties(drake::drake PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "${_drake_interface_libraries}"
   INTERFACE_COMPILE_FEATURES "cxx_std_20"
+  # This definition is deprecated and will be removed from Drake on or after
+  # 2025-06-01.
   INTERFACE_COMPILE_DEFINITIONS "HAVE_SPDLOG"
 )
 

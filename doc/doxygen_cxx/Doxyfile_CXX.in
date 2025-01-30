@@ -300,7 +300,7 @@ SEARCH_INCLUDES        = YES
 INCLUDE_PATH           =
 INCLUDE_FILE_PATTERNS  =
 PREDEFINED             = DRAKE_DOXYGEN_CXX=1 \
-                         HAVE_SPDLOG=1
+                         DRAKE_TEXT_LOGGING_HAS_SPDLOG=1
 # =============================================================================
 # N.B. The spelling of the macro names between common/drake_copyable.h and this
 # file must be kept in sync!

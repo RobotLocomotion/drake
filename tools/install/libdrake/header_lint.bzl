@@ -24,10 +24,11 @@ _ALLOWED_DEFINES = [
     "EIGEN_MPL2_ONLY",
     "FMT_HEADER_ONLY=1",
     "FMT_NO_FMT_STRING_ALIAS=1",
-    "HAVE_SPDLOG",
     "SPDLOG_COMPILED_LIB",
     "SPDLOG_FMT_EXTERNAL",
     "SPDLOG_SHARED_LIB",
+    # Deprecated for removal on 2025-05-01.
+    "HAVE_SPDLOG",
 ]
 
 def _cc_check_allowed_headers_impl(ctx):

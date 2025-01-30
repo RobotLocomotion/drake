@@ -14,21 +14,21 @@
 #error Missing a required definition to compile this test case.
 #endif
 
-// Check for the expected HAVE_SPDLOG value.
+// Check for the expected DRAKE_TEXT_LOGGING_NO_SPDLOG value.
 #if TEXT_LOGGING_TEST_SPDLOG
-  #ifndef HAVE_SPDLOG
-    #error Missing HAVE_SPDLOG.
+  #ifdef DRAKE_TEXT_LOGGING_NO_SPDLOG
+    #error Unwanted DRAKE_TEXT_LOGGING_NO_SPDLOG.
   #endif
 #else
-  #ifdef HAVE_SPDLOG
-    #error Unwanted HAVE_SPDLOG.
+  #ifndef DRAKE_TEXT_LOGGING_NO_SPDLOG
+    #error Missing DRAKE_TEXT_LOGGING_NO_SPDLOG.
   #endif
 #endif
 
-#ifdef HAVE_SPDLOG
+#ifndef DRAKE_TEXT_LOGGING_NO_SPDLOG
 #include <spdlog/sinks/dist_sink.h>
 #include <spdlog/sinks/ostream_sink.h>
-#endif  // HAVE_SPDLOG
+#endif  // DRAKE_TEXT_LOGGING_NO_SPDLOG
 
 #include "drake/common/fmt_ostream.h"
 

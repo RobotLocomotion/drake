@@ -106,6 +106,14 @@ drake_cc_library(
         "ssize.h",
         "text_logging.h",
     ],
+    defines = select({
+        "//tools/workspace/spdlog:flag_spdlog_repo_disabled": [
+            # This is for internal use only by Drake. Downstream projects
+            # should not rely on it being defined.
+            "DRAKE_TEXT_LOGGING_NO_SPDLOG",
+        ],
+        "//conditions:default": [],
+    }),
     deps = [
         ":fmt",
         "@eigen",
@@ -1184,8 +1192,8 @@ drake_cc_googletest(
     ],
 )
 
-# This version of text_logging_test is compiled with HAVE_SPDLOG enabled,
-# because that is what Drake's WORKSPACE provides for the @spdlog external.
+# This version of text_logging_test is compiled with the expectation that
+# spdlog is enabled.
 drake_cc_googletest(
     name = "text_logging_test",
     defines = [
@@ -1197,7 +1205,8 @@ drake_cc_googletest(
     ],
 )
 
-# Likewise (to the above test) for the ostream variation.
+# This version of text_logging_ostream_test is compiled with the expectation
+# that spdlog is enabled.
 drake_cc_googletest(
     name = "text_logging_ostream_test",
     defines = [
@@ -1210,7 +1219,7 @@ drake_cc_googletest(
 )
 
 # This version of text_logging_test re-compiles all source files without
-# defining HAVE_SPDLOG, to ensure that the no-op stubs behave as desired.
+# spdlog, to ensure that the no-op stubs behave as desired.
 drake_cc_googletest(
     name = "text_logging_no_spdlog_test",
     srcs = [
@@ -1222,6 +1231,7 @@ drake_cc_googletest(
         "text_logging.h",
     ],
     defines = [
+        "DRAKE_TEXT_LOGGING_NO_SPDLOG=1",
         "TEXT_LOGGING_TEST_SPDLOG=0",
     ],
     use_default_main = False,
@@ -1230,7 +1240,8 @@ drake_cc_googletest(
     ],
 )
 
-# Likewise (to the above test) for the ostream variation.
+# This version of text_logging_ostream_test re-compiles all source files
+# without spdlog, to ensure that the no-op stubs behave as desired.
 drake_cc_googletest(
     name = "text_logging_ostream_no_spdlog_test",
     srcs = [
@@ -1242,6 +1253,7 @@ drake_cc_googletest(
         "text_logging.h",
     ],
     defines = [
+        "DRAKE_TEXT_LOGGING_NO_SPDLOG=1",
         "TEXT_LOGGING_TEST_SPDLOG=0",
     ],
     use_default_main = False,
