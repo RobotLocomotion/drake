@@ -112,6 +112,16 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   DRAKE_THROW_UNLESS(domain.IsBounded());
   DRAKE_THROW_UNLESS(domain.PointInSet(current_ellipsoid_center));
 
+  const int computed_ambient_dimension =
+      options.parametrization(starting_ellipsoid_center).size();
+  if (computed_ambient_dimension != ambient_dimension) {
+    throw std::runtime_error(
+        fmt::format("The plant has {} positions, but the given parametrization "
+                    "returned a point with the wrong dimension (its size was "
+                    "{}) when called on the center of the starting ellipsoid.",
+                    ambient_dimension, computed_ambient_dimension));
+  }
+
   int current_num_faces = domain.A().rows();
 
   if (options.max_iterations_separating_planes <= 0) {
