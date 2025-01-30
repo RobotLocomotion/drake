@@ -44,8 +44,9 @@ const char double_pendulum_xml[] = R"""(
 </mujoco> 
 )""";
 
-// Simulate a simple double pendulum system with the convex integrator.
-GTEST_TEST(ConvexIntegratorTest, DoublePendulum) {
+// Simulate a simple double pendulum system with the convex integrator. Play
+// the sim back over meshcat so we can see what's going on.
+GTEST_TEST(ConvexIntegratorTest, DoublePendulumSim) {
   // Start meshcat
   auto meshcat = std::make_shared<drake::geometry::Meshcat>();
 
@@ -92,8 +93,9 @@ GTEST_TEST(ConvexIntegratorTest, DoublePendulum) {
   std::cout << std::endl;
 }
 
-// Test our computation of v* with the double pendulum system
-GTEST_TEST(ConvexIntegratorTest, CalcFreeMotionVelocities) {
+// Run a short simulation with the convex integrator. Most useful as a quick
+// sanity check.
+GTEST_TEST(ConvexIntegratorTest, ShortSim) {
   // Initial state (with some non-zero velocities)
   Eigen::Vector4d x0(3.0, 0.1, 0.2, 0.3);
 
@@ -119,9 +121,8 @@ GTEST_TEST(ConvexIntegratorTest, CalcFreeMotionVelocities) {
       simulator.reset_integrator<ConvexIntegrator<double>>();
   integrator.set_maximum_step_size(h);
   simulator.Initialize();
-  
-  simulator.AdvanceTo(0.1);
 
+  simulator.AdvanceTo(0.1);
 }
 
 }  // namespace analysis_test

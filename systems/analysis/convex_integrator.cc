@@ -7,47 +7,40 @@ using drake::multibody::MultibodyForces;
 
 template <class T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
-  Context<T>& context = *this->get_mutable_context();
+  // Get the plant context. Note that we assume the only continuous state is the
+  // plant's, and there are no controllers connected to it.
+  Context<T>& context =
+      plant().GetMyMutableContextFromRoot(this->get_mutable_context());
 
-  // TODO: use plant context only:
-  // Context<T>& context = plant().GetMyMutableContextFromRoot(*this->get_mutable_context());
-
-
-  VectorBase<T>& x = context.get_mutable_continuous_state_vector();
-
-  // TODO(vincekurtz): update the state
-  // For now just some placeholder nonesense so we can see some dynamics
-  const T x0 = x.GetAtIndex(0);
-  x.SetAtIndex(0, x0 + h);
-
-  // TODO(vincekurtz): avoid allocation
+  // TODO(vincekurtz): avoid allocations
   VectorX<T> v_star(plant().num_velocities());
+  VectorX<T> q = plant().GetPositions(context);
 
-  CalcFreeMotionVelocities(context, &v_star);
+  CalcFreeMotionVelocities(context, h, &v_star);
+  q += h * v_star;  // TODO(vincekurtz): handle quaternions
+
+  plant().SetPositions(&context, q);
+  plant().SetVelocities(&context, v_star);
 
   return true;  // step was successful
 }
 
 template <class T>
 void ConvexIntegrator<T>::CalcFreeMotionVelocities(const Context<T>& context,
+                                                   const T& h,
                                                    VectorX<T>* v_star) const {
-  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
-
   // TODO(vincekurtz) avoid allocations with a workspace or similar
   MultibodyForces<T> f_ext(plant());
   VectorX<T> a = VectorX<T>::Zero(plant().num_velocities());
   VectorX<T> k(plant().num_velocities());
   MatrixX<T> M(plant().num_velocities(), plant().num_velocities());
 
-  plant().CalcForceElementsContribution(plant_context, &f_ext);
-  k = plant().CalcInverseDynamics(plant_context, a, f_ext);
-  plant().CalcMassMatrix(plant_context, &M);
+  plant().CalcForceElementsContribution(context, &f_ext);
+  k = plant().CalcInverseDynamics(context, a, f_ext);
+  plant().CalcMassMatrix(context, &M);
 
-  Eigen::VectorBlock<const VectorX<T>> v0 = plant().GetVelocities(plant_context);
-  double h = 0.01; // TODO: pass h and plant_context to this method
-  *v_star = v0 + h * M.ldlt().solve(k);
-
-
+  Eigen::VectorBlock<const VectorX<T>> v0 = plant().GetVelocities(context);
+  *v_star = v0 + h * M.ldlt().solve(-k);
 }
 
 }  // namespace systems

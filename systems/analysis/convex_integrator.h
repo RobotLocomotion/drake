@@ -64,7 +64,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   bool DoStep(const T& h) override;
 
   // Compute v*, the velocities that would occur without contact constraints.
-  void CalcFreeMotionVelocities(const Context<T>& context,
+  void CalcFreeMotionVelocities(const Context<T>& context, const T& h,
                                 VectorX<T>* v_star) const;
 
   // Plant model, since convex integration is specific to MbP
