@@ -268,18 +268,17 @@ Defines an SDF model with various types of joints used for testing the parser.
         </drake:plane_normal>
         <drake:is_periodic>true</drake:is_periodic>
         <drake:curves>
-          <drake:curve>
+          <drake:line_segment>
             <drake:length>1.0</drake:length>
-            <drake:angle>0.0</drake:angle>
-          </drake:curve>
-          <drake:curve>
-            <drake:length>3.14159265358979323846</drake:length>
+          </drake:line_segment>
+          <drake:circular_arc>
+            <drake:radius>2.0</drake:radius>
             <drake:angle>1.57079632679489661923</drake:angle>
-          </drake:curve>
-          <drake:curve>
-            <drake:length>3.14159265358979323846</drake:length>
+          </drake:circular_arc>
+          <drake:circular_arc>
+            <drake:radius>2.0</drake:radius>
             <drake:angle>-1.57079632679489661923</drake:angle>
-          </drake:curve>
+          </drake:circular_arc>
         </drake:curves>
       </drake:joint>
       <link name="link11">
@@ -308,18 +307,17 @@ Defines an SDF model with various types of joints used for testing the parser.
         </drake:plane_normal>
         <drake:is_periodic>false</drake:is_periodic>
         <drake:curves>
-          <drake:curve>
+          <drake:line_segment>
             <drake:length>1.0</drake:length>
-            <drake:angle>0.0</drake:angle>
-          </drake:curve>
-          <drake:curve>
-            <drake:length>3.14159265358979323846</drake:length>
+          </drake:line_segment>
+          <drake:circular_arc>
+            <drake:radius>2.0</drake:radius>
             <drake:angle>1.57079632679489661923</drake:angle>
-          </drake:curve>
-          <drake:curve>
-            <drake:length>3.14159265358979323846</drake:length>
+          </drake:circular_arc>
+          <drake:circular_arc>
+            <drake:radius>2.0</drake:radius>
             <drake:angle>-1.57079632679489661923</drake:angle>
-          </drake:curve>
+          </drake:circular_arc>
         </drake:curves>
       </drake:joint>
     </model>

@@ -438,34 +438,53 @@ void UrdfParser::ParseCurvilinearJointCurves(
   for (XMLElement* curveNode = root->FirstChildElement(); curveNode != NULL;
        curveNode = curveNode->NextSiblingElement()) {
     std::string nodeValue = curveNode->Value();
-    if (nodeValue != "drake:curve") {
-      Error(*root, "A curvilinear joint contains an invalid curve node.");
-      breaks->clear();
-      turning_rates->clear();
-      return;
-    }
     double length = 0.0;
-    if (!ParseScalarAttribute(curveNode, "length", &length)) {
-      Error(*curveNode,
-            "A curvilinear joint contains a <drake:curve> that is "
-            "missing the 'length' attribute.");
-      breaks->clear();
-      turning_rates->clear();
-      return;
-    } else if (length <= 0.0) {
-      Error(*curveNode,
-            "A curvilinear joint contains a <drake:curve> with an zero "
-            "or negative 'length' attribute.");
-      breaks->clear();
-      turning_rates->clear();
-      return;
-    }
-
     double angle = 0.0;
-    if (!ParseScalarAttribute(curveNode, "angle", &angle)) {
-      Error(*curveNode,
-            "A curvilinear joint contains a <drake:curve> that is "
-            "missing the 'angle' attribute.");
+    if (nodeValue == "drake:line_segment") {
+      if (!ParseScalarAttribute(curveNode, "length", &length)) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:line_segment> that is "
+              "missing the 'length' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      } else if (length <= 0.0) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:line_segment> with a zero "
+              "or negative 'length' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+    } else if (nodeValue == "drake:circular_arc") {
+      double radius = 0.0;
+      if (!ParseScalarAttribute(curveNode, "radius", &radius)) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:circular_arc> that is "
+              "missing the 'radius' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      } else if (radius <= 0.0) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:circular_arc> with an zero "
+              "or negative 'radius' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+      if (!ParseScalarAttribute(curveNode, "angle", &angle)) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:circular_arc> that is "
+              "missing the 'angle' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+      length = std::abs(angle) * radius;
+      
+    } else {
+      Error(*root, "A curvilinear joint contains an invalid curve node.");
       breaks->clear();
       turning_rates->clear();
       return;

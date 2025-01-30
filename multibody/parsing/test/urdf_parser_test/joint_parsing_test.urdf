@@ -172,9 +172,9 @@ Defines a URDF model with various types of joints.
     <drake:is_periodic value="true"/>
     <dynamics damping="0.1"/>
     <drake:curves>
-      <drake:curve length="1.0" angle="0.0"/>
-      <drake:curve length="3.14159265358979323846" angle="1.57079632679489661923"/>
-      <drake:curve length="3.14159265358979323846" angle="-1.57079632679489661923"/>
+      <drake:line_segment length="1.0"/>
+      <drake:circular_arc radius="2.0" angle="1.57079632679489661923"/>
+      <drake:circular_arc radius="2.0" angle="-1.57079632679489661923"/>
     </drake:curves>
   </drake:joint>
   <drake:joint name="curvilinear_aperiodic" type="curvilinear">
@@ -186,9 +186,9 @@ Defines a URDF model with various types of joints.
     <drake:is_periodic value="false"/>
     <dynamics damping="0.1"/>
     <drake:curves>
-      <drake:curve length="1.0" angle="0.0"/>
-      <drake:curve length="3.14159265358979323846" angle="1.57079632679489661923"/>
-      <drake:curve length="3.14159265358979323846" angle="-1.57079632679489661923"/>
+      <drake:line_segment length="1.0"/>
+      <drake:circular_arc radius="2.0" angle="1.57079632679489661923"/>
+      <drake:circular_arc radius="2.0" angle="-1.57079632679489661923"/>
     </drake:curves>
   </drake:joint>
   <!-- Normal transmission/joint, should be created with appropriate

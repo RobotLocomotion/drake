@@ -1322,7 +1322,35 @@ void ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
            node->GetElement("drake:curves")->GetFirstElement();
        curve_node != NULL; curve_node = curve_node->GetNextElement()) {
     const auto name = curve_node->GetName();
-    if (name != "drake:curve") {
+    double length = 0.0;
+    double angle = 0.0;
+    if (name == "drake:line_segment") {
+      length = ParseDouble(diagnostic, curve_node, "drake:length");
+      if (length <= 0.0) {
+        std::string message = fmt::format(
+            "<{}>: A drake:line_segment node has a 0 or "
+            "negative drake:length.",
+            curve_node->GetName());
+        diagnostic.Error(node, message);
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+    } else if (name == "drake:circular_arc") {
+      double radius = ParseDouble(diagnostic, curve_node, "drake:radius");
+      if (radius <= 0.0) {
+        std::string message = fmt::format(
+            "<{}>: A drake:circular_arc node has a 0 or "
+            "negative drake:radius.",
+            curve_node->GetName());
+        diagnostic.Error(node, message);
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+      angle = ParseDouble(diagnostic, curve_node, "drake:angle");
+      length = std::abs(angle) * radius;
+    } else {
       std::string message =
           fmt::format("<{}>: drake:curves node contains an invalid child node.",
                       node->GetName());
@@ -1331,18 +1359,6 @@ void ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
       turning_rates->clear();
       return;
     }
-    double length = ParseDouble(diagnostic, curve_node, "drake:length");
-    if (length <= 0.0) {
-      std::string message = fmt::format(
-          "<{}>: A drake:curve node has a 0 or "
-          "negative drake:length.",
-          curve_node->GetName());
-      diagnostic.Error(node, message);
-      breaks->clear();
-      turning_rates->clear();
-      return;
-    }
-    double angle = ParseDouble(diagnostic, curve_node, "drake:angle");
     breaks->push_back(breaks->back() + length);
     turning_rates->push_back(angle / length);
   }
@@ -1443,8 +1459,10 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       "drake:plane_normal",
       "drake:is_periodic",
       "drake:curves",
-      "drake:curve",
+      "drake:line_segment",
+      "drake:circular_arc",
       "drake:length",
+      "drake:radius",
       "drake:angle",
       "pose"};
   CheckSupportedElements(diagnostic, node, supported_joint_elements);
