@@ -11,6 +11,7 @@
 namespace drake {
 namespace systems {
 
+using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 
 /**
@@ -60,15 +61,28 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
  private:
+  // Allocate the workspace
+  void DoInitialize() final;
+
   // The main integration step, sets x_{t+h} in this->context.
   bool DoStep(const T& h) override;
 
   // Compute v*, the velocities that would occur without contact constraints.
   void CalcFreeMotionVelocities(const Context<T>& context, const T& h,
-                                VectorX<T>* v_star) const;
+                                VectorX<T>* v_star);
 
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;
+
+  // Scratch space for intermediate calculations
+  struct Workspace {
+    VectorX<T> q;  // Generalized positions to set
+    MatrixX<T> M;  // Mass matrix
+    VectorX<T> k;  // coriolis and gravity terms from inverse dynamics
+    VectorX<T> a;  // accelerations
+    std::unique_ptr<MultibodyForces<T>> f_ext;  // External forces (gravity)
+    VectorX<T> v_star;  // velocities of the unconstrained system
+  } workspace_;
 };
 
 }  // namespace systems

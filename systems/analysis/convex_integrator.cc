@@ -3,7 +3,20 @@
 namespace drake {
 namespace systems {
 
-using drake::multibody::MultibodyForces;
+template <class T>
+void ConvexIntegrator<T>::DoInitialize() {
+  const int nq = plant().num_positions();
+  const int nv = plant().num_velocities();
+
+  // TODO(vincekurtz): in the future we might want some fancy caching instead of
+  // the workspace, but for now we'll just try to allocate most things here.
+  workspace_.q.resize(nq);
+  workspace_.M.resize(nv, nv);
+  workspace_.k.resize(nv);
+  workspace_.a.resize(nv);
+  workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
+  workspace_.v_star.resize(nv);
+}
 
 template <class T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
@@ -12,12 +25,13 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   Context<T>& context =
       plant().GetMyMutableContextFromRoot(this->get_mutable_context());
 
-  // TODO(vincekurtz): avoid allocations
-  VectorX<T> v_star(plant().num_velocities());
-  VectorX<T> q = plant().GetPositions(context);
+  // Get pre-allocated
+  VectorX<T>& v_star = workspace_.v_star;
+  VectorX<T>& q = workspace_.q;
 
   CalcFreeMotionVelocities(context, h, &v_star);
-  q += h * v_star;  // TODO(vincekurtz): handle quaternions
+  // TODO(vincekurtz): handle quaternions
+  q = plant().GetPositions(context) + h * v_star;
 
   plant().SetPositions(&context, q);
   plant().SetVelocities(&context, v_star);
@@ -28,18 +42,18 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 template <class T>
 void ConvexIntegrator<T>::CalcFreeMotionVelocities(const Context<T>& context,
                                                    const T& h,
-                                                   VectorX<T>* v_star) const {
-  // TODO(vincekurtz) avoid allocations with a workspace or similar
-  MultibodyForces<T> f_ext(plant());
-  VectorX<T> a = VectorX<T>::Zero(plant().num_velocities());
-  VectorX<T> k(plant().num_velocities());
-  MatrixX<T> M(plant().num_velocities(), plant().num_velocities());
+                                                   VectorX<T>* v_star) {
+  VectorX<T>& k = workspace_.k;
+  VectorX<T>& a = workspace_.a;
+  MatrixX<T>& M = workspace_.M;
+  MultibodyForces<T>& f_ext = *workspace_.f_ext;
+  Eigen::VectorBlock<const VectorX<T>> v0 = plant().GetVelocities(context);
 
+  a.setZero();
   plant().CalcForceElementsContribution(context, &f_ext);
   k = plant().CalcInverseDynamics(context, a, f_ext);
   plant().CalcMassMatrix(context, &M);
 
-  Eigen::VectorBlock<const VectorX<T>> v0 = plant().GetVelocities(context);
   *v_star = v0 + h * M.ldlt().solve(-k);
 }
 
