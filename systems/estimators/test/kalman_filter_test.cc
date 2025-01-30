@@ -51,13 +51,16 @@ GTEST_TEST(TestKalman, DoubleIntegrator) {
   context.reset();
   EXPECT_TRUE(CompareMatrices(filter->L(), L, tol));
 
-  // Also check the to-be-deprecated overload that accepts a unique_ptr context.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // Also check the 2025-06-01 deprecated overload that accepts a unique_ptr.
   auto owned = std::make_unique<LinearSystem<double>>(A, B, C, D);
   context = owned->CreateDefaultContext();
   owned->get_input_port().FixValue(context.get(), 0.0);
   context->SetContinuousState(Eigen::Vector2d::Zero());
-  filter = SteadyStateKalmanFilter(std::move(owned), std::move(context), W, V);
+  filter = SteadyStateKalmanFilter(std::move(owned), *context, W, V);
   EXPECT_TRUE(CompareMatrices(filter->L(), L, tol));
+#pragma GCC diagnostic pop
 }
 
 }  // namespace
