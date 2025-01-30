@@ -1,5 +1,6 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
@@ -10,9 +11,14 @@ namespace systems {
 using drake::geometry::PenetrationAsPointPair;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
+using multibody::DiscreteContactApproximation;
 using multibody::Frame;
 using multibody::RigidBody;
+using multibody::contact_solvers::internal::MakeContactConfiguration;
 using multibody::contact_solvers::internal::MatrixBlock;
+using multibody::contact_solvers::internal::SapConstraintJacobian;
+using multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
+using multibody::contact_solvers::internal::SapHuntCrossleyConstraint;
 using multibody::internal::GetCombinedDissipationTimeConstant;
 using multibody::internal::GetCombinedDynamicCoulombFriction;
 using multibody::internal::GetCombinedHuntCrossleyDissipation;
@@ -116,10 +122,58 @@ void ConvexIntegrator<T>::CalcLinearDynamicsMatrix(const Context<T>& context,
 }
 
 template <class T>
+void ConvexIntegrator<T>::AddContactConstraints(const Context<T>& context,
+                                                SapContactProblem<T>* problem) {
+  // N.B. this is essentially copy-pasted from SapDriver, with some
+  // simplification to focus only on kLagged
+  DRAKE_DEMAND(problem != nullptr);
+  DRAKE_DEMAND(plant().get_discrete_contact_approximation() ==
+               DiscreteContactApproximation::kLagged);
+  constexpr double sigma = 1.0e-3;
+
+  DiscreteContactData<DiscreteContactPair<T>>& contact_pairs =
+      workspace_.contact_data;
+  CalcContactPairs(context, &contact_pairs);
+  const int num_contacts = contact_pairs.size();
+
+  for (int icontact = 0; icontact < num_contacts; ++icontact) {
+    const auto& pair = contact_pairs[icontact];
+
+    const T stiffness = pair.stiffness;
+    const T damping = pair.damping;
+    const T friction = pair.friction_coefficient;
+    const auto& jacobian_blocks = pair.jacobian;
+
+    auto make_hunt_crossley_parameters = [&]() {
+      const double vs = plant().stiction_tolerance();
+      SapHuntCrossleyApproximation model =
+          SapHuntCrossleyApproximation::kLagged;
+      return typename SapHuntCrossleyConstraint<T>::Parameters{
+          model, friction, stiffness, damping, vs, sigma};
+    };
+
+    if (jacobian_blocks.size() == 1) {
+      SapConstraintJacobian<T> J(jacobian_blocks[0].tree,
+                                 std::move(jacobian_blocks[0].J));
+      problem->AddConstraint(std::make_unique<SapHuntCrossleyConstraint<T>>(
+          MakeContactConfiguration(pair), std::move(J),
+          make_hunt_crossley_parameters()));
+    } else {
+      SapConstraintJacobian<T> J(
+          jacobian_blocks[0].tree, std::move(jacobian_blocks[0].J),
+          jacobian_blocks[1].tree, std::move(jacobian_blocks[1].J));
+      problem->AddConstraint(std::make_unique<SapHuntCrossleyConstraint<T>>(
+          MakeContactConfiguration(pair), std::move(J),
+          make_hunt_crossley_parameters()));
+    }
+  }
+}
+
+template <class T>
 void ConvexIntegrator<T>::CalcContactPairs(
     const Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* result) const {
-  // N.B. this is essentially copy-pased from
+  // N.B. this is essentially copy-pasted from
   // DiscreteUpdateManater::CalcDiscreteContactPairs.
   plant().ValidateContext(context);
   DRAKE_DEMAND(result != nullptr);

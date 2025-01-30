@@ -94,7 +94,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // Adds contact constraints to the SAP problem.
   void AddContactConstraints(const Context<T>& context,
-                             SapContactProblem<T>* problem) const;
+                             SapContactProblem<T>* problem);
 
   // Compute signed distances and jacobians. While we store this in a
   // DiscreteContactData struct (basically copying DiscreteUpdateManager), this
