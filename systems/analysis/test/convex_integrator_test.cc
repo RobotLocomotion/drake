@@ -27,16 +27,8 @@ using drake::multibody::Parser;
 using geometry::SceneGraph;
 using visualization::AddDefaultVisualization;
 
-// Simulate a simple double pendulum system with the convex integrator.
-GTEST_TEST(ConvexIntegratorTest, DoublePendulum) {
-  // Start meshcat
-  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
-
-  // Set up the system diagram
-  DiagramBuilder<double> builder;
-
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  const std::string xml = R"""(
+// MJCF model of a simple double pendulum
+const char double_pendulum_xml[] = R"""(
 <?xml version="1.0"?>
 <mujoco model="double_pendulum">
 <worldbody>
@@ -51,25 +43,33 @@ GTEST_TEST(ConvexIntegratorTest, DoublePendulum) {
 </worldbody>
 </mujoco> 
 )""";
-  Parser(&plant, &scene_graph).AddModelsFromString(xml, "xml");
+
+// Simulate a simple double pendulum system with the convex integrator.
+GTEST_TEST(ConvexIntegratorTest, DoublePendulum) {
+  // Start meshcat
+  auto meshcat = std::make_shared<drake::geometry::Meshcat>();
+
+  // Set up the system diagram
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant, &scene_graph).AddModelsFromString(double_pendulum_xml, "xml");
   plant.Finalize();
   AddDefaultVisualization(&builder, meshcat);
   auto diagram = builder.Build();
 
   // Create context and set the initial state
-  std::unique_ptr<systems::Context<double>> diagram_context =
+  std::unique_ptr<Context<double>> diagram_context =
       diagram->CreateDefaultContext();
   diagram->SetDefaultContext(diagram_context.get());
-  systems::Context<double>& plant_context =
+  Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
   Eigen::Vector2d q0(3.0, 0.1);
   plant.SetPositions(&plant_context, q0);
 
   // Set up the simulator
-  systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
-
-  systems::SimulatorConfig config;
+  Simulator<double> simulator(*diagram, std::move(diagram_context));
+  SimulatorConfig config;
   config.target_realtime_rate = 1.0;
   config.publish_every_time_step = true;
   ApplySimulatorConfig(config, &simulator);
@@ -90,6 +90,38 @@ GTEST_TEST(ConvexIntegratorTest, DoublePendulum) {
   std::cout << std::endl;
   PrintSimulatorStatistics(simulator);
   std::cout << std::endl;
+}
+
+// Test our computation of v* with the double pendulum system
+GTEST_TEST(ConvexIntegratorTest, CalcFreeMotionVelocities) {
+  // Initial state (with some non-zero velocities)
+  Eigen::Vector4d x0(3.0, 0.1, 0.2, 0.3);
+
+  // Time step
+  const double h = 0.01;
+
+  // Create a continuous-time system
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant, &scene_graph).AddModelsFromString(double_pendulum_xml, "xml");
+  plant.Finalize();
+  auto diagram = builder.Build();
+
+  std::unique_ptr<Context<double>> diagram_context =
+      diagram->CreateDefaultContext();
+  diagram->SetDefaultContext(diagram_context.get());
+  Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+  plant.SetPositionsAndVelocities(&plant_context, x0);
+
+  Simulator<double> simulator(*diagram, std::move(diagram_context));
+  ConvexIntegrator<double>& integrator =
+      simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.set_maximum_step_size(h);
+  simulator.Initialize();
+  
+  simulator.AdvanceTo(0.1);
+
 }
 
 }  // namespace analysis_test

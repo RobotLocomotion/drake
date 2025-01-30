@@ -4,6 +4,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/eigen_types.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/integrator_base.h"
 
@@ -61,6 +62,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
  private:
   // The main integration step, sets x_{t+h} in this->context.
   bool DoStep(const T& h) override;
+
+  // Compute v*, the velocities that would occur without contact constraints.
+  void CalcFreeMotionVelocities(const Context<T>& context,
+                                VectorX<T>* v_star) const;
 
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;
