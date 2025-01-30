@@ -325,7 +325,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         // Update current point using a fixed number of bisection steps.
         Eigen::VectorXd current_point_ambient =
             options.parametrization(curr_pt_lower);
-        DRAKE_ASSERT(current_point_ambient.size() == ambient_dimension);
+        DRAKE_ASSERT(current_point_ambient.size() ==
+                     checker.plant().num_positions());
         if (!checker.CheckConfigCollisionFree(current_point_ambient,
                                               thread_num)) {
           current_point = curr_pt_lower;
@@ -334,7 +335,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           for (int i = 0; i < options.bisection_steps; ++i) {
             Eigen::VectorXd query = 0.5 * (curr_pt_upper + curr_pt_lower);
             Eigen::VectorXd query_ambient = options.parametrization(query);
-            DRAKE_ASSERT(query_ambient.size() == ambient_dimension);
+            DRAKE_ASSERT(query_ambient.size() ==
+                         checker.plant().num_positions());
             if (checker.CheckConfigCollisionFree(query_ambient, thread_num)) {
               curr_pt_lower = query;
             } else {
