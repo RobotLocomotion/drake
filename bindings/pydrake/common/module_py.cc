@@ -195,6 +195,58 @@ void InitLowLevelModules(py::module m) {
             }));
     // Note: __repr__ is defined in _common_extra.py.
     DefCopyAndDeepCopy(&cls);
+    // Add the same __fields__ that DefAttributesUsingSerialize would have.
+    cls.def_property_readonly_static("__fields__", [](py::object /* cls */) {
+      auto str_ctor = py::eval("str");
+      auto bytes_ctor = py::eval("bytes");
+      auto make_namespace = py::module::import("types").attr("SimpleNamespace");
+      auto contents = make_namespace();
+      py::setattr(contents, "name", py::str("contents"));
+      py::setattr(contents, "type", bytes_ctor);
+      auto extension = make_namespace();
+      py::setattr(extension, "name", py::str("extension"));
+      py::setattr(extension, "type", str_ctor);
+      auto filename_hint = make_namespace();
+      py::setattr(filename_hint, "name", py::str("filename_hint"));
+      py::setattr(filename_hint, "type", str_ctor);
+      py::list fields;
+      fields.append(contents);
+      fields.append(extension);
+      fields.append(filename_hint);
+      return py::tuple(fields);
+    });
+    // Use _rewrite_yaml_dump_attr_name to instruct yaml_dump_typed to access
+    // the "_foo" property instead of "foo". Override __setattr__ to instruct
+    // yaml_load_type to do the same.
+    cls.def_static("_rewrite_yaml_dump_attr_name",
+        [](std::string_view name) { return fmt::format("_{}", name); });
+    cls.def("__setattr__", [](Class& self, py::str name, py::object value) {
+      const std::string name_str{name};
+      if (name_str == "contents" || name_str == "extension" ||
+          name_str == "filename_hint") {
+        name = py::str(fmt::format("_{}", name_str));
+      }
+      py::eval("object.__setattr__")(self, name, value);
+    });
+    // Provide properties for use by yaml_{dump,load}_typed.
+    cls.def_property(
+        "_contents",
+        [](const Class& self) -> py::bytes { return self.contents(); },
+        [](Class& self, const py::bytes& contents) {
+          self = MemoryFile{
+              std::string{contents}, self.extension(), self.filename_hint()};
+        });
+    cls.def_property(
+        "_extension", [](const Class& self) { return self.extension(); },
+        [](Class& self, const std::string& extension) {
+          self = MemoryFile{self.contents(), extension, self.filename_hint()};
+        });
+    cls.def_property(
+        "_filename_hint",
+        [](const Class& self) { return self.filename_hint(); },
+        [](Class& self, const std::string& filename_hint) {
+          self = MemoryFile{self.contents(), self.extension(), filename_hint};
+        });
   }
 
   ExecuteExtraPythonCode(m, true);
