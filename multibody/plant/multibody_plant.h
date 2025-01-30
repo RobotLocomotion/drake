@@ -49,7 +49,7 @@ namespace systems {
 template <typename>
 class ConvexIntegrator;
 
-}
+}  // namespace systems
 
 namespace multibody {
 namespace internal {

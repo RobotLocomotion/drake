@@ -1,6 +1,7 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 
 namespace drake {
 namespace systems {
@@ -109,14 +110,15 @@ template <class T>
 void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
     const Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* result) const {
-  // const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-  //     plant().EvalGeometryContactData(context).point_pairs();
+  const std::vector<PenetrationAsPointPair<T>>& point_pairs =
+      plant().EvalGeometryContactData(context).get().point_pairs;
 
-  // const int num_point_contacts = point_pairs.size();
-  // if (num_point_contacts == 0) {
-  //   return;
-  // }
+  const int num_point_contacts = point_pairs.size();
+  if (num_point_contacts == 0) {
+    return;
+  }
 
+  (void)point_pairs;
   (void)context;
   (void)result;
 }
