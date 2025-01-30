@@ -1,8 +1,14 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
+
 namespace drake {
 namespace systems {
 
+using drake::multibody::contact_solvers::internal::SapContactProblem;
+using drake::multibody::contact_solvers::internal::SapSolver;
+using drake::multibody::contact_solvers::internal::SapSolverStatus;
 using multibody::internal::TreeIndex;
 
 template <class T>
@@ -28,20 +34,32 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // plant's, and there are no controllers connected to it.
   Context<T>& context =
       plant().GetMyMutableContextFromRoot(this->get_mutable_context());
+
+  // Get stuff from the workspace
   VectorX<T>& q = workspace_.q;
   VectorX<T>& v_star = workspace_.v_star;
   std::vector<MatrixX<T>>& A = workspace_.A;
+  SapSolverResults<T>& sap_results = workspace_.sap_results;
 
   // Set up the SAP problem
   CalcFreeMotionVelocities(context, h, &v_star);
   CalcLinearDynamicsMatrix(context, h, &A);
+  SapContactProblem<T> problem(h, A, v_star);
+
+  // Solve for v_{t+h} with convex optimization
+  // TODO(vincekurtz): implement custom solve with Hessian re-use
+  Eigen::VectorBlock<const VectorX<T>> v0 = plant().GetVelocities(context);
+  SapSolver<T> sap;  // TODO(vincekurtz): set sap parameters
+  SapSolverStatus status = sap.SolveWithGuess(problem, v0, &sap_results);
+
+  DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
   // Set q_{t+h} = q_t + h N(q_t) v_{t+h}
-  plant().MapVelocityToQDot(context, h * v_star, &q);
+  plant().MapVelocityToQDot(context, h * sap_results.v, &q);
   q += plant().GetPositions(context);
 
   plant().SetPositions(&context, q);
-  plant().SetVelocities(&context, v_star);
+  plant().SetVelocities(&context, sap_results.v);
 
   return true;  // step was successful
 }

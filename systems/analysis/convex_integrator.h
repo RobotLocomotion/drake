@@ -6,6 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -13,6 +14,7 @@
 namespace drake {
 namespace systems {
 
+using drake::multibody::contact_solvers::internal::SapSolverResults;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using multibody::internal::GetInternalTree;
@@ -90,9 +92,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Scratch space for intermediate calculations
   struct Workspace {
     // Used in DoStep
-    VectorX<T> q;               // generalized positions to set
-    VectorX<T> v_star;          // velocities of the unconstrained system
-    std::vector<MatrixX<T>> A;  // Linear dynamics matrix
+    VectorX<T> q;                     // generalized positions to set
+    VectorX<T> v_star;                // velocities of the unconstrained system
+    std::vector<MatrixX<T>> A;        // Linear dynamics matrix
+    SapSolverResults<T> sap_results;  // Container for v_{t+h}
 
     // Used in CalcFreeMotionVelocities
     MatrixX<T> M;  // mass matrix
