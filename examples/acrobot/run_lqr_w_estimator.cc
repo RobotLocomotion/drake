@@ -72,7 +72,8 @@ int do_main() {
       0.1 * Eigen::Matrix2d::Identity();  // Position measurements are clean.
   auto observer =
       builder.AddSystem(systems::estimators::SteadyStateKalmanFilter(
-          std::move(observer_acrobot), std::move(observer_context), W, V));
+          std::move(observer_acrobot), *observer_context, W, V));
+  observer_context.reset();
   observer->set_name("observer");
   builder.Connect(acrobot_w_encoder->get_output_port(0),
                   observer->get_input_port(0));
