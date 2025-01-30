@@ -467,7 +467,7 @@ void UrdfParser::ParseCurvilinearJointCurves(
         return;
       } else if (radius <= 0.0) {
         Error(*curveNode,
-              "A curvilinear joint contains a <drake:circular_arc> with an zero "
+              "A curvilinear joint contains a <drake:circular_arc> with a zero "
               "or negative 'radius' attribute.");
         breaks->clear();
         turning_rates->clear();
@@ -482,7 +482,6 @@ void UrdfParser::ParseCurvilinearJointCurves(
         return;
       }
       length = std::abs(angle) * radius;
-      
     } else {
       Error(*root, "A curvilinear joint contains an invalid curve node.");
       breaks->clear();
@@ -723,8 +722,7 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     XMLElement* initial_tangent_node =
         node->FirstChildElement("drake:initial_tangent");
     if (initial_tangent_node) {
-      ParseVectorAttribute(initial_tangent_node, "xyz",
-                           &initial_tangent);
+      ParseVectorAttribute(initial_tangent_node, "xyz", &initial_tangent);
     }
     XMLElement* planar_normal_node =
         node->FirstChildElement("drake:plane_normal");
@@ -744,8 +742,8 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     // Note: Using initial_position = [0, 0, 0], as origin in parent frame
     // already allows user to place start of trajectory.
     PiecewiseConstantCurvatureTrajectory<double> trajectory(
-        breaks, turning_rates, initial_tangent, plane_normal,
-        Vector3d::Zero(), is_periodic);
+        breaks, turning_rates, initial_tangent, plane_normal, Vector3d::Zero(),
+        is_periodic);
     const RigidTransformd& X_PF = X_PB;
     index =
         plant
