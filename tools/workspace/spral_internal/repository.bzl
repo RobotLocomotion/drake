@@ -10,7 +10,6 @@ def spral_internal_repository(
         sha256 = "c141878e36cb01a3c6f5e677a43d0f7781781755036f59ef91f38090a8f26f71",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
-            ":patches/upstream/pr222.patch",
             ":patches/drake_vendor.patch",
             ":patches/no_fortran_profiling.patch",
         ],
