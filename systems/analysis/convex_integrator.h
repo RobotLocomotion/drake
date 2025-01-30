@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
@@ -71,17 +72,24 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void CalcFreeMotionVelocities(const Context<T>& context, const T& h,
                                 VectorX<T>* v_star);
 
+  // Compute the linearized momentum equation matrix A for the SAP problem.
+  void CalcLinearDynamicsMatrix(const systems::Context<T>& context,
+                                std::vector<MatrixX<T>>* A);
+
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;
 
   // Scratch space for intermediate calculations
   struct Workspace {
-    VectorX<T> q;  // Generalized positions to set
-    MatrixX<T> M;  // Mass matrix
+    // Used in DoStep
+    VectorX<T> q;  // generalized positions to set
+    VectorX<T> v_star;  // velocities of the unconstrained system
+
+    // Used in CalcFreeMotionVelocities
+    MatrixX<T> M;  // mass matrix
     VectorX<T> k;  // coriolis and gravity terms from inverse dynamics
     VectorX<T> a;  // accelerations
-    std::unique_ptr<MultibodyForces<T>> f_ext;  // External forces (gravity)
-    VectorX<T> v_star;  // velocities of the unconstrained system
+    std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
   } workspace_;
 };
 

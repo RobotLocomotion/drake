@@ -11,11 +11,12 @@ void ConvexIntegrator<T>::DoInitialize() {
   // TODO(vincekurtz): in the future we might want some fancy caching instead of
   // the workspace, but for now we'll just try to allocate most things here.
   workspace_.q.resize(nq);
+  workspace_.v_star.resize(nv);
+
   workspace_.M.resize(nv, nv);
   workspace_.k.resize(nv);
   workspace_.a.resize(nv);
   workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
-  workspace_.v_star.resize(nv);
 }
 
 template <class T>
@@ -24,14 +25,15 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // plant's, and there are no controllers connected to it.
   Context<T>& context =
       plant().GetMyMutableContextFromRoot(this->get_mutable_context());
-
-  // Get pre-allocated
   VectorX<T>& v_star = workspace_.v_star;
   VectorX<T>& q = workspace_.q;
 
+  // Set up the SAP problem
   CalcFreeMotionVelocities(context, h, &v_star);
-  // TODO(vincekurtz): handle quaternions
-  q = plant().GetPositions(context) + h * v_star;
+
+  // Set q_{t+h} = q_t + h N(q_t) v_{t+h}
+  plant().MapVelocityToQDot(context, h * v_star, &q);
+  q += plant().GetPositions(context);
 
   plant().SetPositions(&context, q);
   plant().SetVelocities(&context, v_star);
