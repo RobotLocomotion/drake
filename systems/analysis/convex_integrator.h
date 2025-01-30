@@ -19,17 +19,17 @@ namespace systems {
 
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
+using geometry::GeometryId;
+using math::RigidTransform;
+using multibody::BodyIndex;
+using multibody::JacobianWrtVariable;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using multibody::internal::DiscreteContactData;
 using multibody::internal::DiscreteContactPair;
 using multibody::internal::GetInternalTree;
-using multibody::internal::MultibodyTreeTopology;
 using multibody::internal::MultibodyTree;
-using multibody::JacobianWrtVariable;
-using math::RigidTransform;
-using geometry::GeometryId;
-using multibody::BodyIndex;
+using multibody::internal::MultibodyTreeTopology;
 
 /**
  * An experimental implicit integrator that solves a convex SAP problem to
@@ -105,11 +105,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // Copied from DiscreteContactManager, but using the continuous state
   void AppendDiscreteContactPairsForPointContact(
-      const Context<T>& context,
-      DiscreteContactData<DiscreteContactPair<T>>* result) const;
-
-  // Copied from DiscreteContactManager, but using the continuous state
-  void AppendDiscreteContactPairsForHydroelasticContact(
       const Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
 

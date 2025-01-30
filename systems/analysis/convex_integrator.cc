@@ -1,8 +1,8 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
-#include "drake/multibody/plant/geometry_contact_data.h"
 #include "drake/multibody/plant/contact_properties.h"
+#include "drake/multibody/plant/geometry_contact_data.h"
 
 namespace drake {
 namespace systems {
@@ -10,15 +10,15 @@ namespace systems {
 using drake::geometry::PenetrationAsPointPair;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
-using multibody::internal::TreeIndex;
 using multibody::Frame;
 using multibody::RigidBody;
-using multibody::internal::GetPointContactStiffness;
 using multibody::contact_solvers::internal::MatrixBlock;
-using multibody::internal::GetCombinedPointContactStiffness;
-using multibody::internal::GetCombinedHuntCrossleyDissipation;
 using multibody::internal::GetCombinedDissipationTimeConstant;
 using multibody::internal::GetCombinedDynamicCoulombFriction;
+using multibody::internal::GetCombinedHuntCrossleyDissipation;
+using multibody::internal::GetCombinedPointContactStiffness;
+using multibody::internal::GetPointContactStiffness;
+using multibody::internal::TreeIndex;
 
 template <class T>
 void ConvexIntegrator<T>::DoInitialize() {
@@ -116,6 +116,18 @@ void ConvexIntegrator<T>::CalcLinearDynamicsMatrix(const Context<T>& context,
 }
 
 template <class T>
+void ConvexIntegrator<T>::CalcContactPairs(
+    const Context<T>& context,
+    DiscreteContactData<DiscreteContactPair<T>>* result) const {
+  // N.B. this is essentially copy-pased from
+  // DiscreteUpdateManater::CalcDiscreteContactPairs.
+  plant().ValidateContext(context);
+  DRAKE_DEMAND(result != nullptr);
+  result->Clear();
+  AppendDiscreteContactPairsForPointContact(context, result);
+}
+
+template <class T>
 void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
     const Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {
@@ -128,7 +140,7 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
   if (num_point_contacts == 0) {
     return;
   }
-  
+
   contact_pairs->Reserve(num_point_contacts, 0, 0);
   const geometry::SceneGraphInspector<T>& inspector =
       plant().EvalSceneGraphInspector(context);
@@ -273,7 +285,6 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
                                         .point_pair_index = point_pair_index};
     contact_pairs->AppendPointData(std::move(contact_pair));
   }
-
 }
 
 }  // namespace systems
