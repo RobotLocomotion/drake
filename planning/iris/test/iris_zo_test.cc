@@ -239,9 +239,9 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
     int next_point_index = 0;
 
     // Order vertices in counterclockwise order. Thanks claude.ai for the help.
-    Eigen::Vector2d centroid = vregion.vertices().rowwise().mean();
+    Vector2d centroid = vregion.vertices().rowwise().mean();
     Eigen::Matrix2Xd centered = vregion.vertices().colwise() - centroid;
-    Eigen::VectorXd angles = centered.row(1).array().binaryExpr(
+    VectorXd angles = centered.row(1).array().binaryExpr(
         centered.row(0).array(), [](double y, double x) {
           return std::atan2(y, x);
         });

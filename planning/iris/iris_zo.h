@@ -125,7 +125,9 @@ struct IrisZoOptions {
   /** Number of mixing steps used for hit-and-run sampling. */
   int mixing_steps{50};
 
-  /** Whether or not the parametrization function is thread-safe. */
+  /** Whether or not the parametrization function is thread-safe. If the user
+   * specifies that the function is not threadsafe, then `parallelism` will be
+   * overridden and only one thread will be used. */
   bool parametrization_is_threadsafe{true};
 
   /** The dimension of the parametrized subspace (and therefore, the input to
@@ -134,8 +136,10 @@ struct IrisZoOptions {
   std::optional<int> parametrization_dimension{std::nullopt};
 
   /** A function describing a parametrized subspace of the full configuration
-   * space, along which to grow the region. Default value is just the identity
-   * function, indicating that the regions should be grow in the full
+   * space, along which to grow the region. The function should be a map R^m to
+   * R^n, where n is the dimension of the plant configuration space, determined
+   * via `checker.plant().num_positions()`. The default value is just the
+   * identity function, indicating that the regions should be grow in the full
    * configuration space (in the standard coordinate system). */
   std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parametrization{
       [](const Eigen::VectorXd& q) -> Eigen::VectorXd {

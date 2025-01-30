@@ -101,7 +101,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   // Prevent directly terminating if the ellipsoid is too large.
   double previous_volume = 0;
 
-  const int ambient_dimension = checker.GetZeroConfiguration().size();
+  const int ambient_dimension = checker.plant().num_positions();
   const int parametrized_dimension =
       options.parametrization_dimension.value_or(ambient_dimension);
 
@@ -140,6 +140,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     for (int col = 0; col < options.containment_points->cols(); ++col) {
       Eigen::VectorXd conf = options.containment_points->col(col);
       cont_vec.emplace_back(options.parametrization(conf));
+      DRAKE_ASSERT(cont_vec.back().size() == ambient_dimension);
     }
 
     std::vector<uint8_t> containment_point_col_free =
@@ -157,8 +158,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     std::string path = "seedpoint";
     options.meshcat->SetObject(path, Sphere(0.06),
                                geometry::Rgba(0.1, 1, 1, 1.0));
-    point_to_draw.head(ambient_dimension) =
+    Eigen::VectorXd conf_ambient =
         options.parametrization(current_ellipsoid_center);
+    DRAKE_ASSERT(conf_ambient.size() == ambient_dimension);
+    point_to_draw.head(ambient_dimension) = conf_ambient;
     options.meshcat->SetTransform(path, RigidTransform<double>(point_to_draw));
   }
 
@@ -240,6 +243,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       // each one, due to collision checker only accepting vectors of
       // configurations.
       // TODO(wernerpe, cohnt): Remove this copy operation.
+      // TODO(cohnt): Consider parallelizing the parametrization calls, in case
+      // it's an expensive operation.
       std::vector<Eigen::VectorXd> ambient_particles(N_k);
       std::transform(particles.begin(), particles.begin() + N_k,
                      ambient_particles.begin(), options.parametrization);
@@ -295,36 +300,42 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
       // For each particle in collision, we run a bisection search to find a
       // configuration on the boundary of the obstacle.
-      const auto particle_update_work =
-          [&checker, &particles_in_collision_updated, &particles_in_collision,
-           &current_ellipsoid_center,
-           &options](const int thread_num, const int64_t index) {
-            const int point_idx = static_cast<int>(index);
-            auto start_point = particles_in_collision[point_idx];
+      const auto particle_update_work = [&checker,
+                                         &particles_in_collision_updated,
+                                         &particles_in_collision,
+                                         &current_ellipsoid_center,
+                                         &options](const int thread_num,
+                                                   const int64_t index) {
+        const int point_idx = static_cast<int>(index);
+        auto start_point = particles_in_collision[point_idx];
 
-            Eigen::VectorXd current_point = start_point;
-            Eigen::VectorXd curr_pt_lower = current_ellipsoid_center;
+        Eigen::VectorXd current_point = start_point;
+        Eigen::VectorXd curr_pt_lower = current_ellipsoid_center;
 
-            // Update current point using a fixed number of bisection steps.
-            if (!checker.CheckConfigCollisionFree(
-                    options.parametrization(curr_pt_lower), thread_num)) {
-              current_point = curr_pt_lower;
+        // Update current point using a fixed number of bisection steps.
+        Eigen::VectorXd current_point_ambient =
+            options.parametrization(curr_pt_lower);
+        DRAKE_ASSERT(current_point_ambient.size() == ambient_dimension);
+        if (!checker.CheckConfigCollisionFree(current_point_ambient,
+                                              thread_num)) {
+          current_point = curr_pt_lower;
+        } else {
+          Eigen::VectorXd curr_pt_upper = current_point;
+          for (int i = 0; i < options.bisection_steps; ++i) {
+            Eigen::VectorXd query = 0.5 * (curr_pt_upper + curr_pt_lower);
+            Eigen::VectorXd query_ambient = options.parametrization(query);
+            DRAKE_ASSERT(query_ambient.size() == ambient_dimension);
+            if (checker.CheckConfigCollisionFree(query_ambient, thread_num)) {
+              curr_pt_lower = query;
             } else {
-              Eigen::VectorXd curr_pt_upper = current_point;
-              for (int i = 0; i < options.bisection_steps; ++i) {
-                Eigen::VectorXd query = 0.5 * (curr_pt_upper + curr_pt_lower);
-                if (checker.CheckConfigCollisionFree(
-                        options.parametrization(query), thread_num)) {
-                  curr_pt_lower = query;
-                } else {
-                  curr_pt_upper = query;
-                  current_point = query;
-                }
-              }
+              curr_pt_upper = query;
+              current_point = query;
             }
+          }
+        }
 
-            particles_in_collision_updated[point_idx] = current_point;
-          };
+        particles_in_collision_updated[point_idx] = current_point;
+      };
 
       // Update all particles in parallel.
       DynamicParallelForIndexLoop(DegreeOfParallelism(num_threads_to_use), 0,
@@ -403,8 +414,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                   num_iterations_separating_planes, current_num_faces);
               options.meshcat->SetObject(path, Sphere(0.03),
                                          geometry::Rgba(1, 1, 0.1, 1.0));
-              point_to_draw.head(ambient_dimension) =
+              Eigen::VectorXd ambient_particle =
                   options.parametrization(nearest_particle);
+              DRAKE_ASSERT(ambient_particle.size() == ambient_dimension);
+              point_to_draw.head(ambient_dimension) = ambient_particle;
               options.meshcat->SetTransform(
                   path, RigidTransform<double>(point_to_draw));
             }
