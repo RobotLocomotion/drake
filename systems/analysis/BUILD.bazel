@@ -118,6 +118,7 @@ drake_cc_library(
     deps = [
         ":integrator_base",
         "//multibody/plant",
+        "//multibody/plant:contact_properties",
     ],
 )
 

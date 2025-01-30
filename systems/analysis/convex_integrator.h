@@ -25,6 +25,11 @@ using multibody::internal::DiscreteContactData;
 using multibody::internal::DiscreteContactPair;
 using multibody::internal::GetInternalTree;
 using multibody::internal::MultibodyTreeTopology;
+using multibody::internal::MultibodyTree;
+using multibody::JacobianWrtVariable;
+using math::RigidTransform;
+using geometry::GeometryId;
+using multibody::BodyIndex;
 
 /**
  * An experimental implicit integrator that solves a convex SAP problem to
@@ -111,6 +116,23 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {
     return GetInternalTree(plant()).get_topology();
+  }
+
+  // Various methods exposed from the plant
+  const MultibodyTree<T>& internal_tree() const {
+    return plant().internal_tree();
+  }
+
+  double default_contact_stiffness() const {
+    return plant().penalty_method_contact_parameters_.geometry_stiffness;
+  }
+
+  double default_contact_dissipation() const {
+    return plant().penalty_method_contact_parameters_.dissipation;
+  }
+
+  BodyIndex FindBodyByGeometryId(GeometryId geometry_id) const {
+    return plant().FindBodyByGeometryId(geometry_id);
   }
 
   // Plant model, since convex integration is specific to MbP

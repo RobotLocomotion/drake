@@ -416,8 +416,6 @@ drake_cc_library(
     hdrs = [
         "contact_properties.h",
     ],
-    internal = True,
-    visibility = ["//visibility:private"],
     deps = [
         "//common:default_scalars",
         "//geometry:scene_graph_inspector",

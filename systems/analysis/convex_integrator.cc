@@ -2,6 +2,7 @@
 
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
+#include "drake/multibody/plant/contact_properties.h"
 
 namespace drake {
 namespace systems {
@@ -10,6 +11,14 @@ using drake::geometry::PenetrationAsPointPair;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
 using multibody::internal::TreeIndex;
+using multibody::Frame;
+using multibody::RigidBody;
+using multibody::internal::GetPointContactStiffness;
+using multibody::contact_solvers::internal::MatrixBlock;
+using multibody::internal::GetCombinedPointContactStiffness;
+using multibody::internal::GetCombinedHuntCrossleyDissipation;
+using multibody::internal::GetCombinedDissipationTimeConstant;
+using multibody::internal::GetCombinedDynamicCoulombFriction;
 
 template <class T>
 void ConvexIntegrator<T>::DoInitialize() {
@@ -109,7 +118,9 @@ void ConvexIntegrator<T>::CalcLinearDynamicsMatrix(const Context<T>& context,
 template <class T>
 void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
     const Context<T>& context,
-    DiscreteContactData<DiscreteContactPair<T>>* result) const {
+    DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {
+  // N.B. this is essentially copy-pasted from DiscreteUpdateManager
+
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       plant().EvalGeometryContactData(context).get().point_pairs;
 
@@ -117,10 +128,152 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
   if (num_point_contacts == 0) {
     return;
   }
+  
+  contact_pairs->Reserve(num_point_contacts, 0, 0);
+  const geometry::SceneGraphInspector<T>& inspector =
+      plant().EvalSceneGraphInspector(context);
+  const MultibodyTreeTopology& topology = internal_tree().get_topology();
+  const Eigen::VectorBlock<const VectorX<T>> v = plant().GetVelocities(context);
+  const Frame<T>& frame_W = plant().world_frame();
 
-  (void)point_pairs;
-  (void)context;
-  (void)result;
+  // Scratch workspace variables.
+  const int nv = plant().num_velocities();
+  Matrix3X<T> Jv_WAc_W(3, nv);
+  Matrix3X<T> Jv_WBc_W(3, nv);
+  Matrix3X<T> Jv_AcBc_W(3, nv);
+
+  // Fill in the point contact pairs.
+  for (int point_pair_index = 0; point_pair_index < num_point_contacts;
+       ++point_pair_index) {
+    const PenetrationAsPointPair<T>& pair = point_pairs[point_pair_index];
+    const BodyIndex body_A_index = FindBodyByGeometryId(pair.id_A);
+    const RigidBody<T>& body_A = plant().get_body(body_A_index);
+    const BodyIndex body_B_index = FindBodyByGeometryId(pair.id_B);
+    const RigidBody<T>& body_B = plant().get_body(body_B_index);
+
+    const TreeIndex treeA_index = topology.body_to_tree_index(body_A_index);
+    const TreeIndex treeB_index = topology.body_to_tree_index(body_B_index);
+    const bool treeA_has_dofs = topology.tree_has_dofs(treeA_index);
+    const bool treeB_has_dofs = topology.tree_has_dofs(treeB_index);
+
+    const T kA = GetPointContactStiffness(
+        pair.id_A, default_contact_stiffness(), inspector);
+    const T kB = GetPointContactStiffness(
+        pair.id_B, default_contact_stiffness(), inspector);
+
+    // We compute the position of the point contact based on Hertz's theory
+    // for contact between two elastic bodies.
+    const T denom = kA + kB;
+    const T wA = (denom == 0 ? 0.5 : kA / denom);
+    const T wB = (denom == 0 ? 0.5 : kB / denom);
+    const Vector3<T> p_WC = wA * pair.p_WCa + wB * pair.p_WCb;
+
+    // Since v_AcBc_W = v_WBc - v_WAc the relative velocity Jacobian will
+    // be:
+    //   J_AcBc_W = Jv_WBc_W - Jv_WAc_W.
+    // That is the relative velocity at C is v_AcBc_W = J_AcBc_W * v.
+    internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_A.body_frame(), frame_W, p_WC,
+        frame_W, frame_W, &Jv_WAc_W);
+    internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_B.body_frame(), frame_W, p_WC,
+        frame_W, frame_W, &Jv_WBc_W);
+    Jv_AcBc_W = Jv_WBc_W - Jv_WAc_W;
+
+    // Define a contact frame C at the contact point such that the z-axis Cz
+    // equals nhat_W. The tangent vectors are arbitrary, with the only
+    // requirement being that they form a valid right handed basis with
+    // nhat_W.
+    const Vector3<T> nhat_AB_W = -pair.nhat_BA_W;
+    math::RotationMatrix<T> R_WC =
+        math::RotationMatrix<T>::MakeFromOneVector(nhat_AB_W, 2);
+
+    // Contact velocity stored in the current context (previous time step).
+    const Vector3<T> v_AcBc_W = Jv_AcBc_W * v;
+    const Vector3<T> v_AcBc_C = R_WC.transpose() * v_AcBc_W;
+    const T vn0 = v_AcBc_C(2);
+
+    // We have at most two blocks per contact.
+    std::vector<typename DiscreteContactPair<T>::JacobianTreeBlock>
+        jacobian_blocks;
+    jacobian_blocks.reserve(2);
+
+    // Tree A contribution to contact Jacobian Jv_W_AcBc_C.
+    if (treeA_has_dofs) {
+      Matrix3X<T> J =
+          R_WC.matrix().transpose() *
+          Jv_AcBc_W.middleCols(
+              tree_topology().tree_velocities_start_in_v(treeA_index),
+              tree_topology().num_tree_velocities(treeA_index));
+      jacobian_blocks.emplace_back(treeA_index, MatrixBlock<T>(std::move(J)));
+    }
+
+    // Tree B contribution to contact Jacobian Jv_W_AcBc_C.
+    // This contribution must be added only if B is different from A.
+    if ((treeB_has_dofs && !treeA_has_dofs) ||
+        (treeB_has_dofs && treeB_index != treeA_index)) {
+      Matrix3X<T> J =
+          R_WC.matrix().transpose() *
+          Jv_AcBc_W.middleCols(
+              tree_topology().tree_velocities_start_in_v(treeB_index),
+              tree_topology().num_tree_velocities(treeB_index));
+      jacobian_blocks.emplace_back(treeB_index, MatrixBlock<T>(std::move(J)));
+    }
+
+    // Contact stiffness and damping
+    const T k = GetCombinedPointContactStiffness(
+        pair.id_A, pair.id_B, default_contact_stiffness(), inspector);
+    // Hunt & Crossley dissipation. Ignored, for instance, by Sap. See
+    // multibody::DiscreteContactApproximation for details about these contact
+    // models.
+    const T d = GetCombinedHuntCrossleyDissipation(
+        pair.id_A, pair.id_B, kA, kB, default_contact_dissipation(), inspector);
+    // Dissipation time scale. Ignored, for instance, by Similar and Lagged
+    // models. See multibody::DiscreteContactApproximation for details about
+    // these contact models.
+    const double default_dissipation_time_constant = 0.1;
+    const T tau = GetCombinedDissipationTimeConstant(
+        pair.id_A, pair.id_B, default_dissipation_time_constant, body_A.name(),
+        body_B.name(), inspector);
+    const T mu =
+        GetCombinedDynamicCoulombFriction(pair.id_A, pair.id_B, inspector);
+
+    const T phi0 = -pair.depth;
+    const T fn0 = k * pair.depth;
+
+    // Contact point position relative to each body.
+    const RigidTransform<T>& X_WA =
+        plant().EvalBodyPoseInWorld(context, body_A);
+    const Vector3<T>& p_WA = X_WA.translation();
+    const Vector3<T> p_AC_W = p_WC - p_WA;
+    const RigidTransform<T>& X_WB =
+        plant().EvalBodyPoseInWorld(context, body_B);
+    const Vector3<T>& p_WB = X_WB.translation();
+    const Vector3<T> p_BC_W = p_WC - p_WB;
+
+    DiscreteContactPair<T> contact_pair{.jacobian = std::move(jacobian_blocks),
+                                        .id_A = pair.id_A,
+                                        .object_A = body_A_index,
+                                        .id_B = pair.id_B,
+                                        .object_B = body_B_index,
+                                        .R_WC = R_WC,
+                                        .p_WC = p_WC,
+                                        .p_ApC_W = p_AC_W,
+                                        .p_BqC_W = p_BC_W,
+                                        .nhat_BA_W = pair.nhat_BA_W,
+                                        .phi0 = phi0,
+                                        .vn0 = vn0,
+                                        .fn0 = fn0,
+                                        .stiffness = k,
+                                        .damping = d,
+                                        .dissipation_time_scale = tau,
+                                        .friction_coefficient = mu,
+                                        .surface_index{} /* no surface index */,
+                                        .face_index = {} /* no face index */,
+                                        .point_pair_index = point_pair_index};
+    contact_pairs->AppendPointData(std::move(contact_pair));
+  }
+
 }
 
 }  // namespace systems
