@@ -1001,6 +1001,8 @@ FILES = {
             "collectionAPI",
             "collectionMembershipQuery",
             "collectionPredicateLibrary",
+            "colorSpaceAPI",
+            "colorSpaceDefinitionAPI",
             "common",
             "crateInfo",
             "debugCodes",
@@ -1044,11 +1046,6 @@ FILES = {
             "usdaFileFormat",
             "usdcFileFormat",
             "usdzFileFormat",
-            "validationContext",
-            "validationError",
-            "validationRegistry",
-            "validator",
-            "validatorTokens",
             "variantSets",
             "zipFile",
         ],
@@ -1078,9 +1075,7 @@ FILES = {
             "wrapUtils.h",
             "testenv/TestUsdResolverChangedResolver.h",
         ],
-        "CPPFILES": [
-            "coreValidators.cpp",
-        ],
+        "CPPFILES": [],
     },
     "pxr/usd/usdGeom": {
         "NAME": "usdGeom",
@@ -1129,7 +1124,6 @@ FILES = {
             "subset",
             "tetMesh",
             "tokens",
-            "validatorTokens",
             "visibilityAPI",
             "xform",
             "xformCache",
@@ -1144,9 +1138,7 @@ FILES = {
             "samplingUtils",
         ],
         "PRIVATE_HEADERS": [],
-        "CPPFILES": [
-            "validators.cpp",
-        ],
+        "CPPFILES": [],
     },
     "pxr/usd/usdPhysics": {
         "NAME": "usdPhysics",
@@ -1218,7 +1210,6 @@ FILES = {
             "tokens",
             "udimUtils",
             "utils",
-            "validatorTokens",
         ],
         "PUBLIC_HEADERS": [
             "api.h",
@@ -1226,9 +1217,7 @@ FILES = {
         ],
         "PRIVATE_CLASSES": [],
         "PRIVATE_HEADERS": [],
-        "CPPFILES": [
-            "validators.cpp",
-        ],
+        "CPPFILES": [],
     },
     "pxr/usd/usdUtils": {
         "NAME": "usdUtils",
@@ -1258,7 +1247,6 @@ FILES = {
             "stitchClips",
             "timeCodeRange",
             "usdzPackage",
-            "validatorTokens",
         ],
         "PUBLIC_HEADERS": [
             "api.h",
@@ -1270,8 +1258,6 @@ FILES = {
             "assetLocalizationPackage",
         ],
         "PRIVATE_HEADERS": [],
-        "CPPFILES": [
-            "validators.cpp",
-        ],
+        "CPPFILES": [],
     },
 }
