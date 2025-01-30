@@ -110,33 +110,23 @@ GTEST_TEST(ConvexIntegratorTest, DoublePendulumSim) {
 // Run a short simulation with the convex integrator. Most useful as a quick
 // sanity check.
 GTEST_TEST(ConvexIntegratorTest, ShortSim) {
-  // Initial state (with some non-zero velocities)
-  Eigen::Vector4d x0(3.0, 0.1, 0.2, 0.3);
-
   // Time step
   const double h = 0.01;
 
   // Create a continuous-time system
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
-  Parser(&plant, &scene_graph).AddModelsFromString(double_pendulum_xml, "xml");
+  Parser(&plant, &scene_graph).AddModelsFromString(cylinder_xml, "xml");
   plant.Finalize();
   auto diagram = builder.Build();
 
-  std::unique_ptr<Context<double>> diagram_context =
-      diagram->CreateDefaultContext();
-  diagram->SetDefaultContext(diagram_context.get());
-  Context<double>& plant_context =
-      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
-  plant.SetPositionsAndVelocities(&plant_context, x0);
-
-  Simulator<double> simulator(*diagram, std::move(diagram_context));
+  Simulator<double> simulator(*diagram);
   ConvexIntegrator<double>& integrator =
       simulator.reset_integrator<ConvexIntegrator<double>>();
   integrator.set_maximum_step_size(h);
   simulator.Initialize();
 
-  simulator.AdvanceTo(0.1);
+  simulator.AdvanceTo(1.0);
 }
 
 

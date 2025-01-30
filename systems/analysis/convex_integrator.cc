@@ -5,6 +5,7 @@
 namespace drake {
 namespace systems {
 
+using drake::geometry::PenetrationAsPointPair;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
 using multibody::internal::TreeIndex;
@@ -102,6 +103,22 @@ void ConvexIntegrator<T>::CalcLinearDynamicsMatrix(const Context<T>& context,
     const int tree_nv = tree_topology().num_tree_velocities(t);
     (*A)[t] = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
   }
+}
+
+template <class T>
+void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
+    const Context<T>& context,
+    DiscreteContactData<DiscreteContactPair<T>>* result) const {
+  // const std::vector<PenetrationAsPointPair<T>>& point_pairs =
+  //     plant().EvalGeometryContactData(context).point_pairs();
+
+  // const int num_point_contacts = point_pairs.size();
+  // if (num_point_contacts == 0) {
+  //   return;
+  // }
+
+  (void)context;
+  (void)result;
 }
 
 }  // namespace systems

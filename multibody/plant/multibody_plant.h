@@ -42,6 +42,15 @@
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
+
+namespace systems {
+
+// Forward declarations for convex_integrator.h (for prototyping)
+template <typename>
+class ConvexIntegrator;
+
+}
+
 namespace multibody {
 namespace internal {
 
@@ -5470,6 +5479,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // implementations that need it.
   friend class internal::MultibodyPlantModelAttorney<T>;
   friend class internal::MultibodyPlantDiscreteUpdateManagerAttorney<T>;
+
+  // Convex integrator gets private access for prototyping
+  friend class systems::ConvexIntegrator<T>;
 
   // This struct stores in one single place the index of all of our inputs.
   // The order of the items matches our Doxygen system overview figure.

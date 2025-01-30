@@ -129,6 +129,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     VectorX<T> k;  // coriolis and gravity terms from inverse dynamics
     VectorX<T> a;  // accelerations
     std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
+
+    // Used in AddContactConstraint
+    DiscreteContactData<DiscreteContactPair<T>> contact_data;
   } workspace_;
 };
 
