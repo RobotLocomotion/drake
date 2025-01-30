@@ -60,6 +60,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   CalcFreeMotionVelocities(context, h, &v_star);
   CalcLinearDynamicsMatrix(context, h, &A);
   SapContactProblem<T> problem(h, A, v_star);
+  AddContactConstraints(context, &problem);
 
   // Solve for v_{t+h} with convex optimization
   // TODO(vincekurtz): implement custom solve with Hessian re-use
