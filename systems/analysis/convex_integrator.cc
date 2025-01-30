@@ -60,6 +60,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   CalcFreeMotionVelocities(context, h, &v_star);
   CalcLinearDynamicsMatrix(context, h, &A);
   SapContactProblem<T> problem(h, A, v_star);
+  problem.set_num_objects(plant().num_bodies());
   AddContactConstraints(context, &problem);
 
   // Solve for v_{t+h} with convex optimization
