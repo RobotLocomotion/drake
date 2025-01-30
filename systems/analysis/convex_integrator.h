@@ -6,19 +6,25 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/discrete_contact_pair.h"
+#include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/analysis/integrator_base.h"
 
 namespace drake {
 namespace systems {
 
+using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using multibody::internal::GetInternalTree;
 using multibody::internal::MultibodyTreeTopology;
+using multibody::internal::DiscreteContactData;
+using multibody::internal::DiscreteContactPair;
 
 /**
  * An experimental implicit integrator that solves a convex SAP problem to
@@ -78,8 +84,29 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                                 VectorX<T>* v_star);
 
   // Compute the linearized momentum matrix A = M + h D for the SAP problem.
-  void CalcLinearDynamicsMatrix(const systems::Context<T>& context, const T& h,
+  void CalcLinearDynamicsMatrix(const Context<T>& context, const T& h,
                                 std::vector<MatrixX<T>>* A);
+
+  // Adds contact constraints to the SAP problem.
+  void AddContactConstraints(const Context<T>& context,
+                             SapContactProblem<T>* problem) const;
+
+  // Compute signed distances and jacobians. While we store this in a
+  // DiscreteContactData struct (basically copying DiscreteUpdateManager), this
+  // is computed using the plant's continuous state.
+  void CalcContactPairs(
+      const Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* result) const;
+
+  // Copied from DiscreteContactManager, but using the continuous state
+  void AppendDiscreteContactPairsForPointContact(
+      const Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* result) const;
+  
+  // Copied from DiscreteContactManager, but using the continuous state
+  void AppendDiscreteContactPairsForHydroelasticContact(
+      const Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* result) const;
 
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {

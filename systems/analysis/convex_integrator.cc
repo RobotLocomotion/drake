@@ -1,12 +1,10 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
-#include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 
 namespace drake {
 namespace systems {
 
-using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
 using multibody::internal::TreeIndex;
