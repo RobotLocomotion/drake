@@ -12,7 +12,6 @@ def tinyobjloader_internal_repository(
         mirrors = mirrors,
         patches = [
             ":patches/upstream/in_memory_parsing_support.patch",
-            ":patches/upstream/reset_default_kd.patch",
             ":patches/upstream/silence_materials.patch",
             ":patches/faster_float_parsing.patch",
             ":patches/default_texture_color.patch",
