@@ -19,7 +19,6 @@ def openusd_internal_repository(
             ":patches/upstream/cmake_rapidjson.patch",
             ":patches/upstream/cmake_usd_usd_shared.patch",
             ":patches/upstream/pegtl_namespace.patch",
-            ":patches/upstream/usd_utils_include.patch",
             ":patches/dlopen_forbidden.patch",
             ":patches/namespace.patch",
             ":patches/nanocolor_namespace.patch",
