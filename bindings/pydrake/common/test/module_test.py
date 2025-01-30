@@ -8,6 +8,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 import pydrake.common as mut
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
+from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 import pydrake.common._testing as mut_testing
 
 
@@ -89,6 +90,32 @@ class TestCommon(unittest.TestCase):
         file = mut.MemoryFile.Make(
             mut.FindResourceOrThrow("drake/examples/acrobot/Acrobot.urdf"))
         self.assertEqual(file.extension(), ".urdf")
+
+    def test_memory_file_yaml_serialization(self):
+        """Confirms that this can be serialized appropriately. The
+        serialization work (with all of its nuances) gets tested elsewhere.
+        Here, we're simply testing that the fields get serialized and
+        deserialized as expected.
+        """
+        content = "This is an example of memory file test contents."
+        content_b64 = (
+            "VGhpcyBpcyBhbiBleGFtcGxlIG9mIG1lbW9yeSBmaWxlIHRlc3QgY29udGVudHMu")
+        dut = mut.MemoryFile(content, ".txt", "payload.txt")
+
+        # Serialization.
+        dumped = yaml_dump_typed(dut)
+        self.assertEqual(dumped,
+                         "contents: !!binary |\n"
+                         + f"  {content_b64}\n"
+                         + "extension: .txt\n"
+                         + "filename_hint: payload.txt\n")
+
+        # Deserialization.
+        from_yaml = yaml_load_typed(schema=mut.MemoryFile, data=dumped)
+        self.assertEqual(from_yaml.contents(), dut.contents())
+        self.assertEqual(from_yaml.extension(), dut.extension())
+        self.assertEqual(from_yaml.filename_hint(), dut.filename_hint())
+        self.assertEqual(from_yaml.sha256(), dut.sha256())
 
     def test_parallelism(self):
         # This matches the BUILD.bazel rule for this test program.
