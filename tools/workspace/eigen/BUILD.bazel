@@ -74,10 +74,7 @@ selects.config_setting_group(
 
 install(
     name = "install_hdrs",
-    targets = select({
-        ":is_external": [],
-        "//conditions:default": ["@module_eigen//:eigen"],
-    }),
+    targets = ["@module_eigen//:eigen"],
     hdr_dest = "include",
     guess_hdrs = "PACKAGE",
     allowed_externals = ["@module_eigen//:eigen"],
@@ -97,10 +94,13 @@ install_license(
 install(
     name = "install",
     visibility = ["//tools/workspace:__pkg__"],
-    deps = [
-        ":install_hdrs",
-        ":install_license",
-    ],
+    deps = select({
+        ":is_external": [],
+        "//conditions:default": [
+            ":install_hdrs",
+            ":install_license",
+        ],
+    }),
 )
 
 add_lint_tests()
