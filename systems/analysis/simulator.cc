@@ -40,7 +40,7 @@ Simulator<T>::Simulator(const System<T>* system,
   constexpr double kDefaultInitialStepSizeTarget = 1e-4;
 
   // Create a context if necessary.
-  if (!context_) context_ = system_.CreateDefaultContext();
+  if (context_ == nullptr) context_.ptr = system_.CreateDefaultContext();
 
   // Create a default integrator and initialize it.
   DRAKE_DEMAND(SimulatorConfig{}.integration_scheme == "runge_kutta3");
@@ -69,7 +69,7 @@ template <typename T>
 SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
-  if (!context_)
+  if (context_ == nullptr)
     throw std::logic_error("Initialize(): Context has not been set.");
 
   initialization_done_ = false;
@@ -877,7 +877,7 @@ double Simulator<T>::get_actual_realtime_rate() const {
 template <typename T>
 void Simulator<T>::reset_context_from_shared(
     std::shared_ptr<Context<T>> context) {
-  context_ = std::move(context);
+  context_.ptr = std::move(context);
   integrator_->reset_context(context_.get());
   initialization_done_ = false;
 }
@@ -886,7 +886,15 @@ template <typename T>
 std::unique_ptr<Context<T>> Simulator<T>::release_context() {
   integrator_->reset_context(nullptr);
   initialization_done_ = false;
-  return context_.ConvertToUnique();
+  std::unique_ptr<Context<T>> result;
+  if (std::holds_alternative<std::shared_ptr<Context<T>>>(context_.ptr)) {
+    result = context_.get()->Clone();
+    context_.ptr = std::unique_ptr<Context<T>>();
+  } else if (std::holds_alternative<std::unique_ptr<Context<T>>>(
+                 context_.ptr)) {
+    result = std::move(std::get<std::unique_ptr<Context<T>>>(context_.ptr));
+  }
+  return result;
 }
 
 template <typename T>
@@ -910,120 +918,13 @@ void SimulatorPythonInternal<T>::set_python_monitor(
 }
 }  // namespace internal
 
-
-template <typename T>
-Simulator<T>::ContextPtr::ContextPtr(
-    Simulator<T>::ContextPtr::SharedContext&& shared) {
-  if (shared != nullptr) {
-    context_ = std::move(shared);
-  } else {
-    context_ = nullptr;
-  }
-}
-
-template <typename T>
-Simulator<T>::ContextPtr::ContextPtr(
-    Simulator<T>::ContextPtr::UniqueContext&& unique) {
-  if (unique != nullptr) {
-    context_ = std::move(unique);
-  } else {
-    context_ = nullptr;
-  }
-}
-
 template <typename T>
 Context<T>* Simulator<T>::ContextPtr::get() const {
-  return std::visit<Context<T>*>(overloaded{
-      [](const SharedContext& arg) { return arg.get(); },
-      [](const UniqueContext& arg) { return arg.get(); },
-      [](std::nullptr_t) { return nullptr; }}, context_);
-}
-
-template <typename T>
-std::unique_ptr<Context<T>> Simulator<T>::ContextPtr::ConvertToUnique() {
-  if (std::holds_alternative<SharedContext>(context_)) {
-    auto cloned = get()->Clone();
-    context_ = nullptr;
-    return cloned;
-  } else if (std::holds_alternative<UniqueContext>(context_)) {
-    auto moved = std::move(std::get<UniqueContext>(context_));
-    context_ = nullptr;
-    return moved;
-  } else {
-    return nullptr;
-  }
-}
-
-template <typename T>
-void Simulator<T>::ContextPtr::reset(std::nullptr_t) {
-  context_ = nullptr;
-}
-
-template <typename T>
-bool Simulator<T>::ContextPtr::operator==(std::nullptr_t) const {
-  return context_ == ContextStorage{};
-}
-
-template <typename T>
-bool Simulator<T>::ContextPtr::operator!() const {
-  return get() == nullptr;
-}
-
-template <typename T>
-Context<T>& Simulator<T>::ContextPtr::operator*() {
-  DRAKE_ASSERT(*this != nullptr);
-  return *get();
-}
-
-template <typename T>
-const Context<T>& Simulator<T>::ContextPtr::operator*() const {
-  DRAKE_ASSERT(*this != nullptr);
-  return *get();
-}
-
-template <typename T>
-Context<T>* Simulator<T>::ContextPtr::operator->() {
-  return get();
-}
-
-template <typename T>
-const Context<T>* Simulator<T>::ContextPtr::operator->() const {
-  return get();
-}
-
-template <typename T>
-Simulator<T>::ContextPtr& Simulator<T>::ContextPtr::operator=(
-    ContextPtr&& rhs) {
-  context_ = std::move(rhs.context_);
-  return *this;
-}
-
-template <typename T>
-Simulator<T>::ContextPtr& Simulator<T>::ContextPtr::operator=(std::nullptr_t) {
-  context_ = nullptr;
-  return *this;
-}
-
-template <typename T>
-Simulator<T>::ContextPtr& Simulator<T>::ContextPtr::operator=(
-    SharedContext&& rhs) {
-  if (rhs != nullptr) {
-    context_ = std::move(rhs);
-  } else {
-    context_ = nullptr;
-  }
-  return *this;
-}
-
-template <typename T>
-Simulator<T>::ContextPtr& Simulator<T>::ContextPtr::operator=(
-    UniqueContext&& rhs) {
-  if (rhs != nullptr) {
-    context_ = std::move(rhs);
-  } else {
-    context_ = nullptr;
-  }
-  return *this;
+  return std::visit<Context<T>*>(
+      [](const auto& arg) {
+        return arg.get();
+      },
+      this->ptr);
 }
 
 }  // namespace systems
