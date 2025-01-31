@@ -5,6 +5,37 @@
 
 set -euo pipefail
 
+with_bazel=1
+
+while [ "${1:-}" != "" ]; do
+  case "$1" in
+    --developer)
+      with_bazel=1
+      ;;
+    # Install bazelisk from a deb package.
+    --with-bazel)
+      with_bazel=1
+      ;;
+    # Do NOT install bazelisk.
+    --without-bazel)
+      with_bazel=0
+      ;;
+    # Ignore other source distribution arguments.
+    --with-doc-only | \
+    --with-clang | \
+    --without-clang | \
+    --with-maintainer-only | \
+    --without-test-only | \
+    --without-update | \
+    -y)
+      ;;
+    *)
+      echo 'Invalid command line argument' >&2
+      exit 3
+  esac
+  shift
+done
+
 # Check for existence of `SUDO_USER` so that this may be used in Docker
 # environments.
 if [[ "${EUID}" -eq 0 && -n "${SUDO_USER:+D}" ]]; then
@@ -24,4 +55,6 @@ EOF
 
 # Prefetch the bazelisk download of bazel.
 # This is especially helpful for the "Provisioned" images in CI.
-(cd "${workspace_dir}" && bazel version)
+if [[ "${with_bazel}" -eq 1 ]]; then
+  (cd "${workspace_dir}" && bazel version)
+fi

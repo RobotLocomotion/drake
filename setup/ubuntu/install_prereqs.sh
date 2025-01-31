@@ -102,9 +102,9 @@ source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
 # Configure user environment, executing as user if we're under `sudo`.
 user_env_script="${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
 if [[ -n "${SUDO_USER:+D}" ]]; then
-    sudo -u "${SUDO_USER}" bash "${user_env_script}"
+    sudo -u "${SUDO_USER}" bash "${user_env_script}" "${source_distribution_args[@]}"
 else
-    source "${user_env_script}"
+    source "${user_env_script}" "${source_distribution_args[@]}"
 fi
 
 trap : EXIT  # Disable exit reporting.
