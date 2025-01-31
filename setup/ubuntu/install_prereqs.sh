@@ -101,10 +101,15 @@ source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
 
 # Configure user environment, executing as user if we're under `sudo`.
 user_env_script="${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
+user_env_script_args=
+if [[ "${source_distribution_args[@]}" == *"--developer"* ]] || \
+   [[ "${source_distribution_args[@]}" == *"--with-bazel"* ]]; then
+  user_env_script_args="--prefetch-bazel"
+fi
 if [[ -n "${SUDO_USER:+D}" ]]; then
-    sudo -u "${SUDO_USER}" bash "${user_env_script}" "${source_distribution_args[@]}"
+    sudo -u "${SUDO_USER}" bash "${user_env_script}" "${user_env_script_args}"
 else
-    source "${user_env_script}" "${source_distribution_args[@]}"
+    source "${user_env_script}" "${user_env_script_args}"
 fi
 
 trap : EXIT  # Disable exit reporting.
