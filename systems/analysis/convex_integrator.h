@@ -108,6 +108,12 @@ class ConvexIntegrator final : public IntegratorBase<T> {
       const Context<T>& context,
       DiscreteContactData<DiscreteContactPair<T>>* result) const;
 
+  // Copied from DiscreteContactManager, but using the continuous state
+  void AppendDiscreteContactPairsForHydroelasticContact(
+      const Context<T>& context,
+      DiscreteContactData<DiscreteContactPair<T>>* result) const
+    requires scalar_predicate<T>::is_bool;
+
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {
     return GetInternalTree(plant()).get_topology();

@@ -129,7 +129,6 @@ GTEST_TEST(ConvexIntegratorTest, ShortSim) {
   simulator.AdvanceTo(1.0);
 }
 
-
 // Simulate a cylinder falling on a table with the convex integrator. Play
 // the sim back over meshcat so we can see what's going on.
 GTEST_TEST(ConvexIntegratorTest, CylinderSim) {
@@ -142,6 +141,11 @@ GTEST_TEST(ConvexIntegratorTest, CylinderSim) {
   Parser(&plant, &scene_graph).AddModelsFromString(cylinder_xml, "xml");
   plant.Finalize();
   AddDefaultVisualization(&builder, meshcat);
+
+  // Set up hydroelastic contact
+  geometry::SceneGraphConfig scene_graph_config;
+  scene_graph_config.default_proximity_properties.compliance_type = "compliant";
+  scene_graph.set_config(scene_graph_config);
   auto diagram = builder.Build();
 
   // Set up the simulator
@@ -158,7 +162,7 @@ GTEST_TEST(ConvexIntegratorTest, CylinderSim) {
   simulator.Initialize();
 
   // Simulate for a few seconds
-  const int fps = 64;
+  const int fps = 32;
   meshcat->StartRecording(fps);
   simulator.AdvanceTo(10.0);
   meshcat->StopRecording();
