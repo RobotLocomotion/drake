@@ -850,7 +850,13 @@ class Simulator {
   // Context ownership is logically unique, but we allow a shared pointer to
   // accommodate custom memory management for python bindings.
   struct ContextPtr {
-    Context<T>* get() const;
+    Context<T>* get() const {
+      return std::visit<Context<T>*>(
+          [](const auto& arg) {
+            return arg.get();
+          },
+          ptr);
+    }
     Context<T>& operator*() { return *get(); }
     const Context<T>& operator*() const { return *get(); }
     Context<T>* operator->() { return get(); }

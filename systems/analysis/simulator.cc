@@ -3,7 +3,6 @@
 #include <thread>
 
 #include "drake/common/extract_double.h"
-#include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator_python_internal.h"
@@ -917,15 +916,6 @@ void SimulatorPythonInternal<T>::set_python_monitor(
   simulator->python_monitor_ = monitor;
 }
 }  // namespace internal
-
-template <typename T>
-Context<T>* Simulator<T>::ContextPtr::get() const {
-  return std::visit<Context<T>*>(
-      [](const auto& arg) {
-        return arg.get();
-      },
-      this->ptr);
-}
 
 }  // namespace systems
 }  // namespace drake
