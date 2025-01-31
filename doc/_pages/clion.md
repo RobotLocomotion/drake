@@ -177,8 +177,8 @@ following values for the fields:
 * **Name:** ``Clang Format Full File``
 * **Description:** ``Apply clang-format to the active file``
 * **Program:** ``bazel``
-* **Arguments:** ``run //tools/lint:clang-format -- -i $FileName$``
-* **Working directory:** ``$FileDir$``
+* **Arguments:** ``run //tools/lint:clang-format -- -i $FilePath$``
+* **Working directory:** ``$Projectpath$``
 * **Advanced Options:** Uncheck ``Open console for tool output``
 
 Leave the checkbox options in their default state.
@@ -191,8 +191,8 @@ following values for the fields:
 * **Name:** ``Clang Format Selected Lines``
 * **Description:** ``Apply clang-format to the selected lines``
 * **Program:** ``bazel``
-* **Arguments:** ``run //tools/lint:clang-format -- -lines $SelectionStartLine$:$SelectionEndLine$ -i $FileName$``
-* **Working directory:** ``$FileDir$``
+* **Arguments:** ``run //tools/lint:clang-format -- -lines $SelectionStartLine$:$SelectionEndLine$ -i $FilePath$``
+* **Working directory:** ``$Projectpath$``
 * **Advanced Options:** Uncheck ``Open console for tool output``
 
 Leave the checkbox options in their default state.

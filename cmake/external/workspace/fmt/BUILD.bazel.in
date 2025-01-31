@@ -1,20 +1,7 @@
 # -*- bazel -*-
 
-load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@rules_license//rules:license.bzl", "license")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load(":conversion.bzl", "split_cmake_list")
-
-write_file(
-    name = "unknown_license",
-    out = "LICENSE",
-    content = ["Unknown license (Drake used CMake find_package).\n"],
-)
-
-license(
-    name = "license",
-    license_kinds = ["@rules_license//licenses/spdx:MIT"],
-    license_text = "LICENSE",
-)
 
 _DEFINES = split_cmake_list(
     "$<TARGET_PROPERTY:fmt::fmt,INTERFACE_COMPILE_DEFINITIONS>",
