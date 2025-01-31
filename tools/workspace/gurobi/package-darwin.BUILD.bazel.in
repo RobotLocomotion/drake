@@ -17,11 +17,6 @@ GUROBI_C_HDRS = glob([
     "gurobi-distro/include/gurobi_c.h",
 ], allow_empty = True) or [":error-message.h"]
 
-GUROBI_CXX_HDRS = glob([
-    "gurobi-distro/include/gurobi_c.h",
-    "gurobi-distro/include/gurobi_c++.h",
-], allow_empty = True) or [":error-message.h"]
-
 cc_library(
     name = "gurobi_c",
     hdrs = GUROBI_C_HDRS,
@@ -29,19 +24,6 @@ cc_library(
     linkopts = [
         "-L{gurobi_home}/lib",
         "-lgurobi100",
-        "-Wl,-rpath,{gurobi_home}/lib",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
-    name = "gurobi_cxx",
-    hdrs = GUROBI_CXX_HDRS,
-    includes = ["gurobi-distro/include"],
-    linkopts = [
-        "-L{gurobi_home}/lib",
-        "-lgurobi100",
-        "-lgurobi_stdc++",
         "-Wl,-rpath,{gurobi_home}/lib",
     ],
     visibility = ["//visibility:public"],
