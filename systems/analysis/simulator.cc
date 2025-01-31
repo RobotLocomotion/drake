@@ -3,6 +3,7 @@
 #include <thread>
 
 #include "drake/common/extract_double.h"
+#include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator_python_internal.h"
@@ -885,9 +886,7 @@ template <typename T>
 std::unique_ptr<Context<T>> Simulator<T>::release_context() {
   integrator_->reset_context(nullptr);
   initialization_done_ = false;
-  auto cloned = context_->Clone();
-  context_.reset();
-  return cloned;
+  return context_.ConvertToUnique();
 }
 
 template <typename T>
@@ -910,6 +909,122 @@ void SimulatorPythonInternal<T>::set_python_monitor(
   simulator->python_monitor_ = monitor;
 }
 }  // namespace internal
+
+
+template <typename T>
+Simulator<T>::ContextPtr::ContextPtr(
+    Simulator<T>::ContextPtr::SharedContext&& shared) {
+  if (shared != nullptr) {
+    context_ = std::move(shared);
+  } else {
+    context_ = nullptr;
+  }
+}
+
+template <typename T>
+Simulator<T>::ContextPtr::ContextPtr(
+    Simulator<T>::ContextPtr::UniqueContext&& unique) {
+  if (unique != nullptr) {
+    context_ = std::move(unique);
+  } else {
+    context_ = nullptr;
+  }
+}
+
+template <typename T>
+Context<T>* Simulator<T>::ContextPtr::get() const {
+  return std::visit<Context<T>*>(overloaded{
+      [](const SharedContext& arg) { return arg.get(); },
+      [](const UniqueContext& arg) { return arg.get(); },
+      [](std::nullptr_t) { return nullptr; }}, context_);
+}
+
+template <typename T>
+std::unique_ptr<Context<T>> Simulator<T>::ContextPtr::ConvertToUnique() {
+  if (std::holds_alternative<SharedContext>(context_)) {
+    auto cloned = get()->Clone();
+    context_ = nullptr;
+    return cloned;
+  } else if (std::holds_alternative<UniqueContext>(context_)) {
+    auto moved = std::move(std::get<UniqueContext>(context_));
+    context_ = nullptr;
+    return moved;
+  } else {
+    return nullptr;
+  }
+}
+
+template <typename T>
+void Simulator<T>::ContextPtr::reset(std::nullptr_t) {
+  context_ = nullptr;
+}
+
+template <typename T>
+bool Simulator<T>::ContextPtr::operator==(std::nullptr_t) const {
+  return context_ == ContextStorage{};
+}
+
+template <typename T>
+bool Simulator<T>::ContextPtr::operator!() const {
+  return get() == nullptr;
+}
+
+template <typename T>
+Context<T>& Simulator<T>::ContextPtr::operator*() {
+  DRAKE_ASSERT(*this != nullptr);
+  return *get();
+}
+
+template <typename T>
+const Context<T>& Simulator<T>::ContextPtr::operator*() const {
+  DRAKE_ASSERT(*this != nullptr);
+  return *get();
+}
+
+template <typename T>
+Context<T>* Simulator<T>::ContextPtr::operator->() {
+  return get();
+}
+
+template <typename T>
+const Context<T>* Simulator<T>::ContextPtr::operator->() const {
+  return get();
+}
+
+template <typename T>
+Simulator<T>::ContextPtr& Simulator<T>::ContextPtr::operator=(
+    ContextPtr&& rhs) {
+  context_ = std::move(rhs.context_);
+  return *this;
+}
+
+template <typename T>
+Simulator<T>::ContextPtr& Simulator<T>::ContextPtr::operator=(std::nullptr_t) {
+  context_ = nullptr;
+  return *this;
+}
+
+template <typename T>
+Simulator<T>::ContextPtr& Simulator<T>::ContextPtr::operator=(
+    SharedContext&& rhs) {
+  if (rhs != nullptr) {
+    context_ = std::move(rhs);
+  } else {
+    context_ = nullptr;
+  }
+  return *this;
+}
+
+template <typename T>
+Simulator<T>::ContextPtr& Simulator<T>::ContextPtr::operator=(
+    UniqueContext&& rhs) {
+  if (rhs != nullptr) {
+    context_ = std::move(rhs);
+  } else {
+    context_ = nullptr;
+  }
+  return *this;
+}
 
 }  // namespace systems
 }  // namespace drake

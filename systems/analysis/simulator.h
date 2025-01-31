@@ -7,6 +7,7 @@
 #include <optional>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -845,9 +846,44 @@ class Simulator {
   const std::unique_ptr<const System<T>> owned_system_;
 
   const System<T>& system_;              // Just a reference; not owned.
-  // Context ownership is still unique, but we store a shared pointer to
+
+  // Context ownership is logically unique, but we allow a shared pointer to
   // accommodate custom memory management for python bindings.
-  std::shared_ptr<Context<T>> context_;  // The trajectory Context.
+  class ContextPtr {
+   public:
+    using SharedContext = std::shared_ptr<Context<T>>;
+    using UniqueContext = std::unique_ptr<Context<T>>;
+
+    explicit ContextPtr(SharedContext&&);
+    explicit ContextPtr(UniqueContext&&);
+
+    // Returns a unique pointer with semantics dependent on internal storage.
+    // If the internal storage is unique, ownership is transferred. If the
+    // internal storage is shared, the contents are cloned, the internal
+    // storage is set to null, and the clnoe is returned. If the internal
+    // storage is null, an empty unique pointer is returned.
+    std::unique_ptr<Context<T>> ConvertToUnique();
+
+    // Impersonate a unique pointer, more or less.
+    Context<T>* get() const;
+    void reset(std::nullptr_t = nullptr);
+    bool operator==(std::nullptr_t) const;
+    bool operator!() const;
+    Context<T>& operator*();
+    const Context<T>& operator*() const;
+    Context<T>* operator->();
+    const Context<T>* operator->() const;
+    ContextPtr& operator=(ContextPtr&&);
+    ContextPtr& operator=(std::nullptr_t);
+    ContextPtr& operator=(SharedContext&&);
+    ContextPtr& operator=(UniqueContext&&);
+
+   private:
+    using ContextStorage =
+        std::variant<std::nullptr_t, UniqueContext, SharedContext>;
+    ContextStorage context_;
+  };
+  ContextPtr context_;
 
   // Temporaries used for witness function isolation.
   std::vector<const WitnessFunction<T>*> triggered_witnesses_;
