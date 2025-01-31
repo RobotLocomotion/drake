@@ -452,6 +452,7 @@ drake_cc_library(
         ":simulator_status",
         "//common:extract_double",
         "//common:name_value",
+        "//common:overloaded",
         "//systems/framework:context",
         "//systems/framework:system",
     ],
