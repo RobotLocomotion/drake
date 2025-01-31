@@ -27,11 +27,13 @@ trap at_exit EXIT
 
 binary_distribution_args=()
 source_distribution_args=()
+prefetch_bazel=0
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
       source_distribution_args+=(--developer)
+      prefetch_bazel=1
       ;;
     # Install prerequisites that are only needed to build documentation,
     # i.e., those prerequisites that are dependencies of bazel run //doc:build.
@@ -41,10 +43,12 @@ while [ "${1:-}" != "" ]; do
     # Install bazelisk from a deb package.
     --with-bazel)
       source_distribution_args+=(--with-bazel)
+      prefetch_bazel=1
       ;;
     # Do NOT install bazelisk.
     --without-bazel)
       source_distribution_args+=(--without-bazel)
+      prefetch_bazel=0
       ;;
     # Install prerequisites that are only needed for --config clang, i.e.,
     # opts-in to the ability to compile Drake's C++ code using Clang.
@@ -101,10 +105,14 @@ source "${BASH_SOURCE%/*}/source_distribution/install_prereqs.sh" \
 
 # Configure user environment, executing as user if we're under `sudo`.
 user_env_script="${BASH_SOURCE%/*}/source_distribution/install_prereqs_user_environment.sh"
+user_env_script_args=()
+if [[ ${prefetch_bazel} -eq 1 ]]; then
+  user_env_script_args+=(--prefetch-bazel)
+fi
 if [[ -n "${SUDO_USER:+D}" ]]; then
-    sudo -u "${SUDO_USER}" bash "${user_env_script}" "${source_distribution_args[@]}"
+    sudo -u "${SUDO_USER}" bash "${user_env_script}" "${user_env_script_args[@]}"
 else
-    source "${user_env_script}" "${source_distribution_args[@]}"
+    source "${user_env_script}" "${user_env_script_args[@]}"
 fi
 
 trap : EXIT  # Disable exit reporting.
