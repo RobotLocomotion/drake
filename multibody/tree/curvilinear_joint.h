@@ -253,6 +253,11 @@ class CurvilinearJoint final : public Joint<T> {
     this->AddInOneForce(context, 0, force, forces);
   }
 
+  /** @returns A reference to the underlying trajectory. */
+  const PiecewiseConstantCurvatureTrajectory<double>& get_trajectory() const {
+    return curvilinear_path_;
+  }
+
  protected:
   /** Joint<T> override called through public NVI, Joint::AddInForce().
    Arguments already checked to be valid by Joint::AddInForce().

@@ -10,8 +10,10 @@ template <typename T>
 PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
     const std::vector<T>& breaks, const std::vector<T>& turning_rates,
     const Vector3<T>& initial_curve_tangent, const Vector3<T>& plane_normal,
-    const Vector3<T>& initial_position, double periodicity_tolerance)
-    : PiecewiseTrajectory<T>(breaks), segment_turning_rates_(turning_rates) {
+    const Vector3<T>& initial_position, bool is_periodic)
+    : PiecewiseTrajectory<T>(breaks),
+      segment_turning_rates_(turning_rates),
+      is_periodic_(is_periodic) {
   if (turning_rates.size() != breaks.size() - 1) {
     throw std::logic_error(
         "The number of turning rates must be equal to the number of segments.");
@@ -34,10 +36,9 @@ PiecewiseConstantCurvatureTrajectory<T>::PiecewiseConstantCurvatureTrajectory(
         "The initial curve's tangent vector must be perpendicular to the "
         "plane's normal.");
   }
-  segment_start_poses_ = MakeSegmentStartPoses(
+  break_poses_ = MakeBreakPoses(
       MakeInitialPose(initial_curve_tangent, plane_normal, initial_position),
       breaks, turning_rates);
-  is_periodic_ = IsNearlyPeriodic(periodicity_tolerance);
 }
 
 template <typename T>
@@ -48,7 +49,7 @@ math::RigidTransform<T> PiecewiseConstantCurvatureTrajectory<T>::CalcPose(
   const math::RigidTransform<T> X_MiM =
       CalcRelativePoseInSegment(segment_turning_rates_[segment_index],
                                 w - this->start_time(segment_index));
-  return segment_start_poses_[segment_index] * X_MiM;  // = X_AM
+  return break_poses_[segment_index] * X_MiM;  // = X_AM
 }
 
 template <typename T>
@@ -117,9 +118,9 @@ PiecewiseConstantCurvatureTrajectory<T>::CalcSpatialAccelerationInM(
 }
 
 template <typename T>
-boolean<T> PiecewiseConstantCurvatureTrajectory<T>::IsNearlyPeriodic(
+boolean<T> PiecewiseConstantCurvatureTrajectory<T>::EndpointsAreNearlyEqual(
     double tolerance) const {
-  return CalcPose(0.).IsNearlyEqualTo(CalcPose(length()), tolerance);
+  return break_poses_.front().IsNearlyEqualTo(break_poses_.back(), tolerance);
 }
 
 template <typename T>
@@ -130,7 +131,8 @@ PiecewiseConstantCurvatureTrajectory<T>::DoClone() const {
   return std::make_unique<PiecewiseConstantCurvatureTrajectory<T>>(
       this->breaks(), segment_turning_rates_,
       initial_frame.col(kCurveTangentIndex),
-      initial_frame.col(kPlaneNormalIndex), initial_pose.translation());
+      initial_frame.col(kPlaneNormalIndex), initial_pose.translation(),
+      is_periodic_);
 }
 
 template <typename T>
@@ -191,7 +193,7 @@ PiecewiseConstantCurvatureTrajectory<T>::MakeInitialPose(
 
 template <typename T>
 std::vector<math::RigidTransform<T>>
-PiecewiseConstantCurvatureTrajectory<T>::MakeSegmentStartPoses(
+PiecewiseConstantCurvatureTrajectory<T>::MakeBreakPoses(
     const math::RigidTransform<T>& initial_pose, const std::vector<T>& breaks,
     const std::vector<T>& turning_rates) {
   const size_t num_breaks = breaks.size();
@@ -204,18 +206,18 @@ PiecewiseConstantCurvatureTrajectory<T>::MakeSegmentStartPoses(
       breaks_eigen.tail(num_segments) - breaks_eigen.head(num_segments);
 
   // Build frames for the start of each segment.
-  std::vector<math::RigidTransform<T>> segment_start_poses;
-  segment_start_poses.reserve(num_segments);
-  segment_start_poses.push_back(initial_pose);  // X_AM(0)
+  std::vector<math::RigidTransform<T>> segment_break_poses;
+  segment_break_poses.reserve(num_breaks);
+  segment_break_poses.push_back(initial_pose);  // X_AM(0)
 
-  for (size_t i = 0; i < (num_segments - 1); ++i) {
+  for (size_t i = 0; i < (num_breaks - 1); i++) {
     math::RigidTransform<T> X_MiMip1 =
         CalcRelativePoseInSegment(turning_rates[i], segment_durations[i]);
     // X_AM(i+1)
-    segment_start_poses.push_back(segment_start_poses.back() * X_MiMip1);
+    segment_break_poses.push_back(segment_break_poses.back() * X_MiMip1);
   }
 
-  return segment_start_poses;
+  return segment_break_poses;
 }
 
 // Explicit instantiation for the types specified in the header
