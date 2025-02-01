@@ -4,6 +4,7 @@
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 
 namespace drake {
 namespace multibody {
@@ -90,15 +91,17 @@ std::vector<Binding<Constraint>> AddMultibodyPlantConstraints(
         lb.segment(start, size) = current_positions.segment(start, size);
         ub.segment(start, size) = current_positions.segment(start, size);
         is_locked.segment(start, size).array() = true;
+        prog->SetInitialGuess(q.segment(start, size),
+                              current_positions.segment(start, size));
       }
     }
   }
 
   // Add the unit quaternion constraints.
-  for (BodyIndex i{0}; i < plant_ref.num_bodies(); ++i) {
-    const RigidBody<double>& body = plant_ref.get_body(i);
-    if (body.has_quaternion_dofs()) {
-      const int start = body.floating_positions_start();
+  for (JointIndex joint_index : plant_ref.GetJointIndices()) {
+    const Joint<double>& joint = plant->get_joint(joint_index);
+    if (joint.type_name() == QuaternionFloatingJoint<double>::kTypeName) {
+      const int start = joint.position_start();
       constexpr int kSize = 4;
       if (plant_context && is_locked.segment<kSize>(start).any()) {
         // Sanity check the MultibodyTree invariant.
@@ -121,7 +124,7 @@ std::vector<Binding<Constraint>> AddMultibodyPlantConstraints(
                     q.segment<kSize>(start))))
             .evaluator()
             ->set_description(fmt::format(
-                "Unit quaternion constraint for body {}", body.name()));
+                "Unit quaternion constraint for joint {}", joint.name()));
         prog->SetInitialGuess(q.segment<kSize>(start),
                               Eigen::Vector4d{1, 0, 0, 0});
       }
