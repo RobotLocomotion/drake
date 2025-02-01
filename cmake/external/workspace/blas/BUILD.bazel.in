@@ -1,0 +1,9 @@
+# -*- bazel -*-
+
+load("@rules_cc//cc:cc_import.bzl", "cc_import")
+
+cc_import(
+    name = "blas",
+    shared_library = "libblas.so",
+    visibility = ["//visibility:public"],
+)

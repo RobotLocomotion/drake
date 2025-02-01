@@ -1,3 +1,148 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:cc.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:private"])
+
+# Here's the selection table logic to distill the bazel flags into a particular
+# LAPACK implementation:
+#
+#       | flags:   ||
+#       | private_ || flags:
+#       | runtime_ || lapack_repo
+#       | repo_    || --------------------------------------------
+# OS    | default  || default    | source | pkgconfig | accelerate
+# ------+----------++------------+--------+-----------+-----------
+# linux | internal || source     | source | pkgconfig | accelerate
+#     " | external || pkgconfig  | source | pkgconfig | accelerate
+# apple | internal || accelerate | source | pkgconfig | accelerate
+#     " | external || accelerate | source | pkgconfig | accelerate
+#
+# When :lapack_repo is set to anything other than "default", it always takes
+# precedence. Otherwise (when lapack_repo="default"), on apple we always prefer
+# "accelerate", and on linux we use the flags:private_runtime_repo_default to
+# choose between "source" or "pkgconfig".
+
+# ---- Logic for choosing which lapack to use. ---
+
+config_setting(
+    name = "apple",
+    constraint_values = ["@platforms//os:osx"],
+)
+
+config_setting(
+    name = "linux",
+    constraint_values = ["@platforms//os:linux"],
+)
+
+config_setting(
+    name = "flag_private_runtime_repo_default_external",
+    flag_values = {
+        "//tools/flags:private_runtime_repo_default": "external",
+    },
+)
+
+config_setting(
+    name = "flag_lapack_repo_default",
+    flag_values = {
+        "//tools/flags:lapack_repo": "default",
+    },
+)
+
+config_setting(
+    name = "flag_lapack_repo_pkgconfig",
+    flag_values = {
+        "//tools/flags:lapack_repo": "pkgconfig",
+    },
+)
+
+config_setting(
+    name = "flag_lapack_repo_accelerate",
+    flag_values = {
+        "//tools/flags:lapack_repo": "accelerate",
+    },
+)
+
+selects.config_setting_group(
+    name = "defaulted_to_pkgconfig",
+    match_all = [
+        ":flag_lapack_repo_default",
+        ":flag_private_runtime_repo_default_external",
+        ":linux",
+    ],
+)
+
+selects.config_setting_group(
+    name = "defaulted_to_accelerate",
+    match_all = [
+        ":flag_lapack_repo_default",
+        ":apple",
+    ],
+)
+
+selects.config_setting_group(
+    name = "use_pkgconfig",
+    match_any = [
+        ":defaulted_to_pkgconfig",
+        ":flag_lapack_repo_pkgconfig",
+    ],
+)
+
+selects.config_setting_group(
+    name = "use_accelerate",
+    match_any = [
+        ":defaulted_to_accelerate",
+        ":flag_lapack_repo_accelerate",
+    ],
+)
+
+alias(
+    name = "lapack",
+    actual = select({
+        ":use_accelerate": "//tools/workspace/blas:accelerate",
+        ":use_pkgconfig": "@pkgconfig_lapack_internal",
+        "//conditions:default": "@lapack_internal//:lapack",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+# ---- Logic for installing lapack-related files. ---
+
+bool_flag(
+    name = "with_user_lapack",
+    # This is overridden by our CMakeLists.txt to match the CMake option.
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "is_with_user_true",
+    flag_values = {":with_user_lapack": "True"},
+)
+
+selects.config_setting_group(
+    name = "is_external",
+    match_any = [
+        ":is_with_user_true",
+        ":use_accelerate",
+        ":use_pkgconfig",
+    ],
+)
+
+install_license(
+    name = "install_source_license",
+    doc_dest = "share/doc/lapack",
+    licenses = ["@lapack_internal//:license"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = select({
+        ":is_external": [],
+        "//conditions:default": [":install_source_license"],
+    }),
+)
 
 add_lint_tests()
