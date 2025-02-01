@@ -905,10 +905,14 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   simulator.get_mutable_context().SetTime(3.0);
   EXPECT_EQ(simulator.get_context().get_time(), 3.0);
   EXPECT_TRUE(simulator.has_context());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   simulator.release_context();
   EXPECT_FALSE(simulator.has_context());
   DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(),
       ".*Initialize.*Context.*not.*set.*");
+#pragma GCC diagnostic pop
+
 
   // Create another context.
   auto ucontext = spring_mass.CreateDefaultContext();

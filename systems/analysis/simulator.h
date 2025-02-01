@@ -13,6 +13,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/extract_double.h"
 #include "drake/common/name_value.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -634,10 +635,9 @@ class Simulator {
   void reset_context_from_shared(std::shared_ptr<Context<T>> context);
 #endif
 
-  /// Transfer ownership of this %Simulator's internal Context to the caller.
-  /// The %Simulator will no longer contain a Context. The caller must not
-  /// attempt to advance the simulator in time after that point.
-  /// @sa reset_context()
+  DRAKE_DEPRECATED(
+      "2025-06-01",
+      "Use get_context()->Clone() and reset_context(nullptr) instead.")
   std::unique_ptr<Context<T>> release_context();
 
   /// Forget accumulated statistics. Statistics are reset to the values they

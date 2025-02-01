@@ -318,8 +318,6 @@ Parameter ``interruptible``:
                   make_shared_ptr_from_py_object<Context<T>>(py_context));
             },
             py::arg("context"), doc.Simulator.reset_context.doc)
-        .def("release_context", &Simulator<T>::release_context,
-            doc.Simulator.release_context.doc)
         .def("set_publish_every_time_step",
             &Simulator<T>::set_publish_every_time_step, py::arg("publish"),
             doc.Simulator.set_publish_every_time_step.doc)
