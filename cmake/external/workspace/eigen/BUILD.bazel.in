@@ -1,38 +1,7 @@
 # -*- bazel -*-
 
-load("@bazel_skylib//rules:write_file.bzl", "write_file")
-load("@rules_license//rules:license.bzl", "license")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load(":conversion.bzl", "split_cmake_list")
-
-write_file(
-    name = "unknown_license",
-    out = "LICENSE",
-    content = ["Unknown license (Drake used CMake find_package).\n"],
-)
-
-license(
-    name = "license.APACHE",
-    license_kinds = ["@rules_license//licenses/spdx:Apache-2.0"],
-    license_text = "LICENSE",
-)
-
-license(
-    name = "license.BSD",
-    license_kinds = ["@rules_license//licenses/spdx:BSD-3-Clause"],
-    license_text = "LICENSE",
-)
-
-license(
-    name = "license.MINPACK",
-    license_kinds = ["@rules_license//licenses/spdx:BSD-3-Clause-Attribution"],
-    license_text = "LICENSE",
-)
-
-license(
-    name = "license.MPL2",
-    license_kinds = ["@rules_license//licenses/spdx:MPL-2.0"],
-    license_text = "LICENSE",
-)
 
 EIGEN_DEFINES = split_cmake_list(
     "$<TARGET_PROPERTY:Eigen3::Eigen,INTERFACE_COMPILE_DEFINITIONS>",

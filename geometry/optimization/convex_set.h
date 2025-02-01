@@ -540,8 +540,7 @@ ConvexSets MakeConvexSets(Args&&... args) {
   sets.resize(N);
   // This is a "constexpr for" loop for 0 <= I < N.
   auto args_tuple = std::forward_as_tuple(std::forward<Args>(args)...);
-  auto seq_into_sets = [&]<size_t... I>(
-      std::integer_sequence<size_t, I...> &&) {
+  auto seq_into_sets = [&]<size_t... I>(std::integer_sequence<size_t, I...>&&) {
     ((sets[I] = std::get<I>(std::move(args_tuple))), ...);
   };  // NOLINT
   seq_into_sets(std::make_index_sequence<N>{});

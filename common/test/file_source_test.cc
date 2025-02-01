@@ -47,12 +47,14 @@ GTEST_TEST(FileSourceTest, SerializePath) {
   EXPECT_EQ(std::get<fs::path>(dut.source), std::get<fs::path>(decoded.source));
 }
 
-/* The MemoryFile value simply throws (see MemoryFile implementation). */
+/* The MemoryFile value gets (de)serialized. */
 GTEST_TEST(FileSourceTest, SerializeMemoryFile) {
   const HasFileSource dut{.source = MemoryFile("stuff", ".ext", "hint")};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      yaml::SaveYamlString(dut),
-      "Serialization for MemoryFile not yet supported.");
+  const std::string y = yaml::SaveYamlString(dut);
+  const auto decoded = yaml::LoadYamlString<HasFileSource>(y);
+  ASSERT_TRUE(std::holds_alternative<MemoryFile>(decoded.source));
+  EXPECT_EQ(std::get<MemoryFile>(dut.source).contents(),
+            std::get<MemoryFile>(decoded.source).contents());
 }
 
 }  // namespace

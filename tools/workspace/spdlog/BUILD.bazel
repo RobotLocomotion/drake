@@ -104,10 +104,7 @@ cc_library(
 
 install(
     name = "install_hdrs",
-    targets = select({
-        ":is_external": [],
-        "//conditions:default": [":hdrs"],
-    }),
+    targets = [":hdrs"],
     hdr_dest = "include",
     hdr_strip_prefix = ["include"],
     guess_hdrs = "ALLOWED_EXTERNALS",
@@ -123,10 +120,13 @@ install_license(
 install(
     name = "install",
     visibility = ["//tools/workspace:__pkg__"],
-    deps = [
-        ":install_hdrs",
-        ":install_license",
-    ],
+    deps = select({
+        ":is_external": [],
+        "//conditions:default": [
+            ":install_hdrs",
+            ":install_license",
+        ],
+    }),
 )
 
 add_lint_tests()

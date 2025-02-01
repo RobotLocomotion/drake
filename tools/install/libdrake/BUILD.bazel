@@ -25,6 +25,7 @@ load(
 )
 load("//tools/workspace:generate_file.bzl", "generate_file")
 load(":build_components.bzl", "LIBDRAKE_COMPONENTS")
+load(":cc_defines.bzl", "cc_defines")
 load(":header_lint.bzl", "cc_check_allowed_headers")
 
 package(default_visibility = ["//visibility:private"])
@@ -95,12 +96,33 @@ generate_file(
     }),
 )
 
+cc_defines(
+    name = "bazel_eigen_defines.cmake",
+    var = "BAZEL_EIGEN_DEFINES",
+    deps = ["@eigen"],
+)
+
+cc_defines(
+    name = "bazel_fmt_defines.cmake",
+    var = "BAZEL_FMT_DEFINES",
+    deps = ["@fmt"],
+)
+
+cc_defines(
+    name = "bazel_spdlog_defines.cmake",
+    var = "BAZEL_SPDLOG_DEFINES",
+    deps = ["@spdlog"],
+)
+
 cmake_configure_file(
     name = "drake_config_cmake_expand",
     src = "drake-config.cmake.in",
     out = "drake-config.cmake",
     atonly = True,
     cmakelists = [
+        ":bazel_eigen_defines.cmake",
+        ":bazel_fmt_defines.cmake",
+        ":bazel_spdlog_defines.cmake",
         ":python_version.cmake",
         ":stamp_version.cmake",
         ":with_user_eigen.cmake",

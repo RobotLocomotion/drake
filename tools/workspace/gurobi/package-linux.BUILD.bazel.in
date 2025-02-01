@@ -17,11 +17,6 @@ GUROBI_C_HDRS = glob([
     "gurobi-distro/include/gurobi_c.h",
 ], allow_empty = True) or [":error-message.h"]
 
-GUROBI_CXX_HDRS = glob([
-    "gurobi-distro/include/gurobi_c.h",
-    "gurobi-distro/include/gurobi_c++.h",
-], allow_empty = True) or [":error-message.h"]
-
 # In the Gurobi package, libgurobi100.so is a symlink to libgurobi.so.10.0.*.
 # However, if we use libgurobi.so.10.0.* in srcs, executables that link this
 # library will be unable to find it at runtime in the Bazel sandbox,
@@ -31,11 +26,6 @@ GUROBI_CXX_HDRS = glob([
 
 GUROBI_C_SRCS = glob([
     "gurobi-distro/lib/libgurobi100.so",
-], allow_empty = True) or [":error-message.h"]
-
-GUROBI_CXX_SRCS = glob([
-    "gurobi-distro/lib/libgurobi100.so",
-    "gurobi-distro/lib/libgurobi_g++5.2.a",
 ], allow_empty = True) or [":error-message.h"]
 
 GUROBI_INSTALL_LIBRARIES = glob([
@@ -51,15 +41,6 @@ cc_library(
     name = "gurobi_c",
     srcs = GUROBI_C_SRCS,
     hdrs = GUROBI_C_HDRS,
-    includes = ["gurobi-distro/include"],
-    linkopts = ["-pthread"],
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
-    name = "gurobi_cxx",
-    srcs = GUROBI_CXX_SRCS,
-    hdrs = GUROBI_CXX_HDRS,
     includes = ["gurobi-distro/include"],
     linkopts = ["-pthread"],
     visibility = ["//visibility:public"],

@@ -212,6 +212,7 @@ drake_cc_library(
     hdrs = ["memory_file.h"],
     deps = [
         ":essential",
+        ":name_value",
         ":reset_after_move",
         ":sha256",
     ],

@@ -111,12 +111,29 @@ GTEST_TEST(MemoryFileTest, ToString) {
   EXPECT_THAT(fmt::to_string(file), testing::HasSubstr("\"0123456789\""));
 }
 
-/* Serialization compiles but throws. */
-GTEST_TEST(MemoryFileTest, SerializationThrows) {
-  const MemoryFile dut("stuff", ".ext", "hint");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      yaml::SaveYamlString(dut),
-      "Serialization for MemoryFile not yet supported.");
+/** Confirm that this can be serialized appropriately. The serialization work
+ (with all of its nuances) gets tested elsewhere. Here, we're simply testing
+ that the fields get serialized and deserialized as expected. */
+GTEST_TEST(MemoryFileTest, Serialization) {
+  // This content is the text shown in the serialization documentation. Same for
+  // the extension and filename hint as well.
+  const std::string content("This is an example of memory file test contents.");
+  const std::string content_b64(
+      "VGhpcyBpcyBhbiBleGFtcGxlIG9mIG1lbW9yeSBmaWxlIHRlc3QgY29udGVudHMu");
+  const MemoryFile dut(content, ".txt", "payload.txt");
+
+  // Serialization.
+  const std::string y = yaml::SaveYamlString(dut);
+  EXPECT_EQ(y, fmt::format("contents: !!binary {}\nextension: "
+                           ".txt\nfilename_hint: payload.txt\n",
+                           content_b64));
+
+  // Deserialization.
+  const auto from_yaml = yaml::LoadYamlString<MemoryFile>(y);
+  EXPECT_EQ(from_yaml.contents(), dut.contents());
+  EXPECT_EQ(from_yaml.extension(), dut.extension());
+  EXPECT_EQ(from_yaml.filename_hint(), dut.filename_hint());
+  EXPECT_EQ(from_yaml.sha256(), dut.sha256());
 }
 
 }  // namespace

@@ -359,7 +359,15 @@ macro(override_module NAME)
     SYMBOLIC)
 endmacro()
 
-option(WITH_USER_EIGEN "Use user-provided Eigen3" ON)
+if(APPLE AND DRAKE_CI_ENABLE_PACKAGING)
+  # When building a macOS *.tar.gz binary release, never use Homebrew for C++
+  # dependencies, because it offers absolutely no version stability.
+  set(DEFAULT_WITH_USER_LIBS OFF)
+else()
+  set(DEFAULT_WITH_USER_LIBS ON)
+endif()
+
+option(WITH_USER_EIGEN "Use user-provided Eigen3" ${DEFAULT_WITH_USER_LIBS})
 
 if(WITH_USER_EIGEN)
   find_package(Eigen3 CONFIG REQUIRED)
@@ -367,7 +375,7 @@ if(WITH_USER_EIGEN)
   override_module(eigen)
 endif()
 
-option(WITH_USER_FMT "Use user-provided fmt" ON)
+option(WITH_USER_FMT "Use user-provided fmt" ${DEFAULT_WITH_USER_LIBS})
 
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
@@ -376,7 +384,7 @@ if(WITH_USER_FMT)
   override_module(fmt)
 endif()
 
-option(WITH_USER_SPDLOG "Use user-provided spdlog" ON)
+option(WITH_USER_SPDLOG "Use user-provided spdlog" ${DEFAULT_WITH_USER_LIBS})
 
 if(WITH_USER_SPDLOG)
   if(NOT WITH_USER_FMT)

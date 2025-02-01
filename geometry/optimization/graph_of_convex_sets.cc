@@ -1107,22 +1107,21 @@ void GraphOfConvexSets::AddPerspectiveCost(
                               VectorXd::Zero(A_linear.rows()), cost_vars);
   } else if (L2NormCost* l2c = dynamic_cast<L2NormCost*>(cost)) {
     // |Ax + b|₂ becomes ℓ ≥ |Ax+bϕ|₂.
-    MatrixXd A_cone =
-        MatrixXd::Zero(l2c->get_sparse_A().rows() + 1, vars.size());
-    A_cone(0, 1) = 1.0;  // z₀ = ℓ.
-    A_cone.block(1, 0, l2c->get_sparse_A().rows(), 1) = l2c->b();  // bϕ.
-    A_cone.block(1, 2, l2c->get_sparse_A().rows(), l2c->get_sparse_A().cols()) =
-        l2c->get_sparse_A();  // Ax.
+    const SparseMatrix<double>& A = l2c->get_sparse_A();
+    MatrixXd A_cone = MatrixXd::Zero(A.rows() + 1, vars.size());
+    A_cone(0, 1) = 1.0;                          // z₀ = ℓ.
+    A_cone.block(1, 0, A.rows(), 1) = l2c->b();  // bϕ.
+    A_cone.block(1, 2, A.rows(), A.cols()) = A;  // Ax.
     prog->AddLorentzConeConstraint(A_cone, VectorXd::Zero(A_cone.rows()), vars);
   } else if (LInfNormCost* linfc = dynamic_cast<LInfNormCost*>(cost)) {
     // |Ax + b|∞ becomes ℓ ≥ |Aᵢx+bᵢϕ| ∀ i.
     int A_rows = linfc->A().rows();
     MatrixXd A_linear(2 * A_rows, vars.size());
-    A_linear.block(0, 0, A_rows, 1) = linfc->b();                    // bϕ.
-    A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);       // -ℓ.
-    A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();    // Ax.
-    A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();              // -bϕ.
-    A_linear.block(A_rows, 1, A_rows, 1) = -VectorXd::Ones(A_rows);  // -ℓ.
+    A_linear.block(0, 0, A_rows, 1) = linfc->b();                        // bϕ.
+    A_linear.block(0, 1, A_rows, 1) = -VectorXd::Ones(A_rows);           // -ℓ.
+    A_linear.block(0, 2, A_rows, linfc->A().cols()) = linfc->A();        // Ax.
+    A_linear.block(A_rows, 0, A_rows, 1) = -linfc->b();                  // -bϕ.
+    A_linear.block(A_rows, 1, A_rows, 1) = -VectorXd::Ones(A_rows);      // -ℓ.
     A_linear.block(A_rows, 2, A_rows, linfc->A().cols()) = -linfc->A();  // -Ax.
     prog->AddLinearConstraint(A_linear,
                               VectorXd::Constant(A_linear.rows(), -inf),

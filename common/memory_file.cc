@@ -57,4 +57,16 @@ std::string MemoryFile::to_string(int contents_limit) const {
       filename_hint_.value(), contents_str, extension_.value());
 }
 
+std::vector<std::byte> MemoryFile::GetContentsAsBytes() const {
+  const std::string& from = contents_.value();
+  const auto* data = reinterpret_cast<const std::byte*>(from.data());
+  return std::vector<std::byte>(data, data + from.size());
+}
+
+void MemoryFile::SetContentsFromBytes(const std::vector<std::byte>& bytes) {
+  contents_.value() =
+      std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  sha256_.value().checksum = Sha256::Checksum(contents_.value());
+}
+
 }  // namespace drake
