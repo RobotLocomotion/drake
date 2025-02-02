@@ -23,6 +23,7 @@ mkdir -p $SRC_DIR
 cd $SRC_DIR
 
 wget $URL
+sha256sum "$ARCHIVE"
 echo "$SHA  $ARCHIVE" | sha256sum -c
 
 tar --strip-components=1 -xf $ARCHIVE
