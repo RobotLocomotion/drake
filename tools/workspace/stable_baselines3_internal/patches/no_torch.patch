@@ -1,7 +1,5 @@
 Reasoning for not upstreaming this patch: Drake-specific build option.
 
-diff --git stable_baselines3/__init__.py stable_baselines3/__init__.py
-index 0775a8e..633ae10 100644
 --- stable_baselines3/__init__.py
 +++ stable_baselines3/__init__.py
 @@ -1,13 +1,25 @@
@@ -38,8 +36,7 @@ index 0775a8e..633ae10 100644
  
  # Read version from file
  version_file = os.path.join(os.path.dirname(__file__), "version.txt")
-diff --git stable_baselines3/common/env_checker.py stable_baselines3/common/env_checker.py
-index dc465a1..7192212 100644
+
 --- stable_baselines3/common/env_checker.py
 +++ stable_baselines3/common/env_checker.py
 @@ -6,7 +6,13 @@ import numpy as np
@@ -66,14 +63,11 @@ index dc465a1..7192212 100644
      vec_env = VecCheckNan(DummyVecEnv([lambda: env]))
      vec_env.reset()
      for _ in range(10):
-diff --git stable_baselines3/common/preprocessing.py stable_baselines3/common/preprocessing.py
-index d0bfbcd..3ca419e 100644
+
 --- stable_baselines3/common/preprocessing.py
 +++ stable_baselines3/common/preprocessing.py
-@@ -1,10 +1,15 @@
-+from ast import Import
- import warnings
- from typing import Dict, Tuple, Union
+@@ -2,9 +2,13 @@
+ from typing import Union
  
  import numpy as np
 -import torch as th
@@ -88,15 +82,15 @@ index d0bfbcd..3ca419e 100644
  
  
  def is_image_space_channels_first(observation_space: spaces.Box) -> bool:
-@@ -90,10 +95,10 @@ def maybe_transpose(observation: np.ndarray, observation_space: spaces.Space) ->
+@@ -90,10 +88,10 @@
  
  
  def preprocess_obs(
--    obs: Union[th.Tensor, Dict[str, th.Tensor]],
+-    obs: Union[th.Tensor, dict[str, th.Tensor]],
 +    obs,
      observation_space: spaces.Space,
      normalize_images: bool = True,
--) -> Union[th.Tensor, Dict[str, th.Tensor]]:
+-) -> Union[th.Tensor, dict[str, th.Tensor]]:
 +):
      """
      Preprocess observation to be to a neural network.

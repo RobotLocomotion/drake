@@ -22,18 +22,25 @@ endif()
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/modules;${CMAKE_MODULE_PATH}")
 set(_drake_interface_libraries drake::drake-marker)
+set(_drake_interface_compile_definitions HAVE_SPDLOG)
 if(@WITH_USER_EIGEN@)
   find_dependency(Eigen3 CONFIG)
   list(APPEND _drake_interface_libraries Eigen3::Eigen)
+else()
+  list(APPEND _drake_interface_compile_definitions @BAZEL_EIGEN_DEFINES@)
 endif()
 if (@WITH_USER_FMT@)
   find_dependency(fmt CONFIG)
   list(APPEND _drake_interface_libraries fmt::fmt)
+else()
+  list(APPEND _drake_interface_compile_definitions @BAZEL_FMT_DEFINES@)
 endif()
 find_dependency(lcm 1.4 CONFIG HINTS "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/cmake/lcm")
 if (@WITH_USER_SPDLOG@)
   find_dependency(spdlog CONFIG)
   list(APPEND _drake_interface_libraries spdlog::spdlog)
+else()
+  list(APPEND _drake_interface_compile_definitions @BAZEL_SPDLOG_DEFINES@)
 endif()
 set(_expectedTargets drake::drake drake::drake-lcmtypes-cpp drake::drake-lcmtypes-java drake::drake-marker)
 
@@ -72,7 +79,7 @@ set_target_properties(drake::drake PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
   INTERFACE_LINK_LIBRARIES "${_drake_interface_libraries}"
   INTERFACE_COMPILE_FEATURES "cxx_std_20"
-  INTERFACE_COMPILE_DEFINITIONS "HAVE_SPDLOG"
+  INTERFACE_COMPILE_DEFINITIONS "${_drake_interface_compile_definitions}"
 )
 
 add_library(drake::drake-lcmtypes-cpp INTERFACE IMPORTED)

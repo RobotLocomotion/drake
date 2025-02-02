@@ -1255,52 +1255,6 @@ GTEST_TEST(MakeFacetedRenderMeshFromTriangleSurfaceMeshTest, Simple) {
   }
 }
 
-// This is a regression test against the patch in tinyobjloader:
-// reset_default_kd.patch. The *first* material defines Kd as red, the second
-// material doesn't define Kd, but should get the default white color.
-GTEST_TEST(TinyObjReaderRegression, DefaultDiffuseIsWhiteWithMap) {
-  constexpr char obj_contents[] = R"""(
-  mtllib mem.mtl
-  v 0 0 0
-  v 1 0 0
-  v 0 1 0
-  vn 0 0 1
-  usemtl has_map
-  f 1//1 2//1 3//1
-  usemtl has_kd
-  f 1//1 2//1 3//1
-  )""";
-
-  constexpr char mtl_contents[] = R"""(
-  newmtl has_kd
-  Kd 1 0 0
-  newmtl has_map
-  map_Kd test.png
-  )""";
-
-  const MeshSource source(
-      InMemoryMesh{MemoryFile(obj_contents, ".obj", "obj2"),
-                   {{"mem.mtl", MemoryFile(mtl_contents, ".mtl", "mem.mtl")},
-                    {"test.png", MemoryFile("not used", ".png", "test.png")}}});
-
-  const std::vector<RenderMesh> meshes =
-      LoadRenderMeshesFromObj(source, PerceptionProperties(), {});
-
-  ASSERT_EQ(meshes.size(), 2);
-
-  // No texture has red diffuse color.
-  ASSERT_TRUE(meshes[0].material.has_value());
-  ASSERT_TRUE(
-      std::holds_alternative<std::monostate>(meshes[0].material->diffuse_map));
-  EXPECT_EQ(meshes[0].material->diffuse, Rgba(1, 0, 0, 1));
-
-  // Texture implies white diffuse color.
-  ASSERT_TRUE(meshes[1].material.has_value());
-  ASSERT_TRUE(
-      std::holds_alternative<MemoryFile>(meshes[1].material->diffuse_map));
-  EXPECT_EQ(meshes[1].material->diffuse, Rgba(1, 1, 1, 1));
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace geometry

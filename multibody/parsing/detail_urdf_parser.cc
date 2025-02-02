@@ -17,6 +17,7 @@
 #include <tinyxml2.h>
 
 #include "drake/common/sorted_pair.h"
+#include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
@@ -26,6 +27,7 @@
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/curvilinear_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -96,6 +98,9 @@ class UrdfParser {
                            std::string* type, std::string* parent_link_name,
                            std::string* child_link_name);
   void ParseScrewJointThreadPitch(XMLElement* node, double* screw_thread_pitch);
+  void ParseCurvilinearJointCurves(XMLElement* node,
+                                   std::vector<double>* breaks,
+                                   std::vector<double>* turning_rates);
   void ParseCollisionFilterGroup(XMLElement* node);
   void ParseBody(XMLElement* node, MaterialMap* materials);
   SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
@@ -419,6 +424,83 @@ void UrdfParser::ParseScrewJointThreadPitch(XMLElement* node,
   }
 }
 
+void UrdfParser::ParseCurvilinearJointCurves(
+    XMLElement* node, std::vector<double>* breaks,
+    std::vector<double>* turning_rates) {
+  XMLElement* root = node->FirstChildElement("drake:curves");
+  if (!root) {
+    Error(*node, "A curvilinear joint is missing the <drake:curves> list.");
+    return;
+  }
+  breaks->clear();
+  breaks->push_back(0.0);  // breaks needs to start with a leading 0.0 element
+  turning_rates->clear();
+  for (XMLElement* curveNode = root->FirstChildElement(); curveNode != NULL;
+       curveNode = curveNode->NextSiblingElement()) {
+    std::string nodeValue = curveNode->Value();
+    double length = 0.0;
+    double angle = 0.0;
+    if (nodeValue == "drake:line_segment") {
+      if (!ParseScalarAttribute(curveNode, "length", &length)) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:line_segment> that is "
+              "missing the 'length' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      } else if (length <= 0.0) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:line_segment> with a zero "
+              "or negative 'length' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+    } else if (nodeValue == "drake:circular_arc") {
+      double radius = 0.0;
+      if (!ParseScalarAttribute(curveNode, "radius", &radius)) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:circular_arc> that is "
+              "missing the 'radius' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      } else if (radius <= 0.0) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:circular_arc> with a zero "
+              "or negative 'radius' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+      if (!ParseScalarAttribute(curveNode, "angle", &angle)) {
+        Error(*curveNode,
+              "A curvilinear joint contains a <drake:circular_arc> that is "
+              "missing the 'angle' attribute.");
+        breaks->clear();
+        turning_rates->clear();
+        return;
+      }
+      length = std::abs(angle) * radius;
+    } else {
+      Error(*root, "A curvilinear joint contains an invalid curve node.");
+      breaks->clear();
+      turning_rates->clear();
+      return;
+    }
+
+    breaks->push_back(breaks->back() + length);
+    turning_rates->push_back(angle / length);
+  }
+
+  if (breaks->size() == 1) {
+    Error(*root, "A curvilinear joint contains an empty curves list.");
+    breaks->clear();
+    turning_rates->clear();
+    return;
+  }
+}
+
 const RigidBody<double>* UrdfParser::GetBodyForElement(
     const std::string& element_name, const std::string& link_name) {
   auto plant = w_.plant;
@@ -632,6 +714,42 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
                 ->AddJoint<UniversalJoint>(name, *parent_body, X_PF,
                                            *child_body, std::nullopt, damping)
                 .index();
+  } else if (type.compare("curvilinear") == 0) {
+    throw_on_custom_joint(true);
+    ParseJointDynamics(node, &damping);
+    Vector3d initial_tangent(1, 0, 0);
+    Vector3d plane_normal(0, 0, 1);
+    XMLElement* initial_tangent_node =
+        node->FirstChildElement("drake:initial_tangent");
+    if (initial_tangent_node) {
+      ParseVectorAttribute(initial_tangent_node, "xyz", &initial_tangent);
+    }
+    XMLElement* planar_normal_node =
+        node->FirstChildElement("drake:plane_normal");
+    if (planar_normal_node) {
+      ParseVectorAttribute(planar_normal_node, "xyz", &plane_normal);
+    }
+    bool is_periodic = false;
+    std::string is_periodic_string = "";
+    XMLElement* is_periodic_node = node->FirstChildElement("drake:is_periodic");
+    if (is_periodic_node) {
+      ParseStringAttribute(is_periodic_node, "value", &is_periodic_string);
+      is_periodic = (is_periodic_string == "true" ? true : false);
+    }
+    std::vector<double> breaks;
+    std::vector<double> turning_rates;
+    ParseCurvilinearJointCurves(node, &breaks, &turning_rates);
+    // Note: Using initial_position = [0, 0, 0], as origin in parent frame
+    // already allows user to place start of trajectory.
+    PiecewiseConstantCurvatureTrajectory<double> trajectory(
+        breaks, turning_rates, initial_tangent, plane_normal, Vector3d::Zero(),
+        is_periodic);
+    const RigidTransformd& X_PF = X_PB;
+    index =
+        plant
+            ->AddJoint<CurvilinearJoint>(name, *parent_body, X_PF, *child_body,
+                                         std::nullopt, trajectory, damping)
+            .index();
   } else {
     Error(*node,
           fmt::format("Joint '{}' has unrecognized type: '{}'", name, type));

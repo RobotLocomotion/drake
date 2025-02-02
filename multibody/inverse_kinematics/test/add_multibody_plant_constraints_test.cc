@@ -3,6 +3,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/solvers/snopt_solver.h"
@@ -16,6 +18,7 @@ using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using math::RigidTransformd;
+using systems::Context;
 
 bool SnoptSolverUnavailable() {
   return !(solvers::SnoptSolver::is_available() &&
@@ -81,7 +84,7 @@ class AddMultibodyPlantConstraintsTest : public ::testing::Test {
  protected:
   std::shared_ptr<MultibodyPlant<double>> plant_{
       std::make_shared<MultibodyPlant<double>>(0.1)};
-  std::unique_ptr<systems::Context<double>> plant_context_{};
+  std::unique_ptr<Context<double>> plant_context_{};
   const RigidBody<double>* body_A_{nullptr};
   const RigidBody<double>* body_B_{nullptr};
   const RevoluteJoint<double>* world_A_{nullptr};
@@ -128,7 +131,9 @@ TEST_F(AddMultibodyPlantConstraintsTest, WeldConstraint) {
   CheckConstraints(expected_num_constraints, /* tol = */ 1e-2);
 }
 
-GTEST_TEST(AdditionalTests, QuaternionsAndJointLimitsAndLocks) {
+// Tests the interaction between joint locking and constraints, in the simple
+// case where floating joints are parented on the world.
+GTEST_TEST(AdditionalTests, QuaternionsAndJointLimitsAndLocks1) {
   auto plant = std::make_shared<MultibodyPlant<double>>(0);
 
   // Create a plant with four bodies.
@@ -230,6 +235,136 @@ GTEST_TEST(AdditionalTests, QuaternionsAndJointLimitsAndLocks) {
   auto q2 = prog2.NewContinuousVariables(plant->num_positions());
   AddMultibodyPlantConstraints(plant, q2, &prog2);
   EXPECT_EQ(prog2.linear_equality_constraints().size(), 0);
+}
+
+// Tests the interaction between joint locking and constraints, in the unusual
+// case where floating joints are parented onto the robot instead of the world.
+GTEST_TEST(AdditionalTests, QuaternionsAndJointLimitsAndLocks2) {
+  auto plant = std::make_shared<MultibodyPlant<double>>(0);
+
+  // Create a plant with two bodies.
+  const auto& world = plant->world_body();
+  const auto M = SpatialInertia<double>::SolidCubeWithMass(1.0, 0.1);
+  const auto& robot = plant->AddRigidBody("robot", M);
+  const auto& object = plant->AddRigidBody("object", M);
+
+  // Attach the robot to the world with a revolute joint (with limits).
+  // Attach the object to the robot with a floating joint.
+  Eigen::Vector3d X = Eigen::Vector3d::UnitX();
+  const auto& world_robot =
+      plant->AddJoint<RevoluteJoint>("world_robot", world, {}, robot, {}, X);
+  dynamic_cast<RevoluteJoint<double>&>(
+      plant->get_mutable_joint(world_robot.index()))
+      .set_position_limits(Vector1d{-0.5}, Vector1d{0.5});
+  const auto& robot_object = plant->AddJoint<QuaternionFloatingJoint>(
+      "robot_object", robot, {}, object, {});
+  plant->Finalize();
+  ASSERT_EQ(plant->num_positions(), 1 + 7);
+
+  // Helper function (lambda) that calls AddMultibodyPlantConstraints and
+  // extracts the details of what got added to the MathematicalProgram.
+  //
+  // Note that for convenience the output is a local variable named "detail"
+  // which is overwritten by this lambda.
+  struct ProgramDetail {
+    VectorXd initial_guess;
+    VectorXd lower_bound;
+    VectorXd upper_bound;
+    bool has_unit_quat_constraint{};
+  };
+  ProgramDetail detail;
+  auto inspect_constraints = [&plant, &detail](Context<double>* context) {
+    detail = {};
+    solvers::MathematicalProgram prog;
+    auto q = prog.NewContinuousVariables(plant->num_positions());
+    prog.SetInitialGuessForAllVariables(VectorXd::Zero(q.size()));
+    AddMultibodyPlantConstraints(plant, q, &prog, context);
+    detail.initial_guess = prog.GetInitialGuess(q);
+    // We expect exactly one bounding box constraint, which is the joint limits.
+    ASSERT_EQ(prog.bounding_box_constraints().size(), 1);
+    const solvers::Binding<solvers::BoundingBoxConstraint>& bounding_box =
+        prog.bounding_box_constraints().front();
+    ASSERT_TRUE(CheckStructuralEquality(bounding_box.variables(), q));
+    detail.lower_bound = bounding_box.evaluator()->lower_bound();
+    detail.upper_bound = bounding_box.evaluator()->upper_bound();
+    // We expect at most one generic constraint, which is the unit quaternion.
+    if (!prog.generic_constraints().empty()) {
+      ASSERT_EQ(prog.generic_constraints().size(), 1);
+      const solvers::Binding<solvers::Constraint>& generic =
+          prog.generic_constraints().front();
+      ASSERT_NO_THROW(unused(
+          dynamic_cast<const UnitQuaternionConstraint&>(*generic.evaluator())));
+      ASSERT_TRUE(CheckStructuralEquality(
+          generic.variables(),
+          q.segment<4>(plant->GetJointByName("robot_object").position_start())
+              .eval()));
+      detail.has_unit_quat_constraint = true;
+    }
+  };
+
+  // In all of the below, our positions vector has 8 positions in this order:
+  // - 1 position: revolute joint
+  // - 4 positions: floating joint quaternion
+  // - 3 positions: floating joint translation
+  using Vector8d = Eigen::Vector<double, 8>;
+
+  // With no context, nothing is locked.
+  const double inf = std::numeric_limits<double>::infinity();
+  inspect_constraints(nullptr);
+  EXPECT_EQ(detail.initial_guess, Vector8d(0, 1, 0, 0, 0, 0, 0, 0));
+  EXPECT_EQ(detail.lower_bound,
+            Vector8d(-0.5, -1, -1, -1, -1, -inf, -inf, -inf));
+  EXPECT_EQ(detail.upper_bound,
+            Vector8d(+0.5, +1, +1, +1, +1, +inf, +inf, +inf));
+  EXPECT_TRUE(detail.has_unit_quat_constraint);
+
+  // With a default a context, nothing is locked.
+  auto context = plant->CreateDefaultContext();
+  inspect_constraints(context.get());
+  EXPECT_EQ(detail.initial_guess, Vector8d(0, 1, 0, 0, 0, 0, 0, 0));
+  EXPECT_EQ(detail.lower_bound,
+            Vector8d(-0.5, -1, -1, -1, -1, -inf, -inf, -inf));
+  EXPECT_EQ(detail.upper_bound,
+            Vector8d(+0.5, +1, +1, +1, +1, +inf, +inf, +inf));
+  EXPECT_TRUE(detail.has_unit_quat_constraint);
+
+  // Lock the revolute joint.
+  context = plant->CreateDefaultContext();
+  world_robot.set_angle(context.get(), 1.1);
+  world_robot.Lock(context.get());
+  inspect_constraints(context.get());
+  EXPECT_EQ(detail.initial_guess, Vector8d(1.1, 1, 0, 0, 0, 0, 0, 0));
+  EXPECT_EQ(detail.lower_bound,
+            Vector8d(1.1, -1, -1, -1, -1, -inf, -inf, -inf));
+  EXPECT_EQ(detail.upper_bound,
+            Vector8d(1.1, +1, +1, +1, +1, +inf, +inf, +inf));
+  EXPECT_TRUE(detail.has_unit_quat_constraint);
+
+  // Lock the floating joint to an un-normalized initial value.
+  context = plant->CreateDefaultContext();
+  robot_object.SetQuaternion(context.get(),
+                             Eigen::Quaternion<double>(0, 3.0, 0, 0));
+  robot_object.SetTranslation(context.get(), Vector3d(0.5, 0.25, 0.125));
+  robot_object.Lock(context.get());
+  inspect_constraints(context.get());
+  EXPECT_EQ(detail.initial_guess, Vector8d(0, 0, 1, 0, 0, 0.5, 0.25, 0.125));
+  EXPECT_EQ(detail.lower_bound, Vector8d(-0.5, 0, 1, 0, 0, 0.5, 0.25, 0.125));
+  EXPECT_EQ(detail.upper_bound, Vector8d(+0.5, 0, 1, 0, 0, 0.5, 0.25, 0.125));
+  EXPECT_FALSE(detail.has_unit_quat_constraint);
+
+  // Lock both joints.
+  context = plant->CreateDefaultContext();
+  world_robot.set_angle(context.get(), 1.1);
+  world_robot.Lock(context.get());
+  robot_object.SetQuaternion(context.get(),
+                             Eigen::Quaternion<double>(0, 3.0, 0, 0));
+  robot_object.SetTranslation(context.get(), Vector3d(0.5, 0.25, 0.125));
+  robot_object.Lock(context.get());
+  inspect_constraints(context.get());
+  EXPECT_EQ(detail.initial_guess, Vector8d(1.1, 0, 1, 0, 0, 0.5, 0.25, 0.125));
+  EXPECT_EQ(detail.lower_bound, Vector8d(1.1, 0, 1, 0, 0, 0.5, 0.25, 0.125));
+  EXPECT_EQ(detail.upper_bound, Vector8d(1.1, 0, 1, 0, 0, 0.5, 0.25, 0.125));
+  EXPECT_FALSE(detail.has_unit_quat_constraint);
 }
 
 }  // namespace

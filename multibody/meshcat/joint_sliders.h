@@ -1,7 +1,6 @@
 #pragma once
 
 #include <atomic>
-#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -17,6 +16,18 @@ namespace drake {
 namespace multibody {
 namespace meshcat {
 
+namespace internal {
+struct SliderDetail {
+  std::string name;
+  double min{};
+  double max{};
+  double step{};
+  /* The nominal value for this slider. Only used for defining the slider's
+  initial value, or after Delete() after the slider has been removed. */
+  double nominal_value{};
+};
+}  // namespace internal
+
 /** %JointSliders adds slider bars to the Meshcat control panel for the joints
 of a MultibodyPlant. These might be useful for interactive or teleoperation
 demos. The sliders' current values are available on the `positions` output port
@@ -30,9 +41,6 @@ output_ports:
 
 The output port is of size `plant.num_positions()`, and the order of its
 elements matches `plant.GetPositions()`.
-
-Only positions associated with joints get sliders. All other positions are fixed
-at nominal values.
 
 Beware that the output port of this system always provides the sliders' current
 values, even if evaluated by multiple different downstream input ports during a
@@ -84,10 +92,12 @@ class JointSliders final : public systems::LeafSystem<T> {
   JointSliders(
       std::shared_ptr<geometry::Meshcat> meshcat,
       const MultibodyPlant<T>* plant,
-      std::optional<Eigen::VectorXd> initial_value = {},
-      std::variant<std::monostate, double, Eigen::VectorXd> lower_limit = {},
-      std::variant<std::monostate, double, Eigen::VectorXd> upper_limit = {},
-      std::variant<std::monostate, double, Eigen::VectorXd> step = {},
+      const std::optional<Eigen::VectorXd>& initial_value = {},
+      const std::variant<std::monostate, double, Eigen::VectorXd>& lower_limit =
+          {},
+      const std::variant<std::monostate, double, Eigen::VectorXd>& upper_limit =
+          {},
+      const std::variant<std::monostate, double, Eigen::VectorXd>& step = {},
       std::vector<std::string> decrement_keycodes = {},
       std::vector<std::string> increment_keycodes = {});
 
@@ -131,12 +141,11 @@ class JointSliders final : public systems::LeafSystem<T> {
                       std::optional<double> timeout = std::nullopt,
                       std::string stop_button_keycode = "Escape") const;
 
-  /** Sets all robot positions (corresponding to joint positions and potentially
-  positions not associated with any joint) to the values in `q`.  The meshcat
-  sliders associated with any joint positions described by `q` will have their
-  value updated.  Additionally, the "initial state" vector of positions tracked
-  by this instance will be updated to the values in `q`.  This "initial state"
-  vector update will persist even if sliders are removed (e.g., via Delete).
+  /** Sets our meshcat sliders to the values in `q`.
+
+  Additionally, the "initial state" vector of positions tracked by this instance
+  will be updated to the values in `q`.  This "initial state" vector update will
+  persist even if sliders are removed (e.g., via Delete).
 
   @param q A vector whose length is equal to the associated
   MultibodyPlant::num_positions().
@@ -152,10 +161,7 @@ class JointSliders final : public systems::LeafSystem<T> {
 
   std::shared_ptr<geometry::Meshcat> meshcat_;
   const MultibodyPlant<T>* const plant_;
-  const std::map<int, std::string> position_names_;
-  /* The nominal values for all positions; positions with sliders will not use
-   their nominal value except for defining the slider's initial value. */
-  Eigen::VectorXd nominal_value_;
+  std::vector<internal::SliderDetail> slider_details_;
   std::atomic<bool> is_registered_;
 };
 
