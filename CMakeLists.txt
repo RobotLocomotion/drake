@@ -1,7 +1,7 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
@@ -346,9 +346,6 @@ endfunction()
 
 macro(override_module NAME)
   set(local_path "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
-  string(APPEND BAZEL_REPO_ENV " --override_module=${NAME}=${local_path}")
-  string(APPEND BAZEL_REPO_ENV
-      " --@drake//tools/workspace/${NAME}:with_user_${NAME}=True")
   file(GENERATE OUTPUT "${local_path}/MODULE.bazel"
     INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/MODULE.bazel.in")
   file(GENERATE OUTPUT "${local_path}/BUILD.bazel"
@@ -357,6 +354,23 @@ macro(override_module NAME)
     "${PROJECT_SOURCE_DIR}/cmake/external/workspace/conversion.bzl"
     "${local_path}/conversion.bzl"
     SYMBOLIC)
+  string(APPEND BAZEL_REPO_ENV
+      " --override_module=${NAME}=${local_path}")
+  string(APPEND BAZEL_REPO_ENV
+      " --@drake//tools/workspace/${NAME}:with_user_${NAME}=True")
+endmacro()
+
+macro(override_repository NAME)
+  set(local_path "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
+  file(MAKE_DIRECTORY "${local_path}")
+  file(GENERATE OUTPUT "${local_path}/MODULE.bazel"
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/MODULE.bazel.in")
+  file(GENERATE OUTPUT "${local_path}/BUILD.bazel"
+    INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/workspace/${NAME}/BUILD.bazel.in")
+  string(APPEND BAZEL_REPO_ENV
+      " --override_repository=drake++drake_dep_repositories+${NAME}=${local_path}")
+  string(APPEND BAZEL_REPO_ENV
+      " --@drake//tools/workspace/${NAME}:with_user_${NAME}=True")
 endmacro()
 
 if(APPLE AND DRAKE_CI_ENABLE_PACKAGING)
@@ -396,6 +410,45 @@ if(WITH_USER_SPDLOG)
   symlink_external_repository_includes(spdlog spdlog::spdlog)
   symlink_external_repository_libs(spdlog spdlog::spdlog)
   override_module(spdlog)
+endif()
+
+if(NOT APPLE)
+  option(WITH_USER_BLAS "Use user-provided BLAS" ${DEFAULT_WITH_USER_LIBS})
+
+  if(WITH_USER_BLAS)
+    find_package(BLAS REQUIRED)
+    override_repository(blas)
+    # The BLAS_LIBRARIES is a CMake list of libraries, where the actual blas
+    # is first followed by the transitive closure of libraries it uses. For our
+    # purposes, we only want to symlink the primary library. We'll rely on the
+    # NEEDED entries on the primary library to link its dependencies.
+    list(GET BLAS_LIBRARIES 0 FIRST_BLAS_LIBRARY)
+    file(CREATE_LINK
+      "${FIRST_BLAS_LIBRARY}"
+      "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/blas/libblas.so"
+      SYMBOLIC)
+  endif()
+
+  option(WITH_USER_LAPACK "Use user-provided LAPACK" ${DEFAULT_WITH_USER_LIBS})
+
+  if(WITH_USER_LAPACK)
+    if(NOT WITH_USER_BLAS)
+      message(FATAL_ERROR
+        "User-provided lapack (WITH_USER_LAPACK) "
+        "requires user-provided blas (WITH_USER_BLAS).")
+    endif()
+    find_package(LAPACK REQUIRED)
+    override_repository(lapack)
+    # The LAPACK_LIBRARIES is a CMake list of libraries, where the actual lapack
+    # is first followed by the transitive closure of libraries it uses. For our
+    # purposes, we only want to symlink the primary library. We'll rely on the
+    # NEEDED entries on the primary library to link its dependencies.
+    list(GET LAPACK_LIBRARIES 0 FIRST_LAPACK_LIBRARY)
+    file(CREATE_LINK
+      "${FIRST_LAPACK_LIBRARY}"
+      "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/lapack/liblapack.so"
+      SYMBOLIC)
+  endif()
 endif()
 
 set(BAZEL_CONFIG)

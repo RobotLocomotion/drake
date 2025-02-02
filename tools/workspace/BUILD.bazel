@@ -144,11 +144,13 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "yaml_cpp_internal",
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "abseil_cpp_internal",
+    "blas",
     "conex_internal",
     "eigen",
     "fmt",
     "gflags",
     "highway_internal",
+    "lapack",
     "libjpeg_turbo_internal",
     "spdlog",
 ]] + select({
