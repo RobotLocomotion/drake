@@ -139,6 +139,7 @@ drake_py_unittest(
     num_threads = 2,
     deps = [
         ":planning",
+        "//bindings/pydrake/multibody:inverse_kinematics_py",
     ],
 )
 
