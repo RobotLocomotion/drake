@@ -33,6 +33,7 @@ DEFINE_string(simulator_integration_scheme,
               "[Integrator flag] Integration scheme to be used. Available "
               "options are: "
               "'bogacki_shampine3', "
+              "'convex', "
               "'explicit_euler', "
               "'implicit_euler', "
               "'radau1', "

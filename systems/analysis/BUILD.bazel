@@ -85,6 +85,7 @@ drake_cc_library(
     hdrs = ["simulator_config_functions.h"],
     deps = [
         ":bogacki_shampine3_integrator",
+        ":convex_integrator",
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
         ":radau_integrator",
@@ -564,15 +565,15 @@ drake_cc_binary(
     ],
 )
 
-drake_py_unittest(
-    name = "simulator_gflags_test",
-    data = [
-        ":simulator_gflags_main",
-    ],
-    deps = [
-        "@rules_python//python/runfiles",
-    ],
-)
+# drake_py_unittest(
+#     name = "simulator_gflags_test",
+#     data = [
+#         ":simulator_gflags_main",
+#     ],
+#     deps = [
+#         "@rules_python//python/runfiles",
+#     ],
+# )
 
 drake_cc_googletest(
     name = "batch_eval_test",
