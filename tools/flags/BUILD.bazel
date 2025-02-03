@@ -121,6 +121,11 @@ string_flag(
 # `@drake//tools/workspace/spdlog` library into a no-op and Drake will be built
 # without any text_logging infrastructure; all log messages will be discarded.
 #
+# WARNING: The "disabled" feature should be considered experimental (no promise
+# of stability in future releases); in the future, we anticipate respelling the
+# flag so that "how to find spdlog" and "what should text_logging be doing" are
+# configured separately.
+#
 # Note that fmt is typically a dependency of spdlog, so be careful to configure
 # them in a sensible pairing; setting one to module and the other to pkgconfig
 # is probably a mistake.
@@ -129,9 +134,10 @@ string_flag(
     build_setting_default = "default",
     values = [
         "default",
-        "disabled",
         "module",
         "pkgconfig",
+        # N.B. See warning above about our stability promise for 'disabled'.
+        "disabled",
     ],
 )
 
