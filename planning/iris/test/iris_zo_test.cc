@@ -399,6 +399,36 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
 
     MaybePauseForUser();
   }
+
+  // Another version of the test, adding the additional constraint that
+  // x <= -0.3.
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(2, "q");
+  Eigen::RowVectorXd a(2);
+  a << 1, 0;
+  double lb = -std::numeric_limits<double>::infinity();
+  double ub = -0.3;
+  prog.AddLinearConstraint(a, lb, ub, q);
+  options.prog_with_additional_constraints = &prog;
+  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
+
+  {
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
+    meshcat->SetTransform("Test point", math::RigidTransform(Eigen::Vector3d(
+                                            z_test, theta_test, 0)));
+
+    MaybePauseForUser();
+  }
+
+  EXPECT_FALSE(region.PointInSet(Vector2d(-0.1, 0.0)));
+  EXPECT_TRUE(region.PointInSet(Vector2d(-0.4, 0.0)));
 }
 /* A movable sphere with fixed boxes in all corners.
 ┌───────────────┐
