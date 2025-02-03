@@ -106,8 +106,8 @@ rust_proc_macro(
     }),
     version = "1.0.217",
     deps = [
-        "@crate__proc-macro2-1.0.92//:proc_macro2",
+        "@crate__proc-macro2-1.0.93//:proc_macro2",
         "@crate__quote-1.0.38//:quote",
-        "@crate__syn-2.0.94//:syn",
+        "@crate__syn-2.0.96//:syn",
     ],
 )
