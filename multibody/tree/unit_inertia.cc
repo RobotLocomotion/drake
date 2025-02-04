@@ -8,27 +8,6 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-UnitInertia<T>& UnitInertia<T>::SetFromRotationalInertia(
-    const RotationalInertia<T>& I, const T& mass) {
-  DRAKE_THROW_UNLESS(mass > 0);
-  RotationalInertia<T>::operator=(I / mass);
-  return *this;
-}
-
-template <typename T>
-UnitInertia<T> UnitInertia<T>::PointMass(const Vector3<T>& p_FQ) {
-  // Square each coefficient in p_FQ, perhaps better with p_FQ.array().square()?
-  const Vector3<T> p2m = p_FQ.cwiseAbs2();  // [x²  y²  z²].
-  const T mp0 = -p_FQ(0);                   // -x
-  const T mp1 = -p_FQ(1);                   // -y
-  return UnitInertia<T>(
-      // Gxx = y² + z²,  Gyy = x² + z²,  Gzz = x² + y²
-      p2m[1] + p2m[2], p2m[0] + p2m[2], p2m[0] + p2m[1],
-      // Gxy = -x y,  Gxz = -x z,   Gyz = -y z
-      mp0 * p_FQ[1], mp0 * p_FQ[2], mp1 * p_FQ[2]);
-}
-
-template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidEllipsoid(const T& a, const T& b,
                                               const T& c) {
   const T a2 = a * a;

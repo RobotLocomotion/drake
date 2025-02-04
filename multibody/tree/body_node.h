@@ -242,6 +242,10 @@ class BodyNode : public MultibodyElement<T> {
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       PositionKinematicsCache<T>* pc) const = 0;
 
+  virtual void CalcPositionKinematicsCacheInM_BaseToTip(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      PositionKinematicsCacheInM<T>* pcm) const = 0;
+
   // Calculates the hinge matrix H_PB_W, the `6 x nm` hinge matrix that relates
   // V_PB_W`(body B's spatial velocity in its parent body P, expressed in world
   // W) to this node's nm generalized velocities (or mobilities) v_B as
@@ -291,38 +295,64 @@ class BodyNode : public MultibodyElement<T> {
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const = 0;
 
+  virtual void CalcVelocityKinematicsCacheInM_BaseToTip(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const T* velocities, VelocityKinematicsCacheInM<T>* vcm) const = 0;
+
   // The CalcMassMatrix() algorithm invokes this on each body k, serving
   // as the composite body R(k) in the outer loop of Jain's algorithm 9.3.
   // This node must fill in its nv x nv diagonal block in M, and then
   // sweep down to World filling in its diagonal contributions as in the
   // inner loop of algorithm 9.3, using the appropriate
-  // CalcMassMatrixOffDiagonalHelper().
-  virtual void CalcMassMatrixContribution_TipToBase(
+  // CalcMassMatrixOffDiagonalViaWorldHelper().
+  virtual void CalcMassMatrixContributionViaWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
+      const std::vector<SpatialInertia<T>>& I_BBo_W_cache,
       const std::vector<Vector6<T>>& H_PB_W_cache,
       EigenPtr<MatrixX<T>> M) const = 0;
 
+  // Same, but calculated in body M frames rather than World.
+  virtual void CalcMassMatrixContributionViaM_TipToBase(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const std::vector<SpatialInertia<T>>& I_BMo_M_cache,
+      EigenPtr<MatrixX<T>> M) const = 0;
+
   // There are six functions for calculating the off-diagonal blocks, one for
-  // each possible size Rnv of body R(k)'s inboard mobilizer (welds don't
+  // each possible size Bnv of body B(k)'s inboard mobilizer (welds don't
   // contribute here). This allows us to use fixed-size 2d matrices in the
-  // implementation as we sweep the inboard bodies. Use the separate
-  // dispatcher class CalcMassMatrixOffDiagonalDispatcher (defined below)
-  // to generate the properly sized call for body R(k).
-#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                     \
-  virtual void CalcMassMatrixOffDiagonalBlock##Rnv(                     \
-      int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
-      const Eigen::Matrix<T, 6, Rnv>& Fm_CBo_W, EigenPtr<MatrixX<T>> M) \
+  // implementation as we sweep the inboard bodies. Use the separate dispatcher
+  // class CalcMassMatrixOffDiagonalViaWorldDispatcher (defined below) to
+  // generate the properly sized call for body B(k).
+#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(Bnv)           \
+  virtual void CalcMassMatrixOffDiagonalBlockViaWorld##Bnv(             \
+      int B_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,    \
+      const Eigen::Matrix<T, 6, Bnv>& Fm_CBo_W, EigenPtr<MatrixX<T>> M) \
       const = 0
 
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(1);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(2);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(3);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(4);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(5);
-  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(1);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(2);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(3);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(4);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(5);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD(6);
 
-#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
+#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_WORLD
+
+  // Repeat for the M-frame algorithm.
+#define DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(Bnv)           \
+  virtual void CalcMassMatrixOffDiagonalBlockViaM##Bnv(             \
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm, \
+      int B_start_in_v, const Eigen::Matrix<T, 6, Bnv>& Fm_CMp_Mp,  \
+      EigenPtr<MatrixX<T>> M) const = 0
+
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(1);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(2);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(3);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(4);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(5);
+  DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M(6);
+
+#undef DECLARE_MASS_MATRIX_OFF_DIAGONAL_BLOCK_VIA_M
 
   // This method is used by MultibodyTree within a base-to-tip loop to compute
   // this node's kinematics that depend on the generalized accelerations, i.e.
@@ -374,6 +404,12 @@ class BodyNode : public MultibodyElement<T> {
       const VelocityKinematicsCache<T>* vc, const T* accelerations,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const = 0;
 
+  virtual void CalcSpatialAccelerationInM_BaseToTip(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const T* velocities, const VelocityKinematicsCacheInM<T>& vcm,
+      const T* accelerations,
+      std::vector<SpatialAcceleration<T>>* A_WM_M_array) const = 0;
+
   // Computes the generalized forces `tau` for a single BodyNode.
   // This method is used by MultibodyTree within a tip-to-base loop to compute
   // the vector of generalized forces `tau` that would correspond with a known
@@ -416,13 +452,13 @@ class BodyNode : public MultibodyElement<T> {
   //   result in body B having spatial acceleration `A_WB`. This can be the same
   //   object as tau_applied_array.
   //
-  // @pre CalcInverseDynamics_TipToBase() must have already been
+  // @pre CalcInverseDynamicsViaWorld_TipToBase() must have already been
   // called for all the child nodes of `this` node (and, by recursive
   // precondition, all successor nodes in the tree.)
   // Unit test coverage for this method is provided, among others, in
   // double_pendulum_test.cc, and by any other unit tests making use of
   // MultibodyTree::CalcInverseDynamics().
-  virtual void CalcInverseDynamics_TipToBase(
+  virtual void CalcInverseDynamicsViaWorld_TipToBase(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& M_B_W_cache,
@@ -431,6 +467,17 @@ class BodyNode : public MultibodyElement<T> {
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
       const Eigen::Ref<const VectorX<T>>& tau_applied_array,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
+      EigenPtr<VectorX<T>> tau_array) const = 0;
+
+  virtual void CalcInverseDynamicsViaM_TipToBase(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,  // M_BMo_M, X_BM
+      const T* positions,
+      const PositionKinematicsCacheInM<T>& pc,  // X_MpM, X_WB
+      const VelocityKinematicsCacheInM<T>& vc,  // V_WM_M
+      const std::vector<SpatialAcceleration<T>>& A_WM_M_array,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,  // Bo, W !
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+      std::vector<SpatialForce<T>>* F_BMo_M_array,
       EigenPtr<VectorX<T>> tau_array) const = 0;
 
   // This method is used by MultibodyTree within a tip-to-base loop to compute
@@ -599,21 +646,29 @@ class BodyNode : public MultibodyElement<T> {
       std::vector<SpatialAcceleration<T>>* Ab_WB_array) const = 0;
 
   // This method is used by MultibodyTree within a tip-to-base loop to compute
-  // the composite body inertia of each body in the system.
+  // the composite body inertia of each body in the system, taken about its
+  // own body frame origin, and expressed in the World frame.
   //
   // @param[in] pc Position kinematics cache.
-  // @param[in] M_B_W_all Spatial inertias for all bodies B.
-  // About B's origin Bo and expressed in the world frame W.
-  // @param[in] Mc_B_W_all Vector storing the composite body inertia for all
-  // bodies in the multibody system. It must contain already up-to-date
-  // composite body inertias for all the children of `this` node.
-  // @pre CalcCompositeBodyInertia_TipToBase() must have already been called
-  // for the children nodes (and, by recursive precondition, all outboard nodes
-  // in the tree.)
-  virtual void CalcCompositeBodyInertia_TipToBase(
+  // @param[in] M_BBo_W_all Spatial inertias for all bodies B, about Bo,
+  //   and expressed in World (depends on configuration).
+  // @param[in] Mc_BBo_W_all Vector storing the composite body inertias, taken
+  //   about Bo, and expressed in World, for all bodies in the multibody system.
+  //   It must contain already up-to-date composite body inertias for all the
+  //   children of `this` node.
+  //
+  // @pre CalcCompositeBodyInertiaInWorld_TipToBase() must have already been
+  // called for the children nodes (and, by recursive precondition, all outboard
+  // nodes in the tree.)
+  virtual void CalcCompositeBodyInertiaInWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
-      const std::vector<SpatialInertia<T>>& M_B_W_all,
-      std::vector<SpatialInertia<T>>* Mc_B_W_all) const;
+      const std::vector<SpatialInertia<T>>& M_BBo_W_all,
+      std::vector<SpatialInertia<T>>* Mc_BBo_W_all) const;
+
+  virtual void CalcCompositeBodyInertiaInM_TipToBase(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,  // for M_BMo_M
+      const PositionKinematicsCacheInM<T>& pcm,            // for X_MpM(q)
+      std::vector<SpatialInertia<T>>* Mc_BMo_M_all) const;
 
   // Forms LLT factorization of articulated rigid body's hinge inertia matrix.
   // @param[in] D_B Articulated rigid body hinge matrix.
@@ -690,32 +745,61 @@ class BodyNode : public MultibodyElement<T> {
   const Mobilizer<T>* mobilizer_{nullptr};
 };
 
-// During mass matrix computation, this dispatcher is invoked by the
-// composite body R(k) on each of the bodies on the path to World.
-template <typename T, int Rnv>
-class CalcMassMatrixOffDiagonalDispatcher;
+// During CalcMassMatrix() (using the Composite Body Algorithm via recursion of
+// World-frame quantities), this dispatcher is invoked by the composite body B,
+// whose inboard mobilizer has Bnv dofs, on each of the bodies ("parent nodes")
+// on its inboard path to World.
+template <typename T, int Bnv>
+class CalcMassMatrixOffDiagonalViaWorldDispatcher;
 
-#define SPECIALIZE_MASS_MATRIX_DISPATCHER(Rnv)                           \
-  template <typename T>                                                  \
-  class CalcMassMatrixOffDiagonalDispatcher<T, Rnv> {                    \
-   public:                                                               \
-    static void Dispatch(const BodyNode<T>& body_node, int R_start_in_v, \
-                         const std::vector<Vector6<T>>& H_PB_W_cache,    \
-                         const Eigen::Matrix<T, 6, Rnv>& Fm_CBo_W,       \
-                         EigenPtr<MatrixX<T>> M) {                       \
-      body_node.CalcMassMatrixOffDiagonalBlock##Rnv(                     \
-          R_start_in_v, H_PB_W_cache, Fm_CBo_W, M);                      \
-    }                                                                    \
+#define SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(Bnv)                   \
+  template <typename T>                                                    \
+  class CalcMassMatrixOffDiagonalViaWorldDispatcher<T, Bnv> {              \
+   public:                                                                 \
+    static void Dispatch(const BodyNode<T>& parent_node, int B_start_in_v, \
+                         const std::vector<Vector6<T>>& H_PB_W_cache,      \
+                         const Eigen::Matrix<T, 6, Bnv>& Fm_CPo_W,         \
+                         EigenPtr<MatrixX<T>> M) {                         \
+      parent_node.CalcMassMatrixOffDiagonalBlockViaWorld##Bnv(             \
+          B_start_in_v, H_PB_W_cache, Fm_CPo_W, M);                        \
+    }                                                                      \
   }
 
-SPECIALIZE_MASS_MATRIX_DISPATCHER(1);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(2);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(3);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(4);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(5);
-SPECIALIZE_MASS_MATRIX_DISPATCHER(6);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(1);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(2);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(3);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(4);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(5);
+SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER(6);
 
-#undef SPECIALIZE_MASS_MATRIX_DISPATCHER
+#undef SPECIALIZE_MASS_MATRIX_VIA_WORLD_DISPATCHER
+
+// Same as above except for CalcMassMatrixViaM().
+template <typename T, int Bnv>
+class CalcMassMatrixOffDiagonalViaMDispatcher;
+
+#define SPECIALIZE_MASS_MATRIX_VIA_M_DISPATCHER(Bnv)                         \
+  template <typename T>                                                      \
+  class CalcMassMatrixOffDiagonalViaMDispatcher<T, Bnv> {                    \
+   public:                                                                   \
+    static void Dispatch(const BodyNode<T>& parent_node, const T* positions, \
+                         const PositionKinematicsCacheInM<T>& pcm,           \
+                         int B_start_in_v,                                   \
+                         const Eigen::Matrix<T, 6, Bnv>& Fm_CMp_Mp,          \
+                         EigenPtr<MatrixX<T>> M) {                           \
+      parent_node.CalcMassMatrixOffDiagonalBlockViaM##Bnv(                   \
+          positions, pcm, B_start_in_v, Fm_CMp_Mp, M);                       \
+    }                                                                        \
+  }
+
+SPECIALIZE_MASS_MATRIX_VIA_M_DISPATCHER(1);
+SPECIALIZE_MASS_MATRIX_VIA_M_DISPATCHER(2);
+SPECIALIZE_MASS_MATRIX_VIA_M_DISPATCHER(3);
+SPECIALIZE_MASS_MATRIX_VIA_M_DISPATCHER(4);
+SPECIALIZE_MASS_MATRIX_VIA_M_DISPATCHER(5);
+SPECIALIZE_MASS_MATRIX_VIA_M_DISPATCHER(6);
+
+#undef SPECIALIZE_MASS_MATRIX_VIA_M_DISPATCHER
 
 }  // namespace internal
 }  // namespace multibody

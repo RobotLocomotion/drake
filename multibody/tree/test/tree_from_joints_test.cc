@@ -242,13 +242,19 @@ class PendulumTests : public ::testing::Test {
     pendulum_.elbow().set_angle(context_.get(), theta2);
 
     // MultibodyTree mass matrix:
-    Matrix2d H;
-    tree().CalcMassMatrixViaInverseDynamics(*context_, &H);
+    Matrix2d H_id, H_in_world, H_in_m;
+    tree().CalcMassMatrixViaInverseDynamics(*context_, &H_id);
+    tree().CalcMassMatrix(*context_, &H_in_world);
+    tree().CalcMassMatrixViaM(*context_, &H_in_m);
 
-    // Benchmark mass matrix:
+    // Benchmark mass matrix (doesn't actually depend on theta1):
     Matrix2d H_expected = acrobot_benchmark_.CalcMassMatrix(theta2);
 
-    EXPECT_TRUE(CompareMatrices(H, H_expected, kTolerance,
+    EXPECT_TRUE(CompareMatrices(H_id, H_expected, kTolerance,
+                                MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(H_in_world, H_expected, kTolerance,
+                                MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(H_in_m, H_expected, kTolerance,
                                 MatrixCompareType::relative));
   }
 

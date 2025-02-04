@@ -1510,7 +1510,8 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
       M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
-  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(X_BA.translation(), Vector3<double>::Zero(), kTolerance));
 
   // Verify CalcMinimumPhysicalLength() returns the length of the face-diagonal
   // of the minimum bounding rectangle (i.e., √[(2*a)² + (2*b)²] = 500).
@@ -1533,7 +1534,8 @@ GTEST_TEST(SpatialInertia, VerifyMinimumBoundingBoxLengths) {
       M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForMinimumBoundingBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
-  EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
+  EXPECT_TRUE(
+      CompareMatrices(X_BA.translation(), Vector3<double>::Zero(), kTolerance));
 
   // Verify CalcMinimumPhysicalLength() returns the length of the space-diagonal
   // of the minimum bounding box (i.e., √[(2*a)² + (2*b)² + (2*c)²] = 390 m).
