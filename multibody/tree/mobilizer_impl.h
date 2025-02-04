@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <optional>
-#include <vector>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -12,8 +11,6 @@
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_element.h"
-#include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -35,8 +32,41 @@ following (ideally inline) methods.
 state variables for the particular mobilizer. They are only 8-byte aligned so be
 careful when interpreting them as Eigen vectors for computation purposes.
 
-  // Returns X_FM(q)
-  math::RigidTransform<T> calc_X_FM(const T* q) const;
+  // Computes X_FM(q)
+  // TODO(sherm1) Do we need this one?
+  RigidTransform<T> calc_X_FM(const T* q) const;
+
+  // Returns a transform that has the right constants set so that only changed
+  // elements need be written subsequently. In most cases returning an identity
+  // transform is sufficient.
+  RigidTransform<T> init_X_FM0() const;
+
+  // Given current q and an X_FM that has been properly initialized with
+  // init_X_FM0() or previous updates, update to X_FM(q) by filling in only
+  // the potentially-changed elements. For example, a revolute mobilizer about
+  // one of the frame axes will update only the four sine & cosine entries.
+  // A prismatic mobilizer along the Z axis updates only the z shift element.
+  void update_X_FM(const T* q, RigidTransform<T>* X_FM) const;
+
+  // Returns v_F = X_FM ⋅ v_M (shift and re-express)
+  Vector3<T> apply_X_FM(const RigidTransform<T>& X_FM,
+                        const Vector3<T>& v_M) const;
+
+  // Returns v_F = R_FM ⋅ v_M (re-express)
+  Vector3<T> apply_R_FM(const RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const;
+
+  // Compose X_AM = X_AF ⋅ X_FM, optimized for the known structure of X_FM.
+  // For example, a revolute mobilizer has only 4 significant entries in X_FM
+  // out of 12, and a prismatic along Z has only 1.
+  void compose_with_X_FM(const RigidTransform<T>& X_AF,
+                         const RigidTransform<T>& X_FM,
+                         RigidTransform<T>* X_AM) const;
+
+  // Compose X_FB = X_FM ⋅ X_MB, optimized for the known structure of X_FM.
+  void compose_X_FM_with(const RigidTransform<T>& X_FM,
+                         const RigidTransform<T>& X_MB,
+                         RigidTransform<T>* X_FB) const;
 
   // Returns V_FM_F = H_FM_F(q)⋅v
   SpatialVelocity<T> calc_V_FM(const T* q,
@@ -64,6 +94,8 @@ template <typename T, int compile_time_num_positions,
 class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl);
+
+  using ScalarType = T;
 
   // Handy enum to grant specific implementations compile time sizes.
   // static constexpr int i = 42; discouraged.  See answer in:
@@ -148,6 +180,56 @@ class MobilizerImpl : public Mobilizer<T> {
     }
 
     random_state_distribution_->template tail<kNv>() = velocity;
+  }
+
+  // This is the default implementation for init_X_FM0(), which is required
+  // to return a cross-mobilizer transform with the appropriate structure for
+  // each mobilizer. The idea is that during computation, a mobilizer need only
+  // update the changing entries in X_FM(q) because all the constant entries
+  // were properly set by this function. In most cases, an identity transform
+  // is sufficient.
+  math::RigidTransform<T> init_X_FM0() const {
+    return math::RigidTransform<T>::Identity();
+  }
+
+  // N.B. no default implementations possible for calc_X_FM() and update_X_FM()
+  // here. However, a minimal implementation for update_X_FM() in a concrete
+  // mobilizer is just *X_FM = calc_X_FM(q).
+
+  // Returns v_F = X_FM ⋅ v_M (shift and re-express). The default implementation
+  // treats X_FM as fully general and performs this in 18 flops. Mobilizers
+  // that know more about the structure of their X_FM should override.
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>& X_FM,
+                        const Vector3<T>& v_M) const {
+    return X_FM * v_M;
+  }
+
+  // Returns v_F = R_FM ⋅ v_M (re-express). The default implementation
+  // treats R_FM as fully general and performs this in 15 flops. Mobilizers
+  // that know more about the structure of their R_FM should override.
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const {
+    return R_FM * v_M;
+  }
+
+  // Returns the composition X_AM = X_AF ⋅ X_FM. The default implementation
+  // treats X_FM as fully general and performs this in 63 flops. Mobilizers
+  // that know more about the structure of their X_FM should override.
+  math::RigidTransform<T> compose_with_X_FM(
+      const math::RigidTransform<T>& X_AF,
+      const math::RigidTransform<T>& X_FM) const {
+    const math::RigidTransform<T> X_AM = X_AF * X_FM;
+    return X_AM;
+  }
+
+  // Returns the composition X_FB = X_FM ⋅ X_MB. The default implementation
+  // treats X_FM as fully general and performs this in 63 flops. Mobilizers
+  // that know more about the structure of their X_FM should override.
+  math::RigidTransform<T> compose_X_FM_with(
+      const math::RigidTransform<T>& X_FM,
+      const math::RigidTransform<T>& X_MB) const {
+    const math::RigidTransform<T> X_FB = X_FM * X_MB;
+    return X_FB;
   }
 
  protected:

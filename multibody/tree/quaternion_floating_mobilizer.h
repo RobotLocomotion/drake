@@ -220,6 +220,12 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                                    Vector3<T>(q[4], q[5], q[6]));
   }
 
+  /* There's nothing to optimize for the X_FM update. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
     DRAKE_ASSERT(v != nullptr);
     const Eigen::Map<const VVector<T>> V_FM(v);

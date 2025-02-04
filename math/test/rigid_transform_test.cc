@@ -882,21 +882,21 @@ GTEST_TEST(RigidTransform, SpecializedTransformOperators) {
   Xform X_AC;                                    // reusable result
 
   // Test ComposeWithRotation() and ComposeWithTranslation().
-  X_AB.ComposeWithRotation(rX_BC, &X_AC);
+  X_AB.ComposeThisWithRotation(rX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * rX_BC, kTol));
 
-  X_AB.ComposeWithTranslation(tX_BC, &X_AC);
+  X_AB.ComposeThisWithTranslation(tX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * tX_BC, kTol));
 
-  X_AB.ComposeWithAxialTranslation<1>(ytX_BC, &X_AC);
+  X_AB.ComposeThisWithAxialTranslation<1>(ytX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * ytX_BC, kTol));
 
   // Test ComposeWithAxialRotation().
-  X_AB.ComposeWithAxialRotation<0>(xrX_BC, &X_AC);
+  X_AB.ComposeThisWithAxialRotation<0>(xrX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * xrX_BC, kTol));
-  X_AB.ComposeWithAxialRotation<1>(yrX_BC, &X_AC);
+  X_AB.ComposeThisWithAxialRotation<1>(yrX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * yrX_BC, kTol));
-  X_AB.ComposeWithAxialRotation<2>(zrX_BC, &X_AC);
+  X_AB.ComposeThisWithAxialRotation<2>(zrX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * zrX_BC, kTol));
 }
 
