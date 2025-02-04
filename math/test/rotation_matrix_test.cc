@@ -748,15 +748,25 @@ GTEST_TEST(RotationMatrix, AxialRotationOperators) {
                  std::exception);
   }
 
-  // Test ComposeWithAxialRotation().
+  // Test ComposeThisWithAxialRotation().
   const Rmat R_AB(RollPitchYaw(1.0, 2.0, 3.0));
   Rmat R_AC;  // reusable result
-  R_AB.ComposeWithAxialRotation<0>(xR_BC, &R_AC);
+  R_AB.ComposeThisWithAxialRotation<0>(xR_BC, &R_AC);
   EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * xR_BC, kTol));
-  R_AB.ComposeWithAxialRotation<1>(yR_BC, &R_AC);
+  R_AB.ComposeThisWithAxialRotation<1>(yR_BC, &R_AC);
   EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * yR_BC, kTol));
-  R_AB.ComposeWithAxialRotation<2>(zR_BC, &R_AC);
+  R_AB.ComposeThisWithAxialRotation<2>(zR_BC, &R_AC);
   EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * zR_BC, kTol));
+
+  // Test ComposeAxialRotationWithThis().
+  const Rmat R_CD(RollPitchYaw(1.0, 2.0, 3.0));
+  Rmat R_BD;  // reusable result
+  R_CD.ComposeAxialRotationWithThis<0>(xR_BC, &R_BD);
+  EXPECT_TRUE(R_BD.IsNearlyEqualTo(xR_BC * R_CD, kTol));
+  R_CD.ComposeAxialRotationWithThis<1>(yR_BC, &R_BD);
+  EXPECT_TRUE(R_BD.IsNearlyEqualTo(yR_BC * R_CD, kTol));
+  R_CD.ComposeAxialRotationWithThis<2>(zR_BC, &R_BD);
+  EXPECT_TRUE(R_BD.IsNearlyEqualTo(zR_BC * R_CD, kTol));
 }
 
 // The axial rotation operators exist for performance reasons. For some of them
@@ -808,7 +818,7 @@ GTEST_TEST(RotationMatrix, AxialRotationOptimizations) {
     // one.
     const Rmat R_AB(RollPitchYaw(1.0, 2.0, 3.0));
     Rmat R_AC;
-    R_AB.ComposeWithAxialRotation<1>(yR_BC_mangled, &R_AC);
+    R_AB.ComposeThisWithAxialRotation<1>(yR_BC_mangled, &R_AC);
     EXPECT_TRUE(
         R_AC.IsNearlyEqualTo(R_AB * Rmat::MakeYRotation(new_theta), kTol));
   }
