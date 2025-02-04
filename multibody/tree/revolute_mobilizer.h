@@ -277,10 +277,25 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
                               Vector3<T>::Zero());
   }
 
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T* v) const {
+    return SpatialVelocity<T>(v[0] * axis_FM(),  // axis_M, 3 flops
+                              Vector3<T>::Zero());
+  }
+
   // Here H_F₆ₓ₁=[axis_F, 0₃]ᵀ so Hdot_F = 0 and
   // A_FM_F = H_F⋅vdot + Hdot_F⋅v = [axis_F⋅vdot, 0₃]ᵀ
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
     return SpatialAcceleration<T>(vdot[0] * axis_FM(),  // axis_F, 3 flops
+                                  Vector3<T>::Zero());
+  }
+
+  // Here H_M₆ₓ₁=[axis_M, 0₃]ᵀ so Hdot_M = 0 and
+  // A_FM_M = H_M⋅vdot + Hdot_M⋅v = [axis_M⋅vdot, 0₃]ᵀ
+  // But axis_M == axis_F.
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T* vdot) const {
+    return SpatialAcceleration<T>(vdot[0] * axis_FM(),  // axis_M, 3 flops
                                   Vector3<T>::Zero());
   }
 
@@ -289,6 +304,15 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
     DRAKE_ASSERT(tau != nullptr);
     const Vector3<T>& t_BMo_F = F_BMo_F.rotational();
     tau[0] = t_BMo_F[axis];
+  }
+
+  // Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [axis_Mᵀ 0₃ᵀ] and
+  // axis_M == 100, 010, or 001.
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const Vector3<T>& t_BMo_M = F_BMo_M.rotational();
+    tau[0] = t_BMo_M[axis];
   }
 
  private:
