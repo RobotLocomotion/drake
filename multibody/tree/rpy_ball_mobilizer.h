@@ -85,8 +85,8 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   ~RpyBallMobilizer() final;
 
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+      const BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
   bool has_quaternion_dofs() const final { return false; }
@@ -183,6 +183,13 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   math::RigidTransform<T> calc_X_FM(const T* q) const {
     return math::RigidTransform<T>(math::RollPitchYaw<T>(q[0], q[1], q[2]),
                                    Vector3<T>::Zero());
+  }
+
+  /* We're not attempting to optimize the update, but could improve slightly
+  since the translation never changes (always zero). */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
   }
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
