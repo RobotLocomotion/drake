@@ -881,23 +881,33 @@ GTEST_TEST(RigidTransform, SpecializedTransformOperators) {
   const Xform ytX_BC(Vector3d(0.0, -2.0, 0.0));  // y-axial translation
   Xform X_AC;                                    // reusable result
 
-  // Test ComposeWithRotation() and ComposeWithTranslation().
-  X_AB.ComposeWithRotation(rX_BC, &X_AC);
+  // Test ComposeThisWithRotation() and ComposeThisWithTranslation().
+  X_AB.ComposeThisWithRotation(rX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * rX_BC, kTol));
 
-  X_AB.ComposeWithTranslation(tX_BC, &X_AC);
+  X_AB.ComposeThisWithTranslation(tX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * tX_BC, kTol));
 
-  X_AB.ComposeWithAxialTranslation<1>(ytX_BC, &X_AC);
+  X_AB.ComposeThisWithAxialTranslation<1>(ytX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * ytX_BC, kTol));
 
-  // Test ComposeWithAxialRotation().
-  X_AB.ComposeWithAxialRotation<0>(xrX_BC, &X_AC);
+  // Test ComposeThisWithAxialRotation().
+  X_AB.ComposeThisWithAxialRotation<0>(xrX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * xrX_BC, kTol));
-  X_AB.ComposeWithAxialRotation<1>(yrX_BC, &X_AC);
+  X_AB.ComposeThisWithAxialRotation<1>(yrX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * yrX_BC, kTol));
-  X_AB.ComposeWithAxialRotation<2>(zrX_BC, &X_AC);
+  X_AB.ComposeThisWithAxialRotation<2>(zrX_BC, &X_AC);
   EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * zrX_BC, kTol));
+
+  // Test ComposeAxialRotationWithThis().
+  const Xform X_CD(RollPitchYaw(1.0, 2.0, 3.0), Vector3d(1.5, 2.5, 3.5));
+  Xform X_BD;  // reusable result
+  X_CD.ComposeAxialRotationWithThis<0>(xrX_BC, &X_BD);
+  EXPECT_TRUE(X_BD.IsNearlyEqualTo(xrX_BC * X_CD, kTol));
+  X_CD.ComposeAxialRotationWithThis<1>(yrX_BC, &X_BD);
+  EXPECT_TRUE(X_BD.IsNearlyEqualTo(yrX_BC * X_CD, kTol));
+  X_CD.ComposeAxialRotationWithThis<2>(zrX_BC, &X_BD);
+  EXPECT_TRUE(X_BD.IsNearlyEqualTo(zrX_BC * X_CD, kTol));
 }
 
 GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
