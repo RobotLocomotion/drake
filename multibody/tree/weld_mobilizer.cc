@@ -13,11 +13,11 @@ template <typename T>
 WeldMobilizer<T>::~WeldMobilizer() = default;
 
 template <typename T>
-std::unique_ptr<internal::BodyNode<T>> WeldMobilizer<T>::CreateBodyNode(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+std::unique_ptr<BodyNode<T>> WeldMobilizer<T>::CreateBodyNode(
+    const BodyNode<T>* parent_node, const RigidBody<T>* body,
     const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<internal::BodyNodeImpl<T, WeldMobilizer>>(
-      parent_node, body, mobilizer);
+  return std::make_unique<BodyNodeImpl<T, WeldMobilizer>>(parent_node, body,
+                                                          mobilizer);
 }
 
 template <typename T>
