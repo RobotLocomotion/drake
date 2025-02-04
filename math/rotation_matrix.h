@@ -363,6 +363,25 @@ class RotationMatrix {
   /// %RotationMatrix methods instead.
   ///@{
 
+  /// (Internal use only) Creates an axial rotation aR_AB consisting of a
+  /// rotation of `theta` radians about x, y, or z. Of the 9 entries in the
+  /// rotation matrix, only 4 are active; the rest will be set to 0 or 1. This
+  /// structure can be exploited for efficient updating and operating with this
+  /// rotation matrix.
+  /// @param[in] theta the rotation angle.
+  /// @retval aR_BC the axial rotation (also known as R_BC(theta)).
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @see @ref axial_rotation_def "Axial rotations".
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static RotationMatrix<T> MakeAxialRotation(const T& theta) {
+    if constexpr (axis == 0) return MakeXRotation(theta);
+    if constexpr (axis == 1) return MakeYRotation(theta);
+    if constexpr (axis == 2) return MakeZRotation(theta);
+  }
+
   /// (Internal use only) Given an axial rotation about a coordinate axis (x, y,
   /// or z), uses it to efficiently re-express a vector. This takes only 6
   /// floating point operations.
@@ -417,8 +436,8 @@ class RotationMatrix {
   /// (Internal use only) Given sin(θ) and cos(θ), where θ is a new rotation
   /// angle, updates the axial rotation aR_BC to represent the new rotation
   /// angle. We expect that aR_BC was already such a rotation (about the given
-  /// x, y, or z axis) but by some other angle. Only the 4 active elements are
-  /// modified; the other 5 remain unchanged.
+  /// x, y, or z axis). Only the 4 active elements are modified; the other 5
+  /// remain unchanged.
   /// @param[in] sin_theta sin(θ), where θ is the new rotation angle.
   /// @param[in] cos_theta cos(θ), where θ is the new rotation angle.
   /// @param[in,out] aR_BC the axial rotation matrix to be updated.
@@ -445,21 +464,23 @@ class RotationMatrix {
 
   /// (Internal use only) With `this` a general rotation R_AB, and given an
   /// axial rotation aR_BC, efficiently forms R_AC = R_AB * aR_BC. This requires
-  /// only 14 floating point operations.
+  /// only 18 floating point operations.
   /// @param[in] aR_BC An axial rotation about the indicated axis.
-  /// @param[out] R_AC The result. Must not overlap with aR_BC in memory.
+  /// @param[out] R_AC The result, which will be a general rotation matrix.
+  ///   Must not overlap with `this` in memory.
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @pre aR_BC is an @ref axial_rotation_def "axial rotation matrix" about
   ///   the given `axis`.
+  /// @pre R_AC does not overlap with `this` in memory.
   template <int axis>
 #ifndef DRAKE_DOXYGEN_CXX
     requires(0 <= axis && axis <= 2)
 #endif
-  void ComposeWithAxialRotation(const RotationMatrix<T>& aR_BC,
-                                RotationMatrix<T>* R_AC) const {
+  void PostMultiplyByAxialRotation(const RotationMatrix<T>& aR_BC,
+                                   RotationMatrix<T>* R_AC) const {
     // If this is inlined it should be considerably faster than the
     // (non-inlined) SIMD case.
-    DRAKE_ASSERT(R_AC != nullptr);
+    DRAKE_ASSERT(R_AC != nullptr && R_AC != this);
     DRAKE_ASSERT_VOID(aR_BC.IsAxialRotationOrThrow<axis>());
     const Matrix3<T>& M_BC = aR_BC.matrix();
     constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
@@ -469,6 +490,37 @@ class RotationMatrix {
     M_AC.col(x) = R_AB_.col(x);  // No effect on the rotation axis.
     M_AC.col(y) = c * R_AB_.col(y) + s * R_AB_.col(z);
     M_AC.col(z) = c * R_AB_.col(z) - s * R_AB_.col(y);
+  }
+
+  /// (Internal use only) With `this` a general rotation R_BC, and given an
+  /// axial rotation aR_AB, efficiently forms R_AC = aR_AB * R_BC. This requires
+  /// only 18 floating point operations.
+  /// @param[in] aR_AB An axial rotation about the indicated axis.
+  /// @param[out] R_AC The result, which will be a general rotation matrix. Must
+  ///   not overlap with `this` in memory.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @pre aR_AB is an @ref axial_rotation_def "axial rotation matrix" about
+  ///   the given `axis`.
+  /// @pre R_AC does not overlap with `this` in memory.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  void PreMultiplyByAxialRotation(const RotationMatrix<T>& aR_AB,
+                                  RotationMatrix<T>* R_AC) const {
+    // If this is inlined it should be considerably faster than the
+    // (non-inlined) SIMD case.
+    DRAKE_ASSERT(R_AC != nullptr && R_AC != this);
+    DRAKE_ASSERT_VOID(aR_AB.IsAxialRotationOrThrow<axis>());
+    const RotationMatrix<T>& R_BC = *this;
+    const Matrix3<T>& M_AB = aR_AB.matrix();
+    constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
+    const T& c = M_AB(y, y);  // cosine
+    const T& s = M_AB(z, y);  // sine
+    Matrix3<T>& M_AC = R_AC->mutable_matrix();
+    M_AC.row(x) = R_BC.row(x);  // No effect on the rotation axis.
+    M_AC.row(y) = c * R_BC.row(y) - s * R_BC.row(z);
+    M_AC.row(z) = c * R_BC.row(z) + s * R_BC.row(y);
   }
 
   /// (Internal use only) Throws an exception if `this` %RotationMatrix is not

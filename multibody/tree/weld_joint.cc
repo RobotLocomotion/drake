@@ -92,8 +92,9 @@ std::unique_ptr<internal::Mobilizer<T>> WeldJoint<T>::MakeMobilizerForJoint(
   //  when we have more instances.
   auto F_frame_name = [this, tree](const Frame<T>& frame) -> std::string {
     std::string F_name = fmt::format("{}_{}_F", this->name(), frame.name());
-    while (tree->HasFrameNamed(F_name, this->model_instance()))
+    while (tree->HasFrameNamed(F_name, this->model_instance())) {
       F_name = "_" + F_name;
+    }
     return F_name;
   };
 
