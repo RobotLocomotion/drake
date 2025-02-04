@@ -15,11 +15,11 @@ template <typename T>
 PrismaticMobilizer<T>::~PrismaticMobilizer() = default;
 
 template <typename T>
-std::unique_ptr<internal::BodyNode<T>> PrismaticMobilizer<T>::CreateBodyNode(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+std::unique_ptr<BodyNode<T>> PrismaticMobilizer<T>::CreateBodyNode(
+    const BodyNode<T>* parent_node, const RigidBody<T>* body,
     const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<internal::BodyNodeImpl<T, PrismaticMobilizer>>(
-      parent_node, body, mobilizer);
+  return std::make_unique<BodyNodeImpl<T, PrismaticMobilizer>>(parent_node,
+                                                               body, mobilizer);
 }
 
 template <typename T>
