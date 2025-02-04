@@ -97,6 +97,7 @@ drake_cc_library(
         "//math:bspline_basis",
         "//math:gradient",
         "//math:matrix_util",
+        "//multibody/plant",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
     ],
@@ -194,6 +195,7 @@ drake_cc_googletest(
     deps = [
         ":kinematic_trajectory_optimization",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/pendulum",
         "//solvers:constraint",
         "//solvers:ipopt_solver",
         "//solvers:osqp_solver",

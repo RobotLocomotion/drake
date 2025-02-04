@@ -332,6 +332,11 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("lb"), py::arg("ub"), cls_doc.AddAccelerationBounds.doc)
         .def("AddJerkBounds", &Class::AddJerkBounds, py::arg("lb"),
             py::arg("ub"), cls_doc.AddJerkBounds.doc)
+        .def("AddEffortBoundsAtNormalizedTimes",
+            &Class::AddEffortBoundsAtNormalizedTimes, py::arg("plant"),
+            py::arg("s"), py::arg("lb") = std::nullopt,
+            py::arg("ub") = std::nullopt, py::arg("plant_context") = nullptr,
+            cls_doc.AddEffortBoundsAtNormalizedTimes.doc)
         .def("AddDurationCost", &Class::AddDurationCost,
             py::arg("weight") = 1.0, cls_doc.AddDurationCost.doc)
         .def("AddPathLengthCost", &Class::AddPathLengthCost,
