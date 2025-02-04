@@ -36,7 +36,34 @@ state variables for the particular mobilizer. They are only 8-byte aligned so be
 careful when interpreting them as Eigen vectors for computation purposes.
 
   // Returns X_FM(q)
-  math::RigidTransform<T> calc_X_FM(const T* q) const;
+  // TODO(sherm1) Do we need this one?
+  RigidTransform<T> calc_X_FM(const T* q) const;
+
+  // Returns a transform that has the right constants set so that only changes
+  // need be written subsequently. In most cases returning an identity transform
+  // is sufficient. A Weld mobilizer may set its final transform here.
+  RigidTransform<T> init_X_FM() const;
+
+  // Given current q and an X_FM that has been properly initialized with
+  // init_X_FM() or previous updates, update to X_FM(q) by filling in only
+  // the potentially-changed elements. For example, a revolute mobilizer about
+  // one of the frame axes will update only the four sine & cosine entries.
+  // A prismatic mobilizer update only the three shift vector elements.
+  void update_X_FM(const T* q, RigidTransform<T>* X_FM) const;
+
+  // Returns v_F = X_FM * v_M (shift and re-express)
+  Vector3<T> apply_X_FM(const RigidTranform<T>& X_FM,
+                        const Vector3<T>& v_M) const;
+
+  // Returns v_F = R_FM * v_M (re-express)
+  Vector3<T> apply_R_FM(const RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const;
+
+  // Compose X_AM = X_AF * X_FM, optimized for the known structure of X_FM.
+  // For example, a revolute (prismatic) mobilizer has only 4 (3) significant
+  // entries in X_FM out of 12.
+  RigidTransform<T> compose_X_FM(const RigidTransform<T>& X_AF,
+                                 const RigidTransform<T>& X_FM) const;
 
   // Returns V_FM_F = H_FM_F(q)⋅v
   SpatialVelocity<T> calc_V_FM(const T* q,
@@ -63,16 +90,16 @@ careful when interpreting them as Eigen vectors for computation purposes.
   use that transform for revolute and prismatic mobilizers!
 
   // Returns V_FM_M = H_FM_M(q)⋅v
-  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>& X_FM,
+  SpatialVelocity<T> calc_V_FM_M(const RigidTransform<T>& X_FM,
                                  const T* q, const T* v) const;
 
   // Returns A_FM_M = H_FM_M(q)⋅vdot + Hdot_FM_M(q,v)⋅v
-  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>& X_FM,
+  SpatialAcceleration<T> calc_A_FM_M(const RigidTransform<T>& X_FM,
                                      const T* q, const T* v, const T* vdot)
                                      const;
 
   // Returns tau = H_FM_Mᵀ(q)⋅F_BMo_M
-  void calc_tau_from_M(const math::RigidTransform<T>& X_FM, const T* q,
+  void calc_tau_from_M(const RigidTransform<T>& X_FM, const T* q,
                        const SpatialForce<T>& F_BMo_M, T* tau) const;
 
 MobilizerImpl also provides a number of size specific methods to retrieve
