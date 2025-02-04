@@ -944,12 +944,13 @@ class Joint : public MultibodyElement<T> {
   ///
   /// @pre A mobilizer has been created for this Joint.
   /// @pre ConcreteMobilizer must exactly match the dynamic type of the
-  /// mobilizer associated with this Joint. This requirement is (only) checked
-  /// in Debug builds.
+  /// mobilizer associated with this Joint, or be a base class of the
+  /// dynamic type. This requirement is (only) checked in Debug builds.
   template <template <typename> class ConcreteMobilizer>
   const ConcreteMobilizer<T>& get_mobilizer_downcast() const {
     DRAKE_DEMAND(has_mobilizer());
-    DRAKE_ASSERT(typeid(*mobilizer_) == typeid(ConcreteMobilizer<T>));
+    DRAKE_ASSERT(dynamic_cast<const ConcreteMobilizer<T>*>(mobilizer_) !=
+                 nullptr);
     return static_cast<const ConcreteMobilizer<T>&>(*mobilizer_);
   }
 
@@ -957,7 +958,7 @@ class Joint : public MultibodyElement<T> {
   template <template <typename> class ConcreteMobilizer>
   ConcreteMobilizer<T>& get_mutable_mobilizer_downcast() {
     DRAKE_DEMAND(has_mobilizer());
-    DRAKE_ASSERT(typeid(*mobilizer_) == typeid(ConcreteMobilizer<T>));
+    DRAKE_ASSERT(dynamic_cast<ConcreteMobilizer<T>*>(mobilizer_) != nullptr);
     return static_cast<ConcreteMobilizer<T>&>(*mobilizer_);
   }
 
@@ -977,27 +978,26 @@ class Joint : public MultibodyElement<T> {
   friend class Joint;
 
   /* This method must be implemented by derived Joint classes in order to create
-  a Mobilizer as the Joint's internal representation. Starting with the
-  user's joint frames Jp (on parent) and Jc (on child) we must create an
-  inboard frame F and outboard frame M suitable for an available Mobilizer.
-  For example, if a revolute Mobilizer can only rotate around its z axis,
-  while the revolute Joint specifies an arbitrary axis â, we'll need to
-  calculate frames such that Fz and Mz are aligned with â, and the other
-  axes chosen so that the joint coordinate q has the same meaning as it would
-  when rotating about â. We also must decide whether inboard/outboard is
-  reversed from parent/child. Normally we need X_JpF and X_JcM but when reversed
-  we need X_JcF and X_JpM. (We're ignoring reversal in the discussion below.)
+  a Mobilizer as the Joint's internal representation. Starting with the user's
+  joint frames Jp (on parent) and Jc (on child) we must create an inboard frame
+  F and outboard frame M suitable for an available Mobilizer. For example, if a
+  revolute Mobilizer can only rotate around its z axis, while the revolute Joint
+  specifies an arbitrary axis â, we'll need to calculate frames such that Fz and
+  Mz are aligned with â, and the other axes chosen so that the joint coordinate
+  q has the same meaning as it would when rotating about â. We also must decide
+  whether inboard/outboard is reversed from parent/child. Normally we need X_JpF
+  and X_JcM but when reversed we need X_JcF and X_JpM. (We're ignoring reversal
+  in the discussion below.)
 
-  In the case of revolute, prismatic, and screw joints we have an axis â
-  whose measure numbers are the same in Jp and Jc. However, for maximum
-  speed, the available mobilizers are specialized to rotate only about the
-  +z axis.
+  In the case of revolute, prismatic, and screw joints we have an axis â whose
+  components are the same in Jp and Jc. However, for maximum speed, the
+  available mobilizers are specialized to rotate only about a coordinate axis.
   TODO(sherm1) Make that happen.
-  Consequently, we want new frames F and M with Fz=Mz=â, Fo=Jpo, Mo=Jco. We
-  also want F==M when Jp==Jc, i.e. at the joint zero position so that the
-  coordinate q will mean the same thing using F and M as it would have using
-  Jp, Jc, and â. We need to calculate R_JpF and R_JcM so that we can create
-  appropriate offset frames:
+  As an example, if the mobilizer rotates around z, we want new frames F and M
+  with Fz=Mz=â, Fo=Jpo, Mo=Jco. We also want F==M when Jp==Jc, i.e. at the joint
+  zero position so that the coordinate q will mean the same thing using F and M
+  as it would have using Jp, Jc, and â. We need to calculate R_JpF and R_JcM so
+  that we can create appropriate offset frames:
        R_JpF = MakeFromOneVector(â_Jp, 2)   ("2" means "z axis")
        R_JcM = R_JcJp(0) * R_JpF * R_FM(0)  (at q=0)
   But in the zero configurations we have R_JcJp(0)=I and we want R_FM(0)=I

@@ -2001,6 +2001,66 @@ GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
       ".*reversed.*");
 }
 
+// Position kinematics attempts to optimize for cases when X_PF or X_MB are
+// identity matrices. That makes for four distinct cases which we'll engineer
+// here and check that we get X_PB = X_PF * X_FM * X_MB in all cases. We'll
+// avoid any special handling of World by making four systems like this:
+//    World -> parent => child
+// with the joint "=>" being the one we'll check. We don't have direct control
+// over F and M since we only get to specify Jp and Jc for a joint so we'll
+// check to make sure we're testing the right cases. It's sufficient to use
+// easy-to-calculate translations here (no rotations) since we just want to
+// see if the right transforms got applied.
+GTEST_TEST(MultibodyTree, PositionKinematicsFrameOptimizations) {
+  // Test one case, see CalcPositionKinematicsCache_BaseToTip() in
+  // body_node_impl.cc for correspondence.
+  auto test_case = [](int which_case) {
+    const bool X_PF_is_identity = which_case & 0b01;
+    const bool X_BM_is_identity = which_case & 0b10;
+
+    const RigidTransformd X_PJp = X_PF_is_identity
+                                      ? RigidTransformd()
+                                      : RigidTransformd(Vector3d(10, 11, 12));
+
+    const RigidTransformd X_CJc = X_BM_is_identity
+                                      ? RigidTransformd()
+                                      : RigidTransformd(Vector3d(7, 8, 9));
+
+    MultibodyPlant<double> plant(0.0);
+
+    const RigidBody<double>& parent0 = plant.AddRigidBody("parent0");
+    const RigidBody<double>& child0 = plant.AddRigidBody("child0");
+    const PrismaticJoint<double>& joint0 = plant.AddJoint<PrismaticJoint>(
+        "joint0", parent0, X_PJp, child0, X_CJc, Vector3d::UnitX());
+
+    plant.Finalize();
+    auto context = plant.CreateDefaultContext();
+
+    const internal::Mobilizer<double>& mobilizer0 = joint0.GetMobilizerInUse();
+    const RigidTransformd& X_PF =
+        mobilizer0.inboard_frame().EvalPoseInBodyFrame(*context);
+    const RigidTransformd& X_BM =
+        mobilizer0.outboard_frame().EvalPoseInBodyFrame(*context);
+
+    EXPECT_EQ(X_PF.IsExactlyIdentity(), X_PF_is_identity);
+    EXPECT_EQ(X_BM.IsExactlyIdentity(), X_BM_is_identity);
+    const RigidTransformd X_WP = RigidTransformd(Vector3d(1, 2, 3));
+    plant.SetFreeBodyPose(&*context, parent0, X_WP);
+    const RigidTransformd X_JpJc(Vector3d(100, 0, 0));
+    joint0.set_translation(&*context, X_JpJc.translation().x());  // sets X_JpJc
+    const RigidTransformd& X_WC = child0.EvalPoseInWorld(*context);
+
+    EXPECT_EQ(X_WC.translation(), X_WP.translation() + X_PJp.translation() +
+                                      X_JpJc.translation() +
+                                      X_CJc.inverse().translation());
+  };
+
+  test_case(0);
+  test_case(1);
+  test_case(2);
+  test_case(3);
+}
+
 // Verifies exact set of output ports we expect to be a direct feedthrough of
 // the inputs. Returns true iff successful.
 bool VerifyFeedthroughPorts(const MultibodyPlant<double>& plant) {
