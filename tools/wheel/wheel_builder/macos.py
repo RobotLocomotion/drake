@@ -159,8 +159,7 @@ def build(options):
     environment['DRAKE_VERSION'] = options.version
 
     # Create the snopt source archive (and pass along as an environment var).
-    snopt_tgz = os.path.join(
-        resource_root, 'image', 'dependencies', 'snopt.tar.gz')
+    snopt_tgz = os.path.join(resource_root, 'image', 'snopt.tar.gz')
     environment['SNOPT_PATH'] = snopt_tgz
     if options.dependencies:
         _files_to_remove.append(snopt_tgz)
@@ -198,7 +197,6 @@ def build(options):
         os.unlink(wheel_root)
 
     if not options.keep_build:
-        shutil.rmtree('/opt/drake-dependencies')
         shutil.rmtree('/opt/drake-dist')
         shutil.rmtree(build_root)
         if options.test:
