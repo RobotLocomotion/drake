@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include <iostream>
+
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/contact_properties.h"
@@ -29,19 +31,34 @@ using multibody::internal::TreeIndex;
 
 template <class T>
 void ConvexIntegrator<T>::DoInitialize() {
+  using std::isnan;
+
   const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
 
   // TODO(vincekurtz): in the future we might want some fancy caching instead of
   // the workspace, but for now we'll just try to allocate most things here.
   workspace_.q.resize(nq);
+  workspace_.q_h.resize(nq);
   workspace_.v_star.resize(nv);
   workspace_.A.assign(tree_topology().num_trees(), MatrixX<T>(nv, nv));
-
   workspace_.M.resize(nv, nv);
   workspace_.k.resize(nv);
   workspace_.a.resize(nv);
   workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
+  workspace_.err.resize(nq + nv);
+  
+  // Set an artificial step size target, if not set already.
+  if (isnan(this->get_initial_step_size_target())) {
+    // Verify that maximum step size has been set.
+    if (isnan(this->get_maximum_step_size()))
+      throw std::logic_error("Neither initial step size target nor maximum "
+                                 "step size has been set!");
+
+    this->request_initial_step_size_target(
+        this->get_maximum_step_size());
+  }
+
 }
 
 template <class T>
@@ -51,11 +68,17 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   Context<T>& context =
       plant().GetMyMutableContextFromRoot(this->get_mutable_context());
 
+  std::cout << "time: " << context.get_time();
+  std::cout << " dt: " << h << std::endl;
+
   // Get stuff from the workspace
   VectorX<T>& q = workspace_.q;
+  VectorX<T>& q_h = workspace_.q_h;
   VectorX<T>& v_star = workspace_.v_star;
   std::vector<MatrixX<T>>& A = workspace_.A;
   SapSolverResults<T>& sap_results = workspace_.sap_results;
+  SapSolverResults<T>& sap_results_h = workspace_.sap_results_h;
+  VectorX<T>& err = workspace_.err;
 
   // Set up the SAP problem
   CalcFreeMotionVelocities(context, h, &v_star);
@@ -69,15 +92,40 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   Eigen::VectorBlock<const VectorX<T>> v0 = plant().GetVelocities(context);
   SapSolver<T> sap;  // TODO(vincekurtz): set sap parameters
   SapSolverStatus status = sap.SolveWithGuess(problem, v0, &sap_results);
-
   DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
-  // Set q_{t+h} = q_t + h N(q_t) v_{t+h}
-  plant().MapVelocityToQDot(context, h * sap_results.v, &q);
-  q += plant().GetPositions(context);
+  // Solve for v_{t+h} with two half-sized steps for error estimation
+  // TODO(vincekurtz): reuse more info from the full-sized step
+  CalcFreeMotionVelocities(context, 0.5 * h, &v_star);
+  CalcLinearDynamicsMatrix(context, 0.5 * h, &A);
+  SapContactProblem<T> problem_h1(0.5 * h, A, v_star);
+  problem_h1.set_num_objects(plant().num_bodies());
+  AddContactConstraints(context, &problem_h1);
+  SapSolverStatus status_h1 = sap.SolveWithGuess(problem_h1, v0, &sap_results_h);
+  DRAKE_DEMAND(status_h1 == SapSolverStatus::kSuccess);
 
-  plant().SetPositions(&context, q);
-  plant().SetVelocities(&context, sap_results.v);
+  plant().MapVelocityToQDot(context, 0.5 * h * sap_results_h.v, &q_h);
+  q_h += plant().GetPositions(context);
+  plant().SetPositions(&context, q_h);
+  plant().SetVelocities(&context, sap_results_h.v);
+
+  CalcFreeMotionVelocities(context, 0.5 * h, &v_star);  // new state in context
+  CalcLinearDynamicsMatrix(context, 0.5 * h, &A);
+  SapContactProblem<T> problem_h2(0.5 * h, A, v_star);
+  problem_h2.set_num_objects(plant().num_bodies());
+  AddContactConstraints(context, &problem_h2);
+  SapSolverStatus status_h2 = sap.SolveWithGuess(problem_h2, sap_results.v, &sap_results_h);
+  DRAKE_DEMAND(status_h2 == SapSolverStatus::kSuccess);
+
+  plant().MapVelocityToQDot(context, 0.5 * h * sap_results_h.v, &q_h);
+  q_h += plant().GetPositions(context);
+  plant().SetPositions(&context, q_h);
+  plant().SetVelocities(&context, sap_results_h.v);
+
+  // Update the error estimate
+  err.head(plant().num_positions()) = q_h - q;
+  err.tail(plant().num_velocities()) = sap_results_h.v - sap_results.v;
+  this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(err);
 
   return true;  // step was successful
 }

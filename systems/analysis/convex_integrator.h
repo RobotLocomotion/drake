@@ -68,11 +68,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     DRAKE_DEMAND(plant_ != nullptr);
   }
 
-  // TODO(vincekurtz): add error estimation
-  bool supports_error_estimation() const override { return false; }
+  bool supports_error_estimation() const final { return true; }
 
-  // TODO(vincekurtz): add error estimation
-  int get_error_estimate_order() const override { return 0; }
+  // TODO(vincekurtz): figure out the actual order of this error estimate. Right
+  // now this is a guess based on ImplicitEulerIntegrator.
+  int get_error_estimate_order() const final { return 2; }
 
   // Get a reference to the plant used for SAP computations
   const MultibodyPlant<T>& plant() const { return *plant_; }
@@ -142,10 +142,13 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Scratch space for intermediate calculations
   struct Workspace {
     // Used in DoStep
-    VectorX<T> q;                     // generalized positions to set
+    VectorX<T> q;                     // generalized positions
     VectorX<T> v_star;                // velocities of the unconstrained system
     std::vector<MatrixX<T>> A;        // Linear dynamics matrix
     SapSolverResults<T> sap_results;  // Container for v_{t+h}
+    SapSolverResults<T> sap_results_h;  // Container for v_{t+h/2}
+    VectorX<T> q_h;  // generalized positions for the half-step
+    VectorX<T> err;  // error estimate for accuracy control
 
     // Used in CalcFreeMotionVelocities
     MatrixX<T> M;  // mass matrix
