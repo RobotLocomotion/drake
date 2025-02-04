@@ -35,12 +35,16 @@ class FrameBodyPoseCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameBodyPoseCache);
 
-  explicit FrameBodyPoseCache(int num_mobods,
+  explicit FrameBodyPoseCache(int num_mobods, int num_frames,
                               int num_frame_body_pose_slots_needed)
       : X_BF_pool_(num_frame_body_pose_slots_needed),
         X_FB_pool_(num_frame_body_pose_slots_needed),
         is_X_BF_identity_(num_frame_body_pose_slots_needed),
-        M_BBo_B_pool_(num_mobods, SpatialInertia<T>::NaN()) {
+        M_BBo_B_pool_(num_mobods, SpatialInertia<T>::NaN()),
+        X_MbF_pool_(num_frames),
+        X_FMb_pool_(num_frames),
+        is_X_MbF_identity_(num_frames),
+        M_BMo_M_pool_(num_mobods, SpatialInertia<T>::NaN()) {
     DRAKE_DEMAND(num_frame_body_pose_slots_needed > 0);
 
     // All RigidBodyFrames share this body pose.
@@ -97,6 +101,52 @@ class FrameBodyPoseCache {
     M_BBo_B_pool_[index] = M_BBo_B;
   }
 
+  // M-frame quantities below.
+
+  const math::RigidTransform<T>& get_X_MbF(FrameIndex index) const {
+    // This method must be very fast in Release.
+    DRAKE_ASSERT(0 <= index && index < ssize(X_MbF_pool_));
+    return X_MbF_pool_[index];
+  }
+
+  const math::RigidTransform<T>& get_X_FMb(FrameIndex index) const {
+    // This method must be very fast in Release.
+    DRAKE_ASSERT(0 <= index && index < ssize(X_FMb_pool_));
+    return X_FMb_pool_[index];
+  }
+
+  // Returns true for any frame F that is the outboard frame M for some
+  // mobilizer, as well as any frame exactly coincident with one of those.
+  bool is_X_MbF_identity(FrameIndex index) const {
+    // This method must be very fast in Release.
+    DRAKE_ASSERT(0 <= index && index < ssize(is_X_MbF_identity_));
+    return static_cast<bool>(is_X_MbF_identity_[index]);
+  }
+
+  const SpatialInertia<T>& get_M_BMo_M(MobodIndex index) const {
+    // This method must be very fast in Release.
+    DRAKE_ASSERT(0 <= index && index < ssize(M_BMo_M_pool_));
+    return M_BMo_M_pool_[index];
+  }
+
+  void SetX_MbF(FrameIndex index, const math::RigidTransform<T>& X_MbF) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= index && index < ssize(X_MbF_pool_));
+    X_MbF_pool_[index] = X_MbF;
+    X_FMb_pool_[index] = X_MbF.inverse();
+    if constexpr (scalar_predicate<T>::is_bool) {
+      is_X_MbF_identity_[index] = X_MbF.IsExactlyIdentity();
+    } else {
+      is_X_MbF_identity_[index] = static_cast<uint8_t>(false);
+    }
+  }
+
+  void SetM_BMo_M(MobodIndex index, const SpatialInertia<T>& M_BMo_M) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= index && index < ssize(M_BMo_M_pool_));
+    M_BMo_M_pool_[index] = M_BMo_M;
+  }
+
  private:
   // Sizes are set on construction.
 
@@ -108,6 +158,15 @@ class FrameBodyPoseCache {
   // Spatial inertia of mobilized body B, about its body origin Bo, expressed
   // in B. These are indexed by MobodIndex.
   std::vector<SpatialInertia<T>> M_BBo_B_pool_;
+
+  // These are indexed by Frame::index().
+  std::vector<math::RigidTransform<T>> X_MbF_pool_;
+  std::vector<math::RigidTransform<T>> X_FMb_pool_;
+  std::vector<uint8_t> is_X_MbF_identity_;  // fast vector<bool> equivalent
+
+  // Spatial inertia of mobilized body B, about its inboard joint frame M's
+  // origin Mo, expressed in M. These are indexed by MobodIndex.
+  std::vector<SpatialInertia<T>> M_BMo_M_pool_;
 };
 
 }  // namespace internal
