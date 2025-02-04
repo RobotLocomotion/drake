@@ -4033,6 +4033,14 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
                                                external_forces);
   }
 
+  VectorX<T> CalcInverseDynamicsInM(
+      const systems::Context<T>& context, const VectorX<T>& known_vdot,
+      const MultibodyForces<T>& external_forces) const {
+    this->ValidateContext(context);
+    return internal_tree().CalcInverseDynamicsInM(context, known_vdot,
+                                                  external_forces);
+  }
+
 #ifdef DRAKE_DOXYGEN_CXX
   // MultibodyPlant uses the NVI implementation of
   // CalcImplicitTimeDerivativesResidual from

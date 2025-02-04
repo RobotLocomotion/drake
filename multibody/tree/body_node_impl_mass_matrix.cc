@@ -35,7 +35,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
     // This node's 6x6 composite body inertia.
     const SpatialInertia<T>& Mc_C_W = Mc_B_W_cache[mobod_index()];
 
-    // Across-mobilizer 6 x cnv hinge matrix, from C's parent Cp to C.
+    // Across-mobilizer 6 x kNv hinge matrix, from C's parent Cp to C.
     const auto H_CpC_W = get_H(H_PB_W_cache);  // 6 x kNv fixed size Map.
 
     // The composite body algorithm considers the system at rest, when
@@ -54,20 +54,22 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
     // A_WCp is zero.  Since the system is at rest, Ac_WC and Ab_CpC_W are
     // zero.
     // Therefore, for vm_dot = Iₘ, we have that A_WC = H_CpC_W.
-    const auto& A_WC = H_CpC_W;  // 6 x cnv, fixed-size Map.
+    const auto& A_WC = H_CpC_W;  // 6 x kNv, fixed-size Map.
 
     // If we consider the closed system composed of the composite body held by
     // its mobilizer, the Newton-Euler equations state:
     //   Fm_CCo_W = Mc_C_W * A_WC + Fb_C_W
     // where Fm_CCo_W is the spatial force at this node's mobilizer.
     // Since the system is at rest, we have Fb_C_W = 0 and thus:
-    const Eigen::Matrix<T, 6, kNv> Fm_CCo_W = Mc_C_W * A_WC;  // 6 x cnv.
+    // Done as a general matrix multiply, this is 66 * kNv flops.
+    // TODO(sherm1) do better!
+    const Eigen::Matrix<T, 6, kNv> Fm_CCo_W = Mc_C_W * A_WC;
 
     const int composite_start_in_v = mobilizer().velocity_start_in_v();
 
     // Diagonal block corresponding to current node (mobod_index).
-    M->template block<kNv, kNv>(composite_start_in_v, composite_start_in_v) +=
-        H_CpC_W.transpose() * Fm_CCo_W;
+    M->template block<kNv, kNv>(composite_start_in_v, composite_start_in_v) =
+        H_CpC_W.transpose() * Fm_CCo_W;  // kNv * kNv * 11 flops
 
     // We recurse the tree inwards from C all the way to the root. We define
     // the frames:
@@ -76,7 +78,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
     //  - P:  B's parent node frame.
     const BodyNode<T>* child_node = this;  // Child starts at frame C.
     const BodyNode<T>* body_node = this->parent_body_node();  // Inboard body.
-    Eigen::Matrix<T, 6, kNv> Fm_CBo_W = Fm_CCo_W;             // 6 x cnv
+    Eigen::Matrix<T, 6, kNv> Fm_CBo_W = Fm_CCo_W;
 
     while (body_node->mobod_index() != world_mobod_index()) {
       const Vector3<T>& p_BoBc_W = pc.get_p_PoBo_W(child_node->mobod_index());
@@ -88,7 +90,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
       // Fm_CBo_W = Fm_CBc_W.Shift(p_BcB_W).
 
       // This is SpatialForce<T>::ShiftInPlace(&Fm_CBo_W, -p_BoBc_W) but
-      // done with fixed sizes (no loop if kNv==1).
+      // done with fixed sizes (no loop if kNv==1). 12 * kNv flops
       // TODO(sherm1) Consider moving this to a templatized ShiftInPlace
       //  API in SpatialForce (and other spatial vector classes?).
       for (int col = 0; col < kNv; ++col) {
@@ -110,6 +112,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
 // This is the inner loop of the CalcMassMatrix() algorithm. Rnv is the
 // size of the outer-loop body node R's mobilizer, kNv is the size of the
 // current body B's ConcreteMobilizer encountered on R's inboard sweep.
+// Cost is Rnv*kNv*11 flops.
 #define DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                             \
   template <typename T, class ConcreteMobilizer>                               \
   void                                                                         \
@@ -123,7 +126,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
       const int body_start_in_v = mobilizer().velocity_start_in_v();           \
       /* Update the appropriate block and its symmetric partner. */            \
       auto block = M->template block<kNv, Rnv>(body_start_in_v, R_start_in_v); \
-      block += HtFm;                                                           \
+      block = HtFm;                                                            \
       M->template block<Rnv, kNv>(R_start_in_v, body_start_in_v) =             \
           block.transpose();                                                   \
     }                                                                          \

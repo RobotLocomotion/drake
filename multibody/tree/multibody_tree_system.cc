@@ -230,6 +230,7 @@ void MultibodyTreeSystem<T>::Finalize() {
       this->DeclareCacheEntry(
               std::string("frame pose in body frame"),
               FrameBodyPoseCache<T>(internal_tree().num_mobods(),
+                                    internal_tree().num_frames(),
                                     num_frame_body_poses_needed),
               &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
               {this->all_parameters_ticket()})
@@ -248,6 +249,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("position kinematics"),
               PositionKinematicsCache<T>(internal_tree().get_topology()),
               &MultibodyTreeSystem<T>::CalcPositionKinematicsCache,
+              {position_ticket, this->all_parameters_ticket()})
+          .cache_index();
+
+  cache_indexes_.position_kinematics_in_m =
+      this->DeclareCacheEntry(
+              std::string("position kinematics in M"),
+              PositionKinematicsCacheInM<T>(internal_tree().num_mobods()),
+              &MultibodyTreeSystem<T>::CalcPositionKinematicsCacheInM,
               {position_ticket, this->all_parameters_ticket()})
           .cache_index();
 
@@ -279,6 +288,14 @@ void MultibodyTreeSystem<T>::Finalize() {
               std::string("velocity kinematics"),
               VelocityKinematicsCache<T>(internal_tree().get_topology()),
               &MultibodyTreeSystem<T>::CalcVelocityKinematicsCache,
+              {position_ticket, velocity_ticket, this->all_parameters_ticket()})
+          .cache_index();
+
+  cache_indexes_.velocity_kinematics_in_m =
+      this->DeclareCacheEntry(
+              std::string("velocity kinematics in M"),
+              VelocityKinematicsCacheInM<T>(internal_tree().num_mobods()),
+              &MultibodyTreeSystem<T>::CalcVelocityKinematicsCacheInM,
               {position_ticket, velocity_ticket, this->all_parameters_ticket()})
           .cache_index();
 
