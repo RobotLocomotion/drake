@@ -57,7 +57,17 @@ generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header",
     out = "documentation_pybind.h",
     # Anonymous namespace and deduction guides both confuse pybind.
-    exclude_hdr_patterns = ["drake/common/overloaded.h"],
+    exclude_hdr_patterns = [
+        "drake/common/overloaded.h",
+        # Exclude internal implementation headers that use voxelized_geometry_tools
+        "drake/planning/dev/voxel_collision_map_internal.h",
+        "drake/planning/dev/voxel_signed_distance_field_internal.h",
+        "drake/planning/dev/voxel_tagged_object_collision_map_internal.h",
+        "drake/planning/dev/voxel_grid_internal.h",
+        # Exclude internal implementation headers that use common_robotics_utilities
+        "drake/planning/dev/voxel_self_filter_internal.h",
+        "drake/planning/dev/voxelized_environment_builder_internal.h",
+    ],
     root_name = "pydrake_doc",
     targets = [
         "//tools/install/libdrake:drake_headers",
