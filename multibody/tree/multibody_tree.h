@@ -1361,6 +1361,9 @@ class MultibodyTree {
   void CalcPositionKinematicsCache(const systems::Context<T>& context,
                                    PositionKinematicsCache<T>* pc) const;
 
+  void CalcPositionKinematicsCacheInM(const systems::Context<T>& context,
+                                      PositionKinematicsCacheInM<T>* pcm) const;
+
   // Computes all the kinematic quantities that depend on the generalized
   // velocities and stores them in the velocity kinematics cache `vc`.
   // These include:
@@ -1376,6 +1379,10 @@ class MultibodyTree {
   void CalcVelocityKinematicsCache(const systems::Context<T>& context,
                                    const PositionKinematicsCache<T>& pc,
                                    VelocityKinematicsCache<T>* vc) const;
+
+  void CalcVelocityKinematicsCacheInM(const systems::Context<T>& context,
+                                      const PositionKinematicsCacheInM<T>& pcm,
+                                      VelocityKinematicsCacheInM<T>* vcm) const;
 
   // Computes the spatial inertia M_B_W(q) for each body B in the model about
   // its frame origin Bo and expressed in the world frame W.
@@ -1416,21 +1423,29 @@ class MultibodyTree {
   void CalcFrameBodyPoses(const systems::Context<T>& context,
                           FrameBodyPoseCache<T>* frame_body_poses) const;
 
-  // Computes the composite body inertia Mc_B_W(q) for each body B in the
+  // Computes the composite body inertia Mc_BBo_W(q) for each body B in the
   // model about its frame origin Bo and expressed in the world frame W.
   // The composite body inertia is the effective mass properties B would have
   // if every joint outboard of B was welded in its current configuration.
   // @param[in] context
   //   The context storing the state of the model.
-  // @param[out] Mc_B_W_all
-  //   For each body in the model, entry RigidBody::mobod_index() in M_B_W_all
-  //   contains the updated composite body inertia `Mc_B_W(q)` for that body.
-  //   On input it must be a valid pointer to a vector of size num_bodies().
-  // @throws std::exception if Mc_B_W_all is nullptr or if its size is not
-  // num_bodies().
+  // @param[out] Mc_BBo_W_all
+  //   For each body B in the model, entry RigidBody::mobod_index() in
+  //   M_BBo_W_all contains the updated composite body inertia Mc_BBo_W(q) for
+  //   that body. On input it must be a valid pointer to a vector of size
+  //   num_mobods().
+  // @throws std::exception if Mc_BBo_W_all is nullptr or if its size is not
+  //   num_mobods().
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* Mc_B_W_all) const;
+      std::vector<SpatialInertia<T>>* Mc_BBo_W_all) const;
+
+  // Computes the composite body inertia inertia Mc_BMo_M(q) for each body B
+  // in the model about its inboard mobilizer's outboard frame M's origin Mo,
+  // expressed in M.
+  void CalcCompositeBodyInertiasInM(
+      const systems::Context<T>& context,
+      std::vector<SpatialInertia<T>>* Mc_BMo_M_all) const;
 
   // Computes the bias force `Fb_Bo_W(q, v)` for each body in the model.
   // For a body B, this is the bias term `Fb_Bo_W` in the equation
@@ -1487,8 +1502,19 @@ class MultibodyTree {
       const VelocityKinematicsCache<T>& vc, const VectorX<T>& known_vdot,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const;
 
+  void CalcSpatialAccelerationsInMFromVdot(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const T* velocities, const VelocityKinematicsCacheInM<T>& vcm,
+      const T* accelerations,
+      std::vector<SpatialAcceleration<T>>* A_WM_M_array) const;
+
   // See MultibodyPlant method.
   VectorX<T> CalcInverseDynamics(
+      const systems::Context<T>& context, const VectorX<T>& known_vdot,
+      const MultibodyForces<T>& external_forces) const;
+
+  // Uses M frame instead of W.
+  VectorX<T> CalcInverseDynamicsInM(
       const systems::Context<T>& context, const VectorX<T>& known_vdot,
       const MultibodyForces<T>& external_forces) const;
 
@@ -2252,6 +2278,12 @@ class MultibodyTree {
     return tree_system_->EvalPositionKinematics(context);
   }
 
+  const PositionKinematicsCacheInM<T>& EvalPositionKinematicsInM(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalPositionKinematicsInM(context);
+  }
+
   // Evaluates velocity kinematics cached in context. This will also
   // force position kinematics to be updated if it hasn't already.
   // @param context A Context whose velocity kinematics cache will be
@@ -2261,6 +2293,12 @@ class MultibodyTree {
       const systems::Context<T>& context) const {
     DRAKE_ASSERT(tree_system_ != nullptr);
     return tree_system_->EvalVelocityKinematics(context);
+  }
+
+  const VelocityKinematicsCacheInM<T>& EvalVelocityKinematicsInM(
+      const systems::Context<T>& context) const {
+    DRAKE_ASSERT(tree_system_ != nullptr);
+    return tree_system_->EvalVelocityKinematicsInM(context);
   }
 
   // Evaluates acceleration kinematics cached in context. This will also

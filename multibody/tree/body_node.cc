@@ -11,29 +11,61 @@ template <typename T>
 BodyNode<T>::~BodyNode() = default;
 
 template <typename T>
-void BodyNode<T>::CalcCompositeBodyInertia_TipToBase(
+void BodyNode<T>::CalcCompositeBodyInertiaInWorld_TipToBase(
     const PositionKinematicsCache<T>& pc,
-    const std::vector<SpatialInertia<T>>& M_B_W_all,
-    std::vector<SpatialInertia<T>>* Mc_B_W_all) const {
+    const std::vector<SpatialInertia<T>>& M_BBo_W_all,
+    std::vector<SpatialInertia<T>>* Mc_BBo_W_all) const {
   DRAKE_ASSERT(mobod_index() != world_mobod_index());
-  DRAKE_ASSERT(Mc_B_W_all != nullptr);
+  DRAKE_ASSERT(Mc_BBo_W_all != nullptr);
 
   // This mobod's spatial inertia (given).
-  const SpatialInertia<T>& M_B_W = M_B_W_all[mobod_index()];
+  const SpatialInertia<T>& M_BBo_W = M_BBo_W_all[mobod_index()];
   // This mobod's composite body inertia (to be calculated).
-  SpatialInertia<T>& Mc_BBo_W = (*Mc_B_W_all)[mobod_index()];
+  SpatialInertia<T>& Mc_BBo_W = (*Mc_BBo_W_all)[mobod_index()];
 
   // Composite body inertia for this node B, about its frame's origin Bo, and
   // expressed in the world frame W. Add composite body inertia contributions
   // from all children (already calculated).
-  Mc_BBo_W = M_B_W;
+  Mc_BBo_W = M_BBo_W;
   for (const BodyNode<T>* child : child_nodes()) {
     const MobodIndex child_node_index = child->mobod_index();
     // Composite body inertia for child body C, about Co, expressed in W.
-    const SpatialInertia<T>& Mc_CCo_W = (*Mc_B_W_all)[child_node_index];
+    const SpatialInertia<T>& Mc_CCo_W = (*Mc_BBo_W_all)[child_node_index];
     // Shift to Bo and add it to the composite body inertia of B.
     const Vector3<T>& p_BoCo_W = pc.get_p_PoBo_W(child_node_index);
     Mc_BBo_W += Mc_CCo_W.Shift(-p_BoCo_W);  // i.e., by p_CoBo
+  }
+}
+
+template <typename T>
+void BodyNode<T>::CalcCompositeBodyInertiaInM_TipToBase(
+    const FrameBodyPoseCache<T>& frame_body_pose_cache,  // for M_BMo_M
+    const PositionKinematicsCacheInM<T>& pcm,            // for X_MpM(q)
+    std::vector<SpatialInertia<T>>* Mc_BMo_M_all) const {
+  DRAKE_ASSERT(mobod_index() != world_mobod_index());
+  DRAKE_ASSERT(Mc_BMo_M_all != nullptr);
+
+  // This mobod's spatial inertia (given).
+  const SpatialInertia<T>& M_BMo_M =
+      frame_body_pose_cache.get_M_BMo_M(mobod_index());
+  // This mobod's composite body inertia (to be calculated).
+  SpatialInertia<T>& Mc_BMo_M = (*Mc_BMo_M_all)[mobod_index()];
+
+  // Composite body inertia for this node B, about its M frame's origin Mo, and
+  // expressed in M. Add composite body inertia contributions from all children
+  // (already calculated).
+  Mc_BMo_M = M_BMo_M;
+  for (const BodyNode<T>* child : child_nodes()) {
+    const MobodIndex child_node_index = child->mobod_index();
+    // Composite body inertia for child body C, about Co, expressed in W.
+    const SpatialInertia<T>& Mc_CMco_Mc = (*Mc_BMo_M_all)[child_node_index];
+    // Shift to B's Mo, re-express in B's M, and add it to the composite body
+    // inertia of B.
+    const math::RigidTransform<T>& X_MbMc = pcm.get_X_MpM(child_node_index);
+    // Shift to B's M frame origin Mbo, but still expressed in Mc.
+    SpatialInertia<T> Mc_CMbo_M = Mc_CMco_Mc.Shift(-X_MbMc.translation());
+    Mc_CMbo_M.ReExpressInPlace(X_MbMc.rotation());  // Now expressed in Mb
+    Mc_BMo_M += Mc_CMbo_M;
   }
 }
 
