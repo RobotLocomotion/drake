@@ -13,11 +13,11 @@ template <typename T>
 ScrewMobilizer<T>::~ScrewMobilizer() = default;
 
 template <typename T>
-std::unique_ptr<internal::BodyNode<T>> ScrewMobilizer<T>::CreateBodyNode(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+std::unique_ptr<BodyNode<T>> ScrewMobilizer<T>::CreateBodyNode(
+    const BodyNode<T>* parent_node, const RigidBody<T>* body,
     const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<internal::BodyNodeImpl<T, ScrewMobilizer>>(
-      parent_node, body, mobilizer);
+  return std::make_unique<BodyNodeImpl<T, ScrewMobilizer>>(parent_node, body,
+                                                           mobilizer);
 }
 
 template <typename T>

@@ -944,12 +944,13 @@ class Joint : public MultibodyElement<T> {
   ///
   /// @pre A mobilizer has been created for this Joint.
   /// @pre ConcreteMobilizer must exactly match the dynamic type of the
-  /// mobilizer associated with this Joint. This requirement is (only) checked
-  /// in Debug builds.
+  /// mobilizer associated with this Joint, or be a base class of the
+  /// dynamic type. This requirement is (only) checked in Debug builds.
   template <template <typename> class ConcreteMobilizer>
   const ConcreteMobilizer<T>& get_mobilizer_downcast() const {
     DRAKE_DEMAND(has_mobilizer());
-    DRAKE_ASSERT(typeid(*mobilizer_) == typeid(ConcreteMobilizer<T>));
+    DRAKE_ASSERT(dynamic_cast<const ConcreteMobilizer<T>*>(mobilizer_) !=
+                 nullptr);
     return static_cast<const ConcreteMobilizer<T>&>(*mobilizer_);
   }
 
@@ -957,7 +958,7 @@ class Joint : public MultibodyElement<T> {
   template <template <typename> class ConcreteMobilizer>
   ConcreteMobilizer<T>& get_mutable_mobilizer_downcast() {
     DRAKE_DEMAND(has_mobilizer());
-    DRAKE_ASSERT(typeid(*mobilizer_) == typeid(ConcreteMobilizer<T>));
+    DRAKE_ASSERT(dynamic_cast<ConcreteMobilizer<T>*>(mobilizer_) != nullptr);
     return static_cast<ConcreteMobilizer<T>&>(*mobilizer_);
   }
 
