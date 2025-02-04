@@ -10,10 +10,8 @@ from zipfile import ZipFile
 # This list must be kept in sync with the calls to copy_ubuntu_license in
 # drake/tools/wheel/image/build-wheel.sh.
 _ALLOWED_LIBS = {
-    "libblas",
     "libgfortran",
     "libgomp",
-    "liblapack",
     "libquadmath",
     # These are installed by a Drake's repository rule, so don't need copyright
     # installed in build-wheel.sh.

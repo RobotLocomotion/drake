@@ -1,0 +1,114 @@
+# -*- bazel -*-
+
+load("@drake//tools/skylark:cc.bzl", "cc_library")
+load("@drake//tools/skylark:pathutils.bzl", "basename")
+load(
+    "@drake//tools/workspace/gfortran:fortran.bzl",
+    "fortran_library",
+    "fortran_module",
+)
+load(
+    "@drake//tools/workspace/lapack_internal:lock/sources.bzl",
+    "ALLAUX",
+    "ALLBLAS",
+    "DBLAS1",
+    "DBLAS2",
+    "DBLAS3",
+    "DLASRC",
+    "DSLASRC",
+    "DZLAUX",
+)
+load("@rules_license//rules:license.bzl", "license")
+
+package(default_visibility = ["//visibility:private"])
+
+license(
+    name = "license",
+    license_kinds = ["@rules_license//licenses/spdx:BSD-3-Clause"],
+    license_text = "LICENSE",
+)
+
+filegroup(
+    name = "everything",
+    srcs = glob(["**"]),
+    visibility = ["//visibility:public"],
+)
+
+# Based on this line from the Makefile:
+#  double: $(DBLAS1) $(ALLBLAS) $(DBLAS2) $(DBLAS3)
+BLAS_SRCS = depset(DBLAS1 + ALLBLAS + DBLAS2 + DBLAS3).to_list()
+
+fortran_library(
+    name = "blas_objects",
+    srcs = [
+        "BLAS/SRC/" + x
+        for x in BLAS_SRCS
+    ],
+    linkstatic = True,
+)
+
+# Based on these lines from the Makefile:
+#  DOUBLE_DEPS := $(DLASRC) $(DSLASRC)
+#  DOUBLE_DEPS += $(DZLAUX) $(ALLAUX)
+LAPACK_ALL_SRCS = depset(DLASRC + DSLASRC + DZLAUX + ALLAUX).to_list()
+
+# The next two need special attention since they are actual Fortran modules.
+
+fortran_module(
+    src = "SRC/la_constants.f90",
+    name = "la_constants",
+)
+
+fortran_module(
+    src = "SRC/la_xisnan.F90",
+    name = "la_xisnan",
+    uses = ["la_constants"],
+)
+
+# The fortran_library sources need to exclude the two modules immediately above
+# and some duplicate sources that overlap the BLAS library (which otherwise
+# would lead to duplicate symbol errors).
+LAPACK_MOST_SRCS = [
+    x
+    for x in LAPACK_ALL_SRCS
+    if basename(x) not in ALLBLAS + [
+        "la_constants.f90",
+        "la_xisnan.F90",
+    ]
+]
+
+fortran_library(
+    name = "fortran_objects",
+    srcs = [
+        x[3:] if x.startswith("../") else "SRC/" + x
+        for x in LAPACK_MOST_SRCS
+    ],
+    linkstatic = True,
+    _input_mods = [
+        "la_constants.mod",
+        "la_xisnan.mod",
+    ],
+    deps = [
+        ":la_constants",
+        ":la_xisnan",
+    ],
+)
+
+cc_library(
+    name = "blas",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":blas_objects",
+    ],
+)
+
+cc_library(
+    name = "lapack",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":fortran_objects",
+        # N.B. This is the workspace blas, not the :blas we just built, in case
+        # the user want to mix their own blas with our lapack.
+        "@blas",
+    ],
+)
