@@ -14,21 +14,10 @@ ADD image/provision-base.sh /image/
 RUN /image/provision-base.sh
 
 # -----------------------------------------------------------------------------
-# Build Drake's dependencies.
-# -----------------------------------------------------------------------------
-
-FROM base AS incubator
-
-ADD image/dependencies/ /opt/drake-wheel-build/dependencies/src/
-ADD image/build-dependencies.sh /image/
-
-RUN /image/build-dependencies.sh
-
-# -----------------------------------------------------------------------------
 # Install Python.
 # -----------------------------------------------------------------------------
 
-FROM incubator AS clean
+FROM base AS clean
 
 ARG PYTHON=3
 ARG PYTHON_SHA=
@@ -43,6 +32,7 @@ RUN /image/provision-python.sh ${PYTHON} ${PYTHON_SHA}
 
 ADD image/build-drake.sh /image/
 ADD image/drake-src.tar /opt/drake-wheel-build/drake/
+COPY image/snopt.tar.gz /opt/drake-wheel-build/src/
 
 # -----------------------------------------------------------------------------
 # Build the Drake wheel.
@@ -55,7 +45,7 @@ ARG DRAKE_GIT_SHA
 
 ENV DRAKE_VERSION=${DRAKE_VERSION}
 ENV DRAKE_GIT_SHA=${DRAKE_GIT_SHA}
-ENV SNOPT_PATH=/opt/drake-wheel-build/dependencies/src/snopt.tar.gz
+ENV SNOPT_PATH=/opt/drake-wheel-build/src/snopt.tar.gz
 
 RUN --mount=type=cache,target=/var/cache/bazel \
     /image/build-drake.sh

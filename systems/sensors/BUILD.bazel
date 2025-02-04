@@ -230,10 +230,12 @@ drake_cc_library(
         "image_to_lcm_image_array_t.h",
     ],
     deps = [
-        ":lcm_image_traits",
         "//common:essential",
         "//lcmtypes:image_array",
         "//systems/framework",
+    ],
+    implementation_deps = [
+        ":lcm_image_traits",
         "@zlib",
     ],
 )
@@ -617,7 +619,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "image_to_lcm_image_array_t_test",
-    deps = [":image_to_lcm_image_array_t"],
+    deps = [
+        ":image",
+        ":image_to_lcm_image_array_t",
+    ],
 )
 
 drake_cc_googletest(

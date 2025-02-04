@@ -135,9 +135,6 @@ are used:
 - ``/opt/drake-wheel-build``:
   Contains most intermediate artifacts.
 
-- ``/opt/drake-dependencies``:
-  Contains installations of various dependencies needed to build Drake.
-
 - ``/opt/drake-dist``:
   Contains the Drake installation used to build the wheel.
 

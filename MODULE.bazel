@@ -73,6 +73,29 @@ spdlog_repository = use_repo_rule(
 
 spdlog_repository(name = "pkgconfig_spdlog")
 
+# Add C++ module dependencies that are NOT used by Drake's public API, but are
+# used by Drake's implementation.
+#
+# We declare these dependencies twice -- as modules (bazel_dep) and repository
+# rules (pkgconfig). The choice of whether module vs pkgconfig will be used is
+# governed by the flags declared at drake/tools/flags/BUILD.bazel.
+#
+# For our CMake builds from source, the "WITH_USER_..." CMake options to choose
+# the flavor are translated into the matching Bazel flags.  XXX
+#
+# For wheel builds, the module flavor is always used.
+#
+# For Bazel builds using Drake as an external, the module flavor is used by
+# default but can be changed using the Bazel flags.
+#
+# For first-party Bazel builds (by Drake Developers), the pkgconfig flavor is
+# used by default but can be changed using the Bazel flags.
+
+bazel_dep(name = "zlib", version = "1.3.1.bcr.4", repo_name = "module_zlib")
+
+# TODO(jwnimmer-tri) These as well should be module-or-pkgconfig:
+# - glib
+
 # Add additional modules we use as tools (not runtime dependencies).
 
 bazel_dep(name = "toolchains_llvm", version = "1.3.0")
@@ -265,6 +288,4 @@ use_repo(
 )
 
 # TODO(#20731) More improvements are still needed to our MODULE organization:
-# - Provide better configuration options for choosing dependencies.
-# - Adjust the wheel build to build more dependencies as Bazel modules.
 # - Deprecate non-bzlmod use of Drake downstream.
