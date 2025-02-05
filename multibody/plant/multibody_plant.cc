@@ -1717,6 +1717,12 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q.size() == num_positions());
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    using std::isfinite;
+    DRAKE_THROW_UNLESS(all_of(q, [](const T& t) {
+      return isfinite(t);
+    }));
+  }
   for (JointIndex i : GetJointIndices()) {
     Joint<T>& joint = get_mutable_joint(i);
     joint.set_default_positions(
@@ -1730,6 +1736,12 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q_instance) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    using std::isfinite;
+    DRAKE_THROW_UNLESS(all_of(q_instance, [](const T& t) {
+      return isfinite(t);
+    }));
+  }
   VectorX<T> q_T(num_positions());
   internal_tree().SetPositionsInArray(model_instance, q_instance.cast<T>(),
                                       &q_T);
