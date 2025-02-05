@@ -2664,13 +2664,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Context from a given vector [q; v]. Prefer this method over
   /// GetMutablePositionsAndVelocities().
   /// @throws std::exception if `context` is nullptr, if `context` does
-  /// not correspond to the context for a multibody model, or if the length of
-  /// `q_v` is not equal to `num_positions() + num_velocities()`.
+  /// not correspond to the context for a multibody model, if the length of
+  /// `q_v` is not equal to `num_positions() + num_velocities()`, or if `q_v`
+  /// contains non-finite values.
   void SetPositionsAndVelocities(
       systems::Context<T>* context,
       const Eigen::Ref<const VectorX<T>>& q_v) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_v.size() == (num_positions() + num_velocities()));
+    DRAKE_THROW_UNLESS(AllFinite(q_v));
     internal_tree().GetMutablePositionsAndVelocities(context) = q_v;
   }
 
@@ -2678,14 +2680,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// vector [q; v] for a specified model instance in a given Context.
   /// @throws std::exception if `context` is nullptr, if `context` does
   /// not correspond to the Context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `q_v` is not equal to
-  /// `num_positions(model_instance) + num_velocities(model_instance)`.
+  /// index is invalid, if the length of `q_v` is not equal to
+  /// `num_positions(model_instance) + num_velocities(model_instance)`, or if
+  /// `q_v` contains non-finite values.
   void SetPositionsAndVelocities(
       systems::Context<T>* context, ModelInstanceIndex model_instance,
       const Eigen::Ref<const VectorX<T>>& q_v) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_v.size() == (num_positions(model_instance) +
                                       num_velocities(model_instance)));
+    DRAKE_THROW_UNLESS(AllFinite(q_v));
     internal_tree().SetPositionsAndVelocities(model_instance, q_v, context);
   }
 
@@ -2733,12 +2737,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Sets the generalized positions q in a given Context from a given vector.
   /// Prefer this method over GetMutablePositions().
   /// @throws std::exception if `context` is nullptr, if `context` does not
-  /// correspond to the Context for a multibody model, or if the length of `q`
-  /// is not equal to `num_positions()`.
+  /// correspond to the Context for a multibody model, if the length of `q`
+  /// is not equal to `num_positions()`, or if `q` contains non-finite values.
   void SetPositions(systems::Context<T>* context,
                     const Eigen::Ref<const VectorX<T>>& q) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q.size() == num_positions());
+    DRAKE_THROW_UNLESS(AllFinite(q));
     internal_tree().GetMutablePositions(context) = q;
   }
 
@@ -2746,13 +2751,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// given Context from a given vector.
   /// @throws std::exception if the `context` is nullptr, if `context` does
   /// not correspond to the Context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `q_instance` is not equal to
-  /// `num_positions(model_instance)`.
+  /// index is invalid, if the length of `q_instance` is not equal to
+  /// `num_positions(model_instance)`, or if `q_instance` contains non-finite
+  /// values.
   void SetPositions(systems::Context<T>* context,
                     ModelInstanceIndex model_instance,
                     const Eigen::Ref<const VectorX<T>>& q_instance) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
+    DRAKE_THROW_UNLESS(AllFinite(q_instance));
     Eigen::VectorBlock<VectorX<T>> q =
         internal_tree().GetMutablePositions(context);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
@@ -2763,8 +2770,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note No cache invalidation occurs.
   /// @throws std::exception if the `context` is nullptr, if `context` does
   /// not correspond to the Context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `q_instance` is not equal to
-  /// `num_positions(model_instance)`.
+  /// index is invalid, if the length of `q_instance` is not equal to
+  /// `num_positions(model_instance)`, or if `q_instance` contains non-finite
+  /// values.
   /// @pre `state` comes from this MultibodyPlant.
   void SetPositions(const systems::Context<T>& context,
                     systems::State<T>* state, ModelInstanceIndex model_instance,
@@ -2772,6 +2780,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
     DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
+    DRAKE_THROW_UNLESS(AllFinite(q_instance));
     Eigen::VectorBlock<VectorX<T>> q =
         internal_tree().get_mutable_positions(state);
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
@@ -2792,8 +2801,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// or SetDefaultContext/SetDefaultState will return a Context populated with
   /// these position values. They have no other effects on the dynamics of the
   /// system.
-  /// @throws std::exception if the plant is not finalized or if q is
-  /// not of size num_positions().
+  /// @throws std::exception if the plant is not finalized, if q is not of size
+  /// num_positions(), or `q` contains non-finite values.
   void SetDefaultPositions(const Eigen::Ref<const Eigen::VectorXd>& q);
 
   /// Sets the default positions for the model instance.  Calls to
@@ -2801,8 +2810,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Context populated with these position values. They have no other effects
   /// on the dynamics of the system.
   /// @throws std::exception if the plant is not
-  /// finalized, if the model_instance is invalid, or if the length of
-  /// `q_instance` is not equal to `num_positions(model_instance)`.
+  /// finalized, if the model_instance is invalid, if the length of `q_instance`
+  /// is not equal to `num_positions(model_instance)`, or if `q_instance`
+  /// contains non-finite values.
   void SetDefaultPositions(ModelInstanceIndex model_instance,
                            const Eigen::Ref<const Eigen::VectorXd>& q_instance);
 
@@ -2850,12 +2860,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Sets the generalized velocities v in a given Context from a given
   /// vector. Prefer this method over GetMutableVelocities().
   /// @throws std::exception if the `context` is nullptr, if the context does
-  /// not correspond to the context for a multibody model, or if the length of
-  /// `v` is not equal to `num_velocities()`.
+  /// not correspond to the context for a multibody model, if the length of
+  /// `v` is not equal to `num_velocities()`, or if `v` contains non-finite
+  /// values.
   void SetVelocities(systems::Context<T>* context,
                      const Eigen::Ref<const VectorX<T>>& v) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v.size() == num_velocities());
+    DRAKE_THROW_UNLESS(AllFinite(v));
     internal_tree().GetMutableVelocities(context) = v;
   }
 
@@ -2863,13 +2875,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// given Context from a given vector.
   /// @throws std::exception if the `context` is nullptr, if `context` does
   /// not correspond to the Context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `v_instance` is not equal to
-  /// `num_velocities(model_instance)`.
+  /// index is invalid, if the length of `v_instance` is not equal to
+  /// `num_velocities(model_instance)`, or if `v_instance` contains non-finite
+  /// values.
   void SetVelocities(systems::Context<T>* context,
                      ModelInstanceIndex model_instance,
                      const Eigen::Ref<const VectorX<T>>& v_instance) const {
     this->ValidateContext(context);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
+    DRAKE_THROW_UNLESS(AllFinite(v_instance));
     Eigen::VectorBlock<VectorX<T>> v =
         internal_tree().GetMutableVelocities(context);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
@@ -2880,8 +2894,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @note No cache invalidation occurs.
   /// @throws std::exception if the `context` is nullptr, if `context` does
   /// not correspond to the Context for a multibody model, if the model instance
-  /// index is invalid, or if the length of `v_instance` is not equal to
-  /// `num_velocities(model_instance)`.
+  /// index is invalid, if the length of `v_instance` is not equal to
+  /// `num_velocities(model_instance)`, or if `v_instance` contains non-finite
+  /// values.
   /// @pre `state` comes from this MultibodyPlant.
   void SetVelocities(const systems::Context<T>& context,
                      systems::State<T>* state,
@@ -2890,6 +2905,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateContext(context);
     this->ValidateCreatedForThisSystem(state);
     DRAKE_THROW_UNLESS(v_instance.size() == num_velocities(model_instance));
+    DRAKE_THROW_UNLESS(AllFinite(v_instance));
     Eigen::VectorBlock<VectorX<T>> v =
         internal_tree().get_mutable_velocities(state);
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, &v);
@@ -3139,12 +3155,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Sets the vector of generalized velocities for `model_instance` in
   /// `v` using `v_instance`, leaving all other elements in the array
   /// untouched. This method throws an exception if `v` is not of size
-  /// MultibodyPlant::num_velocities() or `v_instance` is not of size
-  /// `MultibodyPlant::num_positions(model_instance)`.
+  /// MultibodyPlant::num_velocities(), `v_instance` is not of size
+  /// `MultibodyPlant::num_positions(model_instance)`, or `v_instance` contains
+  /// non-finite values.
   void SetVelocitiesInArray(ModelInstanceIndex model_instance,
                             const Eigen::Ref<const VectorX<T>>& v_instance,
                             EigenPtr<VectorX<T>> v) const {
     DRAKE_DEMAND(v != nullptr);
+    DRAKE_THROW_UNLESS(AllFinite(v_instance));
     internal_tree().SetVelocitiesInArray(model_instance, v_instance, v);
   }
   /// @} <!-- State accessors and mutators -->
@@ -5548,6 +5566,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // not be called pre-finalize. The invoking method should pass it's name so
   // that the error message can include that detail.
   void ThrowIfNotFinalized(const char* source_method) const;
+
+  // Throws an exception if the vector `v` contains any non-finite values.
+  // @param v The vector to test.
+  // @param source_method   The name of the public method that received the
+  // input.
+  static boolean<T> AllFinite(const Eigen::Ref<const VectorX<T>>& v) {
+    return all_of(v, [](const T& t) {
+      using std::isfinite;
+      return isfinite(t);
+    });
+  }
 
   // Helper method that is used to finalize the plant's internals after
   // MultibodyTree::Finalize() was called.
