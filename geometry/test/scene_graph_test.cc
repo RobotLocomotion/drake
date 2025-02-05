@@ -971,6 +971,51 @@ GTEST_TEST(SceneGraphConnectionTest, FullPoseUpdateDisconnected) {
           source_system->registered_source_name()));
 }
 
+GTEST_TEST(SceneGraphConnectionTest, NanInPoseInputs) {
+  SceneGraph<double> sg;
+  const SourceId s_id = sg.RegisterSource("nan_port");
+  const FrameId f_id = sg.RegisterFrame(s_id, GeometryFrame("frame"));
+  std::unique_ptr<Context<double>> context = sg.CreateDefaultContext();
+
+  FramePoseVector<double> poses;
+  RigidTransformd nan_pose(
+      Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN()));
+  poses.set_value(f_id, nan_pose);
+
+  sg.get_source_pose_port(s_id).FixValue(context.get(), poses);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(SceneGraphTester::FullPoseUpdate(sg, *context),
+                              ".*NaN on a pose input port.*'nan_port'.*");
+}
+
+GTEST_TEST(SceneGraphConnectionTest, NanInConfigInputs) {
+  SceneGraph<double> sg;
+  const SourceId s_id = sg.RegisterSource("nan_port");
+
+  // Sphere tessellated as an octahedron.
+  GeometryId deformable_id = sg.RegisterDeformableGeometry(
+      s_id, sg.world_frame_id(), make_sphere_instance(), 2.0);
+
+  std::unique_ptr<Context<double>> context = sg.CreateDefaultContext();
+
+  const SceneGraphInspector<double>& inspector = sg.model_inspector();
+  const VolumeMesh<double>* mesh_ptr =
+      inspector.GetReferenceMesh(deformable_id);
+  DRAKE_DEMAND(mesh_ptr != nullptr);
+
+  GeometryConfigurationVector<double> configs;
+  Eigen::VectorX<double> qs =
+      Eigen::VectorX<double>::Zero(mesh_ptr->num_vertices() * 3);
+  qs[1] = std::numeric_limits<double>::quiet_NaN();
+  configs.set_value(deformable_id, qs);
+
+  sg.get_source_configuration_port(s_id).FixValue(context.get(), configs);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SceneGraphTester::FullConfigurationUpdate(sg, *context),
+      ".*NaN on a deformable configuration input port.*'nan_port'.*");
+}
+
 // Confirms that the SceneGraph can be instantiated on AutoDiff type.
 GTEST_TEST(SceneGraphAutoDiffTest, InstantiateAutoDiff) {
   SceneGraph<AutoDiffXd> scene_graph;

@@ -140,6 +140,9 @@ class KinematicsVector {
    */
   std::vector<Id> ids() const;
 
+  /** Reports if any value is nan. */
+  bool HasNan() const;
+
  private:
   void CheckInvariants() const;
 

@@ -677,6 +677,12 @@ void SceneGraph<T>::CalcPoseUpdate(const Context<T>& context, int*) const {
         }
         const auto& poses =
             pose_port.template Eval<FramePoseVector<T>>(context);
+        if (poses.HasNan()) {
+          throw std::runtime_error(fmt::format(
+              "SceneGraph encountered a NaN on a pose input port. It came from "
+              "the input associated with source id {} and name '{}'.",
+              fmt_streamed(source_id), state.GetName(source_id)));
+        }
         state.SetFramePoses(source_id, poses, &kinematics_data);
       }
     }
@@ -715,6 +721,13 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
         const auto& configs =
             configuration_port.template Eval<GeometryConfigurationVector<T>>(
                 context);
+        if (configs.HasNan()) {
+          throw std::runtime_error(fmt::format(
+              "SceneGraph encountered a NaN on a deformable configuration "
+              "input port. It came from the input associated with source id {} "
+              "and name '{}'.",
+              fmt_streamed(source_id), state.GetName(source_id)));
+        }
         state.SetGeometryConfiguration(source_id, configs, &kinematics_data);
       }
     }

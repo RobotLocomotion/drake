@@ -1,5 +1,6 @@
 #include "drake/geometry/kinematics_vector.h"
 
+#include <functional>
 #include <stdexcept>
 
 #include <fmt/format.h>
@@ -103,6 +104,45 @@ void KinematicsVector<Id, KinematicsValue>::CheckInvariants() const {
     }
   }
   DRAKE_DEMAND(num_nonnull == size_);
+}
+
+namespace {
+// Tests for the supported kinematics value types for whether they have NaN
+// values.
+
+template <typename T>
+bool KinematicsIsNan(const math::RigidTransform<T>& X) {
+  if constexpr (std::is_same_v<T, double>) {
+    return X.translation().hasNaN() || X.rotation().matrix().hasNaN();
+  } else if constexpr (std::is_same_v<T, AutoDiffXd>) {
+    return ExtractDoubleOrThrow(X.translation()).hasNaN() ||
+           ExtractDoubleOrThrow(X.rotation().matrix()).hasNaN();
+  }
+}
+
+template <typename T>
+bool KinematicsIsNan(const VectorX<T>& q) {
+  using std::isnan;
+  return any_of(q, [](const T& t) { return isnan(t); });
+}
+
+}  // namespace
+
+template <typename Id, typename KinematicsValue>
+bool KinematicsVector<Id, KinematicsValue>::HasNan() const {
+  // For T = Expression, we simply bother don't bother checking.
+  if constexpr (std::is_same_v<KinematicsValue,
+                               math::RigidTransform<symbolic::Expression>> ||
+                std::is_same_v<KinematicsValue,
+                               VectorX<symbolic::Expression>>) {
+    return false;
+  } else {
+    for (const auto& [_, maybe_value] : values_) {
+      if (!maybe_value.has_value()) continue;
+      if (KinematicsIsNan(*maybe_value)) return true;
+    }
+    return false;
+  }
 }
 
 // Explicitly instantiates on the most common scalar types.
