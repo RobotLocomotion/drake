@@ -296,6 +296,8 @@ class TestAnalysis(unittest.TestCase):
         self.assertIn("target_realtime_rate", repr(config))
         copy.copy(config)
 
+    # Disable b/c this doesn't play well with the convex integrator, which
+    # requires a MbP subsystem.
     # def test_simulator_config_functions(self):
     #     for T in (float, AutoDiffXd):
     #         source = ConstantVectorSource_[T]([2, 3])

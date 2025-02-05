@@ -158,7 +158,7 @@ GTEST_TEST(ConvexIntegratorTest, CylinderSim) {
   // Set the integrator
   ConvexIntegrator<double>& integrator =
       simulator.reset_integrator<ConvexIntegrator<double>>();
-  integrator.set_maximum_step_size(0.001);
+  integrator.set_maximum_step_size(0.1);
   simulator.Initialize();
 
   // Simulate for a few seconds
