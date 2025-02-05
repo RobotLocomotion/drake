@@ -137,6 +137,44 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
                                    Vector3<T>::Zero());
   }
 
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    if constexpr (true) {
+      X_FM->set_rotation(Eigen::AngleAxis<T>(q[0], axis_F_));
+    } else {
+      math::RigidTransform<T>::UpdateAxialRotation<2>(q, &*X_FM);
+    }
+  }
+
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>& X_FM,
+                        const Vector3<T>& v_M) const {
+    if constexpr (true) {
+      return X_FM.rotation() * v_M;
+    } else {
+      return math::RigidTransform<T>::ApplyAxialRotation<2>(X_FM, v_M);
+    }
+  }
+
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const {
+    if constexpr (true) {
+      return R_FM * v_M;
+    } else {
+      return math::RotationMatrix<T>::ApplyAxialRotation<2>(R_FM, v_M);
+    }
+  }
+
+  void compose_with_X_FM(const math::RigidTransform<T>& X_AF,
+                         const math::RigidTransform<T>& X_FM,
+                         math::RigidTransform<T>* X_AM) const {
+    DRAKE_ASSERT(X_AM != nullptr);
+    if constexpr (true) {
+      X_AF.ComposeWithRotation(X_FM, &*X_AM);
+    } else {
+      X_AF.ComposeWithAxialRotation<2>(X_FM, &*X_AM);
+    }
+  }
+
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
   // frame M measured and expressed in frame F as a function of the input
   // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
