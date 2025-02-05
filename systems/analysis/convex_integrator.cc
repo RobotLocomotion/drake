@@ -649,5 +649,5 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     class drake::systems::ConvexIntegrator);
