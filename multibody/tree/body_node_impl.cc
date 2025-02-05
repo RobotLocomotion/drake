@@ -1,6 +1,5 @@
 #include "drake/multibody/tree/body_node_impl.h"
 
-#include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/curvilinear_mobilizer.h"
 #include "drake/multibody/tree/planar_mobilizer.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
@@ -16,19 +15,19 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-template <typename T, template <typename> class ConcreteMobilizer>
-BodyNodeImpl<T, ConcreteMobilizer>::BodyNodeImpl(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* rigid_body,
-    const Mobilizer<T>* mobilizer)
+template <typename T, class ConcreteMobilizer>
+BodyNodeImpl<T, ConcreteMobilizer>::BodyNodeImpl(const BodyNode<T>* parent_node,
+                                                 const RigidBody<T>* rigid_body,
+                                                 const Mobilizer<T>* mobilizer)
     : BodyNode<T>(parent_node, rigid_body, mobilizer),
-      mobilizer_(dynamic_cast<const ConcreteMobilizer<T>*>(mobilizer)) {
+      mobilizer_(dynamic_cast<const ConcreteMobilizer*>(mobilizer)) {
   DRAKE_DEMAND(mobilizer_ != nullptr);
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 BodyNodeImpl<T, ConcreteMobilizer>::~BodyNodeImpl() = default;
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
     const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
     PositionKinematicsCache<T>* pc) const {
@@ -36,23 +35,88 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
   DRAKE_ASSERT(mobod_index() != world_mobod_index());
   DRAKE_ASSERT(pc != nullptr);
 
-  // TODO(sherm1) This should be an update rather than generating a whole
-  //  new transform.
+  // RigidBody for this node.
+  const RigidBody<T>& body_B = body();
+
+  // RigidBody for this node's parent, or the parent body P.
+  const RigidBody<T>& body_P = parent_body();
+
+  // Inboard (F)/Outboard (M) frames of this node's mobilizer.
+  const Frame<T>& frame_F = inboard_frame();
+  DRAKE_ASSERT(frame_F.body().index() == body_P.index());
+  const Frame<T>& frame_M = outboard_frame();
+  DRAKE_ASSERT(frame_M.body().index() == body_B.index());
+
+  // Input (const):
+  // - X_PF
+  // - X_MB
+  // - X_WP(q(W:P)), where q(W:P) includes all positions in the kinematics
+  //                 path from parent body P to the world W.
+  const math::RigidTransform<T>& X_PF =
+      frame_F.get_X_BF(frame_body_pose_cache);  // B==P
+  const bool X_PF_is_identity = frame_F.is_X_BF_identity(frame_body_pose_cache);
+
+  const math::RigidTransform<T>& X_MB =
+      frame_M.get_X_FB(frame_body_pose_cache);  // F==M
+  const bool X_MB_is_identity = frame_M.is_X_BF_identity(frame_body_pose_cache);
+  const math::RigidTransform<T>& X_WP = pc->get_X_WB(inboard_mobod_index());
+
+  // Output (updating a cache entry):
+  // - X_FM(q_B)
+  // - X_PB(q_B)
+  // - X_WB(q(W:P), q_B)
+  // - p_PoBo_W(q_B)
+  math::RigidTransform<T>& X_FM = pc->get_mutable_X_FM(mobod_index());
+  math::RigidTransform<T>& X_PB = pc->get_mutable_X_PB(mobod_index());
+  math::RigidTransform<T>& X_WB = pc->get_mutable_X_WB(mobod_index());
+  Vector3<T>& p_PoBo_W = pc->get_mutable_p_PoBo_W(mobod_index());
 
   // Update mobilizer-specific position dependent kinematics.
-  math::RigidTransform<T>& X_FM = get_mutable_X_FM(pc);
-  X_FM = mobilizer_->calc_X_FM(get_q(positions));
+  mobilizer_->update_X_FM(get_q(positions), &X_FM);
 
-  // Given X_FM that we just put into PositionKinematicsCache (pc), and
-  // calculations already done through the parent mobilizer, this
-  // calculates into pc: X_PB, X_WB, p_PoBo_W
-  // Not mobilizer specific so implemented in the base class.
-  BodyNode<T>::CalcAcrossMobilizerBodyPoses_BaseToTip(frame_body_pose_cache,
-                                                      pc);
+  // Cases: 0 general case
+  //        1 only X_PF is identity (not likely)
+  //        2 only X_MB is identity (very likely from urdf files)
+  //        3 both are identity (doubtful)
+  const int special_case = X_MB_is_identity << 1 | X_PF_is_identity;
+  switch (special_case) {
+    case 0:  // The general case.
+    {
+      const math::RigidTransform<T> X_FB =
+          mobilizer_->compose_X_FM_with(X_FM, X_MB);
+      X_PB = X_PF * X_FB;
+      X_WB = X_WP * X_PB;
+    } break;
+    case 1:  // Only X_PF is identity.
+      // X_PB = X_PF * X_FM * X_MB
+      //      =   I  * X_FM * X_MB
+      X_PB = mobilizer_->compose_X_FM_with(X_FM, X_MB);
+      X_WB = X_WP * X_PB;  // No shortcut.
+      break;
+    case 2:  // Only X_MB is identity (common case).
+      // X_PB = X_PF * X_FM * X_MB
+      //      = X_PF * X_FM *  I
+      X_PB = mobilizer_->compose_with_X_FM(X_PF, X_FM);
+      X_WB = X_WP * X_PB;  // No shortcut.
+      break;
+    case 3:  // The best case: both X_PF and X_BM are identity.
+      // X_PB = X_PF * X_FM * X_MB
+      //      =   I  * X_FM *  I
+      // X_WB = X_WP * X_PB
+      //      = X_WP * X_FM
+      X_PB = X_FM;
+      X_WB = mobilizer_->compose_with_X_FM(X_WP, X_FM);
+      break;
+  }
+
+  // Compute shift vector p_PoBo_W from the parent origin to the body origin.
+  const Vector3<T>& p_PoBo_P = X_PB.translation();
+  const math::RotationMatrix<T>& R_WP = X_WP.rotation();
+  p_PoBo_W = R_WP * p_PoBo_P;
 }
 
 // Calculate and save X_FM, X_MpM, X_WM
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcPositionKinematicsCacheInM_BaseToTip(
         const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
@@ -89,7 +153,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 // TODO(sherm1) Consider combining this with VelocityCache computation
 //  so that we don't have to make a separate pass. Or better, get rid of this
 //  computation altogether by working in better frames.
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcAcrossNodeJacobianWrtVExpressedInWorld(
         const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
@@ -141,7 +205,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
     const T* positions, const PositionKinematicsCache<T>& pc,
     const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
@@ -250,7 +314,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
 }
 
 // Calculate V_FM_M and V_WM_M.
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcVelocityKinematicsCacheInM_BaseToTip(
         const T* positions, const PositionKinematicsCacheInM<T>& pcm,
@@ -336,7 +400,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 //
 // Note: ignores velocities if vc is null, in which case velocities must
 // also be null.
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
     const FrameBodyPoseCache<T>& frame_body_poses_cache, const T* positions,
     const PositionKinematicsCache<T>& pc,
@@ -415,7 +479,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
                                                  V_PB_W, A_PB_W);
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationInM_BaseToTip(
     const T* positions, const PositionKinematicsCacheInM<T>& pcm,
     const T* velocities, const VelocityKinematicsCacheInM<T>& vcm,
@@ -519,7 +583,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationInM_BaseToTip(
 
 // Caution: we permit outputs F_BMo_W_array and tau_array to be the same
 // objects as Fapplied_Bo_W_array and tau_applied_array.
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
     const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
     const PositionKinematicsCache<T>& pc,
@@ -644,7 +708,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamics_TipToBase(
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamicsInM_TipToBase(
     const FrameBodyPoseCache<T>& frame_body_pose_cache,  // M_BMo_M, X_BM
     const T* positions,
@@ -717,7 +781,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamicsInM_TipToBase(
   tau = tau_projection - tau_app;  // 1-6 flops
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcArticulatedBodyInertiaCache_TipToBase(
         const systems::Context<T>& context,
@@ -869,7 +933,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcArticulatedBodyForceCache_TipToBase(
         const systems::Context<T>& context,
@@ -925,7 +989,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
     CalcArticulatedBodyAccelerations_BaseToTip(
         const systems::Context<T>& context,
@@ -978,7 +1042,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
   }
 }
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
     const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
     const PositionKinematicsCache<T>& pc, const T* velocities,
@@ -1063,17 +1127,19 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
 }
 
 // Macro used to explicitly instantiate implementations for every mobilizer.
-#define EXPLICITLY_INSTANTIATE_IMPLS(T)                        \
-  template class BodyNodeImpl<T, CurvilinearMobilizer>;        \
-  template class BodyNodeImpl<T, PlanarMobilizer>;             \
-  template class BodyNodeImpl<T, PrismaticMobilizer>;          \
-  template class BodyNodeImpl<T, QuaternionFloatingMobilizer>; \
-  template class BodyNodeImpl<T, RevoluteMobilizer>;           \
-  template class BodyNodeImpl<T, RpyBallMobilizer>;            \
-  template class BodyNodeImpl<T, RpyFloatingMobilizer>;        \
-  template class BodyNodeImpl<T, ScrewMobilizer>;              \
-  template class BodyNodeImpl<T, UniversalMobilizer>;          \
-  template class BodyNodeImpl<T, WeldMobilizer>
+#define EXPLICITLY_INSTANTIATE_IMPLS(T)                           \
+  template class BodyNodeImpl<T, CurvilinearMobilizer<T>>;        \
+  template class BodyNodeImpl<T, PlanarMobilizer<T>>;             \
+  template class BodyNodeImpl<T, PrismaticMobilizer<T>>;          \
+  template class BodyNodeImpl<T, QuaternionFloatingMobilizer<T>>; \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 0>>;   \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 1>>;   \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 2>>;   \
+  template class BodyNodeImpl<T, RpyBallMobilizer<T>>;            \
+  template class BodyNodeImpl<T, RpyFloatingMobilizer<T>>;        \
+  template class BodyNodeImpl<T, ScrewMobilizer<T>>;              \
+  template class BodyNodeImpl<T, UniversalMobilizer<T>>;          \
+  template class BodyNodeImpl<T, WeldMobilizer<T>>
 
 // Explicitly instantiates on the supported scalar types.
 // These should be kept in sync with the list in default_scalars.h.
