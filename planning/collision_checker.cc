@@ -679,6 +679,10 @@ bool CollisionChecker::CheckContextEdgeCollisionFree(
   // There is also no need to special case checking q1, since it will be the
   // first configuration checked in the loop.
   if (!CheckContextConfigCollisionFree(model_context, q2)) {
+    // CheckConfigCollisionFree implicitly confirms q2 contains finite values.
+    // However, if q2 is finite and in collision, we still should throw if
+    // q1 isn't finite; the return value is reserved for valid inputs.
+    DRAKE_THROW_UNLESS(q1.allFinite());
     return false;
   }
 
@@ -714,6 +718,10 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
     // failing fast on a colliding q2 helps reduce the work of checking
     // colliding edges.
     if (!CheckConfigCollisionFree(q2)) {
+      // CheckConfigCollisionFree implicitly confirms q2 contains finite values.
+      // However, if q2 is finite and in collision, we still should throw if
+      // q1 isn't finite; the return value is reserved for valid inputs.
+      DRAKE_THROW_UNLESS(q1.allFinite());
       return false;
     }
     // Special case q1 as well, so it gets checked before parallel dispatch.

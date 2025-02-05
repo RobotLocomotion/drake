@@ -109,49 +109,64 @@ GTEST_TEST(BrokenDistanceAndInterpolationProviderTest, Test) {
 GTEST_TEST(SimpleLinearDistanceAndInterpolationProviderTest, Test) {
   const SimpleLinearDistanceAndInterpolationProvider provider;
 
+  const Eigen::VectorXd kOnes = Eigen::VectorXd::Ones(2);
+  const Eigen::VectorXd kZeros = Eigen::VectorXd::Zero(2);
+
+  const Eigen::VectorXd kInfs =
+      Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+  const Eigen::VectorXd kNans =
+      Eigen::VectorXd::Constant(2, std::numeric_limits<double>::infinity());
+
   // Distance with different length qs throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
-                                            Eigen::VectorXd::Zero(3)),
+      provider.ComputeConfigurationDistance(kZeros, Eigen::VectorXd::Zero(3)),
       ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.*");
 
   // Interpolation with different length qs throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
+      provider.InterpolateBetweenConfigurations(kZeros,
                                                 Eigen::VectorXd::Zero(3), 0.0),
       ".* condition 'from\\.size\\(\\) == to\\.size\\(\\)' failed.*");
 
   // Interpolation with ratios outside [0, 1] throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
-                                                Eigen::VectorXd::Zero(2), -0.1),
+      provider.InterpolateBetweenConfigurations(kZeros, kZeros, -0.1),
       ".* condition 'ratio >= 0\\.0' failed.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Zero(2),
-                                                Eigen::VectorXd::Zero(2), 1.1),
+      provider.InterpolateBetweenConfigurations(kZeros, kZeros, 1.1),
       ".* condition 'ratio <= 1\\.0' failed.*");
 
   // Distance queries.
-  EXPECT_EQ(provider.ComputeConfigurationDistance(Eigen::VectorXd::Zero(2),
-                                                  Eigen::VectorXd::Zero(2)),
-            0.0);
-  EXPECT_EQ(provider.ComputeConfigurationDistance(Eigen::VectorXd::Ones(2),
-                                                  Eigen::VectorXd::Zero(2)),
+  EXPECT_EQ(provider.ComputeConfigurationDistance(kZeros, kZeros), 0.0);
+  EXPECT_EQ(provider.ComputeConfigurationDistance(kOnes, kZeros),
             std::sqrt(2.0));
+
+  EXPECT_THROW(provider.ComputeConfigurationDistance(kOnes, kInfs),
+               std::exception);
+  EXPECT_THROW(provider.ComputeConfigurationDistance(kInfs, kOnes),
+               std::exception);
+  EXPECT_THROW(provider.ComputeConfigurationDistance(kOnes, kNans),
+               std::exception);
+  EXPECT_THROW(provider.ComputeConfigurationDistance(kNans, kOnes),
+               std::exception);
 
   // Interpolation queries.
   EXPECT_TRUE(CompareMatrices(
-      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Ones(2),
-                                                Eigen::VectorXd::Zero(2), 0.0),
-      Eigen::VectorXd::Ones(2)));
+      provider.InterpolateBetweenConfigurations(kOnes, kZeros, 0.0), kOnes));
   EXPECT_TRUE(CompareMatrices(
-      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Ones(2),
-                                                Eigen::VectorXd::Zero(2), 1.0),
-      Eigen::VectorXd::Zero(2)));
+      provider.InterpolateBetweenConfigurations(kOnes, kZeros, 1.0), kZeros));
   EXPECT_TRUE(CompareMatrices(
-      provider.InterpolateBetweenConfigurations(Eigen::VectorXd::Ones(2),
-                                                Eigen::VectorXd::Zero(2), 0.5),
-      Eigen::VectorXd::Constant(2, 0.5)));
+      provider.InterpolateBetweenConfigurations(kOnes, kZeros, 0.5),
+      kOnes * 0.5));
+
+  EXPECT_THROW(provider.InterpolateBetweenConfigurations(kOnes, kInfs, 0),
+               std::exception);
+  EXPECT_THROW(provider.InterpolateBetweenConfigurations(kInfs, kOnes, 0),
+               std::exception);
+  EXPECT_THROW(provider.InterpolateBetweenConfigurations(kOnes, kNans, 0),
+               std::exception);
+  EXPECT_THROW(provider.InterpolateBetweenConfigurations(kNans, kOnes, 0),
+               std::exception);
 }
 
 }  // namespace
