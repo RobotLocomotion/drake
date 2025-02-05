@@ -87,18 +87,20 @@ GTEST_TEST(ConvexIntegratorTest, DoublePendulumSim) {
   SimulatorConfig config;
   config.target_realtime_rate = 1.0;
   config.publish_every_time_step = true;
+  config.integration_scheme = "convex";
   ApplySimulatorConfig(config, &simulator);
 
   // Set the integrator
-  ConvexIntegrator<double>& integrator =
-      simulator.reset_integrator<ConvexIntegrator<double>>();
-  integrator.set_maximum_step_size(0.001);
+  // ConvexIntegrator<double>& integrator =
+  //     simulator.reset_integrator<ConvexIntegrator<double>>();
+  // integrator.set_maximum_step_size(0.1);
+  // integrator.set_fixed_step_mode(false);
   simulator.Initialize();
 
   // Simulate for a few seconds
   const int fps = 64;
   meshcat->StartRecording(fps);
-  simulator.AdvanceTo(10.0);
+  simulator.AdvanceTo(0.1);
   meshcat->StopRecording();
   meshcat->PublishRecording();
 

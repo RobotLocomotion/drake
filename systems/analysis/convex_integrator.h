@@ -17,8 +17,8 @@
 namespace drake {
 namespace systems {
 
-using drake::multibody::contact_solvers::internal::SapContactProblem;
-using drake::multibody::contact_solvers::internal::SapSolverResults;
+using multibody::contact_solvers::internal::SapContactProblem;
+using multibody::contact_solvers::internal::SapSolverResults;
 using geometry::GeometryId;
 using math::RigidTransform;
 using multibody::BodyIndex;

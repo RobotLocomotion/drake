@@ -1,18 +1,16 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
-#include <iostream>
-
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 
+#include <iostream>
+
 namespace drake {
 namespace systems {
 
-using drake::geometry::PenetrationAsPointPair;
-using drake::multibody::contact_solvers::internal::SapSolver;
-using drake::multibody::contact_solvers::internal::SapSolverStatus;
+using geometry::PenetrationAsPointPair;
 using multibody::DiscreteContactApproximation;
 using multibody::Frame;
 using multibody::RigidBody;
@@ -21,6 +19,8 @@ using multibody::contact_solvers::internal::MatrixBlock;
 using multibody::contact_solvers::internal::SapConstraintJacobian;
 using multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
 using multibody::contact_solvers::internal::SapHuntCrossleyConstraint;
+using multibody::contact_solvers::internal::SapSolver;
+using multibody::contact_solvers::internal::SapSolverStatus;
 using multibody::internal::GetCombinedDissipationTimeConstant;
 using multibody::internal::GetCombinedDynamicCoulombFriction;
 using multibody::internal::GetCombinedHuntCrossleyDissipation;
@@ -32,9 +32,11 @@ using multibody::internal::TreeIndex;
 template <class T>
 void ConvexIntegrator<T>::DoInitialize() {
   using std::isnan;
-
   const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
+
+  // TODO(vincekurtz): figure out some reasonable accuracy bounds and defaults
+  const double kDefaultAccuracy = 1e-1;
 
   // TODO(vincekurtz): in the future we might want some fancy caching instead of
   // the workspace, but for now we'll just try to allocate most things here.
@@ -47,29 +49,34 @@ void ConvexIntegrator<T>::DoInitialize() {
   workspace_.a.resize(nv);
   workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
   workspace_.err.resize(nq + nv);
-  
+
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
     // Verify that maximum step size has been set.
     if (isnan(this->get_maximum_step_size()))
-      throw std::logic_error("Neither initial step size target nor maximum "
-                                 "step size has been set!");
+      throw std::logic_error(
+          "Neither initial step size target nor maximum "
+          "step size has been set!");
 
-    this->request_initial_step_size_target(
-        this->get_maximum_step_size());
+    this->request_initial_step_size_target(this->get_maximum_step_size());
   }
 
+  // Set the target accuracy
+  double working_accuracy = this->get_target_accuracy();
+  if (isnan(working_accuracy))
+    working_accuracy = kDefaultAccuracy;
+  this->set_accuracy_in_use(working_accuracy);
 }
 
 template <class T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
   // Get the plant context. Note that we assume the only continuous state is the
   // plant's, and there are no controllers connected to it.
-  Context<T>& context =
-      plant().GetMyMutableContextFromRoot(this->get_mutable_context());
+  Context<T>& diagram_context = *this->get_mutable_context();
+  Context<T>& context = plant().GetMyMutableContextFromRoot(&diagram_context);
 
-  std::cout << "time: " << context.get_time();
-  std::cout << " dt: " << h << std::endl;
+  std::cout << "t: " << context.get_time() << std::endl;
+  std::cout << "dt: " << h << std::endl;
 
   // Get stuff from the workspace
   VectorX<T>& q = workspace_.q;
@@ -101,7 +108,8 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   SapContactProblem<T> problem_h1(0.5 * h, A, v_star);
   problem_h1.set_num_objects(plant().num_bodies());
   AddContactConstraints(context, &problem_h1);
-  SapSolverStatus status_h1 = sap.SolveWithGuess(problem_h1, v0, &sap_results_h);
+  SapSolverStatus status_h1 =
+      sap.SolveWithGuess(problem_h1, v0, &sap_results_h);
   DRAKE_DEMAND(status_h1 == SapSolverStatus::kSuccess);
 
   plant().MapVelocityToQDot(context, 0.5 * h * sap_results_h.v, &q_h);
@@ -114,7 +122,8 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   SapContactProblem<T> problem_h2(0.5 * h, A, v_star);
   problem_h2.set_num_objects(plant().num_bodies());
   AddContactConstraints(context, &problem_h2);
-  SapSolverStatus status_h2 = sap.SolveWithGuess(problem_h2, sap_results.v, &sap_results_h);
+  SapSolverStatus status_h2 =
+      sap.SolveWithGuess(problem_h2, sap_results.v, &sap_results_h);
   DRAKE_DEMAND(status_h2 == SapSolverStatus::kSuccess);
 
   plant().MapVelocityToQDot(context, 0.5 * h * sap_results_h.v, &q_h);
@@ -127,6 +136,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   err.tail(plant().num_velocities()) = sap_results_h.v - sap_results.v;
   this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(err);
 
+  diagram_context.SetTime(diagram_context.get_time() + h);
   return true;  // step was successful
 }
 
