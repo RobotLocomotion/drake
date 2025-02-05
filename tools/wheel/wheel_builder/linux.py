@@ -320,8 +320,7 @@ def build(options):
     identifier = f'{time}-{salt}'
 
     # Provide the SNOPT source archive as a dependency.
-    snopt_tgz = os.path.join(
-        resource_root, 'image', 'dependencies', 'snopt.tar.gz')
+    snopt_tgz = os.path.join(resource_root, 'image', 'snopt.tar.gz')
     _files_to_remove.append(snopt_tgz)
     create_snopt_tgz(snopt_path=options.snopt_path, output=snopt_tgz)
 

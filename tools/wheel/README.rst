@@ -91,11 +91,6 @@ debugging purposes and should not be needed in ordinary use.
     Do not delete the various build trees and artifacts, which can be found in
     various subdirectories under ``/opt``.
 
-``--incremental`` (macOS only)
-    Do not build dependencies. This requires that dependencies were previously
-    built successfully and were not deleted (see ``--keep-build``). This should
-    normally be used only during debugging.
-
 Implementation Details
 ----------------------
 
@@ -108,11 +103,7 @@ resulting images can be used for multiple wheels, in order to save space and
 reduce build times.
 
 Starting with a "bare" image, the first step is to provision the environment
-by installing common tools and dependencies, starting with those provided by
-the operating system. Because wheels must distribute all libraries which they
-use aside from a very limited set, most dependencies are built as static
-libraries during this process, rather than using system packages. (A small
-number of exceptions exist due to licensing reasons.)
+by installing common tools and dependencies provided by the operating system.
 
 These provisioning stages change infrequently. After provisioning, the Drake
 sources are injected into the image, resulting in the ``clean`` stage. This
@@ -134,9 +125,6 @@ are used:
 
 - ``/opt/drake-wheel-build``:
   Contains most intermediate artifacts.
-
-- ``/opt/drake-dependencies``:
-  Contains installations of various dependencies needed to build Drake.
 
 - ``/opt/drake-dist``:
   Contains the Drake installation used to build the wheel.

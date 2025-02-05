@@ -30,7 +30,6 @@ chrpath()
         else
             strip_rpath \
                 --exclude="$HOMEBREW" \
-                --exclude=/opt/drake-dependencies/lib \
                 "$lib"
             install_name_tool -add_rpath "@loader_path/$rpath" "$lib"
         fi
@@ -89,18 +88,9 @@ fi
 
 # MOSEK is "sort of" third party, but is procured as part of Drake's build and
 # ends up in /opt/drake.
-if [[ "$(uname)" == "Darwin" ]]; then
-    # On macOS, it is explicitly referenced by @loader_path, and thus must be
-    # copied to the same place as libdrake.so.
-    cp -r -t ${WHEEL_DIR}/pydrake/lib \
-        /opt/drake/lib/libmosek*.dylib \
-        /opt/drake/lib/libtbb*.dylib
-else
-    # On Linux, it needs to be copied somewhere where auditwheel can find it.
-    cp -r -t /opt/drake-dependencies/lib \
-        /opt/drake/lib/libmosek*.so* \
-        /opt/drake/lib/libtbb*.so*
-fi
+cp -r -t ${WHEEL_DIR}/pydrake/lib \
+    /opt/drake/lib/libmosek* \
+    /opt/drake/lib/libtbb*
 
 cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /opt/drake/share/drake/.drake-find_resource-sentinel \
@@ -117,7 +107,7 @@ if [[ "$(uname)" == "Linux" ]]; then
 fi
 
 if [[ "$(uname)" == "Linux" ]]; then
-    export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib
+    export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib
 fi
 
 chrpath lib pydrake/*.so

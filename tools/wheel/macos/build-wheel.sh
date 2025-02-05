@@ -69,6 +69,7 @@ cmake "$git_root" \
     -DWITH_USER_SPDLOG=OFF \
     -DWITH_USER_BLAS=OFF \
     -DWITH_USER_LAPACK=OFF \
+    -DWITH_USER_ZLIB=OFF \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
     -DCMAKE_INSTALL_PREFIX="/opt/drake-dist/$python" \
     -DPython_EXECUTABLE="$python_executable"

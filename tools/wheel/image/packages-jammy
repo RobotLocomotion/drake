@@ -8,9 +8,7 @@ nasm
 libclang-15-dev
 # Other code tools.
 cmake
-git
 make
-ninja-build
 pkg-config
 # Other general tools.
 ca-certificates
