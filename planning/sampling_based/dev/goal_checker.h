@@ -1,8 +1,8 @@
 #pragma once
 
-#include "planning/default_state_types.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /// Interface used by RRT and ParallelRRT planners to check if a candidate state
@@ -35,12 +35,12 @@ class GoalChecker {
   GoalChecker(const GoalChecker& other);
 
   /// Derived goal checkers must implement goal checking.
-  virtual bool DoCheckGoalReached(
-      const StateType& candidate, int thread_number) const = 0;
+  virtual bool DoCheckGoalReached(const StateType& candidate,
+                                  int thread_number) const = 0;
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::GoalChecker)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::GoalChecker)

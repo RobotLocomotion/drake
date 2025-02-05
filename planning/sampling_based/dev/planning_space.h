@@ -7,19 +7,19 @@
 #include <string>
 #include <vector>
 
-#include "planning/default_state_types.h"
-#include "planning/per_thread_random_source.h"
-#include "planning/valid_starts.h"
-#include "planning/valid_starts_and_goals.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/per_thread_random_source.h"
+#include "drake/planning/sampling_based/dev/valid_starts.h"
+#include "drake/planning/sampling_based/dev/valid_starts_and_goals.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 // Forward declarations.
-template<typename StateType>
+template <typename StateType>
 class AsymmetricPlanningSpace;
-template<typename StateType>
+template <typename StateType>
 class SymmetricPlanningSpace;
-template<typename StateType>
+template <typename StateType>
 class CollisionCheckerPlanningSpace;
 
 /// Provides a single interface to state distance, state/edge validity, state
@@ -54,7 +54,7 @@ class CollisionCheckerPlanningSpace;
 // from this approach.
 // TODO(calderpg) Add test coverage to ensure that thread_number is properly
 // wired through to implementations.
-template<typename StateType>
+template <typename StateType>
 class PlanningSpace {
  public:
   // The copy constructor is protected for use in implementing Clone().
@@ -78,8 +78,8 @@ class PlanningSpace {
   /// @param from Starting state, from the start tree of a (Bi)RRT planner.
   /// @param to Ending state, generally a sampled state.
   /// @return Distance (potentially approximate) from start state to end state.
-  double NearestNeighborDistanceForwards(
-      const StateType& from, const StateType& to) const {
+  double NearestNeighborDistanceForwards(const StateType& from,
+                                         const StateType& to) const {
     return DoNearestNeighborDistanceForwards(from, to);
   }
 
@@ -91,8 +91,8 @@ class PlanningSpace {
   /// @param from Starting state, from the goal tree of a (Bi)RRT planner.
   /// @param to Ending state, generally a sampled state.
   /// @return Distance (potentially approximate) from start state to end state.
-  double NearestNeighborDistanceBackwards(
-      const StateType& from, const StateType& to) const {
+  double NearestNeighborDistanceBackwards(const StateType& from,
+                                          const StateType& to) const {
     return DoNearestNeighborDistanceBackwards(from, to);
   }
 
@@ -103,8 +103,8 @@ class PlanningSpace {
   /// @param from Starting state.
   /// @param to Ending state.
   /// @return Distance from start state to end state.
-  double StateDistanceForwards(
-      const StateType& from, const StateType& to) const {
+  double StateDistanceForwards(const StateType& from,
+                               const StateType& to) const {
     return DoStateDistanceForwards(from, to);
   }
 
@@ -114,8 +114,8 @@ class PlanningSpace {
   /// @param from Starting state.
   /// @param to Ending state.
   /// @return Distance from start state to end state.
-  double StateDistanceBackwards(
-      const StateType& from, const StateType& to) const {
+  double StateDistanceBackwards(const StateType& from,
+                                const StateType& to) const {
     return DoStateDistanceBackwards(from, to);
   }
 
@@ -131,8 +131,8 @@ class PlanningSpace {
   /// @param to Ending state.
   /// @param ratio Interpolation ratio. @pre 0 <= ratio <= 1.
   /// @return Interpolated state.
-  StateType InterpolateForwards(
-      const StateType& from, const StateType& to, double ratio) const {
+  StateType InterpolateForwards(const StateType& from, const StateType& to,
+                                double ratio) const {
     DRAKE_THROW_UNLESS(ratio >= 0.0);
     DRAKE_THROW_UNLESS(ratio <= 1.0);
     return DoInterpolateForwards(from, to, ratio);
@@ -143,8 +143,8 @@ class PlanningSpace {
   /// @param to Ending state.
   /// @param ratio Interpolation ratio. @pre 0 <= ratio <= 1.
   /// @return Interpolated state.
-  StateType InterpolateBackwards(
-      const StateType& from, const StateType& to, double ratio) const {
+  StateType InterpolateBackwards(const StateType& from, const StateType& to,
+                                 double ratio) const {
     DRAKE_THROW_UNLESS(ratio >= 0.0);
     DRAKE_THROW_UNLESS(ratio <= 1.0);
     return DoInterpolateBackwards(from, to, ratio);
@@ -165,8 +165,8 @@ class PlanningSpace {
       std::map<std::string, double>* propagation_statistics,
       std::optional<int> thread_number = std::nullopt) {
     DRAKE_THROW_UNLESS(propagation_statistics != nullptr);
-    return DoPropagateForwards(
-        from, to, propagation_statistics, ResolveThreadNumber(thread_number));
+    return DoPropagateForwards(from, to, propagation_statistics,
+                               ResolveThreadNumber(thread_number));
   }
 
   /// Performs "backwards" propagation from the provided start state towards the
@@ -184,8 +184,8 @@ class PlanningSpace {
       std::map<std::string, double>* propagation_statistics,
       std::optional<int> thread_number = std::nullopt) {
     DRAKE_THROW_UNLESS(propagation_statistics != nullptr);
-    return DoPropagateBackwards(
-        from, to, propagation_statistics, ResolveThreadNumber(thread_number));
+    return DoPropagateBackwards(from, to, propagation_statistics,
+                                ResolveThreadNumber(thread_number));
   }
 
   /// Computes the "forwards" cost for the motion between the provided states,
@@ -195,8 +195,7 @@ class PlanningSpace {
   /// @param from Starting state.
   /// @param to Ending state.
   /// @return Motion cost from start state to end state.
-  double MotionCostForwards(
-      const StateType& from, const StateType& to) const {
+  double MotionCostForwards(const StateType& from, const StateType& to) const {
     return DoMotionCostForwards(from, to);
   }
 
@@ -207,8 +206,7 @@ class PlanningSpace {
   /// @param from Starting state.
   /// @param to Ending state.
   /// @return Motion cost from start state to end state.
-  double MotionCostBackwards(
-      const StateType& from, const StateType& to) const {
+  double MotionCostBackwards(const StateType& from, const StateType& to) const {
     return DoMotionCostBackwards(from, to);
   }
 
@@ -239,8 +237,7 @@ class PlanningSpace {
   /// @param thread_number Optional thread number.
   /// @return Valid start and goal states.
   ValidStartsAndGoals<StateType> ExtractValidStartsAndGoals(
-      const std::vector<StateType>& starts,
-      const std::vector<StateType>& goals,
+      const std::vector<StateType>& starts, const std::vector<StateType>& goals,
       std::optional<int> thread_number = std::nullopt) const;
 
   /// Checks the validity of the provided directed edge.
@@ -282,8 +279,8 @@ class PlanningSpace {
   std::optional<StateType> MaybeSampleValidState(
       int max_attempts, std::optional<int> thread_number = std::nullopt) {
     DRAKE_THROW_UNLESS(max_attempts > 0);
-    return DoMaybeSampleValidState(
-        max_attempts, ResolveThreadNumber(thread_number));
+    return DoMaybeSampleValidState(max_attempts,
+                                   ResolveThreadNumber(thread_number));
   }
 
   /// Same as MaybeSampleValidState, but throws if no valid state could be
@@ -292,8 +289,8 @@ class PlanningSpace {
   /// @param thread_number Optional thread number.
   /// @pre max_attempts > 0.
   /// @return Valid sample state.
-  StateType SampleValidState(
-      int max_attempts, std::optional<int> thread_number = std::nullopt);
+  StateType SampleValidState(int max_attempts,
+                             std::optional<int> thread_number = std::nullopt);
 
   /// Retrieves the per-thread random source.
   PerThreadRandomSource& random_source() { return random_source_; }
@@ -319,27 +316,29 @@ class PlanningSpace {
 
   virtual std::unique_ptr<PlanningSpace<StateType>> DoClone() const = 0;
 
-  virtual double DoNearestNeighborDistanceForwards(
-      const StateType& from, const StateType& to) const {
+  virtual double DoNearestNeighborDistanceForwards(const StateType& from,
+                                                   const StateType& to) const {
     return StateDistanceForwards(from, to);
   }
 
-  virtual double DoNearestNeighborDistanceBackwards(
-      const StateType& from, const StateType& to) const {
+  virtual double DoNearestNeighborDistanceBackwards(const StateType& from,
+                                                    const StateType& to) const {
     return StateDistanceBackwards(from, to);
   }
 
-  virtual double DoStateDistanceForwards(
-      const StateType& from, const StateType& to) const = 0;
+  virtual double DoStateDistanceForwards(const StateType& from,
+                                         const StateType& to) const = 0;
 
-  virtual double DoStateDistanceBackwards(
-      const StateType& from, const StateType& to) const = 0;
+  virtual double DoStateDistanceBackwards(const StateType& from,
+                                          const StateType& to) const = 0;
 
-  virtual StateType DoInterpolateForwards(
-      const StateType& from, const StateType& to, double ratio) const = 0;
+  virtual StateType DoInterpolateForwards(const StateType& from,
+                                          const StateType& to,
+                                          double ratio) const = 0;
 
-  virtual StateType DoInterpolateBackwards(
-      const StateType& from, const StateType& to, double ratio) const = 0;
+  virtual StateType DoInterpolateBackwards(const StateType& from,
+                                           const StateType& to,
+                                           double ratio) const = 0;
 
   virtual std::vector<StateType> DoPropagateForwards(
       const StateType& from, const StateType& to,
@@ -351,29 +350,29 @@ class PlanningSpace {
       std::map<std::string, double>* propagation_statistics,
       int thread_number) = 0;
 
-  virtual double DoMotionCostForwards(
-      const StateType& from, const StateType& to) const {
+  virtual double DoMotionCostForwards(const StateType& from,
+                                      const StateType& to) const {
     return StateDistanceForwards(from, to);
   }
 
-  virtual double DoMotionCostBackwards(
-      const StateType& from, const StateType& to) const {
+  virtual double DoMotionCostBackwards(const StateType& from,
+                                       const StateType& to) const {
     return StateDistanceForwards(from, to);
   }
 
-  virtual bool DoCheckStateValidity(
-      const StateType& state, int thread_number) const = 0;
+  virtual bool DoCheckStateValidity(const StateType& state,
+                                    int thread_number) const = 0;
 
-  virtual bool DoCheckEdgeValidity(
-      const StateType& from, const StateType& to, int thread_number) const = 0;
+  virtual bool DoCheckEdgeValidity(const StateType& from, const StateType& to,
+                                   int thread_number) const = 0;
 
-  virtual bool DoCheckPathValidity(
-      const std::vector<StateType>& path, int thread_number) const;
+  virtual bool DoCheckPathValidity(const std::vector<StateType>& path,
+                                   int thread_number) const;
 
   virtual StateType DoSampleState(int thread_number) = 0;
 
-  virtual std::optional<StateType> DoMaybeSampleValidState(
-      int max_attempts, int thread_number);
+  virtual std::optional<StateType> DoMaybeSampleValidState(int max_attempts,
+                                                           int thread_number);
 
  private:
   friend class AsymmetricPlanningSpace<StateType>;
@@ -395,7 +394,7 @@ class PlanningSpace {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::PlanningSpace)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::PlanningSpace)

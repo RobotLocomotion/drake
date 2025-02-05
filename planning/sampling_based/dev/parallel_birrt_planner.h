@@ -6,16 +6,16 @@
 
 #include <spdlog/spdlog.h>
 
-#include "planning/default_state_types.h"
-#include "planning/parallelism.h"
-#include "planning/path_planning_result.h"
-#include "planning/planning_space.h"
+#include "drake/common/parallelism.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/path_planning_result.h"
+#include "drake/planning/sampling_based/dev/planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Parallel Bi-directional RRT planner. Thread safety of planner trees is
 /// provided by a copy-on-grow approach.
-template<typename StateType>
+template <typename StateType>
 class ParallelBiRRTPlanner {
  public:
   /// Parameters to the Parallel BiRRT planner.
@@ -59,10 +59,8 @@ class ParallelBiRRTPlanner {
   /// @param planning_space Planning space to use. @pre not null.
   /// @return First path found from start to goal, if found in time limit.
   static PathPlanningResult<StateType> Plan(
-      const StateType& start,
-      const StateType& goal,
-      const Parameters& parameters,
-      PlanningSpace<StateType>* planning_space);
+      const StateType& start, const StateType& goal,
+      const Parameters& parameters, PlanningSpace<StateType>* planning_space);
 
   /// Plan a path from the provided start states to goal states.
   /// @param starts Starting states.
@@ -72,16 +70,14 @@ class ParallelBiRRTPlanner {
   /// @return First path found from *a* start to *a* goal, if found in time
   /// limit.
   static PathPlanningResult<StateType> Plan(
-      const std::vector<StateType>& starts,
-      const std::vector<StateType>& goals,
-      const Parameters& parameters,
-      PlanningSpace<StateType>* planning_space);
+      const std::vector<StateType>& starts, const std::vector<StateType>& goals,
+      const Parameters& parameters, PlanningSpace<StateType>* planning_space);
 
   // Delete all constructors of this static-only class.
   ParallelBiRRTPlanner(const ParallelBiRRTPlanner&) = delete;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::ParallelBiRRTPlanner)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::ParallelBiRRTPlanner)

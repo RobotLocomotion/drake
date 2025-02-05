@@ -2,14 +2,14 @@
 
 #include <cstdint>
 
-#include "planning/default_state_types.h"
-#include "planning/per_thread_random_source.h"
-#include "planning/planning_space.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/per_thread_random_source.h"
+#include "drake/planning/sampling_based/dev/planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Base class for implementations of asymmetric planning spaces.
-template<typename StateType>
+template <typename StateType>
 class AsymmetricPlanningSpace : public PlanningSpace<StateType> {
  public:
   // The copy constructor is protected for use in implementing Clone().
@@ -17,8 +17,8 @@ class AsymmetricPlanningSpace : public PlanningSpace<StateType> {
   AsymmetricPlanningSpace(AsymmetricPlanningSpace<StateType>&&) = delete;
   AsymmetricPlanningSpace& operator=(
       const AsymmetricPlanningSpace<StateType>&) = delete;
-  AsymmetricPlanningSpace& operator=(
-      AsymmetricPlanningSpace<StateType>&&) = delete;
+  AsymmetricPlanningSpace& operator=(AsymmetricPlanningSpace<StateType>&&) =
+      delete;
 
   ~AsymmetricPlanningSpace() override;
 
@@ -34,7 +34,7 @@ class AsymmetricPlanningSpace : public PlanningSpace<StateType> {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::AsymmetricPlanningSpace)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::AsymmetricPlanningSpace)

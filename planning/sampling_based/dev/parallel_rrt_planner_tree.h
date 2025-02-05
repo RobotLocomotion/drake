@@ -9,9 +9,9 @@
 
 #include <common_robotics_utilities/simple_knearest_neighbors.hpp>
 
-#include "planning/parallelism.h"
+#include "drake/common/parallelism.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace internal {
 // Planner tree state for parallel RRT planner. This matches the necessary
@@ -23,8 +23,7 @@ namespace internal {
 template <typename StateType>
 class ParallelRRTPlannerState {
  public:
-  ParallelRRTPlannerState(
-      const StateType& value, int64_t parent_index)
+  ParallelRRTPlannerState(const StateType& value, int64_t parent_index)
       : value_(value), parent_index_(parent_index) {}
 
   bool IsInitialized() const { return true; }
@@ -87,8 +86,8 @@ class ParallelRRTPlannerTree {
     return AddNodeAndConnect(value, -1);
   }
 
-  int64_t AddNodeAndConnect(
-      const StateType& value, const int64_t parent_index) {
+  int64_t AddNodeAndConnect(const StateType& value,
+                            const int64_t parent_index) {
     // All node addition operations must be serialized. Within addition, only
     // modifications to nodes_ must be serialized with read operations.
     std::lock_guard<std::mutex> addition_lock(addition_mutex_);
@@ -123,8 +122,8 @@ class ParallelRRTPlannerTree {
       new_nodes->emplace_back(value, parent_index);
       const int64_t new_index = static_cast<int64_t>(new_nodes->size() - 1);
       if (parent_index >= 0) {
-        new_nodes->at(static_cast<size_t>(parent_index)).AddChildIndex(
-            new_index);
+        new_nodes->at(static_cast<size_t>(parent_index))
+            .AddChildIndex(new_index);
       }
 
       // Switch to the new nodes.
@@ -136,8 +135,8 @@ class ParallelRRTPlannerTree {
     }
   }
 
-  std::pair<
-      std::shared_ptr<std::vector<ParallelRRTPlannerState<StateType>>>, size_t>
+  std::pair<std::shared_ptr<std::vector<ParallelRRTPlannerState<StateType>>>,
+            size_t>
   GetViewOfNodes() const {
     std::lock_guard<std::mutex> nodes_lock(nodes_mutex_);
     return std::make_pair(nodes_, nodes_->size());
@@ -189,11 +188,13 @@ int64_t GetParallelRRTNearestNeighbor(
 
   const auto neighbors = common_robotics_utilities::simple_knearest_neighbors::
       GetKNearestNeighbors(
-          view_of_tree, sampled, distance_fn, 1, ToCRU(parallelism));
+          view_of_tree, sampled, distance_fn, 1,
+          common_robotics_utilities::parallelism::DegreeOfParallelism(
+              parallelism.num_threads()));
 
   return neighbors.at(0).Index();
 }
 
 }  // namespace internal
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

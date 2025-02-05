@@ -1,4 +1,4 @@
-#include "planning/per_thread_random_source.h"
+#include "drake/planning/sampling_based/dev/per_thread_random_source.h"
 
 #include <algorithm>
 #include <limits>
@@ -7,7 +7,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 double DrawUniformUnitReal(std::mt19937_64* generator) {
@@ -16,8 +16,8 @@ double DrawUniformUnitReal(std::mt19937_64* generator) {
       *generator);
 }
 
-PerThreadRandomSource::PerThreadRandomSource(
-    const uint64_t seed, const Parallelism parallelism) {
+PerThreadRandomSource::PerThreadRandomSource(const uint64_t seed,
+                                             const Parallelism parallelism) {
   // Make a generator and distribution for each thread.
   drake::log()->info(
       "PerThreadRandomSource allocating random generators to support "
@@ -30,7 +30,7 @@ PerThreadRandomSource::PerThreadRandomSource(
 }
 
 double PerThreadRandomSource::DrawUniformUnitReal(const int thread_number) {
-  return anzu::planning::DrawUniformUnitReal(&generator(thread_number));
+  return drake::planning::DrawUniformUnitReal(&generator(thread_number));
 }
 
 uint64_t PerThreadRandomSource::DrawRaw(const int thread_number) {
@@ -64,7 +64,5 @@ std::vector<uint64_t> PerThreadRandomSource::SnapshotGeneratorSeeds() {
   return snapshot_seeds;
 }
 
-
-
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

@@ -5,16 +5,16 @@
 #include <string>
 #include <vector>
 
-#include "planning/default_state_types.h"
-#include "planning/parallelism.h"
-#include "planning/path_planning_result.h"
-#include "planning/planning_space.h"
-#include "planning/roadmap.h"
+#include "drake/common/parallelism.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/path_planning_result.h"
+#include "drake/planning/sampling_based/dev/planning_space.h"
+#include "drake/planning/sampling_based/dev/roadmap.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// PRM planner.
-template<typename StateType>
+template <typename StateType>
 class PRMPlanner {
  public:
   /// Parameters for roadmap creation.
@@ -92,9 +92,9 @@ class PRMPlanner {
   /// @param parallelism How should update be parallelized? To be performed in
   /// parallel both this parameter must be true, and the planning space must
   /// support parallel operations.
-  static void UpdateRoadmap(
-      const PlanningSpace<StateType>& planning_space,
-      Roadmap<StateType>* roadmap, Parallelism parallelism);
+  static void UpdateRoadmap(const PlanningSpace<StateType>& planning_space,
+                            Roadmap<StateType>* roadmap,
+                            Parallelism parallelism);
 
   /// Plans a path through the provided roadmap from the provided start state to
   /// the provided goal state.
@@ -243,7 +243,9 @@ class PRMPlanner {
       const Roadmap<StateType>& roadmap,
       const std::vector<int32_t>& edge_validity_map,
       const StateOverrideFunction& state_override_fn =
-          [](const StateType& state) { return state; });
+          [](const StateType& state) {
+            return state;
+          });
 
   /// (Advanced)
   /// Plans a path through the provided roadmap from the provided start states
@@ -269,13 +271,15 @@ class PRMPlanner {
       const Roadmap<StateType>& roadmap,
       const std::vector<int32_t>& edge_validity_map,
       const StateOverrideFunction& state_override_fn =
-          [](const StateType& state) { return state; });
+          [](const StateType& state) {
+            return state;
+          });
 
   // Delete all constructors of this static-only class.
   PRMPlanner(const PRMPlanner&) = delete;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::PRMPlanner)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::PRMPlanner)

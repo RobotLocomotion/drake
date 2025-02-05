@@ -1,11 +1,11 @@
-#include "planning/per_instance_qs.h"
+#include "drake/planning/sampling_based/dev/per_instance_qs.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/revolute_joint.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
@@ -111,4 +111,4 @@ GTEST_TEST(PerInstanceQsTest, FullQChains) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

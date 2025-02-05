@@ -5,10 +5,10 @@
 
 #include <spdlog/spdlog.h>
 
-#include "planning/default_state_types.h"
-#include "planning/planning_space.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Path processor for performing resampling and shortcut smoothing.
 /// Note: without using a continuous collision checker, there is no guarantee
@@ -16,7 +16,7 @@ namespace planning {
 /// collision-free. Generally, these "marginal" collision may be ignored,
 /// particularly if collision padding is used to ensure a non-zero nominal
 /// distance between robot(s) and obstacles.
-template<typename StateType>
+template <typename StateType>
 class PathProcessor {
  public:
   /// Parameters to the path processor.
@@ -69,7 +69,7 @@ class PathProcessor {
   PathProcessor(const PathProcessor&) = delete;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::PathProcessor)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::PathProcessor)

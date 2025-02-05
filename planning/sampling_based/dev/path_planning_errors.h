@@ -7,9 +7,9 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt.h"
-#include "planning/path_planning_error.h"
+#include "drake/planning/sampling_based/dev/path_planning_error.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Like a std::set<PathPlanningError> but much more compact. */
@@ -52,7 +52,7 @@ class PathPlanningErrors {
 std::string to_string(const PathPlanningErrors& errors);
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-DRAKE_FORMATTER_AS(, anzu::planning, PathPlanningErrors, x,
-                   anzu::planning::to_string(x))
+DRAKE_FORMATTER_AS(, drake::planning, PathPlanningErrors, x,
+                   drake::planning::to_string(x))

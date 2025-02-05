@@ -5,7 +5,7 @@
 
 #include "drake/common/fmt.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Possible error codes from path planning. Typically, error codes will be
@@ -61,7 +61,7 @@ constexpr PathPlanningError kMaxPathPlanningError =
 }  // namespace internal
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-DRAKE_FORMATTER_AS(, anzu::planning, PathPlanningError, x,
-                   anzu::planning::to_string(x))
+DRAKE_FORMATTER_AS(, drake::planning, PathPlanningError, x,
+                   drake::planning::to_string(x))

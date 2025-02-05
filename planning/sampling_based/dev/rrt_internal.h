@@ -14,14 +14,13 @@
 #include <common_robotics_utilities/simple_rrt_planner.hpp>
 #include <common_robotics_utilities/utility.hpp>
 
-#include "planning/goal_sampler.h"
-#include "planning/planning_space.h"
+#include "drake/planning/sampling_based/dev/goal_sampler.h"
+#include "drake/planning/sampling_based/dev/planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace internal {
 using common_robotics_utilities::utility::GetUniformRandomIndex;
-using common_robotics_utilities::simple_rrt_planner::TimeoutCheckHelper;
 
 // Helper function to assemble propagated states into a ForwardPropagation as
 // consumed by RRT and BiRRT planners.
@@ -33,8 +32,7 @@ MakeForwardPropagation(const std::vector<StateType>& propagated_states) {
   forward_propagation.reserve(propagated_states.size());
   int64_t relative_parent_index = -1;
   for (const auto& propagated_state : propagated_states) {
-    forward_propagation.emplace_back(
-        propagated_state, relative_parent_index);
+    forward_propagation.emplace_back(propagated_state, relative_parent_index);
     relative_parent_index++;
   }
   return forward_propagation;
@@ -44,9 +42,8 @@ MakeForwardPropagation(const std::vector<StateType>& propagated_states) {
 template <typename StateType>
 class GoalStateKeeper {
  public:
-  GoalStateKeeper(
-      const PlanningSpace<StateType>* planning_space,
-      double goal_tolerance)
+  GoalStateKeeper(const PlanningSpace<StateType>* planning_space,
+                  double goal_tolerance)
       : planning_space_(planning_space), goal_tolerance_(goal_tolerance) {
     DRAKE_THROW_UNLESS(planning_space_ != nullptr);
     DRAKE_THROW_UNLESS(goal_tolerance_ >= 0.0);
@@ -85,9 +82,9 @@ class GoalStateKeeper {
 template <typename StateType>
 class StaticGoalStateKeeper final : public GoalStateKeeper<StateType> {
  public:
-  StaticGoalStateKeeper(
-      const PlanningSpace<StateType>* planning_space, double goal_tolerance,
-      std::vector<StateType> goal_states)
+  StaticGoalStateKeeper(const PlanningSpace<StateType>* planning_space,
+                        double goal_tolerance,
+                        std::vector<StateType> goal_states)
       : GoalStateKeeper<StateType>(planning_space, goal_tolerance),
         goal_states_(std::move(goal_states)) {
     DRAKE_THROW_UNLESS(goal_states_.size() > 0);
@@ -99,7 +96,9 @@ class StaticGoalStateKeeper final : public GoalStateKeeper<StateType> {
       return goal_states_.at(0);
     } else {
       return goal_states_.at(GetUniformRandomIndex(
-          [generator]() { return DrawUniformUnitReal(generator); },
+          [generator]() {
+            return DrawUniformUnitReal(generator);
+          },
           goal_states_.size()));
     }
   }
@@ -107,7 +106,7 @@ class StaticGoalStateKeeper final : public GoalStateKeeper<StateType> {
   bool DoCheckGoalReached(const StateType& candidate) const final {
     for (const auto& goal : goal_states_) {
       if (this->planning_space().StateDistanceForwards(candidate, goal) <=
-              this->goal_tolerance()) {
+          this->goal_tolerance()) {
         return true;
       }
     }
@@ -121,10 +120,10 @@ class StaticGoalStateKeeper final : public GoalStateKeeper<StateType> {
 template <typename StateType>
 class SerialDynamicGoalStateKeeper final : public GoalStateKeeper<StateType> {
  public:
-  SerialDynamicGoalStateKeeper(
-      const PlanningSpace<StateType>* planning_space, double goal_tolerance,
-      const GoalSampler<StateType>* const goal_sampler,
-      double p_goal_sample_is_new)
+  SerialDynamicGoalStateKeeper(const PlanningSpace<StateType>* planning_space,
+                               double goal_tolerance,
+                               const GoalSampler<StateType>* const goal_sampler,
+                               double p_goal_sample_is_new)
       : GoalStateKeeper<StateType>(planning_space, goal_tolerance),
         goal_sampler_(goal_sampler),
         p_goal_sample_is_new_(p_goal_sample_is_new) {
@@ -135,13 +134,14 @@ class SerialDynamicGoalStateKeeper final : public GoalStateKeeper<StateType> {
 
  private:
   StateType DoSample(std::mt19937_64* generator, int thread_number) final {
-    const auto uniform_unit_real_fn =
-        [generator]() { return DrawUniformUnitReal(generator); };
+    const auto uniform_unit_real_fn = [generator]() {
+      return DrawUniformUnitReal(generator);
+    };
 
     if (uniform_unit_real_fn() > p_goal_sample_is_new_ &&
         goal_states_.size() > 0) {
-      return goal_states_.at(GetUniformRandomIndex(
-          uniform_unit_real_fn, goal_states_.size()));
+      return goal_states_.at(
+          GetUniformRandomIndex(uniform_unit_real_fn, goal_states_.size()));
     } else {
       const StateType goal_sample =
           goal_sampler_->Sample(generator, thread_number);
@@ -153,7 +153,7 @@ class SerialDynamicGoalStateKeeper final : public GoalStateKeeper<StateType> {
   bool DoCheckGoalReached(const StateType& candidate) const final {
     for (const StateType& goal : goal_states_) {
       if (this->planning_space().StateDistanceForwards(candidate, goal) <=
-              this->goal_tolerance()) {
+          this->goal_tolerance()) {
         return true;
       }
     }
@@ -177,7 +177,7 @@ class ParallelDynamicGoalStateKeeper final : public GoalStateKeeper<StateType> {
       double p_goal_sample_is_new)
       : GoalStateKeeper<StateType>(planning_space, goal_tolerance),
         goal_sampler_(goal_sampler),
-        p_goal_sample_is_new_(p_goal_sample_is_new)  {
+        p_goal_sample_is_new_(p_goal_sample_is_new) {
     DRAKE_THROW_UNLESS(goal_sampler_ != nullptr);
     DRAKE_THROW_UNLESS(p_goal_sample_is_new_ > 0.0);
     DRAKE_THROW_UNLESS(p_goal_sample_is_new_ <= 1.0);
@@ -188,14 +188,15 @@ class ParallelDynamicGoalStateKeeper final : public GoalStateKeeper<StateType> {
 
  private:
   StateType DoSample(std::mt19937_64* generator, int thread_number) final {
-    const auto uniform_unit_real_fn =
-        [generator]() { return DrawUniformUnitReal(generator); };
+    const auto uniform_unit_real_fn = [generator]() {
+      return DrawUniformUnitReal(generator);
+    };
 
     const auto [goal_states, goal_states_size] = GetViewOfGoalStates();
     if (uniform_unit_real_fn() > p_goal_sample_is_new_ &&
         goal_states_size > 0) {
-      return goal_states->operator[](GetUniformRandomIndex(
-          uniform_unit_real_fn, goal_states_size));
+      return goal_states->operator[](
+          GetUniformRandomIndex(uniform_unit_real_fn, goal_states_size));
     } else {
       const StateType goal_sample =
           goal_sampler_->Sample(generator, thread_number);
@@ -209,7 +210,7 @@ class ParallelDynamicGoalStateKeeper final : public GoalStateKeeper<StateType> {
     for (size_t index = 0; index < goal_states_size; ++index) {
       const StateType& goal = goal_states->operator[](index);
       if (this->planning_space().StateDistanceForwards(candidate, goal) <=
-              this->goal_tolerance()) {
+          this->goal_tolerance()) {
         return true;
       }
     }
@@ -238,8 +239,8 @@ class ParallelDynamicGoalStateKeeper final : public GoalStateKeeper<StateType> {
       new_goal_states->reserve(goal_states_->size() + goal_states_->size() / 2);
 
       // Copy the goal states over.
-      new_goal_states->insert(
-          new_goal_states->end(), goal_states_->begin(), goal_states_->end());
+      new_goal_states->insert(new_goal_states->end(), goal_states_->begin(),
+                              goal_states_->end());
 
       // Add the new goal state.
       new_goal_states->emplace_back(goal_state);
@@ -264,8 +265,8 @@ class ParallelDynamicGoalStateKeeper final : public GoalStateKeeper<StateType> {
 };
 
 template <typename PlannerParamsType>
-void ValidateBiRRTTerminationConditions(
-    const PlannerParamsType& parameters, std::string_view planner_name) {
+void ValidateBiRRTTerminationConditions(const PlannerParamsType& parameters,
+                                        std::string_view planner_name) {
   if (parameters.time_limit.has_value() &&
       parameters.tree_growth_limit.has_value()) {
     DRAKE_THROW_UNLESS(parameters.time_limit.value() > 0.0);
@@ -279,18 +280,16 @@ void ValidateBiRRTTerminationConditions(
   } else if (parameters.time_limit.has_value()) {
     DRAKE_THROW_UNLESS(parameters.time_limit.value() > 0.0);
 
-    drake::log()->log(
-        parameters.planner_log_level,
-        "{} termination with time_limit {}",
-        planner_name, *parameters.time_limit);
+    drake::log()->log(parameters.planner_log_level,
+                      "{} termination with time_limit {}", planner_name,
+                      *parameters.time_limit);
   } else if (parameters.tree_growth_limit.has_value()) {
     // There are always at least two nodes, one in each tree.
     DRAKE_THROW_UNLESS(parameters.tree_growth_limit.value() > 2);
 
-    drake::log()->log(
-        parameters.planner_log_level,
-        "{} termination with tree_growth_limit {}",
-        planner_name, *parameters.tree_growth_limit);
+    drake::log()->log(parameters.planner_log_level,
+                      "{} termination with tree_growth_limit {}", planner_name,
+                      *parameters.tree_growth_limit);
   } else {
     throw std::runtime_error(
         "parameters.time_limit and/or parameters.tree_growth_limit "
@@ -299,8 +298,8 @@ void ValidateBiRRTTerminationConditions(
 }
 
 template <typename PlannerParamsType>
-void ValidateRRTTerminationConditions(
-    const PlannerParamsType& parameters, std::string_view planner_name) {
+void ValidateRRTTerminationConditions(const PlannerParamsType& parameters,
+                                      std::string_view planner_name) {
   if (parameters.time_limit.has_value() &&
       parameters.tree_growth_limit.has_value()) {
     DRAKE_THROW_UNLESS(parameters.time_limit.value() > 0.0);
@@ -314,18 +313,16 @@ void ValidateRRTTerminationConditions(
   } else if (parameters.time_limit.has_value()) {
     DRAKE_THROW_UNLESS(parameters.time_limit.value() > 0.0);
 
-    drake::log()->log(
-        parameters.planner_log_level,
-        "{} termination with time_limit {}",
-        planner_name, *parameters.time_limit);
+    drake::log()->log(parameters.planner_log_level,
+                      "{} termination with time_limit {}", planner_name,
+                      *parameters.time_limit);
   } else if (parameters.tree_growth_limit.has_value()) {
     // There is always at least one starting node.
     DRAKE_THROW_UNLESS(parameters.tree_growth_limit.value() > 1);
 
-    drake::log()->log(
-        parameters.planner_log_level,
-        "{} termination with tree_growth_limit {}",
-        planner_name, *parameters.tree_growth_limit);
+    drake::log()->log(parameters.planner_log_level,
+                      "{} termination with tree_growth_limit {}", planner_name,
+                      *parameters.tree_growth_limit);
   } else {
     throw std::runtime_error(
         "parameters.time_limit and/or parameters.tree_growth_limit "
@@ -333,11 +330,33 @@ void ValidateRRTTerminationConditions(
   }
 }
 
+// Simplified version of the implementation in CRU simple_rrt_planner.hpp.
+class TimeoutCheckHelper {
+ public:
+  explicit TimeoutCheckHelper(double timeout) {
+    DRAKE_THROW_UNLESS(timeout > 0.0);
+    timeout_ = std::chrono::duration<double>(timeout);
+  }
+
+  bool CheckOrStart() {
+    if (start_time_.has_value()) {
+      return (std::chrono::steady_clock::now() - start_time_.value()) >
+             timeout_;
+    } else {
+      start_time_ = std::chrono::steady_clock::now();
+      return false;
+    }
+  }
+
+ private:
+  std::chrono::duration<double> timeout_;
+  std::optional<std::chrono::time_point<std::chrono::steady_clock>> start_time_;
+};
+
 class SerialTerminationHelper {
  public:
-  SerialTerminationHelper(
-      const std::optional<double>& time_limit,
-      const std::optional<int>& tree_growth_limit)
+  SerialTerminationHelper(const std::optional<double>& time_limit,
+                          const std::optional<int>& tree_growth_limit)
       : timeout_helper_(
             time_limit.value_or(std::numeric_limits<double>::max())),
         tree_growth_limit_(
@@ -364,10 +383,9 @@ class SerialTerminationHelper {
 
 class ParallelTerminationHelper {
  public:
-  ParallelTerminationHelper(
-      const std::optional<double>& time_limit,
-      const std::optional<int>& tree_growth_limit,
-      const std::atomic<bool>* solution_found)
+  ParallelTerminationHelper(const std::optional<double>& time_limit,
+                            const std::optional<int>& tree_growth_limit,
+                            const std::atomic<bool>* solution_found)
       : timeout_helper_(
             time_limit.value_or(std::numeric_limits<double>::max())),
         tree_growth_limit_(
@@ -417,4 +435,4 @@ inline PathPlanningErrors GetPlanningErrors(
 
 }  // namespace internal
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

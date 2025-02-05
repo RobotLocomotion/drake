@@ -1,42 +1,44 @@
-#include "planning/birrt_planner.h"
+#include "drake/planning/sampling_based/dev/birrt_planner.h"
 
 #include <map>
 #include <string>
 
+#include <common_robotics_utilities/parallelism.hpp>
 #include <common_robotics_utilities/print.hpp>
 #include <common_robotics_utilities/simple_knearest_neighbors.hpp>
 #include <common_robotics_utilities/simple_rrt_planner.hpp>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
-#include "planning/rrt_internal.h"
+#include "drake/planning/sampling_based/dev/rrt_internal.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
 using common_robotics_utilities::simple_knearest_neighbors::
     GetKNearestNeighbors;
 using common_robotics_utilities::simple_rrt_planner::BiRRTActiveTreeType;
 using common_robotics_utilities::simple_rrt_planner::
     BiRRTNearestNeighborFunction;
+using common_robotics_utilities::simple_rrt_planner::BiRRTPlanSinglePath;
 using common_robotics_utilities::simple_rrt_planner::BiRRTPropagationFunction;
+using common_robotics_utilities::simple_rrt_planner::
+    BiRRTSelectActiveTreeFunction;
+using common_robotics_utilities::simple_rrt_planner::
+    BiRRTSelectSampleTypeFunction;
 using common_robotics_utilities::simple_rrt_planner::
     BiRRTStatesConnectedFunction;
 using common_robotics_utilities::simple_rrt_planner::
-    BiRRTSelectSampleTypeFunction;
+    BiRRTTerminationCheckFunction;
 using common_robotics_utilities::simple_rrt_planner::BiRRTTreeSamplingFunction;
-using common_robotics_utilities::simple_rrt_planner::SamplingFunction;
+using common_robotics_utilities::simple_rrt_planner::ForwardPropagation;
 using common_robotics_utilities::simple_rrt_planner::
-    BiRRTSelectActiveTreeFunction;
+    MakeUniformRandomBiRRTSelectActiveTreeFunction;
 using common_robotics_utilities::simple_rrt_planner::
     MakeUniformRandomBiRRTSelectSampleTypeFunction;
 using common_robotics_utilities::simple_rrt_planner::
     MakeUniformRandomBiRRTTreeSamplingFunction;
-using common_robotics_utilities::simple_rrt_planner::
-    MakeUniformRandomBiRRTSelectActiveTreeFunction;
-using common_robotics_utilities::simple_rrt_planner::
-    BiRRTTerminationCheckFunction;
-using common_robotics_utilities::simple_rrt_planner::ForwardPropagation;
-using common_robotics_utilities::simple_rrt_planner::BiRRTPlanSinglePath;
+using common_robotics_utilities::simple_rrt_planner::SamplingFunction;
 using common_robotics_utilities::simple_rrt_planner::SimpleRRTPlannerTree;
 using common_robotics_utilities::utility::UniformUnitRealFunction;
 
@@ -45,6 +47,10 @@ using common_robotics_utilities::utility::UniformUnitRealFunction;
 constexpr int kMainThreadNumber = 0;
 
 namespace {
+DegreeOfParallelism ToCRU(const Parallelism parallelism) {
+  return DegreeOfParallelism(parallelism.num_threads());
+}
+
 template <typename StateType>
 using TreeNodeDistanceFunction = std::function<double(
     const typename SimpleRRTPlannerTree<StateType>::NodeType&,
@@ -66,20 +72,17 @@ int64_t GetRRTNearestNeighbor(
 }
 }  // namespace
 
-template<typename StateType>
+template <typename StateType>
 PathPlanningResult<StateType> BiRRTPlanner<StateType>::Plan(
-    const StateType& start,
-    const StateType& goal,
-    const Parameters& parameters,
+    const StateType& start, const StateType& goal, const Parameters& parameters,
     PlanningSpace<StateType>* const planning_space) {
   return Plan(std::vector<StateType>{start}, std::vector<StateType>{goal},
               parameters, planning_space);
 }
 
-template<typename StateType>
+template <typename StateType>
 PathPlanningResult<StateType> BiRRTPlanner<StateType>::Plan(
-    const std::vector<StateType>& starts,
-    const std::vector<StateType>& goals,
+    const std::vector<StateType>& starts, const std::vector<StateType>& goals,
     const Parameters& parameters,
     PlanningSpace<StateType>* const planning_space) {
   DRAKE_THROW_UNLESS(parameters.tree_sampling_bias > 0.0);
@@ -92,8 +95,8 @@ PathPlanningResult<StateType> BiRRTPlanner<StateType>::Plan(
   internal::ValidateBiRRTTerminationConditions(parameters, "BiRRTPlanner");
 
   const auto& [valid_starts, valid_goals, errors] =
-      planning_space->ExtractValidStartsAndGoals(
-          starts, goals, kMainThreadNumber);
+      planning_space->ExtractValidStartsAndGoals(starts, goals,
+                                                 kMainThreadNumber);
   if (!errors.empty()) {
     return PathPlanningResult<StateType>(errors);
   }
@@ -108,32 +111,33 @@ PathPlanningResult<StateType> BiRRTPlanner<StateType>::Plan(
   };
 
   // Nearest-neighbor function.
-  const BiRRTNearestNeighborFunction<StateType> nearest_neighbor_fn = [&](
-      const SimpleRRTPlannerTree<StateType>& tree,
-      const StateType& sample,
-      const BiRRTActiveTreeType active_tree_type) {
-    switch (active_tree_type) {
-      case BiRRTActiveTreeType::START_TREE:
-        return GetRRTNearestNeighbor<StateType>(
-            tree, sample,
-            [&](const typename SimpleRRTPlannerTree<StateType>::NodeType& from,
-                const StateType& to) {
-              return planning_space->NearestNeighborDistanceForwards(
-                  from.GetValueImmutable(), to);
-            },
-            parameters.nearest_neighbor_parallelism);
-      case BiRRTActiveTreeType::GOAL_TREE:
-        return GetRRTNearestNeighbor<StateType>(
-            tree, sample,
-            [&](const typename SimpleRRTPlannerTree<StateType>::NodeType& from,
-                const StateType& to) {
-              return planning_space->NearestNeighborDistanceBackwards(
-                  from.GetValueImmutable(), to);
-            },
-            parameters.nearest_neighbor_parallelism);
-    }
-    DRAKE_UNREACHABLE();
-  };
+  const BiRRTNearestNeighborFunction<StateType> nearest_neighbor_fn =
+      [&](const SimpleRRTPlannerTree<StateType>& tree, const StateType& sample,
+          const BiRRTActiveTreeType active_tree_type) {
+        switch (active_tree_type) {
+          case BiRRTActiveTreeType::START_TREE:
+            return GetRRTNearestNeighbor<StateType>(
+                tree, sample,
+                [&](const typename SimpleRRTPlannerTree<StateType>::NodeType&
+                        from,
+                    const StateType& to) {
+                  return planning_space->NearestNeighborDistanceForwards(
+                      from.GetValueImmutable(), to);
+                },
+                parameters.nearest_neighbor_parallelism);
+          case BiRRTActiveTreeType::GOAL_TREE:
+            return GetRRTNearestNeighbor<StateType>(
+                tree, sample,
+                [&](const typename SimpleRRTPlannerTree<StateType>::NodeType&
+                        from,
+                    const StateType& to) {
+                  return planning_space->NearestNeighborDistanceBackwards(
+                      from.GetValueImmutable(), to);
+                },
+                parameters.nearest_neighbor_parallelism);
+        }
+        DRAKE_UNREACHABLE();
+      };
 
   // Statistics for edge propagation function.
   std::map<std::string, double> propagation_statistics;
@@ -142,37 +146,37 @@ PathPlanningResult<StateType> BiRRTPlanner<StateType>::Plan(
   const BiRRTPropagationFunction<StateType> propagation_fn =
       [&](const StateType& nearest, const StateType& sampled,
           const BiRRTActiveTreeType active_tree_type) {
-    std::vector<StateType> propagated_states;
+        std::vector<StateType> propagated_states;
 
-    switch (active_tree_type) {
-      case BiRRTActiveTreeType::START_TREE:
-        propagated_states = planning_space->PropagateForwards(
-            nearest, sampled, &propagation_statistics, kMainThreadNumber);
-        break;
-      case BiRRTActiveTreeType::GOAL_TREE:
-        propagated_states = planning_space->PropagateBackwards(
-            nearest, sampled, &propagation_statistics, kMainThreadNumber);
-        break;
-    }
+        switch (active_tree_type) {
+          case BiRRTActiveTreeType::START_TREE:
+            propagated_states = planning_space->PropagateForwards(
+                nearest, sampled, &propagation_statistics, kMainThreadNumber);
+            break;
+          case BiRRTActiveTreeType::GOAL_TREE:
+            propagated_states = planning_space->PropagateBackwards(
+                nearest, sampled, &propagation_statistics, kMainThreadNumber);
+            break;
+        }
 
-    return internal::MakeForwardPropagation(propagated_states);
-  };
+        return internal::MakeForwardPropagation(propagated_states);
+      };
 
   // State-state connection check function.
-  const BiRRTStatesConnectedFunction<StateType> states_connected_fn = [&](
-      const StateType& from, const StateType& to,
-      const BiRRTActiveTreeType active_tree_type) {
-    double distance = 0.0;
-    switch (active_tree_type) {
-      case BiRRTActiveTreeType::START_TREE:
-        distance = planning_space->StateDistanceForwards(from, to);
-        break;
-      case BiRRTActiveTreeType::GOAL_TREE:
-        distance = planning_space->StateDistanceBackwards(from, to);
-        break;
-    }
-    return distance <= parameters.connection_tolerance;
-  };
+  const BiRRTStatesConnectedFunction<StateType> states_connected_fn =
+      [&](const StateType& from, const StateType& to,
+          const BiRRTActiveTreeType active_tree_type) {
+        double distance = 0.0;
+        switch (active_tree_type) {
+          case BiRRTActiveTreeType::START_TREE:
+            distance = planning_space->StateDistanceForwards(from, to);
+            break;
+          case BiRRTActiveTreeType::GOAL_TREE:
+            distance = planning_space->StateDistanceBackwards(from, to);
+            break;
+        }
+        return distance <= parameters.connection_tolerance;
+      };
 
   // Assemble starts & goals.
   SimpleRRTPlannerTree<StateType> start_tree(valid_starts.size());
@@ -208,13 +212,13 @@ PathPlanningResult<StateType> BiRRTPlanner<StateType>::Plan(
 
   const BiRRTTerminationCheckFunction termination_check_fn =
       [&](const int64_t start_tree_size, const int64_t goal_tree_size) {
-    return termination_helper.CheckBiRRTTermination(
-        start_tree_size, goal_tree_size);
-  };
+        return termination_helper.CheckBiRRTTermination(start_tree_size,
+                                                        goal_tree_size);
+      };
 
   // Call the planner
-  drake::log()->log(
-      parameters.planner_log_level, "Calling BiRRTPlanSinglePath()...");
+  drake::log()->log(parameters.planner_log_level,
+                    "Calling BiRRTPlanSinglePath()...");
 
   const auto result = BiRRTPlanSinglePath(
       start_tree, goal_tree, select_sample_type_fn, sampling_fn,
@@ -224,8 +228,7 @@ PathPlanningResult<StateType> BiRRTPlanner<StateType>::Plan(
   auto combined_statistics = result.Statistics();
   combined_statistics.merge(propagation_statistics);
   drake::log()->log(
-      parameters.planner_log_level,
-      "BiRRT statistics {}",
+      parameters.planner_log_level, "BiRRT statistics {}",
       common_robotics_utilities::print::Print(combined_statistics));
 
   if (result.Path().empty()) {
@@ -236,16 +239,15 @@ PathPlanningResult<StateType> BiRRTPlanner<StateType>::Plan(
         static_cast<int>(combined_statistics.at("total_states"))));
   } else {
     const double path_length = planning_space->CalcPathLength(result.Path());
-    drake::log()->log(
-        parameters.planner_log_level,
-        "BiRRT found path of length {} with {} states",
-        path_length, result.Path().size());
+    drake::log()->log(parameters.planner_log_level,
+                      "BiRRT found path of length {} with {} states",
+                      path_length, result.Path().size());
     return PathPlanningResult<StateType>(result.Path(), path_length);
   }
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::BiRRTPlanner)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::BiRRTPlanner)

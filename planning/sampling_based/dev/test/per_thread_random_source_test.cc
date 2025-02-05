@@ -1,17 +1,13 @@
-#include "planning/per_thread_random_source.h"
+#include "drake/planning/sampling_based/dev/per_thread_random_source.h"
 
 #include <unordered_set>
 
-#include <common_robotics_utilities/openmp_helpers.hpp>
 #include <gtest/gtest.h>
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
 
 #include "drake/common/drake_throw.h"
-#include "planning/parallelism.h"
+#include "drake/common/parallelism.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
@@ -122,4 +118,4 @@ GTEST_TEST(PerThreadRandomSourceTest, CopyTest) {
 }
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

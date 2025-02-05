@@ -8,16 +8,16 @@
 #include <vector>
 
 #include "drake/planning/collision_checker.h"
-#include "planning/collision_checker_planning_space.h"
-#include "planning/default_state_types.h"
+#include "drake/planning/sampling_based/dev/collision_checker_planning_space.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Base class for implementations of symmetric planning spaces with a
 /// CollisionChecker and JointLimits.
-template<typename StateType>
-class SymmetricCollisionCheckerPlanningSpace :
-    public CollisionCheckerPlanningSpace<StateType> {
+template <typename StateType>
+class SymmetricCollisionCheckerPlanningSpace
+    : public CollisionCheckerPlanningSpace<StateType> {
  public:
   // The copy constructor is protected for use in implementing Clone().
   // Does not allow copy, move, or assignment.
@@ -37,8 +37,8 @@ class SymmetricCollisionCheckerPlanningSpace :
   /// @param from Starting state, from the start tree of a (Bi)RRT planner.
   /// @param to Ending state, generally a sampled state.
   /// @return Distance (potentially approximate) from start state to end state.
-  double NearestNeighborDistance(
-      const StateType& from, const StateType& to) const {
+  double NearestNeighborDistance(const StateType& from,
+                                 const StateType& to) const {
     return DoNearestNeighborDistance(from, to);
   }
 
@@ -59,8 +59,8 @@ class SymmetricCollisionCheckerPlanningSpace :
   /// @param to Ending state.
   /// @param ratio Interpolation ratio. @pre 0 <= ratio <= 1.
   /// @return Interpolated state.
-  StateType Interpolate(
-      const StateType& from, const StateType& to, double ratio) const {
+  StateType Interpolate(const StateType& from, const StateType& to,
+                        double ratio) const {
     DRAKE_THROW_UNLESS(ratio >= 0.0);
     DRAKE_THROW_UNLESS(ratio <= 1.0);
     return DoInterpolate(from, to, ratio);
@@ -81,9 +81,8 @@ class SymmetricCollisionCheckerPlanningSpace :
       std::map<std::string, double>* propagation_statistics,
       std::optional<int> thread_number = std::nullopt) {
     DRAKE_THROW_UNLESS(propagation_statistics != nullptr);
-    return DoPropagate(
-        from, to, propagation_statistics,
-        this->ResolveThreadNumber(thread_number));
+    return DoPropagate(from, to, propagation_statistics,
+                       this->ResolveThreadNumber(thread_number));
   }
 
   /// Computes the cost for the motion between the provided states, as would be
@@ -100,57 +99,57 @@ class SymmetricCollisionCheckerPlanningSpace :
   /// Interface to be implemented by derived classes. See public methods above
   /// for more information.
 
-  virtual double DoNearestNeighborDistance(
-      const StateType& from, const StateType& to) const {
+  virtual double DoNearestNeighborDistance(const StateType& from,
+                                           const StateType& to) const {
     return StateDistance(from, to);
   }
 
-  virtual double DoStateDistance(
-      const StateType& from, const StateType& to) const = 0;
+  virtual double DoStateDistance(const StateType& from,
+                                 const StateType& to) const = 0;
 
-  virtual StateType DoInterpolate(
-      const StateType& from, const StateType& to, double ratio) const = 0;
+  virtual StateType DoInterpolate(const StateType& from, const StateType& to,
+                                  double ratio) const = 0;
 
   virtual std::vector<StateType> DoPropagate(
       const StateType& from, const StateType& to,
       std::map<std::string, double>* propagation_statistics,
       int thread_number) = 0;
 
-  virtual double DoMotionCost(
-      const StateType& from, const StateType& to) const {
+  virtual double DoMotionCost(const StateType& from,
+                              const StateType& to) const {
     return StateDistance(from, to);
   }
 
   /// Implements PlanningSpace API, where each pair of *Forwards* and
   /// *Backwards* methods is provided by a single implementation.
 
-  double DoNearestNeighborDistanceForwards(
-      const StateType& from, const StateType& to) const final {
+  double DoNearestNeighborDistanceForwards(const StateType& from,
+                                           const StateType& to) const final {
     return NearestNeighborDistance(from, to);
   }
 
-  double DoNearestNeighborDistanceBackwards(
-      const StateType& from, const StateType& to) const final {
+  double DoNearestNeighborDistanceBackwards(const StateType& from,
+                                            const StateType& to) const final {
     return NearestNeighborDistance(from, to);
   }
 
-  double DoStateDistanceForwards(
-      const StateType& from, const StateType& to) const final {
+  double DoStateDistanceForwards(const StateType& from,
+                                 const StateType& to) const final {
     return StateDistance(from, to);
   }
 
-  double DoStateDistanceBackwards(
-      const StateType& from, const StateType& to) const final {
+  double DoStateDistanceBackwards(const StateType& from,
+                                  const StateType& to) const final {
     return StateDistance(from, to);
   }
 
-  StateType DoInterpolateForwards(
-      const StateType& from, const StateType& to, double ratio) const final {
+  StateType DoInterpolateForwards(const StateType& from, const StateType& to,
+                                  double ratio) const final {
     return Interpolate(from, to, ratio);
   }
 
-  StateType DoInterpolateBackwards(
-      const StateType& from, const StateType& to, double ratio) const final {
+  StateType DoInterpolateBackwards(const StateType& from, const StateType& to,
+                                   double ratio) const final {
     return Interpolate(from, to, ratio);
   }
 
@@ -168,13 +167,13 @@ class SymmetricCollisionCheckerPlanningSpace :
     return Propagate(from, to, propagation_statistics, thread_number);
   }
 
-  double DoMotionCostForwards(
-      const StateType& from, const StateType& to) const final {
+  double DoMotionCostForwards(const StateType& from,
+                              const StateType& to) const final {
     return MotionCost(from, to);
   }
 
-  double DoMotionCostBackwards(
-      const StateType& from, const StateType& to) const final {
+  double DoMotionCostBackwards(const StateType& from,
+                               const StateType& to) const final {
     return MotionCost(from, to);
   }
 
@@ -186,12 +185,12 @@ class SymmetricCollisionCheckerPlanningSpace :
   /// @param collision_checker Collision checker to use.
   /// @param seed Seed for per-thread random source.
   SymmetricCollisionCheckerPlanningSpace(
-      std::unique_ptr<drake::planning::CollisionChecker> collision_checker,
+      std::unique_ptr<CollisionChecker> collision_checker,
       const JointLimits& joint_limits, uint64_t seed);
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::SymmetricCollisionCheckerPlanningSpace)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::SymmetricCollisionCheckerPlanningSpace)

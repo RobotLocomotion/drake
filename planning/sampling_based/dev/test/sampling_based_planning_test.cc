@@ -12,14 +12,14 @@
 #include "drake/common/text_logging.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/planning/collision_checker.h"
-#include "planning/holonomic_kinematic_planning_space.h"
-#include "planning/sampling_based_planners.h"
-#include "planning/test/planning_test_helpers.h"
-#include "planning/voxelized_environment_collision_checker.h"
+#include "drake/planning/sampling_based/dev/holonomic_kinematic_planning_space.h"
+#include "drake/planning/sampling_based/dev/sampling_based_planners.h"
+#include "drake/planning/sampling_based/dev/test/planning_test_helpers.h"
+#include "drake/planning/sampling_based/dev/voxelized_environment_collision_checker.h"
 
 using drake::multibody::ModelInstanceIndex;
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 GTEST_TEST(SamplingBasedPlanningTest, Test) {
@@ -298,4 +298,4 @@ GTEST_TEST(SamplingBasedPlanningTest, Test) {
 }
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

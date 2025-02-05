@@ -1,4 +1,4 @@
-#include "planning/path_processor.h"
+#include "drake/planning/sampling_based/dev/path_processor.h"
 
 #include <chrono>
 #include <functional>
@@ -9,7 +9,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 using common_robotics_utilities::path_processing::ResamplePath;
 using common_robotics_utilities::path_processing::ShortcutSmoothPath;
@@ -28,20 +28,20 @@ std::vector<StateType> PathProcessor<StateType>::ProcessPath(
   // Bind helper functions.
   const std::function<bool(const StateType&, const StateType&)>
       edge_validity_check_fn = [&](const StateType& q1, const StateType& q2) {
-    return planning_space.CheckEdgeValidity(q1, q2);
-  };
+        return planning_space.CheckEdgeValidity(q1, q2);
+      };
 
   const std::function<double(const StateType&, const StateType&)>
       state_distance_fn = [&](const StateType& q1, const StateType& q2) {
-    return planning_space.StateDistanceForwards(q1, q2);
-  };
+        return planning_space.StateDistanceForwards(q1, q2);
+      };
 
-  const std::function
-      <StateType(const StateType&, const StateType&, const double)>
-          state_interpolation_fn =
-      [&](const StateType& q1, const StateType& q2, const double ratio) {
-    return planning_space.InterpolateForwards(q1, q2, ratio);
-  };
+  const std::function<StateType(const StateType&, const StateType&,
+                                const double)>
+      state_interpolation_fn =
+          [&](const StateType& q1, const StateType& q2, const double ratio) {
+            return planning_space.InterpolateForwards(q1, q2, ratio);
+          };
 
   // Optional safety check.
   if (parameters.safety_check_path) {
@@ -52,33 +52,30 @@ std::vector<StateType> PathProcessor<StateType>::ProcessPath(
   std::vector<StateType> processed_path = path;
   if (parameters.resample_before_smoothing ||
       (!parameters.use_shortcut_smoothing &&
-        parameters.resample_after_smoothing)) {
-    drake::log()->log(
-        parameters.processor_log_level,
-        "Calling pre-smoothing ResamplePath()...");
+       parameters.resample_after_smoothing)) {
+    drake::log()->log(parameters.processor_log_level,
+                      "Calling pre-smoothing ResamplePath()...");
     const size_t starting_length = processed_path.size();
-    processed_path = ResamplePath(
-        processed_path, parameters.resampled_state_interval,
-        state_distance_fn, state_interpolation_fn);
-  drake::log()->log(
-      parameters.processor_log_level,
-      "Resampled path from {} to {} states",
-      starting_length, processed_path.size());
+    processed_path =
+        ResamplePath(processed_path, parameters.resampled_state_interval,
+                     state_distance_fn, state_interpolation_fn);
+    drake::log()->log(parameters.processor_log_level,
+                      "Resampled path from {} to {} states", starting_length,
+                      processed_path.size());
   }
 
   if (parameters.use_shortcut_smoothing) {
-    drake::log()->log(
-        parameters.processor_log_level,
-        "Calling ShortcutSmoothPath()...");
+    drake::log()->log(parameters.processor_log_level,
+                      "Calling ShortcutSmoothPath()...");
     std::mt19937_64 prng(parameters.prng_seed);
     const UniformUnitRealFunction uniform_unit_real_fn = [&]() {
       return DrawUniformUnitReal(&prng);
     };
 
     const size_t starting_length = processed_path.size();
-    const double resampling_interval =
-        (parameters.resample_shortcuts) ? parameters.resampled_state_interval
-                                        : 0.0;
+    const double resampling_interval = (parameters.resample_shortcuts)
+                                           ? parameters.resampled_state_interval
+                                           : 0.0;
     const std::chrono::time_point<std::chrono::steady_clock> start_time =
         std::chrono::steady_clock::now();
     processed_path = ShortcutSmoothPath(
@@ -92,29 +89,25 @@ std::vector<StateType> PathProcessor<StateType>::ProcessPath(
     const std::chrono::time_point<std::chrono::steady_clock> end_time =
         std::chrono::steady_clock::now();
     const std::chrono::duration<double> smoothing_time = end_time - start_time;
-    drake::log()->log(
-        parameters.processor_log_level,
-        "Shortcut path from {} to {} states in {} seconds",
-        starting_length, processed_path.size(), smoothing_time.count());
+    drake::log()->log(parameters.processor_log_level,
+                      "Shortcut path from {} to {} states in {} seconds",
+                      starting_length, processed_path.size(),
+                      smoothing_time.count());
   }
 
   if (parameters.use_shortcut_smoothing &&
       parameters.resample_after_smoothing) {
-    drake::log()->log(
-        parameters.processor_log_level,
-        "Calling post-smoothing ResamplePath()...");
+    drake::log()->log(parameters.processor_log_level,
+                      "Calling post-smoothing ResamplePath()...");
     const size_t starting_length = processed_path.size();
-    processed_path = ResamplePath(
-        processed_path, parameters.resampled_state_interval, state_distance_fn,
-        state_interpolation_fn);
-    drake::log()->log(
-        parameters.processor_log_level,
-        "Resampled path from {} to {} states",
-        starting_length, processed_path.size());
+    processed_path =
+        ResamplePath(processed_path, parameters.resampled_state_interval,
+                     state_distance_fn, state_interpolation_fn);
+    drake::log()->log(parameters.processor_log_level,
+                      "Resampled path from {} to {} states", starting_length,
+                      processed_path.size());
   }
-  drake::log()->log(
-      parameters.processor_log_level,
-      "Postprocessing complete");
+  drake::log()->log(parameters.processor_log_level, "Postprocessing complete");
 
   // Optional safety check.
   if (parameters.safety_check_path) {
@@ -124,7 +117,7 @@ std::vector<StateType> PathProcessor<StateType>::ProcessPath(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::PathProcessor)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::PathProcessor)

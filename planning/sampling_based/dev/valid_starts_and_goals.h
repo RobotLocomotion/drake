@@ -4,10 +4,10 @@
 #include <tuple>
 #include <vector>
 
-#include "planning/default_state_types.h"
-#include "planning/path_planning_errors.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/path_planning_errors.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /// Wrapper type for valid start & goal configs with errors. Supports structured
@@ -18,8 +18,8 @@ class ValidStartsAndGoals {
   /// Provides all copy/move/assign operations.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ValidStartsAndGoals);
 
-  ValidStartsAndGoals(
-      std::vector<StateType> valid_starts, std::vector<StateType> valid_goals);
+  ValidStartsAndGoals(std::vector<StateType> valid_starts,
+                      std::vector<StateType> valid_goals);
 
   ValidStartsAndGoals();
 
@@ -31,11 +31,17 @@ class ValidStartsAndGoals {
 
   // Accessor required for structured bindings.
   template <size_t Index>
-  const std::tuple_element_t<Index, ValidStartsAndGoals<StateType>>&
-  get() const {
-    if constexpr (Index == 0) { return valid_starts_; }
-    if constexpr (Index == 1) { return valid_goals_; }
-    if constexpr (Index == 2) { return errors_; }
+  const std::tuple_element_t<Index, ValidStartsAndGoals<StateType>>& get()
+      const {
+    if constexpr (Index == 0) {
+      return valid_starts_;
+    }
+    if constexpr (Index == 1) {
+      return valid_goals_;
+    }
+    if constexpr (Index == 2) {
+      return errors_;
+    }
   }
 
  private:
@@ -46,23 +52,20 @@ class ValidStartsAndGoals {
   PathPlanningErrors errors_;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
 // Interface bits required for structured binding of ValidStartsAndGoals.
 namespace std {
 template <typename StateType>
-struct tuple_size<anzu::planning::ValidStartsAndGoals<StateType>> {
+struct tuple_size<drake::planning::ValidStartsAndGoals<StateType>> {
   static constexpr size_t value = 3;
 };
 
 template <size_t Index, typename StateType>
-struct tuple_element<Index, anzu::planning::ValidStartsAndGoals<StateType>>
-    : tuple_element<
-        Index,
-        tuple<std::vector<StateType>,
-              std::vector<StateType>,
-              anzu::planning::PathPlanningErrors>> {};
+struct tuple_element<Index, drake::planning::ValidStartsAndGoals<StateType>>
+    : tuple_element<Index, tuple<std::vector<StateType>, std::vector<StateType>,
+                                 drake::planning::PathPlanningErrors>> {};
 }  // namespace std
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::ValidStartsAndGoals)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::ValidStartsAndGoals)

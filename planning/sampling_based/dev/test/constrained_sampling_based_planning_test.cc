@@ -9,13 +9,13 @@
 #include "drake/common/text_logging.h"
 #include "drake/solvers/solve.h"
 #include "common/anzu_model_directives.h"
-#include "planning/interim_constrained_kinematic_planning_space.h"
-#include "planning/make_planning_robot.h"
-#include "planning/mbp_constraint_types.h"
-#include "planning/sampling_based_planners.h"
-#include "planning/test/planning_test_helpers.h"
+#include "drake/planning/sampling_based/dev/interim_constrained_kinematic_planning_space.h"
+#include "drake/planning/sampling_based/dev/make_planning_robot.h"
+#include "drake/planning/sampling_based/dev/mbp_constraint_types.h"
+#include "drake/planning/sampling_based/dev/sampling_based_planners.h"
+#include "drake/planning/sampling_based/dev/test/planning_test_helpers.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 using common_robotics_utilities::print::Print;
@@ -140,4 +140,4 @@ GTEST_TEST(ConstrainedSamplingBasedPlanningTest, Test) {
 }
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

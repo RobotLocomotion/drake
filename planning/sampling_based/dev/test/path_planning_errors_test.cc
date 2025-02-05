@@ -1,8 +1,8 @@
-#include "planning/path_planning_errors.h"
+#include "drake/planning/sampling_based/dev/path_planning_errors.h"
 
 #include <gtest/gtest.h>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
@@ -56,4 +56,4 @@ GTEST_TEST(PathPlanningErrorsTest, Insert) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

@@ -7,17 +7,17 @@
 
 #include <spdlog/spdlog.h>
 
-#include "planning/default_state_types.h"
-#include "planning/goal_checker.h"
-#include "planning/goal_sampler.h"
-#include "planning/parallelism.h"
-#include "planning/path_planning_result.h"
-#include "planning/planning_space.h"
+#include "drake/common/parallelism.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/goal_checker.h"
+#include "drake/planning/sampling_based/dev/goal_sampler.h"
+#include "drake/planning/sampling_based/dev/path_planning_result.h"
+#include "drake/planning/sampling_based/dev/planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Single-directional RRT planner.
-template<typename StateType>
+template <typename StateType>
 class RRTPlanner {
  public:
   /// Parameters to the RRT planner.
@@ -53,10 +53,8 @@ class RRTPlanner {
   /// @param planning_space Planning space to use. @pre not null.
   /// @return First path found from start to goal, if found in time limit.
   static PathPlanningResult<StateType> Plan(
-      const StateType& start,
-      const StateType& goal,
-      const Parameters& parameters,
-      PlanningSpace<StateType>* planning_space);
+      const StateType& start, const StateType& goal,
+      const Parameters& parameters, PlanningSpace<StateType>* planning_space);
 
   /// Plan a path from the provided start states to goal states.
   /// @param starts Starting states.
@@ -66,10 +64,8 @@ class RRTPlanner {
   /// @return First path found from *a* start to *a* goal, if found in time
   /// limit.
   static PathPlanningResult<StateType> Plan(
-      const std::vector<StateType>& starts,
-      const std::vector<StateType>& goals,
-      const Parameters& parameters,
-      PlanningSpace<StateType>* planning_space);
+      const std::vector<StateType>& starts, const std::vector<StateType>& goals,
+      const Parameters& parameters, PlanningSpace<StateType>* planning_space);
 
   /// Plan a path from the provided start state to sampled goal state(s).
   /// @param start Starting state.
@@ -78,10 +74,8 @@ class RRTPlanner {
   /// @param planning_space Planning space to use. @pre not null.
   /// @return First path found from start to *a* goal, if found in time limit.
   static PathPlanningResult<StateType> PlanGoalSampling(
-      const StateType& start,
-      const GoalSampler<StateType>& goal_sampler,
-      const Parameters& parameters,
-      PlanningSpace<StateType>* planning_space);
+      const StateType& start, const GoalSampler<StateType>& goal_sampler,
+      const Parameters& parameters, PlanningSpace<StateType>* planning_space);
 
   /// Plan a path from the provided start states to sampled goal state(s).
   /// @param starts Starting states.
@@ -92,8 +86,7 @@ class RRTPlanner {
   /// limit.
   static PathPlanningResult<StateType> PlanGoalSampling(
       const std::vector<StateType>& starts,
-      const GoalSampler<StateType>& goal_sampler,
-      const Parameters& parameters,
+      const GoalSampler<StateType>& goal_sampler, const Parameters& parameters,
       PlanningSpace<StateType>* planning_space);
 
   /// Plan a path from the provided start state to the goal implicitly defined
@@ -105,10 +98,8 @@ class RRTPlanner {
   /// @return First path found from start to *a* state meeting the goal check,
   /// if found in time limit.
   static PathPlanningResult<StateType> PlanGoalCheck(
-      const StateType& start,
-      const GoalChecker<StateType>& goal_checker,
-      const Parameters& parameters,
-      PlanningSpace<StateType>* planning_space);
+      const StateType& start, const GoalChecker<StateType>& goal_checker,
+      const Parameters& parameters, PlanningSpace<StateType>* planning_space);
 
   /// Plan a path from the provided start states to the goal implicitly defined
   /// by the goal checker.
@@ -120,15 +111,14 @@ class RRTPlanner {
   /// check, if found in time limit.
   static PathPlanningResult<StateType> PlanGoalCheck(
       const std::vector<StateType>& starts,
-      const GoalChecker<StateType>& goal_checker,
-      const Parameters& parameters,
+      const GoalChecker<StateType>& goal_checker, const Parameters& parameters,
       PlanningSpace<StateType>* planning_space);
 
   // Delete all constructors of this static-only class.
   RRTPlanner(const RRTPlanner&) = delete;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::RRTPlanner)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::RRTPlanner)

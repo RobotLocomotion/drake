@@ -6,18 +6,17 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/planning/collision_checker.h"
-#include "planning/default_state_types.h"
-#include "planning/joint_limits.h"
-#include "planning/parallelism.h"
-#include "planning/per_instance_qs.h"
-#include "planning/planning_space.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/joint_limits.h"
+#include "drake/planning/sampling_based/dev/per_instance_qs.h"
+#include "drake/planning/sampling_based/dev/planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 // Forward declarations.
-template<typename StateType>
+template <typename StateType>
 class AsymmetricCollisionCheckerPlanningSpace;
-template<typename StateType>
+template <typename StateType>
 class SymmetricCollisionCheckerPlanningSpace;
 
 /// Base type for PlanningSpaces that have a CollisionChecker and a JointLimits.
@@ -26,13 +25,13 @@ class SymmetricCollisionCheckerPlanningSpace;
 /// SymmetricCollisionCheckerPlanningSpace depending on whether or not their
 /// space is symmetric (i.e. each pair of *Forward* and *Backwards* methods is
 /// provided by a single implementation.)
-template<typename StateType>
+template <typename StateType>
 class CollisionCheckerPlanningSpace : public PlanningSpace<StateType> {
  public:
   // The copy constructor is protected for use in implementing Clone().
   // Does not allow copy, move, or assignment.
-  CollisionCheckerPlanningSpace(
-      CollisionCheckerPlanningSpace<StateType>&&) = delete;
+  CollisionCheckerPlanningSpace(CollisionCheckerPlanningSpace<StateType>&&) =
+      delete;
   CollisionCheckerPlanningSpace& operator=(
       const CollisionCheckerPlanningSpace<StateType>&) = delete;
   CollisionCheckerPlanningSpace& operator=(
@@ -65,11 +64,11 @@ class CollisionCheckerPlanningSpace : public PlanningSpace<StateType> {
     joint_limits_ = joint_limits;
   }
 
-  JointLimits MakeJointLimits(
-      const JointLimits& joint_limits, const PerInstanceQs& fixed_qs) const;
+  JointLimits MakeJointLimits(const JointLimits& joint_limits,
+                              const PerInstanceQs& fixed_qs) const;
 
-  Eigen::VectorXd MakeCombinedQ(
-      const PerInstanceQs& active_qs, const PerInstanceQs& passive_qs) const;
+  Eigen::VectorXd MakeCombinedQ(const PerInstanceQs& active_qs,
+                                const PerInstanceQs& passive_qs) const;
 
   /// Provided for convenience where replacing MultibodyPlantWrapper.
   const drake::multibody::MultibodyPlant<double>& plant() const {
@@ -109,17 +108,16 @@ class CollisionCheckerPlanningSpace : public PlanningSpace<StateType> {
   // @param seed Seed for per-thread random source.
   // @param is_symmetric Is the planning space symmetric?
   CollisionCheckerPlanningSpace(
-      std::unique_ptr<drake::planning::CollisionChecker> collision_checker,
+      std::unique_ptr<CollisionChecker> collision_checker,
       const JointLimits& joint_limits, uint64_t seed, bool is_symmetric);
 
-  drake::copyable_unique_ptr<drake::planning::CollisionChecker>
-      collision_checker_;
+  drake::copyable_unique_ptr<CollisionChecker> collision_checker_;
   JointLimits joint_limits_;
   JointLimits nominal_joint_limits_;
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::CollisionCheckerPlanningSpace)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::CollisionCheckerPlanningSpace)

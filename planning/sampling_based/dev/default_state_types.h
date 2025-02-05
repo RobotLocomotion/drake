@@ -5,12 +5,12 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/math/rigid_transform.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Basic planning state for control planning, incorporating state and control.
 /// State value is one of {Vector2d, Vector3d, RigidTransformd, VectorXd} and
 /// control is always VectorXd.
-template<typename StateType>
+template <typename StateType>
 class ControlPlanningState {
  public:
   /// Provides all copy/move/assign operations.
@@ -64,36 +64,47 @@ class ControlPlanningState {
 
 /// Defines template instantiations for Anzu's default planning state types.
 /// This should only be used in .cc files, never in .h files.
-#define ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES( \
-    SomeType) \
-template SomeType<::Eigen::Vector2d>; \
-template SomeType<::Eigen::Vector3d>; \
-template SomeType<::drake::math::RigidTransformd>; \
-template SomeType<::Eigen::VectorXd>; \
-template SomeType<::anzu::planning::ControlPlanningState<::Eigen::Vector2d>>; \
-template SomeType<::anzu::planning::ControlPlanningState<::Eigen::Vector3d>>; \
-template SomeType<::anzu::planning::ControlPlanningState<::drake::math::RigidTransformd>>; /* NOLINT(whitespace/line_length) */ \
-template SomeType<::anzu::planning::ControlPlanningState<::Eigen::VectorXd>>;
+#define DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(  \
+    SomeType)                                                                \
+  template SomeType<::Eigen::Vector2d>;                                      \
+  template SomeType<::Eigen::Vector3d>;                                      \
+  template SomeType<::drake::math::RigidTransformd>;                         \
+  template SomeType<::Eigen::VectorXd>;                                      \
+  template SomeType<                                                         \
+      ::drake::planning::ControlPlanningState<::Eigen::Vector2d>>;           \
+  template SomeType<                                                         \
+      ::drake::planning::ControlPlanningState<::Eigen::Vector3d>>;           \
+  template SomeType<::drake::planning::ControlPlanningState<                 \
+      ::drake::math::RigidTransformd>>; /* NOLINT(whitespace/line_length) */ \
+  template SomeType<::drake::planning::ControlPlanningState<::Eigen::VectorXd>>;
 
 /// Declares that template instantiations exist for Anzu's default planning
 /// state types.
 /// This should only be used in .h files, never in .cc files.
-#define ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(  \
-    SomeType) \
-extern template SomeType<::Eigen::Vector2d>; \
-extern template SomeType<::Eigen::Vector3d>; \
-extern template SomeType<::drake::math::RigidTransformd>; \
-extern template SomeType<::Eigen::VectorXd>; \
-extern template SomeType<::anzu::planning::ControlPlanningState<::Eigen::Vector2d>>; /* NOLINT(whitespace/line_length) */ \
-extern template SomeType<::anzu::planning::ControlPlanningState<::Eigen::Vector3d>>; /* NOLINT(whitespace/line_length) */ \
-extern template SomeType<::anzu::planning::ControlPlanningState<::drake::math::RigidTransformd>>; /* NOLINT(whitespace/line_length) */ \
-extern template SomeType<::anzu::planning::ControlPlanningState<::Eigen::VectorXd>>; /* NOLINT(whitespace/line_length) */
+#define DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES( \
+    SomeType)                                                                \
+  extern template SomeType<::Eigen::Vector2d>;                               \
+  extern template SomeType<::Eigen::Vector3d>;                               \
+  extern template SomeType<::drake::math::RigidTransformd>;                  \
+  extern template SomeType<::Eigen::VectorXd>;                               \
+  extern template SomeType<::drake::planning::ControlPlanningState<          \
+      ::Eigen::Vector2d>>; /* NOLINT(whitespace/line_length) */              \
+  extern template SomeType<::drake::planning::ControlPlanningState<          \
+      ::Eigen::Vector3d>>; /* NOLINT(whitespace/line_length) */              \
+  extern template SomeType<::drake::planning::ControlPlanningState<          \
+      ::drake::math::RigidTransformd>>; /* NOLINT(whitespace/line_length) */ \
+  extern template SomeType<::drake::planning::ControlPlanningState<          \
+      ::Eigen::VectorXd>>; /* NOLINT(whitespace/line_length) */
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
 // Manually declare the supported instantiations of ControlPlanningState.
-extern template class ::anzu::planning::ControlPlanningState<::Eigen::Vector2d>;
-extern template class ::anzu::planning::ControlPlanningState<::Eigen::Vector3d>;
-extern template class ::anzu::planning::ControlPlanningState<::drake::math::RigidTransformd>; /* NOLINT(whitespace/line_length) */
-extern template class ::anzu::planning::ControlPlanningState<::Eigen::VectorXd>;
+extern template class ::drake::planning::ControlPlanningState<
+    ::Eigen::Vector2d>;
+extern template class ::drake::planning::ControlPlanningState<
+    ::Eigen::Vector3d>;
+extern template class ::drake::planning::ControlPlanningState<
+    ::drake::math::RigidTransformd>; /* NOLINT(whitespace/line_length) */
+extern template class ::drake::planning::ControlPlanningState<
+    ::Eigen::VectorXd>;

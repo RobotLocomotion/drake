@@ -4,9 +4,9 @@
 #include <random>
 
 #include "drake/common/drake_throw.h"
-#include "planning/default_state_types.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /// Interface used by RRT and ParallelRRT planners to sample goal states. Since
@@ -39,12 +39,12 @@ class GoalSampler {
 
   /// Derived goal checkers must implement goal sampling. Base class ensures
   /// that the provided `generator` is non-null.
-  virtual StateType DoSample(
-      std::mt19937_64* generator, int thread_number) const = 0;
+  virtual StateType DoSample(std::mt19937_64* generator,
+                             int thread_number) const = 0;
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::GoalSampler)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::GoalSampler)

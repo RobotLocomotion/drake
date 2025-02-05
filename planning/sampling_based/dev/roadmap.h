@@ -7,9 +7,9 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
-#include "planning/default_state_types.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Roadmap type for use in PRM planning. Note that the Roadmap type serves to
 /// hide the details of the internal representation of the roadmap graph.
@@ -17,14 +17,14 @@ namespace planning {
 /// planning/roadmap_internal.h for accessors and more information.
 /// Note that loading and saving roadmaps and "named roadmaps" are all provided
 /// via static methods to provide a more consistent API.
-template<typename StateType>
+template <typename StateType>
 class Roadmap {
  public:
   /// Saves the provided roadmap to the specified file.
   /// @param roadmap Roadmap to save.
   /// @param file Path of file to save to.
-  static void SaveRoadmapToFile(
-      const Roadmap<StateType>& roadmap, const std::filesystem::path& file);
+  static void SaveRoadmapToFile(const Roadmap<StateType>& roadmap,
+                                const std::filesystem::path& file);
 
   /// Loads a roadmap from the specified file.
   /// @param file Path of file to load from.
@@ -82,7 +82,7 @@ class Roadmap {
   std::shared_ptr<void> internal_representation_;
 };
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::Roadmap)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::Roadmap)

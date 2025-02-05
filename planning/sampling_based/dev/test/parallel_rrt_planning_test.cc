@@ -14,18 +14,18 @@
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/collision_checker.h"
-#include "planning/holonomic_kinematic_planning_space.h"
-#include "planning/interim_constrained_kinematic_planning_space.h"
-#include "planning/mbp_constraint_types.h"
-#include "planning/sampling_based_planners.h"
-#include "planning/test/planning_test_helpers.h"
-#include "planning/voxelized_environment_collision_checker.h"
+#include "drake/planning/sampling_based/dev/holonomic_kinematic_planning_space.h"
+#include "drake/planning/sampling_based/dev/interim_constrained_kinematic_planning_space.h"
+#include "drake/planning/sampling_based/dev/mbp_constraint_types.h"
+#include "drake/planning/sampling_based/dev/sampling_based_planners.h"
+#include "drake/planning/sampling_based/dev/test/planning_test_helpers.h"
+#include "drake/planning/sampling_based/dev/voxelized_environment_collision_checker.h"
 
 using drake::multibody::ModelInstanceIndex;
 using drake::planning::CollisionCheckerContext;
 using drake::planning::CollisionCheckerParams;
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 constexpr int64_t kPrngSeed = 42;
@@ -362,4 +362,4 @@ GTEST_TEST(ParallelBiRRTPlanningTest, ConstrainedTest) {
 }
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

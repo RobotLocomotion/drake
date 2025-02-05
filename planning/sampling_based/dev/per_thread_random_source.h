@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "planning/parallelism.h"
+#include "drake/common/parallelism.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /// Helper to draw a uniformly-distributed double in [0.0, 1.0) from the
@@ -67,4 +67,4 @@ class PerThreadRandomSource {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

@@ -19,11 +19,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/planning/collision_checker.h"
+#include "drake/planning/sampling_based/dev/joint_limits.h"
+#include "drake/planning/sampling_based/dev/symmetric_collision_checker_planning_space.h"
 #include "drake/solvers/constraint.h"
-#include "planning/joint_limits.h"
-#include "planning/symmetric_collision_checker_planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// A function type to build constraints using the provided standalone
 /// CollisionCheckerContext.
@@ -48,8 +48,8 @@ using ConstraintsFactoryFunction =
         const std::shared_ptr<drake::planning::CollisionCheckerContext>&)>;
 
 /// "Dummy" constraints factory function that returns no constraints.
-std::vector<std::shared_ptr<drake::solvers::Constraint>>
-inline DummyConstraintsFactoryFunction(
+inline std::vector<std::shared_ptr<drake::solvers::Constraint>>
+DummyConstraintsFactoryFunction(
     const std::shared_ptr<drake::planning::CollisionCheckerContext>&) {
   return {};
 }
@@ -164,36 +164,35 @@ class InterimConstrainedKinematicPlanningSpace
 
   std::unique_ptr<PlanningSpace<Eigen::VectorXd>> DoClone() const override;
 
-  bool DoCheckStateValidity(
-      const Eigen::VectorXd& state, int thread_number) const final;
+  bool DoCheckStateValidity(const Eigen::VectorXd& state,
+                            int thread_number) const final;
 
-  bool DoCheckEdgeValidity(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to,
-      int thread_number) const final;
+  bool DoCheckEdgeValidity(const Eigen::VectorXd& from,
+                           const Eigen::VectorXd& to,
+                           int thread_number) const final;
 
-  bool DoCheckPathValidity(
-      const std::vector<Eigen::VectorXd>& path,
-      int thread_number) const final;
+  bool DoCheckPathValidity(const std::vector<Eigen::VectorXd>& path,
+                           int thread_number) const final;
 
   Eigen::VectorXd DoSampleState(int thread_number) override;
 
   std::optional<Eigen::VectorXd> DoMaybeSampleValidState(
       int max_attempts, int thread_number) final;
 
-  double DoStateDistance(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final;
+  double DoStateDistance(const Eigen::VectorXd& from,
+                         const Eigen::VectorXd& to) const final;
 
-  Eigen::VectorXd DoInterpolate(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to, double ratio)
-      const final;
+  Eigen::VectorXd DoInterpolate(const Eigen::VectorXd& from,
+                                const Eigen::VectorXd& to,
+                                double ratio) const final;
 
   std::vector<Eigen::VectorXd> DoPropagate(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to,
       std::map<std::string, double>* propagation_statistics,
       int thread_number) final;
 
-  double DoMotionCost(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const override;
+  double DoMotionCost(const Eigen::VectorXd& from,
+                      const Eigen::VectorXd& to) const override;
 
  private:
   // Stores a reference to a CollisionCheckerContext and the constraints built
@@ -215,11 +214,15 @@ class InterimConstrainedKinematicPlanningSpace
       DRAKE_THROW_UNLESS(context_ != nullptr);
     }
 
-    const std::shared_ptr<drake::planning::CollisionCheckerContext>&
-    context() const { return context_; }
+    const std::shared_ptr<drake::planning::CollisionCheckerContext>& context()
+        const {
+      return context_;
+    }
 
     const std::vector<std::shared_ptr<drake::solvers::Constraint>>&
-    constraints() const { return constraints_; }
+    constraints() const {
+      return constraints_;
+    }
 
    private:
     std::shared_ptr<drake::planning::CollisionCheckerContext> context_;
@@ -293,8 +296,8 @@ class InterimConstrainedKinematicPlanningSpace
 
         auto constraints = constraints_factory_function_(shared_context);
 
-        context_and_constraints_.emplace_back(
-            std::move(shared_context), std::move(constraints));
+        context_and_constraints_.emplace_back(std::move(shared_context),
+                                              std::move(constraints));
       }
     }
 
@@ -311,4 +314,4 @@ class InterimConstrainedKinematicPlanningSpace
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

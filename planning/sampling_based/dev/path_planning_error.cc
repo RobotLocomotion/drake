@@ -1,8 +1,8 @@
-#include "planning/path_planning_error.h"
+#include "drake/planning/sampling_based/dev/path_planning_error.h"
 
 #include "drake/common/drake_assert.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 std::string_view to_string(const PathPlanningError& error) {
@@ -27,4 +27,4 @@ std::string_view to_string(const PathPlanningError& error) {
 }  // namespace planning
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

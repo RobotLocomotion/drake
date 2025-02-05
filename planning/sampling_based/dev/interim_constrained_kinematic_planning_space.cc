@@ -1,4 +1,4 @@
-#include "planning/interim_constrained_kinematic_planning_space.h"
+#include "drake/planning/sampling_based/dev/interim_constrained_kinematic_planning_space.h"
 
 #include <limits>
 #include <utility>
@@ -6,24 +6,24 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
+#include "drake/planning/sampling_based/dev/path_planning.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
-#include "planning/path_planning.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 constexpr double kTargetCloseEnough = 1e-6;
 
 InterimConstrainedKinematicPlanningSpace::
-InterimConstrainedKinematicPlanningSpace(
-    std::unique_ptr<drake::planning::CollisionChecker> collision_checker,
-    const JointLimits& joint_limits,
-    const ConstraintsFactoryFunction& constraints_factory_fn,
-    const double propagation_step_size,
-    const double minimum_propagation_progress, const double tolerance,
-    const uint64_t seed)
+    InterimConstrainedKinematicPlanningSpace(
+        std::unique_ptr<drake::planning::CollisionChecker> collision_checker,
+        const JointLimits& joint_limits,
+        const ConstraintsFactoryFunction& constraints_factory_fn,
+        const double propagation_step_size,
+        const double minimum_propagation_progress, const double tolerance,
+        const uint64_t seed)
     : SymmetricCollisionCheckerPlanningSpace<Eigen::VectorXd>(
-        std::move(collision_checker), joint_limits, seed) {
+          std::move(collision_checker), joint_limits, seed) {
   context_and_constraints_keeper_ = ContextAndConstraintsKeeper(
       &this->collision_checker(), constraints_factory_fn);
   SetPropagationStepSize(propagation_step_size);
@@ -32,11 +32,11 @@ InterimConstrainedKinematicPlanningSpace(
 }
 
 InterimConstrainedKinematicPlanningSpace::
-~InterimConstrainedKinematicPlanningSpace() = default;
+    ~InterimConstrainedKinematicPlanningSpace() = default;
 
 InterimConstrainedKinematicPlanningSpace::
-InterimConstrainedKinematicPlanningSpace(
-    const InterimConstrainedKinematicPlanningSpace& other)
+    InterimConstrainedKinematicPlanningSpace(
+        const InterimConstrainedKinematicPlanningSpace& other)
     : SymmetricCollisionCheckerPlanningSpace<Eigen::VectorXd>(other) {
   context_and_constraints_keeper_ = ContextAndConstraintsKeeper(
       &this->collision_checker(),
@@ -93,7 +93,7 @@ bool InterimConstrainedKinematicPlanningSpace::DoCheckPathValidity(
 
   if (path.size() > 1) {
     for (size_t index = 1; index < path.size(); ++index) {
-      const Eigen::VectorXd& previous = path.at(index -1);
+      const Eigen::VectorXd& previous = path.at(index - 1);
       const Eigen::VectorXd& current = path.at(index);
 
       // TODO(calderpg) Incorporate joint limits check into path validity.
@@ -145,8 +145,8 @@ InterimConstrainedKinematicPlanningSpace::DoMaybeSampleValidState(
   // Make joint limits constraint + quaternion constraint if needed.
   auto q_var = projection.NewContinuousVariables(
       collision_checker().plant().num_positions(), "q");
-  projection.AddBoundingBoxConstraint(
-      joint_limits().position_lower(), joint_limits().position_upper(), q_var);
+  projection.AddBoundingBoxConstraint(joint_limits().position_lower(),
+                                      joint_limits().position_upper(), q_var);
   drake::multibody::AddUnitQuaternionConstraintOnPlant(
       collision_checker().plant(), q_var, &projection);
   // Add the user-provided constraints.
@@ -179,7 +179,8 @@ InterimConstrainedKinematicPlanningSpace::DoMaybeSampleValidState(
     const auto result = drake::solvers::Solve(projection, initial_q);
     const Eigen::VectorXd& q_projected = result.GetSolution();
 
-    const bool constraints_satisfied = result.is_success() ||
+    const bool constraints_satisfied =
+        result.is_success() ||
         CheckConstraintsSatisfied(constraints, q_projected, tolerance());
     const bool collision_free =
         collision_checker().CheckContextConfigCollisionFree(
@@ -202,8 +203,8 @@ double InterimConstrainedKinematicPlanningSpace::DoStateDistance(
 }
 
 Eigen::VectorXd InterimConstrainedKinematicPlanningSpace::DoInterpolate(
-    const Eigen::VectorXd& from, const Eigen::VectorXd& to, const double ratio)
-    const {
+    const Eigen::VectorXd& from, const Eigen::VectorXd& to,
+    const double ratio) const {
   return collision_checker().InterpolateBetweenConfigurations(from, to, ratio);
 }
 
@@ -218,8 +219,8 @@ InterimConstrainedKinematicPlanningSpace::DoPropagate(
   propagation_statistics->try_emplace("targets_considered", 0.0);
   propagation_statistics->try_emplace("projected_targets", 0.0);
   propagation_statistics->try_emplace("projected_target_in_collision", 0.0);
-  propagation_statistics->try_emplace(
-      "projected_target_insufficient_progress", 0.0);
+  propagation_statistics->try_emplace("projected_target_insufficient_progress",
+                                      0.0);
   propagation_statistics->try_emplace("target_failed_to_project", 0.0);
   propagation_statistics->try_emplace("edges_considered", 0.0);
   propagation_statistics->try_emplace("valid_edges", 0.0);
@@ -237,8 +238,8 @@ InterimConstrainedKinematicPlanningSpace::DoPropagate(
   // Make joint limits constraint + quaternion constraint if needed.
   auto q_var = projection.NewContinuousVariables(
       collision_checker().plant().num_positions(), "q");
-  projection.AddBoundingBoxConstraint(
-      joint_limits().position_lower(), joint_limits().position_upper(), q_var);
+  projection.AddBoundingBoxConstraint(joint_limits().position_lower(),
+                                      joint_limits().position_upper(), q_var);
   drake::multibody::AddUnitQuaternionConstraintOnPlant(
       collision_checker().plant(), q_var, &projection);
   // Add the user-provided constraints.
@@ -267,7 +268,8 @@ InterimConstrainedKinematicPlanningSpace::DoPropagate(
     const auto result = drake::solvers::Solve(projection, current_q);
     const Eigen::VectorXd& q_projected = result.GetSolution();
 
-    const bool constraints_satisfied = result.is_success() ||
+    const bool constraints_satisfied =
+        result.is_success() ||
         CheckConstraintsSatisfied(constraints, q_projected, tolerance());
 
     if (constraints_satisfied) {
@@ -330,8 +332,7 @@ InterimConstrainedKinematicPlanningSpace::DoPropagate(
       break;
     }
 
-    const double propagation_progress =
-        StateDistance(current, current_target);
+    const double propagation_progress = StateDistance(current, current_target);
 
     if (propagation_progress < minimum_propagation_progress()) {
       drake::log()->trace(
@@ -406,8 +407,8 @@ InterimConstrainedKinematicPlanningSpace::TryProjectStateToConstraints(
   // Make joint limits constraint + quaternion constraint if needed.
   auto q_var = projection.NewContinuousVariables(
       collision_checker().plant().num_positions(), "q");
-  projection.AddBoundingBoxConstraint(
-      joint_limits().position_lower(), joint_limits().position_upper(), q_var);
+  projection.AddBoundingBoxConstraint(joint_limits().position_lower(),
+                                      joint_limits().position_upper(), q_var);
   drake::multibody::AddUnitQuaternionConstraintOnPlant(
       collision_checker().plant(), q_var, &projection);
   // Add the user-provided constraints.
@@ -429,11 +430,12 @@ InterimConstrainedKinematicPlanningSpace::TryProjectStateToConstraints(
   const auto result = drake::solvers::Solve(projection, state);
   const Eigen::VectorXd& q_projected = result.GetSolution();
 
-  const bool constraints_satisfied = result.is_success() ||
+  const bool constraints_satisfied =
+      result.is_success() ||
       CheckConstraintsSatisfied(constraints, q_projected, tolerance());
   const bool collision_free =
-      collision_checker().CheckContextConfigCollisionFree(
-          checker_context.get(), q_projected);
+      collision_checker().CheckContextConfigCollisionFree(checker_context.get(),
+                                                          q_projected);
 
   if (constraints_satisfied && collision_free) {
     drake::log()->trace("Projected {} to {}", state, q_projected);
@@ -445,4 +447,4 @@ InterimConstrainedKinematicPlanningSpace::TryProjectStateToConstraints(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

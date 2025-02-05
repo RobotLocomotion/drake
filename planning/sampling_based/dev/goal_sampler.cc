@@ -1,6 +1,6 @@
-#include "planning/goal_sampler.h"
+#include "drake/planning/sampling_based/dev/goal_sampler.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 template <typename StateType>
@@ -13,7 +13,7 @@ template <typename StateType>
 GoalSampler<StateType>::GoalSampler(const GoalSampler& other) = default;
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::GoalSampler)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::GoalSampler)

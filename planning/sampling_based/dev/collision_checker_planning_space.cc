@@ -1,4 +1,4 @@
-#include "planning/collision_checker_planning_space.h"
+#include "drake/planning/sampling_based/dev/collision_checker_planning_space.h"
 
 #include <map>
 #include <utility>
@@ -6,7 +6,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 Parallelism GetCollisionCheckerParallelism(
@@ -16,11 +16,11 @@ Parallelism GetCollisionCheckerParallelism(
 }
 }  // namespace
 
-template<typename StateType>
-CollisionCheckerPlanningSpace<StateType>::
-~CollisionCheckerPlanningSpace() = default;
+template <typename StateType>
+CollisionCheckerPlanningSpace<StateType>::~CollisionCheckerPlanningSpace() =
+    default;
 
-template<typename StateType>
+template <typename StateType>
 JointLimits CollisionCheckerPlanningSpace<StateType>::MakeJointLimits(
     const JointLimits& joint_limits, const PerInstanceQs& fixed_qs) const {
   DRAKE_THROW_UNLESS(joint_limits.num_positions() ==
@@ -60,12 +60,11 @@ JointLimits CollisionCheckerPlanningSpace<StateType>::MakeJointLimits(
         drake::fmt_eigen(position_upper));
   }
 
-  return JointLimits(
-      position_lower, position_upper, velocity_lower, velocity_upper,
-      acceleration_lower, acceleration_upper);
+  return JointLimits(position_lower, position_upper, velocity_lower,
+                     velocity_upper, acceleration_lower, acceleration_upper);
 }
 
-template<typename StateType>
+template <typename StateType>
 Eigen::VectorXd CollisionCheckerPlanningSpace<StateType>::MakeCombinedQ(
     const PerInstanceQs& active_qs, const PerInstanceQs& passive_qs) const {
   // Track what we've written.
@@ -98,18 +97,18 @@ Eigen::VectorXd CollisionCheckerPlanningSpace<StateType>::MakeCombinedQ(
   return combined_q;
 }
 
-template<typename StateType>
+template <typename StateType>
 CollisionCheckerPlanningSpace<StateType>::CollisionCheckerPlanningSpace(
     const CollisionCheckerPlanningSpace<StateType>& other) = default;
 
-template<typename StateType>
+template <typename StateType>
 CollisionCheckerPlanningSpace<StateType>::CollisionCheckerPlanningSpace(
-    std::unique_ptr<drake::planning::CollisionChecker> collision_checker,
+    std::unique_ptr<CollisionChecker> collision_checker,
     const JointLimits& joint_limits, const uint64_t seed,
     const bool is_symmetric)
     : PlanningSpace<StateType>(
-        seed, GetCollisionCheckerParallelism(collision_checker.get()),
-        is_symmetric),
+          seed, GetCollisionCheckerParallelism(collision_checker.get()),
+          is_symmetric),
       collision_checker_(std::move(collision_checker)) {
   DRAKE_THROW_UNLESS(collision_checker_ != nullptr);
   DRAKE_THROW_UNLESS(collision_checker_->num_allocated_contexts() ==
@@ -120,7 +119,7 @@ CollisionCheckerPlanningSpace<StateType>::CollisionCheckerPlanningSpace(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::CollisionCheckerPlanningSpace)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::CollisionCheckerPlanningSpace)

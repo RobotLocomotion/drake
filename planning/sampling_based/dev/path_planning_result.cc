@@ -1,8 +1,8 @@
-#include "planning/path_planning_result.h"
+#include "drake/planning/sampling_based/dev/path_planning_result.h"
 
 #include <utility>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 template <typename StateType>
@@ -20,8 +20,7 @@ PathPlanningResult<StateType>::PathPlanningResult(PathPlanningErrors errors)
 }
 
 template <typename StateType>
-PathPlanningResult<StateType>::PathPlanningResult(
-    const PathPlanningError error)
+PathPlanningResult<StateType>::PathPlanningResult(const PathPlanningError error)
     : PathPlanningResult(PathPlanningErrors(error)) {}
 
 template <typename StateType>
@@ -31,7 +30,7 @@ template <typename StateType>
 PathPlanningResult<StateType>::~PathPlanningResult() = default;
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::PathPlanningResult)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::PathPlanningResult)

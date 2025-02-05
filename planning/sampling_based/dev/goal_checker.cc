@@ -1,6 +1,6 @@
-#include "planning/goal_checker.h"
+#include "drake/planning/sampling_based/dev/goal_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 template <typename StateType>
@@ -13,7 +13,7 @@ template <typename StateType>
 GoalChecker<StateType>::GoalChecker(const GoalChecker& other) = default;
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::GoalChecker)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::GoalChecker)

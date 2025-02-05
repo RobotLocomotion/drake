@@ -1,6 +1,6 @@
-#include "planning/path_planning_errors.h"
+#include "drake/planning/sampling_based/dev/path_planning_errors.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 static_assert(sizeof(PathPlanningErrors) <= 8, "Should fit within 1 word");
@@ -24,4 +24,4 @@ std::string to_string(const PathPlanningErrors& errors) {
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

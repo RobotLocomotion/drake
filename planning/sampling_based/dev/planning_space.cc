@@ -1,18 +1,18 @@
-#include "planning/planning_space.h"
+#include "drake/planning/sampling_based/dev/planning_space.h"
 
 #include <common_robotics_utilities/openmp_helpers.hpp>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/text_logging.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 using common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum;
 
-template<typename StateType>
+template <typename StateType>
 PlanningSpace<StateType>::~PlanningSpace() = default;
 
-template<typename StateType>
+template <typename StateType>
 double PlanningSpace<StateType>::CalcPathLength(
     const std::vector<StateType>& path) const {
   double path_length = 0.0;
@@ -22,7 +22,7 @@ double PlanningSpace<StateType>::CalcPathLength(
   return path_length;
 }
 
-template<typename StateType>
+template <typename StateType>
 ValidStarts<StateType> PlanningSpace<StateType>::ExtractValidStarts(
     const std::vector<StateType>& starts,
     const std::optional<int> thread_number) const {
@@ -34,19 +34,18 @@ ValidStarts<StateType> PlanningSpace<StateType>::ExtractValidStarts(
     if (CheckStateValidity(start, resolved_thread_number)) {
       valid_starts.push_back(start);
     } else {
-      drake::log()->warn(
-          "Start {}/{} is invalid", start_index + 1, starts.size());
+      drake::log()->warn("Start {}/{} is invalid", start_index + 1,
+                         starts.size());
     }
   }
 
   return ValidStarts<StateType>(valid_starts);
 }
 
-template<typename StateType>
+template <typename StateType>
 ValidStartsAndGoals<StateType>
 PlanningSpace<StateType>::ExtractValidStartsAndGoals(
-    const std::vector<StateType>& starts,
-    const std::vector<StateType>& goals,
+    const std::vector<StateType>& starts, const std::vector<StateType>& goals,
     const std::optional<int> thread_number) const {
   const int resolved_thread_number = ResolveThreadNumber(thread_number);
 
@@ -56,8 +55,8 @@ PlanningSpace<StateType>::ExtractValidStartsAndGoals(
     if (CheckStateValidity(start, resolved_thread_number)) {
       valid_starts.push_back(start);
     } else {
-      drake::log()->warn(
-          "Start {}/{} is invalid", start_index + 1, starts.size());
+      drake::log()->warn("Start {}/{} is invalid", start_index + 1,
+                         starts.size());
     }
   }
 
@@ -67,15 +66,14 @@ PlanningSpace<StateType>::ExtractValidStartsAndGoals(
     if (CheckStateValidity(goal, resolved_thread_number)) {
       valid_goals.push_back(goal);
     } else {
-      drake::log()->warn(
-          "Goal {}/{} is invalid", goal_index + 1, goals.size());
+      drake::log()->warn("Goal {}/{} is invalid", goal_index + 1, goals.size());
     }
   }
 
   return ValidStartsAndGoals<StateType>(valid_starts, valid_goals);
 }
 
-template<typename StateType>
+template <typename StateType>
 bool PlanningSpace<StateType>::DoCheckPathValidity(
     const std::vector<StateType>& path, const int thread_number) const {
   if (path.size() > 1) {
@@ -83,8 +81,8 @@ bool PlanningSpace<StateType>::DoCheckPathValidity(
       const StateType& previous = path.at(index - 1);
       const StateType& current = path.at(index);
       if (!CheckEdgeValidity(previous, current, thread_number)) {
-        drake::log()->warn(
-            "Edge from waypoint {} to waypoint {} invalid", index - 1, index);
+        drake::log()->warn("Edge from waypoint {} to waypoint {} invalid",
+                           index - 1, index);
         return false;
       }
     }
@@ -96,7 +94,7 @@ bool PlanningSpace<StateType>::DoCheckPathValidity(
   }
 }
 
-template<typename StateType>
+template <typename StateType>
 std::optional<StateType> PlanningSpace<StateType>::DoMaybeSampleValidState(
     const int max_attempts, const int thread_number) {
   for (int attempt = 0; attempt < max_attempts; ++attempt) {
@@ -108,7 +106,7 @@ std::optional<StateType> PlanningSpace<StateType>::DoMaybeSampleValidState(
   return std::nullopt;
 }
 
-template<typename StateType>
+template <typename StateType>
 StateType PlanningSpace<StateType>::SampleValidState(
     const int max_attempts, const std::optional<int> thread_number) {
   std::optional<StateType> maybe_valid_sample =
@@ -121,7 +119,7 @@ StateType PlanningSpace<StateType>::SampleValidState(
   }
 }
 
-template<typename StateType>
+template <typename StateType>
 int PlanningSpace<StateType>::ResolveThreadNumber(
     const std::optional<int> thread_number) {
   const int resolved_thread_number =
@@ -129,18 +127,20 @@ int PlanningSpace<StateType>::ResolveThreadNumber(
   return resolved_thread_number;
 }
 
-template<typename StateType>
-PlanningSpace<StateType>::PlanningSpace(
-    const PlanningSpace<StateType>& other) = default;
+template <typename StateType>
+PlanningSpace<StateType>::PlanningSpace(const PlanningSpace<StateType>& other) =
+    default;
 
-template<typename StateType>
-PlanningSpace<StateType>::PlanningSpace(
-    const uint64_t seed, const Parallelism parallelism, const bool is_symmetric)
-    : random_source_(seed, parallelism), parallelism_(parallelism),
+template <typename StateType>
+PlanningSpace<StateType>::PlanningSpace(const uint64_t seed,
+                                        const Parallelism parallelism,
+                                        const bool is_symmetric)
+    : random_source_(seed, parallelism),
+      parallelism_(parallelism),
       is_symmetric_(is_symmetric) {}
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::PlanningSpace)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::PlanningSpace)

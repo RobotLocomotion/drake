@@ -4,10 +4,10 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
-#include "planning/default_state_types.h"
-#include "planning/path_planning_errors.h"
+#include "drake/planning/sampling_based/dev/default_state_types.h"
+#include "drake/planning/sampling_based/dev/path_planning_errors.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Holds the results from planning {path, length, errors} where `path` is the
@@ -49,7 +49,7 @@ class PathPlanningResult {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::PathPlanningResult)
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::PathPlanningResult)

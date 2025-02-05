@@ -4,7 +4,7 @@
 
 #include "drake/multibody/plant/multibody_plant.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Wrapper type for position, velocity, and acceleration limits.
 class JointLimits {
@@ -13,26 +13,24 @@ class JointLimits {
   /// limits in the provided `plant`. If set, throws if the position, velocity,
   /// or acceleration limits contain non-finite values. Position limits should
   /// generally be finite.
-  JointLimits(
-      const drake::multibody::MultibodyPlant<double>& plant,
-      bool require_finite_positions = false,
-      bool require_finite_velocities = false,
-      bool require_finite_accelerations = false);
+  JointLimits(const multibody::MultibodyPlant<double>& plant,
+              bool require_finite_positions = false,
+              bool require_finite_velocities = false,
+              bool require_finite_accelerations = false);
 
   /// Construct a JointLimits using the position, velocity, and acceleration
   /// limits provided. If set, throws if the position, velocity, or acceleration
   /// limits contain non-finite values. Position limits should generally be
   /// finite.
-  JointLimits(
-      const Eigen::VectorXd& position_lower,
-      const Eigen::VectorXd& position_upper,
-      const Eigen::VectorXd& velocity_lower,
-      const Eigen::VectorXd& velocity_upper,
-      const Eigen::VectorXd& acceleration_lower,
-      const Eigen::VectorXd& acceleration_upper,
-      bool require_finite_positions = false,
-      bool require_finite_velocities = false,
-      bool require_finite_accelerations = false);
+  JointLimits(const Eigen::VectorXd& position_lower,
+              const Eigen::VectorXd& position_upper,
+              const Eigen::VectorXd& velocity_lower,
+              const Eigen::VectorXd& velocity_upper,
+              const Eigen::VectorXd& acceleration_lower,
+              const Eigen::VectorXd& acceleration_upper,
+              bool require_finite_positions = false,
+              bool require_finite_velocities = false,
+              bool require_finite_accelerations = false);
 
   JointLimits() {}
 
@@ -66,18 +64,18 @@ class JointLimits {
 
   /// Checks if `position` is within position limits +/- `tolerance` beyond
   /// limits.
-  bool CheckInPositionLimits(
-      const Eigen::VectorXd& position, double tolerance = 0.0) const;
+  bool CheckInPositionLimits(const Eigen::VectorXd& position,
+                             double tolerance = 0.0) const;
 
   /// Checks if `velocity` is within velocity limits +/- `tolerance` beyond
   /// limits.
-  bool CheckInVelocityLimits(
-      const Eigen::VectorXd& velocity, double tolerance = 0.0) const;
+  bool CheckInVelocityLimits(const Eigen::VectorXd& velocity,
+                             double tolerance = 0.0) const;
 
   /// Checks if `acceleration` is within acceleration limits +/- `tolerance`
   /// beyond limits.
-  bool CheckInAccelerationLimits(
-      const Eigen::VectorXd& acceleration, double tolerance = 0.0) const;
+  bool CheckInAccelerationLimits(const Eigen::VectorXd& acceleration,
+                                 double tolerance = 0.0) const;
 
  private:
   Eigen::VectorXd position_lower_;
@@ -91,4 +89,4 @@ class JointLimits {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

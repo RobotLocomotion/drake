@@ -1,22 +1,22 @@
-#include "planning/symmetric_planning_space.h"
+#include "drake/planning/sampling_based/dev/symmetric_planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-template<typename StateType>
+template <typename StateType>
 SymmetricPlanningSpace<StateType>::~SymmetricPlanningSpace() = default;
 
-template<typename StateType>
+template <typename StateType>
 SymmetricPlanningSpace<StateType>::SymmetricPlanningSpace(
     const SymmetricPlanningSpace<StateType>& other) = default;
 
-template<typename StateType>
+template <typename StateType>
 SymmetricPlanningSpace<StateType>::SymmetricPlanningSpace(
     const uint64_t seed, const Parallelism parallelism)
     : PlanningSpace<StateType>(seed, parallelism, true) {}
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::SymmetricPlanningSpace)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::SymmetricPlanningSpace)

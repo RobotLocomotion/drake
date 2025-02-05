@@ -10,13 +10,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/text_logging.h"
-#include "planning/asymmetric_planning_space.h"
-#include "planning/goal_checker.h"
-#include "planning/goal_sampler.h"
-#include "planning/parallel_rrt_planner.h"
-#include "planning/rrt_planner.h"
+#include "drake/planning/sampling_based/dev/asymmetric_planning_space.h"
+#include "drake/planning/sampling_based/dev/goal_checker.h"
+#include "drake/planning/sampling_based/dev/goal_sampler.h"
+#include "drake/planning/sampling_based/dev/parallel_rrt_planner.h"
+#include "drake/planning/sampling_based/dev/rrt_planner.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 using common_robotics_utilities::math::ContinuousRevoluteDistance;
@@ -438,4 +438,4 @@ GTEST_TEST(ControlSamplingBasedPlanningTest, ParallelStartAndGoalCheckTest) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

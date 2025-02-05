@@ -17,10 +17,10 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/planning/collision_checker.h"
-#include "planning/joint_limits.h"
-#include "planning/symmetric_collision_checker_planning_space.h"
+#include "drake/planning/sampling_based/dev/joint_limits.h"
+#include "drake/planning/sampling_based/dev/symmetric_collision_checker_planning_space.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /// Implementation of a "holonomic" kinematic planning space. Broadly, this
 /// covers all non-constrained planning uses to date, i.e. anywhere the
@@ -69,36 +69,35 @@ class HolonomicKinematicPlanningSpace
 
  protected:
   // Copy constructor for use in Clone().
-  HolonomicKinematicPlanningSpace(
-      const HolonomicKinematicPlanningSpace& other);
+  HolonomicKinematicPlanningSpace(const HolonomicKinematicPlanningSpace& other);
 
   // Implement SymmetricPlanningSpace API.
 
   std::unique_ptr<PlanningSpace<Eigen::VectorXd>> DoClone() const override;
 
-  bool DoCheckStateValidity(
-      const Eigen::VectorXd& state, int thread_number) const final;
+  bool DoCheckStateValidity(const Eigen::VectorXd& state,
+                            int thread_number) const final;
 
-  bool DoCheckEdgeValidity(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to,
-      int thread_number) const final;
+  bool DoCheckEdgeValidity(const Eigen::VectorXd& from,
+                           const Eigen::VectorXd& to,
+                           int thread_number) const final;
 
   Eigen::VectorXd DoSampleState(int thread_number) override;
 
-  double DoStateDistance(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final;
+  double DoStateDistance(const Eigen::VectorXd& from,
+                         const Eigen::VectorXd& to) const final;
 
-  Eigen::VectorXd DoInterpolate(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to, double ratio)
-      const final;
+  Eigen::VectorXd DoInterpolate(const Eigen::VectorXd& from,
+                                const Eigen::VectorXd& to,
+                                double ratio) const final;
 
   std::vector<Eigen::VectorXd> DoPropagate(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to,
       std::map<std::string, double>* propagation_statistics,
       int thread_number) final;
 
-  double DoMotionCost(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const override;
+  double DoMotionCost(const Eigen::VectorXd& from,
+                      const Eigen::VectorXd& to) const override;
 
  private:
   double propagation_step_size_ = 0.0;
@@ -106,4 +105,4 @@ class HolonomicKinematicPlanningSpace
 
 // Separate implementation for constrained case, see if this makes sense?
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

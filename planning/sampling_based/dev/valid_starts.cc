@@ -1,8 +1,8 @@
-#include "planning/valid_starts.h"
+#include "drake/planning/sampling_based/dev/valid_starts.h"
 
 #include <utility>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 template <typename StateType>
@@ -25,7 +25,7 @@ void ValidStarts<StateType>::SetErrors() {
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
 
-ANZU_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
-    class ::anzu::planning::ValidStarts)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_PLANNING_STATE_TYPES(
+    class ::drake::planning::ValidStarts)

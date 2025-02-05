@@ -1,0 +1,418 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "dev",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":asymmetric_collision_checker_planning_space",
+        ":asymmetric_planning_space",
+        ":birrt_planner",
+        ":collision_checker_planning_space",
+        ":default_state_types",
+        ":goal_checker",
+        ":goal_sampler",
+        ":holonomic_kinematic_planning_space",
+        ":joint_limits",
+        ":parallel_birrt_planner",
+        ":parallel_rrt_planner",
+        ":path_planning_error",
+        ":path_planning_errors",
+        ":path_planning_result",
+        ":path_processor",
+        ":per_instance_qs",
+        ":per_thread_random_source",
+        ":planning_space",
+        ":prm_planner",
+        ":roadmap",
+        ":rrt_planner",
+        ":symmetric_collision_checker_planning_space",
+        ":symmetric_planning_space",
+        ":valid_starts",
+        ":valid_starts_and_goals",
+    ],
+)
+
+drake_cc_library(
+    name = "joint_limits",
+    srcs = ["joint_limits.cc"],
+    hdrs = ["joint_limits.h"],
+    deps = [
+        "//common:essential",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "per_instance_qs",
+    srcs = ["per_instance_qs.cc"],
+    hdrs = ["per_instance_qs.h"],
+    deps = [
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "per_thread_random_source",
+    srcs = ["per_thread_random_source.cc"],
+    hdrs = ["per_thread_random_source.h"],
+    deps = [
+        "//common:essential",
+        "//common:parallelism",
+    ],
+)
+
+drake_cc_library(
+    name = "default_state_types",
+    srcs = ["default_state_types.cc"],
+    hdrs = ["default_state_types.h"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "path_planning_error",
+    srcs = ["path_planning_error.cc"],
+    hdrs = ["path_planning_error.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "path_planning_errors",
+    srcs = ["path_planning_errors.cc"],
+    hdrs = ["path_planning_errors.h"],
+    deps = [
+        ":path_planning_error",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "path_planning_result",
+    srcs = ["path_planning_result.cc"],
+    hdrs = ["path_planning_result.h"],
+    deps = [
+        ":default_state_types",
+        ":path_planning_errors",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "valid_starts",
+    srcs = ["valid_starts.cc"],
+    hdrs = ["valid_starts.h"],
+    deps = [
+        ":default_state_types",
+        ":path_planning_errors",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "valid_starts_and_goals",
+    srcs = ["valid_starts_and_goals.cc"],
+    hdrs = ["valid_starts_and_goals.h"],
+    deps = [
+        ":default_state_types",
+        ":path_planning_errors",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "planning_space",
+    srcs = ["planning_space.cc"],
+    hdrs = ["planning_space.h"],
+    deps = [
+        ":default_state_types",
+        ":per_thread_random_source",
+        ":valid_starts",
+        ":valid_starts_and_goals",
+        "//common:essential",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "asymmetric_planning_space",
+    srcs = ["asymmetric_planning_space.cc"],
+    hdrs = ["asymmetric_planning_space.h"],
+    deps = [
+        ":default_state_types",
+        ":per_thread_random_source",
+        ":planning_space",
+        ":valid_starts",
+        ":valid_starts_and_goals",
+    ],
+)
+
+drake_cc_library(
+    name = "symmetric_planning_space",
+    srcs = ["symmetric_planning_space.cc"],
+    hdrs = ["symmetric_planning_space.h"],
+    deps = [
+        ":default_state_types",
+        ":per_thread_random_source",
+        ":planning_space",
+        ":valid_starts",
+        ":valid_starts_and_goals",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_checker_planning_space",
+    srcs = ["collision_checker_planning_space.cc"],
+    hdrs = ["collision_checker_planning_space.h"],
+    deps = [
+        ":default_state_types",
+        ":joint_limits",
+        ":per_instance_qs",
+        ":per_thread_random_source",
+        ":planning_space",
+        ":valid_starts",
+        ":valid_starts_and_goals",
+        "//planning:collision_checker",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "asymmetric_collision_checker_planning_space",
+    srcs = ["asymmetric_collision_checker_planning_space.cc"],
+    hdrs = ["asymmetric_collision_checker_planning_space.h"],
+    deps = [
+        ":collision_checker_planning_space",
+        ":default_state_types",
+        ":joint_limits",
+        ":per_thread_random_source",
+        ":valid_starts",
+        ":valid_starts_and_goals",
+    ],
+)
+
+drake_cc_library(
+    name = "symmetric_collision_checker_planning_space",
+    srcs = ["symmetric_collision_checker_planning_space.cc"],
+    hdrs = ["symmetric_collision_checker_planning_space.h"],
+    deps = [
+        ":collision_checker_planning_space",
+        ":default_state_types",
+        ":joint_limits",
+        ":per_thread_random_source",
+        ":valid_starts",
+        ":valid_starts_and_goals",
+    ],
+)
+
+drake_cc_library(
+    name = "goal_checker",
+    srcs = ["goal_checker.cc"],
+    hdrs = ["goal_checker.h"],
+    deps = [
+        ":default_state_types",
+    ],
+)
+
+drake_cc_library(
+    name = "goal_sampler",
+    srcs = ["goal_sampler.cc"],
+    hdrs = ["goal_sampler.h"],
+    deps = [
+        ":default_state_types",
+    ],
+)
+
+drake_cc_library(
+    name = "birrt_planner",
+    srcs = [
+        "birrt_planner.cc",
+        "rrt_internal.h",
+    ],
+    hdrs = ["birrt_planner.h"],
+    deps = [
+        ":default_state_types",
+        ":goal_sampler",
+        ":path_planning_result",
+        ":per_thread_random_source",
+        ":planning_space",
+        "//common:essential",
+        "//common:parallelism",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "rrt_planner",
+    srcs = [
+        "rrt_internal.h",
+        "rrt_planner.cc",
+    ],
+    hdrs = ["rrt_planner.h"],
+    deps = [
+        ":default_state_types",
+        ":goal_checker",
+        ":goal_sampler",
+        ":path_planning_result",
+        ":per_thread_random_source",
+        ":planning_space",
+        "//common:essential",
+        "//common:parallelism",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "parallel_birrt_planner",
+    srcs = [
+        "parallel_birrt_planner.cc",
+        "parallel_rrt_planner_tree.h",
+        "rrt_internal.h",
+    ],
+    hdrs = ["parallel_birrt_planner.h"],
+    deps = [
+        ":default_state_types",
+        ":goal_sampler",
+        ":path_planning_result",
+        ":per_thread_random_source",
+        ":planning_space",
+        "//common:essential",
+        "//common:parallelism",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "parallel_rrt_planner",
+    srcs = [
+        "parallel_rrt_planner.cc",
+        "parallel_rrt_planner_tree.h",
+        "rrt_internal.h",
+    ],
+    hdrs = ["parallel_rrt_planner.h"],
+    deps = [
+        ":default_state_types",
+        ":goal_checker",
+        ":goal_sampler",
+        ":path_planning_result",
+        ":per_thread_random_source",
+        ":planning_space",
+        "//common:essential",
+        "//common:parallelism",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "path_processor",
+    srcs = ["path_processor.cc"],
+    hdrs = ["path_processor.h"],
+    deps = [
+        ":default_state_types",
+        ":planning_space",
+        "//common:essential",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "roadmap",
+    srcs = [
+        "roadmap.cc",
+        "roadmap_internal.cc",
+    ],
+    hdrs = [
+        "roadmap.h",
+        "roadmap_internal.h",
+    ],
+    deps = [
+        ":default_state_types",
+        "//common:essential",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "prm_planner",
+    srcs = ["prm_planner.cc"],
+    hdrs = ["prm_planner.h"],
+    deps = [
+        ":default_state_types",
+        ":path_planning_result",
+        ":per_thread_random_source",
+        ":planning_space",
+        ":roadmap",
+        "//common:essential",
+        "//common:parallelism",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "holonomic_kinematic_planning_space",
+    srcs = ["holonomic_kinematic_planning_space.cc"],
+    hdrs = ["holonomic_kinematic_planning_space.h"],
+    deps = [
+        ":symmetric_collision_checker_planning_space",
+        "//common:essential",
+        "//planning:collision_checker",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+#drake_cc_library(
+#name = "interim_constrained_kinematic_planning_space",
+#srcs = [
+#"interim_constrained_kinematic_planning_space.cc",
+#"path_planning.cc",
+#],
+#hdrs = [
+#"interim_constrained_kinematic_planning_space.h",
+#"path_planning.h",
+#],
+#deps = [
+#":mbp_constraint_types",
+#":symmetric_collision_checker_planning_space",
+#"//common:essential",
+#"//multibody/inverse_kinematics:kinematic_evaluators",
+#"//planning:collision_checker",
+#"//solvers:snopt_solver",
+#"//solvers:solve",
+#],
+#implementation_deps = [
+#"@common_robotics_utilities_internal//:common_robotics_utilities",
+#],
+#)
+
+add_lint_tests()

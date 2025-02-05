@@ -1,8 +1,8 @@
-#include "planning/holonomic_kinematic_planning_space.h"
+#include "drake/planning/sampling_based/dev/holonomic_kinematic_planning_space.h"
 
 #include <utility>
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 HolonomicKinematicPlanningSpace::HolonomicKinematicPlanningSpace(
@@ -10,7 +10,7 @@ HolonomicKinematicPlanningSpace::HolonomicKinematicPlanningSpace(
     const JointLimits& joint_limits, const double propagation_step_size,
     const uint64_t seed)
     : SymmetricCollisionCheckerPlanningSpace<Eigen::VectorXd>(
-        std::move(collision_checker), joint_limits, seed) {
+          std::move(collision_checker), joint_limits, seed) {
   SetPropagationStepSize(propagation_step_size);
 }
 
@@ -57,8 +57,8 @@ double HolonomicKinematicPlanningSpace::DoStateDistance(
 }
 
 Eigen::VectorXd HolonomicKinematicPlanningSpace::DoInterpolate(
-    const Eigen::VectorXd& from, const Eigen::VectorXd& to, const double ratio)
-    const {
+    const Eigen::VectorXd& from, const Eigen::VectorXd& to,
+    const double ratio) const {
   return collision_checker().InterpolateBetweenConfigurations(from, to, ratio);
 }
 
@@ -110,4 +110,4 @@ double HolonomicKinematicPlanningSpace::DoMotionCost(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

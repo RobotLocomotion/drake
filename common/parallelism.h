@@ -1,5 +1,6 @@
 #pragma once
 
+#include <compare>
 #include <optional>
 #include <string_view>
 
@@ -93,6 +94,11 @@ class Parallelism {
  private:
   int num_threads_ = 1;
 };
+
+inline std::strong_ordering operator <=>(
+    const Parallelism& first, const Parallelism& second) {
+  return first.num_threads() <=> second.num_threads();
+}
 
 namespace internal {
 // Exposed for unit testing.
