@@ -43,12 +43,11 @@ ModelInstanceIndex AddChain(MultibodyPlant<double>* plant, int n) {
   ModelInstanceIndex instance = plant->AddModelInstance(fmt::format("m{}", n));
   const RigidBody<double>* parent = nullptr;
   for (int k = 0; k < n; ++k) {
-    const RigidBody<double>* body = &plant->AddRigidBody(
-        fmt::format("b{}", k), instance);
+    const RigidBody<double>* body =
+        &plant->AddRigidBody(fmt::format("b{}", k), instance);
     if (k > 0) {
-      plant->AddJoint<RevoluteJoint>(
-          fmt::format("j{}", k), *parent, {}, *body, {},
-          Eigen::Vector3d::UnitY());
+      plant->AddJoint<RevoluteJoint>(fmt::format("j{}", k), *parent, {}, *body,
+                                     {}, Eigen::Vector3d::UnitY());
     }
     parent = body;
   }
@@ -104,9 +103,8 @@ GTEST_TEST(PerInstanceQsTest, FullQChains) {
 
   // Wrong-sized input vector for existing model throws.
   PerInstanceQs wrong_qs{{models[1], qs[models[0]]}};
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SetInstanceQsInFullQ(plant, wrong_qs, &full_q),
-      ".* not properly sized.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(SetInstanceQsInFullQ(plant, wrong_qs, &full_q),
+                              ".* not properly sized.*");
 }
 
 }  // namespace

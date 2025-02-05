@@ -3,16 +3,125 @@
 #include <limits>
 #include <utility>
 
+#include <fmt/format.h>
+
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/inverse_kinematics/unit_quaternion_constraint.h"
-#include "drake/planning/sampling_based/dev/path_planning.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
 namespace planning {
 constexpr double kTargetCloseEnough = 1e-6;
+
+namespace {
+
+bool CheckConstraintSatisfied(
+    const solvers::Constraint& constraint, const Eigen::VectorXd& q,
+    double tolerance,
+    const std::function<void(const std::string&)>& log_function) {
+  if (constraint.CheckSatisfied(q, tolerance)) {
+    return true;
+  } else {
+    if (log_function != nullptr) {
+      log_function(fmt::format("constraint with description [{}] not satisfied",
+                               constraint.get_description()));
+    }
+    return false;
+  }
+}
+
+bool CheckConstraintsSatisfied(
+    const std::vector<std::shared_ptr<solvers::Constraint>>& constraints,
+    const Eigen::VectorXd& q, double tolerance,
+    spdlog::level::level_enum logging_level = spdlog::level::debug) {
+  std::function<void(const std::string&)> log_function = nullptr;
+  if (drake::log()->level() <= logging_level) {
+    log_function = [logging_level](const std::string& msg) {
+      drake::log()->log(logging_level, "CheckConstraintsSatisfied: {}", msg);
+    };
+  }
+
+  bool constraints_met = true;
+  for (const auto& constraint : constraints) {
+    if (!CheckConstraintSatisfied(*constraint, q, tolerance, log_function)) {
+      constraints_met = false;
+      if (log_function == nullptr) {
+        break;
+      }
+    }
+  }
+
+  if (constraints_met) {
+    if (log_function != nullptr) {
+      log_function("all constraints met");
+    }
+    return true;
+  } else {
+    return false;
+  }
+}
+
+enum class ConstrainedEdgeCheckResult : uint8_t {
+  EdgeValid = 0,
+  EdgeInCollision = 1,
+  EdgeViolatesConstraints = 2
+};
+
+ConstrainedEdgeCheckResult CheckEdgeCollisionFreeAndSatisfiesConstraints(
+    const Eigen::VectorXd& start, const Eigen::VectorXd& end,
+    const CollisionChecker& collision_checker,
+    const std::vector<std::shared_ptr<solvers::Constraint>>& constraints,
+    double tolerance, CollisionCheckerContext* model_context) {
+  DRAKE_THROW_UNLESS(model_context != nullptr);
+
+  // Helper to check a single configuration. Note that collision is always
+  // checked first.
+  const auto check_single_config = [&](const Eigen::VectorXd& q) {
+    if (collision_checker.CheckContextConfigCollisionFree(model_context, q)) {
+      if (CheckConstraintsSatisfied(constraints, q, tolerance)) {
+        return ConstrainedEdgeCheckResult::EdgeValid;
+      } else {
+        return ConstrainedEdgeCheckResult::EdgeViolatesConstraints;
+      }
+    } else {
+      return ConstrainedEdgeCheckResult::EdgeInCollision;
+    }
+  };
+
+  // Fail fast if end is invalid. This method is used by motion planners that
+  // extend/connect towards some target configuration, and thus require a number
+  // of edge collision checks in which start is often known to be valid while
+  // end is unknown. Many of these potential extensions/connections will result
+  // in an invalid configuration, so failing fast on an invalid end helps reduce
+  // the work of checking colliding edges. There is also no need to special case
+  // checking start, since it will be the first configuration checked in the
+  // loop.
+  const ConstrainedEdgeCheckResult end_result = check_single_config(end);
+  if (end_result != ConstrainedEdgeCheckResult::EdgeValid) {
+    return end_result;
+  }
+
+  const double distance =
+      collision_checker.ComputeConfigurationDistance(start, end);
+  const double step_size = collision_checker.edge_step_size();
+  const int num_steps =
+      static_cast<int>(std::max(1.0, std::ceil(distance / step_size)));
+  for (int step = 0; step < num_steps; ++step) {
+    const double ratio =
+        static_cast<double>(step) / static_cast<double>(num_steps);
+    const Eigen::VectorXd qinterp =
+        collision_checker.InterpolateBetweenConfigurations(start, end, ratio);
+    const ConstrainedEdgeCheckResult q_result = check_single_config(qinterp);
+    if (q_result != ConstrainedEdgeCheckResult::EdgeValid) {
+      return q_result;
+    }
+  }
+  return ConstrainedEdgeCheckResult::EdgeValid;
+}
+
+}  // namespace
 
 InterimConstrainedKinematicPlanningSpace::
     InterimConstrainedKinematicPlanningSpace(
@@ -187,7 +296,8 @@ InterimConstrainedKinematicPlanningSpace::DoMaybeSampleValidState(
             checker_context.get(), q_projected);
 
     if (constraints_satisfied && collision_free) {
-      drake::log()->trace("Projected {} to {}", initial_q, q_projected);
+      drake::log()->trace("Projected {} to {}", fmt_eigen(initial_q),
+                          fmt_eigen(q_projected));
       return std::optional<Eigen::VectorXd>(q_projected);
     } else {
       drake::log()->trace("Failed to project");
@@ -438,7 +548,8 @@ InterimConstrainedKinematicPlanningSpace::TryProjectStateToConstraints(
                                                           q_projected);
 
   if (constraints_satisfied && collision_free) {
-    drake::log()->trace("Projected {} to {}", state, q_projected);
+    drake::log()->trace("Projected {} to {}", fmt_eigen(state),
+                        fmt_eigen(q_projected));
     return std::optional<Eigen::VectorXd>(q_projected);
   } else {
     drake::log()->trace("Failed to project");

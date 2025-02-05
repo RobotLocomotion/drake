@@ -61,6 +61,31 @@ GTEST_TEST(ParallelismTest, BoolConversionAssignmentTest) {
   EXPECT_EQ(assigned_parallelism.num_threads(), kNoneThreads);
 }
 
+// Test that all of the comparisons between Parallelism work.
+GTEST_TEST(ParallelismTest, ParallelismCompareTest) {
+  const Parallelism false_parallelism(false);
+  const Parallelism none_parallelism = Parallelism::None();
+  const Parallelism true_parallelism(true);
+  const Parallelism max_parallelism = Parallelism::Max();
+
+  EXPECT_EQ(false_parallelism, false_parallelism);
+  EXPECT_EQ(none_parallelism, none_parallelism);
+  EXPECT_EQ(false_parallelism, none_parallelism);
+
+  EXPECT_EQ(true_parallelism, true_parallelism);
+  EXPECT_EQ(max_parallelism, max_parallelism);
+  EXPECT_EQ(true_parallelism, max_parallelism);
+
+  EXPECT_NE(false_parallelism, true_parallelism);
+  EXPECT_NE(none_parallelism, max_parallelism);
+
+  EXPECT_LT(false_parallelism, true_parallelism);
+  EXPECT_LT(none_parallelism, max_parallelism);
+
+  EXPECT_GT(true_parallelism, false_parallelism);
+  EXPECT_GT(max_parallelism, none_parallelism);
+}
+
 // Tests all variety of environment variable string parsing.
 GTEST_TEST(ParallelismTest, ParsingLogicTest) {
   // When string parsing fails, this is what we get back.

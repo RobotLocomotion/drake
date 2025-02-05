@@ -58,27 +58,27 @@ class CarControlPlanningSpace
     throw std::runtime_error("CarControlPlanningSpace is forwards-only");
   }
 
-  double DoStateDistanceForwards(
-      const CarPlanningState& from, const CarPlanningState& to) const override {
+  double DoStateDistanceForwards(const CarPlanningState& from,
+                                 const CarPlanningState& to) const override {
     // Note: only an approximate distance function is required for goal checks.
     return ApproximateStateDistance(from.state(), to.state());
   }
 
-  double DoStateDistanceBackwards(
-      const CarPlanningState& from, const CarPlanningState& to) const override {
+  double DoStateDistanceBackwards(const CarPlanningState& from,
+                                  const CarPlanningState& to) const override {
     throw std::runtime_error("CarControlPlanningSpace is forwards-only");
   }
 
-  CarPlanningState DoInterpolateForwards(
-      const CarPlanningState& from, const CarPlanningState& to,
-      double ratio) const override {
+  CarPlanningState DoInterpolateForwards(const CarPlanningState& from,
+                                         const CarPlanningState& to,
+                                         double ratio) const override {
     throw std::runtime_error(
         "CarControlPlanningSpace doesn't support forwards interpolation");
   }
 
-  CarPlanningState DoInterpolateBackwards(
-      const CarPlanningState& from, const CarPlanningState& to,
-      double ratio) const override {
+  CarPlanningState DoInterpolateBackwards(const CarPlanningState& from,
+                                          const CarPlanningState& to,
+                                          double ratio) const override {
     throw std::runtime_error(
         "CarControlPlanningSpace doesn't support backwards interpolation");
   }
@@ -138,26 +138,26 @@ class CarControlPlanningSpace
     throw std::runtime_error("CarControlPlanningSpace is forwards-only");
   }
 
-  double DoMotionCostForwards(
-      const CarPlanningState& from, const CarPlanningState& to) const override {
+  double DoMotionCostForwards(const CarPlanningState& from,
+                              const CarPlanningState& to) const override {
     throw std::runtime_error(
         "CarControlPlanningSpace doesn't support forwards motion cost");
   }
 
-  double DoMotionCostBackwards(
-      const CarPlanningState& from, const CarPlanningState& to) const override {
+  double DoMotionCostBackwards(const CarPlanningState& from,
+                               const CarPlanningState& to) const override {
     throw std::runtime_error(
         "CarControlPlanningSpace doesn't support backwards motion cost");
   }
 
-  bool DoCheckStateValidity(
-      const CarPlanningState& state, int thread_number) const override {
+  bool DoCheckStateValidity(const CarPlanningState& state,
+                            int thread_number) const override {
     return DoCheckCarStateValidity(state.state(), thread_number);
   }
 
-  bool DoCheckEdgeValidity(
-      const CarPlanningState& from, const CarPlanningState& to,
-      int thread_number) const override {
+  bool DoCheckEdgeValidity(const CarPlanningState& from,
+                           const CarPlanningState& to,
+                           int thread_number) const override {
     throw std::runtime_error(
         "CarControlPlanningSpace doesn't support edge validity");
   }
@@ -173,8 +173,8 @@ class CarControlPlanningSpace
     return CarPlanningState(sampled_state);
   }
 
-  double ApproximateStateDistance(
-      const Eigen::Vector3d& from, const Eigen::Vector3d& to) const {
+  double ApproximateStateDistance(const Eigen::Vector3d& from,
+                                  const Eigen::Vector3d& to) const {
     const double x_dist = std::abs(from(0) - to(0));
     const double y_dist = std::abs(from(1) - to(1));
     const double theta_dist = ContinuousRevoluteDistance(from(2), to(2));
@@ -194,8 +194,7 @@ class CarControlPlanningSpace
     return sampled_control;
   }
 
-  bool DoCheckCarStateValidity(
-      const Eigen::Vector3d& xytheta, int) const {
+  bool DoCheckCarStateValidity(const Eigen::Vector3d& xytheta, int) const {
     // Enforce bounds.
     if (xytheta(0) < lower_bounds()(0) || xytheta(0) > upper_bounds()(0)) {
       return false;
@@ -204,8 +203,8 @@ class CarControlPlanningSpace
       return false;
     }
     // Obstacle in the middle.
-    if (xytheta(0) > 0.2 && xytheta(0) < 0.8 &&
-        xytheta(1) > 0.2 && xytheta(1) < 0.8) {
+    if (xytheta(0) > 0.2 && xytheta(0) < 0.8 && xytheta(1) > 0.2 &&
+        xytheta(1) < 0.8) {
       return false;
     }
     return true;
@@ -334,9 +333,9 @@ GTEST_TEST(ControlSamplingBasedPlanningTest, StartAndGoalCheckTest) {
 
   // Planner parameters.
   RRTPlanner<CarPlanningState>::Parameters parameters;
-  parameters.goal_sampling_bias = 0.0;  // Not used with a goal check.
+  parameters.goal_sampling_bias = 0.0;    // Not used with a goal check.
   parameters.p_goal_sample_is_new = 0.0;  // Not used with a goal check.
-  parameters.goal_tolerance = 0.0;  // Not used with a goal check.
+  parameters.goal_tolerance = 0.0;        // Not used with a goal check.
   parameters.nearest_neighbor_parallelism = Parallelism::None();
   parameters.time_limit = 300.0;
   parameters.tree_growth_limit = 1000;
@@ -419,9 +418,9 @@ GTEST_TEST(ControlSamplingBasedPlanningTest, ParallelStartAndGoalCheckTest) {
 
   // Planner parameters.
   ParallelRRTPlanner<CarPlanningState>::Parameters parameters;
-  parameters.goal_sampling_bias = 0.0;  // Not used with a goal check.
+  parameters.goal_sampling_bias = 0.0;    // Not used with a goal check.
   parameters.p_goal_sample_is_new = 0.0;  // Not used with a goal check.
-  parameters.goal_tolerance = 0.0;  // Not used with a goal check.
+  parameters.goal_tolerance = 0.0;        // Not used with a goal check.
   parameters.num_workers = 2;
   // This is an unusually low value to exercise tree swapping in test.
   parameters.initial_tree_capacity = 10;

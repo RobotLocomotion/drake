@@ -2,6 +2,7 @@
 
 #include <unordered_set>
 
+#include <common_robotics_utilities/parallelism.hpp>
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_throw.h"
@@ -10,13 +11,15 @@
 namespace drake {
 namespace planning {
 namespace {
-using common_robotics_utilities::openmp_helpers::GetNumOmpThreads;
+using common_robotics_utilities::parallelism::DegreeOfParallelism;
+using common_robotics_utilities::parallelism::ParallelForBackend;
+using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
 
 constexpr uint64_t kPrngSeed = 42;
 constexpr int kNumDraws = 10;
 
-void Discard(
-    PerThreadRandomSource* source, int num_discards, int thread_number) {
+void Discard(PerThreadRandomSource* source, int num_discards,
+             int thread_number) {
   DRAKE_THROW_UNLESS(source != nullptr);
   DRAKE_THROW_UNLESS(num_discards > 0);
 
@@ -32,12 +35,15 @@ GTEST_TEST(PerThreadRandomSourceTest, MultipleGeneratorsTest) {
 
   std::vector<std::vector<uint64_t>> thread_draws(num_threads);
 
-  DRAKE_OMP_PARALLEL_FOR_STATIC(Parallelism::Max())
-  for (int thread_num = 0; thread_num < num_threads; ++thread_num) {
+  const auto draw_per_thread = [&](const int thread_num, const int64_t) {
     for (int draw = 0; draw < kNumDraws; ++draw) {
       thread_draws.at(thread_num).emplace_back(source.DrawRaw(thread_num));
     }
-  }
+  };
+
+  StaticParallelForIndexLoop(DegreeOfParallelism(num_threads), 0, num_threads,
+                             draw_per_thread,
+                             ParallelForBackend::BEST_AVAILABLE);
 
   std::unordered_set<uint64_t> all_draws;
   for (const auto& draws : thread_draws) {
@@ -76,9 +82,8 @@ GTEST_TEST(PerThreadRandomSourceTest, ReseedTest) {
 
   auto malformed_seeds = seeds;
   malformed_seeds.push_back(1);
-  EXPECT_THROW(
-      other_source.ReseedGeneratorsIndividually(malformed_seeds),
-      std::exception);
+  EXPECT_THROW(other_source.ReseedGeneratorsIndividually(malformed_seeds),
+               std::exception);
 }
 
 GTEST_TEST(PerThreadRandomSourceTest, CopyTest) {

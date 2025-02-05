@@ -91,14 +91,13 @@ class Parallelism {
   /** Returns the degree of parallelism. The result will always be >= 1. */
   int num_threads() const { return num_threads_; }
 
+  /** Provides the automatic comparison operator between Parallelisms, which
+  compares num_threads between this and the other instance of Parallelism. */
+  auto operator<=>(const Parallelism&) const = default;
+
  private:
   int num_threads_ = 1;
 };
-
-inline std::strong_ordering operator <=>(
-    const Parallelism& first, const Parallelism& second) {
-  return first.num_threads() <=> second.num_threads();
-}
 
 namespace internal {
 // Exposed for unit testing.

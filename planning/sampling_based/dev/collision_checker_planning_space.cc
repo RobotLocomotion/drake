@@ -54,10 +54,8 @@ JointLimits CollisionCheckerPlanningSpace<StateType>::MakeJointLimits(
         "MakeJointLimits fixed joint positions exceed existing joint limits:\n"
         "Existing lower limits: {}\nNew lower limits: {}\n"
         "Existing upper limits: {}\nNew upper limits: {}",
-        drake::fmt_eigen(joint_limits.position_lower()),
-        drake::fmt_eigen(position_lower),
-        drake::fmt_eigen(joint_limits.position_upper()),
-        drake::fmt_eigen(position_upper));
+        fmt_eigen(joint_limits.position_lower()), fmt_eigen(position_lower),
+        fmt_eigen(joint_limits.position_upper()), fmt_eigen(position_upper));
   }
 
   return JointLimits(position_lower, position_upper, velocity_lower,

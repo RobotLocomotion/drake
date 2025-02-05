@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":goal_checker",
         ":goal_sampler",
         ":holonomic_kinematic_planning_space",
+        ":interim_constrained_kinematic_planning_space",
         ":joint_limits",
         ":parallel_birrt_planner",
         ":parallel_rrt_planner",
@@ -391,28 +392,62 @@ drake_cc_library(
     ],
 )
 
-#drake_cc_library(
-#name = "interim_constrained_kinematic_planning_space",
-#srcs = [
-#"interim_constrained_kinematic_planning_space.cc",
-#"path_planning.cc",
-#],
-#hdrs = [
-#"interim_constrained_kinematic_planning_space.h",
-#"path_planning.h",
-#],
-#deps = [
-#":mbp_constraint_types",
-#":symmetric_collision_checker_planning_space",
-#"//common:essential",
-#"//multibody/inverse_kinematics:kinematic_evaluators",
-#"//planning:collision_checker",
-#"//solvers:snopt_solver",
-#"//solvers:solve",
-#],
-#implementation_deps = [
-#"@common_robotics_utilities_internal//:common_robotics_utilities",
-#],
-#)
+drake_cc_library(
+    name = "interim_constrained_kinematic_planning_space",
+    srcs = ["interim_constrained_kinematic_planning_space.cc"],
+    hdrs = ["interim_constrained_kinematic_planning_space.h"],
+    deps = [
+        ":symmetric_collision_checker_planning_space",
+        "//common:essential",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
+        "//planning:collision_checker",
+        "//solvers:snopt_solver",
+        "//solvers:solve",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "control_sampling_based_planning_test",
+    # Be sure to exercise parallel RRT planner.
+    num_threads = 2,
+    deps = [
+        ":asymmetric_planning_space",
+        ":parallel_rrt_planner",
+        ":path_planning_result",
+        ":rrt_planner",
+        "//common:essential",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "path_planning_errors_test",
+    deps = [
+        ":path_planning_errors",
+    ],
+)
+
+drake_cc_googletest(
+    name = "per_instance_qs_test",
+    deps = [
+        ":per_instance_qs",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "per_thread_random_source_test",
+    # Be sure to exercise per-thread features.
+    num_threads = 2,
+    deps = [
+        ":per_thread_random_source",
+        "//common:essential",
+        "//common:parallelism",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
 
 add_lint_tests()
