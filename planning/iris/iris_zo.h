@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -92,7 +93,8 @@ struct IrisZoOptions {
 
   /** Number of threads to use when updating the particles. If the user requests
    * more threads than the CollisionChecker supports, that number of threads
-   * will be used instead. */
+   * will be used instead. However, see also `parameterization_is_threadsafe`.
+   */
   Parallelism parallelism{Parallelism::Max()};
 
   /** Enables print statements indicating the progress of IrisZo. */
@@ -123,6 +125,32 @@ struct IrisZoOptions {
 
   /** Number of mixing steps used for hit-and-run sampling. */
   int mixing_steps{50};
+
+  /** Whether or not parameterization() is thread-safe. If the user specifies
+   * that the function is not threadsafe, then `parallelism` will be overridden
+   * and only one thread will be used.
+   * @warning If the user sets a new `parameterization` and it is not
+   * threadsafe, then parameterization_is_threadsafe must be set to false. */
+  bool parameterization_is_threadsafe{true};
+
+  /** The dimension of the parameterized subspace (and therefore, the input to
+   * the parameterization function). If not specified, the full dimension of the
+   * configuration space is used. */
+  std::optional<int> parameterization_dimension{std::nullopt};
+
+  /** A function describing a parameterized subspace of the full configuration
+   * space, along which to grow the region. The function should be a map R^m to
+   * R^n, where n is the dimension of the plant configuration space, determined
+   * via `checker.plant().num_positions()` and m is `parametrization_dimension`
+   * if specified. The default value is just the identity function, indicating
+   * that the regions should be grow in the full configuration space (in the
+   * standard coordinate system).
+   * @warning If the user sets a new `parameterization` and it is not
+   * threadsafe, then parameterization_is_threadsafe must be set to false. */
+  std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parameterization{
+      [](const Eigen::VectorXd& q) -> Eigen::VectorXd {
+        return q;
+      }};
 
   /** Passing a meshcat instance may enable debugging visualizations; this
   currently and when the
@@ -160,7 +188,9 @@ box representing joint limits (e.g. from HPolyhedron::MakeBox).
 fraction, confidence level, and various algorithmic settings.
 
 The @p starting_ellipsoid and @p domain must describe elements in the same
-ambient dimension as the configuration space of the robot.
+ambient dimension as the configuration space of the robot, unless a
+parameterization is specified (in which case, they must match
+`options.parameterization_dimension`).
 @return A HPolyhedron representing the computed collision-free region in
 configuration space.
 @ingroup robot_planning
