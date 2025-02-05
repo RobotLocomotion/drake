@@ -324,6 +324,79 @@ class RotationMatrix {
     return RotationMatrix<T>(Eigen::AngleAxis<T>(angle, normalized_axis));
   }
 
+  /// (Advanced) Given a rotation about a coordinate axis (x, y, or z), use it
+  /// to efficiently re-express a vector.
+  /// @param[in] Rx_BC A rotation about the indicated axis.
+  /// @param[in] v_C A vector expressed in C to be re-expressed in B.
+  /// @retval v_B The input vector re-expressed in B.
+  /// @pre R_BC is _exactly_ a rotation about the given axis (constant entries
+  ///   are exactly 1 or 0).
+  template <int axis>
+  static Vector3<T> ApplyAxialRotation(const RotationMatrix<T>& Rx_BC,
+                                       const Vector3<T>& v_C) {
+    // This takes 6 flops rather than 15 for a general rotation. Must be
+    // inline for that to matter at all. Look at the comments for
+    // MakeFromXRotation() etc. to see that this is correct.
+    static_assert(0 <= axis && axis <= 2, "Axis value out of range");
+    const Matrix3<T>& M = Rx_BC.matrix();
+    constexpr int x = axis;
+    constexpr int y = (axis + 1) % 3;
+    constexpr int z = (axis + 2) % 3;
+    DRAKE_ASSERT(M(x, x) == 1 && M(x, y) == 0 && M(x, z) == 0);
+    DRAKE_ASSERT(M(y, x) == 0 && M(z, x) == 0);
+    const T& c = M(y, y);   // cosine
+    const T& s = M(z, y);   // sine
+    const T& ns = M(y, z);  // -sine
+    Vector3<T> v_B;
+    v_B(x) = v_C(x);  // No effect along the rotation axis.
+    v_B(y) = c * v_C(y) + ns * v_C(z);
+    v_B(z) = c * v_C(z) + s * v_C(y);
+    return v_B;
+  }
+
+  template <int axis>
+  static void UpdateAxialRotation(const T& theta, RotationMatrix<T>* Rx_BC) {
+    static_assert(0 <= axis && axis <= 2, "Axis value out of range");
+    DRAKE_ASSERT(Rx_BC != nullptr);
+    Matrix3<T>& M = Rx_BC->matrix();
+    constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
+    DRAKE_ASSERT(M(x, x) == 1 && M(x, y) == 0 && M(x, z) == 0);
+    DRAKE_ASSERT(M(y, x) == 0 && M(z, x) == 0);
+    using std::cos, std::sin;
+    const T c = cos(theta), s = sin(theta);
+    M(y, y) = M(z, z) = c;
+    M(z, y) = s;
+    M(y, z) = -s;
+  }
+
+  /// With this a general rotation R_AB, given an axial rotation Rx_BC,
+  /// efficiently form R_AC = R_AB * Rx_BC.
+  /// @param[in] Rx_BC A rotation about the indicated axis.
+  /// @param[out] R_AC The result. Must not overlap with Rx_BC in memory.
+  /// @pre Rx_BC is _exactly_ a rotation about the given axis (constant entries
+  ///   are exactly 1 or 0).
+  template <int axis>
+  void ComposeWithAxialRotation(const RotationMatrix<T>& Rx_BC,
+                                RotationMatrix<T>* R_AC) const {
+    // This takes 14 flops rather than 45 for a general rotation composition
+    // (though we do those with hand coded SIMD). If this is inlined it
+    // should be considerably faster than the (non-inlined) SIMD case.
+    static_assert(0 <= axis && axis <= 2, "Axis value out of range");
+    DRAKE_ASSERT(R_AC != nullptr);
+    const Matrix3<T>& M_BC = Rx_BC.matrix();
+    constexpr int x = axis;
+    constexpr int y = (axis + 1) % 3;
+    constexpr int z = (axis + 2) % 3;
+    DRAKE_ASSERT(M_BC(x, x) == 1 && M_BC(x, y) == 0 && M_BC(x, z) == 0);
+    DRAKE_ASSERT(M_BC(y, x) == 0 && M_BC(z, x) == 0);
+    const T& c = M_BC(y, y);  // cosine
+    const T& s = M_BC(z, y);  // sine
+    Matrix3<T>& M_AC = R_AC->matrix();
+    M_AC.col(x) = R_AB_.col(x);  // No effect on the rotation axis.
+    M_AC.col(y) = c * R_AB_.col(y) + s * R_AB_.col(z);
+    M_AC.col(z) = c * R_AB_.col(z) - s * R_AB_.col(y);
+  }
+
   /// Creates a %RotationMatrix templatized on a scalar type U from a
   /// %RotationMatrix templatized on scalar type T.  For example,
   /// ```
