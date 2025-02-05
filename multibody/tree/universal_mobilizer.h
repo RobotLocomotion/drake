@@ -76,8 +76,8 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
 
   ~UniversalMobilizer() final;
 
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+      const BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
@@ -139,6 +139,13 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
     return math::RigidTransform<T>(
         math::RotationMatrix<T>::MakeUnchecked(R_FM_matrix),
         Vector3<T>::Zero());
+  }
+
+  /* We're not attempting to optimize the update, but could improve slightly
+  since the translation never changes (always zero). */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
   }
 
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
