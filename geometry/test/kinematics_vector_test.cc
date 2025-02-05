@@ -1,6 +1,7 @@
 #include "drake/geometry/kinematics_vector.h"
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -15,7 +16,7 @@
 
 namespace drake {
 namespace geometry {
-namespace test {
+namespace {
 
 using math::RigidTransform;
 using math::RigidTransformd;
@@ -217,6 +218,56 @@ GTEST_TEST(KinematicsVector, FrameIdRange) {
   for (FrameId id : ids) EXPECT_TRUE(actual_ids.contains(id));
 }
 
-}  // namespace test
+template <typename T>
+FramePoseVector<T> MakeNanPoses(const std::vector<FrameId>& ids) {
+  FramePoseVector<T> poses;
+  for (int i = 0; i < ssize(ids); ++i) {
+    const double d = i % 2 ? i : std::numeric_limits<double>::quiet_NaN();
+    RigidTransform<T> pose(Vector3<T>::Constant(d));
+    DRAKE_EXPECT_NO_THROW(poses.set_value(ids[i], pose));
+  }
+  return poses;
+}
+
+template <typename T>
+GeometryConfigurationVector<T> MakeNanConfigs(
+    const std::vector<GeometryId>& ids) {
+  GeometryConfigurationVector<T> configs;
+  for (int i = 0; i < ssize(ids); ++i) {
+    const double d = i % 2 ? i : std::numeric_limits<double>::quiet_NaN();
+    DRAKE_EXPECT_NO_THROW(configs.set_value(ids[i], Vector3<T>::Constant(d)));
+  }
+  return configs;
+}
+
+GTEST_TEST(KinematicsVector, HasNan) {
+  int kPoseCount = 2;
+  std::vector<FrameId> f_ids;
+  for (int i = 0; i < kPoseCount; ++i) f_ids.push_back(FrameId::get_new_id());
+
+  FramePoseVector<double> poses_d = MakeNanPoses<double>(f_ids);
+  FramePoseVector<AutoDiffXd> poses_ad = MakeNanPoses<AutoDiffXd>(f_ids);
+  FramePoseVector<symbolic::Expression> poses_exp =
+      MakeNanPoses<symbolic::Expression>(f_ids);
+
+  EXPECT_TRUE(poses_d.HasNan());
+  EXPECT_TRUE(poses_ad.HasNan());
+  EXPECT_FALSE(poses_exp.HasNan());  // Symbolic never gets tested.
+
+  std::vector<GeometryId> g_ids;
+  for (int i = 0; i < kPoseCount; ++i)
+    g_ids.push_back(GeometryId::get_new_id());
+  GeometryConfigurationVector<double> configs_d = MakeNanConfigs<double>(g_ids);
+  GeometryConfigurationVector<AutoDiffXd> configs_ad =
+      MakeNanConfigs<AutoDiffXd>(g_ids);
+  GeometryConfigurationVector<symbolic::Expression> configs_exp =
+      MakeNanConfigs<symbolic::Expression>(g_ids);
+
+  EXPECT_TRUE(configs_d.HasNan());
+  EXPECT_TRUE(configs_ad.HasNan());
+  EXPECT_FALSE(configs_exp.HasNan());  // Symbolic never gets tested.
+}
+
+}  // namespace
 }  // namespace geometry
 }  // namespace drake
