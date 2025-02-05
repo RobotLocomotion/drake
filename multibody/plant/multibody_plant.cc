@@ -1717,6 +1717,7 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q.size() == num_positions());
+  ThrowIfNotFinite(q, __func__);
   for (JointIndex i : GetJointIndices()) {
     Joint<T>& joint = get_mutable_joint(i);
     joint.set_default_positions(
@@ -1730,6 +1731,7 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q_instance) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
+  ThrowIfNotFinite(q_instance, __func__);
   VectorX<T> q_T(num_positions());
   internal_tree().SetPositionsInArray(model_instance, q_instance.cast<T>(),
                                       &q_T);
@@ -4042,6 +4044,12 @@ void MultibodyPlant<T>::ThrowIfNotFinalized(const char* source_method) const {
                            "()' are "
                            "not allowed; you must call Finalize() first.");
   }
+}
+
+template <typename T>
+void MultibodyPlant<T>::ThrowNonFinite(const char* source_method) {
+  throw std::logic_error(fmt::format(
+      "The input to {}() contained non-finite values.", source_method));
 }
 
 template <typename T>

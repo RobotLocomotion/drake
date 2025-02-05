@@ -671,7 +671,11 @@ class AcrobotPlantTests : public ::testing::Test {
     const std::string url =
         "package://drake/multibody/benchmarks/acrobot/acrobot.sdf";
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
-    Parser(plant_).AddModelsFromUrl(url);
+    const std::vector<ModelInstanceIndex> instances =
+        Parser(plant_).AddModelsFromUrl(url);
+    DRAKE_DEMAND(instances.size() == 1);
+    model_instance_ = instances[0];
+
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != std::nullopt);
@@ -971,6 +975,8 @@ class AcrobotPlantTests : public ::testing::Test {
   RevoluteJoint<double>* elbow_{nullptr};
   // Input port for the actuation:
   systems::FixedInputPortValue* input_port_{nullptr};
+  // The model instance of the acrobot.
+  ModelInstanceIndex model_instance_{};
 
   // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{Vector3d::UnitZ() /* Plane normal */,
@@ -1133,6 +1139,107 @@ TEST_F(AcrobotPlantTests, SetDefaultState) {
   // Calling SetDefaultContext directly works, too.
   plant_->SetDefaultContext(plant_context_);
   EXPECT_EQ(shoulder_->get_angle(*plant_context_), 4.2);
+}
+
+TEST_F(AcrobotPlantTests, SetPositionWithNonFinites) {
+  VectorX<double> p = VectorX<double>::Zero(plant_->num_positions());
+  ASSERT_GT(p.rows(), 0);
+
+  // First confirm we've got the right context and right size of things.
+  EXPECT_NO_THROW(plant_->SetPositions(plant_context_, p));
+
+  for (double bad : {std::numeric_limits<double>::quiet_NaN(),
+                     std::numeric_limits<double>::infinity()}) {
+    p[0] = bad;
+    DRAKE_EXPECT_THROWS_MESSAGE(plant_->SetPositions(plant_context_, p),
+                                ".*SetPositions.*non-finite values.");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant_->SetPositions(plant_context_, model_instance_, p),
+        ".*SetPositions.*non-finite values.");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant_->SetPositions(*plant_context_,
+                             &plant_context_->get_mutable_state(),
+                             model_instance_, p),
+        ".*SetPositions.*non-finite values.");
+  }
+}
+
+TEST_F(AcrobotPlantTests, SetDefaultPositionWithNonFinites) {
+  VectorX<double> p = VectorX<double>::Zero(plant_->num_positions());
+  ASSERT_GT(p.rows(), 0);
+
+  // First confirm we've got the right size of things.
+  EXPECT_NO_THROW(plant_->SetDefaultPositions(p));
+
+  for (double bad : {std::numeric_limits<double>::quiet_NaN(),
+                     std::numeric_limits<double>::infinity()}) {
+    p[0] = bad;
+    DRAKE_EXPECT_THROWS_MESSAGE(plant_->SetDefaultPositions(p),
+                                ".*SetDefaultPositions.*non-finite values.");
+    DRAKE_EXPECT_THROWS_MESSAGE(plant_->SetDefaultPositions(model_instance_, p),
+                                ".*SetDefaultPositions.*non-finite values.");
+  }
+}
+
+TEST_F(AcrobotPlantTests, SetVelocitiesWithNonFinites) {
+  VectorX<double> v = VectorX<double>::Zero(plant_->num_velocities());
+  ASSERT_GT(v.rows(), 0);
+
+  // First confirm we've got the right context and right size of things.
+  EXPECT_NO_THROW(plant_->SetVelocities(plant_context_, v));
+
+  for (double bad : {std::numeric_limits<double>::quiet_NaN(),
+                     std::numeric_limits<double>::infinity()}) {
+    v[0] = bad;
+    DRAKE_EXPECT_THROWS_MESSAGE(plant_->SetVelocities(plant_context_, v),
+                                ".*SetVelocities.*non-finite values.");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant_->SetVelocities(plant_context_, model_instance_, v),
+        ".*SetVelocities.*non-finite values.");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant_->SetVelocities(*plant_context_,
+                              &plant_context_->get_mutable_state(),
+                              model_instance_, v),
+        ".*SetVelocities.*non-finite values.");
+  }
+}
+
+TEST_F(AcrobotPlantTests, SetVelocitiesInArrayWithNonFinites) {
+  VectorX<double> v_all = VectorX<double>::Zero(plant_->num_velocities());
+  ASSERT_GT(v_all.rows(), 0);
+  VectorX<double> v_instance =
+      VectorX<double>::Zero(plant_->num_velocities(model_instance_));
+
+  // First confirm we've got the right context and right size of things.
+  EXPECT_NO_THROW(
+      plant_->SetVelocitiesInArray(model_instance_, v_instance, &v_all));
+
+  for (double bad : {std::numeric_limits<double>::quiet_NaN(),
+                     std::numeric_limits<double>::infinity()}) {
+    v_instance[0] = bad;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant_->SetVelocitiesInArray(model_instance_, v_instance, &v_all),
+        ".*SetVelocitiesInArray.*non-finite values.");
+  }
+}
+
+TEST_F(AcrobotPlantTests, SetPositionAndVelocitiesWithNonFinites) {
+  VectorX<double> q = VectorX<double>::Zero(plant_->num_multibody_states());
+  ASSERT_GT(q.rows(), 0);
+
+  // First confirm we've got the right context and right size of things.
+  EXPECT_NO_THROW(plant_->SetPositionsAndVelocities(plant_context_, q));
+
+  for (double bad : {std::numeric_limits<double>::quiet_NaN(),
+                     std::numeric_limits<double>::infinity()}) {
+    q[0] = bad;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant_->SetPositionsAndVelocities(plant_context_, q),
+        ".*SetPositionsAndVelocities.*non-finite values.");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant_->SetPositionsAndVelocities(plant_context_, model_instance_, q),
+        ".*SetPositionsAndVelocities.*non-finite values.");
+  }
 }
 
 GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
