@@ -556,6 +556,7 @@ bool CollisionChecker::CheckConfigCollisionFree(
 bool CollisionChecker::CheckContextConfigCollisionFree(
     CollisionCheckerContext* model_context, const Eigen::VectorXd& q) const {
   DRAKE_THROW_UNLESS(model_context != nullptr);
+  DRAKE_THROW_UNLESS(!q.hasNaN());
   UpdateContextPositions(model_context, q);
   return DoCheckContextConfigCollisionFree(*model_context);
 }
@@ -669,6 +670,7 @@ bool CollisionChecker::CheckContextEdgeCollisionFree(
     CollisionCheckerContext* model_context, const Eigen::VectorXd& q1,
     const Eigen::VectorXd& q2) const {
   DRAKE_THROW_UNLESS(model_context != nullptr);
+  DRAKE_THROW_UNLESS(!q1.hasNaN() && !q2.hasNaN());
 
   // Fail fast if q2 is in collision. This method is used by motion planners
   // that extend/connect towards some target configuration, and thus require a
@@ -700,6 +702,7 @@ bool CollisionChecker::CheckContextEdgeCollisionFree(
 bool CollisionChecker::CheckEdgeCollisionFreeParallel(
     const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
     const Parallelism parallelize) const {
+  DRAKE_THROW_UNLESS(!q1.hasNaN() && !q2.hasNaN());
   const int number_of_threads = GetNumberOfThreads(parallelize);
   drake::log()->debug("CheckEdgeCollisionFreeParallel uses {} thread(s)",
                       number_of_threads);
@@ -762,6 +765,9 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
 std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
     const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
     const Parallelism parallelize) const {
+  for (const auto& [q1, q2] : edges) {
+    DRAKE_THROW_UNLESS(!q1.hasNaN() && !q2.hasNaN());
+  }
   // Note: vector<uint8_t> is used since vector<bool> is not thread safe.
   std::vector<uint8_t> collision_checks(edges.size(), 0);
 
@@ -814,6 +820,7 @@ EdgeMeasure CollisionChecker::MeasureContextEdgeCollisionFree(
 EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
     const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
     const Parallelism parallelize) const {
+  DRAKE_THROW_UNLESS(!q1.hasNaN() && !q2.hasNaN());
   const int number_of_threads = GetNumberOfThreads(parallelize);
   drake::log()->debug("MeasureEdgeCollisionFreeParallel uses {} thread(s)",
                       number_of_threads);
@@ -884,6 +891,9 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
 std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
     const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
     const Parallelism parallelize) const {
+  for (const auto& [q1, q2] : edges) {
+    DRAKE_THROW_UNLESS(!q1.hasNaN() && !q2.hasNaN());
+  }
   std::vector<EdgeMeasure> collision_checks(edges.size(),
                                             EdgeMeasure(0.0, -1.0));
 

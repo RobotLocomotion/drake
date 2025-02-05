@@ -278,7 +278,8 @@ class CollisionChecker {
    The implicit context is either that specified by `context_number`, or when
    nullopt the context to be used with the current OpenMP thread.
    @param context_number Optional implicit context number.
-   @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
+   @see @ref ccb_implicit_contexts "Implicit Context Parallelism".
+   @throws if `q` contains NaN. */
   const systems::Context<double>& UpdatePositions(
       const Eigen::VectorXd& q,
       std::optional<int> context_number = std::nullopt) const {
@@ -287,10 +288,12 @@ class CollisionChecker {
 
   /** Explicit Context-based version of UpdatePositions().
    @throws std::exception if `model_context` is `nullptr`.
+   @throws if `q` contains NaN.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
   const systems::Context<double>& UpdateContextPositions(
       CollisionCheckerContext* model_context, const Eigen::VectorXd& q) const {
     DRAKE_THROW_UNLESS(model_context != nullptr);
+    DRAKE_THROW_UNLESS(!q.hasNaN());
     plant().SetPositions(&model_context->mutable_plant_context(), q);
     DoUpdateContextPositions(model_context);
     return model_context->plant_context();
@@ -714,6 +717,7 @@ class CollisionChecker {
    @param q Configuration to check
    @param context_number Optional implicit context number.
    @returns true if collision free, false if in collision.
+   @throws if `q` contains NaN.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   bool CheckConfigCollisionFree(
       const Eigen::VectorXd& q,
@@ -721,6 +725,7 @@ class CollisionChecker {
 
   /** Explicit Context-based version of CheckConfigCollisionFree().
    @throws std::exception if model_context is nullptr.
+   @throws if `q` contains NaN.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
   bool CheckContextConfigCollisionFree(CollisionCheckerContext* model_context,
                                        const Eigen::VectorXd& q) const;
@@ -737,7 +742,8 @@ class CollisionChecker {
    @param configs     Configurations to check
    @param parallelize How much should collision checks be parallelized?
    @returns std::vector<uint8_t>, one for each configuration in configs. For
-   each configuration, 1 if collision free, 0 if in collision. */
+   each configuration, 1 if collision free, 0 if in collision.
+   @throws if `configs` contains NaN. */
   std::vector<uint8_t> CheckConfigsCollisionFree(
       const std::vector<Eigen::VectorXd>& configs,
       Parallelism parallelize = Parallelism::Max()) const;
@@ -890,9 +896,11 @@ class CollisionChecker {
 
   /** Computes configuration-space distance between the provided configurations
    `q1` and `q2`, using the distance function configured at construction-
-   time or via SetConfigurationDistanceFunction(). */
+   time or via SetConfigurationDistanceFunction().
+   @throws if `q1` or `q2` contain NaN. */
   double ComputeConfigurationDistance(const Eigen::VectorXd& q1,
                                       const Eigen::VectorXd& q2) const {
+    DRAKE_THROW_UNLESS(!q1.hasNaN() && !q2.hasNaN());
     return distance_and_interpolation_provider_->ComputeConfigurationDistance(
         q1, q2);
   }
@@ -903,7 +911,8 @@ class CollisionChecker {
    ComputeConfigurationDistance().
    @warning do not pass this standalone function back into
    SetConfigurationDistanceFunction() function; doing so would create an
-   infinite loop. */
+   infinite loop.
+   @throws if `q1` or `q2` contain NaN. */
   ConfigurationDistanceFunction MakeStandaloneConfigurationDistanceFunction()
       const;
 
@@ -930,10 +939,12 @@ class CollisionChecker {
    @param ratio Interpolation ratio.
    @returns Interpolated configuration.
    @throws std::exception if ratio is not in range [0, 1].
+   @throws if `q1` or `q2` contain NaN.
    @see ConfigurationInterpolationFunction for more. */
   Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& q1,
                                                    const Eigen::VectorXd& q2,
                                                    double ratio) const {
+    DRAKE_THROW_UNLESS(!q1.hasNaN() && !q2.hasNaN());
     return distance_and_interpolation_provider_
         ->InterpolateBetweenConfigurations(q1, q2, ratio);
   }
@@ -964,12 +975,14 @@ class CollisionChecker {
    @param q2 End configuration for edge.
    @param context_number Optional implicit context number.
    @returns true if collision free, false if in collision.
+   @throws if `q1` or `q2` contain NaN.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   bool CheckEdgeCollisionFree(
       const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
       std::optional<int> context_number = std::nullopt) const;
 
-  /** Explicit Context-based version of CheckEdgeCollisionFree().
+  /** Explicit Context-based version of CheckEdgeCollisionF
+   @throws if `q1` or `q2` contain NaN.ree().
    @throws std::exception if `model_context` is nullptr.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
   bool CheckContextEdgeCollisionFree(CollisionCheckerContext* model_context,
@@ -983,7 +996,8 @@ class CollisionChecker {
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
    @param parallelize How much should edge collision check be parallelized?
-   @returns true if collision free, false if in collision. */
+   @returns true if collision free, false if in collision.
+   @throws if `q1` or `q2` contain NaN. */
   bool CheckEdgeCollisionFreeParallel(
       const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
       Parallelism parallelize = Parallelism::Max()) const;
@@ -996,7 +1010,8 @@ class CollisionChecker {
    @param edges        Edges to check, each in the form of pair<q1, q2>.
    @param parallelize  How much should edge collision checks be parallelized?
    @returns std::vector<uint8_t>, one for each edge in edges. For each edge, 1
-   if collision free, 0 if in collision. */
+   if collision free, 0 if in collision.
+   @throws if any vector in `edges` contains NaN. */
   std::vector<uint8_t> CheckEdgesCollisionFree(
       const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
       Parallelism parallelize = Parallelism::Max()) const;
@@ -1007,6 +1022,7 @@ class CollisionChecker {
    @param q2 End configuration for edge.
    @param context_number Optional implicit context number.
    @returns A measure of how much of the edge is collision free.
+   @throws if `q1` or `q2` contain NaN.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   EdgeMeasure MeasureEdgeCollisionFree(
       const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
@@ -1014,6 +1030,7 @@ class CollisionChecker {
 
   /** Explicit Context-based version of MeasureEdgeCollisionFree().
    @throws std::exception if `model_context` is nullptr.
+   @throws if `q1` or `q2` contain NaN.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
   EdgeMeasure MeasureContextEdgeCollisionFree(
       CollisionCheckerContext* model_context, const Eigen::VectorXd& q1,
@@ -1026,7 +1043,8 @@ class CollisionChecker {
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
    @param parallelize How much should edge collision check be parallelized?
-   @returns A measure of how much of the edge is collision free. */
+   @returns A measure of how much of the edge is collision free.
+   @throws if `q1` or `q2` contain NaN. */
   EdgeMeasure MeasureEdgeCollisionFreeParallel(
       const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
       Parallelism parallelize = Parallelism::Max()) const;
@@ -1039,7 +1057,8 @@ class CollisionChecker {
    @param edges        Edges to check, each in the form of pair<q1, q2>.
    @param parallelize  How much should edge collision checks be parallelized?
    @returns A measure of how much of each edge is collision free. The iᵗʰ entry
-            is the result for the iᵗʰ edge. */
+            is the result for the iᵗʰ edge.
+   @throws if any vector in `edges` contains NaN. */
   std::vector<EdgeMeasure> MeasureEdgesCollisionFree(
       const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
       Parallelism parallelize = Parallelism::Max()) const;
@@ -1076,6 +1095,7 @@ class CollisionChecker {
    @see RobotClearance for details on the quantities ϕ and Jqᵣ_ϕ (and other
    details).
    @param context_number Optional implicit context number.
+   @throws if `q` contains NaN.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   RobotClearance CalcRobotClearance(
       const Eigen::VectorXd& q, double influence_distance,
@@ -1083,6 +1103,7 @@ class CollisionChecker {
 
   /** Explicit Context-based version of CalcRobotClearance().
    @throws std::exception if `model_context` is nullptr.
+   @throws if `q` contains NaN.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
   RobotClearance CalcContextRobotClearance(
       CollisionCheckerContext* model_context, const Eigen::VectorXd& q,
@@ -1109,6 +1130,7 @@ class CollisionChecker {
    entries for robot bodies are guaranteed to be valid; entries for
    environment bodies are populated with kNoCollision, regardless of their
    actual status.
+   @throws if `q` contains NaN.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
   std::vector<RobotCollisionType> ClassifyBodyCollisions(
       const Eigen::VectorXd& q,
@@ -1116,6 +1138,7 @@ class CollisionChecker {
 
   /** Explicit Context-based version of ClassifyBodyCollisions().
    @throws std::exception if `model_context` is nullptr.
+   @throws if `q` contains NaN.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
   std::vector<RobotCollisionType> ClassifyContextBodyCollisions(
       CollisionCheckerContext* model_context, const Eigen::VectorXd& q) const;
