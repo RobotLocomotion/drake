@@ -39,8 +39,9 @@ namespace internal {
 //    where axis_M == axis_F
 //
 // @tparam_default_scalar
-template <typename T>
+template <typename T, int axis = 4>
 class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
+  static_assert(0 <= axis && axis <= 4, "Invalid axis");
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer);
   using MobilizerBase = MobilizerImpl<T, 1, 1>;
@@ -135,6 +136,44 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
     // sin+cos+22 flops
     return math::RigidTransform<T>(math::RotationMatrix<T>(q[0], axis_F_),
                                    Vector3<T>::Zero());
+  }
+
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    if constexpr (axis == 4) {
+      X_FM->set_rotation(Eigen::AngleAxis<T>(q[0], axis_F_));
+    } else {
+      math::RigidTransform<T>::UpdateAxialRotation<axis>(q, &*X_FM);
+    }
+  }
+
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>& X_FM,
+                        const Vector3<T>& v_M) const {
+    if constexpr (axis == 4) {
+      return X_FM.rotation() * v_M;
+    } else {
+      return math::RigidTransform<T>::ApplyAxialRotation<axis>(X_FM, v_M);
+    }
+  }
+
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const {
+    if constexpr (axis == 4) {
+      return R_FM * v_M;
+    } else {
+      return math::RotationMatrix<T>::ApplyAxialRotation<axis>(R_FM, v_M);
+    }
+  }
+
+  void compose_with_X_FM(const math::RigidTransform<T>& X_AF,
+                         const math::RigidTransform<T>& X_FM,
+                         math::RigidTransform<T>* X_AM) const {
+    DRAKE_ASSERT(X_AM != nullptr);
+    if constexpr (axis == 4) {
+      X_AF.ComposeWithRotation(X_FM, &*X_AM);
+    } else {
+      X_AF.ComposeWithAxialRotation<axis>(X_FM, &*X_AM);
+    }
   }
 
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
