@@ -137,6 +137,12 @@ class CurvilinearMobilizer final : public MobilizerImpl<T, 1, 1> {
    @returns The across-mobilizer transform X_FM(q). */
   math::RigidTransform<T> calc_X_FM(const T* q) const;
 
+  /* We're not attempting to optimize the X_FM update. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   /* Computes the across-mobilizer spatial velocity V_FM(q, v) as a function of
    the distance traveled and tangential velocity along the mobilizer's path.
    @param q The distance traveled along the mobilizer's path in meters.
