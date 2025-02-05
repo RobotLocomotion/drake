@@ -176,6 +176,9 @@ class TestModelVisualizer(unittest.TestCase):
             # SDFormat world file with multiple models.
             "package://drake/manipulation/util/test/"
             + "simple_world_with_two_models.sdf",
+            # GLTF file.
+            "package://drake_models/veggies/assets/"
+            + "yellow_bell_pepper_no_stem_low.gltf"
         ]
         for i, model_url in enumerate(model_urls):
             with self.subTest(model=model_url):
