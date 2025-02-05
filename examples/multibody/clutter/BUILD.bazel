@@ -14,18 +14,22 @@ drake_cc_binary(
     srcs = [
         "clutter.cc",
     ],
-    copts = ["-Wno-error=deprecated-declarations","-Wno-deprecated-declarations","-Wno-error=unused-variable"],
+    copts = [
+        "-Wno-error=deprecated-declarations",
+        "-Wno-deprecated-declarations",
+        "-Wno-error=unused-variable",
+    ],
     deps = [
         "//common:add_text_logging_gflags",
-        "//geometry:meshcat_visualizer",
-        "//multibody/meshcat:contact_visualizer",
         "//geometry:drake_visualizer",
-        "//multibody/plant:contact_results_to_lcm",
+        "//geometry:meshcat_visualizer",
         "//multibody/contact_solvers/sap:sap_solver",
+        "//multibody/meshcat:contact_visualizer",
+        "//multibody/plant:contact_results_to_lcm",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_gflags",
-        "//systems/framework:diagram",
         "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
         "@gflags",
     ],
 )

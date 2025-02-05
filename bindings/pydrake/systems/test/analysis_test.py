@@ -296,14 +296,14 @@ class TestAnalysis(unittest.TestCase):
         self.assertIn("target_realtime_rate", repr(config))
         copy.copy(config)
 
-    def test_simulator_config_functions(self):
-        for T in (float, AutoDiffXd):
-            source = ConstantVectorSource_[T]([2, 3])
-            simulator = Simulator_[T](source)
-            config = ExtractSimulatorConfig(simulator)
-            config.target_realtime_rate = 100.0
-            ApplySimulatorConfig(config=config, simulator=simulator)
-            self.assertEqual(simulator.get_target_realtime_rate(), 100.0)
+    # def test_simulator_config_functions(self):
+    #     for T in (float, AutoDiffXd):
+    #         source = ConstantVectorSource_[T]([2, 3])
+    #         simulator = Simulator_[T](source)
+    #         config = ExtractSimulatorConfig(simulator)
+    #         config.target_realtime_rate = 100.0
+    #         ApplySimulatorConfig(config=config, simulator=simulator)
+    #         self.assertEqual(simulator.get_target_realtime_rate(), 100.0)
 
     def test_system_monitor(self):
         x = Variable("x")

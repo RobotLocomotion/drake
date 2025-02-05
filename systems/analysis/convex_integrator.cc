@@ -5,8 +5,6 @@
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 
-#include <iostream>
-
 namespace drake {
 namespace systems {
 
@@ -63,8 +61,7 @@ void ConvexIntegrator<T>::DoInitialize() {
 
   // Set the target accuracy
   double working_accuracy = this->get_target_accuracy();
-  if (isnan(working_accuracy))
-    working_accuracy = kDefaultAccuracy;
+  if (isnan(working_accuracy)) working_accuracy = kDefaultAccuracy;
   this->set_accuracy_in_use(working_accuracy);
 }
 
@@ -74,9 +71,6 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // plant's, and there are no controllers connected to it.
   Context<T>& diagram_context = *this->get_mutable_context();
   Context<T>& context = plant().GetMyMutableContextFromRoot(&diagram_context);
-
-  std::cout << "t: " << context.get_time() << std::endl;
-  std::cout << "dt: " << h << std::endl;
 
   // Get stuff from the workspace
   VectorX<T>& q = workspace_.q;
@@ -100,6 +94,10 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   SapSolver<T> sap;  // TODO(vincekurtz): set sap parameters
   SapSolverStatus status = sap.SolveWithGuess(problem, v0, &sap_results);
   DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
+
+  // Set q_{t+h} for later error estimation
+  plant().MapVelocityToQDot(context, h * sap_results.v, &q);
+  q += plant().GetPositions(context);
 
   // Solve for v_{t+h} with two half-sized steps for error estimation
   // TODO(vincekurtz): reuse more info from the full-sized step
