@@ -55,13 +55,15 @@ class DistanceAndInterpolationProvider {
   /** Computes the configuration distance from the provided configuration `from`
   to the provided configuration `to`. The returned distance will be strictly
   non-negative.
-  @pre from.size() == to.size() */
+  @pre from.size() == to.size().
+  @throws if `from` or `to` contain non-finite values. */
   double ComputeConfigurationDistance(const Eigen::VectorXd& from,
                                       const Eigen::VectorXd& to) const;
 
   /** Returns the interpolated configuration between `from` and `to` at `ratio`.
-  @pre from.size() == to.size()
-  @pre ratio in [0, 1] */
+  @pre from.size() == to.size().
+  @pre ratio in [0, 1].
+  @throws if `from` or `to` contain non-finite values. */
   Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& from,
                                                    const Eigen::VectorXd& to,
                                                    double ratio) const;
@@ -72,14 +74,18 @@ class DistanceAndInterpolationProvider {
   /** Derived distance and interpolation providers must implement distance
   computation. The returned distance must be non-negative.
   DistanceAndInterpolationProvider ensures that `from` and `to` are the same
-  size. */
+  size.
+
+  Base class guarantees that `from` and `to` contain only finite values. */
   virtual double DoComputeConfigurationDistance(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to) const = 0;
 
   /** Derived distance and interpolation providers must implement interpolation.
   The returned configuration must be the same size as `from` and `to`.
   DistanceAndInterpolationProvider ensures that `from` and `to` are the same
-  size and that `ratio` is in [0, 1]. */
+  size and that `ratio` is in [0, 1].
+
+  Base class guarantees that `from` and `to` contain only finite values. */
   virtual Eigen::VectorXd DoInterpolateBetweenConfigurations(
       const Eigen::VectorXd& from, const Eigen::VectorXd& to,
       double ratio) const = 0;
