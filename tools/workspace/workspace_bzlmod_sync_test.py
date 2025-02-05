@@ -75,6 +75,7 @@ class TestWorkspaceBzlmodSync(unittest.TestCase):
         del modules["eigen"]
         del modules["fmt"]
         del modules["spdlog"]
+        del modules["zlib"]
 
         # Don't check modules that are documented to skew versions on purpose.
         del modules["rules_python"]

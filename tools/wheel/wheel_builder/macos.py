@@ -139,8 +139,6 @@ def build(options):
     # and ending up with a wheel that doesn't run our supported platforms.
     # To guard against that, we'll set this environment variable controls:
     # - The majority of the apple and python tooling behind the scenes.
-    # - The tools/wheel/image/dependencies/* CMake projects
-    #   (CMAKE_OSX_DEPLOYMENT_TARGET initializes to this environment variable).
     # - The value for the bazel argument --macos_minimum_os used in
     #   tools/wheel/macos/build-wheel.sh.
     # We always target the macOS that is building the wheel, so to define the
@@ -159,18 +157,10 @@ def build(options):
     environment['DRAKE_VERSION'] = options.version
 
     # Create the snopt source archive (and pass along as an environment var).
-    snopt_tgz = os.path.join(
-        resource_root, 'image', 'dependencies', 'snopt.tar.gz')
+    snopt_tgz = os.path.join(resource_root, 'image', 'snopt.tar.gz')
     environment['SNOPT_PATH'] = snopt_tgz
-    if options.dependencies:
-        _files_to_remove.append(snopt_tgz)
-        create_snopt_tgz(snopt_path=options.snopt_path, output=snopt_tgz)
-
-    # Build the wheel dependencies.
-    if options.dependencies:
-        build_deps_script = os.path.join(resource_root, 'macos',
-                                         'build-dependencies.sh')
-        subprocess.check_call(['bash', build_deps_script], env=environment)
+    _files_to_remove.append(snopt_tgz)
+    create_snopt_tgz(snopt_path=options.snopt_path, output=snopt_tgz)
 
     # Build the wheel(s).
     for python_target in targets_to_build:
@@ -198,7 +188,6 @@ def build(options):
         os.unlink(wheel_root)
 
     if not options.keep_build:
-        shutil.rmtree('/opt/drake-dependencies')
         shutil.rmtree('/opt/drake-dist')
         shutil.rmtree(build_root)
         if options.test:
@@ -217,10 +206,6 @@ def add_build_arguments(parser):
         '--no-provision', dest='provision', action='store_false',
         help='skip host provisioning '
              '(requires already-povisioned host)')
-    parser.add_argument(
-        '--no-dependencies', dest='dependencies', action='store_false',
-        help='skip building dependencies '
-             '(requires previously built dependencies)')
 
 
 def add_selection_arguments(parser):

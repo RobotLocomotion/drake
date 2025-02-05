@@ -451,6 +451,15 @@ if(NOT APPLE)
   endif()
 endif()
 
+option(WITH_USER_ZLIB "Use user-provided ZLIB" ON)
+
+if(WITH_USER_ZLIB)
+  find_package(ZLIB REQUIRED)
+  symlink_external_repository_includes(zlib ZLIB::ZLIB)
+  symlink_external_repository_libs(zlib ZLIB::ZLIB)
+  override_module(zlib)
+endif()
+
 set(BAZEL_CONFIG)
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
