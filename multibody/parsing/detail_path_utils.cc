@@ -20,8 +20,10 @@ namespace fs = std::filesystem;
 using std::string;
 using drake::internal::DiagnosticPolicy;
 
-string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
-                  const PackageMap& package_map, const string& root_dir) {
+std::tuple<string, bool> ResolveUri(const DiagnosticPolicy& diagnostic,
+                                    const string& uri,
+                                    const PackageMap& package_map,
+                                    const string& root_dir) {
   fs::path result;
 
   // Parse the given URI into pieces.
@@ -40,7 +42,7 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
       if (!package_map.Contains(uri_package)) {
         diagnostic.Error(fmt::format(
             "URI '{}' refers to unknown package '{}'", uri, uri_package));
-        return {};
+        return std::make_tuple(string{}, false);
       }
       std::optional<string> deprecation;
       const std::string& package_path = package_map.GetPath(
@@ -54,14 +56,14 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
       diagnostic.Error(fmt::format(
           "URI '{}' specifies an unsupported scheme; supported schemes are "
           "'file://', 'model://', and 'package://'.", uri));
-      return {};
+      return std::make_tuple(string{}, false);
     }
   } else {
     if (root_dir.empty()) {
       diagnostic.Error(fmt::format(
           "URI '{}' is invalid when parsing a string instead of a filename.",
           uri));
-      return {};
+      return std::make_tuple(string{}, false);
     }
     // Strictly speaking a URI should not just be a bare filename, but we allow
     // this for backward compatibility and user convenience.
@@ -78,14 +80,14 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
 
   result = result.lexically_normal();
 
-  if (!fs::exists(result)) {
+  bool file_exists = fs::exists(result);
+  if (!file_exists) {
       diagnostic.Error(fmt::format(
           "URI '{}' resolved to '{}' which does not exist.",
           uri, result.string()));
-    return {};
   }
 
-  return result.string();
+  return {result.string(), file_exists};
 }
 
 }  // namespace internal

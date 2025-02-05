@@ -766,7 +766,7 @@ const std::string& PackageMap::GetPath(
 
 std::string PackageMap::ResolveUrl(const std::string& url) const {
   drake::internal::DiagnosticPolicy diagnostic_policy;
-  return internal::ResolveUri(diagnostic_policy, url, *this, {});
+  return std::get<0>(internal::ResolveUri(diagnostic_policy, url, *this, {}));
 }
 
 void PackageMap::PopulateFromFolder(const std::string& path) {
