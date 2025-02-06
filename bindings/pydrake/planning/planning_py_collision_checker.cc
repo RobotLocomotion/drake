@@ -284,31 +284,29 @@ void DefinePlanningCollisionChecker(py::module m) {
     constexpr auto& cls_doc = doc.SceneGraphCollisionChecker;
     py::class_<Class, CollisionChecker> cls(
         m, "SceneGraphCollisionChecker", cls_doc.doc);
-    // TODO(jwnimmer-tri) Bind the __init__(params=...) constructor here once
-    // we've solved the unique_ptr vs shared_ptr binding lifetime issue.
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR
-        .def(py::init([params_ctor](std::unique_ptr<RobotDiagram<double>> model,
+        .def(py::init([params_ctor](RobotDiagram<double>* model,
                           const py::kwargs& kwargs) {
-          // For lifetime management, we need to treat pointer-like arguments
-          // separately. Start by creating a Params object in Python with all
-          // of the other non-pointer kwargs.
+          // For lifetime management, we need to treat pointer-like
+          // arguments separately. Start by creating a Params object in
+          // Python with all of the other non-pointer kwargs.
           py::object params_py = params_ctor(**kwargs);
           auto* params = params_py.cast<CollisionCheckerParams*>();
           DRAKE_DEMAND(params != nullptr);
           // Now, transfer ownership of the pointer.
-          params->model = std::move(model);
+          params->model = make_unowned_shared_ptr_from_raw(model);
           return std::make_unique<SceneGraphCollisionChecker>(
               std::move(*params));
         }),
             py::kw_only(), py::arg("model"),
-            // Keep alive, ownership: `model` keeps `self` alive.
-            py::keep_alive<2, 1>(),
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "
                 "list of properties available here as kwargs.")
-                .c_str());
+                .c_str())
+        .def(py::init<CollisionCheckerParams>(), py::arg("params"),
+            cls_doc.ctor.doc);
   }
 
   {
@@ -316,33 +314,31 @@ void DefinePlanningCollisionChecker(py::module m) {
     constexpr auto& cls_doc = doc.UnimplementedCollisionChecker;
     py::class_<Class, CollisionChecker> cls(
         m, "UnimplementedCollisionChecker", cls_doc.doc);
-    // TODO(jwnimmer-tri) Bind the __init__(params=...) constructor here once
-    // we've solved the unique_ptr vs shared_ptr binding lifetime issue.
     py::object params_ctor = m.attr("CollisionCheckerParams");
     cls  // BR
-        .def(py::init([params_ctor](std::unique_ptr<RobotDiagram<double>> model,
+        .def(py::init([params_ctor](RobotDiagram<double>* model,
                           bool supports_parallel_checking,
                           const py::kwargs& kwargs) {
-          // For lifetime management, we need to treat pointer-like arguments
-          // separately. Start by creating a Params object in Python with all
-          // of the other non-pointer kwargs.
+          // For lifetime management, we need to treat pointer-like
+          // arguments separately. Start by creating a Params object in
+          // Python with all of the other non-pointer kwargs.
           py::object params_py = params_ctor(**kwargs);
           auto* params = params_py.cast<CollisionCheckerParams*>();
           DRAKE_DEMAND(params != nullptr);
           // Now, transfer ownership of the pointer.
-          params->model = std::move(model);
+          params->model = make_unowned_shared_ptr_from_raw(model);
           return std::make_unique<UnimplementedCollisionChecker>(
               std::move(*params), supports_parallel_checking);
         }),
             py::kw_only(), py::arg("model"),
             py::arg("supports_parallel_checking"),
-            // Keep alive, ownership: `model` keeps `self` alive.
-            py::keep_alive<2, 1>(),
             (std::string(cls_doc.ctor.doc) +
                 "\n\n"
                 "See :class:`pydrake.planning.CollisionCheckerParams` for the "
                 "list of properties available here as kwargs.")
-                .c_str());
+                .c_str())
+        .def(py::init<CollisionCheckerParams, bool>(), py::arg("params"),
+            py::arg("supports_parallel_checking"), cls_doc.ctor.doc);
   }
 }
 
