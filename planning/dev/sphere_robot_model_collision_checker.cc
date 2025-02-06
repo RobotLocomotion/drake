@@ -119,7 +119,7 @@ SphereSpecification BodySpheres::ComputeApproximateBoundingSphere(
   // candidates this is not a problem.
   // Note: in Ritter's algorithm, the points generated in step 1 would be used
   // for the refinement in step 3. Since we can easily compute the true farthest
-  // point on any sphere, we no longer need the intial set of points.
+  // point on any sphere, we no longer need the initial set of points.
   // See Graphics Gems, pages 301-303, for the original algorithm.
 
   // 1. Generate an initial set of points on spheres (e.g. the 6 +/-x, y, z
