@@ -1,7 +1,6 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
-#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 
@@ -15,6 +14,7 @@ using multibody::RigidBody;
 using multibody::contact_solvers::internal::MakeContactConfiguration;
 using multibody::contact_solvers::internal::MatrixBlock;
 using multibody::contact_solvers::internal::SapConstraintJacobian;
+using multibody::contact_solvers::internal::SapHessianFactorizationType;
 using multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
 using multibody::contact_solvers::internal::SapHuntCrossleyConstraint;
 using multibody::contact_solvers::internal::SapSolver;
@@ -65,6 +65,9 @@ void ConvexIntegrator<T>::DoInitialize() {
   double working_accuracy = this->get_target_accuracy();
   if (isnan(working_accuracy)) working_accuracy = kDefaultAccuracy;
   this->set_accuracy_in_use(working_accuracy);
+
+  // Set SAP solver parameters
+  sap_parameters_.linear_solver_type = SapHessianFactorizationType::kDense;
 }
 
 template <class T>
@@ -84,8 +87,8 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
       workspace_.timestep_independent_data;
 
   // Solver setup
-  // TODO(vincekurtz): set sap parameters
   SapSolver<T> sap;
+  sap.set_parameters(sap_parameters_);
 
   // Compute problem data at time (t)
   CalcTimestepIndependentProblemData(context, &data);

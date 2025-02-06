@@ -7,6 +7,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/discrete_contact_data.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
@@ -24,6 +25,7 @@ using multibody::JacobianWrtVariable;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
 using multibody::contact_solvers::internal::SapContactProblem;
+using multibody::contact_solvers::internal::SapSolverParameters;
 using multibody::contact_solvers::internal::SapSolverResults;
 using multibody::internal::DiscreteContactData;
 using multibody::internal::DiscreteContactPair;
@@ -154,6 +156,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;
+
+  // SAP solver parameters
+  SapSolverParameters sap_parameters_;
 
   // Scratch space for intermediate calculations
   struct Workspace {
