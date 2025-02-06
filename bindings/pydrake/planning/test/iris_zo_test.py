@@ -59,14 +59,14 @@ class TestIrisZo(unittest.TestCase):
           </joint>
         </robot>
 """
-        params = dict(edge_step_size=0.1)
+        params = CollisionCheckerParams(edge_step_size=0.1)
         builder = RobotDiagramBuilder()
-        params["robot_model_instances"] = builder.parser().AddModelsFromString(
+        params.robot_model_instances = builder.parser().AddModelsFromString(
             cross_cspace_urdf, "urdf"
         )
-        params["model"] = builder.Build()
-        plant = params["model"].plant()
-        checker = SceneGraphCollisionChecker(**params)
+        params.model = builder.Build()
+        plant = params.model.plant()
+        checker = SceneGraphCollisionChecker(params)
         seed_point = np.zeros((2,))
         options = mut.IrisZoOptions()
         options.num_particles = 1000
