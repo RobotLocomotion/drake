@@ -1,5 +1,7 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include <iostream>
+
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/contact_properties.h"
@@ -39,14 +41,16 @@ void ConvexIntegrator<T>::DoInitialize() {
   // TODO(vincekurtz): in the future we might want some fancy caching instead of
   // the workspace, but for now we'll just try to allocate most things here.
   workspace_.q.resize(nq);
-  workspace_.q_h.resize(nq);
-  workspace_.v_star.resize(nv);
-  workspace_.A.assign(tree_topology().num_trees(), MatrixX<T>(nv, nv));
-  workspace_.M.resize(nv, nv);
-  workspace_.k.resize(nv);
-  workspace_.a.resize(nv);
-  workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
   workspace_.err.resize(nq + nv);
+  workspace_.k.resize(nv);
+  workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
+  workspace_.v_star.resize(nv);
+  workspace_.A_dense.resize(nv, nv);
+  workspace_.A.assign(tree_topology().num_trees(), MatrixX<T>(nv, nv));
+
+  workspace_.timestep_independent_data.M.resize(nv, nv);
+  workspace_.timestep_independent_data.a.resize(nv);
+  workspace_.timestep_independent_data.v0.resize(nv);
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -71,113 +75,132 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // plant's, and there are no controllers connected to it.
   Context<T>& diagram_context = *this->get_mutable_context();
   Context<T>& context = plant().GetMyMutableContextFromRoot(&diagram_context);
+  const int nq = plant().num_positions();
+  const int nv = plant().num_velocities();
 
-  // Get stuff from the workspace
+  // Workspace preallocations
   VectorX<T>& q = workspace_.q;
-  VectorX<T>& q_h = workspace_.q_h;
-  VectorX<T>& v_star = workspace_.v_star;
-  std::vector<MatrixX<T>>& A = workspace_.A;
   SapSolverResults<T>& sap_results = workspace_.sap_results;
-  SapSolverResults<T>& sap_results_h = workspace_.sap_results_h;
   VectorX<T>& err = workspace_.err;
+  TimestepIndependentProblemData<T>& data =
+      workspace_.timestep_independent_data;
 
-  // Set up the SAP problem
-  CalcFreeMotionVelocities(context, h, &v_star);
-  CalcLinearDynamicsMatrix(context, h, &A);
-  SapContactProblem<T> problem(h, A, v_star);
-  problem.set_num_objects(plant().num_bodies());
-  AddContactConstraints(context, &problem);
+  // Solver setup
+  // TODO(vincekurtz): set sap parameters
+  SapSolver<T> sap;
 
-  // Solve for v_{t+h} with convex optimization
-  // TODO(vincekurtz): implement custom solve with Hessian re-use
-  Eigen::VectorBlock<const VectorX<T>> v0 = plant().GetVelocities(context);
-  SapSolver<T> sap;  // TODO(vincekurtz): set sap parameters
-  SapSolverStatus status = sap.SolveWithGuess(problem, v0, &sap_results);
+  // Compute problem data at time (t)
+  CalcTimestepIndependentProblemData(context, &data);
+
+  // Solve the for the full step (t+h)
+  SapContactProblem<T> problem = MakeSapContactProblem(context, data, h);
+  SapSolverStatus status = sap.SolveWithGuess(problem, data.v0, &sap_results);
   DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
-  // Set q_{t+h} for later error estimation
+  // q_{t+h} = q_t + h N(q_t) v_{t+h}
   plant().MapVelocityToQDot(context, h * sap_results.v, &q);
   q += plant().GetPositions(context);
 
-  // Solve for v_{t+h} with two half-sized steps for error estimation
-  // TODO(vincekurtz): reuse more info from the full-sized step
-  CalcFreeMotionVelocities(context, 0.5 * h, &v_star);
-  CalcLinearDynamicsMatrix(context, 0.5 * h, &A);
-  SapContactProblem<T> problem_h1(0.5 * h, A, v_star);
-  problem_h1.set_num_objects(plant().num_bodies());
-  AddContactConstraints(context, &problem_h1);
-  SapSolverStatus status_h1 =
-      sap.SolveWithGuess(problem_h1, v0, &sap_results_h);
-  DRAKE_DEMAND(status_h1 == SapSolverStatus::kSuccess);
+  if (this->get_fixed_step_mode()) {
+    // No error control, so we'll just set x_{t+h} in the context.
+    plant().SetPositions(&context, q);
+    plant().SetVelocities(&context, sap_results.v);
 
-  plant().MapVelocityToQDot(context, 0.5 * h * sap_results_h.v, &q_h);
-  q_h += plant().GetPositions(context);
-  plant().SetPositions(&context, q_h);
-  plant().SetVelocities(&context, sap_results_h.v);
+  } else {
+    // We're using error control, and will compare with two half-steps. So we'll
+    // start by putting the full-step result x_{t+h} in the error buffer.
+    err.head(nq) = q;
+    err.tail(nv) = sap_results.v;
 
-  CalcFreeMotionVelocities(context, 0.5 * h, &v_star);  // new state in context
-  CalcLinearDynamicsMatrix(context, 0.5 * h, &A);
-  SapContactProblem<T> problem_h2(0.5 * h, A, v_star);
-  problem_h2.set_num_objects(plant().num_bodies());
-  AddContactConstraints(context, &problem_h2);
-  SapSolverStatus status_h2 =
-      sap.SolveWithGuess(problem_h2, sap_results.v, &sap_results_h);
-  DRAKE_DEMAND(status_h2 == SapSolverStatus::kSuccess);
+    // Solve the first half-step (t + h/2). Here we can reuse the problem data
+    // from the full step.
+    problem = MakeSapContactProblem(context, data, 0.5 * h);
+    status = sap.SolveWithGuess(problem, data.v0, &sap_results);
+    DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
-  plant().MapVelocityToQDot(context, 0.5 * h * sap_results_h.v, &q_h);
-  q_h += plant().GetPositions(context);
-  plant().SetPositions(&context, q_h);
-  plant().SetVelocities(&context, sap_results_h.v);
+    // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
+    plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
+    q += plant().GetPositions(context);
 
-  // Update the error estimate
-  err.head(plant().num_positions()) = q_h - q;
-  err.tail(plant().num_velocities()) = sap_results_h.v - sap_results.v;
-  this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(err);
+    // Put x_{t+h/2} in the context to prepare the next step
+    plant().SetPositions(&context, q);
+    plant().SetVelocities(&context, sap_results.v);
 
+    // Solve the second half-step from (t+h/2) to (t+h). Here we need to
+    // re-compute the problem data using x_{t+h/2}.
+    CalcTimestepIndependentProblemData(context, &data);
+    problem = MakeSapContactProblem(context, data, 0.5 * h);
+    status = sap.SolveWithGuess(problem, data.v0, &sap_results);
+    DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
+
+    // q_{t+h} = q_{t+h/2} + h/2 N(q_{t+h/2}) v_{t+h}
+    plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
+    q += plant().GetPositions(context);
+
+    // Finish out the error computation (compare with the full step)
+    err.head(nq) -= q;
+    err.tail(nv) -= sap_results.v;
+    this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(err);
+
+    // Set x_{t+h} in the context, using the (more accurate) half steps
+    plant().SetPositions(&context, q);
+    plant().SetVelocities(&context, sap_results.v);
+  }
+
+  // Advance time to t+h
   diagram_context.SetTime(diagram_context.get_time() + h);
+
   return true;  // step was successful
 }
 
 template <class T>
-void ConvexIntegrator<T>::CalcFreeMotionVelocities(const Context<T>& context,
-                                                   const T& h,
-                                                   VectorX<T>* v_star) {
-  DRAKE_DEMAND(v_star != nullptr);
-
+void ConvexIntegrator<T>::CalcTimestepIndependentProblemData(
+    const Context<T>& context, TimestepIndependentProblemData<T>* data) {
+  // workspace pre-allocations
   VectorX<T>& k = workspace_.k;
-  VectorX<T>& a = workspace_.a;
-  MatrixX<T>& M = workspace_.M;
   MultibodyForces<T>& f_ext = *workspace_.f_ext;
-  Eigen::VectorBlock<const VectorX<T>> v0 = plant().GetVelocities(context);
 
-  a.setZero();
+  data->v0 = plant().GetVelocities(context);  // initial velocity
+  plant().CalcMassMatrix(context, &data->M);  // mass matrix
+
+  // accelerations
   plant().CalcForceElementsContribution(context, &f_ext);
-  k = plant().CalcInverseDynamics(context, a, f_ext);
-  plant().CalcMassMatrix(context, &M);
-
-  *v_star = v0 + h * M.ldlt().solve(-k);
+  k = plant().CalcInverseDynamics(
+      context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
+  data->a = data->M.ldlt().solve(-k);
 }
 
 template <class T>
-void ConvexIntegrator<T>::CalcLinearDynamicsMatrix(const Context<T>& context,
-                                                   const T& h,
-                                                   std::vector<MatrixX<T>>* A) {
-  DRAKE_DEMAND(A != nullptr);
+SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
+    const Context<T>& context, const TimestepIndependentProblemData<T>& data,
+    const T& h) {
+  // workspace pre-allocations
+  VectorX<T>& v_star = workspace_.v_star;
+  MatrixX<T>& A_dense = workspace_.A_dense;
+  std::vector<MatrixX<T>>& A = workspace_.A;
 
-  MatrixX<T>& M = workspace_.M;
-  A->resize(tree_topology().num_trees());
+  // free-motion velocities v*
+  v_star = data.v0 + h * data.a;
 
-  // TODO(vincekurtz): we could eventually cache M to avoid re-computing here
-  // and in CalcFreeMotionVelocities.
-  plant().CalcMassMatrix(context, &M);
-  M.diagonal() += h * plant().EvalJointDampingCache(context);
+  // linearized dynamics matrix A = M + hD
+  A_dense = data.M;
+  A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
 
-  // Construct the (sparse) linear dynamics matrix A = M + h D
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
     const int tree_nv = tree_topology().num_tree_velocities(t);
-    (*A)[t] = M.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
+    A[t] = A_dense.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
   }
+
+  // problem creation
+  // TODO(vincekurtz): consider updating rather than recreating
+  SapContactProblem<T> problem(h, A, v_star);
+  problem.set_num_objects(plant().num_bodies());
+
+  // contact constraints (point contact + hydro)
+  AddContactConstraints(context, &problem);
+
+  return problem;
 }
 
 template <class T>

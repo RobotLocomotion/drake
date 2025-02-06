@@ -17,19 +17,31 @@
 namespace drake {
 namespace systems {
 
-using multibody::contact_solvers::internal::SapContactProblem;
-using multibody::contact_solvers::internal::SapSolverResults;
 using geometry::GeometryId;
 using math::RigidTransform;
 using multibody::BodyIndex;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
+using multibody::contact_solvers::internal::SapContactProblem;
+using multibody::contact_solvers::internal::SapSolverResults;
 using multibody::internal::DiscreteContactData;
 using multibody::internal::DiscreteContactPair;
 using multibody::internal::GetInternalTree;
 using multibody::internal::MultibodyTree;
 using multibody::internal::MultibodyTreeTopology;
+
+/**
+ * A container for SAP problem data that can be reused with multiple timesteps
+ * (h). This is useful for error control, where we attempt multiple step sizes
+ * from the same initial conditions.
+ */
+template <class T>
+struct TimestepIndependentProblemData {
+  MatrixX<T> M;   // mass matrix
+  VectorX<T> a;   // accelerations (= M^{-1} k)
+  VectorX<T> v0;  // initial velocities
+};
 
 /**
  * An experimental implicit integrator that solves a convex SAP problem to
@@ -84,13 +96,17 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // The main integration step, sets x_{t+h} in this->context.
   bool DoStep(const T& h) override;
 
-  // Compute v*, the velocities that would occur without contact constraints.
-  void CalcFreeMotionVelocities(const Context<T>& context, const T& h,
-                                VectorX<T>* v_star);
+  // Create the sap problem, including contact constraints, for a particular
+  // step size h.
+  SapContactProblem<T> MakeSapContactProblem(
+      const Context<T>& context, const TimestepIndependentProblemData<T>& data,
+      const T& h);
 
-  // Compute the linearized momentum matrix A = M + h D for the SAP problem.
-  void CalcLinearDynamicsMatrix(const Context<T>& context, const T& h,
-                                std::vector<MatrixX<T>>* A);
+  // Compute all the data we need for constructing the SAP problem for any time
+  // step h. This data can be re-used to solve the SAP problem with multiple
+  // step sizes for error control.
+  void CalcTimestepIndependentProblemData(
+      const Context<T>& context, TimestepIndependentProblemData<T>* data);
 
   // Adds contact constraints to the SAP problem.
   void AddContactConstraints(const Context<T>& context,
@@ -143,18 +159,18 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   struct Workspace {
     // Used in DoStep
     VectorX<T> q;                     // generalized positions
-    VectorX<T> v_star;                // velocities of the unconstrained system
-    std::vector<MatrixX<T>> A;        // Linear dynamics matrix
-    SapSolverResults<T> sap_results;  // Container for v_{t+h}
-    SapSolverResults<T> sap_results_h;  // Container for v_{t+h/2}
-    VectorX<T> q_h;  // generalized positions for the half-step
-    VectorX<T> err;  // error estimate for accuracy control
+    SapSolverResults<T> sap_results;  // Container for convex solve results
+    VectorX<T> err;                   // error estimate for accuracy control
 
-    // Used in CalcFreeMotionVelocities
-    MatrixX<T> M;  // mass matrix
+    // Used in CalcTimestepIndependentProblemData
+    TimestepIndependentProblemData<T> timestep_independent_data;
     VectorX<T> k;  // coriolis and gravity terms from inverse dynamics
-    VectorX<T> a;  // accelerations
     std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
+
+    // Used in MakeSapContactProblem
+    VectorX<T> v_star;          // velocities of the unconstrained system
+    MatrixX<T> A_dense;         // dense linear dynamics matrix
+    std::vector<MatrixX<T>> A;  // linear dynamics matrix
 
     // Used in AddContactConstraint
     DiscreteContactData<DiscreteContactPair<T>> contact_data;
