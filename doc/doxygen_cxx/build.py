@@ -9,6 +9,7 @@ import os
 from os.path import join, relpath
 import shutil
 import sys
+from glob import glob
 
 from python import runfiles
 
@@ -290,6 +291,13 @@ def _build(*, out_dir, temp_dir, modules, quick):
     perl_cleanup_html_output(
         out_dir=out_dir,
         extra_perl_statements=extra_perl_statements)
+
+    # Remove extraneous Doxygen build files.
+    files_to_remove = glob(os.path.join(out_dir, "*.md5"))
+    files_to_remove += glob(os.path.join(out_dir, "*.map"))
+    for i in files_to_remove:
+        if os.path.exists(i):
+            os.remove(i)
 
     # The nominal pages to offer for preview.
     return ["", "classes.html", "modules.html"]
