@@ -124,11 +124,15 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     plant().SetPositions(&context, q);
     plant().SetVelocities(&context, sap_results.v);
 
-    // Solve the second half-step from (t+h/2) to (t+h). Here we need to
+    // Set up the second half-step from (t+h/2) to (t+h). Here we need to
     // re-compute the problem data using x_{t+h/2}.
     CalcTimestepIndependentProblemData(context, &data);
     problem = MakeSapContactProblem(context, data, 0.5 * h);
-    status = sap.SolveWithGuess(problem, data.v0, &sap_results);
+
+    // Solve the second half-step problem. We'll use the full step from before
+    // as the initial guess.
+    const Eigen::Ref<const VectorX<T>> v_full = err.tail(nv);
+    status = sap.SolveWithGuess(problem, v_full, &sap_results);
     DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
     // q_{t+h} = q_{t+h/2} + h/2 N(q_{t+h/2}) v_{t+h}
