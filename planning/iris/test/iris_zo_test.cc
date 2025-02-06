@@ -207,13 +207,13 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   // We now test an example of a region grown along a parameterization of the
   // space. We use the rational parameterization s=tan(θ/2), so our
   // parameterization function is θ=2arctan(s).
-  options.parameterization_is_threadsafe = true;
-  options.parameterization = [](const VectorXd& q) -> VectorXd {
-    return (2 * q.array().atan()).matrix();
-  };
+  options.set_parameterization(
+      [](const VectorXd& q) -> VectorXd {
+        return (2 * q.array().atan()).matrix();
+      },
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 2);
   options.configuration_space_margin = 1e-4;
-  // Note that we don't specify the parameterization dimension. This is
-  // unneeded, since it will just match the ambient dimension.
   const Vector2d sample2{0.0, 0.0};
   starting_ellipsoid = Hyperellipsoid::MakeHypersphere(1e-2, sample2);
   // This domain matches the joint limits under the transformation.
@@ -264,19 +264,20 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
         double t =
             static_cast<double>(j) / static_cast<double>(n_points_per_edge);
         Vector2d q = t * q2 + (1 - t) * q1;
-        points.col(next_point_index).head(2) = options.parameterization(q);
+        points.col(next_point_index).head(2) =
+            options.get_parameterization()(q);
         ++next_point_index;
       }
     }
     points.topRightCorner(2, 1) =
-        options.parameterization(sorted_vertices.col(0));
+        options.get_parameterization()(sorted_vertices.col(0));
     points.bottomRows<1>().setZero();
     meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
 
     meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
 
     Vector2d ambient_query_point =
-        options.parameterization(region_query_point_1);
+        options.get_parameterization()(region_query_point_1);
     meshcat->SetTransform(
         "Test point", math::RigidTransform(Eigen::Vector3d(
                           ambient_query_point[0], ambient_query_point[1], 0)));
@@ -285,10 +286,13 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   }
 
   // Verify that we fail gracefully if the parameterization has the wrong output
-  // dimension.
-  options.parameterization = [](const VectorXd& q) -> VectorXd {
-    return Vector1d(0.0);
-  };
+  // dimension (even if we claim it outputs the correct dimension).
+  options.set_parameterization(
+      [](const VectorXd& q) -> VectorXd {
+        return Vector1d(0.0);
+      },
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 2);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options,
                      &domain),
@@ -495,11 +499,12 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   }
 
   // We now test an example of a region grown along a subspace.
-  options.parameterization_is_threadsafe = true;
-  options.parameterization_dimension = 1;
-  options.parameterization = [](const Vector1d& q) -> Vector2d {
-    return Vector2d{q[0], 2 * q[0] + 1};
-  };
+  options.set_parameterization(
+      [](const Vector1d& q) -> Vector2d {
+        return Vector2d{q[0], 2 * q[0] + 1};
+      },
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 1);
   const Vector1d sample2{-0.5};
   starting_ellipsoid = Hyperellipsoid::MakeHypersphere(1e-2, sample2);
   // This domain matches the "x" dimension of C-space, so the region generated
@@ -517,7 +522,8 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
     VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
     points.resize(3, vregion.vertices().cols() + 1);
     for (int i = 0; i < vregion.vertices().cols(); ++i) {
-      Vector2d point = options.parameterization(vregion.vertices().col(i));
+      Vector2d point =
+          options.get_parameterization()(vregion.vertices().col(i));
       points.col(i).head(2) = point;
       if (i == 0) {
         points.topRightCorner(2, 1) = point;
@@ -529,7 +535,7 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
     meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
 
     Vector2d ambient_query_point =
-        options.parameterization(region_query_point_1);
+        options.get_parameterization()(region_query_point_1);
     meshcat->SetTransform(
         "Test point", math::RigidTransform(Eigen::Vector3d(
                           ambient_query_point[0], ambient_query_point[1], 0)));

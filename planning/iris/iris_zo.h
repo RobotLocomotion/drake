@@ -23,7 +23,8 @@ namespace planning {
  * @experimental
  * @see IrisZo for more details.
  **/
-struct IrisZoOptions {
+class IrisZoOptions {
+ public:
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
   Note: This only serializes options that are YAML built-in types. */
@@ -126,36 +127,60 @@ struct IrisZoOptions {
   /** Number of mixing steps used for hit-and-run sampling. */
   int mixing_steps{50};
 
+  /** Passing a meshcat instance may enable debugging visualizations; this
+  currently and when the
+  configuration space is <= 3 dimensional.*/
+  std::shared_ptr<geometry::Meshcat> meshcat{};
+
+  typedef std::function<Eigen::VectorXd(const Eigen::VectorXd&)>
+      ParameterizationFunction;
+
+  void set_parameterization(const ParameterizationFunction& parameterization,
+                            bool parameterization_is_threadsafe,
+                            int parameterization_dimension) {
+    parameterization_ = parameterization;
+    parameterization_is_threadsafe_ = parameterization_is_threadsafe;
+    parameterization_dimension_ = parameterization_dimension;
+  }
+
+  const ParameterizationFunction& get_parameterization() const {
+    return parameterization_;
+  }
+
+  bool get_parameterization_is_threadsafe() const {
+    return parameterization_is_threadsafe_;
+  }
+
+  std::optional<int> get_parameterization_dimension() const {
+    return parameterization_dimension_;
+  }
+
+ private:
   /** Whether or not parameterization() is thread-safe. If the user specifies
    * that the function is not threadsafe, then `parallelism` will be overridden
    * and only one thread will be used.
    * @warning If the user sets a new `parameterization` and it is not
    * threadsafe, then parameterization_is_threadsafe must be set to false. */
-  bool parameterization_is_threadsafe{true};
+  bool parameterization_is_threadsafe_{true};
 
   /** The dimension of the parameterized subspace (and therefore, the input to
    * the parameterization function). If not specified, the full dimension of the
    * configuration space is used. */
-  std::optional<int> parameterization_dimension{std::nullopt};
+  std::optional<int> parameterization_dimension_{std::nullopt};
 
   /** A function describing a parameterized subspace of the full configuration
    * space, along which to grow the region. The function should be a map R^m to
    * R^n, where n is the dimension of the plant configuration space, determined
-   * via `checker.plant().num_positions()` and m is `parametrization_dimension`
+   * via `checker.plant().num_positions()` and m is `parameterization_dimension`
    * if specified. The default value is just the identity function, indicating
    * that the regions should be grow in the full configuration space (in the
    * standard coordinate system).
    * @warning If the user sets a new `parameterization` and it is not
    * threadsafe, then parameterization_is_threadsafe must be set to false. */
-  std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parameterization{
+  std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parameterization_{
       [](const Eigen::VectorXd& q) -> Eigen::VectorXd {
         return q;
       }};
-
-  /** Passing a meshcat instance may enable debugging visualizations; this
-  currently and when the
-  configuration space is <= 3 dimensional.*/
-  std::shared_ptr<geometry::Meshcat> meshcat{};
 };
 
 /** The IRIS-ZO (Iterative Regional Inflation by Semidefinite programming - Zero
