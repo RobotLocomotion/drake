@@ -113,8 +113,8 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
             [](const Class& self) -> const RobotDiagram<double>* {
               return self.model.get();
             },
-            [](Class& self, std::unique_ptr<RobotDiagram<double>> model) {
-              self.model = std::move(model);
+            [](Class& self, RobotDiagram<double>* model) {
+              self.model = make_unowned_shared_ptr_from_raw(model);
             },
             cls_doc.model.doc)
         .def_readwrite("distance_and_interpolation_provider",

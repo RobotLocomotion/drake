@@ -19,7 +19,8 @@ from pydrake.multibody.plant import (
 from pydrake.multibody.tree import BodyIndex
 import pydrake.solvers as mp
 from pydrake.systems.framework import DiagramBuilder
-from pydrake.planning import RobotDiagramBuilder, SceneGraphCollisionChecker
+from pydrake.planning import (
+    CollisionCheckerParams, RobotDiagramBuilder, SceneGraphCollisionChecker)
 
 # TODO(eric.cousineau): Replace manual coordinate indexing with more semantic
 # operations (`CalcRelativeTransform`, `SetFreeBodyPose`).
@@ -699,10 +700,11 @@ class TestConstraints(unittest.TestCase):
             return np.linalg.norm(q1 - q2)
 
         collision_checker = SceneGraphCollisionChecker(
-            model=robot,
-            robot_model_instances=[index],
-            configuration_distance_function=distance_function,
-            edge_step_size=0.125)
+            CollisionCheckerParams(
+                model=robot,
+                robot_model_instances=[index],
+                configuration_distance_function=distance_function,
+                edge_step_size=0.125))
         collision_checker_context = \
             collision_checker.MakeStandaloneModelContext()
 
