@@ -1,7 +1,5 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
-#include <iostream>
-
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/plant/contact_properties.h"
