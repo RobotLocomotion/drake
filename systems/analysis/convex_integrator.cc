@@ -127,9 +127,9 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     plant().SetPositions(&context, q);
     plant().SetVelocities(&context, sap_results.v);
 
-    // Set up the second half-step from (t+h/2) to (t+h). Here we need to
-    // re-compute the problem data using x_{t+h/2}.
-    CalcTimestepIndependentProblemData(context, &data);
+    // Set up the second half-step from (t+h/2) to (t+h). We reset the initial
+    // velocity, but freeze the mass matrix and coriolis/centripedal terms.
+    data.v0 = plant().GetVelocities(context);
     problem = MakeSapContactProblem(context, data, 0.5 * h);
 
     // Solve the second half-step problem. We'll use the full step from before
