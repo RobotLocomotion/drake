@@ -700,6 +700,7 @@ bool CollisionChecker::CheckContextEdgeCollisionFree(
 bool CollisionChecker::CheckEdgeCollisionFreeParallel(
     const Eigen::VectorXd& q1, const Eigen::VectorXd& q2,
     const Parallelism parallelize) const {
+  DRAKE_THROW_UNLESS(!q1.hasNaN() && !q2.hasNaN());
   const int number_of_threads = GetNumberOfThreads(parallelize);
   drake::log()->debug("CheckEdgeCollisionFreeParallel uses {} thread(s)",
                       number_of_threads);
