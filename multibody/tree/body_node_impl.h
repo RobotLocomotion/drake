@@ -71,6 +71,10 @@ class BodyNodeImpl final : public BodyNode<T> {
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       PositionKinematicsCache<T>* pc) const final;
 
+  void CalcPositionKinematicsCacheInM_BaseToTip(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      PositionKinematicsCacheInM<T>* pcm) const final;
+
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       const PositionKinematicsCache<T>& pc,
@@ -80,6 +84,10 @@ class BodyNodeImpl final : public BodyNode<T> {
       const T* positions, const PositionKinematicsCache<T>& pc,
       const std::vector<Vector6<T>>& H_PB_W_cache, const T* velocities,
       VelocityKinematicsCache<T>* vc) const final;
+
+  void CalcVelocityKinematicsCacheInM_BaseToTip(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const T* velocities, VelocityKinematicsCacheInM<T>* vcm) const final;
 
   void CalcMassMatrixContribution_TipToBase(
       const PositionKinematicsCache<T>& pc,
@@ -110,6 +118,12 @@ class BodyNodeImpl final : public BodyNode<T> {
       const VelocityKinematicsCache<T>* vc, const T* accelerations,
       std::vector<SpatialAcceleration<T>>* A_WB_array) const final;
 
+  void CalcSpatialAccelerationInM_BaseToTip(
+      const T* positions, const PositionKinematicsCacheInM<T>& pcm,
+      const T* velocities, const VelocityKinematicsCacheInM<T>& vcm,
+      const T* accelerations,
+      std::vector<SpatialAcceleration<T>>* A_WM_M_array) const final;
+
   void CalcInverseDynamics_TipToBase(
       const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
       const PositionKinematicsCache<T>& pc,
@@ -119,6 +133,16 @@ class BodyNodeImpl final : public BodyNode<T> {
       const std::vector<SpatialForce<T>>& Fapplied_Bo_W,
       const Eigen::Ref<const VectorX<T>>& tau_applied,
       std::vector<SpatialForce<T>>* F_BMo_W_array,
+      EigenPtr<VectorX<T>> tau_array) const final;
+
+  void CalcInverseDynamicsInM_TipToBase(
+      const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+      const PositionKinematicsCacheInM<T>& pcm,
+      const VelocityKinematicsCacheInM<T>& vcm,
+      const std::vector<SpatialAcceleration<T>>& A_WM_M_array,
+      const std::vector<SpatialForce<T>>& Fapplied_Bo_W_array,
+      const Eigen::Ref<const VectorX<T>>& tau_applied_array,
+      std::vector<SpatialForce<T>>* F_BMo_M_array,
       EigenPtr<VectorX<T>> tau_array) const final;
 
   void CalcArticulatedBodyInertiaCache_TipToBase(
