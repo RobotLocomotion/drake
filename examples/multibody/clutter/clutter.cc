@@ -257,7 +257,7 @@ void AddSink(MultibodyPlant<double>* plant) {
   const double wall_mass = 1.0;
   const double friction_coefficient = FLAGS_friction_coefficient;
   const Vector4<double> light_blue(0.5, 0.8, 1.0, 0.3);
-  const Vector4<double> light_green(0., 0.7, 0.0, 1.0);
+  const Vector4<double> transparent(0., 0.0, 0.0, 0.0);
 
   auto add_wall =
       [&](const std::string& name, const Vector3d& dimensions,
@@ -275,7 +275,7 @@ void AddSink(MultibodyPlant<double>* plant) {
   const Vector3d back_front_wall_dimensions(length, wall_thickness, height);
 
   add_wall("sink_bottom", bottom_dimensions,
-           Translation3d(0, 0, -wall_thickness / 2.0), light_green);
+           Translation3d(0, 0, -wall_thickness / 2.0), transparent);
 
   if (FLAGS_add_sink_walls) {
     add_wall("sink_right", side_wall_dimensions,
