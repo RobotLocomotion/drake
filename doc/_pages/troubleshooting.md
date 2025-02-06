@@ -238,6 +238,37 @@ Note that the concurrency level passed to `make` (e.g., `make -j 2`) does not
 propagate through to affect the concurrency of most of Drake's build steps; you
 need to configure the dotfile in order to control the build concurrency.
 
+# Network Configuration
+
+## LCM on MacOS {#lcm-macos}
+
+When building and testing Drake from source on MacOS 15 (Sequoia), you may
+encounter a test failure on the
+[hardware_sim](https://github.com/RobotLocomotion/drake/tree/master/examples/hardware_sim)
+example with the error "LCM self test failed!! Check your routing tables
+and firewall settings." [LCM](https://lcm-proj.github.io/lcm/index.html)
+relies on [UDP Multicast](https://lcm-proj.github.io/lcm/index.html)
+over loopback, so multicast traffic must be enabled over the loopback
+interface on your computer in order for it to work.
+
+Sometimes this is not explicitly enabled on MacOS. If you see this error,
+check the routing table by running `netstat -nr`. The following entry in the
+IPv4 table is correct:
+
+```
+Internet:
+Destination        Gateway            Flags               Netif Expire
+...
+224.0.0/4          lo0                UmS                   lo0
+```
+
+If you see a different interface for this address, such as `en0`, then
+run the following to change it to loopback (`lo0`):
+
+```
+sudo route -nv delete 224.0.0.0/4
+sudo route -nv add -net 224.0.0.0/4 -interface lo0
+```
 
 <!-- Links to the various Drake doxygen pages.
      Order determined by directory structure first and names second.
