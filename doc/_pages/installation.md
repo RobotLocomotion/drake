@@ -45,7 +45,7 @@ that Conda is involved.
 
 ⁽³⁾ The Python version shown in the table is supported for all installation
 channels. Additionally, when installing via ``pip``
-on Ubuntu Python versions 3.10 through 3.12 (inclusive) are supported and
+on Ubuntu Python versions 3.10 through 3.13 (inclusive) are supported and
 on macOS Python versions 3.11 through 3.12 (inclusive) are supported.
 Refer to [OS Support](/stable.html#os-support) for details on our "end of life"
 timeline for changing which Python versions are supported.
