@@ -152,9 +152,12 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
     std::string texture_name;
     if (ParseStringAttribute(texture_node, "filename", &texture_name) &&
         !texture_name.empty()) {
-      texture_path = ResolveUri(diagnostic.MakePolicyForNode(texture_node),
-                                texture_name, package_map, root_dir);
-      if (texture_path->empty()) {
+      const ResolveUriResult resolved =
+          ResolveUri(diagnostic.MakePolicyForNode(texture_node), texture_name,
+                     package_map, root_dir);
+      if (resolved.exists) {
+        texture_path = resolved.full_path.string();
+      } else {
         // ResolveUri already emitted an error message.
         return {};
       }
@@ -292,10 +295,10 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
     return {};
   }
 
-  const std::string resolved_filename = ResolveUri(
-      diagnostic.MakePolicyForNode(shape_node), filename, package_map,
-      root_dir);
-  if (resolved_filename.empty()) {
+  const ResolveUriResult resolved =
+      ResolveUri(diagnostic.MakePolicyForNode(shape_node), filename,
+                 package_map, root_dir);
+  if (!resolved.exists) {
     // ResolveUri already emitted an error message.
     return {};
   }
@@ -319,9 +322,9 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
 
   // Rely on geometry::Shape to validate physical parameters.
   if (shape_node->FirstChildElement("drake:declare_convex")) {
-    return std::make_unique<geometry::Convex>(resolved_filename, scale);
+    return std::make_unique<geometry::Convex>(resolved.full_path, scale);
   } else {
-    return std::make_unique<geometry::Mesh>(resolved_filename, scale);
+    return std::make_unique<geometry::Mesh>(resolved.full_path, scale);
   }
   }
 
