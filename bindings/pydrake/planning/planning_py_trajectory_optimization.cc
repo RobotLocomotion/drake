@@ -319,6 +319,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             &Class::AddVelocityConstraintAtNormalizedTime,
             py::arg("constraint"), py::arg("s"),
             cls_doc.AddVelocityConstraintAtNormalizedTime.doc)
+        .def("AddVelocityLinearConstraintAtNormalizedTime",
+            &Class::AddVelocityLinearConstraintAtNormalizedTime,
+            py::arg("constraint"), py::arg("s"),
+            cls_doc.AddVelocityLinearConstraintAtNormalizedTime.doc)
         .def("AddPathAccelerationConstraint",
             &Class::AddPathAccelerationConstraint, py::arg("lb"), py::arg("ub"),
             py::arg("s"), cls_doc.AddPathAccelerationConstraint.doc)
