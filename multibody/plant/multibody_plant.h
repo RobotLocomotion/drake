@@ -6303,6 +6303,21 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
     std::unique_ptr<MultibodyPlant<T>> plant,
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph = nullptr);
 
+namespace internal {
+// Adds a MultibodyPlant and a SceneGraph instance via shared pointers to a
+// diagram builder, connecting the geometry ports.
+//
+// The shared pointer signature is useful for implementing pydrake memory
+// management, because it permits supplying a custom deleter. The systems are
+// not *actually* shared. They are logically owned by the builder, and
+// eventually by the diagram.
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraphFromShared(
+    systems::DiagramBuilder<T>* builder,
+    std::shared_ptr<MultibodyPlant<T>> plant,
+    std::shared_ptr<geometry::SceneGraph<T>> scene_graph);
+}  // namespace internal
+
 /// Temporary result from `AddMultibodyPlantSceneGraph`. This cannot be
 /// constructed outside of this method.
 /// @warning Do NOT use this as a function argument or member variable. The
@@ -6347,9 +6362,10 @@ struct AddMultibodyPlantSceneGraphResult final {
 
  private:
   // Deter external usage by hiding construction.
-  friend AddMultibodyPlantSceneGraphResult AddMultibodyPlantSceneGraph<T>(
-      systems::DiagramBuilder<T>*, std::unique_ptr<MultibodyPlant<T>>,
-      std::unique_ptr<geometry::SceneGraph<T>>);
+  friend AddMultibodyPlantSceneGraphResult
+  internal::AddMultibodyPlantSceneGraphFromShared<T>(
+      systems::DiagramBuilder<T>*, std::shared_ptr<MultibodyPlant<T>>,
+      std::shared_ptr<geometry::SceneGraph<T>>);
 
   AddMultibodyPlantSceneGraphResult(MultibodyPlant<T>* plant_in,
                                     geometry::SceneGraph<T>* scene_graph_in)
