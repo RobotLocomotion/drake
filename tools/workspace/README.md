@@ -151,6 +151,9 @@ Once all upgrades are ready, open a Drake pull request and label it
 change the drop-down that says "Combine commits for review" to choose
 "Review each commit separately" instead.
 
+If any packages suggested that additional pre-merge testing is needed,
+launch jobs as specified in the output of ``new_release``.
+
 Once all of the Jenkins builds of the pull request have passed, assign the
 pull request for review. If the pull request contains no especially complicated
 changes, it may be assigned to the on-call platform reviewer and labelled
