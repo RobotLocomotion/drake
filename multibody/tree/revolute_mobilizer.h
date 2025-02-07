@@ -39,9 +39,9 @@ namespace internal {
 //    where axis_M == axis_F
 //
 // @tparam_default_scalar
-template <typename T, int axis = 4>
+template <typename T, int axis = 3>
 class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
-  static_assert(0 <= axis && axis <= 4, "Invalid axis");
+  static_assert(0 <= axis && axis <= 3, "Invalid axis");
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer);
   using MobilizerBase = MobilizerImpl<T, 1, 1>;
@@ -140,7 +140,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
     DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
-    if constexpr (axis == 4) {
+    if constexpr (axis == 3) {
       X_FM->set_rotation(Eigen::AngleAxis<T>(q[0], axis_F_));
     } else {
       math::RigidTransform<T>::UpdateAxialRotation<axis>(q, &*X_FM);
@@ -149,7 +149,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   Vector3<T> apply_X_FM(const math::RigidTransform<T>& X_FM,
                         const Vector3<T>& v_M) const {
-    if constexpr (axis == 4) {
+    if constexpr (axis == 3) {
       return X_FM.rotation() * v_M;
     } else {
       return math::RigidTransform<T>::ApplyAxialRotation<axis>(X_FM, v_M);
@@ -158,7 +158,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   Vector3<T> apply_R_FM(const math::RotationMatrix<T>& R_FM,
                         const Vector3<T>& v_M) const {
-    if constexpr (axis == 4) {
+    if constexpr (axis == 3) {
       return R_FM * v_M;
     } else {
       return math::RotationMatrix<T>::ApplyAxialRotation<axis>(R_FM, v_M);
@@ -169,7 +169,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
                          const math::RigidTransform<T>& X_FM,
                          math::RigidTransform<T>* X_AM) const {
     DRAKE_ASSERT(X_AM != nullptr);
-    if constexpr (axis == 4) {
+    if constexpr (axis == 3) {
       X_AF.ComposeWithRotation(X_FM, &*X_AM);
     } else {
       X_AF.ComposeWithAxialRotation<axis>(X_FM, &*X_AM);
