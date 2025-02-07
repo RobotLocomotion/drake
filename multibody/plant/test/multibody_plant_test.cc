@@ -671,7 +671,11 @@ class AcrobotPlantTests : public ::testing::Test {
     const std::string url =
         "package://drake/multibody/benchmarks/acrobot/acrobot.sdf";
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
-    Parser(plant_).AddModelsFromUrl(url);
+    const std::vector<ModelInstanceIndex> instances =
+        Parser(plant_).AddModelsFromUrl(url);
+    DRAKE_DEMAND(instances.size() == 1);
+    model_instance_ = instances[0];
+
     // Sanity check on the availability of the optional source id before using
     // it.
     DRAKE_DEMAND(plant_->get_source_id() != std::nullopt);
@@ -971,6 +975,8 @@ class AcrobotPlantTests : public ::testing::Test {
   RevoluteJoint<double>* elbow_{nullptr};
   // Input port for the actuation:
   systems::FixedInputPortValue* input_port_{nullptr};
+  // The model instance of the acrobot.
+  ModelInstanceIndex model_instance_{};
 
   // Reference benchmark for verification.
   Acrobot<double> acrobot_benchmark_{Vector3d::UnitZ() /* Plane normal */,
@@ -1133,6 +1139,117 @@ TEST_F(AcrobotPlantTests, SetDefaultState) {
   // Calling SetDefaultContext directly works, too.
   plant_->SetDefaultContext(plant_context_);
   EXPECT_EQ(shoulder_->get_angle(*plant_context_), 4.2);
+}
+
+TEST_F(AcrobotPlantTests, SetPositionWithNonFinites) {
+  VectorX<double> p = VectorX<double>::Zero(plant_->num_positions());
+  ASSERT_GT(p.rows(), 0);
+
+  // First confirm we've got the right context and right size of things.
+  EXPECT_NO_THROW(plant_->SetPositions(plant_context_, p));
+
+  p[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(plant_->SetPositions(plant_context_, p), std::exception);
+  EXPECT_THROW(plant_->SetPositions(plant_context_, model_instance_, p),
+               std::exception);
+  EXPECT_THROW(plant_->SetPositions(*plant_context_,
+                                    &plant_context_->get_mutable_state(),
+                                    model_instance_, p),
+               std::exception);
+
+  p[0] = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(plant_->SetPositions(plant_context_, p), std::exception);
+  EXPECT_THROW(plant_->SetPositions(plant_context_, model_instance_, p),
+               std::exception);
+  EXPECT_THROW(plant_->SetPositions(*plant_context_,
+                                    &plant_context_->get_mutable_state(),
+                                    model_instance_, p),
+               std::exception);
+}
+
+TEST_F(AcrobotPlantTests, SetDefaultPositionWithNonFinites) {
+  VectorX<double> p = VectorX<double>::Zero(plant_->num_positions());
+  ASSERT_GT(p.rows(), 0);
+
+  // First confirm we've got the right size of things.
+  EXPECT_NO_THROW(plant_->SetDefaultPositions(p));
+
+  p[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(plant_->SetDefaultPositions(p), std::exception);
+  EXPECT_THROW(plant_->SetDefaultPositions(model_instance_, p), std::exception);
+
+  p[0] = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(plant_->SetDefaultPositions(p), std::exception);
+  EXPECT_THROW(plant_->SetDefaultPositions(model_instance_, p), std::exception);
+}
+
+TEST_F(AcrobotPlantTests, SetVelocitiesWithNonFinites) {
+  VectorX<double> v = VectorX<double>::Zero(plant_->num_velocities());
+  ASSERT_GT(v.rows(), 0);
+
+  // First confirm we've got the right context and right size of things.
+  EXPECT_NO_THROW(plant_->SetVelocities(plant_context_, v));
+
+  v[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(plant_->SetVelocities(plant_context_, v), std::exception);
+  EXPECT_THROW(plant_->SetVelocities(plant_context_, model_instance_, v),
+               std::exception);
+  EXPECT_THROW(plant_->SetVelocities(*plant_context_,
+                                     &plant_context_->get_mutable_state(),
+                                     model_instance_, v),
+               std::exception);
+
+  v[0] = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(plant_->SetVelocities(plant_context_, v), std::exception);
+  EXPECT_THROW(plant_->SetVelocities(plant_context_, model_instance_, v),
+               std::exception);
+  EXPECT_THROW(plant_->SetVelocities(*plant_context_,
+                                     &plant_context_->get_mutable_state(),
+                                     model_instance_, v),
+               std::exception);
+}
+
+TEST_F(AcrobotPlantTests, SetVelocitiesInArrayWithNonFinites) {
+  VectorX<double> v_all = VectorX<double>::Zero(plant_->num_velocities());
+  ASSERT_GT(v_all.rows(), 0);
+  VectorX<double> v_instance =
+      VectorX<double>::Zero(plant_->num_velocities(model_instance_));
+
+  // First confirm we've got the right context and right size of things.
+  EXPECT_NO_THROW(
+      plant_->SetVelocitiesInArray(model_instance_, v_instance, &v_all));
+
+  v_instance[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(
+      plant_->SetVelocitiesInArray(model_instance_, v_instance, &v_all),
+      std::exception);
+
+  v_instance[0] = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(
+      plant_->SetVelocitiesInArray(model_instance_, v_instance, &v_all),
+      std::exception);
+}
+
+TEST_F(AcrobotPlantTests, SetPositionAndVelocitiesWithNonFinites) {
+  VectorX<double> q = VectorX<double>::Zero(plant_->num_multibody_states());
+  ASSERT_GT(q.rows(), 0);
+
+  // First confirm we've got the right context and right size of things.
+  EXPECT_NO_THROW(plant_->SetPositionsAndVelocities(plant_context_, q));
+
+  q[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(plant_->SetPositionsAndVelocities(plant_context_, q),
+               std::exception);
+  EXPECT_THROW(
+      plant_->SetPositionsAndVelocities(plant_context_, model_instance_, q),
+      std::exception);
+
+  q[0] = std::numeric_limits<double>::infinity();
+  EXPECT_THROW(plant_->SetPositionsAndVelocities(plant_context_, q),
+               std::exception);
+  EXPECT_THROW(
+      plant_->SetPositionsAndVelocities(plant_context_, model_instance_, q),
+      std::exception);
 }
 
 GTEST_TEST(MultibodyPlantTest, SetDefaultFreeBodyPose) {
