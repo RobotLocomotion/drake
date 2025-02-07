@@ -135,6 +135,15 @@ class IrisZoOptions {
   typedef std::function<Eigen::VectorXd(const Eigen::VectorXd&)>
       ParameterizationFunction;
 
+  /** Ordinarily, IRIS-ZO grows collision free regions in the robot's
+   * configuration space C. This allows the user to specify a function f:Q→C ,
+   * and grow the region in Q instead. The function should be a map R^m to
+   * R^n, where n is the dimension of the plant configuration space, determined
+   * via `checker.plant().num_positions()` and m is `parameterization_dimension`
+   * if specified. The user must provide `parameterization`, which is the
+   * function f, `parameterization_is_threadsafe`, which is whether or not
+   * `parametrization` can be called concurrently, and
+   * `parameterization_dimension`, the dimension of the input space Q. */
   void set_parameterization(const ParameterizationFunction& parameterization,
                             bool parameterization_is_threadsafe,
                             int parameterization_dimension) {
@@ -156,27 +165,16 @@ class IrisZoOptions {
   }
 
  private:
-  /** Whether or not parameterization() is thread-safe. If the user specifies
-   * that the function is not threadsafe, then `parallelism` will be overridden
-   * and only one thread will be used.
-   * @warning If the user sets a new `parameterization` and it is not
-   * threadsafe, then parameterization_is_threadsafe must be set to false. */
   bool parameterization_is_threadsafe_{true};
 
-  /** The dimension of the parameterized subspace (and therefore, the input to
-   * the parameterization function). If not specified, the full dimension of the
-   * configuration space is used. */
+  /* By default, this is not specified, and the full dimension of the
+   * configuration space is determined when IrisZo is called, and that value is
+   * used. */
   std::optional<int> parameterization_dimension_{std::nullopt};
 
-  /** A function describing a parameterized subspace of the full configuration
-   * space, along which to grow the region. The function should be a map R^m to
-   * R^n, where n is the dimension of the plant configuration space, determined
-   * via `checker.plant().num_positions()` and m is `parameterization_dimension`
-   * if specified. The default value is just the identity function, indicating
-   * that the regions should be grow in the full configuration space (in the
-   * standard coordinate system).
-   * @warning If the user sets a new `parameterization` and it is not
-   * threadsafe, then parameterization_is_threadsafe must be set to false. */
+  /* By default, we just use the identity function, indicating that the regions
+   * should be grown in the full configuration space (in the standard coordinate
+   * system). */
   std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parameterization_{
       [](const Eigen::VectorXd& q) -> Eigen::VectorXd {
         return q;
