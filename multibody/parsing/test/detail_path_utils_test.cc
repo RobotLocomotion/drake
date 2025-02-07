@@ -29,9 +29,9 @@ std::string ResolveGoodUri(
   // Don't let warnings leak into spdlog; tests should always specifically
   // handle any warnings that appear.
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-  const std::string result = ResolveUri(
+  auto [result, exists] = ResolveUri(
       diagnostic, uri, package_map, root_dir);
-  EXPECT_NE(result, "");
+  EXPECT_TRUE(exists);
   return result;
 }
 
@@ -49,9 +49,9 @@ std::string ResolveBadUri(
   // Don't let warnings leak into spdlog; tests should always specifically
   // handle any warnings that appear.
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-  const std::string result = ResolveUri(
+  auto [result, exists] = ResolveUri(
       diagnostic, uri, package_map, root_dir);
-  EXPECT_EQ(result, "");
+  EXPECT_FALSE(exists);
   return error.FormatError();
 }
 
@@ -215,19 +215,71 @@ GTEST_TEST(ResolveUriTest, DeprecatedPackage) {
   });
 
   // Check that we get a detailed warning.
-  std::string result = ResolveUri(
+  auto [result, file_exists] = ResolveUri(
       diagnostic, "package://foo/multibody", package_map, "");
+  EXPECT_TRUE(file_exists);
   EXPECT_EQ(result, "multibody");
   EXPECT_THAT(warning.message, ::testing::MatchesRegex(
       ".*package://foo/multibody.*is deprecated.*Stop using foo.*"));
 
   // Check that we get a basic warning.
   warning = {};
-  result = ResolveUri(
+  auto [result2, file_exists2] = ResolveUri(
       diagnostic, "package://bar/multibody", package_map, "");
-  EXPECT_EQ(result, "multibody");
+  EXPECT_TRUE(file_exists2);
+  EXPECT_EQ(result2, "multibody");
   EXPECT_THAT(warning.message, ::testing::MatchesRegex(
       ".*package://bar/multibody.*is deprecated.*"));
+}
+
+// Verifies that ResolveUri() returns the path even for non-existent files.
+GTEST_TEST(ResolveUriTest, NonExistentFiles) {
+  PackageMap package_map;
+  package_map.Add("test_package", ".");
+
+  DiagnosticPolicy diagnostic;
+  DiagnosticDetail error;
+  diagnostic.SetActionForErrors([&error](const DiagnosticDetail& detail) {
+    error = detail;
+  });
+
+  // Test with relative path.
+  const string rel_path = "nonexistent.urdf";
+  const string root_dir = "/some/root";
+  std::string result;
+  bool exists;
+  std::tie(result, exists) =
+    ResolveUri(diagnostic, rel_path, package_map, root_dir);
+  EXPECT_EQ(result, root_dir + "/" + rel_path);
+  EXPECT_THAT(error.message, ::testing::HasSubstr("does not exist"));
+  EXPECT_FALSE(exists);
+
+  // Test model:// scheme.
+  error = {};
+  const string model_uri = "model://test_package/" + rel_path;
+  std::tie(result, exists) = ResolveUri(diagnostic, model_uri, package_map, "");
+  EXPECT_EQ(result, rel_path);
+  EXPECT_THAT(error.message, ::testing::HasSubstr("does not exist"));
+  EXPECT_FALSE(exists);
+
+  // Test package:// scheme.
+  error = {};
+  const string package_uri = "package://test_package/" + rel_path;
+  std::tie(result, exists) =
+    ResolveUri(diagnostic, package_uri, package_map, "");
+  EXPECT_EQ(result, rel_path);
+  EXPECT_THAT(error.message, ::testing::HasSubstr("does not exist"));
+  EXPECT_FALSE(exists);
+
+  // Paths without a root_dir should return nothing.
+  error = {};
+  const string other_path = "/some/other/root/" + rel_path;
+  std::tie(result, exists) =
+    ResolveUri(diagnostic, other_path, package_map, "");
+  EXPECT_EQ(result, "");
+  EXPECT_THAT(error.message, ::testing::HasSubstr(
+    "is invalid when parsing a string instead of a filename."));
+  EXPECT_FALSE(exists);
 }
 
 }  // namespace

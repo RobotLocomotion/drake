@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 
 #include <sdf/Collision.hh>
@@ -29,7 +30,7 @@ namespace internal {
 constexpr char kIsDrakeNamespaceAttr[] = "drake-namespaced";
 
 /* Used for resolving URIs / filenames.  */
-using ResolveFilename = std::function<std::string (
+using ResolveFilename = std::function<std::tuple<std::string, bool> (
     const SDFormatDiagnostic&, std::string)>;
 
 /* Given an sdf::Geometry object representing a <geometry> element from an SDF

@@ -164,7 +164,8 @@ void FlattenModelDirectivesInternal(const ModelDirectives& directives,
 std::string ResolveModelDirectiveUri(const std::string& uri,
                                      const PackageMap& package_map) {
   ::drake::internal::DiagnosticPolicy policy;
-  return ::drake::multibody::internal::ResolveUri(policy, uri, package_map, "");
+  return std::get<0>(
+    ::drake::multibody::internal::ResolveUri(policy, uri, package_map, ""));
 }
 
 void ProcessModelDirectives(const ModelDirectives& directives,
