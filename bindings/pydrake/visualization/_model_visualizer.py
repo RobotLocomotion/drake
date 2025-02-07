@@ -13,7 +13,9 @@ from pydrake.geometry import (
     Box,
     Cylinder,
     GeometryInstance,
+    IllustrationProperties,
     MakePhongIllustrationProperties,
+    Mesh,
     MeshcatCone,
     Role,
     Rgba,
@@ -262,11 +264,26 @@ class ModelVisualizer:
             raise ValueError("Must provide either filename= or url=")
         self._check_rep(finalized=False)
         if filename is not None:
-            kwargs = dict(file_name=filename)
+            # Make sure filename is a Path
+            filename = Path(filename)
+            kwargs = dict(file_name=str(filename))
+            if filename.suffix == ".gltf":
+                geometry = GeometryInstance(
+                    name=filename.stem,
+                    shape=Mesh(filename=filename),
+                    X_PG=RigidTransform.Identity())
+                geometry.set_illustration_properties(IllustrationProperties())
+                self._builder.scene_graph().RegisterAnchoredGeometry(
+                    self._builder.plant().get_source_id(), geometry=geometry)
+            else:
+                self._builder.parser().AddModels(**kwargs)
         else:
+            # TODO(DamrongGuoy): For `url` with suffix ".gltf",
+            #  use PackageMap in self._builder to get the file and
+            #  RegisterAnchoredGeometry() as `filename` case above.
             assert url is not None
             kwargs = dict(url=url)
-        self._builder.parser().AddModels(**kwargs)
+            self._builder.parser().AddModels(**kwargs)
         if self._added_models is not None:
             self._added_models.append(kwargs)
 
