@@ -1125,8 +1125,11 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
       ResolveFilename resolve_filename =
           [&package_map, &root_dir, &link_element](
               const SDFormatDiagnostic& inner_diagnostic, std::string uri) {
-            return ResolveUri(inner_diagnostic.MakePolicyForNode(*link_element),
-                              uri, package_map, root_dir);
+            const ResolveUriResult resolved =
+                ResolveUri(inner_diagnostic.MakePolicyForNode(*link_element),
+                           uri, package_map, root_dir);
+            return resolved.exists ? resolved.full_path.string()
+                                   : std::string{};
           };
 
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -2266,7 +2269,9 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
     debug_log.SetActionForErrors([](const DiagnosticDetail& detail) {
       drake::log()->debug(detail.FormatError());
     });
-    return ResolveUri(debug_log, _input, workspace.package_map, ".");
+    const ResolveUriResult resolved =
+        ResolveUri(debug_log, _input, workspace.package_map, ".");
+    return resolved.exists ? resolved.full_path.string() : std::string{};
   });
 
   parser_config.RegisterCustomModelParser(
