@@ -344,11 +344,21 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
                              const geometry::VolumeMesh<double>& mesh,
                              const fem::DeformableBodyConfig<T>& config);
 
+  /* Helper function for BuildLinearVolumetricModel that turns
+   element_subdivision to a template parameter. */
+  template <template <class> class Model, int num_subd, typename T1 = T>
+  typename std::enable_if_t<std::is_same_v<T1, double>, void>
+  SubdElementlHelper(DeformableBodyId id,
+                     const geometry::VolumeMesh<double>& mesh,
+                     const fem::DeformableBodyConfig<T>& config);
+
+  /* Helper function for BuildLinearVolumetricModel that turns
+   constitutive model to a template parameter. */
   template <template <class> class Model, typename T1 = T>
   typename std::enable_if_t<std::is_same_v<T1, double>, void>
-  BuildLinearVolumetricModelHelper(DeformableBodyId id,
-                                   const geometry::VolumeMesh<double>& mesh,
-                                   const fem::DeformableBodyConfig<T>& config);
+  ConstitutiveModelHelper(DeformableBodyId id,
+                          const geometry::VolumeMesh<double>& mesh,
+                          const fem::DeformableBodyConfig<T>& config);
 
   /* Copies the vertex positions of all deformable bodies to the output port
    value which is guaranteed to be of type GeometryConfigurationVector. */
