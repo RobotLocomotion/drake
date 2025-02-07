@@ -505,6 +505,7 @@ GTEST_TEST(CollisionCheckerTest, MutableSetupModel) {
 //
 //  - influence distance must be finite and positive
 //  - non-robot dofs must be zeroed out in the Jacobian.
+//  - confirm input is not Nan.
 //
 // Calling MaxNumDistance() simply defaults to the NVI implementation; we'll
 // confirm we get back the magic number: 13.
@@ -547,6 +548,9 @@ GTEST_TEST(CollisionCheckerTest, RobotClearance) {
   EXPECT_THROW(checker->CalcRobotClearance(q, -1), std::exception);
   constexpr double kInf = std::numeric_limits<double>::infinity();
   EXPECT_THROW(checker->CalcRobotClearance(q, kInf), std::exception);
+  const VectorXd nan =
+      VectorXd::Constant(q.size(), std::numeric_limits<double>::quiet_NaN());
+  EXPECT_THROW(checker->CalcRobotClearance(nan, 0), std::exception);
 }
 
 // Testing framework for the collision checker such that the model contains
@@ -915,6 +919,7 @@ TEST_F(TrivialCollisionCheckerTest, ReportParallelChecking) {
 //   2 Does the context get updated?
 //   3 Does the context get updated before DoUpdateContextPositions gets called?
 //   4 Does DoUpdateContextPositions get called with a non-null context?
+//   5 Do we check the inputs for NaN?
 TEST_F(TrivialCollisionCheckerTest, UpdatePositions) {
   VectorXd q = dut_->GetZeroConfiguration();
 
@@ -922,6 +927,9 @@ TEST_F(TrivialCollisionCheckerTest, UpdatePositions) {
   const Context<double>& model_plant_context = dut_->UpdatePositions(q);
   // Test for #3 and #4; it doesn't throw and the right positions were recorded.
   EXPECT_EQ(dut_->latest_positions()[0], 0.1);
+
+  q[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(dut_->UpdatePositions(q), std::exception);
 
   q[0] = 0.2;
   std::shared_ptr<CollisionCheckerContext> collision_context =
@@ -934,6 +942,10 @@ TEST_F(TrivialCollisionCheckerTest, UpdatePositions) {
   // Test for #1 and #2; each context is observably updated as expected.
   EXPECT_EQ(dut_->plant().GetPositions(model_plant_context)[0], 0.1);
   EXPECT_EQ(dut_->plant().GetPositions(standalone_plant_context)[0], 0.2);
+
+  q[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(dut_->UpdateContextPositions(collision_context.get(), q),
+               std::exception);
 }
 
 // Verify that positions get updated before the NVI method
@@ -948,6 +960,9 @@ TEST_F(TrivialCollisionCheckerTest, ClassifyBodyCollisions) {
   // Update got called before forwarding to a derived class.
   EXPECT_EQ(dut_->positions_for_classify()[0], 0.1);
 
+  q[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(dut_->ClassifyBodyCollisions(q), std::exception);
+
   q[0] = 0.2;
   std::shared_ptr<CollisionCheckerContext> collision_context =
       dut_->MakeStandaloneModelContext();
@@ -956,9 +971,13 @@ TEST_F(TrivialCollisionCheckerTest, ClassifyBodyCollisions) {
   EXPECT_EQ(dut_->latest_positions()[0], 0.2);
   // Update got called before forwarding to a derived class.
   EXPECT_EQ(dut_->positions_for_classify()[0], 0.2);
+
+  q[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(dut_->ClassifyContextBodyCollisions(collision_context.get(), q),
+               std::exception);
 }
 
-// Verify that positions get updated before the NVI method
+// Verify that positions get checked for Nan and updated before the NVI method
 // DoCheckContextConfigCollisionFree gets called.
 TEST_F(TrivialCollisionCheckerTest, CheckConfigCollisionFree) {
   VectorXd q = dut_->GetZeroConfiguration();
@@ -970,6 +989,9 @@ TEST_F(TrivialCollisionCheckerTest, CheckConfigCollisionFree) {
   // Update got called before forwarding to a derived class.
   EXPECT_EQ(dut_->positions_for_check()[0], 0.1);
 
+  q[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(dut_->CheckConfigCollisionFree(q), std::exception);
+
   q[0] = 0.2;
   std::shared_ptr<CollisionCheckerContext> collision_context =
       dut_->MakeStandaloneModelContext();
@@ -978,6 +1000,13 @@ TEST_F(TrivialCollisionCheckerTest, CheckConfigCollisionFree) {
   EXPECT_EQ(dut_->latest_positions()[0], 0.2);
   // Update got called before forwarding to a derived class.
   EXPECT_EQ(dut_->positions_for_check()[0], 0.2);
+
+  q[0] = std::numeric_limits<double>::quiet_NaN();
+  EXPECT_THROW(
+      dut_->CheckContextConfigCollisionFree(collision_context.get(), q),
+      std::exception);
+
+  EXPECT_THROW(dut_->CheckConfigsCollisionFree({q, q}), std::exception);
 }
 
 // Tests the ValidateFilteredCollisionMatrix() method by exercising
@@ -1454,6 +1483,8 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
 
   const Eigen::VectorXd q1 = Eigen::VectorXd::Constant(q_size, 1);
   const Eigen::VectorXd q2 = Eigen::VectorXd::Zero(q_size);
+  const Eigen::VectorXd nan = Eigen::VectorXd::Constant(
+      q_size, std::numeric_limits<double>::quiet_NaN());
 
   {
     // Distance function.
@@ -1475,6 +1506,9 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
     ASSERT_NE(dut.MakeStandaloneConfigurationDistanceFunction(), nullptr);
     EXPECT_EQ(dut.MakeStandaloneConfigurationDistanceFunction()(q1, q2),
               q1.norm());
+
+    EXPECT_THROW(dut.ComputeConfigurationDistance(q1, nan), std::exception);
+    EXPECT_THROW(dut.ComputeConfigurationDistance(nan, q2), std::exception);
   }
 
   {
@@ -1513,6 +1547,11 @@ GTEST_TEST(EdgeCheckTest, Configuration) {
     EXPECT_EQ(
         dut.MakeStandaloneConfigurationInterpolationFunction()(q1, q2, 0.5),
         0.5 * (q1 + q2));
+
+    EXPECT_THROW(dut.InterpolateBetweenConfigurations(q1, nan, 0.5),
+                 std::exception);
+    EXPECT_THROW(dut.InterpolateBetweenConfigurations(nan, q2, 0.5),
+                 std::exception);
   }
 }
 
@@ -1844,6 +1883,8 @@ TEST_P(ParameterizedEdgeCheckTest, MeasureEdgeCollisionFree) {
   // End configuration encodes failure based on the expected colliding range.
   const VectorXd q2 = dut.EncodeConfiguration(q_size, config.alpha,
                                               config.last_colliding_alpha);
+  const VectorXd nan =
+      VectorXd::Constant(q_size, std::numeric_limits<double>::quiet_NaN());
 
   const EdgeMeasure result = config.parallel
                                  ? dut.MeasureEdgeCollisionFreeParallel(q1, q2)
@@ -1864,6 +1905,14 @@ TEST_P(ParameterizedEdgeCheckTest, MeasureEdgeCollisionFree) {
   // Are things parallel as we expect?
   if (config.parallel) {
     EXPECT_GT(dut.thread_count(), 1);
+  }
+
+  if (config.parallel) {
+    EXPECT_THROW(dut.MeasureEdgeCollisionFree(q1, nan), std::exception);
+    EXPECT_THROW(dut.MeasureEdgeCollisionFree(nan, q2), std::exception);
+  } else {
+    EXPECT_THROW(dut.MeasureEdgeCollisionFreeParallel(q1, nan), std::exception);
+    EXPECT_THROW(dut.MeasureEdgeCollisionFreeParallel(nan, q2), std::exception);
   }
 }
 
@@ -1898,6 +1947,8 @@ TEST_P(ParameterizedEdgeCheckTest, CheckEdgeCollisionFree) {
   // End configuration encodes failure based on the expected colliding range.
   const VectorXd q2 = dut.EncodeConfiguration(q_size, config.alpha,
                                               config.last_colliding_alpha);
+  const VectorXd nan =
+      VectorXd::Constant(q_size, std::numeric_limits<double>::quiet_NaN());
 
   const bool result = config.parallel
                           ? dut.CheckEdgeCollisionFreeParallel(q1, q2)
@@ -1919,6 +1970,14 @@ TEST_P(ParameterizedEdgeCheckTest, CheckEdgeCollisionFree) {
       EXPECT_GT(dut.thread_count(), 1);
     }
   }
+
+  if (config.parallel) {
+    EXPECT_THROW(dut.CheckEdgeCollisionFree(q1, nan), std::exception);
+    EXPECT_THROW(dut.CheckEdgeCollisionFree(nan, q2), std::exception);
+  } else {
+    EXPECT_THROW(dut.CheckEdgeCollisionFreeParallel(q1, nan), std::exception);
+    EXPECT_THROW(dut.CheckEdgeCollisionFreeParallel(nan, q2), std::exception);
+  }
 }
 
 // The test for MeasureEdgesCollisionFree() (plural) uses
@@ -1935,6 +1994,9 @@ GTEST_TEST(EdgeCheckTest, MeasureMultipleEdges) {
   auto interp = MockEdgeChecker::MakeEdgeInterpolation();
 
   const int q_size = MockEdgeChecker::kQSize;
+
+  const VectorXd nan =
+      VectorXd::Constant(q_size, std::numeric_limits<double>::quiet_NaN());
 
   // Garbage start configuration; the values are ignored.
   const VectorXd q_start = VectorXd::Constant(q_size, 0.75);
@@ -1957,6 +2019,8 @@ GTEST_TEST(EdgeCheckTest, MeasureMultipleEdges) {
   // Three quarters free (collision at 1.0).
   edges.emplace_back(q_start,
                      MockEdgeChecker::EncodeConfiguration(q_size, 0.75, 1.25));
+  const VectorXd& q2 = edges[0].second;
+
   // The distance for all of the edges is the same.
   const double edge_dist = calc_dist(edges[0].first, edges[0].second);
   const vector<EdgeMeasure> expected_results{
@@ -1991,6 +2055,14 @@ GTEST_TEST(EdgeCheckTest, MeasureMultipleEdges) {
     } else {
       EXPECT_EQ(dut.thread_count(), 1);
     }
+    // We make sure there is one valid edge first so we know we catch the
+    // invalid edge, even if it isn't first.
+    EXPECT_THROW(dut.MeasureEdgesCollisionFree({{q_start, q2}, {q_start, nan}},
+                                               parallel),
+                 std::exception);
+    EXPECT_THROW(
+        dut.MeasureEdgesCollisionFree({{q_start, q2}, {nan, q2}}, parallel),
+        std::exception);
   }
 }
 
@@ -2002,6 +2074,9 @@ GTEST_TEST(EdgeCheckTest, CheckMultipleEdgesFree) {
   auto interp = MockEdgeChecker::MakeEdgeInterpolation();
 
   const int q_size = MockEdgeChecker::kQSize;
+
+  const VectorXd nan =
+      VectorXd::Constant(q_size, std::numeric_limits<double>::quiet_NaN());
 
   // Garbage start configuration; the values are ignored.
   const VectorXd q_start = VectorXd::Constant(q_size, 0.75);
@@ -2020,6 +2095,8 @@ GTEST_TEST(EdgeCheckTest, CheckMultipleEdgesFree) {
   // Later collision.
   edges.emplace_back(q_start,
                      MockEdgeChecker::EncodeConfiguration(q_size, 0.75, 1.25));
+  const VectorXd& q2 = edges[0].second;
+
   const vector<uint8_t> expected_results{edges[0].second(0) == 1.0,
                                          edges[1].second(0) == 1.0,
                                          edges[2].second(0) == 1.0};
@@ -2050,6 +2127,14 @@ GTEST_TEST(EdgeCheckTest, CheckMultipleEdgesFree) {
     } else {
       EXPECT_EQ(dut.thread_count(), 1);
     }
+    // We make sure there is one valid edge first so we know we catch the
+    // invalid edge, even if it isn't first.
+    EXPECT_THROW(
+        dut.CheckEdgesCollisionFree({{q_start, q2}, {q_start, nan}}, parallel),
+        std::exception);
+    EXPECT_THROW(
+        dut.CheckEdgesCollisionFree({{q_start, q2}, {nan, q2}}, parallel),
+        std::exception);
   }
 }
 
