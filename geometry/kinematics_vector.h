@@ -140,6 +140,9 @@ class KinematicsVector {
    */
   std::vector<Id> ids() const;
 
+  /** Reports if *all* values are finite. */
+  bool IsFinite() const;
+
  private:
   void CheckInvariants() const;
 

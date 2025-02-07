@@ -1,5 +1,6 @@
 #include "drake/geometry/kinematics_vector.h"
 
+#include <functional>
 #include <stdexcept>
 
 #include <fmt/format.h>
@@ -103,6 +104,41 @@ void KinematicsVector<Id, KinematicsValue>::CheckInvariants() const {
     }
   }
   DRAKE_DEMAND(num_nonnull == size_);
+}
+
+namespace {
+// Tests for the supported kinematics value types for whether they have NaN
+// values.
+
+template <typename Derived>
+bool KinematicsIsFinite(const Eigen::MatrixBase<Derived>& m) {
+  using std::isfinite;
+  return all_of(m, [](const auto& t) { return isfinite(t); });
+}
+
+template <typename T>
+bool KinematicsIsFinite(const math::RigidTransform<T>& X) {
+  return KinematicsIsFinite(X.translation()) &&
+         KinematicsIsFinite(X.rotation().matrix());
+}
+
+}  // namespace
+
+template <typename Id, typename KinematicsValue>
+bool KinematicsVector<Id, KinematicsValue>::IsFinite() const {
+  // For T = Expression, we simply don't bother checking.
+  if constexpr (std::is_same_v<KinematicsValue,
+                               math::RigidTransform<symbolic::Expression>> ||
+                std::is_same_v<KinematicsValue,
+                               VectorX<symbolic::Expression>>) {
+    return true;
+  } else {
+    for (const auto& [_, maybe_value] : values_) {
+      if (!maybe_value.has_value()) continue;
+      if (!KinematicsIsFinite(*maybe_value)) return false;
+    }
+    return true;
+  }
 }
 
 // Explicitly instantiates on the most common scalar types.
