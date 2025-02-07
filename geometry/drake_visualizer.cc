@@ -709,13 +709,11 @@ void DrakeVisualizer<T>::SendDrawNonDeformableMessage(
 
     const math::RigidTransformd& X_WF =
         internal::convert_to_double(query_object.GetPoseInWorld(frame_id));
-    message.position[i].resize(3);
     message.position[i][0] = X_WF.translation()[0];
     message.position[i][1] = X_WF.translation()[1];
     message.position[i][2] = X_WF.translation()[2];
 
     const Eigen::Quaternion<double> q = X_WF.rotation().ToQuaternion();
-    message.quaternion[i].resize(4);
     message.quaternion[i][0] = q.w();
     message.quaternion[i][1] = q.x();
     message.quaternion[i][2] = q.y();

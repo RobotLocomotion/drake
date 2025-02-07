@@ -1,7 +1,8 @@
 # When compiling Drake as the main module (i.e., not as a Bazel dependency of
-# something else) we will default to using pkg-config to locate our public
-# C++ dependencies (eigen, fmt, spdlog).
+# something else) we will default to using pkg-config to locate our C++
+# library dependencies.
 common --@drake//tools/flags:public_repo_default=pkgconfig
+common --@drake//tools/flags:private_runtime_repo_default=external
 
 # Tell spdlog to build a library, not header-only. This *substantially* reduces
 # build size and improves build speed.

@@ -84,8 +84,6 @@ if [[ "$(uname)" == "Linux" ]]; then
     # The drake/tools/wheel/test/tests/libs-test.py must be kept in sync with
     # this list. To maintain that correspondence, the _ALLOWED_LIBS entry seen
     # in that test program is added as comment to the end of each line below.
-    copy_ubuntu_license libblas-dev    # libblas
-    copy_ubuntu_license liblapack-dev  # liblapack
     copy_ubuntu_license libgfortran5   # libgfortran, libquadmath, libgomp
 fi
 

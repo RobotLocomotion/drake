@@ -826,6 +826,46 @@ GTEST_TEST(SimulatorTest, SecondConstructor) {
   EXPECT_EQ(simulator.get_context().get_time(), 3.0);
 }
 
+// Tests the internal use (for Python) factory method that takes the context via
+// shared pointer.
+GTEST_TEST(SimulatorTest, SharedContextFactoryMethod) {
+  // Create the spring-mass system and context.
+  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
+  auto context = spring_mass.CreateDefaultContext();
+
+  // Mark the context with an arbitrary value.
+  context->SetTime(7.0);
+  std::shared_ptr<Context<double>> shared_context(std::move(context));
+
+  // Construct the simulator with the created context.
+  auto simulator = Simulator<double>::MakeWithSharedContext(
+      spring_mass, std::move(shared_context));
+
+  // Verify that context values are equivalent.
+  EXPECT_EQ(simulator->get_context().get_time(), 7.0);
+}
+
+// Tests the internal use (for Python) method that resets the context via
+// shared pointer.
+GTEST_TEST(SimulatorTest, ResetFromShared) {
+  // Create the spring-mass system and context.
+  analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
+  auto context = spring_mass.CreateDefaultContext();
+
+  // Mark the context with an arbitrary value.
+  context->SetTime(11.0);
+  std::shared_ptr<Context<double>> shared_context(std::move(context));
+
+  // Construct the simulator with a default context.
+  Simulator<double> simulator(spring_mass);
+
+  // Change to the marked context.
+  simulator.reset_context_from_shared(std::move(shared_context));
+
+  // Verify that context values are equivalent.
+  EXPECT_EQ(simulator.get_context().get_time(), 11.0);
+}
+
 GTEST_TEST(SimulatorTest, MiscAPI) {
   analysis_test::MySpringMassSystem<double> spring_mass(1.0, 1.0, 0.0);
   Simulator<double> simulator(spring_mass);  // Use default Context.
@@ -865,10 +905,13 @@ GTEST_TEST(SimulatorTest, ContextAccess) {
   simulator.get_mutable_context().SetTime(3.0);
   EXPECT_EQ(simulator.get_context().get_time(), 3.0);
   EXPECT_TRUE(simulator.has_context());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   simulator.release_context();
   EXPECT_FALSE(simulator.has_context());
   DRAKE_EXPECT_THROWS_MESSAGE(simulator.Initialize(),
       ".*Initialize.*Context.*not.*set.*");
+#pragma GCC diagnostic pop
 
   // Create another context.
   auto ucontext = spring_mass.CreateDefaultContext();

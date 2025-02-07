@@ -85,16 +85,18 @@ class MemoryFile final {
    Serializing the %MemoryFile will produce such a string. Writing a yaml file
    by hand will be more challenging.
 
-   The following yaml would produce a %MemoryFile with contents equal to:
+   For this yaml:
 
-       This is an example of memory file test contents.
-
-   ```yaml
+   @code{yaml}
    contents: !!binary VGhpcyBpcyBhbiBleGFtcGxlIG9mIG1
            lbW9yeSBmaWxlIHRlc3QgY29udGVudHMu
    extension: .txt
    filename_hint: payload.txt
-   ```
+   @endcode
+
+   we would produce a %MemoryFile with contents equal to:
+
+       This is an example of memory file test contents.
    */
   template <typename Archive>
   void Serialize(Archive* a) {
