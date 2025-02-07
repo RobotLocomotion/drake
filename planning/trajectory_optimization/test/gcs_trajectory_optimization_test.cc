@@ -16,9 +16,11 @@
 #include "drake/geometry/optimization/point.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rpy_floating_joint.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/snopt_solver.h"
@@ -45,11 +47,13 @@ using geometry::optimization::Intersection;
 using geometry::optimization::MakeConvexSets;
 using geometry::optimization::Point;
 using geometry::optimization::VPolytope;
+using multibody::BallRpyJoint;
 using multibody::MultibodyPlant;
 using multibody::PlanarJoint;
 using multibody::RevoluteJoint;
 using multibody::RigidBody;
 using multibody::RpyFloatingJoint;
+using multibody::UniversalJoint;
 using solvers::MathematicalProgram;
 using solvers::internal::ParseConstraint;
 using solvers::internal::ParseCost;
@@ -71,6 +75,8 @@ bool SnoptSolverUnavailable() {
 
 // A tolerance for numerical comparisons in the tests.
 const double kTolerance = 1e-6;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   const int kDimension = 2;
@@ -2338,6 +2344,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   const RigidBody<double>& second_body = plant.AddRigidBody("second_body");
   const RigidBody<double>& third_body = plant.AddRigidBody("third_body");
   const RigidBody<double>& fourth_body = plant.AddRigidBody("fourth_body");
+  const RigidBody<double>& fifth_body = plant.AddRigidBody("fifth_body");
+  const RigidBody<double>& sixth_body = plant.AddRigidBody("sixth_body");
   const RigidBody<double>& floating_body_1 =
       plant.AddRigidBody("floating_body_1");
   const RigidBody<double>& floating_body_2 =
@@ -2364,6 +2372,22 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
                                 Eigen::Matrix<double, 3, 1>{1.0, 0.0, 0.0},
                                 -1.0, 1.0);
 
+  // Add a universal joint with some limits.
+  std::unique_ptr<UniversalJoint<double>> fifth_joint_ptr(
+      new UniversalJoint<double>("fifth_joint", fourth_body.body_frame(),
+                                 fifth_body.body_frame()));
+  fifth_joint_ptr->set_position_limits(Vector2d{-1.0, -kInf},
+                                       Vector2d{1.0, kInf});
+  plant.AddJoint<UniversalJoint>(std::move(fifth_joint_ptr));
+
+  // Add a ball rpy joint with some limits.
+  std::unique_ptr<BallRpyJoint<double>> sixth_joint_ptr(
+      new BallRpyJoint<double>("sixth_joint", fifth_body.body_frame(),
+                               sixth_body.body_frame()));
+  sixth_joint_ptr->set_position_limits(Vector3d{-kInf, -1.0, -kInf},
+                                       Vector3d{kInf, 1.0, kInf});
+  plant.AddJoint<BallRpyJoint>(std::move(sixth_joint_ptr));
+
   // Add a floating body with a RpyFloatingJoint, without limits.
   plant.AddJoint<RpyFloatingJoint>("floating_joint_1", plant.world_body(), {},
                                    floating_body_1, {});
@@ -2373,10 +2397,8 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
       new RpyFloatingJoint<double>("floating_joint_2", plant.world_frame(),
                                    floating_body_2.body_frame()));
   floating_joint_2_ptr->set_position_limits(
-      Vector6d(-1.0, -std::numeric_limits<double>::infinity(), -1.0, -1.0, -1.0,
-               -1.0),
-      Vector6d(1.0, std::numeric_limits<double>::infinity(), 1.0, 1.0, 1.0,
-               1.0));
+      Vector6d(-1.0, -kInf, -1.0, -1.0, -1.0, -1.0),
+      Vector6d(1.0, kInf, 1.0, 1.0, 1.0, 1.0));
   plant.AddJoint<RpyFloatingJoint>(std::move(floating_joint_2_ptr));
 
   plant.Finalize();
@@ -2391,28 +2413,36 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, GetContinuousJoints) {
   //   5   | planar 2 θ (not continuous revolute)
   //   6   | revolute 1 θ (continuous revolute)
   //   7   | revolute 2 θ (not continuous revolute)
-  //   8   | floating 1 qx (continuous revolute)
-  //   9   | floating 1 qy (continuous revolute)
-  //  10   | floating 1 qz (continuous revolute)
-  //  11   | floating 1 x
-  //  12   | floating 1 y
-  //  13   | floating 1 z
-  //  14   | floating 2 qx (not continuous revolute)
-  //  15   | floating 2 qy (continuous revolute)
-  //  16   | floating 2 qz (not continuous revolute)
-  //  17   | floating 2 x
-  //  18   | floating 2 y
-  //  19   | floating 2 z
+  //   8   | universal 1 θ₁ (not continuous revolute)
+  //   9   | universal 1 θ₂ (continuous revolute)
+  //  10   | ball rpy 1 θ₁ (continuous reovlute)
+  //  11   | ball rpy 1 θ₂ (not continuous reovlute)
+  //  12   | ball rpy 1 θ₃ (continuous reovlute)
+  //  13   | floating 1 qx (continuous revolute)
+  //  14   | floating 1 qy (continuous revolute)
+  //  15   | floating 1 qz (continuous revolute)
+  //  16   | floating 1 x
+  //  17   | floating 1 y
+  //  18   | floating 1 z
+  //  19   | floating 2 qx (not continuous revolute)
+  //  20   | floating 2 qy (continuous revolute)
+  //  21   | floating 2 qz (not continuous revolute)
+  //  22   | floating 2 x
+  //  23   | floating 2 y
+  //  24   | floating 2 z
   // clang-format on
   const std::vector<int> continuous_joint_indices =
       trajectory_optimization::GetContinuousRevoluteJointIndices(plant);
-  ASSERT_EQ(continuous_joint_indices.size(), 6);
+  ASSERT_EQ(continuous_joint_indices.size(), 9);
   EXPECT_EQ(continuous_joint_indices[0], 2);
   EXPECT_EQ(continuous_joint_indices[1], 6);
-  EXPECT_EQ(continuous_joint_indices[2], 8);
-  EXPECT_EQ(continuous_joint_indices[3], 9);
-  EXPECT_EQ(continuous_joint_indices[4], 10);
-  EXPECT_EQ(continuous_joint_indices[5], 15);
+  EXPECT_EQ(continuous_joint_indices[2], 9);
+  EXPECT_EQ(continuous_joint_indices[3], 10);
+  EXPECT_EQ(continuous_joint_indices[4], 12);
+  EXPECT_EQ(continuous_joint_indices[5], 13);
+  EXPECT_EQ(continuous_joint_indices[6], 14);
+  EXPECT_EQ(continuous_joint_indices[7], 15);
+  EXPECT_EQ(continuous_joint_indices[8], 20);
 }
 
 // Confirm that NonlinearDerivativeConstraint supports symbolic.

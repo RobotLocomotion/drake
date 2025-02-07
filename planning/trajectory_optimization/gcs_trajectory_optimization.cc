@@ -18,9 +18,11 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/matrix_util.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rpy_floating_joint.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -49,12 +51,14 @@ using geometry::optimization::internal::GetMinimumAndMaximumValueAlongDimension;
 using geometry::optimization::internal::ThrowsForInvalidContinuousJointsList;
 using math::ExtractValue;
 using math::InitializeAutoDiff;
+using multibody::BallRpyJoint;
 using multibody::Joint;
 using multibody::JointIndex;
 using multibody::MultibodyPlant;
 using multibody::PlanarJoint;
 using multibody::RevoluteJoint;
 using multibody::RpyFloatingJoint;
+using multibody::UniversalJoint;
 using solvers::Binding;
 using solvers::ConcatenateVariableRefList;
 using solvers::Constraint;
@@ -2440,9 +2444,30 @@ std::vector<int> GetContinuousRevoluteJointIndices(
       }
       continue;
     }
-    // TODO(cohnt): Determine if other joint types (e.g. UniversalJoint) can
-    // be handled appropriately with wraparound edges, and if so, return their
-    // indices as well.
+    // The fourth possibility we check for is a universal joint. If it is, we
+    // check each of its two configuration values for unbounded joint limits
+    // (both are revolute).
+    if (joint.type_name() == UniversalJoint<double>::kTypeName) {
+      for (int j = 0; j < 2; ++j) {
+        if (joint.position_lower_limits()[j] == -kInf &&
+            joint.position_upper_limits()[j] == kInf) {
+          indices.push_back(joint.position_start() + j);
+        }
+      }
+      continue;
+    }
+    // The fifth possibility we check for is a roll-pitch-yaw ball joint. If it
+    // is, we check each of its three configuration values for unbounded joint
+    // limits (all are revolute).
+    if (joint.type_name() == BallRpyJoint<double>::kTypeName) {
+      for (int j = 0; j < 3; ++j) {
+        if (joint.position_lower_limits()[j] == -kInf &&
+            joint.position_upper_limits()[j] == kInf) {
+          indices.push_back(joint.position_start() + j);
+        }
+      }
+      continue;
+    }
   }
   return indices;
 }
