@@ -801,6 +801,18 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsDetectable", &IsDetectable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsDetectable.doc);
+
+  m.def("ContinuousToDiscrete",
+      static_cast<std::unique_ptr<LinearSystem<double>> (*)(
+          const LinearSystem<double>&, double)>(&ContinuousToDiscrete),
+      py::arg("system"), py::arg("time_period"),
+      doc.ContinuousToDiscrete.doc_linearsystem);
+
+  m.def("ContinuousToDiscrete",
+      static_cast<std::unique_ptr<AffineSystem<double>> (*)(
+          const AffineSystem<double>&, double)>(&ContinuousToDiscrete),
+      py::arg("system"), py::arg("time_period"),
+      doc.ContinuousToDiscrete.doc_affinesystem);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
