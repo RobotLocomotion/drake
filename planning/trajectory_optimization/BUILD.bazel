@@ -97,6 +97,7 @@ drake_cc_library(
         "//math:bspline_basis",
         "//math:gradient",
         "//math:matrix_util",
+        "//multibody/plant",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
     ],
@@ -191,9 +192,15 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "kinematic_trajectory_optimization_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+        "@drake_models//:iiwa_description",
+    ],
     deps = [
         ":kinematic_trajectory_optimization",
         "//common/test_utilities:eigen_matrix_compare",
+        "//multibody/benchmarks/pendulum",
+        "//multibody/parsing",
         "//solvers:constraint",
         "//solvers:ipopt_solver",
         "//solvers:osqp_solver",

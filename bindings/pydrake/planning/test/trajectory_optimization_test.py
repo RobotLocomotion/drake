@@ -32,6 +32,7 @@ from pydrake.solvers import (
     ExpressionConstraint
 )
 from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.parsing import Parser
 import pydrake.solvers as mp
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
@@ -253,6 +254,17 @@ class TestTrajectoryOptimization(unittest.TestCase):
         trajopt.AddVelocityBounds(lb=b, ub=b)
         trajopt.AddAccelerationBounds(lb=b, ub=b)
         trajopt.AddJerkBounds(lb=b, ub=b)
+
+        plant = MultibodyPlant(time_step=0.0)
+        Parser(plant).AddModelsFromUrl(
+            url="package://drake/examples/multibody/cart_pole/cart_pole.sdf")
+        plant.Finalize()
+        plant_context = plant.CreateDefaultContext()
+        trajopt.AddEffortBoundsAtNormalizedTimes(
+            plant=plant, s=[0.1, 0.9],
+            lb=[-1]*plant.num_actuators(),
+            ub=[3]*plant.num_actuators(),
+            plant_context=plant_context)
 
         trajopt.AddDurationCost(weight=1)
         trajopt.AddPathLengthCost(weight=1)
