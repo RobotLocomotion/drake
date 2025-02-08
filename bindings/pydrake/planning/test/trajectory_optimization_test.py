@@ -237,6 +237,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertIsInstance(trajopt.duration(), Variable)
         self.assertEqual(trajopt.prog().GetInitialGuess(trajopt.duration()),
                          2.0)
+        self.assertEqual(len(trajopt.placeholder_q_vars()), 2)
+        self.assertEqual(len(trajopt.placeholder_qdot_vars()), 2)
 
         b = np.zeros((2, 1))
         trajopt.AddPathPositionConstraint(lb=b, ub=b, s=0)
@@ -246,7 +248,18 @@ class TestTrajectoryOptimization(unittest.TestCase):
         velocity_constraint = mp.LinearConstraint(np.eye(4),
                                                   lb=np.zeros((4, 1)),
                                                   ub=np.zeros((4, 1)))
+        velocity_binding = mp.Binding[mp.LinearConstraint](
+            mp.LinearConstraint(
+                np.eye(2),
+                lb=np.zeros(2),
+                ub=np.zeros(2)),
+            trajopt.placeholder_qdot_vars()
+        )
         trajopt.AddVelocityConstraintAtNormalizedTime(velocity_constraint, s=0)
+        trajopt.AddVelocityConstraintAtNormalizedTime(
+            binding=velocity_binding,
+            s=0
+        )
         trajopt.AddPathAccelerationConstraint(lb=b, ub=b, s=0)
         trajopt.AddDurationConstraint(1, 1)
         trajopt.AddPositionBounds(lb=b, ub=b)
