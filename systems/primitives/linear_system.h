@@ -285,5 +285,33 @@ bool IsStabilizable(const LinearSystem<double>& sys,
 bool IsDetectable(const LinearSystem<double>& sys,
                   std::optional<double> threshold = std::nullopt);
 
+/// Converts a continuous-time linear system to a discrete-time linear system
+/// using the zero-order hold (ZOH) method.
+///
+/// @param system The continuous-time LinearSystem.
+/// @param time_period The sampling time period.
+/// @returns A discrete-time LinearSystem.
+/// @throws if the @p system is not continuous or @p time_period <= 0
+/// @tparam_default_scalar
+/// @ingroup primitive_systems
+/// @pydrake_mkdoc_identifier{linearsystem}
+template <typename T>
+std::unique_ptr<LinearSystem<T>> DiscreteTimeApproximation(
+    const LinearSystem<T>& system, double time_period);
+
+/// Converts a continuous-time affine system to a discrete-time affine system
+/// using the zero-order hold (ZOH) method.
+///
+/// @param system The continuous-time AffineSystem.
+/// @param time_period The sampling time period.
+/// @returns A discrete-time AffineSystem.
+/// @throws if the @p system is not continuous or @p time_period <= 0
+/// @tparam_default_scalar
+/// @ingroup primitive_systems
+/// @pydrake_mkdoc_identifier{affinesystem}
+template <typename T>
+std::unique_ptr<AffineSystem<T>> DiscreteTimeApproximation(
+    const AffineSystem<T>& system, double time_period);
+
 }  // namespace systems
 }  // namespace drake
