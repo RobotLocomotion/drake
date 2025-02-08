@@ -434,6 +434,7 @@ REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
     "rules_shell",
     "spdlog",
     "toolchains_llvm",
+    "zlib",
 ]
 
 # This is the list of repositories that Drake provides as a module extension

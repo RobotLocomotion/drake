@@ -1,3 +1,104 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
+load("//tools/install:check_is_cc_import.bzl", "check_is_cc_import")
+load("//tools/install:install.bzl", "install", "install_license")
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:cc.bzl", "cc_library")
+
+# ---- Logic for choosing which blas to use. ---
+
+cc_library(
+    name = "hardcoded",
+    linkopts = ["-lz"],
+    tags = ["manual"],
+)
+
+config_setting(
+    name = "flag_zlib_repo_hardcoded",
+    flag_values = {
+        "//tools/flags:zlib_repo": "hardcoded",
+    },
+)
+
+config_setting(
+    name = "flag_zlib_repo_default",
+    flag_values = {
+        "//tools/flags:zlib_repo": "default",
+    },
+)
+
+config_setting(
+    name = "flag_private_runtime_repo_default_external",
+    flag_values = {
+        "//tools/flags:private_runtime_repo_default": "external",
+    },
+)
+
+selects.config_setting_group(
+    name = "flag_zlib_repo_default_hardcoded",
+    match_all = [
+        ":flag_zlib_repo_default",
+        ":flag_private_runtime_repo_default_external",
+    ],
+)
+
+selects.config_setting_group(
+    name = "use_hardcoded",
+    match_any = [
+        ":flag_zlib_repo_hardcoded",
+        ":flag_zlib_repo_default_hardcoded",
+    ],
+)
+
+alias(
+    name = "zlib",
+    actual = select({
+        ":use_hardcoded": ":hardcoded",
+        "//conditions:default": "@module_zlib//:zlib",
+    }),
+    visibility = ["//visibility:public"],
+)
+
+# ---- Logic for installing zlib-related files. ---
+
+bool_flag(
+    name = "with_user_zlib",
+    # This is overridden by our CMakeLists.txt to match the CMake option.
+    build_setting_default = False,
+)
+
+config_setting(
+    name = "is_with_user_true",
+    flag_values = {":with_user_zlib": "True"},
+)
+
+check_is_cc_import(
+    name = "check_is_cc_import",
+    # This is only built on demand. It fails fast during the analysis phase in
+    # case our CMakeLists.txt had a typo for the override_repository flag.
+    tags = ["manual"],
+    deps = select({
+        ":is_with_user_true": ["@zlib"],
+        "//conditions:default": [],
+    }),
+)
+
+# Note: the zlib license does not require the license notice to be included in
+# non-source distributions, but we do it anyway as a courtesy.
+install_license(
+    name = "install_source_license",
+    doc_dest = "share/doc/zlib",
+    licenses = ["@module_zlib//:license"],
+)
+
+install(
+    name = "install",
+    visibility = ["//tools/workspace:__pkg__"],
+    deps = select({
+        ":is_with_user_true": [":check_is_cc_import"],
+        ":use_hardcoded": [],
+        "//conditions:default": [":install_source_license"],
+    }),
+)
 
 add_lint_tests()

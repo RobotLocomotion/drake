@@ -451,6 +451,30 @@ if(NOT APPLE)
   endif()
 endif()
 
+option(WITH_USER_ZLIB "Use user-provided ZLIB" ${DEFAULT_WITH_USER_LIBS})
+
+if(APPLE)
+  # TODO(jwnimmer-tri) Unfortunately we can't use find_package() here because
+  # symlink_external_repository_libs() is not compatible with the `zlib.tbd`
+  # linker script that CMake finds on macOS. We should work on fixing that
+  # routine, and then remove this APPLE-specific logic. When doing so, don't
+  # forget to fix our doc/_pages/from_source.md documentation at the same time.
+  if(WITH_USER_ZLIB)
+    string(APPEND BAZEL_REPO_ENV
+        " --@drake//tools/flags:zlib_repo=hardcoded")
+  else()
+    string(APPEND BAZEL_REPO_ENV
+        " --@drake//tools/flags:zlib_repo=source")
+  endif()
+else()
+  if(WITH_USER_ZLIB)
+    find_package(ZLIB REQUIRED)
+    symlink_external_repository_includes(zlib ZLIB::ZLIB)
+    symlink_external_repository_libs(zlib ZLIB::ZLIB)
+    override_module(zlib)
+  endif()
+endif()
+
 set(BAZEL_CONFIG)
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
