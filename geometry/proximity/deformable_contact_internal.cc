@@ -36,6 +36,10 @@ void Geometries::MaybeAddRigidGeometry(
   // the same rigid geometry for both hydro and deformable contact.
   if (props.HasProperty(kHydroGroup, kRezHint)) {
     ReifyData data{id, props};
+    const double E = data.properties.GetPropertyOrDefault(kHydroGroup, kElastic,
+                                                          double(1e6));
+    data.properties.UpdateProperty(kHydroGroup, kElastic, E);
+    DRAKE_DEMAND(data.properties.HasProperty(kHydroGroup, kElastic));
     shape.Reify(this, &data);
     UpdateRigidWorldPose(id, X_WG);
   }
@@ -54,15 +58,21 @@ void Geometries::UpdateRigidWorldPose(
   }
 }
 
-void Geometries::AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh) {
-  deformable_geometries_.insert({id, DeformableGeometry(std::move(mesh))});
+void Geometries::AddDeformableGeometry(
+    GeometryId id, VolumeMesh<double> mesh,
+    TriangleSurfaceMesh<double> surface_mesh,
+    std::vector<int> surface_index_to_volume_index) {
+  deformable_geometries_.insert(
+      {id, DeformableGeometry(std::move(mesh), std::move(surface_mesh),
+                              std::move(surface_index_to_volume_index))});
   FlushPendingRigidGeometry();
 }
 
 void Geometries::UpdateDeformableVertexPositions(
-    GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG) {
+    GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG,
+    const Eigen::Ref<const VectorX<double>>& q_WS) {
   if (is_deformable(id)) {
-    deformable_geometries_.at(id).UpdateVertexPositions(q_WG);
+    deformable_geometries_.at(id).UpdateVertexPositions(q_WG, q_WS);
   }
 }
 
@@ -100,12 +110,15 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
       if (collision_filter.CanCollideWith(deformable_id, rigid_id)) {
         const math::RigidTransform<double>& X_WR =
             rigid_geometry.pose_in_world();
-        const auto& rigid_bvh = rigid_geometry.rigid_mesh().bvh();
-        const auto& rigid_tri_mesh = rigid_geometry.rigid_mesh().mesh();
+        const auto& rigid_bvh = rigid_geometry.mesh().bvh();
+        const auto& rigid_volume_mesh = rigid_geometry.mesh().mesh();
+        const auto& pressure_field_R = rigid_geometry.mesh().pressure();
+        // Deformable geometry is in the world frame.
+        const auto& X_RD = X_WR.inverse();
         AddDeformableRigidContactSurface(
-            *signed_distance_fields.at(deformable_id),
-            deformable_geometry.deformable_mesh(), deformable_id, rigid_id,
-            rigid_tri_mesh, rigid_bvh, X_WR, &result);
+            pressure_field_R, deformable_geometry.deformable_surface_mesh(),
+            deformable_geometry.surface_index_to_volume_index(), deformable_id,
+            rigid_id, rigid_volume_mesh, rigid_bvh, X_RD, &result);
       }
     }
   }
@@ -203,7 +216,7 @@ void Geometries::AddRigidGeometry(const ShapeType& shape,
     return;
   }
   std::optional<RigidGeometry> rigid_geometry =
-      internal::deformable::MakeRigidRepresentation(shape, data.properties);
+      internal::deformable::MakeMeshRepresentation(shape, data.properties);
   if (rigid_geometry) {
     rigid_geometries_.insert({data.id, std::move(*rigid_geometry)});
   }

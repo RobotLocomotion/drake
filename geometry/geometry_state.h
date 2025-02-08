@@ -115,7 +115,8 @@ class DrivenMeshData {
 
   // Registers both driven meshes and render meshes for the deformable geometry
   // with the given id.
-  // @pre driven_meshes and render_meshes are the same size and not empty.
+  // @pre driven_meshes is not empty.
+  // @pre render_meshes is either empty or has the same size as driven_meshes.
   void SetMeshes(GeometryId id, std::vector<DrivenTriangleMesh> driven_meshes,
                  std::vector<RenderMesh> render_meshes);
 
@@ -819,6 +820,7 @@ class GeometryState {
   void FinalizeConfigurationUpdate(
       const internal::KinematicsData<T>& kinematics_data,
       const internal::DrivenMeshData& driven_mesh_data,
+      const internal::DrivenMeshData& proximity_driven_mesh_data,
       internal::ProximityEngine<T>* proximity_engine,
       std::vector<render::RenderEngine*> render_engines) const;
 
@@ -976,6 +978,14 @@ class GeometryState {
   // Utility function to facilitate getting a double-valued pose for a frame,
   // regardless of T's actual type.
   math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
+
+  // Returns a reference to the driven meshes with the given role in this
+  // GeometryState.
+  // @pre role is not Role::kUnassigned.
+  const internal::DrivenMeshData& driven_mesh_data(Role role) const {
+    DRAKE_DEMAND(role != Role::kUnassigned);
+    return driven_mesh_data_.at(role);
+  }
 
   /* TODO(xuchenhan-tri) Dangerous mutable getters using const_cast.
    These data live in GeometryState (which is a Parameter in the system

@@ -3,6 +3,7 @@
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
@@ -145,8 +146,10 @@ class DeformableContactSurface {
   DeformableContactSurface(
       GeometryId id_A, GeometryId id_B, PolygonSurfaceMesh<T> contact_mesh_W,
       std::vector<T> signed_distances,
-      std::vector<Vector4<int>> contact_vertex_indexes_A,
-      std::vector<Vector4<T>> barycentric_coordinates_A,
+      std::variant<std::vector<Vector4<int>>, std::vector<Vector3<int>>>
+          contact_vertex_indexes_A,
+      std::variant<std::vector<Vector4<T>>, std::vector<Vector3<T>>>
+          barycentric_coordinates_A,
       std::optional<std::vector<Vector4<int>>> contact_vertex_indexes_B,
       std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B);
 
@@ -167,6 +170,9 @@ class DeformableContactSurface {
   /* Returns the total number of contact points on this contact surface. */
   int num_contact_points() const { return signed_distances_.size(); }
 
+  // TODO(xuchenhan-tri) This may return non-positive signed_distance or
+  //  non-negative pressure depending on whether the surface is
+  //  deformable-deformable or deformable-rigid.
   /* Returns the *approximations* of signed distances at all contact points. The
      approximate signed distance values have the following properties:
      1. Contact points on the surface of a deformable geometry will report
@@ -181,15 +187,16 @@ class DeformableContactSurface {
   }
 
   /* Returns the barycentric coordinates of each contact point in its containing
-   tetrahedron in the deformable geometry A's mesh. The ordering of barycentric
-   coordinates is the same as that in `signed_distances()`. */
+   tetrahedron (or triangle) in the deformable geometry A's mesh. The ordering
+   of barycentric coordinates is the same as that in `signed_distances()`. */
   const std::vector<Vector4<T>>& barycentric_coordinates_A() const {
     return barycentric_coordinates_A_;
   }
 
-  /* Returns the indexes of the 4 vertices forming the tetrahedra containing the
-   contact points in the deformable geometry A's mesh. The ordering of contact
-   vertex indexes is the same as that in `signed_distances()`. */
+  /* Returns the volume mesh indexes of the 4 vertices forming the tetrahedra
+   (or 3 vertices forming the triangle) containing the contact points in the
+   deformable geometry A's mesh. The ordering of contact vertex indexes is the
+   same as that in `signed_distances()`. */
   const std::vector<Vector4<int>>& contact_vertex_indexes_A() const {
     return contact_vertex_indexes_A_;
   }
@@ -222,9 +229,9 @@ class DeformableContactSurface {
   /* Returns rotation matrices that transform the basis of frame W into the
    basis of an arbitrary frame C. In this transformation, the z-axis of frame,
    Cz, is aligned with the vector n̂. The vector n̂ represents the normal as
-   reported in `nhats_W()`. Cx and Cy are arbitrary but sufficient to form the
-   right-handed basis. The ordering of rotation matrices is the same as that in
-   `signed_distances()`. */
+   opposite to the one reported in `nhats_W()`. Cx and Cy are arbitrary but
+   sufficient to form the right-handed basis. The ordering of rotation matrices
+   is the same as that in `signed_distances()`. */
   const std::vector<math::RotationMatrix<T>>& R_WCs() const { return R_WCs_; }
 
   bool is_B_deformable() const { return contact_vertex_indexes_B_.has_value(); }
@@ -280,24 +287,25 @@ class DeformableContact {
      The GeometryId of the rigid geometry.
   @param[in] participating_vertices
      Each contact polygon in `contact_mesh_W` is completely contained within
-     one tetrahedron of the deformable mesh. `participating_vertices` contains
-     the indexes of vertices incident to all such tetrahedra.
+     one triangle of the deformable surface mesh. `participating_vertices`
+     contains the _volume mesh_ indexes of vertices into the full deformable
+     _volume_ mesh.
   @param[in] contact_mesh_W
      The contact surface mesh expressed in the world frame. The normals of the
      mesh point out of the rigid geometry.
-  @param[in] signed_distances
-     _Approximate_ signed distances of penetration sampled on `contact_mesh_W`.
-     These values are non-positive. Note that there is one signed distance
-     value per contact point and the i-th signed distance corresponds to the
-     i-th element in the contact mesh.
+  @param[in] pressure
+     Hydroelastic pressure of the rigid body sampled on `contact_mesh_W`.
+     These values are non-negative. Note that there is one pressure value per
+     contact point and the i-th signed distance corresponds to the i-th element
+     in the contact mesh.
   @param[in] contact_vertex_indexes
-     Vector of four vertex indexes of the tetrahedra in the mesh of the
-     deformable geometry containing each contact point with the same index
-     semantics as `signed_distances`.
+     Vector of three vertex indexes of the triangle in contact. Note that the
+     indexes are the indexes into the volume mesh's vertices. The ordering of
+     contact vertex indexes is the same as that in `pressure`.
   @param[in] barycentric_coordinates
      Barycentric coordinates of centroids of contact polygons with respect to
-     their containing tetrahedra in the mesh of the deformable geometry with
-     the same index semantics as `signed_distances`.
+     their containing triangle in the surface mesh of the deformable geometry.
+     This has the ordering semantics as `pressure`.
   @pre A deformable geometry with the given `deformable_id` has been registered
      via `RegisterDeformableGeometry()`.
   @pre contact_mesh_W.num_faces() == signed_distances.size().
@@ -306,9 +314,11 @@ class DeformableContact {
   void AddDeformableRigidContactSurface(
       GeometryId deformable_id, GeometryId rigid_id,
       const std::unordered_set<int>& participating_vertices,
-      PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> signed_distances,
-      std::vector<Vector4<int>> contact_vertex_indexes,
-      std::vector<Vector4<T>> barycentric_coordinates);
+      // TODO(xuchenhan-tri): The sign of the has been flipped from changing
+      // from sign-distance to pressure. Confirm the implications.
+      PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> pressure,
+      std::vector<Vector3<int>> contact_vertex_indexes,
+      std::vector<Vector3<T>> barycentric_coordinates);
 
   /* Adds a contact surface between two deformable geometries.
   @param[in] id0

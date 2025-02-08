@@ -752,7 +752,8 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
         kinematics_data.q_WGs);
   }
   state.FinalizeConfigurationUpdate(
-      kinematics_data, state.mutable_driven_mesh_data(Role::kPerception),
+      kinematics_data, state.driven_mesh_data(Role::kPerception),
+      state.driven_mesh_data(Role::kProximity),
       &state.mutable_proximity_engine(), state.GetMutableRenderEngines());
 }
 

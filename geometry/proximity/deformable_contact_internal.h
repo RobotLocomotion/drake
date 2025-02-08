@@ -70,12 +70,14 @@ class Geometries final : public ShapeReifier {
 
   /* Examines the given shape and properties, adding a rigid geometry
    representation if
+
    1. `props` specifies the resolution hint for the mesh representation of the
       rigid geometry.
    2. The `shape` type is supported for rigid representation for deformable
       contact. The set of supported geometries is the set of all supported hydro
-      rigid geometries minus half space. We use the same implementation that the
-      hydro-rigid reifier is using for supported shapes.
+      compliant geometries minus half space. We use the same implementation that
+      the hydro-compliant reifier is using for supported shapes.
+
    This function is a no-op if the resolution_hint property is not specified and
    logs a one-time warning if the shape is not supported for deformable contact.
 
@@ -100,15 +102,24 @@ class Geometries final : public ShapeReifier {
   /* Adds a deformable geometry whose contact mesh representation is given by
    `mesh`.
 
-   @param id     The unique identifier for the geometry.
-   @param mesh   The volume mesh representation of the deformable geometry.
+   @param id             The unique identifier for the geometry.
+   @param mesh           The volume mesh representation of the deformable
+                         geometry.
+   @param surface_mesh   The surface mesh of `mesh`.
+   @param surface_index_to_volume_index
+                         A mapping from the index of a vertex in the surface
+                         mesh to the index of the corresponding vertex in the
+                         volume mesh.
    @pre There is no previous representation associated with id. */
-  void AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh);
+  void AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh,
+                             TriangleSurfaceMesh<double> surface_mesh,
+                             std::vector<int> surface_index_to_volume_index);
 
   /* If a deformable geometry with `id` exists, updates the vertex positions
    of the geometry (in the world frame) to `q_WG`. */
   void UpdateDeformableVertexPositions(
-      GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG);
+      GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG,
+      const Eigen::Ref<const VectorX<double>>& q_WS);
 
   /* For each registered deformable geometry, computes the contact data of it
    with respect to all registered rigid geometries and all other deformable
@@ -125,7 +136,7 @@ class Geometries final : public ShapeReifier {
    parameter in the ImplementGeometry API. */
   struct ReifyData {
     GeometryId id;
-    const ProximityProperties& properties;
+    ProximityProperties properties;
   };
 
   void ImplementGeometry(const Box& box, void* user_data) override;

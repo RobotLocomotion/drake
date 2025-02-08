@@ -298,6 +298,10 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
     Vector3<T> v_WGc = Vector3<T>::Zero();
     triplets.clear();
     for (int v = 0; v < 4; ++v) {
+      if (participating_vertices(v) < 0) {
+        DRAKE_DEMAND(b(v) == 0.0);
+        continue;
+      }
       const bool vertex_under_bc = num_bcs[participating_vertices(v)] > 0;
       /* Map indexes to the permuted domain. */
       const int permuted_vertex =
@@ -483,7 +487,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        We choose a large C = 1e8 Pa/m so that for ρ = 1000 kg/m³ and
        g = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
        density of water, a reasonably small penetration. */
-      const T kA = surface.contact_mesh_W().area(i) * 1e8;
+      const T Ae = surface.contact_mesh_W().area(i);
+      const T kA = Ae * 1e8;
       const T default_rigid_k = std::numeric_limits<T>::infinity();
       const T kB = surface.is_B_deformable() ? kA : default_rigid_k;
       /* Combine stiffnesses k₁ (of geometry A) and k₂ (of geometry B) to get k
@@ -509,8 +514,10 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 
-      const T& phi0 = surface.signed_distances()[i];
-      const T fn0 = -k * phi0;
+      const T& p0 = surface.signed_distances()[i];
+      const T fn0 = Ae * p0;
+      // TODO(xuchenhan-tri): Find phi0.
+      const T phi0 = 0;
       /* The normal (scalar) component of the contact velocity in the contact
        frame. */
       /* Contact solver assumes the normal points from A to B whereas the
