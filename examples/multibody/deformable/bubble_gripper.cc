@@ -83,7 +83,9 @@ int do_main() {
    deformable bodies.
    1. A valid Coulomb friction coefficient, and
    2. A resolution hint. (Rigid bodies need to be tessellated so that collision
-   queries can be performed against deformable geometries.) */
+   queries can be performed against deformable geometries.)
+   3. A hydroelastic modulus (which is added by default through scene graph
+   config). */
   ProximityProperties rigid_proximity_props;
   const CoulombFriction<double> surface_friction(1.0, 1.0);
   const double resolution_hint = 0.01;

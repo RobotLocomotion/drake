@@ -116,29 +116,15 @@ ModelInstanceIndex AddSuctionGripper(
   return model_instance;
 }
 
-/* Adds a parallel gripper to the given MultibodyPlant and assign
- `proximity_props` to all the registered collision geometries. Returns the
+/* Adds a parallel gripper to the given MultibodyPlant. Returns the
  ModelInstanceIndex of the gripper model. */
-ModelInstanceIndex AddParallelGripper(
-    MultibodyPlant<double>* plant, const ProximityProperties& proximity_props) {
+ModelInstanceIndex AddParallelGripper(MultibodyPlant<double>* plant) {
   // TODO(xuchenhan-tri): Consider using a schunk gripper from the manipulation
   // station instead.
   Parser parser(plant);
   ModelInstanceIndex model_instance = parser.AddModelsFromUrl(
       "package://drake/examples/multibody/deformable/models/simple_gripper.sdf")
                                           [0];
-  /* Add collision geometries. */
-  const RigidTransformd X_BG =
-      RigidTransformd(math::RollPitchYawd(M_PI_2, 0, 0), Vector3d::Zero());
-  const RigidBody<double>& left_finger = plant->GetBodyByName("left_finger");
-  const RigidBody<double>& right_finger = plant->GetBodyByName("right_finger");
-  /* The size of the fingers is set to match the visual geometries in
-   simple_gripper.sdf. */
-  Capsule capsule(0.01, 0.08);
-  plant->RegisterCollisionGeometry(left_finger, X_BG, capsule,
-                                   "left_finger_collision", proximity_props);
-  plant->RegisterCollisionGeometry(right_finger, X_BG, capsule,
-                                   "right_finger_collision", proximity_props);
   /* Get joints so that we can set initial conditions. */
   PrismaticJoint<double>& left_slider =
       plant->GetMutableJointByName<PrismaticJoint>("left_slider");
@@ -180,7 +166,7 @@ int do_main() {
   const bool use_suction = FLAGS_gripper == "suction";
   ModelInstanceIndex gripper_instance =
       use_suction ? AddSuctionGripper(&plant, rigid_proximity_props)
-                  : AddParallelGripper(&plant, rigid_proximity_props);
+                  : AddParallelGripper(&plant);
 
   /* Set up a deformable torus. */
   DeformableBodyConfig<double> deformable_config;
