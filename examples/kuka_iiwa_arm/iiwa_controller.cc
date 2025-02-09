@@ -39,6 +39,8 @@ namespace {
 using manipulation::util::InterpolatorType;
 using manipulation::util::RobotPlanInterpolator;
 using multibody::PackageMap;
+using systems::lcm::LcmPublisherSystem;
+using systems::lcm::LcmSubscriberSystem;
 
 const char kIiwaUrdfUrl[] =
     "package://drake_models/iiwa_description/urdf/"
@@ -63,8 +65,8 @@ int DoMain() {
 
   // Sets the robot plan interpolation type.
   std::string interp_str(FLAGS_interp_type);
-  std::transform(interp_str.begin(), interp_str.end(),
-                 interp_str.begin(), ::tolower);
+  std::transform(interp_str.begin(), interp_str.end(), interp_str.begin(),
+                 ::tolower);
   InterpolatorType interpolator_type{};
   if (interp_str == "zoh") {
     interpolator_type = InterpolatorType::ZeroOrderHold;
@@ -75,10 +77,9 @@ int DoMain() {
   } else if (interp_str == "pchip") {
     interpolator_type = InterpolatorType::Pchip;
   } else {
-    std::cerr <<
-        "Robot plan interpolation type not recognized. "
-        "Use the gflag --helpshort to display "
-        "flag options for interpolator type.\n";
+    std::cerr << "Robot plan interpolation type not recognized. "
+                 "Use the gflag --helpshort to display "
+                 "flag options for interpolator type.\n";
     return EXIT_FAILURE;
   }
   auto plan_interpolator =
@@ -86,13 +87,11 @@ int DoMain() {
   const int kNumJoints = plan_interpolator->num_joints();
 
   auto plan_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_robot_plan>(
-          kLcmPlanChannel, &lcm));
+      LcmSubscriberSystem::Make<lcmt_robot_plan>(kLcmPlanChannel, &lcm));
   plan_sub->set_name("plan_sub");
 
   auto command_pub = builder.AddSystem(
-      systems::lcm::LcmPublisherSystem::Make<lcmt_iiwa_command>(
-          kLcmCommandChannel, &lcm));
+      LcmPublisherSystem::Make<lcmt_iiwa_command>(kLcmCommandChannel, &lcm));
   command_pub->set_name("command_pub");
 
   // Connect subscribers to input ports.
@@ -114,7 +113,9 @@ int DoMain() {
   // Wait for the first message.
   drake::log()->info("Waiting for first lcmt_iiwa_status");
   lcm::Subscriber<lcmt_iiwa_status> status_sub(&lcm, kLcmStatusChannel);
-  LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+  LcmHandleSubscriptionsUntil(&lcm, [&]() {
+    return status_sub.count() > 0;
+  });
   DRAKE_DEMAND(status_sub.message().num_joints == kNumJoints);
 
   // Initialize the context based on the first message.
@@ -135,7 +136,9 @@ int DoMain() {
   while (true) {
     // Wait for an lcmt_iiwa_status message.
     status_sub.clear();
-    LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+    LcmHandleSubscriptionsUntil(&lcm, [&]() {
+      return status_sub.count() > 0;
+    });
     // Write the lcmt_iiwa_status message into the context and advance.
     status_value.GetMutableData()->set_value(status_sub.message());
     const double time = status_sub.message().utime * 1e-6;

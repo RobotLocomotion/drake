@@ -11,16 +11,15 @@ namespace allegro_hand {
 
 using systems::BasicVector;
 using systems::Context;
-using systems::DiscreteValues;
 using systems::DiscreteUpdateEvent;
+using systems::DiscreteValues;
 
 AllegroCommandReceiver::AllegroCommandReceiver(int num_joints,
                                                double lcm_period)
     : num_joints_(num_joints), lcm_period_(lcm_period) {
   DRAKE_THROW_UNLESS(lcm_period > 0);
-  this->DeclareAbstractInputPort(
-      systems::kUseDefaultName,
-      Value<lcmt_allegro_command>{});
+  this->DeclareAbstractInputPort(systems::kUseDefaultName,
+                                 Value<lcmt_allegro_command>{});
   state_output_port_ =
       this->DeclareVectorOutputPort(
               systems::kUseDefaultName, num_joints_ * 2,
@@ -94,16 +93,19 @@ void AllegroCommandReceiver::CopyStateToOutput(
 AllegroStatusSender::AllegroStatusSender(int num_joints)
     : num_joints_(num_joints) {
   // Commanded state.
-  command_input_port_ = this->DeclareInputPort(
-      systems::kUseDefaultName, systems::kVectorValued, num_joints_ * 2)
+  command_input_port_ =
+      this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued,
+                             num_joints_ * 2)
           .get_index();
   // Measured state.
-  state_input_port_ = this->DeclareInputPort(
-      systems::kUseDefaultName, systems::kVectorValued, num_joints_ * 2)
+  state_input_port_ =
+      this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued,
+                             num_joints_ * 2)
           .get_index();
   // Commanded torque.
-  command_torque_input_port_ = this->DeclareInputPort(
-      systems::kUseDefaultName, systems::kVectorValued, num_joints_)
+  command_torque_input_port_ =
+      this->DeclareInputPort(systems::kUseDefaultName, systems::kVectorValued,
+                             num_joints_)
           .get_index();
 
   this->DeclareAbstractOutputPort(systems::kUseDefaultName,
