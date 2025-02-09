@@ -348,6 +348,49 @@ struct MeshfileObjectData {
   MSGPACK_DEFINE_MAP(uuid, type, format, data, mtl_library, resources, matrix);
 };
 
+struct InstancedMeshData {
+  std::string uuid;
+  std::string type{"InstancedMesh"};
+  std::string geometry;
+  std::string material;
+  // The count of instances
+  int count{0};
+  // Matrix data for all instances stored as a contiguous array.
+  // Each instance has a 16-element transform matrix.
+  Eigen::Matrix<float, 16, Eigen::Dynamic> instanceMatrix;
+  // Optional per-instance colors stored as RGB values (3 floats per instance)
+  std::optional<Eigen::Matrix<float, 3, Eigen::Dynamic>> instanceColor;
+
+  template <typename Packer>
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(Packer& o) const {
+    int size = 5;  // uuid, type, geometry, material, count
+    if (instanceMatrix.cols() > 0) ++size;
+    if (instanceColor && instanceColor->cols() > 0) ++size;
+
+    o.pack_map(size);
+    PACK_MAP_VAR(o, uuid);
+    PACK_MAP_VAR(o, type);
+    PACK_MAP_VAR(o, geometry);
+    PACK_MAP_VAR(o, material);
+    PACK_MAP_VAR(o, count);
+
+    if (instanceMatrix.cols() > 0) {
+      PACK_MAP_VAR(o, instanceMatrix);
+    }
+    if (instanceColor && instanceColor->cols() > 0) {
+      o.pack("instanceColor");
+      o.pack(*instanceColor);
+    }
+  }
+
+  // This method must be defined, but the implementation is not needed in the
+  // current workflows.
+  void msgpack_unpack(msgpack::object const&) {
+    throw std::runtime_error("unpack is not implemented for InstancedMeshData.");
+  }
+};
+
 struct LumpedObjectData {
   ObjectData metadata{};
   // We deviate from the msgpack names (geometries, materials) here since we
