@@ -122,7 +122,7 @@ cc_library(
     includes = ["test"],
     tags = ["nolint"],
     deps = [
-        "@lcm",
+        "@lcm//:lcm_coretypes",
     ],
 )
 
