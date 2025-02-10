@@ -758,7 +758,7 @@ void MultibodyTree<T>::CreateJointImplementations() {
       // Mobods, BodyNodes, and Mobilizers have identical numbering.
       topology_.add_world_mobilizer(mobod, world_body().body_frame().index());
       auto dummy_weld = std::make_unique<internal::WeldMobilizer<T>>(
-          mobod, world_frame(), world_frame(), RigidTransform<double>());
+          mobod, world_frame(), world_frame());
       dummy_weld->set_model_instance(world_model_instance());
       dummy_weld->set_parent_tree(this, MobodIndex(0));
       mobilizers_.push_back(std::move(dummy_weld));
@@ -783,7 +783,7 @@ void MultibodyTree<T>::CreateJointImplementations() {
           GetModelInstanceName(joint.model_instance())));
     }
 
-    std::unique_ptr<Mobilizer<T>> owned_mobilizer = joint.Build(mobod);
+    std::unique_ptr<Mobilizer<T>> owned_mobilizer = joint.Build(mobod, this);
     Mobilizer<T>* mobilizer = owned_mobilizer.get();
     AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     mobilizer->set_model_instance(joint.model_instance());
