@@ -174,6 +174,7 @@ def run_simulation(
     accuracy: float,
     max_step_size: float,
     meshcat: Meshcat,
+    wait_for_meshcat: bool = True,
 ):
     """
     Run a short simulation, and report the time-steps used throughout.
@@ -185,9 +186,10 @@ def run_simulation(
         accuracy: the desired accuracy (ignored for "discrete").
         max_step_size: the maximum (and initial) timestep dt.
         meshcat: meshcat instance for visualization.
+        wait_for_meshcat: whether to wait for meshcat load.
 
     Returns:
-        Timesteps (dt) throughout the simulation.
+        Timesteps (dt) throughout the simulation, and the wall-clock time.
     """
     url = example.url
     use_hydroelastic = example.use_hydroelastic
@@ -226,7 +228,8 @@ def run_simulation(
     simulator.Initialize()
 
     print(f"Running the {example.name} example with {integrator} integrator.")
-    input("Waiting for meshcat... [ENTER] to continue")
+    if wait_for_meshcat:
+        input("Waiting for meshcat... [ENTER] to continue")
 
     # Simulate
     meshcat.StartRecording()
@@ -244,7 +247,7 @@ def run_simulation(
     times = log.sample_times()
     timesteps = times[1:] - times[0:-1]
 
-    return np.asarray(timesteps)
+    return np.asarray(timesteps), wall_time
 
 
 if __name__ == "__main__":
@@ -256,7 +259,6 @@ if __name__ == "__main__":
         help=(
             "Which example to run. One of: gripper, ball_on_table, "
             "double_pendulum, cylinder_hydro, cylinder_point, clutter. "
-            "Default: gripper."
         ),
     )
     parser.add_argument(
@@ -277,10 +279,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--max_step_size",
         type=float,
-        default=0.1,
+        default=0.01,
         help=(
             "Maximum time step size (or fixed step size for discrete "
-            "integrator). Default: 0.1."
+            "integrator). Default: 0.01."
         ),
     )
     parser.add_argument(
@@ -311,7 +313,7 @@ if __name__ == "__main__":
 
     meshcat = StartMeshcat()
 
-    time_steps = run_simulation(
+    time_steps, _ = run_simulation(
         example,
         args.integrator,
         args.accuracy,

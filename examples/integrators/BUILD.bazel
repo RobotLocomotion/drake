@@ -1,5 +1,5 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:drake_py.bzl", "drake_py_binary")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_library")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -20,6 +20,24 @@ drake_py_binary(
     srcs = ["error_control_demo.py"],
     data = [":models"],
     deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_library(
+    name = "error_control",
+    srcs = ["error_control_demo.py"],
+    data = [":models"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    name = "work_precision_plots",
+    srcs = ["work_precision_plots.py"],
+    deps = [
+        ":error_control",
         "//bindings/pydrake",
     ],
 )
