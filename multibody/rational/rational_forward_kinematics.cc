@@ -287,14 +287,7 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
     return CalcPrismaticJointChildLinkPose(axis_F, X_PF, X_MC, X_AP,
                                            q_star(s_index), s_[s_index]);
   } else if (IsWeld(*mobilizer)) {
-    const internal::WeldMobilizer<double>* weld_mobilizer =
-        static_cast<const internal::WeldMobilizer<double>*>(mobilizer);
-    math::RigidTransformd X_FM;
-    if (!is_order_reversed) {
-      X_FM = weld_mobilizer->get_X_FM();
-    } else {
-      X_FM = weld_mobilizer->get_X_FM().inverse();
-    }
+    math::RigidTransformd X_FM;  // Always identity for Weld.
     return CalcWeldJointChildBodyPose(X_FM, X_PF, X_MC, X_AP);
   }
   // Successful construction guarantess that all supported mobilizers are

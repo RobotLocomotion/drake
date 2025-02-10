@@ -299,7 +299,8 @@ class PrismaticJoint final : public Joint<T> {
 
   // Joint<T> finals:
   std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
-      const internal::SpanningForest::Mobod& mobod) const final {
+      const internal::SpanningForest::Mobod& mobod,
+      internal::MultibodyTree<T>*) const final {
     const auto [inboard_frame, outboard_frame] =
         this->tree_frames(mobod.is_reversed());
     // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
