@@ -8,7 +8,7 @@ and the [Robotics Division](https://www.tri.global/our-work/robotics/) at
 Toyota Research Institute.  Many other people have since contributed their
 talents to help make Drake successful.  Here's an alphabetical list: (note to contributors: *do add yourself*)
 
-{% comment %} 
+{% comment %}
 this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.php?title=Main_Page#Credits
 {% endcomment %}
 
@@ -47,6 +47,7 @@ this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.
 * Naveen Kuppuswamy
 * Benoit Landry
 * Dominic Liao-McPherson
+* Wei-Chen Li
 * Lucas Manuelli
 * Matt Marjanovic
 * Pat Marion
