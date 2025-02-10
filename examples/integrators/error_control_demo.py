@@ -173,17 +173,17 @@ def clutter():
 def create_scene(
     url: str,
     time_step: float,
+    meshcat: Meshcat,
     hydroelastic: bool = False,
-    meshcat: Meshcat = None,
 ):
     """
     Set up a drake system dyagram
 
     Args:
-        xml: mjcf robot description
-        time_step: dt for MultibodyPlant
-        hydroelastic: whether to use hydroelastic contact
-        meshcat: meshcat instance. Defaults to no visualization.
+        xml: mjcf robot description.
+        time_step: dt for MultibodyPlant.
+        hydroelastic: whether to use hydroelastic contact.
+        meshcat: meshcat instance for visualization.
 
     Returns:
         The system diagram, the MbP within that diagram, and the logger used to
@@ -207,8 +207,9 @@ def create_scene(
         sg_config.default_proximity_properties.compliance_type = "compliant"
         scene_graph.set_config(sg_config)
 
-    if meshcat is not None:
-        AddDefaultVisualization(builder=builder, meshcat=meshcat)
+    vis_config = VisualizationConfig()
+    vis_config.publish_period = 100  # very long to avoid extra publishes
+    ApplyVisualizationConfig(vis_config, builder=builder, meshcat=meshcat)
 
     logger = LogVectorOutput(
         plant.get_state_output_port(),
@@ -227,19 +228,18 @@ def run_simulation(
     integrator: str,
     accuracy: float,
     max_step_size: float,
-    visualize: bool = False,
+    meshcat: Meshcat,
 ):
     """
     Run a short simulation, and report the time-steps used throughout.
 
     Args:
-        example: container defining the scenario to simulate
+        example: container defining the scenario to simulate.
         integrator: which integration strategy to use ("implicit_euler",
-            "runge_kutta3", "convex", "discrete")
-        accuracy: the desired accuracy (ignored for "discrete")
-        max_step_size: the maximum (and initial) timestep dt
-        visualize: flag for playing the sim in meshcat. Note that this breaks
-            timestep visualizations
+            "runge_kutta3", "convex", "discrete").
+        accuracy: the desired accuracy (ignored for "discrete").
+        max_step_size: the maximum (and initial) timestep dt.
+        meshcat: meshcat instance for visualization.
 
     Returns:
         Timesteps (dt) throughout the simulation.
@@ -248,11 +248,6 @@ def run_simulation(
     use_hydroelastic = example.use_hydroelastic
     initial_state = example.initial_state
     sim_time = example.sim_time
-
-    if visualize:
-        meshcat = StartMeshcat()
-    else:
-        meshcat = None
 
     # We can use a more standard simulation setup and rely on a logger to
     # tell use the time step information. Note that in this case enabling
@@ -274,7 +269,7 @@ def run_simulation(
     else:
         time_step = 0.0
     diagram, plant, logger = create_scene(
-        url, time_step, use_hydroelastic, meshcat
+        url, time_step, meshcat, use_hydroelastic
     )
     context = diagram.CreateDefaultContext()
     plant_context = diagram.GetMutableSubsystemContext(plant, context)
@@ -284,17 +279,17 @@ def run_simulation(
     simulator = Simulator(diagram, context)
     ApplySimulatorConfig(config, simulator)
     simulator.Initialize()
+
+    print(f"Running the {example.name} example with {integrator} integrator.")
     input("Waiting for meshcat... [ENTER] to continue")
 
     # Simulate
-    if meshcat is not None:
-        meshcat.StartRecording()
+    meshcat.StartRecording()
     start_time = time.time()
     simulator.AdvanceTo(sim_time)
     wall_time = time.time() - start_time
-    if meshcat is not None:
-        meshcat.StopRecording()
-        meshcat.PublishRecording()
+    meshcat.StopRecording()
+    meshcat.PublishRecording()
 
     print(f"\nWall clock time: {wall_time}\n")
     PrintSimulatorStatistics(simulator)
@@ -304,8 +299,7 @@ def run_simulation(
     times = log.sample_times()
     timesteps = times[1:] - times[0:-1]
 
-    # Keep meshcat instance alive for playback
-    return np.asarray(timesteps), meshcat
+    return np.asarray(timesteps)
 
 
 if __name__ == "__main__":
@@ -345,12 +339,7 @@ if __name__ == "__main__":
         ),
     )
     parser.add_argument(
-        "--visualize",
-        action="store_true",
-        help="Whether to visualize in meshcat. Default: False.",
-    )
-    parser.add_argument(
-        "--make_plots",
+        "--plot",
         action="store_true",
         help=(
             "Whether to make plots of the step size over time. Default: "
@@ -375,15 +364,17 @@ if __name__ == "__main__":
     else:
         raise ValueError(f"Unknown example {args.example}")
 
-    time_steps, meshcat = run_simulation(
+    meshcat = StartMeshcat()
+
+    time_steps = run_simulation(
         example,
         args.integrator,
         args.accuracy,
         max_step_size=args.max_step_size,
-        visualize=args.visualize,
+        meshcat=meshcat,
     )
 
-    if args.make_plots:
+    if args.plot:
         times = np.cumsum(time_steps)
         plt.title(
             (

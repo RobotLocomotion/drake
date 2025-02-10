@@ -16,8 +16,8 @@ filegroup(
 )
 
 drake_py_binary(
-    name = "compare",
-    srcs = ["compare.py"],
+    name = "error_control_demo",
+    srcs = ["error_control_demo.py"],
     data = [":models"],
     deps = [
         "//bindings/pydrake",
