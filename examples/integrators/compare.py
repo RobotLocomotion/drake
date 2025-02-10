@@ -1,3 +1,4 @@
+import argparse
 from pydrake.all import *
 
 import time
@@ -15,8 +16,9 @@ from dataclasses import dataclass
 @dataclass
 class SimulationExample:
     """A little container for setting up different examples."""
+
     name: str
-    xml: str
+    url: str
     use_hydroelastic: bool
     initial_state: np.array
     sim_time: float
@@ -25,173 +27,151 @@ class SimulationExample:
 def gripper():
     """A fake "gripper", where an object is wedged between two fixed joints."""
     name = "Gripper"
-    xml = """
-    <?xml version="1.0"?>
-    <mujoco model="robot">
-      <worldbody>
-        <geom name="table" type="box" size="0.5 0.5 0.02" rgba="0.5 0.5 0.5 0.5"/>
-        <body>
-          <joint type="slide" />
-          <geom name="post" type="box" pos="0 0 0.3" size="0.02 0.02 0.1" rgba="0.5 0.5 0.5 0.5"/>
-          <geom name="finger1" type="box" pos="0.01 0.025 0.39" size="0.005 0.04 0.005" rgba="0.5 0.5 0.5 0.5"/>
-          <geom name="finger2" type="box" pos="-0.01 0.025 0.39" size="0.005 0.04 0.005" rgba="0.5 0.5 0.5 0.5"/>
-        </body>
-        <body>
-          <joint type="free" />
-          <geom name="manipuland" type="box" pos="0.0 0.05 0.36" euler="10 0 0" size="0.00501 0.005 0.04" rgba="0.9 0.8 0.7 1.0"/>
-        </body>
-      </worldbody>
-    </mujoco>
-    """
+    url = "package://drake/examples/integrators/gripper.xml"
     use_hydroelastic = True
     initial_state = np.array([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     sim_time = 2.0
-    return SimulationExample(name, xml, use_hydroelastic, initial_state, sim_time)
+    return SimulationExample(
+        name, url, use_hydroelastic, initial_state, sim_time
+    )
 
 
 def ball_on_table():
     """A sphere is dropped on a table with some initial horizontal velocity."""
     name = "Ball on table"
-    xml = """
-    <?xml version="1.0"?>
-    <mujoco model="robot">
-    <worldbody>
-        <geom name="table_top" type="box" pos="0.0 0.0 0.0" size="0.55 1.1 0.05" rgba="0.9 0.8 0.7 1"/>
-        <body>
-            <joint type="free"/>
-            <geom name="object" type="sphere" pos="0.0 0.0 0.5" euler="80 0 0" size="0.1" rgba="1.0 1.0 1.0 1.0"/>
-        </body>
-    </worldbody>
-    </mujoco>
-    """
+    url = "package://drake/examples/integrators/ball_on_table.xml"
     use_hydroelastic = False
     initial_state = np.array(
-        [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.])
+        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    )
     sim_time = 1.0
-    return SimulationExample(name, xml, use_hydroelastic, initial_state, sim_time)
+    return SimulationExample(
+        name, url, use_hydroelastic, initial_state, sim_time
+    )
 
 
 def double_pendulum():
     """A simple double pendulum (no contact)."""
     name = "Double Pendulum"
-    xml = """
-    <?xml version="1.0"?>
-    <mujoco model="robot">
-    <worldbody>
-        <body>
-        <joint type="hinge" axis="0 1 0" pos="0 0 0.1" damping="1e-3"/>
-        <geom type="capsule" size="0.01 0.1"/>
-        <body>
-            <joint type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="1e-3"/>
-            <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
-        </body>
-        </body>
-    </worldbody>
-    </mujoco>
-    """
+    url = "package://drake/examples/integrators/double_pendulum.xml"
     use_hydroelastic = False
     initial_state = np.array([3.0, 0.1, 0.0, 0.0])
     sim_time = 2.0
-    return SimulationExample(name, xml, use_hydroelastic, initial_state, sim_time)
+    return SimulationExample(
+        name, url, use_hydroelastic, initial_state, sim_time
+    )
 
 
 def cylinder_hydro():
     """A cylinder with hydroelastic contact is dropped on the table."""
     name = "Cylinder w/ hydroelastic"
-    xml = """
-    <?xml version="1.0"?>
-    <mujoco model="robot">
-    <worldbody>
-        <geom name="table_top" type="box" pos="0.0 0.0 0.0" size="0.55 1.1 0.05" rgba="0.9 0.8 0.7 1"/>
-        <body>
-            <joint type="free"/>
-            <geom name="object" type="cylinder" pos="0.0 0.0 0.5" euler="80 0 0" size="0.1 0.1" rgba="1.0 1.0 1.0 1.0"/>
-        </body>
-    </worldbody>
-    </mujoco>
-    """
+    url = "package://drake/examples/integrators/cylinder.xml"
     use_hydroelastic = True
     initial_state = np.array(
-        [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.])
+        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    )
     sim_time = 1.0
-    return SimulationExample(name, xml, use_hydroelastic, initial_state, sim_time)
+    return SimulationExample(
+        name, url, use_hydroelastic, initial_state, sim_time
+    )
 
 
 def cylinder_point():
     """A cylinder with point contact is dropped on the table."""
     name = "Cylinder w/ point contact"
-    xml = """
-    <?xml version="1.0"?>
-    <mujoco model="robot">
-    <worldbody>
-        <geom name="table_top" type="box" pos="0.0 0.0 0.0" size="0.55 1.1 0.05" rgba="0.9 0.8 0.7 1"/>
-        <body>
-            <joint type="free"/>
-            <geom name="object" type="cylinder" pos="0.0 0.0 0.5" euler="80 0 0" size="0.1 0.1" rgba="1.0 1.0 1.0 1.0"/>
-        </body>
-    </worldbody>
-    </mujoco>
-    """
+    url = "package://drake/examples/integrators/cylinder.xml"
     use_hydroelastic = False
     initial_state = np.array(
-        [1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.])
+        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    )
     sim_time = 1.0
-    return SimulationExample(name, xml, use_hydroelastic, initial_state, sim_time)
+    return SimulationExample(
+        name, url, use_hydroelastic, initial_state, sim_time
+    )
 
 
 def clutter():
     """Several spheres fall into a box."""
     name = "Clutter"
-    xml = """
-    <?xml version="1.0"?>
-    <mujoco model="robot">
-    <worldbody>
-        <geom name="base" type="box" pos="0.0 0.0 0.0" size="0.05 0.05 0.002" rgba="0.5 0.5 0.5 0.3"/>
-        <geom name="left" type="box" pos="0.05 0.0 0.05" size="0.002 0.05 0.05" rgba="0.5 0.5 0.5 0.3"/>
-        <geom name="right" type="box" pos="-0.05 0.0 0.05" size="0.002 0.05 0.05" rgba="0.5 0.5 0.5 0.3"/>
-        <geom name="front" type="box" pos="0.0 0.05 0.05" size="0.05 0.002 0.05" rgba="0.5 0.5 0.5 0.3"/>
-        <geom name="back" type="box" pos="0.0 -0.05 0.05" size="0.05 0.002 0.05" rgba="0.5 0.5 0.5 0.3"/>
-        <body>
-            <joint type="free"/>
-            <geom name="ball1" type="sphere" pos="0.0 0.0 0.05" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
-        </body>
-        <body>
-            <joint type="free"/>
-            <geom name="ball2" type="sphere" pos="0.0001 0.0 0.07" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
-        </body>
-        <body>
-            <joint type="free"/>
-            <geom name="ball3" type="sphere" pos="0.0 0.0001 0.09" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
-        </body>
-        <body>
-            <joint type="free"/>
-            <geom name="ball4" type="sphere" pos="-0.0001 0.0 0.11" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
-        </body>
-        <body>
-            <joint type="free"/>
-            <geom name="ball5" type="sphere" pos="0.0 -0.0001 0.13" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
-        </body>
-    </worldbody>
-    </mujoco>
-    """
+    url = "package://drake/examples/integrators/clutter.xml"
     use_hydroelastic = False
     initial_state = np.array(
-        [1., 0., 0., 0., 0., 0., 0.,
-         1., 0., 0., 0., 0., 0., 0.,
-         1., 0., 0., 0., 0., 0., 0.,
-         1., 0., 0., 0., 0., 0., 0.,
-         1., 0., 0., 0., 0., 0., 0.,
-         0., 0., 0., 0., 0., 0.,
-         0., 0., 0., 0., 0., 0.,
-         0., 0., 0., 0., 0., 0.,
-         0., 0., 0., 0., 0., 0.,
-         0., 0., 0., 0., 0., 0.])
+        [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+    )
     sim_time = 3.0
-    return SimulationExample(name, xml, use_hydroelastic, initial_state, sim_time)
+    return SimulationExample(
+        name, url, use_hydroelastic, initial_state, sim_time
+    )
 
 
 def create_scene(
-    xml: str,
+    url: str,
     time_step: float,
     hydroelastic: bool = False,
     meshcat: Meshcat = None,
@@ -203,21 +183,23 @@ def create_scene(
         xml: mjcf robot description
         time_step: dt for MultibodyPlant
         hydroelastic: whether to use hydroelastic contact
-        meshcat: meshcat instance for visualization. Defaults to no visualization.
+        meshcat: meshcat instance. Defaults to no visualization.
 
     Returns:
-        The system diagram, the MbP within that diagram, and the logger instance
-        used to keep track of time steps
+        The system diagram, the MbP within that diagram, and the logger used to
+        keep track of time steps.
     """
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(
-        builder, time_step=time_step)
+        builder, time_step=time_step
+    )
 
     parser = Parser(plant)
-    parser.AddModelsFromString(xml, "xml")
+    parser.AddModels(url=url)
     if time_step > 0:
         plant.set_discrete_contact_approximation(
-            DiscreteContactApproximation.kLagged)
+            DiscreteContactApproximation.kLagged
+        )
     plant.Finalize()
 
     if hydroelastic:
@@ -232,7 +214,8 @@ def create_scene(
         plant.get_state_output_port(),
         builder,
         publish_triggers={TriggerType.kForced},
-        publish_period=0)
+        publish_period=0,
+    )
     logger.set_name("logger")
 
     diagram = builder.Build()
@@ -244,23 +227,24 @@ def run_simulation(
     integrator: str,
     accuracy: float,
     max_step_size: float,
-    visualize: bool = False
+    visualize: bool = False,
 ):
     """
     Run a short simulation, and report the time-steps used throughout.
 
     Args:
         example: container defining the scenario to simulate
-        integrator: which integration strategy to use ("implicit_euler", "runge_kutta3", "convex", "discrete")
+        integrator: which integration strategy to use ("implicit_euler",
+            "runge_kutta3", "convex", "discrete")
         accuracy: the desired accuracy (ignored for "discrete")
         max_step_size: the maximum (and initial) timestep dt
         visualize: flag for playing the sim in meshcat. Note that this breaks
-                   timestep visualizations
+            timestep visualizations
 
     Returns:
         Timesteps (dt) throughout the simulation.
     """
-    xml = example.xml
+    url = example.url
     use_hydroelastic = example.use_hydroelastic
     initial_state = example.initial_state
     sim_time = example.sim_time
@@ -290,7 +274,8 @@ def run_simulation(
     else:
         time_step = 0.0
     diagram, plant, logger = create_scene(
-        xml, time_step, use_hydroelastic, meshcat)
+        url, time_step, use_hydroelastic, meshcat
+    )
     context = diagram.CreateDefaultContext()
     plant_context = diagram.GetMutableSubsystemContext(plant, context)
 
@@ -324,25 +309,91 @@ def run_simulation(
 
 
 if __name__ == "__main__":
-    example = gripper()
-    integrator = "convex"
-    accuracy = 0.1
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--example",
+        type=str,
+        default="clutter",
+        help=(
+            "Which example to run. One of: gripper, ball_on_table, "
+            "double_pendulum, cylinder_hydro, cylinder_point, clutter. "
+            "Default: gripper."
+        ),
+    )
+    parser.add_argument(
+        "--integrator",
+        type=str,
+        default="convex",
+        help=(
+            "Integrator to use, e.g., implicit_euler, runge_kutta3, convex, "
+            "discrete. Default: convex."
+        ),
+    )
+    parser.add_argument(
+        "--accuracy",
+        type=float,
+        default=0.1,
+        help="Integrator accuracy (ignored for discrete). Default: 0.1.",
+    )
+    parser.add_argument(
+        "--max_step_size",
+        type=float,
+        default=0.1,
+        help=(
+            "Maximum time step size (or fixed step size for discrete "
+            "integrator). Default: 0.1."
+        ),
+    )
+    parser.add_argument(
+        "--visualize",
+        action="store_true",
+        help="Whether to visualize in meshcat. Default: False.",
+    )
+    parser.add_argument(
+        "--make_plots",
+        action="store_true",
+        help=(
+            "Whether to make plots of the step size over time. Default: "
+            "False."
+        ),
+    )
+    args = parser.parse_args()
+
+    # Set up the example system
+    if args.example == "gripper":
+        example = gripper()
+    elif args.example == "ball_on_table":
+        example = ball_on_table()
+    elif args.example == "double_pendulum":
+        example = double_pendulum()
+    elif args.example == "cylinder_hydro":
+        example = cylinder_hydro()
+    elif args.example == "cylinder_point":
+        example = cylinder_point()
+    elif args.example == "clutter":
+        example = clutter()
+    else:
+        raise ValueError(f"Unknown example {args.example}")
 
     time_steps, meshcat = run_simulation(
         example,
-        integrator,
-        accuracy,
-        max_step_size=0.1,
-        visualize=True,
+        args.integrator,
+        args.accuracy,
+        max_step_size=args.max_step_size,
+        visualize=args.visualize,
     )
 
-    # Plot stuff
-    times = np.cumsum(time_steps)
-    plt.title(
-        f"{example.name} | {integrator} integrator | accuracy = {accuracy}")
-    plt.plot(times, time_steps, "o")
-    plt.ylim(1e-10, 1e0)
-    plt.yscale("log")
-    plt.xlabel("time (s)")
-    plt.ylabel("step size (s)")
-    plt.show()
+    if args.make_plots:
+        times = np.cumsum(time_steps)
+        plt.title(
+            (
+                f"{example.name} | {args.integrator} integrator | "
+                f"accuracy = {args.accuracy}"
+            )
+        )
+        plt.plot(times, time_steps, "o")
+        plt.ylim(1e-10, 1e0)
+        plt.yscale("log")
+        plt.xlabel("time (s)")
+        plt.ylabel("step size (s)")
+        plt.show()

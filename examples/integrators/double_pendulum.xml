@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<mujoco model="robot">
+  <worldbody>
+    <body>
+      <joint type="hinge" axis="0 1 0" pos="0 0 0.1" damping="1e-3"/>
+      <geom type="capsule" size="0.01 0.1"/>
+      <body>
+        <joint type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="1e-3"/>
+        <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

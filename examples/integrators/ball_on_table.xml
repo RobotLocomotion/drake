@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<mujoco model="robot">
+  <worldbody>
+    <geom name="table_top" type="box" pos="0.0 0.0 0.0" size="0.55 1.1 0.05" rgba="0.9 0.8 0.7 1"/>
+    <body>
+      <joint type="free"/>
+      <geom name="object" type="sphere" pos="0.0 0.0 0.5" euler="80 0 0" size="0.1" rgba="1.0 1.0 1.0 1.0"/>
+    </body>
+  </worldbody>
+</mujoco>

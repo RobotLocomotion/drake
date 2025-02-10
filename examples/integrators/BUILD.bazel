@@ -3,9 +3,22 @@ load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 
 package(default_visibility = ["//visibility:private"])
 
+filegroup(
+    name = "models",
+    srcs = [
+        "ball_on_table.xml",
+        "clutter.xml",
+        "cylinder.xml",
+        "double_pendulum.xml",
+        "gripper.xml",
+    ],
+    visibility = ["//:__pkg__"],
+)
+
 drake_py_binary(
     name = "compare",
     srcs = ["compare.py"],
+    data = [":models"],
     deps = [
         "//bindings/pydrake",
     ],

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<mujoco model="robot">
+  <worldbody>
+    <geom name="base" type="box" pos="0.0 0.0 0.0" size="0.05 0.05 0.002" rgba="0.5 0.5 0.5 0.3"/>
+    <geom name="left" type="box" pos="0.05 0.0 0.05" size="0.002 0.05 0.05" rgba="0.5 0.5 0.5 0.3"/>
+    <geom name="right" type="box" pos="-0.05 0.0 0.05" size="0.002 0.05 0.05" rgba="0.5 0.5 0.5 0.3"/>
+    <geom name="front" type="box" pos="0.0 0.05 0.05" size="0.05 0.002 0.05" rgba="0.5 0.5 0.5 0.3"/>
+    <geom name="back" type="box" pos="0.0 -0.05 0.05" size="0.05 0.002 0.05" rgba="0.5 0.5 0.5 0.3"/>
+    <body>
+      <joint type="free"/>
+      <geom name="ball1" type="sphere" pos="0.0 0.0 0.05" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
+    </body>
+    <body>
+      <joint type="free"/>
+      <geom name="ball2" type="sphere" pos="0.0001 0.0 0.07" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
+    </body>
+    <body>
+      <joint type="free"/>
+      <geom name="ball3" type="sphere" pos="0.0 0.0001 0.09" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
+    </body>
+    <body>
+      <joint type="free"/>
+      <geom name="ball4" type="sphere" pos="-0.0001 0.0 0.11" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
+    </body>
+    <body>
+      <joint type="free"/>
+      <geom name="ball5" type="sphere" pos="0.0 -0.0001 0.13" size="0.01" rgba="1.0 1.0 1.0 1.0"/>
+    </body>
+  </worldbody>
+</mujoco>
