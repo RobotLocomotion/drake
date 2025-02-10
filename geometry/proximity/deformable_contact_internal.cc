@@ -36,8 +36,10 @@ void Geometries::MaybeAddRigidGeometry(
   // the same rigid geometry for both hydro and deformable contact.
   if (props.HasProperty(kHydroGroup, kRezHint)) {
     ReifyData data{id, props};
-    const double E = data.properties.GetPropertyOrDefault(kHydroGroup, kElastic,
-                                                          double(1e6));
+    // TODO(xuchenhan-tri): The default value for hydroelastic modulus should be
+    // configurable and set elsewhere.
+    const double E =
+        data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e6);
     data.properties.UpdateProperty(kHydroGroup, kElastic, E);
     DRAKE_DEMAND(data.properties.HasProperty(kHydroGroup, kElastic));
     shape.Reify(this, &data);
