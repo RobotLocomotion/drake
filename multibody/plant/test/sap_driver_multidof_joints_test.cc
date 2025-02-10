@@ -92,7 +92,7 @@ class MultiDofJointWithLimits final : public Joint<T> {
   int do_get_position_start() const override { return 0; }
 
   std::unique_ptr<Mobilizer<T>> MakeMobilizerForJoint(
-      const SpanningForest::Mobod& mobod) const override {
+      const SpanningForest::Mobod& mobod, MultibodyTree<T>*) const override {
     const auto [inboard_frame, outboard_frame] =
         this->tree_frames(mobod.is_reversed());
     // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
