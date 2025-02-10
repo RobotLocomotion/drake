@@ -20,8 +20,13 @@ namespace fs = std::filesystem;
 using std::string;
 using drake::internal::DiagnosticPolicy;
 
-string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
-                  const PackageMap& package_map, const string& root_dir) {
+std::string ResolveUriResult::GetStringPathIfExists() const {
+  return exists ? full_path.string() : std::string{};
+}
+
+ResolveUriResult ResolveUri(const DiagnosticPolicy& diagnostic,
+                            const string& uri, const PackageMap& package_map,
+                            const string& root_dir) {
   fs::path result;
 
   // Parse the given URI into pieces.
@@ -76,16 +81,15 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
     }
   }
 
-  result = result.lexically_normal();
-
-  if (!fs::exists(result)) {
+  ResolveUriResult compound_result;
+  compound_result.full_path = result.lexically_normal();
+  compound_result.exists = fs::exists(compound_result.full_path);
+  if (!compound_result.exists) {
       diagnostic.Error(fmt::format(
           "URI '{}' resolved to '{}' which does not exist.",
           uri, result.string()));
-    return {};
   }
-
-  return result.string();
+  return compound_result;
 }
 
 }  // namespace internal

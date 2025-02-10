@@ -29,10 +29,10 @@ std::string ResolveGoodUri(
   // Don't let warnings leak into spdlog; tests should always specifically
   // handle any warnings that appear.
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-  const std::string result = ResolveUri(
+  const ResolveUriResult result = ResolveUri(
       diagnostic, uri, package_map, root_dir);
-  EXPECT_NE(result, "");
-  return result;
+  EXPECT_TRUE(result.exists);
+  return result.full_path.string();
 }
 
 // This wraps the "ResolveUri()" device under test to return the error message
@@ -49,10 +49,30 @@ std::string ResolveBadUri(
   // Don't let warnings leak into spdlog; tests should always specifically
   // handle any warnings that appear.
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-  const std::string result = ResolveUri(
+  const ResolveUriResult result = ResolveUri(
       diagnostic, uri, package_map, root_dir);
-  EXPECT_EQ(result, "");
+  EXPECT_EQ(result.exists, false);
   return error.FormatError();
+}
+
+// This wraps the "ResolveUri()" device under test to expect a well-formed
+// URI but pointing to a file that does not exist. Returns the expected path.
+std::string ResolveMissingUri(const std::string& uri,
+                              const PackageMap& package_map,
+                              const std::string& root_dir) {
+  DiagnosticPolicy diagnostic;
+  DiagnosticDetail error;
+  diagnostic.SetActionForErrors([&error](const DiagnosticDetail& detail) {
+    error = detail;
+  });
+  // Don't let warnings leak into spdlog; tests should always specifically
+  // handle any warnings that appear.
+  diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
+  const ResolveUriResult result =
+      ResolveUri(diagnostic, uri, package_map, root_dir);
+  EXPECT_FALSE(result.exists);
+  EXPECT_THAT(error.message, ::testing::MatchesRegex(".*does not exist.*"));
+  return result.full_path.string();
 }
 
 // Verifies that the path returned is a normalized path. This is not an
@@ -84,6 +104,10 @@ GTEST_TEST(ResolveUriUncheckedTest, NormalizedPath) {
   // Case: Redundant directory dividers.
   EXPECT_EQ(ResolveGoodUri(".//test_model.sdf", package_map, root_dir),
             target_file);
+
+  // Case: Well-formed URL, but pointing to non-existent file.
+  EXPECT_EQ(ResolveMissingUri(".//test_model.sdf2", package_map, root_dir),
+            target_file + "2");
 }
 
 // Verifies that ResolveUri() resolves the proper file using the scheme
@@ -215,9 +239,9 @@ GTEST_TEST(ResolveUriTest, DeprecatedPackage) {
   });
 
   // Check that we get a detailed warning.
-  std::string result = ResolveUri(
+  ResolveUriResult result = ResolveUri(
       diagnostic, "package://foo/multibody", package_map, "");
-  EXPECT_EQ(result, "multibody");
+  EXPECT_EQ(result.full_path.string(), "multibody");
   EXPECT_THAT(warning.message, ::testing::MatchesRegex(
       ".*package://foo/multibody.*is deprecated.*Stop using foo.*"));
 
@@ -225,7 +249,7 @@ GTEST_TEST(ResolveUriTest, DeprecatedPackage) {
   warning = {};
   result = ResolveUri(
       diagnostic, "package://bar/multibody", package_map, "");
-  EXPECT_EQ(result, "multibody");
+  EXPECT_EQ(result.full_path.string(), "multibody");
   EXPECT_THAT(warning.message, ::testing::MatchesRegex(
       ".*package://bar/multibody.*is deprecated.*"));
 }
