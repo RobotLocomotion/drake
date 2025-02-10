@@ -35,7 +35,6 @@ if (@WITH_USER_FMT@)
 else()
   list(APPEND _drake_interface_compile_definitions @BAZEL_FMT_DEFINES@)
 endif()
-find_dependency(lcm 1.4 CONFIG HINTS "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/lib/cmake/lcm")
 if (@WITH_USER_SPDLOG@)
   find_dependency(spdlog CONFIG)
   list(APPEND _drake_interface_libraries spdlog::spdlog)
@@ -85,7 +84,6 @@ set_target_properties(drake::drake PROPERTIES
 add_library(drake::drake-lcmtypes-cpp INTERFACE IMPORTED)
 set_target_properties(drake::drake-lcmtypes-cpp PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${${CMAKE_FIND_PACKAGE_NAME}_IMPORT_PREFIX}/include"
-  INTERFACE_LINK_LIBRARIES "lcm::lcm-coretypes"
 )
 
 add_library(drake::drake-lcmtypes-java STATIC IMPORTED)

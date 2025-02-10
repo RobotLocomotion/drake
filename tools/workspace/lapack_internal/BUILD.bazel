@@ -1,0 +1,46 @@
+load("@bazel_skylib//rules:diff_test.bzl", "diff_test")
+load("//doc:defs.bzl", "enumerate_filegroup")
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_py.bzl", "drake_py_binary")
+
+package(default_visibility = ["//visibility:private"])
+
+enumerate_filegroup(
+    name = "everything.txt",
+    data = ["@lapack_internal//:everything"],
+)
+
+drake_py_binary(
+    name = "sources_gen",
+    srcs = ["sources_gen.py"],
+    data = [
+        ":everything.txt",
+        "@lapack_internal//:everything",
+    ],
+    deps = [
+        "@rules_python//python/runfiles",
+    ],
+)
+
+genrule(
+    name = "generate_sources_bzl",
+    outs = ["gen/sources.bzl"],
+    cmd = "$(execpath :sources_gen) --output=$@",
+    tools = [":sources_gen"],
+)
+
+diff_test(
+    name = "sources_bzl_test",
+    failure_message = (
+        "To fix, run this command:\n" +
+        "  cp bazel-bin/tools/workspace/lapack_internal/gen/sources.bzl " +
+        "tools/workspace/lapack_internal/lock/sources.bzl"
+    ),
+    file1 = ":lock/sources.bzl",
+    file2 = ":gen/sources.bzl",
+    tags = [
+        "lint",
+    ],
+)
+
+add_lint_tests()

@@ -93,8 +93,8 @@ class Rgba {
 
   /** Passes this object to an Archive.
 
-   In YAML, an %Rgba is represented by an array-like list of three or four
-   numbers. E.g.,
+   In YAML, an %Rgba is represented by a mapping of the symbol `rgba` to
+   an array-like list of three or four numbers. E.g.,
 
         rgba: [0.5, 0.5, 1.0]
 
@@ -104,6 +104,29 @@ class Rgba {
 
    such that the first three values are red, green, and blue, respectively. If
    no fourth value is provided, alpha is defined a 1.0.
+
+   When another struct has an %Rgba-valued member (e.g.,
+   systems::sensors::CameraConfig::background), remember to include the full
+   mapping. For example, imagine the struct:
+
+   ```{cpp}
+   struct Foo {
+     Rgba color1;
+     Rgba color2;
+   };
+   ```
+
+   The correct yaml representation of this would be:
+
+   ```yaml
+   color1:
+     rgba: [0.5, 0.5, 1.0]
+   color2:
+     rgba: [1.0, 0.0, 0.0, 0.5]
+   ```
+
+   The *values* of `color1` and `color2` are the mapping from `rgba` to the
+   desired color tuples.
 
    Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
