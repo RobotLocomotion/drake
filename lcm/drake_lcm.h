@@ -17,6 +17,9 @@ namespace lcm {
  *
  * See \ref allow_network "DRAKE_ALLOW_NETWORK" for an environment variable
  * option to disable LCM network traffic (i.e., only allowing `memq://` URLs).
+ *
+ * For network issues on macOS, see
+ * https://drake.mit.edu/troubleshooting.html#lcm-macos.
  */
 class DrakeLcm : public DrakeLcmInterface {
  public:
