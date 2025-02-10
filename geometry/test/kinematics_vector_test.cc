@@ -1,6 +1,7 @@
 #include "drake/geometry/kinematics_vector.h"
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -15,10 +16,11 @@
 
 namespace drake {
 namespace geometry {
-namespace test {
+namespace {
 
 using math::RigidTransform;
 using math::RigidTransformd;
+using symbolic::Expression;
 
 ::testing::AssertionResult ExpectExactIdentity(const RigidTransformd& pose) {
   const RigidTransformd I = RigidTransformd::Identity();
@@ -217,6 +219,57 @@ GTEST_TEST(KinematicsVector, FrameIdRange) {
   for (FrameId id : ids) EXPECT_TRUE(actual_ids.contains(id));
 }
 
-}  // namespace test
+template <typename T>
+FramePoseVector<T> MakePoses(const std::vector<FrameId>& ids, double value) {
+  FramePoseVector<T> poses;
+  for (int i = 0; i < ssize(ids); ++i) {
+    const double d = (i % 2) ? i : value;
+    RigidTransform<T> pose(Vector3<T>::Constant(d));
+    DRAKE_EXPECT_NO_THROW(poses.set_value(ids[i], pose));
+  }
+  return poses;
+}
+
+template <typename T>
+GeometryConfigurationVector<T> MakeConfigs(
+    const std::vector<GeometryId>& ids, double value) {
+  GeometryConfigurationVector<T> configs;
+  for (int i = 0; i < ssize(ids); ++i) {
+    const double d = i % 2 ? i : value;
+    DRAKE_EXPECT_NO_THROW(configs.set_value(ids[i], Vector3<T>::Constant(d)));
+  }
+  return configs;
+}
+
+GTEST_TEST(KinematicsVector, IsFinite) {
+  int kPoseCount = 2;
+  std::vector<FrameId> f_ids;
+  for (int i = 0; i < kPoseCount; ++i) f_ids.push_back(FrameId::get_new_id());
+
+  const double kNan = std::numeric_limits<double>::quiet_NaN();
+  const double kInf = std::numeric_limits<double>::infinity();
+
+  EXPECT_FALSE(MakePoses<double>(f_ids, kNan).IsFinite());
+  EXPECT_FALSE(MakePoses<double>(f_ids, kInf).IsFinite());
+  EXPECT_FALSE(MakePoses<AutoDiffXd>(f_ids, kNan).IsFinite());
+  EXPECT_FALSE(MakePoses<AutoDiffXd>(f_ids, kInf).IsFinite());
+  // Symbolic should always return true.
+  EXPECT_TRUE(MakePoses<Expression>(f_ids, kNan).IsFinite());
+  EXPECT_TRUE(MakePoses<Expression>(f_ids, kInf).IsFinite());
+
+  std::vector<GeometryId> g_ids;
+  for (int i = 0; i < kPoseCount; ++i)
+    g_ids.push_back(GeometryId::get_new_id());
+
+  EXPECT_FALSE(MakeConfigs<double>(g_ids, kNan).IsFinite());
+  EXPECT_FALSE(MakeConfigs<double>(g_ids, kInf).IsFinite());
+  EXPECT_FALSE(MakeConfigs<AutoDiffXd>(g_ids, kNan).IsFinite());
+  EXPECT_FALSE(MakeConfigs<AutoDiffXd>(g_ids, kInf).IsFinite());
+  // Symbolic should always return true.
+  EXPECT_TRUE(MakeConfigs<Expression>(g_ids, kNan).IsFinite());
+  EXPECT_TRUE(MakeConfigs<Expression>(g_ids, kInf).IsFinite());
+}
+
+}  // namespace
 }  // namespace geometry
 }  // namespace drake
