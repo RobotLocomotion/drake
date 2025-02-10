@@ -593,15 +593,15 @@ struct pack<Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
     // Based on pack_numpy_array method in meshcat-python geometry.py. See also
     // https://github.com/msgpack/msgpack/blob/master/spec.md#extension-types
     if (std::is_floating_point_v<Scalar>) {
-      o.pack("Float32Array");
+      o.pack("Float32BufferAttribute");
       ext = 0x17;
     } else if (std::is_same_v<std::remove_cv<Scalar>, uint8_t>) {
-      o.pack("Uint8Array");
+      o.pack("Uint8BufferAttribute");
       ext = 0x12;
     } else if (std::is_same_v<Scalar, uint32_t>) {
       // TODO(russt): Using std::remove_cv<Scalar> did not work here (it failed
       // to match).  Need to understand and resolve this.
-      o.pack("Uint32Array");
+      o.pack("Uint32BufferAttribute");
       ext = 0x16;
     } else {
       throw std::runtime_error("Unsupported Scalar " +
