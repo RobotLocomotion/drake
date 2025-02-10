@@ -39,9 +39,8 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   // @param[in] X_FM Pose of `outboard_frame_M` in the `inboard_frame_F`.
   WeldMobilizer(const SpanningForest::Mobod& mobod,
                 const Frame<T>& inboard_frame_F,
-                const Frame<T>& outboard_frame_M,
-                const math::RigidTransform<double>& X_FM)
-      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
+                const Frame<T>& outboard_frame_M)
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~WeldMobilizer() final;
 
@@ -49,12 +48,11 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
-  // @retval X_FM The pose of the outboard frame M in the inboard frame F.
-  const math::RigidTransform<double>& get_X_FM() const { return X_FM_; }
-
   // Computes the across-mobilizer transform `X_FM`, which for this mobilizer
-  // is independent of the state stored in `context`.
-  math::RigidTransform<T> calc_X_FM(const T*) const { return X_FM_.cast<T>(); }
+  // is always the identity transform since F==M by construction.
+  math::RigidTransform<T> calc_X_FM(const T*) const {
+    return math::RigidTransform<T>();
+  }
 
   // Computes the across-mobilizer velocity V_FM which for this mobilizer is
   // always zero since the outboard frame M is fixed to the inboard frame F.
@@ -126,9 +124,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
-
-  // Pose of the outboard frame M in the inboard frame F.
-  math::RigidTransform<double> X_FM_;
 };
 
 }  // namespace internal
