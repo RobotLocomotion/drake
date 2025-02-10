@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/common/trajectories/discrete_time_trajectory.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/matrix_util.h"
@@ -20,6 +21,7 @@ namespace drake {
 namespace systems {
 namespace controllers {
 
+using trajectories::DiscreteTimeTrajectory;
 using trajectories::PiecewisePolynomial;
 using trajectories::Trajectory;
 
@@ -142,8 +144,8 @@ class RiccatiSystem : public LeafSystem<double> {
     } else {
       Sxx = Eigen::Map<const Eigen::MatrixXd>(S_vectorized.data(), num_states_,
                                               num_states_);
-      Eigen::Map<Eigen::MatrixXd> minus_Sxxdot(
-          minus_Sdot_vectorized.data(), num_states_, num_states_);
+      Eigen::Map<Eigen::MatrixXd> minus_Sxxdot(minus_Sdot_vectorized.data(),
+                                               num_states_, num_states_);
       minus_Sxxdot = Sxx * A + A.transpose() * Sxx -
                      (N_ + Sxx * B) * Rinv_ * (N_ + Sxx * B).transpose() + Q_;
     }
@@ -283,10 +285,8 @@ class RiccatiSystem : public LeafSystem<double> {
   const FiniteHorizonLinearQuadraticRegulatorOptions& options_;
 };
 
-}  // namespace
-
 FiniteHorizonLinearQuadraticRegulatorResult
-FiniteHorizonLinearQuadraticRegulator(
+ContinuousTimeFiniteHorizonLinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context, double t0,
     double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
@@ -294,6 +294,7 @@ FiniteHorizonLinearQuadraticRegulator(
   // Most argument consistency checks are handled by RiccatiSystem, but that
   // System doesn't need to understand the time range, so we perform (only)
   // those checks here.
+  DRAKE_DEMAND(system.IsDifferentialEquationSystem());
   system.ValidateContext(context);
   DRAKE_DEMAND(system.num_input_ports() > 0);
   DRAKE_DEMAND(tf > t0);
@@ -400,6 +401,218 @@ FiniteHorizonLinearQuadraticRegulator(
   riccati.MakeKTrajectories(&result);
 
   return result;
+}
+
+FiniteHorizonLinearQuadraticRegulatorResult
+DiscreteTimeFiniteHorizonLinearQuadraticRegulator(
+    const System<double>& system, const Context<double>& context, double t0,
+    double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const FiniteHorizonLinearQuadraticRegulatorOptions& options) {
+  DRAKE_DEMAND(system.IsDifferenceEquationSystem());
+  system.ValidateContext(context);
+  DRAKE_THROW_UNLESS(system.num_input_ports() > 0);
+  DRAKE_THROW_UNLESS(tf > t0);
+
+  if (options.use_square_root_method) {
+    // TODO(wei-chen): Find if possible and implement square root method.
+    throw std::logic_error(
+        "Discrete-time finite-horizon LQR does not yet support the square root "
+        "method.");
+  }
+
+  const Trajectory<double>* x0_traj;
+  PiecewisePolynomial<double> x0_constant_traj;
+  if (options.x0 != nullptr) {
+    DRAKE_THROW_UNLESS(options.x0->start_time() <= t0);
+    DRAKE_THROW_UNLESS(options.x0->end_time() >= tf);
+    x0_traj = options.x0;
+  } else {
+    // Make a constant trajectory with the state from context.
+    x0_constant_traj = PiecewisePolynomial<double>(
+        context.get_discrete_state_vector().CopyToVector());
+    x0_traj = &x0_constant_traj;
+  }
+
+  const Trajectory<double>* u0_traj;
+  PiecewisePolynomial<double> u0_constant_traj;
+  if (options.u0 != nullptr) {
+    DRAKE_THROW_UNLESS(options.u0->start_time() <= t0);
+    DRAKE_THROW_UNLESS(options.u0->end_time() >= tf);
+    u0_traj = options.u0;
+  } else {
+    // Make a constant trajectory with the input from context.
+    const InputPort<double>* input_port =
+        system.get_input_port_selection(options.input_port_index);
+    DRAKE_THROW_UNLESS(input_port != nullptr);
+    u0_constant_traj = PiecewisePolynomial<double>(input_port->Eval(context));
+    u0_traj = &u0_constant_traj;
+  }
+
+  // Create an autodiff version of the system.
+  std::unique_ptr<System<AutoDiffXd>> autodiff_system =
+      drake::systems::System<double>::ToAutoDiffXd(system);
+
+  const InputPort<AutoDiffXd>* input_port =
+      autodiff_system->get_input_port_selection(options.input_port_index);
+  DRAKE_THROW_UNLESS(input_port != nullptr);
+
+  // Initialize autodiff.
+  std::unique_ptr<Context<AutoDiffXd>> autodiff_context =
+      autodiff_system->CreateDefaultContext();
+  autodiff_context->SetTimeStateAndParametersFrom(context);
+  autodiff_system->FixInputPortsFrom(system, context, autodiff_context.get());
+
+  const int num_states = autodiff_context->num_total_states();
+  const int num_inputs = input_port->size();
+
+  // Check arguments.
+  if (input_port->get_data_type() == PortDataType::kAbstractValued) {
+    throw std::logic_error(
+        "The specified input port is abstract-valued, but "
+        "FiniteHorizonLinearQuadraticRegulator only supports vector-valued "
+        "input ports.  Did you perhaps forget to pass a non-default "
+        "`input_port_index` argument?");
+  }
+  DRAKE_THROW_UNLESS(input_port->get_data_type() ==
+                     PortDataType::kVectorValued);
+
+  DRAKE_THROW_UNLESS(num_states > 0);
+  DRAKE_THROW_UNLESS(num_inputs > 0);
+
+  const double kSymmetryTolerance = 1e-8;
+  DRAKE_THROW_UNLESS(Q.rows() == num_states && Q.cols() == num_states);
+  DRAKE_THROW_UNLESS(math::IsPositiveDefinite(Q, 0.0, kSymmetryTolerance));
+
+  DRAKE_THROW_UNLESS(R.rows() == num_inputs && R.cols() == num_inputs);
+  DRAKE_THROW_UNLESS(math::IsPositiveDefinite(
+      R, std::numeric_limits<double>::epsilon(), kSymmetryTolerance));
+
+  const Eigen::MatrixXd Qf =
+      options.Qf.value_or(Eigen::MatrixXd::Zero(num_states, num_states));
+  DRAKE_THROW_UNLESS(Qf.rows() == num_states && Qf.cols() == num_states);
+  DRAKE_THROW_UNLESS(math::IsPositiveDefinite(Q, 0.0, kSymmetryTolerance));
+
+  const Eigen::MatrixXd N =
+      options.N.value_or(Eigen::MatrixXd::Zero(num_states, num_inputs));
+  DRAKE_THROW_UNLESS(N.rows() == num_states && N.cols() == num_inputs);
+
+  // Compute the discrete times.
+  const double kTimeCompTolerance = 1e-10;
+  std::vector<double> times;
+  DRAKE_THROW_UNLESS(
+      system.GetUniquePeriodicDiscreteUpdateAttribute().has_value());
+  auto discrete = system.GetUniquePeriodicDiscreteUpdateAttribute().value();
+  DRAKE_THROW_UNLESS(std::abs(std::remainder(t0 - discrete.offset_sec(),
+                                             discrete.period_sec())) <=
+                     kTimeCompTolerance);
+  DRAKE_THROW_UNLESS(std::abs(std::remainder(tf - discrete.offset_sec(),
+                                             discrete.period_sec())) <=
+                     kTimeCompTolerance);
+  times.resize(std::round((tf - t0) / discrete.period_sec() + 1));
+  for (int n = 0; n < ssize(times); ++n) {
+    times[n] = t0 + discrete.period_sec() * n;
+  }
+
+  // Compute discrete-time finite horizon LQR,
+  // K[n], k0[n] depends on S[n+1], sx[n+1], s0[n+1].
+  std::vector<Eigen::MatrixXd> K(times.size() - 1), k0(times.size() - 1),
+      S(times.size()), sx(times.size()), s0(times.size());
+
+  Eigen::MatrixXd xd0f =
+      (options.xd != nullptr)
+          ? (options.xd->value(tf) - x0_traj->value(tf)).eval()
+          : Eigen::VectorXd::Zero(num_states);
+  S.back() = Qf;
+  sx.back() = -Qf * xd0f;
+  s0.back() = xd0f.transpose() * Qf * xd0f;
+
+  for (int n = ssize(times) - 2; n >= 0; --n) {
+    double t = times[n];
+
+    Eigen::MatrixXd x0 = x0_traj->value(t);
+    Eigen::MatrixXd u0 = u0_traj->value(t);
+
+    Eigen::MatrixXd x0_next = x0_traj->value(times[n + 1]);
+
+    // Desired trajectories relative to the nominal.
+    Eigen::MatrixXd xd0 =
+        ((options.xd != nullptr) ? options.xd->value(t) : x0) - x0;
+    Eigen::MatrixXd ud0 =
+        ((options.ud != nullptr) ? options.ud->value(t) : u0) - u0;
+
+    auto autodiff_args = math::InitializeAutoDiffTuple(x0, u0);
+
+    input_port->FixValue(autodiff_context.get(), std::get<1>(autodiff_args));
+
+    autodiff_context->SetTime(t);
+    autodiff_context->SetDiscreteState(std::get<0>(autodiff_args));
+
+    auto autodiff_x0_next =
+        autodiff_system->EvalUniquePeriodicDiscreteUpdate(*autodiff_context)
+            .value();
+
+    const Eigen::MatrixXd AB = math::ExtractGradient(autodiff_x0_next);
+
+    Eigen::MatrixXd A = AB.leftCols(num_states);
+    Eigen::MatrixXd B = AB.rightCols(num_inputs);
+    Eigen::MatrixXd c = math::ExtractValue(autodiff_x0_next) - x0_next;
+
+    Eigen::MatrixXd qx = -Q * xd0 - N * ud0;
+    Eigen::MatrixXd q0 =
+        xd0.transpose() * Q * xd0 + 2 * xd0.transpose() * N * ud0;
+    Eigen::MatrixXd ru = -R * ud0 - N.transpose() * xd0;
+    Eigen::MatrixXd r0 = ud0.transpose() * R * ud0;
+
+    Eigen::MatrixXd R_BSB_inv = (R + B.transpose() * S[n + 1] * B).inverse();
+    Eigen::MatrixXd N_BSA = N.transpose() + B.transpose() * S[n + 1] * A;
+    Eigen::MatrixXd ru_BSc_Bsx =
+        ru + B.transpose() * S[n + 1] * c + B.transpose() * sx[n + 1];
+
+    K[n] = R_BSB_inv * N_BSA;
+    k0[n] = R_BSB_inv * ru_BSc_Bsx;
+
+    S[n] = Q + A.transpose() * S[n + 1] * A -
+           N_BSA.transpose() * R_BSB_inv * N_BSA;
+    sx[n] = qx + A.transpose() * S[n + 1] * c + A.transpose() * sx[n + 1] -
+            N_BSA.transpose() * R_BSB_inv * ru_BSc_Bsx;
+    s0[n] = c.transpose() * S[n + 1] * c + 2 * c.transpose() * sx[n + 1] +
+            s0[n + 1] + q0 + r0 -
+            ru_BSc_Bsx.transpose() * R_BSB_inv * ru_BSc_Bsx;
+  }  // for loop
+
+  FiniteHorizonLinearQuadraticRegulatorResult result;
+  result.x0 = x0_traj->Clone();
+  result.u0 = u0_traj->Clone();
+  result.S = DiscreteTimeTrajectory(times, std::move(S));
+  result.sx = DiscreteTimeTrajectory(times, std::move(sx));
+  result.s0 = DiscreteTimeTrajectory(times, std::move(s0));
+  times.pop_back();
+  result.K = DiscreteTimeTrajectory(times, std::move(K));
+  result.k0 = DiscreteTimeTrajectory(times, std::move(k0));
+
+  return result;
+}
+
+}  // namespace
+
+FiniteHorizonLinearQuadraticRegulatorResult
+FiniteHorizonLinearQuadraticRegulator(
+    const System<double>& system, const Context<double>& context, double t0,
+    double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::MatrixXd>& R,
+    const FiniteHorizonLinearQuadraticRegulatorOptions& options) {
+  if (system.IsDifferentialEquationSystem()) {
+    return ContinuousTimeFiniteHorizonLinearQuadraticRegulator(
+        system, context, t0, tf, Q, R, options);
+  } else if (system.IsDifferenceEquationSystem()) {
+    return DiscreteTimeFiniteHorizonLinearQuadraticRegulator(
+        system, context, t0, tf, Q, R, options);
+  } else {
+    throw std::logic_error(
+        "FiniteHorizonLinearQuadraticRegulator does not support hybrid "
+        "systems.");
+  }
 }
 
 namespace {
