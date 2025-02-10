@@ -57,26 +57,59 @@ std::unique_ptr<Joint<T>> WeldJoint<T>::DoShallowClone() const {
                                         this->frame_on_child(), X_FM());
 }
 
-// N.B. Due to esoteric linking errors on Mac (see #9345) involving
-// `MobilizerImpl`, we must place this implementation in the source file, not
-// in the header file.
+/* For a weld joint, we are given Jp on parent P, Jc on child C, and a fixed
+X_JpJc. For optimal performance, the underlying mobilizer expects coincident
+frames F (on the inboard body) and M (on the outboard body) so that we don't
+have to apply X_JpJc repeatedly at run time. We only need to move one of the
+frames, and because of the way we report reaction forces (at Jc) it is best
+to choose M=Jc and move F if necessary by creating a new offset frame from Jp
+that is coincident with Jc (and M):
+    X_JpF = X_JpJc
+This yields X_FM = X_FJc = (X_JpF)⁻¹ * X_JpJc = Identity as required.
+If the mobilizer's inboard/outboard direction is reversed from the joint's
+parent/child direction, we instead choose M=Jp and an offset from F
+    X_JcF = (X_JpJc)⁻¹
+so that X_FM = X_FJp = (X_JcF)⁻¹ (X_JpJc)⁻¹ = Identity.
+
+If X_JpJc is already Identity we just use the original frames for F and M. */
 template <typename T>
 std::unique_ptr<internal::Mobilizer<T>> WeldJoint<T>::MakeMobilizerForJoint(
-    const internal::SpanningForest::Mobod& mobod) const {
-  const auto [inboard_frame, outboard_frame] =
-      this->tree_frames(mobod.is_reversed());
+    const internal::SpanningForest::Mobod& mobod,
+    internal::MultibodyTree<T>* tree) const {
+  DRAKE_DEMAND(tree != nullptr);
+  const Frame<T>& Jp = this->frame_on_parent();
+  const Frame<T>& Jc = this->frame_on_child();
+  const bool X_JpJc_is_identity = X_JpJc_.IsExactlyIdentity();
 
-  // This quirk is unique to Weld joints.
-  const math::RigidTransform<double> X_FM =
-      mobod.is_reversed() ? X_JpJc_.inverse() : X_JpJc_;
+  // Create a unique frame name for F based on the joint name (unique within
+  // its model instance) and the name of the parent or child frame (not
+  // necessarily unique). New frames go in the joint's model instance.
+  auto F_frame_name = [this, tree](const Frame<T>& frame) -> std::string {
+    const std::string F_name =
+        fmt::format("{}_{}_F", this->name(), frame.name());
+    DRAKE_DEMAND(!tree->HasFrameNamed(F_name, this->model_instance()));
+    return F_name;
+  };
 
-  // The only other requirement for a reversed weld is that the reported
-  // reaction forces (on the joint's child link) must be those acting on
-  // the mobilizer's inboard body rather than the usual outboard reaction.
-  // That's handled when reporting (see MultibodyPlant::CalcReactionForces()),
-  // not locally by the mobilizer.
-  auto weld_mobilizer = std::make_unique<internal::WeldMobilizer<T>>(
-      mobod, *inboard_frame, *outboard_frame, X_FM);
+  const Frame<T>* F{};
+  const Frame<T>* M{};
+  if (mobod.is_reversed()) {
+    M = &Jp;  // The reversed case: outboard==parent, inboard==child.
+    F = X_JpJc_is_identity
+            ? &Jc
+            : &tree->AddFrame(std::make_unique<FixedOffsetFrame<T>>(
+                  F_frame_name(Jc), Jc, X_JpJc_.inverse(),
+                  this->model_instance()));
+  } else {
+    M = &Jc;  // The normal case: outboard==child, inboard==parent.
+    F = X_JpJc_is_identity
+            ? &Jp
+            : &tree->AddFrame(std::make_unique<FixedOffsetFrame<T>>(
+                  F_frame_name(Jp), Jp, X_JpJc_, this->model_instance()));
+  }
+
+  auto weld_mobilizer =
+      std::make_unique<internal::WeldMobilizer<T>>(mobod, *F, *M);
   return weld_mobilizer;
 }
 

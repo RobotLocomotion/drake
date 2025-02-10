@@ -753,8 +753,10 @@ class Joint : public MultibodyElement<T> {
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
   // (Internal use only) Model this joint using the appropriate Mobilizer.
+  // `tree` must be non-null.
   std::unique_ptr<internal::Mobilizer<T>> Build(
-      const internal::SpanningForest::Mobod& mobod);
+      const internal::SpanningForest::Mobod& mobod,
+      internal::MultibodyTree<T>* tree);
 
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   // be created. This method is intended to be called by
@@ -974,10 +976,45 @@ class Joint : public MultibodyElement<T> {
   template <typename>
   friend class Joint;
 
-  // This method must be implemented by derived Joint classes in order to
-  // create a Mobilizer as the Joint's internal representation.
+  /* This method must be implemented by derived Joint classes in order to create
+  a Mobilizer as the Joint's internal representation. Starting with the
+  user's joint frames Jp (on parent) and Jc (on child) we must create an
+  inboard frame F and outboard frame M suitable for an available Mobilizer.
+  For example, if a revolute Mobilizer can only rotate around its z axis,
+  while the revolute Joint specifies an arbitrary axis â, we'll need to
+  calculate frames such that Fz and Mz are aligned with â, and the other
+  axes chosen so that the joint coordinate q has the same meaning as it would
+  when rotating about â. We also must decide whether inboard/outboard is
+  reversed from parent/child. Normally we need X_JpF and X_JcM but when reversed
+  we need X_JcF and X_JpM. (We're ignoring reversal in the discussion below.)
+
+  In the case of revolute, prismatic, and screw joints we have an axis â
+  whose measure numbers are the same in Jp and Jc. However, for maximum
+  speed, the available mobilizers are specialized to rotate only about the
+  +z axis.
+  TODO(sherm1) Make that happen.
+  Consequently, we want new frames F and M with Fz=Mz=â, Fo=Jpo, Mo=Jco. We
+  also want F==M when Jp==Jc, i.e. at the joint zero position so that the
+  coordinate q will mean the same thing using F and M as it would have using
+  Jp, Jc, and â. We need to calculate R_JpF and R_JcM so that we can create
+  appropriate offset frames:
+       R_JpF = MakeFromOneVector(â_Jp, 2)   ("2" means "z axis")
+       R_JcM = R_JcJp(0) * R_JpF * R_FM(0)  (at q=0)
+  But in the zero configurations we have R_JcJp(0)=I and we want R_FM(0)=I
+  also, so R_JcM = R_JpF.
+
+  For a weld joint, we have Jp, Jc, and a fixed X_JpJc. We want to pick F
+  and M so F=M at all times. We can choose M=Jc and create a new offset frame
+  for F that is colocated with Jp:
+       X_JpF = X_JpJc
+  This yields X_FM = X_FJc = X_JpF⁻¹ * X_JpJc = Identity.
+
+  In order to permit auxiliary frames to be created, we provide mutable
+  access to the MultibodyTree here. Don't use that to add anything other
+  than frames. We promise that tree will be non-null. */
   virtual std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
-      const internal::SpanningForest::Mobod& mobod) const = 0;
+      const internal::SpanningForest::Mobod& mobod,
+      internal::MultibodyTree<T>* tree) const = 0;
 
   // Helper method to be called within Joint::CloneToScalar() to locate the
   // cloned Mobilizer corresponding to this Joint's Mobilizer.
@@ -1013,8 +1050,8 @@ class Joint : public MultibodyElement<T> {
                               const char* func) const;
 
   std::string name_;
-  const Frame<T>& frame_on_parent_;
-  const Frame<T>& frame_on_child_;
+  const Frame<T>& frame_on_parent_;  // Frame Jp.
+  const Frame<T>& frame_on_child_;   // Frame Jc.
 
   VectorX<double> damping_;
 
@@ -1036,7 +1073,7 @@ class Joint : public MultibodyElement<T> {
   // Joint default position. This vector has zero size for joints with no state.
   VectorX<double> default_positions_;
 
-  // The Joint<T> implementation:
+  // The Joint<T> implementation.
   internal::Mobilizer<T>* mobilizer_{};
 
   // System parameter indices.
