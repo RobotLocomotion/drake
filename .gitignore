@@ -29,3 +29,6 @@
 
 # User-specified configuration
 /user.bazelrc
+
+# Python junk
+__pycache__

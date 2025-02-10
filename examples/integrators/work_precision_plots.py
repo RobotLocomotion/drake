@@ -108,15 +108,19 @@ if __name__ == "__main__":
         for accuracy in getattr(args, integrator):
             # Run the simulation experiment
             print(f"\n==> Running {integrator} with accuracy {accuracy}...")
-            _, wall_time = run_simulation(
-                example,
-                integrator=integrator,
-                accuracy=accuracy,
-                max_step_size=args.max_step_size,
-                meshcat=meshcat,
-                wait_for_meshcat=False,
-            )
-            print(f"==> Wall time: {wall_time:.3f} s")
+            try:
+                _, wall_time = run_simulation(
+                    example,
+                    integrator=integrator,
+                    accuracy=accuracy,
+                    max_step_size=args.max_step_size,
+                    meshcat=meshcat,
+                    wait_for_meshcat=False,
+                )
+            except KeyboardInterrupt:
+                # If the user interrupts, just skip this accuracy.
+                wall_time = None
+            print(f"==> Wall time: {wall_time} s")
 
             # Store the data
             if integrator == "convex":

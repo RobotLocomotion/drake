@@ -67,7 +67,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   this->set_accuracy_in_use(working_accuracy);
 
   // Set SAP solver parameters (default is sparse algebra)
-  // sap_parameters_.linear_solver_type = SapHessianFactorizationType::kDense;
+  sap_parameters_.linear_solver_type = SapHessianFactorizationType::kDense;
 }
 
 template <class T>
