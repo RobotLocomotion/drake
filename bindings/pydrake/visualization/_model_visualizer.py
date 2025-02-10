@@ -246,6 +246,15 @@ class ModelVisualizer:
             self._meshcat = StartMeshcat()
         return self._meshcat
 
+    def AddGltf(self, filepath: Path):
+        geometry = GeometryInstance(
+            name=filepath.stem,
+            shape=Mesh(filename=filepath),
+            X_PG=RigidTransform.Identity())
+        geometry.set_illustration_properties(IllustrationProperties())
+        self._builder.scene_graph().RegisterAnchoredGeometry(
+            self._builder.plant().get_source_id(), geometry=geometry)
+
     def AddModels(self, filename: Path = None, *, url: str = None):
         """
         Adds all models found in an input file (or url).
@@ -264,23 +273,16 @@ class ModelVisualizer:
             raise ValueError("Must provide either filename= or url=")
         self._check_rep(finalized=False)
         if filename is not None:
-            # Make sure filename is a Path
-            filename = Path(filename)
+            filepath = Path(filename)
             kwargs = dict(file_name=str(filename))
-            if filename.suffix == ".gltf":
-                geometry = GeometryInstance(
-                    name=filename.stem,
-                    shape=Mesh(filename=filename),
-                    X_PG=RigidTransform.Identity())
-                geometry.set_illustration_properties(IllustrationProperties())
-                self._builder.scene_graph().RegisterAnchoredGeometry(
-                    self._builder.plant().get_source_id(), geometry=geometry)
+            if filepath.suffix == ".gltf":
+                self.AddGltf(filepath=filepath)
             else:
                 self._builder.parser().AddModels(**kwargs)
         else:
             # TODO(DamrongGuoy): For `url` with suffix ".gltf",
             #  use PackageMap in self._builder to get the file and
-            #  RegisterAnchoredGeometry() as `filename` case above.
+            #  call AddGltf(filename) as above.
             assert url is not None
             kwargs = dict(url=url)
             self._builder.parser().AddModels(**kwargs)
@@ -479,7 +481,14 @@ class ModelVisualizer:
         self._builder.parser().package_map().AddMap(self._original_package_map)
         try:
             for kwargs in self._added_models:
-                self._builder.parser().AddModels(**kwargs)
+                if "file_name" in kwargs:
+                    filepath = Path(kwargs["file_name"])
+                    if filepath.suffix == ".gltf":
+                        self.AddGltf(filepath=filepath)
+                    else:
+                        self._builder.parser().AddModels(**kwargs)
+                else:
+                    self._builder.parser().AddModels(**kwargs)
             logging.getLogger("drake").info(f"Reload was successful")
         except BaseException as e:
             # If there's a parsing error, show it; don't crash.

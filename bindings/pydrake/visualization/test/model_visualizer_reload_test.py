@@ -4,6 +4,7 @@ import unittest
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import Meshcat
+from pydrake.multibody.parsing import PackageMap
 import pydrake.visualization as mut
 
 
@@ -24,6 +25,9 @@ class TestModelVisualizerReload(unittest.TestCase):
         dut = mut.ModelVisualizer(meshcat=meshcat)
         filename = "drake/multibody/benchmarks/acrobot/acrobot.sdf"
         dut.AddModels(FindResourceOrThrow(filename))
+        dut.AddModels(filename=PackageMap().ResolveUrl(
+            "package://drake_models/veggies/assets/"
+            + "yellow_bell_pepper_no_stem_low.gltf"))
         dut.Finalize()
 
         # Check that it allowed reloading.
