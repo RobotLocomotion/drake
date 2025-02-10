@@ -114,8 +114,9 @@ struct FiniteHorizonLinearQuadraticRegulatorResult {
 // the terms.
 
 /**
-Solves the differential Riccati equation to compute the optimal controller and
-optimal cost-to-go for the finite-horizon linear quadratic regulator:
+If @p system is a continuous-time system, then solves the differential Riccati
+equation to compute the optimal controller and optimal cost-to-go for the
+continuous-time finite-horizon linear quadratic regulator:
 
 @f[\min_u (x(t_f)-x_d(t_f))'Q_f(x(t_f)-x_d(t_f)) + \int_{t_0}^{t_f}
   (x(t)-x_d(t))'Q(x(t)-x_d(t)) dt + \int_{t_0}^{t_f}
@@ -131,6 +132,27 @@ u0(t)), and c(t) = f(t, x0(t), u0(t)) - ẋ0(t).  x0(t) and u0(t) can be
 specified in @p options, otherwise are taken to be constant trajectories with
 values given by @p context.
 
+If @p system is a discrete-time system, or if @p system is any system and @p
+options.x0/@p options.u0 is of type trajectories::DiscreteTimeTrajectory, then
+solves the algebraic Riccati equation to compute the optimal controller and
+optimal cost-to-go for the doscrete-time finite-horizon linear quadratic
+regulator:
+
+@f[\min_u (x[N]-x_d[N])'Q_f(x[N]-x_d[N]) + \sum_{n=0}^{N-1}
+  (x[n]-x_d[n])'Q(x[n]-x_d[n])+ \sum_{n=0}^{N-1}
+  (u[n]-u_d[n])'R(u[n]-u_d[n]) + \sum_{n=0}^{N-1}
+  2(x[n]-x_d[n])'N(u[n]-u_d[n]) \\
+  \text{s.t. } x[n+1] - x_0[n+1] = A[n](x[n] - x_0[n]) + B[n](u[n] -
+u_0[n]) + c[n]
+@f]
+
+where A[n], B[n], and c[n] are taken from the gradients of the discrete-time
+dynamics x[n+1] = g(n,x[n],u[n]) or the approximated discrete-time dynamics
+g(n,x[n],u[n]) = x[n] + \int_{t[n]}^{t[n+1]} f(t,x(t),u[n]) dt, as A[n] =
+dgdx(n, x0[n], u0[n]), B[n] = dgdu(t, x0[n], u0[n]), and c[n] = g(n, x0[n],
+u0[n]) - x0[n+1]. x0[n] and u0[n] can be specified in @p options, otherwise are
+taken to be constant trajectories with values given by @p context.
+
 @param system a System<double> representing the plant.
 @param context a Context<double> used to pass the default input, state, and
     parameters.  Note: Use @p options to specify time-varying nominal state
@@ -141,13 +163,22 @@ values given by @p context.
 @param R is mxm positive definite.
 @param options is the optional FiniteHorizonLinearQuadraticRegulatorOptions.
 
+@return If @p system is a continuous-time system, returns a
+FiniteHorizonLinearQuadraticRegulatorResult containing
+trajectories::PiecewisePolynomial. If @p system is a discrete-time system, or
+if @p system is any system and @p options.x0 / @p options.u0 is of type
+trajectories::DiscreteTimeTrajectory, returns a
+FiniteHorizonLinearQuadraticRegulatorResult containing
+trajectories::DiscreteTimeTrajectory.
+
 @pre @p system must be a System<double> with (only) n continuous state variables
 and m inputs.  It must be convertible to System<AutoDiffXd>.
 
-@note Support for difference-equation systems (@see
-System<T>::IsDifferenceEquationSystem()) by solving the differential Riccati
-equation and richer specification of the objective are anticipated (they are
-listed in the code as TODOs).
+@note @p options.simulator_config.integration_scheme is utilized to perform the
+integration in @f[ x[n+1] = x[n] + \int_{t[n]}^{t[n+1]} f(t,x(t),u[n]) \, dt @f]
+if necessary.
+
+@note Richer specification of the objective is anticipated.
 
 @ingroup control
 */
