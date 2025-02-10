@@ -87,7 +87,11 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
       workspace_.timestep_independent_data;
 
   // Solver setup
+  // TODO(vincekurtz): figure out a more principled mapping from accuracy to
+  // sap solver tolerances.
   SapSolver<T> sap;
+  sap_parameters_.rel_tolerance =
+      std::max(1e-2 * this->get_accuracy_in_use(), 1e-6);
   sap.set_parameters(sap_parameters_);
 
   // Compute problem data at time (t)
