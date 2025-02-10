@@ -417,7 +417,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   }
 
   // Joint<T> overrides:
-  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint(
+  std::unique_ptr<internal::Mobilizer<T>> MakeJointImplementation(
       const internal::SpanningForest::Mobod& mobod) const override;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(

@@ -99,10 +99,9 @@ std::unique_ptr<Joint<T>> CurvilinearJoint<T>::DoShallowClone() const {
 }
 
 template <typename T>
-std::unique_ptr<typename Joint<T>::BluePrint>
-CurvilinearJoint<T>::MakeImplementationBlueprint(
+std::unique_ptr<internal::Mobilizer<T>>
+CurvilinearJoint<T>::MakeJointImplementation(
     const internal::SpanningForest::Mobod& mobod) const {
-  auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
   const auto [inboard_frame, outboard_frame] =
       this->tree_frames(mobod.is_reversed());
   // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
@@ -110,8 +109,7 @@ CurvilinearJoint<T>::MakeImplementationBlueprint(
       std::make_unique<internal::CurvilinearMobilizer<T>>(
           mobod, *inboard_frame, *outboard_frame, curvilinear_path_);
   curvilinear_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizer = std::move(curvilinear_mobilizer);
-  return blue_print;
+  return curvilinear_mobilizer;
 }
 
 }  // namespace multibody
