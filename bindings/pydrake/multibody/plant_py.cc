@@ -3,11 +3,13 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/systems/builder_life_support_pybind.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/geometry/scene_graph.h"
@@ -1338,38 +1340,44 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   {
-    // TODO(eric.cousineau): Figure out why we need to use this to explicit
-    // keep-alive vs. annotating the return tuple with `py::keep_alive()`.
-    // Most likely due to a bug in our fork of pybind11 for handling of
-    // unique_ptr<> arguments and keep_alive<> behavior for objects that are
-    // not yet registered with pybind11 (#11046).
-    auto cast_workaround = [](auto&& nurse, py::object patient_py) {
-      // Cast to ensure we have the object registered.
-      py::object nurse_py = py::cast(nurse, py_rvp::reference);
-      // Directly leverage pybind11's keep alive mechanism.
-      py::detail::keep_alive_impl(nurse_py, patient_py);
-      return nurse_py;
-    };
-
+    // This function applies essentially the same memory management annotations
+    // as the builder.AddSystem() binding.
     auto result_to_tuple =
-        [cast_workaround](systems::DiagramBuilder<T>* builder,
+        [](systems::DiagramBuilder<T>* builder,
             const AddMultibodyPlantSceneGraphResult<T>& pair) {
+          // Using BuilderLifeSupport::stash makes the builder
+          // temporarily immortal (uncollectible self cycle). This will be
+          // resolved by the Build() step. See BuilderLifeSupport for
+          // rationale.
+          internal::BuilderLifeSupport<T>::stash(builder);
+
+          // Add garbage collectible ref cycles between the builder and the
+          // added systems. Strictly speaking, this is more lifetime insurance
+          // than necessary, but it does support usage seen in the wild where a
+          // single system reference (say, plant) is expected to keep an entire
+          // diagram alive.
           py::object builder_py = py::cast(builder, py_rvp::reference);
-          // Keep alive, ownership: `plant` keeps `builder` alive.
-          py::object plant_py = cast_workaround(pair.plant, builder_py);
-          // Keep alive, ownership: `scene_graph` keeps `builder` alive.
-          py::object scene_graph_py =
-              cast_workaround(pair.scene_graph, builder_py);
+          py::object plant_py = cast(pair.plant, py_rvp::reference);
+          py::object scene_graph_py = cast(pair.scene_graph, py_rvp::reference);
+          internal::make_arbitrary_ref_cycle(
+              builder_py, plant_py, "AddMultibodyPlantSceneGraphResult.plant");
+          internal::make_arbitrary_ref_cycle(builder_py, scene_graph_py,
+              "AddMultibodyPlantSceneGraphResult.scene_graph");
           return py::make_tuple(plant_py, scene_graph_py);
         };
 
     m.def(
         "AddMultibodyPlantSceneGraph",
         [result_to_tuple](systems::DiagramBuilder<T>* builder,
-            std::unique_ptr<MultibodyPlant<T>> plant,
-            std::unique_ptr<SceneGraph<T>> scene_graph) {
-          auto pair = AddMultibodyPlantSceneGraph<T>(
-              builder, std::move(plant), std::move(scene_graph));
+            MultibodyPlant<T>& plant, SceneGraph<T>* scene_graph) {
+          // The C++ method doesn't offer a bare-pointer overload, only
+          // shared_ptr. Because object lifetimes are already handled by the
+          // ref_cycle annotations above, we can pass the systems via unowned
+          // shared_ptr.
+          auto pair =
+              multibody::internal::AddMultibodyPlantSceneGraphFromShared<T>(
+                  builder, make_unowned_shared_ptr_from_raw(&plant),
+                  make_unowned_shared_ptr_from_raw(scene_graph));
           return result_to_tuple(builder, pair);
         },
         py::arg("builder"), py::arg("plant"), py::arg("scene_graph") = nullptr,
@@ -1379,9 +1387,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
     m.def(
         "AddMultibodyPlantSceneGraph",
         [result_to_tuple](systems::DiagramBuilder<T>* builder, double time_step,
-            std::unique_ptr<SceneGraph<T>> scene_graph) {
-          auto pair = AddMultibodyPlantSceneGraph<T>(
-              builder, time_step, std::move(scene_graph));
+            SceneGraph<T>* scene_graph) {
+          // The C++ method doesn't offer a bare-pointer overload, only
+          // shared_ptr. Because object lifetimes are already handled by the
+          // ref_cycle annotations above, we can pass the systems via unowned
+          // shared_ptr.
+          auto pair =
+              multibody::internal::AddMultibodyPlantSceneGraphFromShared<T>(
+                  builder,
+                  make_unowned_shared_ptr_from_raw(
+                      new MultibodyPlant<T>(time_step)),
+                  make_unowned_shared_ptr_from_raw(scene_graph));
           return result_to_tuple(builder, pair);
         },
         py::arg("builder"), py::arg("time_step"),
