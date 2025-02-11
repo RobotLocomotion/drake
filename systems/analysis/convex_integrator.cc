@@ -287,10 +287,15 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     // checking the convergence criteria, so that also the last iteration is
     // considered.
     if (k == sap_parameters_.max_iterations) break;
+   
+    // TODO(vincekurtz): more principled choice of when to re-factorize the 
+    // Hessian. For now we do it every other iteration.
+    const bool refresh_hessian = (k % 2) == 0;
 
     // This is the most expensive update: it performs the factorization of H to
     // solve for the search direction dv.
-    CalcSearchDirectionData(model, *context, &search_direction_data);
+    CalcSearchDirectionData(model, *context, &search_direction_data,
+                            refresh_hessian);
     const VectorX<double>& dv = search_direction_data.dv;
 
     // Perform line search. We'll do exact linesearch only, regardless of the
@@ -407,16 +412,18 @@ void ConvexIntegrator<T>::CalcHessianFactorization(
 template <typename T>
 void ConvexIntegrator<T>::CalcSearchDirectionData(const SapModel<T>& model,
                                                   const Context<T>& context,
-                                                  SearchDirectionData* data)
+                                                  SearchDirectionData* data,
+                                                  const bool refactorize_hessian)
   requires std::is_same_v<T, double>
 {  // NOLINT(whitespace/braces)
   // We compute the rhs on data->dv to allow in-place solution.
   data->dv = -model.EvalCostGradient(context);
 
-  // if (!hessian_factorization_.matches_problem_structure(model)) {
-  //   CalcHessianFactorization(model, context, &hessian_factorization_);
-  // }
-  CalcHessianFactorization(model, context, &hessian_factorization_);
+  // Factorizing the Hessian is expensive, so we only do it when we have to
+  // (because the problem structure has changed) or when explicitly requested.
+  if (!hessian_factorization_.matches(model) || refactorize_hessian) {
+    CalcHessianFactorization(model, context, &hessian_factorization_);
+  }
 
   hessian_factorization_.SolveInPlace(&data->dv);
 

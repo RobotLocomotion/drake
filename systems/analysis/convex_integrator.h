@@ -72,9 +72,8 @@ class HessianFactorization : public HessianFactorizationCache {
     num_constraint_equations_ = model.num_constraint_equations();
   }
 
-  // TODO(vincekurtz): more systematic tracking of when the sparsity
-  // pattern/constraints have gone stale.
-  bool matches_problem_structure(const SapModel<double>& model) const {
+  // Check whether the sparsity pattern/constraints match the current model.
+  bool matches(const SapModel<double>& model) const {
     return num_cliques_ == model.num_cliques() &&
            num_velocities_ == model.num_velocities() &&
            num_constraints_ == model.num_constraints() &&
@@ -222,7 +221,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Hessian updates.
   void CalcSearchDirectionData(const SapModel<T>& model,
                                const Context<T>& context,
-                               SearchDirectionData* search_direction_data)
+                               SearchDirectionData* search_direction_data,
+                               const bool refactorize_hessian)
     requires std::is_same_v<T, double>;
 
   // Update the Hessian factorization based on the given SAP model. This is a
