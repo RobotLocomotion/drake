@@ -364,9 +364,14 @@ struct InstancedMeshData {
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(Packer& o) const {
-    int size = 5;  // uuid, type, geometry, material, count
-    if (instanceMatrix.cols() > 0) ++size;
-    if (instanceColor && instanceColor->cols() > 0) ++size;
+    DRAKE_ASSERT(instanceMatrix.cols() == count);
+    DRAKE_ASSERT(count > 0);
+
+    int size = 6;  // uuid, type, geometry, material, count, instanceMatrix
+    if (instanceColor && instanceColor->cols() > 0) {
+      DRAKE_ASSERT(instanceColor->cols() == count);
+      ++size;
+    }  // instanceColor
 
     o.pack_map(size);
     PACK_MAP_VAR(o, uuid);
@@ -374,10 +379,8 @@ struct InstancedMeshData {
     PACK_MAP_VAR(o, geometry);
     PACK_MAP_VAR(o, material);
     PACK_MAP_VAR(o, count);
+    PACK_MAP_VAR(o, instanceMatrix);
 
-    if (instanceMatrix.cols() > 0) {
-      PACK_MAP_VAR(o, instanceMatrix);
-    }
     if (instanceColor && instanceColor->cols() > 0) {
       o.pack("instanceColor");
       o.pack(*instanceColor);
