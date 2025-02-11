@@ -102,7 +102,7 @@ void AddDeformableRigidContactSurface(
   intersect.SampleVolumeFieldOnSurface(
       pressure_field_R, rigid_bvh_R, deformable_mesh.mesh(),
       deformable_mesh.bvh(), X_RD,
-      false /* don't filter face normal along field gradient */);
+      true /* don't filter face normal along field gradient */);
 
   if (intersect.has_intersection()) {
     std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_R =

@@ -494,10 +494,12 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
         DRAKE_DEMAND(ssize(surface.pressure_gradient_W()) ==
                      surface.num_contact_points());
       }
-      const T g = surface.is_B_deformable()
+      T g = surface.is_B_deformable()
                       ? NAN
                       : -surface.pressure_gradient_W()[i].dot(nhat_BA_W);
-      if (g < 1e-14) continue;
+      if (g < 1e-14 || Ae < 1e-14) {
+        continue;
+      }
       const T rigid_k = Ae * g;
       const T k = surface.is_B_deformable() ? deformable_k : rigid_k;
 
@@ -508,7 +510,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       cannot be resolved at such high stiffness values, dissipation should be
       irrelevant. Therefore we use zero Hunt & Crossley dissipation and the
       "near rigid regime" time scale for the linear dissipation. */
-      const T d = 0.0;
+      const T d = 40.0;
 
       /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
        contact approximation. See multibody::DiscreteContactApproximation for
