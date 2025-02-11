@@ -132,8 +132,13 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       const std::string name =
           ScopedName::Join(model_namespace, model.name).to_string();
       drake::log()->debug("  add_model: {}\n    {}", name, model.file);
-      const std::string file =
+      const ResolveUriResult resolved =
           ResolveUri(diagnostic, model.file, package_map, {});
+      if (!resolved.exists) {
+        // ResolveUri already emitted an error message.
+        continue;
+      }
+      const std::string file = resolved.full_path.string();
       std::optional<ModelInstanceIndex> child_model_instance_id =
           parser_selector(diagnostic, file)
               .AddModel({DataSource::kFilename, &file}, model.name,
@@ -254,7 +259,13 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
             fmt::format("Namespace '{}' does not exist as model instance",
                         new_model_namespace));
       }
-      std::string filename = ResolveUri(diagnostic, sub.file, package_map, {});
+      const ResolveUriResult resolved =
+          ResolveUri(diagnostic, sub.file, package_map, {});
+      if (!resolved.exists) {
+        // ResolveUri already emitted an error message.
+        continue;
+      }
+      const std::string filename = resolved.full_path.string();
       auto sub_directives =
           LoadModelDirectives({DataSource::kFilename, &filename});
       ParseModelDirectivesImpl(sub_directives, new_model_namespace, workspace,

@@ -95,12 +95,12 @@ std::vector<ModelInstanceIndex> Parser::AddModels(
 
 std::vector<ModelInstanceIndex> Parser::AddModelsFromUrl(
     const std::string& url) {
-  const std::string file_name =
+  const internal::ResolveUriResult resolved =
       internal::ResolveUri(diagnostic_policy_, url, package_map_, {});
-  if (file_name.empty()) {
+  if (!resolved.exists) {
     return {};
   }
-  return AddModels(file_name);
+  return AddModels(resolved.full_path);
 }
 
 std::vector<ModelInstanceIndex> Parser::AddModelsFromString(
