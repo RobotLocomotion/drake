@@ -9,12 +9,11 @@ namespace kuka_iiwa_arm {
 
 // These details have moved to files under drake/manipulation/kuka_iiwa.
 // These forwarding aliases are placed here for compatibility purposes.
-using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 using manipulation::kuka_iiwa::get_iiwa_max_joint_velocities;
+using manipulation::kuka_iiwa::kIiwaArmNumJoints;
 
 /// Used to set the feedback gains for the simulated position controlled KUKA.
-void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
-                                    Eigen::VectorXd* Ki,
+void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd);
 
 /// Used to set the feedback gains for the simulated torque controlled KUKA.

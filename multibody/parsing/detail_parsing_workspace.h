@@ -134,8 +134,7 @@ struct ParsingWorkspace {
   // All parameters are aliased; they must have a lifetime greater than that of
   // this struct.
   ParsingWorkspace(
-      const ParsingOptions& options_in,
-      const PackageMap& package_map_in,
+      const ParsingOptions& options_in, const PackageMap& package_map_in,
       const drake::internal::DiagnosticPolicy& diagnostic_in,
       MultibodyPlant<double>* plant_in,
       internal::CollisionFilterGroupResolver* collision_resolver_in,

@@ -1125,8 +1125,10 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
       ResolveFilename resolve_filename =
           [&package_map, &root_dir, &link_element](
               const SDFormatDiagnostic& inner_diagnostic, std::string uri) {
-            return ResolveUri(inner_diagnostic.MakePolicyForNode(*link_element),
-                              uri, package_map, root_dir);
+            const ResolveUriResult resolved =
+                ResolveUri(inner_diagnostic.MakePolicyForNode(*link_element),
+                           uri, package_map, root_dir);
+            return resolved.GetStringPathIfExists();
           };
 
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -1451,6 +1453,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
                                     const sdf::ElementPtr node,
                                     ModelInstanceIndex model_instance,
                                     MultibodyPlant<double>* plant) {
+  // clang-format off
   const std::set<std::string> supported_joint_elements{
       "drake:parent",
       "drake:child",
@@ -1465,6 +1468,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       "drake:radius",
       "drake:angle",
       "pose"};
+  // clang-format on
   CheckSupportedElements(diagnostic, node, supported_joint_elements);
 
   if (!node->HasAttribute("type")) {
@@ -1542,8 +1546,8 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       return false;
     }
     PiecewiseConstantCurvatureTrajectory<double> trajectory(
-        breaks, turning_rates, initial_tangent, plane_normal,
-        Vector3d::Zero(), is_periodic);
+        breaks, turning_rates, initial_tangent, plane_normal, Vector3d::Zero(),
+        is_periodic);
     plant->AddJoint(std::make_unique<CurvilinearJoint<double>>(
         joint_name, *parent_frame, *child_frame, trajectory, damping));
   } else {
@@ -2266,7 +2270,9 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
     debug_log.SetActionForErrors([](const DiagnosticDetail& detail) {
       drake::log()->debug(detail.FormatError());
     });
-    return ResolveUri(debug_log, _input, workspace.package_map, ".");
+    const ResolveUriResult resolved =
+        ResolveUri(debug_log, _input, workspace.package_map, ".");
+    return resolved.GetStringPathIfExists();
   });
 
   parser_config.RegisterCustomModelParser(

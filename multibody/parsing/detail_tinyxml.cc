@@ -66,7 +66,6 @@ bool ParseScalarAttribute(
 
 math::RigidTransformd OriginAttributesToTransform(
     const tinyxml2::XMLElement* node) {
-
   Eigen::Vector3d rpy = Eigen::Vector3d::Zero();
   Eigen::Vector3d xyz = Eigen::Vector3d::Zero();
 

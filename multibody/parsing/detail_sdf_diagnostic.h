@@ -22,10 +22,9 @@ class SDFormatDiagnostic {
   // parameter.
   // @pre diagnostic cannot be nullptr.
   // @pre data_source cannot be nullptr.
-  SDFormatDiagnostic(
-      const drake::internal::DiagnosticPolicy* diagnostic,
-      const DataSource* data_source,
-      const std::string& file_extension = "sdf");
+  SDFormatDiagnostic(const drake::internal::DiagnosticPolicy* diagnostic,
+                     const DataSource* data_source,
+                     const std::string& file_extension = "sdf");
 
   // Issues a warning for an ElementConstPtr.
   void Warning(const sdf::ElementConstPtr element,
@@ -56,8 +55,7 @@ class SDFormatDiagnostic {
  private:
   // Makes a diagnostic detail record based on an Element.
   drake::internal::DiagnosticDetail MakeDetail(
-      const sdf::Element& element,
-      const std::string& message) const;
+      const sdf::Element& element, const std::string& message) const;
 
   const drake::internal::DiagnosticPolicy* diagnostic_{};
   const DataSource* data_source_{};
@@ -69,29 +67,24 @@ class SDFormatDiagnostic {
 // Unsupported elements in the `drake:` namespace are errors, all others are
 // warnings.  (see https://github.com/RobotLocomotion/drake/issues/16785 for
 // some discussion of this rationale)
-void CheckSupportedElements(
-    const SDFormatDiagnostic& diagnostic,
-    sdf::ElementConstPtr root_element,
-    const std::set<std::string>& supported_elements);
+void CheckSupportedElements(const SDFormatDiagnostic& diagnostic,
+                            sdf::ElementConstPtr root_element,
+                            const std::set<std::string>& supported_elements);
 
-void CheckSupportedElements(
-    const SDFormatDiagnostic& diagnostic,
-    const sdf::Element* root_element,
-    const std::set<std::string>& supported_elements);
+void CheckSupportedElements(const SDFormatDiagnostic& diagnostic,
+                            const sdf::Element* root_element,
+                            const std::set<std::string>& supported_elements);
 
 // Checks, for elements where there is only one supported value, that
 // the element matches that value if it's present.
-void CheckSupportedElementValue(
-    const SDFormatDiagnostic& diagnostic,
-    sdf::ElementConstPtr root_element,
-    const std::string& element_name,
-    const std::string& expected);
+void CheckSupportedElementValue(const SDFormatDiagnostic& diagnostic,
+                                sdf::ElementConstPtr root_element,
+                                const std::string& element_name,
+                                const std::string& expected);
 
 // Move-appends all `input_errors` onto `output_errors`.
 // Returns true if `input_errors` contains any error.
-bool PropagateErrors(
-    sdf::Errors&& input_errors,
-    sdf::Errors* output_errors);
+bool PropagateErrors(sdf::Errors&& input_errors, sdf::Errors* output_errors);
 
 // Returns true iff the given report indicates an error, or false
 // for warnings.

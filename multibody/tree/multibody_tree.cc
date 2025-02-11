@@ -54,20 +54,17 @@ class JointImplementationBuilder {
 
   static Mobilizer<T>* Build(const SpanningForest::Mobod& mobod,
                              Joint<T>* joint, MultibodyTree<T>* tree) {
-    std::unique_ptr<JointBluePrint> blue_print =
-        joint->MakeImplementationBlueprint(mobod);
-    auto implementation = std::make_unique<JointImplementation>(*blue_print);
+    std::unique_ptr<Mobilizer<T>> owned_mobilizer =
+        joint->MakeMobilizerForJoint(mobod);
+    Mobilizer<T>* mobilizer = owned_mobilizer.get();
+    auto implementation =
+        std::make_unique<typename Joint<T>::JointImplementation>(mobilizer);
     DRAKE_DEMAND(implementation->has_mobilizer());
-    Mobilizer<T>* mobilizer = blue_print->mobilizer.get();
-    tree->AddMobilizer(std::move(blue_print->mobilizer));
+    tree->AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     // TODO(amcastro-tri): add force elements, bodies, constraints, etc.
     joint->OwnImplementation(std::move(implementation));
     return mobilizer;
   }
-
- private:
-  typedef typename Joint<T>::BluePrint JointBluePrint;
-  typedef typename Joint<T>::JointImplementation JointImplementation;
 };
 
 template <typename T>

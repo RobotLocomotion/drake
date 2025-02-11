@@ -34,8 +34,7 @@ const char* const kLcmCommandChannel = "ALLEGRO_COMMAND";
 class PositionCommander {
  public:
   PositionCommander() {
-    lcm_.subscribe(kLcmStatusChannel, &PositionCommander::HandleStatus,
-                   this);
+    lcm_.subscribe(kLcmStatusChannel, &PositionCommander::HandleStatus, this);
   }
 
   void Run() {
@@ -81,8 +80,7 @@ class PositionCommander {
       // position. Eigen::Vector3d(1, 1, 0.5) is a number based on experience
       // to keep the finger position, and 0.1 is the coefficient related to
       // the extra force to apply.
-      target_joint_position.segment<3>(9) +=
-          (0.1 * Eigen::Vector3d(1, 1, 0.5));
+      target_joint_position.segment<3>(9) += (0.1 * Eigen::Vector3d(1, 1, 0.5));
       // The thumb works as another pivot finger, and is expected to exert a
       // large force in order to keep stabilization.
       target_joint_position.segment<4>(0) =
@@ -95,8 +93,7 @@ class PositionCommander {
       MovetoPositionUntilStuck(target_joint_position);
 
       target_joint_position = close_hand_joint_position;
-      target_joint_position.segment<3>(9) +=
-          (0.1 * Eigen::Vector3d(1, 1, 0.5));
+      target_joint_position.segment<3>(9) += (0.1 * Eigen::Vector3d(1, 1, 0.5));
       target_joint_position.segment<4>(0) =
           hand_state_.FingerGraspJointPosition(0);
       // The ring finger works as the actuating finger now to rotate the mug in
@@ -108,15 +105,13 @@ class PositionCommander {
   }
 
  private:
-  void PublishPositionCommand(
-      const Eigen::VectorXd& target_joint_position) {
+  void PublishPositionCommand(const Eigen::VectorXd& target_joint_position) {
     Eigen::VectorXd::Map(&allegro_command_.joint_position[0],
                          kAllegroNumJoints) = target_joint_position;
     lcm_.publish(kLcmCommandChannel, &allegro_command_);
   }
 
-  void MovetoPositionUntilStuck(
-      const Eigen::VectorXd& target_joint_position) {
+  void MovetoPositionUntilStuck(const Eigen::VectorXd& target_joint_position) {
     PublishPositionCommand(target_joint_position);
     // A time delay at the initial moving stage so that the noisy data from the
     // hand motion is filtered.

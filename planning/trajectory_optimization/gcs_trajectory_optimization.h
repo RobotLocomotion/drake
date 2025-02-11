@@ -1364,8 +1364,8 @@ class GcsTrajectoryOptimization final {
 
 /** Returns a list of indices in the plant's generalized positions which
 correspond to a continuous revolute joint (a revolute joint with no joint
-limits). This includes the revolute component of PlanarJoint and
-RpyFloatingJoint. */
+limits). This includes UniversalJoint, and the revolute component of PlanarJoint
+and RpyFloatingJoint. */
 std::vector<int> GetContinuousRevoluteJointIndices(
     const multibody::MultibodyPlant<double>& plant);
 

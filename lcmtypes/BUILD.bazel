@@ -361,33 +361,6 @@ install(
 
 # === test/ ===
 
-# TODO(jwnimmer-tri) We use this to test the `use_new_lcm_gen = True` flag.
-# Once we turn on that flag by default, we can probably ditch this test.
-generate_file(
-    name = "test_message.lcm",
-    content = """
-package drake;
-struct test_message { double value; }
-""",
-    visibility = ["//visibility:private"],
-)
-
-drake_lcm_cc_library(
-    name = "test_message",
-    lcm_package = "drake",
-    lcm_srcs = ["test_message.lcm"],
-    use_new_lcm_gen = True,
-    visibility = ["//visibility:private"],
-)
-
-drake_cc_googletest(
-    name = "test_message_test",
-    deps = [
-        ":test_message",
-        "//lcm:lcm_messages",
-    ],
-)
-
 drake_py_test(
     name = "nested_types_test",
     deps = [

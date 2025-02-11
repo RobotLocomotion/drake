@@ -16,21 +16,20 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+using parsing::GetScopedFrameByName;
 using parsing::ModelDirectives;
 using parsing::ModelInstanceInfo;
-using parsing::GetScopedFrameByName;
 
 namespace {
 
 // Adds a new weld joint to @p plant from @p parent_frame as indicated by @p
 // weld (as resolved relative to @p model_namespace) and update the @p info for
 // the child model accordingly.
-void AddWeld(
-    const Frame<double>& parent_frame,
-    const Frame<double>& child_frame,
-    const math::RigidTransform<double>& X_PC,
-    MultibodyPlant<double>* plant,
-    std::vector<ModelInstanceInfo>* added_models) {
+void AddWeld(const Frame<double>& parent_frame,
+             const Frame<double>& child_frame,
+             const math::RigidTransform<double>& X_PC,
+             MultibodyPlant<double>* plant,
+             std::vector<ModelInstanceInfo>* added_models) {
   plant->WeldFrames(parent_frame, child_frame, X_PC);
   if (added_models) {
     // Record weld info into crappy ModelInstanceInfo struct.
@@ -111,15 +110,14 @@ void ApplyAddModelDefaultFreeBodyPose(
   }
 }
 
-void ParseModelDirectivesImpl(
-    const ModelDirectives& directives,
-    const std::string& model_namespace,
-    const ParsingWorkspace& workspace,
-    std::vector<ModelInstanceInfo>* added_models) {
+void ParseModelDirectivesImpl(const ModelDirectives& directives,
+                              const std::string& model_namespace,
+                              const ParsingWorkspace& workspace,
+                              std::vector<ModelInstanceInfo>* added_models) {
   drake::log()->debug("ParseModelDirectivesImpl(MultibodyPlant)");
   DRAKE_DEMAND(added_models != nullptr);
-  auto& [options, package_map, diagnostic, plant,
-         collision_resolver, parser_selector] = workspace;
+  auto& [options, package_map, diagnostic, plant, collision_resolver,
+         parser_selector] = workspace;
   DRAKE_DEMAND(plant != nullptr);
   auto get_scoped_frame = [_plant = plant, &model_namespace](
                               const std::string& name) -> const Frame<double>& {
@@ -134,18 +132,23 @@ void ParseModelDirectivesImpl(
       const std::string name =
           ScopedName::Join(model_namespace, model.name).to_string();
       drake::log()->debug("  add_model: {}\n    {}", name, model.file);
-      const std::string file =
+      const ResolveUriResult resolved =
           ResolveUri(diagnostic, model.file, package_map, {});
+      if (!resolved.exists) {
+        // ResolveUri already emitted an error message.
+        continue;
+      }
+      const std::string file = resolved.full_path.string();
       std::optional<ModelInstanceIndex> child_model_instance_id =
-          parser_selector(diagnostic, file).AddModel(
-              {DataSource::kFilename, &file},
-              model.name, model_namespace, workspace);
+          parser_selector(diagnostic, file)
+              .AddModel({DataSource::kFilename, &file}, model.name,
+                        model_namespace, workspace);
       if (!child_model_instance_id.has_value()) {
         // Error should have already been emitted.
         continue;
       }
       for (const auto& [joint_name, positions] :
-               directive.add_model->default_joint_positions) {
+           directive.add_model->default_joint_positions) {
         plant->GetMutableJointByName(joint_name, child_model_instance_id)
             .set_default_positions(positions);
       }
@@ -207,10 +210,9 @@ void ParseModelDirectivesImpl(
       if (directive.add_weld->X_PC) {
         X_PC = directive.add_weld->X_PC->GetDeterministicValue();
       }
-      AddWeld(
-          get_scoped_frame(directive.add_weld->parent),
-          get_scoped_frame(directive.add_weld->child),
-          X_PC, plant, added_models);
+      AddWeld(get_scoped_frame(directive.add_weld->parent),
+              get_scoped_frame(directive.add_weld->child), X_PC, plant,
+              added_models);
 
     } else if (directive.add_collision_filter_group) {
       // If there's no geometry registered, there's nothing to be done with
@@ -238,25 +240,32 @@ void ParseModelDirectivesImpl(
       collision_resolver->AddGroup(diagnostic, group.name, member_set,
                                    member_groups_set, model_instance);
       for (const auto& ignored_group : group.ignored_collision_filter_groups) {
-        collision_resolver->AddPair(
-            diagnostic, group.name, ignored_group, model_instance);
+        collision_resolver->AddPair(diagnostic, group.name, ignored_group,
+                                    model_instance);
       }
 
     } else {
       // Recurse.
       auto& sub = *directive.add_directives;
-      std::string new_model_namespace = ScopedName::Join(
-          model_namespace, sub.model_namespace.value_or("")).to_string();
+      std::string new_model_namespace =
+          ScopedName::Join(model_namespace, sub.model_namespace.value_or(""))
+              .to_string();
       // Ensure we have a model instance for this namespace.
       drake::log()->debug("  add_directives: {}", sub.file);
       drake::log()->debug("    new_model_namespace: {}", new_model_namespace);
       if (!new_model_namespace.empty() &&
           !plant->HasModelInstanceNamed(new_model_namespace)) {
-        throw std::runtime_error(fmt::format(
-            "Namespace '{}' does not exist as model instance",
-            new_model_namespace));
+        throw std::runtime_error(
+            fmt::format("Namespace '{}' does not exist as model instance",
+                        new_model_namespace));
       }
-      std::string filename = ResolveUri(diagnostic, sub.file, package_map, {});
+      const ResolveUriResult resolved =
+          ResolveUri(diagnostic, sub.file, package_map, {});
+      if (!resolved.exists) {
+        // ResolveUri already emitted an error message.
+        continue;
+      }
+      const std::string filename = resolved.full_path.string();
       auto sub_directives =
           LoadModelDirectives({DataSource::kFilename, &filename});
       ParseModelDirectivesImpl(sub_directives, new_model_namespace, workspace,
@@ -318,16 +327,15 @@ DmdParserWrapper::~DmdParserWrapper() {}
 
 std::optional<ModelInstanceIndex> DmdParserWrapper::AddModel(
     const DataSource& data_source, const std::string&,
-    const std::optional<std::string>&,
-    const ParsingWorkspace& workspace) {
-  std::string display_source =
-      data_source.IsFilename()
-      ? data_source.GetAbsolutePath()
-      : data_source.GetStem() + ".dmd.yaml";
+    const std::optional<std::string>&, const ParsingWorkspace& workspace) {
+  std::string display_source = data_source.IsFilename()
+                                   ? data_source.GetAbsolutePath()
+                                   : data_source.GetStem() + ".dmd.yaml";
   workspace.diagnostic.Error(fmt::format(
       "'{}' is a model directives data source; it is always an error to pass"
       " a model directives source to a single-model parser method. Use"
-      " AddModels() instead.", display_source));
+      " AddModels() instead.",
+      display_source));
   return {};
 }
 
