@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <tuple>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -191,9 +192,9 @@ unique_ptr<sdf::Collision> MakeSdfCollisionFromString(
 }
 
 // Define a pass-through functor for testing.
-std::string NoopResolveFilename(const SDFormatDiagnostic&,
+std::tuple<std::string, bool> NoopResolveFilename(const SDFormatDiagnostic&,
                                 std::string filename) {
-  return filename;
+  return {filename, !filename.empty()};
 }
 
 class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
@@ -1065,7 +1066,7 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
         make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap));
     internal::MakeVisualPropertiesFromSdfVisual(sdf_diagnostic_,
         *sdf_visual, [](const SDFormatDiagnostic&, std::string filename)
-            -> std::string {return {};});
+            -> std::tuple<std::string, bool> {return {std::string{}, false};});
     EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
         ".*Unable to locate the texture file: empty.png"));
   }
@@ -1102,11 +1103,9 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
       " <geometry><sphere><radius>1</radius></sphere></geometry>"
       " <drake:illustration_properties enabled=\"bob\"/>"
       "</visual>");
-    internal::MakeVisualPropertiesFromSdfVisual(
-        sdf_diagnostic_, *sdf_visual,
-        [](const SDFormatDiagnostic&, std::string) -> std::string {
-          return {};
-        });
+    internal::MakeVisualPropertiesFromSdfVisual(sdf_diagnostic_,
+      *sdf_visual, [](const SDFormatDiagnostic&, std::string filename)
+        -> std::tuple<std::string, bool> {return {std::string{}, false};});
     EXPECT_THAT(TakeError(),
                 ::testing::MatchesRegex(
                     ".*'enabled' attribute with the wrong value type.*"));
