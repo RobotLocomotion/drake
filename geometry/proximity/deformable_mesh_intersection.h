@@ -32,8 +32,8 @@ namespace internal {
      measusured and expressed in frame R. @param[in] rigid_bvh_R
      A bounding volume hierarchy built on the geometry contained in
      rigid_mesh_R.
- @param[in] X_DR
-     The pose of the rigid geometry's frame R in deformable geometry's frame D.
+ @param[in] X_RD
+     The pose of the deformable geometry's frame D in rigid geometry's frame R.
  @param[in, out] deformable_contact
      The deformable contact data to be appended to.
  @pre deformable_contact != nullptr. */
@@ -44,7 +44,7 @@ void AddDeformableRigidContactSurface(
     GeometryId deformable_id, GeometryId rigid_id,
     const VolumeMesh<double>& rigid_mesh_R,
     const Bvh<Obb, VolumeMesh<double>>& rigid_bvh_R,
-    const math::RigidTransform<double>& X_DR,
+    const math::RigidTransform<double>& X_RD,
     DeformableContact<double>* deformable_contact);
 
 }  // namespace internal

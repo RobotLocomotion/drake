@@ -116,7 +116,7 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
         const auto& rigid_volume_mesh = rigid_geometry.mesh().mesh();
         const auto& pressure_field_R = rigid_geometry.mesh().pressure();
         // Deformable geometry is in the world frame.
-        const auto& X_RD = X_WR.inverse();
+        const auto X_RD = X_WR.inverse();
         AddDeformableRigidContactSurface(
             pressure_field_R, deformable_geometry.deformable_surface_mesh(),
             deformable_geometry.surface_index_to_volume_index(), deformable_id,

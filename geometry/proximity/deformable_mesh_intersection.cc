@@ -1,5 +1,6 @@
 #include "drake/geometry/proximity/deformable_mesh_intersection.h"
 
+#include <iostream>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -68,11 +69,33 @@ class DeformableSurfaceVolumeIntersector
 
     // TODO(xuchenhan-tri): We enforce that the normal points outward of the
     // rigid mesh. Consider whether we should flip this convention.
-    barycentric_centroids_.push_back(surface_D.CalcBarycentric(
-        CalcPolygonCentroid(
-            polygon, X_RD_d.rotation() * (-surface_D.face_normal(tri_index)),
-            builder_R->vertices()),
-        tri_index));
+    const Vector3<double> n_R =
+        X_RD_d.rotation() * (-surface_D.face_normal(tri_index));
+    const Vector3<double> p_RC =
+        CalcPolygonCentroid(polygon, n_R, builder_R->vertices());
+    const auto X_DR_d = X_RD_d.inverse();
+    // Recall that D frame is the W frame.
+    const Vector3<double> p_WR_W = X_DR_d.translation();
+    const Vector3<double> p_RC_W = X_DR_d.rotation() * p_RC;
+    const Vector3<double> p_WC_W = p_WR_W + p_RC_W;
+    const Vector3<double> barycentric_centroid =
+        surface_D.CalcBarycentric(p_WC_W, tri_index);
+    if (false) {
+      std::cout << "n_R: " << n_R[0] << " " << n_R[1] << " " << n_R[2]
+                << std::endl;
+      std::cout << "p_RC: " << p_RC[0] << " " << p_RC[1] << " " << p_RC[2]
+                << std::endl;
+      std::cout << "p_WR_W: " << p_WR_W[0] << " " << p_WR_W[1] << " "
+                << p_WR_W[2] << std::endl;
+      std::cout << "p_RC_W: " << p_RC_W[0] << " " << p_RC_W[1] << " "
+                << p_RC_W[2] << std::endl;
+      std::cout << "p_WC_W: " << p_WC_W[0] << " " << p_WC_W[1] << " "
+                << p_WC_W[2] << std::endl;
+      std::cout << "barycentric_centroid: " << barycentric_centroid[0] << " "
+                << barycentric_centroid[1] << " " << barycentric_centroid[2]
+                << std::endl;
+    }
+    barycentric_centroids_.push_back(barycentric_centroid);
   }
 
  private:
@@ -97,21 +120,28 @@ void AddDeformableRigidContactSurface(
       false /* don't filter face normal along field gradient */);
 
   if (intersect.has_intersection()) {
-    std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_W =
+    std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_R =
         intersect.release_mesh();
     const PolygonSurfaceMeshFieldLinear<double, double>& pressure_field =
         intersect.mutable_field();
-    const int num_faces = contact_mesh_W->num_faces();
+    const int num_faces = contact_mesh_R->num_faces();
     /* Compute the penetration distance at the centroid of each contact polygon
      using the signed distance field. */
     std::vector<double> pressure(num_faces);
     for (int i = 0; i < num_faces; ++i) {
-      const Vector3<double>& contact_points_W =
-          contact_mesh_W->element_centroid(i);
+      const Vector3<double>& contact_points_R =
+          contact_mesh_R->element_centroid(i);
       /* `signed_distance_field` has a gradient, therefore `EvaluateCartesian()`
        should be cheap. */
-      pressure[i] = pressure_field.EvaluateCartesian(i, contact_points_W);
+      pressure[i] = pressure_field.EvaluateCartesian(i, contact_points_R);
     }
+
+    // Transform the contact mesh from the rigid frame R to the deformable frame
+    // (which is aligned with the world frame).
+    const math::RigidTransform<double> X_DR = X_RD.inverse();
+    contact_mesh_R->TransformVertices(X_DR);
+    std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_W =
+        std::move(contact_mesh_R);
 
     const TriangleSurfaceMesh<double>& mesh = deformable_mesh.mesh();
     // Each contact polygon generates one "participating triangle". Hence

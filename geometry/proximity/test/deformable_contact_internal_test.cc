@@ -79,9 +79,12 @@ VolumeMesh<double> MakeVolumeMesh() {
 /* Makes a ProximityProperties with a resolution hint property in the hydro
  group.
  @pre resolution_hint > 0. */
-ProximityProperties MakeProximityPropsWithRezHint(double resolution_hint) {
+ProximityProperties MakeCompliantHydroProps(double resolution_hint,
+                                            double hydroelastic_modulus = 1e5) {
   ProximityProperties props;
-  props.AddProperty(internal::kHydroGroup, internal::kRezHint, resolution_hint);
+  AddCompliantHydroelasticProperties(resolution_hint, hydroelastic_modulus,
+                                     &props);
+  props.AddProperty("hydroelastic", "slab_thickness", 0.1);
   return props;
 }
 
@@ -105,7 +108,7 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
   /* Add a rigid geometry with resolution hint property. */
   constexpr double kRadius = 0.5;
   constexpr double kRezHint = 0.5;
-  ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
+  ProximityProperties props = MakeCompliantHydroProps(kRezHint);
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id, props,
                                    default_pose());
 
@@ -131,10 +134,10 @@ GTEST_TEST(GeometriesTest, AddRigidGeometry) {
 }
 
 /* Test coverage for all unsupported shapes as rigid geometries: MeshcatCone and
- * HalfSpace. */
+ HalfSpace. */
 GTEST_TEST(GeometriesTest, UnsupportedRigidShapes) {
   constexpr double kRezHint = 0.5;
-  ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
+  ProximityProperties props = MakeCompliantHydroProps(kRezHint);
   Geometries geometries;
 
   /* Unsupported shapes: MeshcatCone, HalfSpace. */
@@ -161,7 +164,7 @@ GTEST_TEST(GeometriesTest, UnsupportedRigidShapes) {
  Cylinder, Capsule, Ellipsoid, Mesh, Convex. */
 GTEST_TEST(GeometriesTest, SupportedRigidShapes) {
   constexpr double kRezHint = 0.5;
-  ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
+  ProximityProperties props = MakeCompliantHydroProps(kRezHint);
   Geometries geometries;
 
   /* Box */
@@ -233,7 +236,7 @@ GTEST_TEST(GeometriesTest, UpdateRigidWorldPose) {
   GeometryId rigid_id = GeometryId::get_new_id();
   constexpr double kRadius = 0.5;
   constexpr double kRezHint = 0.5;
-  ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
+  ProximityProperties props = MakeCompliantHydroProps(kRezHint);
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id, props,
                                    default_pose());
 
@@ -262,7 +265,13 @@ GTEST_TEST(GeometriesTest, AddDeformableGeometry) {
   EXPECT_FALSE(geometries.is_deformable(deformable_id));
 
   /* Add a deformable geometry. */
-  geometries.AddDeformableGeometry(deformable_id, MakeVolumeMesh());
+  const VolumeMesh<double> volume_mesh = MakeVolumeMesh();
+  std::vector<int> surface_vertices;
+  TriangleSurfaceMesh<double> surface_mesh =
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(volume_mesh,
+                                                     &surface_vertices);
+  geometries.AddDeformableGeometry(deformable_id, volume_mesh, surface_mesh,
+                                   surface_vertices);
   EXPECT_FALSE(geometries.is_rigid(deformable_id));
   EXPECT_TRUE(geometries.is_deformable(deformable_id));
 }
@@ -280,7 +289,7 @@ GTEST_TEST(GeometriesTest, RemoveGeometry) {
   GeometryId rigid_id1 = GeometryId::get_new_id();
   constexpr double kRadius = 0.5;
   constexpr double kRezHint = 0.5;
-  ProximityProperties props = MakeProximityPropsWithRezHint(kRezHint);
+  ProximityProperties props = MakeCompliantHydroProps(kRezHint);
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id0, props,
                                    default_pose());
   geometries.MaybeAddRigidGeometry(Sphere(kRadius), rigid_id1, props,
@@ -321,8 +330,15 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
   /* Add a deformable geometry. */
   GeometryId deformable_id = GeometryId::get_new_id();
   const VolumeMesh<double> input_mesh = MakeVolumeMesh();
-  geometries.AddDeformableGeometry(deformable_id, input_mesh);
+  std::vector<int> surface_vertices;
+  TriangleSurfaceMesh<double> input_surface_mesh =
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(input_mesh,
+                                                     &surface_vertices);
+
+  geometries.AddDeformableGeometry(deformable_id, input_mesh,
+                                   input_surface_mesh, surface_vertices);
   const int num_vertices = input_mesh.num_vertices();
+  const int num_surface_vertices = input_surface_mesh.num_vertices();
 
   /* Initially the vertex positions is the same as the registered mesh. */
   {
@@ -333,7 +349,9 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
   }
   /* Update the vertex positions to some arbitrary value. */
   const VectorXd q = VectorXd::LinSpaced(3 * num_vertices, 0.0, 1.0);
-  geometries.UpdateDeformableVertexPositions(deformable_id, q);
+  const VectorXd q_surface =
+      VectorXd::LinSpaced(3 * num_surface_vertices, 0.0, 1.0);
+  geometries.UpdateDeformableVertexPositions(deformable_id, q, q_surface);
   {
     const DeformableGeometry& geometry =
         GeometriesTester::get_deformable_geometry(geometries, deformable_id);
@@ -342,6 +360,15 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
       const Vector3d& q_MV = mesh.vertex(i);
       const Vector3d& reference_q_MV = input_mesh.vertex(i);
       const Vector3d& expected_q_MV = q.segment<3>(3 * i);
+      EXPECT_EQ(q_MV, expected_q_MV);
+      EXPECT_NE(q_MV, reference_q_MV);
+    }
+    const TriangleSurfaceMesh<double>& surface_mesh =
+        geometry.deformable_surface_mesh().mesh();
+    for (int i = 0; i < num_surface_vertices; ++i) {
+      const Vector3d& q_MV = surface_mesh.vertex(i);
+      const Vector3d& reference_q_MV = input_surface_mesh.vertex(i);
+      const Vector3d& expected_q_MV = q_surface.segment<3>(3 * i);
       EXPECT_EQ(q_MV, expected_q_MV);
       EXPECT_NE(q_MV, reference_q_MV);
     }
@@ -362,8 +389,15 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   GeometryId deformable_id = GeometryId::get_new_id();
   VolumeMesh<double> deformable_mesh =
       MakeBoxVolumeMesh<double>(Box::MakeCube(1.0), 1.0);
+  std::vector<int> surface_vertices;
+  TriangleSurfaceMesh<double> deformable_surface_mesh =
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(deformable_mesh,
+                                                     &surface_vertices);
   const int num_vertices = deformable_mesh.num_vertices();
-  geometries.AddDeformableGeometry(deformable_id, std::move(deformable_mesh));
+  const int num_surface_vertices = deformable_mesh.num_vertices();
+  geometries.AddDeformableGeometry(deformable_id, std::move(deformable_mesh),
+                                   std::move(deformable_surface_mesh),
+                                   std::move(surface_vertices));
   collision_filter.AddGeometry(deformable_id);
 
   /* There is no geometry to collide with the deformable geometry yet. */
@@ -371,7 +405,7 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   ASSERT_EQ(contact_data.contact_surfaces().size(), 0);
   /* Add a rigid unit cube. */
   GeometryId rigid_id = GeometryId::get_new_id();
-  ProximityProperties rigid_properties = MakeProximityPropsWithRezHint(1.0);
+  ProximityProperties rigid_properties = MakeCompliantHydroProps(1.0);
   math::RigidTransform<double> X_WR(Vector3d(0, -2.0, 0));
   geometries.MaybeAddRigidGeometry(Box::MakeCube(1.0), rigid_id,
                                    rigid_properties, X_WR);
@@ -408,6 +442,7 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   /* Verify that the contact surface is as expected. */
   const auto& X_DR =
       X_WR;  // The deformable mesh frame is always the world frame.
+  const auto X_RD = X_DR.inverse();
   const DeformableGeometry& deformable_geometry =
       GeometriesTester::get_deformable_geometry(geometries, deformable_id);
   const RigidGeometry& rigid_geometry =
@@ -415,10 +450,10 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   DeformableContact<double> expected_contact_data;
   expected_contact_data.RegisterDeformableGeometry(deformable_id, num_vertices);
   AddDeformableRigidContactSurface(
-      deformable_geometry.CalcSignedDistanceField(),
-      deformable_geometry.deformable_mesh(), deformable_id, rigid_id,
-      rigid_geometry.rigid_mesh().mesh(), rigid_geometry.rigid_mesh().bvh(),
-      X_DR, &expected_contact_data);
+      pressure_field, deformable_geometry.deformable_surface_mesh(),
+      deformable_geometry.surface_index_to_volume_index(), deformable_id,
+      rigid_id, rigid_geometry.rigid_mesh().mesh(),
+      rigid_geometry.rigid_mesh().bvh(), X_RD, &expected_contact_data);
 
   /* Verify that the contact data is the same as expected by checking a subset
    of all data fields. */

@@ -517,7 +517,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const T& p0 = surface.signed_distances()[i];
       const T fn0 = Ae * p0;
       // TODO(xuchenhan-tri): Find phi0.
-      const T phi0 = 0;
+      const T phi0 = 0.0;
       /* The normal (scalar) component of the contact velocity in the contact
        frame. */
       /* Contact solver assumes the normal points from A to B whereas the
