@@ -217,6 +217,13 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                                SearchDirectionData* search_direction_data)
     requires std::is_same_v<T, double>;
 
+  // Update the Hessian factorization based on the given SAP model. This is a
+  // loose clone of SapModel::CalcHessianFactorizationCache.
+  void CalcHessianFactorization(const SapModel<T>& model,
+                                const Context<T>& context,
+                                HessianFactorization* hessian)
+    requires std::is_same_v<T, double>;
+
   // Clone of SapSolver::PerformExactLineSearch
   std::pair<T, int> PerformExactLineSearch(
       const SapModel<T>& model, const systems::Context<T>& context,
@@ -253,11 +260,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   BodyIndex FindBodyByGeometryId(GeometryId geometry_id) const {
     return plant().FindBodyByGeometryId(geometry_id);
   }
-  
+
   // Stored Hessian factorization. Computing this is expensive, so we reuse it
   // whenever possible.
   HessianFactorization hessian_factorization_;
-  std::vector<MatrixX<T>> A_;   // Hack to keep these from going out of scope
+  std::vector<MatrixX<T>> A_;  // Hack to keep these from going out of scope
   BlockSparseMatrix<T> J_;
 
   // Plant model, since convex integration is specific to MbP

@@ -5,8 +5,6 @@
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 
-#include <iostream>
-
 namespace drake {
 namespace systems {
 
@@ -85,6 +83,7 @@ void ConvexIntegrator<T>::DoInitialize() {
 
   // Set SAP solver parameters (default is sparse algebra)
   sap_parameters_.linear_solver_type = SapHessianFactorizationType::kDense;
+  sap_parameters_.max_iterations = 10000;
 }
 
 template <class T>
@@ -385,7 +384,24 @@ void ConvexIntegrator<T>::PackSapSolverResults(
   model.velocities_permutation().ApplyInverse(tau_participating, &results->j);
 }
 
-template <class T>
+template <typename T>
+void ConvexIntegrator<T>::CalcHessianFactorization(
+    const SapModel<T>& model, const Context<T>& context,
+    HessianFactorization* hessian)
+  requires std::is_same_v<T, double>
+{  // NOLINT(whitespace/braces)
+  // Hackily keep J and A from going out of scope even when model is destoryed.
+  // TODO(vincekurtz): consider storing these in hessian_factorization_ or
+  // figuring out a better solution.
+  A_ = model.dynamics_matrix();
+  J_ = model.constraints_bundle().J();
+
+  *hessian = HessianFactorization(model.hessian_type(), &A_, &J_, model);
+  const std::vector<MatrixX<double>>& G = model.EvalConstraintsHessian(context);
+  hessian->UpdateWeightMatrixAndFactor(G);
+}
+
+template <typename T>
 void ConvexIntegrator<T>::CalcSearchDirectionData(const SapModel<T>& model,
                                                   const Context<T>& context,
                                                   SearchDirectionData* data)
@@ -393,40 +409,12 @@ void ConvexIntegrator<T>::CalcSearchDirectionData(const SapModel<T>& model,
 {  // NOLINT(whitespace/braces)
   // We compute the rhs on data->dv to allow in-place solution.
   data->dv = -model.EvalCostGradient(context);
-  // const HessianFactorizationCache& hessian_factorization =
-  //     model.EvalHessianFactorizationCache(context);
-  // hessian_factorization.SolveInPlace(&data->dv);
 
-  // hessian_factorization_ = HessianFactorization();
+  // if (!hessian_factorization_.matches_problem_structure(model)) {
+  //   CalcHessianFactorization(model, context, &hessian_factorization_);
+  // }
+  CalcHessianFactorization(model, context, &hessian_factorization_);
 
-  // DEBUG
-  fmt::print("\n");
-  fmt::print("is_empty: {}\n", hessian_factorization_.is_empty());
-  fmt::print("matches: {}\n", hessian_factorization_.matches_problem_structure(model));
-  fmt::print("model.num_constraints: {}\n", model.num_constraints());
-  fmt::print("model.num_velocities: {}\n", model.num_velocities());
-  fmt::print("model.num_constraint_equations: {}\n", model.num_constraint_equations());
-  fmt::print("model.dynamics_matrix.size(): {}\n", model.dynamics_matrix().size());
-
-  // TODO: abstract into a CalcHessianFactorization method
-  if (hessian_factorization_.is_empty() ||
-      !hessian_factorization_.matches_problem_structure(model)) {
-    // Hackily keep J and A from going out of scope even when the model is
-    // destroyed
-    // TODO(vincekurtz): consider storing these in hessian_factorization_
-    A_ = model.dynamics_matrix();
-    J_ = model.constraints_bundle().J();
-    hessian_factorization_ = HessianFactorization(
-        model.hessian_type(), &A_,
-        &J_, model);
-  }
-  const std::vector<MatrixX<double>>& G = model.EvalConstraintsHessian(context);
-  hessian_factorization_.UpdateWeightMatrixAndFactor(G);
-
-  fmt::print("updated factorization\n");
-
-  // TODO: restore in model
-  // model.CalcHessianFactorizationCache(context, &hessian_factorization_);
   hessian_factorization_.SolveInPlace(&data->dv);
 
   // Update Δp, Δvc and d²ellA/dα².
@@ -961,7 +949,7 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
   }
 }
 
-template <class T>
+template <typename T>
 void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
     const Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const
