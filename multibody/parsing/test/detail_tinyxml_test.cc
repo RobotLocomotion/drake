@@ -10,10 +10,10 @@
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 
+using drake::math::RigidTransformd;
+using drake::math::RollPitchYawd;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using drake::math::RollPitchYawd;
-using drake::math::RigidTransformd;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
@@ -41,13 +41,9 @@ GTEST_TEST(TinyxmlUtilTest, ParseAttributeTest) {
   EXPECT_TRUE(ParseScalarAttribute(element, "scalar", &scalar));
   EXPECT_EQ(scalar, 1.);
   EXPECT_FALSE(ParseScalarAttribute(element, "missing", &scalar));
-  EXPECT_THROW(ParseScalarAttribute(element, "vec3", &scalar),
-               std::exception);
-  EXPECT_THROW(ParseScalarAttribute(element, "empty", &scalar),
-               std::exception);
-  EXPECT_THROW(ParseScalarAttribute(element, "bad", &scalar),
-               std::exception);
-
+  EXPECT_THROW(ParseScalarAttribute(element, "vec3", &scalar), std::exception);
+  EXPECT_THROW(ParseScalarAttribute(element, "empty", &scalar), std::exception);
+  EXPECT_THROW(ParseScalarAttribute(element, "bad", &scalar), std::exception);
 
   Vector3d vec3 = Vector3d::Zero();
   EXPECT_TRUE(ParseVectorAttribute(element, "vec3", &vec3));
@@ -72,12 +68,10 @@ class TinyxmlUtilDiagnosticTest : public test::DiagnosticPolicyTestBase {
  public:
   // A work-alike for internal::ParseScalarAttribute() that uses the test
   // fixture's local diagnostic policy.
-  bool ParseScalarAttribute(
-    const tinyxml2::XMLElement* node,
-    const char* attribute_name, double* val) {
-    return internal::ParseScalarAttribute(
-        node, attribute_name, val,
-        diagnostic_policy_);
+  bool ParseScalarAttribute(const tinyxml2::XMLElement* node,
+                            const char* attribute_name, double* val) {
+    return internal::ParseScalarAttribute(node, attribute_name, val,
+                                          diagnostic_policy_);
   }
 };
 
@@ -95,19 +89,18 @@ TEST_F(TinyxmlUtilDiagnosticTest, ParseScalarAttributeDiagnosticTest) {
   EXPECT_EQ(scalar, 1.);
   EXPECT_FALSE(ParseScalarAttribute(element, "missing", &scalar));
   EXPECT_TRUE(ParseScalarAttribute(element, "vec3", &scalar));
-  EXPECT_THAT(TakeError(), testing::MatchesRegex(
-                  ".*Expected single value.*vec3.*"));
+  EXPECT_THAT(TakeError(),
+              testing::MatchesRegex(".*Expected single value.*vec3.*"));
   EXPECT_FALSE(ParseScalarAttribute(element, "empty", &scalar));
-  EXPECT_THAT(TakeError(), testing::MatchesRegex(
-                  ".*Expected single value.*empty.*"));
+  EXPECT_THAT(TakeError(),
+              testing::MatchesRegex(".*Expected single value.*empty.*"));
   EXPECT_FALSE(ParseScalarAttribute(element, "bad", &scalar));
-  EXPECT_THAT(TakeError(), testing::MatchesRegex(
-                  ".*Expected single value.*bad.*"));
+  EXPECT_THAT(TakeError(),
+              testing::MatchesRegex(".*Expected single value.*bad.*"));
 }
 
 GTEST_TEST(TinyxmlUtilTest, OriginAttributesTest) {
-  const std::string test_xml =
-      "<element rpy=\"1 2 3\" xyz=\"4 5 6\"/>";
+  const std::string test_xml = "<element rpy=\"1 2 3\" xyz=\"4 5 6\"/>";
 
   XMLDocument xml_doc;
   xml_doc.Parse(test_xml.c_str());
@@ -121,8 +114,7 @@ GTEST_TEST(TinyxmlUtilTest, OriginAttributesTest) {
 }
 
 GTEST_TEST(TinyxmlUtilTest, MalformedRpyOriginAttributesTest) {
-  const std::string test_xml =
-      "<element rpy=\"1 2\" xyz=\"4 5 6\"/>";
+  const std::string test_xml = "<element rpy=\"1 2\" xyz=\"4 5 6\"/>";
 
   XMLDocument xml_doc;
   xml_doc.Parse(test_xml.c_str());
@@ -134,8 +126,7 @@ GTEST_TEST(TinyxmlUtilTest, MalformedRpyOriginAttributesTest) {
 }
 
 GTEST_TEST(TinyxmlUtilTest, ThreeVectorAttributeTest) {
-  const std::string test_xml =
-      "<element one=\"1\" three=\"4 5 6\"/>";
+  const std::string test_xml = "<element one=\"1\" three=\"4 5 6\"/>";
 
   XMLDocument xml_doc;
   xml_doc.Parse(test_xml.c_str());
@@ -156,15 +147,12 @@ GTEST_TEST(TinyxmlUtilTest, LocaleAttributeTest) {
   const std::string test_xml = "<element oneAndHalf=\"1.5\"/>";
 
   struct CommaDecimalPointFacet : std::numpunct<char> {
-    char do_decimal_point() const {
-      return ',';
-    }
+    char do_decimal_point() const { return ','; }
   };
 
   // Set a global locale in which the decimal separator is the comma
-  std::locale original_global_locale =
-    std::locale::global(std::locale(std::locale::classic(),
-                                    new CommaDecimalPointFacet));
+  std::locale original_global_locale = std::locale::global(
+      std::locale(std::locale::classic(), new CommaDecimalPointFacet));
 
   XMLDocument xml_doc;
   xml_doc.Parse(test_xml.c_str());
