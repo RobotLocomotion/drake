@@ -163,15 +163,17 @@ class IrisZoOptions {
     return parameterization_;
   }
 
-  /** Returns whether or not the parameterization is threadsafe.
+  /** Returns whether or not the user has specified the parameterization to be
+   * threadsafe.
    * @note The default `parameterization_` is the identity function, which is
    * threadsafe. */
   bool get_parameterization_is_threadsafe() const {
     return parameterization_is_threadsafe_;
   }
 
-  /** Returns the input dimension for the parameterization function, or
-   * std::nullopt if it has not been set. A std::nullopt value indicates that
+  /** Returns what the user has specified as the input dimension for the
+   * parameterization function, or std::nullopt if it has not been set. A
+   * std::nullopt value indicates that
    * IrisZo should use the ambient configuration space dimension as the input
    * dimension to the parameterization. */
   std::optional<int> get_parameterization_dimension() const {
