@@ -34,8 +34,7 @@ namespace internal {
 // @return The file's full path, lexically normalized, or an empty string if
 // the file is not found or does not exist.
 std::string ResolveUri(const drake::internal::DiagnosticPolicy& diagnostic,
-                       const std::string& uri,
-                       const PackageMap& package_map,
+                       const std::string& uri, const PackageMap& package_map,
                        const std::string& root_dir);
 
 }  // namespace internal

@@ -35,8 +35,8 @@ class CompositeParse;
 /// The output of parsing is one or more model instances added to the
 /// MultibodyPlant provided to the parser at construction.
 ///
-/// For an introductory tutorial about parsing, see the
-/// <a href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/authoring_multibody_simulation-3c9697070d3541ee82c0bfe4054ada2d">Authoring
+/// For an introductory tutorial about parsing, see the <a
+/// href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/authoring_multibody_simulation-3c9697070d3541ee82c0bfe4054ada2d">Authoring
 /// a Multibody Simulation</a> page.
 ///
 /// SDFormat files may contain multiple `<model>` elements.  New model
@@ -230,8 +230,7 @@ class Parser final {
   /// @returns The set of model instance indices for the newly added models,
   /// including nested models.
   /// @throws std::exception in case of errors.
-  std::vector<ModelInstanceIndex> AddModelsFromUrl(
-      const std::string& url);
+  std::vector<ModelInstanceIndex> AddModelsFromUrl(const std::string& url);
 
   /// Provides same functionality as AddModels, but instead parses
   /// the model description text data via @p file_contents with format dictated

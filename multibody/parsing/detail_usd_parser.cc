@@ -31,8 +31,8 @@ namespace internal {
 namespace fs = std::filesystem;
 
 struct UsdStageMetadata {
-    double meters_per_unit = 1.0;
-    pxr::TfToken up_axis = pxr::TfToken("Z");
+  double meters_per_unit = 1.0;
+  pxr::TfToken up_axis = pxr::TfToken("Z");
 };
 
 class UsdParser {
@@ -40,17 +40,17 @@ class UsdParser {
   explicit UsdParser(const ParsingWorkspace& ws);
   ~UsdParser() = default;
   std::vector<ModelInstanceIndex> AddAllModels(
-    const DataSource& data_source,
-    const std::optional<std::string>& parent_model_name);
+      const DataSource& data_source,
+      const std::optional<std::string>& parent_model_name);
 
  private:
   void ProcessPrim(const pxr::UsdPrim& prim);
   void ProcessRigidBody(const pxr::UsdPrim& prim, bool is_static);
   UsdStageMetadata GetStageMetadata(const pxr::UsdStageRefPtr stage);
   std::unique_ptr<geometry::Shape> CreateCollisionGeometry(
-    const pxr::UsdPrim& prim);
+      const pxr::UsdPrim& prim);
   std::unique_ptr<geometry::Shape> CreateVisualGeometry(
-    const pxr::UsdPrim& prim);
+      const pxr::UsdPrim& prim);
   const RigidBody<double>* CreateRigidBody(const pxr::UsdPrim& prim);
   void RaiseUnsupportedPrimTypeError(const pxr::UsdPrim& prim);
 
@@ -117,29 +117,28 @@ UsdParser::UsdParser(const ParsingWorkspace& ws) : w_{ws} {
 }
 
 std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
-  const pxr::UsdPrim& prim) {
+    const pxr::UsdPrim& prim) {
   if (prim.IsA<pxr::UsdGeomCube>()) {
-    return CreateGeometryBox(
-      prim, metadata_.meters_per_unit, w_.diagnostic);
+    return CreateGeometryBox(prim, metadata_.meters_per_unit, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
-    return CreateGeometryEllipsoid(
-      prim, metadata_.meters_per_unit, w_.diagnostic);
+    return CreateGeometryEllipsoid(prim, metadata_.meters_per_unit,
+                                   w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
-    return CreateGeometryCapsule(
-      prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
+    return CreateGeometryCapsule(prim, metadata_.meters_per_unit,
+                                 metadata_.up_axis, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
-    return CreateGeometryCylinder(
-      prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
+    return CreateGeometryCylinder(prim, metadata_.meters_per_unit,
+                                  metadata_.up_axis, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomMesh>()) {
     // TODO(#15263): Here we create an obj file for each mesh and pass the
     // filename into the constructor of geometry::Mesh. It is a temporary
     // solution while #15263 is being worked on. This is something we must fix
     // before we enable this parser in the default build options.
-    std::string obj_file_path = fmt::format("{}/{}.obj", temp_directory_,
-      mesh_files_.size());
+    std::string obj_file_path =
+        fmt::format("{}/{}.obj", temp_directory_, mesh_files_.size());
     mesh_files_.push_back(obj_file_path);
-    return CreateGeometryMesh(
-      obj_file_path, prim, metadata_.meters_per_unit, w_.diagnostic);
+    return CreateGeometryMesh(obj_file_path, prim, metadata_.meters_per_unit,
+                              w_.diagnostic);
   } else {
     RaiseUnsupportedPrimTypeError(prim);
     return nullptr;
@@ -147,7 +146,7 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateVisualGeometry(
 }
 
 std::unique_ptr<geometry::Shape> UsdParser::CreateCollisionGeometry(
-  const pxr::UsdPrim& prim) {
+    const pxr::UsdPrim& prim) {
   // For now, we use the raw visual geometry for collision detection
   // for all geometry types.
   return CreateVisualGeometry(prim);
@@ -156,47 +155,50 @@ std::unique_ptr<geometry::Shape> UsdParser::CreateCollisionGeometry(
 const RigidBody<double>* UsdParser::CreateRigidBody(const pxr::UsdPrim& prim) {
   std::optional<SpatialInertia<double>> inertia;
   if (prim.IsA<pxr::UsdGeomCube>()) {
-    inertia = CreateSpatialInertiaForBox(
-      prim, metadata_.meters_per_unit, w_.diagnostic);
+    inertia = CreateSpatialInertiaForBox(prim, metadata_.meters_per_unit,
+                                         w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomSphere>()) {
-    inertia = CreateSpatialInertiaForEllipsoid(
-      prim, metadata_.meters_per_unit, w_.diagnostic);
+    inertia = CreateSpatialInertiaForEllipsoid(prim, metadata_.meters_per_unit,
+                                               w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomCapsule>()) {
-    inertia = CreateSpatialInertiaForCapsule(
-      prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
+    inertia = CreateSpatialInertiaForCapsule(prim, metadata_.meters_per_unit,
+                                             metadata_.up_axis, w_.diagnostic);
   } else if (prim.IsA<pxr::UsdGeomCylinder>()) {
-    inertia = CreateSpatialInertiaForCylinder(
-      prim, metadata_.meters_per_unit, metadata_.up_axis, w_.diagnostic);
+    inertia = CreateSpatialInertiaForCylinder(prim, metadata_.meters_per_unit,
+                                              metadata_.up_axis, w_.diagnostic);
   } else {
     RaiseUnsupportedPrimTypeError(prim);
   }
   if (inertia.has_value()) {
     return &w_.plant->AddRigidBody(
-      fmt::format("{}-RigidBody", prim.GetPath().GetString()),
-      model_instance_, inertia.value());
+        fmt::format("{}-RigidBody", prim.GetPath().GetString()),
+        model_instance_, inertia.value());
   } else {
     return nullptr;
   }
 }
 
-void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
-  bool is_static) {
+void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim, bool is_static) {
   auto collision_geometry = CreateCollisionGeometry(prim);
   if (!collision_geometry) {
-    w_.diagnostic.Error(fmt::format("Failed to create collision "
-      "geometry for prim at {}.", prim.GetPath().GetString()));
+    w_.diagnostic.Error(
+        fmt::format("Failed to create collision "
+                    "geometry for prim at {}.",
+                    prim.GetPath().GetString()));
     return;
   }
 
   auto visual_geometry = CreateVisualGeometry(prim);
   if (!visual_geometry) {
-    w_.diagnostic.Error(fmt::format("Failed to create visual "
-      "geometry for prim at {}.", prim.GetPath().GetString()));
+    w_.diagnostic.Error(
+        fmt::format("Failed to create visual "
+                    "geometry for prim at {}.",
+                    prim.GetPath().GetString()));
     return;
   }
 
   std::optional<math::RigidTransform<double>> prim_transform =
-    GetPrimRigidTransform(prim, metadata_.meters_per_unit, w_.diagnostic);
+      GetPrimRigidTransform(prim, metadata_.meters_per_unit, w_.diagnostic);
   if (!prim_transform.has_value()) {
     return;
   }
@@ -214,26 +216,24 @@ void UsdParser::ProcessRigidBody(const pxr::UsdPrim& prim,
   }
 
   if (!rigid_body) {
-    w_.diagnostic.Error(fmt::format("Failed to create RigidBody "
-      "for prim at {}.", prim.GetPath().GetString()));
+    w_.diagnostic.Error(
+        fmt::format("Failed to create RigidBody "
+                    "for prim at {}.",
+                    prim.GetPath().GetString()));
     return;
   }
   w_.plant->RegisterCollisionGeometry(
-    *rigid_body,
-    X_BG,
-    *collision_geometry,
-    fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
-    GetPrimFriction(prim));
+      *rigid_body, X_BG, *collision_geometry,
+      fmt::format("{}-CollisionGeometry", prim.GetPath().GetString()),
+      GetPrimFriction(prim));
 
-  std::optional<Eigen::Vector4d> prim_color = GetGeomPrimColor(prim,
-    w_.diagnostic);
+  std::optional<Eigen::Vector4d> prim_color =
+      GetGeomPrimColor(prim, w_.diagnostic);
 
   w_.plant->RegisterVisualGeometry(
-    *rigid_body,
-    X_BG,
-    *visual_geometry,
-    fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
-    prim_color.has_value() ? prim_color.value() : default_geom_prim_color());
+      *rigid_body, X_BG, *visual_geometry,
+      fmt::format("{}-VisualGeometry", prim.GetPath().GetString()),
+      prim_color.has_value() ? prim_color.value() : default_geom_prim_color());
 }
 
 void UsdParser::ProcessPrim(const pxr::UsdPrim& prim) {
@@ -253,12 +253,13 @@ UsdStageMetadata UsdParser::GetStageMetadata(const pxr::UsdStageRefPtr stage) {
   bool success = false;
   if (stage->HasAuthoredMetadata(pxr::TfToken("metersPerUnit"))) {
     success = stage->GetMetadata(pxr::TfToken("metersPerUnit"),
-      &metadata.meters_per_unit);
+                                 &metadata.meters_per_unit);
   }
   if (!success) {
-    w_.diagnostic.Warning(fmt::format(
-      "Failed to read metersPerUnit in stage metadata. "
-      "Using the default value '{}' instead.", metadata.meters_per_unit));
+    w_.diagnostic.Warning(
+        fmt::format("Failed to read metersPerUnit in stage metadata. "
+                    "Using the default value '{}' instead.",
+                    metadata.meters_per_unit));
   }
 
   success = false;
@@ -266,32 +267,33 @@ UsdStageMetadata UsdParser::GetStageMetadata(const pxr::UsdStageRefPtr stage) {
     success = stage->GetMetadata(pxr::TfToken("upAxis"), &metadata.up_axis);
   }
   if (!success) {
-    w_.diagnostic.Warning(fmt::format(
-      "Failed to read upAxis in stage metadata. "
-      "Using the default value '{}' instead.", metadata.up_axis));
+    w_.diagnostic.Warning(
+        fmt::format("Failed to read upAxis in stage metadata. "
+                    "Using the default value '{}' instead.",
+                    metadata.up_axis));
   }
   if (metadata.up_axis != "Z") {
-    throw std::runtime_error("Parsing for Y-up or X-up stage is not yet "
-      "implemented.");
+    throw std::runtime_error(
+        "Parsing for Y-up or X-up stage is not yet implemented.");
   }
   return metadata;
 }
 
 std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
-  const DataSource& data_source,
-  const std::optional<std::string>& parent_model_name) {
+    const DataSource& data_source,
+    const std::optional<std::string>& parent_model_name) {
   pxr::UsdStageRefPtr stage;
   if (data_source.IsFilename()) {
     std::string file_absolute_path = data_source.GetAbsolutePath();
     if (!std::filesystem::exists(file_absolute_path)) {
       w_.diagnostic.Error(
-        fmt::format("File does not exist: {}.", file_absolute_path));
+          fmt::format("File does not exist: {}.", file_absolute_path));
       return std::vector<ModelInstanceIndex>();
     }
     stage = pxr::UsdStage::Open(file_absolute_path);
     if (!stage) {
-      w_.diagnostic.Error(fmt::format("Failed to open USD stage: {}.",
-        data_source.filename()));
+      w_.diagnostic.Error(
+          fmt::format("Failed to open USD stage: {}.", data_source.filename()));
       return std::vector<ModelInstanceIndex>();
     }
   } else {
@@ -304,26 +306,27 @@ std::vector<ModelInstanceIndex> UsdParser::AddAllModels(
 
   metadata_ = GetStageMetadata(stage);
 
-  std::string model_name = MakeModelName(
-    data_source.GetStem(), parent_model_name, w_);
+  std::string model_name =
+      MakeModelName(data_source.GetStem(), parent_model_name, w_);
   model_instance_ = w_.plant->AddModelInstance(model_name);
 
   for (pxr::UsdPrim prim : stage->Traverse()) {
     ProcessPrim(prim);
   }
 
-  return std::vector<ModelInstanceIndex>{ model_instance_ };
+  return std::vector<ModelInstanceIndex>{model_instance_};
 }
 
 void UsdParser::RaiseUnsupportedPrimTypeError(const pxr::UsdPrim& prim) {
   pxr::TfToken prim_type = prim.GetTypeName();
   if (prim_type == "") {
-    w_.diagnostic.Error(fmt::format("The type of the Prim at {} is "
-      "not specified. Please assign a type to it.",
-      prim.GetPath().GetString()));
+    w_.diagnostic.Error(fmt::format(
+        "The type of the Prim at {} is not specified. Please assign a type to "
+        "it.",
+        prim.GetPath().GetString()));
   } else {
     w_.diagnostic.Error(fmt::format("Unsupported Prim type '{}' at {}.",
-      prim_type, prim.GetPath().GetString()));
+                                    prim_type, prim.GetPath().GetString()));
   }
 }
 

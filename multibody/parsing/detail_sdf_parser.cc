@@ -1451,6 +1451,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
                                     const sdf::ElementPtr node,
                                     ModelInstanceIndex model_instance,
                                     MultibodyPlant<double>* plant) {
+  // clang-format off
   const std::set<std::string> supported_joint_elements{
       "drake:parent",
       "drake:child",
@@ -1465,6 +1466,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       "drake:radius",
       "drake:angle",
       "pose"};
+  // clang-format on
   CheckSupportedElements(diagnostic, node, supported_joint_elements);
 
   if (!node->HasAttribute("type")) {
@@ -1542,8 +1544,8 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       return false;
     }
     PiecewiseConstantCurvatureTrajectory<double> trajectory(
-        breaks, turning_rates, initial_tangent, plane_normal,
-        Vector3d::Zero(), is_periodic);
+        breaks, turning_rates, initial_tangent, plane_normal, Vector3d::Zero(),
+        is_periodic);
     plant->AddJoint(std::make_unique<CurvilinearJoint<double>>(
         joint_name, *parent_frame, *child_frame, trajectory, damping));
   } else {

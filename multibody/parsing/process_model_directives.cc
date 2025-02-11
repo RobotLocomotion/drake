@@ -88,8 +88,8 @@ AddFrame ApplyDirectiveNamespace(const AddFrame& orig,
     result.name =
         DmdScopedNameJoin(
             model_namespace,
-            DmdScopedNameJoin(base_frame_namespace,
-                              orig_element).to_string()).to_string();
+            DmdScopedNameJoin(base_frame_namespace, orig_element).to_string())
+            .to_string();
   }
   return result;
 }
@@ -108,8 +108,7 @@ AddCollisionFilterGroup ApplyDirectiveNamespace(
   }
   // These will also have the `.model_namespace` applied.
   result.members = orig.members;
-  result.ignored_collision_filter_groups =
-      orig.ignored_collision_filter_groups;
+  result.ignored_collision_filter_groups = orig.ignored_collision_filter_groups;
   return result;
 }
 

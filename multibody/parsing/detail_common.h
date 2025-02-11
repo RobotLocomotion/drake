@@ -37,7 +37,7 @@ class DataSource {
   static constexpr char kContentsPseudoStem[] = "<literal-string>";
 
   // A data source contains either a file name, or file contents.
-  enum DataSourceType {kFilename, kContents};
+  enum DataSourceType { kFilename, kContents };
 
   // Depending on the DataSourceType value supplied, @p data will be treated as
   // either a file name or contents. The data is aliased, so the lifetime of
@@ -285,8 +285,7 @@ struct InertiaInputs {
 //                      expressed in frame Bi.
 SpatialInertia<double> ParseSpatialInertia(
     const drake::internal::DiagnosticPolicy& diagnostic,
-    const math::RigidTransformd& X_BBi,
-    double mass,
+    const math::RigidTransformd& X_BBi, double mass,
     const InertiaInputs& inertia_Bi_Bi);
 
 }  // namespace internal

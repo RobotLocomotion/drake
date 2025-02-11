@@ -31,10 +31,8 @@ using drake::internal::DiagnosticPolicy;
 
 UrdfMaterial AddMaterialToMaterialMap(
     const drake::internal::DiagnosticPolicy& policy,
-    const std::string& material_name,
-    UrdfMaterial material,
-    bool error_if_name_clash,
-    MaterialMap* materials) {
+    const std::string& material_name, UrdfMaterial material,
+    bool error_if_name_clash, MaterialMap* materials) {
   DRAKE_DEMAND(materials != nullptr);
   // Determines if the material is already in the map.
   auto material_iter = materials->find(material_name);
@@ -95,12 +93,11 @@ UrdfMaterial AddMaterialToMaterialMap(
                 : "Diffuse map: None";
         return fmt::format("{}, {}", rgb_string, map_string);
       };
-      policy.Error(
-          fmt::format("Material '{}' was previously defined.\n"
-                      "  - existing definition: {}\n"
-                      "  - new definition:      {}",
-                      material_name, mat_descrip(cached_material),
-                      mat_descrip(material)));
+      policy.Error(fmt::format(
+          "Material '{}' was previously defined.\n"
+          "  - existing definition: {}\n"
+          "  - new definition:      {}",
+          material_name, mat_descrip(cached_material), mat_descrip(material)));
       return {};
     }
   } else {
@@ -137,10 +134,12 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
   if (drake_diffuse_map_node) {
     // Error condition: #2: an SDFormat-specific Drake extension,
     // <drake:diffuse_map>, specified in a URDF.
-    diagnostic.Error(*node,
-                     "<drake:diffuse_map> is not supported in URDF. See "
-                     "https://drake.mit.edu/doxygen_cxx/group__multibody__parsing.html#tag_drake_diffuse_map"  // NOLINT
-                     " for more details.");
+    diagnostic.Error(
+        *node,
+        "<drake:diffuse_map> is not supported in URDF. See "
+        "https://drake.mit.edu/doxygen_cxx/"
+        "group__multibody__parsing.html#tag_drake_diffuse_map"  // NOLINT
+        " for more details.");
     return {};
   }
 
@@ -180,7 +179,8 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
       // defined.
       diagnostic.Error(
           *node, fmt::format("Material '{}' not previously defined, but has no"
-                             " color or texture information.", name));
+                             " color or texture information.",
+                             name));
       return {};
     }
   }
@@ -200,9 +200,8 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
 
 namespace {
 
-std::unique_ptr<geometry::Shape> ParseBox(
-    const TinyXml2Diagnostic& diagnostic,
-    const XMLElement* shape_node) {
+std::unique_ptr<geometry::Shape> ParseBox(const TinyXml2Diagnostic& diagnostic,
+                                          const XMLElement* shape_node) {
   Eigen::Vector3d size = Eigen::Vector3d::Zero();
   if (!ParseVectorAttribute(shape_node, "size", &size)) {
     diagnostic.Error(*shape_node, "Missing box attribute: size");
@@ -213,8 +212,7 @@ std::unique_ptr<geometry::Shape> ParseBox(
 }
 
 std::unique_ptr<geometry::Shape> ParseSphere(
-    const TinyXml2Diagnostic& diagnostic,
-    const XMLElement* shape_node) {
+    const TinyXml2Diagnostic& diagnostic, const XMLElement* shape_node) {
   double r = 0;
   if (!ParseScalarAttribute(shape_node, "radius", &r,
                             diagnostic.MakePolicyForNode(shape_node))) {
@@ -227,8 +225,7 @@ std::unique_ptr<geometry::Shape> ParseSphere(
 }
 
 std::unique_ptr<geometry::Shape> ParseCylinder(
-    const TinyXml2Diagnostic& diagnostic,
-    const XMLElement* shape_node) {
+    const TinyXml2Diagnostic& diagnostic, const XMLElement* shape_node) {
   double r = 0;
   if (!ParseScalarAttribute(shape_node, "radius", &r,
                             diagnostic.MakePolicyForNode(shape_node))) {
@@ -247,8 +244,7 @@ std::unique_ptr<geometry::Shape> ParseCylinder(
 }
 
 std::unique_ptr<geometry::Shape> ParseCapsule(
-    const TinyXml2Diagnostic& diagnostic,
-    const XMLElement* shape_node) {
+    const TinyXml2Diagnostic& diagnostic, const XMLElement* shape_node) {
   double r = 0;
   if (!ParseScalarAttribute(shape_node, "radius", &r,
                             diagnostic.MakePolicyForNode(shape_node))) {
@@ -267,15 +263,15 @@ std::unique_ptr<geometry::Shape> ParseCapsule(
 }
 
 std::unique_ptr<geometry::Shape> ParseEllipsoid(
-    const TinyXml2Diagnostic& diagnostic,
-    const XMLElement* shape_node) {
+    const TinyXml2Diagnostic& diagnostic, const XMLElement* shape_node) {
   double axes[3];
   const char* names[] = {"a", "b", "c"};
   for (int i = 0; i < 3; ++i) {
     if (!ParseScalarAttribute(shape_node, names[i], &axes[i],
                               diagnostic.MakePolicyForNode(shape_node))) {
-      diagnostic.Error(*shape_node, fmt::format(
-                           "Missing ellipsoid attribute: '{}'", names[i]));
+      diagnostic.Error(
+          *shape_node,
+          fmt::format("Missing ellipsoid attribute: '{}'", names[i]));
       return {};
     }
   }
@@ -292,9 +288,9 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
     return {};
   }
 
-  const std::string resolved_filename = ResolveUri(
-      diagnostic.MakePolicyForNode(shape_node), filename, package_map,
-      root_dir);
+  const std::string resolved_filename =
+      ResolveUri(diagnostic.MakePolicyForNode(shape_node), filename,
+                 package_map, root_dir);
   if (resolved_filename.empty()) {
     // ResolveUri already emitted an error message.
     return {};
@@ -309,7 +305,8 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
     // enforce it.
     if (!(scale_vector(0) == scale_vector(1) &&
           scale_vector(0) == scale_vector(2))) {
-      diagnostic.Error(*shape_node, "Drake meshes only support isotropic"
+      diagnostic.Error(*shape_node,
+                       "Drake meshes only support isotropic"
                        " scaling. Therefore all three scaling factors must be"
                        " exactly equal.");
       return {};
@@ -323,21 +320,18 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
   } else {
     return std::make_unique<geometry::Mesh>(resolved_filename, scale);
   }
-  }
+}
 
 std::unique_ptr<geometry::Shape> ParseGeometry(
-    const TinyXml2Diagnostic& diagnostic,
-    const XMLElement* node,
-    const PackageMap& package_map,
-    const std::string& root_dir) {
+    const TinyXml2Diagnostic& diagnostic, const XMLElement* node,
+    const PackageMap& package_map, const std::string& root_dir) {
   if (auto child_node = node->FirstChildElement("box"); child_node) {
     return ParseBox(diagnostic, child_node);
   } else if (child_node = node->FirstChildElement("sphere"); child_node) {
     return ParseSphere(diagnostic, child_node);
   } else if (child_node = node->FirstChildElement("cylinder"); child_node) {
     return ParseCylinder(diagnostic, child_node);
-  } else if (child_node = node->FirstChildElement("capsule");
-             child_node) {
+  } else if (child_node = node->FirstChildElement("capsule"); child_node) {
     // Accepting the <capsule> is non-standard:
     // http://wiki.ros.org/urdf/XML/link. And even there has been a long debate
     // about adding it into ros (still unresolved):
@@ -361,7 +355,8 @@ std::unique_ptr<geometry::Shape> ParseGeometry(
     return ParseEllipsoid(diagnostic, child_node);
   }
 
-  diagnostic.Error(*node, "Warning: geometry element does not have a"
+  diagnostic.Error(*node,
+                   "Warning: geometry element does not have a"
                    " recognizable shape type");
   return {};
 }
@@ -418,15 +413,14 @@ std::optional<std::string> ParseGeometryName(
 // Parses a "visual" element in @p node.
 std::optional<geometry::GeometryInstance> ParseVisual(
     const TinyXml2Diagnostic& diagnostic,
-    const std::string& parent_element_name,
-    const PackageMap& package_map,
+    const std::string& parent_element_name, const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
     MaterialMap* materials, std::unordered_set<std::string>* geometry_names,
     int numeric_name_suffix_limit) {
   if (std::string(node->Name()) != "visual") {
-    diagnostic.Error(*node, fmt::format(
-                         "In link {} expected visual element, got {}",
-                         parent_element_name, node->Name()));
+    diagnostic.Error(*node,
+                     fmt::format("In link {} expected visual element, got {}",
+                                 parent_element_name, node->Name()));
     return {};
   }
 
@@ -434,9 +428,9 @@ std::optional<geometry::GeometryInstance> ParseVisual(
   // element, emits an error if a geometry element does not exist.
   const XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) {
-    diagnostic.Error(*node, fmt::format(
-                         "Link {} has a visual element without geometry.",
-                         parent_element_name));
+    diagnostic.Error(
+        *node, fmt::format("Link {} has a visual element without geometry.",
+                           parent_element_name));
     return {};
   }
 
@@ -484,9 +478,9 @@ std::optional<geometry::GeometryInstance> ParseVisual(
     while (accepting_node) {
       std::string name;
       if (!ParseStringAttribute(accepting_node, "name", &name)) {
-        diagnostic.Error(*accepting_node, fmt::format(
-                             "<{}> tag given without any name",
-                             kAcceptingTag));
+        diagnostic.Error(
+            *accepting_node,
+            fmt::format("<{}> tag given without any name", kAcceptingTag));
         return {};
       }
       accepting_names.insert(name);
@@ -556,9 +550,10 @@ CoulombFriction<double> ParseCoulombFrictionFromDrakeCompliance(
     if (friction_node) {
       static_friction_present = true;
       if (friction_node->QueryDoubleText(&static_friction)) {
-        diagnostic.Error(*friction_node, fmt::format(
-                             "Unable to parse static_friction for link {}",
-                             parent_element_name));
+        diagnostic.Error(
+            *friction_node,
+            fmt::format("Unable to parse static_friction for link {}",
+                        parent_element_name));
         return default_friction();
       }
     }
@@ -567,18 +562,21 @@ CoulombFriction<double> ParseCoulombFrictionFromDrakeCompliance(
     if (friction_node) {
       dynamic_friction_present = true;
       if (friction_node->QueryDoubleText(&dynamic_friction)) {
-        diagnostic.Error(*friction_node, fmt::format(
-                             "Unable to parse dynamic_friction for link {}",
-                             parent_element_name));
+        diagnostic.Error(
+            *friction_node,
+            fmt::format("Unable to parse dynamic_friction for link {}",
+                        parent_element_name));
         return default_friction();
       }
     }
 
     if (static_friction_present != dynamic_friction_present) {
-      diagnostic.Error(*compliant_node, fmt::format(
-                           "Link '{}': When specifying coefficient of friction,"
-                           " both static and dynamic coefficients must be"
-                           " defined", parent_element_name));
+      diagnostic.Error(
+          *compliant_node,
+          fmt::format("Link '{}': When specifying coefficient of friction,"
+                      " both static and dynamic coefficients must be"
+                      " defined",
+                      parent_element_name));
       return default_friction();
     }
 
@@ -596,15 +594,14 @@ CoulombFriction<double> ParseCoulombFrictionFromDrakeCompliance(
 // @param[out] friction Coulomb friction for the associated geometry.
 std::optional<geometry::GeometryInstance> ParseCollision(
     const TinyXml2Diagnostic& diagnostic,
-    const std::string& parent_element_name,
-    const PackageMap& package_map,
+    const std::string& parent_element_name, const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
     std::unordered_set<std::string>* geometry_names,
     int numeric_name_suffix_limit) {
   if (std::string(node->Name()) != "collision") {
-    diagnostic.Error(*node, fmt::format(
-                         "In link '{}' expected collision element, got {}",
-                         parent_element_name, node->Name()));
+    diagnostic.Error(
+        *node, fmt::format("In link '{}' expected collision element, got {}",
+                           parent_element_name, node->Name()));
     return {};
   }
   // Seen in the ROS urdfdom XSD Schema.
@@ -615,9 +612,9 @@ std::optional<geometry::GeometryInstance> ParseCollision(
   // element, emits an error if a geometry element does not exist.
   const XMLElement* geometry_node = node->FirstChildElement("geometry");
   if (!geometry_node) {
-    diagnostic.Error(*node, fmt::format(
-                         "Link '{}' has a collision element without geometry",
-                         parent_element_name));
+    diagnostic.Error(
+        *node, fmt::format("Link '{}' has a collision element without geometry",
+                           parent_element_name));
     return {};
   }
 
@@ -651,9 +648,8 @@ std::optional<geometry::GeometryInstance> ParseCollision(
   const XMLElement* drake_element =
       node->FirstChildElement("drake:proximity_properties");
   if (drake_element) {
-    auto read_double =
-        [drake_element, &diagnostic](const char* element_name)
-        -> std::optional<double> {
+    auto read_double = [drake_element, &diagnostic](
+                           const char* element_name) -> std::optional<double> {
       const XMLElement* value_node =
           drake_element->FirstChildElement(element_name);
       if (value_node != nullptr) {
@@ -662,9 +658,11 @@ std::optional<geometry::GeometryInstance> ParseCollision(
                                  diagnostic.MakePolicyForNode(value_node))) {
           return value;
         } else {
-          diagnostic.Error(*value_node, fmt::format(
-                               "Unable to read the 'value' attribute for the"
-                               " <{}> tag", element_name));
+          diagnostic.Error(
+              *value_node,
+              fmt::format("Unable to read the 'value' attribute for the"
+                          " <{}> tag",
+                          element_name));
           // Fall through to failure return.
         }
       }
@@ -681,15 +679,18 @@ std::optional<geometry::GeometryInstance> ParseCollision(
     const XMLElement* const no_longer_supported =
         drake_element->FirstChildElement("drake:soft_hydroelastic");
     if (no_longer_supported) {
-      diagnostic.Error(*no_longer_supported, "Collision geometry uses the tag"
-                 " <drake:soft_hydroelastic>, which is no longer supported."
-                 " Please change it to <drake:compliant_hydroelastic>.");
+      diagnostic.Error(
+          *no_longer_supported,
+          "Collision geometry uses the tag"
+          " <drake:soft_hydroelastic>, which is no longer supported."
+          " Please change it to <drake:compliant_hydroelastic>.");
       return {};
     }
 
     if (rigid_element && compliant_element) {
       diagnostic.Error(
-          *drake_element, fmt::format(
+          *drake_element,
+          fmt::format(
               "Collision geometry has defined mutually-exclusive tags"
               " <drake:rigid_hydroelastic> and <drake:compliant_hydroelastic>"
               " on lines {} and {}, respectively. Only one can be provided.",
