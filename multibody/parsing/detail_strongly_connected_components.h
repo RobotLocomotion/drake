@@ -83,8 +83,8 @@ StronglyConnectedComponents<T> FindStronglyConnectedComponents(
           // Successor has not yet been visited; recurse on it.
           strongconnect(successor);
           lowlinks[node] = std::min(lowlinks[node], lowlinks[successor]);
-        } else if (std::find(stack.begin(), stack.end(), successor)
-                   != stack.end()) {
+        } else if (std::find(stack.begin(), stack.end(), successor) !=
+                   stack.end()) {
           // the successor is in the stack and hence in the current strongly
           // connected component (SCC).
           lowlinks[node] = std::min(lowlinks[node], index[successor]);
@@ -100,7 +100,9 @@ StronglyConnectedComponents<T> FindStronglyConnectedComponents(
         T successor = stack.back();
         stack.pop_back();
         connected_component.insert(successor);
-        if (successor == node) { break; }
+        if (successor == node) {
+          break;
+        }
       }
       result.emplace_back(std::move(connected_component));
     }

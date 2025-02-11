@@ -45,8 +45,7 @@ namespace internal {
 // unfinished) model instance. It will be up to the supplier of the policy to
 // indicate the overall parse result via public interfaces.
 std::optional<ModelInstanceIndex> AddModelFromUrdf(
-    const DataSource& data_source,
-    const std::string& model_name,
+    const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace);
 
