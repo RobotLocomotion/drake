@@ -21,26 +21,22 @@ using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 
 // This wraps the "ResolveUri()" device under test to throw for bad URIs.
-std::string ResolveGoodUri(
-    const std::string& uri,
-    const PackageMap& package_map,
-    const std::string& root_dir) {
+std::string ResolveGoodUri(const std::string& uri,
+                           const PackageMap& package_map,
+                           const std::string& root_dir) {
   DiagnosticPolicy diagnostic;
   // Don't let warnings leak into spdlog; tests should always specifically
   // handle any warnings that appear.
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-  const std::string result = ResolveUri(
-      diagnostic, uri, package_map, root_dir);
+  const std::string result = ResolveUri(diagnostic, uri, package_map, root_dir);
   EXPECT_NE(result, "");
   return result;
 }
 
 // This wraps the "ResolveUri()" device under test to return the error message
 // for bad URIs.
-std::string ResolveBadUri(
-    const std::string& uri,
-    const PackageMap& package_map,
-    const std::string& root_dir) {
+std::string ResolveBadUri(const std::string& uri, const PackageMap& package_map,
+                          const std::string& root_dir) {
   DiagnosticPolicy diagnostic;
   DiagnosticDetail error;
   diagnostic.SetActionForErrors([&error](const DiagnosticDetail& detail) {
@@ -49,8 +45,7 @@ std::string ResolveBadUri(
   // Don't let warnings leak into spdlog; tests should always specifically
   // handle any warnings that appear.
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-  const std::string result = ResolveUri(
-      diagnostic, uri, package_map, root_dir);
+  const std::string result = ResolveUri(diagnostic, uri, package_map, root_dir);
   EXPECT_EQ(result, "");
   return error.FormatError();
 }
@@ -95,8 +90,8 @@ GTEST_TEST(ResolveUriTest, TestFile) {
   // file scheme requires an absolute path.
   const string absolute_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
-          "package_map_test_packages/package_map_test_package_a/"
-          "sdf/test_model.sdf");
+      "package_map_test_packages/package_map_test_package_a/"
+      "sdf/test_model.sdf");
 
   // Set the root directory - it will not end up being used in ResolveUri().
   const std::string root_dir = ".";
@@ -114,8 +109,8 @@ GTEST_TEST(ResolveUriTest, TestAbsolutePath) {
 
   const string absolute_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
-          "package_map_test_packages/package_map_test_package_a/"
-          "sdf/test_model.sdf");
+      "package_map_test_packages/package_map_test_package_a/"
+      "sdf/test_model.sdf");
 
   // Set the root directory.
   const std::string root_dir = "/";
@@ -130,7 +125,8 @@ GTEST_TEST(ResolveUriTest, TestRelativePath) {
   // Use an empty package map.
   PackageMap package_map;
 
-  const std::string relative_path = "package_map_test_packages/"
+  const std::string relative_path =
+      "package_map_test_packages/"
       "package_map_test_package_a/sdf/test_model.sdf";
 
   // Set the root directory.
@@ -148,8 +144,8 @@ GTEST_TEST(ResolveUriTest, TestNoRoot) {
   // resource, but ignoring the returned absolute path).
   const string rel_path =
       "multibody/parsing/test/"
-          "package_map_test_packages/package_map_test_package_a/"
-          "sdf/test_model.sdf";
+      "package_map_test_packages/package_map_test_package_a/"
+      "sdf/test_model.sdf";
   unused(FindResourceOrThrow("drake/" + rel_path));
   const PackageMap package_map;
   const std::string root_dir;
@@ -164,15 +160,15 @@ GTEST_TEST(ResolveUriTest, TestNoRoot) {
 GTEST_TEST(ResolveUriTest, TestModel) {
   const string sdf_file_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
-          "package_map_test_packages/package_map_test_package_a/"
-          "sdf/test_model.sdf");
+      "package_map_test_packages/package_map_test_package_a/"
+      "sdf/test_model.sdf");
 
   // Create the package map.
   PackageMap package_map;
   package_map.AddPackageXml(FindResourceOrThrow(
       "drake/multibody/parsing/test/"
-          "package_map_test_packages/package_map_test_package_a/"
-          "package.xml"));
+      "package_map_test_packages/package_map_test_package_a/"
+      "package.xml"));
 
   // Set the root directory - it will not end up being used in ResolveUri().
   const std::string root_dir = "/no/such/root";
@@ -215,19 +211,21 @@ GTEST_TEST(ResolveUriTest, DeprecatedPackage) {
   });
 
   // Check that we get a detailed warning.
-  std::string result = ResolveUri(
-      diagnostic, "package://foo/multibody", package_map, "");
+  std::string result =
+      ResolveUri(diagnostic, "package://foo/multibody", package_map, "");
   EXPECT_EQ(result, "multibody");
-  EXPECT_THAT(warning.message, ::testing::MatchesRegex(
-      ".*package://foo/multibody.*is deprecated.*Stop using foo.*"));
+  EXPECT_THAT(
+      warning.message,
+      ::testing::MatchesRegex(
+          ".*package://foo/multibody.*is deprecated.*Stop using foo.*"));
 
   // Check that we get a basic warning.
   warning = {};
-  result = ResolveUri(
-      diagnostic, "package://bar/multibody", package_map, "");
+  result = ResolveUri(diagnostic, "package://bar/multibody", package_map, "");
   EXPECT_EQ(result, "multibody");
-  EXPECT_THAT(warning.message, ::testing::MatchesRegex(
-      ".*package://bar/multibody.*is deprecated.*"));
+  EXPECT_THAT(
+      warning.message,
+      ::testing::MatchesRegex(".*package://bar/multibody.*is deprecated.*"));
 }
 
 }  // namespace

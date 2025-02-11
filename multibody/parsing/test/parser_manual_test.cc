@@ -13,8 +13,9 @@ namespace multibody {
 namespace {
 
 int do_main(int argc, char* argv[]) {
-  gflags::SetUsageMessage("[INPUT-FILE-OR-URL]\n"
-                          "Run multibody parser; print errors if any");
+  gflags::SetUsageMessage(
+      "[INPUT-FILE-OR-URL]\n"
+      "Run multibody parser; print errors if any");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (argc < 2) {
     drake::log()->error("missing input filename");
@@ -36,8 +37,8 @@ int do_main(int argc, char* argv[]) {
     parser.SetStrictParsing();
   }
 
-  const bool is_url = std::regex_search(
-      argv[1], std::regex("^[A-Za-z0-9+.-]+://"));
+  const bool is_url =
+      std::regex_search(argv[1], std::regex("^[A-Za-z0-9+.-]+://"));
 
   drake::log()->info("parsing {}", argv[1]);
 

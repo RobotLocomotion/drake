@@ -103,6 +103,7 @@ struct VisualProperties {
   std::optional<geometry::PerceptionProperties> perception;
 };
 
+// clang-format off
 /* Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
  file. The material properties are placed into both a
@@ -153,6 +154,7 @@ struct VisualProperties {
  property tags, the property set will be empty. If the material is malformed
  an error will be emitted. If the error policy is not set to throw, an
  std::nullopt will be returned. */
+// clang-format on
 VisualProperties MakeVisualPropertiesFromSdfVisual(
     const SDFormatDiagnostic& diagnostic, const sdf::Visual& sdf_visual,
     ResolveFilename resolve_filename);
@@ -165,6 +167,7 @@ VisualProperties MakeVisualPropertiesFromSdfVisual(
 math::RigidTransformd MakeGeometryPoseFromSdfCollision(
     const sdf::Collision& sdf_collision, const math::RigidTransformd& X_LG);
 
+// clang-format off
 /* @anchor sdf_contact_material
  Parses the drake-relevant collision properties from a <collision> element.
 
@@ -218,6 +221,7 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
       created (see default_friction()).
  As long as no exception is thrown, the resulting ProximityProperties will have
  the ('material', 'coulomb_friction') property.  */
+// clang-format on
 std::optional<geometry::ProximityProperties>
 MakeProximityPropertiesForCollision(const SDFormatDiagnostic& diagnostic,
                                     const sdf::Collision& sdf_collision);
