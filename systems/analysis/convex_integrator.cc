@@ -5,6 +5,8 @@
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 
+#include <iostream>
+
 namespace drake {
 namespace systems {
 
@@ -83,7 +85,7 @@ void ConvexIntegrator<T>::DoInitialize() {
 
   // Set SAP solver parameters (default is sparse algebra)
   sap_parameters_.linear_solver_type = SapHessianFactorizationType::kDense;
-  sap_parameters_.max_iterations = 10000;
+  sap_parameters_.max_iterations = 100;
 }
 
 template <class T>
@@ -287,15 +289,36 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     // checking the convergence criteria, so that also the last iteration is
     // considered.
     if (k == sap_parameters_.max_iterations) break;
-   
-    // TODO(vincekurtz): more principled choice of when to re-factorize the 
-    // Hessian. For now we do it every other iteration.
-    const bool refresh_hessian = (k % 2) == 0;
 
+    if (k > 0) {
+      // Check for anticipated convergence using the method described in
+      // [Hairer, 1996], Equation IV.8.11. But we use the momentum residual
+      // instead of dx.
+      const double dx_norm = momentum_residual;
+      const double last_dx_norm = sap_stats_.momentum_residual[k - 1];
+      const double theta = dx_norm / last_dx_norm;
+
+      // Compute a rough approximation of the momentum residual after the
+      // next few iterations. If it doesn't look like we're going to make it,
+      // refresh the Hessian.
+      const int k_max = 100;
+      const double kappa = 1.0;
+      const double tolerance =
+          kappa * (sap_parameters_.abs_tolerance +
+                   sap_parameters_.rel_tolerance * momentum_scale);
+      const double anticipated_residual =
+          std::pow(theta, k_max - k) / (1 - theta) *
+          dx_norm;
+
+      if (anticipated_residual > tolerance || theta >= 1.0) {
+        // TODO(vincekurtz): debug why theta is not always < 1.
+        refresh_hessian_ = true;
+      }
+    } 
+   
     // This is the most expensive update: it performs the factorization of H to
     // solve for the search direction dv.
-    CalcSearchDirectionData(model, *context, &search_direction_data,
-                            refresh_hessian);
+    CalcSearchDirectionData(model, *context, &search_direction_data);
     const VectorX<double>& dv = search_direction_data.dv;
 
     // Perform line search. We'll do exact linesearch only, regardless of the
@@ -412,8 +435,7 @@ void ConvexIntegrator<T>::CalcHessianFactorization(
 template <typename T>
 void ConvexIntegrator<T>::CalcSearchDirectionData(const SapModel<T>& model,
                                                   const Context<T>& context,
-                                                  SearchDirectionData* data,
-                                                  const bool refactorize_hessian)
+                                                  SearchDirectionData* data)
   requires std::is_same_v<T, double>
 {  // NOLINT(whitespace/braces)
   // We compute the rhs on data->dv to allow in-place solution.
@@ -421,8 +443,12 @@ void ConvexIntegrator<T>::CalcSearchDirectionData(const SapModel<T>& model,
 
   // Factorizing the Hessian is expensive, so we only do it when we have to
   // (because the problem structure has changed) or when explicitly requested.
-  if (!hessian_factorization_.matches(model) || refactorize_hessian) {
+  if (!hessian_factorization_.matches(model) || refresh_hessian_) {
     CalcHessianFactorization(model, context, &hessian_factorization_);
+
+    // Now that we've factorized the hessian, let's not re-factorize again
+    // unless we really have to.
+    refresh_hessian_ = false;
   }
 
   hessian_factorization_.SolveInPlace(&data->dv);

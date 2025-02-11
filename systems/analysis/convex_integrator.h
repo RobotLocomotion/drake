@@ -221,8 +221,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Hessian updates.
   void CalcSearchDirectionData(const SapModel<T>& model,
                                const Context<T>& context,
-                               SearchDirectionData* search_direction_data,
-                               const bool refactorize_hessian)
+                               SearchDirectionData* search_direction_data)
     requires std::is_same_v<T, double>;
 
   // Update the Hessian factorization based on the given SAP model. This is a
@@ -274,6 +273,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   HessianFactorization hessian_factorization_;
   std::vector<MatrixX<T>> A_;  // Hack to keep these from going out of scope
   BlockSparseMatrix<T> J_;
+
+  // Flag for Hessian factorization re-use
+  bool refresh_hessian_{false};
 
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;
