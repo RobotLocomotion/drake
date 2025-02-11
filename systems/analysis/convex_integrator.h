@@ -134,6 +134,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Get a reference to the plant used for SAP computations
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
+  // Get the number of Hessian factorizations
+  int get_num_hessian_factorizations() const {
+    return num_hessian_factorizations_;
+  }
+
+  // Get the number of (convex) newton iterations
+  int get_num_solver_iterations() const { return num_solver_iterations_; }
+
  private:
   // Struct used to store the result of computing the search direction. Clone of
   // SapSolver::SearchDirectionData
@@ -275,6 +283,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // SAP solver statistics
   mutable SapStatistics sap_stats_;
+
+  // Simulator statistics
+  int64_t num_hessian_factorizations_{0};
+  int64_t num_solver_iterations_{0};
 
   // Scratch space for intermediate calculations
   struct Workspace {

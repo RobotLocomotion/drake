@@ -426,6 +426,7 @@ drake_cc_library(
     srcs = ["simulator_print_stats.cc"],
     hdrs = ["simulator_print_stats.h"],
     deps = [
+        ":convex_integrator",
         ":implicit_integrator",
         ":integrator_base",
         ":simulator",

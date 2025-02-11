@@ -202,6 +202,7 @@ SapSolverStatus ConvexIntegrator<double>::SolveWithGuess(
   // Solve the convex optimization problem
   // TODO(vincekurtz): consider flag for Hessian re-use here
   const SapSolverStatus status = SolveWithGuessImpl(*model, context.get());
+  num_solver_iterations_ += sap_stats_.num_iters;
   if (status != SapSolverStatus::kSuccess) return status;
 
   // Gather up the results
@@ -399,6 +400,8 @@ void ConvexIntegrator<T>::CalcHessianFactorization(
   *hessian = HessianFactorization(model.hessian_type(), &A_, &J_, model);
   const std::vector<MatrixX<double>>& G = model.EvalConstraintsHessian(context);
   hessian->UpdateWeightMatrixAndFactor(G);
+
+  num_hessian_factorizations_++;
 }
 
 template <typename T>
