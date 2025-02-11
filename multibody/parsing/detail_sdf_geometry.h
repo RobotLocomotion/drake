@@ -29,8 +29,8 @@ namespace internal {
 constexpr char kIsDrakeNamespaceAttr[] = "drake-namespaced";
 
 /* Used for resolving URIs / filenames.  */
-using ResolveFilename = std::function<std::string (
-    const SDFormatDiagnostic&, std::string)>;
+using ResolveFilename =
+    std::function<std::string(const SDFormatDiagnostic&, std::string)>;
 
 /* Given an sdf::Geometry object representing a <geometry> element from an SDF
  file, this method makes a new drake::geometry::Shape object from this
@@ -219,9 +219,8 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
  As long as no exception is thrown, the resulting ProximityProperties will have
  the ('material', 'coulomb_friction') property.  */
 std::optional<geometry::ProximityProperties>
-    MakeProximityPropertiesForCollision(
-        const SDFormatDiagnostic& diagnostic,
-        const sdf::Collision& sdf_collision);
+MakeProximityPropertiesForCollision(const SDFormatDiagnostic& diagnostic,
+                                    const sdf::Collision& sdf_collision);
 
 /* Parses friction coefficients from `sdf_collision`.
  This method looks for the definitions specific to ODE, as given by the SDF
@@ -242,10 +241,8 @@ std::optional<geometry::ProximityProperties>
  ```
  If mu or mu2 are not found, an error is emitted. If the error policy is not
  set to throw an std::nullopt is returned. */
-std::optional<CoulombFriction<double>>
-    MakeCoulombFrictionFromSdfCollisionOde(
-        const SDFormatDiagnostic& diagnostic,
-        const sdf::Collision& sdf_collision);
+std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
+    const SDFormatDiagnostic& diagnostic, const sdf::Collision& sdf_collision);
 
 }  // namespace internal
 }  // namespace multibody

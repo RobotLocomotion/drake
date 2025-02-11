@@ -12,9 +12,13 @@ using drake::internal::DiagnosticPolicy;
 using Eigen::Vector3d;
 
 bool EndsWithCaseInsensitive(std::string_view str, std::string_view ext) {
-  if (ext.size() > str.size()) { return false; }
+  if (ext.size() > str.size()) {
+    return false;
+  }
   return std::equal(str.end() - ext.size(), str.end(), ext.begin(),
-                    [](char a, char b) { return tolower(a) == tolower(b); });
+                    [](char a, char b) {
+                      return tolower(a) == tolower(b);
+                    });
 }
 
 DataSource::DataSource(DataSourceType type, const std::string* data)
@@ -157,9 +161,13 @@ const LinearBushingRollPitchYaw<double>* ParseLinearBushingRollPitchYaw(
     const std::function<const Frame<double>*(const char*)>& read_frame,
     MultibodyPlant<double>* plant) {
   const Frame<double>* frame_A = read_frame("drake:bushing_frameA");
-  if (!frame_A) { return {}; }
+  if (!frame_A) {
+    return {};
+  }
   const Frame<double>* frame_C = read_frame("drake:bushing_frameC");
-  if (!frame_C) { return {}; }
+  if (!frame_C) {
+    return {};
+  }
 
   const Eigen::Vector3d bushing_torque_stiffness =
       read_vector("drake:bushing_torque_stiffness");
@@ -180,9 +188,13 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
     const std::function<const RigidBody<double>*(const char*)>& read_body,
     MultibodyPlant<double>* plant) {
   const RigidBody<double>* body_A = read_body("drake:ball_constraint_body_A");
-  if (!body_A) { return {}; }
+  if (!body_A) {
+    return {};
+  }
   const RigidBody<double>* body_B = read_body("drake:ball_constraint_body_B");
-  if (!body_B) { return {}; }
+  if (!body_B) {
+    return {};
+  }
 
   const Eigen::Vector3d p_AP = read_vector("drake:ball_constraint_p_AP");
   const Eigen::Vector3d p_BQ = read_vector("drake:ball_constraint_p_BQ");
@@ -193,9 +205,8 @@ std::optional<MultibodyConstraintId> ParseBallConstraint(
 namespace {
 // See ParseCollisionFilterGroupCommon at header for documentation
 void CollectCollisionFilterGroup(
-    const DiagnosticPolicy& diagnostic,
-    ModelInstanceIndex model_instance, const MultibodyPlant<double>& plant,
-    const ElementNode& group_node,
+    const DiagnosticPolicy& diagnostic, ModelInstanceIndex model_instance,
+    const MultibodyPlant<double>& plant, const ElementNode& group_node,
     CollisionFilterGroupResolver* resolver,
     const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,
@@ -215,7 +226,9 @@ void CollectCollisionFilterGroup(
     }
   }
   const std::string group_name = read_string_attribute(group_node, "name");
-  if (group_name.empty()) { return; }
+  if (group_name.empty()) {
+    return;
+  }
 
   std::set<std::string> bodies;
   for (auto member_node = next_child_element(group_node, "drake:member");
@@ -224,7 +237,9 @@ void CollectCollisionFilterGroup(
            : std::get<tinyxml2::XMLElement*>(member_node) != nullptr;
        member_node = next_sibling_element(member_node, "drake:member")) {
     const std::string body_name = read_tag_string(member_node, "link");
-    if (body_name.empty()) { continue; }
+    if (body_name.empty()) {
+      continue;
+    }
 
     bodies.insert(body_name);
   }
@@ -235,7 +250,9 @@ void CollectCollisionFilterGroup(
            : std::get<tinyxml2::XMLElement*>(member_node) != nullptr;
        member_node = next_sibling_element(member_node, "drake:member_group")) {
     const std::string member_group_name = read_tag_string(member_node, "name");
-    if (member_group_name.empty()) { continue; }
+    if (member_group_name.empty()) {
+      continue;
+    }
 
     member_groups.insert(member_group_name);
   }
@@ -250,7 +267,9 @@ void CollectCollisionFilterGroup(
        ignore_node = next_sibling_element(
            ignore_node, "drake:ignored_collision_filter_group")) {
     const std::string target_name = read_tag_string(ignore_node, "name");
-    if (target_name.empty()) { continue; }
+    if (target_name.empty()) {
+      continue;
+    }
 
     // These two group names are allowed to be identical, which means the
     // bodies inside this collision filter group should be collision excluded
@@ -261,10 +280,8 @@ void CollectCollisionFilterGroup(
 }  // namespace
 
 void ParseCollisionFilterGroupCommon(
-    const DiagnosticPolicy& diagnostic,
-    ModelInstanceIndex model_instance,
-    const ElementNode& model_node,
-    MultibodyPlant<double>* plant,
+    const DiagnosticPolicy& diagnostic, ModelInstanceIndex model_instance,
+    const ElementNode& model_node, MultibodyPlant<double>* plant,
     CollisionFilterGroupResolver* resolver,
     const std::function<ElementNode(const ElementNode&, const char*)>&
         next_child_element,
@@ -287,18 +304,16 @@ void ParseCollisionFilterGroupCommon(
        group_node =
            next_sibling_element(group_node, "drake:collision_filter_group")) {
     CollectCollisionFilterGroup(
-        diagnostic,
-        model_instance, *plant, group_node, resolver, next_child_element,
-        next_sibling_element, has_attribute, read_string_attribute,
-        read_bool_attribute, read_tag_string);
+        diagnostic, model_instance, *plant, group_node, resolver,
+        next_child_element, next_sibling_element, has_attribute,
+        read_string_attribute, read_bool_attribute, read_tag_string);
   }
 }
 
-SpatialInertia<double> ParseSpatialInertia(
-    const DiagnosticPolicy& diagnostic,
-    const math::RigidTransformd& X_BBi,
-    double mass,
-    const InertiaInputs& inertia_Bi_Bi) {
+SpatialInertia<double> ParseSpatialInertia(const DiagnosticPolicy& diagnostic,
+                                           const math::RigidTransformd& X_BBi,
+                                           double mass,
+                                           const InertiaInputs& inertia_Bi_Bi) {
   // If physical validity checks fail below, return a prepared plausible
   // inertia instead. Use a plausible guess for the mass, letting actual mass
   // validity checking happen later.
@@ -318,8 +333,8 @@ SpatialInertia<double> ParseSpatialInertia(
   // not guarantee that the spatial inertia about Bcm is valid. Bcm (B's center
   // of mass) is the ground-truth point for validity tests.
   const SpatialInertia<double> Mdum_BBcm =
-    SpatialInertia<double>::SolidSphereWithDensity(
-       kPlausibleDensity, plausible_radius);
+      SpatialInertia<double>::SolidSphereWithDensity(kPlausibleDensity,
+                                                     plausible_radius);
   const Vector3d& p_BoBcm_B = X_BBi.translation();
   const SpatialInertia<double> Mdum_BBo_B = Mdum_BBcm.Shift(-p_BoBcm_B);
 
@@ -336,8 +351,8 @@ SpatialInertia<double> ParseSpatialInertia(
     // Use the factory method here; it doesn't change its diagnostic behavior
     // between release and debug builds.
     I_BBcm_Bi = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
-            inertia_Bi_Bi.ixx, inertia_Bi_Bi.iyy, inertia_Bi_Bi.izz,
-            inertia_Bi_Bi.ixy, inertia_Bi_Bi.ixz, inertia_Bi_Bi.iyz);
+        inertia_Bi_Bi.ixx, inertia_Bi_Bi.iyy, inertia_Bi_Bi.izz,
+        inertia_Bi_Bi.ixy, inertia_Bi_Bi.ixz, inertia_Bi_Bi.iyz);
   } catch (const std::exception& e) {
     diagnostic.Warning(
         fmt::format("While parsing inertia matrix: {}", e.what()));
@@ -347,8 +362,8 @@ SpatialInertia<double> ParseSpatialInertia(
   // If this is a massless body, return a zero SpatialInertia.
   if (mass == 0.0 && I_BBcm_Bi.get_moments().isZero() &&
       I_BBcm_Bi.get_products().isZero()) {
-    return SpatialInertia<double>(
-        0.0, Vector3d::Zero(), UnitInertia<double>{0.0, 0.0, 0.0});
+    return SpatialInertia<double>(0.0, Vector3d::Zero(),
+                                  UnitInertia<double>{0.0, 0.0, 0.0});
   }
   // B and Bi are not necessarily aligned.
   const math::RotationMatrix<double>& R_BBi = X_BBi.rotation();
@@ -357,8 +372,8 @@ SpatialInertia<double> ParseSpatialInertia(
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
 
   try {
-    return SpatialInertia<double>::MakeFromCentralInertia(
-        mass, p_BoBcm_B, I_BBcm_B);
+    return SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B,
+                                                          I_BBcm_B);
   } catch (const std::exception& e) {
     diagnostic.Warning(
         fmt::format("While re-expressing as central inertia: {}", e.what()));

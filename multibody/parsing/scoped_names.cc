@@ -6,12 +6,12 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
-const drake::multibody::Frame<double>*
-GetScopedFrameByNameMaybe(
+const drake::multibody::Frame<double>* GetScopedFrameByNameMaybe(
     const drake::multibody::MultibodyPlant<double>& plant,
     const std::string& full_name) {
-  if (full_name == "world")
+  if (full_name == "world") {
     return &plant.world_frame();
+  }
   auto scoped_name = multibody::ScopedName::Parse(full_name);
   if (!scoped_name.get_namespace().empty()) {
     if (plant.HasModelInstanceNamed(scoped_name.get_namespace())) {
@@ -29,8 +29,9 @@ GetScopedFrameByNameMaybe(
 const drake::multibody::Frame<double>& GetScopedFrameByName(
     const drake::multibody::MultibodyPlant<double>& plant,
     const std::string& full_name) {
-  if (full_name == "world")
+  if (full_name == "world") {
     return plant.world_frame();
+  }
   auto scoped_name = multibody::ScopedName::Parse(full_name);
   if (!scoped_name.get_namespace().empty()) {
     auto instance = plant.GetModelInstanceByName(scoped_name.get_namespace());

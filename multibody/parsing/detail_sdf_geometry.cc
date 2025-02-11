@@ -48,17 +48,19 @@ namespace {
 // SDF file and no `default_value` is supplied, or the tag has a bad or missing
 // value.
 template <typename T>
-std::optional<T> GetChildElementValue(const SDFormatDiagnostic& diagnostic,
-                       const sdf::ElementConstPtr element,
-                       const std::string& child_name,
-                       const std::optional<T>& default_value = std::nullopt) {
+std::optional<T> GetChildElementValue(
+    const SDFormatDiagnostic& diagnostic, const sdf::ElementConstPtr element,
+    const std::string& child_name,
+    const std::optional<T>& default_value = std::nullopt) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
 
   if (!element->HasElement(child_name)) {
-    if (default_value) return *default_value;
-    std::string message = "Element <" + child_name +
-        "> is required within element <" + element->GetName() + ">.";
-    diagnostic.Error(element, std::move(message));
+    if (default_value) {
+      return *default_value;
+    }
+    diagnostic.Error(
+        element, fmt::format("Element <{}> is required within element <{}>.",
+                             child_name, element->GetName()));
     return std::nullopt;
   }
   std::pair<T, bool> value_pair = element->Get<T>(child_name, T());
@@ -74,21 +76,23 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const SDFormatDiagnostic& diagnostic, const sdf::Geometry& sdf_geometry,
     ResolveFilename resolve_filename) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
+  // clang-format off
   const std::set<std::string> supported_geometry_elements{
-    "box",
-    "capsule",
-    "cylinder",
-    "drake:capsule",
-    "drake:ellipsoid",
-    "ellipsoid",
-    "empty",
-    "heightmap",
-    "mesh",
-    "plane",
-    "polyline",
-    "sphere"};
-  CheckSupportedElements(
-      diagnostic, sdf_geometry.Element(), supported_geometry_elements);
+      "box",
+      "capsule",
+      "cylinder",
+      "drake:capsule",
+      "drake:ellipsoid",
+      "ellipsoid",
+      "empty",
+      "heightmap",
+      "mesh",
+      "plane",
+      "polyline",
+      "sphere"};
+  // clang-format on
+  CheckSupportedElements(diagnostic, sdf_geometry.Element(),
+                         supported_geometry_elements);
   // For the geometry elements parsed by sdformat, assume that all elements
   // are supported and that sdformat is checking the schema.
 
@@ -102,8 +106,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       if (sdf_geometry.Element()->HasElement("drake:capsule")) {
         const sdf::ElementPtr capsule_element =
             sdf_geometry.Element()->GetElement("drake:capsule");
-        CheckSupportedElements(
-            diagnostic, capsule_element, {"radius", "length"});
+        CheckSupportedElements(diagnostic, capsule_element,
+                               {"radius", "length"});
         std::optional<const double> radius =
             GetChildElementValue<double>(diagnostic, capsule_element, "radius");
         if (!radius.has_value()) return nullptr;
@@ -114,8 +118,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       } else if (sdf_geometry.Element()->HasElement("drake:ellipsoid")) {
         const sdf::ElementPtr ellipsoid_element =
             sdf_geometry.Element()->GetElement("drake:ellipsoid");
-        CheckSupportedElements(
-            diagnostic, ellipsoid_element, {"a", "b", "c"});
+        CheckSupportedElements(diagnostic, ellipsoid_element, {"a", "b", "c"});
         std::optional<const double> a =
             GetChildElementValue<double>(diagnostic, ellipsoid_element, "a");
         if (!a.has_value()) return nullptr;
@@ -161,7 +164,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
           geometry_element->FindElement("mesh");
       DRAKE_DEMAND(mesh_element != nullptr);
       std::optional<std::string> mesh_uri =
-        GetChildElementValue<std::string>(diagnostic, mesh_element, "uri");
+          GetChildElementValue<std::string>(diagnostic, mesh_element, "uri");
       // We don't register an error; this is a required element and the sdformat
       // parsing should handle the case of this missing.
       DRAKE_DEMAND(mesh_uri.has_value());
@@ -170,8 +173,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       double scale = 1.0;
       if (mesh_element->HasElement("scale")) {
         std::optional<gz::math::Vector3d> scale_vector =
-            GetChildElementValue<gz::math::Vector3d>(
-                diagnostic, mesh_element, "scale");
+            GetChildElementValue<gz::math::Vector3d>(diagnostic, mesh_element,
+                                                     "scale");
         if (!scale_vector.has_value()) return nullptr;
         // geometry::Mesh only supports isotropic scaling and therefore we
         // enforce it.
@@ -197,8 +200,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       return make_unique<geometry::Capsule>(shape.Radius(), shape.Length());
     }
     case sdf::GeometryType::ELLIPSOID: {
-      const gz::math::Vector3d& radii =
-          sdf_geometry.EllipsoidShape()->Radii();
+      const gz::math::Vector3d& radii = sdf_geometry.EllipsoidShape()->Radii();
       return make_unique<geometry::Ellipsoid>(radii.X(), radii.Y(), radii.Z());
     }
     case sdf::GeometryType::HEIGHTMAP: {
@@ -220,15 +222,17 @@ static constexpr char kAcceptingTag[] = "drake:accepting_renderer";
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     const SDFormatDiagnostic& diagnostic, const sdf::Visual& sdf_visual,
     ResolveFilename resolve_filename, const math::RigidTransformd& X_LG) {
+  // clang-format off
   const std::set<std::string> supported_visual_elements{
-    "drake:perception_properties",
-    "drake:illustration_properties",
-    "geometry",
-    "material",
-    "pose",
-    kAcceptingTag};
-  CheckSupportedElements(
-      diagnostic, sdf_visual.Element(), supported_visual_elements);
+      "drake:perception_properties",
+      "drake:illustration_properties",
+      "geometry",
+      "material",
+      "pose",
+      kAcceptingTag};
+  // clang-format on
+  CheckSupportedElements(diagnostic, sdf_visual.Element(),
+                         supported_visual_elements);
 
   const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
   if (sdf_geometry.Type() == sdf::GeometryType::EMPTY) {
@@ -288,8 +292,8 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
     }
   }
 
-  std::unique_ptr<geometry::Shape> shape = MakeShapeFromSdfGeometry(
-      diagnostic, sdf_geometry, resolve_filename);
+  std::unique_ptr<geometry::Shape> shape =
+      MakeShapeFromSdfGeometry(diagnostic, sdf_geometry, resolve_filename);
   if (shape == nullptr) return nullptr;
 
   auto instance =
@@ -329,9 +333,12 @@ bool ElementIsEnabled(const sdf::ElementConstPtr e,
   bool enabled;
   const bool valid = attr->Get(enabled);
   if (!valid) {
-    diagnostic.Error(e, fmt::format(
-        "The `{}` element has an 'enabled' attribute with the wrong value "
-        "type; it should be a boolean value.", e->GetName()));
+    diagnostic.Error(
+        e,
+        fmt::format(
+            "The `{}` element has an 'enabled' attribute with the wrong value "
+            "type; it should be a boolean value.",
+            e->GetName()));
     return false;
   }
   return enabled;
@@ -403,16 +410,18 @@ VisualProperties MakeVisualPropertiesFromSdfVisual(
       visual_element->FindElement("material");
 
   if (material_element.get() != nullptr) {
+    // clang-format off
     const std::set<std::string> supported_material_elements{
-      "ambient",
-      "diffuse",
-      "drake:diffuse_map",
-      "emissive",
-      "specular"};
-    CheckSupportedElements(
-        diagnostic, material_element, supported_material_elements);
+        "ambient",
+        "diffuse",
+        "drake:diffuse_map",
+        "emissive",
+        "specular"};
+    // clang-format on
+    CheckSupportedElements(diagnostic, material_element,
+                           supported_material_elements);
 
-  if (material_element->HasElement("drake:diffuse_map")) {
+    if (material_element->HasElement("drake:diffuse_map")) {
       auto [texture_name, has_value] =
           material_element->Get<std::string>("drake:diffuse_map", {});
       if (has_value) {
@@ -545,49 +554,49 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
 }
 
 std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
-    const SDFormatDiagnostic& diagnostic,
-    const sdf::Collision& sdf_collision) {
+    const SDFormatDiagnostic& diagnostic, const sdf::Collision& sdf_collision) {
   const sdf::ElementPtr collision_element = sdf_collision.Element();
   DRAKE_DEMAND(collision_element != nullptr);
 
+  // clang-format off
   const std::set<std::string> supported_collision_elements{
-    "drake:proximity_properties",
-    "geometry",
-    "laser_retro",
-    "pose",
-    "surface"};
-  CheckSupportedElements(
-      diagnostic, collision_element, supported_collision_elements);
-  CheckSupportedElementValue(
-      diagnostic, collision_element, "laser_retro", "0");
+      "drake:proximity_properties",
+      "geometry",
+      "laser_retro",
+      "pose",
+      "surface"};
+  // clang-format on
+  CheckSupportedElements(diagnostic, collision_element,
+                         supported_collision_elements);
+  CheckSupportedElementValue(diagnostic, collision_element, "laser_retro", "0");
 
   const sdf::ElementConstPtr drake_element =
       collision_element->FindElement("drake:proximity_properties");
 
   geometry::ProximityProperties properties;
   if (drake_element != nullptr) {
+    // clang-format off
     const std::set<std::string> supported_proximity_elements{
-      "drake:rigid_hydroelastic",
-      "drake:compliant_hydroelastic",
-      "drake:soft_hydroelastic",
-      "drake:mesh_resolution_hint",
-      "drake:hydroelastic_modulus",
-      "drake:hydroelastic_margin",
-      "drake:hunt_crossley_dissipation",
-      "drake:relaxation_time",
-      "drake:point_contact_stiffness",
-      "drake:mu_dynamic",
-      "drake:mu_static"};
+        "drake:rigid_hydroelastic",
+        "drake:compliant_hydroelastic",
+        "drake:soft_hydroelastic",
+        "drake:mesh_resolution_hint",
+        "drake:hydroelastic_modulus",
+        "drake:hydroelastic_margin",
+        "drake:hunt_crossley_dissipation",
+        "drake:relaxation_time",
+        "drake:point_contact_stiffness",
+        "drake:mu_dynamic",
+        "drake:mu_static"};
+    // clang-format on
     CheckSupportedElements(diagnostic, drake_element,
                            supported_proximity_elements);
 
-    auto read_double =
-      [drake_element, &diagnostic](
-            const char* element_name) -> std::optional<double> {
+    auto read_double = [drake_element, &diagnostic](
+                           const char* element_name) -> std::optional<double> {
       std::optional<double> result;
       if (drake_element->FindElement(element_name) != nullptr) {
-        result = GetChildElementValue<double>(diagnostic,
-                                              drake_element,
+        result = GetChildElementValue<double>(diagnostic, drake_element,
                                               element_name);
       }
       return result;
@@ -602,7 +611,8 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
     const bool is_unsupported_soft =
         drake_element->HasElement("drake:soft_hydroelastic");
     if (is_unsupported_soft) {
-      std::string message = "A <collision> geometry has defined the "
+      std::string message =
+          "A <collision> geometry has defined the "
           "unsupported tag <drake:soft_hydroelastic>. Please change it to "
           "<drake:compliant_hydroelastic>.";
       diagnostic.Error(collision_element, std::move(message));
@@ -610,16 +620,17 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
     }
 
     if (is_rigid && is_compliant) {
-      std::string message = "A <collision> geometry has defined "
+      std::string message =
+          "A <collision> geometry has defined "
           "mutually-exclusive tags <drake:rigid_hydroelastic> and "
           "<drake:compliant_hydroelastic>. Only one can be provided.";
       diagnostic.Error(collision_element, std::move(message));
       return std::nullopt;
     }
 
-    properties = ParseProximityProperties(
-        diagnostic.MakePolicyForNode(*drake_element),
-        read_double, is_rigid, is_compliant);
+    properties =
+        ParseProximityProperties(diagnostic.MakePolicyForNode(*drake_element),
+                                 read_double, is_rigid, is_compliant);
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
@@ -647,12 +658,15 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
         CheckSupportedElements(diagnostic, ode_element, {"mu", "mu2"});
         if (ode_element->FindElement("mu").get() ||
             ode_element->FindElement("mu2").get()) {
-          diagnostic.Warning(ode_element,
-              fmt::format("In <collision name='{}'>: "
-              "When drake contact parameters are fully specified in the "
-              "<drake:proximity_properties> tag, the <surface><friction><ode>"
-              "<mu*> tags are ignored.",
-              sdf_collision.Name()));
+          diagnostic.Warning(
+              ode_element,
+              fmt::format(
+                  "In <collision name='{}'>: "
+                  "When drake contact parameters are fully specified in the "
+                  "<drake:proximity_properties> tag, the "
+                  "<surface><friction><ode>"
+                  "<mu*> tags are ignored.",
+                  sdf_collision.Name()));
         }
       }
     }
@@ -662,9 +676,7 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
 }
 
 std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
-    const SDFormatDiagnostic& diagnostic,
-    const sdf::Collision& sdf_collision) {
-
+    const SDFormatDiagnostic& diagnostic, const sdf::Collision& sdf_collision) {
   const sdf::ElementPtr collision_element = sdf_collision.Element();
   // Element pointers can only be nullptr if Load() was not called on the sdf::
   // object. Only a bug could cause this.
@@ -679,18 +691,15 @@ std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
   const sdf::ElementConstPtr friction_element =
       surface_element->FindElement("friction");
   if (!friction_element.get()) return default_friction();
-  const sdf::ElementConstPtr ode_element =
-      friction_element->FindElement("ode");
+  const sdf::ElementConstPtr ode_element = friction_element->FindElement("ode");
   if (!ode_element.get()) return default_friction();
 
   // Read <mu> (for static) and <mu2> (for dynamic), with default values.
-  std::optional<const double> static_friction =
-      GetChildElementValue<double>(diagnostic,
-          ode_element, "mu", default_friction().static_friction());
+  std::optional<const double> static_friction = GetChildElementValue<double>(
+      diagnostic, ode_element, "mu", default_friction().static_friction());
   if (!static_friction.has_value()) return std::nullopt;
-  std::optional<const double> dynamic_friction =
-      GetChildElementValue<double>(diagnostic,
-          ode_element, "mu2", default_friction().dynamic_friction());
+  std::optional<const double> dynamic_friction = GetChildElementValue<double>(
+      diagnostic, ode_element, "mu2", default_friction().dynamic_friction());
   if (!dynamic_friction.has_value()) return std::nullopt;
 
   return CoulombFriction<double>(*static_friction, *dynamic_friction);

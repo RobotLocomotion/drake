@@ -20,10 +20,9 @@ class TinyXml2Diagnostic {
   // no restrictions on the lifetime of the passed parameter.
   // @pre diagnostic cannot be nullptr.
   // @pre data_source cannot be nullptr.
-  TinyXml2Diagnostic(
-      const drake::internal::DiagnosticPolicy* diagnostic,
-      const DataSource* data_source,
-      const std::string& file_extension = "urdf");
+  TinyXml2Diagnostic(const drake::internal::DiagnosticPolicy* diagnostic,
+                     const DataSource* data_source,
+                     const std::string& file_extension = "urdf");
 
   // Issues a warning for an XMLNode.
   void Warning(const tinyxml2::XMLNode& location,
@@ -50,8 +49,7 @@ class TinyXml2Diagnostic {
  private:
   // Makes a diagnostic detail record based on an XMLNode.
   drake::internal::DiagnosticDetail MakeDetail(
-      const tinyxml2::XMLNode& location,
-      const std::string& message) const;
+      const tinyxml2::XMLNode& location, const std::string& message) const;
 
   const drake::internal::DiagnosticPolicy* diagnostic_{};
   const DataSource* data_source_{};

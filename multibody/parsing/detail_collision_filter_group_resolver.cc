@@ -30,8 +30,7 @@ CollisionFilterGroupResolver::CollisionFilterGroupResolver(
 CollisionFilterGroupResolver::~CollisionFilterGroupResolver() {}
 
 void CollisionFilterGroupResolver::AddGroup(
-    const DiagnosticPolicy& diagnostic,
-    const std::string& group_name,
+    const DiagnosticPolicy& diagnostic, const std::string& group_name,
     const std::set<std::string>& body_names,
     const std::set<std::string>& member_group_names,
     std::optional<ModelInstanceIndex> model_instance) {
@@ -47,8 +46,8 @@ void CollisionFilterGroupResolver::AddGroup(
     return;
   }
   if (groups_.contains(full_group_name)) {
-    diagnostic.Error(fmt::format("group '{}' has already been defined",
-                                 full_group_name));
+    diagnostic.Error(
+        fmt::format("group '{}' has already been defined", full_group_name));
     return;
   }
   if (body_names.empty() && member_group_names.empty()) {
@@ -68,15 +67,16 @@ void CollisionFilterGroupResolver::AddGroup(
       ModelInstanceIndex body_model =
           plant_->GetModelInstanceByName(scoped_body_name.get_namespace());
       if (body_model < minimum_model_instance_index_) {
-        diagnostic.Error(fmt::format("body name '{}' refers to a model outside"
-                                     " the current parse", scoped_body_name));
+        diagnostic.Error(fmt::format(
+            "body name '{}' refers to a model outside the current parse",
+            scoped_body_name));
         continue;
       }
       body = FindBody(scoped_body_name.get_element(), body_model);
     }
     if (!body) {
-      diagnostic.Error(fmt::format("body with name '{}' not found",
-                                   scoped_body_name));
+      diagnostic.Error(
+          fmt::format("body with name '{}' not found", scoped_body_name));
       continue;
     }
     full_names.insert(std::string(scoped_body_name.get_full()));
@@ -95,7 +95,7 @@ void CollisionFilterGroupResolver::AddGroup(
   // time.
   for (const auto& insertion_group : member_group_names) {
     const auto full_insertion_group{
-      FullyQualify(insertion_group, model_instance)};
+        FullyQualify(insertion_group, model_instance)};
     if (!group_insertion_graph_.contains(full_insertion_group)) {
       group_insertion_graph_[full_insertion_group] = {};
     }
@@ -104,8 +104,7 @@ void CollisionFilterGroupResolver::AddGroup(
 }
 
 void CollisionFilterGroupResolver::AddPair(
-    const DiagnosticPolicy& diagnostic,
-    const std::string& group_name_a,
+    const DiagnosticPolicy& diagnostic, const std::string& group_name_a,
     const std::string& group_name_b,
     std::optional<ModelInstanceIndex> model_instance) {
   unused(diagnostic);
@@ -259,21 +258,19 @@ std::string CollisionFilterGroupResolver::FullyQualify(
 }
 
 const CollisionFilterGroupResolver::GroupData*
-CollisionFilterGroupResolver::FindGroup(
-    const DiagnosticPolicy& diagnostic, const std::string& group_name) const {
+CollisionFilterGroupResolver::FindGroup(const DiagnosticPolicy& diagnostic,
+                                        const std::string& group_name) const {
   auto iter = groups_.find(group_name);
   if (iter == groups_.end()) {
-    diagnostic.Error(
-        fmt::format("collision filter group with name '{}' not found",
-                    group_name));
+    diagnostic.Error(fmt::format(
+        "collision filter group with name '{}' not found", group_name));
     return nullptr;
   }
   return &iter->second;
 }
 
 const RigidBody<double>* CollisionFilterGroupResolver::FindBody(
-    std::string_view name,
-    ModelInstanceIndex model_instance) const {
+    std::string_view name, ModelInstanceIndex model_instance) const {
   if (plant_->HasBodyNamed(name, model_instance)) {
     return &plant_->GetBodyByName(name, model_instance);
   }
