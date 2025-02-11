@@ -43,11 +43,12 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 using manipulation::kinova_jaco::JacoCommandSender;
-using manipulation::kinova_jaco::kJacoDefaultArmNumJoints;
-using manipulation::kinova_jaco::kJacoDefaultArmNumFingers;
 using manipulation::kinova_jaco::JacoStatusReceiver;
+using manipulation::kinova_jaco::kJacoDefaultArmNumFingers;
+using manipulation::kinova_jaco::kJacoDefaultArmNumJoints;
 using manipulation::util::RobotPlanInterpolator;
 using multibody::PackageMap;
+using systems::lcm::LcmSubscriberSystem;
 
 const char* const kJacoUrdfUrl =
     "package://drake_models/jaco_description/urdf/"
@@ -61,8 +62,7 @@ int DoMain() {
   systems::DiagramBuilder<double> builder;
 
   auto plan_sub = builder.AddSystem(
-      systems::lcm::LcmSubscriberSystem::Make<lcmt_robot_plan>(
-          kLcmPlanChannel, &lcm));
+      LcmSubscriberSystem::Make<lcmt_robot_plan>(kLcmPlanChannel, &lcm));
 
   const std::string urdf =
       (!FLAGS_urdf.empty() ? FLAGS_urdf
@@ -100,11 +100,11 @@ int DoMain() {
 
   // We'll directly fix the input to the status receiver later from our lcm
   // subscriber.
-  auto status_receiver = builder.AddSystem<JacoStatusReceiver>(
-      num_joints, num_fingers);
+  auto status_receiver =
+      builder.AddSystem<JacoStatusReceiver>(num_joints, num_fingers);
   auto status_mux = builder.AddSystem<systems::Multiplexer>(
       std::vector<int>({kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers,
-              kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
+                        kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
   builder.Connect(status_receiver->get_position_measured_output_port(),
                   status_mux->get_input_port(0));
   builder.Connect(status_receiver->get_velocity_measured_output_port(),
@@ -116,9 +116,8 @@ int DoMain() {
 
   // Split the plan source into q_d (sent in the command message for
   // informational purposes) and v_d (feed forward term for control).
-  auto target_demux =
-      builder.AddSystem<systems::Demultiplexer>(
-          (num_joints + num_fingers) * 2, num_joints + num_fingers);
+  auto target_demux = builder.AddSystem<systems::Demultiplexer>(
+      (num_joints + num_fingers) * 2, num_joints + num_fingers);
   builder.Connect(plan_source->get_output_port(0),
                   target_demux->get_input_port());
 
@@ -126,8 +125,7 @@ int DoMain() {
   auto adder = builder.AddSystem<systems::Adder>(2, num_joints + num_fingers);
   builder.Connect(pid_controller->get_output_port_control(),
                   adder->get_input_port(0));
-  builder.Connect(target_demux->get_output_port(1),
-                  adder->get_input_port(1));
+  builder.Connect(target_demux->get_output_port(1), adder->get_input_port(1));
 
   auto command_pub = builder.AddSystem(
       systems::lcm::LcmPublisherSystem::Make<lcmt_jaco_command>(
@@ -152,7 +150,9 @@ int DoMain() {
   // Wait for the first message.
   drake::log()->info("Waiting for first lcmt_jaco_status");
   lcm::Subscriber<lcmt_jaco_status> status_sub(&lcm, kLcmStatusChannel);
-  LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+  LcmHandleSubscriptionsUntil(&lcm, [&]() {
+    return status_sub.count() > 0;
+  });
 
   const lcmt_jaco_status& first_status = status_sub.message();
   DRAKE_DEMAND(first_status.num_joints == 0 ||
@@ -166,8 +166,8 @@ int DoMain() {
 
   systems::Context<double>& status_context =
       diagram->GetMutableSubsystemContext(*status_receiver, &diagram_context);
-  auto& status_value = status_receiver->get_input_port().FixValue(
-      &status_context, first_status);
+  auto& status_value =
+      status_receiver->get_input_port().FixValue(&status_context, first_status);
 
   auto& plan_source_context =
       diagram->GetMutableSubsystemContext(*plan_source, &diagram_context);
@@ -184,7 +184,9 @@ int DoMain() {
   while (true) {
     // Wait for an lcmt_jaco_status message.
     status_sub.clear();
-    LcmHandleSubscriptionsUntil(&lcm, [&]() { return status_sub.count() > 0; });
+    LcmHandleSubscriptionsUntil(&lcm, [&]() {
+      return status_sub.count() > 0;
+    });
     // Write the lcmt_jaco_status message into the context and advance.
     status_value.GetMutableData()->set_value(status_sub.message());
     const double time = status_sub.message().utime * 1e-6;

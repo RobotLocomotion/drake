@@ -25,12 +25,10 @@ namespace kuka_iiwa_arm {
  */
 class LcmPlanInterpolator : public systems::Diagram<double> {
  public:
-  LcmPlanInterpolator(
-      const std::string& model_path,
-      manipulation::util::InterpolatorType interpolator_type);
+  LcmPlanInterpolator(const std::string& model_path,
+                      manipulation::util::InterpolatorType interpolator_type);
 
-  const systems::InputPort<double>& get_input_port_iiwa_status()
-      const {
+  const systems::InputPort<double>& get_input_port_iiwa_status() const {
     return get_input_port(input_port_iiwa_status_);
   }
 

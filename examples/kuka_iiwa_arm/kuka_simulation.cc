@@ -49,8 +49,8 @@ using multibody::MultibodyPlant;
 using multibody::PackageMap;
 using systems::Context;
 using systems::Demultiplexer;
-using systems::StateInterpolatorWithDiscreteDerivative;
 using systems::Simulator;
+using systems::StateInterpolatorWithDiscreteDerivative;
 using systems::controllers::InverseDynamicsController;
 using systems::controllers::StateFeedbackControllerInterface;
 
@@ -58,8 +58,8 @@ int DoMain() {
   systems::DiagramBuilder<double> builder;
 
   // Adds a plant.
-  auto [plant, scene_graph] = multibody::AddMultibodyPlantSceneGraph(
-      &builder, FLAGS_sim_dt);
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_sim_dt);
   const char* kModelUrl =
       "package://drake_models/iiwa_description/"
       "urdf/iiwa14_polytope_collision.urdf";
@@ -108,14 +108,13 @@ int DoMain() {
       systems::lcm::LcmSubscriberSystem::Make<drake::lcmt_iiwa_command>(
           "IIWA_COMMAND", lcm));
   command_sub->set_name("command_subscriber");
-  auto command_receiver =
-      builder.AddSystem<IiwaCommandReceiver>(num_joints);
+  auto command_receiver = builder.AddSystem<IiwaCommandReceiver>(num_joints);
   command_receiver->set_name("command_receiver");
-  auto plant_state_demux = builder.AddSystem<Demultiplexer>(
-      2 * num_joints, num_joints);
+  auto plant_state_demux =
+      builder.AddSystem<Demultiplexer>(2 * num_joints, num_joints);
   plant_state_demux->set_name("plant_state_demux");
-  auto desired_state_from_position = builder.AddSystem<
-      StateInterpolatorWithDiscreteDerivative>(
+  auto desired_state_from_position =
+      builder.AddSystem<StateInterpolatorWithDiscreteDerivative>(
           num_joints, kIiwaLcmStatusPeriod,
           true /* suppress_initial_transient */);
   desired_state_from_position->set_name("desired_state_from_position");

@@ -13,11 +13,11 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
-using drake::systems::kVectorValued;
 using drake::systems::Adder;
 using drake::systems::BasicVector;
 using drake::systems::Context;
 using drake::systems::DiagramBuilder;
+using drake::systems::kVectorValued;
 using drake::systems::LeafSystem;
 using drake::systems::controllers::PidController;
 
@@ -68,8 +68,7 @@ class StateDependentDamper : public LeafSystem<T> {
 
     // Compute critical damping gains and scale by damping ratio. Use Eigen
     // arrays (rather than matrices) for elementwise multiplication.
-    Eigen::ArrayXd temp =
-        H.diagonal().array() * stiffness_.array();
+    Eigen::ArrayXd temp = H.diagonal().array() * stiffness_.array();
     Eigen::ArrayXd damping_gains = 2 * temp.sqrt();
     damping_gains *= damping_ratio_.array();
 
@@ -83,11 +82,9 @@ class StateDependentDamper : public LeafSystem<T> {
 
 template <typename T>
 KukaTorqueController<T>::KukaTorqueController(
-    const multibody::MultibodyPlant<T>& plant,
-    const VectorX<double>& stiffness,
+    const multibody::MultibodyPlant<T>& plant, const VectorX<double>& stiffness,
     const VectorX<double>& damping)
     : plant_(plant) {
-
   DiagramBuilder<T> builder;
   DRAKE_DEMAND(plant_.num_positions() == stiffness.size());
   DRAKE_DEMAND(plant_.num_positions() == damping.size());
@@ -107,9 +104,8 @@ KukaTorqueController<T>::KukaTorqueController(
 
   // Adds gravity compensator.
   using drake::systems::controllers::InverseDynamics;
-  auto gravity_comp =
-      builder.template AddSystem<InverseDynamics<T>>(
-          &plant_, InverseDynamics<T>::kGravityCompensation);
+  auto gravity_comp = builder.template AddSystem<InverseDynamics<T>>(
+      &plant_, InverseDynamics<T>::kGravityCompensation);
 
   // Adds virtual springs.
   Eigen::VectorXd kd(dim);
@@ -153,8 +149,8 @@ KukaTorqueController<T>::KukaTorqueController(
       builder.ExportInput(adder->get_input_port(0), "commanded_torque");
 
   // Exposes controller output.
-  output_port_index_control_ = builder.ExportOutput(
-      adder->get_output_port(), "control");
+  output_port_index_control_ =
+      builder.ExportOutput(adder->get_output_port(), "control");
 
   builder.BuildInto(this);
 }

@@ -28,7 +28,8 @@ namespace {
 
 using drake::multibody::MultibodyPlant;
 
-DEFINE_double(constant_load, 0, "the constant load on each joint, Unit [Nm]."
+DEFINE_double(constant_load, 0,
+              "the constant load on each joint, Unit [Nm]."
               "Suggested load is in the order of 0.01 Nm. When input value"
               "equals to 0 (default), the program runs a passive simulation.");
 
@@ -41,8 +42,9 @@ DEFINE_bool(use_right_hand, true,
 DEFINE_double(max_time_step, 1.0e-4,
               "Simulation time step used for integrator.");
 
-DEFINE_bool(add_gravity, true, "Indicator for whether terrestrial gravity"
-                                " (9.81 m/s²) is included or not.");
+DEFINE_bool(add_gravity, true,
+            "Indicator for whether terrestrial gravity"
+            " (9.81 m/s²) is included or not.");
 
 DEFINE_double(target_realtime_rate, 1,
               "Desired rate relative to real time.  See documentation for "
@@ -58,23 +60,24 @@ void DoMain() {
 
   std::string hand_url;
   if (FLAGS_use_right_hand) {
-    hand_url = "package://drake_models/"
-      "allegro_hand_description/sdf/allegro_hand_description_right.sdf";
+    hand_url =
+        "package://drake_models/"
+        "allegro_hand_description/sdf/allegro_hand_description_right.sdf";
   } else {
-    hand_url = "package://drake_models/"
-      "allegro_hand_description/sdf/allegro_hand_description_left.sdf";
+    hand_url =
+        "package://drake_models/"
+        "allegro_hand_description/sdf/allegro_hand_description_left.sdf";
   }
   multibody::Parser(&plant).AddModelsFromUrl(hand_url);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
-  plant.AddJoint<multibody::WeldJoint>("weld_hand", plant.world_body(),
-      std::nullopt, joint_hand_root, std::nullopt,
-      math::RigidTransformd::Identity());
+  plant.AddJoint<multibody::WeldJoint>(
+      "weld_hand", plant.world_body(), std::nullopt, joint_hand_root,
+      std::nullopt, math::RigidTransformd::Identity());
 
   if (!FLAGS_add_gravity) {
-    plant.mutable_gravity_field().set_gravity_vector(
-        Eigen::Vector3d::Zero());
+    plant.mutable_gravity_field().set_gravity_vector(Eigen::Vector3d::Zero());
   }
 
   // Now the model is complete.
@@ -84,11 +87,11 @@ void DoMain() {
   DRAKE_DEMAND(plant.num_actuated_dofs() == 16);
 
   // constant force input
-  VectorX<double> constant_load_value = VectorX<double>::Ones(
-      plant.num_actuators()) * FLAGS_constant_load;
+  VectorX<double> constant_load_value =
+      VectorX<double>::Ones(plant.num_actuators()) * FLAGS_constant_load;
   auto constant_source =
-     builder.AddSystem<systems::ConstantVectorSource<double>>(
-      constant_load_value);
+      builder.AddSystem<systems::ConstantVectorSource<double>>(
+          constant_load_value);
   constant_source->set_name("constant_source");
   builder.Connect(constant_source->get_output_port(),
                   plant.get_actuation_input_port());

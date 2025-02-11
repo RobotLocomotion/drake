@@ -38,14 +38,14 @@ using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
 using drake::manipulation::kinova_jaco::JacoCommandReceiver;
 using drake::manipulation::kinova_jaco::JacoStatusSender;
-using drake::manipulation::kinova_jaco::kJacoDefaultArmNumJoints;
 using drake::manipulation::kinova_jaco::kJacoDefaultArmNumFingers;
+using drake::manipulation::kinova_jaco::kJacoDefaultArmNumJoints;
 using drake::manipulation::kinova_jaco::kJacoLcmStatusPeriod;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::multibody::RigidBody;
-using drake::systems::controllers::InverseDynamicsController;
 using drake::systems::Demultiplexer;
+using drake::systems::controllers::InverseDynamicsController;
 using drake::visualization::AddDefaultVisualization;
 
 namespace drake {
@@ -95,7 +95,7 @@ int DoMain() {
 
   auto mux = builder.AddSystem<systems::Multiplexer>(
       std::vector<int>({kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers,
-              kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
+                        kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
   builder.Connect(command_receiver->get_commanded_position_output_port(),
                   mux->get_input_port(0));
   builder.Connect(command_receiver->get_commanded_velocity_output_port(),
@@ -105,9 +105,8 @@ int DoMain() {
   builder.Connect(jaco_controller->get_output_port_control(),
                   jaco_plant.get_actuation_input_port(jaco_id));
 
-  auto status_pub =
-      builder.AddSystem(
-          systems::lcm::LcmPublisherSystem::Make<drake::lcmt_jaco_status>(
+  auto status_pub = builder.AddSystem(
+      systems::lcm::LcmPublisherSystem::Make<drake::lcmt_jaco_status>(
           "KINOVA_JACO_STATUS", lcm, kJacoLcmStatusPeriod));
   // TODO(sammy-tri) populate joint torque (and external torques).  External
   // torques might want to wait until after #12631 is fixed or it could slow
@@ -115,7 +114,7 @@ int DoMain() {
   auto status_sender = builder.AddSystem<JacoStatusSender>();
   auto demux = builder.AddSystem<systems::Demultiplexer>(
       std::vector<int>({kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers,
-              kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
+                        kJacoDefaultArmNumJoints + kJacoDefaultArmNumFingers}));
   builder.Connect(jaco_plant.get_state_output_port(jaco_id),
                   demux->get_input_port());
   builder.Connect(demux->get_output_port(0),
