@@ -108,10 +108,31 @@ RevoluteJoint<T>::MakeImplementationBlueprint(
   const auto [inboard_frame, outboard_frame] =
       this->tree_frames(mobod.is_reversed());
   // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
-  auto revolute_mobilizer = std::make_unique<internal::RevoluteMobilizer<T>>(
-      mobod, *inboard_frame, *outboard_frame, axis_);
-  revolute_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizer = std::move(revolute_mobilizer);
+  if (axis_ == Vector3<T>::UnitX()) {
+    auto revolute_mobilizer =
+        std::make_unique<internal::RevoluteMobilizer<T, 0>>(
+            mobod, *inboard_frame, *outboard_frame, axis_);
+    revolute_mobilizer->set_default_position(this->default_positions());
+    blue_print->mobilizer = std::move(revolute_mobilizer);
+  } else if (axis_ == Vector3<T>::UnitY()) {
+    auto revolute_mobilizer =
+        std::make_unique<internal::RevoluteMobilizer<T, 1>>(
+            mobod, *inboard_frame, *outboard_frame, axis_);
+    revolute_mobilizer->set_default_position(this->default_positions());
+    blue_print->mobilizer = std::move(revolute_mobilizer);
+  } else if (axis_ == Vector3<T>::UnitZ()) {
+    auto revolute_mobilizer =
+        std::make_unique<internal::RevoluteMobilizer<T, 2>>(
+            mobod, *inboard_frame, *outboard_frame, axis_);
+    revolute_mobilizer->set_default_position(this->default_positions());
+    blue_print->mobilizer = std::move(revolute_mobilizer);
+  } else {  // Joint's axis is not aligned with any coordinate axis.
+    auto revolute_mobilizer =
+        std::make_unique<internal::RevoluteMobilizer<T, 3>>(
+            mobod, *inboard_frame, *outboard_frame, axis_);
+    revolute_mobilizer->set_default_position(this->default_positions());
+    blue_print->mobilizer = std::move(revolute_mobilizer);
+  }
   return blue_print;
 }
 
