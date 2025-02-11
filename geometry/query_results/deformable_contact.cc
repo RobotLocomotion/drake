@@ -1,5 +1,6 @@
 #include "drake/geometry/query_results/deformable_contact.h"
 
+#include <iostream>
 #include <utility>
 
 #include "drake/common/ssize.h"
@@ -59,11 +60,13 @@ DeformableContactSurface<T>::DeformableContactSurface(
     std::variant<std::vector<Vector4<T>>, std::vector<Vector3<T>>>
         barycentric_coordinates_A,
     std::optional<std::vector<Vector4<int>>> contact_vertex_indexes_B,
-    std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B)
+    std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B,
+    std::vector<Vector3<T>> pressure_gradient_W)
     : id_A_(id_A),
       id_B_(id_B),
       contact_mesh_W_(std::move(contact_mesh_W)),
       signed_distances_(std::move(signed_distances)),
+      pressure_gradient_W_(std::move(pressure_gradient_W)),
       contact_vertex_indexes_B_(std::move(contact_vertex_indexes_B)),
       barycentric_coordinates_B_(std::move(barycentric_coordinates_B)) {
   const int num_contact_points = contact_mesh_W_.num_faces();
@@ -94,6 +97,11 @@ DeformableContactSurface<T>::DeformableContactSurface(
         std::get<std::vector<Vector3<T>>>(barycentric_coordinates_A);
     PadDataToVector4<T>(barycentric_coordinates_A_3,
                         &barycentric_coordinates_A_, T(0.0));
+  }
+  if (is_rigid_vs_deformable) {
+    DRAKE_DEMAND(ssize(pressure_gradient_W_) == num_contact_points);
+  } else {
+    DRAKE_DEMAND(ssize(pressure_gradient_W_) == 0);
   }
   DRAKE_DEMAND(num_contact_points ==
                static_cast<int>(barycentric_coordinates_A_.size()));
@@ -135,11 +143,14 @@ void DeformableContact<T>::AddDeformableRigidContactSurface(
     GeometryId deformable_id, GeometryId rigid_id,
     const std::unordered_set<int>& participating_vertices,
     PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> pressure,
+    std::vector<Vector3<T>> pressure_gradient_W,
     std::vector<Vector3<int>> contact_vertex_indexes,
     std::vector<Vector3<T>> barycentric_coordinates) {
   const auto iter = contact_participations_.find(deformable_id);
   DRAKE_THROW_UNLESS(iter != contact_participations_.end());
   DRAKE_DEMAND(static_cast<int>(pressure.size()) == contact_mesh_W.num_faces());
+  DRAKE_DEMAND(static_cast<int>(pressure_gradient_W.size()) ==
+               contact_mesh_W.num_faces());
   DRAKE_DEMAND(static_cast<int>(contact_vertex_indexes.size()) ==
                contact_mesh_W.num_faces());
   DRAKE_DEMAND(static_cast<int>(barycentric_coordinates.size()) ==
@@ -148,7 +159,7 @@ void DeformableContact<T>::AddDeformableRigidContactSurface(
   contact_surfaces_.emplace_back(
       deformable_id, rigid_id, std::move(contact_mesh_W), std::move(pressure),
       std::move(contact_vertex_indexes), std::move(barycentric_coordinates),
-      std::nullopt, std::nullopt);
+      std::nullopt, std::nullopt, std::move(pressure_gradient_W));
 }
 
 template <typename T>

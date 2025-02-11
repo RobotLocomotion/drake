@@ -80,21 +80,6 @@ class DeformableSurfaceVolumeIntersector
     const Vector3<double> p_WC_W = p_WR_W + p_RC_W;
     const Vector3<double> barycentric_centroid =
         surface_D.CalcBarycentric(p_WC_W, tri_index);
-    if (false) {
-      std::cout << "n_R: " << n_R[0] << " " << n_R[1] << " " << n_R[2]
-                << std::endl;
-      std::cout << "p_RC: " << p_RC[0] << " " << p_RC[1] << " " << p_RC[2]
-                << std::endl;
-      std::cout << "p_WR_W: " << p_WR_W[0] << " " << p_WR_W[1] << " "
-                << p_WR_W[2] << std::endl;
-      std::cout << "p_RC_W: " << p_RC_W[0] << " " << p_RC_W[1] << " "
-                << p_RC_W[2] << std::endl;
-      std::cout << "p_WC_W: " << p_WC_W[0] << " " << p_WC_W[1] << " "
-                << p_WC_W[2] << std::endl;
-      std::cout << "barycentric_centroid: " << barycentric_centroid[0] << " "
-                << barycentric_centroid[1] << " " << barycentric_centroid[2]
-                << std::endl;
-    }
     barycentric_centroids_.push_back(barycentric_centroid);
   }
 
@@ -158,6 +143,10 @@ void AddDeformableRigidContactSurface(
     // containing more than one contact point.
     participating_vertices.reserve(3 * num_faces);
     contact_vertex_indexes.reserve(num_faces);
+    const std::vector<Vector3<double>>& pressure_gradient_R =
+        intersect.mutable_grad_eM_M();
+    DRAKE_DEMAND(ssize(pressure_gradient_R) == num_faces);
+    std::vector<Vector3<double>> pressure_gradient_W(num_faces);
     for (int e : participating_triangles) {
       Vector3<int> triangle_vertex_indices;
       for (int v = 0; v < TriangleSurfaceMesh<double>::kVertexPerElement; ++v) {
@@ -169,11 +158,14 @@ void AddDeformableRigidContactSurface(
       }
       contact_vertex_indexes.push_back(triangle_vertex_indices);
     }
+    for (int e = 0; e < num_faces; ++e) {
+      pressure_gradient_W[e] = X_DR * pressure_gradient_R[e];
+    }
 
     deformable_contact->AddDeformableRigidContactSurface(
         deformable_id, rigid_id, participating_vertices,
         std::move(*contact_mesh_W), std::move(pressure),
-        std::move(contact_vertex_indexes),
+        std::move(pressure_gradient_W), std::move(contact_vertex_indexes),
         std::move(intersect.mutable_barycentric_centroids()));
   }
 }

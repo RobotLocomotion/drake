@@ -151,7 +151,8 @@ class DeformableContactSurface {
       std::variant<std::vector<Vector4<T>>, std::vector<Vector3<T>>>
           barycentric_coordinates_A,
       std::optional<std::vector<Vector4<int>>> contact_vertex_indexes_B,
-      std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B);
+      std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B,
+      std::vector<Vector3<T>> pressure_gradient_W = {});
 
   ~DeformableContactSurface();
 
@@ -179,6 +180,12 @@ class DeformableContactSurface {
         with zero distances.
      2. The signed distance values for all contact points are non-positive. */
   const std::vector<T>& signed_distances() const { return signed_distances_; }
+
+  /* Returns the pressure gradient at the contact points expressed in the world
+   frame for deformable rigid contacts. */
+  const std::vector<Vector3<T>>& pressure_gradient_W() const {
+    return pressure_gradient_W_;
+  }
 
   /* Returns the world frame positions of the contact_points. The ordering of
    contact points is the same as that in `signed_distances()`.*/
@@ -243,6 +250,7 @@ class DeformableContactSurface {
   /* per-contact point data. */
   std::vector<Vector3<T>> contact_points_W_;
   std::vector<T> signed_distances_;
+  std::vector<Vector3<T>> pressure_gradient_W_;
   std::vector<Vector4<int>> contact_vertex_indexes_A_;
   std::vector<Vector4<T>> barycentric_coordinates_A_;
   std::optional<std::vector<Vector4<int>>> contact_vertex_indexes_B_;
@@ -317,6 +325,7 @@ class DeformableContact {
       // TODO(xuchenhan-tri): The sign of the has been flipped from changing
       // from sign-distance to pressure. Confirm the implications.
       PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> pressure,
+      std::vector<Vector3<T>> pressure_gradient_W,
       std::vector<Vector3<int>> contact_vertex_indexes,
       std::vector<Vector3<T>> barycentric_coordinates);
 

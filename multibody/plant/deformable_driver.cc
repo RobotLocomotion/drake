@@ -487,13 +487,19 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        We choose a large C = 1e8 Pa/m so that for ρ = 1000 kg/m³ and
        g = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
        density of water, a reasonably small penetration. */
+      const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
       const T Ae = surface.contact_mesh_W().area(i);
-      const T kA = Ae * 1e8;
-      const T default_rigid_k = std::numeric_limits<T>::infinity();
-      const T kB = surface.is_B_deformable() ? kA : default_rigid_k;
-      /* Combine stiffnesses k₁ (of geometry A) and k₂ (of geometry B) to get k
-       according to the rule: 1/k = 1/k₁ + 1/k₂. */
-      const T k = GetCombinedPointContactStiffness(kA, kB);
+      const T deformable_k = Ae * 1e8;
+      if (surface.is_B_deformable()) {
+        DRAKE_DEMAND(ssize(surface.pressure_gradient_W()) ==
+                     surface.num_contact_points());
+      }
+      const T g = surface.is_B_deformable()
+                      ? NAN
+                      : -surface.pressure_gradient_W()[i].dot(nhat_BA_W);
+      if (g < 1e-14) continue;
+      const T rigid_k = Ae * g;
+      const T k = surface.is_B_deformable() ? deformable_k : rigid_k;
 
       /* While in Drake we provide constraints to model Hunt & Crossley or
       linear Kelvin–Voigt dissipation, for deformable objects all we want is to
@@ -515,9 +521,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 
       const T& p0 = surface.signed_distances()[i];
-      const T fn0 = Ae * p0;
-      // TODO(xuchenhan-tri): Find phi0.
-      const T phi0 = 0.0;
+      const T fn0 = surface.is_B_deformable() ? -k * p0 : Ae * p0;
+      const T phi0 = surface.is_B_deformable() ? p0 : -p0 / g;
       /* The normal (scalar) component of the contact velocity in the contact
        frame. */
       /* Contact solver assumes the normal points from A to B whereas the
@@ -535,7 +540,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
           .p_WC = p_WC,
           .p_ApC_W = p_AC_W,
           .p_BqC_W = p_BC_W,
-          .nhat_BA_W = -nhat_AB_W,
+          .nhat_BA_W = nhat_BA_W,
           .phi0 = phi0,
           .vn0 = v_AcBc_Cz,
           .fn0 = fn0,
