@@ -30,6 +30,18 @@ using multibody::internal::GetHydroelasticModulus;
 using multibody::internal::GetPointContactStiffness;
 using multibody::internal::TreeIndex;
 
+// Copied from sap_solver.cc
+namespace {
+constexpr char kNanValuesMessage[] =
+    "The typical root cause for this failure is usually outside the solver, "
+    "when there are not enough checks to catch it earlier. In this case, a "
+    "previous (valid) simulation result led to the generation of NaN values in "
+    "a controller, that are then fed as actuation through MultibodyPlant's "
+    "ports. If you don't believe this is the root cause of your problem, "
+    "please contact the Drake developers and/or open a Drake issue with a "
+    "minimal reproduction example to help debug your problem.";
+}
+
 template <class T>
 void ConvexIntegrator<T>::DoInitialize() {
   using std::isnan;
@@ -209,7 +221,7 @@ template <typename T>
 SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     const SapModel<T>& model, Context<T>* context)
   requires std::is_same_v<T, double>
-{
+{  // NOLINT(whitespace/braces)
   using std::abs;
   using std::max;
 
@@ -376,7 +388,7 @@ void ConvexIntegrator<T>::CalcSearchDirectionData(
     const SapModel<T>& model, const Context<T>& context,
     ConvexIntegrator<T>::SearchDirectionData* data)
   requires std::is_same_v<T, double>
-{
+{  // NOLINT(whitespace/braces)
   // We compute the rhs on data->dv to allow in-place solution.
   data->dv = -model.EvalCostGradient(context);
   const HessianFactorizationCache& hessian_factorization =
@@ -413,7 +425,7 @@ std::pair<T, int> ConvexIntegrator<T>::PerformExactLineSearch(
     const SapModel<T>& model, const Context<T>& context,
     const SearchDirectionData& search_direction_data, Context<T>* scratch) const
   requires std::is_same_v<T, double>
-{
+{  // NOLINT(whitespace/braces)
   DRAKE_DEMAND(sap_parameters_.line_search_type ==
                SapSolverParameters::LineSearchType::kExact);
   DRAKE_DEMAND(scratch != nullptr);

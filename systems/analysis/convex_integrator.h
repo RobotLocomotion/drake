@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -36,18 +37,6 @@ using multibody::internal::DiscreteContactPair;
 using multibody::internal::GetInternalTree;
 using multibody::internal::MultibodyTree;
 using multibody::internal::MultibodyTreeTopology;
-
-// Copied from sap_solver.cc
-namespace {
-constexpr char kNanValuesMessage[] =
-    "The typical root cause for this failure is usually outside the solver, "
-    "when there are not enough checks to catch it earlier. In this case, a "
-    "previous (valid) simulation result led to the generation of NaN values in "
-    "a controller, that are then fed as actuation through MultibodyPlant's "
-    "ports. If you don't believe this is the root cause of your problem, "
-    "please contact the Drake developers and/or open a Drake issue with a "
-    "minimal reproduction example to help debug your problem.";
-}
 
 /**
  * A container for SAP problem data that can be reused with multiple timesteps
