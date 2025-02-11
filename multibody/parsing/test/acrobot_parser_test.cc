@@ -22,8 +22,8 @@ namespace drake {
 namespace multibody {
 namespace {
 
-class AcrobotModelTests :
-      public testing::TestWithParam<test::ModelLoadFunction> {
+class AcrobotModelTests
+    : public testing::TestWithParam<test::ModelLoadFunction> {
  public:
   void SetUp() override {
     const std::string base_name = "drake/multibody/benchmarks/acrobot/acrobot";
@@ -69,8 +69,8 @@ class AcrobotModelTests :
     MatrixX<double> M(nv, nv);
     plant_->CalcMassMatrixViaInverseDynamics(*context_.get(), &M);
 
-    EXPECT_TRUE(CompareMatrices(
-        M, M_benchmark, kTolerance, MatrixCompareType::relative));
+    EXPECT_TRUE(CompareMatrices(M, M_benchmark, kTolerance,
+                                MatrixCompareType::relative));
   }
 
  protected:
@@ -178,15 +178,11 @@ TEST_P(AcrobotModelTests, VerifyMassMatrixAgainstBenchmark) {
   VerifyModelMassMatrix(-M_PI / 3, -3 * M_PI / 4);
 }
 
-INSTANTIATE_TEST_SUITE_P(SdfAcrobatModelTests,
-                        AcrobotModelTests,
-                        ::testing::Values(test::LoadFromSdf));
+INSTANTIATE_TEST_SUITE_P(SdfAcrobatModelTests, AcrobotModelTests,
+                         ::testing::Values(test::LoadFromSdf));
 
-
-INSTANTIATE_TEST_SUITE_P(UrdfAcrobatModelTests,
-                        AcrobotModelTests,
-                        ::testing::Values(test::LoadFromUrdf));
-
+INSTANTIATE_TEST_SUITE_P(UrdfAcrobatModelTests, AcrobotModelTests,
+                         ::testing::Values(test::LoadFromUrdf));
 
 }  // namespace
 }  // namespace multibody
