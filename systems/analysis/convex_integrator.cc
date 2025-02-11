@@ -5,6 +5,8 @@
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 
+#include <iostream>
+
 namespace drake {
 namespace systems {
 
@@ -384,16 +386,48 @@ void ConvexIntegrator<T>::PackSapSolverResults(
 }
 
 template <class T>
-void ConvexIntegrator<T>::CalcSearchDirectionData(
-    const SapModel<T>& model, const Context<T>& context,
-    ConvexIntegrator<T>::SearchDirectionData* data)
+void ConvexIntegrator<T>::CalcSearchDirectionData(const SapModel<T>& model,
+                                                  const Context<T>& context,
+                                                  SearchDirectionData* data)
   requires std::is_same_v<T, double>
 {  // NOLINT(whitespace/braces)
   // We compute the rhs on data->dv to allow in-place solution.
   data->dv = -model.EvalCostGradient(context);
-  const HessianFactorizationCache& hessian_factorization =
-      model.EvalHessianFactorizationCache(context);
-  hessian_factorization.SolveInPlace(&data->dv);
+  // const HessianFactorizationCache& hessian_factorization =
+  //     model.EvalHessianFactorizationCache(context);
+  // hessian_factorization.SolveInPlace(&data->dv);
+
+  // hessian_factorization_ = HessianFactorization();
+
+  // DEBUG
+  fmt::print("\n");
+  fmt::print("is_empty: {}\n", hessian_factorization_.is_empty());
+  fmt::print("matches: {}\n", hessian_factorization_.matches_problem_structure(model));
+  fmt::print("model.num_constraints: {}\n", model.num_constraints());
+  fmt::print("model.num_velocities: {}\n", model.num_velocities());
+  fmt::print("model.num_constraint_equations: {}\n", model.num_constraint_equations());
+  fmt::print("model.dynamics_matrix.size(): {}\n", model.dynamics_matrix().size());
+
+  // TODO: abstract into a CalcHessianFactorization method
+  if (hessian_factorization_.is_empty() ||
+      !hessian_factorization_.matches_problem_structure(model)) {
+    // Hackily keep J and A from going out of scope even when the model is
+    // destroyed
+    // TODO(vincekurtz): consider storing these in hessian_factorization_
+    A_ = model.dynamics_matrix();
+    J_ = model.constraints_bundle().J();
+    hessian_factorization_ = HessianFactorization(
+        model.hessian_type(), &A_,
+        &J_, model);
+  }
+  const std::vector<MatrixX<double>>& G = model.EvalConstraintsHessian(context);
+  hessian_factorization_.UpdateWeightMatrixAndFactor(G);
+
+  fmt::print("updated factorization\n");
+
+  // TODO: restore in model
+  // model.CalcHessianFactorizationCache(context, &hessian_factorization_);
+  hessian_factorization_.SolveInPlace(&data->dv);
 
   // Update Δp, Δvc and d²ellA/dα².
   model.constraints_bundle().J().Multiply(data->dv, &data->dvc);

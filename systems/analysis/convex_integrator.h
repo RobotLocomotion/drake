@@ -25,8 +25,10 @@ using multibody::BodyIndex;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
+using multibody::contact_solvers::internal::BlockSparseMatrix;
 using multibody::contact_solvers::internal::HessianFactorizationCache;
 using multibody::contact_solvers::internal::SapContactProblem;
+using multibody::contact_solvers::internal::SapHessianFactorizationType;
 using multibody::contact_solvers::internal::SapModel;
 using multibody::contact_solvers::internal::SapSolverParameters;
 using multibody::contact_solvers::internal::SapSolverResults;
@@ -48,6 +50,42 @@ struct TimestepIndependentProblemData {
   MatrixX<T> M;   // mass matrix
   VectorX<T> a;   // accelerations (= M^{-1} k)
   VectorX<T> v0;  // initial velocities
+};
+
+/**
+ * An improved version of HessianFactorizationCache that keeps track of the
+ * number of constraints. This allows us to re-use the factorization whenever
+ * possible.
+ */
+class HessianFactorization : public HessianFactorizationCache {
+ public:
+  HessianFactorization() = default;
+
+  HessianFactorization(SapHessianFactorizationType type,
+                       const std::vector<MatrixX<double>>* A,
+                       const BlockSparseMatrix<double>* J,
+                       const SapModel<double>& model)
+      : HessianFactorizationCache(type, A, J) {
+    num_cliques_ = model.num_cliques();
+    num_velocities_ = model.num_velocities();
+    num_constraints_ = model.num_constraints();
+    num_constraint_equations_ = model.num_constraint_equations();
+  }
+
+  // TODO(vincekurtz): more systematic tracking of when the sparsity
+  // pattern/constraints have gone stale.
+  bool matches_problem_structure(const SapModel<double>& model) const {
+    return num_cliques_ == model.num_cliques() &&
+           num_velocities_ == model.num_velocities() &&
+           num_constraints_ == model.num_constraints() &&
+           num_constraint_equations_ == model.num_constraint_equations();
+  }
+
+ private:
+  int num_cliques_{0};
+  int num_velocities_{0};
+  int num_constraints_{0};
+  int num_constraint_equations_{0};
 };
 
 /**
@@ -215,6 +253,12 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   BodyIndex FindBodyByGeometryId(GeometryId geometry_id) const {
     return plant().FindBodyByGeometryId(geometry_id);
   }
+  
+  // Stored Hessian factorization. Computing this is expensive, so we reuse it
+  // whenever possible.
+  HessianFactorization hessian_factorization_;
+  std::vector<MatrixX<T>> A_;   // Hack to keep these from going out of scope
+  BlockSparseMatrix<T> J_;
 
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;
