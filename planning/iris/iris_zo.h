@@ -25,6 +25,8 @@ namespace planning {
  **/
 class IrisZoOptions {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisZoOptions);
+
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
   Note: This only serializes options that are YAML built-in types. */
@@ -152,14 +154,26 @@ class IrisZoOptions {
     parameterization_dimension_ = parameterization_dimension;
   }
 
+  /** Get the parameterization function.
+   * @note If the user has not specified this with `set_parameterization()`,
+   * then the default value of `parameterization_` is the identity function,
+   * indicating that the regions should be grown in the full configuration space
+   * (in the standard coordinate system). */
   const ParameterizationFunction& get_parameterization() const {
     return parameterization_;
   }
 
+  /** Returns whether or not the parameterization is threadsafe.
+   * @note The default `parameterization_` is the identity function, which is
+   * threadsafe. */
   bool get_parameterization_is_threadsafe() const {
     return parameterization_is_threadsafe_;
   }
 
+  /** Returns the input dimension for the parameterization function, or
+   * std::nullopt if it has not been set. A std::nullopt value indicates that
+   * IrisZo should use the ambient configuration space dimension as the input
+   * dimension to the parameterization. */
   std::optional<int> get_parameterization_dimension() const {
     return parameterization_dimension_;
   }
@@ -167,14 +181,8 @@ class IrisZoOptions {
  private:
   bool parameterization_is_threadsafe_{true};
 
-  /* By default, this is not specified, and the full dimension of the
-   * configuration space is determined when IrisZo is called, and that value is
-   * used. */
   std::optional<int> parameterization_dimension_{std::nullopt};
 
-  /* By default, we just use the identity function, indicating that the regions
-   * should be grown in the full configuration space (in the standard coordinate
-   * system). */
   std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parameterization_{
       [](const Eigen::VectorXd& q) -> Eigen::VectorXd {
         return q;
