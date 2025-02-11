@@ -146,14 +146,17 @@ GTEST_TEST(DeformableContact, AddDeformableRigidContactSurface) {
   const std::vector<Vector3<double>> contact_points_W = {
       {1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0}};
   const std::vector<double> signed_distances = {-0.25};
-  const std::vector<Vector4<int>> contact_vertex_indexes = {{0, 3, 2, 5}};
-  const std::vector<Vector4<double>> barycentric_centroids = {
-      {0.1, 0.2, 0.3, 0.4}};
+  const std::vector<Vector3<int>> contact_vertex_indexes = {{0, 3, 2}};
+  const std::vector<Vector3<double>> barycentric_centroids = {{0.2, 0.3, 0.5}};
 
-  dut.AddDeformableRigidContactSurface(kIdA, kIdB, {0, 3, 2, 5}, contact_mesh_W,
+  dut.AddDeformableRigidContactSurface(kIdA, kIdB, {0, 3, 2}, contact_mesh_W,
                                        signed_distances, contact_vertex_indexes,
                                        barycentric_centroids);
   /* Verify that the contact surface is as expected. */
+  const std::vector<Vector4<int>> contact_vertex_indexes_padded = {
+      {0, 3, 2, -1}};
+  const std::vector<Vector4<double>> barycentric_centroids_padded = {
+      {0.2, 0.3, 0.5, 0.0}};
   const std::vector<DeformableContactSurface<double>>& surfaces =
       dut.contact_surfaces();
   ASSERT_EQ(surfaces.size(), 1);
@@ -163,11 +166,11 @@ GTEST_TEST(DeformableContact, AddDeformableRigidContactSurface) {
   EXPECT_EQ(s.num_contact_points(), 1);
   EXPECT_EQ(s.contact_points_W(), contact_points_W);
   EXPECT_EQ(s.signed_distances(), signed_distances);
-  EXPECT_EQ(s.contact_vertex_indexes_A(), contact_vertex_indexes);
-  EXPECT_EQ(s.barycentric_coordinates_A(), barycentric_centroids);
+  EXPECT_EQ(s.contact_vertex_indexes_A(), contact_vertex_indexes_padded);
+  EXPECT_EQ(s.barycentric_coordinates_A(), barycentric_centroids_padded);
   EXPECT_FALSE(s.is_B_deformable());
   /* Verify that contact participation is as expected. */
-  EXPECT_EQ(dut.contact_participation(kIdA).num_vertices_in_contact(), 4);
+  EXPECT_EQ(dut.contact_participation(kIdA).num_vertices_in_contact(), 3);
 }
 
 GTEST_TEST(DeformableContact, Participate) {
