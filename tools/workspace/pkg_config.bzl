@@ -1,5 +1,4 @@
 load("//tools/workspace:execute.bzl", "path", "which")
-load("//tools/workspace:os.bzl", "is_wheel_build")
 
 _DEFAULT_TEMPLATE = Label("@drake//tools/workspace:pkg_config.BUILD.tpl")
 
@@ -49,15 +48,6 @@ def _maybe_setup_pkg_config_repository(repository_ctx):
         "pkg_config_paths",
         [],
     ))
-
-    if is_wheel_build(repository_ctx):
-        # TODO(jwnimmer-tri) Ultimately, we want the wheel build to use Bazel
-        # to compile all dependencies. At the moment, however, some are built
-        # using CMake files at drake/tools/wheel/image/dependencies. To find
-        # the libraries installed by those builds, we need to add some custom
-        # paths when calling pkg-config.
-        pkg_config_paths.insert(0, "/opt/drake-dependencies/share/pkgconfig")
-        pkg_config_paths.insert(0, "/opt/drake-dependencies/lib/pkgconfig")
 
     # Convert the canonical name (e.g., "+_repo_rules+eigen") to its apparent
     # name (e.g., "eigen") so that when a BUILD file uses a label which omits
