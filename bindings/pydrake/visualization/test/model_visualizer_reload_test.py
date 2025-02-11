@@ -4,7 +4,6 @@ import unittest
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.geometry import Meshcat
-from pydrake.multibody.parsing import PackageMap
 import pydrake.visualization as mut
 
 
