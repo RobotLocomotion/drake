@@ -68,13 +68,14 @@ class QueryObject;
    - Implement appropriate `Calc*` methods on the geometry output ports to
      update geometry pose/configuration values.
 
- @section geom_sys_inputs Inputs
  @cond
  In future versions, this will *also* include velocity and (possibly)
  acceleration ports.
  // TODO(SeanCurtis-TRI): Modify this to reflect the number of actual port
  // types.
  @endcond
+
+ @section geom_sys_inputs Inputs
 
  For each registered geometry source, there is one input port for each order
  of kinematics values (e.g., pose, velocity, acceleration, and configuration).
