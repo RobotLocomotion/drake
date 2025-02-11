@@ -5,11 +5,11 @@ For instructions, see https://drake.mit.edu/documentation_instructions.html.
 
 import argparse
 from fnmatch import fnmatch
+from glob import glob
 import os
 from os.path import join, relpath
 import shutil
 import sys
-from glob import glob
 
 from python import runfiles
 
@@ -293,11 +293,13 @@ def _build(*, out_dir, temp_dir, modules, quick):
         extra_perl_statements=extra_perl_statements)
 
     # Remove extraneous Doxygen build files.
-    files_to_remove = glob(os.path.join(out_dir, "*.md5"))
-    files_to_remove += glob(os.path.join(out_dir, "*.map"))
+    files_to_remove = glob(join(out_dir, "*.md5"))
+    files_to_remove += glob(join(out_dir, "*.map"))
     for i in files_to_remove:
-        if os.path.exists(i):
+        try:
             os.remove(i)
+        except IOError:
+            pass
 
     # The nominal pages to offer for preview.
     return ["", "classes.html", "modules.html"]
