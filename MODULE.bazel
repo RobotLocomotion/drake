@@ -82,6 +82,26 @@ llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
 llvm(
     name = "llvm",
     llvm_version = "19.1.3",
+    # TODO(jwnimmer-tri) Once we upgrade toolchains_llvm past 1.3.0, we won't
+    # need to specify the `urls` (nor the `strip_prefix` and `sha256`) anymore.
+    sha256 = {
+        "darwin-aarch64": "80a54a467e9e770a76ba9670e89a235224ec47578cc4d4dbd928592813732518",  # noqa
+        "darwin-x86_64": "52ea30f3089af4e086a98638a16167c5a20d253d43f7146c058e3e9e6d33274f",  # noqa
+        "linux-aarch64": "a730175e58233f20a99ecab0015d8cd0f1af5d92411ca1f9e3e472645d889bcd",  # noqa
+        "linux-x86_64": "052a5ee117782aab5893dba2cdf2cb97c3d873f7a50ba6b1690594161c75c519",  # noqa
+    },
+    strip_prefix = {
+        "darwin-aarch64": "LLVM-19.1.3-macOS-ARM64",
+        "darwin-x86_64": "LLVM-19.1.3-macOS-X64",
+        "linux-aarch64": "clang+llvm-19.1.3-aarch64-linux-gnu",
+        "linux-x86_64": "LLVM-19.1.3-Linux-X64",
+    },
+    urls = {
+        "darwin-aarch64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-macOS-ARM64.tar.xz"],  # noqa
+        "darwin-x86_64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-macOS-X64.tar.xz"],  # noqa
+        "linux-aarch64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/clang%2Bllvm-19.1.3-aarch64-linux-gnu.tar.xz"],  # noqa
+        "linux-x86_64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-Linux-X64.tar.xz"],  # noqa
+    },
 )
 
 # Load dependencies which are "public", i.e., made available to downstream
