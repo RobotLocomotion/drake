@@ -1,5 +1,6 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include "drake/multibody/contact_solvers/newton_with_bisection.h"
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
@@ -7,17 +8,19 @@
 namespace drake {
 namespace systems {
 
+using Eigen::VectorXd;
 using geometry::PenetrationAsPointPair;
 using multibody::DiscreteContactApproximation;
 using multibody::Frame;
 using multibody::RigidBody;
+using multibody::contact_solvers::internal::Bracket;
+using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
 using multibody::contact_solvers::internal::MakeContactConfiguration;
 using multibody::contact_solvers::internal::MatrixBlock;
 using multibody::contact_solvers::internal::SapConstraintJacobian;
 using multibody::contact_solvers::internal::SapHessianFactorizationType;
 using multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
 using multibody::contact_solvers::internal::SapHuntCrossleyConstraint;
-using multibody::contact_solvers::internal::SapSolver;
 using multibody::contact_solvers::internal::SapSolverStatus;
 using multibody::internal::GetCombinedDissipationTimeConstant;
 using multibody::internal::GetCombinedDynamicCoulombFriction;
@@ -86,20 +89,17 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   TimestepIndependentProblemData<T>& data =
       workspace_.timestep_independent_data;
 
-  // Solver setup
   // TODO(vincekurtz): figure out a more principled mapping from accuracy to
   // sap solver tolerances.
-  SapSolver<T> sap;
   sap_parameters_.rel_tolerance =
       std::max(1e-2 * this->get_accuracy_in_use(), 1e-6);
-  sap.set_parameters(sap_parameters_);
 
   // Compute problem data at time (t)
   CalcTimestepIndependentProblemData(context, &data);
 
   // Solve the for the full step (t+h)
   SapContactProblem<T> problem = MakeSapContactProblem(context, data, h);
-  SapSolverStatus status = sap.SolveWithGuess(problem, data.v0, &sap_results);
+  SapSolverStatus status = SolveWithGuess(problem, data.v0, &sap_results);
   DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
   // q_{t+h} = q_t + h N(q_t) v_{t+h}
@@ -120,7 +120,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     // Solve the first half-step (t + h/2). Here we can reuse the problem data
     // from the full step.
     problem = MakeSapContactProblem(context, data, 0.5 * h);
-    status = sap.SolveWithGuess(problem, data.v0, &sap_results);
+    status = SolveWithGuess(problem, data.v0, &sap_results);
     DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
     // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
@@ -139,7 +139,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     // Solve the second half-step problem. We'll use the full step from before
     // as the initial guess.
     const Eigen::Ref<const VectorX<T>> v_full = err.tail(nv);
-    status = sap.SolveWithGuess(problem, v_full, &sap_results);
+    status = SolveWithGuess(problem, v_full, &sap_results);
     DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
     // q_{t+h} = q_{t+h/2} + h/2 N(q_{t+h/2}) v_{t+h}
@@ -160,6 +160,484 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   diagram_context.SetTime(diagram_context.get_time() + h);
 
   return true;  // step was successful
+}
+
+template <>
+SapSolverStatus ConvexIntegrator<double>::SolveWithGuess(
+    const SapContactProblem<double>& problem, const VectorXd& v_guess,
+    SapSolverResults<double>* results) {
+  if (problem.num_constraints() == 0) {
+    // In the absence of constraints the solution is trivially v = v*.
+    results->Resize(problem.num_velocities(),
+                    problem.num_constraint_equations());
+    results->v = problem.v_star();
+    results->j.setZero();
+    return SapSolverStatus::kSuccess;
+  }
+
+  // Create the sap model and allocate context, which handles caching.
+  auto model = std::make_unique<SapModel<double>>(
+      &problem, sap_parameters_.linear_solver_type);
+  auto context = model->MakeContext();
+
+  // Put the velocities into the model context (copies
+  // SapSolver::SetProblemVelocitiesIntoModelContext).
+  Eigen::VectorBlock<VectorXd> v_model =
+      model->GetMutableVelocities(context.get());
+  model->velocities_permutation().Apply(v_guess, &v_model);
+
+  // Solve the convex optimization problem
+  // TODO(vincekurtz): consider flag for Hessian re-use here
+  const SapSolverStatus status = SolveWithGuessImpl(*model, context.get());
+  if (status != SapSolverStatus::kSuccess) return status;
+
+  // Gather up the results
+  PackSapSolverResults(*model, *context, results);
+  return status;
+}
+
+template <>
+SapSolverStatus ConvexIntegrator<AutoDiffXd>::SolveWithGuess(
+    const SapContactProblem<AutoDiffXd>&, const VectorX<AutoDiffXd>&,
+    SapSolverResults<AutoDiffXd>*) {
+  // Eventually we could propagate gradients with the implicit function theorem.
+  // For now we'll throw if autodiff is used.
+  throw std::logic_error("ConvexIntegrator does not support AutoDiffXd.");
+}
+
+template <typename T>
+SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
+    const SapModel<T>& model, Context<T>* context)
+  requires std::is_same_v<T, double>
+{
+  using std::abs;
+  using std::max;
+
+  const int nv = model.num_velocities();
+  const int nk = model.num_constraint_equations();
+
+  // Allocate the necessary memory to work with.
+  auto scratch = model.MakeContext();
+  SearchDirectionData search_direction_data(nv, nk);
+  sap_stats_ = SapStatistics();
+
+  // Start Newton iterations.
+  int k = 0;
+  double ell = model.EvalCost(*context);
+  double ell_previous = ell;
+  bool converged = false;
+  double alpha = 1.0;
+  int num_line_search_iters = 0;
+  for (;; ++k) {
+    // We first verify the stopping criteria. If satisfied, we skip expensive
+    // factorizations.
+    double momentum_residual, momentum_scale;
+
+    CalcStoppingCriteriaResidual(model, *context, &momentum_residual,
+                                 &momentum_scale);
+    sap_stats_.optimality_criterion_reached =
+        momentum_residual <= sap_parameters_.abs_tolerance +
+                                 sap_parameters_.rel_tolerance * momentum_scale;
+    sap_stats_.cost.push_back(ell);
+    sap_stats_.alpha.push_back(alpha);
+    sap_stats_.momentum_residual.push_back(momentum_residual);
+    sap_stats_.momentum_scale.push_back(momentum_scale);
+    // TODO(amcastro-tri): consider monitoring the duality gap.
+    if (sap_stats_.optimality_criterion_reached ||
+        sap_stats_.cost_criterion_reached) {
+      converged = true;
+      break;
+    } else {
+      // SAP's convergence is monotonic. We sanity check this here. We use a
+      // slop to account for round-off errors.
+      // N.B. Notice the check for monotonic convergence is placed AFTER the
+      // check for convergence. This is done puposedly to avoid round-off errors
+      // in the cost near convergence when the gradient is almost zero.
+      const double ell_scale = 0.5 * (abs(ell) + abs(ell_previous));
+      const double ell_slop =
+          sap_parameters_.relative_slop * std::max(1.0, ell_scale);
+      if (ell > ell_previous + ell_slop) {
+        DRAKE_LOGGER_DEBUG(
+            "At iter {} cost increased by: {}. alpha = {}. Relative momentum "
+            "residual = {}\n",
+            k, std::abs(ell - ell_previous), alpha,
+            momentum_residual / momentum_scale);
+        if (sap_parameters_.nonmonotonic_convergence_is_error) {
+          throw std::logic_error(
+              "SapSolver: Non-monotonic convergence detected.");
+        }
+      }
+    }
+
+    // Exit if the maximum number of iterations is reached, but only after
+    // checking the convergence criteria, so that also the last iteration is
+    // considered.
+    if (k == sap_parameters_.max_iterations) break;
+
+    // This is the most expensive update: it performs the factorization of H to
+    // solve for the search direction dv.
+    CalcSearchDirectionData(model, *context, &search_direction_data);
+    const VectorX<double>& dv = search_direction_data.dv;
+
+    // Perform line search. We'll do exact linesearch only, regardless of the
+    // sap parameters.
+    std::tie(alpha, num_line_search_iters) = PerformExactLineSearch(
+        model, *context, search_direction_data, scratch.get());
+
+    sap_stats_.num_line_search_iters += num_line_search_iters;
+
+    // Update state.
+    model.GetMutableVelocities(context) += alpha * dv;
+
+    ell_previous = ell;
+    ell = model.EvalCost(*context);
+
+    const double ell_scale = 0.5 * (abs(ell) + abs(ell_previous));
+    // N.B. Even though theoretically we expect ell < ell_previous, round-off
+    // errors might make the difference ell_previous - ell negative, within
+    // machine epsilon. Therefore we take the absolute value here.
+    const double ell_decrement = std::abs(ell_previous - ell);
+
+    // N.B. Here we want alpha≈1 and therefore we impose alpha > 0.5, an
+    // arbitrarily "large" value. This is to avoid a false positive on the
+    // convergence of the cost due to a small value of the line search
+    // parameter.
+    sap_stats_.cost_criterion_reached =
+        ell_decrement < sap_parameters_.cost_abs_tolerance +
+                            sap_parameters_.cost_rel_tolerance * ell_scale &&
+        alpha > 0.5;
+  }
+
+  if (!converged) return SapSolverStatus::kFailure;
+
+  // N.B. If the stopping criteria is satisfied for k = 0, the solver is not
+  // even instantiated and no factorizations are performed (the expensive part
+  // of the computation). We report zero number of iterations.
+  sap_stats_.num_iters = k;
+
+  return SapSolverStatus::kSuccess;
+}
+
+template <typename T>
+void ConvexIntegrator<T>::CalcStoppingCriteriaResidual(
+    const SapModel<T>& model, const Context<T>& context, T* momentum_residual,
+    T* momentum_scale) const {
+  using std::max;
+  const VectorX<T>& inv_sqrt_A = model.inv_sqrt_dynamics_matrix();
+  const VectorX<T>& p = model.EvalMomentum(context);
+  const VectorX<T>& jc = model.EvalGeneralizedImpulses(context);
+  const VectorX<T>& ell_grad = model.EvalCostGradient(context);
+
+  // Scale generalized momentum quantities using inv_sqrt_A so that all entries
+  // have the same units and we can weigh them equally.
+  const VectorX<T> ell_grad_tilde = inv_sqrt_A.asDiagonal() * ell_grad;
+  const VectorX<T> p_tilde = inv_sqrt_A.asDiagonal() * p;
+  const VectorX<T> jc_tilde = inv_sqrt_A.asDiagonal() * jc;
+
+  *momentum_residual = ell_grad_tilde.norm();
+  *momentum_scale = max(p_tilde.norm(), jc_tilde.norm());
+}
+
+template <typename T>
+void ConvexIntegrator<T>::PackSapSolverResults(
+    const SapModel<T>& model, const Context<T>& context,
+    SapSolverResults<T>* results) const {
+  DRAKE_DEMAND(results != nullptr);
+  results->Resize(model.problem().num_velocities(),
+                  model.num_constraint_equations());
+
+  // For non-participating velocities the solutions is v = v*. Therefore we
+  // first initialize to v = v* and overwrite with the non-trivial participating
+  // values in the following line.
+  results->v = model.problem().v_star();
+  const VectorX<T>& v_participating = model.GetVelocities(context);
+  model.velocities_permutation().ApplyInverse(v_participating, &results->v);
+
+  // Constraints equations are clustered (essentially their order is permuted
+  // for a better sparsity structure). Therefore constraint velocities and
+  // impulses are evaluated in this clustered order and permuted into the
+  // original order described by the model right after.
+  const VectorX<T>& vc_clustered = model.EvalConstraintVelocities(context);
+  model.impulses_permutation().ApplyInverse(vc_clustered, &results->vc);
+  const VectorX<T>& gamma_clustered = model.EvalImpulses(context);
+  model.impulses_permutation().ApplyInverse(gamma_clustered, &results->gamma);
+
+  // For non-participating velocities we have v=v* and the generalized impulses
+  // are zero. Therefore we first zero-out all generalized impulses and
+  // overwrite with the non-trivial non-zero values for the participating DOFs
+  // right after.
+  const VectorX<T>& tau_participating = model.EvalGeneralizedImpulses(context);
+  results->j.setZero();
+  model.velocities_permutation().ApplyInverse(tau_participating, &results->j);
+}
+
+template <class T>
+void ConvexIntegrator<T>::CalcSearchDirectionData(
+    const SapModel<T>& model, const Context<T>& context,
+    ConvexIntegrator<T>::SearchDirectionData* data)
+  requires std::is_same_v<T, double>
+{
+  // We compute the rhs on data->dv to allow in-place solution.
+  data->dv = -model.EvalCostGradient(context);
+  const HessianFactorizationCache& hessian_factorization =
+      model.EvalHessianFactorizationCache(context);
+  hessian_factorization.SolveInPlace(&data->dv);
+
+  // Update Δp, Δvc and d²ellA/dα².
+  model.constraints_bundle().J().Multiply(data->dv, &data->dvc);
+  model.MultiplyByDynamicsMatrix(data->dv, &data->dp);
+  data->d2ellA_dalpha2 = data->dv.dot(data->dp);
+
+  using std::isnan;
+  if (isnan(data->d2ellA_dalpha2)) {
+    throw std::logic_error(fmt::format(
+        "The Hessian of the momentum cost along the search direction is NaN. "
+        "{}",
+        kNanValuesMessage));
+  }
+  if (data->d2ellA_dalpha2 <= 0) {
+    throw std::logic_error(fmt::format(
+        "The Hessian of the momentum cost along the search direction is not "
+        "positive, d²ℓ/dα² = {}. This can only be caused by a mass matrix that "
+        "is not SPD. This would indicate bad problem data (e.g. a zero mass "
+        "floating body, though this would be caught earlier). If you don't "
+        "believe this is the root cause of your problem, please contact the "
+        "Drake developers and/or open a Drake issue with a minimal "
+        "reproduction example to help debug your problem.",
+        data->d2ellA_dalpha2));
+  }
+}
+
+template <typename T>
+std::pair<T, int> ConvexIntegrator<T>::PerformExactLineSearch(
+    const SapModel<T>& model, const Context<T>& context,
+    const SearchDirectionData& search_direction_data, Context<T>* scratch) const
+  requires std::is_same_v<T, double>
+{
+  DRAKE_DEMAND(sap_parameters_.line_search_type ==
+               SapSolverParameters::LineSearchType::kExact);
+  DRAKE_DEMAND(scratch != nullptr);
+  DRAKE_DEMAND(scratch != &context);
+  // dℓ/dα(α = 0) = ∇ᵥℓ(α = 0)⋅Δv.
+  const VectorX<double>& ell_grad_v0 = model.EvalCostGradient(context);
+  const VectorX<double>& dv = search_direction_data.dv;
+  const double dell_dalpha0 = ell_grad_v0.dot(dv);
+
+  // dℓ/dα(α = 0) is guaranteed to be strictly negative given the the Hessian of
+  // the cost is positive definite. Only round-off errors in the factorization
+  // of the Hessian for ill-conditioned systems (small regularization) can
+  // destroy this property. If so, we abort given that'd mean the model must be
+  // revisited.
+  if (dell_dalpha0 >= 0) {
+    throw std::logic_error(
+        "The cost does not decrease along the search direction. This is "
+        "usually caused by an excessive accumulation round-off errors for "
+        "ill-conditioned systems. Consider revisiting your model.");
+  }
+
+  const double alpha_max = sap_parameters_.exact_line_search.alpha_max;
+  double dell{NAN};
+  double d2ell{NAN};
+  VectorX<double> vec_scratch;
+  const double ell0 =
+      CalcCostAlongLine(model, context, search_direction_data, alpha_max,
+                        scratch, &dell, &d2ell, &vec_scratch);
+
+  // If the cost is still decreasing at alpha_max, we accept this value.
+  if (dell <= 0) return std::make_pair(alpha_max, 0);
+
+  // If the user requests very tight tolerances (say, smaller than 10⁻¹⁰) then
+  // we might enter the line search with a very small gradient. If close to
+  // machine epsilon, the Newton method below might return inaccurate results.
+  // Therefore return early if we detect this situation.
+  // For these tight tolerances, we'd reach this condition close to the global
+  // minimizer of the cost. Even if the norm of the search direction Δv is
+  // small, we allow the Newton solver to take a full step and therefore we
+  // return with a step size of one.
+  if (-dell_dalpha0 < sap_parameters_.cost_abs_tolerance +
+                          sap_parameters_.cost_rel_tolerance * ell0)
+    return std::make_pair(1.0, 0);
+
+  // N.B. We place the data needed to evaluate cost and gradients into a single
+  // struct so that cost_and_gradient only needs to capture a single pointer.
+  // This avoids heap allocations when passing the lambda to
+  // DoNewtonWithBisectionFallback().
+  struct EvalData {
+    const ConvexIntegrator<double>& solver;
+    const SapModel<double>& model;
+    const Context<double>& context0;  // Context at alpha = 0.
+    const SearchDirectionData& search_direction_data;
+    Context<double>& scratch;  // Context at alpha != 0.
+    // N.B. We normalize the gradient to minimize round-off errors as f(alpha) =
+    // −ℓ'(α)/dell_scale.
+    const double dell_scale;
+    VectorX<double> vec_scratch;
+  };
+
+  // N.B. At this point we know that dell_dalpha0 < 0. Also, if the line search
+  // was called it is because the residual (the gradient of the cost) is
+  // non-zero. Therefore we can safely divide by dell_dalpha0.
+  // N.B. We then define f(alpha) = −ℓ'(α)/ℓ'₀ so that f(alpha=0) = -1.
+  const double dell_scale = -dell_dalpha0;
+  EvalData data{*this,    model,     context, search_direction_data,
+                *scratch, dell_scale};
+
+  // Cost and gradient of f(α) = −ℓ'(α)/ℓ'₀.
+  auto cost_and_gradient = [&data](double x) {
+    double dell_dalpha;
+    double d2ell_dalpha2;
+    data.solver.CalcCostAlongLine(
+        data.model, data.context0, data.search_direction_data, x, &data.scratch,
+        &dell_dalpha, &d2ell_dalpha2, &data.vec_scratch);
+    return std::make_pair(dell_dalpha / data.dell_scale,
+                          d2ell_dalpha2 / data.dell_scale);
+  };
+
+  // To estimate a guess, we approximate the cost as being quadratic around
+  // alpha = 0.
+  const double alpha_guess = std::min(-dell_dalpha0 / d2ell, alpha_max);
+  if (std::isnan(alpha_guess)) {
+    throw std::logic_error(fmt::format(
+        "The initial guess for line search is NaN. {}", kNanValuesMessage));
+  }
+
+  // N.B. If we are here, then we already know that dell_dalpha0 < 0 and dell >
+  // 0, and therefore [0, alpha_max] is a valid bracket.
+  const Bracket bracket(0., dell_dalpha0 / dell_scale, alpha_max,
+                        dell / dell_scale);
+
+  // This relative tolerance was obtained by experimentation on a large set of
+  // tests cases. We found out that with f_tolerance ∈ [10⁻¹⁴, 10⁻³] the solver
+  // is robust with small changes in performances (about 30%). We then choose a
+  // safe tolerance far enough from the lower limit (close to machine epsilon)
+  // and the upper limit (close to an inexact method).
+  const double f_tolerance = 1.0e-8;  // f = −ℓ'(α)/ℓ'₀ is dimensionless.
+  const double alpha_tolerance = f_tolerance * alpha_guess;
+  const auto [alpha, iters] = DoNewtonWithBisectionFallback(
+      cost_and_gradient, bracket, alpha_guess, alpha_tolerance, f_tolerance,
+      sap_parameters_.exact_line_search.max_iterations);
+
+  return std::make_pair(alpha, iters);
+}
+
+template <typename T>
+T ConvexIntegrator<T>::CalcCostAlongLine(
+    const SapModel<T>& model, const Context<T>& context,
+    const SearchDirectionData& search_direction_data, const T& alpha,
+    Context<T>* scratch, T* dell_dalpha, T* d2ell_dalpha2,
+    VectorX<T>* d2ell_dalpha2_scratch) const {
+  DRAKE_DEMAND(scratch != nullptr);
+  DRAKE_DEMAND(scratch != &context);
+  if (d2ell_dalpha2 != nullptr) DRAKE_DEMAND(d2ell_dalpha2_scratch != nullptr);
+
+  // Data.
+  const VectorX<T>& v_star = model.v_star();
+
+  // Search direction quantities at state v.
+  const VectorX<T>& dv = search_direction_data.dv;
+  const VectorX<T>& dp = search_direction_data.dp;
+  const VectorX<T>& dvc = search_direction_data.dvc;
+  const T& d2ellA_dalpha2 = search_direction_data.d2ellA_dalpha2;
+
+  // N.B. d2ellA_dalpha2 coming as input in SearchDirectionData was already
+  // validated to be strictly positive by CalcSearchDirectionData(). Therefore
+  // an assert here is sufficient.
+  DRAKE_ASSERT(d2ellA_dalpha2 > 0.0);
+
+  // State at v(alpha).
+  Context<T>& context_alpha = *scratch;
+  const VectorX<T>& v = model.GetVelocities(context);
+  model.GetMutableVelocities(&context_alpha) = v + alpha * dv;
+
+  if (d2ell_dalpha2 != nullptr) {
+    // Since it is more efficient to calculate impulses (gamma) and their
+    // derivatives (G) together, this evaluation avoids calculating the impulses
+    // twice.
+    model.EvalConstraintsHessian(context_alpha);
+  }
+
+  // Update velocities and impulses at v(alpha).
+  // N.B. This evaluation should be cheap given we called
+  // EvalConstraintsHessian() at the very start of the scope of this function.
+  const VectorX<T>& gamma = model.EvalImpulses(context_alpha);
+
+  // Regularizer cost.
+  const T ellR = model.EvalConstraintsCost(context_alpha);
+
+  // Momentum cost. We use the O(n) strategy described in [Castro et al., 2021].
+  // The momentum cost is: ellA(α) = 0.5‖v(α)−v*‖², where ‖⋅‖ is the norm
+  // defined by A. v(α) corresponds to the value of v along the search
+  // direction: v(α) = v + αΔv. Using v(α) in the expression of the cost and
+  // expanding the squared norm leads to: ellA(α) = 0.5‖v−v*‖² + αΔvᵀ⋅A⋅(v−v*) +
+  // 0.5‖Δv‖²α². We now notice some of those terms are already cached:
+  //  - dpᵀ = Δvᵀ⋅A
+  //  - ellA(v) = 0.5‖v−v*‖²
+  //  - d2ellA_dalpha2 = 0.5‖Δv‖²α², see [Castro et al., 2021; §VIII.C].
+  T ellA = model.EvalMomentumCost(context);
+  ellA += alpha * dp.dot(v - v_star);
+  ellA += 0.5 * alpha * alpha * d2ellA_dalpha2;
+  const T ell = ellA + ellR;
+
+  // Compute first derivative.
+  if (dell_dalpha != nullptr) {
+    const VectorX<T>& v_alpha = model.GetVelocities(context_alpha);
+
+    // First derivative.
+    const T dellA_dalpha = dp.dot(v_alpha - v_star);  // Momentum term.
+    const T dellR_dalpha = -dvc.dot(gamma);           // Regularizer term.
+    *dell_dalpha = dellA_dalpha + dellR_dalpha;
+  }
+
+  // Compute second derivative.
+  if (d2ell_dalpha2 != nullptr) {
+    // N.B. This evaluation should be cheap given we called
+    // EvalConstraintsHessian() at the very start of the scope of this function.
+    const std::vector<MatrixX<T>>& G =
+        model.EvalConstraintsHessian(context_alpha);
+
+    // First compute d2ell_dalpha2_scratch = G⋅Δvc.
+    d2ell_dalpha2_scratch->resize(model.num_constraint_equations());
+    const int nc = model.num_constraints();
+    int constraint_start = 0;
+    for (int i = 0; i < nc; ++i) {
+      const MatrixX<T>& G_i = G[i];
+      // Number of equations for the i-th constraint.
+      const int ni = G_i.rows();
+      const auto dvc_i = dvc.segment(constraint_start, ni);
+      d2ell_dalpha2_scratch->segment(constraint_start, ni) = G_i * dvc_i;
+      constraint_start += ni;
+    }
+
+    // For the constraints' contribution to the cost, d²ℓ/dα² = Δvcᵀ⋅G⋅Δvc.
+    const T d2ellR_dalpha2 = dvc.dot(*d2ell_dalpha2_scratch);
+
+    // Sanity check these terms are all positive.
+    using std::isnan;
+    if (isnan(d2ellR_dalpha2)) {
+      throw std::logic_error(fmt::format(
+          "The Hessian of the constraints cost along the search direction is "
+          "NaN. {}",
+          kNanValuesMessage));
+    }
+    if (d2ellR_dalpha2 < 0) {
+      throw std::logic_error(fmt::format(
+          "The Hessian of the constraints cost along the search direction is "
+          "negative, d²ℓ/dα² = {}. This can only be caused by a degenerate "
+          "constraint Hessian (a bug). This would be indicated by a value that "
+          "might be negative but close to machine epsilon. Please contact the "
+          "Drake developers and/or open a Drake issue with a minimal "
+          "reproduction example to help debug your problem.",
+          d2ellR_dalpha2));
+    }
+
+    *d2ell_dalpha2 = d2ellA_dalpha2 + d2ellR_dalpha2;
+
+    // N.B. With d2ellA_dalpha2 > 0 and d2ellR_dalpha2 validated to be positive
+    // just a few lines above, then d2ell_dalpha2 must be strictly positive.
+    DRAKE_DEMAND(*d2ell_dalpha2 > 0);
+  }
+
+  return ell;
 }
 
 template <class T>

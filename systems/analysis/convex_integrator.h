@@ -24,14 +24,30 @@ using multibody::BodyIndex;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyForces;
 using multibody::MultibodyPlant;
+using multibody::contact_solvers::internal::HessianFactorizationCache;
 using multibody::contact_solvers::internal::SapContactProblem;
+using multibody::contact_solvers::internal::SapModel;
 using multibody::contact_solvers::internal::SapSolverParameters;
 using multibody::contact_solvers::internal::SapSolverResults;
+using multibody::contact_solvers::internal::SapSolverStatus;
+using multibody::contact_solvers::internal::SapStatistics;
 using multibody::internal::DiscreteContactData;
 using multibody::internal::DiscreteContactPair;
 using multibody::internal::GetInternalTree;
 using multibody::internal::MultibodyTree;
 using multibody::internal::MultibodyTreeTopology;
+
+// Copied from sap_solver.cc
+namespace {
+constexpr char kNanValuesMessage[] =
+    "The typical root cause for this failure is usually outside the solver, "
+    "when there are not enough checks to catch it earlier. In this case, a "
+    "previous (valid) simulation result led to the generation of NaN values in "
+    "a controller, that are then fed as actuation through MultibodyPlant's "
+    "ports. If you don't believe this is the root cause of your problem, "
+    "please contact the Drake developers and/or open a Drake issue with a "
+    "minimal reproduction example to help debug your problem.";
+}
 
 /**
  * A container for SAP problem data that can be reused with multiple timesteps
@@ -92,6 +108,21 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   const MultibodyPlant<T>& plant() const { return *plant_; }
 
  private:
+  // Struct used to store the result of computing the search direction. Clone of
+  // SapSolver::SearchDirectionData
+  struct SearchDirectionData {
+    SearchDirectionData(int num_velocities, int num_constraint_equations) {
+      dv.resize(num_velocities);
+      dp.resize(num_velocities);
+      dvc.resize(num_constraint_equations);
+      d2ellA_dalpha2 = NAN;
+    }
+    VectorX<T> dv;          // Search direction.
+    VectorX<T> dp;          // Momentum update Δp = A⋅Δv.
+    VectorX<T> dvc;         // Constraints velocities update, Δvc=J⋅Δv.
+    T d2ellA_dalpha2{NAN};  // d²ellA/dα² = Δvᵀ⋅A⋅Δv.
+  };
+
   // Allocate the workspace
   void DoInitialize() final;
 
@@ -132,6 +163,48 @@ class ConvexIntegrator final : public IntegratorBase<T> {
       DiscreteContactData<DiscreteContactPair<T>>* result) const
     requires scalar_predicate<T>::is_bool;
 
+  // Clone of SapSolver::SolveWithGuessImpl, but allows for Hessian re-use.
+  SapSolverStatus SolveWithGuess(const SapContactProblem<T>& problem,
+                                 const VectorX<T>& v_guess,
+                                 SapSolverResults<T>* result);
+
+  // Clone of SapSolver::SolveWithGuessImpl, but allows for Hessian re-use.
+  SapSolverStatus SolveWithGuessImpl(const SapModel<T>& model,
+                                     Context<T>* context)
+    requires std::is_same_v<T, double>;
+
+  // Clone of SapSolver::PackSapSolverResults
+  void PackSapSolverResults(const SapModel<T>& model, const Context<T>& context,
+                            SapSolverResults<T>* results) const;
+
+  // Clone of SapSolver::CalcStoppingCriteriaResidual
+  void CalcStoppingCriteriaResidual(const SapModel<T>& model,
+                                    const Context<T>& context,
+                                    T* momentum_residual,
+                                    T* momentum_scale) const;
+
+  // Clone of SapSolver::CalcSearchDirectionData, but allows for selective
+  // Hessian updates.
+  void CalcSearchDirectionData(const SapModel<T>& model,
+                               const Context<T>& context,
+                               SearchDirectionData* search_direction_data)
+    requires std::is_same_v<T, double>;
+
+  // Clone of SapSolver::PerformExactLineSearch
+  std::pair<T, int> PerformExactLineSearch(
+      const SapModel<T>& model, const systems::Context<T>& context,
+      const SearchDirectionData& search_direction_data,
+      systems::Context<T>* scratch_workspace) const
+    requires std::is_same_v<T, double>;
+
+  // Clone of SapSolver::CalcCostAlongLine
+  T CalcCostAlongLine(const SapModel<T>& model,
+                      const systems::Context<T>& context,
+                      const SearchDirectionData& search_direction_data,
+                      const T& alpha, systems::Context<T>* scratch,
+                      T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
+                      VectorX<T>* d2ell_dalpha2_scratch = nullptr) const;
+
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {
     return GetInternalTree(plant()).get_topology();
@@ -160,6 +233,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // SAP solver parameters
   SapSolverParameters sap_parameters_;
 
+  // SAP solver statistics
+  mutable SapStatistics sap_stats_;
+
   // Scratch space for intermediate calculations
   struct Workspace {
     // Used in DoStep
@@ -181,6 +257,17 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     DiscreteContactData<DiscreteContactPair<T>> contact_data;
   } workspace_;
 };
+
+// Forward-declare specializations, prior to DRAKE_DECLARE... below.
+// We use these to specialize functions that do not support AutoDiffXd.
+template <>
+SapSolverStatus ConvexIntegrator<double>::SolveWithGuess(
+    const SapContactProblem<double>&, const VectorX<double>&,
+    SapSolverResults<double>*);
+template <>
+SapSolverStatus ConvexIntegrator<AutoDiffXd>::SolveWithGuess(
+    const SapContactProblem<AutoDiffXd>&, const VectorX<AutoDiffXd>&,
+    SapSolverResults<AutoDiffXd>*);
 
 }  // namespace systems
 }  // namespace drake
