@@ -101,18 +101,15 @@ std::unique_ptr<Joint<T>> RevoluteJoint<T>::DoShallowClone() const {
 // `MobilizerImpl`, we must place this implementation in the source file, not
 // in the header file.
 template <typename T>
-std::unique_ptr<typename Joint<T>::BluePrint>
-RevoluteJoint<T>::MakeImplementationBlueprint(
+std::unique_ptr<internal::Mobilizer<T>> RevoluteJoint<T>::MakeMobilizerForJoint(
     const internal::SpanningForest::Mobod& mobod) const {
-  auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
   const auto [inboard_frame, outboard_frame] =
       this->tree_frames(mobod.is_reversed());
   // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
   auto revolute_mobilizer = std::make_unique<internal::RevoluteMobilizer<T>>(
       mobod, *inboard_frame, *outboard_frame, axis_);
   revolute_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizer = std::move(revolute_mobilizer);
-  return blue_print;
+  return revolute_mobilizer;
 }
 
 }  // namespace multibody

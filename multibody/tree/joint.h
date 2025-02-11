@@ -777,15 +777,6 @@ class Joint : public MultibodyElement<T> {
   // End of hidden Doxygen section.
 
  protected:
-  /// (Advanced) Structure containing all the information needed to build the
-  /// MultibodyTree implementation for a %Joint. At MultibodyTree::Finalize() a
-  /// %Joint creates a BluePrint of its implementation so that MultibodyTree can
-  /// build an implementation for it.
-  struct BluePrint {
-    std::unique_ptr<internal::Mobilizer<T>> mobilizer;
-    // TODO(sherm1): add constraints and force elements as needed.
-  };
-
   /// (Advanced) A Joint is implemented in terms of MultibodyTree elements,
   /// typically a Mobilizer. However, some Joints may be better modeled with
   /// constraints or force elements. This object contains the internal details
@@ -799,10 +790,10 @@ class Joint : public MultibodyElement<T> {
     JointImplementation() {}
 
     /// This constructor creates an implementation for `this` joint from the
-    /// blueprint provided.
-    explicit JointImplementation(const BluePrint& blue_print) {
-      DRAKE_DEMAND(blue_print.mobilizer != nullptr);
-      mobilizer = blue_print.mobilizer.get();
+    /// mobilizer provided. Ownership remains with the caller.
+    explicit JointImplementation(internal::Mobilizer<T>* mobilizer_in) {
+      DRAKE_DEMAND(mobilizer_in != nullptr);
+      mobilizer = mobilizer_in;
     }
 
     /// Returns `true` if the implementation of this Joint uses a Mobilizer.
@@ -975,12 +966,6 @@ class Joint : public MultibodyElement<T> {
   virtual std::unique_ptr<Joint<T>> DoShallowClone() const;
   /// @}
 
-  /// This method must be implemented by derived classes in order to provide
-  /// JointImplementationBuilder a BluePrint of their internal implementation
-  /// JointImplementation.
-  virtual std::unique_ptr<BluePrint> MakeImplementationBlueprint(
-      const internal::SpanningForest::Mobod& mobod) const = 0;
-
   /// Returns a const reference to the internal implementation of `this` joint.
   /// @warning The MultibodyTree model must have already been finalized, or
   /// this method will abort.
@@ -1038,8 +1023,14 @@ class Joint : public MultibodyElement<T> {
   friend class Joint;
 
   // JointImplementationBuilder is a friend so that it can access the
-  // Joint<T>::BluePrint and protected method MakeImplementationBlueprint().
+  // private method MakeMobilizerForJoint().
   friend class internal::JointImplementationBuilder<T>;
+
+  // This method must be implemented by derived Joint classes in order to
+  // provide JointImplementationBuilder a Mobilizer as the Joint's internal
+  // representation.
+  virtual std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
+      const internal::SpanningForest::Mobod& mobod) const = 0;
 
   // When an implementation is created, either by
   // internal::JointImplementationBuilder or by Joint::CloneToScalar(), this
