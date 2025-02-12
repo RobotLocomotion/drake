@@ -233,9 +233,6 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
   // Set up alternative convergence criteria per [Hairer, 1996] Sec. IV.8.
   double dv_norm = 0.0;
   double last_dv_norm = 0.0;
-  const double kappa = 0.05;
-  double theta = 0.0;
-  double eta = 0.0;
 
   // Start Newton iterations.
   int k = 0;
@@ -262,8 +259,9 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     if (k > 1) {
       // Alternative optimality criterion based on the method of [Hairer, 1996],
       // Equation IV.8.10.
-      theta = dv_norm / last_dv_norm;
-      eta = theta / (1.0 - theta);
+      const double kappa = 0.05;  // copied from implicit_integrator.cc
+      const double theta = dv_norm / last_dv_norm;
+      const double eta = theta / (1.0 - theta);
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       const bool theta_converged = (theta < 1.0) && (eta * dv_norm < k_dot_tol);
 
@@ -274,9 +272,9 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
 
       // Choose whether to re-compute the Hessian factorization using Equation
       // IV.8.11 of [Hairer, 1996].
+      const int k_max = sap_parameters_.max_iterations;
       const double anticipated_residual =
-          std::pow(theta, sap_parameters_.max_iterations - k) / (1 - theta) *
-          dv_norm;
+          std::pow(theta, k_max - k) / (1 - theta) * dv_norm;
 
       // Only refresh the Hessian if it looks like we won't converge in time
       if (anticipated_residual > k_dot_tol || theta >= 1.0) {
