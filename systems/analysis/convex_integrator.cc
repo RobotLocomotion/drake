@@ -242,6 +242,8 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
   bool converged = false;
   double alpha = 1.0;
   int num_line_search_iters = 0;
+  double dv_norm = 0.0;
+  double last_dv_norm = 0.0;
   for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
@@ -290,24 +292,21 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
 
     if (!use_full_newton_) {
       // Attempt Hessian re-use
-      if (k > 0) {
+      if (k > 1) {
         // Check for anticipated convergence using the method described in
-        // [Hairer, 1996], Equation IV.8.11. But we use the momentum residual
-        // instead of dx.
-        const double dx_norm = momentum_residual;
-        const double last_dx_norm = sap_stats_.momentum_residual[k - 1];
-        const double theta = dx_norm / last_dx_norm;
+        // [Hairer, 1996], Equation IV.8.11. 
+        const double theta = dv_norm / last_dv_norm;
 
-        // Compute a rough approximation of the momentum residual after the
+        // Compute a rough approximation of the residual after the
         // next few iterations. If it doesn't look like we're going to make it,
         // refresh the Hessian.
         const int k_max = 100;
-        const double kappa = 0.1;
+        const double kappa = 0.01;
         const double tolerance =
             kappa * (sap_parameters_.abs_tolerance +
                      sap_parameters_.rel_tolerance * momentum_scale);
         const double anticipated_residual =
-            std::pow(theta, k_max - k) / (1 - theta) * dx_norm;
+            std::pow(theta, k_max - k) / (1 - theta) * dv_norm;
 
         if (anticipated_residual > tolerance || theta >= 1.0) {
           // TODO(vincekurtz): debug why theta is not always < 1.
@@ -334,6 +333,8 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     sap_stats_.num_line_search_iters += num_line_search_iters;
 
     // Update state.
+    last_dv_norm = dv_norm;
+    dv_norm = (alpha * dv).norm();
     model.GetMutableVelocities(context) += alpha * dv;
 
     ell_previous = ell;
