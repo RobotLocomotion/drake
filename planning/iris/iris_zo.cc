@@ -168,8 +168,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   DRAKE_THROW_UNLESS(domain.PointInSet(current_ellipsoid_center));
 
   if (options.prog_with_additional_constraints) {
-    DRAKE_DEMAND(options.prog_with_additional_constraints->num_vars() ==
-                 parameterized_dimension);
+    DRAKE_THROW_UNLESS(options.prog_with_additional_constraints->num_vars() ==
+                       parameterized_dimension);
   }
   // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
   const double constraints_tol = 1e-6;

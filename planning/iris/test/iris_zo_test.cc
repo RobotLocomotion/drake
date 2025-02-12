@@ -545,7 +545,6 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
 
   // We now test an example of a region grown along a subspace.
-  options.prog_with_additional_constraints = nullptr;
   options.set_parameterization(
       [](const Vector1d& config) -> Vector2d {
         return Vector2d{config[0], 2 * config[0] + 1};
@@ -557,6 +556,15 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   // This domain matches the "x" dimension of C-space, so the region generated
   // will respect the joint limits.
   HPolyhedron domain = HPolyhedron::MakeBox(Vector1d(-1.5), Vector1d(0));
+
+  // Since we have a parameterization, the prog with additional constraints will
+  // have the wrong dimension. We expect an error message.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain),
+      ".*num_vars.*parameterized_dimension.*");
+
+  // Reset the parameterization, and now generate the region.
+  options.prog_with_additional_constraints = nullptr;
   region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain);
 
   EXPECT_EQ(region.ambient_dimension(), 1);
