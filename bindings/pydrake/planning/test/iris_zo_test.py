@@ -104,3 +104,12 @@ class TestIrisZo(unittest.TestCase):
         self.assertTrue(callable(options.get_parameterization()))
         q = options.get_parameterization()(np.array([0, 1]))
         np.testing.assert_array_equal(q, np.array([0, np.pi/2]))
+
+        options2 = mut.IrisZoOptions()
+        options2.set_parameterization(options.get_parameterization(),
+                                      options.get_parameterization_dimension())
+        self.assertFalse(options2.get_parameterization_is_threadsafe())
+        self.assertEqual(options2.get_parameterization_dimension(), 2)
+        self.assertTrue(callable(options2.get_parameterization()))
+        q2 = options2.get_parameterization()(np.array([0, 1]))
+        np.testing.assert_array_equal(q2, np.array([0, np.pi/2]))

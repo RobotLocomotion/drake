@@ -52,6 +52,29 @@ void DefinePlanningIrisZo(py::module m) {
           "random_seed", &IrisZoOptions::random_seed, cls_doc.random_seed.doc)
       .def_readwrite("mixing_steps", &IrisZoOptions::mixing_steps,
           cls_doc.mixing_steps.doc)
+      .def(
+          "set_parameterization",
+          [](IrisZoOptions& self,
+              const IrisZoOptions::ParameterizationFunction& parameterization,
+              int parameterization_dimension) {
+            self.set_parameterization(parameterization,
+                /* parameterization_is_threadsafe */ false,
+                parameterization_dimension);
+          },
+          py::arg("parameterization"), py::arg("parameterization_dimension"),
+          "Ordinarily, IRIS-ZO grows collision free regions in the robot's "
+          "configuration space C. This allows the user to specify a function "
+          "f:Q→C, and grow the region in Q instead. The function should be a "
+          "map R^m to R^n, where n is the dimension of the plant configuration "
+          "space, determined via `checker.plant().num_positions()` and m is "
+          "`parameterization_dimension` if specified. The user must provide "
+          "`parameterization`, which is the function f, "
+          "`parameterization_is_threadsafe`, which is whether or not "
+          "`parametrization` can be called concurrently, and "
+          "`parameterization_dimension`, the dimension of the input space Q. "
+          "@note Because a python function cannot be called concurrently by "
+          "multiple C++ threads (due to GIL), the parameterization setter "
+          "function automatically sets threadsafe to false")
       .def("get_parameterization_is_threadsafe",
           &IrisZoOptions::get_parameterization_is_threadsafe,
           cls_doc.get_parameterization_is_threadsafe.doc)
