@@ -52,35 +52,48 @@ void DefinePlanningIrisZo(py::module m) {
           "random_seed", &IrisZoOptions::random_seed, cls_doc.random_seed.doc)
       .def_readwrite("mixing_steps", &IrisZoOptions::mixing_steps,
           cls_doc.mixing_steps.doc)
-      .def("__repr__", [](const IrisZoOptions& self) {
-        return py::str(
-            "IrisZoOptions("
-            "num_particles={}, "
-            "tau={}, "
-            "delta={}, "
-            "epsilon={}, "
-            "max_iterations={}, "
-            "max_iterations_separating_planes={}, "
-            "max_separating_planes_per_iteration={}, "
-            "bisection_steps={}, "
-            "parallelism={}, "
-            "verbose={}, "
-            "require_sample_point_is_contained={}, "
-            "configuration_space_margin={}, "
-            "termination_threshold={}, "
-            "relative_termination_threshold={}, "
-            "random_seed={}, "
-            "mixing_steps={}, "
-            ")")
-            .format(self.num_particles, self.tau, self.delta, self.epsilon,
-                self.max_iterations, self.max_iterations_separating_planes,
-                self.max_separating_planes_per_iteration, self.bisection_steps,
-                self.parallelism, self.verbose,
-                self.require_sample_point_is_contained,
-                self.configuration_space_margin, self.termination_threshold,
-                self.relative_termination_threshold, self.random_seed,
-                self.mixing_steps);
-      });
+      .def("get_parameterization_is_threadsafe",
+          &IrisZoOptions::get_parameterization_is_threadsafe,
+          cls_doc.get_parameterization_is_threadsafe.doc)
+      .def("get_parameterization_dimension",
+          &IrisZoOptions::get_parameterization_dimension,
+          cls_doc.get_parameterization_dimension.doc)
+      .def("get_parameterization", &IrisZoOptions::get_parameterization,
+          cls_doc.get_parameterization.doc)
+      .def("__repr__",
+          [](const IrisZoOptions& self) {
+            return py::str(
+                "IrisZoOptions("
+                "num_particles={}, "
+                "tau={}, "
+                "delta={}, "
+                "epsilon={}, "
+                "max_iterations={}, "
+                "max_iterations_separating_planes={}, "
+                "max_separating_planes_per_iteration={}, "
+                "bisection_steps={}, "
+                "parallelism={}, "
+                "verbose={}, "
+                "require_sample_point_is_contained={}, "
+                "configuration_space_margin={}, "
+                "termination_threshold={}, "
+                "relative_termination_threshold={}, "
+                "random_seed={}, "
+                "mixing_steps={}, "
+                ")")
+                .format(self.num_particles, self.tau, self.delta, self.epsilon,
+                    self.max_iterations, self.max_iterations_separating_planes,
+                    self.max_separating_planes_per_iteration,
+                    self.bisection_steps, self.parallelism, self.verbose,
+                    self.require_sample_point_is_contained,
+                    self.configuration_space_margin, self.termination_threshold,
+                    self.relative_termination_threshold, self.random_seed,
+                    self.mixing_steps);
+          })
+      .def_static("CreateWithRationalKinematicParameterization",
+          IrisZoOptions::CreateWithRationalKinematicParameterization,
+          py::arg("dimension"),
+          cls_doc.CreateWithRationalKinematicParameterization.doc);
 
   // The `options` contains a `Parallelism`; we must release the GIL.
   m.def("IrisZo", &IrisZo, py::arg("checker"), py::arg("starting_ellipsoid"),

@@ -96,3 +96,11 @@ class TestIrisZo(unittest.TestCase):
         self.assertTrue(region.PointInSet(test_point))
         test_point2 = np.array([0.0, 1])
         self.assertTrue(region.PointInSet(test_point2))
+
+        options = mut.IrisZoOptions.\
+            CreateWithRationalKinematicParameterization(2)
+        self.assertTrue(options.get_parameterization_is_threadsafe())
+        self.assertEqual(options.get_parameterization_dimension(), 2)
+        self.assertTrue(callable(options.get_parameterization()))
+        q = options.get_parameterization()(np.array([0, 1]))
+        np.testing.assert_array_equal(q, np.array([0, np.pi/2]))
