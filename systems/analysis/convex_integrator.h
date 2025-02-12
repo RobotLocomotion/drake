@@ -141,6 +141,13 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Get the number of (convex) newton iterations
   int get_num_solver_iterations() const { return num_solver_iterations_; }
 
+  // Enable (false) or disable (true) Hessian re-use between iterations and time
+  // steps. Naming convention follows ImplicitIntegrator.
+  void set_use_full_newton(bool flag) { use_full_newton_ = flag; }
+
+  // Check whether Hessian re-use is enabled.
+  bool get_use_full_newton() const { return use_full_newton_; }
+
  private:
   // Struct used to store the result of computing the search direction. Clone of
   // SapSolver::SearchDirectionData
@@ -274,7 +281,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   std::vector<MatrixX<T>> A_;  // Hack to keep these from going out of scope
   BlockSparseMatrix<T> J_;
 
-  // Flag for Hessian factorization re-use
+  // Flag for enabling/disabling hessian re-use
+  bool use_full_newton_{false};
+
+  // Flag for Hessian factorization re-use (changes between iterations)
   bool refresh_hessian_{false};
 
   // Plant model, since convex integration is specific to MbP

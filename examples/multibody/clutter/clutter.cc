@@ -27,6 +27,7 @@
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/systems/analysis/convex_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_integrator.h"
 #include "drake/systems/analysis/simulator.h"
@@ -115,6 +116,7 @@ using drake::math::RollPitchYawd;
 using drake::math::RotationMatrixd;
 using drake::multibody::ContactResults;
 using drake::multibody::MultibodyPlant;
+using drake::systems::ConvexIntegrator;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::IntegratorBase;
 using Eigen::Translation3d;
@@ -551,6 +553,10 @@ int do_main() {
       throw std::logic_error("Invalid jacobian scheme");
     }
     ie.set_use_full_newton(FLAGS_full_newton);
+  }
+  if (FLAGS_simulator_integration_scheme == "convex") {
+    auto& ci = dynamic_cast<ConvexIntegrator<double>&>(integrator);
+    ci.set_use_full_newton(FLAGS_full_newton);
   }
 
   // Monitor to save stats into a file.

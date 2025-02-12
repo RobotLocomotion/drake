@@ -5,8 +5,6 @@
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
 
-#include <iostream>
-
 namespace drake {
 namespace systems {
 
@@ -290,32 +288,39 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     // considered.
     if (k == sap_parameters_.max_iterations) break;
 
-    if (k > 0) {
-      // Check for anticipated convergence using the method described in
-      // [Hairer, 1996], Equation IV.8.11. But we use the momentum residual
-      // instead of dx.
-      const double dx_norm = momentum_residual;
-      const double last_dx_norm = sap_stats_.momentum_residual[k - 1];
-      const double theta = dx_norm / last_dx_norm;
+    if (!use_full_newton_) {
+      // Attempt Hessian re-use
+      if (k > 0) {
+        // Check for anticipated convergence using the method described in
+        // [Hairer, 1996], Equation IV.8.11. But we use the momentum residual
+        // instead of dx.
+        const double dx_norm = momentum_residual;
+        const double last_dx_norm = sap_stats_.momentum_residual[k - 1];
+        const double theta = dx_norm / last_dx_norm;
 
-      // Compute a rough approximation of the momentum residual after the
-      // next few iterations. If it doesn't look like we're going to make it,
-      // refresh the Hessian.
-      const int k_max = 100;
-      const double kappa = 1.0;
-      const double tolerance =
-          kappa * (sap_parameters_.abs_tolerance +
-                   sap_parameters_.rel_tolerance * momentum_scale);
-      const double anticipated_residual =
-          std::pow(theta, k_max - k) / (1 - theta) *
-          dx_norm;
+        // Compute a rough approximation of the momentum residual after the
+        // next few iterations. If it doesn't look like we're going to make it,
+        // refresh the Hessian.
+        const int k_max = 100;
+        const double kappa = 0.1;
+        const double tolerance =
+            kappa * (sap_parameters_.abs_tolerance +
+                     sap_parameters_.rel_tolerance * momentum_scale);
+        const double anticipated_residual =
+            std::pow(theta, k_max - k) / (1 - theta) * dx_norm;
 
-      if (anticipated_residual > tolerance || theta >= 1.0) {
-        // TODO(vincekurtz): debug why theta is not always < 1.
-        refresh_hessian_ = true;
+        if (anticipated_residual > tolerance || theta >= 1.0) {
+          // TODO(vincekurtz): debug why theta is not always < 1.
+          refresh_hessian_ = true;
+        }
       }
-    } 
-   
+    } else {
+      // Full newton is on, so we always re-factorize the Hessian. In this case
+      // the number of hessian factorizations should be the same as the number
+      // of (convex) newton iterations.
+      refresh_hessian_ = true;
+    }
+
     // This is the most expensive update: it performs the factorization of H to
     // solve for the search direction dv.
     CalcSearchDirectionData(model, *context, &search_direction_data);
