@@ -487,7 +487,7 @@ def _drake_dep_repositories_impl(module_ctx):
     snopt_repository(name = "snopt")
     styleguide_repository(name = "styleguide", mirrors = mirrors)
     x11_repository(name = "x11")
-    zlib_repository(name = "zlib")
+    zlib_repository(name = "zlib", _legacy_workspace = False)
     for name in ["eigen", "fmt", "spdlog"]:
         alias_repository(
             name = name,
