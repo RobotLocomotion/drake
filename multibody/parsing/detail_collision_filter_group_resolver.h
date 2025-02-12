@@ -87,12 +87,11 @@ class CollisionFilterGroupResolver {
   // @pre no member strings of body_names are empty.
   // @pre model_instance has a valid index or else no value.
   //      @see valid_model_instance note above.
-  void AddGroup(
-      const drake::internal::DiagnosticPolicy& diagnostic,
-      const std::string& group_name,
-      const std::set<std::string>& body_names,
-      const std::set<std::string>& member_group_names,
-      std::optional<ModelInstanceIndex> model_instance);
+  void AddGroup(const drake::internal::DiagnosticPolicy& diagnostic,
+                const std::string& group_name,
+                const std::set<std::string>& body_names,
+                const std::set<std::string>& member_group_names,
+                std::optional<ModelInstanceIndex> model_instance);
 
   // Adds a group pair. Emits diagnostics for illegal names.  Two distinct
   // names will resolve to an exclude-between-groups rule; identical names will
@@ -109,11 +108,9 @@ class CollisionFilterGroupResolver {
   // @pre neither group_name_a nor group_name_b is empty.
   // @pre model_instance has a valid index or else no value.
   //      @see valid_model_instance note above.
-  void AddPair(
-      const drake::internal::DiagnosticPolicy& diagnostic,
-      const std::string& group_name_a,
-      const std::string& group_name_b,
-      std::optional<ModelInstanceIndex> model_instance);
+  void AddPair(const drake::internal::DiagnosticPolicy& diagnostic,
+               const std::string& group_name_a, const std::string& group_name_b,
+               std::optional<ModelInstanceIndex> model_instance);
 
   // Resolves group pairs to rules. Emits diagnostics for undefined groups.
   // @pre cannot have been previously invoked on this instance.

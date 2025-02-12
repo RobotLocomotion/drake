@@ -6,8 +6,8 @@ def ros_xacro_internal_repository(
     github_archive(
         name = name,
         repository = "ros/xacro",
-        commit = "2.0.11",
-        sha256 = "0c9b1619f1cdcf863e5a29fe8c034ae5c310e39722ff089d5d1e440c4e41967f",  # noqa
+        commit = "2.0.12",
+        sha256 = "396cad4883b0214f1c77a57c2935ac46f3f8300626034bdd2e22ce3a5874e4f6",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/disable-import-warning.patch",

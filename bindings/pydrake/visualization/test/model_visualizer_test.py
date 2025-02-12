@@ -176,6 +176,9 @@ class TestModelVisualizer(unittest.TestCase):
             # SDFormat world file with multiple models.
             "package://drake/manipulation/util/test/"
             + "simple_world_with_two_models.sdf",
+            # glTF file.
+            "package://drake_models/veggies/assets/"
+            + "yellow_bell_pepper_no_stem_low.gltf"
         ]
         for i, model_url in enumerate(model_urls):
             with self.subTest(model=model_url):
@@ -190,6 +193,13 @@ class TestModelVisualizer(unittest.TestCase):
 
     def test_model_from_url(self):
         url = "package://drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        dut = mut.ModelVisualizer()
+        dut.AddModels(url=url)
+        dut.Run(loop_once=True)
+
+    def test_model_from_gltf_url(self):
+        url = ("package://drake_models/veggies/assets/"
+               + "yellow_bell_pepper_no_stem_low.gltf")
         dut = mut.ModelVisualizer()
         dut.AddModels(url=url)
         dut.Run(loop_once=True)

@@ -76,7 +76,7 @@ class MujocoParser {
     if (num_orientation_attrs > 1) {
       std::string attributes;
       for (const XMLAttribute* attr = node.FirstAttribute(); attr;
-            attr = attr->Next()) {
+           attr = attr->Next()) {
         attributes += fmt::format("{}={} ", attr->Name(),
                                   fmt_debug_string(attr->Value()));
       }
@@ -480,7 +480,7 @@ class MujocoParser {
       // of position = 0. This is equivalent to inserting a translating of
       // ref*axis between the joint and the child body, and setting the default
       // position to ref (which we do below).
-      X_CJ = X_CJ * RigidTransformd(ref*axis);
+      X_CJ = X_CJ * RigidTransformd(ref * axis);
       index = plant_
                   ->AddJoint<PrismaticJoint>(
                       name, parent, X_PJ, child, X_CJ, axis,
@@ -562,12 +562,9 @@ class MujocoParser {
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
     InertiaCalculator(
-        const DiagnosticPolicy& policy,
-        std::string name,
+        const DiagnosticPolicy& policy, std::string name,
         std::map<std::string, SpatialInertia<double>>* mesh_inertia)
-        : policy_(policy),
-          name_(std::move(name)),
-          mesh_inertia_(mesh_inertia) {
+        : policy_(policy), name_(std::move(name)), mesh_inertia_(mesh_inertia) {
       DRAKE_DEMAND(mesh_inertia != nullptr);
     }
 
@@ -864,7 +861,7 @@ class MujocoParser {
         Error(*node, fmt::format("geom {} specified type 'mesh', but did not "
                                  "set the mesh attribute",
                                  geom.name));
-          return geom;
+        return geom;
       }
       if (mesh_.contains(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
@@ -1014,7 +1011,7 @@ class MujocoParser {
       }
       double mass{};
       if (!ParseScalarAttribute(node, "mass", &mass)) {
-        double density{1000};  /* fallback default ≈ water density */
+        double density{1000}; /* fallback default ≈ water density */
         ParseScalarAttribute(node, "density", &density);
         mass = volume * density;
       }
@@ -1214,8 +1211,7 @@ class MujocoParser {
   // updating `default_map`. Implements the inheritance mechanism for
   // defaults; see
   // https://mujoco.readthedocs.io/en/latest/modeling.html#cdefault
-  void ParseClassDefaults(XMLElement* node,
-                          const std::string& class_name,
+  void ParseClassDefaults(XMLElement* node, const std::string& class_name,
                           const std::string& parent_default,
                           const std::string& element_name,
                           std::map<std::string, XMLElement*>* default_map) {
@@ -1223,8 +1219,7 @@ class MujocoParser {
     for (XMLElement* e = node->FirstChildElement(elt_name); e;
          e = e->NextSiblingElement(elt_name)) {
       (*default_map)[class_name] = e;
-      if (!parent_default.empty() &&
-          default_map->contains(parent_default)) {
+      if (!parent_default.empty() && default_map->contains(parent_default)) {
         ApplyDefaultAttributes(*default_map->at(parent_default), e);
       }
     }
@@ -1249,7 +1244,7 @@ class MujocoParser {
             std::map<std::string, XMLElement*>* default_map) {
           ParseClassDefaults(node, class_name, parent_default, element_name,
                              default_map);
-    };
+        };
 
     parse_class_defaults("geom", &default_geometry_);
     parse_class_defaults("joint", &default_joint_);
@@ -1324,14 +1319,13 @@ class MujocoParser {
         Vector3d scale{1, 1, 1};
         if (ParseVectorAttribute(mesh_node, "scale", &scale)) {
           if (scale[0] != scale[1] || scale[1] != scale[2]) {
-            Error(
-                *node,
-                fmt::format("mesh {} was defined with a non-uniform scale; "
-                            "but Drake currently only supports uniform "
-                            "scaling. See "
-                            "https://drake.mit.edu/troubleshooting.html for "
-                            "additional resources.",
-                            name));
+            Error(*node,
+                  fmt::format(
+                      "mesh {} was defined with a non-uniform scale; but Drake "
+                      "currently only supports uniform scaling. See "
+                      "https://drake.mit.edu/troubleshooting.html for "
+                      "additional resources.",
+                      name));
             continue;
           }
         }
@@ -1373,31 +1367,32 @@ class MujocoParser {
             Error(
                 *node,
                 fmt::format(
-                  "Drake's MuJoCo parser currently only supports mesh files "
-                  "in .obj format, but the meshfile \"{}\" was requested. See "
-                  "https://drake.mit.edu/troubleshooting.html for additional "
-                  "resources.", filename.string()));
+                    "Drake's MuJoCo parser currently only supports mesh files "
+                    "in .obj format, but the meshfile \"{}\" was requested. "
+                    "See https://drake.mit.edu/troubleshooting.html for "
+                    "additional resources.",
+                    filename.string()));
             continue;
           }
         } else {
-          Error(*node,
-                  fmt::format("The mesh asset \"{}\" could not be found.",
-                              filename.string()));
+          Error(*node, fmt::format("The mesh asset \"{}\" could not be found.",
+                                   filename.string()));
           continue;
         }
       } else {
         std::string name;
         ParseStringAttribute(mesh_node, "name", &name);
         Warning(*node, fmt::format("The mesh asset named {} did not specify a "
-                                    "'file' attribute and so will be ignored.",
-                                    name));
+                                   "'file' attribute and so will be ignored.",
+                                   name));
       }
     }
 
     if (node->FirstChildElement("texture") != nullptr) {
-      Warning(*node, "The texture element is not supported, see "
-                     "https://drake.mit.edu/troubleshooting.html for "
-                     "additional resources.");
+      Warning(*node,
+              "The texture element is not supported, see "
+              "https://drake.mit.edu/troubleshooting.html for "
+              "additional resources.");
     }
 
     // Unsupported attributes are listed in the order from the MuJoCo docs:
@@ -2064,7 +2059,8 @@ std::optional<ModelInstanceIndex> AddModelFromMujocoXml(
     const ParsingWorkspace& workspace) {
   return AddOrMergeModelFromMujocoXml(data_source, model_name_in,
                                       parent_model_name, workspace,
-                                      std::nullopt).first;
+                                      std::nullopt)
+      .first;
 }
 
 MujocoParserWrapper::MujocoParserWrapper() {}
@@ -2087,7 +2083,6 @@ std::string MujocoParserWrapper::MergeModel(
                                       workspace, merge_into_model_instance)
       .second;
 }
-
 
 std::vector<ModelInstanceIndex> MujocoParserWrapper::AddAllModels(
     const DataSource& data_source,

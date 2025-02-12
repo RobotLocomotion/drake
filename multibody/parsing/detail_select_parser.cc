@@ -54,15 +54,18 @@ class UnknownParserWrapper final : public ParserInterface {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnknownParserWrapper);
   UnknownParserWrapper() {}
   ~UnknownParserWrapper() final {}
-  std::optional<ModelInstanceIndex> AddModel(
-      const DataSource&, const std::string&,
-      const std::optional<std::string>&,
-      const ParsingWorkspace&) final { return {}; }
+  std::optional<ModelInstanceIndex> AddModel(const DataSource&,
+                                             const std::string&,
+                                             const std::optional<std::string>&,
+                                             const ParsingWorkspace&) final {
+    return {};
+  }
 
   std::vector<ModelInstanceIndex> AddAllModels(
-      const DataSource&,
-      const std::optional<std::string>&,
-      const ParsingWorkspace&) final { return {}; }
+      const DataSource&, const std::optional<std::string>&,
+      const ParsingWorkspace&) final {
+    return {};
+  }
 };
 
 }  // namespace

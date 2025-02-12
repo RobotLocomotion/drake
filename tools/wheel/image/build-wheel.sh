@@ -30,7 +30,6 @@ chrpath()
         else
             strip_rpath \
                 --exclude="$HOMEBREW" \
-                --exclude=/opt/drake-dependencies/lib \
                 "$lib"
             install_name_tool -add_rpath "@loader_path/$rpath" "$lib"
         fi
@@ -74,6 +73,12 @@ cp -r -t ${WHEEL_DIR}/pydrake \
 cp -r -t ${WHEEL_DIR}/pydrake/lib \
     /opt/drake/lib/libdrake*.so
 
+# MOSEK is "sort of" third party, but is procured as part of Drake's build and
+# ends up in /opt/drake. It should end up in the same place as libdrake.so.
+cp -r -t ${WHEEL_DIR}/pydrake/lib \
+    /opt/drake/lib/libmosek* \
+    /opt/drake/lib/libtbb*
+
 if [[ "$(uname)" == "Linux" ]]; then
   cp -r -t ${WHEEL_DIR}/pydrake \
       /opt/drake-wheel-content/*
@@ -84,24 +89,7 @@ if [[ "$(uname)" == "Linux" ]]; then
     # The drake/tools/wheel/test/tests/libs-test.py must be kept in sync with
     # this list. To maintain that correspondence, the _ALLOWED_LIBS entry seen
     # in that test program is added as comment to the end of each line below.
-    copy_ubuntu_license libblas-dev    # libblas
-    copy_ubuntu_license liblapack-dev  # liblapack
     copy_ubuntu_license libgfortran5   # libgfortran, libquadmath, libgomp
-fi
-
-# MOSEK is "sort of" third party, but is procured as part of Drake's build and
-# ends up in /opt/drake.
-if [[ "$(uname)" == "Darwin" ]]; then
-    # On macOS, it is explicitly referenced by @loader_path, and thus must be
-    # copied to the same place as libdrake.so.
-    cp -r -t ${WHEEL_DIR}/pydrake/lib \
-        /opt/drake/lib/libmosek*.dylib \
-        /opt/drake/lib/libtbb*.dylib
-else
-    # On Linux, it needs to be copied somewhere where auditwheel can find it.
-    cp -r -t /opt/drake-dependencies/lib \
-        /opt/drake/lib/libmosek*.so* \
-        /opt/drake/lib/libtbb*.so*
 fi
 
 cp -r -t ${WHEEL_SHARE_DIR}/drake \
@@ -119,7 +107,7 @@ if [[ "$(uname)" == "Linux" ]]; then
 fi
 
 if [[ "$(uname)" == "Linux" ]]; then
-    export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib
+    export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib
 fi
 
 chrpath lib pydrake/*.so

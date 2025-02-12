@@ -8,9 +8,7 @@ nasm
 libclang-15-dev
 # Other code tools.
 cmake
-git
 make
-ninja-build
 pkg-config
 # Other general tools.
 ca-certificates
@@ -21,7 +19,3 @@ wget
 # Build dependencies (general).
 libglib2.0-dev
 libxt-dev
-
-# TODO(jwnimmer-tri) Build these from source instead of using Ubuntu.
-libblas-dev
-liblapack-dev

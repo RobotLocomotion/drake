@@ -78,7 +78,8 @@ int DoMain() {
         }
       });
 
-  while (lc.handle() >= 0) { }
+  while (lc.handle() >= 0) {
+  }
   return 0;
 }
 

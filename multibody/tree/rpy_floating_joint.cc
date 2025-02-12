@@ -71,10 +71,9 @@ std::unique_ptr<Joint<T>> RpyFloatingJoint<T>::DoShallowClone() const {
 // `MobilizerImpl`, we must place this implementation in the source file, not
 // in the header file.
 template <typename T>
-std::unique_ptr<typename Joint<T>::BluePrint>
-RpyFloatingJoint<T>::MakeImplementationBlueprint(
+std::unique_ptr<internal::Mobilizer<T>>
+RpyFloatingJoint<T>::MakeMobilizerForJoint(
     const internal::SpanningForest::Mobod& mobod) const {
-  auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
   const auto [inboard_frame, outboard_frame] =
       this->tree_frames(mobod.is_reversed());
   // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
@@ -82,8 +81,7 @@ RpyFloatingJoint<T>::MakeImplementationBlueprint(
       std::make_unique<internal::RpyFloatingMobilizer<T>>(mobod, *inboard_frame,
                                                           *outboard_frame);
   rpy_floating_mobilizer->set_default_position(this->default_positions());
-  blue_print->mobilizer = std::move(rpy_floating_mobilizer);
-  return blue_print;
+  return rpy_floating_mobilizer;
 }
 
 }  // namespace multibody

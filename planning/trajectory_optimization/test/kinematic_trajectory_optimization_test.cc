@@ -1,20 +1,25 @@
 #include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
+#include <limits>
 #include <optional>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/find_resource.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
+#include "drake/multibody/benchmarks/pendulum/make_pendulum_plant.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solve.h"
 
 using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::nullopt;
@@ -33,6 +38,7 @@ using ::testing::HasSubstr;
 using trajectories::BsplineTrajectory;
 
 namespace {
+const double kInf = std::numeric_limits<double>::infinity();
 
 class KinematicTrajectoryOptimizationTest : public ::testing::Test {
  public:
@@ -154,6 +160,46 @@ TEST_F(KinematicTrajectoryOptimizationTest,
   EXPECT_TRUE(CompareMatrices(qdot->value(0.2), x_desired.tail<3>(), kTol));
 }
 
+TEST_F(KinematicTrajectoryOptimizationTest,
+       AddVelocityConstraintAtNormalizedTimeLinear) {
+  // Test AddVelocityConstraintAtNormalizedTime with linear constraints.
+  EXPECT_EQ(trajopt_.prog().linear_constraints().size(), 0);
+  // Impose the constraint that [0, 4, -kInf] <= qdot(s * T)[0, 2, 1] <= [0,
+  // kInf, 3]
+  const Eigen::Vector3d lb(1, 4, -kInf);
+  const Eigen::Vector3d ub(1, kInf, 3);
+
+  auto constraint = std::make_shared<solvers::BoundingBoxConstraint>(lb, ub);
+  auto binding = solvers::Binding<solvers::BoundingBoxConstraint>(
+      constraint,
+      Vector3<symbolic::Variable>(trajopt_.qdot()(0), trajopt_.qdot()(2),
+                                  trajopt_.qdot()(1)));
+  const double s = 0.2;
+  const auto binding_ret_vec =
+      trajopt_.AddVelocityConstraintAtNormalizedTime(binding, s);
+  for (const auto& binding_ret : binding_ret_vec) {
+    EXPECT_THAT(binding_ret.to_string(), HasSubstr("velocity constraint"));
+  }
+  EXPECT_EQ(trajopt_.prog().linear_constraints().size(),
+            binding_ret_vec.size());
+  trajopt_.AddDurationConstraint(2, 2);
+  // Snopt does not converge from the default zero trajectory.
+  trajopt_.SetInitialGuess(BsplineTrajectory(
+      trajopt_.basis(), math::EigenToStdVector<double>(
+                            MatrixXd::Ones(3, trajopt_.num_control_points()))));
+  auto result = Solve(trajopt_.prog());
+  EXPECT_TRUE(result.is_success());
+  auto q = trajopt_.ReconstructTrajectory(result);
+  auto qdot = q.MakeDerivative();
+  const double kTol = 1e-6;
+  const double T = result.GetSolution(trajopt_.duration());
+  const auto qdot_at_s = qdot->value(s * T);
+  const Eigen::Vector3d constrained_qdot_val(qdot_at_s(0), qdot_at_s(2),
+                                             qdot_at_s(1));
+  EXPECT_TRUE((constrained_qdot_val.array() <= ub.array() + kTol).all());
+  EXPECT_TRUE((constrained_qdot_val.array() >= lb.array() - kTol).all());
+}
+
 TEST_F(KinematicTrajectoryOptimizationTest, AddPathAccelerationConstraint) {
   EXPECT_EQ(trajopt_.prog().linear_constraints().size(), 0);
   VectorXd desired = VectorXd::Ones(num_positions_);
@@ -251,9 +297,10 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddVelocityBounds) {
   EXPECT_EQ(trajopt_.prog().linear_constraints().size(), 0);
   auto binding = trajopt_.AddVelocityBounds(-VectorXd::Ones(num_positions_),
                                             VectorXd::Ones(num_positions_));
-  EXPECT_THAT(binding[0].to_string(), HasSubstr("velocity bound"));
+  EXPECT_THAT(binding[0].to_string(), HasSubstr("velocity lower bound"));
+  EXPECT_THAT(binding[1].to_string(), HasSubstr("velocity upper bound"));
   EXPECT_EQ(trajopt_.prog().linear_constraints().size(),
-            trajopt_.num_control_points() - 1);
+            trajopt_.num_positions() * 2);
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
@@ -292,9 +339,9 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddAccelerationBounds) {
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 0);
   auto binding =
       trajopt_.AddAccelerationBounds(-Vector3d::Ones(), Vector3d::Ones());
-  EXPECT_THAT(binding[0][0].to_string(), HasSubstr("acceleration bound"));
+  EXPECT_THAT(binding[0].to_string(), HasSubstr("acceleration bound"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(),
-            trajopt_.num_positions() * (trajopt_.num_control_points() - 2));
+            trajopt_.num_positions());
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
@@ -340,9 +387,9 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddJerkBounds) {
 
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 0);
   auto binding = trajopt_.AddJerkBounds(-Vector3d::Ones(), Vector3d::Ones());
-  EXPECT_THAT(binding[0][0].to_string(), HasSubstr("jerk bound"));
+  EXPECT_THAT(binding[0].to_string(), HasSubstr("jerk bound"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(),
-            trajopt_.num_positions() * (trajopt_.num_control_points() - 3));
+            trajopt_.num_positions());
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
@@ -356,6 +403,159 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddJerkBounds) {
     EXPECT_LE(qdddot->value(t).maxCoeff(), 1.0 + kTol);
     EXPECT_GE(qdddot->value(t).minCoeff(), -1.0 - kTol);
   }
+}
+
+GTEST_TEST(KinematicTrajectoryOptimizationMultibodyTest,
+           AddEffortBoundsAtNormalizedTimes) {
+  multibody::benchmarks::pendulum::PendulumParameters parameters;
+  auto plant = multibody::benchmarks::pendulum::MakePendulumPlant(parameters);
+  const int num_control_points = 10;
+  KinematicTrajectoryOptimization trajopt(plant->num_positions(),
+                                          num_control_points);
+
+  const Vector1d tau_lb(-1.0), tau_ub(1.0);
+  auto bindings = trajopt.AddEffortBoundsAtNormalizedTimes(*plant, Vector1d(0),
+                                                           tau_lb, tau_ub);
+  EXPECT_EQ(bindings.size(), 1);
+  EXPECT_EQ(bindings[0].evaluator()->num_constraints(), 1);
+  EXPECT_EQ(bindings[0].evaluator()->lower_bound(), tau_lb);
+  EXPECT_EQ(bindings[0].evaluator()->upper_bound(), tau_ub);
+
+  // Use a small traj opt to compute the (normalized) control points.
+  auto MakeNormalizedTrajectory = [&](double duration, double q0, double v0,
+                                      double vdot0) {
+    KinematicTrajectoryOptimization kto(plant->num_positions(),
+                                        num_control_points);
+    // The spline should be normalized (duration = 1).
+    kto.AddDurationConstraint(1, 1);
+    // We have to undo the time scaling.
+    v0 *= duration;
+    vdot0 *= duration * duration;
+    kto.AddPathPositionConstraint(Vector1d(q0), Vector1d(q0), /* s= */ 0);
+    kto.AddPathVelocityConstraint(Vector1d(v0), Vector1d(v0), /* s= */ 0);
+    kto.AddPathAccelerationConstraint(Vector1d(vdot0), Vector1d(vdot0),
+                                      /* s= */ 0);
+    auto result = Solve(kto.prog());
+    return kto.ReconstructTrajectory(result);
+  };
+
+  // Variables for the constraint are [duration, control_points]
+  VectorXd x(1 + num_control_points);
+  const double duration = 4.23;
+  auto vdot_ulimit = [&](double q, double v) {
+    // ml^2vdot + b*v + mglsin(q) <= tau_ub
+    return (tau_ub[0] - parameters.damping() * v -
+            parameters.m() * parameters.g() * parameters.l() * std::sin(q)) /
+           parameters.m() / parameters.l() / parameters.l();
+  };
+
+  // Initial acceleration below the limit.
+  double q0 = 0, v0 = 0;
+  auto traj = MakeNormalizedTrajectory(duration, q0, v0,
+                                       /* vdot0 = */ 0.9 * vdot_ulimit(q0, v0));
+  x << duration,
+      math::StdVectorToEigen<double>(traj.control_points()).row(0).transpose();
+  EXPECT_TRUE(bindings[0].evaluator()->CheckSatisfied(x));
+
+  // Initial acceleration above the limit.
+  traj = MakeNormalizedTrajectory(duration, q0, v0,
+                                  /* vdot0 = */ 1.1 * vdot_ulimit(q0, v0));
+  x << duration,
+      math::StdVectorToEigen<double>(traj.control_points()).row(0).transpose();
+  EXPECT_FALSE(bindings[0].evaluator()->CheckSatisfied(x));
+
+  // Confirm that the damping is also considered by setting a (large) non-zero
+  // velocity.
+  v0 = -100;
+  traj = MakeNormalizedTrajectory(duration, q0, v0,
+                                  /* vdot0 = */ 0.9 * vdot_ulimit(q0, v0));
+  x << duration,
+      math::StdVectorToEigen<double>(traj.control_points()).row(0).transpose();
+  EXPECT_TRUE(bindings[0].evaluator()->CheckSatisfied(x));
+  traj = MakeNormalizedTrajectory(duration, q0, v0,
+                                  /* vdot0 = */ 1.1 * vdot_ulimit(q0, v0));
+  x << duration,
+      math::StdVectorToEigen<double>(traj.control_points()).row(0).transpose();
+  EXPECT_FALSE(bindings[0].evaluator()->CheckSatisfied(x));
+
+  // Set the damping to zero in the context.
+  auto context = plant->CreateDefaultContext();
+  plant->get_joint(multibody::JointIndex(0))
+      .SetDampingVector(context.get(), Vector1d::Zero());
+  bindings = trajopt.AddEffortBoundsAtNormalizedTimes(
+      *plant, Vector1d(0.5), tau_lb, tau_ub, context.get());
+  EXPECT_EQ(bindings.size(), 1);
+  EXPECT_EQ(bindings[0].evaluator()->num_constraints(), 1);
+  EXPECT_EQ(bindings[0].evaluator()->lower_bound(), tau_lb);
+  EXPECT_EQ(bindings[0].evaluator()->upper_bound(), tau_ub);
+  // The torque that tripped due to high damping is now satisfied.
+  EXPECT_TRUE(bindings[0].evaluator()->CheckSatisfied(x));
+
+  // Multiple normalized times.
+  bindings = trajopt.AddEffortBoundsAtNormalizedTimes(
+      *plant, Vector2d(0.5, 1.0), tau_lb, tau_ub);
+  EXPECT_EQ(bindings.size(), 2);
+
+  // Default bounds.
+  bindings = trajopt.AddEffortBoundsAtNormalizedTimes(*plant, Vector1d(0.25));
+  EXPECT_EQ(bindings.size(), 1);
+  EXPECT_TRUE(CompareMatrices(bindings[0].evaluator()->lower_bound(),
+                              plant->GetEffortLowerLimits(), 1e-14));
+  EXPECT_TRUE(CompareMatrices(bindings[0].evaluator()->upper_bound(),
+                              plant->GetEffortUpperLimits(), 1e-14));
+}
+
+GTEST_TEST(KinematicTrajectoryOptimizationMultibodyTest,
+           AddEffortBoundsAtNormalizedTimesIiwa) {
+  multibody::MultibodyPlant<double> plant(0.0);
+  multibody::Parser(&plant).AddModelsFromUrl(
+      "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf");
+  plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("iiwa_link_0"));
+  plant.Finalize();
+  auto plant_context = plant.CreateDefaultContext();
+
+  const int num_control_points = 10;
+  KinematicTrajectoryOptimization trajopt(plant.num_positions(),
+                                          num_control_points);
+
+  auto bindings = trajopt.AddEffortBoundsAtNormalizedTimes(plant, Vector1d(0));
+  EXPECT_EQ(bindings.size(), 1);
+  EXPECT_EQ(bindings[0].evaluator()->num_constraints(), plant.num_positions());
+  EXPECT_EQ(bindings[0].evaluator()->lower_bound(),
+            plant.GetEffortLowerLimits());
+  EXPECT_EQ(bindings[0].evaluator()->upper_bound(),
+            plant.GetEffortUpperLimits());
+
+  // Solve runs without error
+  auto result = Solve(trajopt.prog());
+  EXPECT_TRUE(result.is_success());
+}
+
+GTEST_TEST(KinematicTrajectoryOptimizationMultibodyTest,
+           AddEffortBoundsAtNormalizedTimesCartPole) {
+  multibody::MultibodyPlant<double> plant(0.0);
+  const std::string file_name =
+      FindResourceOrThrow("drake/examples/multibody/cart_pole/cart_pole.sdf");
+  multibody::Parser(&plant).AddModels(file_name);
+  plant.Finalize();
+  auto plant_context = plant.CreateDefaultContext();
+
+  const int num_control_points = 10;
+  KinematicTrajectoryOptimization trajopt(plant.num_positions(),
+                                          num_control_points);
+
+  auto bindings = trajopt.AddEffortBoundsAtNormalizedTimes(plant, Vector1d(0));
+  EXPECT_EQ(bindings.size(), 1);
+  EXPECT_EQ(bindings[0].evaluator()->num_constraints(), plant.num_positions());
+  auto Binv = plant.MakeActuationMatrixPseudoinverse();
+  EXPECT_EQ(Binv * bindings[0].evaluator()->lower_bound(),
+            plant.GetEffortLowerLimits());
+  EXPECT_EQ(Binv * bindings[0].evaluator()->upper_bound(),
+            plant.GetEffortUpperLimits());
+
+  // Solve runs without error
+  auto result = Solve(trajopt.prog());
+  EXPECT_TRUE(result.is_success());
 }
 
 TEST_F(KinematicTrajectoryOptimizationTest, AddDurationCost) {

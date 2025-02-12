@@ -125,12 +125,13 @@ TEST_F(CollisionFilterGroupResolverTest, OutOfParseBodyGlobal) {
             resolver_.minimum_model_instance_index());
 
   AddBody("stuff", {});
-  resolver_.AddGroup(diagnostic_policy_, "a", {
-      "DefaultModelInstance::stuff",
-      "WorldModelInstance::world",
-      "stuff",
-    },
-    {}, {});
+  resolver_.AddGroup(diagnostic_policy_, "a",
+                     {
+                         "DefaultModelInstance::stuff",
+                         "WorldModelInstance::world",
+                         "stuff",
+                     },
+                     {}, {});
   EXPECT_THAT(TakeError(), MatchesRegex(".*'DefaultModelInstance::stuff'"
                                         ".*outside the current parse"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*'WorldModelInstance::world'"
@@ -242,12 +243,14 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupCycle) {
   ModelInstanceIndex r1 = plant_.AddModelInstance("r1");
   const int length = 100;
   std::vector<GeometryId> geoms;
-  auto body_of = [](int k) { return fmt::format("body{}", k); };
+  auto body_of = [](int k) {
+    return fmt::format("body{}", k);
+  };
   for (int k = 0; k < length; ++k) {
     std::string body_k = body_of(k);
     geoms.push_back(AddBody(body_k, r1));
-    resolver_.AddGroup(
-        diagnostic_policy_, body_k, {body_k}, {body_of((k + 1) % length)}, r1);
+    resolver_.AddGroup(diagnostic_policy_, body_k, {body_k},
+                       {body_of((k + 1) % length)}, r1);
   }
   // Create a self-exclusion rule for testing. It doesn't matter which group
   // name we pick, any group in the cycle will end up with all the member
@@ -272,25 +275,25 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupCycle) {
 
   // Spot-check the filtered collisions.
   EXPECT_TRUE(inspector_.CollisionFiltered(geoms.front(), geoms.back()));
-  EXPECT_TRUE(inspector_.CollisionFiltered(
-      geoms.front(), geoms[geoms.size() / 2]));
+  EXPECT_TRUE(
+      inspector_.CollisionFiltered(geoms.front(), geoms[geoms.size() / 2]));
 }
-
 
 TEST_F(CollisionFilterGroupResolverTest, MemberGroupDeepNest) {
   ModelInstanceIndex r1 = plant_.AddModelInstance("r1");
   const int depth = 100;
   std::vector<GeometryId> geoms;
-  auto body_of = [](int k) { return fmt::format("body{}", k); };
+  auto body_of = [](int k) {
+    return fmt::format("body{}", k);
+  };
   for (int k = 0; k < depth; ++k) {
     std::string body_k = body_of(k);
     geoms.push_back(AddBody(body_k, r1));
     if (k + 1 >= depth) {
-      resolver_.AddGroup(
-          diagnostic_policy_, body_k, {body_k}, {}, r1);
+      resolver_.AddGroup(diagnostic_policy_, body_k, {body_k}, {}, r1);
     } else {
-      resolver_.AddGroup(
-          diagnostic_policy_, body_k, {body_k}, {body_of(k + 1)}, r1);
+      resolver_.AddGroup(diagnostic_policy_, body_k, {body_k}, {body_of(k + 1)},
+                         r1);
     }
   }
   // Create a self-exclusion rule for testing. The group containing body0 is
@@ -315,7 +318,6 @@ TEST_F(CollisionFilterGroupResolverTest, MemberGroupDeepNest) {
   // Spot-check the filtered collisions.
   EXPECT_TRUE(inspector_.CollisionFiltered(geoms.front(), geoms.back()));
 }
-
 
 }  // namespace
 }  // namespace internal

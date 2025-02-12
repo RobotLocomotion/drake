@@ -640,8 +640,6 @@ class TestGeneral(unittest.TestCase):
         # WARNING: Once we call `simulator.reset_context()`, it will delete the
         # context it currently owns, which is `context_default` in this case.
         # BE CAREFUL IN SITUATIONS LIKE THIS!
-        # TODO(eric.cousineau): Bind `release_context()`, or migrate context
-        # usage to use `shared_ptr`.
         context = system.CreateDefaultContext()
         simulator.reset_context(context)
         self.assertIs(context, simulator.get_mutable_context())

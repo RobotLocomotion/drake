@@ -88,8 +88,8 @@ AddFrame ApplyDirectiveNamespace(const AddFrame& orig,
     result.name =
         DmdScopedNameJoin(
             model_namespace,
-            DmdScopedNameJoin(base_frame_namespace,
-                              orig_element).to_string()).to_string();
+            DmdScopedNameJoin(base_frame_namespace, orig_element).to_string())
+            .to_string();
   }
   return result;
 }
@@ -108,8 +108,7 @@ AddCollisionFilterGroup ApplyDirectiveNamespace(
   }
   // These will also have the `.model_namespace` applied.
   result.members = orig.members;
-  result.ignored_collision_filter_groups =
-      orig.ignored_collision_filter_groups;
+  result.ignored_collision_filter_groups = orig.ignored_collision_filter_groups;
   return result;
 }
 
@@ -164,7 +163,9 @@ void FlattenModelDirectivesInternal(const ModelDirectives& directives,
 std::string ResolveModelDirectiveUri(const std::string& uri,
                                      const PackageMap& package_map) {
   ::drake::internal::DiagnosticPolicy policy;
-  return ::drake::multibody::internal::ResolveUri(policy, uri, package_map, "");
+  const auto resolved =
+      ::drake::multibody::internal::ResolveUri(policy, uri, package_map, "");
+  return resolved.GetStringPathIfExists();
 }
 
 void ProcessModelDirectives(const ModelDirectives& directives,

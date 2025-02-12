@@ -17,11 +17,16 @@ namespace internal {
 
 namespace fs = std::filesystem;
 
-using std::string;
 using drake::internal::DiagnosticPolicy;
+using std::string;
 
-string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
-                  const PackageMap& package_map, const string& root_dir) {
+std::string ResolveUriResult::GetStringPathIfExists() const {
+  return exists ? full_path.string() : std::string{};
+}
+
+ResolveUriResult ResolveUri(const DiagnosticPolicy& diagnostic,
+                            const string& uri, const PackageMap& package_map,
+                            const string& root_dir) {
   fs::path result;
 
   // Parse the given URI into pieces.
@@ -38,22 +43,22 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
       result = "/" + uri_path;
     } else if ((uri_scheme == "model") || (uri_scheme == "package")) {
       if (!package_map.Contains(uri_package)) {
-        diagnostic.Error(fmt::format(
-            "URI '{}' refers to unknown package '{}'", uri, uri_package));
+        diagnostic.Error(fmt::format("URI '{}' refers to unknown package '{}'",
+                                     uri, uri_package));
         return {};
       }
       std::optional<string> deprecation;
-      const std::string& package_path = package_map.GetPath(
-          uri_package, &deprecation);
+      const std::string& package_path =
+          package_map.GetPath(uri_package, &deprecation);
       if (deprecation.has_value()) {
-        diagnostic.Warning(fmt::format(
-            "In URI '{}': {}", uri, *deprecation));
+        diagnostic.Warning(fmt::format("In URI '{}': {}", uri, *deprecation));
       }
       result = fs::path(package_path) / uri_path;
     } else {
       diagnostic.Error(fmt::format(
           "URI '{}' specifies an unsupported scheme; supported schemes are "
-          "'file://', 'model://', and 'package://'.", uri));
+          "'file://', 'model://', and 'package://'.",
+          uri));
       return {};
     }
   } else {
@@ -76,16 +81,15 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
     }
   }
 
-  result = result.lexically_normal();
-
-  if (!fs::exists(result)) {
-      diagnostic.Error(fmt::format(
-          "URI '{}' resolved to '{}' which does not exist.",
-          uri, result.string()));
-    return {};
+  ResolveUriResult compound_result;
+  compound_result.full_path = result.lexically_normal();
+  compound_result.exists = fs::exists(compound_result.full_path);
+  if (!compound_result.exists) {
+    diagnostic.Error(
+        fmt::format("URI '{}' resolved to '{}' which does not exist.", uri,
+                    result.string()));
   }
-
-  return result.string();
+  return compound_result;
 }
 
 }  // namespace internal

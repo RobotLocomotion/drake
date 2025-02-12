@@ -121,6 +121,11 @@ string_flag(
 # `@drake//tools/workspace/spdlog` library into a no-op and Drake will be built
 # without any text_logging infrastructure; all log messages will be discarded.
 #
+# WARNING: The "disabled" feature should be considered experimental (no promise
+# of stability in future releases); in the future, we anticipate respelling the
+# flag so that "how to find spdlog" and "what should text_logging be doing" are
+# configured separately.
+#
 # Note that fmt is typically a dependency of spdlog, so be careful to configure
 # them in a sensible pairing; setting one to module and the other to pkgconfig
 # is probably a mistake.
@@ -129,9 +134,85 @@ string_flag(
     build_setting_default = "default",
     values = [
         "default",
-        "disabled",
         "module",
         "pkgconfig",
+        # N.B. See warning above about our stability promise for 'disabled'.
+        "disabled",
+    ],
+)
+
+# -----------------------------------------------------------------------------
+# Configuration for private runtime dependencies of Drake.
+
+# The :private_runtime_repo_default configures what happens when a specific
+# :foobar_repo flag is set to "default". When "external" is selected, the
+# dependency is provided outisde of Bazel (e.g., via pkg-config or other OS-
+# specific logic). When "internal" is selected, the dependency is provided with
+# Bazel mechanisms (e.g., "bazel_dep", module extension, etc.).
+string_flag(
+    name = "private_runtime_repo_default",
+    build_setting_default = "internal",
+    values = [
+        "internal",
+        "external",
+    ],
+)
+
+# The :blas_repo flag configures where Drake obtains @blas from.
+# The public dependency alias is `@drake//tools/workspace/blas` or use the
+# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+string_flag(
+    name = "blas_repo",
+    build_setting_default = "default",
+    values = [
+        # The default on Apple is "accelerate". The default on Linux is based
+        # on :private_runtime_repo_default -- "internal" maps to "source" and
+        # "external" maps to "pkgconfig".
+        "default",
+        # Compile Reference-LAPACK's built-in BLAS (i.e., Netlib) from source.
+        "source",
+        # Find BLAS via pkg-config.
+        "pkgconfig",
+        # Use Apple's Accelerate; see
+        # https://developer.apple.com/documentation/accelerate/blas/.
+        "accelerate",
+    ],
+)
+
+# The :lapack_repo flag configures where Drake obtains @lapack from.
+# The public dependency alias is `@drake//tools/workspace/lapack` or use the
+# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+string_flag(
+    name = "lapack_repo",
+    build_setting_default = "default",
+    values = [
+        # The default on Apple is "accelerate". The default on Linux is based
+        # on :private_runtime_repo_default -- "internal" maps to "source" and
+        # "external" maps to "pkgconfig".
+        "default",
+        # Compile Reference-LAPACK from source.
+        "source",
+        # Find LAPACK via pkg-config.
+        "pkgconfig",
+        # Use Apple's Accelerate.
+        "accelerate",
+    ],
+)
+
+# The :zlib_repo flag configures where Drake obtains @zlib from.
+# The public dependency alias is `@drake//tools/workspace/zlib` or use the
+# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+string_flag(
+    name = "zlib_repo",
+    build_setting_default = "default",
+    values = [
+        # The default is based on :private_runtime_repo_default -- "internal"
+        # maps to "source" and "external" maps to "hardcoded".
+        "default",
+        # Compile zlib from source.
+        "source",
+        # Hard-coded linkopts.
+        "hardcoded",
     ],
 )
 

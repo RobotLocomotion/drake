@@ -105,6 +105,9 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectory_optimization_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+    ],
     deps = [
         ":planning",
         "//bindings/pydrake/examples",

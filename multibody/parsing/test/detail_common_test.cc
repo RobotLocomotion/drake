@@ -13,6 +13,7 @@ namespace {
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 using geometry::GeometryProperties;
+using geometry::ProximityProperties;
 using geometry::internal::HydroelasticType;
 using geometry::internal::kComplianceType;
 using geometry::internal::kElastic;
@@ -24,7 +25,6 @@ using geometry::internal::kMaterialGroup;
 using geometry::internal::kPointStiffness;
 using geometry::internal::kRelaxationTime;
 using geometry::internal::kRezHint;
-using geometry::ProximityProperties;
 using std::optional;
 using testing::MatchesRegex;
 
@@ -73,19 +73,20 @@ const bool rigid{true};
 const bool compliant{true};
 
 // A read_double implementation that always returns nullopt.
-optional<double> empty_read_double(const char*) { return {}; }
+optional<double> empty_read_double(const char*) {
+  return {};
+}
 
 // Creates a read_double implementation that returns nullopt for every tag name
 // expect for the given name (which returns the given value).
-ReadDoubleFunc param_read_double(
-    const std::string& tag, double value) {
+ReadDoubleFunc param_read_double(const std::string& tag, double value) {
   return [&tag, value](const char* name) -> optional<double> {
     return (tag == name) ? optional<double>(value) : std::nullopt;
   };
 }
 
 // Tests for a particular value in the given properties.
-template<typename T>
+template <typename T>
 ::testing::AssertionResult ExpectScalar(const char* group, const char* property,
                                         T expected,
                                         const ProximityProperties& p) {
@@ -108,10 +109,10 @@ class ParseProximityPropertiesTest : public test::DiagnosticPolicyTestBase {
   // This shadows the namespace-scoped free function under test in order to
   // bind the `diagnostic` argument.
   geometry::ProximityProperties ParseProximityProperties(
-    const std::function<std::optional<double>(const char*)>& read_double,
-    bool is_rigid, bool is_compliant) {
-    return internal::ParseProximityProperties(
-        diagnostic_policy_, read_double, is_rigid, is_compliant);
+      const std::function<std::optional<double>(const char*)>& read_double,
+      bool is_rigid, bool is_compliant) {
+    return internal::ParseProximityProperties(diagnostic_policy_, read_double,
+                                              is_rigid, is_compliant);
   }
 };
 
@@ -232,8 +233,9 @@ TEST_F(ParseProximityPropertiesTest, RigidHydroelasticModulusIgnored) {
   ProximityProperties properties = ParseProximityProperties(
       param_read_double("drake:hydroelastic_modulus", kValue), rigid,
       !compliant);
-  EXPECT_THAT(warning.message, ::testing::MatchesRegex(
-      ".*hydroelastic_modulus.*value.*1.75.*ignored.*"));
+  EXPECT_THAT(warning.message,
+              ::testing::MatchesRegex(
+                  ".*hydroelastic_modulus.*value.*1.75.*ignored.*"));
   EXPECT_FALSE(ExpectScalar(kHydroGroup, kElastic, kValue, properties));
   EXPECT_TRUE(ExpectScalar(kHydroGroup, kComplianceType,
                            geometry::internal::HydroelasticType::kRigid,
@@ -282,8 +284,7 @@ TEST_F(ParseProximityPropertiesTest, BadMargin) {
 TEST_F(ParseProximityPropertiesTest, RelaxationTime) {
   const double kValue = 1.25;
   ProximityProperties properties = ParseProximityProperties(
-      param_read_double("drake:relaxation_time", kValue), !rigid,
-      !compliant);
+      param_read_double("drake:relaxation_time", kValue), !rigid, !compliant);
   EXPECT_TRUE(
       ExpectScalar(kMaterialGroup, kRelaxationTime, kValue, properties));
   // Relaxation time is the only property.
@@ -295,8 +296,7 @@ TEST_F(ParseProximityPropertiesTest, RelaxationTime) {
 TEST_F(ParseProximityPropertiesTest, BadRelaxationTime) {
   const double kValue = -10;
   ProximityProperties properties = ParseProximityProperties(
-      param_read_double("drake:relaxation_time", kValue), !rigid,
-      !compliant);
+      param_read_double("drake:relaxation_time", kValue), !rigid, !compliant);
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*relaxation.*negative.*"));
   EXPECT_FALSE(
       ExpectScalar(kMaterialGroup, kRelaxationTime, kValue, properties));
@@ -321,7 +321,7 @@ TEST_F(ParseProximityPropertiesTest, Friction) {
   // We're not testing the case where *no* coefficients are provided; that's
   // covered in the NoProperties test.
   auto friction_read_double = [](optional<double> mu_d,
-      optional<double> mu_s) -> ReadDoubleFunc {
+                                 optional<double> mu_s) -> ReadDoubleFunc {
     return [mu_d, mu_s](const char* name) -> optional<double> {
       optional<double> result;
       if (mu_d.has_value() && std::string("drake:mu_dynamic") == name) {
@@ -359,8 +359,7 @@ TEST_F(ParseProximityPropertiesTest, Friction) {
   {
     const double kValue = 1.25;
     ProximityProperties properties = ParseProximityProperties(
-        friction_read_double(kValue, {}), !rigid,
-        !compliant);
+        friction_read_double(kValue, {}), !rigid, !compliant);
     EXPECT_TRUE(expect_friction(kValue, kValue, properties));
     // Friction is the only property.
     EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
@@ -371,8 +370,7 @@ TEST_F(ParseProximityPropertiesTest, Friction) {
   {
     const double kValue = 1.5;
     ProximityProperties properties = ParseProximityProperties(
-        friction_read_double({}, kValue), !rigid,
-        !compliant);
+        friction_read_double({}, kValue), !rigid, !compliant);
     EXPECT_TRUE(expect_friction(kValue, kValue, properties));
     // Friction is the only property.
     EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
@@ -384,8 +382,7 @@ TEST_F(ParseProximityPropertiesTest, Friction) {
     const double kMuD = 1.5;
     const double kMuS = 2.25;
     ProximityProperties properties = ParseProximityProperties(
-        friction_read_double(kMuD, kMuS), !rigid,
-        !compliant);
+        friction_read_double(kMuD, kMuS), !rigid, !compliant);
     EXPECT_TRUE(expect_friction(kMuD, kMuS, properties));
     // Friction is the only property.
     EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
@@ -400,29 +397,28 @@ TEST_F(ParseSpatialInertiaTest, BadInertiaValues) {
   math::RigidTransformd X_BBi;
 
   // Absurd rotational inertia values.
-  results.push_back(
-      ParseSpatialInertia(diagnostic_policy_, X_BBi, 1,
-                          {.ixx = 1, .iyy = 4, .izz = 9,
-                           .ixy = 16, .ixz = 25, .iyz = 36}));
+  results.push_back(ParseSpatialInertia(
+      diagnostic_policy_, X_BBi, 1,
+      {.ixx = 1, .iyy = 4, .izz = 9, .ixy = 16, .ixz = 25, .iyz = 36}));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
   // Test some inertia values found in the wild.
-  results.push_back(
-      ParseSpatialInertia(
-          diagnostic_policy_, X_BBi, 0.038,
-          {.ixx = 4.30439933333e-05, .iyy = 5.1205e-06, .izz = 4.3043993333e-05,
-           .ixy = 9.57068e-06, .ixz = 1.44451933333e-05, .iyz = 1.342825e-05}));
+  results.push_back(ParseSpatialInertia(diagnostic_policy_, X_BBi, 0.038,
+                                        {.ixx = 4.30439933333e-05,
+                                         .iyy = 5.1205e-06,
+                                         .izz = 4.3043993333e-05,
+                                         .ixy = 9.57068e-06,
+                                         .ixz = 1.44451933333e-05,
+                                         .iyz = 1.342825e-05}));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
   // Negative mass.
-  results.push_back(
-      ParseSpatialInertia(diagnostic_policy_, X_BBi, -1,
-                          {.ixx = 1, .iyy = 1, .izz = 1,
-                           .ixy = 0, .ixz = 0, .iyz = 0}));
+  results.push_back(ParseSpatialInertia(
+      diagnostic_policy_, X_BBi, -1,
+      {.ixx = 1, .iyy = 1, .izz = 1, .ixy = 0, .ixz = 0, .iyz = 0}));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
   // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  results.push_back(
-      ParseSpatialInertia(diagnostic_policy_, X_BBi, 0,
-                          {.ixx = 1, .iyy = 1, .izz = 1,
-                           .ixy = 0, .ixz = 0, .iyz = 0}));
+  results.push_back(ParseSpatialInertia(
+      diagnostic_policy_, X_BBi, 0,
+      {.ixx = 1, .iyy = 1, .izz = 1, .ixy = 0, .ixz = 0, .iyz = 0}));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
 
   // Do some basic sanity checking on the plausible mass and inertia generated

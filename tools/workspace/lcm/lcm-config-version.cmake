@@ -1,3 +1,9 @@
+# Drake's install of LCM alongside Drake (both as part of our CMake install,
+# and in our binary packages) is deprecated and will be removed on 2025-05-01.
+#
+# If you still need LCM tools in your own project, add LCM as a CMake external
+# to your project.
+
 set(PACKAGE_VERSION "1.5.1")
 set(PACKAGE_COMPAT_VERSION "1.5.1")
 

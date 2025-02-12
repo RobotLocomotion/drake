@@ -73,6 +73,25 @@ spdlog_repository = use_repo_rule(
 
 spdlog_repository(name = "pkgconfig_spdlog")
 
+# Add C++ module dependencies that are NOT used by Drake's public API, but are
+# used by Drake's implementation. Builds have the option to opt-out of these
+# depdencies by providing a replacement:
+#
+# For our CMake builds from source, the "WITH_USER_..." CMake options find a
+# user-supplied library are converted into a module override.
+#
+# For wheel builds, the module flavor is always used.
+#
+# For Bazel builds using Drake as an external, the module flavor is used by
+# default but can be changed using the Bazel flags at @drake//tools/flags.
+# For first-party Bazel builds (by Drake Developers), the non-module flavor
+# is used by default.
+
+bazel_dep(name = "zlib", version = "1.3.1.bcr.4", repo_name = "module_zlib")
+
+# TODO(jwnimmer-tri) These as well should be module-or-external.
+# - glib
+
 # Add additional modules we use as tools (not runtime dependencies).
 
 bazel_dep(name = "toolchains_llvm", version = "1.3.0")
@@ -82,6 +101,26 @@ llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
 llvm(
     name = "llvm",
     llvm_version = "19.1.3",
+    # TODO(jwnimmer-tri) Once we upgrade toolchains_llvm past 1.3.0, we won't
+    # need to specify the `urls` (nor the `strip_prefix` and `sha256`) anymore.
+    sha256 = {
+        "darwin-aarch64": "80a54a467e9e770a76ba9670e89a235224ec47578cc4d4dbd928592813732518",  # noqa
+        "darwin-x86_64": "52ea30f3089af4e086a98638a16167c5a20d253d43f7146c058e3e9e6d33274f",  # noqa
+        "linux-aarch64": "a730175e58233f20a99ecab0015d8cd0f1af5d92411ca1f9e3e472645d889bcd",  # noqa
+        "linux-x86_64": "052a5ee117782aab5893dba2cdf2cb97c3d873f7a50ba6b1690594161c75c519",  # noqa
+    },
+    strip_prefix = {
+        "darwin-aarch64": "LLVM-19.1.3-macOS-ARM64",
+        "darwin-x86_64": "LLVM-19.1.3-macOS-X64",
+        "linux-aarch64": "clang+llvm-19.1.3-aarch64-linux-gnu",
+        "linux-x86_64": "LLVM-19.1.3-Linux-X64",
+    },
+    urls = {
+        "darwin-aarch64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-macOS-ARM64.tar.xz"],  # noqa
+        "darwin-x86_64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-macOS-X64.tar.xz"],  # noqa
+        "linux-aarch64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/clang%2Bllvm-19.1.3-aarch64-linux-gnu.tar.xz"],  # noqa
+        "linux-x86_64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-Linux-X64.tar.xz"],  # noqa
+    },
 )
 
 # Load dependencies which are "public", i.e., made available to downstream
@@ -111,8 +150,6 @@ use_repo(
     "gurobi",
     "lapack",
     "lcm",
-    "libblas",
-    "liblapack",
     "meshcat",
     "mosek",
     "opencl",
@@ -165,6 +202,7 @@ use_repo(
     "gz_utils_internal",
     "highway_internal",
     "ipopt_internal",
+    "lapack_internal",
     "libjpeg_turbo_internal",
     "libpng_internal",
     "libtiff_internal",
@@ -185,6 +223,8 @@ use_repo(
     "org_apache_xmlgraphics_commons",
     "osqp_internal",
     "picosha2_internal",
+    "pkgconfig_blas_internal",
+    "pkgconfig_lapack_internal",
     "poisson_disk_sampling_internal",
     "qdldl_internal",
     "qhull_internal",
@@ -237,7 +277,7 @@ use_repo(
     "crate__fnv-1.0.7",
     "crate__hashbrown-0.15.2",
     "crate__ident_case-1.0.1",
-    "crate__indexmap-2.7.0",
+    "crate__indexmap-2.7.1",
     "crate__itertools-0.11.0",
     "crate__itoa-1.0.14",
     "crate__lapack-0.19.0",
@@ -249,21 +289,19 @@ use_repo(
     "crate__num-traits-0.2.19",
     "crate__once_cell-1.19.0",
     "crate__paste-1.0.15",
-    "crate__proc-macro2-1.0.92",
+    "crate__proc-macro2-1.0.93",
     "crate__quote-1.0.38",
-    "crate__ryu-1.0.18",
+    "crate__ryu-1.0.19",
     "crate__serde-1.0.217",
     "crate__serde_derive-1.0.217",
-    "crate__serde_json-1.0.134",
+    "crate__serde_json-1.0.138",
     "crate__strsim-0.10.0",
     "crate__syn-1.0.109",
-    "crate__syn-2.0.94",
+    "crate__syn-2.0.96",
     "crate__thiserror-1.0.69",
     "crate__thiserror-impl-1.0.69",
-    "crate__unicode-ident-1.0.14",
+    "crate__unicode-ident-1.0.16",
 )
 
 # TODO(#20731) More improvements are still needed to our MODULE organization:
-# - Provide better configuration options for choosing dependencies.
-# - Adjust the wheel build to build more dependencies as Bazel modules.
 # - Deprecate non-bzlmod use of Drake downstream.

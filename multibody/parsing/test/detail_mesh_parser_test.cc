@@ -35,8 +35,8 @@ class MeshParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, &plant_,
-                       &resolver, TestingSelect};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+                       &plant_,  &resolver,    TestingSelect};
     // The wrapper simply delegates to AddModelFromMesh(), so we're testing
     // the underlying implementation *and* confirming that the wrapper delegates
     // appropriately.
@@ -51,8 +51,8 @@ class MeshParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, &plant_,
-                       &resolver, TestingSelect};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+                       &plant_,  &resolver,    TestingSelect};
     // The wrapper is responsible for building the vector from whatever a call
     // to AddModelFromMesh() does; this confirms invocation and successful
     // transformation of return type.
@@ -210,8 +210,8 @@ TEST_F(MeshParserTest, ErrorModes) {
     const std::string data("Just some text");
     const DataSource data_source{DataSource::kContents, &data};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, &plant_,
-                       &resolver, TestingSelect};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+                       &plant_,  &resolver,    TestingSelect};
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddModelFromMesh(data_source, "", std::nullopt, w),
         ".*must be .+ file.*");
@@ -256,8 +256,8 @@ TEST_F(MeshParserTest, CorrectMass) {
 }
 
 TEST_F(MeshParserTest, ZeroVolume) {
-  const std::string obj_path = FindResourceOrThrow(
-      "drake/geometry/test/bad_geometry_volume_zero.obj");
+  const std::string obj_path =
+      FindResourceOrThrow("drake/geometry/test/bad_geometry_volume_zero.obj");
   AddModelFromMeshFile(obj_path, "body");
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(".*volume.*is 0.*"));
 }
