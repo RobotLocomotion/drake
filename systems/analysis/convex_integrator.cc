@@ -231,7 +231,9 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
   sap_stats_ = SapStatistics();
 
   // Set up alternative convergence criteria per [Hairer, 1996] Sec. IV.8.
-  const double kappa = 0.1;
+  double dv_norm = 0.0;
+  double last_dv_norm = 0.0;
+  const double kappa = 0.05;
   double theta = 0.0;
   double eta = 0.0;
 
@@ -257,14 +259,13 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     sap_stats_.momentum_residual.push_back(momentum_residual);
     sap_stats_.momentum_scale.push_back(momentum_scale);
 
-    if (k > 0) {
-      // Alternative optimality criterion based on the method of [Hairer, 1996]
-      // IV.8.10. But we use the momentum residual instead of the step size.
-      theta = momentum_residual / sap_stats_.momentum_residual[k - 1];
+    if (k > 1) {
+      // Alternative optimality criterion based on the method of [Hairer, 1996],
+      // Equation IV.8.10.
+      theta = dv_norm / last_dv_norm;
       eta = theta / (1.0 - theta);
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
-      const bool theta_converged =
-          (theta < 1.0) && (eta * momentum_residual < k_dot_tol);
+      const bool theta_converged = (theta < 1.0) && (eta * dv_norm < k_dot_tol);
 
       // This is typically less strict than the SAP convergence criterion, but
       // we'll take either one just to be safe.
@@ -273,9 +274,9 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
 
       // Choose whether to re-compute the Hessian factorization using Equation
       // IV.8.11 of [Hairer, 1996].
-      const int k_max = sap_parameters_.max_iterations;
       const double anticipated_residual =
-          std::pow(theta, k_max - k) / (1 - theta) * momentum_residual;
+          std::pow(theta, sap_parameters_.max_iterations - k) / (1 - theta) *
+          dv_norm;
 
       // Only refresh the Hessian if it looks like we won't converge in time
       if (anticipated_residual > k_dot_tol || theta >= 1.0) {
@@ -330,6 +331,8 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     sap_stats_.num_line_search_iters += num_line_search_iters;
 
     // Update state.
+    last_dv_norm = dv_norm;
+    dv_norm = dv.norm();
     model.GetMutableVelocities(context) += alpha * dv;
 
     ell_previous = ell;
