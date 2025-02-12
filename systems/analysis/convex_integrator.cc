@@ -102,11 +102,6 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   TimestepIndependentProblemData<T>& data =
       workspace_.timestep_independent_data;
 
-  // TODO(vincekurtz): figure out a more principled mapping from accuracy to
-  // sap solver tolerances.
-  // sap_parameters_.rel_tolerance =
-  //     std::max(1e-2 * this->get_accuracy_in_use(), 1e-6);
-
   // Compute problem data at time (t)
   CalcTimestepIndependentProblemData(context, &data);
 
@@ -235,6 +230,11 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
   SearchDirectionData search_direction_data(nv, nk);
   sap_stats_ = SapStatistics();
 
+  // Set up alternative convergence criteria per [Hairer, 1996] Sec. IV.8.
+  const double kappa = 0.1;
+  double theta = 0.0;
+  double eta = 0.0;
+
   // Start Newton iterations.
   int k = 0;
   double ell = model.EvalCost(*context);
@@ -256,6 +256,35 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     sap_stats_.alpha.push_back(alpha);
     sap_stats_.momentum_residual.push_back(momentum_residual);
     sap_stats_.momentum_scale.push_back(momentum_scale);
+
+    if (k > 0) {
+      // Alternative optimality criterion based on the method of [Hairer, 1996]
+      // IV.8.10. But we use the momentum residual instead of the step size.
+      theta = momentum_residual / sap_stats_.momentum_residual[k - 1];
+      eta = theta / (1.0 - theta);
+      const double k_dot_tol = kappa * this->get_accuracy_in_use();
+      const bool theta_converged =
+          (theta < 1.0) && (eta * momentum_residual < k_dot_tol);
+
+      // This is typically less strict than the SAP convergence criterion, but
+      // we'll take either one just to be safe.
+      sap_stats_.optimality_criterion_reached =
+          sap_stats_.optimality_criterion_reached || theta_converged;
+
+      // Choose whether to re-compute the Hessian factorization using Equation
+      // IV.8.11 of [Hairer, 1996].
+      const int k_max = sap_parameters_.max_iterations;
+      const double anticipated_residual =
+          std::pow(theta, k_max - k) / (1 - theta) * momentum_residual;
+
+      // Only refresh the Hessian if it looks like we won't converge in time
+      if (anticipated_residual > k_dot_tol || theta >= 1.0) {
+        refresh_hessian_ = true;
+      }
+    }
+
+    if (get_use_full_newton()) refresh_hessian_ = true;
+
     // TODO(amcastro-tri): consider monitoring the duality gap.
     if (sap_stats_.optimality_criterion_reached ||
         sap_stats_.cost_criterion_reached) {
@@ -287,38 +316,6 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     // checking the convergence criteria, so that also the last iteration is
     // considered.
     if (k == sap_parameters_.max_iterations) break;
-
-    if (!use_full_newton_) {
-      // Attempt Hessian re-use
-      if (k > 1) {
-        // Check for anticipated convergence using the method described in
-        // [Hairer, 1996], Equation IV.8.11.
-        const double dv_norm = momentum_residual;
-        const double last_dv_norm = sap_stats_.momentum_residual[k - 1];
-        const double theta = dv_norm / last_dv_norm;
-
-        // Compute a rough approximation of the residual after the
-        // next few iterations. If it doesn't look like we're going to make it,
-        // refresh the Hessian.
-        const int k_max = 100;
-        const double kappa = 0.01;
-        const double tolerance =
-            kappa * (sap_parameters_.abs_tolerance +
-                     sap_parameters_.rel_tolerance * momentum_scale);
-        const double anticipated_residual =
-            std::pow(theta, k_max - k) / (1 - theta) * dv_norm;
-
-        if (anticipated_residual > tolerance || theta >= 1.0) {
-          // TODO(vincekurtz): debug why theta is not always < 1.
-          refresh_hessian_ = true;
-        }
-      }
-    } else {
-      // Full newton is on, so we always re-factorize the Hessian. In this case
-      // the number of hessian factorizations should be the same as the number
-      // of (convex) newton iterations.
-      refresh_hessian_ = true;
-    }
 
     // This is the most expensive update: it performs the factorization of H to
     // solve for the search direction dv.
