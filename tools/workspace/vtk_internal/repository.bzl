@@ -180,6 +180,7 @@ def vtk_internal_repository(
             ":patches/upstream/gltf_selected_load.patch",
             ":patches/upstream/io_geometry_gltf_default_scene.patch",
             ":patches/upstream/gltf_importer_from_stream.patch",
+            ":patches/upstream/scaled_albedo_for_ibl.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_version.patch",
             ":patches/disable_static_destructors.patch",
