@@ -174,7 +174,18 @@ class Parser final {
   ///   when empty, no scoping will be added.
   Parser(MultibodyPlant<double>* plant, std::string_view model_name_prefix);
 
+  /// @pre Either the given `builder` contains a MultibodyPlant system named
+  /// "plant" or else the provided `plant` is non-null.
+  explicit Parser(systems::DiagramBuilder<double>* builder,
+                  MultibodyPlant<double>* plant = nullptr,
+                  geometry::SceneGraph<double>* scene_graph = nullptr,
+                  std::string_view model_name_prefix = {});
+
   ~Parser();
+
+  /// Gets a mutable pointer to the DiagramBuilder that will be modified by
+  /// this parser, or nullptr if this parser does not have a DiagramBuilder.
+  systems::DiagramBuilder<double>* builder() { return builder_; }
 
   /// Gets a mutable reference to the plant that will be modified by this
   /// parser.
@@ -256,7 +267,8 @@ class Parser final {
   bool enable_auto_rename_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
-  MultibodyPlant<double>* const plant_;
+  systems::DiagramBuilder<double>* const builder_;
+  MultibodyPlant<double>* plant_;
   std::optional<std::string> model_name_prefix_;
   struct ParserInternalData;
   std::unique_ptr<ParserInternalData> data_;
