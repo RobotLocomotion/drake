@@ -88,28 +88,21 @@ def analyze_data(csv_file, start_step, end_step):
     data = pd.read_csv(csv_file)
 
     # Extract the relevant quantities
-    solver_steps = np.array(data.index[start_step:end_step])
     k = np.array(data["k"][start_step:end_step])
     times = np.array(data["t"][start_step:end_step])
-    time_steps = np.array(data["h"][start_step:end_step])
-    residual = np.array(data["residual"][start_step:end_step])
     hessian_refresh = np.array(data["refresh_hessian"][start_step:end_step])
     problem_changed = np.array(data["problem_changed"][start_step:end_step])
     solve_phase = np.array(data["solve_phase"][start_step:end_step])
 
     print(f"Analyzing interval from t = {times[0]:.3f} to t = {times[-1]:.3f}")
     
-    print("\nHow many time steps?")
+    print("\nHow many Newton solves?")
     phase_0_solves = np.sum(np.logical_and(k == 0, solve_phase == 0))
     phase_1_solves = np.sum(np.logical_and(k == 0, solve_phase == 1))
     phase_2_solves = np.sum(np.logical_and(k == 0, solve_phase == 2))
     print("==> ", phase_0_solves, "full steps t --> t+h (phase 0)")
     print("==> ", phase_1_solves, "half steps t --> t+h/2 (phase 1)")
     print("==> ", phase_2_solves, "half steps t+h/2 --> t+h (phase 2)")
-    
-    print("\nHow many Newton steps in total?")
-    num_newton_steps = end_step - start_step
-    print("==> ", num_newton_steps)
 
     print("\nHow many Newton steps in each phase?")
     phase_0_steps = np.sum(solve_phase == 0)
@@ -158,16 +151,52 @@ def analyze_data(csv_file, start_step, end_step):
     print("==> ", phase_2_changes, "(phase 2)")
 
 
+def plot_hessian_refreshes(csv_file, start_step, end_step, include_baseline=False):
+    """Make a plot of the cumulative number of Hessian refreshes over time."""
+    data = pd.read_csv(csv_file)
+
+    # Extract the relevant quantities
+    solver_steps = np.array(data.index[start_step:end_step]) - data.index[start_step]
+    times = np.array(data["t"][start_step:end_step])
+    hessian_refreshes = np.array(data["refresh_hessian"][start_step:end_step])
+    total_refreshes = np.cumsum(hessian_refreshes)
+    total_refreshes_without_reuse = solver_steps
+
+    # Hessian refreshes over time
+    plt.subplot(2,1,1)
+    plt.plot(times, total_refreshes, label="ours")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Total Hessian refreshes")
+
+    if include_baseline: 
+        plt.plot(times, total_refreshes_without_reuse, label="without re-use")
+        plt.legend()
+
+    # Hessian refreshes over solver iteration
+    plt.subplot(2,1,2)
+    plt.plot(solver_steps, total_refreshes, label="ours")
+    plt.xlabel("Solver Step")
+    plt.ylabel("Total Hessian refreshes")
+
+    if include_baseline: 
+        plt.plot(solver_steps, total_refreshes_without_reuse, label="without re-use")
+        plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
 if __name__ == "__main__":
     # Path to the csv file
     csv_file = "clutter_test.csv"
 
     # Set the data range (in terms of solver steps)
-    start_step = 200
-    end_step = 1000
+    start_step = 0
+    end_step = -1
 
     # Answer some questions about the data
     analyze_data(csv_file, start_step, end_step)
 
     # Make some plots
-    make_plots(csv_file, 200, 1000)
+    # make_plots(csv_file, start_step, end_step)
+    plot_hessian_refreshes(csv_file, start_step, end_step)
