@@ -276,8 +276,11 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
       theta_criterion_reached = (theta < 1.0) && (eta * dv_norm < k_dot_tol);
 
       // Choose whether to re-compute the Hessian factorization using Equation
-      // IV.8.11 of [Hairer, 1996].
-      const int k_max = sap_parameters_.max_iterations;
+      // IV.8.11 of [Hairer, 1996]. This essentially predicts whether we'll
+      // converge within (k_max - k) iterations, assuming linear convergence.
+      // We'll set k_max to something a smaller that the hard iteration limit,
+      // to give ourselves some room.
+      const int k_max = sap_parameters_.max_iterations / 2;
       const double anticipated_residual =
           std::pow(theta, k_max - k) / (1 - theta) * dv_norm;
 
