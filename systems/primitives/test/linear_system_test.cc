@@ -995,6 +995,8 @@ GTEST_TEST(DiscreteTimeApproximation, test) {
   B << 0, 1;
   f0 << 2, 1;
   C << 1, 0;
+  D << 1;
+  y0 << 1;
 
   // Reject discrete system as argument.
   EXPECT_ANY_THROW(DiscreteTimeApproximation<double>(
