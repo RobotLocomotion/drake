@@ -37,9 +37,7 @@ for the rest of the implementations in detail_dmd_parser.h */
 
 class DmdParserTest : public test::DiagnosticPolicyTestBase {
  public:
-  DmdParserTest() {
-    RecordErrors();
-  }
+  DmdParserTest() { RecordErrors(); }
 
   static ParserInterface& TestingSelect(const DiagnosticPolicy&,
                                         const std::string& filename) {

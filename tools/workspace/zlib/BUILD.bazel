@@ -11,6 +11,7 @@ cc_library(
     name = "hardcoded",
     linkopts = ["-lz"],
     tags = ["manual"],
+    visibility = ["@zlib//:__subpackages__"],
 )
 
 config_setting(

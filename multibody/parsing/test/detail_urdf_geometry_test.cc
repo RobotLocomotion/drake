@@ -57,33 +57,30 @@ using tinyxml2::XMLElement;
 
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
-using math::RigidTransformd;
 using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::ProximityProperties;
+using math::RigidTransformd;
 
 class UrdfMaterialTest : public testing::Test {
  public:
   UrdfMaterialTest() {
-    policy_.SetActionForErrors(
-        [this](const DiagnosticDetail& detail) {
-          EXPECT_TRUE(error_.empty());
-          error_ = detail.message;
-        });
+    policy_.SetActionForErrors([this](const DiagnosticDetail& detail) {
+      EXPECT_TRUE(error_.empty());
+      error_ = detail.message;
+    });
   }
 
   // Call the function under test, taking care of repetitive details.
   UrdfMaterial AddMaterial(const std::string& material_name,
-                           UrdfMaterial material,
-                           bool error_if_name_clash) {
-    return AddMaterialToMaterialMap(
-        policy_, material_name, material, error_if_name_clash, &materials_);
+                           UrdfMaterial material, bool error_if_name_clash) {
+    return AddMaterialToMaterialMap(policy_, material_name, material,
+                                    error_if_name_clash, &materials_);
   }
 
   // Call the function under test, expect no error.
   UrdfMaterial AddMaterialGood(const std::string& material_name,
-                               UrdfMaterial material,
-                               bool error_if_name_clash,
+                               UrdfMaterial material, bool error_if_name_clash,
                                UrdfMaterial expected) {
     auto result = AddMaterial(material_name, material, error_if_name_clash);
     EXPECT_TRUE(error_.empty());
@@ -93,8 +90,7 @@ class UrdfMaterialTest : public testing::Test {
 
   // Call the function under test, expect an error matching a pattern.
   UrdfMaterial AddMaterialBad(const std::string& material_name,
-                              UrdfMaterial material,
-                              bool error_if_name_clash,
+                              UrdfMaterial material, bool error_if_name_clash,
                               const std::string& error_pattern) {
     auto result = AddMaterial(material_name, material, error_if_name_clash);
     EXPECT_THAT(error_, MatchesRegex(error_pattern));
@@ -240,8 +236,7 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
   // Creates a special XML DOM consisting of *only* a collision object. XML text
   // can be provided as an input and it will be injected as a child of the
   // <collision> tag.
-  void MakeCollisionDocFromString(
-      const std::string& collision_spec) {
+  void MakeCollisionDocFromString(const std::string& collision_spec) {
     constexpr const char* urdf_harness = R"""(
 <?xml version="1.0"?>
   <collision>
@@ -266,7 +261,6 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
                           collision_node, &geometry_names_,
                           numeric_name_suffix_limit_);
   }
-
 
   // Processes a "collision doc" all the way to proximity properties in the
   // expect-success case. As a side effect, the collision_instances_ member is
@@ -308,7 +302,9 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
     bool has_property = properties.HasProperty(group, property);
     EXPECT_TRUE(has_property)
         << fmt::format("  for property: ('{}', '{}')", group, property);
-    if (!has_property) { return; }
+    if (!has_property) {
+      return;
+    }
     EXPECT_EQ(properties.GetProperty<T>(group, property), value);
   }
 
@@ -321,17 +317,17 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
 
   // Finds a file resource within 'urdf_parser_test'.
   std::string FindUrdfTestResourceOrThrow(const std::string& filename) {
-      const std::string resource_dir{
+    const std::string resource_dir{
         "drake/multibody/parsing/test/urdf_parser_test/"};
-      return FindResourceOrThrow(resource_dir + filename);
+    return FindResourceOrThrow(resource_dir + filename);
   }
 
  protected:
   void UpdateSource(DataSource::DataSourceType type, std::string* data) {
     source_ = std::make_unique<DataSource>(type, data);
     root_dir_ = source_->GetRootDir();
-    diag_ = std::make_unique<TinyXml2Diagnostic>(&diagnostic_policy_,
-                                                 &*source_);
+    diag_ =
+        std::make_unique<TinyXml2Diagnostic>(&diagnostic_policy_, &*source_);
   }
 
   // Parses the currently set source_.
@@ -357,8 +353,7 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
 
     // Parses geometry out of the model's link elements.
     for (const XMLElement* link_node = node->FirstChildElement("link");
-         link_node;
-         link_node = link_node->NextSiblingElement("link")) {
+         link_node; link_node = link_node->NextSiblingElement("link")) {
       const char* attr = node->Attribute("name");
       ASSERT_TRUE(attr);
       const std::string body_name = attr;
@@ -368,8 +363,8 @@ class UrdfGeometryTest : public test::DiagnosticPolicyTestBase {
            visual_node;
            visual_node = visual_node->NextSiblingElement("visual")) {
         std::optional<geometry::GeometryInstance> geometry_instance =
-            ParseVisual(*diag_, body_name, package_map_, root_dir_,
-                        visual_node, &materials_, &geometry_names_,
+            ParseVisual(*diag_, body_name, package_map_, root_dir_, visual_node,
+                        &materials_, &geometry_names_,
                         numeric_name_suffix_limit_);
         if (geometry_instance.has_value()) {
           visual_instances_.push_back(*geometry_instance);
@@ -457,8 +452,8 @@ TEST_F(UrdfGeometryTest, TestParseMaterial1) {
   // The <visual/> has no name, so type of Shape is used instead.
   EXPECT_EQ(visual.name(), "Box");
 
-  EXPECT_TRUE(CompareMatrices(
-      visual.pose().GetAsMatrix34(), RigidTransformd().GetAsMatrix34()));
+  EXPECT_TRUE(CompareMatrices(visual.pose().GetAsMatrix34(),
+                              RigidTransformd().GetAsMatrix34()));
 
   const geometry::IllustrationProperties* properties =
       visual.illustration_properties();
@@ -508,8 +503,8 @@ TEST_F(UrdfGeometryTest, TestParseMaterial2) {
                           "phong", "diffuse"),
                       brown, 1e-14));
   const RigidTransformd expected_pose(Eigen::Vector3d(0, 0, 0.3));
-  EXPECT_TRUE(CompareMatrices(
-      visual.pose().GetAsMatrix34(), expected_pose.GetAsMatrix34()));
+  EXPECT_TRUE(CompareMatrices(visual.pose().GetAsMatrix34(),
+                              expected_pose.GetAsMatrix34()));
 
   const geometry::Cylinder* cylinder =
       dynamic_cast<const geometry::Cylinder*>(&visual.shape());
@@ -579,8 +574,8 @@ TEST_F(UrdfGeometryTest, TestParseMaterialBadRgba) {
 
 TEST_F(UrdfGeometryTest, TestParseMaterialEmpty) {
   ParseUrdfGeometryString("<robot name='a'><material name='b'/></robot>");
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Material 'b'.*no color or texture.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Material 'b'.*no color or texture.*"));
 }
 
 TEST_F(UrdfGeometryTest, TestParseMaterialDuplicateButSame) {
@@ -634,20 +629,20 @@ TEST_F(UrdfGeometryTest, TestWrongElementType) {
   const XMLElement* material_node = node->FirstChildElement("material");
   ASSERT_TRUE(material_node);
 
-  ParseVisual(*diag_, "fake_name", package_map_, root_dir_,
-              material_node, &materials_, &geometry_names_);
+  ParseVisual(*diag_, "fake_name", package_map_, root_dir_, material_node,
+              &materials_, &geometry_names_);
   EXPECT_THAT(TakeError(), MatchesRegex(".*In link fake_name expected visual"
                                         " element, got material"));
 
-  ParseCollision(*diag_, "fake_name", package_map_, root_dir_,
-               material_node, &geometry_names_);
+  ParseCollision(*diag_, "fake_name", package_map_, root_dir_, material_node,
+                 &geometry_names_);
   EXPECT_THAT(TakeError(), MatchesRegex(".*In link 'fake_name' expected"
                                         " collision element, got material"));
 }
 
 TEST_F(UrdfGeometryTest, TestParseConvexMesh) {
-  const std::string convex_and_nonconvex_test = FindUrdfTestResourceOrThrow(
-      "convex_and_nonconvex_test.urdf");
+  const std::string convex_and_nonconvex_test =
+      FindUrdfTestResourceOrThrow("convex_and_nonconvex_test.urdf");
 
   DRAKE_EXPECT_NO_THROW(ParseUrdfGeometryFile(convex_and_nonconvex_test));
 
@@ -687,9 +682,9 @@ TEST_F(UrdfGeometryTest, CollisionSmokeTest) {
   VerifySingleProperty(properties, geometry::internal::kHydroGroup,
                        geometry::internal::kRezHint, 2.5);
   VerifySingleProperty(properties, geometry::internal::kHydroGroup,
-                         geometry::internal::kElastic, 3.5);
+                       geometry::internal::kElastic, 3.5);
   VerifySingleProperty(properties, geometry::internal::kHydroGroup,
-                         geometry::internal::kMargin, 1.3);
+                       geometry::internal::kMargin, 1.3);
   VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
                        geometry::internal::kHcDissipation, 4.5);
   VerifySingleProperty(properties, geometry::internal::kMaterialGroup,
@@ -843,12 +838,12 @@ TEST_F(UrdfGeometryTest, TestBadCylinder) {
     </robot>)""";
 
   ParseUrdfGeometryString(fmt::format(base, ""));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing cylinder attribute.*radius.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Missing cylinder attribute.*radius.*"));
 
   ParseUrdfGeometryString(fmt::format(base, "radius='1'"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing cylinder attribute.*length.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Missing cylinder attribute.*length.*"));
 
   ParseUrdfGeometryString(fmt::format(base, "radius='1 2 3' length='1'"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*radius.*"));
@@ -873,16 +868,16 @@ TEST_F(UrdfGeometryTest, TestBadCapsule) {
   for (const auto& prefix : std::array<std::string, 2>{"", "drake:"}) {
     SCOPED_TRACE(prefix + "capsule");
     ParseUrdfGeometryString(fmt::format(base, prefix, ""));
-    EXPECT_THAT(TakeError(), MatchesRegex(
-                    ".*Missing capsule attribute.*radius.*"));
+    EXPECT_THAT(TakeError(),
+                MatchesRegex(".*Missing capsule attribute.*radius.*"));
     ParseUrdfGeometryString(fmt::format(base, prefix, "radius='1'"));
-    EXPECT_THAT(TakeError(), MatchesRegex(
-                    ".*Missing capsule attribute.*length.*"));
-    ParseUrdfGeometryString(fmt::format(base, prefix,
-                                        "radius='1 2 3' length='1'"));
+    EXPECT_THAT(TakeError(),
+                MatchesRegex(".*Missing capsule attribute.*length.*"));
+    ParseUrdfGeometryString(
+        fmt::format(base, prefix, "radius='1 2 3' length='1'"));
     EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*radius.*"));
-    ParseUrdfGeometryString(fmt::format(base, prefix,
-                                        "radius='1' length='1 2 3'"));
+    ParseUrdfGeometryString(
+        fmt::format(base, prefix, "radius='1' length='1 2 3'"));
     EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*length.*"));
   }
 }
@@ -899,16 +894,16 @@ TEST_F(UrdfGeometryTest, TestBadEllipsoid) {
       </link>
     </robot>)""";
   ParseUrdfGeometryString(fmt::format(base, ""));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing ellipsoid attribute.*'a'.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Missing ellipsoid attribute.*'a'.*"));
 
   ParseUrdfGeometryString(fmt::format(base, "a='1'"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing ellipsoid attribute.*'b'.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Missing ellipsoid attribute.*'b'.*"));
 
   ParseUrdfGeometryString(fmt::format(base, "a='1' b='2'"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Missing ellipsoid attribute.*'c'.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Missing ellipsoid attribute.*'c'.*"));
 
   ParseUrdfGeometryString(fmt::format(base, "a='1 1 1' b='2' c='3'"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*'a'.*"));
@@ -973,8 +968,8 @@ TEST_F(UrdfGeometryTest, TestLegacyDrakeCompliance) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*<dissipation>.*ignored.*"));
 
   ParseUrdfGeometryString(fmt::format(base, "<dynamic_friction/>"));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Unable to parse dynamic_friction.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to parse dynamic_friction.*"));
 
   ParseUrdfGeometryString(fmt::format(base, "<static_friction/>"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*Unable to parse static_friction.*"));
@@ -1010,8 +1005,8 @@ TEST_F(UrdfGeometryTest, TestBadProperty) {
     <drake:mu_dynamic {}/>
   </drake:proximity_properties>)""";
   ParseCollisionDoc(fmt::format(base, ""));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Unable to read.*attribute.*mu_dynamic.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Unable to read.*attribute.*mu_dynamic.*"));
   ParseCollisionDoc(fmt::format(base, "value='1 2 3'"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*"));
 }
@@ -1024,10 +1019,10 @@ TEST_F(UrdfGeometryTest, RigidHydroelastic) {
   </drake:proximity_properties>)""");
   ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                      geometry::internal::kComplianceType));
-  EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
-                geometry::internal::kHydroGroup,
-                geometry::internal::kComplianceType),
-            geometry::internal::HydroelasticType::kRigid);
+  EXPECT_EQ(
+      properties.GetProperty<geometry::internal::HydroelasticType>(
+          geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+      geometry::internal::HydroelasticType::kRigid);
 }
 
 TEST_F(UrdfGeometryTest, CompliantHydroelastic) {
@@ -1038,10 +1033,10 @@ TEST_F(UrdfGeometryTest, CompliantHydroelastic) {
   </drake:proximity_properties>)""");
   ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                      geometry::internal::kComplianceType));
-  EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
-                geometry::internal::kHydroGroup,
-                geometry::internal::kComplianceType),
-            geometry::internal::HydroelasticType::kSoft);
+  EXPECT_EQ(
+      properties.GetProperty<geometry::internal::HydroelasticType>(
+          geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
+      geometry::internal::HydroelasticType::kSoft);
 }
 
 TEST_F(UrdfGeometryTest, LegacySoftHydroelastic) {
@@ -1052,10 +1047,11 @@ TEST_F(UrdfGeometryTest, LegacySoftHydroelastic) {
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
   </drake:proximity_properties>)""");
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Collision geometry uses the tag"
-                  " <drake:soft_hydroelastic>.* which is no longer supported."
-                  " Please change it to <drake:compliant_hydroelastic>."));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Collision geometry uses the tag"
+                   " <drake:soft_hydroelastic>.* which is no longer supported."
+                   " Please change it to <drake:compliant_hydroelastic>."));
 }
 
 TEST_F(UrdfGeometryTest, BothHydroelastic) {
@@ -1065,11 +1061,11 @@ TEST_F(UrdfGeometryTest, BothHydroelastic) {
     <drake:compliant_hydroelastic/>
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*Collision geometry has defined mutually-exclusive tags"
-                  " .*rigid.* and .*compliant.*"));
+  EXPECT_THAT(
+      TakeError(),
+      MatchesRegex(".*Collision geometry has defined mutually-exclusive tags"
+                   " .*rigid.* and .*compliant.*"));
 }
-
 
 TEST_F(UrdfGeometryTest, LegacyDrakeCompliance) {
   // TODO(SeanCurtis-TRI): This is the *old* interface; the new
@@ -1095,9 +1091,9 @@ TEST_F(UrdfGeometryTest, LegacyDrakeComplianceVsProxProperties) {
   <drake:proximity_properties>
     <drake:mu_dynamic value="4.5" />
   </drake:proximity_properties>)""");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(
-                  ".*both <drake:proximity_properties> and"
-                  " <drake_compliance> tags.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*both <drake:proximity_properties> and"
+                           " <drake_compliance> tags.*"));
   VerifyFriction(properties, {4.5, 4.5});
 }
 
@@ -1147,7 +1143,7 @@ TEST_F(UrdfGeometryTest, AcceptingRenderers) {
       EXPECT_TRUE(names.contains("renderer2"));
     } else {
       GTEST_FAIL() << "Encountered visual geometry not expected: "
-                     << instance.name();
+                   << instance.name();
     }
   }
 }
@@ -1162,8 +1158,8 @@ TEST_F(UrdfGeometryTest, BadAcceptingRenderer) {
         </visual>
       </link>
     </robot>)""");
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*<drake:accepting_renderer>.*without.* name.*"));
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*<drake:accepting_renderer>.*without.* name.*"));
 }
 
 // Check that unnamed geometry is given a name based on its shape, and that

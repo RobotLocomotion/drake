@@ -50,7 +50,8 @@ TEST_P(DrakeManifestResolutionTest, ResolvesMeshUris) {
 }
 
 INSTANTIATE_TEST_SUITE_P(DrakeUriModel, DrakeManifestResolutionTest,
-  testing::Values("cube_visual.sdf", "cube_visual.urdf"));
+                         testing::Values("cube_visual.sdf",
+                                         "cube_visual.urdf"));
 
 }  // namespace
 }  // namespace multibody

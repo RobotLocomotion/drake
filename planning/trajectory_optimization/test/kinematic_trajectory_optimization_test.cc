@@ -1,5 +1,6 @@
 #include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
+#include <limits>
 #include <optional>
 
 #include <gmock/gmock.h>
@@ -37,6 +38,7 @@ using ::testing::HasSubstr;
 using trajectories::BsplineTrajectory;
 
 namespace {
+const double kInf = std::numeric_limits<double>::infinity();
 
 class KinematicTrajectoryOptimizationTest : public ::testing::Test {
  public:
@@ -156,6 +158,46 @@ TEST_F(KinematicTrajectoryOptimizationTest,
   const double kTol = 1e-6;
   EXPECT_TRUE(CompareMatrices(q.value(0.2), x_desired.head<3>(), kTol));
   EXPECT_TRUE(CompareMatrices(qdot->value(0.2), x_desired.tail<3>(), kTol));
+}
+
+TEST_F(KinematicTrajectoryOptimizationTest,
+       AddVelocityConstraintAtNormalizedTimeLinear) {
+  // Test AddVelocityConstraintAtNormalizedTime with linear constraints.
+  EXPECT_EQ(trajopt_.prog().linear_constraints().size(), 0);
+  // Impose the constraint that [0, 4, -kInf] <= qdot(s * T)[0, 2, 1] <= [0,
+  // kInf, 3]
+  const Eigen::Vector3d lb(1, 4, -kInf);
+  const Eigen::Vector3d ub(1, kInf, 3);
+
+  auto constraint = std::make_shared<solvers::BoundingBoxConstraint>(lb, ub);
+  auto binding = solvers::Binding<solvers::BoundingBoxConstraint>(
+      constraint,
+      Vector3<symbolic::Variable>(trajopt_.qdot()(0), trajopt_.qdot()(2),
+                                  trajopt_.qdot()(1)));
+  const double s = 0.2;
+  const auto binding_ret_vec =
+      trajopt_.AddVelocityConstraintAtNormalizedTime(binding, s);
+  for (const auto& binding_ret : binding_ret_vec) {
+    EXPECT_THAT(binding_ret.to_string(), HasSubstr("velocity constraint"));
+  }
+  EXPECT_EQ(trajopt_.prog().linear_constraints().size(),
+            binding_ret_vec.size());
+  trajopt_.AddDurationConstraint(2, 2);
+  // Snopt does not converge from the default zero trajectory.
+  trajopt_.SetInitialGuess(BsplineTrajectory(
+      trajopt_.basis(), math::EigenToStdVector<double>(
+                            MatrixXd::Ones(3, trajopt_.num_control_points()))));
+  auto result = Solve(trajopt_.prog());
+  EXPECT_TRUE(result.is_success());
+  auto q = trajopt_.ReconstructTrajectory(result);
+  auto qdot = q.MakeDerivative();
+  const double kTol = 1e-6;
+  const double T = result.GetSolution(trajopt_.duration());
+  const auto qdot_at_s = qdot->value(s * T);
+  const Eigen::Vector3d constrained_qdot_val(qdot_at_s(0), qdot_at_s(2),
+                                             qdot_at_s(1));
+  EXPECT_TRUE((constrained_qdot_val.array() <= ub.array() + kTol).all());
+  EXPECT_TRUE((constrained_qdot_val.array() >= lb.array() - kTol).all());
 }
 
 TEST_F(KinematicTrajectoryOptimizationTest, AddPathAccelerationConstraint) {

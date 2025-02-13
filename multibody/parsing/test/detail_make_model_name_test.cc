@@ -12,10 +12,11 @@ using drake::internal::DiagnosticPolicy;
 class MakeModelNameTest : public testing::Test {
  public:
   // Making model names does not involve parser delegation.
-  static ParserInterface& NoSelect(
-      const drake::internal::DiagnosticPolicy&, const std::string&) {
+  static ParserInterface& NoSelect(const drake::internal::DiagnosticPolicy&,
+                                   const std::string&) {
     DRAKE_UNREACHABLE();
   }
+
  protected:
   ParsingOptions options_;
   PackageMap package_map_;
@@ -23,7 +24,7 @@ class MakeModelNameTest : public testing::Test {
   MultibodyPlant<double> plant_{0.0};
   CollisionFilterGroupResolver resolver_{&plant_};
   ParsingWorkspace workspace_{options_, package_map_, policy_,
-    &plant_, &resolver_, NoSelect};
+                              &plant_,  &resolver_,   NoSelect};
 };
 
 TEST_F(MakeModelNameTest, Identity) {

@@ -910,5 +910,4 @@ add_lint_tests(
         "detail_usd_parser.cc",
         "detail_usd_parser_off.cc",
     ],
-    enable_clang_format_lint = False,
 )

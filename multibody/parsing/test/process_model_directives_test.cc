@@ -21,8 +21,6 @@ namespace multibody {
 namespace parsing {
 namespace {
 
-using std::optional;
-using Eigen::Vector3d;
 using drake::geometry::GeometryId;
 using drake::math::RigidTransformd;
 using drake::multibody::AddMultibodyPlantSceneGraph;
@@ -31,38 +29,38 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::systems::Context;
 using drake::systems::DiagramBuilder;
+using Eigen::Vector3d;
+using std::optional;
 
 const char* const kTestDir =
     "drake/multibody/parsing/test/process_model_directives_test";
 
 void add_test_package(PackageMap* package_map) {
-  const std::filesystem::path abspath_xml = FindResourceOrThrow(
-      std::string(kTestDir) + "/package.xml");
+  const std::filesystem::path abspath_xml =
+      FindResourceOrThrow(std::string(kTestDir) + "/package.xml");
   package_map->AddPackageXml(abspath_xml.string());
 }
 
 // Our unit test's package is not normally loaded; construct a parser that
 // has it and can resolve package://process_model_directives_test urls.
 std::unique_ptr<Parser> make_parser(
-  MultibodyPlant<double>* plant,
-  geometry::SceneGraph<double>* scene_graph = nullptr) {
+    MultibodyPlant<double>* plant,
+    geometry::SceneGraph<double>* scene_graph = nullptr) {
   auto parser = std::make_unique<Parser>(plant, scene_graph);
   add_test_package(&(parser->package_map()));
   return parser;
 }
 
 using CollisionPair = SortedPair<std::string>;
-void VerifyCollisionFilters(
-    const geometry::SceneGraph<double>& scene_graph,
-    const std::set<CollisionPair>& expected_filters) {
+void VerifyCollisionFilters(const geometry::SceneGraph<double>& scene_graph,
+                            const std::set<CollisionPair>& expected_filters) {
   const auto& inspector = scene_graph.model_inspector();
   // Get the collision geometry ids.
   const std::vector<GeometryId> all_ids = inspector.GetAllGeometryIds();
   geometry::GeometrySet id_set(all_ids);
-  auto collision_id_set = inspector.GetGeometryIds(
-      id_set, geometry::Role::kProximity);
-  std::vector<GeometryId> ids(collision_id_set.begin(),
-                              collision_id_set.end());
+  auto collision_id_set =
+      inspector.GetGeometryIds(id_set, geometry::Role::kProximity);
+  std::vector<GeometryId> ids(collision_id_set.begin(), collision_id_set.end());
   const int num_links = ids.size();
   for (int m = 0; m < num_links; ++m) {
     const std::string& m_name = inspector.GetName(ids[m]);
@@ -70,12 +68,10 @@ void VerifyCollisionFilters(
       const std::string& n_name = inspector.GetName(ids[n]);
       CollisionPair names{m_name, n_name};
       SCOPED_TRACE(fmt::format("{} vs {}", names.first(), names.second()));
-      auto contains =
-          [&expected_filters](const CollisionPair& key) {
-            return expected_filters.contains(key);
-          };
-      EXPECT_EQ(inspector.CollisionFiltered(ids[m], ids[n]),
-                contains(names));
+      auto contains = [&expected_filters](const CollisionPair& key) {
+        return expected_filters.contains(key);
+      };
+      EXPECT_EQ(inspector.CollisionFiltered(ids[m], ids[n]), contains(names));
     }
   }
 }
@@ -87,8 +83,8 @@ GTEST_TEST(ProcessModelDirectivesTest, BasicSmokeTest) {
   const MultibodyPlant<double> empty_plant(0.0);
 
   MultibodyPlant<double> plant(0.0);
-  ProcessModelDirectives(station_directives, &plant,
-                         nullptr, make_parser(&plant).get());
+  ProcessModelDirectives(station_directives, &plant, nullptr,
+                         make_parser(&plant).get());
   plant.Finalize();
 
   // Expect the two model instances added by the directives.
@@ -112,8 +108,8 @@ GTEST_TEST(ProcessModelDirectivesTest, FromString) {
   const MultibodyPlant<double> empty_plant(0.0);
 
   MultibodyPlant<double> plant(0.0);
-  ProcessModelDirectives(station_directives, &plant,
-                         nullptr, make_parser(&plant).get());
+  ProcessModelDirectives(station_directives, &plant, nullptr,
+                         make_parser(&plant).get());
   plant.Finalize();
 
   // Expect the two model instances added by the directives.
@@ -157,14 +153,14 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
   // pieces.
   DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.);
-  ProcessModelDirectives(directives, &plant,
-                         nullptr, make_parser(&plant).get());
+  ProcessModelDirectives(directives, &plant, nullptr,
+                         make_parser(&plant).get());
   plant.Finalize();
   auto diagram = builder.Build();
 
   // Helper lambda for checking existence of frame in model scope.
-  auto check_frame = [&plant](
-      const std::string instance, const std::string frame) {
+  auto check_frame = [&plant](const std::string instance,
+                              const std::string frame) {
     const std::string scoped_frame = instance + "::" + frame;
     drake::log()->debug("Check: {}", scoped_frame);
     EXPECT_TRUE(
@@ -194,16 +190,15 @@ GTEST_TEST(ProcessModelDirectivesTest, AddScopedSmokeTest) {
 
 // Tests for frames added without a model name, but different base_frame.
 GTEST_TEST(ProcessModelDirectivesTest, AddFrameWithoutScope) {
-  ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) +
-                          "/add_frame_without_model_namespace.dmd.yaml"));
+  ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/add_frame_without_model_namespace.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
   DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.);
-  ProcessModelDirectives(directives, &plant,
-                         nullptr, make_parser(&plant).get());
+  ProcessModelDirectives(directives, &plant, nullptr,
+                         make_parser(&plant).get());
   plant.Finalize();
   auto diagram = builder.Build();
 
@@ -240,24 +235,23 @@ directives:
 
 // Test backreference behavior in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, TestBackreferences) {
-  ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) +
-                          "/test_backreferences.dmd.yaml"));
+  ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/test_backreferences.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
   DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.);
-  ProcessModelDirectives(directives, &plant,
-                         nullptr, make_parser(&plant).get());
+  ProcessModelDirectives(directives, &plant, nullptr,
+                         make_parser(&plant).get());
   plant.Finalize();
   auto diagram = builder.Build();
 
   // Weld joint for the model without a namespace is placed under simple_model
   // instead of world.
-  EXPECT_TRUE(plant.HasJointNamed(
-      "simple_model_origin_welds_to_base",
-      plant.GetModelInstanceByName("simple_model")));
+  EXPECT_TRUE(
+      plant.HasJointNamed("simple_model_origin_welds_to_base",
+                          plant.GetModelInstanceByName("simple_model")));
 
   // Weld joint for the nested model.
   EXPECT_TRUE(plant.HasJointNamed(
@@ -274,8 +268,8 @@ GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
   // pieces.
   DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.);
-  ProcessModelDirectives(directives, &plant,
-                         nullptr, make_parser(&plant).get());
+  ProcessModelDirectives(directives, &plant, nullptr,
+                         make_parser(&plant).get());
   plant.Finalize();
   auto diagram = builder.Build();
   auto context = plant.CreateDefaultContext();
@@ -288,33 +282,32 @@ GTEST_TEST(ProcessModelDirectivesTest, InjectFrames) {
 
   // Check for pose of welded models' base.
   EXPECT_TRUE(plant
-      .GetFrameByName("base", plant.GetModelInstanceByName("mid_level_model"))
-      .CalcPoseInWorld(*context)
-      .translation()
-      .isApprox(Vector3d(1, 2, 3)));
+                  .GetFrameByName(
+                      "base", plant.GetModelInstanceByName("mid_level_model"))
+                  .CalcPoseInWorld(*context)
+                  .translation()
+                  .isApprox(Vector3d(1, 2, 3)));
   // This transform includes the translation from the parent frame to the world
   // and from the parent frame to the child frame (via add_weld::X_PC).
   EXPECT_TRUE(plant
-      .GetFrameByName("base",
-                      plant.GetModelInstanceByName("bottom_level_model"))
-      .CalcPoseInWorld(*context)
-      .translation()
-      .isApprox(Vector3d(6, 9, 12)));
+                  .GetFrameByName("base", plant.GetModelInstanceByName(
+                                              "bottom_level_model"))
+                  .CalcPoseInWorld(*context)
+                  .translation()
+                  .isApprox(Vector3d(6, 9, 12)));
 }
 
 // Test collision filter groups in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
-  ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) +
-                          "/collision_filter_group.dmd.yaml"));
+  ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/collision_filter_group.dmd.yaml"));
 
   // Ensure that we have a SceneGraph present so that we test relevant visual
   // pieces.
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.);
   auto parser = make_parser(&plant);
-  ProcessModelDirectives(directives, &plant,
-                         nullptr, parser.get());
+  ProcessModelDirectives(directives, &plant, nullptr, parser.get());
 
   // Make sure the plant is not finalized such that the Finalize() default
   // filtering has not taken into effect yet. This guarantees that the
@@ -322,22 +315,22 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   ASSERT_FALSE(plant.is_finalized());
 
   std::set<CollisionPair> expected_filters = {
-    // From group 'across_models'.
-    {"model1::collision",             "model2::collision"},
-    // From group 'nested_members'.
-    {"model1::collision",             "nested::sub_model2::collision"},
-    // From group 'nested_group'.
-    {"model3::collision",             "nested::sub_model1::collision"},
-    {"model3::collision",             "nested::sub_model2::collision"},
-    // From group 'across_sub_models'.
-    {"nested::sub_model1::collision", "nested::sub_model2::collision"},
-    // From composite group 'group_4567'.
-    {"model4::collision", "model5::collision"},
-    {"model4::collision", "model6::collision"},
-    {"model4::collision", "model7::collision"},
-    {"model5::collision", "model6::collision"},
-    {"model5::collision", "model7::collision"},
-    {"model6::collision", "model7::collision"},
+      // From group 'across_models'.
+      {"model1::collision", "model2::collision"},
+      // From group 'nested_members'.
+      {"model1::collision", "nested::sub_model2::collision"},
+      // From group 'nested_group'.
+      {"model3::collision", "nested::sub_model1::collision"},
+      {"model3::collision", "nested::sub_model2::collision"},
+      // From group 'across_sub_models'.
+      {"nested::sub_model1::collision", "nested::sub_model2::collision"},
+      // From composite group 'group_4567'.
+      {"model4::collision", "model5::collision"},
+      {"model4::collision", "model6::collision"},
+      {"model4::collision", "model7::collision"},
+      {"model5::collision", "model6::collision"},
+      {"model5::collision", "model7::collision"},
+      {"model6::collision", "model7::collision"},
   };
   VerifyCollisionFilters(scene_graph, expected_filters);
 
@@ -345,13 +338,12 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
   CollisionFilterGroups expected_report;
   expected_report.AddGroup("across_models", {"model1::base", "model2::base"});
   expected_report.AddGroup("group_45", {"model4::base", "model5::base"});
-  expected_report.AddGroup("group_4567",
-                           {"model4::base", "model5::base",
-                            "model6::base", "model7::base"});
+  expected_report.AddGroup("group_4567", {"model4::base", "model5::base",
+                                          "model6::base", "model7::base"});
   expected_report.AddGroup("group_67", {"model6::base", "model7::base"});
-  expected_report.AddGroup("nested::across_sub_models",
-                           {"nested::sub_model1::base",
-                            "nested::sub_model2::base"});
+  expected_report.AddGroup(
+      "nested::across_sub_models",
+      {"nested::sub_model1::base", "nested::sub_model2::base"});
   expected_report.AddGroup("nested_group", {"model3::base"});
   expected_report.AddGroup("nested_members",
                            {"model1::base", "nested::sub_model2::base"});
@@ -367,15 +359,13 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
 
 // Test collision filter groups in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupNoSceneGraph) {
-  ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) +
-                          "/collision_filter_group.dmd.yaml"));
+  ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/collision_filter_group.dmd.yaml"));
 
   MultibodyPlant<double> plant(0.0);
   ASSERT_FALSE(plant.geometry_source_is_registered());
-  DRAKE_EXPECT_NO_THROW(
-      ProcessModelDirectives(directives, &plant,
-                             nullptr, make_parser(&plant).get()));
+  DRAKE_EXPECT_NO_THROW(ProcessModelDirectives(directives, &plant, nullptr,
+                                               make_parser(&plant).get()));
 }
 
 // Duplicate definition of collision filter groups raises an error.
@@ -407,16 +397,15 @@ directives:
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      ProcessModelDirectives(directives, &plant,
-                             nullptr, make_parser(&plant).get()),
+      ProcessModelDirectives(directives, &plant, nullptr,
+                             make_parser(&plant).get()),
       ".*'bad_repeated'.*already.*defined.*");
 }
 
 // Test collision filter groups in ModelDirectives.
 GTEST_TEST(ProcessModelDirectivesTest, DefaultPositions) {
-  ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) +
-                          "/default_positions.dmd.yaml"));
+  ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/default_positions.dmd.yaml"));
 
   MultibodyPlant<double> plant(0);
   ProcessModelDirectives(directives, &plant, nullptr,
@@ -452,16 +441,14 @@ GTEST_TEST(ProcessModelDirectivesTest, DefaultPositions) {
 GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
   // When the user gives a bogus filename, at minimum we must echo it back to
   // them so they know what failed.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      LoadModelDirectives("no-such-file.yaml"),
-      ".*no-such-file.yaml.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(LoadModelDirectives("no-such-file.yaml"),
+                              ".*no-such-file.yaml.*");
 
   // User specifies a package that hasn't been properly registered.
   {
     MultibodyPlant<double> plant(0.0);
-    ModelDirectives directives = LoadModelDirectives(
-        FindResourceOrThrow(std::string(kTestDir) +
-                            "/bad_package_uri.dmd.yaml"));
+    ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+        std::string(kTestDir) + "/bad_package_uri.dmd.yaml"));
     DRAKE_EXPECT_THROWS_MESSAGE(
         ProcessModelDirectives(directives, &plant, nullptr,
                                make_parser(&plant).get()),
@@ -472,28 +459,26 @@ GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
 // Test model directives failure to load welds with a deep nested child.
 GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildWelds) {
   ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) +
-                          "/deep_child_weld.dmd.yaml"));
+      FindResourceOrThrow(std::string(kTestDir) + "/deep_child_weld.dmd.yaml"));
   MultibodyPlant<double> plant(0.0);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ProcessModelDirectives(directives, &plant, nullptr,
-        make_parser(&plant).get()),
-        R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+                             make_parser(&plant).get()),
+      R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
 }
 
 // Test model directives failure to load welds with a child to a
 // deep nested frame.
 GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildFrameWelds) {
-  ModelDirectives directives = LoadModelDirectives(
-      FindResourceOrThrow(std::string(kTestDir) +
-                          "/deep_child_frame_weld.dmd.yaml"));
+  ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
+      std::string(kTestDir) + "/deep_child_frame_weld.dmd.yaml"));
   MultibodyPlant<double> plant(0.0);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       ProcessModelDirectives(directives, &plant, nullptr,
-        make_parser(&plant).get()),
-        R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+                             make_parser(&plant).get()),
+      R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
 }
 
 // Test that flattening is idempotent and semantically a no-op.
@@ -567,17 +552,16 @@ GTEST_TEST(ProcessModelDirectivesTest, FlattenCollisionGroups) {
   add_test_package(&package_map);
 
   // Load the directives hierarchy.
-  const ModelDirectives directives = LoadModelDirectives(FindResourceOrThrow(
-      std::string(kTestDir) + "/unflattened_top.dmd.yaml"));
+  const ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/unflattened_top.dmd.yaml"));
 
   // Flatten the directives hierarchy.
   ModelDirectives flat_directives;
   FlattenModelDirectives(directives, package_map, &flat_directives);
 
   // Load the expected result of flattening.
-  const ModelDirectives expected_directives =
-      LoadModelDirectives(FindResourceOrThrow(
-          std::string(kTestDir) + "/flattened.dmd.yaml"));
+  const ModelDirectives expected_directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) + "/flattened.dmd.yaml"));
 
   // Check that the flattened directives are identical to the expected ones.
   const std::string flattened = yaml::SaveYamlString(flat_directives);
@@ -590,7 +574,7 @@ GTEST_TEST(ProcessModelDirectivesTest, FlattenCollisionGroups) {
     geometry::SceneGraph<double> scene_graph;
     std::unique_ptr<Parser> parser = make_parser(&plant, &scene_graph);
     std::vector<ModelInstanceInfo> added_models =
-      ProcessModelDirectives(flat_directives, parser.get());
+        ProcessModelDirectives(flat_directives, parser.get());
     ASSERT_EQ(added_models.size(), 4);
   }
   {
@@ -598,7 +582,7 @@ GTEST_TEST(ProcessModelDirectivesTest, FlattenCollisionGroups) {
     geometry::SceneGraph<double> scene_graph;
     std::unique_ptr<Parser> parser = make_parser(&plant, &scene_graph);
     std::vector<ModelInstanceInfo> added_models =
-      ProcessModelDirectives(expected_directives, parser.get());
+        ProcessModelDirectives(expected_directives, parser.get());
     ASSERT_EQ(added_models.size(), 4);
   }
 
@@ -634,8 +618,7 @@ GTEST_TEST(ProcessModelDirectivesTest, WeldOffset) {
   std::vector<ModelInstanceInfo> added_models =
       ProcessModelDirectives(directives, make_parser(&plant).get());
   plant.Finalize();
-  const std::unique_ptr<Context<double>> context =
-      plant.CreateDefaultContext();
+  const std::unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
   ASSERT_EQ(added_models.size(), 2);
   EXPECT_EQ(added_models[0].model_name, "panda");

@@ -108,8 +108,12 @@ Collision filter exclusion pairs:
 
 GTEST_TEST(CollisionFilterGroups, Convert) {
   // Use some arbitrary reversible conversions.
-  auto double_to_int = [](const double& x) { return x * 32; };
-  auto int_to_double = [](const int& x) { return x / 32.0; };
+  auto double_to_int = [](const double& x) {
+    return x * 32;
+  };
+  auto int_to_double = [](const int& x) {
+    return x / 32.0;
+  };
 
   CollisionFilterGroupsImpl<int> int_groups1;
   int_groups1.AddGroup(1, {2});
