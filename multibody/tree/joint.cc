@@ -8,14 +8,14 @@ Joint<T>::~Joint() = default;
 
 template <typename T>
 bool Joint<T>::can_rotate() const {
-  DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-  return get_implementation().mobilizer->can_rotate();
+  DRAKE_DEMAND(has_mobilizer());
+  return mobilizer_->can_rotate();
 }
 
 template <typename T>
 bool Joint<T>::can_translate() const {
-  DRAKE_DEMAND(this->get_implementation().has_mobilizer());
-  return get_implementation().mobilizer->can_translate();
+  DRAKE_DEMAND(has_mobilizer());
+  return mobilizer_->can_translate();
 }
 
 template <typename T>
@@ -32,21 +32,20 @@ void Joint<T>::SetPositions(
   DRAKE_THROW_UNLESS(context != nullptr);
   DRAKE_THROW_UNLESS(positions.size() == num_positions());
   this->get_parent_tree().ThrowIfNotFinalized("Joint::SetPositions");
-  DRAKE_DEMAND(get_implementation().has_mobilizer());
+  DRAKE_DEMAND(has_mobilizer());
   const Eigen::VectorBlock<VectorX<T>> all_q =
       this->get_parent_tree().GetMutablePositions(&*context);
-  get_implementation().mobilizer->get_mutable_positions_from_array(&all_q) =
-      positions;
+  mobilizer_->get_mutable_positions_from_array(&all_q) = positions;
 }
 
 template <typename T>
 Eigen::Ref<const VectorX<T>> Joint<T>::GetPositions(
     const systems::Context<T>& context) const {
   this->get_parent_tree().ThrowIfNotFinalized("Joint::GetPositions");
-  DRAKE_DEMAND(get_implementation().has_mobilizer());
+  DRAKE_DEMAND(has_mobilizer());
   const Eigen::VectorBlock<const VectorX<T>> all_q =
       this->get_parent_tree().get_positions(context);
-  return get_implementation().mobilizer->get_positions_from_array(all_q);
+  return mobilizer_->get_positions_from_array(all_q);
 }
 
 template <typename T>
@@ -56,21 +55,29 @@ void Joint<T>::SetVelocities(
   DRAKE_THROW_UNLESS(context != nullptr);
   DRAKE_THROW_UNLESS(velocities.size() == num_velocities());
   this->get_parent_tree().ThrowIfNotFinalized("Joint::SetVelocities");
-  DRAKE_DEMAND(get_implementation().has_mobilizer());
+  DRAKE_DEMAND(has_mobilizer());
   const Eigen::VectorBlock<VectorX<T>> all_v =
       this->get_parent_tree().GetMutableVelocities(&*context);
-  get_implementation().mobilizer->get_mutable_velocities_from_array(&all_v) =
-      velocities;
+  mobilizer_->get_mutable_velocities_from_array(&all_v) = velocities;
 }
 
 template <typename T>
 Eigen::Ref<const VectorX<T>> Joint<T>::GetVelocities(
     const systems::Context<T>& context) const {
   this->get_parent_tree().ThrowIfNotFinalized("Joint::GetVelocities");
-  DRAKE_DEMAND(get_implementation().has_mobilizer());
+  DRAKE_DEMAND(has_mobilizer());
   const Eigen::VectorBlock<const VectorX<T>> all_v =
       this->get_parent_tree().get_velocities(context);
-  return get_implementation().mobilizer->get_velocities_from_array(all_v);
+  return mobilizer_->get_velocities_from_array(all_v);
+}
+
+template <typename T>
+std::unique_ptr<internal::Mobilizer<T>> Joint<T>::Build(
+    const internal::SpanningForest::Mobod& mobod) {
+  std::unique_ptr<internal::Mobilizer<T>> owned_mobilizer =
+      MakeMobilizerForJoint(mobod);
+  mobilizer_ = owned_mobilizer.get();
+  return owned_mobilizer;
 }
 
 template <typename T>
@@ -100,9 +107,9 @@ void Joint<T>::SetSpatialVelocityImpl(systems::Context<T>* context,
                                       const char* func) const {
   DRAKE_THROW_UNLESS(context != nullptr);
   this->get_parent_tree().ThrowIfNotFinalized("Joint::SetSpatialVelocity");
-  DRAKE_DEMAND(get_implementation().has_mobilizer());
-  if (!get_implementation().mobilizer->SetSpatialVelocity(
-          *context, V_FM, &context->get_mutable_state())) {
+  DRAKE_DEMAND(has_mobilizer());
+  if (!mobilizer_->SetSpatialVelocity(*context, V_FM,
+                                      &context->get_mutable_state())) {
     throw std::logic_error(
         fmt::format("{}(): {} joint does not implement this function "
                     "(joint '{}')",
@@ -114,8 +121,8 @@ template <typename T>
 SpatialVelocity<T> Joint<T>::GetSpatialVelocity(
     const systems::Context<T>& context) const {
   this->get_parent_tree().ThrowIfNotFinalized("Joint::GetSpatialVelocity");
-  DRAKE_DEMAND(get_implementation().has_mobilizer());
-  return get_implementation().mobilizer->GetSpatialVelocity(context);
+  DRAKE_DEMAND(has_mobilizer());
+  return mobilizer_->GetSpatialVelocity(context);
 }
 
 template <typename T>
@@ -124,9 +131,9 @@ void Joint<T>::SetPosePairImpl(systems::Context<T>* context,
                                const Vector3<T>& p_FM, const char* func) const {
   DRAKE_THROW_UNLESS(context != nullptr);
   this->get_parent_tree().ThrowIfNotFinalized("Joint::SetPosePair");
-  DRAKE_DEMAND(get_implementation().has_mobilizer());
-  if (!get_implementation().mobilizer->SetPosePair(
-          *context, q_FM, p_FM, &context->get_mutable_state())) {
+  DRAKE_DEMAND(has_mobilizer());
+  if (!mobilizer_->SetPosePair(*context, q_FM, p_FM,
+                               &context->get_mutable_state())) {
     throw std::logic_error(
         fmt::format("{}(): {} joint does not implement this function "
                     "(joint '{}')",
@@ -138,8 +145,8 @@ template <typename T>
 std::pair<Eigen::Quaternion<T>, Vector3<T>> Joint<T>::GetPosePair(
     const systems::Context<T>& context) const {
   this->get_parent_tree().ThrowIfNotFinalized("Joint::GetPosePair");
-  DRAKE_DEMAND(get_implementation().has_mobilizer());
-  return get_implementation().mobilizer->GetPosePair(context);
+  DRAKE_DEMAND(has_mobilizer());
+  return mobilizer_->GetPosePair(context);
 }
 
 }  // namespace multibody
