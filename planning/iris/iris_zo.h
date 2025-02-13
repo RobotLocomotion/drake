@@ -180,6 +180,22 @@ class IrisZoOptions {
     return parameterization_dimension_;
   }
 
+  /** Construct an instance of IrisZoOptions for the rational kinematic
+   * parameterization function θᵢ=2arctan(sᵢ), where θ and s are vectors of a
+   * user-defined dimension. */
+  static IrisZoOptions CreateWithRationalKinematicParameterization(
+      int dimension) {
+    DRAKE_DEMAND(dimension > 0);
+    IrisZoOptions instance;
+    instance.set_parameterization(
+        [](const Eigen::VectorXd& q) -> Eigen::VectorXd {
+          return (2 * q.array().atan()).matrix();
+        },
+        /* parameterization_is_threadsafe */ true,
+        /* parameterization_dimension */ dimension);
+    return instance;
+  }
+
  private:
   bool parameterization_is_threadsafe_{true};
 
