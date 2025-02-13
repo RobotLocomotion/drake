@@ -95,6 +95,10 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
 
+  // Set time step for debugging
+  time_ = diagram_context.get_time();
+  time_step_ = h;
+
   // Workspace preallocations
   VectorX<T>& q = workspace_.q;
   SapSolverResults<T>& sap_results = workspace_.sap_results;
@@ -280,7 +284,29 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
       }
     }
 
-    if (get_use_full_newton()) refresh_hessian_ = true;
+    // Force a Hessian refresh if the problem structure has changed, or if 
+    // Hessian re-use is disabled by the user. 
+    bool problem_structure_changed = !hessian_factorization_.matches(model);
+    if (get_use_full_newton() || problem_structure_changed) {
+      refresh_hessian_ = true;
+    }
+   
+    ////////////////////////////////////////////////////////////////////////
+    // Debugging plots
+
+    if (is_first_iteration_) {
+      // CVS header
+      fmt::print("t, h, k, cost, refresh_hessian, problem_changed, theta_converged\n");
+      is_first_iteration_ = false;
+    }
+
+    // CSV data
+    fmt::print("{}, {}, {}, {}, {}, {}, {}\n", time_, time_step_, k, ell,
+               static_cast<int>(refresh_hessian_),
+               static_cast<int>(problem_structure_changed),
+               static_cast<int>(theta_criterion_reached));
+
+    ////////////////////////////////////////////////////////////////////////
 
     // TODO(amcastro-tri): consider monitoring the duality gap.
     if (sap_stats_.optimality_criterion_reached ||
@@ -450,12 +476,11 @@ void ConvexIntegrator<T>::CalcSearchDirectionData(const SapModel<T>& model,
   data->dv = -model.EvalCostGradient(context);
 
   // Factorizing the Hessian is expensive, so we only do it when we have to
-  // (because the problem structure has changed) or when explicitly requested.
-  if (!hessian_factorization_.matches(model) || refresh_hessian_) {
+  if (refresh_hessian_) {
     CalcHessianFactorization(model, context, &hessian_factorization_);
 
-    // Now that we've factorized the hessian, let's not re-factorize again
-    // unless we really have to.
+    // Now that we've factorized the hessian, let's try not to do it again at
+    // the next iteration.
     refresh_hessian_ = false;
   }
 

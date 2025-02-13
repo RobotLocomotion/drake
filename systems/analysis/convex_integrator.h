@@ -287,6 +287,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Flag for Hessian factorization re-use (changes between iterations)
   bool refresh_hessian_{false};
 
+  // Various plotting/debugging tools
+  bool is_first_iteration_{true};
+  T time_{0.0};
+  T time_step_{0.0};
+
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;
 
