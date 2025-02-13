@@ -153,9 +153,9 @@ Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {
 std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
                                        double scale) {
   vtkNew<vtkGLTFDocumentLoader> loader;
-  loader->SetConfig({.include_animation = false,
-                     .include_images = false,
-                     .include_skins = false});
+  loader->SetLoadAnimation(false);
+  loader->SetLoadImages(false);
+  loader->SetLoadSkinMatrix(false);
   vtkNew<VtkDiagnosticEventObserver> observer;
   DiagnosticPolicy diagnostic;
   observer->set_diagnostic(&diagnostic);
