@@ -26,7 +26,7 @@ def make_plots(csv_file, start_step, end_step):
     k = data["k"][start_step:end_step]
     times = data["t"][start_step:end_step]
     time_steps = data["h"][start_step:end_step]
-    costs = data["cost"][start_step:end_step]
+    residual = data["residual"][start_step:end_step]
     hessian_refresh = data["refresh_hessian"][start_step:end_step]
     problem_changed = data["problem_changed"][start_step:end_step]
     solve_phase = data["solve_phase"][start_step:end_step]
@@ -43,9 +43,10 @@ def make_plots(csv_file, start_step, end_step):
     ax[1].set_ylabel("$\delta t$ (s)")
     ax[1].set_yscale("log")
 
-    # Third plot is the cost
-    ax[2].plot(solver_steps, costs, "o")
-    ax[2].set_ylabel("Cost $\ell$")
+    # Third plot is the momentum residual
+    ax[2].plot(solver_steps, residual, "o")
+    ax[2].set_ylabel("$\\nabla\ell$")
+    ax[2].set_yscale("log")
 
     # Fourth plot is a vertical bar when the hessian is refreshed. Uses axvline
     # because the refresh is not periodic

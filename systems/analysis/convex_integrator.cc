@@ -299,12 +299,12 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
 
     if (is_first_iteration_) {
       // CVS header
-      fmt::print("t,h,k,cost,refresh_hessian,problem_changed,theta_converged,solve_phase\n");
+      fmt::print("t,h,k,residual,refresh_hessian,problem_changed,theta_converged,solve_phase\n");
       is_first_iteration_ = false;
     }
 
     // CSV data
-    fmt::print("{},{},{},{},{},{},{},{}\n", time_, time_step_, k, ell,
+    fmt::print("{},{},{},{},{},{},{},{}\n", time_, time_step_, k, momentum_residual,
                static_cast<int>(refresh_hessian_),
                static_cast<int>(problem_structure_changed),
                static_cast<int>(theta_criterion_reached), solve_phase_);
