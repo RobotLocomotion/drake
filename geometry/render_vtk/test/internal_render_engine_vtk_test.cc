@@ -2020,7 +2020,7 @@ TEST_F(RenderEngineVtkTest, PbrMaterialPromotion) {
 
     // We should still basically be green (because of the green texture), but
     // the saturation and brightness changes in the presence of PBR material.
-    const TestColor pbr_texture_color(66, 152, 68, 255);
+    const TestColor pbr_texture_color(60, 150, 63, 255);
     test_sphere_color(pbr_texture_color, renderer_.get(),
                       std::source_location::current());
   }

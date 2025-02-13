@@ -1,0 +1,80 @@
+In the mathematical model for PBR, when a surface's roughness goes to zero, it
+becomes a *perfect* reflector. That means, the explicit lights we use (point,
+spot, direction) will be reflected a perfect points. That causes the light's
+specular reflection to simply disappear.
+
+These explicit lights are supposed to approximate real world lights that are
+*not* point lights. Even in a perfect surface, the light will still appear
+in specular reflections. So, disappearing highlights would be counter
+intuitive. Sufficiently so that other PBR render engines accommodate it
+(three.js used by Meshcat prevents the light sources from disappearing
+completely).
+
+In this patch, we're simply mapping the roughness domain [0, 1] to [0.05, 1.0]
+for the case when computing the specular contribution of explicit lights.
+It does not affect specular reflections from image-based lighting (so, a
+roughness value of zero will still perfectly reflect the environment map).
+
+It's worth noting, that when it comes to direct illumination this makes
+*every* surface a bit rougher. Rougher surfaces diffuse the light more broadly
+and, because of this, the specular reflection of the direct light will be
+ever so slightly dimmer (conserving energy).
+
+An alternative would be to clamp the roughness value to the minimum value (in
+this case, 0.05). We chose to map the full domain so that if the material
+definition of a material tweaks its roughness value anywhere within the valid
+range, it would lead to a difference in rendered image. By clamping, there'd
+be a range of roughness values in which changes make no apparent difference
+(with respect to direct light specular reflections). We can change our minds
+and simply clamp if that seems more useful.
+
+The value 0.05 is arbitrary. The goal was to pick the smallest number that would
+still produce a "satisfying" specular reflection. It was picked via a limited
+sampling of renderings and the value can certainly be revisited in the future
+if it proves dissatisfying for other reasons. Alternatively, further exploration
+into meshcat (and underlying three.js) to figure out why meshcat doesn't lose
+specular reflections might provide a more disciplined basis for resolving the
+underlying issue.
+
+This modification is an aesthetic judgment and a deviation from the pure
+mathematical model. This could be upstreamed, but it would require a similar
+aesthetic judgment on VTK's part.
+
+--- Rendering/OpenGL2/glsl/vtkPBRFunctions.glsl
++++ Rendering/OpenGL2/glsl/vtkPBRFunctions.glsl
+@@ -39,9 +39,20 @@ vec3 DiffuseLambert(vec3 albedo)
+ {
+   return albedo * recPI;
+ }
+-vec3 SpecularIsotropic(float NdH, float NdV, float NdL, float HdL, float roughness,
++float DirectLightRoughness(float roughness)
++{
++  // With direct lights (point, spot, directional light), when roughness goes
++  // to zero, the specular highlight completely disappears. While mathematically
++  // correct, it is visually surprising. The physical equivalent of those point
++  // lights do *not* disappear in reflections. So, we'll address this by
++  // remapping input roughness [0, 1] to the range [0.05, 1.0], guaranteeing
++  // that lights create a specular highlight on the smoothest surfaces.
++  return 0.95 * roughness + 0.05;
++}
++vec3 SpecularIsotropic(float NdH, float NdV, float NdL, float HdL, float roughness_in,
+   vec3 F0, vec3 F90, out vec3 F)
+ {
++  float roughness = DirectLightRoughness(roughness_in);
+   float D = D_GGX(NdH, roughness);
+   float V = V_SmithCorrelated(NdV, NdL, roughness);
+   F = F_Schlick(F0, F90, HdL);
+@@ -64,10 +75,12 @@ float V_SmithGGXCorrelated_Anisotropic(float at, float ab, float TdV, float BdV,
+   float lambdaL = NdV * length(vec3(at * TdL, ab * BdL, NdL));
+   return 0.5 / (lambdaV + lambdaL);
+ }
+-vec3 SpecularAnisotropic(float at, float ab, vec3 l, vec3 t, vec3 b, vec3 h, float TdV,
++vec3 SpecularAnisotropic(float at_in, float ab_in, vec3 l, vec3 t, vec3 b, vec3 h, float TdV,
+   float BdV, float NdH, float NdV, float NdL, float HdL, float roughness, float anisotropy,
+   vec3 F0, vec3 F90, out vec3 F)
+ {
++  float at = DirectLightRoughness(at_in);
++  float ab = DirectLightRoughness(ab_in);
+   float TdL = dot(t, l);
+   float BdL = dot(b, l);
+   float TdH = dot(t, h);
