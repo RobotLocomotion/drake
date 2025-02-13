@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "drake/geometry/geometry_ids.h"
@@ -313,7 +314,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   VectorX<T> AssembleActuationInput(const systems::Context<T>& context) const;
 
-  VectorX<T> AssembleDesiredStateInput(
+  std::pair<VectorX<T>, std::vector<bool>> AssembleDesiredStateInput(
       const systems::Context<T>& context) const;
 
   const std::map<MultibodyConstraintId, internal::CouplerConstraintSpec>&

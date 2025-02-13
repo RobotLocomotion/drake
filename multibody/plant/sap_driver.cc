@@ -730,13 +730,15 @@ void SapDriver<T>::AddPdControllerConstraints(
 
   // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
   // allocations.
-  const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
+  const auto [desired_state, model_instance_has_armed_pds] =
+      manager_->AssembleDesiredStateInput(context);
   const VectorX<T> feed_forward_actuation =
       manager_->AssembleActuationInput(context);
 
   for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
     const JointActuator<T>& actuator =
         plant().get_joint_actuator(actuator_index);
+    if (!model_instance_has_armed_pds[actuator.model_instance()]) continue;
     if (actuator.has_controller()) {
       const Joint<T>& joint = actuator.joint();
       // There is no point in modeling PD controllers if the joint is locked.
