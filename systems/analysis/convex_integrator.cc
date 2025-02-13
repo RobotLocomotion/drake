@@ -241,6 +241,7 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
   bool converged = false;
   double alpha = 1.0;
   int num_line_search_iters = 0;
+  bool theta_criterion_reached = false;
   for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
@@ -258,17 +259,14 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
 
     if (k > 1) {
       // Alternative optimality criterion based on the method of [Hairer, 1996],
-      // Equation IV.8.10.
+      // Equation IV.8.10. This indicates whether or not the *next* step will
+      // converge, using a looser tolerance (than the SAP criteria) that scales
+      // with the desired accuracy.
       const double kappa = 0.05;  // copied from implicit_integrator.cc
       const double theta = dv_norm / last_dv_norm;
       const double eta = theta / (1.0 - theta);
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
-      const bool theta_converged = (theta < 1.0) && (eta * dv_norm < k_dot_tol);
-
-      // This is typically less strict than the SAP convergence criterion, but
-      // we'll take either one just to be safe.
-      sap_stats_.optimality_criterion_reached =
-          sap_stats_.optimality_criterion_reached || theta_converged;
+      theta_criterion_reached = (theta < 1.0) && (eta * dv_norm < k_dot_tol);
 
       // Choose whether to re-compute the Hessian factorization using Equation
       // IV.8.11 of [Hairer, 1996].
@@ -350,6 +348,14 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
         ell_decrement < sap_parameters_.cost_abs_tolerance +
                             sap_parameters_.cost_rel_tolerance * ell_scale &&
         alpha > 0.5;
+
+    // The theta convergence criterion is only relevant *after* a step has been
+    // taken. This is different from the (tighter) SAP convergence thresholds,
+    // which are checked before the step is taken.
+    if (theta_criterion_reached) {
+      converged = true;
+      break;
+    }
   }
 
   if (!converged) return SapSolverStatus::kFailure;
