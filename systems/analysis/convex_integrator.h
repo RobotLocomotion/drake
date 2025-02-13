@@ -291,6 +291,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   bool is_first_iteration_{true};
   T time_{0.0};
   T time_step_{0.0};
+  int solve_phase_{0};  // 0 = full , 1 = first half-step, 2 = second half-step
 
   // Plant model, since convex integration is specific to MbP
   const MultibodyPlant<T>* plant_;

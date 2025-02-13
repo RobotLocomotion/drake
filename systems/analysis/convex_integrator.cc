@@ -110,6 +110,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   CalcTimestepIndependentProblemData(context, &data);
 
   // Solve the for the full step (t+h)
+  solve_phase_ = 0;
   SapContactProblem<T> problem = MakeSapContactProblem(context, data, h);
   SapSolverStatus status = SolveWithGuess(problem, data.v0, &sap_results);
   DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
@@ -131,6 +132,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 
     // Solve the first half-step (t + h/2). Here we can reuse the problem data
     // from the full step.
+    solve_phase_ = 1;
     problem = MakeSapContactProblem(context, data, 0.5 * h);
     status = SolveWithGuess(problem, data.v0, &sap_results);
     DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
@@ -150,6 +152,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 
     // Solve the second half-step problem. We'll use the full step from before
     // as the initial guess.
+    solve_phase_ = 2;
     const Eigen::Ref<const VectorX<T>> v_full = err.tail(nv);
     status = SolveWithGuess(problem, v_full, &sap_results);
     DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
@@ -296,15 +299,15 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
 
     if (is_first_iteration_) {
       // CVS header
-      fmt::print("t, h, k, cost, refresh_hessian, problem_changed, theta_converged\n");
+      fmt::print("t,h,k,cost,refresh_hessian,problem_changed,theta_converged,solve_phase\n");
       is_first_iteration_ = false;
     }
 
     // CSV data
-    fmt::print("{}, {}, {}, {}, {}, {}, {}\n", time_, time_step_, k, ell,
+    fmt::print("{},{},{},{},{},{},{},{}\n", time_, time_step_, k, ell,
                static_cast<int>(refresh_hessian_),
                static_cast<int>(problem_structure_changed),
-               static_cast<int>(theta_criterion_reached));
+               static_cast<int>(theta_criterion_reached), solve_phase_);
 
     ////////////////////////////////////////////////////////////////////////
 
