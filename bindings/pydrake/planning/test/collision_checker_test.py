@@ -8,6 +8,7 @@ import numpy as np
 import scipy.sparse
 
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import Sphere
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
@@ -430,19 +431,19 @@ class TestCollisionChecker(unittest.TestCase):
 
         robot, index = self._make_robot_diagram()
         plant = robot.plant()
-        checker_kwargs = dict(
+        checker_params = mut.CollisionCheckerParams(
             model=robot,
             robot_model_instances=[index],
             edge_step_size=0.125)
 
         if use_provider:
-            checker_kwargs["distance_and_interpolation_provider"] = \
+            checker_params.distance_and_interpolation_provider = \
                 mut.LinearDistanceAndInterpolationProvider(plant)
         if use_function:
-            checker_kwargs["configuration_distance_function"] = \
+            checker_params.configuration_distance_function = \
                 self._configuration_distance
 
-        return mut.SceneGraphCollisionChecker(**checker_kwargs)
+        return mut.SceneGraphCollisionChecker(checker_params)
 
     def test_scene_graph_collision_checker(self):
         """Tests the full CollisionChecker API.
@@ -458,6 +459,38 @@ class TestCollisionChecker(unittest.TestCase):
         self._test_collision_checker_base_class(provider_checker, True)
 
         function_checker = self._make_scene_graph_collision_checker(
+            False, True)
+        self._test_collision_checker_base_class(function_checker, False)
+
+    def test_scene_graph_collision_checker_deprecated_ctor(self):
+        # Delete this test on the removal date: 2025-06-01.
+        def _make_with_deprecated_ctor(use_provider, use_function):
+            self.assertFalse(use_provider and use_function)
+            robot, index = self._make_robot_diagram()
+            plant = robot.plant()
+            checker_kwargs = dict(
+                model=robot,
+                robot_model_instances=[index],
+                edge_step_size=0.125)
+
+            if use_provider:
+                checker_kwargs["distance_and_interpolation_provider"] = \
+                    mut.LinearDistanceAndInterpolationProvider(plant)
+            if use_function:
+                checker_kwargs["configuration_distance_function"] = \
+                    self._configuration_distance
+            with catch_drake_warnings(expected_count=1):
+                return mut.SceneGraphCollisionChecker(**checker_kwargs)
+
+        default_checker = _make_with_deprecated_ctor(
+            False, False)
+        self._test_collision_checker_base_class(default_checker, True)
+
+        provider_checker = _make_with_deprecated_ctor(
+            True, False)
+        self._test_collision_checker_base_class(provider_checker, True)
+
+        function_checker = _make_with_deprecated_ctor(
             False, True)
         self._test_collision_checker_base_class(function_checker, False)
 

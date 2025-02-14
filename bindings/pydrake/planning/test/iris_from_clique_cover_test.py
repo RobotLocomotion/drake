@@ -58,20 +58,20 @@ class TestIrisFromCliqueCover(unittest.TestCase):
 
         robot, index = self._make_robot_diagram()
         plant = robot.plant()
-        checker_kwargs = dict(
-            model=robot, robot_model_instances=[index], edge_step_size=0.125
+        checker_params = CollisionCheckerParams(
+            model=robot,
+            robot_model_instances=[index],
+            edge_step_size=0.125
         )
 
         if use_provider:
-            checker_kwargs[
-                "distance_and_interpolation_provider"
-            ] = mut.LinearDistanceAndInterpolationProvider(plant)
+            checker_params.distance_and_interpolation_provider = \
+                mut.LinearDistanceAndInterpolationProvider(plant)
         if use_function:
-            checker_kwargs[
-                "configuration_distance_function"
-            ] = self._configuration_distance
+            checker_params.configuration_distance_function = \
+                self._configuration_distance
 
-        return mut.SceneGraphCollisionChecker(**checker_kwargs)
+        return mut.SceneGraphCollisionChecker(checker_params)
 
     def test_iris_in_configuration_space_from_clique_cover_options(self):
         options = mut.IrisFromCliqueCoverOptions()
@@ -147,13 +147,13 @@ class TestIrisFromCliqueCover(unittest.TestCase):
           </joint>
         </robot>
 """
-        params = dict(edge_step_size=0.125)
+        params = CollisionCheckerParams(edge_step_size=0.125)
         builder = RobotDiagramBuilder()
-        params["robot_model_instances"] = builder.parser().AddModelsFromString(
+        params.robot_model_instances = builder.parser().AddModelsFromString(
             cross_cspace_urdf, "urdf"
         )
-        params["model"] = builder.Build()
-        checker = SceneGraphCollisionChecker(**params)
+        params.model = builder.Build()
+        checker = SceneGraphCollisionChecker(params)
 
         options = mut.IrisFromCliqueCoverOptions()
         options.num_points_per_coverage_check = 10

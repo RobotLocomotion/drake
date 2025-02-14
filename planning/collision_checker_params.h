@@ -50,7 +50,7 @@ configuration struct, but many do so.
 struct CollisionCheckerParams {
   /** A RobotDiagram model of the robot and environment. Must not be
   nullptr. */
-  std::unique_ptr<RobotDiagram<double>> model;
+  std::shared_ptr<RobotDiagram<double>> model;
 
   /** A DistanceAndInterpolationProvider to support configuration distance and
   interpolation operations.
