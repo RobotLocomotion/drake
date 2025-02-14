@@ -120,11 +120,17 @@ std::vector<uint8_t> CheckProgConstraints(
     return is_valid;
   }
   DRAKE_DEMAND(prog_ptr->IsThreadSafe() || parallelism.num_threads() == 1);
-  // TODO(cohnt): Parallelize this method if the constraints are threadsafe.
-  for (int i = start_idx; i < actual_end_idx; ++i) {
-    is_valid[i - start_idx] = static_cast<uint8_t>(
-        CheckProgConstraints(prog_ptr, particles[i], kTol));
-  }
+  const auto check_particle_work = [&prog_ptr, &particles, &start_idx, &kTol,
+                                    &is_valid](const int thread_num,
+                                               const int64_t index) {
+    unused(thread_num);
+    is_valid[index - start_idx] = static_cast<uint8_t>(
+        CheckProgConstraints(prog_ptr, particles[index], kTol));
+  };
+
+  DynamicParallelForIndexLoop(DegreeOfParallelism(parallelism.num_threads()),
+                              start_idx, actual_end_idx, check_particle_work,
+                              ParallelForBackend::BEST_AVAILABLE);
   return is_valid;
 }
 
