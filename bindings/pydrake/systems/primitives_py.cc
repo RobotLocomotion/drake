@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/primitives/adder.h"
@@ -24,6 +25,7 @@
 #include "drake/systems/primitives/port_switch.h"
 #include "drake/systems/primitives/random_source.h"
 #include "drake/systems/primitives/saturation.h"
+#include "drake/systems/primitives/selector.h"
 #include "drake/systems/primitives/shared_pointer_system.h"
 #include "drake/systems/primitives/sine.h"
 #include "drake/systems/primitives/sparse_matrix_gain.h"
@@ -63,6 +65,24 @@ PYBIND11_MODULE(primitives, m) {
           doc.PerceptronActivationType.kReLU.doc)
       .value("kTanh", PerceptronActivationType::kTanh,
           doc.PerceptronActivationType.kTanh.doc);
+
+  {
+    using Class = SelectorParams;
+    py::class_<Class> cls(m, "SelectorParams", doc.SelectorParams.doc);
+    {
+      using Nested = Class::OutputSelection;
+      py::class_<Nested> nested(
+          cls, "OutputSelection", doc.SelectorParams.OutputSelection.doc);
+      nested.def(ParamInit<Nested>());
+      DefAttributesUsingSerialize(&nested, doc.SelectorParams.OutputSelection);
+      DefReprUsingSerialize(&nested);
+      DefCopyAndDeepCopy(&nested);
+    }
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, doc.SelectorParams);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
 
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
   auto bind_common_scalar_types = [&m, &doc](auto dummy) {
@@ -210,6 +230,11 @@ PYBIND11_MODULE(primitives, m) {
             doc.Gain.ctor.doc_2args)
         .def(py::init<const Eigen::Ref<const VectorXd>&>(), py::arg("k"),
             doc.Gain.ctor.doc_1args);
+
+    DefineTemplateClassWithDefault<Selector<T>, LeafSystem<T>>(
+        m, "Selector", GetPyParam<T>(), doc.Selector.doc)
+        .def(py::init<SelectorParams>(), py::arg("params"),
+            doc.Selector.ctor.doc);
 
     DefineTemplateClassWithDefault<Sine<T>, LeafSystem<T>>(
         m, "Sine", GetPyParam<T>(), doc.Sine.doc)
