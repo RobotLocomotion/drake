@@ -185,6 +185,7 @@ def vtk_internal_repository(
             ":patches/disable_static_destructors.patch",
             ":patches/io_image_formats.patch",
             ":patches/nerf_pegtl.patch",
+            ":patches/preserve_direct_light_specular_reflections.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
             ":patches/vtkdoubleconversion_hidden.patch",
