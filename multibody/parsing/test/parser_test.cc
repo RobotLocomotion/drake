@@ -9,6 +9,7 @@
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/planning/robot_diagram_builder.h"
 
 namespace drake {
 namespace multibody {
@@ -34,6 +35,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
     Parser dut(&plant);
     EXPECT_EQ(&dut.plant(), &plant);
     EXPECT_EQ(dut.scene_graph(), nullptr);
+    EXPECT_EQ(dut.builder(), nullptr);
     EXPECT_EQ(dut.AddModels(sdf_name).size(), 1);
     const auto prefix_ids = Parser(&plant, "prefix").AddModels(sdf_name);
     EXPECT_EQ(prefix_ids.size(), 1);
@@ -48,6 +50,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
     Parser dut(&plant, &scene_graph);
     EXPECT_EQ(&dut.plant(), &plant);
     EXPECT_EQ(dut.scene_graph(), &scene_graph);
+    EXPECT_EQ(dut.builder(), nullptr);
     EXPECT_EQ(dut.AddModels(urdf_name).size(), 1);
     const auto prefix_ids = Parser(&plant, "prefix").AddModels(urdf_name);
     EXPECT_EQ(prefix_ids.size(), 1);
@@ -95,6 +98,84 @@ GTEST_TEST(FileParserTest, BasicTest) {
     const auto prefix_ids = Parser(&plant, "prefix").AddModels(obj_name);
     EXPECT_EQ(prefix_ids.size(), 1);
     EXPECT_EQ(plant.GetModelInstanceName(prefix_ids[0]), "prefix::box");
+  }
+}
+
+GTEST_TEST(FileParserTest, BuilderTest) {
+  const std::string sdf_name =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
+
+  {  // Pass the builder only (using RobotDiagramBuilder).
+    planning::RobotDiagramBuilder<double> builder(0.0);
+    Parser dut(&builder.builder());
+    EXPECT_EQ(dut.builder(), &builder.builder());
+    EXPECT_EQ(&dut.plant(), &builder.plant());
+    EXPECT_EQ(dut.scene_graph(), &builder.scene_graph());
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(builder.plant().GetModelInstanceName(ids[0]), "acrobot");
+  }
+
+  {  // Pass the builder only (the Diagram has only the plant).
+    systems::DiagramBuilder<double> builder;
+    auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+    plant->set_name("plant");
+    Parser dut(&builder);
+    EXPECT_EQ(dut.builder(), &builder);
+    EXPECT_EQ(&dut.plant(), plant);
+    EXPECT_EQ(dut.scene_graph(), nullptr);
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant->GetModelInstanceName(ids[0]), "acrobot");
+  }
+
+  {  // Pass the builder only; the Diagram has a plant named "plant", but no
+     // SceneGraph.
+    systems::DiagramBuilder<double> builder;
+    auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+    plant->set_name("plant");
+    Parser dut(&builder);
+    EXPECT_EQ(dut.builder(), &builder);
+    EXPECT_EQ(&dut.plant(), plant);
+    EXPECT_EQ(dut.scene_graph(), nullptr);
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant->GetModelInstanceName(ids[0]), "acrobot");
+  }
+
+  {  // The Diagram has a plant named "random", but no SceneGraph.
+    systems::DiagramBuilder<double> builder;
+    auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+    plant->set_name("random");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        Parser(&builder),
+        "DiagramBuilder does not contain a subsystem named plant.*");
+    Parser dut(&builder, plant);
+    EXPECT_EQ(dut.builder(), &builder);
+    EXPECT_EQ(&dut.plant(), plant);
+    EXPECT_EQ(dut.scene_graph(), nullptr);
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant->GetModelInstanceName(ids[0]), "acrobot");
+  }
+
+  {  // The Diagram has a plant and scene_graph with non-default names.
+    systems::DiagramBuilder<double> builder;
+    auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+    auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
+    plant->set_name("random");
+    scene_graph->set_name("arbitrary");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        Parser(&builder, nullptr, scene_graph),
+        "DiagramBuilder does not contain a subsystem named plant.*");
+    Parser dut(&builder, plant, scene_graph);
+    EXPECT_EQ(dut.builder(), &builder);
+    EXPECT_EQ(&dut.plant(), plant);
+    EXPECT_EQ(dut.scene_graph(), scene_graph);
+    EXPECT_EQ(plant->geometry_source_is_registered(), true);
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant->GetModelInstanceName(ids[0]), "acrobot");
   }
 }
 
