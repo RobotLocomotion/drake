@@ -477,8 +477,42 @@ endif()
 
 set(BAZEL_CONFIG)
 
-option(WITH_GUROBI "Build with support for Gurobi" OFF)
+option(WITH_CLARABEL "Build with support for Clarabel" ON)
+if(NOT WITH_CLARABEL)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_clarabel=False")
+endif()
 
+option(WITH_CLP "Build with support for CLP" ON)
+if(NOT WITH_CLP)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_clp=False")
+endif()
+
+option(WITH_CSDP "Build with support for CSDP" ON)
+if(NOT WITH_CSDP)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_csdp=False")
+endif()
+
+option(WITH_IPOPT "Build with support for Ipopt" ON)
+if(NOT WITH_IPOPT)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_ipopt=False")
+endif()
+
+option(WITH_NLOPT "Build with support for NLopt" ON)
+if(NOT WITH_NLOPT)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_nlopt=False")
+endif()
+
+option(WITH_OSQP "Build with support for OSQP" ON)
+if(NOT WITH_OSQP)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_osqp=False")
+endif()
+
+option(WITH_SCS "Build with support for SCS" ON)
+if(NOT WITH_SCS)
+  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_scs=False")
+endif()
+
+option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
   find_package(Gurobi 10.0 EXACT MODULE REQUIRED)
 
@@ -491,13 +525,11 @@ if(WITH_GUROBI)
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
-
 if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
 
 option(WITH_OPENMP "Build with support for OpenMP" OFF)
-
 if(WITH_OPENMP)
   string(APPEND BAZEL_CONFIG " --config=omp")
 endif()
