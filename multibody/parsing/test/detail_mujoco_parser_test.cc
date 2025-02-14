@@ -1576,6 +1576,12 @@ TEST_F(MujocoParserTest, Motor) {
 <mujoco model="test">
   <default>
     <geom type="sphere" size="1"/>
+    <default class="mymotors">
+      <motor ctrllimited="true" ctrlrange="-1 1"/>
+    </default>
+    <default class="mypositions">
+      <position ctrllimited="true" ctrlrange="-2 2"/>
+    </default>
   </default>
   <worldbody>
     <body>
@@ -1602,6 +1608,12 @@ TEST_F(MujocoParserTest, Motor) {
     <body>
       <joint type="hinge" name="hinge7" axis="0 1 0"/>
     </body>
+    <body>
+      <joint type="hinge" name="hinge8" axis="0 1 0"/>
+    </body>
+    <body>
+      <joint type="hinge" name="hinge9" axis="0 1 0"/>
+    </body>
   </worldbody>
   <actuator>
     <motor joint="hinge0"/>
@@ -1619,6 +1631,8 @@ TEST_F(MujocoParserTest, Motor) {
     <position name="position0" joint="hinge6"/>
     <position name="position1" joint="hinge7" ctrllimited="true" ctrlrange="-2 2"
            forcelimited="true" forcerange="-.4 .4" kp="4" kd="1"/>
+    <motor joint="hinge8" class="mymotors"/>
+    <position joint="hinge9" class="mypositions"/>
   </actuator>
 </mujoco>
 )""";
@@ -1633,10 +1647,12 @@ TEST_F(MujocoParserTest, Motor) {
 
   plant_.Finalize();
 
-  EXPECT_EQ(plant_.get_actuation_input_port().size(), 8);
+  EXPECT_EQ(plant_.get_actuation_input_port().size(), 10);
+
+  JointActuatorIndex actuator_index{0};
 
   const JointActuator<double>& motor0 =
-      plant_.get_joint_actuator(JointActuatorIndex(0));
+      plant_.get_joint_actuator(actuator_index++);
   EXPECT_EQ(motor0.name(), "motor0");
   EXPECT_EQ(motor0.joint().name(), "hinge0");
   EXPECT_EQ(motor0.effort_limit(), std::numeric_limits<double>::infinity());
@@ -1645,25 +1661,25 @@ TEST_F(MujocoParserTest, Motor) {
   EXPECT_FALSE(motor0.has_controller());
 
   const JointActuator<double>& motor1 =
-      plant_.get_joint_actuator(JointActuatorIndex(1));
+      plant_.get_joint_actuator(actuator_index++);
   EXPECT_EQ(motor1.name(), "motor1");
   EXPECT_EQ(motor1.joint().name(), "hinge1");
   EXPECT_EQ(motor1.effort_limit(), 2);
 
   const JointActuator<double>& motor2 =
-      plant_.get_joint_actuator(JointActuatorIndex(2));
+      plant_.get_joint_actuator(actuator_index++);
   EXPECT_EQ(motor2.name(), "motor2");
   EXPECT_EQ(motor2.joint().name(), "hinge2");
   EXPECT_EQ(motor2.effort_limit(), .5);
 
   const JointActuator<double>& motor3 =
-      plant_.get_joint_actuator(JointActuatorIndex(3));
+      plant_.get_joint_actuator(actuator_index++);
   EXPECT_EQ(motor3.name(), "motor3");
   EXPECT_EQ(motor3.joint().name(), "hinge3");
   EXPECT_EQ(motor3.effort_limit(), std::numeric_limits<double>::infinity());
 
   const JointActuator<double>& motor4 =
-      plant_.get_joint_actuator(JointActuatorIndex(4));
+      plant_.get_joint_actuator(actuator_index++);
   EXPECT_EQ(motor4.name(), "motor4");
   EXPECT_EQ(motor4.joint().name(), "hinge4");
   EXPECT_EQ(motor4.effort_limit(), std::numeric_limits<double>::infinity());
@@ -1671,17 +1687,26 @@ TEST_F(MujocoParserTest, Motor) {
   EXPECT_NEAR(motor4.default_reflected_inertia(), 12, 1e-14);
 
   const JointActuator<double>& motor5 =
-      plant_.get_joint_actuator(JointActuatorIndex(5));
+      plant_.get_joint_actuator(actuator_index++);
   EXPECT_EQ(motor5.name(), "motor5");
   EXPECT_EQ(motor5.joint().name(), "hinge5");
   EXPECT_EQ(motor5.effort_limit(), std::numeric_limits<double>::infinity());
   EXPECT_EQ(motor5.default_gear_ratio(), 3);
   EXPECT_EQ(motor5.default_rotor_inertia(), 0);
 
-  // Verify that omiting kp and kd for position tag results in the MuJoCo
+  // Check default parsing for motors. Note that currently all motors will be
+  // parsed before all positions, despite the order in which they occur in the
+  // XML.
+  const JointActuator<double>& motor6 =
+      plant_.get_joint_actuator(actuator_index++);
+  EXPECT_EQ(motor6.name(), "motor6");
+  EXPECT_EQ(motor6.joint().name(), "hinge8");
+  EXPECT_EQ(motor6.effort_limit(), 1);  // from the mymotors default.
+
+  // Verify that omitting kp and kd for position tag results in the MuJoCo
   // default controller gains.
   const JointActuator<double>& position0 =
-      plant_.get_joint_actuator(JointActuatorIndex(6));
+      plant_.get_joint_actuator(actuator_index++);
   EXPECT_EQ(position0.name(), "position0");
   EXPECT_EQ(position0.joint().name(), "hinge6");
   EXPECT_EQ(position0.effort_limit(), std::numeric_limits<double>::infinity());
@@ -1692,12 +1717,20 @@ TEST_F(MujocoParserTest, Motor) {
   // the mininum of the absolute value of the control range and the force
   // range).
   const JointActuator<double>& position1 =
-      plant_.get_joint_actuator(JointActuatorIndex(7));
+      plant_.get_joint_actuator(actuator_index++);
   EXPECT_EQ(position1.name(), "position1");
   EXPECT_EQ(position1.joint().name(), "hinge7");
   EXPECT_EQ(position1.effort_limit(), 0.4);
   EXPECT_EQ(position1.get_controller_gains().p, 4);
   EXPECT_EQ(position1.get_controller_gains().d, 1);
+
+  // Check default parsing for positions.
+  const JointActuator<double>& position2 =
+      plant_.get_joint_actuator(actuator_index++);
+  EXPECT_EQ(position2.name(), "motor9");  // both positions and motors have
+                                          // "motor{}" as the default name.
+  EXPECT_EQ(position2.joint().name(), "hinge9");
+  EXPECT_EQ(position2.effort_limit(), 2);  // from the mypositions default.
 }
 
 class ContactTest : public MujocoParserTest,
@@ -1781,6 +1814,7 @@ TEST_F(MujocoParserTest, ContactWarnings) {
 <mujoco model="test">
   <default>
     <geom type="sphere" size="1"/>
+    <pair name="with_friction" friction="0.5"/>
   </default>
   <worldbody>
     <body name="base">
@@ -1796,6 +1830,7 @@ TEST_F(MujocoParserTest, ContactWarnings) {
     </body>
   </worldbody>
   <contact>
+    <pair name="with_default" geom1="body1_geom" geom2="body2_geom" class="with_friction"/>
     <pair name="no-geom1" geom2="body1_geom"/>
     <pair name="no-geom2" geom1="body1_geom"/>
     <pair name="unknown-geom1" geom1="QQQ" geom2="body1_geom"/>
@@ -1808,6 +1843,8 @@ TEST_F(MujocoParserTest, ContactWarnings) {
 
   AddModelFromString(xml, "test");
 
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*friction.*pair.*unsupported.*ignored.*"));
   EXPECT_THAT(TakeWarning(),
               MatchesRegex(".*pair.*not have.*geom1.*geom2.*ignored.*"));
   EXPECT_THAT(TakeWarning(),
