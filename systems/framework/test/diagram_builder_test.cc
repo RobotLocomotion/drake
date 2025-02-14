@@ -867,16 +867,16 @@ GTEST_TEST(DiagramBuilderTest, GetByName) {
   // Error: no such name.
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.GetSubsystemByName("not_a_subsystem"),
-      ".*not_a_subsystem.*");
+      ".*not_a_subsystem.*Valid subsystems are.*adder.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.GetMutableSubsystemByName("not_a_subsystem"),
-      ".*not_a_subsystem.*");
+      ".*not_a_subsystem.*Valid subsystems are.*adder.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.GetDowncastSubsystemByName<Adder>("not_a_subsystem"),
-      ".*not_a_subsystem.*");
+      ".*not_a_subsystem.*Valid subsystems are.*adder.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.GetMutableDowncastSubsystemByName<Adder>("not_a_subsystem"),
-      ".*not_a_subsystem.*");
+      ".*not_a_subsystem.*Valid subsystems are.*adder.*");
 
   // Error: wrong type.
   DRAKE_EXPECT_THROWS_MESSAGE(
