@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -14,8 +15,8 @@ void DefinePlanningIrisZo(py::module m) {
 
   // IrisZoOptions
   const auto& cls_doc = doc.IrisZoOptions;
-  py::class_<IrisZoOptions>(m, "IrisZoOptions", cls_doc.doc)
-      .def(py::init<>())
+  py::class_<IrisZoOptions> iris_zo_options(m, "IrisZoOptions", cls_doc.doc);
+  iris_zo_options.def(py::init<>())
       .def_readwrite("num_particles", &IrisZoOptions::num_particles,
           cls_doc.num_particles.doc)
       .def_readwrite("tau", &IrisZoOptions::tau, cls_doc.tau.doc)
@@ -81,6 +82,10 @@ void DefinePlanningIrisZo(py::module m) {
                 self.relative_termination_threshold, self.random_seed,
                 self.mixing_steps);
       });
+
+  DefReadWriteKeepAlive(&iris_zo_options, "prog_with_additional_constraints",
+      &IrisZoOptions::prog_with_additional_constraints,
+      cls_doc.prog_with_additional_constraints.doc);
 
   // The `options` contains a `Parallelism`; we must release the GIL.
   m.def("IrisZo", &IrisZo, py::arg("checker"), py::arg("starting_ellipsoid"),
