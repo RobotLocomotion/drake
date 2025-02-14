@@ -503,7 +503,7 @@ class SpatialInertia {
                  const bool skip_validity_check = false)
       : mass_(mass), p_PScm_E_(p_PScm_E), G_SP_E_(G_SP_E) {
     if (!skip_validity_check) {
-      CheckInvariants();
+      ThrowIfNotPhysicallyValid();
     }
   }
 
@@ -593,7 +593,11 @@ class SpatialInertia {
 
   /// Performs the same checks as the boolean typed IsPhysicallyValid().
   /// @returns empty string if valid, otherwise, a detailed error message.
-  std::string CriticizeNotPhysicallyValid() const;
+  std::string CriticizeNotPhysicallyValid() const {
+    std::optional<std::string> invalidity_report = CreateInvalidityReport();
+    if (invalidity_report.has_value()) return *invalidity_report;
+    return {};
+  }
 
   /// @anchor spatial_inertia_equivalent_shapes
   /// @name Spatial inertia equivalent shapes
@@ -898,35 +902,18 @@ class SpatialInertia {
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
   }
 
-  // Checks that the SpatialInertia is physically valid and throws an
-  // exception if not. This is mostly used in Debug builds to throw an
-  // appropriate exception.
-  // Since this method is used within assertions or demands, we do not try to
-  // attempt a smart way throw based on a given symbolic::Formula but instead we
-  // make these methods a no-op for non-numeric types.
-  template <typename T1 = T>
-  typename std::enable_if_t<scalar_predicate<T1>::is_bool> CheckInvariants()
-      const {
-    if (!IsPhysicallyValid()) ThrowNotPhysicallyValid();
-  }
-
-  // SFINAE for non-numeric types. See documentation in the implementation for
-  // numeric types.
-  template <typename T1 = T>
-  typename std::enable_if_t<!scalar_predicate<T1>::is_bool> CheckInvariants()
-      const {}
-
-  // Throws an exception with a detailed error message.
-  // @pre !IsPhysicallyValid() (not checked).
-  [[noreturn]] void ThrowNotPhysicallyValid() const;
-
-  // Returns an error string if `this` RotationalInertia is verifiably invalid.
-  // Note: Not returning an error string does not _guarantee_ validity.
+  // Returns an error string if `this` SpatialInertia is invalid.
   std::optional<std::string> CreateInvalidityReport() const;
 
-  // Returns a detailed error message.
-  // @pre !IsPhysicallyValid() (not checked).
-  std::string MakeNotPhysicallyValidErrorMessage() const;
+  // If type T is Symbolic, validity is not checked and no exception is thrown.
+  void ThrowIfNotPhysicallyValid() {
+    if constexpr (scalar_predicate<T>::is_bool) {
+      ThrowIfNotPhysicallyValidImpl();
+    }
+  }
+
+  // Throw an exception if CreateInvalidityReport() returns an error string.
+  void ThrowIfNotPhysicallyValidImpl() const;
 
   // Mass of the body or composite body.
   T mass_{nan()};
