@@ -92,6 +92,7 @@ TYPED_TEST(GridDataTest, Reset) {
 
   data.reset();
   EXPECT_TRUE(data.index_or_flag.is_inactive());
+  EXPECT_TRUE(data.is_inactive());
   EXPECT_EQ(data.scratch, Vector3<T>::Zero());
   EXPECT_EQ(data.v, Vector3<T>::Zero());
   EXPECT_EQ(data.m, 0);
