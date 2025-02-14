@@ -1,3 +1,4 @@
+import copy
 import gc
 import scipy.sparse
 import unittest
@@ -52,6 +53,7 @@ from pydrake.systems.primitives import (
     PortSwitch, PortSwitch_,
     RandomSource,
     Saturation, Saturation_,
+    Selector, Selector_, SelectorParams,
     SharedPointerSystem, SharedPointerSystem_,
     Sine, Sine_,
     SparseMatrixGain_,
@@ -106,6 +108,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(PassThrough_)
         self._check_instantiations(PortSwitch_)
         self._check_instantiations(Saturation_)
+        self._check_instantiations(Selector_)
         self._check_instantiations(SharedPointerSystem_)
         self._check_instantiations(Sine_)
         self._check_instantiations(StateInterpolatorWithDiscreteDerivative_)
@@ -410,6 +413,34 @@ class TestGeneral(unittest.TestCase):
 
         mytest((-5., 5., 4.), (0., 2., 4.))
         mytest((.4, 0., 3.5), (.4, 0., 3.5))
+
+    def _make_selector_params(self):
+        def _select(i, j):
+            return SelectorParams.OutputSelection(
+                input_port_index=i,
+                input_offset=j,
+            )
+        return SelectorParams(
+            input_names=["x", "y", "z"],
+            input_sizes=[3, 2, 1],
+            output_selections=[
+                [_select(0, 0), _select(0, 1)],  # a = <x[0], x[1]>
+                [_select(0, 2), _select(1, 0)],  # b = <x[2], y[0]>
+                [_select(1, 1), _select(2, 0)],  # c = <y[1], z[0]>
+            ],
+            output_names=["a", "b", "c"],
+        )
+
+    def test_selector_params(self):
+        dut = self._make_selector_params()
+        self.assertEqual(len(dut.input_sizes), 3)
+        copy.deepcopy(dut)
+        self.assertNotIn("<", repr(dut))
+
+    @numpy_compare.check_all_types
+    def test_selector(self, T):
+        dut = Selector_[T](params=self._make_selector_params())
+        dut.CreateDefaultContext()
 
     def test_trajectory_source(self):
         ppt = PiecewisePolynomial.FirstOrderHold(
