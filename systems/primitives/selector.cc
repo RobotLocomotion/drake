@@ -4,8 +4,30 @@
 
 namespace drake {
 namespace systems {
+namespace {
 
 using OutputSelection = SelectorParams::OutputSelection;
+
+struct CompiledProgram {
+  struct Element {
+    auto operator<=>(const Element&) const = default;
+    int input_offset{};
+    int output_offset{};
+  };
+
+  // These InlinedVector sizes are chosen to keep the program smallish but avoid
+  // pointer chasing for very small outputs or outputs with only a single input.
+  using PerOutput = absl::InlinedVector<
+      std::pair<InputPortIndex, absl::InlinedVector<Element, 5>>, 1>;
+  static_assert(sizeof(PerOutput) == 64);
+
+  // The outer vector is indexed by OutputPortIndex.
+  // The next inner vector is like a map<InputPortIndex, ...>.
+  // The values in the map are the offsets within those two ports.
+  std::vector<PerOutput> outputs;
+};
+
+}  // namespace
 
 template <typename T>
 Selector<T>::Selector(SelectorParams params)
@@ -57,6 +79,38 @@ Selector<T>::Selector(SelectorParams params)
         },
         std::move(prerequisites_of_calc));
   }
+
+  // Prepare the data for our CompiledProgram.
+  using Element = CompiledProgram::Element;
+  std::vector<std::map<InputPortIndex, std::vector<Element>>> compiled_outputs;
+  compiled_outputs.resize(num_outputs);
+  for (OutputPortIndex i{0}; i < num_outputs; ++i) {
+    const std::vector<OutputSelection>& output_specs =
+        params_.output_selections[i];
+    int output_offset = 0;
+    for (const auto& [input_port_index, input_offset] : output_specs) {
+      compiled_outputs[i][InputPortIndex{input_port_index}].push_back(Element{
+          .input_offset = input_offset,
+          .output_offset = output_offset,
+      });
+      ++output_offset;
+    }
+    for (auto& [_, elements] : compiled_outputs[i]) {
+      std::sort(elements.begin(), elements.end());
+    }
+  }
+
+  // Pack the data into a CompiledProgram.
+  auto program = std::make_shared<CompiledProgram>();
+  program->outputs.resize(num_outputs);
+  for (OutputPortIndex i{0}; i < num_outputs; ++i) {
+    program->outputs[i].reserve(compiled_outputs[i].size());
+    for (const auto& [input_port_index, elements] : compiled_outputs[i]) {
+      program->outputs[i].push_back(CompiledProgram::PerOutput::value_type{
+          input_port_index, {elements.begin(), elements.end()}});
+    }
+  }
+  compiled_program_ = std::move(program);
 }
 
 template <typename T>
@@ -70,16 +124,15 @@ template <typename T>
 void Selector<T>::CalcOutput(const Context<T>& context,
                              OutputPortIndex output_port_index,
                              BasicVector<T>* output) const {
-  const std::vector<OutputSelection>& selections =
-      params_.output_selections[output_port_index];
-  absl::InlinedVector<const VectorX<T>*, 8> inputs(this->num_input_ports());
-  for (int i = 0; i < ssize(selections); ++i) {
-    const InputPortIndex n{selections[i].input_port_index};
-    const int j = selections[i].input_offset;
-    if (inputs[n] == nullptr) {
-      inputs[n] = &(this->get_input_port(n).Eval(context));
+  const auto& compiled_program =
+      *static_cast<const CompiledProgram*>(compiled_program_.get());
+  for (const auto& [input_port_index, elements] :
+       compiled_program.outputs[output_port_index]) {
+    const VectorX<T>& input =
+        this->get_input_port(input_port_index).Eval(context);
+    for (const auto& element : elements) {
+      (*output)[element.output_offset] = input[element.input_offset];
     }
-    (*output)[i] = (*inputs[n])[j];
   }
 }
 
