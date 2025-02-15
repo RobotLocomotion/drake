@@ -6,6 +6,8 @@
 #include <tuple>
 #include <unordered_map>
 
+#include <fmt/ranges.h>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
 
@@ -165,9 +167,14 @@ const System<T>& DiagramBuilder<T>::GetSubsystemByName(
   if (result != nullptr) {
     return *result;
   }
-  throw std::logic_error(fmt::format(
-      "DiagramBuilder does not contain a subsystem named {}",
-      name));
+  std::vector<std::string> valid_subsystems;
+  for (const auto& child : registered_systems_) {
+    valid_subsystems.push_back(child->get_name());
+  }
+  throw std::logic_error(
+      fmt::format("DiagramBuilder does not contain a subsystem named {}. Valid "
+                  "subsystems are {}.",
+                  name, fmt::join(valid_subsystems, ", ")));
 }
 
 template <typename T>
