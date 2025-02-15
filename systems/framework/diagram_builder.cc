@@ -166,13 +166,11 @@ const System<T>& DiagramBuilder<T>::GetSubsystemByName(
     return *result;
   }
   throw std::logic_error(fmt::format(
-      "DiagramBuilder does not contain a subsystem named {}",
-      name));
+      "DiagramBuilder does not contain a subsystem named {}", name));
 }
 
 template <typename T>
-System<T>& DiagramBuilder<T>::GetMutableSubsystemByName(
-    std::string_view name) {
+System<T>& DiagramBuilder<T>::GetMutableSubsystemByName(std::string_view name) {
   ThrowIfAlreadyBuilt();
   return const_cast<System<T>&>(GetSubsystemByName(name));
 }
@@ -186,9 +184,8 @@ DiagramBuilder<T>::connection_map() const {
 }
 
 template <typename T>
-void DiagramBuilder<T>::Connect(
-    const OutputPort<T>& src,
-    const InputPort<T>& dest) {
+void DiagramBuilder<T>::Connect(const OutputPort<T>& src,
+                                const InputPort<T>& dest) {
   ThrowIfAlreadyBuilt();
   InputPortLocator dest_id{&dest.get_system(), dest.get_index()};
   OutputPortLocator src_id{&src.get_system(), src.get_index()};
@@ -200,11 +197,10 @@ void DiagramBuilder<T>::Connect(
         "DiagramBuilder::Connect: Cannot mix vector-valued and abstract-"
         "valued ports while connecting output port {} of System {} to "
         "input port {} of System {}",
-        src.get_name(), src.get_system().get_name(),
-        dest.get_name(), dest.get_system().get_name()));
+        src.get_name(), src.get_system().get_name(), dest.get_name(),
+        dest.get_system().get_name()));
   }
-  if ((src.get_data_type() != kAbstractValued) &&
-      (src.size() != dest.size())) {
+  if ((src.get_data_type() != kAbstractValued) && (src.size() != dest.size())) {
     throw std::logic_error(fmt::format(
         "DiagramBuilder::Connect: Mismatched vector sizes while connecting "
         "output port {} of System {} (size {}) to "
@@ -223,9 +219,8 @@ void DiagramBuilder<T>::Connect(
           "output port {} of System {} (type {}) to "
           "input port {} of System {} (type {})",
           src.get_name(), src.get_system().get_name(),
-          NiceTypeName::Get(output_type),
-          dest.get_name(), dest.get_system().get_name(),
-          NiceTypeName::Get(input_type)));
+          NiceTypeName::Get(output_type), dest.get_name(),
+          dest.get_system().get_name(), NiceTypeName::Get(input_type)));
     }
   }
   connection_map_[dest_id] = src_id;
@@ -245,8 +240,7 @@ void DiagramBuilder<T>::Cascade(const System<T>& src, const System<T>& dest) {
 
 template <typename T>
 InputPortIndex DiagramBuilder<T>::ExportInput(
-    const InputPort<T>& input,
-    std::variant<std::string, UseDefaultName> name) {
+    const InputPort<T>& input, std::variant<std::string, UseDefaultName> name) {
   ThrowIfAlreadyBuilt();
   const InputPortIndex diagram_port_index = DeclareInput(input, name);
   ConnectInput(diagram_port_index, input);
@@ -255,8 +249,7 @@ InputPortIndex DiagramBuilder<T>::ExportInput(
 
 template <typename T>
 InputPortIndex DiagramBuilder<T>::DeclareInput(
-    const InputPort<T>& input,
-    std::variant<std::string, UseDefaultName> name) {
+    const InputPort<T>& input, std::variant<std::string, UseDefaultName> name) {
   InputPortLocator id{&input.get_system(), input.get_index()};
   ThrowIfSystemNotRegistered(&input.get_system());
 
@@ -282,8 +275,8 @@ InputPortIndex DiagramBuilder<T>::DeclareInput(
 }
 
 template <typename T>
-void DiagramBuilder<T>::ConnectInput(
-    std::string_view diagram_port_name, const InputPort<T>& input) {
+void DiagramBuilder<T>::ConnectInput(std::string_view diagram_port_name,
+                                     const InputPort<T>& input) {
   ThrowIfAlreadyBuilt();
   DRAKE_THROW_UNLESS(diagram_input_indices_.count(diagram_port_name));
   const InputPortIndex diagram_port_index =
@@ -292,14 +285,14 @@ void DiagramBuilder<T>::ConnectInput(
 }
 
 template <typename T>
-void DiagramBuilder<T>::ConnectInput(
-    InputPortIndex diagram_port_index, const InputPort<T>& input) {
+void DiagramBuilder<T>::ConnectInput(InputPortIndex diagram_port_index,
+                                     const InputPort<T>& input) {
   ThrowIfAlreadyBuilt();
   InputPortLocator id{&input.get_system(), input.get_index()};
   ThrowIfInputAlreadyWired(id);
   ThrowIfSystemNotRegistered(&input.get_system());
-  DRAKE_THROW_UNLESS(
-      diagram_port_index < InputPortIndex(diagram_input_data_.size()));
+  DRAKE_THROW_UNLESS(diagram_port_index <
+                     InputPortIndex(diagram_input_data_.size()));
 
   // Check that port types match.
   const ExportedInputData& data = diagram_input_data_[diagram_port_index];
@@ -329,12 +322,12 @@ void DiagramBuilder<T>::ConnectInput(
     const std::type_info& input_type = model_input->static_type_info();
     if (model_type != input_type) {
       throw std::logic_error(fmt::format(
-           "DiagramBuilder::ConnectInput: Mismatched value types while "
-           "connecting input port {} of System {} (type {}) to "
-           "input port {} of Diagram (type {})",
-           input.get_name(), input.get_system().get_name(),
-           NiceTypeName::Get(input_type),
-           port_name, NiceTypeName::Get(model_type)));
+          "DiagramBuilder::ConnectInput: Mismatched value types while "
+          "connecting input port {} of System {} (type {}) to "
+          "input port {} of Diagram (type {})",
+          input.get_name(), input.get_system().get_name(),
+          NiceTypeName::Get(input_type), port_name,
+          NiceTypeName::Get(model_type)));
     }
   }
 
@@ -345,8 +338,8 @@ void DiagramBuilder<T>::ConnectInput(
 }
 
 template <typename T>
-bool DiagramBuilder<T>::ConnectToSame(
-      const InputPort<T>& exemplar, const InputPort<T>& dest) {
+bool DiagramBuilder<T>::ConnectToSame(const InputPort<T>& exemplar,
+                                      const InputPort<T>& dest) {
   ThrowIfAlreadyBuilt();
   ThrowIfSystemNotRegistered(&exemplar.get_system());
   ThrowIfSystemNotRegistered(&dest.get_system());
@@ -512,8 +505,8 @@ using EitherPortIndex = std::variant<InputPortIndex, OutputPortIndex>;
 // their own (the variant disambiguates input vs output indices, even though
 // their integer values overlap).  The SystemBase* field is supplementary (and
 // only used during error reporting).
-using PortIdentifier = std::tuple<
-    SubsystemIndex, EitherPortIndex, const SystemBase*>;
+using PortIdentifier =
+    std::tuple<SubsystemIndex, EitherPortIndex, const SystemBase*>;
 
 bool is_input_port(const PortIdentifier& node) {
   const EitherPortIndex& either = std::get<1>(node);
@@ -523,9 +516,11 @@ bool is_input_port(const PortIdentifier& node) {
 std::string to_string(const PortIdentifier& port_id) {
   const SystemBase* const system = std::get<2>(port_id);
   const EitherPortIndex& index = std::get<1>(port_id);
-  return is_input_port(port_id) ?
-      system->get_input_port_base(std::get<0>(index)).GetFullDescription() :
-      system->get_output_port_base(std::get<1>(index)).GetFullDescription();
+  return is_input_port(port_id)
+             ? system->get_input_port_base(std::get<0>(index))
+                   .GetFullDescription()
+             : system->get_output_port_base(std::get<1>(index))
+                   .GetFullDescription();
 }
 
 // Helper to do the algebraic loop test. It recursively performs the
@@ -533,8 +528,7 @@ std::string to_string(const PortIdentifier& port_id) {
 bool HasCycleRecurse(
     const PortIdentifier& n,
     const std::map<PortIdentifier, std::set<PortIdentifier>>& edges,
-    std::set<PortIdentifier>* visited,
-    std::vector<PortIdentifier>* stack) {
+    std::set<PortIdentifier>* visited, std::vector<PortIdentifier>* stack) {
   DRAKE_ASSERT(!visited->contains(n));
   visited->insert(n);
 
@@ -585,10 +579,10 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
     const InputPortIndex input_index = item.first.second;
     const SystemBase* const output_system = item.second.first;
     const OutputPortIndex output_index = item.second.second;
-    const PortIdentifier input{
-        system_to_index.at(input_system), input_index, input_system};
-    const PortIdentifier output{
-        system_to_index.at(output_system), output_index, output_system};
+    const PortIdentifier input{system_to_index.at(input_system), input_index,
+                               input_system};
+    const PortIdentifier output{system_to_index.at(output_system), output_index,
+                                output_system};
     nodes.insert(input);
     nodes.insert(output);
     edges[output].insert(input);
@@ -603,10 +597,10 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
     const SystemBase* const system = system_ptr.get();
     for (const auto& item : system->GetDirectFeedthroughs()) {
       const SubsystemIndex subsystem_index = system_to_index.at(system);
-      const PortIdentifier input{
-          subsystem_index, InputPortIndex{item.first}, system};
-      const PortIdentifier output{
-          subsystem_index, OutputPortIndex{item.second}, system};
+      const PortIdentifier input{subsystem_index, InputPortIndex{item.first},
+                                 system};
+      const PortIdentifier output{subsystem_index, OutputPortIndex{item.second},
+                                  system};
       if (nodes.contains(input) && nodes.contains(output)) {
         edges[input].insert(output);
       }

@@ -16,7 +16,8 @@ namespace systems {
 
 // Forward declare for friendship below. Only System<T> may ever create
 // a SystemOutput<T>.
-template <typename T> class System;
+template <typename T>
+class System;
 
 /** Conveniently stores a snapshot of the values of every output port of
 a System. There is framework support for allocating the right types and filling

@@ -72,10 +72,8 @@ class DiagramOutputPort final : public OutputPort<T> {
   // the caller to do that cast for us so take a System<T> here.
   DiagramOutputPort(const System<T>* diagram,
                     internal::SystemMessageInterface* system_interface,
-                    internal::SystemId system_id,
-                    std::string name,
-                    OutputPortIndex index,
-                    DependencyTicket ticket,
+                    internal::SystemId system_id, std::string name,
+                    OutputPortIndex index, DependencyTicket ticket,
                     const OutputPort<T>* source_output_port,
                     SubsystemIndex source_subsystem_index)
       : OutputPort<T>(diagram, system_interface, system_id, std::move(name),

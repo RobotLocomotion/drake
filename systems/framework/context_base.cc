@@ -10,9 +10,10 @@ namespace systems {
 
 std::unique_ptr<ContextBase> ContextBase::Clone() const {
   if (!is_root_context()) {
-      throw std::logic_error(fmt::format(
-          "Context::Clone(): Cannot clone a non-root Context; "
-          "this Context was created by '{}'.", system_name_));
+    throw std::logic_error(fmt::format(
+        "Context::Clone(): Cannot clone a non-root Context; this Context was "
+        "created by '{}'.",
+        system_name_));
   }
 
   std::unique_ptr<ContextBase> clone_ptr(CloneWithoutPointers(*this));
@@ -37,8 +38,8 @@ std::string ContextBase::GetSystemPathname() const {
          GetSystemName();
 }
 
-FixedInputPortValue& ContextBase::FixInputPort(
-    int index, const AbstractValue& value) {
+FixedInputPortValue& ContextBase::FixInputPort(int index,
+                                               const AbstractValue& value) {
   std::unique_ptr<FixedInputPortValue> fixed =
       internal::ContextBaseFixedInputAttorney::CreateFixedInputPortValue(
           value.Clone());
@@ -86,8 +87,7 @@ void ContextBase::AddOutputPort(
 }
 
 void ContextBase::SetFixedInputPortValue(
-    InputPortIndex index,
-    std::unique_ptr<FixedInputPortValue> port_value) {
+    InputPortIndex index, std::unique_ptr<FixedInputPortValue> port_value) {
   DRAKE_DEMAND(0 <= index && index < num_input_ports());
   DRAKE_DEMAND(port_value != nullptr);
 
@@ -96,8 +96,7 @@ void ContextBase::SetFixedInputPortValue(
 
   DependencyTracker& port_tracker =
       get_mutable_tracker(input_port_tickets_[index]);
-  FixedInputPortValue* old_value =
-      input_port_values_[index].get_mutable();
+  FixedInputPortValue* old_value = input_port_values_[index].get_mutable();
 
   DependencyTicket ticket_to_use;
   if (old_value != nullptr) {
@@ -136,8 +135,8 @@ void ContextBase::CreateBuiltInTrackers() {
   DependencyGraph& graph = graph_;
   // This is the dummy "tracker" used for constants and anything else that has
   // no dependencies on any Context source. Ignoring return value.
-  graph.CreateNewDependencyTracker(
-      DependencyTicket(internal::kNothingTicket), "nothing");
+  graph.CreateNewDependencyTracker(DependencyTicket(internal::kNothingTicket),
+                                   "nothing");
 
   // Allocate trackers for time and accuracy.
   auto& time_tracker = graph.CreateNewDependencyTracker(

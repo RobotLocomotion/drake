@@ -367,9 +367,7 @@ class CacheEntryValue {
   @note Operation of this method is unaffected by whether the cache is frozen.
   If you call it in that case the corresponding value will become
   inaccessible since it would require recomputation. */
-  void mark_out_of_date() {
-    flags_ |= kValueIsOutOfDate;
-  }
+  void mark_out_of_date() { flags_ |= kValueIsOutOfDate; }
 
   /** Returns the serial number of the contained value. This counts up every
   time the contained value changes, or whenever mutable access is granted. */
@@ -429,18 +427,14 @@ class CacheEntryValue {
   cache access will fail since recomputation is not permitted in a frozen
   cache. Once unfrozen, caching will remain disabled unless enable_caching()
   is called. */
-  void disable_caching() {
-    flags_ |= kCacheEntryIsDisabled;
-  }
+  void disable_caching() { flags_ |= kCacheEntryIsDisabled; }
 
   /** (Advanced) Enables caching for this cache entry value if it was previously
   disabled. When enabled (the default condition) the corresponding entry's
   Eval() method will check the `out_of_date` flag and invoke Calc() only if the
   entry is marked out of date. It is also independent of whether the cache is
   frozen; in that case caching will be enabled once the cache is unfrozen. */
-  void enable_caching() {
-    flags_ &= ~kCacheEntryIsDisabled;
-  }
+  void enable_caching() { flags_ &= ~kCacheEntryIsDisabled; }
 
   /** (Advanced) Returns `true` if caching is disabled for this cache entry.
   This is independent of the `out_of_date` flag, and independent of whether
@@ -536,7 +530,8 @@ class CacheEntryValue {
 
   void ThrowIfValuePresent(const char* api) const {
     if (has_value()) {
-      throw std::logic_error(FormatName(api) +
+      throw std::logic_error(
+          FormatName(api) +
           "there is already a value object in this CacheEntryValue.");
     }
   }
@@ -561,7 +556,7 @@ class CacheEntryValue {
   void ThrowIfAlreadyComputed(const char* api) const {
     if (!needs_recomputation()) {
       throw std::logic_error(FormatName(api) +
-          "the current value is already up to date.");
+                             "the current value is already up to date.");
     }
   }
 
@@ -569,7 +564,8 @@ class CacheEntryValue {
   // cache entry value.
   void ThrowIfFrozen(const char* api) const {
     if (owning_subcontext_->is_cache_frozen()) {
-      throw std::logic_error(FormatName(api) +
+      throw std::logic_error(
+          FormatName(api) +
           "the cache is frozen but this entry is out of date.");
     }
   }
@@ -601,8 +597,7 @@ class CacheEntryValue {
 
   // Pointer to the system name service of the owning subcontext. Used for
   // error messages.
-  reset_on_copy<const internal::ContextMessageInterface*>
-      owning_subcontext_;
+  reset_on_copy<const internal::ContextMessageInterface*> owning_subcontext_;
 
   // The value, its serial number, and its validity. The value is copyable so
   // that we can use a default copy constructor. The serial number is
@@ -657,10 +652,8 @@ class Cache {
   prerequisites. The tracker will retain a pointer to the created
   CacheEntryValue for invalidation purposes. */
   CacheEntryValue& CreateNewCacheEntryValue(
-      CacheIndex index, DependencyTicket ticket,
-      const std::string& description,
-      const std::set<DependencyTicket>& prerequisites,
-      DependencyGraph* graph);
+      CacheIndex index, DependencyTicket ticket, const std::string& description,
+      const std::set<DependencyTicket>& prerequisites, DependencyGraph* graph);
 
   /** Returns true if there is a CacheEntryValue in this cache that has the
   given index. */
@@ -717,16 +710,12 @@ class Cache {
   /** (Advanced) Sets the "is frozen" flag. Cache entry values should check this
   before permitting mutable access to values.
   @see ContextBase::FreezeCache() for the user-facing API */
-  void freeze_cache() {
-    is_cache_frozen_ = true;
-  }
+  void freeze_cache() { is_cache_frozen_ = true; }
 
   /** (Advanced) Clears the "is frozen" flag, permitting normal cache
   activity.
   @see ContextBase::UnfreezeCache() for the user-facing API */
-  void unfreeze_cache() {
-    is_cache_frozen_ = false;
-  }
+  void unfreeze_cache() { is_cache_frozen_ = false; }
 
   /** (Advanced) Reports the current value of the "is frozen" flag.
   @see ContextBase::is_cache_frozen() for the user-facing API */
@@ -756,8 +745,7 @@ class Cache {
 
   // The system name service of the subcontext that owns this cache. This should
   // not be copied since it would still refer to the source subcontext.
-  reset_on_copy<const internal::ContextMessageInterface*>
-      owning_subcontext_;
+  reset_on_copy<const internal::ContextMessageInterface*> owning_subcontext_;
 
   // All CacheEntryValue objects, indexed by CacheIndex.
   std::vector<copyable_unique_ptr<CacheEntryValue>> store_;

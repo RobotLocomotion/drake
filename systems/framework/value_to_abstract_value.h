@@ -88,7 +88,7 @@ class ValueToAbstractValue {
  public:
   // Signature (1): used for AbstractValue or Value<U> arguments.
   static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
-      const AbstractValue& value) {
+                                                   const AbstractValue& value) {
     unused(api_name);
     return value.Clone();
   }
@@ -96,7 +96,7 @@ class ValueToAbstractValue {
   // Signature (2): special case char* to std::string to avoid ugly compilation
   // messages for this case, where the user's intent is obvious.
   static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
-      const char* c_string) {
+                                                   const char* c_string) {
     unused(api_name);
     return std::make_unique<Value<std::string>>(c_string);
   }
@@ -133,7 +133,7 @@ class ValueToAbstractValue {
                 !(std::is_base_of_v<AbstractValue, ValueType> ||
                   is_eigen_refable<ValueType>())>>
   static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
-      const ValueType& value) {
+                                                   const ValueType& value) {
     static_assert(
         std::is_copy_constructible_v<ValueType> ||
             has_accessible_clone<ValueType>(),
@@ -145,8 +145,7 @@ class ValueToAbstractValue {
 
  private:
   template <typename ValueType>
-  using CopyReturnType =
-      decltype(ValueType(std::declval<const ValueType>()));
+  using CopyReturnType = decltype(ValueType(std::declval<const ValueType>()));
 
   template <typename ValueType>
   using CloneReturnType = std::remove_pointer_t<
@@ -182,7 +181,7 @@ class ValueToAbstractValue {
   // itself. In that case we store the value using the base type, although
   // presumably the concrete type has been properly cloned.
   template <typename ValueType,
-      typename ClonedValueType = CloneReturnType<ValueType>>
+            typename ClonedValueType = CloneReturnType<ValueType>>
   static std::unique_ptr<AbstractValue> ValueHelper(const ValueType& value, int,
                                                     ...) {
     static_assert(
@@ -230,8 +229,8 @@ class ValueToVectorValue {
  public:
   // Signature (1): used for any Eigen vector type, but the argument is copied
   // to a BasicVector for the returned abstract value.
-  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
-      const Eigen::Ref<const VectorX<T>>& vector) {
+  static std::unique_ptr<AbstractValue> ToAbstract(
+      const char* api_name, const Eigen::Ref<const VectorX<T>>& vector) {
     unused(api_name);
     return std::make_unique<Value<BasicVector<T>>>(vector);
   }
@@ -247,8 +246,8 @@ class ValueToVectorValue {
   // Value<BasicVector> to store a copy of the given object, even if it is from
   // a subclass of BasicVector, and even if it has its own Clone() method. The
   // actual type is preserved regardless.
-  static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
-      const BasicVector<T>& vector) {
+  static std::unique_ptr<AbstractValue> ToAbstract(
+      const char* api_name, const BasicVector<T>& vector) {
     unused(api_name);
     return std::make_unique<Value<BasicVector<T>>>(vector.Clone());
   }
@@ -256,10 +255,11 @@ class ValueToVectorValue {
   // Signature (4): used for AbstractValue or Value<U> arguments. After cloning,
   // this must be exactly type Value<BasicVector<T>>.
   static std::unique_ptr<AbstractValue> ToAbstract(const char* api_name,
-      const AbstractValue& value) {
+                                                   const AbstractValue& value) {
     auto cloned = value.Clone();
-    if (cloned->maybe_get_value<BasicVector<T>>() != nullptr)
+    if (cloned->maybe_get_value<BasicVector<T>>() != nullptr) {
       return cloned;
+    }
 
     throw std::logic_error(
         fmt::format("{}(): the given AbstractValue containing type {} is not "
@@ -290,4 +290,3 @@ class ValueToVectorValue {
 }  // namespace internal
 }  // namespace systems
 }  // namespace drake
-

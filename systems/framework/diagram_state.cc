@@ -8,9 +8,7 @@ namespace systems {
 
 template <typename T>
 DiagramState<T>::DiagramState(int size)
-    : State<T>(),
-      substates_(size),
-      owned_substates_(size) {}
+    : State<T>(), substates_(size), owned_substates_(size) {}
 
 template <typename T>
 void DiagramState<T>::Finalize() {
@@ -39,8 +37,7 @@ void DiagramState<T>::Finalize() {
   // pointers to that memory.
   this->set_continuous_state(
       std::make_unique<DiagramContinuousState<T>>(sub_xcs));
-  this->set_discrete_state(
-      std::make_unique<DiagramDiscreteValues<T>>(sub_xds));
+  this->set_discrete_state(std::make_unique<DiagramDiscreteValues<T>>(sub_xds));
   this->set_abstract_state(std::make_unique<AbstractValues>(sub_xas));
 }
 

@@ -53,9 +53,7 @@ class PortBase {
 
   /** (Advanced.) Returns the DependencyTicket for this port within the owning
   System. */
-  DependencyTicket ticket() const {
-    return ticket_;
-  }
+  DependencyTicket ticket() const { return ticket_; }
 
  protected:
   /** Provides derived classes the ability to set the base
@@ -82,10 +80,10 @@ class PortBase {
     If the port described is vector-valued, the number of elements. Ignored for
     abstract-valued ports.
   */
-  PortBase(
-      const char* kind_string, internal::SystemMessageInterface* owning_system,
-      internal::SystemId owning_system_id, std::string name, int index,
-      DependencyTicket ticket, PortDataType data_type, int size);
+  PortBase(const char* kind_string,
+           internal::SystemMessageInterface* owning_system,
+           internal::SystemId owning_system_id, std::string name, int index,
+           DependencyTicket ticket, PortDataType data_type, int size);
 
   /** Returns the index of this port within the owning System (i.e., an
   InputPortIndex or OutputPortIndex, but as a bare integer). For a Diagram,
@@ -149,9 +147,8 @@ class PortBase {
   /** Reports that the user provided a bad ValueType argument to Eval.  The
   value_typename is the type of the port's current value; the eval_typename is
   the type the user asked for. */
-  [[noreturn]] void ThrowBadCast(
-      const std::string& value_typename,
-      const std::string& eval_typename) const;
+  [[noreturn]] void ThrowBadCast(const std::string& value_typename,
+                                 const std::string& eval_typename) const;
 
  private:
   friend class internal::PortBaseAttorney;
@@ -195,7 +192,8 @@ const ValueType& PortBase::PortEvalCast(const BasicVector<T>& basic) const {
 
 #ifndef DRAKE_DOXYGEN_CXX
 class SystemBase;
-template <typename> class Diagram;
+template <typename>
+class Diagram;
 class LeafSystemDeprecationTest;
 namespace internal {
 // This is an attorney-client pattern class providing SystemBase and Diagram
@@ -207,7 +205,8 @@ class PortBaseAttorney {
 
  private:
   friend class drake::systems::SystemBase;
-  template <typename> friend class drake::systems::Diagram;
+  template <typename>
+  friend class drake::systems::Diagram;
   friend class drake::systems::LeafSystemDeprecationTest;
 
   // Returns a reference to the system that owns this port. Note that for a

@@ -32,19 +32,16 @@ SystemConstraintBounds::SystemConstraintBounds(
       upper_(upper) {}
 
 SystemConstraintBounds::SystemConstraintBounds(
-    const Eigen::Ref<const Eigen::VectorXd>& lower,
-    std::nullopt_t)
+    const Eigen::Ref<const Eigen::VectorXd>& lower, std::nullopt_t)
     : SystemConstraintBounds(
-          lower,
-          Eigen::VectorXd::Constant(
-              lower.size(), std::numeric_limits<double>::infinity())) {}
+          lower, Eigen::VectorXd::Constant(
+                     lower.size(), std::numeric_limits<double>::infinity())) {}
 
 SystemConstraintBounds::SystemConstraintBounds(
-    std::nullopt_t,
-    const Eigen::Ref<const Eigen::VectorXd>& upper)
+    std::nullopt_t, const Eigen::Ref<const Eigen::VectorXd>& upper)
     : SystemConstraintBounds(
-          Eigen::VectorXd::Constant(
-              upper.size(), -std::numeric_limits<double>::infinity()),
+          Eigen::VectorXd::Constant(upper.size(),
+                                    -std::numeric_limits<double>::infinity()),
           upper) {}
 
 SystemConstraintBounds::SystemConstraintBounds(int size)

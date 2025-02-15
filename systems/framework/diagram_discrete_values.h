@@ -25,7 +25,7 @@ namespace systems {
 /// LeafSystem discrete values in a Diagram, the child objects are not owned.
 /// When this is cloned, deep copies are made that are owned here.
 template <typename T>
-class DiagramDiscreteValues final: public DiscreteValues<T> {
+class DiagramDiscreteValues final : public DiscreteValues<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramDiscreteValues);
 

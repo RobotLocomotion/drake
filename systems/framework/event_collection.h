@@ -92,9 +92,7 @@ class EventCollection {
   /**
    * Adds all of `other`'s events to the end of `this`.
    */
-  void AddToEnd(const EventCollection<EventType>& other) {
-    DoAddToEnd(other);
-  }
+  void AddToEnd(const EventCollection<EventType>& other) { DoAddToEnd(other); }
 
   /**
    * Removes all events from this collection.
@@ -250,8 +248,7 @@ class DiagramEventCollection final : public EventCollection<EventType> {
    * @throws std::exception if `other_collection` is not an instance of
    * DiagramEventCollection.
    */
-  void DoAddToEnd(
-      const EventCollection<EventType>& other_collection) final {
+  void DoAddToEnd(const EventCollection<EventType>& other_collection) final {
     const DiagramEventCollection<EventType>& other =
         dynamic_cast<const DiagramEventCollection<EventType>&>(
             other_collection);
@@ -290,9 +287,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
   /**
    * Constructor.
    */
-  LeafEventCollection() {
-    Reserve(kDefaultCapacity);
-  }
+  LeafEventCollection() { Reserve(kDefaultCapacity); }
 
   /**
    * Static method that generates a LeafEventCollection with exactly
@@ -321,9 +316,7 @@ class LeafEventCollection final : public EventCollection<EventType> {
    * events.
    */
   // TODO(siyuan): provide an iterator instead.
-  const std::vector<const EventType*>& get_events() const {
-    return events_;
-  }
+  const std::vector<const EventType*>& get_events() const { return events_; }
 
   /**
    * Add `event` to the existing collection.

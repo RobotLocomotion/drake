@@ -62,7 +62,9 @@ class VectorBase {
   /// @throws std::exception if the index is >= size() or negative.
   /// Consider operator[]() instead if bounds-checking is unwanted.
   const T& GetAtIndex(int index) const {
-    if (index < 0) { this->ThrowOutOfRange(index); }
+    if (index < 0) {
+      this->ThrowOutOfRange(index);
+    }
     return DoGetAtIndexChecked(index);
   }
 
@@ -70,16 +72,16 @@ class VectorBase {
   /// @throws std::exception if the index is >= size() or negative.
   /// Consider operator[]() instead if bounds-checking is unwanted.
   T& GetAtIndex(int index) {
-    if (index < 0) { this->ThrowOutOfRange(index); }
+    if (index < 0) {
+      this->ThrowOutOfRange(index);
+    }
     return DoGetAtIndexChecked(index);
   }
 
   /// Replaces the state at the given index with the value.
   /// @throws std::exception if the index is >= size().
   /// Consider operator[]() instead if bounds-checking is unwanted.
-  void SetAtIndex(int index, const T& value) {
-    GetAtIndex(index) = value;
-  }
+  void SetAtIndex(int index, const T& value) { GetAtIndex(index) = value; }
 
   /// Replaces the entire vector with the contents of @p value.
   /// @throws std::exception if @p value is not a column vector with size()
@@ -89,7 +91,9 @@ class VectorBase {
   /// value and allocates no memory.
   virtual void SetFrom(const VectorBase<T>& value) {
     const int n = value.size();
-    if (n != size()) { this->ThrowMismatchedSize(n); }
+    if (n != size()) {
+      this->ThrowMismatchedSize(n);
+    }
     for (int i = 0; i < n; ++i) {
       (*this)[i] = value[i];
     }
@@ -103,7 +107,9 @@ class VectorBase {
   /// value and allocates no memory.
   virtual void SetFromVector(const Eigen::Ref<const VectorX<T>>& value) {
     const int n = value.rows();
-    if (n != size()) { this->ThrowMismatchedSize(n); }
+    if (n != size()) {
+      this->ThrowMismatchedSize(n);
+    }
     for (int i = 0; i < n; ++i) {
       (*this)[i] = value[i];
     }
@@ -137,7 +143,9 @@ class VectorBase {
   virtual void CopyToPreSizedVector(EigenPtr<VectorX<T>> vec) const {
     DRAKE_THROW_UNLESS(vec != nullptr);
     const int n = vec->rows();
-    if (n != size()) { this->ThrowMismatchedSize(n); }
+    if (n != size()) {
+      this->ThrowMismatchedSize(n);
+    }
     for (int i = 0; i < n; ++i) {
       (*vec)[i] = (*this)[i];
     }
@@ -152,7 +160,9 @@ class VectorBase {
                                    EigenPtr<VectorX<T>> vec) const {
     DRAKE_THROW_UNLESS(vec != nullptr);
     const int n = vec->rows();
-    if (n != size()) { this->ThrowMismatchedSize(n); }
+    if (n != size()) {
+      this->ThrowMismatchedSize(n);
+    }
     for (int i = 0; i < n; ++i) {
       (*vec)[i] += scale * (*this)[i];
     }
@@ -166,13 +176,16 @@ class VectorBase {
 
   /// Add in multiple scaled vectors to this vector.
   /// @throws std::exception if any rhs are a different size than this.
-  VectorBase& PlusEqScaled(const std::initializer_list<
-                           std::pair<T, const VectorBase<T>&>>& rhs_scale) {
+  VectorBase& PlusEqScaled(
+      const std::initializer_list<std::pair<T, const VectorBase<T>&>>&
+          rhs_scale) {
     const int n = size();
     for (const auto& [scale, rhs] : rhs_scale) {
       unused(scale);
       const int rhs_n = rhs.size();
-      if (rhs_n != n) { this->ThrowMismatchedSize(rhs_n); }
+      if (rhs_n != n) {
+        this->ThrowMismatchedSize(rhs_n);
+      }
     }
     DoPlusEqScaled(rhs_scale);
     return *this;
@@ -232,8 +245,9 @@ class VectorBase {
   /// operations should be far more efficient. Overriding implementations should
   /// ensure that this operation remains O(N) in the size of
   /// the value and allocates no memory.
-  virtual void DoPlusEqScaled(const std::initializer_list<
-                              std::pair<T, const VectorBase<T>&>>& rhs_scale) {
+  virtual void DoPlusEqScaled(
+      const std::initializer_list<std::pair<T, const VectorBase<T>&>>&
+          rhs_scale) {
     const int n = size();
     for (int i = 0; i < n; ++i) {
       T value(0);
@@ -245,15 +259,15 @@ class VectorBase {
   }
 
   [[noreturn]] void ThrowOutOfRange(int index) const {
-    throw std::out_of_range(fmt::format(
-        "Index {} is not within [0, {}) while accessing {}.",
-        index, size(), NiceTypeName::Get(*this)));
+    throw std::out_of_range(
+        fmt::format("Index {} is not within [0, {}) while accessing {}.", index,
+                    size(), NiceTypeName::Get(*this)));
   }
 
   [[noreturn]] void ThrowMismatchedSize(int other_size) const {
-    throw std::out_of_range(fmt::format(
-        "Operand vector size {} does not match this {} size {}",
-        other_size, NiceTypeName::Get(*this), size()));
+    throw std::out_of_range(
+        fmt::format("Operand vector size {} does not match this {} size {}",
+                    other_size, NiceTypeName::Get(*this), size()));
   }
 };
 
@@ -271,8 +285,7 @@ std::ostream& operator<<(std::ostream& os, const VectorBase<T>& vec) {
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <typename T>
-struct formatter<drake::systems::VectorBase<T>>
-    : drake::ostream_formatter {};
+struct formatter<drake::systems::VectorBase<T>> : drake::ostream_formatter {};
 }  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
