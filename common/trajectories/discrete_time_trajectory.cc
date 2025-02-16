@@ -27,18 +27,32 @@ template <typename T>
 DiscreteTimeTrajectory<T>::DiscreteTimeTrajectory(
     const std::vector<T>& times, const std::vector<MatrixX<T>>& values,
     const double time_comparison_tolerance)
-    : times_(times),
-      values_(values),
+    : DiscreteTimeTrajectory(std::vector(times), std::vector(values),
+                             time_comparison_tolerance) {}
+
+template <typename T>
+DiscreteTimeTrajectory<T>::DiscreteTimeTrajectory(
+    const std::vector<T>& times, std::vector<MatrixX<T>>&& values,
+    const double time_comparison_tolerance)
+    : DiscreteTimeTrajectory(std::vector(times), std::move(values),
+                             time_comparison_tolerance) {}
+
+template <typename T>
+DiscreteTimeTrajectory<T>::DiscreteTimeTrajectory(
+    std::vector<T>&& times, std::vector<MatrixX<T>>&& values,
+    const double time_comparison_tolerance)
+    : times_(std::move(times)),
+      values_(std::move(values)),
       time_comparison_tolerance_(time_comparison_tolerance) {
-  DRAKE_DEMAND(times.size() == values.size());
+  DRAKE_DEMAND(times_.size() == values_.size());
   // Ensure that times are convertible to double.
-  for (const auto& t : times) {
+  for (const auto& t : times_) {
     ExtractDoubleOrThrow(t);
   }
   for (int i = 1; i < static_cast<int>(times_.size()); i++) {
-    DRAKE_DEMAND(times[i] - times[i - 1] >= time_comparison_tolerance_);
-    DRAKE_DEMAND(values[i].rows() == values[0].rows());
-    DRAKE_DEMAND(values[i].cols() == values[0].cols());
+    DRAKE_DEMAND(times_[i] - times_[i - 1] >= time_comparison_tolerance_);
+    DRAKE_DEMAND(values_[i].rows() == values_[0].rows());
+    DRAKE_DEMAND(values_[i].cols() == values_[0].cols());
   }
   DRAKE_DEMAND(time_comparison_tolerance_ >= 0);
 }

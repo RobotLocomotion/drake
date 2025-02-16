@@ -19,6 +19,7 @@ from pydrake.trajectories import (
     BsplineTrajectory_,
     CompositeTrajectory_,
     DerivativeTrajectory_,
+    DiscreteTimeTrajectory_,
     ExponentialPlusPiecewisePolynomial,
     FunctionHandleTrajectory_,
     PathParameterizedTrajectory_,
@@ -283,6 +284,25 @@ class TestTrajectories(unittest.TestCase):
         dut = DerivativeTrajectory_[T](nominal=foh, derivative_order=1)
         self.assertEqual(dut.rows(), 1)
         self.assertEqual(dut.cols(), 1)
+        dut.Clone()
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_discrete_time_trajectory(self):
+        times = [0, 1, 2]
+        values = [[[0], [0]], [[1], [1]], [[2], [2]]]
+        dut = DiscreteTimeTrajectory_[float](
+            times=times, values=values)
+        zoh = dut.ToZeroOrderHold()
+        self.assertEqual(dut.num_times(), len(times))
+        self.assertEqual(dut.start_time(), times[0])
+        self.assertEqual(dut.end_time(), times[-1])
+        self.assertEqual(zoh.start_time(), times[0])
+        self.assertEqual(zoh.end_time(), times[-1])
+        for i, t in enumerate(times):
+            self.assertTrue(np.all(dut.value(t) == values[i]))
+            if i < len(times) - 1:
+                self.assertTrue(np.all(zoh.value(t) == values[i]))
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
