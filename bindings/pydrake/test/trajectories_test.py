@@ -19,6 +19,7 @@ from pydrake.trajectories import (
     BsplineTrajectory_,
     CompositeTrajectory_,
     DerivativeTrajectory_,
+    DiscreteTimeTrajectory_,
     ExponentialPlusPiecewisePolynomial,
     FunctionHandleTrajectory_,
     PathParameterizedTrajectory_,
@@ -286,6 +287,35 @@ class TestTrajectories(unittest.TestCase):
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_discrete_time_trajectory(self, T):
+        times = [0, 1, 2]
+        traj = PiecewisePolynomial_[T].FirstOrderHold(
+            [0, 2], [[[0]], [[2]]])
+        # Invokes Eigen constructor.
+        dut1 = DiscreteTimeTrajectory_[T](
+            times=times, values=traj.vector_values(times))
+
+        values = [[[0]], [[1]], [[2]]]
+        # Invokes std::vector constructor.
+        dut2 = DiscreteTimeTrajectory_[T](
+            times=times, values=values)
+        zoh = dut2.ToZeroOrderHold()
+        self.assertTrue(dut1.num_times() == dut2.num_times() == len(times))
+        self.assertTrue(dut1.start_time() == dut2.start_time()
+                        == zoh.start_time() == times[0])
+        self.assertTrue(dut1.end_time() == dut2.end_time()
+                        == zoh.end_time() == times[-1])
+        for i, t in enumerate(times):
+            print(dut1.value(t), values[i])
+            self.assertTrue(np.all(dut1.value(t) == values[i]))
+            self.assertTrue(np.all(dut2.value(t) == values[i]))
+            if i < len(times) - 1:
+                self.assertTrue(np.all(zoh.value(t) == values[i]))
+        dut1.Clone()
+        copy.copy(dut1)
+        copy.deepcopy(dut1)
 
     def test_exponential_plus_piecewise_polynomial(self):
         K = np.array([1.23])
