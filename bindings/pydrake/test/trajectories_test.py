@@ -19,6 +19,7 @@ from pydrake.trajectories import (
     BsplineTrajectory_,
     CompositeTrajectory_,
     DerivativeTrajectory_,
+    DiscreteTimeTrajectory_,
     ExponentialPlusPiecewisePolynomial,
     FunctionHandleTrajectory_,
     PathParameterizedTrajectory_,
@@ -286,6 +287,38 @@ class TestTrajectories(unittest.TestCase):
         dut.Clone()
         copy.copy(dut)
         copy.deepcopy(dut)
+
+    @numpy_compare.check_all_types
+    def test_discrete_time_trajectory(self, T):
+        times = [0, 1, 2]
+        traj = PiecewisePolynomial_[T].FirstOrderHold(
+            [0, 9], [[[0], [0]], [[9], [9]]])
+        dut1 = DiscreteTimeTrajectory_[T](
+            times=times, values=traj.vector_values(times).transpose())
+
+        values = [[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]
+        dut2 = DiscreteTimeTrajectory_[T](
+            times=times, values=values)
+        zoh = dut2.ToZeroOrderHold()
+
+        self.assertTrue(dut1.num_times() == dut2.num_times() == len(times))
+        numpy_compare.assert_equal(dut1.start_time() == times[0], True)
+        numpy_compare.assert_equal(dut2.start_time() == times[0], True)
+        numpy_compare.assert_equal(zoh.start_time() == times[0], True)
+        numpy_compare.assert_equal(dut1.end_time() == times[-1], True)
+        numpy_compare.assert_equal(dut2.end_time() == times[-1], True)
+        numpy_compare.assert_equal(zoh.end_time() == times[-1], True)
+        for i, t in enumerate(times):
+            numpy_compare.assert_float_equal(
+                dut1.value(t).flatten(), values[i])
+            numpy_compare.assert_float_equal(
+                dut2.value(t).flatten(), values[i])
+            if i < len(times) - 1:
+                numpy_compare.assert_float_equal(
+                    zoh.value(t).flatten(), values[i])
+        dut1.Clone()
+        copy.copy(dut1)
+        copy.deepcopy(dut1)
 
     def test_exponential_plus_piecewise_polynomial(self):
         K = np.array([1.23])
