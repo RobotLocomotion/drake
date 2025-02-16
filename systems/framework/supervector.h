@@ -51,13 +51,17 @@ class Supervector final : public VectorBase<T> {
   }
 
   const T& DoGetAtIndexChecked(int index) const final {
-    if (index >= size()) { this->ThrowOutOfRange(index); }
+    if (index >= size()) {
+      this->ThrowOutOfRange(index);
+    }
     const auto& [subvector, offset] = GetSubvectorAndOffset(index);
     return (*subvector)[offset];
   }
 
   T& DoGetAtIndexChecked(int index) final {
-    if (index >= size()) { this->ThrowOutOfRange(index); }
+    if (index >= size()) {
+      this->ThrowOutOfRange(index);
+    }
     const auto& [subvector, offset] = GetSubvectorAndOffset(index);
     return (*subvector)[offset];
   }

@@ -12,13 +12,12 @@ namespace systems {
 
 InputPortBase::InputPortBase(
     internal::SystemMessageInterface* owning_system,
-    internal::SystemId owning_system_id, std::string name,
-    InputPortIndex index, DependencyTicket ticket,
-    PortDataType data_type, int size,
+    internal::SystemId owning_system_id, std::string name, InputPortIndex index,
+    DependencyTicket ticket, PortDataType data_type, int size,
     const std::optional<RandomDistribution>& random_type,
     EvalAbstractCallback eval, ValueProducer::AllocateCallback alloc)
-    : PortBase("Input", owning_system, owning_system_id, std::move(name),
-               index, ticket, data_type, size),
+    : PortBase("Input", owning_system, owning_system_id, std::move(name), index,
+               ticket, data_type, size),
       eval_(std::move(eval)),
       alloc_(std::move(alloc)),
       random_type_(random_type) {
@@ -43,8 +42,7 @@ std::unique_ptr<AbstractValue> InputPortBase::Allocate() const {
 
 void InputPortBase::ThrowRequiredMissing() const {
   throw std::logic_error(fmt::format(
-      "InputPort::Eval(): required {} is not connected",
-      GetFullDescription()));
+      "InputPort::Eval(): required {} is not connected", GetFullDescription()));
 }
 
 }  // namespace systems

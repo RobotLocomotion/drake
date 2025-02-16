@@ -50,13 +50,12 @@ class LeafOutputPort final : public OutputPort<T> {
 
   /** Signature of a function suitable for calculating a value of a particular
   output port, given a place to put the value. */
-  using CalcCallback =
-  std::function<void(const Context<T>&, AbstractValue*)>;
+  using CalcCallback = std::function<void(const Context<T>&, AbstractValue*)>;
 
   /** Signature of a function suitable for calculating a value of a particular
   vector-valued output port, given a place to put the value. */
   using CalcVectorCallback =
-  std::function<void(const Context<T>&, BasicVector<T>*)>;
+      std::function<void(const Context<T>&, BasicVector<T>*)>;
 
   /** Returns the cache entry associated with this output port. */
   const CacheEntry& cache_entry() const {
@@ -80,10 +79,9 @@ class LeafOutputPort final : public OutputPort<T> {
   // object as the `system_interface` parameter.
   LeafOutputPort(const System<T>* system,
                  internal::SystemMessageInterface* system_interface,
-                 internal::SystemId system_id,
-                 std::string name, OutputPortIndex index,
-                 DependencyTicket ticket, PortDataType data_type, int size,
-                 CacheEntry* cache_entry)
+                 internal::SystemId system_id, std::string name,
+                 OutputPortIndex index, DependencyTicket ticket,
+                 PortDataType data_type, int size, CacheEntry* cache_entry)
       : OutputPort<T>(system, system_interface, system_id, std::move(name),
                       index, ticket, data_type, size),
         cache_entry_(cache_entry) {

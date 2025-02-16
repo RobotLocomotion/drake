@@ -52,9 +52,7 @@ class DiagramState : public State<T> {
   void Finalize();
 
  private:
-  int num_substates() const {
-    return static_cast<int>(substates_.size());
-  }
+  int num_substates() const { return static_cast<int>(substates_.size()); }
 
   bool finalized_{false};
   std::vector<State<T>*> substates_;

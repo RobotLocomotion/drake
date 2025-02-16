@@ -56,21 +56,18 @@ class SystemConstraintBounds final {
   /// kEquality).  It is not currently allowed to set lower == upper (creating
   /// an equality constraint in the form f(x) = b), except when b == 0.  Using
   /// a non-zero b might be allowed in the future.
-  SystemConstraintBounds(
-      const Eigen::Ref<const Eigen::VectorXd>& lower,
-      const Eigen::Ref<const Eigen::VectorXd>& upper);
+  SystemConstraintBounds(const Eigen::Ref<const Eigen::VectorXd>& lower,
+                         const Eigen::Ref<const Eigen::VectorXd>& upper);
 
   /// Creates an inequality constraint with the given lower bounds for `f(x)`.
   /// The upper bounds are all positive infinity.
-  SystemConstraintBounds(
-      const Eigen::Ref<const Eigen::VectorXd>& lower,
-      std::nullopt_t);
+  SystemConstraintBounds(const Eigen::Ref<const Eigen::VectorXd>& lower,
+                         std::nullopt_t);
 
   /// Creates an inequality constraint with the given upper bounds for `f(x)`.
   /// The lower bounds are all negative infinity.
-  SystemConstraintBounds(
-      std::nullopt_t,
-      const Eigen::Ref<const Eigen::VectorXd>& upper);
+  SystemConstraintBounds(std::nullopt_t,
+                         const Eigen::Ref<const Eigen::VectorXd>& upper);
 
   int size() const { return size_; }
   SystemConstraintType type() const { return type_; }
@@ -152,11 +149,9 @@ class SystemConstraint final {
   /// to create (and add) constraints, not call this constructor directly.
   ///
   /// @param description a human-readable description useful for debugging.
-  SystemConstraint(const System<T>* system,
-                   std::string description)
-    : SystemConstraint<T>(
-        system, &NoopSystemConstraintCalc, SystemConstraintBounds{},
-        std::move(description)) {}
+  SystemConstraint(const System<T>* system, std::string description)
+      : SystemConstraint<T>(system, &NoopSystemConstraintCalc,
+                            SystemConstraintBounds{}, std::move(description)) {}
 
   /// (Advanced) Constructs a SystemConstraint.  Depending on the `bounds` it
   /// could be an equality constraint f(x) = 0, or an inequality constraint
@@ -168,8 +163,7 @@ class SystemConstraint final {
   /// @param description a human-readable description useful for debugging.
   SystemConstraint(const System<T>* system,
                    ContextConstraintCalc<T> calc_function,
-                   SystemConstraintBounds bounds,
-                   std::string description)
+                   SystemConstraintBounds bounds, std::string description)
       : system_(system),
         system_calc_function_{},
         context_calc_function_(std::move(calc_function)),
@@ -188,8 +182,7 @@ class SystemConstraint final {
   /// @param description a human-readable description useful for debugging.
   SystemConstraint(const System<T>* system,
                    SystemConstraintCalc<T> calc_function,
-                   SystemConstraintBounds bounds,
-                   std::string description)
+                   SystemConstraintBounds bounds, std::string description)
       : system_(system),
         system_calc_function_(std::move(calc_function)),
         context_calc_function_{},
@@ -243,9 +236,7 @@ class SystemConstraint final {
   /// Returns a reference to the System that owns this constraint.  Note that
   /// for a constraint on a diagram this will be the diagram itself, never a
   /// leaf system whose constraint was re-expressed.
-  const System<T>& get_system() const {
-    return *system_;
-  }
+  const System<T>& get_system() const { return *system_; }
 
   // Accessor methods.
   const SystemConstraintBounds& bounds() const { return bounds_; }
@@ -273,8 +264,8 @@ class SystemConstraint final {
   //@}
 
  private:
-  static void NoopSystemConstraintCalc(
-      const System<T>&, const Context<T>&, VectorX<T>*) {}
+  static void NoopSystemConstraintCalc(const System<T>&, const Context<T>&,
+                                       VectorX<T>*) {}
 
   // If this object has a system id, check that it matches the id of the
   // context parameter.
@@ -304,14 +295,12 @@ class ExternalSystemConstraint final {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ExternalSystemConstraint);
 
   /// Creates an empty constraint.
-  ExternalSystemConstraint()
-      : ExternalSystemConstraint("empty", {}, {}) {}
+  ExternalSystemConstraint() : ExternalSystemConstraint("empty", {}, {}) {}
 
   /// Creates a constraint with the given arguments.
   /// The calc functions (other than calc_double) may be omitted.
   ExternalSystemConstraint(
-      std::string description,
-      SystemConstraintBounds bounds,
+      std::string description, SystemConstraintBounds bounds,
       SystemConstraintCalc<double> calc_double,
       SystemConstraintCalc<AutoDiffXd> calc_autodiffxd = {},
       SystemConstraintCalc<symbolic::Expression> calc_expression = {})
@@ -325,26 +314,20 @@ class ExternalSystemConstraint final {
   /// supply Calc functions for Drake's default scalar types.
   template <typename GenericSystemConstraintCalc>
   static ExternalSystemConstraint MakeForAllScalars(
-      std::string description,
-      SystemConstraintBounds bounds,
+      std::string description, SystemConstraintBounds bounds,
       GenericSystemConstraintCalc calc) {
-    return ExternalSystemConstraint(
-        std::move(description),
-        std::move(bounds),
-        calc, calc, calc);
+    return ExternalSystemConstraint(std::move(description), std::move(bounds),
+                                    calc, calc, calc);
   }
 
   /// Creates a constraint based on generic lambda.  This constraint will
   /// supply Calc functions for Drake's non-symbolic default scalar types.
   template <typename GenericSystemConstraintCalc>
   static ExternalSystemConstraint MakeForNonsymbolicScalars(
-      std::string description,
-      SystemConstraintBounds bounds,
+      std::string description, SystemConstraintBounds bounds,
       GenericSystemConstraintCalc calc) {
-    return ExternalSystemConstraint(
-        std::move(description),
-        std::move(bounds),
-        calc, calc, {});
+    return ExternalSystemConstraint(std::move(description), std::move(bounds),
+                                    calc, calc, {});
   }
 
   /// Returns a human-readable description of this constraint.
@@ -381,20 +364,20 @@ class ExternalSystemConstraint final {
   SystemConstraintCalc<symbolic::Expression> calc_expression_;
 };
 
-template <> inline
-const SystemConstraintCalc<double>&
+template <>
+inline const SystemConstraintCalc<double>&
 ExternalSystemConstraint::do_get_calc() const {
   return calc_double_;
 }
 
-template <> inline
-const SystemConstraintCalc<AutoDiffXd>&
+template <>
+inline const SystemConstraintCalc<AutoDiffXd>&
 ExternalSystemConstraint::do_get_calc() const {
   return calc_autodiffxd_;
 }
 
-template <> inline
-const SystemConstraintCalc<symbolic::Expression>&
+template <>
+inline const SystemConstraintCalc<symbolic::Expression>&
 ExternalSystemConstraint::do_get_calc() const {
   return calc_expression_;
 }

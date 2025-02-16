@@ -79,24 +79,26 @@ class InputPort final : public InputPortBase {
   }
   // With ValueType == AbstractValue, we don't need to downcast.
   template <typename ValueType, typename = std::enable_if_t<
-      std::is_same_v<AbstractValue, ValueType>>>
+                                    std::is_same_v<AbstractValue, ValueType>>>
   const AbstractValue& Eval(const Context<T>& context) const {
     ValidateSystemId(context.get_system_id());
     return DoEvalRequired(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
-  template <typename ValueType, typename = std::enable_if_t<
-      !std::is_same_v<AbstractValue, ValueType> && (
-        !std::is_base_of_v<BasicVector<T>, ValueType> ||
-        std::is_same_v<BasicVector<T>, ValueType>)>>
+  template <typename ValueType,
+            typename = std::enable_if_t<
+                !std::is_same_v<AbstractValue, ValueType> &&
+                (!std::is_base_of_v<BasicVector<T>, ValueType> ||
+                 std::is_same_v<BasicVector<T>, ValueType>)>>
   const ValueType& Eval(const Context<T>& context) const {
     ValidateSystemId(context.get_system_id());
     return PortEvalCast<ValueType>(DoEvalRequired(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
-  template <typename ValueType, typename = std::enable_if_t<
-      std::is_base_of_v<BasicVector<T>, ValueType> &&
-      !std::is_same_v<BasicVector<T>, ValueType>>>
+  template <typename ValueType,
+            typename =
+                std::enable_if_t<std::is_base_of_v<BasicVector<T>, ValueType> &&
+                                 !std::is_same_v<BasicVector<T>, ValueType>>>
   const ValueType& Eval(const Context<T>& context, int = 0) const {
     return PortEvalCast<ValueType>(Eval<BasicVector<T>>(context));
   }
@@ -169,15 +171,15 @@ class InputPort final : public InputPortBase {
 
   // A using-declaration adds these methods into our class's Doxygen.
   // (Placed in an order that makes sense for the class's table of contents.)
+  using InputPortBase::Allocate;
+  using InputPortBase::get_index;
+  using InputPortBase::get_random_type;
+  using InputPortBase::is_random;
+  using PortBase::get_data_type;
   using PortBase::get_name;
   using PortBase::GetFullDescription;
-  using InputPortBase::get_index;
-  using PortBase::get_data_type;
   using PortBase::size;
-  using InputPortBase::is_random;
-  using InputPortBase::get_random_type;
   using PortBase::ticket;
-  using InputPortBase::Allocate;
 
  private:
   friend class internal::FrameworkFactory;
@@ -185,13 +187,13 @@ class InputPort final : public InputPortBase {
   // See InputPortBase for the meaning of these parameters. The additional
   // `system` parameter must point to the same object as `system_interface`.
   // (They're separate because System is forward-declared so we can't cast.)
-  InputPort(
-      const System<T>* system,
-      internal::SystemMessageInterface* system_interface,
-      internal::SystemId system_id, std::string name,
-      InputPortIndex index, DependencyTicket ticket, PortDataType data_type,
-      int size, const std::optional<RandomDistribution>& random_type,
-      EvalAbstractCallback eval, ValueProducer::AllocateCallback alloc)
+  InputPort(const System<T>* system,
+            internal::SystemMessageInterface* system_interface,
+            internal::SystemId system_id, std::string name,
+            InputPortIndex index, DependencyTicket ticket,
+            PortDataType data_type, int size,
+            const std::optional<RandomDistribution>& random_type,
+            EvalAbstractCallback eval, ValueProducer::AllocateCallback alloc)
       : InputPortBase(system_interface, system_id, std::move(name), index,
                       ticket, data_type, size, random_type, std::move(eval),
                       std::move(alloc)),

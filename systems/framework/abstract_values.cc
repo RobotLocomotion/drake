@@ -26,7 +26,9 @@ AbstractValues::AbstractValues(std::unique_ptr<AbstractValue> datum)
   owned_data_.push_back(std::move(datum));
 }
 
-int AbstractValues::size() const { return static_cast<int>(data_.size()); }
+int AbstractValues::size() const {
+  return static_cast<int>(data_.size());
+}
 
 const AbstractValue& AbstractValues::get_value(int index) const {
   DRAKE_ASSERT(index >= 0 && index < size());

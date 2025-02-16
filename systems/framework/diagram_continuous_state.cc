@@ -30,8 +30,8 @@ template <typename T>
 DiagramContinuousState<T>::~DiagramContinuousState() {}
 
 template <typename T>
-std::unique_ptr<DiagramContinuousState<T>>
-DiagramContinuousState<T>::Clone() const {
+std::unique_ptr<DiagramContinuousState<T>> DiagramContinuousState<T>::Clone()
+    const {
   // We are sure of the type here because DoClone() is final.  However,
   // we'll still use the `..._or_throw` spelling as a sanity check.
   return dynamic_pointer_cast_or_throw<DiagramContinuousState>(
