@@ -115,9 +115,7 @@ class ContextBase : public internal::ContextMessageInterface {
   /** (Advanced) Reports whether this %Context's cache is currently frozen.
   This checks only locally; it is possible that parent, child, or sibling
   subcontext caches are in a different state than this one. */
-  bool is_cache_frozen() const final {
-    return get_cache().is_cache_frozen();
-  }
+  bool is_cache_frozen() const final { return get_cache().is_cache_frozen(); }
 
   /** Returns the local name of the subsystem for which this is the Context.
   This is intended primarily for error messages and logging.
@@ -138,9 +136,7 @@ class ContextBase : public internal::ContextMessageInterface {
   std::string GetSystemPathname() const final;
 
   /** Returns a const reference to this subcontext's cache. */
-  const Cache& get_cache() const {
-    return cache_;
-  }
+  const Cache& get_cache() const { return cache_; }
 
   /** (Advanced) Returns a mutable reference to this subcontext's cache. Note
   that this method is const because the cache is always writable.
@@ -150,9 +146,7 @@ class ContextBase : public internal::ContextMessageInterface {
   went out of date. Cache entries are updated automatically when needed via
   their `Calc()` methods; most users should not bypass that mechanism by using
   this method. */
-  Cache& get_mutable_cache() const {
-    return cache_;
-  }
+  Cache& get_mutable_cache() const { return cache_; }
 
   /** Returns a const reference to a DependencyTracker in this subcontext.
   Advanced users and internal code can use the returned reference to issue value
@@ -170,14 +164,10 @@ class ContextBase : public internal::ContextMessageInterface {
   /** Returns a const reference to the collection of value trackers within
   this subcontext. Together these form the dependency subgraph for the values
   in this subcontext, plus edges leading to neighboring trackers. */
-  const DependencyGraph& get_dependency_graph() const {
-    return graph_;
-  }
+  const DependencyGraph& get_dependency_graph() const { return graph_; }
 
   /** Returns a mutable reference to the dependency graph. */
-  DependencyGraph& get_mutable_dependency_graph() {
-    return graph_;
-  }
+  DependencyGraph& get_mutable_dependency_graph() { return graph_; }
 
   /** Returns the number of input ports in this context. */
   int num_input_ports() const {
@@ -186,9 +176,7 @@ class ContextBase : public internal::ContextMessageInterface {
   }
 
   /** Returns the number of output ports represented in this context. */
-  int num_output_ports() const {
-    return ssize(output_port_tickets_);
-  }
+  int num_output_ports() const { return ssize(output_port_tickets_); }
 
   /** Returns the dependency ticket associated with a particular input port. */
   DependencyTicket input_port_ticket(InputPortIndex port_num) {
@@ -262,9 +250,7 @@ class ContextBase : public internal::ContextMessageInterface {
   q, all states, all inputs, etc.). We can't allocate trackers for individual
   discrete & abstract states, parameters, or input ports since we don't yet
   know how many there are. */
-  ContextBase() : cache_(this), graph_(this) {
-    CreateBuiltInTrackers();
-  }
+  ContextBase() : cache_(this), graph_(this) { CreateBuiltInTrackers(); }
 
   /** Copy constructor takes care of base class data members, but _does not_ fix
   up base class pointers. Derived classes must implement copy constructors that
@@ -294,9 +280,8 @@ class ContextBase : public internal::ContextMessageInterface {
 
   /** Adds the next output port. Expected index is supplied along with the
   assigned ticket. */
-  void AddOutputPort(
-      OutputPortIndex expected_index, DependencyTicket ticket,
-      const internal::OutputPortPrerequisite& prerequisite);
+  void AddOutputPort(OutputPortIndex expected_index, DependencyTicket ticket,
+                     const internal::OutputPortPrerequisite& prerequisite);
 
   /** Adds a ticket to the list of discrete state tickets. */
   void AddDiscreteStateTicket(DependencyTicket ticket) {
@@ -477,8 +462,7 @@ class ContextBase : public internal::ContextMessageInterface {
   // protected function on its children.
   static void FixContextPointers(
       const ContextBase& source,
-      const DependencyTracker::PointerMap& tracker_map,
-      ContextBase* clone);
+      const DependencyTracker::PointerMap& tracker_map, ContextBase* clone);
 
   /** (Internal use only) Applies the given caching-change notification method
   to `context`, and propagates the notification to subcontexts if `context` is
@@ -603,9 +587,8 @@ class ContextBase : public internal::ContextMessageInterface {
   // subscription but replace the value. Notifies the port's downstream
   // subscribers that the value has changed. Aborts if `index` is out of range,
   // or the given `port_value` is null or already belongs to a context.
-  void SetFixedInputPortValue(
-      InputPortIndex index,
-      std::unique_ptr<FixedInputPortValue> port_value);
+  void SetFixedInputPortValue(InputPortIndex index,
+                              std::unique_ptr<FixedInputPortValue> port_value);
 
   // Fills in the dependency graph with the built-in trackers that are common
   // to every Context (and every System).
@@ -633,8 +616,7 @@ class ContextBase : public internal::ContextMessageInterface {
   // Each non-null FixedInputPortValue has a ticket and associated
   // tracker.
   // Index with InputPortIndex.
-  std::vector<copyable_unique_ptr<FixedInputPortValue>>
-      input_port_values_;
+  std::vector<copyable_unique_ptr<FixedInputPortValue>> input_port_values_;
 
   // For each input port, the type checker function will be used for validation
   // when setting a fixed input.

@@ -10,10 +10,11 @@
 namespace drake {
 namespace systems {
 
-PortBase::PortBase(
-    const char* kind_string, internal::SystemMessageInterface* owning_system,
-    internal::SystemId owning_system_id, std::string name, int index,
-    DependencyTicket ticket, PortDataType data_type, int size)
+PortBase::PortBase(const char* kind_string,
+                   internal::SystemMessageInterface* owning_system,
+                   internal::SystemId owning_system_id, std::string name,
+                   int index, DependencyTicket ticket, PortDataType data_type,
+                   int size)
     : kind_string_(kind_string),
       owning_system_(*owning_system),
       owning_system_id_(owning_system_id),
@@ -32,8 +33,8 @@ PortBase::~PortBase() = default;
 
 std::string PortBase::GetFullDescription() const {
   return fmt::format(
-      "{}Port[{}] ({}) of System {} ({})",
-      kind_string_, index_, name_, get_system_interface().GetSystemPathname(),
+      "{}Port[{}] ({}) of System {} ({})", kind_string_, index_, name_,
+      get_system_interface().GetSystemPathname(),
       NiceTypeName::RemoveNamespaces(get_system_interface().GetSystemType()));
 }
 
@@ -43,8 +44,8 @@ void PortBase::ThrowValidateContextMismatch() const {
       kind_string_, GetFullDescription()));
 }
 
-void PortBase::ThrowBadCast(
-    const std::string& value_typename, const std::string& eval_typename) const {
+void PortBase::ThrowBadCast(const std::string& value_typename,
+                            const std::string& eval_typename) const {
   throw std::logic_error(fmt::format(
       "{}Port::Eval(): wrong value type {} specified; "
       "actual type was {} for {}.",

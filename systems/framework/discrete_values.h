@@ -101,26 +101,18 @@ class DiscreteValues {
   //@{
 
   /// Returns the number of elements in the only %DiscreteValues group.
-  int size() const {
-    return get_vector().size();
-  }
+  int size() const { return get_vector().size(); }
 
   /// Returns a mutable reference to an element in the _only_ group.
-  T& operator[](std::size_t idx) {
-    return get_mutable_vector()[idx];
-  }
+  T& operator[](std::size_t idx) { return get_mutable_vector()[idx]; }
 
   /// Returns a const reference to an element in the _only_ group.
-  const T& operator[](std::size_t idx) const {
-    return get_vector()[idx];
-  }
+  const T& operator[](std::size_t idx) const { return get_vector()[idx]; }
 
   /// Returns a const reference to the underlying VectorX containing the values
   /// for the _only_ group. This is the preferred method for examining the
   /// value of the only group.
-  const VectorX<T>& value() const {
-    return get_vector().value();
-  }
+  const VectorX<T>& value() const { return get_vector().value(); }
 
   /// Sets the vector to the given value for the _only_ group.
   void set_value(const Eigen::Ref<const VectorX<T>>& value) {
@@ -169,9 +161,7 @@ class DiscreteValues {
   /// Returns a const reference to the underlying VectorX containing the values
   /// for the indicated group. This is the preferred method for examining the
   /// value of a group.
-  const VectorX<T>& value(int index) const {
-    return get_vector(index).value();
-  }
+  const VectorX<T>& value(int index) const { return get_vector(index).value(); }
 
   /// Returns the entire vector for the indicated group as a mutable
   /// Eigen::VectorBlock, which allows mutation of the values, but does not
@@ -181,8 +171,7 @@ class DiscreteValues {
   }
 
   /// Sets the vector to the given value for the indicated group.
-  void set_value(
-      int index, const Eigen::Ref<const VectorX<T>>& value) {
+  void set_value(int index, const Eigen::Ref<const VectorX<T>>& value) {
     get_mutable_vector(index).set_value(value);
   }
 

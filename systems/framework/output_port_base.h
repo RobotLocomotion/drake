@@ -20,9 +20,7 @@ class OutputPortBase : public PortBase {
   /** Returns the index of this output port within the owning System. For a
   Diagram, this will be the index within the Diagram, _not_ the index within
   the LeafSystem whose output port was forwarded. */
-  OutputPortIndex get_index() const {
-    return OutputPortIndex(get_int_index());
-  }
+  OutputPortIndex get_index() const { return OutputPortIndex(get_int_index()); }
 
   // A using-declaration adds these methods into our class's Doxygen.
   // (Placed in an order that makes sense for the class's table of contents.)
@@ -60,11 +58,10 @@ class OutputPortBase : public PortBase {
   @param size
     If the port described is vector-valued, the number of elements expected,
     otherwise ignored. */
-  OutputPortBase(
-      internal::SystemMessageInterface* owning_system,
-      internal::SystemId owning_system_id, std::string name,
-      OutputPortIndex index, DependencyTicket ticket, PortDataType data_type,
-      int size);
+  OutputPortBase(internal::SystemMessageInterface* owning_system,
+                 internal::SystemId owning_system_id, std::string name,
+                 OutputPortIndex index, DependencyTicket ticket,
+                 PortDataType data_type, int size);
 
   /** Concrete output ports must implement this to return the prerequisite
   dependency ticket for this port, which may be in the current System or one

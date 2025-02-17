@@ -60,9 +60,9 @@ struct Traits {
 /// @endcode
 struct NonSymbolicTraits {
   template <typename T, typename U>
-  using supported = typename std::bool_constant<
-    !std::is_same_v<T, symbolic::Expression> &&
-    !std::is_same_v<U, symbolic::Expression>>;
+  using supported =
+      typename std::bool_constant<!std::is_same_v<T, symbolic::Expression> &&
+                                  !std::is_same_v<U, symbolic::Expression>>;
 };
 
 /// A concrete traits class providing sugar to support for converting only from
@@ -90,16 +90,12 @@ struct FromDoubleTraits {
 /// beyond the double value (e.g., possible derivatives) might be discarded.
 template <typename T, typename U>
 struct ValueConverter {
-  T operator()(const U& u) const {
-    return ExtractDoubleOrThrow(u);
-  }
+  T operator()(const U& u) const { return ExtractDoubleOrThrow(u); }
 };
 template <typename T>
 struct ValueConverter<T, T> {
   using U = T;
-  T operator()(const U& u) const {
-    return u;
-  }
+  T operator()(const U& u) const { return u; }
 };
 
 }  // namespace scalar_conversion

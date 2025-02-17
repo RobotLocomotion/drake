@@ -14,18 +14,16 @@ namespace systems {
 template <typename T>
 ContinuousState<T>::ContinuousState(std::unique_ptr<VectorBase<T>> state) {
   state_ = std::move(state);
-  generalized_position_.reset(
-      new Subvector<T>(state_.get(), 0, 0));
-  generalized_velocity_.reset(
-      new Subvector<T>(state_.get(), 0, 0));
+  generalized_position_.reset(new Subvector<T>(state_.get(), 0, 0));
+  generalized_velocity_.reset(new Subvector<T>(state_.get(), 0, 0));
   misc_continuous_state_.reset(
       new Subvector<T>(state_.get(), 0, state_->size()));
   DRAKE_ASSERT_VOID(DemandInvariants());
 }
 
 template <typename T>
-ContinuousState<T>::ContinuousState(
-    std::unique_ptr<VectorBase<T>> state, int num_q, int num_v, int num_z) {
+ContinuousState<T>::ContinuousState(std::unique_ptr<VectorBase<T>> state,
+                                    int num_q, int num_v, int num_z) {
   state_ = std::move(state);
   if (state_->size() != num_q + num_v + num_z) {
     throw std::out_of_range(
@@ -61,11 +59,10 @@ std::unique_ptr<ContinuousState<T>> ContinuousState<T>::Clone() const {
 }
 
 template <typename T>
-ContinuousState<T>::ContinuousState(
-    std::unique_ptr<VectorBase<T>> state,
-    std::unique_ptr<VectorBase<T>> q,
-    std::unique_ptr<VectorBase<T>> v,
-    std::unique_ptr<VectorBase<T>> z)
+ContinuousState<T>::ContinuousState(std::unique_ptr<VectorBase<T>> state,
+                                    std::unique_ptr<VectorBase<T>> q,
+                                    std::unique_ptr<VectorBase<T>> v,
+                                    std::unique_ptr<VectorBase<T>> z)
     : state_(std::move(state)),
       generalized_position_(std::move(q)),
       generalized_velocity_(std::move(v)),

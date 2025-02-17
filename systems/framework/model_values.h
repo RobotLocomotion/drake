@@ -71,19 +71,18 @@ class ModelValues {
 };
 
 template <typename T>
-void ModelValues::AddVectorModel(
-    int index, std::unique_ptr<BasicVector<T>> model_vector) {
+void ModelValues::AddVectorModel(int index,
+                                 std::unique_ptr<BasicVector<T>> model_vector) {
   if (model_vector.get() != nullptr) {
-    AddModel(index, std::make_unique<Value<BasicVector<T>>>(
-        std::move(model_vector)));
+    AddModel(index,
+             std::make_unique<Value<BasicVector<T>>>(std::move(model_vector)));
   } else {
     AddModel(index, std::unique_ptr<AbstractValue>{});
   }
 }
 
 template <typename T>
-std::unique_ptr<BasicVector<T>>
-ModelValues::CloneVectorModel(int index) const {
+std::unique_ptr<BasicVector<T>> ModelValues::CloneVectorModel(int index) const {
   std::unique_ptr<AbstractValue> abstract_result = CloneModel(index);
   if (abstract_result.get() == nullptr) {
     return nullptr;

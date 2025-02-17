@@ -254,8 +254,9 @@ class SystemBase : public internal::SystemMessageInterface {
   const AbstractValue* EvalAbstractInput(const ContextBase& context,
                                          int port_index) const {
     ValidateContext(context);
-    if (port_index < 0)
+    if (port_index < 0) {
       ThrowNegativePortIndex(__func__, port_index);
+    }
     const InputPortIndex port(port_index);
     return EvalAbstractInputImpl(__func__, context, port);
   }
@@ -278,14 +279,16 @@ class SystemBase : public internal::SystemMessageInterface {
   template <typename V>
   const V* EvalInputValue(const ContextBase& context, int port_index) const {
     ValidateContext(context);
-    if (port_index < 0)
+    if (port_index < 0) {
       ThrowNegativePortIndex(__func__, port_index);
+    }
     const InputPortIndex port(port_index);
 
     const AbstractValue* const abstract_value =
         EvalAbstractInputImpl(__func__, context, port);
-    if (abstract_value == nullptr)
+    if (abstract_value == nullptr) {
       return nullptr;  // An unconnected port.
+    }
 
     // We have a value, is it a V?
     const V* const value = abstract_value->maybe_get_value<V>();
@@ -300,15 +303,11 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns the number of input ports currently allocated in this System.
   These are indexed from 0 to %num_input_ports()-1. */
-  int num_input_ports() const {
-    return ssize(input_ports_);
-  }
+  int num_input_ports() const { return ssize(input_ports_); }
 
   /** Returns the number of output ports currently allocated in this System.
   These are indexed from 0 to %num_output_ports()-1. */
-  int num_output_ports() const {
-    return ssize(output_ports_);
-  }
+  int num_output_ports() const { return ssize(output_ports_); }
 
   /** Returns a reference to an InputPort given its `port_index`.
   @pre `port_index` selects an existing input port of this System. */
@@ -355,9 +354,7 @@ class SystemBase : public internal::SystemMessageInterface {
 
   /** Returns the number nc of cache entries currently allocated in this System.
   These are indexed from 0 to nc-1. */
-  int num_cache_entries() const {
-    return ssize(cache_entries_);
-  }
+  int num_cache_entries() const { return ssize(cache_entries_); }
 
   /** Returns a reference to a CacheEntry given its `index`. */
   const CacheEntry& get_cache_entry(CacheIndex index) const {
@@ -688,9 +685,7 @@ class SystemBase : public internal::SystemMessageInterface {
   }
 
   /** Returns the number of declared abstract state variables. */
-  int num_abstract_states() const {
-    return context_sizes_.num_abstract_states;
-  }
+  int num_abstract_states() const { return context_sizes_.num_abstract_states; }
 
   /** Returns the number of declared numeric parameters (each of these is
   a vector-valued parameter). */
@@ -952,9 +947,9 @@ class SystemBase : public internal::SystemMessageInterface {
     // Check that name is unique.
     for (InputPortIndex i{0}; i < num_input_ports(); i++) {
       if (port->get_name() == input_ports_[i]->get_name()) {
-        throw std::logic_error("System " + GetSystemName() +
-            " already has an input port named " +
-            port->get_name());
+        throw std::logic_error(
+            fmt::format("System {} already has an input port named {}",
+                        GetSystemName(), port->get_name()));
       }
     }
 
@@ -996,8 +991,8 @@ class SystemBase : public internal::SystemMessageInterface {
       std::variant<std::string, UseDefaultName> given_name) const {
     const std::string result =
         given_name == kUseDefaultName
-           ? std::string("u") + std::to_string(num_input_ports())
-           : std::get<std::string>(std::move(given_name));
+            ? std::string("u") + std::to_string(num_input_ports())
+            : std::get<std::string>(std::move(given_name));
     DRAKE_DEMAND(!result.empty());
     return result;
   }
@@ -1010,8 +1005,8 @@ class SystemBase : public internal::SystemMessageInterface {
       std::variant<std::string, UseDefaultName> given_name) const {
     const std::string result =
         given_name == kUseDefaultName
-           ? std::string("y") + std::to_string(num_output_ports())
-           : std::get<std::string>(std::move(given_name));
+            ? std::string("y") + std::to_string(num_output_ports())
+            : std::get<std::string>(std::move(given_name));
     DRAKE_DEMAND(!result.empty());
     return result;
   }
@@ -1173,11 +1168,11 @@ class SystemBase : public internal::SystemMessageInterface {
   a deprecation warning should occur when the `port_index` is deprecated; calls
   made on behalf of the user should pass `true`; calls made on behalf or the
   framework internals should pass `false`. */
-  const InputPortBase& GetInputPortBaseOrThrow(const char* func,
-                                               int port_index,
+  const InputPortBase& GetInputPortBaseOrThrow(const char* func, int port_index,
                                                bool warn_deprecated) const {
-    if (port_index < 0)
+    if (port_index < 0) {
       ThrowNegativePortIndex(func, port_index);
+    }
     const InputPortIndex port(port_index);
     if (port_index >= num_input_ports())
       ThrowInputPortIndexOutOfRange(func, port);
@@ -1196,8 +1191,9 @@ class SystemBase : public internal::SystemMessageInterface {
   const OutputPortBase& GetOutputPortBaseOrThrow(const char* func,
                                                  int port_index,
                                                  bool warn_deprecated) const {
-    if (port_index < 0)
+    if (port_index < 0) {
       ThrowNegativePortIndex(func, port_index);
+    }
     const OutputPortIndex port(port_index);
     if (port_index >= num_output_ports())
       ThrowOutputPortIndexOutOfRange(func, port);
@@ -1236,10 +1232,10 @@ class SystemBase : public internal::SystemMessageInterface {
   /** Return type for get_context_sizes(). Initialized to zero
   and equipped with a += operator for Diagram use in aggregation. */
   struct ContextSizes {
-    int num_generalized_positions{0};     // q }
-    int num_generalized_velocities{0};    // v | Sum is num continuous states x.
-    int num_misc_continuous_states{0};    // z }
-    int num_discrete_state_groups{0};     // Each "group" is a vector.
+    int num_generalized_positions{0};   // q }
+    int num_generalized_velocities{0};  // v | Sum is num continuous states x.
+    int num_misc_continuous_states{0};  // z }
+    int num_discrete_state_groups{0};   // Each "group" is a vector.
     int num_abstract_states{0};
     int num_numeric_parameter_groups{0};  // Each "group" is a vector.
     int num_abstract_parameters{0};
@@ -1283,8 +1279,9 @@ class SystemBase : public internal::SystemMessageInterface {
   @see System::CalcImplicitTimeDerivativesResidual() */
   void set_implicit_time_derivatives_residual_size(int n) {
     implicit_time_derivatives_residual_size_.reset();
-    if (n > 0)
+    if (n > 0) {
       implicit_time_derivatives_residual_size_ = n;
+    }
   }
 
   /** (Internal) Gets the id used to tag context data as being created by this
@@ -1411,9 +1408,9 @@ CacheEntry& SystemBase::DeclareCacheEntry(
                 "Expected to be invoked from a SystemBase-derived System.");
   static_assert(std::is_base_of_v<ContextBase, MyContext>,
                 "Expected to be invoked with a ContextBase-derived Context.");
-  auto& entry = DeclareCacheEntry(
-      std::move(description), ValueProducer(this, model_value, calc),
-      std::move(prerequisites_of_calc));
+  auto& entry = DeclareCacheEntry(std::move(description),
+                                  ValueProducer(this, model_value, calc),
+                                  std::move(prerequisites_of_calc));
   return entry;
 }
 
@@ -1435,7 +1432,8 @@ CacheEntry& SystemBase::DeclareCacheEntry(
 }
 
 #ifndef DRAKE_DOXYGEN_CXX
-template <typename> class Diagram;
+template <typename>
+class Diagram;
 namespace internal {
 // This is an attorney-client pattern class providing Diagram with access to
 // certain specific SystemBase protected member functions, and nothing else.
@@ -1447,7 +1445,8 @@ class DiagramSystemBaseAttorney {
   DiagramSystemBaseAttorney() = delete;
 
  private:
-  template <typename> friend class drake::systems::Diagram;
+  template <typename>
+  friend class drake::systems::Diagram;
 
   static std::string GetUnsupportedScalarConversionMessage(
       const SystemBase&, const std::type_info&, const std::type_info&);
