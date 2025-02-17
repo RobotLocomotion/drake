@@ -11,6 +11,7 @@ filegroup(
         "cylinder.xml",
         "double_pendulum.xml",
         "gripper.xml",
+        "plate_and_spatula.sdf",
     ],
     visibility = ["//:__pkg__"],
 )
@@ -18,7 +19,10 @@ filegroup(
 drake_py_binary(
     name = "error_control_demo",
     srcs = ["error_control_demo.py"],
-    data = [":models"],
+    data = [
+        ":models",
+        "@drake_models//:dishes",
+    ],
     deps = [
         "//bindings/pydrake",
     ],

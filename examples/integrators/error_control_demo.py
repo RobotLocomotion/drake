@@ -115,6 +115,23 @@ def clutter():
     )
 
 
+def plate_and_spatula():
+    """A spatula is dropped onto a plate."""
+    name = "Plate and spatula"
+    url = "package://drake/examples/integrators/plate_and_spatula.sdf"
+    use_hydroelastic = True
+    initial_state = np.array([
+        1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.02,   # plate pos
+        1.0, 0.0, 0.0, 0.0, -0.05, 0.0, 0.08,  # spatula pos
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,         # plate vel
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,         # spatula vel
+    ])
+    sim_time = 2.0
+    return SimulationExample(
+        name, url, use_hydroelastic, initial_state, sim_time
+    )
+
+
 def create_scene(
     url: str,
     time_step: float,
@@ -308,6 +325,8 @@ if __name__ == "__main__":
         example = cylinder_point()
     elif args.example == "clutter":
         example = clutter()
+    elif args.example == "plate_and_spatula":
+        example = plate_and_spatula()
     else:
         raise ValueError(f"Unknown example {args.example}")
 
