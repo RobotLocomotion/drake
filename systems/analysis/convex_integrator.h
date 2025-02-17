@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -148,6 +149,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Check whether Hessian re-use is enabled.
   bool get_use_full_newton() const { return use_full_newton_; }
 
+  // Enable/disable writing iteration data to a CSV file
+  void set_write_to_csv(bool flag) { write_to_csv_ = flag; }
+
  private:
   // Struct used to store the result of computing the search direction. Clone of
   // SapSolver::SearchDirectionData
@@ -288,7 +292,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   bool refresh_hessian_{false};
 
   // Various plotting/debugging tools
-  bool is_first_iteration_{true};
+  bool write_to_csv_{false};
+  std::ofstream csv_file_;
   T time_{0.0};
   T time_step_{0.0};
   int solve_phase_{0};  // 0 = full , 1 = first half-step, 2 = second half-step

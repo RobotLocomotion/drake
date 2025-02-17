@@ -84,6 +84,13 @@ void ConvexIntegrator<T>::DoInitialize() {
   // Set SAP solver parameters (default is sparse algebra)
   sap_parameters_.linear_solver_type = SapHessianFactorizationType::kDense;
   sap_parameters_.max_iterations = 100;
+
+  // Set up CSV writing, if requested
+  if (write_to_csv_) {
+    csv_file_.open("convex_integrator.csv");
+    csv_file_ << "t,h,k,residual,refresh_hessian,problem_changed,theta_"
+                 "converged,theta,solve_phase\n";
+  }
 }
 
 template <class T>
@@ -291,29 +298,21 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
       }
     }
 
-    // Force a Hessian refresh if the problem structure has changed, or if 
-    // Hessian re-use is disabled by the user. 
+    // Force a Hessian refresh if the problem structure has changed, or if
+    // Hessian re-use is disabled by the user.
     bool problem_structure_changed = !hessian_factorization_.matches(model);
     if (get_use_full_newton() || problem_structure_changed) {
       refresh_hessian_ = true;
     }
-   
-    ////////////////////////////////////////////////////////////////////////
-    // Debugging plots
 
-    if (is_first_iteration_) {
-      // CVS header
-      fmt::print("t,h,k,residual,refresh_hessian,problem_changed,theta_converged,theta,solve_phase\n");
-      is_first_iteration_ = false;
+    // Dump iteration data to csv, if requested
+    if (write_to_csv_) {
+      csv_file_ << fmt::format(
+          "{},{},{},{},{},{},{},{},{}\n", time_, time_step_, k,
+          momentum_residual, static_cast<int>(refresh_hessian_),
+          static_cast<int>(problem_structure_changed),
+          static_cast<int>(theta_criterion_reached), theta, solve_phase_);
     }
-
-    // CSV data
-    fmt::print("{},{},{},{},{},{},{},{},{}\n", time_, time_step_, k, momentum_residual,
-               static_cast<int>(refresh_hessian_),
-               static_cast<int>(problem_structure_changed),
-               static_cast<int>(theta_criterion_reached), theta, solve_phase_);
-
-    ////////////////////////////////////////////////////////////////////////
 
     // TODO(amcastro-tri): consider monitoring the duality gap.
     if (sap_stats_.optimality_criterion_reached ||

@@ -107,7 +107,8 @@ DEFINE_double(near_rigid_threshold, 1.0, "SAP near rigid threshold.");
 DEFINE_string(
     integrator_jacobian_scheme, "forward",
     "Jacobian computation scheme: 'forward', 'central', 'automatic'.");
-DEFINE_bool(full_newton, false, "Update Jacobian every iteration");
+DEFINE_bool(full_newton, false, "Update Jacobian every iteration.");
+DEFINE_bool(save_csv, false, "Save CSV data for the convex integrator.");
 
 using drake::geometry::CollisionFilterDeclaration;
 using drake::math::RigidTransform;
@@ -557,6 +558,7 @@ int do_main() {
   if (FLAGS_simulator_integration_scheme == "convex") {
     auto& ci = dynamic_cast<ConvexIntegrator<double>&>(integrator);
     ci.set_use_full_newton(FLAGS_full_newton);
+    ci.set_write_to_csv(FLAGS_save_csv);
   }
 
   // Monitor to save stats into a file.

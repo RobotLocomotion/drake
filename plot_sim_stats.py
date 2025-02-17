@@ -5,10 +5,14 @@
 # Make a plot of simulation statistics for the convex integrator.
 #
 # Workflow:
-#   - Run a sim and dump the stats to a file.
-#      `bazel run examples/multibody/clutter -- --mbp_time_step=0 --simulator_integration_scheme=convex > clutter_test.csv`
-#   - Clean up the csv file manually (remove lines at beginning and end)
-#   - Run this script
+#   - Run a sim with csv saving enabled, eg., 
+#     `bazel run examples/multibody/clutter -- \
+#            --mbp_time_step=0.0 \
+#            --simulator_integration_scheme=convex \
+#            --simulator_accuracy=0.1 \
+#            --save_csv=true`
+#   - Set plotting options in the __name__="__main__" section below
+#   - Run this script `./plot_sim_stats.py`
 #
 ##
 
@@ -233,7 +237,7 @@ def plot_reuse_vs_time_step(csv_file, start_step, end_step):
 
 if __name__ == "__main__":
     # Path to the csv file
-    csv_file = "clutter_test.csv"
+    csv_file = "./bazel-bin/examples/multibody/clutter/clutter.runfiles/_main/convex_integrator.csv"
 
     # Set the data range (in terms of solver steps)
     start_step = 500
