@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":batch_eval",
         ":bogacki_shampine3_integrator",
         ":dense_output",
+        ":discrete_time_approximation",
         ":explicit_euler_integrator",
         ":hermitian_dense_output",
         ":implicit_euler_integrator",
@@ -118,6 +119,19 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_approximation",
+    srcs = ["discrete_time_approximation.cc"],
+    hdrs = ["discrete_time_approximation.h"],
+    deps = [
+        ":simulator",
+        ":simulator_config_functions",
+        "//systems/framework",
+        "//systems/primitives:affine_system",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -586,6 +600,21 @@ drake_cc_googletest(
         "//math:geometric_transform",
         "//multibody/plant",
         "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_approximation_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+    ],
+    deps = [
+        ":discrete_time_approximation",
+        ":simulator",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/primitives",
     ],
 )
 
