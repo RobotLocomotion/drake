@@ -50,19 +50,17 @@ drake_cc_library(
     ],
 )
 
+# Define the public interface headers
 drake_cc_library(
-    name = "voxel_collision_map",
-    srcs = [
-        "voxel_collision_map.cc",
-        "voxel_collision_map_internal.cc",
-        "voxel_collision_map_internal.h",
-        "voxel_signed_distance_field_internal.cc",
-        "voxel_signed_distance_field_internal.h",
+    name = "voxel_headers",
+    hdrs = [
+        "voxel_collision_map.h",
+        "voxel_signed_distance_field.h",
+        "voxel_tagged_object_collision_map.h",
     ],
-    hdrs = ["voxel_collision_map.h"],
     deps = [
-        ":voxel_signed_distance_field",
         "//common:essential",
+        "//common:parallelism",
         "//math:geometric_transform",
     ],
     implementation_deps = [
@@ -84,53 +82,41 @@ drake_cc_library(
         "voxel_signed_distance_field_internal.h",
         "voxel_tagged_object_collision_map_internal.h",
     ],
-    tags = ["exclude_from_package"],
+    visibility = ["//visibility:private"],
     deps = [
-        ":voxel_collision_map",
-        ":voxel_signed_distance_field",
-        ":voxel_tagged_object_collision_map",
+        ":voxel_headers",
         "//common:essential",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
         "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
+    ],
+)
+
+drake_cc_library(
+    name = "voxel_collision_map",
+    srcs = ["voxel_collision_map.cc"],
+    deps = [
+        ":voxel_headers",
+        ":voxel_grid_internal",
+        ":voxel_signed_distance_field",
     ],
 )
 
 drake_cc_library(
     name = "voxel_signed_distance_field",
-    srcs = [
-        "voxel_signed_distance_field.cc",
-        "voxel_signed_distance_field_internal.cc",
-        "voxel_signed_distance_field_internal.h",
-    ],
-    hdrs = ["voxel_signed_distance_field.h"],
+    srcs = ["voxel_signed_distance_field.cc"],
     deps = [
-        "//common:essential",
-        "//common:parallelism",
-    ],
-    implementation_deps = [
-        "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
+        ":voxel_headers",
+        ":voxel_grid_internal",
     ],
 )
 
 drake_cc_library(
     name = "voxel_tagged_object_collision_map",
-    srcs = [
-        "voxel_signed_distance_field_internal.cc",
-        "voxel_signed_distance_field_internal.h",
-        "voxel_tagged_object_collision_map.cc",
-        "voxel_tagged_object_collision_map_internal.cc",
-        "voxel_tagged_object_collision_map_internal.h",
-    ],
-    hdrs = ["voxel_tagged_object_collision_map.h"],
+    srcs = ["voxel_tagged_object_collision_map.cc"],
     deps = [
+        ":voxel_headers",
+        ":voxel_grid_internal",
         ":voxel_signed_distance_field",
-        "//common:essential",
-        "//math:geometric_transform",
-    ],
-    implementation_deps = [
-        "@common_robotics_utilities_internal//:common_robotics_utilities",
-        "@voxelized_geometry_tools_internal//:voxelized_geometry_tools",
     ],
 )
 
