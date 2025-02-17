@@ -249,6 +249,7 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
   double alpha = 1.0;
   int num_line_search_iters = 0;
   bool theta_criterion_reached = false;
+  double theta = std::numeric_limits<double>::quiet_NaN();
   for (;; ++k) {
     // We first verify the stopping criteria. If satisfied, we skip expensive
     // factorizations.
@@ -270,7 +271,7 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
       // converge, using a looser tolerance (than the SAP criteria) that scales
       // with the desired accuracy.
       const double kappa = 0.05;  // copied from implicit_integrator.cc
-      const double theta = dv_norm / last_dv_norm;
+      theta = dv_norm / last_dv_norm;
       const double eta = theta / (1.0 - theta);
       const double k_dot_tol = kappa * this->get_accuracy_in_use();
       theta_criterion_reached = (theta < 1.0) && (eta * dv_norm < k_dot_tol);
@@ -302,15 +303,15 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
 
     if (is_first_iteration_) {
       // CVS header
-      fmt::print("t,h,k,residual,refresh_hessian,problem_changed,theta_converged,solve_phase\n");
+      fmt::print("t,h,k,residual,refresh_hessian,problem_changed,theta_converged,theta,solve_phase\n");
       is_first_iteration_ = false;
     }
 
     // CSV data
-    fmt::print("{},{},{},{},{},{},{},{}\n", time_, time_step_, k, momentum_residual,
+    fmt::print("{},{},{},{},{},{},{},{},{}\n", time_, time_step_, k, momentum_residual,
                static_cast<int>(refresh_hessian_),
                static_cast<int>(problem_structure_changed),
-               static_cast<int>(theta_criterion_reached), solve_phase_);
+               static_cast<int>(theta_criterion_reached), theta, solve_phase_);
 
     ////////////////////////////////////////////////////////////////////////
 

@@ -30,9 +30,10 @@ def make_plots(csv_file, start_step, end_step):
     hessian_refresh = data["refresh_hessian"][start_step:end_step]
     problem_changed = data["problem_changed"][start_step:end_step]
     solve_phase = data["solve_phase"][start_step:end_step]
+    theta = data["theta"][start_step:end_step]
 
     # Set up the figure
-    fig, ax = plt.subplots(5, 1, figsize=(10, 10), sharex=True)
+    fig, ax = plt.subplots(6, 1, figsize=(10, 10), sharex=True)
 
     # First plot is the sim time
     ax[0].plot(solver_steps, times, "o")
@@ -48,31 +49,36 @@ def make_plots(csv_file, start_step, end_step):
     ax[2].set_ylabel("$\\nabla\ell$")
     ax[2].set_yscale("log")
 
-    # Fourth plot is a vertical bar when the hessian is refreshed. Uses axvline
+    # Fourth plot is theta
+    ax[3].plot(solver_steps, theta, "o")
+    ax[3].set_ylabel("$\\theta$")
+    ax[3].set_ylim(0, 1)
+
+    # Fifth plot is a vertical bar when the hessian is refreshed. Uses axvline
     # because the refresh is not periodic
     for i, refresh, problem in zip(
         solver_steps, hessian_refresh, problem_changed
     ):
         if problem:
-            ax[3].axvline(i, color="r", linewidth=3)
+            ax[4].axvline(i, color="r", linewidth=3)
         elif refresh:
-            ax[3].axvline(i, color="b", linewidth=3)
-    ax[3].set_ylabel("Hessian refresh\n(red=forced)")
+            ax[4].axvline(i, color="b", linewidth=3)
+    ax[4].set_ylabel("Hessian refresh\n(red=forced)")
 
-    # Fifth plot is the Newton step
-    ax[4].plot(solver_steps, k, "o")
-    ax[4].set_ylabel("Newton step $k$")
+    # Sixth plot is the Newton step
+    ax[5].plot(solver_steps, k, "o")
+    ax[5].set_ylabel("Newton step $k$")
 
     # Set major ticks at the beginning of each time step
     major_ticks = (
         np.where(np.logical_and(solve_phase == 0, k == 0))[0] + start_step
     )
-    ax[4].set_xticks(major_ticks)
+    ax[5].set_xticks(major_ticks)
 
     # Set minor ticks at the beginning of each solve phase (full step, first half
     # step, second half step)
     minor_ticks = np.where(k == 0)[0] + start_step
-    ax[4].set_xticks(minor_ticks, minor=True)
+    ax[5].set_xticks(minor_ticks, minor=True)
 
     # Set vertical grid lines for both major and minor ticks
     for a in ax:
@@ -194,7 +200,6 @@ def plot_reuse_vs_time_step(csv_file, start_step, end_step):
     hessian_refreshes = np.array(data["refresh_hessian"][start_step:end_step])
 
     # Define logarithmic bins
-    # bins = np.linspace(np.min(dts), np.max(dts), num=20)
     bins = np.logspace(np.log10(np.min(dts)), np.log10(np.max(dts)), num=20)
 
     # In each bin, compute the fraction of time steps with Hessian reuse
@@ -231,13 +236,13 @@ if __name__ == "__main__":
     csv_file = "clutter_test.csv"
 
     # Set the data range (in terms of solver steps)
-    start_step = 0
-    end_step = -1
+    start_step = 500
+    end_step = 700
 
     # Answer some questions about the data
     analyze_data(csv_file, start_step, end_step)
 
     # Make some plots
-    # make_plots(csv_file, start_step, end_step)
+    make_plots(csv_file, start_step, end_step)
     # plot_hessian_refreshes(csv_file, start_step, end_step)
-    plot_reuse_vs_time_step(csv_file, start_step, end_step)
+    # plot_reuse_vs_time_step(csv_file, start_step, end_step)
