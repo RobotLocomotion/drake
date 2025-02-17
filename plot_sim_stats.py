@@ -185,6 +185,46 @@ def plot_hessian_refreshes(csv_file, start_step, end_step, include_baseline=Fals
     plt.tight_layout()
     plt.show()
 
+def plot_reuse_vs_time_step(csv_file, start_step, end_step):
+    """Make a histogram of Hessian reuses at various step sizes"""
+    data = pd.read_csv(csv_file)
+
+    # Extract the relevant quantities
+    dts = np.array(data["h"][start_step:end_step])
+    hessian_refreshes = np.array(data["refresh_hessian"][start_step:end_step])
+
+    # Define logarithmic bins
+    # bins = np.linspace(np.min(dts), np.max(dts), num=20)
+    bins = np.logspace(np.log10(np.min(dts)), np.log10(np.max(dts)), num=20)
+
+    # In each bin, compute the fraction of time steps with Hessian reuse
+    num_steps = []
+    num_refreshes= []
+    for bin in zip(bins[:-1], bins[1:]):
+        # Get the indices of the time steps that fall within the current bin
+        indices = np.where(np.logical_and(dts >= bin[0], dts < bin[1]))[0]
+        # Compute the fraction of those time steps with Hessian reuse
+        num_steps.append(len(indices))
+        num_refreshes.append(np.sum(hessian_refreshes[indices]))
+
+    # Plot the results
+    plt.subplot(2,1,1)
+    plt.hist(bins[:-1], bins, weights=num_steps, alpha=0.7, label="total steps")
+    plt.hist(bins[:-1], bins, weights=num_refreshes, alpha=0.7, label="Recomputations")
+    plt.xlabel("Time Step Size")
+    plt.ylabel("Number of Steps")
+    plt.xscale("log")
+    plt.legend()
+
+    plt.subplot(2,1,2)
+    percent_refreshed = 100 * np.array(num_refreshes) / np.array(num_steps)
+    plt.hist(bins[:-1], bins, weights=percent_refreshed, alpha=0.7)
+    plt.xlabel("Time Step Size")
+    plt.ylabel("Steps with Hessian Re-computation (%)")
+    plt.xscale("log")
+
+    plt.show()
+
 
 if __name__ == "__main__":
     # Path to the csv file
@@ -199,4 +239,5 @@ if __name__ == "__main__":
 
     # Make some plots
     # make_plots(csv_file, start_step, end_step)
-    plot_hessian_refreshes(csv_file, start_step, end_step)
+    # plot_hessian_refreshes(csv_file, start_step, end_step)
+    plot_reuse_vs_time_step(csv_file, start_step, end_step)
