@@ -30,6 +30,7 @@ drake_cc_binary(
         "//systems/analysis:simulator_gflags",
         "//systems/analysis:simulator_print_stats",
         "//systems/framework:diagram",
+        "//visualization:visualization_config_functions",
         "@gflags",
     ],
 )

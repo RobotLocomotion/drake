@@ -34,6 +34,7 @@
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 // To profile with Valgrind run with (the defaults are good):
 // valgrind --tool=callgrind --separate-callers=10 --instr-atstart=no
@@ -87,14 +88,12 @@ DEFINE_int32(objects_per_pile, 5, "Number of objects per pile.");
 DEFINE_double(dz, 0.15, "Initial distance between objects in the pile.");
 DEFINE_double(scale_factor, 1.0, "Multiplicative factor to generate the pile.");
 DEFINE_bool(add_sink_walls, true, "Adds wall of a sink model.");
+DEFINE_bool(enable_boxes, false, "Make some of the objects boxes.");
 
 // Visualization.
 DEFINE_bool(visualize, true, "Whether to visualize (true) or not (false).");
 DEFINE_bool(visualize_forces, false,
             "Whether to visualize forces (true) or not (false).");
-DEFINE_bool(visualize_multicontact, false,
-            "Whether to visualize (true) or not the spheres used to emulate "
-            "multicontact.");
 DEFINE_double(viz_period, 1.0 / 60.0, "Viz period.");
 
 // Discrete contact solver.
@@ -124,6 +123,8 @@ using Eigen::Translation3d;
 using Eigen::Vector3d;
 using clock = std::chrono::steady_clock;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
+using drake::visualization::ApplyVisualizationConfig;
+using drake::visualization::VisualizationConfig;
 
 // Parameters
 const double width(0.8);
@@ -205,9 +206,6 @@ const RigidBody<double>& AddBox(const std::string& name,
       // geometry::Ellipsoid shape(radius_x, radius_y, radius_z);
       plant->RegisterCollisionGeometry(box, X_BSpherei, shape, sphere_name,
                                        props);
-      if (FLAGS_visualize_multicontact) {
-        plant->RegisterVisualGeometry(box, X_BSpherei, shape, sphere_name, red);
-      }
     };
 
     // Add points (zero size spheres) at the corners to avoid spurious
@@ -388,8 +386,11 @@ std::vector<BodyIndex> AddObjects(double scale_factor,
   std::uniform_int_distribution<int> distribution(0, 1);
 
   auto roll_shape = [&]() {
-    return 0;  // All spheres.
-    // return distribution(generator);
+    if (!FLAGS_enable_boxes) {
+      return 0;  // All boxes.
+    } else {
+      return distribution(generator);
+    }
   };
 
   const int num_objects = FLAGS_objects_per_pile;
@@ -498,16 +499,11 @@ int do_main() {
   // Publish contact results for visualization.
   auto meshcat = std::make_shared<drake::geometry::Meshcat>();
   if (FLAGS_visualize) {
-    drake::geometry::MeshcatVisualizerParams params;
-    params.publish_period = FLAGS_viz_period;
-    drake::geometry::MeshcatVisualizerd::AddToBuilder(
-        &builder, scene_graph, meshcat, std::move(params));
-  }
-  if (FLAGS_visualize_forces) {
-    drake::multibody::meshcat::ContactVisualizerParams cparams;
-    cparams.newtons_per_meter = 60.0;
-    drake::multibody::meshcat::ContactVisualizerd::AddToBuilder(
-        &builder, plant, meshcat, std::move(cparams));
+    VisualizationConfig vis_config;
+    vis_config.publish_period = FLAGS_viz_period;
+    vis_config.publish_contacts = FLAGS_visualize_forces;
+    ApplyVisualizationConfig(vis_config, &builder, nullptr, &plant,
+                             &scene_graph, meshcat);
   }
   auto diagram = builder.Build();
 
