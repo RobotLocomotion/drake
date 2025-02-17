@@ -19,6 +19,7 @@
 #include "drake/math/rigid_transform.h"
 // TODO(russt): Move point_cloud.h to a more central location.
 #include "drake/perception/point_cloud.h"
+#include "drake/planning/dev/voxel_collision_map.h"
 
 namespace drake {
 namespace geometry {

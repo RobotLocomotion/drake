@@ -584,6 +584,7 @@ drake_cc_library(
         "//geometry/proximity:triangle_surface_mesh",
         "//math:geometric_transform",
         "//perception:point_cloud",
+        "//planning/dev:voxel_collision_map",
     ],
     implementation_deps = [
         "//common:drake_export",
