@@ -36,6 +36,7 @@
 #include "drake/geometry/meshcat_recording_internal.h"
 #include "drake/geometry/meshcat_types_internal.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
+#include "drake/planning/dev/voxel_collision_map_internal.h"
 #include "drake/systems/analysis/realtime_rate_calculator.h"
 
 #ifdef BOOST_VERSION
@@ -1078,6 +1079,101 @@ class Meshcat::Impl {
     mesh.type = "Points";
     mesh.geometry = data.object.geometry->uuid;
     mesh.material = data.object.material->uuid;
+    data.object.object = std::move(mesh);
+
+    Defer([this, data = std::move(data)]() {
+      std::stringstream message_stream;
+      msgpack::pack(message_stream, data);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      SceneTreeElement& e = scene_tree_root_[data.path];
+      e.object().emplace() = std::move(message);
+    });
+  }
+
+  // This function is public via the PIMPL.
+  void SetObject(std::string_view path,
+                 const planning::VoxelCollisionMap& voxel_collision_map,
+                 const Rgba& occupied_rgba, const Rgba& unknown_rgba) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    internal::SetObjectData data;
+    data.path = FullPath(path);
+
+    // Get internal collision map
+    const voxelized_geometry_tools::CollisionMap grid =
+      planning::internal::GetInternalCollisionMap(voxel_collision_map);
+
+    // Create a cube geometry that will be instanced.
+    auto geometry = std::make_unique<internal::BoxGeometryData>();
+    geometry->uuid = uuid_generator_.GenerateRandom();
+    const auto cell_sizes = grid.GetCellSizes();
+    geometry->width = cell_sizes.x();
+    geometry->height = cell_sizes.y();
+    geometry->depth = cell_sizes.z();
+    data.object.geometry = std::move(geometry);
+
+    // Create material for voxels.
+    auto material = std::make_unique<internal::MaterialData>();
+    material->uuid = uuid_generator_.GenerateRandom();
+    material->type = "MeshPhongMaterial";
+    material->vertexColors = true;  // Enable per-instance coloring
+    material->transparent = (occupied_rgba.a() != 1.0 || unknown_rgba.a() != 1.0);
+    material->opacity = 1.0;  // We'll handle opacity per-instance
+    data.object.material = std::move(material);
+
+    // Dummy transform. Each cell instance will only modify the translation of
+    // this transform.
+    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+
+    // Iterate through the grid to compute transforms and colors.
+    const auto total_cells = grid.GetTotalCells();
+    auto transforms = Eigen::Matrix4Xf::Zero(16, total_cells);
+    auto colors = Eigen::Matrix3Xf::Zero(3, total_cells);
+
+    int64_t counter = 0;
+    for (int64_t x_index = 0; x_index < grid.GetNumXCells(); ++x_index) {
+      for (int64_t y_index = 0; y_index < grid.GetNumYCells(); ++y_index) {
+        for (int64_t z_index = 0; z_index < grid.GetNumZCells(); ++z_index) {
+          counter += 1;
+
+          const auto& cell = grid.GetIndexImmutable(x_index, y_index, z_index).Value();
+
+          // Get location in the grid's frame.
+          const Eigen::Vector4d& location =
+            grid.GridIndexToLocationInGridFrame(x_index, y_index, z_index);
+          const Eigen::Vector3f& xyz = location.cast<float>().head<3>();
+
+          // Set translation.
+          transform.block<3,1>(0,3) = xyz;
+
+          // Flatten the transform matrix in column-major order
+          transforms.col(counter) = Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
+
+          if (cell.Occupancy() > 0.5) {
+            // Occupied voxel
+            colors.col(counter) = occupied_rgba.rgba();
+          } else if (cell.Occupancy() == 0.5) {
+            // Unknown voxel
+            colors.col(counter) = unknown_rgba.rgba();
+          } else {
+            // Free voxel: Make this fully transparent.
+            colors.col(counter) = Eigen::Vector4d::Zero();
+          }
+
+        }
+      }
+    }
+
+    // Create instanced mesh object.
+    internal::InstancedMeshData mesh;
+    mesh.uuid = uuid_generator_.GenerateRandom();
+    mesh.type = "InstancedMesh";
+    mesh.geometry = data.object.geometry->uuid;
+    mesh.material = material->uuid;
+    mesh.count = total_cells;
+    mesh.instanceMatrix = std::move(transforms);
+    mesh.instanceColor = std::move(colors);
     data.object.object = std::move(mesh);
 
     Defer([this, data = std::move(data)]() {
@@ -2563,6 +2659,13 @@ void Meshcat::SetObject(std::string_view path,
                         const Rgba& rgba) {
   impl().SetObject(path, cloud, point_size, rgba);
 }
+
+void Meshcat::SetObject(std::string_view path,
+                        const planning::VoxelCollisionMap& voxel_collision_map,
+                        const Rgba& occupied_rgba, const Rgba& unknown_rgba) {
+  impl().SetObject(path, voxel_collision_map, occupied_rgba, unknown_rgba);
+}
+
 
 void Meshcat::SetObject(std::string_view path,
                         const TriangleSurfaceMesh<double>& mesh,

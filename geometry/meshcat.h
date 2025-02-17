@@ -211,6 +211,23 @@ class Meshcat {
                  double point_size = 0.001,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
+  /** Sets the "object" at a given `path` in the scene tree to be
+  `voxel_collision_map`.  Note that `path`="/foo" will always set an object in
+  the tree at "/foo/<object>".  See @ref meshcat_path. Any objects previously
+  set at this `path` will be replaced.
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param voxel_collision_map a planning::VoxelCollisionMap.
+  @param occupied_rgba The color to use for occupied voxels in the visualization.
+                       Defaults to solid red.
+  @param unknown_rgba The color to use for unknown voxels in the visualization. 
+                      Defaults to semi-transparent black.
+  */
+  void SetObject(std::string_view path,
+                 const planning::VoxelCollisionMap& voxel_collision_map,
+                 const Rgba& occupied_rgba = Rgba(1., 0., 0., 1.),
+                 const Rgba& unknown_rgba = Rgba(0., 0., 0., .2));
+
   /** Sets the "object" at `path` in the scene tree to a TriangleSurfaceMesh.
 
   @param path a "/"-delimited string indicating the path in the scene tree. See
