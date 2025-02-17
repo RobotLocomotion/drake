@@ -78,18 +78,29 @@ struct FiniteHorizonLinearQuadraticRegulatorOptions {
   bool use_square_root_method{false};
 
   /**
-  For continuous-time dynamical systems, the Riccati equation is solved by the
-  Simulator (running backwards in time). Use this parameter to configure the
-  simulator (e.g. choose non-default integrator or integrator parameters). */
+  This parameter applies to continuous-time dynamical systems. For
+  continuous-time finite-horizon LQR, the Riccati differential equation is
+  solved by the Simulator (running backwards in time). For discrete-time
+  finite-horizon LQR, the approximate discrete-time dynamics @f$ x[n+1] = x[n] +
+  \int_{t[n]}^{t[n+1]} f(t,x(t),u[n]) \, dt @f$ is integrated using the
+  Simulator. Use this parameter to configure the simulator (e.g. choose
+  non-default integrator or integrator parameters). */
   SimulatorConfig simulator_config{};
 };
 
 /**
 A structure that contains the basic FiniteHorizonLinearQuadraticRegulator
-results. The finite-horizon cost-to-go is given by (x-x0(t))'*S(t)*(x-x0(t)) +
-2*(x-x₀(t))'sₓ(t) + s₀(t) and the optimal controller is given by u-u0(t) =
--K(t)*(x-x₀(t)) - k₀(t).  Please don't overlook the factor of 2 in front of the
-sₓ(t) term.
+results.
+
+The continuous-time finite-horizon cost-to-go is given by @f$
+(x-x_0(t))^\top S(t) (x-x_0(t)) + 2(x-x_0(t))^\top s_x(t) + s_0(t) @f$ and the
+optimal controller is given by @f$ u-u_0(t) = -K(t) (x-x_0(t)) - k_0(t) @f$.
+Please don't overlook the factor of 2 in front of the @f$ s_x(t) @f$ term.
+
+The discrete-time finite-horizon cost-to-go is given by @f$
+(x-x_0[n])^\top S[n] (x-x_0[n])) + 2(x-x_0[n])^\top s_x[n] + s_0[n] @f$ and the
+optimal controller is given by @f$ u-u_0[n] = -K[n] (x-x_0[n]) - k_0[n] @f$.
+Please don't overlook the factor of 2 in front of the @f$ s_x[n] @f$ term.
 */
 struct FiniteHorizonLinearQuadraticRegulatorResult {
   copyable_unique_ptr<trajectories::Trajectory<double>> x0;
@@ -105,8 +116,6 @@ struct FiniteHorizonLinearQuadraticRegulatorResult {
   copyable_unique_ptr<trajectories::Trajectory<double>> sx;
   copyable_unique_ptr<trajectories::Trajectory<double>> s0;
 };
-
-// TODO(russt): Add support for difference-equation systems.
 
 // TODO(russt): Add variants for specifying the cost with Q and/or R
 // trajectories, full quadratic forms, and perhaps even symbolic and/or
@@ -148,11 +157,11 @@ u_0[n]) + c[n]
 @f]
 
 where @f$ A[n] @f$, @f$ B[n] @f$, and @f$ c[n] @f$ are taken from the gradients
-of the discrete-time dynamics @f$ x[n+1] = g(x[n],u[n]) @f$ or the
-approximated discrete-time dynamics @f$ g(x[n],u[n]) = x[n] +
+of the discrete-time dynamics @f$ x[n+1] = g(n,x[n],u[n]) @f$ or the
+approximated discrete-time dynamics @f$ g(n,x[n],u[n]) = x[n] +
 \int_{t[n]}^{t[n+1]} f(t,x(t),u[n]) \, dt @f$, where @f$ A[n] =\frac{\partial
-g}{\partial x}(x_0[n], u_0[n]), B[n] = \frac{\partial g}{\partial u}(x_0[n],
-u_0[n]) @f$, and @f$ c[n] = g(x_0[n], u_0[n]) - x_0[n+1] @f$.
+g}{\partial x}(x_0[n], u_0[n]), B[n] = \frac{\partial g}{\partial u}(n,x_0[n],
+u_0[n]) @f$, and @f$ c[n] = g(n,x_0[n],u_0[n]) - x_0[n+1] @f$.
 @f$ x_0[n] @f$ and @f$ u_0[n] @f$ can be specified in @p options, otherwise are
 taken to be constant trajectories with values given by @p context.
 
@@ -167,20 +176,19 @@ taken to be constant trajectories with values given by @p context.
 @param options is the optional FiniteHorizonLinearQuadraticRegulatorOptions.
 
 @return If @p system is a continuous-time system, returns a
-FiniteHorizonLinearQuadraticRegulatorResult containing
-trajectories::PiecewisePolynomial. If @p system is a discrete-time system or @p
-options.x0 / @p options.u0 is of type trajectories::DiscreteTimeTrajectory,
-returns a FiniteHorizonLinearQuadraticRegulatorResult containing
-trajectories::DiscreteTimeTrajectory.
+FiniteHorizonLinearQuadraticRegulatorResult representing a continuous-time
+finite-horizon LQR.
+If @p system is a discrete-time system or @p options.x0 /
+@p options.u0 is of type trajectories::DiscreteTimeTrajectory, returns a
+FiniteHorizonLinearQuadraticRegulatorResult representing a discrete-time
+finite-horizon LQR.
 
-@pre @p system must be a System<double> with (only) n continuous state variables
-and m inputs.  It must be convertible to System<AutoDiffXd>.
+@pre @p system must be a System<double> with n continuous state variables and m
+inputs, or a System<double> with n discrete state variables and m inputs.  It
+must be convertible to System<AutoDiffXd>.
 
-@note @p options.simulator_config.integration_scheme is utilized to perform the
-integration in @f[ x[n+1] = x[n] + \int_{t[n]}^{t[n+1]} f(t,x(t),u[n]) \, dt @f]
-if necessary.
-
-@note Richer specification of the objective is anticipated.
+@note Richer specification of the objective is anticipated (they are
+listed in the code as TODOs).
 
 @ingroup control
 */
@@ -198,6 +206,11 @@ implementing the regulator (controller) as a System, with a single
 output for the regulator control output.
 
 @see FiniteHorizonLinearQuadraticRegulator for details on the arguments.
+
+@note To regulate a continuous-time plant using a discrete-time finite-horizon
+LQR controller, be sure to connect a ZeroOrderHold system to the controller's
+output. See the documentation for DiscreteTimeTrajectory for more details.
+
 @ingroup control_systems
 */
 std::unique_ptr<System<double>> MakeFiniteHorizonLinearQuadraticRegulator(

@@ -221,10 +221,10 @@ GTEST_TEST(FiniteHorizonLQRTest, DoubleIntegratorWithNonZeroGoal) {
 // Tests the affine terms by solving LQR from a different coordinate system.
 // Given an affine system: xdot = Ax + Bu + c, with B invertible, we have a
 // fixed point at x0=0, B*u0 = -c.  Normally, we would stabilize as a linear
-// system in relative to x0, u0 using LQR.  Here we will leave the coordinate
-// system alone (x0=0, u0=0), but set B*ud = -c.  The steady-state solution to
-// the finite-horizon LQR problem will contain non-zero affine terms in order
-// to get back to the offset form of this LQR controller.
+// system in relative to x0, u0 using LQR.  Here set the coordinate system to
+// (x0=0, u0=1), and set B*ud = -c.  The steady-state solution to the
+// finite-horizon LQR problem will contain non-zero affine terms in order to get
+// back to the offset form of this LQR controller.
 GTEST_TEST(FiniteHorizonLQRTest, AffineSystemTest) {
   Eigen::Matrix2d A;
   Eigen::Matrix2d B;
@@ -270,7 +270,8 @@ GTEST_TEST(FiniteHorizonLQRTest, AffineSystemTest) {
   EXPECT_TRUE(CompareMatrices(result.S->value(t0), lqr_result.S, 3.8e-5));
   EXPECT_TRUE(result.sx->value(t0).isZero(1e-5));
   EXPECT_TRUE(result.s0->value(t0).isZero(1e-5));
-  // The LQR controller would be u - u0 = ud - Kx, so Kx = lqr.K, k0 = -ud + u0.
+  // The LQR controller would be u = ud - Kx or u - u0 = -K(x-x0) - k0,
+  // so Kx = lqr.K, k0 = -ud + u0.
   EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 4e-4));
   EXPECT_TRUE(CompareMatrices(result.k0->value(t0), -udv + u0v, 1e-5));
 
@@ -616,7 +617,8 @@ GTEST_TEST(DiscreteTimeFiniteHorizonLQRTest, AffineSystemTest) {
   EXPECT_TRUE(CompareMatrices(result.S->value(t0), lqr_result.S, 3.8e-5));
   EXPECT_TRUE(result.sx->value(t0).isZero(1e-5));
   EXPECT_TRUE(result.s0->value(t0).isZero(1e-5));
-  // The LQR controller would be u - u0 = ud - Kx, so Kx = lqr.K, k0 = -ud + u0.
+  // The LQR controller would be u = ud - Kx or u - u0 = -K(x-x0) - k0,
+  // so Kx = lqr.K, k0 = -ud + u0.
   EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 4e-4));
   EXPECT_TRUE(CompareMatrices(result.k0->value(t0), -udv + u0v, 1e-5));
 
