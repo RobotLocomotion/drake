@@ -289,10 +289,10 @@ bool IsDetectable(const LinearSystem<double>& sys,
 /// using the zero-order hold (ZOH) method.
 ///
 /// @param system The continuous-time LinearSystem.
-/// @param time_period The sampling time period.
+/// @param time_period The discrete time period.
 /// @returns A discrete-time LinearSystem.
-/// @throws if the @p system is not continuous or @p time_period <= 0.
-/// @tparam_default_scalar
+/// @pre @p system must be a continuous-time system. @p time_period must be
+/// greater than zero.
 /// @ingroup primitive_systems
 /// @pydrake_mkdoc_identifier{linearsystem}
 template <typename T>
@@ -303,10 +303,10 @@ std::unique_ptr<LinearSystem<T>> DiscreteTimeApproximation(
 /// using the zero-order hold (ZOH) method.
 ///
 /// @param system The continuous-time AffineSystem.
-/// @param time_period The sampling time period.
+/// @param time_period The discrete time period.
 /// @returns A discrete-time AffineSystem.
-/// @throws if the @p system is not continuous or @p time_period <= 0.
-/// @tparam_default_scalar
+/// @pre @p system must be a continuous-time system. @p time_period must be
+/// greater than zero.
 /// @ingroup primitive_systems
 /// @pydrake_mkdoc_identifier{affinesystem}
 template <typename T>

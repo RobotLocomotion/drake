@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":constant_vector_source",
         ":demultiplexer",
         ":discrete_derivative",
+        ":discrete_time_approximation",
         ":discrete_time_delay",
         ":discrete_time_integrator",
         ":first_order_low_pass_filter",
@@ -117,6 +118,17 @@ drake_cc_library(
         ":linear_system",
         ":multiplexer",
         ":pass_through",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_approximation",
+    srcs = ["discrete_time_approximation.cc"],
+    hdrs = ["discrete_time_approximation.h"],
+    deps = [
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_config_functions",
         "//systems/framework",
     ],
 )
@@ -487,6 +499,21 @@ drake_cc_googletest(
         "//systems/analysis:simulator",
         "//systems/framework",
         "//systems/framework/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_approximation_test",
+    deps = [
+        ":constant_vector_source",
+        ":discrete_time_approximation",
+        ":integrator",
+        ":zero_order_hold",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/framework",
     ],
 )
 

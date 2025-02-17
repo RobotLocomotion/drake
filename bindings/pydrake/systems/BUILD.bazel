@@ -90,6 +90,7 @@ drake_pybind_library(
     cc_srcs = ["primitives_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
+        ":analysis_py",
         ":framework_py",
         ":module_py",
         "//bindings/pydrake:trajectories_py",

@@ -10,6 +10,7 @@
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/discrete_derivative.h"
+#include "drake/systems/primitives/discrete_time_approximation.h"
 #include "drake/systems/primitives/discrete_time_delay.h"
 #include "drake/systems/primitives/discrete_time_integrator.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
@@ -52,6 +53,7 @@ PYBIND11_MODULE(primitives, m) {
   m.doc() = "Bindings for the primitives portion of the Systems framework.";
   constexpr auto& doc = pydrake_doc.drake.systems;
 
+  py::module::import("pydrake.systems.analysis");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.trajectories");
 
@@ -239,6 +241,18 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("A") = Eigen::MatrixXd(), py::arg("B") = Eigen::MatrixXd(),
             py::arg("C") = Eigen::MatrixXd(), py::arg("D") = Eigen::MatrixXd(),
             py::arg("time_period") = 0.0, doc.LinearSystem.ctor.doc_5args);
+
+    m.def("DiscreteTimeApproximation",
+        overload_cast_explicit<std::unique_ptr<LinearSystem<T>>,
+            const LinearSystem<T>&, double>(&DiscreteTimeApproximation),
+        py::arg("system"), py::arg("time_period"),
+        doc.DiscreteTimeApproximation.doc_linearsystem);
+
+    m.def("DiscreteTimeApproximation",
+        overload_cast_explicit<std::unique_ptr<AffineSystem<T>>,
+            const AffineSystem<T>&, double>(&DiscreteTimeApproximation),
+        py::arg("system"), py::arg("time_period"),
+        doc.DiscreteTimeApproximation.doc_affinesystem);
 
     DefineTemplateClassWithDefault<MatrixGain<T>, LinearSystem<T>>(
         m, "MatrixGain", GetPyParam<T>(), doc.MatrixGain.doc)
@@ -617,7 +631,7 @@ PYBIND11_MODULE(primitives, m) {
   type_visit(bind_common_scalar_types, CommonScalarPack{});
 
   // N.B. Capturing `&doc` should not be required; workaround per #9600.
-  auto bind_non_symbolic_scalar_types = [m, &doc](auto dummy) {
+  auto bind_non_symbolic_scalar_types = [&m, &doc](auto dummy) {
     using T = decltype(dummy);
 
     DefineTemplateClassWithDefault<LinearTransformDensity<T>, LeafSystem<T>>(m,
@@ -741,6 +755,14 @@ PYBIND11_MODULE(primitives, m) {
             &TimeVaryingAffineSystem<T>::configure_random_state,
             py::arg("covariance"),
             doc.TimeVaryingAffineSystem.configure_random_state.doc);
+
+    m.def("DiscreteTimeApproximation",
+        overload_cast_explicit<std::unique_ptr<System<T>>, const System<T>&,
+            double, double, const drake::systems::SimulatorConfig&>(
+            &DiscreteTimeApproximation),
+        py::arg("system"), py::arg("time_period"), py::arg("time_offset") = 0.0,
+        py::arg("integrator_config") = drake::systems::SimulatorConfig(),
+        doc.DiscreteTimeApproximation.doc_system);
   };
   type_visit(bind_non_symbolic_scalar_types, NonSymbolicScalarPack{});
 
@@ -801,18 +823,6 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsDetectable", &IsDetectable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsDetectable.doc);
-
-  m.def("DiscreteTimeApproximation",
-      overload_cast_explicit<std::unique_ptr<LinearSystem<double>>,
-          const LinearSystem<double>&, double>(&DiscreteTimeApproximation),
-      py::arg("system"), py::arg("time_period"),
-      doc.DiscreteTimeApproximation.doc_linearsystem);
-
-  m.def("DiscreteTimeApproximation",
-      overload_cast_explicit<std::unique_ptr<AffineSystem<double>>,
-          const AffineSystem<double>&, double>(&DiscreteTimeApproximation),
-      py::arg("system"), py::arg("time_period"),
-      doc.DiscreteTimeApproximation.doc_affinesystem);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

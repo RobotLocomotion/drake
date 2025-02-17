@@ -924,7 +924,8 @@ class TestGeneral(unittest.TestCase):
             all(logger.GetLog(logger_context) == logger.FindLog(context)
                 for logger, logger_context in loggers_and_contexts))
 
-    def test_discrete_time_approximation(self):
+    @numpy_compare.check_all_types
+    def test_discrete_time_approximation_linearsystem(self, T):
         A = np.array([[0, 1], [0, 0]])
         B = np.array([0, 1])
         f0 = np.array([2, 1])
@@ -943,7 +944,7 @@ class TestGeneral(unittest.TestCase):
         def assert_array_close(x, y): np.testing.assert_allclose(
             np.squeeze(x), np.squeeze(y), atol=1e-10)
 
-        continuous_system = LinearSystem(A, B, C, D)
+        continuous_system = LinearSystem_[T](A, B, C, D)
         discrete_system = DiscreteTimeApproximation(
             system=continuous_system, time_period=h)
         assert_array_close(discrete_system.A(), Ad)
@@ -951,7 +952,7 @@ class TestGeneral(unittest.TestCase):
         assert_array_close(discrete_system.C(), Cd)
         assert_array_close(discrete_system.D(), Dd)
 
-        continuous_system = AffineSystem(A, B, f0, C, D, y0)
+        continuous_system = AffineSystem_[T](A, B, f0, C, D, y0)
         discrete_system = DiscreteTimeApproximation(
             system=continuous_system, time_period=h)
         assert_array_close(discrete_system.A(),  Ad)
@@ -960,3 +961,14 @@ class TestGeneral(unittest.TestCase):
         assert_array_close(discrete_system.C(),  Cd)
         assert_array_close(discrete_system.D(),  Dd)
         assert_array_close(discrete_system.y0(), y0d)
+
+    def test_discrete_time_approximation_system(self):
+        sys = DiscreteTimeApproximation(
+            system=Integrator_[float](1),
+            time_period=0.01, time_offset=0.0)
+        sys.ToScalarType[AutoDiffXd]()
+
+        sys = DiscreteTimeApproximation(
+            system=Integrator_[AutoDiffXd](1),
+            time_period=0.01, time_offset=0.0)
+        sys.ToScalarType[float]()
