@@ -64,6 +64,332 @@ std::vector<VolumeElement> SplitToTetrahedra(int v0, int v1, int v2, int v3,
 }
 }  // namespace
 
+// Makes a mesh for a cube of lengths `length`. This tesselation:
+//  - splits all faces into four triangles, and
+//  - respects the medial axis.
+// @pre The box has a point MA, i.e. it is a cube.
+template <typename T>
+VolumeMesh<T> MakeBoxWithPointMa(double length) {
+  // clang-format off
+  std::vector<VolumeElement> elements = {
+    {8, 0, 4, 11},
+    {3, 8, 1,  9},
+    {0, 8, 4, 13},
+    {8, 7, 3, 14},
+    {8, 5, 4, 10},
+    {8, 0, 1,  9},
+    {5, 8, 1, 14},
+    {0, 8, 2,  9},
+    {2, 8, 3,  9},
+    {8, 4, 6, 10},
+    {7, 8, 6, 10},
+    {8, 5, 1, 11},
+    {4, 8, 6, 13},
+    {8, 5, 7, 14},
+    {8, 7, 6, 12},
+    {8, 6, 2, 12},
+    {5, 8, 7, 10},
+    {5, 8, 4, 11},
+    {8, 3, 1, 14},
+    {8, 2, 3, 12},
+    {7, 8, 3, 12},
+    {8, 0, 2, 13},
+    {6, 8, 2, 13},
+    {0, 8, 1, 11}};
+  // clang-format on
+
+  // clang-format off
+  const T L = length / 2.0;
+  std::vector<Vector3<T>> vertices  = {
+    {-L, -L, -L},
+    {-L, -L,  L},
+    {-L,  L, -L},
+    {-L,  L,  L},
+    { L, -L, -L},
+    { L, -L,  L},
+    { L,  L, -L},
+    { L,  L,  L},
+    {0., 0., 0.},
+    {-L, 0., 0.},
+    { L, 0., 0.},
+    {0., -L, 0.},
+    {0.,  L, 0.},
+    {0., 0., -L},
+    {0., 0.,  L}};
+  // clang-format on
+
+  return {std::move(elements), std::move(vertices)};
+}
+
+// Makes a mesh for a box having two lengths to be equal and smaller than the
+// third length. This tesselation:
+//  - splits all faces into four triangles, and
+//  - respects the medial axis.
+// @pre The box has a line MA.
+template <typename T>
+VolumeMesh<T> MakeBoxWithLineMa(const Box& box) {
+  // Below, `elements` and `vertices` define a tessellation of the box in a
+  // canonical frame in which the longest size is along the z-axis.
+
+  // clang-format off
+  std::vector<VolumeElement> elements = {
+    { 5,   10,    4,   13},
+    { 3,    1,    8,   16},
+    { 7,    8,    5,   16},
+    { 6,    9,    4,   12},
+    { 8,    1,    5,   16},
+    { 2,   10,    3,   11},
+    { 6,    7,   10,   12},
+    {10,    5,    4,   12},
+    {10,    0,    1,   11},
+    { 7,    6,   10,   14},
+    { 8,    7,    5,   12},
+    { 3,    8,    7,   16},
+    { 6,    9,    2,   15},
+    { 9,    0,    2,   15},
+    { 1,    8,   10,   11},
+    { 1,    3,    8,   11},
+    { 8,    3,   10,   11},
+    { 2,    9,   10,   11},
+    { 0,    9,    2,   11},
+    {10,    9,    0,   11},
+    { 8,    3,    7,   14},
+    { 8,    7,   10,   14},
+    { 9,    6,    2,   14},
+    {10,    6,    9,   14},
+    {10,    2,    3,   14},
+    { 3,    8,   10,   14},
+    { 9,    2,   10,   14},
+    { 9,    4,    0,   15},
+    { 9,    6,    4,   15},
+    {10,    9,    4,   13},
+    { 4,    9,    0,   13},
+    { 8,   10,    5,   13},
+    { 1,    8,    5,   13},
+    { 0,   10,    1,   13},
+    { 9,   10,    0,   13},
+    { 8,    1,   10,   13},
+    {10,    8,    5,   12},
+    { 7,    8,   10,   12},
+    { 9,   10,    4,   12},
+    { 6,   10,    9,   12}};
+  // clang-format on
+
+  // We first create the mesh in the canonical frame and then rotate it back to
+  // the original frame.
+  const Vector3d half_sizes = box.size() / 2.0;
+  int z_dir;
+  const T L2 = half_sizes.maxCoeff(&z_dir);
+  const int x_dir = (z_dir + 1) % 3;
+  const T L1 = half_sizes(x_dir);
+  const T Lm = L2 - L1;  // MA half size.
+
+  // Coordinates of the box in the canonical frame, where the z-axis is aligned
+  // along the longest size.
+  // clang-format off
+  std::vector<Vector3<T>> vertices  = {
+    {-L1, -L1, -L2},
+    {-L1, -L1,  L2},
+    {-L1,  L1, -L2},
+    {-L1,  L1,  L2},
+    { L1, -L1, -L2},
+    { L1, -L1,  L2},
+    { L1,  L1, -L2},
+    { L1,  L1,  L2},
+    { 0,  0,  Lm},
+    { 0,  0, -Lm},
+    { 0,  0,  0},
+    {-L1,  0,  0},
+    { L1,  0,  0},
+    { 0, -L1,  0},
+    { 0,  L1,  0},
+    { 0,  0, -L2},
+    { 0,  0,  L2}};
+  // clang-format on
+
+  if (z_dir == 0) {
+    // Rotate 90 degrees around the canonical y axis.
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [](const Vector3<T>& p) {
+                     return Vector3<T>(-p(2), p(1), p(0));
+                   });
+  }
+
+  if (z_dir == 1) {
+    // Rotate 90 degrees around the canonical x axis.
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [](const Vector3<T>& p) {
+                     return Vector3<T>(p(0), -p(2), p(1));
+                   });
+  }
+
+  return {std::move(elements), std::move(vertices)};
+}
+
+// Makes a mesh for a box for which its medial axis forms a rectangular surface.
+// This tesselation:
+//  - splits all faces into four triangles, and
+//  - respects the medial axis.
+// @pre The box has a rectangular MA.
+template <typename T>
+VolumeMesh<T> MakeBoxWithRectangleMa(const Box& box) {
+  // Below, `elements` and `vertices` define a tessellation of the box in a
+  // canonical frame in which the shortest size is along the x-axis. This x-axis
+  // is then perpendicular to the plane that contains the rectangular MA.
+
+  // clang-format off
+  std::vector<VolumeElement> elements = {
+    { 4, 11,  6, 16},
+    { 8,  5,  1, 14},
+    { 5,  9,  8, 17},
+    { 5,  4,  8, 13},
+    { 5,  8,  1, 17},
+    { 0, 11,  2, 12},
+    { 7,  9,  6, 13},
+    { 3,  7,  9, 15},
+    { 3,  2,  9, 12},
+    { 9,  7,  6, 15},
+    { 1,  9,  3, 17},
+    { 6, 11,  2, 16},
+    { 2, 11,  9, 12},
+    { 9,  8,  1, 12},
+    { 9,  5,  8, 13},
+    { 5,  9,  7, 13},
+    { 8,  9, 11, 12},
+    { 8,  0,  1, 12},
+    {11,  4,  6, 13},
+    { 9,  1,  3, 12},
+    { 4,  5,  8, 14},
+    { 7,  3,  9, 17},
+    { 9,  5,  7, 17},
+    { 8, 11, 10, 12},
+    { 0,  8, 10, 12},
+    {11,  0, 10, 12},
+    { 8,  9,  1, 17},
+    {11,  6,  2, 15},
+    {11,  9,  6, 15},
+    { 2,  3,  9, 15},
+    {11,  2,  9, 15},
+    { 4,  0, 10, 16},
+    {11,  4, 10, 16},
+    {11,  0,  2, 16},
+    { 0, 11, 10, 16},
+    { 4,  8, 10, 14},
+    { 0,  4, 10, 14},
+    { 0,  8,  1, 14},
+    { 8,  0, 10, 14},
+    { 9, 11,  6, 13},
+    { 9,  8, 11, 13},
+    { 8,  4, 10, 13},
+    {11,  8, 10, 13},
+    { 4, 11, 10, 13}};
+  // clang-format on
+
+  // We first make a mesh for the box int its canonical frame and then rotate it
+  // back to the original frame of the box.
+  const Vector3d half_sizes = box.size() / 2.0;
+
+  int x_dir;  // The MA normal is in the x_dir.
+  const T L1 = half_sizes.minCoeff(&x_dir);
+
+  // Default initialize L2 and L3 for the case x_dir == 0, when no rotation is
+  // needed.
+  T L2 = half_sizes(1);
+  T L3 = half_sizes(2);
+
+  if (x_dir == 2) {
+    // We'll rotate from the canonical frame along y.
+    // Therefore y axis length stays the same and x swaps with z.
+    L2 = half_sizes(1);  // stays the same
+    L3 = half_sizes(0);  // swaps x and z
+  }
+
+  if (x_dir == 1) {
+    // We'll rotate from the canonical frame along z.
+    // Therefore z axis length stays the same and x swaps with y.
+    L3 = half_sizes(2);  // stays the same.
+    L2 = half_sizes(0);  // swaps x and y.
+  }
+
+  // MA half sizes.
+  const T Lm2 = L2 - L1;
+  const T Lm3 = L3 - L1;
+
+  // Coordinates of the box in the canonical frame C. Lengths L1 < L2 < L3 are
+  // along Cx, Cy, Cz respectively and the MA plane is in the y-z plane (zero
+  // size in x).
+  // clang-format off
+  std::vector<Vector3<T>> vertices  = {
+    {-L1, -L2, -L3},
+    {-L1, -L2,  L3},
+    {-L1,  L2, -L3},
+    {-L1,  L2,  L3},
+    { L1, -L2, -L3},
+    { L1, -L2,  L3},
+    { L1,  L2, -L3},
+    { L1,  L2,  L3},
+    { 0, -Lm2,  Lm3},
+    { 0,  Lm2,  Lm3},
+    { 0, -Lm2, -Lm3},
+    { 0,  Lm2, -Lm3},
+    {-L1,  0,  0},
+    { L1,  0,  0},
+    { 0, -L2,  0},
+    { 0,  L2,  0},
+    { 0,  0, -L3},
+    { 0,  0,  L3}};
+  // clang-format on
+
+  if (x_dir == 2) {
+    // Rotate 90 degrees around the canonical y axis.
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [](const Vector3<T>& p) {
+                     return Vector3<T>(-p(2), p(1), p(0));
+                   });
+  }
+
+  if (x_dir == 1) {
+    // Rotate 90 degrees around the canonical z axis.
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [](const Vector3<T>& p) {
+                     return Vector3<T>(-p(1), p(0), p(2));
+                   });
+  }
+
+  return {std::move(elements), std::move(vertices)};
+}
+
+template <typename T>
+VolumeMesh<T> MakeBoxVolumeMeshWithMaAndSplitFaces(const Box& box) {
+  const Vector3d half_box = box.size() / 2.;
+  const double min_half_box = half_box.minCoeff();
+
+  const Vector3d half_central_Ma_before_tolerancing =
+      half_box - Vector3d::Constant(min_half_box);
+  const Vector3d half_central_Ma =
+      (half_central_Ma_before_tolerancing.array() >
+       DistanceToPointRelativeTolerance(min_half_box))
+          .select(half_central_Ma_before_tolerancing, 0.);
+
+  // MA is zero in all directions, collapsing to a single point.
+  const bool ma_is_point = half_central_Ma.x() == 0 &&
+                           half_central_Ma.y() == 0 && half_central_Ma.z() == 0;
+  if (ma_is_point) return MakeBoxWithPointMa<T>(box.width());
+
+  // MA is zero in two directions, collapsing into a line.
+  const bool ma_is_line =
+      ((half_central_Ma.x() == 0) + (half_central_Ma.y() == 0) +
+       (half_central_Ma.z() == 0)) == 2;
+  if (ma_is_line) return MakeBoxWithLineMa<T>(box);
+
+  // MA is zero in one direction only, collapsing into a rectangle.
+  const bool ma_is_rectangle =
+      ((half_central_Ma.x() == 0) + (half_central_Ma.y() == 0) +
+       (half_central_Ma.z() == 0)) == 1;
+  DRAKE_DEMAND(ma_is_rectangle);
+  return MakeBoxWithRectangleMa<T>(box);
+}
+
 template <typename T>
 VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
   // Begin: Notes For Developers.
@@ -448,7 +774,8 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeBoxVolumeMesh<T>, &MakeBoxVolumeMeshWithMa<T>));
+    (&MakeBoxVolumeMesh<T>, &MakeBoxVolumeMeshWithMa<T>,
+     MakeBoxVolumeMeshWithMaAndSplitFaces<T>));
 
 }  // namespace internal
 }  // namespace geometry
