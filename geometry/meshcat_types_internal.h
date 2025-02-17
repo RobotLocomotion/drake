@@ -400,7 +400,7 @@ struct LumpedObjectData {
   // currently only support zero or one geometry/material.
   std::unique_ptr<GeometryData> geometry;
   std::unique_ptr<MaterialData> material;
-  std::variant<std::monostate, MeshData, MeshfileObjectData> object;
+  std::variant<std::monostate, MeshData, MeshfileObjectData, InstancedMeshData> object;
 
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
@@ -423,8 +423,10 @@ struct LumpedObjectData {
     o.pack("object");
     if (std::holds_alternative<MeshData>(object)) {
       o.pack(std::get<MeshData>(object));
-    } else {
+    } else if (std::holds_alternative<MeshfileObjectData>(object)) {
       o.pack(std::get<MeshfileObjectData>(object));
+    } else {
+      o.pack(std::get<InstancedMeshData>(object));
     }
   }
   // This method must be defined, but the implementation is not needed in the
