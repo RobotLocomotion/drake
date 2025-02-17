@@ -135,8 +135,8 @@ class DependencyTracker {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DependencyTracker);
 
   /** (Internal use only) */
-  using PointerMap = std::unordered_map<const DependencyTracker*,
-                                        const DependencyTracker*>;
+  using PointerMap =
+      std::unordered_map<const DependencyTracker*, const DependencyTracker*>;
 
   /** Returns the human-readable description for this tracker. */
   const std::string& description() const { return description_; }
@@ -181,9 +181,7 @@ class DependencyTracker {
   example, if there are no q's we can improve performance and avoid spurious
   notifications to q-subscribers like configuration_tracker by disabling q's
   tracker. */
-  void suppress_notifications() {
-    suppress_notifications_ = true;
-  }
+  void suppress_notifications() { suppress_notifications_ = true; }
 
   /** Returns true if suppress_notifications() has been called on this
   tracker. */
@@ -345,8 +343,7 @@ class DependencyTracker {
     clone->has_associated_cache_entry_ = has_associated_cache_entry_;
     // The constructor sets cache_value_ to dummy by default, but that's wrong
     // if there is an associated cache entry. In that case we'll set it later.
-    if (has_associated_cache_entry_)
-      clone->cache_value_ = nullptr;
+    if (has_associated_cache_entry_) clone->cache_value_ = nullptr;
     clone->subscribers_.resize(num_subscribers(), nullptr);
     clone->prerequisites_.resize(num_prerequisites(), nullptr);
     clone->suppress_notifications_ = suppress_notifications_;
@@ -382,7 +379,7 @@ class DependencyTracker {
   void NotifySubscribers(int64_t change_event, int depth) const;
 
   std::string GetSystemPathname() const {
-    DRAKE_DEMAND(owning_subcontext_!= nullptr);
+    DRAKE_DEMAND(owning_subcontext_ != nullptr);
     return owning_subcontext_->GetSystemPathname();
   }
 

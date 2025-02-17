@@ -86,7 +86,7 @@ class DiagramBuilder {
   ///
   /// @warning a System may only be added to at most one DiagramBuilder.
   /// Multiple Diagram instances cannot share the same System.
-  template<class S>
+  template <class S>
   S* AddSystem(std::shared_ptr<S> system) {
     S* result = system.get();
     this->AddSystemImpl(std::move(system));
@@ -102,7 +102,7 @@ class DiagramBuilder {
   ///
   /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- pydrake only uses the
   /// shared_ptr overload.}
-  template<class S>
+  template <class S>
   S* AddSystem(std::unique_ptr<S> system) {
     S* result = system.get();
     this->AddSystemImpl(std::move(system));
@@ -130,7 +130,7 @@ class DiagramBuilder {
   ///
   /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
   /// specifying <T> doesn't make sense for that language.}
-  template<class S, typename... Args>
+  template <class S, typename... Args>
   S* AddSystem(Args&&... args) {
     auto system = std::make_shared<S>(std::forward<Args>(args)...);
     S* result = system.get();
@@ -161,7 +161,7 @@ class DiagramBuilder {
   ///
   /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
   /// specifying <T> doesn't make sense for that language.}
-  template<template<typename Scalar> class S, typename... Args>
+  template <template <typename Scalar> class S, typename... Args>
   S<T>* AddSystem(Args&&... args) {
     auto system = std::make_shared<S<T>>(std::forward<Args>(args)...);
     S<T>* result = system.get();
@@ -175,7 +175,7 @@ class DiagramBuilder {
   ///
   /// @warning a System may only be added to at most one DiagramBuilder.
   /// Multiple Diagram instances cannot share the same System.
-  template<class S>
+  template <class S>
   S* AddNamedSystem(const std::string& name, std::shared_ptr<S> system) {
     S* result = system.get();
     this->AddNamedSystemImpl(name, std::move(system));
@@ -188,7 +188,7 @@ class DiagramBuilder {
   ///
   /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- pydrake only uses the
   /// shared_ptr overload.}
-  template<class S>
+  template <class S>
   S* AddNamedSystem(const std::string& name, std::unique_ptr<S> system) {
     S* result = system.get();
     this->AddNamedSystemImpl(name, std::move(system));
@@ -219,7 +219,7 @@ class DiagramBuilder {
   ///
   /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
   /// specifying <T> doesn't make sense for that language.}
-  template<class S, typename... Args>
+  template <class S, typename... Args>
   S* AddNamedSystem(const std::string& name, Args&&... args) {
     auto system = std::make_shared<S>(std::forward<Args>(args)...);
     S* result = system.get();
@@ -253,7 +253,7 @@ class DiagramBuilder {
   ///
   /// @exclude_from_pydrake_mkdoc{Not bound in pydrake -- emplacement while
   /// specifying <T> doesn't make sense for that language.}
-  template<template<typename Scalar> class S, typename... Args>
+  template <template <typename Scalar> class S, typename... Args>
   S<T>* AddNamedSystem(const std::string& name, Args&&... args) {
     auto system = std::make_shared<S<T>>(std::forward<Args>(args)...);
     S<T>* result = system.get();
@@ -282,9 +282,7 @@ class DiagramBuilder {
   /// Returns true iff Build() or BuildInto() has been called on this Builder,
   /// in which case it's an error to call any member function other than the
   /// the destructor.
-  bool already_built() const {
-    return already_built_;
-  }
+  bool already_built() const { return already_built_; }
 
   /// Returns the list of contained Systems.
   /// @see GetSubsystemByName()
@@ -421,16 +419,16 @@ class DiagramBuilder {
   /// @pre The Diagram input indicated by @p diagram_port_name must have been
   /// previously built via ExportInput().
   /// @post @p input is connected to the indicated Diagram input port.
-  void ConnectInput(
-      std::string_view diagram_port_name, const InputPort<T>& input);
+  void ConnectInput(std::string_view diagram_port_name,
+                    const InputPort<T>& input);
 
   /// Connects an input to the entire Diagram, indicated by @p
   /// diagram_port_index, to the given @p input port of a constituent system.
   /// @pre The Diagram input indicated by @p diagram_port_index must have been
   /// previously built via ExportInput().
   /// @post @p input is connected to the indicated Diagram input port.
-  void ConnectInput(
-      InputPortIndex diagram_port_index, const InputPort<T>& input);
+  void ConnectInput(InputPortIndex diagram_port_index,
+                    const InputPort<T>& input);
 
   /// Connects @p dest to the same source as @p exemplar is connected to.
   ///

@@ -68,9 +68,7 @@ class Parameters {
     return numeric_parameters_->num_groups();
   }
 
-  int num_abstract_parameters() const {
-    return abstract_parameters_->size();
-  }
+  int num_abstract_parameters() const { return abstract_parameters_->size(); }
 
   /// Returns the vector-valued parameter at @p index. Asserts if the index
   /// is out of bounds.
@@ -117,8 +115,8 @@ class Parameters {
   /// is out of bounds, and throws if the parameter is not of type V.
   template <typename V>
   V& get_mutable_abstract_parameter(int index) {
-    return get_mutable_abstract_parameter(index).
-        template get_mutable_value<V>();
+    return get_mutable_abstract_parameter(index)
+        .template get_mutable_value<V>();
   }
 
   const AbstractValues& get_abstract_parameters() const {

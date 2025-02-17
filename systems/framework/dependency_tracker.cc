@@ -41,14 +41,12 @@ void DependencyTracker::NoteValueChange(int64_t change_event) const {
 // about this change event. Otherwise, invalidate the associated cache entry and
 // then pass on the bad news to our subscribers. Update statistics.
 void DependencyTracker::NotePrerequisiteChange(
-    int64_t change_event,
-    const DependencyTracker& prerequisite,
+    int64_t change_event, const DependencyTracker& prerequisite,
     int depth) const {
   unused(Indent);  // Avoid warning in non-Debug builds.
-  DRAKE_LOGGER_DEBUG(
-      "{}Tracker '{}': prerequisite '{}' changed (event {}) ...",
-      Indent(depth), GetPathDescription(), prerequisite.GetPathDescription(),
-      change_event);
+  DRAKE_LOGGER_DEBUG("{}Tracker '{}': prerequisite '{}' changed (event {}) ...",
+                     Indent(depth), GetPathDescription(),
+                     prerequisite.GetPathDescription(), change_event);
   DRAKE_ASSERT(change_event > 0);
   DRAKE_ASSERT(HasPrerequisite(prerequisite));  // Expensive.
 
@@ -119,8 +117,8 @@ namespace {
 // a given value.
 template <typename T>
 bool Contains(const T& value, const std::vector<T>& to_search) {
-  return std::find(to_search.begin(), to_search.end(), value)
-      != to_search.end();
+  return std::find(to_search.begin(), to_search.end(), value) !=
+         to_search.end();
 }
 
 // Look for the given value and erase it. Fail if not found.
@@ -179,8 +177,7 @@ void DependencyTracker::ThrowIfBadDependencyTracker(
     // Can't use FormatName() here because that depends on us having an owning
     // context to talk to.
     throw std::logic_error("DependencyTracker(" + description() + ")::" +
-        __func__ +
-        "(): tracker has no owning subcontext.");
+                           __func__ + "(): tracker has no owning subcontext.");
   }
   if (owning_subcontext && owning_subcontext_ != owning_subcontext) {
     throw std::logic_error(FormatName(__func__) + "wrong owning subcontext.");
@@ -188,26 +185,25 @@ void DependencyTracker::ThrowIfBadDependencyTracker(
   if (cache_value_ == nullptr) {
     throw std::logic_error(
         FormatName(__func__) +
-            "no associated cache entry value (should at least be a dummy).");
+        "no associated cache entry value (should at least be a dummy).");
   }
   if (cache_value && cache_value_ != cache_value) {
     throw std::logic_error(FormatName(__func__) +
-        "wrong associated cache entry value.");
+                           "wrong associated cache entry value.");
   }
   if (!ticket_.is_valid()) {
-    throw std::logic_error(FormatName(__func__) +
-        "dependency ticket invalid.");
+    throw std::logic_error(FormatName(__func__) + "dependency ticket invalid.");
   }
   if (last_change_event_ < -1) {
     throw std::logic_error(FormatName(__func__) +
-        "last change event has an absurd value.");
+                           "last change event has an absurd value.");
   }
   if (num_value_change_notifications_received_ < 0 ||
       num_prerequisite_notifications_received_ < 0 ||
       num_ignored_notifications_ < 0 ||
       num_downstream_notifications_sent_ < 0) {
     throw std::logic_error(FormatName(__func__) +
-        "a counter has a negative value.");
+                           "a counter has a negative value.");
   }
 }
 
@@ -284,10 +280,12 @@ void DependencyGraph::AppendToTrackerPointerMap(
   DRAKE_DEMAND(tracker_map != nullptr);
   DRAKE_DEMAND(clone.trackers_size() == trackers_size());
   for (DependencyTicket ticket(0); ticket < trackers_size(); ++ticket) {
-    if (!has_tracker(ticket))
+    if (!has_tracker(ticket)) {
       continue;
-    const bool added = tracker_map->emplace(&get_tracker(ticket),
-                                            &clone.get_tracker(ticket)).second;
+    }
+    const bool added =
+        tracker_map->emplace(&get_tracker(ticket), &clone.get_tracker(ticket))
+            .second;
     DRAKE_DEMAND(added);  // Shouldn't have been there.
   }
 }
@@ -300,8 +298,9 @@ void DependencyGraph::RepairTrackerPointers(
   DRAKE_DEMAND(owning_subcontext != nullptr);
   owning_subcontext_ = owning_subcontext;
   for (DependencyTicket ticket(0); ticket < trackers_size(); ++ticket) {
-    if (!has_tracker(ticket))
+    if (!has_tracker(ticket)) {
       continue;
+    }
     get_mutable_tracker(ticket).RepairTrackerPointers(
         source.get_tracker(ticket), tracker_map, owning_subcontext, new_cache);
   }

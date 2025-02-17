@@ -81,8 +81,8 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   ///
   /// @param converter is per LeafSystem::LeafSystem constructor documentation;
   /// see that function documentation for details.
-  SingleOutputVectorSource(
-      SystemScalarConverter converter, const BasicVector<T>& model_vector)
+  SingleOutputVectorSource(SystemScalarConverter converter,
+                           const BasicVector<T>& model_vector)
       : LeafSystem<T>(std::move(converter)) {
     this->DeclareVectorOutputPort(
         kUseDefaultName, model_vector,

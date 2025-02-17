@@ -47,8 +47,7 @@ Diagram<T>::connection_map() const {
 
 template <typename T>
 std::vector<typename Diagram<T>::InputPortLocator>
-Diagram<T>::GetInputPortLocators(
-    InputPortIndex port_index) const {
+Diagram<T>::GetInputPortLocators(InputPortIndex port_index) const {
   DRAKE_DEMAND(port_index >= 0 && port_index < this->num_input_ports());
   std::vector<typename Diagram<T>::InputPortLocator> result;
   for (const auto& map_pair : input_port_map_) {
@@ -60,8 +59,8 @@ Diagram<T>::GetInputPortLocators(
 }
 
 template <typename T>
-typename Diagram<T>::InputPortLocator
-Diagram<T>::GetArbitraryInputPortLocator(InputPortIndex port_index) const {
+typename Diagram<T>::InputPortLocator Diagram<T>::GetArbitraryInputPortLocator(
+    InputPortIndex port_index) const {
   DRAKE_DEMAND(port_index >= 0 && port_index < this->num_input_ports());
   const auto ids = GetInputPortLocators(port_index);
   DRAKE_ASSERT(!ids.empty());
@@ -135,8 +134,8 @@ void Diagram<T>::SetDefaultParameters(const Context<T>& context,
 
     std::vector<BasicVector<T>*> numeric_params;
     for (int j = 0; j < subcontext.num_numeric_parameter_groups(); ++j) {
-      numeric_params.push_back(&params->get_mutable_numeric_parameter(
-          numeric_parameter_offset + j));
+      numeric_params.push_back(
+          &params->get_mutable_numeric_parameter(numeric_parameter_offset + j));
     }
     numeric_parameter_offset += subcontext.num_numeric_parameter_groups();
 
@@ -229,8 +228,8 @@ void Diagram<T>::SetRandomParameters(const Context<T>& context,
     std::vector<BasicVector<T>*> numeric_params;
     std::vector<AbstractValue*> abstract_params;
     for (int j = 0; j < subcontext.num_numeric_parameter_groups(); ++j) {
-      numeric_params.push_back(&params->get_mutable_numeric_parameter(
-          numeric_parameter_offset + j));
+      numeric_params.push_back(
+          &params->get_mutable_numeric_parameter(numeric_parameter_offset + j));
     }
     numeric_parameter_offset += subcontext.num_numeric_parameter_groups();
     for (int j = 0; j < subcontext.num_abstract_parameters(); ++j) {
@@ -278,8 +277,8 @@ std::unique_ptr<ContinuousState<T>> Diagram<T>::AllocateTimeDerivatives()
   for (const auto& system : registered_systems_) {
     sub_derivatives.push_back(system->AllocateTimeDerivatives());
   }
-  auto result = std::make_unique<DiagramContinuousState<T>>(
-      std::move(sub_derivatives));
+  auto result =
+      std::make_unique<DiagramContinuousState<T>>(std::move(sub_derivatives));
   result->set_system_id(this->get_system_id());
   return result;
 }
@@ -388,8 +387,7 @@ const System<T>& Diagram<T>::GetSubsystemByName(std::string_view name) const {
 
 template <typename T>
 const ContinuousState<T>& Diagram<T>::GetSubsystemDerivatives(
-    const System<T>& subsystem,
-    const ContinuousState<T>& derivatives) const {
+    const System<T>& subsystem, const ContinuousState<T>& derivatives) const {
   this->ValidateCreatedForThisSystem(derivatives);
   auto diagram_derivatives =
       dynamic_cast<const DiagramContinuousState<T>*>(&derivatives);
@@ -412,7 +410,8 @@ const DiscreteValues<T>& Diagram<T>::GetSubsystemDiscreteValues(
 
 template <typename T>
 const CompositeEventCollection<T>&
-Diagram<T>::GetSubsystemCompositeEventCollection(const System<T>& subsystem,
+Diagram<T>::GetSubsystemCompositeEventCollection(
+    const System<T>& subsystem,
     const CompositeEventCollection<T>& events) const {
   this->ValidateCreatedForThisSystem(events);
   auto ret = DoGetTargetSystemCompositeEventCollection(subsystem, &events);
@@ -425,8 +424,8 @@ CompositeEventCollection<T>&
 Diagram<T>::GetMutableSubsystemCompositeEventCollection(
     const System<T>& subsystem, CompositeEventCollection<T>* events) const {
   this->ValidateCreatedForThisSystem(events);
-  auto ret = DoGetMutableTargetSystemCompositeEventCollection(
-      subsystem, events);
+  auto ret =
+      DoGetMutableTargetSystemCompositeEventCollection(subsystem, events);
   DRAKE_DEMAND(ret != nullptr);
   return *ret;
 }
@@ -636,8 +635,8 @@ bool Diagram<T>::AreConnected(const OutputPort<T>& output,
 }
 
 template <typename T>
-Diagram<T>::Diagram() : System<T>(
-    SystemScalarConverter::MakeWithoutSubtypeChecking<Diagram>()) {}
+Diagram<T>::Diagram()
+    : System<T>(SystemScalarConverter::MakeWithoutSubtypeChecking<Diagram>()) {}
 
 template <typename T>
 Diagram<T>::Diagram(SystemScalarConverter converter)
@@ -653,8 +652,7 @@ T Diagram<T>::DoCalcWitnessValue(const Context<T>& context,
 
 template <typename T>
 void Diagram<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
-    Event<T>* event,
-    CompositeEventCollection<T>* events) const {
+    Event<T>* event, CompositeEventCollection<T>* events) const {
   DRAKE_DEMAND(events != nullptr);
   DRAKE_DEMAND(event != nullptr);
 
@@ -669,11 +667,11 @@ void Diagram<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
       GetMutableSubsystemCompositeEventCollection(subsystem, events);
 
   // Get the continuous states at both window endpoints.
-  auto diagram_xc0 = dynamic_cast<const DiagramContinuousState<T>*>(
-      data->xc0());
+  auto diagram_xc0 =
+      dynamic_cast<const DiagramContinuousState<T>*>(data->xc0());
   DRAKE_DEMAND(diagram_xc0 != nullptr);
-  auto diagram_xcf = dynamic_cast<const DiagramContinuousState<T>*>(
-      data->xcf());
+  auto diagram_xcf =
+      dynamic_cast<const DiagramContinuousState<T>*>(data->xcf());
   DRAKE_DEMAND(diagram_xcf != nullptr);
 
   // Modify the pointer to the event data to point to the sub-system
@@ -712,60 +710,59 @@ void Diagram<T>::DoGetWitnessFunctions(
 template <typename T>
 const Context<T>* Diagram<T>::DoGetTargetSystemContext(
     const System<T>& target_system, const Context<T>* context) const {
-  if (&target_system == this)
+  if (&target_system == this) {
     return context;
+  }
 
   return GetSubsystemStuff<const Context<T>, const DiagramContext<T>>(
-      target_system, context,
-      &System<T>::DoGetTargetSystemContext,
+      target_system, context, &System<T>::DoGetTargetSystemContext,
       &DiagramContext<T>::GetSubsystemContext);
 }
 
 template <typename T>
 State<T>* Diagram<T>::DoGetMutableTargetSystemState(
     const System<T>& target_system, State<T>* state) const {
-  if (&target_system == this)
+  if (&target_system == this) {
     return state;
+  }
 
   return GetSubsystemStuff<State<T>, DiagramState<T>>(
-      target_system, state,
-      &System<T>::DoGetMutableTargetSystemState,
+      target_system, state, &System<T>::DoGetMutableTargetSystemState,
       &DiagramState<T>::get_mutable_substate);
 }
 
 template <typename T>
 const ContinuousState<T>* Diagram<T>::DoGetTargetSystemContinuousState(
-    const System<T>& target_system,
-    const ContinuousState<T>* xc) const {
-  if (&target_system == this)
+    const System<T>& target_system, const ContinuousState<T>* xc) const {
+  if (&target_system == this) {
     return xc;
+  }
 
   return GetSubsystemStuff<const ContinuousState<T>,
                            const DiagramContinuousState<T>>(
-      target_system, xc,
-      &System<T>::DoGetTargetSystemContinuousState,
+      target_system, xc, &System<T>::DoGetTargetSystemContinuousState,
       &DiagramContinuousState<T>::get_substate);
 }
 
 template <typename T>
 const State<T>* Diagram<T>::DoGetTargetSystemState(
     const System<T>& target_system, const State<T>* state) const {
-  if (&target_system == this)
+  if (&target_system == this) {
     return state;
+  }
 
   return GetSubsystemStuff<const State<T>, const DiagramState<T>>(
-      target_system, state,
-      &System<T>::DoGetTargetSystemState,
+      target_system, state, &System<T>::DoGetTargetSystemState,
       &DiagramState<T>::get_substate);
 }
 
 template <typename T>
 CompositeEventCollection<T>*
 Diagram<T>::DoGetMutableTargetSystemCompositeEventCollection(
-    const System<T>& target_system,
-    CompositeEventCollection<T>* events) const {
-  if (&target_system == this)
+    const System<T>& target_system, CompositeEventCollection<T>* events) const {
+  if (&target_system == this) {
     return events;
+  }
 
   return GetSubsystemStuff<CompositeEventCollection<T>,
                            DiagramCompositeEventCollection<T>>(
@@ -779,8 +776,7 @@ const CompositeEventCollection<T>*
 Diagram<T>::DoGetTargetSystemCompositeEventCollection(
     const System<T>& target_system,
     const CompositeEventCollection<T>* events) const {
-  if (&target_system == this)
-    return events;
+  if (&target_system == this) return events;
 
   return GetSubsystemStuff<const CompositeEventCollection<T>,
                            const DiagramCompositeEventCollection<T>>(
@@ -838,8 +834,7 @@ void Diagram<T>::DoMapVelocityToQDot(
 
 template <typename T>
 void Diagram<T>::DoMapQDotToVelocity(
-    const Context<T>& context,
-    const Eigen::Ref<const VectorX<T>>& qdot,
+    const Context<T>& context, const Eigen::Ref<const VectorX<T>>& qdot,
     VectorBase<T>* generalized_velocity) const {
   // Check that the dimensions of the continuous state in the context match
   // the dimensions of the provided generalized velocity and configuration
@@ -867,8 +862,7 @@ void Diagram<T>::DoMapQDotToVelocity(
     // Select the chunk of qdot belonging to subsystem i.
     const int num_q = sub_xc.get_generalized_position().size();
     if (num_q == 0) continue;
-    const Eigen::Ref<const VectorX<T>>& dq_slice =
-        qdot.segment(q_index, num_q);
+    const Eigen::Ref<const VectorX<T>>& dq_slice = qdot.segment(q_index, num_q);
 
     // Select the chunk of generalized_velocity belonging to subsystem i.
     const int num_v = sub_xc.get_generalized_velocity().size();
@@ -894,10 +888,9 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
 
   CacheEntryValue& value =
       this->get_cache_entry(event_times_buffer_cache_index_)
-      .get_mutable_cache_entry_value(context);
+          .get_mutable_cache_entry_value(context);
   auto& event_times_buffer = value.GetMutableValueOrThrow<std::vector<T>>();
-  DRAKE_DEMAND(
-      static_cast<int>(event_times_buffer.size()) == num_subsystems());
+  DRAKE_DEMAND(static_cast<int>(event_times_buffer.size()) == num_subsystems());
 
   // In assert-enabled builds, enforce the invariant that no stale values in
   // event_times_buffer are reused across invocations. In effect,
@@ -906,10 +899,9 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
   // assert-build-only clearing of the storage to invalid values, and a later
   // assertion that the invalid values are all replaced.
   auto set_to_nan = [](std::vector<T>* vec) {
-    std::fill(
-        vec->begin(), vec->end(),
-        std::numeric_limits<
-        typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
+    std::fill(vec->begin(), vec->end(),
+              std::numeric_limits<
+                  typename Eigen::NumTraits<T>::Literal>::quiet_NaN());
   };
   DRAKE_ASSERT_VOID(set_to_nan(&event_times_buffer));
 
@@ -933,8 +925,9 @@ void Diagram<T>::DoCalcNextUpdateTime(const Context<T>& context,
   // Check that all vector entries were replaced.
   auto none_are_nan = [](const std::vector<T>& vec) {
     using std::isnan;
-    return std::none_of(vec.begin(), vec.end(),
-                        [](const T& v) { return isnan(v); });
+    return std::none_of(vec.begin(), vec.end(), [](const T& v) {
+      return isnan(v);
+    });
   };
   DRAKE_ASSERT(none_are_nan(event_times_buffer));
 
@@ -952,8 +945,8 @@ std::string Diagram<T>::GetUnsupportedScalarConversionMessage(
     const std::type_info& destination_type) const {
   // Start with the default message for this system.
   std::stringstream result;
-  result << SystemBase::GetUnsupportedScalarConversionMessage(
-      source_type, destination_type);
+  result << SystemBase::GetUnsupportedScalarConversionMessage(source_type,
+                                                              destination_type);
 
   // Append extra details, if we are able to.
   std::vector<std::string> causes;
@@ -963,8 +956,8 @@ std::string Diagram<T>::GetUnsupportedScalarConversionMessage(
       continue;
     }
     causes.push_back(internal::DiagramSystemBaseAttorney::
-        GetUnsupportedScalarConversionMessage(
-            *system, source_type, destination_type));
+                         GetUnsupportedScalarConversionMessage(
+                             *system, source_type, destination_type));
   }
   if (!causes.empty()) {
     result << fmt::format(" (because {})", fmt::join(causes, " and "));
@@ -980,8 +973,7 @@ std::unique_ptr<AbstractValue> Diagram<T>::DoAllocateInput(
   const auto id = GetArbitraryInputPortLocator(input_port.get_index());
   const System<T>* subsystem = id.first;
   const InputPortIndex subindex = id.second;
-  return subsystem->AllocateInputAbstract(
-      subsystem->get_input_port(subindex));
+  return subsystem->AllocateInputAbstract(subsystem->get_input_port(subindex));
 }
 
 template <typename T>
@@ -994,8 +986,8 @@ std::unique_ptr<ContextBase> Diagram<T>::DoAllocateContext() const {
   // then add to this diagram Context.
   for (SubsystemIndex i(0); i < num_subsystems(); ++i) {
     const System<T>& system = *registered_systems_[i];
-    auto subcontext = dynamic_pointer_cast_or_throw<Context<T>>(
-        system.AllocateContext());
+    auto subcontext =
+        dynamic_pointer_cast_or_throw<Context<T>>(system.AllocateContext());
     context->AddSystem(i, std::move(subcontext));
   }
 
@@ -1058,8 +1050,7 @@ const AbstractValue* Diagram<T>::EvalConnectedSubsystemInputPort(
   // this Context is ours. Proving that our caller would have already checked
   // the SystemId is too complicated, so we'll always just check ourselves.
   this->ValidateContext(context_base);
-  auto& diagram_context =
-      static_cast<const DiagramContext<T>&>(context_base);
+  auto& diagram_context = static_cast<const DiagramContext<T>&>(context_base);
 
   // Profiling revealed that it is too expensive to do a dynamic_cast here.
   // A static_cast is safe as long as the given input_port_base was actually
@@ -1079,8 +1070,9 @@ const AbstractValue* Diagram<T>::EvalConnectedSubsystemInputPort(
   const auto upstream_it = connection_map_.find(id);
   const bool is_connected = (upstream_it != connection_map_.end());
 
-  if (!(is_exported || is_connected))
+  if (!(is_exported || is_connected)) {
     return nullptr;
+  }
 
   DRAKE_DEMAND(is_exported ^ is_connected);
 
@@ -1173,8 +1165,7 @@ template <typename T>
 template <typename EventType>
 std::unique_ptr<EventCollection<EventType>>
 Diagram<T>::AllocateForcedEventCollection(
-    std::function<
-        std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
+    std::function<std::unique_ptr<EventCollection<EventType>>(const System<T>*)>
         allocator_func) const {
   const int num_systems = num_subsystems();
   auto ret = std::make_unique<DiagramEventCollection<EventType>>(num_systems);
@@ -1243,7 +1234,7 @@ EventStatus Diagram<T>::DispatchDiscreteVariableUpdateHandler(
 
       const EventStatus per_subsystem_status =
           registered_systems_[i]->CalcDiscreteVariableUpdate(
-          subcontext, subevents, &subdiscrete);
+              subcontext, subevents, &subdiscrete);
       overall_status.KeepMoreSevere(per_subsystem_status);
       if (overall_status.failed()) break;  // Stop at the first disaster.
     }
@@ -1313,8 +1304,8 @@ EventStatus Diagram<T>::DispatchUnrestrictedUpdateHandler(
 
 template <typename T>
 void Diagram<T>::DoApplyUnrestrictedUpdate(
-    const EventCollection<UnrestrictedUpdateEvent<T>>& events,
-    State<T>* state, Context<T>* context) const {
+    const EventCollection<UnrestrictedUpdateEvent<T>>& events, State<T>* state,
+    Context<T>* context) const {
   // If this method is called, these are all Diagram objects.
   const auto& diagram_events =
       dynamic_cast<const DiagramEventCollection<UnrestrictedUpdateEvent<T>>&>(
@@ -1347,10 +1338,9 @@ BaseStuff* Diagram<T>::GetSubsystemStuff(
   static_assert(
       std::is_same_v<BaseStuff, typename std::remove_pointer_t<BaseStuff>>,
       "BaseStuff cannot be a pointer");
-  static_assert(
-      std::is_same_v<DerivedStuff,
-                     typename std::remove_pointer_t<DerivedStuff>>,
-      "DerivedStuff cannot be a pointer");
+  static_assert(std::is_same_v<DerivedStuff,
+                               typename std::remove_pointer_t<DerivedStuff>>,
+                "DerivedStuff cannot be a pointer");
 
   DRAKE_DEMAND(my_stuff != nullptr);
   DRAKE_DEMAND(&target_system != this);
@@ -1382,8 +1372,8 @@ Diagram<T>::ConvertScalarType() const {
   for (const auto& old_system : registered_systems_) {
     // Convert old_system to new_system using the old_system's converter.
     std::shared_ptr<System<NewType>> new_system =
-        old_system->get_system_scalar_converter().
-        template Convert<NewType>(*old_system);
+        old_system->get_system_scalar_converter().template Convert<NewType>(
+            *old_system);
     DRAKE_DEMAND(new_system != nullptr);
 
     // Special case to work around Python difficulties -- if the new_system is a
@@ -1514,8 +1504,7 @@ void Diagram<T>::DoFindUniquePeriodicDiscreteUpdatesOrThrow(
 
 template <typename T>
 void Diagram<T>::DoGetPeriodicEvents(
-    const Context<T>& context,
-    CompositeEventCollection<T>* event_info) const {
+    const Context<T>& context, CompositeEventCollection<T>* event_info) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
   DRAKE_DEMAND(diagram_context != nullptr);
@@ -1532,8 +1521,7 @@ void Diagram<T>::DoGetPeriodicEvents(
 
 template <typename T>
 void Diagram<T>::DoGetPerStepEvents(
-    const Context<T>& context,
-    CompositeEventCollection<T>* event_info) const {
+    const Context<T>& context, CompositeEventCollection<T>* event_info) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
   DRAKE_DEMAND(diagram_context != nullptr);
@@ -1550,8 +1538,7 @@ void Diagram<T>::DoGetPerStepEvents(
 
 template <typename T>
 void Diagram<T>::DoGetInitializationEvents(
-    const Context<T>& context,
-    CompositeEventCollection<T>* event_info) const {
+    const Context<T>& context, CompositeEventCollection<T>* event_info) const {
   auto diagram_context = dynamic_cast<const DiagramContext<T>*>(&context);
   auto info = dynamic_cast<DiagramCompositeEventCollection<T>*>(event_info);
   DRAKE_DEMAND(diagram_context != nullptr);
@@ -1591,11 +1578,11 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   // responsibility of DoCalcNextUpdateTime() to ensure that no stale data is
   // used.
   event_times_buffer_cache_index_ =
-      this->DeclareCacheEntry(
-          "event_times_buffer", ValueProducer(
-              std::vector<T>(num_subsystems()),
-              &ValueProducer::NoopCalc),
-          {this->nothing_ticket()}).cache_index();
+      this->DeclareCacheEntry("event_times_buffer",
+                              ValueProducer(std::vector<T>(num_subsystems()),
+                                            &ValueProducer::NoopCalc),
+                              {this->nothing_ticket()})
+          .cache_index();
 
   // Generate a map from the System pointer to its index in the registered
   // order.
@@ -1635,8 +1622,7 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
   for (const InputPortLocator& id : blueprint->input_port_ids) {
     ExportOrConnectInput(id, *name_iter++);
   }
-  DRAKE_DEMAND(output_port_ids_.size() ==
-               blueprint->output_port_names.size());
+  DRAKE_DEMAND(output_port_ids_.size() == blueprint->output_port_names.size());
   name_iter = blueprint->output_port_names.begin();
   for (const OutputPortLocator& id : output_port_ids_) {
     ExportOutput(id, *name_iter++);
@@ -1674,8 +1660,8 @@ void Diagram<T>::Initialize(std::unique_ptr<Blueprint> blueprint) {
 }
 
 template <typename T>
-void Diagram<T>::ExportOrConnectInput(
-    const InputPortLocator& port, std::string name) {
+void Diagram<T>::ExportOrConnectInput(const InputPortLocator& port,
+                                      std::string name) {
   const System<T>* const sys = port.first;
   const int port_index = port.second;
   // Fail quickly if this system is not part of the diagram.
@@ -1702,8 +1688,8 @@ void Diagram<T>::ExportOutput(const OutputPortLocator& port, std::string name) {
   auto diagram_port = internal::FrameworkFactory::Make<DiagramOutputPort<T>>(
       this,  // implicit_cast<const System<T>*>(this)
       this,  // implicit_cast<SystemBase*>(this)
-      this->get_system_id(),
-      std::move(name), OutputPortIndex(this->num_output_ports()),
+      this->get_system_id(), std::move(name),
+      OutputPortIndex(this->num_output_ports()),
       this->assign_next_dependency_ticket(), &source_output_port,
       GetSystemIndexOrAbort(&source_output_port.get_system()));
   this->AddOutputPort(std::move(diagram_port));
@@ -1717,15 +1703,15 @@ const AbstractValue& Diagram<T>::EvalSubsystemOutputPort(
   const OutputPort<T>& port = system->get_output_port(port_index);
   const SubsystemIndex i = GetSystemIndexOrAbort(system);
   DRAKE_LOGGER_TRACE("Evaluating output for subsystem {}, port {}",
-      system->GetSystemPathname(), port_index);
+                     system->GetSystemPathname(), port_index);
   const Context<T>& subsystem_context = context.GetSubsystemContext(i);
   return port.template Eval<AbstractValue>(subsystem_context);
 }
 
 template <typename T>
 typename DiagramContext<T>::InputPortIdentifier
-Diagram<T>::ConvertToContextPortIdentifier(const InputPortLocator& locator)
-    const {
+Diagram<T>::ConvertToContextPortIdentifier(
+    const InputPortLocator& locator) const {
   typename DiagramContext<T>::InputPortIdentifier identifier;
   identifier.first = GetSystemIndexOrAbort(locator.first);
   identifier.second = locator.second;
@@ -1734,8 +1720,8 @@ Diagram<T>::ConvertToContextPortIdentifier(const InputPortLocator& locator)
 
 template <typename T>
 typename DiagramContext<T>::OutputPortIdentifier
-Diagram<T>::ConvertToContextPortIdentifier(const OutputPortLocator& locator)
-    const {
+Diagram<T>::ConvertToContextPortIdentifier(
+    const OutputPortLocator& locator) const {
   typename DiagramContext<T>::OutputPortIdentifier identifier;
   identifier.first = GetSystemIndexOrAbort(locator.first);
   identifier.second = locator.second;
@@ -1789,4 +1775,4 @@ int Diagram<T>::num_subsystems() const {
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-  class ::drake::systems::Diagram);
+    class ::drake::systems::Diagram);

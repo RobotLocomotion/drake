@@ -82,8 +82,8 @@ class VectorSystem : public LeafSystem<T> {
   /// "Example using drake::systems::VectorSystem as the base class".
   VectorSystem(SystemScalarConverter converter, int input_size, int output_size,
                std::optional<bool> direct_feedthrough)
-    : LeafSystem<T>(std::move(converter)),
-      direct_feedthrough_(direct_feedthrough) {
+      : LeafSystem<T>(std::move(converter)),
+        direct_feedthrough_(direct_feedthrough) {
     if (input_size > 0) {
       this->DeclareInputPort(kUseDefaultName, kVectorValued, input_size);
     }
@@ -91,21 +91,19 @@ class VectorSystem : public LeafSystem<T> {
       std::set<DependencyTicket> prerequisites_of_calc;
       if (direct_feedthrough.value_or(true)) {
         // Depend on everything.
-        prerequisites_of_calc = {
-          this->all_sources_ticket()
-        };
+        prerequisites_of_calc = {this->all_sources_ticket()};
       } else {
         // Depend on everything *except* for the inputs.
         prerequisites_of_calc = {
-          this->time_ticket(),
-          this->accuracy_ticket(),
-          this->all_state_ticket(),
-          this->all_parameters_ticket(),
+            this->time_ticket(),
+            this->accuracy_ticket(),
+            this->all_state_ticket(),
+            this->all_parameters_ticket(),
         };
       }
-      this->DeclareVectorOutputPort(
-          kUseDefaultName, output_size,
-          &VectorSystem::CalcVectorOutput, std::move(prerequisites_of_calc));
+      this->DeclareVectorOutputPort(kUseDefaultName, output_size,
+                                    &VectorSystem::CalcVectorOutput,
+                                    std::move(prerequisites_of_calc));
     }
     this->DeclareForcedDiscreteUpdateEvent(
         &VectorSystem<T>::CalcDiscreteUpdate);
@@ -114,8 +112,7 @@ class VectorSystem : public LeafSystem<T> {
   /// Causes the vector-valued input port to become up-to-date, and returns
   /// the port's value as an %Eigen vector.  If the system has zero inputs,
   /// then returns an empty vector.
-  const VectorX<T>& EvalVectorInput(
-      const Context<T>& context) const {
+  const VectorX<T>& EvalVectorInput(const Context<T>& context) const {
     // Obtain a reference to u (or the empty vector).
     if (this->num_input_ports() > 0) {
       return this->get_input_port().Eval(context);
@@ -126,8 +123,7 @@ class VectorSystem : public LeafSystem<T> {
 
   /// Returns a reference to an %Eigen vector version of the state from within
   /// the %Context.
-  const VectorX<T>& GetVectorState(
-      const Context<T>& context) const {
+  const VectorX<T>& GetVectorState(const Context<T>& context) const {
     // Obtain the block form of xc or xd.
     DRAKE_ASSERT(context.num_abstract_states() == 0);
     const BasicVector<T>* state_vector{};
@@ -224,8 +220,7 @@ class VectorSystem : public LeafSystem<T> {
     // create a computational loop.
     static const never_destroyed<VectorX<T>> empty_vector(0);
     const VectorX<T>& input_vector =
-        should_eval_input ? EvalVectorInput(context) :
-        empty_vector.access();
+        should_eval_input ? EvalVectorInput(context) : empty_vector.access();
     const Eigen::VectorBlock<const VectorX<T>> input_block =
         input_vector.head(input_vector.rows());
 
