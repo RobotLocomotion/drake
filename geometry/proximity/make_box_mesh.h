@@ -156,6 +156,18 @@ namespace internal {
 template <typename T>
 VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box);
 
+/* Generates a tetrahedral volume mesh for a given box. The generated
+ tesselation:
+  - splits all faces into four triangles, and
+  - respects the medial axis.
+
+ @param[in] box
+     The box shape specification (see drake::geometry::Box).
+ @retval volume_mesh
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+VolumeMesh<T> MakeBoxVolumeMeshWithMaAndSplitFaces(const Box& box);
+
 /*
  Generates a tetrahedral volume mesh of a given box by subdividing the box
  into _rectangular cells_ (volume bounded by six axis-aligned faces) and

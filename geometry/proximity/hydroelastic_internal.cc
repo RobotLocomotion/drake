@@ -458,7 +458,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
   // First, create an inflated mesh.
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
-      MakeBoxVolumeMeshWithMa<double>(inflated_box));
+      MakeBoxVolumeMeshWithMaAndSplitFaces<double>(inflated_box));
 
   const double hydroelastic_modulus =
       PositiveDouble("Box", "soft").Extract(props, kHydroGroup, kElastic);

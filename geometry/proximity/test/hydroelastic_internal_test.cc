@@ -1146,7 +1146,7 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 12;
+  const int expected_num_vertices = 18;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < box->mesh().num_vertices(); ++v) {
