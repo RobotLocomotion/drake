@@ -41,9 +41,7 @@ class SystemOutputTest : public ::testing::Test {
 TEST_F(SystemOutputTest, Access) {
   VectorX<double> expected(2);
   expected << 5, 25;
-  EXPECT_EQ(
-      expected,
-      output_.get_vector_data(0)->get_value());
+  EXPECT_EQ(expected, output_.get_vector_data(0)->get_value());
 
   EXPECT_EQ("foo", output_.get_data(2)->get_value<std::string>());
 }

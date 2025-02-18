@@ -104,6 +104,8 @@ void DiagramContext<T>::SubscribeDiagramCompositeTrackersToChildrens() {
   // discrete or abstract state or individual numerical or abstract parameters.
   // That means we need only subscribe the aggregate trackers xd, xa, pn, pa
   // to their children's xd, xa, pn, pa, resp.
+  //
+  // clang-format off
   std::vector<internal::BuiltInTicketNumbers> composites{
       internal::kQTicket,  // Value sources.
       internal::kVTicket,
@@ -117,6 +119,7 @@ void DiagramContext<T>::SubscribeDiagramCompositeTrackersToChildrens() {
       internal::kKeTicket,
       internal::kPcTicket,
       internal::kPncTicket};
+  // clang-format on
 
   // Validate the claim above that Diagrams do not have tickets for individual
   // variables and parameters.

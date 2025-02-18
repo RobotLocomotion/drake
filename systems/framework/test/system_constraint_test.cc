@@ -75,20 +75,18 @@ GTEST_TEST(SystemConstraintBoundsTest, Upper) {
 GTEST_TEST(SystemConstraintBoundsTest, BadSizes) {
   EXPECT_THROW(SystemConstraintBounds::Equality(-1), std::exception);
   EXPECT_THROW(
-      SystemConstraintBounds(
-          Vector1d::Constant(1.0),
-          Vector2d::Constant(2.0)),
+      SystemConstraintBounds(Vector1d::Constant(1.0), Vector2d::Constant(2.0)),
       std::exception);
 }
 
 // Just a simple test to call each of the public methods.
 GTEST_TEST(SystemConstraintTest, Basic) {
-  ContextConstraintCalc<double> calc = [](
-      const Context<double>& context, Eigen::VectorXd* value) {
+  ContextConstraintCalc<double> calc = [](const Context<double>& context,
+                                          Eigen::VectorXd* value) {
     *value = Vector1d(context.get_continuous_state_vector()[1]);
   };
-  ContextConstraintCalc<double> calc2 = [](
-      const Context<double>& context, Eigen::VectorXd* value) {
+  ContextConstraintCalc<double> calc2 = [](const Context<double>& context,
+                                           Eigen::VectorXd* value) {
     *value =
         Eigen::Vector2d(context.get_continuous_state_vector().CopyToVector());
   };
@@ -124,7 +122,7 @@ GTEST_TEST(SystemConstraintTest, Basic) {
 
   // Test inequality constraint.
   SystemConstraint<double> inequality_constraint(
-      &system, calc2, { Eigen::Vector2d::Ones(), Eigen::Vector2d(4, 6) },
+      &system, calc2, {Eigen::Vector2d::Ones(), Eigen::Vector2d(4, 6)},
       "inequality constraint");
   EXPECT_TRUE(CompareMatrices(inequality_constraint.lower_bound(),
                               Eigen::Vector2d::Ones()));
@@ -178,8 +176,7 @@ ExternalSystemConstraint ZeroStateDerivativeConstraint(
   DRAKE_DEMAND(dummy_context->num_discrete_state_groups() == 0);
   const int n_xc = dummy_context->get_continuous_state_vector().size();
   return ExternalSystemConstraint::MakeForAllScalars(
-      "xc_dot = 0 and xd_{n+1} = 0",
-      SystemConstraintBounds::Equality(n_xc),
+      "xc_dot = 0 and xd_{n+1} = 0", SystemConstraintBounds::Equality(n_xc),
       [](const auto& system, const auto& context, auto* value) {
         const auto& xc = system.EvalTimeDerivatives(context).get_vector();
         *value = xc.CopyToVector();
@@ -192,8 +189,7 @@ ExternalSystemConstraint ZeroStateDerivativeConstraint(
 // TODO(jwnimmer-tri) This cannot handle discrete state yet.
 // TODO(jwnimmer-tri) Make this constraint public (and not testonly) -- it is
 // quite commonly used.
-ExternalSystemConstraint ZeroVelocityConstraint(
-    const System<double>& shape) {
+ExternalSystemConstraint ZeroVelocityConstraint(const System<double>& shape) {
   auto dummy_context = shape.AllocateContext();
 
   // We can't handle discrete state yet, because of #9171.
@@ -202,19 +198,18 @@ ExternalSystemConstraint ZeroVelocityConstraint(
   return ExternalSystemConstraint::MakeForAllScalars(
       "zero velocity", SystemConstraintBounds::Equality(num_v),
       [](const auto& system, const auto& context, auto* value) {
-        *value = context.get_continuous_state().get_generalized_velocity()
-          .CopyToVector();
+        *value = context.get_continuous_state()
+                     .get_generalized_velocity()
+                     .CopyToVector();
       });
 }
 
 class ExternalSystemConstraintTest : public ::testing::Test {
  protected:
   // This system_ is a double integrator.
-  LinearSystem<double> system_{
-    (Matrix2d{} << 0.0, 1.0, 0.0, 0.0).finished(),
-    Vector2d(0.0, 1.0),
-    MatrixXd(0, 2),
-    MatrixXd(0, 1)};
+  LinearSystem<double> system_{(Matrix2d{} << 0.0, 1.0, 0.0, 0.0).finished(),
+                               Vector2d(0.0, 1.0), MatrixXd(0, 2),
+                               MatrixXd(0, 1)};
 };
 
 // Acceptance test the symbolic form of a fixed-point constraint.
@@ -253,7 +248,7 @@ TEST_F(ExternalSystemConstraintTest, DoubleOnly) {
   const ExternalSystemConstraint dut(
       "desc", {std::nullopt, Vector2d::Constant(100.0)},
       [&](const System<double>& system, const Context<double>& context,
-         VectorXd* value) {
+          VectorXd* value) {
         EXPECT_EQ(&system, &dummy_system);
         EXPECT_EQ(&context, dummy_context.get());
         *value = Vector2d::Constant(22.0);
@@ -302,8 +297,7 @@ TEST_F(ExternalSystemConstraintTest, NonSymbolic) {
   context_autodiff->SetContinuousState(
       (VectorX<T>(2) << T{0.0}, T{22.0}).finished());
   VectorX<T> value_autodiff;
-  dut.get_calc<T>()(
-      *system_autodiff, *context_autodiff, &value_autodiff);
+  dut.get_calc<T>()(*system_autodiff, *context_autodiff, &value_autodiff);
   EXPECT_EQ(value_autodiff[0].value(), 22.0);
   EXPECT_EQ(value_autodiff[1].value(), 0.0);
 }

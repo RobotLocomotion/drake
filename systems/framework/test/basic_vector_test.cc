@@ -18,7 +18,7 @@ namespace {
 
 // Tests the initializer_list functionality.
 GTEST_TEST(BasicVectorTest, InitializerList) {
-  const BasicVector<double> empty1;  // Default constructor.
+  const BasicVector<double> empty1;    // Default constructor.
   const BasicVector<double> empty2{};  // Initializer list.
   EXPECT_EQ(0, empty1.size());
   EXPECT_EQ(0, empty2.size());
@@ -101,9 +101,7 @@ GTEST_TEST(BasicVectorTest, Make) {
 // the tin.
 GTEST_TEST(BasicVectorTest, MakeSymbolic) {
   auto vec = BasicVector<symbolic::Expression>::Make(
-      symbolic::Variable("x"),
-      2.0,
-      symbolic::Variable("y") + 2.0);
+      symbolic::Variable("x"), 2.0, symbolic::Variable("y") + 2.0);
   EXPECT_EQ("x", vec->GetAtIndex(0).to_string());
   EXPECT_EQ("2", vec->GetAtIndex(1).to_string());
   EXPECT_EQ("(2 + y)", vec->GetAtIndex(2).to_string());

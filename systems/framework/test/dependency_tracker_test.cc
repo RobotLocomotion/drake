@@ -33,6 +33,7 @@ class MyContextBase final : public ContextBase {
  public:
   MyContextBase() {}
   MyContextBase(const MyContextBase&) = default;
+
  private:
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final {
     return std::make_unique<MyContextBase>(*this);
@@ -267,16 +268,13 @@ class HandBuiltDependencies : public ::testing::Test {
 
     DependencyTicket next_ticket(internal::kNextAvailableTicket);
 
-    upstream1_ = &graph.CreateNewDependencyTracker(
-        next_ticket++, "upstream1");
-    upstream2_ = &graph.CreateNewDependencyTracker(
-        next_ticket++, "upstream2");
-    middle1_ = &graph.CreateNewDependencyTracker(
-        next_ticket++, "middle1");
-    downstream1_ = &graph.CreateNewDependencyTracker(
-        next_ticket++, "downstream1");
-    downstream2_ = &graph.CreateNewDependencyTracker(
-        next_ticket++, "downstream2");
+    upstream1_ = &graph.CreateNewDependencyTracker(next_ticket++, "upstream1");
+    upstream2_ = &graph.CreateNewDependencyTracker(next_ticket++, "upstream2");
+    middle1_ = &graph.CreateNewDependencyTracker(next_ticket++, "middle1");
+    downstream1_ =
+        &graph.CreateNewDependencyTracker(next_ticket++, "downstream1");
+    downstream2_ =
+        &graph.CreateNewDependencyTracker(next_ticket++, "downstream2");
     middle1_->SubscribeToPrerequisite(upstream1_);
     middle1_->SubscribeToPrerequisite(upstream2_);
     downstream1_->SubscribeToPrerequisite(middle1_);
@@ -332,8 +330,8 @@ TEST_F(HandBuiltDependencies, Construction) {
   DependencyGraph& graph = context_.get_mutable_dependency_graph();
 
   // Construct with a known ticket.
-  auto& tracker100 = graph.CreateNewDependencyTracker(
-      DependencyTicket(100), "tracker100");
+  auto& tracker100 =
+      graph.CreateNewDependencyTracker(DependencyTicket(100), "tracker100");
   EXPECT_EQ(tracker100.ticket(), 100);
 
   // Construct with assigned ticket (should get the next one).
@@ -364,8 +362,7 @@ TEST_F(HandBuiltDependencies, Construction) {
   const DependencyTicket xcdot_ticket(internal::kXcdotTicket);
   const DependencyTracker& xcdot_tracker(graph.get_tracker(xcdot_ticket));
   const CacheEntryValue& xcdot_value = cache.CreateNewCacheEntryValue(
-      index, xcdot_ticket, "xcdot cache value",
-      {time_ticket_}, &graph);
+      index, xcdot_ticket, "xcdot cache value", {time_ticket_}, &graph);
   EXPECT_EQ(xcdot_value.ticket(), xcdot_ticket);
   EXPECT_EQ(xcdot_tracker.cache_entry_value(), &xcdot_value);
 }
@@ -375,7 +372,7 @@ TEST_F(HandBuiltDependencies, GetPathname) {
   const std::string system_path = context_.GetSystemPathname();
   const std::string mid1_description = middle1_->description();
   EXPECT_EQ(middle1_->GetPathDescription(),
-    system_path + ":" + mid1_description);
+            system_path + ":" + mid1_description);
 }
 
 // Check that we can unsubscribe from a previously-subscribed-to
@@ -452,8 +449,8 @@ TEST_F(HandBuiltDependencies, Clone) {
   // Make up a ticket number that is guaranteed to leave a gap to make sure
   // we test handling of missing trackers.
   const DependencyTicket after_gap_ticket(graph.trackers_size() + 3);
-  const DependencyTracker& after_gap = graph.CreateNewDependencyTracker(
-      after_gap_ticket, "after_gap");
+  const DependencyTracker& after_gap =
+      graph.CreateNewDependencyTracker(after_gap_ticket, "after_gap");
 
   // Do some notifies in the old context so we can make sure all the stats
   // get cleared for the clone. (Previous test ensured these are propagated.)
@@ -500,7 +497,7 @@ TEST_F(HandBuiltDependencies, Clone) {
     EXPECT_EQ(clone_tracker.description(), tracker.description());
     EXPECT_EQ(clone_tracker.num_subscribers(), tracker.num_subscribers());
     EXPECT_EQ(clone_tracker.num_prerequisites(), tracker.num_prerequisites());
-    for (int i=0; i < tracker.num_subscribers(); ++i) {
+    for (int i = 0; i < tracker.num_subscribers(); ++i) {
       const DependencyTracker* clone_subs = clone_tracker.subscribers()[i];
       const DependencyTracker* subs = tracker.subscribers()[i];
       EXPECT_NE(clone_subs, nullptr);
@@ -508,7 +505,7 @@ TEST_F(HandBuiltDependencies, Clone) {
       EXPECT_EQ(clone_subs->ticket(), subs->ticket());
       EXPECT_EQ(clone_subs->description(), subs->description());
     }
-    for (int i=0; i < tracker.num_prerequisites(); ++i) {
+    for (int i = 0; i < tracker.num_prerequisites(); ++i) {
       const DependencyTracker* clone_pre = clone_tracker.prerequisites()[i];
       const DependencyTracker* pre = tracker.prerequisites()[i];
       EXPECT_NE(clone_pre, nullptr);
@@ -539,8 +536,8 @@ TEST_F(HandBuiltDependencies, Clone) {
       clone_cache.get_mutable_cache_entry_value(entry0_->cache_index());
 
   // Expected statistics for the cloned trackers; initially zero.
-  Stats tt_stats, up1_stats, up2_stats, mid1_stats, down1_stats,
-      down2_stats, entry0_stats;
+  Stats tt_stats, up1_stats, up2_stats, mid1_stats, down1_stats, down2_stats,
+      entry0_stats;
 
   // All stats should have been cleared in the clone.
   ExpectStatsMatch(&time1, tt_stats);
@@ -603,13 +600,13 @@ TEST_F(HandBuiltDependencies, SuppressNotifications) {
   middle1_->suppress_notifications();
   EXPECT_TRUE(middle1_->notifications_are_suppressed());
   upstream1_->NoteValueChange(2LL);
-  EXPECT_EQ(upstream1_->num_notifications_sent(), 4);  // +2
-  EXPECT_EQ(middle1_->num_prerequisite_change_events(), 2);  // +1
-  EXPECT_EQ(middle1_->num_ignored_notifications(), 1);  // should ignore now
-  EXPECT_EQ(middle1_->num_notifications_sent(), 3);  // +0
+  EXPECT_EQ(upstream1_->num_notifications_sent(), 4);            // +2
+  EXPECT_EQ(middle1_->num_prerequisite_change_events(), 2);      // +1
+  EXPECT_EQ(middle1_->num_ignored_notifications(), 1);           // ignored now
+  EXPECT_EQ(middle1_->num_notifications_sent(), 3);              // +0
   EXPECT_EQ(downstream1_->num_prerequisite_change_events(), 3);  // +1
   EXPECT_EQ(downstream2_->num_prerequisite_change_events(), 1);  // +0
-  EXPECT_EQ(downstream2_->num_notifications_sent(), 1);  // +0
+  EXPECT_EQ(downstream2_->num_notifications_sent(), 1);          // +0
   EXPECT_EQ(entry0_tracker_->num_prerequisite_change_events(), 2);  // +0
 
   // Check that the clone preserves the suppress_notifications flag.

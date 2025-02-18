@@ -110,16 +110,20 @@ void AddPydrakeConverterFunction(
   });
 }
 
+// clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &AddPydrakeConverterFunction<T, U>
 ));
+// clang-format on
 
 }  // namespace system_scalar_converter_internal
 
+// clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &SystemScalarConverter::IsConvertible<T, U>,
     &SystemScalarConverter::Remove<T, U>
 ));
+// clang-format on
 
 }  // namespace systems
 }  // namespace drake

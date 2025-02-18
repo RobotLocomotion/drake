@@ -19,8 +19,8 @@
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
-using std::string;
 using Eigen::Vector3d;
+using std::string;
 
 namespace drake {
 namespace systems {
@@ -76,8 +76,7 @@ class CacheTest : public ::testing::Test {
 
     index1_ = next_cache_index_++;
     cache().CreateNewCacheEntryValue(index1_, next_ticket_++, "entry1",
-                                     {cache_value(index0_).ticket()},
-                                     &graph());
+                                     {cache_value(index0_).ticket()}, &graph());
     cache_value(index1_).SetInitialValue(PackValue(1));
 
     index2_ = next_cache_index_++;
@@ -94,8 +93,7 @@ class CacheTest : public ::testing::Test {
 
     string_index_ = next_cache_index_++;
     cache().CreateNewCacheEntryValue(string_index_, next_ticket_++,
-                                     "string thing", {time_ticket_},
-                                     &graph());
+                                     "string thing", {time_ticket_}, &graph());
     cache_value(string_index_)
         .SetInitialValue(AbstractValue::Make<string>("initial"));
     EXPECT_TRUE(cache_value(string_index_).is_out_of_date());
@@ -289,15 +287,16 @@ TEST_F(CacheTest, DisableCachingWorks) {
   EXPECT_FALSE(str_val.is_out_of_date());
   EXPECT_FALSE(vec_val.is_out_of_date());
 
-  ++ser_int; ++ser_str; ++ser_vec;
+  ++ser_int;
+  ++ser_str;
+  ++ser_vec;
   EXPECT_EQ(int_val.serial_number(), ser_int);
   EXPECT_EQ(str_val.serial_number(), ser_str);
   EXPECT_EQ(vec_val.serial_number(), ser_vec);
 
   EXPECT_EQ(int_val.get_value<int>(), 101);
   EXPECT_EQ(str_val.get_value<string>(), "hello there");
-  EXPECT_EQ(vec_val.get_value<MyVector3d>().get_value(),
-            Vector3d(4., 5., 6.));
+  EXPECT_EQ(vec_val.get_value<MyVector3d>().get_value(), Vector3d(4., 5., 6.));
 
   // Should still need recomputation even though we just did it.
   EXPECT_TRUE(int_val.needs_recomputation());
@@ -317,8 +316,7 @@ TEST_F(CacheTest, DisableCachingWorks) {
   // And we can still grab the previously-computed values.
   EXPECT_EQ(int_val.get_value<int>(), 101);
   EXPECT_EQ(str_val.get_value<string>(), "hello there");
-  EXPECT_EQ(vec_val.get_value<MyVector3d>().get_value(),
-            Vector3d(4., 5., 6.));
+  EXPECT_EQ(vec_val.get_value<MyVector3d>().get_value(), Vector3d(4., 5., 6.));
 
   // Blanket forced recomputation should work though.
   context_.SetAllCacheEntriesOutOfDate();
@@ -360,7 +358,6 @@ TEST_F(CacheTest, FreezeUnfreezeWork) {
   auto swapper = AbstractValue::Make<std::string>("for swapping");
   DRAKE_EXPECT_NO_THROW(str_val.swap_value(&swapper));
 
-
   // With cache frozen but up to date, check some const methods to make sure
   // they still work.
   str_val.mark_up_to_date();
@@ -388,9 +385,8 @@ TEST_F(CacheTest, FreezeUnfreezeWork) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       str_val.GetMutableValueOrThrow<std::string>(),
       ".*string thing.*GetMutableValueOrThrow.*cache is frozen.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      str_val.swap_value(&swapper),
-      ".*string thing.*swap_value.*cache is frozen.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(str_val.swap_value(&swapper),
+                              ".*string thing.*swap_value.*cache is frozen.*");
 }
 
 // Test that the vector-valued cache entry works and preserved the underlying
@@ -432,7 +428,7 @@ TEST_F(CacheTest, CanSwapValue) {
   entry_value.mark_up_to_date();
   EXPECT_EQ(entry_value.get_value<string>(), "new value");
 
-// In Debug builds, try a bad swap and expect it to be caught.
+  // In Debug builds, try a bad swap and expect it to be caught.
   if (kDrakeAssertIsArmed) {
     std::unique_ptr<AbstractValue> empty_ptr;
     EXPECT_THROW(entry_value.swap_value(&empty_ptr), std::logic_error);
@@ -456,9 +452,8 @@ TEST_F(CacheTest, Clone) {
   // we test handling of missing entries properly.
   next_cache_index_ += 3;
   CacheIndex last_index(next_cache_index_++);
-  cache().CreateNewCacheEntryValue(last_index, next_ticket_++,
-                                   "last entry", {nothing_ticket_},
-                                   &graph());
+  cache().CreateNewCacheEntryValue(last_index, next_ticket_++, "last entry",
+                                   {nothing_ticket_}, &graph());
   cache_value(last_index).SetInitialValue(PackValue(42));
   EXPECT_TRUE(cache_value(last_index).is_out_of_date());
   cache_value(last_index).mark_up_to_date();
@@ -501,8 +496,7 @@ TEST_F(CacheTest, Clone) {
     // If there is a value, the clone_cache should not have the same memory
     // address.
     if (value.has_value()) {
-      EXPECT_NE(&clone_value.get_abstract_value(),
-                &value.get_abstract_value());
+      EXPECT_NE(&clone_value.get_abstract_value(), &value.get_abstract_value());
     }
 
     // Make sure the tracker got copied and that the new one refers to the
@@ -527,18 +521,19 @@ TEST_F(CacheTest, Clone) {
             cache_value(index2_).GetValueOrThrow<int>());
   EXPECT_EQ(cache_value(string_index_, &clone_cache).GetValueOrThrow<string>(),
             cache_value(string_index_).GetValueOrThrow<string>());
-  EXPECT_EQ(cache_value(vector_index_,
-                        &clone_cache).GetValueOrThrow<MyVector3d>()
-                .get_value(),
-            cache_value(vector_index_).GetValueOrThrow<MyVector3d>()
-                .get_value());
+  EXPECT_EQ(
+      cache_value(vector_index_, &clone_cache)
+          .GetValueOrThrow<MyVector3d>()
+          .get_value(),
+      cache_value(vector_index_).GetValueOrThrow<MyVector3d>().get_value());
   EXPECT_EQ(cache_value(last_index, &clone_cache).GetValueOrThrow<int>(),
             cache_value(last_index).GetValueOrThrow<int>());
 
   // Changes to the clone_cache should not affect the original.
   cache_value(index2_, &clone_cache).mark_out_of_date();  // Invalidate.
   cache_value(index2_,
-              &clone_cache).set_value<int>(99);  // Set new value & validate.
+              &clone_cache)
+      .set_value<int>(99);  // Set new value & validate.
   EXPECT_EQ(cache_value(index2_, &clone_cache).get_value<int>(), 99);
   EXPECT_EQ(cache_value(index2_).get_value<int>(), 2);
 
@@ -563,12 +558,11 @@ TEST_F(CacheTest, Clone) {
 // exceptions that it is hard to run through in the debugger.)
 TEST_F(CacheTest, ValueMethodsWork) {
   CacheIndex index(next_cache_index_++);
-  cache().CreateNewCacheEntryValue(index, next_ticket_++,
-                                   "get test", {nothing_ticket_},
-                                   &graph());
+  cache().CreateNewCacheEntryValue(index, next_ticket_++, "get test",
+                                   {nothing_ticket_}, &graph());
   CacheEntryValue& value = cache_value(index);
   EXPECT_EQ(value.cache_index(), index);
-  EXPECT_EQ(value.ticket(), next_ticket_-1);
+  EXPECT_EQ(value.ticket(), next_ticket_ - 1);
   EXPECT_EQ(value.description(), "get test");
 
   auto swap_with_me = AbstractValue::Make<int>(29);

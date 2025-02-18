@@ -24,11 +24,13 @@ class OutputPortBase : public PortBase {
 
   // A using-declaration adds these methods into our class's Doxygen.
   // (Placed in an order that makes sense for the class's table of contents.)
+  // clang-format off
   using PortBase::get_name;
   using PortBase::GetFullDescription;
   using PortBase::get_data_type;
   using PortBase::size;
   using PortBase::ticket;
+  // clang-format on
 
 #ifndef DRAKE_DOXYGEN_CXX
   // Internal use only. Returns the prerequisite for this output port -- either

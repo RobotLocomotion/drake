@@ -171,6 +171,7 @@ class InputPort final : public InputPortBase {
 
   // A using-declaration adds these methods into our class's Doxygen.
   // (Placed in an order that makes sense for the class's table of contents.)
+  // clang-format off
   using PortBase::get_name;
   using PortBase::GetFullDescription;
   using InputPortBase::get_index;
@@ -180,6 +181,7 @@ class InputPort final : public InputPortBase {
   using InputPortBase::get_random_type;
   using PortBase::ticket;
   using InputPortBase::Allocate;
+  // clang-format on
 
  private:
   friend class internal::FrameworkFactory;

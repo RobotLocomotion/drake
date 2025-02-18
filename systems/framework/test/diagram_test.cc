@@ -27,11 +27,11 @@
 #include "drake/systems/primitives/integrator.h"
 #include "drake/systems/primitives/zero_order_hold.h"
 
+using drake::systems::analysis_test::StatelessSystem;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
-using drake::systems::analysis_test::StatelessSystem;
 using testing::ElementsAreArray;
 
 namespace drake {
@@ -88,8 +88,7 @@ class EmptySystemDiagram : public Diagram<double> {
   // A recursion depth of zero will create two empty systems only; Otherwise,
   // 2*`recursion_depth` empty systems will be created.
   EmptySystemDiagram(UpdateType num_periodic_discrete_updates,
-                     int recursion_depth,
-                     bool unique_updates) {
+                     int recursion_depth, bool unique_updates) {
     DRAKE_DEMAND(recursion_depth >= 0);
 
     DiagramBuilder<double> builder;
@@ -165,9 +164,7 @@ class EmptySystemDiagram : public Diagram<double> {
     // recursion depth is not zero).
     if (recursion_depth > 0) {
       builder.AddSystem<EmptySystemDiagram>(
-        num_periodic_discrete_updates,
-        recursion_depth - 1,
-        unique_updates);
+          num_periodic_discrete_updates, recursion_depth - 1, unique_updates);
     }
     builder.BuildInto(this);
     EXPECT_FALSE(IsDifferenceEquationSystem());
@@ -186,56 +183,56 @@ void CheckPeriodAndOffset(const PeriodicEventData& data) {
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
   // Check diagrams with no recursion.
   std::optional<PeriodicEventData> periodic_data;
-  EmptySystemDiagram d_sys2upd_zero(
-      EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, true);
-  EmptySystemDiagram d_sys1upd_zero(
-      EmptySystemDiagram::kOneUpdatePerLevelSys2, 0, true);
+  EmptySystemDiagram d_sys2upd_zero(EmptySystemDiagram::kOneUpdatePerLevelSys1,
+                                    0, true);
+  EmptySystemDiagram d_sys1upd_zero(EmptySystemDiagram::kOneUpdatePerLevelSys2,
+                                    0, true);
   EmptySystemDiagram d_bothupd_zero(EmptySystemDiagram::kTwoUpdatesPerLevel, 0,
-      true);
+                                    true);
   ASSERT_TRUE(periodic_data =
-      d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+                  d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
   CheckPeriodAndOffset(periodic_data.value());
   ASSERT_TRUE(periodic_data =
-      d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+                  d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
   CheckPeriodAndOffset(periodic_data.value());
   ASSERT_TRUE(periodic_data =
-      d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
+                  d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
   CheckPeriodAndOffset(periodic_data.value());
 
   // Check systems with up to three levels of recursion.
   for (int i = 1; i <= 3; ++i) {
     // Create the systems.
-    EmptySystemDiagram d_sys1upd(
-        EmptySystemDiagram::kOneUpdatePerLevelSys1, i, true);
-    EmptySystemDiagram d_sys2upd(
-        EmptySystemDiagram::kOneUpdatePerLevelSys2, i, true);
-    EmptySystemDiagram d_bothupd(
-        EmptySystemDiagram::kTwoUpdatesPerLevel, i, true);
+    EmptySystemDiagram d_sys1upd(EmptySystemDiagram::kOneUpdatePerLevelSys1, i,
+                                 true);
+    EmptySystemDiagram d_sys2upd(EmptySystemDiagram::kOneUpdatePerLevelSys2, i,
+                                 true);
+    EmptySystemDiagram d_bothupd(EmptySystemDiagram::kTwoUpdatesPerLevel, i,
+                                 true);
     EmptySystemDiagram d_sys1_last(
         EmptySystemDiagram::kOneUpdateAtLastLevelSys1, i, true);
     EmptySystemDiagram d_sys2_last(
         EmptySystemDiagram::kOneUpdateAtLastLevelSys2, i, true);
-    EmptySystemDiagram d_both_last(
-        EmptySystemDiagram::kTwoUpdatesAtLastLevel, i, true);
+    EmptySystemDiagram d_both_last(EmptySystemDiagram::kTwoUpdatesAtLastLevel,
+                                   i, true);
 
     // All of these should return "true". Check them.
     ASSERT_TRUE(periodic_data =
-        d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
+                    d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
     CheckPeriodAndOffset(periodic_data.value());
     ASSERT_TRUE(periodic_data =
-        d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
+                    d_sys2upd.GetUniquePeriodicDiscreteUpdateAttribute());
     CheckPeriodAndOffset(periodic_data.value());
     ASSERT_TRUE(periodic_data =
-        d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
+                    d_bothupd.GetUniquePeriodicDiscreteUpdateAttribute());
     CheckPeriodAndOffset(periodic_data.value());
     ASSERT_TRUE(periodic_data =
-        d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
+                    d_both_last.GetUniquePeriodicDiscreteUpdateAttribute());
     CheckPeriodAndOffset(periodic_data.value());
     ASSERT_TRUE(periodic_data =
-        d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
+                    d_sys1_last.GetUniquePeriodicDiscreteUpdateAttribute());
     CheckPeriodAndOffset(periodic_data.value());
     ASSERT_TRUE(periodic_data =
-        d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
+                    d_sys2_last.GetUniquePeriodicDiscreteUpdateAttribute());
     CheckPeriodAndOffset(periodic_data.value());
   }
 }
@@ -245,12 +242,12 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdateUnique) {
 GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   // Check diagrams with no recursion.
   PeriodicEventData periodic_data;
-  EmptySystemDiagram d_sys2upd_zero(
-      EmptySystemDiagram::kOneUpdatePerLevelSys1, 0, false);
-  EmptySystemDiagram d_sys1upd_zero(
-      EmptySystemDiagram::kOneUpdatePerLevelSys2, 0, false);
+  EmptySystemDiagram d_sys2upd_zero(EmptySystemDiagram::kOneUpdatePerLevelSys1,
+                                    0, false);
+  EmptySystemDiagram d_sys1upd_zero(EmptySystemDiagram::kOneUpdatePerLevelSys2,
+                                    0, false);
   EmptySystemDiagram d_bothupd_zero(EmptySystemDiagram::kTwoUpdatesPerLevel, 0,
-      false);
+                                    false);
   EXPECT_TRUE(d_sys2upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
   EXPECT_TRUE(d_sys1upd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
   EXPECT_FALSE(d_bothupd_zero.GetUniquePeriodicDiscreteUpdateAttribute());
@@ -258,18 +255,18 @@ GTEST_TEST(EmptySystemDiagramTest, CheckPeriodicTriggerDiscreteUpdate) {
   // Check systems with up to three levels of recursion.
   for (int i = 1; i <= 3; ++i) {
     // Create the systems.
-    EmptySystemDiagram d_sys1upd(
-        EmptySystemDiagram::kOneUpdatePerLevelSys1, i, false);
-    EmptySystemDiagram d_sys2upd(
-        EmptySystemDiagram::kOneUpdatePerLevelSys2, i, false);
-    EmptySystemDiagram d_bothupd(
-        EmptySystemDiagram::kTwoUpdatesPerLevel, i, false);
+    EmptySystemDiagram d_sys1upd(EmptySystemDiagram::kOneUpdatePerLevelSys1, i,
+                                 false);
+    EmptySystemDiagram d_sys2upd(EmptySystemDiagram::kOneUpdatePerLevelSys2, i,
+                                 false);
+    EmptySystemDiagram d_bothupd(EmptySystemDiagram::kTwoUpdatesPerLevel, i,
+                                 false);
     EmptySystemDiagram d_sys1_last(
         EmptySystemDiagram::kOneUpdateAtLastLevelSys1, i, false);
     EmptySystemDiagram d_sys2_last(
         EmptySystemDiagram::kOneUpdateAtLastLevelSys2, i, false);
-    EmptySystemDiagram d_both_last(
-        EmptySystemDiagram::kTwoUpdatesAtLastLevel, i, false);
+    EmptySystemDiagram d_both_last(EmptySystemDiagram::kTwoUpdatesAtLastLevel,
+                                   i, false);
 
     // None of these should have a unique periodic event.
     EXPECT_FALSE(d_sys1upd.GetUniquePeriodicDiscreteUpdateAttribute());
@@ -376,8 +373,8 @@ class KitchenSinkStateAndParameters final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(KitchenSinkStateAndParameters);
 
-  KitchenSinkStateAndParameters() :
-      LeafSystem<T>(systems::SystemTypeTag<KitchenSinkStateAndParameters>{}) {
+  KitchenSinkStateAndParameters()
+      : LeafSystem<T>(systems::SystemTypeTag<KitchenSinkStateAndParameters>{}) {
     this->DeclareContinuousState(4, 3, 5);  // nq, nv, nz
     for (int i = 0; i < 2; ++i)  // Make two "groups" of discrete variables.
       this->DeclareDiscreteState(4 + i);
@@ -397,12 +394,10 @@ class KitchenSinkStateAndParameters final : public LeafSystem<T> {
 
  private:
   // Must provide derivatives since we have continuous states.
-  void DoCalcTimeDerivatives(
-      const Context<T>& context,
-      ContinuousState<T>* derivatives) const override {
+  void DoCalcTimeDerivatives(const Context<T>& context,
+                             ContinuousState<T>* derivatives) const override {
     // xdot = 0.
-    derivatives->SetFromVector(
-        VectorX<T>::Zero(this->num_continuous_states()));
+    derivatives->SetFromVector(VectorX<T>::Zero(this->num_continuous_states()));
   }
 };
 
@@ -425,7 +420,8 @@ class Sink final : public LeafSystem<T> {
 
   // Scalar-converting copy constructor. See @ref system_scalar_conversion.
   template <typename U>
-  explicit Sink(const Sink<U>& other): Sink<T>(other.get_input_port().size()) {}
+  explicit Sink(const Sink<U>& other)
+      : Sink<T>(other.get_input_port().size()) {}
 };
 
 /* ExampleDiagram has the following structure:
@@ -480,8 +476,8 @@ witness functions from its subsystems.
 */
 class ExampleDiagram : public Diagram<double> {
  public:
-  explicit ExampleDiagram(
-      int size, bool use_abstract = false, bool use_double_only = false) {
+  explicit ExampleDiagram(int size, bool use_abstract = false,
+                          bool use_double_only = false) {
     DiagramBuilder<double> builder;
 
     adder0_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
@@ -491,8 +487,7 @@ class ExampleDiagram : public Diagram<double> {
     adder2_ = builder.AddSystem<Adder<double>>(2 /* inputs */, size);
     adder2_->set_name("adder2");
     stateless_ = builder.AddSystem<StatelessSystem<double>>(
-        1.0 /* trigger time */,
-        WitnessFunctionDirection::kCrossesZero);
+        1.0 /* trigger time */, WitnessFunctionDirection::kCrossesZero);
     stateless_->set_name("stateless");
 
     integrator0_ = builder.AddSystem<Integrator<double>>(size);
@@ -506,8 +501,7 @@ class ExampleDiagram : public Diagram<double> {
     builder.Connect(adder0_->get_output_port(), adder2_->get_input_port(0));
     builder.Connect(adder1_->get_output_port(), adder2_->get_input_port(1));
 
-    builder.Connect(adder0_->get_output_port(),
-                    integrator0_->get_input_port());
+    builder.Connect(adder0_->get_output_port(), integrator0_->get_input_port());
     builder.Connect(integrator0_->get_output_port(),
                     integrator1_->get_input_port());
 
@@ -592,16 +586,12 @@ class DiagramTest : public ::testing::Test {
   // Asserts that output_ is what it should be for the default values
   // of input0_, input1_, and input2_.
   void ExpectDefaultOutputs() {
-    Vector3d expected_output0(
-        1 + 8 + 64,
-        2 + 16 + 128,
-        4 + 32 + 256);  // B
-
-    Vector3d expected_output1(
-        1 + 8,
-        2 + 16,
-        4 + 32);  // A
-    expected_output1 += expected_output0;       // A + B
+    Vector3d expected_output0(1 + 8 + 64,     //
+                              2 + 16 + 128,   //
+                              4 + 32 + 256);  // = B
+    Vector3d expected_output1(1 + 8, 2 + 16,  //
+                              4 + 32);        // = A
+    expected_output1 += expected_output0;     // = A + B
 
     Vector3d expected_output2(81, 243, 729);  // state of integrator1_
 
@@ -651,7 +641,7 @@ class DiagramTest : public ::testing::Test {
 // each of which has three state variables, plus the "kitchen sink" which
 // has 12.
 TEST_F(DiagramTest, NumberOfContinuousStates) {
-  EXPECT_EQ(3+3+12, diagram_->num_continuous_states());
+  EXPECT_EQ(3 + 3 + 12, diagram_->num_continuous_states());
 }
 
 // Tests that the diagram returns the correct number of witness functions and
@@ -778,20 +768,27 @@ TEST_F(DiagramTest, CheckPortSubscriptions) {
         diagram_->GetSubsystemContext(*subsystem, *context_);
     // Not checking "HasSubscriber" separately to cut down on fluff;
     // prerequisite and subscriber are set in the same call and checked above.
-    EXPECT_TRUE(context_->get_tracker(diagram_->q_ticket())
-        .HasPrerequisite(subcontext.get_tracker(subsystem->q_ticket())));
-    EXPECT_TRUE(context_->get_tracker(diagram_->v_ticket())
-        .HasPrerequisite(subcontext.get_tracker(subsystem->v_ticket())));
-    EXPECT_TRUE(context_->get_tracker(diagram_->z_ticket())
-        .HasPrerequisite(subcontext.get_tracker(subsystem->z_ticket())));
-    EXPECT_TRUE(context_->get_tracker(diagram_->xd_ticket())
-        .HasPrerequisite(subcontext.get_tracker(subsystem->xd_ticket())));
-    EXPECT_TRUE(context_->get_tracker(diagram_->xa_ticket())
-        .HasPrerequisite(subcontext.get_tracker(subsystem->xa_ticket())));
-    EXPECT_TRUE(context_->get_tracker(diagram_->pn_ticket())
-        .HasPrerequisite(subcontext.get_tracker(subsystem->pn_ticket())));
-    EXPECT_TRUE(context_->get_tracker(diagram_->pa_ticket())
-        .HasPrerequisite(subcontext.get_tracker(subsystem->pa_ticket())));
+    EXPECT_TRUE(
+        context_->get_tracker(diagram_->q_ticket())
+            .HasPrerequisite(subcontext.get_tracker(subsystem->q_ticket())));
+    EXPECT_TRUE(
+        context_->get_tracker(diagram_->v_ticket())
+            .HasPrerequisite(subcontext.get_tracker(subsystem->v_ticket())));
+    EXPECT_TRUE(
+        context_->get_tracker(diagram_->z_ticket())
+            .HasPrerequisite(subcontext.get_tracker(subsystem->z_ticket())));
+    EXPECT_TRUE(
+        context_->get_tracker(diagram_->xd_ticket())
+            .HasPrerequisite(subcontext.get_tracker(subsystem->xd_ticket())));
+    EXPECT_TRUE(
+        context_->get_tracker(diagram_->xa_ticket())
+            .HasPrerequisite(subcontext.get_tracker(subsystem->xa_ticket())));
+    EXPECT_TRUE(
+        context_->get_tracker(diagram_->pn_ticket())
+            .HasPrerequisite(subcontext.get_tracker(subsystem->pn_ticket())));
+    EXPECT_TRUE(
+        context_->get_tracker(diagram_->pa_ticket())
+            .HasPrerequisite(subcontext.get_tracker(subsystem->pa_ticket())));
   }
 }
 
@@ -836,9 +833,8 @@ TEST_F(DiagramTest, Graphviz) {
   SystemBase::GraphvizFragment fragment = diagram_->GetGraphvizFragment();
   const std::string dot = fmt::format("{}", fmt::join(fragment.fragments, ""));
   // Check that the Diagram is labeled with its name.
-  EXPECT_THAT(dot,
-              testing::HasSubstr(
-                  "\nname=Unicode Snowman's Favorite Diagram!!1!☃!\n"));
+  EXPECT_THAT(dot, testing::HasSubstr(
+                       "\nname=Unicode Snowman's Favorite Diagram!!1!☃!\n"));
   // Check that ports are declared with blue and green bubbles.
   EXPECT_THAT(dot, testing::HasSubstr(
                        "COLOR=\"blue\" CELLSPACING=\"3\" STYLE=\"rounded\""));
@@ -882,8 +878,7 @@ TEST_F(DiagramTest, GetMutableSubsystemState) {
       *diagram_->integrator0(), &context_->get_mutable_state());
 
   EXPECT_EQ(&state_from_context, &state_from_state);
-  const ContinuousState<double>& xc =
-      state_from_context.get_continuous_state();
+  const ContinuousState<double>& xc = state_from_context.get_continuous_state();
   EXPECT_EQ(3, xc[0]);
   EXPECT_EQ(9, xc[1]);
   EXPECT_EQ(27, xc[2]);
@@ -957,8 +952,7 @@ TEST_F(DiagramTest, ContinuousStateBelongsWithSystem) {
   auto temp_context = diagram_->AllocateContext();
   ContinuousState<double>& temp_xc =
       temp_context->get_mutable_continuous_state();
-  DRAKE_EXPECT_NO_THROW(
-      diagram_->CalcTimeDerivatives(*context_, &temp_xc));
+  DRAKE_EXPECT_NO_THROW(diagram_->CalcTimeDerivatives(*context_, &temp_xc));
 
   // Cannot ask the other_diagram to calc into storage that was created by the
   // original diagram.
@@ -988,9 +982,7 @@ TEST_F(DiagramTest, AllocateInputs) {
 TEST_F(DiagramTest, GetSubsystemByName) {
   EXPECT_TRUE(diagram_->HasSubsystemNamed("stateless"));
   const System<double>& stateless = diagram_->GetSubsystemByName("stateless");
-  EXPECT_NE(
-      dynamic_cast<const StatelessSystem<double>*>(&stateless),
-      nullptr);
+  EXPECT_NE(dynamic_cast<const StatelessSystem<double>*>(&stateless), nullptr);
 
   EXPECT_FALSE(diagram_->HasSubsystemNamed("not_a_subsystem"));
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -1019,8 +1011,8 @@ TEST_F(DiagramTest, GetDowncastSubsystemByName) {
   // This will only compile if the subsystem's scalar type matches the
   // Diagram's scalar type.
   const StatelessSystem<double>& also_stateless =
-      diagram_->GetDowncastSubsystemByName<StatelessSystem<double>>
-          ("stateless");
+      diagram_->GetDowncastSubsystemByName<StatelessSystem<double>>(
+          "stateless");
   EXPECT_EQ(also_stateless.get_name(), "stateless");
 
   // Both overloads use the same implementation and depend on
@@ -1066,8 +1058,7 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
     double_inputs += diagram_->get_input_port(k).get_name();
     double_inputs += ",";
   }
-  std::unique_ptr<System<AutoDiffXd>> ad_diagram =
-      diagram_->ToAutoDiffXd();
+  std::unique_ptr<System<AutoDiffXd>> ad_diagram = diagram_->ToAutoDiffXd();
   std::string ad_inputs;
   for (int k = 0; k < ad_diagram->num_input_ports(); k++) {
     ad_inputs += ad_diagram->get_input_port(k).get_name();
@@ -1149,8 +1140,8 @@ TEST_F(DiagramTest, ToAutoDiffXd) {
   // we cannot transmogrify the Diagram to AutoDiffXd.
   const bool use_abstract = false;
   const bool use_double_only = true;
-  auto diagram_with_double_only = std::make_unique<ExampleDiagram>(
-      kSize, use_abstract, use_double_only);
+  auto diagram_with_double_only =
+      std::make_unique<ExampleDiagram>(kSize, use_abstract, use_double_only);
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram_with_double_only->ToAutoDiffXd(),
       ".*ExampleDiagram.*AutoDiffXd.*DoubleOnlySystem.*");
@@ -1165,8 +1156,8 @@ TEST_F(DiagramTest, ToSymbolic) {
   // No symbolic support when one of the subsystems does not declare support.
   const bool use_abstract = false;
   const bool use_double_only = true;
-  auto diagram_with_double_only = std::make_unique<ExampleDiagram>(
-      kSize, use_abstract, use_double_only);
+  auto diagram_with_double_only =
+      std::make_unique<ExampleDiagram>(kSize, use_abstract, use_double_only);
   EXPECT_THROW(diagram_with_double_only->ToSymbolic(), std::exception);
 }
 
@@ -1210,21 +1201,19 @@ TEST_F(DiagramTest, Clone) {
 
   // Recompute the output and check the values.
   diagram_->CalcOutput(*clone, output_.get());
-  Vector3d expected_output0(
-      3 + 8 + 64,
-      6 + 16 + 128,
-      9 + 32 + 256);  // B
+  Vector3d expected_output0(3 + 8 + 64,     //
+                            6 + 16 + 128,   //
+                            9 + 32 + 256);  // = B
   const BasicVector<double>* output0 = output_->get_vector_data(0);
   ASSERT_TRUE(output0 != nullptr);
   EXPECT_EQ(expected_output0[0], output0->get_value()[0]);
   EXPECT_EQ(expected_output0[1], output0->get_value()[1]);
   EXPECT_EQ(expected_output0[2], output0->get_value()[2]);
 
-  Vector3d expected_output1(
-      3 + 8,
-      6 + 16,
-      9 + 32);  // A
-  expected_output1 += expected_output0;       // A + B
+  Vector3d expected_output1(3 + 8,       //
+                            6 + 16,      //
+                            9 + 32);     // = A
+  expected_output1 += expected_output0;  // = A + B
   const BasicVector<double>* output1 = output_->get_vector_data(1);
   ASSERT_TRUE(output1 != nullptr);
   EXPECT_EQ(expected_output1[0], output1->get_value()[0]);
@@ -1319,23 +1308,19 @@ class DiagramOfDiagramsTest : public ::testing::Test {
 
     State<double>& integrator0_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator0(), &d0_context);
-    integrator0_x.get_mutable_continuous_state()
-        .get_mutable_vector()[0] = 3;
+    integrator0_x.get_mutable_continuous_state().get_mutable_vector()[0] = 3;
 
     State<double>& integrator1_x = subdiagram0_->GetMutableSubsystemState(
         *subdiagram0_->integrator1(), &d0_context);
-    integrator1_x.get_mutable_continuous_state()
-        .get_mutable_vector()[0] = 9;
+    integrator1_x.get_mutable_continuous_state().get_mutable_vector()[0] = 9;
 
     State<double>& integrator2_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator0(), &d1_context);
-    integrator2_x.get_mutable_continuous_state()
-        .get_mutable_vector()[0] = 27;
+    integrator2_x.get_mutable_continuous_state().get_mutable_vector()[0] = 27;
 
     State<double>& integrator3_x = subdiagram1_->GetMutableSubsystemState(
         *subdiagram1_->integrator1(), &d1_context);
-    integrator3_x.get_mutable_continuous_state()
-        .get_mutable_vector()[0] = 81;
+    integrator3_x.get_mutable_continuous_state().get_mutable_vector()[0] = 81;
   }
 
   const int kSize = 1;
@@ -1357,8 +1342,7 @@ TEST_F(DiagramOfDiagramsTest, DeclaredContextSizes) {
             context_->num_continuous_states());
   EXPECT_EQ(diagram_->num_discrete_state_groups(),
             context_->num_discrete_state_groups());
-  EXPECT_EQ(diagram_->num_abstract_states(),
-            context_->num_abstract_states());
+  EXPECT_EQ(diagram_->num_abstract_states(), context_->num_abstract_states());
   EXPECT_EQ(diagram_->num_numeric_parameter_groups(),
             context_->num_numeric_parameter_groups());
   EXPECT_EQ(diagram_->num_abstract_parameters(),
@@ -1377,8 +1361,7 @@ TEST_F(DiagramOfDiagramsTest, ScalarConvertAndCheckContextSizes) {
             context_->num_continuous_states());
   EXPECT_EQ(diagram_ad.num_discrete_state_groups(),
             context_->num_discrete_state_groups());
-  EXPECT_EQ(diagram_ad.num_abstract_states(),
-            context_->num_abstract_states());
+  EXPECT_EQ(diagram_ad.num_abstract_states(), context_->num_abstract_states());
   EXPECT_EQ(diagram_ad.num_numeric_parameter_groups(),
             context_->num_numeric_parameter_groups());
   EXPECT_EQ(diagram_ad.num_abstract_parameters(),
@@ -1450,22 +1433,22 @@ TEST_F(DiagramOfDiagramsTest, EvalOutput) {
   //   output2 = 81 (state of integrator1_)
   FixedInputPortValue& port_value =
       diagram_->get_input_port(0).FixValue(context_.get(), 10.0);
-  EXPECT_EQ(1255, diagram_->get_output_port(0).
-      Eval<BasicVector<double>>(*context_)[0]);
-  EXPECT_EQ(2501, diagram_->get_output_port(1).
-      Eval<BasicVector<double>>(*context_)[0]);
-  EXPECT_EQ(81, diagram_->get_output_port(2).
-      Eval<BasicVector<double>>(*context_)[0]);
+  EXPECT_EQ(1255, diagram_->get_output_port(0).Eval<BasicVector<double>>(
+                      *context_)[0]);
+  EXPECT_EQ(2501, diagram_->get_output_port(1).Eval<BasicVector<double>>(
+                      *context_)[0]);
+  EXPECT_EQ(
+      81, diagram_->get_output_port(2).Eval<BasicVector<double>>(*context_)[0]);
 
   // Now change the value back to 8 using mutable access to the port_value
   // object. Should also cause re-evaluation.
   port_value.GetMutableVectorData<double>()->SetAtIndex(0, 8.0);
-  EXPECT_EQ(1249, diagram_->get_output_port(0).
-      Eval<BasicVector<double>>(*context_)[0]);
-  EXPECT_EQ(2489, diagram_->get_output_port(1).
-      Eval<BasicVector<double>>(*context_)[0]);
-  EXPECT_EQ(81, diagram_->get_output_port(2).
-      Eval<BasicVector<double>>(*context_)[0]);
+  EXPECT_EQ(1249, diagram_->get_output_port(0).Eval<BasicVector<double>>(
+                      *context_)[0]);
+  EXPECT_EQ(2489, diagram_->get_output_port(1).Eval<BasicVector<double>>(
+                      *context_)[0]);
+  EXPECT_EQ(
+      81, diagram_->get_output_port(2).Eval<BasicVector<double>>(*context_)[0]);
 }
 
 TEST_F(DiagramOfDiagramsTest, DirectFeedthrough) {
@@ -1551,8 +1534,9 @@ class PublishNumberDiagram : public Diagram<double> {
     constant_ =
         builder.AddSystem<ConstantVectorSource<double>>(Vector1d{constant});
     constant_->set_name("constant");
-    publisher_ =
-        builder.AddSystem<PublishingSystem>([this](double v) { this->set(v); });
+    publisher_ = builder.AddSystem<PublishingSystem>([this](double v) {
+      this->set(v);
+    });
     publisher_->set_name("publisher");
 
     builder.Connect(constant_->get_output_port(),
@@ -1612,8 +1596,7 @@ class FeedbackDiagram : public Diagram<T> {
     gain->set_name("gain");
     gain_builder.ExportInput(gain->get_input_port());
     gain_builder.ExportOutput(gain->get_output_port());
-    Diagram<T>* const gain_diagram =
-        builder.AddSystem(gain_builder.Build());
+    Diagram<T>* const gain_diagram = builder.AddSystem(gain_builder.Build());
     gain_diagram->set_name("gain_diagram");
 
     builder.Connect(*integrator_diagram, *gain_diagram);
@@ -1661,18 +1644,20 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
   // subclass at runtime will fail-fast.
   class SubclassOfFeedbackDiagram : public FeedbackDiagram<double> {};
   const SubclassOfFeedbackDiagram subclass_dut{};
-  EXPECT_THROW(({
-    try {
-      subclass_dut.ToAutoDiffXd();
-    } catch (const std::runtime_error& e) {
-      EXPECT_THAT(
-          std::string(e.what()),
-          testing::MatchesRegex(
-              ".*convert a .*::FeedbackDiagram<double>.* called with a"
-              ".*::SubclassOfFeedbackDiagram at runtime"));
-      throw;
-    }
-  }), std::runtime_error);
+  EXPECT_THROW(
+      ({
+        try {
+          subclass_dut.ToAutoDiffXd();
+        } catch (const std::runtime_error& e) {
+          EXPECT_THAT(
+              std::string(e.what()),
+              testing::MatchesRegex(
+                  ".*convert a .*::FeedbackDiagram<double>.* called with a"
+                  ".*::SubclassOfFeedbackDiagram at runtime"));
+          throw;
+        }
+      }),
+      std::runtime_error);
 }
 
 // A simple class that consumes *two* inputs and passes one input through. The
@@ -1691,11 +1676,11 @@ TEST_F(DiagramTest, SubclassTransmogrificationTest) {
 class Reduce : public LeafSystem<double> {
  public:
   Reduce() {
-    const auto& input0 = this->DeclareInputPort(
-        kUseDefaultName, kVectorValued, 1);
+    const auto& input0 =
+        this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
     feedthrough_input_ = input0.get_index();
-    sink_input_ = this->DeclareInputPort(
-        kUseDefaultName, kVectorValued, 1).get_index();
+    sink_input_ =
+        this->DeclareInputPort(kUseDefaultName, kVectorValued, 1).get_index();
     this->DeclareVectorOutputPort(kUseDefaultName, 1, &Reduce::CalcFeedthrough,
                                   {input0.ticket()});
   }
@@ -1723,21 +1708,22 @@ class Reduce : public LeafSystem<double> {
 // feedthrough, but the path between diagram input and output doesn't follow
 // this path.
 GTEST_TEST(PortDependentFeedthroughTest, DetectNoFeedthrough) {
-// This is a diagram that wraps a Reduce Leaf system, exporting the output
-// and the *sink* input. There should be *no* direct feedthrough on the diagram.
-//        +-----------------+
-//        |                 |
-//        |  +-----------+  |
-//        |  +--+        |  |
-//   I +---->+S |        |  |
-//        |  +--+     +--+  |
-//        |  |     +->+O +------> O
-//        |  +--+  |  +--+  |
-//        |  |F +--+     |  |
-//        |  +--+        |  |
-//        |  +-----------+  |
-//        |                 |
-//        +-----------------+
+  // This is a diagram that wraps a Reduce Leaf system, exporting the output
+  // and the *sink* input. There should be *no* direct feedthrough on the
+  // diagram.
+  //        +-----------------+
+  //        |                 |
+  //        |  +-----------+  |
+  //        |  +--+        |  |
+  //   I +---->+S |        |  |
+  //        |  +--+     +--+  |
+  //        |  |     +->+O +------> O
+  //        |  +--+  |  +--+  |
+  //        |  |F +--+     |  |
+  //        |  +--+        |  |
+  //        |  +-----------+  |
+  //        |                 |
+  //        +-----------------+
   DiagramBuilder<double> builder;
   auto reduce = builder.AddSystem<Reduce>();
   builder.ExportInput(reduce->get_sink_input());
@@ -1751,22 +1737,22 @@ GTEST_TEST(PortDependentFeedthroughTest, DetectNoFeedthrough) {
 // Diagram input and output are connected by a system that has direct
 // feedthrough, and the input and output *are* connected by that path.
 GTEST_TEST(PortDependentFeedthroughTest, DetectFeedthrough) {
-// This is a diagram that wraps a Reduce Leaf system, exporting the output
-// and the *feedthrough* input. There should be direct feedthrough on the
-// diagram.
-//        +-----------------+
-//        |                 |
-//        |  +-----------+  |
-//        |  +--+        |  |
-//        |  |S |        |  |
-//        |  +--+     +--+  |
-//        |  |     +->+O +------> O
-//        |  +--+  |  +--+  |
-//   I +---->|F +--+     |  |
-//        |  +--+        |  |
-//        |  +-----------+  |
-//        |                 |
-//        +-----------------+
+  // This is a diagram that wraps a Reduce Leaf system, exporting the output
+  // and the *feedthrough* input. There should be direct feedthrough on the
+  // diagram.
+  //        +-----------------+
+  //        |                 |
+  //        |  +-----------+  |
+  //        |  +--+        |  |
+  //        |  |S |        |  |
+  //        |  +--+     +--+  |
+  //        |  |     +->+O +------> O
+  //        |  +--+  |  +--+  |
+  //   I +---->|F +--+     |  |
+  //        |  +--+        |  |
+  //        |  +-----------+  |
+  //        |                 |
+  //        +-----------------+
   DiagramBuilder<double> builder;
   auto reduce = builder.AddSystem<Reduce>();
   builder.ExportInput(reduce->get_feedthrough_input());
@@ -1825,8 +1811,8 @@ class SecondOrderStateSystem : public LeafSystem<double> {
  public:
   SecondOrderStateSystem() {
     DeclareInputPort(kUseDefaultName, kVectorValued, 1);
-    DeclareContinuousState(SecondOrderStateVector{},
-                           1 /* num_q */, 1 /* num_v */, 0 /* num_z */);
+    DeclareContinuousState(SecondOrderStateVector{}, 1 /* num_q */,
+                           1 /* num_v */, 0 /* num_z */);
   }
 
   SecondOrderStateVector* x(Context<double>* context) const {
@@ -1911,14 +1897,12 @@ GTEST_TEST(SecondOrderStateTest, MapVelocityToQDot) {
 // Test for GetSystems.
 GTEST_TEST(GetSystemsTest, GetSystems) {
   auto diagram = std::make_unique<ExampleDiagram>(2);
-  EXPECT_EQ((std::vector<const System<double>*>{
-                diagram->adder0(), diagram->adder1(), diagram->adder2(),
-                diagram->stateless(),
-                diagram->integrator0(), diagram->integrator1(),
-                diagram->sink(),
-                diagram->kitchen_sink()
-            }),
-            diagram->GetSystems());
+  EXPECT_EQ(
+      (std::vector<const System<double>*>{
+          diagram->adder0(), diagram->adder1(), diagram->adder2(),
+          diagram->stateless(), diagram->integrator0(), diagram->integrator1(),
+          diagram->sink(), diagram->kitchen_sink()}),
+      diagram->GetSystems());
 }
 
 const double kTestPublishPeriod = 19.0;
@@ -1936,9 +1920,7 @@ class TestPublishingSystem final : public LeafSystem<double> {
   bool published() const { return published_; }
 
  private:
-  void HandlePeriodPublish(const Context<double>&) const {
-    published_ = true;
-  }
+  void HandlePeriodPublish(const Context<double>&) const { published_ = true; }
 
   // Recording state through event handlers, like this system does, is an
   // anti-pattern, but we do it to simplify testing.
@@ -1977,8 +1959,7 @@ class DiscreteStateDiagram : public Diagram<double> {
 class ForcedPublishingSystem : public LeafSystem<double> {
  public:
   ForcedPublishingSystem() {
-    this->DeclareForcedPublishEvent(
-        &ForcedPublishingSystem::PublishHandler);
+    this->DeclareForcedPublishEvent(&ForcedPublishingSystem::PublishHandler);
   }
   bool published() const { return published_; }
 
@@ -2007,10 +1988,10 @@ class ForcedPublishingSystemDiagram : public Diagram<double> {
     builder.BuildInto(this);
   }
   ForcedPublishingSystem* publishing_system_one() const {
-      return publishing_system_one_;
+    return publishing_system_one_;
   }
   ForcedPublishingSystem* publishing_system_two() const {
-      return publishing_system_two_;
+    return publishing_system_two_;
   }
 
  private:
@@ -2039,8 +2020,7 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold1) {
 
   EXPECT_EQ(2.0, time);
   const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            *diagram_.hold1(), *events);
+      diagram_.GetSubsystemCompositeEventCollection(*diagram_.hold1(), *events);
 
   EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
 }
@@ -2054,15 +2034,15 @@ TEST_F(DiscreteStateTest, CalcNextUpdateTimeHold2) {
   EXPECT_EQ(6.0, time);
   {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            *diagram_.hold2(), *events);
+        diagram_.GetSubsystemCompositeEventCollection(*diagram_.hold2(),
+                                                      *events);
     EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
   }
 
   {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            *diagram_.hold1(), *events);
+        diagram_.GetSubsystemCompositeEventCollection(*diagram_.hold1(),
+                                                      *events);
     EXPECT_TRUE(subevent_collection.get_discrete_update_events().HasEvents());
   }
 }
@@ -2083,11 +2063,9 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
       diagram_.AllocateDiscreteVariables();
   EXPECT_EQ(updates->get_system_id(), context_->get_system_id());
   const DiscreteValues<double>& updates1 =
-      diagram_
-          .GetSubsystemDiscreteValues(*diagram_.hold1(), *updates);
+      diagram_.GetSubsystemDiscreteValues(*diagram_.hold1(), *updates);
   const DiscreteValues<double>& updates2 =
-      diagram_
-          .GetSubsystemDiscreteValues(*diagram_.hold2(), *updates);
+      diagram_.GetSubsystemDiscreteValues(*diagram_.hold2(), *updates);
   updates->get_mutable_vector(0)[0] = 0.0;  // Start with known values.
   updates->get_mutable_vector(1)[0] = 0.0;
 
@@ -2109,12 +2087,12 @@ TEST_F(DiscreteStateTest, UpdateDiscreteVariables) {
 
   // Note that non-participating hold1's state should not have been
   // copied (if it had been it would be 1001.0).
-  EXPECT_EQ(0.0, updates1[0]);  // Same as we started with.
+  EXPECT_EQ(0.0, updates1[0]);   // Same as we started with.
   EXPECT_EQ(23.0, updates2[0]);  // Updated.
 
   // Apply the updates to the context_.
   diagram_.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
-      updates.get(), context_.get());
+                                       updates.get(), context_.get());
   EXPECT_EQ(1001.0, ctx1.get_discrete_state(0)[0]);
   EXPECT_EQ(23.0, ctx2.get_discrete_state(0)[0]);
 
@@ -2225,15 +2203,14 @@ class SystemWithDiscreteState : public LeafSystem<double> {
  private:
   // Discrete state is set to input state value + time. We expect that the
   // initial value for discrete_state is the same as the value in context.
-  void AddTimeToDiscreteVariable(
-      const Context<double>& context,
-      DiscreteValues<double>* discrete_state) const {
+  void AddTimeToDiscreteVariable(const Context<double>& context,
+                                 DiscreteValues<double>* discrete_state) const {
     ASSERT_EQ((*discrete_state)[0], context.get_discrete_state(0)[0]);
     (*discrete_state)[0] += context.get_time();
   }
 
-  EventStatus IncrementCounter(
-      const Context<double>&, DiscreteValues<double>*) const {
+  EventStatus IncrementCounter(const Context<double>&,
+                               DiscreteValues<double>*) const {
     ++counter_;
     return EventStatus::Succeeded();
   }
@@ -2350,7 +2327,7 @@ GTEST_TEST(DiscreteStateDiagramTest, CalcDiscreteVariableUpdate) {
   // it would now be 2). sys1's state should have been copied, replacing the
   // 98 with a 1, then updated by adding time.
   EXPECT_EQ(x_buf->get_vector(0)[0], kSys1Id + time);  // Updated.
-  EXPECT_EQ(x_buf->get_vector(1)[0], 99.0);      // Unchanged.
+  EXPECT_EQ(x_buf->get_vector(1)[0], 99.0);            // Unchanged.
 
   // Swaps in the new state, and the discrete data for sys1 should be updated.
   diagram.ApplyDiscreteVariableUpdate(events->get_discrete_update_events(),
@@ -2466,9 +2443,7 @@ TEST_F(DiscreteStateTest, Publish) {
 
 class ForcedPublishingSystemDiagramTest : public ::testing::Test {
  public:
-  void SetUp() override {
-    context_ = diagram_.CreateDefaultContext();
-  }
+  void SetUp() override { context_ = diagram_.CreateDefaultContext(); }
 
  protected:
   ForcedPublishingSystemDiagram diagram_;
@@ -2518,9 +2493,8 @@ class SystemWithAbstractState : public LeafSystem<double> {
 
  private:
   // Abstract state is set to input state value + time.
-  void CalcUnrestrictedUpdate(
-      const Context<double>& context,
-      State<double>* state) const {
+  void CalcUnrestrictedUpdate(const Context<double>& context,
+                              State<double>* state) const {
     double& state_num = state->get_mutable_abstract_state()
                             .get_mutable_value(0)
                             .get_mutable_value<double>();
@@ -2604,15 +2578,15 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 2.);
   {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            diagram_.get_sys(kSys1Id), *events);
+        diagram_.GetSubsystemCompositeEventCollection(diagram_.get_sys(kSys1Id),
+                                                      *events);
     EXPECT_TRUE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
   {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            diagram_.get_sys(kSys2Id), *events);
+        diagram_.GetSubsystemCompositeEventCollection(diagram_.get_sys(kSys2Id),
+                                                      *events);
     EXPECT_FALSE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
@@ -2640,7 +2614,7 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
 
   // Swaps in the new state, and the abstract data for sys0 should be updated.
   diagram_.ApplyUnrestrictedUpdate(events->get_unrestricted_update_events(),
-      x_buf.get(), context_.get());
+                                   x_buf.get(), context_.get());
   EXPECT_EQ(get_sys1_abstract_data_as_double(), kSys1Id + time);  // == 3
   EXPECT_EQ(get_sys2_abstract_data_as_double(), kSys2Id);
 
@@ -2650,8 +2624,8 @@ TEST_F(AbstractStateDiagramTest, CalcUnrestrictedUpdate) {
   EXPECT_EQ(diagram_.CalcNextUpdateTime(*context_, events.get()), 6.);
   for (int i : {kSys1Id, kSys2Id}) {
     const auto& subevent_collection =
-        diagram_.GetSubsystemCompositeEventCollection(
-            diagram_.get_sys(i), *events);
+        diagram_.GetSubsystemCompositeEventCollection(diagram_.get_sys(i),
+                                                      *events);
     EXPECT_TRUE(
         subevent_collection.get_unrestricted_update_events().HasEvents());
   }
@@ -2724,7 +2698,7 @@ TEST_F(AbstractStateDiagramTest, UnrestrictedUpdateNotificationsAreLocalized) {
 
   // Selectively apply the update; only hold1 should get notified.
   diagram_.ApplyUnrestrictedUpdate(unrestricted_events, updates.get(),
-                                       context_.get());
+                                   context_.get());
   // Sanity check that the update actually occurred -- should have added time
   // to sys1's abstract id.
   EXPECT_EQ(get_sys1_abstract_data_as_double(), kSys1Id + next_time);
@@ -2940,35 +2914,35 @@ TEST_F(NestedDiagramContextTest, GetSubsystemState) {
   EXPECT_EQ(big_output_->get_vector_data(3)->GetAtIndex(0), 0);
 
   State<double>& big_state = big_context_->get_mutable_state();
-  big_diagram_
-      ->GetMutableSubsystemState(*integrator0_, &big_state)
+  big_diagram_->GetMutableSubsystemState(*integrator0_, &big_state)
       .get_mutable_continuous_state()
       .get_mutable_vector()[0] = 1;
-  big_diagram_
-      ->GetMutableSubsystemState(*integrator1_, &big_state)
+  big_diagram_->GetMutableSubsystemState(*integrator1_, &big_state)
       .get_mutable_continuous_state()
       .get_mutable_vector()[0] = 2;
-  big_diagram_
-      ->GetMutableSubsystemState(*integrator2_, &big_state)
+  big_diagram_->GetMutableSubsystemState(*integrator2_, &big_state)
       .get_mutable_continuous_state()
       .get_mutable_vector()[0] = 3;
-  big_diagram_
-      ->GetMutableSubsystemState(*integrator3_, &big_state)
+  big_diagram_->GetMutableSubsystemState(*integrator3_, &big_state)
       .get_mutable_continuous_state()
       .get_mutable_vector()[0] = 4;
 
   // Checks state.
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator0_, big_state)
-                .get_continuous_state().get_vector()[0],
+                .get_continuous_state()
+                .get_vector()[0],
             1);
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator1_, big_state)
-                .get_continuous_state().get_vector()[0],
+                .get_continuous_state()
+                .get_vector()[0],
             2);
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator2_, big_state)
-                .get_continuous_state().get_vector()[0],
+                .get_continuous_state()
+                .get_vector()[0],
             3);
   EXPECT_EQ(big_diagram_->GetSubsystemState(*integrator3_, big_state)
-                .get_continuous_state().get_vector()[0],
+                .get_continuous_state()
+                .get_vector()[0],
             4);
 
   // Checks output.
@@ -3094,8 +3068,7 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
       integ2->get_input_port(0).FixValue(&context2, 0.75);
 
   // The diagram derivatives should be (u0,u1,u2)=(u,x0,u2).
-  auto& eval_derivs =
-      diagram->EvalTimeDerivatives(*diagram_context);
+  auto& eval_derivs = diagram->EvalTimeDerivatives(*diagram_context);
   ++expected_derivative_serial;
   EXPECT_EQ(eval_derivs[0], 1.5);
   EXPECT_EQ(eval_derivs[1], 5.);
@@ -3112,7 +3085,8 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
       diagram->GetMutableSubsystemContext(*integ1, &*diagram_context);
 
   VectorXd new_x0(1), new_x1(1);
-  new_x0 << 13.; new_x1 << 17.;
+  new_x0 << 13.;
+  new_x1 << 17.;
   context0.SetContinuousState(new_x0);
   context1.SetContinuousState(new_x1);
 
@@ -3148,7 +3122,7 @@ GTEST_TEST(MutateSubcontextTest, DiagramRecalculatesOnSubcontextChange) {
   // that should be reflected in the diagram derivative result.
   u2_value.GetMutableVectorData<double>()->SetAtIndex(0, 300.);
   EXPECT_EQ(diagram->get_output_port(0).Eval<BasicVector<double>>(
-      *diagram_context)[0],
+                *diagram_context)[0],
             17.);  // No change.
   EXPECT_TRUE(derivative_cache.is_out_of_date());
 
@@ -3520,12 +3494,12 @@ GTEST_TEST(DiagramEventEvaluation, EventStatusHandling) {
   const std::string all_unrestricted[] = {
       "sys0 unrestricted", "sys1 unrestricted", "sys2 unrestricted",
       "sys3 unrestricted", "sys4 unrestricted"};
-  const std::string all_discrete[] = {
-      "sys0 discrete", "sys1 discrete", "sys2 discrete",
-      "sys3 discrete", "sys4 discrete"};
-  const std::string all_publish[] = {
-      "sys0 publish", "sys1 publish", "sys2 publish",
-      "sys3 publish", "sys4 publish"};
+  const std::string all_discrete[] = {"sys0 discrete", "sys1 discrete",
+                                      "sys2 discrete", "sys3 discrete",
+                                      "sys4 discrete"};
+  const std::string all_publish[] = {"sys0 publish", "sys1 publish",
+                                     "sys2 publish", "sys3 publish",
+                                     "sys4 publish"};
 
   // Sets all events in all systems to the same severity.
   auto reset_severity = [sys](EventStatus::Severity severity) {
@@ -3639,9 +3613,7 @@ class MyEventTestSystem : public LeafSystem<double> {
   int get_per_step_count() const { return per_step_count_; }
 
  private:
-  void PublishPeriodic(const Context<double>&) const {
-     ++periodic_count_;
-  }
+  void PublishPeriodic(const Context<double>&) const { ++periodic_count_; }
 
   // TODO(15465) When per-step event declaration sugar allows for callbacks
   // whose result is "assumed to succeed", change this to void return.
@@ -3773,7 +3745,7 @@ class ConstraintTestSystem : public LeafSystem<T> {
                                     1, "x0");
     this->DeclareInequalityConstraint(
         &ConstraintTestSystem::CalcStateConstraint,
-        { Vector2d::Zero(), std::nullopt }, "x");
+        {Vector2d::Zero(), std::nullopt}, "x");
   }
 
   // Scalar-converting copy constructor.
@@ -3916,13 +3888,13 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
   // Get pointers to the parameters.
   auto params1 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
       &diagram->GetMutableSubsystemContext(*pendulum1, context.get())
-          .get_mutable_numeric_parameter(0));
+           .get_mutable_numeric_parameter(0));
   auto params2 = dynamic_cast<examples::pendulum::PendulumParams<double>*>(
       &diagram->GetMutableSubsystemContext(*pendulum2, context.get())
-          .get_mutable_numeric_parameter(0));
+           .get_mutable_numeric_parameter(0));
 
   const double original_damping = params1->damping();
-  const double new_damping = 5.0*original_damping;
+  const double new_damping = 5.0 * original_damping;
   EXPECT_EQ(params2->damping(), original_damping);
 
   params1->set_damping(new_damping);
@@ -3943,10 +3915,8 @@ GTEST_TEST(DiagramParametersTest, ParameterTest) {
 class RandomContextTestSystem : public LeafSystem<double> {
  public:
   RandomContextTestSystem() {
-    this->DeclareContinuousState(
-        BasicVector<double>(Vector2d(-1.0, -2.0)));
-    this->DeclareNumericParameter(
-        BasicVector<double>(Vector3d(1.0, 2.0, 3.0)));
+    this->DeclareContinuousState(BasicVector<double>(Vector2d(-1.0, -2.0)));
+    this->DeclareNumericParameter(BasicVector<double>(Vector3d(1.0, 2.0, 3.0)));
   }
 
   void SetRandomState(const Context<double>& context, State<double>* state,
@@ -3962,8 +3932,8 @@ class RandomContextTestSystem : public LeafSystem<double> {
                            RandomGenerator* generator) const override {
     std::uniform_real_distribution<double> uniform;
     for (int i = 0; i < context.get_numeric_parameter(0).size(); i++) {
-      params->get_mutable_numeric_parameter(0).SetAtIndex(
-          i, uniform(*generator));
+      params->get_mutable_numeric_parameter(0).SetAtIndex(i,
+                                                          uniform(*generator));
     }
   }
 };
@@ -3988,12 +3958,12 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
   EXPECT_TRUE((state.array() ==
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
-  EXPECT_TRUE((params0.array() ==
-               context->get_numeric_parameter(0).get_value().array())
-                  .all());
-  EXPECT_TRUE((params1.array() ==
-               context->get_numeric_parameter(1).get_value().array())
-                  .all());
+  EXPECT_TRUE(
+      (params0.array() == context->get_numeric_parameter(0).get_value().array())
+          .all());
+  EXPECT_TRUE(
+      (params1.array() == context->get_numeric_parameter(1).get_value().array())
+          .all());
 
   RandomGenerator generator;
 
@@ -4002,12 +3972,12 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
   EXPECT_TRUE((state.array() !=
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
-  EXPECT_TRUE((params0.array() !=
-               context->get_numeric_parameter(0).get_value().array())
-                  .all());
-  EXPECT_TRUE((params1.array() !=
-               context->get_numeric_parameter(1).get_value().array())
-                  .all());
+  EXPECT_TRUE(
+      (params0.array() != context->get_numeric_parameter(0).get_value().array())
+          .all());
+  EXPECT_TRUE(
+      (params1.array() != context->get_numeric_parameter(1).get_value().array())
+          .all());
 
   // Update backup.
   state = context->get_continuous_state_vector().CopyToVector();
@@ -4019,12 +3989,12 @@ GTEST_TEST(RandomContextTest, SetRandomTest) {
   EXPECT_TRUE((state.array() !=
                context->get_continuous_state_vector().CopyToVector().array())
                   .all());
-  EXPECT_TRUE((params0.array() !=
-               context->get_numeric_parameter(0).get_value().array())
-                  .all());
-  EXPECT_TRUE((params1.array() !=
-               context->get_numeric_parameter(1).get_value().array())
-                  .all());
+  EXPECT_TRUE(
+      (params0.array() != context->get_numeric_parameter(0).get_value().array())
+          .all());
+  EXPECT_TRUE(
+      (params1.array() != context->get_numeric_parameter(1).get_value().array())
+          .all());
 }
 
 // Tests initialization works properly for all subsystems.
@@ -4068,15 +4038,13 @@ class DefaultExplicitSystem : public LeafSystem<double> {
 // implementation, and also changes the residual size from its default.
 class OverrideImplicitSystem : public DefaultExplicitSystem {
  public:
-  OverrideImplicitSystem() {
-    DeclareImplicitTimeDerivativesResidualSize(1);
-  }
+  OverrideImplicitSystem() { DeclareImplicitTimeDerivativesResidualSize(1); }
 
  private:
   void DoCalcImplicitTimeDerivativesResidual(
-    const systems::Context<double>& context,
-    const systems::ContinuousState<double>& proposed_derivatives,
-    EigenPtr<VectorX<double>> residual) const final {
+      const systems::Context<double>& context,
+      const systems::ContinuousState<double>& proposed_derivatives,
+      EigenPtr<VectorX<double>> residual) const final {
     EXPECT_EQ(residual->size(), 1);
     (*residual)[0] = proposed_derivatives.CopyToVector().sum();
   }
