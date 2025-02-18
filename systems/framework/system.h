@@ -1465,6 +1465,7 @@ class System : public SystemBase {
   // don't need "this->" everywhere when in templated derived classes.
   // All pre-defined ticket methods should be listed here. They are ordered as
   // they appear in SystemBase to make it easy to check that none are missing.
+  // clang-format off
   using SystemBase::nothing_ticket;
   using SystemBase::time_ticket;
   using SystemBase::accuracy_ticket;
@@ -1493,6 +1494,7 @@ class System : public SystemBase {
   using SystemBase::ke_ticket;
   using SystemBase::pc_ticket;
   using SystemBase::pnc_ticket;
+  // clang-format on
 
   // Don't promote output_port_ticket() since it is for internal use only.
 

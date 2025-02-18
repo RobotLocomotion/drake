@@ -79,9 +79,8 @@ class Convertable final : public SingleOutputVectorSource<T> {
     return std::make_unique<BasicVector<T>>(VectorX<T>::Constant(kSize, 22.0));
   }
 
-  void DoCalcVectorOutput(
-      const Context<T>& context,
-      Eigen::VectorBlock<VectorX<T>>* output) const final {
+  void DoCalcVectorOutput(const Context<T>& context,
+                          Eigen::VectorBlock<VectorX<T>>* output) const final {
     *output = Eigen::Vector3d::Ones();
   }
 };

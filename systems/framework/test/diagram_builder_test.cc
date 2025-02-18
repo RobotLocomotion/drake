@@ -46,7 +46,7 @@ GTEST_TEST(DiagramBuilderTest, AddNamedSystem) {
   EXPECT_EQ(a->get_name(), "a");
   auto b = builder.AddNamedSystem<Adder<double>>("b", 2, 1);
   EXPECT_EQ(b->get_name(), "b");
-  auto c = builder.AddNamedSystem<Adder>("c", 2 , 1);
+  auto c = builder.AddNamedSystem<Adder>("c", 2, 1);
   EXPECT_EQ(c->get_name(), "c");
 }
 
@@ -127,9 +127,8 @@ GTEST_TEST(DiagramBuilderTest, AlreadyBuilt) {
   EXPECT_FALSE(builder.already_built());
   auto diagram = builder.Build();
   EXPECT_TRUE(builder.already_built());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.AddSystem<Adder>(2, 2),
-      ".*DiagramBuilder may no longer be used.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.AddSystem<Adder>(2, 2),
+                              ".*DiagramBuilder may no longer be used.*");
 }
 
 // Integration test of the Diagram <==> System <==> SystemBase interaction when
@@ -192,24 +191,23 @@ class ConstAndEcho final : public LeafSystem<T> {
 // Tests that an exception is thrown if the diagram contains an algebraic loop.
 GTEST_TEST(DiagramBuilderTest, AlgebraicLoop) {
   DiagramBuilder<double> builder;
-  auto adder = builder.AddNamedSystem<Adder>(
-      "adder", 1 /* inputs */, 1 /* size */);
+  auto adder =
+      builder.AddNamedSystem<Adder>("adder", 1 /* inputs */, 1 /* size */);
   auto pass = builder.AddNamedSystem<PassThrough>("pass", 1 /* size */);
   // Connect the output port to the input port.
   builder.Connect(adder->get_output_port(), pass->get_input_port());
   builder.Connect(pass->get_output_port(), adder->get_input_port(0));
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.Build(),
-      fmt::format(
-          "Reported algebraic loop detected in DiagramBuilder:\n"
-          "  InputPort.0. .u0. of {adder} is direct-feedthrough to\n"
-          "  OutputPort.0. .sum. of {adder} is connected to\n"
-          "  InputPort.0. .u. of {pass} is direct-feedthrough to\n"
-          "  OutputPort.0. .y. of {pass} is connected to\n"
-          "  InputPort.0. .u0. of {adder}\n"
-          ".*conservatively reported.*",
-          fmt::arg("adder", "System ::adder .Adder<double>."),
-          fmt::arg("pass", "System ::pass .PassThrough<double>.")));
+      fmt::format("Reported algebraic loop detected in DiagramBuilder:\n"
+                  "  InputPort.0. .u0. of {adder} is direct-feedthrough to\n"
+                  "  OutputPort.0. .sum. of {adder} is connected to\n"
+                  "  InputPort.0. .u. of {pass} is direct-feedthrough to\n"
+                  "  OutputPort.0. .y. of {pass} is connected to\n"
+                  "  InputPort.0. .u0. of {adder}\n"
+                  ".*conservatively reported.*",
+                  fmt::arg("adder", "System ::adder .Adder<double>."),
+                  fmt::arg("pass", "System ::pass .PassThrough<double>.")));
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
@@ -262,13 +260,12 @@ GTEST_TEST(DiagramBuilderTest, CycleAtLoopPortLevel) {
   builder.Connect(echo->get_echo_output_port(), echo->get_vec_input_port());
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.Build(),
-      fmt::format(
-          "Reported algebraic loop detected in DiagramBuilder:\n"
-          "  InputPort.0. .input. of {sys} is direct-feedthrough to\n"
-          "  OutputPort.0. .echo. of {sys} is connected to\n"
-          "  InputPort.0. .input. of {sys}\n"
-          ".*conservatively reported.*",
-          fmt::arg("sys", "System ::echo .ConstAndEcho<double>.")));
+      fmt::format("Reported algebraic loop detected in DiagramBuilder:\n"
+                  "  InputPort.0. .input. of {sys} is direct-feedthrough to\n"
+                  "  OutputPort.0. .echo. of {sys} is connected to\n"
+                  "  InputPort.0. .input. of {sys}\n"
+                  ".*conservatively reported.*",
+                  fmt::arg("sys", "System ::echo .ConstAndEcho<double>.")));
 }
 
 // Tests that a cycle which is not an algebraic loop is recognized as valid.
@@ -283,10 +280,10 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoopSystemLevel) {
   //           |   Adder +---> Integrator -|
   //        |->| 1       |                 |---> output
   //        |------------------------------|
-  auto adder = builder.AddNamedSystem<Adder>(
-      "adder", 2 /* inputs */, 1 /* size */);
-  auto integrator = builder.AddNamedSystem<Integrator>(
-      "integrator", 1 /* size */);
+  auto adder =
+      builder.AddNamedSystem<Adder>("adder", 2 /* inputs */, 1 /* size */);
+  auto integrator =
+      builder.AddNamedSystem<Integrator>("integrator", 1 /* size */);
 
   builder.Connect(integrator->get_output_port(), adder->get_input_port(1));
 
@@ -299,10 +296,10 @@ GTEST_TEST(DiagramBuilderTest, CycleButNoAlgebraicLoopSystemLevel) {
 GTEST_TEST(DiagramBuilderTest, CascadedNonDirectFeedthrough) {
   DiagramBuilder<double> builder;
 
-  auto integrator1 = builder.AddNamedSystem<Integrator>(
-      "integrator1", 1 /* size */);
-  auto integrator2 = builder.AddNamedSystem<Integrator>(
-      "integrator2, ", 1 /* size */);
+  auto integrator1 =
+      builder.AddNamedSystem<Integrator>("integrator1", 1 /* size */);
+  auto integrator2 =
+      builder.AddNamedSystem<Integrator>("integrator2, ", 1 /* size */);
 
   builder.Connect(integrator1->get_output_port(),
                   integrator2->get_input_port());
@@ -349,17 +346,15 @@ GTEST_TEST(DiagramBuilderTest, ConnectVectorToAbstractThrow) {
   auto abstract_system = builder.AddNamedSystem<PassThrough<double>>(
       "abstract_system", Value<int>{});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.Connect(
-          vector_system->get_output_port(),
-          abstract_system->get_input_port()),
+      builder.Connect(vector_system->get_output_port(),
+                      abstract_system->get_input_port()),
       "DiagramBuilder::Connect: "
       "Cannot mix vector-valued and abstract-valued ports while connecting "
       "output port y of System vector_system to "
       "input port u of System abstract_system");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.Connect(
-          abstract_system->get_output_port(),
-          vector_system->get_input_port()),
+      builder.Connect(abstract_system->get_output_port(),
+                      vector_system->get_input_port()),
       "DiagramBuilder::Connect: "
       "Cannot mix vector-valued and abstract-valued ports while connecting "
       "output port y of System abstract_system to "
@@ -398,22 +393,20 @@ GTEST_TEST(DiagramBuilderTest, ExportInputAbstractToVectorThrow) {
 
 GTEST_TEST(DiagramBuilderTest, ConnectVectorSizeMismatchThrow) {
   DiagramBuilder<double> builder;
-  auto size1_system = builder.AddNamedSystem<PassThrough<double>>(
-      "size1_system", 1 /* size */);
-  auto size2_system = builder.AddNamedSystem<PassThrough<double>>(
-      "size2_system", 2 /* size */);
+  auto size1_system =
+      builder.AddNamedSystem<PassThrough<double>>("size1_system", 1 /* size */);
+  auto size2_system =
+      builder.AddNamedSystem<PassThrough<double>>("size2_system", 2 /* size */);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.Connect(
-          size1_system->get_output_port(),
-          size2_system->get_input_port()),
+      builder.Connect(size1_system->get_output_port(),
+                      size2_system->get_input_port()),
       "DiagramBuilder::Connect: "
       "Mismatched vector sizes while connecting "
       "output port y of System size1_system \\(size 1\\) to "
       "input port u of System size2_system \\(size 2\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.Connect(
-          size2_system->get_output_port(),
-          size1_system->get_input_port()),
+      builder.Connect(size2_system->get_output_port(),
+                      size1_system->get_input_port()),
       "DiagramBuilder::Connect: "
       "Mismatched vector sizes while connecting "
       "output port y of System size2_system \\(size 2\\) to "
@@ -437,22 +430,20 @@ GTEST_TEST(DiagramBuilderTest, ExportInputVectorSizeMismatchThrow) {
 
 GTEST_TEST(DiagramBuilderTest, ConnectAbstractTypeMismatchThrow) {
   DiagramBuilder<double> builder;
-  auto int_system = builder.AddNamedSystem<PassThrough<double>>(
-      "int_system", Value<int>{});
-  auto char_system = builder.AddNamedSystem<PassThrough<double>>(
-      "char_system", Value<char>{});
+  auto int_system =
+      builder.AddNamedSystem<PassThrough<double>>("int_system", Value<int>{});
+  auto char_system =
+      builder.AddNamedSystem<PassThrough<double>>("char_system", Value<char>{});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.Connect(
-          int_system->get_output_port(),
-          char_system->get_input_port()),
+      builder.Connect(int_system->get_output_port(),
+                      char_system->get_input_port()),
       "DiagramBuilder::Connect: "
       "Mismatched value types while connecting "
       "output port y of System int_system \\(type int\\) to "
       "input port u of System char_system \\(type char\\)");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.Connect(
-          char_system->get_output_port(),
-          int_system->get_input_port()),
+      builder.Connect(char_system->get_output_port(),
+                      int_system->get_input_port()),
       "DiagramBuilder::Connect: "
       "Mismatched value types while connecting "
       "output port y of System char_system \\(type char\\) to "
@@ -500,11 +491,10 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractSubtypes) {
   {
     auto context = diagram->CreateDefaultContext();
     const PiecewisePolynomiald input(Vector1d(22.0));
-    diagram->get_input_port(0).FixValue(
-        context.get(), Value<Trajectoryd>(input));
-    const auto& output =
-        dynamic_cast<const PiecewisePolynomiald&>(
-            diagram->get_output_port(0).Eval<Trajectoryd>(*context));
+    diagram->get_input_port(0).FixValue(context.get(),
+                                        Value<Trajectoryd>(input));
+    const auto& output = dynamic_cast<const PiecewisePolynomiald&>(
+        diagram->get_output_port(0).Eval<Trajectoryd>(*context));
     EXPECT_EQ(output.value(0.0)(0), 22.0);
   }
 
@@ -514,8 +504,8 @@ GTEST_TEST(DiagramBuilderTest, ConnectAbstractSubtypes) {
     const ExponentialPlusPiecewisePolynomiald input(
         PiecewisePolynomiald::ZeroOrderHold(Eigen::Vector2d(0., 1.),
                                             Eigen::RowVector2d(22.0, 22.0)));
-    diagram->get_input_port(0).FixValue(
-        context.get(), Value<Trajectoryd>(input));
+    diagram->get_input_port(0).FixValue(context.get(),
+                                        Value<Trajectoryd>(input));
     const auto& output =
         dynamic_cast<const ExponentialPlusPiecewisePolynomiald&>(
             diagram->get_output_port(0).Eval<Trajectoryd>(*context));
@@ -669,8 +659,8 @@ GTEST_TEST(DiagramBuilderTest, InputPortNamesFanout) {
 
   // Fan-out connect likewise.
   EXPECT_FALSE(builder.IsConnectedOrExported(sink5->get_input_port(0)));
-  EXPECT_TRUE(builder.ConnectToSame(
-      sink1->get_input_port(0), sink5->get_input_port(0)));
+  EXPECT_TRUE(builder.ConnectToSame(sink1->get_input_port(0),
+                                    sink5->get_input_port(0)));
   EXPECT_TRUE(builder.IsConnectedOrExported(sink5->get_input_port(0)));
 
   EXPECT_EQ(indices[0], 0);
@@ -700,18 +690,17 @@ GTEST_TEST(DiagramBuilderTest, DuplicateOutputPortNamesThrow) {
                               ".*already has an output port named.*");
 }
 
-
 // Tests the sole-port based overload of Connect().
 class DiagramBuilderSolePortsTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    out1_ = builder_.AddNamedSystem<ConstantVectorSource>(
-        "constant", Vector1d::Ones());
+    out1_ = builder_.AddNamedSystem<ConstantVectorSource>("constant",
+                                                          Vector1d::Ones());
     in1_ = builder_.AddNamedSystem<Sink>("sink");
-    in1out1_ = builder_.AddNamedSystem<Gain>(
-        "gain", 1.0 /* gain */, 1 /* size */);
-    in2out1_ = builder_.AddNamedSystem<Adder>(
-        "adder", 2 /* inputs */, 1 /* size */);
+    in1out1_ =
+        builder_.AddNamedSystem<Gain>("gain", 1.0 /* gain */, 1 /* size */);
+    in2out1_ =
+        builder_.AddNamedSystem<Adder>("adder", 2 /* inputs */, 1 /* size */);
     in1out2_ = builder_.AddNamedSystem<Demultiplexer>("demux", 2 /* size */);
   }
 
@@ -761,8 +750,8 @@ TEST_F(DiagramBuilderSolePortsTest, SourceGainSinkCascade) {
 //       |->Sink
 TEST_F(DiagramBuilderSolePortsTest, SourceGainSink2) {
   builder_.Connect(*out1_, *in1out1_);
-  EXPECT_TRUE(builder_.ConnectToSame(
-      in1out1_->get_input_port(), in1_->get_input_port()));
+  EXPECT_TRUE(builder_.ConnectToSame(in1out1_->get_input_port(),
+                                     in1_->get_input_port()));
   auto diagram = builder_.Build();
 
   const InputPortLocator in1_input{in1_, InputPortIndex{0}};
@@ -773,8 +762,8 @@ TEST_F(DiagramBuilderSolePortsTest, SourceGainSink2) {
 
 // Using ConnectToSame on a disconnected input is a no-op.
 TEST_F(DiagramBuilderSolePortsTest, ConnectToSameNothing) {
-  EXPECT_FALSE(builder_.ConnectToSame(
-      in1out1_->get_input_port(), in1_->get_input_port()));
+  EXPECT_FALSE(builder_.ConnectToSame(in1out1_->get_input_port(),
+                                      in1_->get_input_port()));
   auto diagram = builder_.Build();
   EXPECT_EQ(diagram->connection_map().size(), 0);
 }
@@ -815,10 +804,10 @@ TEST_F(DiagramBuilderSolePortsTest, TooManySrcInputs) {
 // Test for GetSystems and GetMutableSystems.
 GTEST_TEST(DiagramBuilderTest, GetMutableSystems) {
   DiagramBuilder<double> builder;
-  auto adder1 = builder.AddNamedSystem<Adder>(
-      "adder1", 1 /* inputs */, 1 /* size */);
-  auto adder2 = builder.AddNamedSystem<Adder>(
-      "adder2", 1 /* inputs */, 1 /* size */);
+  auto adder1 =
+      builder.AddNamedSystem<Adder>("adder1", 1 /* inputs */, 1 /* size */);
+  auto adder2 =
+      builder.AddNamedSystem<Adder>("adder2", 1 /* inputs */, 1 /* size */);
   EXPECT_EQ((std::vector<const System<double>*>{adder1, adder2}),
             builder.GetSystems());
   EXPECT_EQ((std::vector<System<double>*>{adder1, adder2}),
@@ -879,9 +868,8 @@ GTEST_TEST(DiagramBuilderTest, GetByName) {
       ".*not_a_subsystem.*Valid subsystems are.*adder.*");
 
   // Error: wrong type.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.GetDowncastSubsystemByName<Gain>("adder"),
-      ".*cast.*Adder.*Gain.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.GetDowncastSubsystemByName<Gain>("adder"),
+                              ".*cast.*Adder.*Gain.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.GetMutableDowncastSubsystemByName<Gain>("adder"),
       ".*cast.*Adder.*Gain.*");
@@ -891,9 +879,8 @@ GTEST_TEST(DiagramBuilderTest, GetByName) {
   auto bonus_pass = builder.AddNamedSystem<PassThrough>("pass", 1);
   EXPECT_EQ(&builder.GetSubsystemByName("adder"), adder);
   EXPECT_TRUE(builder.HasSubsystemNamed("pass"));
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      builder.GetMutableSubsystemByName("pass"),
-      ".*multiple subsystems.*pass.*unique.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.GetMutableSubsystemByName("pass"),
+                              ".*multiple subsystems.*pass.*unique.*");
 
   // Once the system is reset to use unique name, both lookups succeed.
   bonus_pass->set_name("bonus_pass");
@@ -906,23 +893,23 @@ GTEST_TEST(DiagramBuilderTest, GetByName) {
 // number of ExportInput() / ExportOutput() calls.
 GTEST_TEST(DiagramBuilderTest, ExportInputOutputIndex) {
   DiagramBuilder<double> builder;
-  auto adder1 = builder.AddNamedSystem<Adder>(
-      "adder1", 3 /* inputs */, 1 /* size */);
-  auto adder2 = builder.AddNamedSystem<Adder>(
-      "adder2", 1 /* inputs */, 1 /* size */);
+  auto adder1 =
+      builder.AddNamedSystem<Adder>("adder1", 3 /* inputs */, 1 /* size */);
+  auto adder2 =
+      builder.AddNamedSystem<Adder>("adder2", 1 /* inputs */, 1 /* size */);
 
-  EXPECT_EQ(builder.ExportInput(
-        adder1->get_input_port(0)), 0 /* exported input port id */);
-  EXPECT_EQ(builder.ExportInput(
-        adder1->get_input_port(1)), 1 /* exported input port id */);
+  EXPECT_EQ(builder.ExportInput(adder1->get_input_port(0)),
+            0 /* exported input port id */);
+  EXPECT_EQ(builder.ExportInput(adder1->get_input_port(1)),
+            1 /* exported input port id */);
 
   EXPECT_EQ(builder.num_input_ports(), 2);
   EXPECT_EQ(builder.num_output_ports(), 0);
 
-  EXPECT_EQ(builder.ExportOutput(
-        adder1->get_output_port()), 0 /* exported output port id */);
-  EXPECT_EQ(builder.ExportOutput(
-        adder2->get_output_port()), 1 /* exported output port id */);
+  EXPECT_EQ(builder.ExportOutput(adder1->get_output_port()),
+            0 /* exported output port id */);
+  EXPECT_EQ(builder.ExportOutput(adder2->get_output_port()),
+            1 /* exported output port id */);
 
   EXPECT_EQ(builder.num_input_ports(), 2);
   EXPECT_EQ(builder.num_output_ports(), 2);

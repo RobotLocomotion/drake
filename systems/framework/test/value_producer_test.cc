@@ -43,14 +43,10 @@ class MyClass {
   MyClass() = default;
 
   // &MyClass::CalcOne is a valid argument for series (1).
-  void CalcOne(const Context<double>&, std::string* out) const {
-    *out = "one";
-  }
+  void CalcOne(const Context<double>&, std::string* out) const { *out = "one"; }
 
   // &MyClass::CalcTwo is a valid argument for series (2).
-  std::string CalcTwo(const Context<double>&) const {
-    return "two";
-  }
+  std::string CalcTwo(const Context<double>&) const { return "two"; }
 
   // &MyClass::AllocateCharlie is a valid argument for series (c).
   std::unique_ptr<std::string> AllocateCharlie() const {
@@ -89,32 +85,28 @@ std::unique_ptr<AbstractValue> AllocateDelta() {
 }
 
 // kBadCalcOne is an null argument for series (1).
-void (MyClass::* const kBadCalcOne)(const Context<double>&, std::string*) const
-    = nullptr;
+void (MyClass::* const kBadCalcOne)(const Context<double>&,
+                                    std::string*) const = nullptr;
 
 // kBadCalcTwo is an null argument for series (2).
-std::string (MyClass::* const kBadCalcTwo)(const Context<double>&) const
-    = nullptr;
+std::string (MyClass::* const kBadCalcTwo)(const Context<double>&) const =
+    nullptr;
 
 // std::function(kBadCalcThree) is an null argument for series (3).
-void (* const kBadCalcThree)(const Context<double>&, std::string*)
-    = nullptr;
+void (*const kBadCalcThree)(const Context<double>&, std::string*) = nullptr;
 
 // std::function(kBadCalcFour) is an null argument for series (4).
-std::string (* const kBadCalcFour)(const Context<double>&)
-    = nullptr;
+std::string (*const kBadCalcFour)(const Context<double>&) = nullptr;
 
 // kBadCalcFive is an null argument for series (5).
-void (* const kBadCalcFive)(const ContextBase&, AbstractValue*)
-    = nullptr;
+void (*const kBadCalcFive)(const ContextBase&, AbstractValue*) = nullptr;
 
 // kBadAllocateCharlie is an null argument for series (c).
-std::unique_ptr<std::string> (MyClass::* const kBadAllocateCharlie)() const
-    = nullptr;
+std::unique_ptr<std::string> (MyClass::* const kBadAllocateCharlie)() const =
+    nullptr;
 
 // kBadAllocateDelta is an null argument for series (d).
-std::unique_ptr<AbstractValue> (* const kBadAllocateDelta)()
-    = nullptr;
+std::unique_ptr<AbstractValue> (*const kBadAllocateDelta)() = nullptr;
 
 // kBadInstance provides a typed null when a SomeInstance is needed.
 const MyClass* const kBadInstance = nullptr;
@@ -123,10 +115,9 @@ class ValueProducerTest : public ::testing::Test {
  protected:
   // Given a device under test, check that its Allocate and Calc produce the
   // given strings.
-  void CheckValues(
-      const ValueProducer& dut,
-      std::string_view expected_allocate_value,
-      std::string_view expected_calc_value) {
+  void CheckValues(const ValueProducer& dut,
+                   std::string_view expected_allocate_value,
+                   std::string_view expected_calc_value) {
     EXPECT_TRUE(dut.is_valid());
     std::unique_ptr<AbstractValue> output = dut.Allocate();
     ASSERT_NE(output, nullptr);
@@ -151,27 +142,20 @@ TEST_F(ValueProducerTest, DefaultCtor) {
 
   const ValueProducer empty;
   EXPECT_FALSE(empty.is_valid());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      empty.Allocate(),
-      ".* null Allocate.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      empty.Calc(context_, storage.get()),
-      ".* null Calc.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(empty.Allocate(), ".* null Allocate.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(empty.Calc(context_, storage.get()),
+                              ".* null Calc.*");
 
   const ValueProducer empty_copy(empty);
   EXPECT_FALSE(empty_copy.is_valid());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      empty_copy.Allocate(),
-      ".* null Allocate.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      empty_copy.Calc(context_, storage.get()),
-      ".* null Calc.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(empty_copy.Allocate(), ".* null Allocate.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(empty_copy.Calc(context_, storage.get()),
+                              ".* null Calc.*");
 }
 
 // Check that the given constructor arguments throw a null pointer exception.
 #define DRAKE_CHECK_CTOR_NULL(constructor_args) \
-  DRAKE_EXPECT_THROWS_MESSAGE(ValueProducer constructor_args, \
-      ".* null .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(ValueProducer constructor_args, ".* null .*");
 
 TEST_F(ValueProducerTest, AlphaOne) {
   const ValueProducer dut(&my_class_, &MyClass::CalcOne);
@@ -229,51 +213,47 @@ TEST_F(ValueProducerTest, BravoFive) {
 }
 
 TEST_F(ValueProducerTest, CharlieOne) {
-  const ValueProducer dut(
-      &my_class_, &MyClass::AllocateCharlie, &MyClass::CalcOne);
+  const ValueProducer dut(&my_class_, &MyClass::AllocateCharlie,
+                          &MyClass::CalcOne);
   CheckValues(dut, "charlie", "one");
-  DRAKE_CHECK_CTOR_NULL((
-      kBadInstance, &MyClass::AllocateCharlie, &MyClass::CalcOne));
-  DRAKE_CHECK_CTOR_NULL((
-      &my_class_, kBadAllocateCharlie, &MyClass::CalcOne));
-  DRAKE_CHECK_CTOR_NULL((
-      &my_class_, &MyClass::AllocateCharlie, kBadCalcOne));
+  DRAKE_CHECK_CTOR_NULL(
+      (kBadInstance, &MyClass::AllocateCharlie, &MyClass::CalcOne));
+  DRAKE_CHECK_CTOR_NULL((&my_class_, kBadAllocateCharlie, &MyClass::CalcOne));
+  DRAKE_CHECK_CTOR_NULL((&my_class_, &MyClass::AllocateCharlie, kBadCalcOne));
 }
 
 TEST_F(ValueProducerTest, CharlieTwo) {
-  const ValueProducer dut(
-      &my_class_, &MyClass::AllocateCharlie, &MyClass::CalcTwo);
+  const ValueProducer dut(&my_class_, &MyClass::AllocateCharlie,
+                          &MyClass::CalcTwo);
   CheckValues(dut, "charlie", "two");
-  DRAKE_CHECK_CTOR_NULL((
-      kBadInstance, &MyClass::AllocateCharlie, &MyClass::CalcTwo));
-  DRAKE_CHECK_CTOR_NULL((
-      &my_class_, kBadAllocateCharlie, &MyClass::CalcTwo));
-  DRAKE_CHECK_CTOR_NULL((
-      &my_class_, &MyClass::AllocateCharlie, kBadCalcTwo));
+  DRAKE_CHECK_CTOR_NULL(
+      (kBadInstance, &MyClass::AllocateCharlie, &MyClass::CalcTwo));
+  DRAKE_CHECK_CTOR_NULL((&my_class_, kBadAllocateCharlie, &MyClass::CalcTwo));
+  DRAKE_CHECK_CTOR_NULL((&my_class_, &MyClass::AllocateCharlie, kBadCalcTwo));
 }
 
 TEST_F(ValueProducerTest, CharlieThree) {
-  const ValueProducer dut(
-      &my_class_, &MyClass::AllocateCharlie, std::function(CalcThree));
+  const ValueProducer dut(&my_class_, &MyClass::AllocateCharlie,
+                          std::function(CalcThree));
   CheckValues(dut, "charlie", "three");
-  DRAKE_CHECK_CTOR_NULL((
-      kBadInstance, &MyClass::AllocateCharlie, std::function(CalcThree)));
-  DRAKE_CHECK_CTOR_NULL((
-      &my_class_, kBadAllocateCharlie, std::function(CalcThree)));
-  DRAKE_CHECK_CTOR_NULL((
-      &my_class_, &MyClass::AllocateCharlie, std::function(kBadCalcThree)));
+  DRAKE_CHECK_CTOR_NULL(
+      (kBadInstance, &MyClass::AllocateCharlie, std::function(CalcThree)));
+  DRAKE_CHECK_CTOR_NULL(
+      (&my_class_, kBadAllocateCharlie, std::function(CalcThree)));
+  DRAKE_CHECK_CTOR_NULL(
+      (&my_class_, &MyClass::AllocateCharlie, std::function(kBadCalcThree)));
 }
 
 TEST_F(ValueProducerTest, CharlieFour) {
-  const ValueProducer dut(
-      &my_class_, &MyClass::AllocateCharlie, std::function(CalcFour));
+  const ValueProducer dut(&my_class_, &MyClass::AllocateCharlie,
+                          std::function(CalcFour));
   CheckValues(dut, "charlie", "four");
-  DRAKE_CHECK_CTOR_NULL((
-      kBadInstance, &MyClass::AllocateCharlie, std::function(CalcFour)));
-  DRAKE_CHECK_CTOR_NULL((
-      &my_class_, kBadAllocateCharlie, std::function(CalcFour)));
-  DRAKE_CHECK_CTOR_NULL((
-      &my_class_, &MyClass::AllocateCharlie, std::function(kBadCalcFour)));
+  DRAKE_CHECK_CTOR_NULL(
+      (kBadInstance, &MyClass::AllocateCharlie, std::function(CalcFour)));
+  DRAKE_CHECK_CTOR_NULL(
+      (&my_class_, kBadAllocateCharlie, std::function(CalcFour)));
+  DRAKE_CHECK_CTOR_NULL(
+      (&my_class_, &MyClass::AllocateCharlie, std::function(kBadCalcFour)));
 }
 
 TEST_F(ValueProducerTest, CharlieFive) {
@@ -385,8 +365,7 @@ TEST_F(ValueProducerTest, DocumentationExample4) {
   };
   MyClazz my_class;
   BasicVector<T> model_value(1);
-  ValueProducer foo = ValueProducer(
-      &my_class, model_value, &MyClazz::MyCalc);
+  ValueProducer foo = ValueProducer(&my_class, model_value, &MyClazz::MyCalc);
 }
 
 }  // namespace

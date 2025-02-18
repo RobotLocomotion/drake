@@ -25,16 +25,20 @@
 #include "drake/systems/framework/test_utilities/my_vector.h"
 #include "drake/systems/framework/test_utilities/pack_value.h"
 
-using std::string;
 using Eigen::Vector3d;
+using std::string;
 
 namespace drake {
 namespace systems {
 namespace {
 
 // Free functions suitable for defining cache entries.
-auto Alloc1 = []() { return AbstractValue::Make<int>(1); };
-auto Alloc3 = []() { return AbstractValue::Make<int>(3); };
+auto Alloc1 = []() {
+  return AbstractValue::Make<int>(1);
+};
+auto Alloc3 = []() {
+  return AbstractValue::Make<int>(3);
+};
 auto Calc99 = [](const ContextBase&, AbstractValue* result) {
   result->set_value(99);
 };
@@ -96,7 +100,7 @@ class MySystemBase final : public SystemBase {
 
     // Same overload, but now using prerequisites.
     entry1_ = &DeclareCacheEntry("entry1", ValueProducer(Alloc1, Calc99),
-        {entry0_->ticket()});
+                                 {entry0_->ticket()});
 
     // Use the overload that takes a model value and member calculator.
     entry2_ = &DeclareCacheEntry("entry2", 2, &MySystemBase::CalcInt98,
@@ -104,20 +108,17 @@ class MySystemBase final : public SystemBase {
 
     // Use the overload that takes just a member calculator. The model value
     // will be value-initialized (using an `int{}` for this one).
-    entry3_ = &DeclareCacheEntry("entry3",
-                                 &MySystemBase::CalcInt98,
+    entry3_ = &DeclareCacheEntry("entry3", &MySystemBase::CalcInt98,
                                  {entry0_->ticket(), entry1_->ticket()});
 
     // Ditto but using a string{} defaulted model value.
-    string_entry_ = &DeclareCacheEntry("string thing",
-                                       &MySystemBase::CalcString,
-                                       {time_ticket()});
+    string_entry_ = &DeclareCacheEntry(
+        "string thing", &MySystemBase::CalcString, {time_ticket()});
 
     // Ditto but using a MyVector3d{} defaulted model value.
-    vector_entry_ =
-        &DeclareCacheEntry("vector thing", MyVector3d(Vector3d(1., 2., 3.)),
-                           &MySystemBase::CalcMyVector3,
-                           {xc_ticket(), string_entry_->ticket()});
+    vector_entry_ = &DeclareCacheEntry(
+        "vector thing", MyVector3d(Vector3d(1., 2., 3.)),
+        &MySystemBase::CalcMyVector3, {xc_ticket(), string_entry_->ticket()});
 
     set_name("cache_entry_test_system");
 
@@ -141,9 +142,7 @@ class MySystemBase final : public SystemBase {
   // For use as an allocator.
   int MakeInt1() const { return 1; }
   // For use as a cache entry calculator.
-  void CalcInt98(const MyContextBase& my_context, int* out) const {
-    *out = 98;
-  }
+  void CalcInt98(const MyContextBase& my_context, int* out) const { *out = 98; }
   void CalcString(const MyContextBase& my_context, string* out) const {
     *out = "calculated_result";
   }
@@ -181,8 +180,7 @@ class MySystemBase final : public SystemBase {
 // we allocate a Context.
 GTEST_TEST(CacheEntryAllocTest, BadAllocGetsCaught) {
   MySystemBase system;
-  system.DeclareCacheEntry("bad alloc entry",
-                           ValueProducer(AllocNull, Calc99),
+  system.DeclareCacheEntry("bad alloc entry", ValueProducer(AllocNull, Calc99),
                            {system.nothing_ticket()});
   // Error messages should include the System name and type, cache entry
   // description, and the specific message. The first three are boilerplate so
@@ -204,9 +202,8 @@ GTEST_TEST(CacheEntryAllocTest, EmptyPrerequisiteListForbidden) {
   const ValueProducer alloc3_calc99(Alloc3, Calc99);
   DRAKE_EXPECT_NO_THROW(
       system.DeclareCacheEntry("default prerequisites", alloc3_calc99));
-  DRAKE_EXPECT_NO_THROW(
-      system.DeclareCacheEntry(
-          "no prerequisites", alloc3_calc99, {system.nothing_ticket()}));
+  DRAKE_EXPECT_NO_THROW(system.DeclareCacheEntry(
+      "no prerequisites", alloc3_calc99, {system.nothing_ticket()}));
   DRAKE_EXPECT_THROWS_MESSAGE(
       system.DeclareCacheEntry("empty prerequisites", alloc3_calc99, {}),
       ".*[Cc]annot create.*empty prerequisites.*nothing_ticket.*");
@@ -560,7 +557,9 @@ TEST_F(CacheEntryTest, DisableCacheWorks) {
   entry1().EvalAbstract(context_);
   string_entry().EvalAbstract(context_);
   vector_entry().EvalAbstract(context_);
-  ++ser_int; ++ser_str; ++ser_vec;
+  ++ser_int;
+  ++ser_str;
+  ++ser_vec;
 
   EXPECT_EQ(int_val.serial_number(), ser_int);
   EXPECT_EQ(str_val.serial_number(), ser_str);
@@ -577,7 +576,9 @@ TEST_F(CacheEntryTest, DisableCacheWorks) {
   entry1().EvalAbstract(context_);
   string_entry().EvalAbstract(context_);
   vector_entry().EvalAbstract(context_);
-  ++ser_int; ++ser_str; ++ser_vec;
+  ++ser_int;
+  ++ser_str;
+  ++ser_vec;
 
   EXPECT_FALSE(int_val.is_out_of_date());
   EXPECT_FALSE(str_val.is_out_of_date());
@@ -735,9 +736,12 @@ TEST_F(CacheEntryTest, Copy) {
   EXPECT_FALSE(entry3().is_out_of_date(clone_context));
 
   // Bring everything in source context up to date.
-  entry0().EvalAbstract(context_); entry1().EvalAbstract(context_);
-  entry2().EvalAbstract(context_); entry3().EvalAbstract(context_);
-  string_entry().EvalAbstract(context_); vector_entry().EvalAbstract(context_);
+  entry0().EvalAbstract(context_);
+  entry1().EvalAbstract(context_);
+  entry2().EvalAbstract(context_);
+  entry3().EvalAbstract(context_);
+  string_entry().EvalAbstract(context_);
+  vector_entry().EvalAbstract(context_);
 
   // Pretend entry0 was modified in the copy. Should invalidate the copy's
   // entry1-5, but leave source untouched.

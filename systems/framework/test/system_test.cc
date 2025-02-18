@@ -226,18 +226,15 @@ class TestSystem : public TestSystemBase<double> {
   LeafOutputPort<double>& AddAbstractOutputPort() {
     // Create an abstract output port with dummy alloc and calc.
     CacheEntry& cache_entry = this->DeclareCacheEntry(
-        "null output port", ValueProducer(
-             0, &ValueProducer::NoopCalc));
+        "null output port", ValueProducer(0, &ValueProducer::NoopCalc));
     // TODO(sherm1) Use implicit_cast when available (from abseil). Several
     // places in this test.
     auto port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
-        this->get_system_id(),
-        "y" + std::to_string(num_output_ports()),
+        this->get_system_id(), "y" + std::to_string(num_output_ports()),
         OutputPortIndex(this->num_output_ports()),
-        assign_next_dependency_ticket(),
-        kAbstractValued, 0, &cache_entry);
+        assign_next_dependency_ticket(), kAbstractValued, 0, &cache_entry);
     LeafOutputPort<double>* const port_ptr = port.get();
     this->AddOutputPort(std::move(port));
     return *port_ptr;
@@ -274,7 +271,7 @@ class TestSystem : public TestSystemBase<double> {
       const Context<double>& context,
       const EventCollection<PublishEvent<double>>& events) const final {
     const LeafEventCollection<PublishEvent<double>>& leaf_events =
-       dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(events);
+        dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(events);
     if (leaf_events.HasEvents()) {
       this->MyPublish(context, leaf_events.get_events());
       return EventStatus::Succeeded();
@@ -291,7 +288,7 @@ class TestSystem : public TestSystemBase<double> {
             events);
     if (leaf_events.HasEvents()) {
       this->MyCalcDiscreteVariableUpdates(context, leaf_events.get_events(),
-          discrete_state);
+                                          discrete_state);
       return EventStatus::Succeeded();
     }
     return EventStatus::DidNothing();
@@ -403,10 +400,11 @@ TEST_F(SystemTest, DiscretePublish) {
   system_.CalcNextUpdateTime(*context_, event_info.get());
   const auto& events =
       dynamic_cast<const LeafCompositeEventCollection<double>*>(
-          event_info.get())->get_publish_events().get_events();
+          event_info.get())
+          ->get_publish_events()
+          .get_events();
   EXPECT_EQ(events.size(), 1);
-  EXPECT_EQ(events.front()->get_trigger_type(),
-            TriggerType::kPeriodic);
+  EXPECT_EQ(events.front()->get_trigger_type(), TriggerType::kPeriodic);
 
   const EventStatus status =
       system_.Publish(*context_, event_info->get_publish_events());
@@ -551,29 +549,23 @@ TEST_F(SystemTest, PortNameTest) {
   EXPECT_EQ(system_.HasOutputPort("fake_name"), false);
 
   // Requesting a non-existing port name should throw.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      system_.GetInputPort("not_my_input"),
-      ".*does not have an input port named.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      system_.GetOutputPort("not_my_output"),
-      ".*does not have an output port named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.GetInputPort("not_my_input"),
+                              ".*does not have an input port named.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.GetOutputPort("not_my_output"),
+                              ".*does not have an output port named.*");
 
   // Error messages should mention valid ports.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      system_.GetInputPort("not_my_input"),
-      ".*valid port names: .*u0.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      system_.GetOutputPort("not_my_output"),
-      ".*valid port names: .*y0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.GetInputPort("not_my_input"),
+                              ".*valid port names: .*u0.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.GetOutputPort("not_my_output"),
+                              ".*valid port names: .*y0.*");
 }
 
 TEST_F(SystemTest, PortNameNoPortsTest) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      system_.GetInputPort("not_my_input"),
-      ".* it has no input ports.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      system_.GetOutputPort("not_my_output"),
-      ".* it has no output ports.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.GetInputPort("not_my_input"),
+                              ".* it has no input ports.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(system_.GetOutputPort("not_my_output"),
+                              ".* it has no output ports.*");
 }
 
 TEST_F(SystemTest, PortSelectionTest) {
@@ -624,8 +616,8 @@ TEST_F(SystemTest, SystemConstraintTest) {
   EXPECT_THROW(system_.get_constraint(SystemConstraintIndex(0)),
                std::out_of_range);
 
-  ContextConstraintCalc<double> calc = [](
-      const Context<double>& context, Eigen::VectorXd* value) {
+  ContextConstraintCalc<double> calc = [](const Context<double>& context,
+                                          Eigen::VectorXd* value) {
     unused(context);
     (*value)[0] = 1.0;
   };
@@ -644,8 +636,8 @@ TEST_F(SystemTest, SystemConstraintTest) {
 
   const double tol = 1e-6;
   EXPECT_TRUE(system_.CheckSystemConstraintsSatisfied(*context_, tol));
-  ContextConstraintCalc<double> calc_false = [](
-      const Context<double>& context, Eigen::VectorXd* value) {
+  ContextConstraintCalc<double> calc_false = [](const Context<double>& context,
+                                                Eigen::VectorXd* value) {
     unused(context);
     (*value)[0] = -1.0;
   };
@@ -673,8 +665,7 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
   EXPECT_THROW(system_.ToAutoDiffXd(), std::exception);
   EXPECT_THROW(system_.ToSymbolic(), std::exception);
   EXPECT_THROW(system_.ToScalarType<AutoDiffXd>(), std::exception);
-  EXPECT_THROW(system_.ToScalarType<symbolic::Expression>(),
-               std::exception);
+  EXPECT_THROW(system_.ToScalarType<symbolic::Expression>(), std::exception);
 
   // Use the instance method that returns nullptr.
   EXPECT_EQ(system_.ToAutoDiffXdMaybe(), nullptr);
@@ -683,8 +674,8 @@ TEST_F(SystemTest, TransmogrifyNotSupported) {
   EXPECT_EQ(system_.ToScalarTypeMaybe<symbolic::Expression>(), nullptr);
 
   // Spot check the specific converter object.
-  EXPECT_FALSE((
-      system_.get_system_scalar_converter().IsConvertible<double, double>()));
+  EXPECT_FALSE(
+      (system_.get_system_scalar_converter().IsConvertible<double, double>()));
 }
 
 // Tests IsDifferenceEquationSystem works for this one System.  Additional
@@ -768,13 +759,11 @@ class ValueIOTestSystem : public TestSystemBase<T> {
     this->AddOutputPort(internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
-        this->get_system_id(),
-        "absport",
+        this->get_system_id(), "absport",
         OutputPortIndex(this->num_output_ports()),
-        this->assign_next_dependency_ticket(),
-        kAbstractValued, 0 /* size */,
-        &this->DeclareCacheEntry(
-            "absport", &ValueIOTestSystem::CalcStringOutput)));
+        this->assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
+        &this->DeclareCacheEntry("absport",
+                                 &ValueIOTestSystem::CalcStringOutput)));
     this->DeclareInputPort(kUseDefaultName, kVectorValued, 1);
     this->DeclareInputPort("uniform", kVectorValued, 1,
                            RandomDistribution::kUniform);
@@ -783,14 +772,11 @@ class ValueIOTestSystem : public TestSystemBase<T> {
     this->AddOutputPort(internal::FrameworkFactory::Make<LeafOutputPort<T>>(
         this,  // implicit_cast<const System<T>*>(this)
         this,  // implicit_cast<const SystemBase*>(this)
-        this->get_system_id(),
-        "vecport",
+        this->get_system_id(), "vecport",
         OutputPortIndex(this->num_output_ports()),
-        this->assign_next_dependency_ticket(),
-        kVectorValued, 1 /* size */,
-        &this->DeclareCacheEntry(
-            "vecport", BasicVector<T>(1),
-            &ValueIOTestSystem::CalcVectorOutput)));
+        this->assign_next_dependency_ticket(), kVectorValued, 1 /* size */,
+        &this->DeclareCacheEntry("vecport", BasicVector<T>(1),
+                                 &ValueIOTestSystem::CalcVectorOutput)));
 
     this->set_name("ValueIOTestSystem");
   }
@@ -822,8 +808,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
   }
 
   // Appends "output" to input(0) for output(0).
-  void CalcStringOutput(const ContextBase& context,
-                        std::string* output) const {
+  void CalcStringOutput(const ContextBase& context, std::string* output) const {
     const std::string* str_in =
         this->template EvalInputValue<std::string>(context, 0);
     *output = *str_in + "output";
@@ -842,9 +827,7 @@ class ValueIOTestSystem : public TestSystemBase<T> {
 // allow for lots of error conditions.
 class SystemInputErrorTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    context_ = system_.CreateDefaultContext();
-  }
+  void SetUp() override { context_ = system_.CreateDefaultContext(); }
 
   ValueIOTestSystem<double> system_;
   std::unique_ptr<Context<double>> context_;
@@ -866,8 +849,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
 
   // Try some illegal port numbers.
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
-      system_.get_input_port(-1),
-      ".*get_input_port.*negative.*-1.*illegal.*");
+      system_.get_input_port(-1), ".*get_input_port.*negative.*-1.*illegal.*");
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalVectorInput(*context_, -1),
       ".*EvalVectorInput.*negative.*-1.*illegal.*");
@@ -904,7 +886,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalVectorInput<WrongVector>(*context_, 2),
       ".*EvalVectorInput.*expected.*WrongVector"
-          ".*input port.*2.*actual.*MyVector.*");
+      ".*input port.*2.*actual.*MyVector.*");
 
   DRAKE_EXPECT_NO_THROW(
       system_.EvalInputValue<BasicVector<double>>(*context_, 1));
@@ -919,7 +901,7 @@ TEST_F(SystemInputErrorTest, CheckMessages) {
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalVectorInput(*context_, 0),
       ".*EvalVectorInput.*vector port required.*input port.*0.*"
-          "was declared abstract.*");
+      "was declared abstract.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       system_.EvalInputValue<double>(*context_, 0),
@@ -955,7 +937,6 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
             std::string("inputoutput"));
   EXPECT_EQ(output_->get_vector_data(1)->get_value()(0), 4);
 
-
   // Connected inputs ports can be evaluated.  (Port #1 was set to [2]).
   const auto* basic_vector = test_sys_.EvalVectorInput(*context_, 1);
   ASSERT_NE(basic_vector, nullptr);
@@ -968,7 +949,7 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   // Test AllocateInput*
   // Second input is not (yet) a TestTypedVector, since I haven't called the
   // Allocate methods directly yet.
-  EXPECT_EQ(dynamic_cast<const TestTypedVector<double> *>(
+  EXPECT_EQ(dynamic_cast<const TestTypedVector<double>*>(
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
   // Now allocate.
@@ -977,7 +958,7 @@ TEST_F(SystemIOTest, SystemValueIOTest) {
   EXPECT_EQ(test_sys_.EvalAbstractInput(*context_, 0)->get_value<std::string>(),
             "");
   // Second input should now be of type TestTypedVector.
-  EXPECT_NE(dynamic_cast<const TestTypedVector<double> *>(
+  EXPECT_NE(dynamic_cast<const TestTypedVector<double>*>(
                 test_sys_.EvalVectorInput(*context_, 1)),
             nullptr);
 }
@@ -1142,13 +1123,10 @@ class ComputationTestSystem final : public TestSystemBase<double> {
 // Provides values for some of the inputs and sets up for outputs.
 class ComputationTest : public ::testing::Test {
  protected:
-  void SetUp() final {
-    context_->EnableCaching();
-  }
+  void SetUp() final { context_->EnableCaching(); }
 
   ComputationTestSystem test_sys_;
-  std::unique_ptr<Context<double>> context_ =
-      test_sys_.CreateDefaultContext();
+  std::unique_ptr<Context<double>> context_ = test_sys_.CreateDefaultContext();
 };
 
 TEST_F(ComputationTest, Eval) {
@@ -1177,7 +1155,6 @@ TEST_F(ComputationTest, Eval) {
   EXPECT_EQ(test_sys_.EvalConservativePower(*context_), 3.);
   EXPECT_EQ(test_sys_.EvalNonConservativePower(*context_), 4.);
   test_sys_.ExpectCount(1, 1, 1, 1, 1);
-
 
   // Each of the Calc methods should cause computation.
   auto derivatives = test_sys_.AllocateTimeDerivatives();

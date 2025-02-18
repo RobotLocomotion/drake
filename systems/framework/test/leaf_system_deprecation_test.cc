@@ -209,8 +209,8 @@ TEST_F(LeafSystemDeprecationTest, FixedFromNoSpurious) {
   PortDeprecationSystem other;
   auto& other_in = other.DeclareVectorInputPort("ok", 1);
   auto other_context = other.CreateDefaultContext();
-  other.get_input_port().FixValue(
-      other_context.get(), Eigen::VectorXd::Constant(1, 22.0));
+  other.get_input_port().FixValue(other_context.get(),
+                                  Eigen::VectorXd::Constant(1, 22.0));
 
   auto& dut_in = DeclareDeprecatedInput();
   auto dut_context = dut_.CreateDefaultContext();
@@ -243,8 +243,8 @@ class SillyPassThrough : public LeafSystem<double> {
   SillyPassThrough() {
     // These are the non-deprecated ports.
     input_new_ = &this->DeclareVectorInputPort("input_new", 1);
-    output_new_ = &this->DeclareVectorOutputPort(
-        "output_new", 1, &SillyPassThrough::CalcOutput);
+    output_new_ = &this->DeclareVectorOutputPort("output_new", 1,
+                                                 &SillyPassThrough::CalcOutput);
 
     // These are the deprecated ports. For the output port, we'll use the same
     // CalcOutput function as the non-deprecated port. (Another option would be
@@ -253,8 +253,8 @@ class SillyPassThrough : public LeafSystem<double> {
     // case the computation was too expensive to risk doing twice.)
     const std::string message = "use the ports with suffix '_new'";
     input_old_ = &this->DeclareVectorInputPort("input", 1);
-    output_old_ = &this->DeclareVectorOutputPort(
-        "output", 1, &SillyPassThrough::CalcOutput);
+    output_old_ = &this->DeclareVectorOutputPort("output", 1,
+                                                 &SillyPassThrough::CalcOutput);
     this->DeprecateInputPort(*input_old_, message);
     this->DeprecateOutputPort(*output_old_, message);
   }
@@ -289,7 +289,6 @@ GTEST_TEST(LeafSystemDeprecationAcceptanceTest, Demo) {
   // The call to GetOutputPort will log a warning.
   EXPECT_EQ(dut.GetOutputPort("output").Eval(*context), u);
 }
-
 
 }  // namespace
 }  // namespace systems

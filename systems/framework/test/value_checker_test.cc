@@ -20,9 +20,7 @@ class GoodVector : public BasicVector<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GoodVector);
   GoodVector() : BasicVector<double>(2) {}
-  [[nodiscard]] GoodVector* DoClone() const override {
-    return new GoodVector;
-  }
+  [[nodiscard]] GoodVector* DoClone() const override { return new GoodVector; }
 };
 
 // This one forgot the DoClone override entirely.
@@ -45,9 +43,7 @@ class NotQuiteGoodVector : public GoodVector {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NotQuiteGoodVector);
   NotQuiteGoodVector() {}
-  [[nodiscard]] GoodVector* DoClone() const override {
-    return new GoodVector;
-  }
+  [[nodiscard]] GoodVector* DoClone() const override { return new GoodVector; }
 };
 
 // A convenience wrapper for the "device under test".
