@@ -1124,12 +1124,12 @@ class Meshcat::Impl {
 
     // Dummy transform. Each cell instance will only modify the translation of
     // this transform.
-    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+    Eigen::Matrix4d transform = Eigen::Matrix4d::Identity();
 
     // Iterate through the grid to compute transforms and colors.
     const auto total_cells = grid.GetTotalCells();
-    auto transforms = Eigen::Matrix4Xf::Zero(16, total_cells);
-    auto colors = Eigen::Matrix3Xf::Zero(3, total_cells);
+    Eigen::MatrixXd transforms = Eigen::MatrixXd::Zero(16, total_cells);
+    Eigen::MatrixXd colors = Eigen::MatrixXd::Zero(4, total_cells);
 
     int64_t counter = 0;
     for (int64_t x_index = 0; x_index < grid.GetNumXCells(); ++x_index) {
@@ -1142,13 +1142,13 @@ class Meshcat::Impl {
           // Get location in the grid's frame.
           const Eigen::Vector4d& location =
             grid.GridIndexToLocationInGridFrame(x_index, y_index, z_index);
-          const Eigen::Vector3f& xyz = location.cast<float>().head<3>();
+          const Eigen::Vector3d& xyz = location.head<3>();
 
           // Set translation.
           transform.block<3,1>(0,3) = xyz;
 
           // Flatten the transform matrix in column-major order
-          transforms.col(counter) = Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
+          transforms.col(counter) = Eigen::Map<Eigen::Vector<double, 16>>(transform.data());
 
           if (cell.Occupancy() > 0.5) {
             // Occupied voxel
@@ -1157,7 +1157,7 @@ class Meshcat::Impl {
             // Unknown voxel
             colors.col(counter) = unknown_rgba.rgba();
           } else {
-            // Free voxel: Make this fully transparent.
+            // Freespace voxel: make this fully transparent.
             colors.col(counter) = Eigen::Vector4d::Zero();
           }
 
