@@ -149,6 +149,16 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Check whether Hessian re-use is enabled.
   bool get_use_full_newton() const { return use_full_newton_; }
 
+  // Enable/disable implicit trapezoid rule for error estimation.
+  void set_use_implicit_trapezoid_error_estimation(bool flag) {
+    use_implicit_trapezoid_error_estimation_ = flag;
+  }
+
+  // Check whether implicit trapezoid rule is enabled for error estimation.
+  bool get_use_implicit_trapezoid_error_estimation() const {
+    return use_implicit_trapezoid_error_estimation_;
+  }
+
   // Enable/disable writing iteration data to a CSV file
   void set_write_to_csv(bool flag) { write_to_csv_ = flag; }
 
@@ -288,6 +298,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Flag for enabling/disabling hessian re-use
   bool use_full_newton_{false};
 
+  // Flag for choosing the error estimation strategy. Default is step doubling.
+  bool use_implicit_trapezoid_error_estimation_{false};
+
   // Flag for Hessian factorization re-use (changes between iterations)
   bool refresh_hessian_{false};
 
@@ -315,6 +328,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   struct Workspace {
     // Used in DoStep
     VectorX<T> q;                     // generalized positions
+    VectorX<T> v;                     // generalized velocities
     SapSolverResults<T> sap_results;  // Container for convex solve results
     VectorX<T> err;                   // error estimate for accuracy control
 

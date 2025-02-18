@@ -108,6 +108,7 @@ DEFINE_string(
     "Jacobian computation scheme: 'forward', 'central', 'automatic'.");
 DEFINE_bool(full_newton, false, "Update Jacobian every iteration.");
 DEFINE_bool(save_csv, false, "Save CSV data for the convex integrator.");
+DEFINE_bool(trapezoid, false, "Implicit trapezoid rule for error estimation.");
 
 using drake::geometry::CollisionFilterDeclaration;
 using drake::math::RigidTransform;
@@ -550,11 +551,13 @@ int do_main() {
       throw std::logic_error("Invalid jacobian scheme");
     }
     ie.set_use_full_newton(FLAGS_full_newton);
+    ie.set_use_implicit_trapezoid_error_estimation(FLAGS_trapezoid);
   }
   if (FLAGS_simulator_integration_scheme == "convex") {
     auto& ci = dynamic_cast<ConvexIntegrator<double>&>(integrator);
     ci.set_use_full_newton(FLAGS_full_newton);
     ci.set_write_to_csv(FLAGS_save_csv);
+    ci.set_use_implicit_trapezoid_error_estimation(FLAGS_trapezoid);
   }
 
   // Monitor to save stats into a file.

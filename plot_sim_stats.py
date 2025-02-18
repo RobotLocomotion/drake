@@ -244,7 +244,7 @@ if __name__ == "__main__":
     end_step = 700
 
     # Answer some questions about the data
-    analyze_data(csv_file, start_step, end_step)
+    # analyze_data(csv_file, start_step, end_step)
 
     # Make some plots
     make_plots(csv_file, start_step, end_step)

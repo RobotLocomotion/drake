@@ -54,6 +54,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   // TODO(vincekurtz): in the future we might want some fancy caching instead of
   // the workspace, but for now we'll just try to allocate most things here.
   workspace_.q.resize(nq);
+  workspace_.v.resize(nv);
   workspace_.err.resize(nq + nv);
   workspace_.k.resize(nv);
   workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
@@ -108,6 +109,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 
   // Workspace preallocations
   VectorX<T>& q = workspace_.q;
+  VectorX<T>& v = workspace_.v;
   SapSolverResults<T>& sap_results = workspace_.sap_results;
   VectorX<T>& err = workspace_.err;
   TimestepIndependentProblemData<T>& data =
@@ -137,20 +139,40 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     err.head(nq) = q;
     err.tail(nv) = sap_results.v;
 
-    // Solve the first half-step (t + h/2). Here we can reuse the problem data
-    // from the full step.
     solve_phase_ = 1;
-    problem = MakeSapContactProblem(context, data, 0.5 * h);
-    status = SolveWithGuess(problem, data.v0, &sap_results);
-    DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
+    if (!get_use_implicit_trapezoid_error_estimation()) {
+      // Solve the first half-step (t + h/2) with SAP. Here we can reuse the
+      // problem data from the full step.
+      problem = MakeSapContactProblem(context, data, 0.5 * h);
+      status = SolveWithGuess(problem, data.v0, &sap_results);
+      DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
-    // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
-    plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
-    q += plant().GetPositions(context);
+      // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
+      plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
+      q += plant().GetPositions(context);
 
-    // Put x_{t+h/2} in the context to prepare the next step
-    plant().SetPositions(&context, q);
-    plant().SetVelocities(&context, sap_results.v);
+      // Put x_{t+h/2} in the context to prepare the next step
+      plant().SetPositions(&context, q);
+      plant().SetVelocities(&context, sap_results.v);
+    } else {
+      // Solve for the first half step (t + h/2) explicitly. This results in in
+      // an implicit trapezoid step,
+      //    x_{t+h} = x_t + h/2 [ f(t, x_t) + f(t+h, x_{t+h}) ]
+      // for the second-order estimate.
+      const VectorX<T> xdot =
+          plant().EvalTimeDerivatives(context).CopyToVector();
+
+      // v_{t+h/2} = v_t + h/2 vdot_t
+      v = plant().GetVelocities(context) + 0.5 * h * xdot.tail(nv);
+
+      // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
+      plant().MapVelocityToQDot(context, 0.5 * h * v, &q);
+      q += plant().GetPositions(context);
+
+      // Set x_{t+h/2} in the context
+      plant().SetPositions(&context, q);
+      plant().SetVelocities(&context, v);
+    }
 
     // Set up the second half-step from (t+h/2) to (t+h). We reset the initial
     // velocity, but freeze the mass matrix and coriolis/centripedal terms.
