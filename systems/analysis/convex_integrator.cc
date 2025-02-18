@@ -190,14 +190,21 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
     q += plant().GetPositions(context);
 
+    // Set x_{t+h} in the context
+    if (get_use_implicit_trapezoid_error_estimation()) {
+      // We'll set the next state with the larger fully implicit step
+      plant().SetPositions(&context, err.head(nq));
+      plant().SetVelocities(&context, err.tail(nv));
+    } else {
+      // We'll set the next state with the two half-steps
+      plant().SetPositions(&context, q);
+      plant().SetVelocities(&context, sap_results.v);
+    }
+
     // Finish out the error computation (compare with the full step)
     err.head(nq) -= q;
     err.tail(nv) -= sap_results.v;
     this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(err);
-
-    // Set x_{t+h} in the context, using the (more accurate) half steps
-    plant().SetPositions(&context, q);
-    plant().SetVelocities(&context, sap_results.v);
   }
 
   // Advance time to t+h
