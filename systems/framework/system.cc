@@ -161,8 +161,7 @@ void System<T>::SetRandomContext(Context<T>* context,
   // Set the default parameters, checking that the number of parameters does
   // not change.
   const int num_params = context->num_numeric_parameter_groups();
-  SetRandomParameters(*context, &context->get_mutable_parameters(),
-                      generator);
+  SetRandomParameters(*context, &context->get_mutable_parameters(), generator);
   DRAKE_DEMAND(num_params == context->num_numeric_parameter_groups());
 }
 
@@ -208,8 +207,9 @@ bool System<T>::HasDirectFeedthrough(int input_port, int output_port) const {
 }
 
 template <typename T>
-EventStatus System<T>::Publish(const Context<T>& context,
-                        const EventCollection<PublishEvent<T>>& events) const {
+EventStatus System<T>::Publish(
+    const Context<T>& context,
+    const EventCollection<PublishEvent<T>>& events) const {
   ValidateContext(context);
   return DispatchPublishHandler(context, events);
 }
@@ -232,8 +232,7 @@ const T& System<T>::EvalPotentialEnergy(const Context<T>& context) const {
 template <typename T>
 const T& System<T>::EvalKineticEnergy(const Context<T>& context) const {
   ValidateContext(context);
-  const CacheEntry& entry =
-      this->get_cache_entry(kinetic_energy_cache_index_);
+  const CacheEntry& entry = this->get_cache_entry(kinetic_energy_cache_index_);
   return entry.Eval<T>(context);
 }
 
@@ -262,9 +261,8 @@ SystemConstraintIndex System<T>::AddExternalConstraint(
         this, calc, constraint.bounds(), constraint.description()));
   } else {
     constraints_.emplace_back(std::make_unique<SystemConstraint<T>>(
-        this, fmt::format(
-            "{} (disabled for this scalar type)",
-            constraint.description())));
+        this, fmt::format("{} (disabled for this scalar type)",
+                          constraint.description())));
   }
   external_constraints_.emplace_back(std::move(constraint));
   return SystemConstraintIndex(constraints_.size() - 1);
@@ -320,8 +318,7 @@ void System<T>::ApplyDiscreteVariableUpdate(
 
 template <typename T>
 void System<T>::CalcForcedDiscreteVariableUpdate(
-    const Context<T>& context,
-    DiscreteValues<T>* discrete_state) const {
+    const Context<T>& context, DiscreteValues<T>* discrete_state) const {
   const EventStatus status = CalcDiscreteVariableUpdate(
       context, this->get_forced_discrete_update_events(), discrete_state);
   status.ThrowOnFailure(__func__);
@@ -354,8 +351,8 @@ EventStatus System<T>::CalcUnrestrictedUpdate(
 
 template <typename T>
 void System<T>::ApplyUnrestrictedUpdate(
-    const EventCollection<UnrestrictedUpdateEvent<T>>& events,
-    State<T>* state, Context<T>* context) const {
+    const EventCollection<UnrestrictedUpdateEvent<T>>& events, State<T>* state,
+    Context<T>* context) const {
   ValidateContext(context);
   ValidateCreatedForThisSystem(state);
   DoApplyUnrestrictedUpdate(events, state, context);
@@ -439,7 +436,8 @@ void System<T>::CalcUniquePeriodicDiscreteUpdate(
   if (!timing.has_value()) {
     throw std::logic_error(
         fmt::format("{}(): there are no periodic discrete "
-                    "update events in this System.", __func__));
+                    "update events in this System.",
+                    __func__));
   }
 
   // This should come up with the same result although calculated independently.
@@ -475,8 +473,7 @@ void System<T>::GetPerStepEvents(const Context<T>& context,
 
 template <typename T>
 void System<T>::GetInitializationEvents(
-    const Context<T>& context,
-    CompositeEventCollection<T>* events) const {
+    const Context<T>& context, CompositeEventCollection<T>* events) const {
   ValidateContext(context);
   ValidateCreatedForThisSystem(events);
   events->Clear();
@@ -519,8 +516,7 @@ void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
 }
 
 template <typename T>
-void System<T>::ExecuteForcedEvents(Context<T>* context,
-                                    bool publish) const {
+void System<T>::ExecuteForcedEvents(Context<T>* context, bool publish) const {
   // NOTE: The execution order here must match the code in
   // Simulator::Initialize().
 
@@ -537,30 +533,27 @@ void System<T>::ExecuteForcedEvents(Context<T>* context,
   if (get_forced_discrete_update_events().HasEvents()) {
     auto discrete_updates = AllocateDiscreteVariables();
     const EventStatus status = CalcDiscreteVariableUpdate(
-        *context, get_forced_discrete_update_events(),
-        discrete_updates.get());
+        *context, get_forced_discrete_update_events(), discrete_updates.get());
     status.ThrowOnFailure(__func__);
     ApplyDiscreteVariableUpdate(get_forced_discrete_update_events(),
                                 discrete_updates.get(), context);
   }
   // Do any publishes last.
   if (publish && get_forced_publish_events().HasEvents()) {
-    const EventStatus status =
-        Publish(*context, get_forced_publish_events());
+    const EventStatus status = Publish(*context, get_forced_publish_events());
     status.ThrowOnFailure(__func__);
   }
 }
 
 template <typename T>
 std::optional<PeriodicEventData>
-    System<T>::GetUniquePeriodicDiscreteUpdateAttribute() const {
+System<T>::GetUniquePeriodicDiscreteUpdateAttribute() const {
   std::optional<PeriodicEventData> saved_attr;
   auto periodic_events_map = MapPeriodicEventsByTiming();
   for (const auto& saved_attr_and_vector : periodic_events_map) {
     for (const auto& event : saved_attr_and_vector.second) {
       if (event->is_discrete_update()) {
-        if (saved_attr)
-          return std::nullopt;
+        if (saved_attr) return std::nullopt;
         saved_attr = saved_attr_and_vector.first;
         break;
       }
@@ -572,7 +565,9 @@ std::optional<PeriodicEventData>
 
 template <typename T>
 bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
-  if (num_continuous_states() || num_abstract_states()) { return false; }
+  if (num_continuous_states() || num_abstract_states()) {
+    return false;
+  }
 
   if (num_discrete_state_groups() != 1) {
     return false;
@@ -580,8 +575,12 @@ bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
 
   std::optional<PeriodicEventData> periodic_data =
       GetUniquePeriodicDiscreteUpdateAttribute();
-  if (!periodic_data) { return false; }
-  if (periodic_data->offset_sec() != 0.0) { return false; }
+  if (!periodic_data) {
+    return false;
+  }
+  if (periodic_data->offset_sec() != 0.0) {
+    return false;
+  }
 
   if (time_period != nullptr) {
     *time_period = periodic_data->period_sec();
@@ -591,7 +590,9 @@ bool System<T>::IsDifferenceEquationSystem(double* time_period) const {
 
 template <typename T>
 bool System<T>::IsDifferentialEquationSystem() const {
-  if (num_discrete_state_groups() || num_abstract_states()) { return false; }
+  if (num_discrete_state_groups() || num_abstract_states()) {
+    return false;
+  }
   for (int i = 0; i < num_input_ports(); ++i) {
     if (get_input_port(i).get_data_type() != PortDataType::kVectorValued) {
       return false;
@@ -688,8 +689,7 @@ void System<T>::MapQDotToVelocity(const Context<T>& context,
 
 template <typename T>
 const Context<T>& System<T>::GetSubsystemContext(
-    const System<T>& subsystem,
-    const Context<T>& context) const {
+    const System<T>& subsystem, const Context<T>& context) const {
   ValidateContext(context);
   auto ret = DoGetTargetSystemContext(subsystem, &context);
   if (ret != nullptr) return *ret;
@@ -757,8 +757,7 @@ const State<T>* System<T>::DoGetTargetSystemState(
 
 template <typename T>
 const ContinuousState<T>* System<T>::DoGetTargetSystemContinuousState(
-    const System<T>& target_system,
-    const ContinuousState<T>* xc) const {
+    const System<T>& target_system, const ContinuousState<T>* xc) const {
   if (&target_system == this) return xc;
   return nullptr;
 }
@@ -766,8 +765,7 @@ const ContinuousState<T>* System<T>::DoGetTargetSystemContinuousState(
 template <typename T>
 CompositeEventCollection<T>*
 System<T>::DoGetMutableTargetSystemCompositeEventCollection(
-    const System<T>& target_system,
-    CompositeEventCollection<T>* events) const {
+    const System<T>& target_system, CompositeEventCollection<T>* events) const {
   if (&target_system == this) return events;
   return nullptr;
 }
@@ -853,14 +851,12 @@ const InputPort<T>& System<T>::GetInputPort(
     port_names.push_back("it has no input ports");
   }
   throw std::logic_error(fmt::format(
-      "System {} does not have an input port named {} "
-      "(valid port names: {})",
+      "System {} does not have an input port named {} (valid port names: {})",
       GetSystemName(), port_name, fmt::join(port_names, ", ")));
 }
 
 template <typename T>
-bool System<T>::HasInputPort(
-    const std::string& port_name) const {
+bool System<T>::HasInputPort(const std::string& port_name) const {
   for (InputPortIndex i{0}; i < num_input_ports(); i++) {
     const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
         __func__, i, /* warn_deprecated = */ false);
@@ -945,14 +941,12 @@ const OutputPort<T>& System<T>::GetOutputPort(
     port_names.push_back("it has no output ports");
   }
   throw std::logic_error(fmt::format(
-      "System {} does not have an output port named {} "
-      "(valid port names: {})",
+      "System {} does not have an output port named {} (valid port names: {})",
       GetSystemName(), port_name, fmt::join(port_names, ", ")));
 }
 
 template <typename T>
-bool System<T>::HasOutputPort(
-    const std::string& port_name) const {
+bool System<T>::HasOutputPort(const std::string& port_name) const {
   for (OutputPortIndex i{0}; i < num_output_ports(); i++) {
     const OutputPortBase& port_base = this->GetOutputPortBaseOrThrow(
         __func__, i, /* warn_deprecated = */ false);
@@ -975,18 +969,17 @@ template <typename T>
 const SystemConstraint<T>& System<T>::get_constraint(
     SystemConstraintIndex constraint_index) const {
   if (constraint_index < 0 || constraint_index >= num_constraints()) {
-    throw std::out_of_range("System " + get_name() + ": Constraint index " +
-                            std::to_string(constraint_index) +
-                            " is out of range. There are only " +
-                            std::to_string(num_constraints()) +
-                            " constraints.");
+    throw std::out_of_range(
+        "System " + get_name() + ": Constraint index " +
+        std::to_string(constraint_index) + " is out of range. There are only " +
+        std::to_string(num_constraints()) + " constraints.");
   }
   return *constraints_[constraint_index];
 }
 
 template <typename T>
-boolean<T> System<T>::CheckSystemConstraintsSatisfied(
-    const Context<T>& context, double tol) const {
+boolean<T> System<T>::CheckSystemConstraintsSatisfied(const Context<T>& context,
+                                                      double tol) const {
   ValidateContext(context);
   DRAKE_DEMAND(tol >= 0.0);
   boolean<T> result{true};
@@ -995,9 +988,8 @@ boolean<T> System<T>::CheckSystemConstraintsSatisfied(
     // If T is a real number (not a symbolic expression), we can bail out
     // early with a diagnostic when the first constraint fails.
     if (scalar_predicate<T>::is_bool && !result) {
-      DRAKE_LOGGER_DEBUG(
-          "Context fails to satisfy SystemConstraint {}",
-          constraint->description());
+      DRAKE_LOGGER_DEBUG("Context fails to satisfy SystemConstraint {}",
+                         constraint->description());
       return result;
     }
   }
@@ -1026,8 +1018,8 @@ std::unique_ptr<System<symbolic::Expression>> System<T>::ToSymbolic() const {
 }
 
 template <typename T>
-std::unique_ptr<System<symbolic::Expression>>
-System<T>::ToSymbolicMaybe() const {
+std::unique_ptr<System<symbolic::Expression>> System<T>::ToSymbolicMaybe()
+    const {
   return ToScalarTypeMaybe<symbolic::Expression>();
 }
 
@@ -1043,8 +1035,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
         __func__, i, /* warn_deprecated = */ false);
     const InputPortBase& other_port_base = other_system.GetInputPortBaseOrThrow(
         __func__, i, /* warn_deprecated = */ false);
-    const auto& input_port =
-        dynamic_cast<const InputPort<T>&>(input_port_base);
+    const auto& input_port = dynamic_cast<const InputPort<T>&>(input_port_base);
     const auto& other_port =
         dynamic_cast<const InputPort<double>&>(other_port_base);
     if (!other_port.HasValue(other_context)) {
@@ -1066,8 +1057,7 @@ void System<T>::FixInputPortsFrom(const System<double>& other_system,
       case kAbstractValued: {
         // For abstract-valued input ports, we just clone the value and fix
         // it to the port.
-        const auto& other_value =
-            other_port.Eval<AbstractValue>(other_context);
+        const auto& other_value = other_port.Eval<AbstractValue>(other_context);
         input_port.FixValue(target_context, other_value);
         continue;
       }
@@ -1092,17 +1082,15 @@ void System<T>::GetWitnessFunctions(
 }
 
 template <typename T>
-T System<T>::CalcWitnessValue(
-    const Context<T>& context,
-    const WitnessFunction<T>& witness_func) const {
+T System<T>::CalcWitnessValue(const Context<T>& context,
+                              const WitnessFunction<T>& witness_func) const {
   ValidateContext(context);
   return DoCalcWitnessValue(context, witness_func);
 }
 
 template <typename T>
-void System<T>::DoGetWitnessFunctions(const Context<T>&,
-    std::vector<const WitnessFunction<T>*>*) const {
-}
+void System<T>::DoGetWitnessFunctions(
+    const Context<T>&, std::vector<const WitnessFunction<T>*>*) const {}
 
 template <typename T>
 System<T>::System(SystemScalarConverter converter)
@@ -1122,19 +1110,21 @@ System<T>::System(SystemScalarConverter converter)
   const std::set<DependencyTicket> energy_prereqs_for_9171{
       accuracy_ticket(), all_state_ticket(), all_parameters_ticket()};
   potential_energy_cache_index_ =
-      DeclareCacheEntry("potential energy",
+      DeclareCacheEntry(
+          "potential energy",
           ValueProducer(this, &System<T>::CalcPotentialEnergy),
           energy_prereqs_for_9171)  // After #9171: configuration + mass.
           .cache_index();
 
   kinetic_energy_cache_index_ =
-      DeclareCacheEntry("kinetic energy",
-          ValueProducer(this, &System<T>::CalcKineticEnergy),
+      DeclareCacheEntry(
+          "kinetic energy", ValueProducer(this, &System<T>::CalcKineticEnergy),
           energy_prereqs_for_9171)  // After #9171: kinematics + mass.
           .cache_index();
 
   conservative_power_cache_index_ =
-      DeclareCacheEntry("conservative power",
+      DeclareCacheEntry(
+          "conservative power",
           ValueProducer(this, &System<T>::CalcConservativePower),
           energy_prereqs_for_9171)  // After #9171: kinematics + mass.
           .cache_index();
@@ -1143,7 +1133,8 @@ System<T>::System(SystemScalarConverter converter)
   // port dependence. See API documentation above for
   // EvalNonConservativePower() to see why.
   nonconservative_power_cache_index_ =
-      DeclareCacheEntry("non-conservative power",
+      DeclareCacheEntry(
+          "non-conservative power",
           ValueProducer(this, &System<T>::CalcNonConservativePower),
           {all_sources_ticket()})  // This is correct.
           .cache_index();
@@ -1152,10 +1143,8 @@ System<T>::System(SystemScalarConverter converter)
   time_derivatives_cache_index_ =
       this->DeclareCacheEntryWithKnownTicket(
               xcdot_ticket(), "time derivatives",
-              ValueProducer(
-                  this,
-                  &System<T>::AllocateTimeDerivatives,
-                  &System<T>::CalcTimeDerivatives),
+              ValueProducer(this, &System<T>::AllocateTimeDerivatives,
+                            &System<T>::CalcTimeDerivatives),
               {all_sources_ticket()})
           .cache_index();
 
@@ -1178,8 +1167,8 @@ System<T>::System(SystemScalarConverter converter)
 
 template <typename T>
 InputPort<T>& System<T>::DeclareInputPort(
-    std::variant<std::string, UseDefaultName> name, PortDataType type,
-    int size, std::optional<RandomDistribution> random_type) {
+    std::variant<std::string, UseDefaultName> name, PortDataType type, int size,
+    std::optional<RandomDistribution> random_type) {
   const InputPortIndex port_index(num_input_ports());
 
   const DependencyTicket port_ticket(this->assign_next_dependency_ticket());
@@ -1226,8 +1215,8 @@ void System<T>::DoCalcTimeDerivatives(const Context<T>& context,
 
 template <typename T>
 void System<T>::DoCalcImplicitTimeDerivativesResidual(
-      const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
-      EigenPtr<VectorX<T>> residual) const {
+    const Context<T>& context, const ContinuousState<T>& proposed_derivatives,
+    EigenPtr<VectorX<T>> residual) const {
   // As documented, we can assume residual is non-null, its length matches the
   // declared size, and proposed_derivatives is compatible with this System.
   // However, this default implementation has an additional restriction: the
@@ -1254,23 +1243,20 @@ void System<T>::DoCalcNextUpdateTime(const Context<T>& context,
 }
 
 template <typename T>
-void System<T>::DoGetPeriodicEvents(
-    const Context<T>& context,
-    CompositeEventCollection<T>* events) const {
+void System<T>::DoGetPeriodicEvents(const Context<T>& context,
+                                    CompositeEventCollection<T>* events) const {
   unused(context, events);
 }
 
 template <typename T>
-void System<T>::DoGetPerStepEvents(
-    const Context<T>& context,
-    CompositeEventCollection<T>* events) const {
+void System<T>::DoGetPerStepEvents(const Context<T>& context,
+                                   CompositeEventCollection<T>* events) const {
   unused(context, events);
 }
 
 template <typename T>
 void System<T>::DoGetInitializationEvents(
-    const Context<T>& context,
-    CompositeEventCollection<T>* events) const {
+    const Context<T>& context, CompositeEventCollection<T>* events) const {
   unused(context, events);
 }
 
@@ -1347,8 +1333,7 @@ Eigen::VectorBlock<VectorX<T>> System<T>::GetMutableOutputVector(
 
 template <typename T>
 std::function<void(const AbstractValue&)>
-System<T>::MakeFixInputPortTypeChecker(
-    InputPortIndex port_index) const {
+System<T>::MakeFixInputPortTypeChecker(InputPortIndex port_index) const {
   const InputPortBase& port_base = this->GetInputPortBaseOrThrow(
       __func__, port_index, /* warn_deprecated = */ false);
   const InputPort<T>& port = static_cast<const InputPort<T>&>(port_base);
@@ -1369,8 +1354,8 @@ System<T>::MakeFixInputPortTypeChecker(
       // fine to let them also handle detailed error reporting on their own.
       const std::type_info& expected_type =
           this->AllocateInputAbstract(port)->static_type_info();
-      return [&expected_type, port_index, path_name, port_name](
-          const AbstractValue& actual) {
+      return [&expected_type, port_index, path_name,
+              port_name](const AbstractValue& actual) {
         if (actual.static_type_info() != expected_type) {
           SystemBase::ThrowInputPortHasWrongType(
               "FixInputPortTypeCheck", path_name, port_index, port_name,
@@ -1385,8 +1370,8 @@ System<T>::MakeFixInputPortTypeChecker(
       const std::unique_ptr<BasicVector<T>> model_vector =
           this->AllocateInputVector(port);
       const int expected_size = model_vector->size();
-      return [expected_size, port_index, path_name, port_name](
-          const AbstractValue& actual) {
+      return [expected_size, port_index, path_name,
+              port_name](const AbstractValue& actual) {
         const BasicVector<T>* const actual_vector =
             actual.maybe_get_value<BasicVector<T>>();
         if (actual_vector == nullptr) {
@@ -1400,10 +1385,8 @@ System<T>::MakeFixInputPortTypeChecker(
           SystemBase::ThrowInputPortHasWrongType(
               "FixInputPortTypeCheck", path_name, port_index, port_name,
               fmt::format("{} with size={}",
-                          NiceTypeName::Get<BasicVector<T>>(),
-                          expected_size),
-              fmt::format("{} with size={}",
-                          NiceTypeName::Get(*actual_vector),
+                          NiceTypeName::Get<BasicVector<T>>(), expected_size),
+              fmt::format("{} with size={}", NiceTypeName::Get(*actual_vector),
                           actual_vector->size()));
         }
       };
@@ -1418,8 +1401,8 @@ const BasicVector<T>* System<T>::EvalBasicVectorInputImpl(
     InputPortIndex port_index) const {
   // Make sure this is the right kind of port before worrying about whether
   // it is connected up properly.
-  const InputPortBase& port = GetInputPortBaseOrThrow(
-      func, port_index, /* warn_deprecated = */ true);
+  const InputPortBase& port =
+      GetInputPortBaseOrThrow(func, port_index, /* warn_deprecated = */ true);
   if (port.get_data_type() != kVectorValued)
     ThrowNotAVectorInputPort(func, port_index);
 

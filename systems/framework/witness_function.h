@@ -121,33 +121,33 @@ class WitnessFunction final {
   // @warning the pointer to the System must be valid as long or longer than
   // the lifetime of the witness function.
   template <class MySystem>
-  WitnessFunction(const System<T>* system,
-                  const SystemBase* system_base,
+  WitnessFunction(const System<T>* system, const SystemBase* system_base,
                   std::string description,
                   const WitnessFunctionDirection& direction,
                   T (MySystem::*calc)(const Context<T>&) const,
                   std::unique_ptr<Event<T>> event = nullptr)
-    : WitnessFunction(
-          system, system_base, std::move(description), direction,
-          [system, calc](const Context<T>& context) {
-            auto calc_system = static_cast<const MySystem*>(system);
-            return (calc_system->*calc)(context);
-          },
-          std::move(event)) {
+      : WitnessFunction(
+            system, system_base, std::move(description), direction,
+            [system, calc](const Context<T>& context) {
+              auto calc_system = static_cast<const MySystem*>(system);
+              return (calc_system->*calc)(context);
+            },
+            std::move(event)) {
     DRAKE_DEMAND(dynamic_cast<const MySystem*>(system) != nullptr);
   }
 
   // See documentation for above constructor, which applies here without
   // reservations.
-  WitnessFunction(const System<T>* system,
-                  const SystemBase* system_base,
+  WitnessFunction(const System<T>* system, const SystemBase* system_base,
                   std::string description,
                   const WitnessFunctionDirection& direction,
                   std::function<T(const Context<T>&)> calc,
                   std::unique_ptr<Event<T>> event = nullptr)
-      : system_(system), system_base_(system_base),
+      : system_(system),
+        system_base_(system_base),
         description_(std::move(description)),
-        direction_type_(direction), event_(std::move(event)),
+        direction_type_(direction),
+        event_(std::move(event)),
         calc_function_(std::move(calc)) {
     DRAKE_DEMAND(system != nullptr);
     DRAKE_DEMAND(system_base != nullptr);
@@ -196,8 +196,7 @@ class WitnessFunction final {
         return (w0 < zero && wf >= zero);
 
       case WitnessFunctionDirection::kCrossesZero:
-        return ((w0 > zero && wf <= zero) ||
-                (w0 < zero && wf >= zero));
+        return ((w0 > zero && wf <= zero) || (w0 < zero && wf >= zero));
     }
     DRAKE_UNREACHABLE();
   }

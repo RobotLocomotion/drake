@@ -9,8 +9,7 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-LeafContext<T>::LeafContext()
-    : state_(std::make_unique<State<T>>()) {}
+LeafContext<T>::LeafContext() : state_(std::make_unique<State<T>>()) {}
 
 template <typename T>
 LeafContext<T>::~LeafContext() {}
@@ -57,13 +56,11 @@ std::string LeafContext<T>::do_to_string() const {
   os << std::string(this->GetSystemPathname().size() + 9, '-') << "\n";
   os << "Time: " << this->get_time() << "\n";
 
-  if (this->num_continuous_states() ||
-      this->num_discrete_state_groups() ||
+  if (this->num_continuous_states() || this->num_discrete_state_groups() ||
       this->num_abstract_states()) {
     os << "States:\n";
     if (this->num_continuous_states()) {
-      os << "  " << this->num_continuous_states()
-         << " continuous states\n";
+      os << "  " << this->num_continuous_states() << " continuous states\n";
       os << "    " << this->get_continuous_state_vector() << "\n";
     }
     if (this->num_discrete_state_groups()) {
@@ -80,8 +77,7 @@ std::string LeafContext<T>::do_to_string() const {
     os << "\n";
   }
 
-  if (this->num_numeric_parameter_groups() ||
-      this->num_abstract_parameters()) {
+  if (this->num_numeric_parameter_groups() || this->num_abstract_parameters()) {
     os << "Parameters:\n";
     if (this->num_numeric_parameter_groups()) {
       os << "  " << this->num_numeric_parameter_groups()
@@ -94,8 +90,7 @@ std::string LeafContext<T>::do_to_string() const {
       }
     }
     if (this->num_abstract_parameters()) {
-      os << "  " << this->num_abstract_parameters()
-         << " abstract parameters\n";
+      os << "  " << this->num_abstract_parameters() << " abstract parameters\n";
     }
   }
   return os.str();

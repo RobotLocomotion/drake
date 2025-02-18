@@ -10,11 +10,10 @@
 namespace drake {
 namespace systems {
 
-CacheEntry::CacheEntry(
-    const internal::SystemMessageInterface* owning_system, CacheIndex index,
-    DependencyTicket ticket, std::string description,
-    ValueProducer value_producer,
-    std::set<DependencyTicket> prerequisites_of_calc)
+CacheEntry::CacheEntry(const internal::SystemMessageInterface* owning_system,
+                       CacheIndex index, DependencyTicket ticket,
+                       std::string description, ValueProducer value_producer,
+                       std::set<DependencyTicket> prerequisites_of_calc)
     : owning_system_(owning_system),
       cache_index_(index),
       ticket_(ticket),
@@ -26,7 +25,8 @@ CacheEntry::CacheEntry(
   DRAKE_DEMAND(value_producer_.is_valid());
 
   if (prerequisites_of_calc_.empty()) {
-    throw std::logic_error(FormatName("CacheEntry") +
+    throw std::logic_error(
+        FormatName("CacheEntry") +
         "Cannot create a CacheEntry with an empty prerequisites list. If the "
         "Calc() function really has no dependencies, list 'nothing_ticket()' "
         "as its sole prerequisite.");
@@ -42,8 +42,7 @@ std::unique_ptr<AbstractValue> CacheEntry::Allocate() const {
   return value;
 }
 
-void CacheEntry::Calc(const ContextBase& context,
-                      AbstractValue* value) const {
+void CacheEntry::Calc(const ContextBase& context, AbstractValue* value) const {
   DRAKE_DEMAND(value != nullptr);
   DRAKE_ASSERT_VOID(owning_system_->ValidateContext(context));
   DRAKE_ASSERT_VOID(CheckValidAbstractValue(context, *value));
@@ -64,10 +63,11 @@ void CacheEntry::CheckValidAbstractValue(const ContextBase& context,
 }
 
 std::string CacheEntry::FormatName(const char* api) const {
-  return "System '" + owning_system_->GetSystemPathname() + "' (" +
-      NiceTypeName::RemoveNamespaces(owning_system_->GetSystemType()) +
-      "): CacheEntry[" + std::to_string(cache_index_) + "](" +
-      description() + ")::" + api + "(): ";
+  return fmt::format(
+      "System '{}' ({}): CacheEntry[{}]({})::{}(): ",
+      owning_system_->GetSystemPathname(),
+      NiceTypeName::RemoveNamespaces(owning_system_->GetSystemType()),
+      std::to_string(cache_index_), description(), api);
 }
 
 }  // namespace systems
