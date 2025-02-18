@@ -948,6 +948,28 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
   return AddConstraint(make_shared<LinearConstraint>(A, lb, ub), vars);
 }
 
+    Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
+            const Eigen::Ref<const VectorXDecisionVariable>& vars,
+            const Eigen::Ref<const Eigen::VectorXd>& lb,
+            const Eigen::Ref<const Eigen::VectorXd>& ub) {
+        DRAKE_ASSERT(vars.size() == lb.size() && vars.size() == ub.size());
+
+        Eigen::MatrixXd A = Eigen::MatrixXd::Identity(vars.size(), vars.size());
+
+        return AddConstraint(make_shared<LinearConstraint>(A, lb, ub), vars);
+    }
+
+    Binding<LinearEqualityConstraint> MathematicalProgram::AddLinearEqualityConstraint(
+            const Eigen::Ref<const VectorXDecisionVariable>& vars,
+            const Eigen::Ref<const Eigen::VectorXd>& values) {
+        DRAKE_ASSERT(vars.size() == values.size());
+
+        Eigen::MatrixXd A = Eigen::MatrixXd::Identity(vars.size(), vars.size());
+
+        return AddConstraint(make_shared<LinearEqualityConstraint>(A, values), vars);
+
+    }
+
 Binding<LinearEqualityConstraint> MathematicalProgram::AddConstraint(
     const Binding<LinearEqualityConstraint>& binding) {
   DRAKE_ASSERT(binding.evaluator()->get_sparse_A().cols() ==

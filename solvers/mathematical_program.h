@@ -1684,6 +1684,30 @@ class MathematicalProgram {
   Binding<LinearEqualityConstraint> AddConstraint(
       const Binding<LinearEqualityConstraint>& binding);
 
+        /**
+     * Adds linear constraints for a vector of decision variables using
+     * element-wise constraints.
+     *
+     * @param vars A vector of decision variables.
+     * @param lb The lower bound applied to each element.
+     * @param ub The upper bound applied to each element.
+     * @return The binding to the created linear constraints.
+       */
+        Binding<LinearConstraint> AddLinearConstraint(
+                const Eigen::Ref<const Eigen::VectorXd>& lb,
+                const Eigen::Ref<const Eigen::VectorXd>& ub,
+                const VectorXDecisionVariable& vars);
+
+        /**
+       * Adds a linear equality constraint for a vector of decision variables.
+       *
+       * @param vars A vector of decision variables.
+       * @param value The target value for equality.
+       * @return The binding to the created linear equality constraints.
+         */
+        Binding<LinearEqualityConstraint> AddLinearEqualityConstraint(
+                const Eigen::Ref<const Eigen::VectorXd>& value,
+                const VectorXDecisionVariable& vars);
   /**
    * Adds one row of linear constraint e = b where @p e is a symbolic
    * expression.
