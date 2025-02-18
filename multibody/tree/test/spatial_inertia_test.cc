@@ -967,7 +967,7 @@ GTEST_TEST(SpatialInertia, IsInvalidDueToBadMassOrPositionVector) {
   DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia(mass, p_PBcm_E, G_BP_E),
                               expected_message);
 
-  // Ensure a NaN mass throws an exception.
+  // Ensure a non-finite mass throws an exception.
   mass = std::numeric_limits<double>::infinity();
   expected_message =
       "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
@@ -975,12 +975,20 @@ GTEST_TEST(SpatialInertia, IsInvalidDueToBadMassOrPositionVector) {
   DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia(mass, p_PBcm_E, G_BP_E),
                               expected_message);
 
-  // Ensure a position vector with a NaN element throws an exception.
+  // Ensure a position vector with a non-finite element throws an exception.
   p_PBcm_E = Vector3<double>(0.0, 0.0, std::numeric_limits<double>::infinity());
   expected_message =
       "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
       "Position vector [0(\\.0)?  0(\\.0)?  inf\\] "
       "has non-finite elements.\n";
+
+  // Ensure a zero mass does not throw an exception.
+  p_PBcm_E = Vector3<double>(0.0, 0.0, 0.0);
+  mass = 0.0;
+  DRAKE_EXPECT_NO_THROW(SpatialInertia(mass, p_PBcm_E, G_BP_E));
+
+  // TODO(Mitiguy) Ensure a zero mass with a bad unit inertia throws
+  //  a sensible message. Currently (Feb 2025) it does not.
 }
 
 // Test that it is not possible to create a spatial inertia with a bad

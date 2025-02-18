@@ -336,18 +336,18 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
 
 template <typename T>
 std::optional<std::string> SpatialInertia<T>::CreateInvalidityReport() const {
-  // Default return value is an empty string (this SpatialInertia is valid).
+  // Default return value is an empty optional (this SpatialInertia is valid).
   std::string error_message;
   const Vector3<T>& p_PBcm = get_com();
 
   // Is invalid if the mass is negative or non-finite.
   const T& mass = get_mass();
   if (!is_nonnegative_finite(mass)) {
-    error_message +=
+    error_message =
         fmt::format("\nmass = {} is negative or not finite.\n", mass);
 
-  } else if (p_PBcm.array().isNaN().any()) {
-    error_message +=
+  } else if (!p_PBcm.array().isFinite().all()) {
+    error_message =
         fmt::format("\nPosition vector [{}  {}  {}] has non-finite elements.\n",
                     p_PBcm(0), p_PBcm(1), p_PBcm(2));
   } else {
