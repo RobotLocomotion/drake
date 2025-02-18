@@ -628,6 +628,32 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "meshcat_voxel_grid_manual_test",
+    testonly = True,
+    srcs = ["test/meshcat_voxel_grid_manual_test.cc"],
+    data = [
+        ":environment_maps",
+        "//examples/kuka_iiwa_arm:models",
+        "//examples/scene_graph:models",
+        "//geometry/render:test_models",
+        "//multibody/meshcat:models",
+        "@drake_models//:iiwa_description",
+        "@drake_models//:ycb",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":meshcat",
+        ":meshcat_visualizer",
+        "//common:add_text_logging_gflags",
+        "//common/test_utilities:maybe_pause_for_user",
+        "//multibody/meshcat:contact_visualizer",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+    ],
+)
+
 drake_py_binary(
     name = "meshcat_websocket_client",
     testonly = True,
