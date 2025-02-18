@@ -496,6 +496,23 @@ class RotationalInertia {
     I_SP_E_.template triangularView<Eigen::Lower>() = Matrix3<T>::Zero();
   }
 
+  /// Returns true if all moments and products in `this` rotational inertia are
+  /// finite (e.g., no NaNs or infinities), otherwise returns false.
+  boolean<T> IsFinite() const {
+    using std::isfinite;
+    // Only check the lower-triangular part of this symmetric matrix for NaN.
+    // The three upper off-diagonal products of inertia should be/remain NaN.
+    static_assert(is_lower_triangular_order(0, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
+    static_assert(is_lower_triangular_order(1, 1), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
+    static_assert(is_lower_triangular_order(2, 2), "Invalid indices");
+    return isfinite(I_SP_E_(0, 0)) && isfinite(I_SP_E_(1, 0)) &&
+           isfinite(I_SP_E_(1, 1)) && isfinite(I_SP_E_(2, 0)) &&
+           isfinite(I_SP_E_(2, 1)) && isfinite(I_SP_E_(2, 2));
+  }
+
   /// Returns `true` if any moment/product in `this` rotational inertia is NaN.
   /// Otherwise returns `false`.
   boolean<T> IsNaN() const {
