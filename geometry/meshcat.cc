@@ -1135,8 +1135,7 @@ class Meshcat::Impl {
     for (int64_t x_index = 0; x_index < grid.GetNumXCells(); ++x_index) {
       for (int64_t y_index = 0; y_index < grid.GetNumYCells(); ++y_index) {
         for (int64_t z_index = 0; z_index < grid.GetNumZCells(); ++z_index) {
-          counter += 1;
-
+          // Get the cell.
           const auto& cell = grid.GetIndexImmutable(x_index, y_index, z_index).Value();
 
           // Get location in the grid's frame.
@@ -1161,6 +1160,7 @@ class Meshcat::Impl {
             colors.col(counter) = Eigen::Vector4d::Zero();
           }
 
+          counter++;
         }
       }
     }
@@ -1170,7 +1170,7 @@ class Meshcat::Impl {
     mesh.uuid = uuid_generator_.GenerateRandom();
     mesh.type = "InstancedMesh";
     mesh.geometry = data.object.geometry->uuid;
-    mesh.material = material->uuid;
+    mesh.material =  data.object.material->uuid;
     mesh.count = total_cells;
     mesh.instanceMatrix = std::move(transforms);
     mesh.instanceColor = std::move(colors);
