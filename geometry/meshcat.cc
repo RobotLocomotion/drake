@@ -1092,77 +1092,28 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void SetObject(std::string_view path,
-                 const planning::VoxelCollisionMap& voxel_collision_map,
-                 const Rgba& occupied_rgba, const Rgba& unknown_rgba) {
+  void SetObject(std::string_view path, BoxList box_list, const Rgba& rgba) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetObjectData data;
     data.path = FullPath(path);
 
-    // Get internal collision map
-    const voxelized_geometry_tools::CollisionMap grid =
-      planning::internal::GetInternalCollisionMap(voxel_collision_map);
-
     // Create a cube geometry that will be instanced.
     auto geometry = std::make_unique<internal::BoxGeometryData>();
     geometry->uuid = uuid_generator_.GenerateRandom();
-    const auto cell_sizes = grid.GetCellSizes();
-    geometry->width = cell_sizes.x();
-    geometry->height = cell_sizes.y();
-    geometry->depth = cell_sizes.z();
+    geometry->width = box_list.box_size.x();
+    geometry->height = box_list.box_size.y();
+    geometry->depth = box_list.box_size.z();
     data.object.geometry = std::move(geometry);
 
     // Create material for voxels.
     auto material = std::make_unique<internal::MaterialData>();
     material->uuid = uuid_generator_.GenerateRandom();
     material->type = "MeshPhongMaterial";
-    material->transparent = (occupied_rgba.a() != 1.0 || unknown_rgba.a() != 1.0);
-    material->opacity = 1.0;  // We'll handle opacity per-instance
+    material->color = ToMeshcatColor(rgba);
+    material->transparent = rgba.a() != 1.0;
+    material->opacity = rgba.a();
     data.object.material = std::move(material);
-
-    // Dummy transform. Each cell instance will only modify the translation of
-    // this transform.
-    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
-
-    // Iterate through the grid to compute transforms and colors.
-    const auto total_cells = grid.GetTotalCells();
-    Eigen::MatrixXf transforms = Eigen::MatrixXf::Zero(16, total_cells);
-    Eigen::MatrixXf colors = Eigen::MatrixXf::Zero(3, total_cells);
-
-    int64_t counter = 0;
-    for (int64_t x_index = 0; x_index < grid.GetNumXCells(); ++x_index) {
-      for (int64_t y_index = 0; y_index < grid.GetNumYCells(); ++y_index) {
-        for (int64_t z_index = 0; z_index < grid.GetNumZCells(); ++z_index) {
-          // Get the cell.
-          const auto& cell = grid.GetIndexImmutable(x_index, y_index, z_index).Value();
-
-          // Get location in the grid's frame.
-          const Eigen::Vector4d& location =
-            grid.GridIndexToLocationInGridFrame(x_index, y_index, z_index);
-          const Eigen::Vector3d& xyz = location.head<3>();
-
-          // Set translation.
-          transform.block<3,1>(0,3) = xyz.cast<float>();
-
-          // Flatten the transform matrix in column-major order
-          transforms.col(counter) = Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
-
-          if (cell.Occupancy() > 0.5) {
-            // Occupied voxel
-            colors.col(counter) = occupied_rgba.rgba().head<3>().cast<float>();
-          } else if (cell.Occupancy() == 0.5) {
-            // Unknown voxel
-            colors.col(counter) = unknown_rgba.rgba().head<3>().cast<float>();
-          } else {
-            // Freespace voxel: make this fully transparent.
-            colors.col(counter) = Eigen::Vector4f::Zero();
-          }
-
-          counter++;
-        }
-      }
-    }
 
     // Create instanced mesh object.
     internal::InstancedMeshData mesh;
@@ -1170,9 +1121,8 @@ class Meshcat::Impl {
     mesh.type = "InstancedMesh";
     mesh.geometry = data.object.geometry->uuid;
     mesh.material =  data.object.material->uuid;
-    mesh.count = total_cells;
-    mesh.instanceMatrix = std::move(transforms);
-    mesh.instanceColor = std::move(colors);
+    mesh.count = box_list.centers.cols();
+    mesh.instanceMatrix = std::move(box_list.centers);
     data.object.object = std::move(mesh);
 
     Defer([this, data = std::move(data)]() {
@@ -1183,6 +1133,74 @@ class Meshcat::Impl {
       SceneTreeElement& e = scene_tree_root_[data.path];
       e.object().emplace() = std::move(message);
     });
+  }
+
+  // This function is public via the PIMPL.
+  void SetObject(std::string_view path,
+                 const planning::VoxelCollisionMap& voxel_collision_map,
+                 const Rgba& occupied_rgba, const Rgba& unknown_rgba) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    // Get internal collision map
+    const voxelized_geometry_tools::CollisionMap grid =
+      planning::internal::GetInternalCollisionMap(voxel_collision_map);
+    const auto total_cells = grid.GetTotalCells();
+    const auto grid_sizes = grid.GetGridSizes();
+    const Eigen::Vector3f cell_sizes = grid.GetCellSizes().cast<float>();
+
+    // First iterate through the grid to count the number of occupied and
+    // unknown voxels.
+    int64_t num_occupied_cells = 0;
+    int64_t num_unknown_cells = 0;
+    for (int64_t data_index = 0; data_index < total_cells; ++data_index) {
+      const auto& cell = grid.GetDataIndexImmutable(data_index);
+      if (cell.Occupancy() > 0.5) {
+        ++num_occupied_cells;
+      } else if (cell.Occupancy() == 0.5) {
+        ++num_unknown_cells;
+      }
+    }
+
+    BoxList occupied_box_list;
+    occupied_box_list.box_size = cell_sizes;
+    occupied_box_list.centers.resize(16, num_occupied_cells);
+
+    BoxList unknown_box_list;
+    unknown_box_list.box_size = cell_sizes;
+    unknown_box_list.centers.resize(16, num_unknown_cells);
+
+    // Dummy transform. Each cell instance will only modify the translation of
+    // this transform.
+    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+
+    for (int64_t data_index = 0, occupied_counter = 0, unknown_counter = 0;
+         data_index < total_cells; ++data_index) {
+      // Get cell.
+      const auto& cell = grid.GetDataIndexImmutable(data_index);
+
+      // Get location in the grid's frame.
+      const auto& grid_index = grid_sizes.GetGridIndexFromDataIndex(data_index);
+      const Eigen::Vector3d& location =
+        grid.GridIndexToLocationInGridFrame(grid_index).head<3>();
+
+      // Flatten the transform matrix in column-major order
+      if (cell.Occupancy() > 0.5) {
+        // Occupied voxel
+        transform.block<3,1>(0,3) = location.cast<float>();
+        occupied_box_list.centers.col(occupied_counter++) =
+          Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
+      }
+      else if (cell.Occupancy() == 0.5) {
+        // Unknown voxel
+        transform.block<3,1>(0,3) = location.cast<float>();
+        unknown_box_list.centers.col(unknown_counter++) =
+         Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
+      }
+    }
+
+    // Set both BoxLists
+    SetObject(path, occupied_box_list, occupied_rgba);
+    SetObject(path, unknown_box_list, unknown_rgba);
   }
 
   // This function is public via the PIMPL.

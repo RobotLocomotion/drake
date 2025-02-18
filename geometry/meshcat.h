@@ -211,6 +211,23 @@ class Meshcat {
                  double point_size = 0.001,
                  const Rgba& rgba = Rgba(.9, .9, .9, 1.));
 
+  struct BoxList {
+    Eigen::Vector3f box_size;
+    Eigen::Matrix<float, 16, Eigen::Dynamic> centers;
+  };
+
+  /** Sets the "object" at a given `path` in the scene tree to be
+  `box_list`.  Note that `path`="/foo" will always set an object in
+  the tree at "/foo/<object>".  See @ref meshcat_path. Any objects previously
+  set at this `path` will be replaced.
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param box_list a Meshcat::BoxList.
+  @param rgba The color to use for the visualization.
+
+  */
+  void SetObject(std::string_view path, BoxList box_list, const Rgba& rgba);
+
   /** Sets the "object" at a given `path` in the scene tree to be
   `voxel_collision_map`.  Note that `path`="/foo" will always set an object in
   the tree at "/foo/<object>".  See @ref meshcat_path. Any objects previously

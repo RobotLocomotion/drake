@@ -369,7 +369,6 @@ struct InstancedMeshData {
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
   void msgpack_pack(Packer& o) const {
     DRAKE_ASSERT(instanceMatrix.cols() == count);
-    DRAKE_ASSERT(count > 0);
 
     int size = 6;  // uuid, type, geometry, material, count, instanceMatrix
     if (instanceColor && instanceColor->cols() > 0) {
