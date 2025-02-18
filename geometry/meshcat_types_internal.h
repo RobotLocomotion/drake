@@ -357,9 +357,9 @@ struct InstancedMeshData {
   int count{0};
   // Matrix data for all instances stored as a contiguous array.
   // Each instance has a 16-element transform matrix.
-  Eigen::Matrix<double, 16, Eigen::Dynamic> instanceMatrix;
+  Eigen::Matrix<float, 16, Eigen::Dynamic> instanceMatrix;
   // Optional per-instance colors stored as RGB values (3 doubles per instance)
-  std::optional<Eigen::Matrix<double, 4, Eigen::Dynamic>> instanceColor;
+  std::optional<Eigen::Matrix<float, 3, Eigen::Dynamic>> instanceColor;
 
   // TODO (Sid): This is a dummy matrix because InstancedMesh is a member of
   // LumpedObject's monostate. Remove this eventually.

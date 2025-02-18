@@ -1117,19 +1117,18 @@ class Meshcat::Impl {
     auto material = std::make_unique<internal::MaterialData>();
     material->uuid = uuid_generator_.GenerateRandom();
     material->type = "MeshPhongMaterial";
-    material->vertexColors = true;  // Enable per-instance coloring
     material->transparent = (occupied_rgba.a() != 1.0 || unknown_rgba.a() != 1.0);
     material->opacity = 1.0;  // We'll handle opacity per-instance
     data.object.material = std::move(material);
 
     // Dummy transform. Each cell instance will only modify the translation of
     // this transform.
-    Eigen::Matrix4d transform = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
 
     // Iterate through the grid to compute transforms and colors.
     const auto total_cells = grid.GetTotalCells();
-    Eigen::MatrixXd transforms = Eigen::MatrixXd::Zero(16, total_cells);
-    Eigen::MatrixXd colors = Eigen::MatrixXd::Zero(4, total_cells);
+    Eigen::MatrixXf transforms = Eigen::MatrixXf::Zero(16, total_cells);
+    Eigen::MatrixXf colors = Eigen::MatrixXf::Zero(3, total_cells);
 
     int64_t counter = 0;
     for (int64_t x_index = 0; x_index < grid.GetNumXCells(); ++x_index) {
@@ -1144,20 +1143,20 @@ class Meshcat::Impl {
           const Eigen::Vector3d& xyz = location.head<3>();
 
           // Set translation.
-          transform.block<3,1>(0,3) = xyz;
+          transform.block<3,1>(0,3) = xyz.cast<float>();
 
           // Flatten the transform matrix in column-major order
-          transforms.col(counter) = Eigen::Map<Eigen::Vector<double, 16>>(transform.data());
+          transforms.col(counter) = Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
 
           if (cell.Occupancy() > 0.5) {
             // Occupied voxel
-            colors.col(counter) = occupied_rgba.rgba();
+            colors.col(counter) = occupied_rgba.rgba().head<3>().cast<float>();
           } else if (cell.Occupancy() == 0.5) {
             // Unknown voxel
-            colors.col(counter) = unknown_rgba.rgba();
+            colors.col(counter) = unknown_rgba.rgba().head<3>().cast<float>();
           } else {
             // Freespace voxel: make this fully transparent.
-            colors.col(counter) = Eigen::Vector4d::Zero();
+            colors.col(counter) = Eigen::Vector4f::Zero();
           }
 
           counter++;

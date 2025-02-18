@@ -54,9 +54,10 @@ int do_main() {
       parent_frame, X_PG, grid_dimensions, grid_resolution, default_occupancy);
 
   // Visualize the voxel grid
-  meshcat->SetObject("voxel_grid", voxel_map, 
+  meshcat->SetObject("voxel_grid", voxel_map,
                      Rgba(1.0, 0.0, 0.0, 1.0),  // Red for occupied
                      Rgba(0.0, 0.0, 0.0, 0.5)); // Semi-transparent black for unknown
+  meshcat->Flush();
 
   std::cout << "\nOpen your browser to the following URL:\n\n"
             << meshcat->web_url() << "\n\n";
