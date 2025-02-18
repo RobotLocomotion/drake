@@ -2695,63 +2695,42 @@ void MultibodyPlant<T>::CalcInstanceNetActuationOutput(
 }
 
 template <typename T>
-VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
+internal::DesiredStateInput<T> MultibodyPlant<T>::AssembleDesiredStateInput(
     const systems::Context<T>& context) const {
   this->ValidateContext(context);
 
   // Assemble the vector from the model instance input ports.
   // TODO(amcastro-tri): Heap allocation here. Get rid of it. Make it EvalFoo().
-  // Desired states of size 2 * num_actuators() for the full model packed as xd
-  // = [qd, vd].
-  VectorX<T> xd = VectorX<T>::Zero(2 * num_actuated_dofs());
-  auto qd = xd.head(num_actuated_dofs());
-  auto vd = xd.tail(num_actuated_dofs());
+  internal::DesiredStateInput<T> desired_states(num_model_instances());
 
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     // Ignore the port if the model instance has no actuated DoFs.
     const int instance_num_u = num_actuated_dofs(model_instance_index);
-    const int instance_num_xd = 2 * instance_num_u;
-    if (instance_num_xd == 0) continue;
-
-    const auto& xd_input_port =
-        this->get_desired_state_input_port(model_instance_index);
+    if (instance_num_u == 0) continue;
 
     const int num_pd_controlled_actuators =
         NumOfPdControlledActuators(*this, model_instance_index);
     DRAKE_DEMAND(num_pd_controlled_actuators <= instance_num_u);
 
-    // Desired states input port is ignored for models without PD controllers.
-    if (num_pd_controlled_actuators == instance_num_u) {
-      if (xd_input_port.HasValue(context)) {
-        const auto& xd_instance = xd_input_port.Eval(context);
-        if (xd_instance.hasNaN()) {
-          throw std::runtime_error(
-              fmt::format("Desired state input port for model "
-                          "instance {} contains NaN.",
-                          GetModelInstanceName(model_instance_index)));
-        }
-        const auto qd_instance = xd_instance.head(instance_num_u);
-        SetActuationInArray(model_instance_index, qd_instance, &qd);
-        const auto vd_instance = xd_instance.tail(instance_num_u);
-        SetActuationInArray(model_instance_index, vd_instance, &vd);
-      } else {
+    const auto& xd_input_port =
+        this->get_desired_state_input_port(model_instance_index);
+    if (xd_input_port.HasValue(context)) {
+      const auto& xd_instance = xd_input_port.Eval(context);
+      if (xd_instance.hasNaN()) {
         throw std::runtime_error(
             fmt::format("Desired state input port for model "
-                        "instance {} not connected.",
+                        "instance {} contains NaN.",
                         GetModelInstanceName(model_instance_index)));
       }
-    } else if (0 < num_pd_controlled_actuators &&
-               num_pd_controlled_actuators < instance_num_u) {
-      // Partially controlled model. Not supported.
-      throw std::runtime_error(fmt::format(
-          "Model {} is partially PD controlled. For PD controlling a model "
-          "instance, all of its actuators must have gains defined.",
-          GetModelInstanceName(model_instance_index)));
+      const auto qd = xd_instance.head(instance_num_u);
+      const auto vd = xd_instance.tail(instance_num_u);
+      desired_states.SetModelInstanceDesiredStates(model_instance_index, qd,
+                                                   vd);
     }
   }
 
-  return xd;
+  return desired_states;
 }
 
 template <typename T>
