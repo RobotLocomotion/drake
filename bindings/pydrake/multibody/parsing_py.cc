@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
@@ -281,17 +282,29 @@ PYBIND11_MODULE(parsing, m) {
       py::arg("directives"), py::arg("plant"), py::arg("parser") = nullptr,
       doc.parsing.ProcessModelDirectives.doc_4args);
 
-  m.def("GetScopedFrameByName", &parsing::GetScopedFrameByName,
-      py::arg("plant"), py::arg("full_name"),
-      py::return_value_policy::reference,
-      py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
-      doc.parsing.GetScopedFrameByName.doc);
+  type_visit(
+      [&m]<typename T>(T) {
+        m.def("GetScopedFrameByName",
+            overload_cast_explicit<const Frame<T>&, const MultibodyPlant<T>&,
+                const std::string&>(&parsing::GetScopedFrameByName),
+            py::arg("plant"), py::arg("full_name"),
+            py::return_value_policy::reference,
+            py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
+            doc.parsing.GetScopedFrameByName.doc);
+      },
+      CommonScalarPack{});
 
-  m.def("GetScopedFrameByNameMaybe", &parsing::GetScopedFrameByNameMaybe,
-      py::arg("plant"), py::arg("full_name"),
-      py::return_value_policy::reference,
-      py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
-      doc.parsing.GetScopedFrameByNameMaybe.doc);
+  type_visit(
+      [&m]<typename T>(T) {
+        m.def("GetScopedFrameByNameMaybe",
+            overload_cast_explicit<const Frame<T>*, const MultibodyPlant<T>&,
+                const std::string&>(&parsing::GetScopedFrameByNameMaybe),
+            py::arg("plant"), py::arg("full_name"),
+            py::return_value_policy::reference,
+            py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
+            doc.parsing.GetScopedFrameByNameMaybe.doc);
+      },
+      CommonScalarPack{});
 }
 
 }  // namespace pydrake

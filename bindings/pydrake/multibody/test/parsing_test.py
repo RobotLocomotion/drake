@@ -27,12 +27,14 @@ import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
 )
 from pydrake.multibody.plant import (
     MultibodyPlant,
+    MultibodyPlant_,
 )
 
 
@@ -235,8 +237,9 @@ class TestParsing(unittest.TestCase):
         ModelInstanceInfo.X_PC
         ModelInstanceInfo.model_instance
 
-    def test_scoped_frame_names(self):
-        plant = MultibodyPlant(time_step=0.01)
+    @numpy_compare.check_all_types
+    def test_scoped_frame_names(self, T):
+        plant = MultibodyPlant_[T](time_step=0.01)
         GetScopedFrameByName(plant, "world")
         GetScopedFrameByNameMaybe(plant, "world")
 
