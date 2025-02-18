@@ -48,7 +48,7 @@ int do_main() {
   const RigidTransformd X_PG;  // Identity transform
   const Vector3d grid_dimensions(1.0, 1.0, 1.0);  // 1m cube
   const double grid_resolution = 0.1;  // 10cm voxels
-  const float default_occupancy = 0.0;  // Empty by default
+  const float default_occupancy = 0.5;  // Unknown by default
 
   planning::VoxelCollisionMap voxel_map(
       parent_frame, X_PG, grid_dimensions, grid_resolution, default_occupancy);
