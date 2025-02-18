@@ -2085,7 +2085,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// See documentation of geometry::SceneGraphInspector on where to get an
   /// inspector.
   ///
-  /// <h4> %MultibodyPlant names vs. SceneGraph names
+  /// <h4>%MultibodyPlant names vs. SceneGraph names</h4>
   ///
   /// In %MultibodyPlant, frame names only have to be unique in a single
   /// model instance. However, SceneGraph knows nothing of model instances. So,
