@@ -77,8 +77,8 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     plant_->WeldFrames(plant_->world_frame(), base_body.body_frame());
     plant_->WeldFrames(end_effector.body_frame(), gripper_body.body_frame());
 
-    // Set PD controllers for the gripper.
-    SetGripperModel();
+    SetPdGainsForGripperModel();
+    SetPdGainsForArmModel();
 
     plant_->Finalize();
 
@@ -92,13 +92,30 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
     context_ = plant_->CreateDefaultContext();
   }
 
-  void SetGripperModel() {
+  // Sets both actuators to have PD control.
+  void SetPdGainsForGripperModel() {
     for (JointActuatorIndex actuator_index :
          plant_->GetJointActuatorIndices()) {
       JointActuator<double>& actuator =
           plant_->get_mutable_joint_actuator(actuator_index);
       if (actuator.model_instance() == gripper_model_) {
-        actuator.set_controller_gains({kProportionalGain_, kDerivativeGain_});
+        actuator.set_controller_gains(
+            {kGripperProportionalGain_, kGripperDerivativeGain_});
+      }
+    }
+  }
+
+  // Sets only joints 2 and 4 of the arm to have PD control, even though all
+  // joints have (feed-forward) actuation.
+  void SetPdGainsForArmModel() {
+    for (JointActuatorIndex actuator_index :
+         plant_->GetJointActuatorIndices()) {
+      JointActuator<double>& actuator =
+          plant_->get_mutable_joint_actuator(actuator_index);
+      if (actuator.joint().name() == "iiwa_joint_2" ||
+          actuator.joint().name() == "iiwa_joint_4") {
+        actuator.set_controller_gains(
+            {kArmProportionalGain_, kArmDerivativeGain_});
       }
     }
   }
@@ -110,9 +127,14 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
  protected:
   const int kKukaNumPositions_{7};
   const int kGripperNumPositions_{2};
-  const double kProportionalGain_{10000.0};
-  const double kDerivativeGain_{100.0};
-  const double kEffortLimit_{80.0};  // Defined in schunk_wsg_50.sdf
+  const double kGripperProportionalGain_{10000.0};
+  const double kGripperDerivativeGain_{100.0};
+  const double kGripperEffortLimit_{80.0};  // Defined in schunk_wsg_50.sdf
+  const double kArmProportionalGain_{15000.0};
+  const double kArmDerivativeGain_{300.0};
+  // Efforts for second and fourth joints defined in iiwa14_no_collision.sdf
+  const double kArmEffortLimit2_{320.0};
+  const double kArmEffortLimit4_{176.0};
   std::unique_ptr<MultibodyPlant<double>> plant_;
   ModelInstanceIndex arm_model_;
   ModelInstanceIndex gripper_model_;
@@ -121,74 +143,99 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
 };
 
 // We verify that the SAP driver properly defined constraints to model the PD
-// controllers in the gripper fingers.
+// controllers in the gripper fingers. We build a model in which only a subset
+// of non-consecutive joints in the arm have PD control. We do this to stress
+// test the proper assembly of the resulting SAP problem.
 TEST_F(ActuatedIiiwaArmTest, VerifyConstraints) {
   // We expect each of the 1-DOF joints to be actuated.
   EXPECT_EQ(plant_->num_actuators(), plant_->num_velocities());
 
-  // Sanity check we only defined PD controllers for the grippers DOFs.
-  int num_controlled_actuators = 0;
-  for (JointActuatorIndex a : plant_->GetJointActuatorIndices()) {
-    const JointActuator<double>& actuator = plant_->get_joint_actuator(a);
-    if (actuator.has_controller()) ++num_controlled_actuators;
-  }
-  EXPECT_EQ(num_controlled_actuators, 2);
+  // Sanity check the number of actuators.
+  EXPECT_EQ(plant_->num_actuators(gripper_model_), 2);
+  EXPECT_EQ(plant_->NumPdControlledActuators(gripper_model_), 2);
+  EXPECT_EQ(plant_->num_actuators(arm_model_), 7);
+  EXPECT_EQ(plant_->NumPdControlledActuators(arm_model_), 2);
 
-  // The actuation input port for the arm is required to be connected.
-  const VectorXd arm_u =
-      VectorXd::LinSpaced(kKukaNumPositions_, 1.0, kKukaNumPositions_);
-  plant_->get_actuation_input_port(arm_model_).FixValue(context_.get(), arm_u);
+  // We must provide desired state values for all actuators, whether they have
+  // PD control or not.
+  // Values for non-controlled actuators are ignored. We fill those in with NaNs
+  // and verify they do not propagate below.
+  VectorXd plant_qd = VectorXd::LinSpaced(9, 1.0, 9.0);
+  VectorXd plant_vd = VectorXd::LinSpaced(9, 10.0, 18.0);
+  // The first actuator in the arm is not PD-controlled.
+  plant_qd[0] = NAN;
+  plant_vd[0] = NAN;
 
-  // Since the gripper has controllers, the desired state input port must be
-  // connected.
-  const VectorXd gripper_xd = (VectorXd(4) << 1., 2., 3, 4.).finished();
+  // Plant feed-forward actuation, arm (7) + gripper (2)
+  const VectorXd plant_uff = VectorXd::LinSpaced(9, 7.0, 13.0);
+
+  // Desired state for the gripper.
+  const VectorXd gripper_xd = (VectorXd(2 * kGripperNumPositions_)
+                                   << plant_qd.tail(kGripperNumPositions_),
+                               plant_vd.tail(kGripperNumPositions_))
+                                  .finished();
   plant_->get_desired_state_input_port(gripper_model_)
       .FixValue(context_.get(), gripper_xd);
 
-  // Arbitrary feed-forward term for testing.
-  const VectorXd gripper_ff = (VectorXd(2) << 5., 6.).finished();
+  // Feed-forward actuation for the gripper.
+  const VectorXd gripper_uff = plant_uff.tail(kGripperNumPositions_);
   plant_->get_actuation_input_port(gripper_model_)
-      .FixValue(context_.get(), gripper_ff);
+      .FixValue(context_.get(), gripper_uff);
 
+  // Desired state for the arm.
+  const VectorXd arm_xd =
+      (VectorXd(2 * kKukaNumPositions_) << plant_qd.head(kKukaNumPositions_),
+       plant_vd.head(kKukaNumPositions_))
+          .finished();
+  plant_->get_desired_state_input_port(arm_model_)
+      .FixValue(context_.get(), arm_xd);
+
+  // Feed-forward actuation for the arm.
+  const VectorXd arm_uff = plant_uff.head(kKukaNumPositions_);
+  plant_->get_actuation_input_port(arm_model_)
+      .FixValue(context_.get(), arm_uff);
+
+  // Evaluate the contact problem so that we can verify it has the expected
+  // constraints.
   const ContactProblemCache<double>& problem_cache =
       SapDriverTest::EvalContactProblemCache(sap_driver(), *context_);
   const SapContactProblem<double>& problem = *problem_cache.sap_problem;
 
-  // We should at least have two constraints to model the controllers.
+  // We should at least have four constraints to model the PD controllers.
   // Additional constraints will correspond to joint limits.
-  EXPECT_GE(problem.num_constraints(), 2);
-  EXPECT_GE(problem.num_constraint_equations(), 2);
+  EXPECT_GE(problem.num_constraints(), 4);
+  EXPECT_GE(problem.num_constraint_equations(), 4);
 
-  auto make_finger_config = [&](const std::string& name) {
-    const int dof = plant_->GetJointByName(name).velocity_start();
-    const int gripper_dof = dof - kKukaNumPositions_;
+  auto make_config = [&](int dof) {
     const int clique = 0;  // Only one kinematic tree in this model.
     const int clique_dof = dof;
-    const int clique_nv = 9;  // 7 Kuka DOFs + 2 gripper DOFs.
+    const int clique_nv = kKukaNumPositions_ + kGripperNumPositions_;
     const VectorXd q = plant_->GetPositions(*context_);
     const double q0 = q[dof];  // For this model nq = nv.
-    const double qd = gripper_xd(gripper_dof);
-    const double vd = gripper_xd(2 + gripper_dof);
-    const double u_ff = gripper_ff(gripper_dof);
+    const double qd = plant_qd(dof);
+    const double vd = plant_vd(dof);
+    const double u_ff = plant_uff(dof);
     SapPdControllerConstraint<double>::Configuration config{
         clique, clique_dof, clique_nv, q0, qd, vd, u_ff};
     return config;
   };
-
-  const SapPdControllerConstraint<double>::Configuration left_finger_config =
-      make_finger_config("left_finger_sliding_joint");
-  const SapPdControllerConstraint<double>::Configuration right_finger_config =
-      make_finger_config("right_finger_sliding_joint");
 
   for (int k = 0; k < problem.num_constraints(); ++k) {
     const auto* constraint =
         dynamic_cast<const SapPdControllerConstraint<double>*>(
             &problem.get_constraint(k));
     if (constraint != nullptr) {
-      const auto& p = constraint->parameters();
-      EXPECT_EQ(p.Kp(), kProportionalGain_);
-      EXPECT_EQ(p.Kd(), kDerivativeGain_);
-      EXPECT_EQ(p.effort_limit(), kEffortLimit_);
+      const auto& c = constraint->configuration();
+      // Verify that NaN desired states for non-controlled actuators do not
+      // propagate into any constraint.
+      using std::isnan;
+      EXPECT_FALSE(isnan(c.qd));
+      EXPECT_FALSE(isnan(c.vd));
+
+      // Verify expected values.
+      const SapPdControllerConstraint<double>::Configuration expected_config =
+          make_config(c.clique_dof);
+      EXPECT_EQ(c, expected_config);
 
       // Always one clique for PD controllers.
       EXPECT_EQ(constraint->num_cliques(), 1);
@@ -197,16 +244,17 @@ TEST_F(ActuatedIiiwaArmTest, VerifyConstraints) {
       EXPECT_EQ(constraint->first_clique(), 0);
       EXPECT_THROW(constraint->second_clique(), std::exception);
 
-      const auto& c = constraint->configuration();
-      EXPECT_EQ(c.clique, 0);  // There is only one clique.
-      // Either of the two gripper DOFs.
-      EXPECT_TRUE(c.clique_dof == 7 || c.clique_dof == 8);
-      EXPECT_EQ(c.clique_nv, 9);  // 7 Kuka DOFs + 2 gripper DOFs.
-
-      if (c.clique_dof == left_finger_config.clique_dof) {
-        EXPECT_EQ(c, left_finger_config);
-      } else {
-        EXPECT_EQ(c, right_finger_config);
+      const auto& p = constraint->parameters();
+      if (c.clique_dof >= 7) {  // Gripper
+        EXPECT_EQ(p.Kp(), kGripperProportionalGain_);
+        EXPECT_EQ(p.Kd(), kGripperDerivativeGain_);
+        EXPECT_EQ(p.effort_limit(), kGripperEffortLimit_);
+      } else {  // Arm
+        EXPECT_EQ(p.Kp(), kArmProportionalGain_);
+        EXPECT_EQ(p.Kd(), kArmDerivativeGain_);
+        const double expected_limit =
+            c.clique_dof == 1 ? kArmEffortLimit2_ : kArmEffortLimit4_;
+        EXPECT_EQ(p.effort_limit(), expected_limit);
       }
     }
   }
