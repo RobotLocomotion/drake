@@ -1,0 +1,376 @@
+[pybind11] Attach python lifetime to shared_ptr passed to C++
+
+This patch allows compatibility for the Drake lcm bindings, absent the
+more comprehensive changes of the RobotLocomotion/pybind11 branch.
+
+These changes were derived from the PR at pybind/pybind11#2839, with
+heavy rebasing for compatibility with more current pybind releases.
+
+TODO(rpoyner-tri): The long-awaited smart-pointer branch has merged
+upstream, and is no doubt more comprehensive than this patch. Port to a
+new upstream containing the smart-pointer features and retire this patch
+when practical.
+
+TODO(rpoyner-tri): This patch currently contains test code that is not
+run anywhere. Consider adapting it to be run by Drake builds.
+
+Co-Author: Dustin Spicuzza <dustin@virtualroadside.com>
+
+--- include/pybind11/cast.h
++++ include/pybind11/cast.h
+@@ -10,6 +10,8 @@
+ 
+ #pragma once
+ 
++#include "gil.h"
++#include "pytypes.h"
+ #include "detail/common.h"
+ #include "detail/descr.h"
+ #include "detail/type_caster_base.h"
+@@ -754,6 +756,50 @@ struct holder_helper {
+     static auto get(const T &p) -> decltype(p.get()) { return p.get(); }
+ };
+ 
++/// Another helper class for holders that helps construct derivative holders from
++/// the original holder
++template <typename T>
++struct holder_retriever {
++    static auto get_derivative_holder(const value_and_holder &v_h) -> decltype(v_h.template holder<T>()) {
++        return v_h.template holder<T>();
++    }
++};
++
++template <typename T>
++struct holder_retriever<std::shared_ptr<T>> {
++    struct shared_ptr_deleter {
++        // Note: deleter destructor fails on MSVC 2015 and GCC 4.8, so we manually
++        // call dec_ref here instead
++        handle ref;
++        void operator()(T *) {
++            gil_scoped_acquire gil;
++            ref.dec_ref();
++        }
++    };
++
++    static auto get_derivative_holder(const value_and_holder &v_h) -> std::shared_ptr<T> {
++        // If there's no trampoline class, nothing special needed
++        if (!v_h.inst->is_alias) {
++            return v_h.template holder<std::shared_ptr<T>>();
++        }
++
++        // If there's a trampoline class, ensure the python side of the object doesn't
++        // die until the C++ portion also dies
++        //
++        // The shared_ptr is always given to C++ code, so construct a new shared_ptr
++        // that is given a custom deleter. The custom deleter increments the python
++        // reference count to bind the python instance lifetime with the lifetime
++        // of the shared_ptr.
++        //
++        // This enables things like passing the last python reference of a subclass to a
++        // C++ function without the python reference dying.
++        //
++        // Reference cycles will cause a leak, but this is a limitation of shared_ptr
++        return std::shared_ptr<T>((T*)v_h.value_ptr(),
++            shared_ptr_deleter{handle((PyObject*)v_h.inst).inc_ref()});
++    }
++};
++
+ /// Type caster for holder types like std::shared_ptr, etc.
+ /// The SFINAE hook is provided to help work around the current lack of support
+ /// for smart-pointer interoperability. Please consider it an implementation
+@@ -797,7 +843,7 @@ protected:
+     void load_value(value_and_holder &&v_h) {
+         if (v_h.holder_constructed()) {
+             value = v_h.value_ptr();
+-            holder = v_h.template holder<holder_type>();
++            holder = holder_retriever<holder_type>::get_derivative_holder(v_h);
+             return;
+         }
+         throw cast_error("Unable to cast from non-held to held instance (T& to Holder<T>) "
+--- include/pybind11/detail/class.h
++++ include/pybind11/detail/class.h
+@@ -190,6 +190,11 @@ extern "C" inline PyObject *pybind11_meta_call(PyObject *type, PyObject *args, P
+         return nullptr;
+     }
+ 
++    // This must be a pybind11 instance
++    auto instance = reinterpret_cast<detail::instance *>(self);
++    // Mark this instance as an instance of an alias class
++    instance->is_alias = instance->has_alias;
++
+     // Ensure that the base __init__ function(s) were called
+     values_and_holders vhs(self);
+     for (const auto &vh : vhs) {
+--- include/pybind11/detail/common.h
++++ include/pybind11/detail/common.h
+@@ -640,6 +640,10 @@ struct instance {
+     bool simple_instance_registered : 1;
+     /// If true, get_internals().patients has an entry for this object
+     bool has_patients : 1;
++    /// If true, the type of this instance has an associated alias class (set via `init_instance`)
++    bool has_alias : 1;
++    /// If true, this instance has an associated alias class and was constructed by Python
++    bool is_alias : 1;
+ 
+     /// Initializes all of the above type/values/holders data (but not the instance values
+     /// themselves)
+--- include/pybind11/pybind11.h
++++ include/pybind11/pybind11.h
+@@ -1953,6 +1953,7 @@ private:
+     /// an optional pointer to an existing holder to use; if not specified and the instance is
+     /// `.owned`, a new holder will be constructed to manage the value pointer.
+     static void init_instance(detail::instance *inst, const void *holder_ptr) {
++        inst->has_alias = has_alias;
+         auto v_h = inst->get_value_and_holder(detail::get_type_info(typeid(type)));
+         if (!v_h.instance_registered()) {
+             register_instance(inst, v_h.value_ptr(), v_h.type);
+--- tests/CMakeLists.txt
++++ tests/CMakeLists.txt
+@@ -131,8 +131,7 @@ set(PYBIND11_TEST_FILES
+     test_custom_type_casters
+     test_custom_type_setup
+     test_docstring_options
+-    test_eigen_matrix
+-    test_eigen_tensor
++    test_eigen
+     test_enum
+     test_eval
+     test_exceptions
+@@ -150,7 +149,6 @@ set(PYBIND11_TEST_FILES
+     test_opaque_types
+     test_operator_overloading
+     test_pickling
+-    test_python_multiple_inheritance
+     test_pytypes
+     test_sequences_and_iterators
+     test_smart_ptr
+@@ -158,12 +156,8 @@ set(PYBIND11_TEST_FILES
+     test_stl_binders
+     test_tagbased_polymorphic
+     test_thread
+-    test_type_caster_pyobject_ptr
+-    test_type_caster_std_function_specializations
++    test_trampoline_shared_ptr_cpp_arg
+     test_union
+-    test_unnamed_namespace_a
+-    test_unnamed_namespace_b
+-    test_vector_unique_ptr_member
+     test_virtual_functions)
+ 
+ # Invoking cmake with something like:
+--- /dev/null
++++ tests/test_trampoline_shared_ptr_cpp_arg.cpp
+@@ -0,0 +1,79 @@
++// Copyright (c) 2021 The Pybind Development Team.
++// All rights reserved. Use of this source code is governed by a
++// BSD-style license that can be found in the LICENSE file.
++
++#include "pybind11_tests.h"
++
++namespace {
++
++// For testing whether a python subclass of a C++ object dies when the
++// last python reference is lost
++struct SpBase {
++    // returns true if the base virtual function is called
++    virtual bool is_base_used() { return true; }
++
++    // returns true if there's an associated python instance
++    bool has_python_instance() {
++        auto tinfo = py::detail::get_type_info(typeid(SpBase));
++        return (bool)py::detail::get_object_handle(this, tinfo);
++    }
++
++    SpBase()               = default;
++    SpBase(const SpBase &) = delete;
++    virtual ~SpBase()      = default;
++};
++
++struct PySpBase : SpBase {
++    bool is_base_used() override { PYBIND11_OVERRIDE(bool, SpBase, is_base_used); }
++};
++
++struct SpBaseTester {
++    std::shared_ptr<SpBase> get_object() const { return m_obj; }
++    void set_object(std::shared_ptr<SpBase> obj) { m_obj = std::move(obj); }
++    bool is_base_used() { return m_obj->is_base_used(); }
++    bool has_instance() { return (bool)m_obj; }
++    bool has_python_instance() { return m_obj && m_obj->has_python_instance(); }
++    void set_nonpython_instance() {
++        m_obj = std::make_shared<SpBase>();
++    }
++    std::shared_ptr<SpBase> m_obj;
++};
++
++// For testing that a C++ class without an alias does not retain the python
++// portion of the object
++struct SpGoAway {};
++
++struct SpGoAwayTester {
++    std::shared_ptr<SpGoAway> m_obj;
++};
++
++} // namespace
++
++TEST_SUBMODULE(trampoline_shared_ptr_cpp_arg, m) {
++    // For testing whether a python subclass of a C++ object dies when the
++    // last python reference is lost
++
++    py::class_<SpBase, std::shared_ptr<SpBase>, PySpBase>(m, "SpBase")
++        .def(py::init<>())
++        .def("is_base_used", &SpBase::is_base_used)
++        .def("has_python_instance", &SpBase::has_python_instance);
++
++    py::class_<SpBaseTester>(m, "SpBaseTester")
++        .def(py::init<>())
++        .def("get_object", &SpBaseTester::get_object)
++        .def("set_object", &SpBaseTester::set_object)
++        .def("is_base_used", &SpBaseTester::is_base_used)
++        .def("has_instance", &SpBaseTester::has_instance)
++        .def("has_python_instance", &SpBaseTester::has_python_instance)
++        .def("set_nonpython_instance", &SpBaseTester::set_nonpython_instance)
++        .def_readwrite("obj", &SpBaseTester::m_obj);
++
++    // For testing that a C++ class without an alias does not retain the python
++    // portion of the object
++
++    py::class_<SpGoAway, std::shared_ptr<SpGoAway>>(m, "SpGoAway").def(py::init<>());
++
++    py::class_<SpGoAwayTester>(m, "SpGoAwayTester")
++        .def(py::init<>())
++        .def_readwrite("obj", &SpGoAwayTester::m_obj);
++}
+--- /dev/null
++++ tests/test_trampoline_shared_ptr_cpp_arg.py
+@@ -0,0 +1,131 @@
++# -*- coding: utf-8 -*-
++import pytest
++
++import pybind11_tests.trampoline_shared_ptr_cpp_arg as m
++
++
++def test_shared_ptr_cpp_arg():
++    import weakref
++
++    class PyChild(m.SpBase):
++        def is_base_used(self):
++            return False
++
++    tester = m.SpBaseTester()
++
++    obj = PyChild()
++    objref = weakref.ref(obj)
++
++    # Pass the last python reference to the C++ function
++    tester.set_object(obj)
++    del obj
++    pytest.gc_collect()
++
++    # python reference is still around since C++ has it now
++    assert objref() is not None
++    assert tester.is_base_used() is False
++    assert tester.obj.is_base_used() is False
++    assert tester.get_object() is objref()
++
++
++def test_shared_ptr_cpp_prop():
++    class PyChild(m.SpBase):
++        def is_base_used(self):
++            return False
++
++    tester = m.SpBaseTester()
++
++    # Set the last python reference as a property of the C++ object
++    tester.obj = PyChild()
++    pytest.gc_collect()
++
++    # python reference is still around since C++ has it now
++    assert tester.is_base_used() is False
++    assert tester.has_python_instance() is True
++    assert tester.obj.is_base_used() is False
++    assert tester.obj.has_python_instance() is True
++
++
++def test_shared_ptr_arg_identity():
++    import weakref
++
++    tester = m.SpBaseTester()
++
++    obj = m.SpBase()
++    objref = weakref.ref(obj)
++
++    tester.set_object(obj)
++    del obj
++    pytest.gc_collect()
++
++    # python reference is still around since C++ has it
++    assert objref() is not None
++    assert tester.get_object() is objref()
++    assert tester.has_python_instance() is True
++
++    # python reference disappears once the C++ object releases it
++    tester.set_object(None)
++    pytest.gc_collect()
++    assert objref() is None
++
++
++def test_shared_ptr_alias_nonpython():
++    tester = m.SpBaseTester()
++
++    # C++ creates the object, a python instance shouldn't exist
++    tester.set_nonpython_instance()
++    assert tester.is_base_used() is True
++    assert tester.has_instance() is True
++    assert tester.has_python_instance() is False
++
++    # Now a python instance exists
++    cobj = tester.get_object()
++    assert cobj.has_python_instance()
++    assert tester.has_instance() is True
++    assert tester.has_python_instance() is True
++
++    # Now it's gone
++    del cobj
++    pytest.gc_collect()
++    assert tester.has_instance() is True
++    assert tester.has_python_instance() is False
++
++    # When we pass it as an arg to a new tester the python instance should
++    # disappear because it wasn't created with an alias
++    new_tester = m.SpBaseTester()
++
++    cobj = tester.get_object()
++    assert cobj.has_python_instance()
++
++    new_tester.set_object(cobj)
++    assert tester.has_python_instance() is True
++    assert new_tester.has_python_instance() is True
++
++    del cobj
++    pytest.gc_collect()
++
++    # Gone!
++    assert tester.has_instance() is True
++    assert tester.has_python_instance() is False
++    assert new_tester.has_instance() is True
++    assert new_tester.has_python_instance() is False
++
++
++def test_shared_ptr_goaway():
++    import weakref
++
++    tester = m.SpGoAwayTester()
++
++    obj = m.SpGoAway()
++    objref = weakref.ref(obj)
++
++    assert tester.obj is None
++
++    tester.obj = obj
++    del obj
++    pytest.gc_collect()
++
++    # python reference is no longer around
++    assert objref() is None
++    # C++ reference is still around
++    assert tester.obj is not None
