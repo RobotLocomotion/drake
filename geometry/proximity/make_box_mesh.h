@@ -156,6 +156,18 @@ namespace internal {
 template <typename T>
 VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box);
 
+/* Generates a tetrahedral volume mesh for a given box. The generated
+ tesselation:
+  - splits each rectangular face into four congruent triangles, and
+  - respects the medial axis.
+
+ @param[in] box
+     The box shape specification (see drake::geometry::Box).
+ @retval volume_mesh
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+VolumeMesh<T> MakeBoxVolumeMeshWithMaAndSymmetricTriangles(const Box& box);
+
 /*
  Generates a tetrahedral volume mesh of a given box by subdividing the box
  into _rectangular cells_ (volume bounded by six axis-aligned faces) and
@@ -220,6 +232,15 @@ TriangleSurfaceMesh<T> MakeBoxSurfaceMesh(const Box& box,
   // TODO(SeanCurtis-TRI): Consider putting an upper limit - as with the sphere.
   return ConvertVolumeToSurfaceMesh<T>(
       MakeBoxVolumeMesh<T>(box, resolution_hint));
+}
+
+template <typename T>
+TriangleSurfaceMesh<T> MakeBoxSurfaceMeshWithSymmetricTriangles(
+    const Box& box) {
+  // TODO(amcastro-tri): Consider an implementation with hardcoded mesh
+  // connectivities.
+  return ConvertVolumeToSurfaceMesh<T>(
+      MakeBoxVolumeMeshWithMaAndSymmetricTriangles<T>(box));
 }
 
 /* The functions below are only support functions for the main API above. They

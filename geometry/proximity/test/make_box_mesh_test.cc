@@ -64,8 +64,9 @@ bool IsTetrahedronRespectingMa(const VolumeElement& tetrahedron,
   return false;
 }
 
-// Verifies that a tetrahedral mesh of a box from MakeBoxVolumeMeshWithMa()
-// satisfies all these properties:
+// Verifies that a tetrahedral mesh of a box from MakeBoxVolumeMeshWithMa() or
+// MakeBoxVolumeMeshWithMaAndSymmetricTriangles() satisfies all these
+// properties:
 //
 //   A. The mesh is conforming.
 //   B. The mesh conforms to the box.
@@ -335,6 +336,58 @@ GTEST_TEST(MakeBoxVolumeMeshWithMaTest, ParameterValueCoverage) {
   }
 }
 
+GTEST_TEST(MakeBoxVolumeMeshWithMaAndSymmetricTriangles,
+           ParameterValueCoverage) {
+  // A box with a point MA (same three dimensions).
+  {
+    const Box box(2., 2., 2.);
+    const VolumeMesh<double> mesh =
+        MakeBoxVolumeMeshWithMaAndSymmetricTriangles<double>(box);
+    EXPECT_EQ(mesh.num_elements(), 24);
+    EXPECT_EQ(mesh.num_vertices(), 15);
+    EXPECT_TRUE(VerifyBoxMeshWithMa(mesh, box));
+  }
+
+  // A box with a line MA (two dimensions are the same).
+  {
+    // Box lengths, with L1 < L2 for a MA line of length L2.
+    const double L1 = 2;
+    const double L2 = 4;
+    // We test the 3 distinct permutations.
+    for (const Box& box : {Box{L2, L1, L1}, Box{L1, L2, L1}, Box{L1, L1, L2}}) {
+      const VolumeMesh<double> mesh =
+          MakeBoxVolumeMeshWithMaAndSymmetricTriangles<double>(box);
+      EXPECT_EQ(mesh.num_elements(), 40);
+      EXPECT_EQ(mesh.num_vertices(), 17);
+      EXPECT_TRUE(VerifyBoxMeshWithMa(mesh, box));
+    }
+  }
+
+  // A box with planar MA.
+  {
+    const double L1 = 2;
+    const double L2 = 4;
+    const double L3 = 6;
+    // We test the 6 distinct permutations.
+    for (const Box& box : {
+             // clang-format off
+             Box{L1, L2, L3},
+             Box{L1, L3, L2},
+             Box{L2, L1, L3},
+             Box{L2, L3, L1},
+             Box{L3, L1, L2},
+             Box{L3, L2, L1},
+             // clang-format on
+         }) {
+      const VolumeMesh<double> mesh =
+          MakeBoxVolumeMeshWithMaAndSymmetricTriangles<double>(box);
+      EXPECT_EQ(mesh.num_elements(), 44);
+      EXPECT_EQ(mesh.num_vertices(), 18);
+      EXPECT_TRUE(VerifyBoxMeshWithMa(mesh, box));
+    }
+  }
+}
+
 GTEST_TEST(MakeBoxVolumeMeshTest, CalcSequentialIndex) {
   const Vector3<int> num_vertices(3, 2, 5);
   EXPECT_EQ(28, CalcSequentialIndex(2, 1, 3, num_vertices));
@@ -467,6 +520,19 @@ GTEST_TEST(MakeBoxSurfaceMeshTest, GenerateSurface) {
 
   const int expect_num_vertices = 114;
   EXPECT_EQ(expect_num_vertices, surface_mesh.num_vertices());
+}
+
+// Smoke test only. Assume correctness of
+// MakeBoxVolumeMeshWithMaAndSymmetricTriangles() and
+// ConvertVolumeToSurfaceMesh().
+GTEST_TEST(MakeBoxSurfaceMeshWithSymmetricTrianglesTest, GenerateSurface) {
+  const Box box(0.2, 0.4, 0.8);
+  TriangleSurfaceMesh<double> surface_mesh =
+      MakeBoxSurfaceMeshWithSymmetricTriangles<double>(box);
+  const int expect_num_vertices = 14;  // 8 corners + 6 face centers.
+  EXPECT_EQ(expect_num_vertices, surface_mesh.num_vertices());
+  const int expect_num_elements = 24;  // Triangles.
+  EXPECT_EQ(expect_num_elements, surface_mesh.num_elements());
 }
 
 }  // namespace

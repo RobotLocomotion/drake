@@ -62,7 +62,446 @@ std::vector<VolumeElement> SplitToTetrahedra(int v0, int v1, int v2, int v3,
   }
   return elements;
 }
+
+// Makes a mesh for a cube of lengths `length`. This tesselation:
+//  - splits all faces into four triangles, and
+//  - respects the medial axis.
+template <typename T>
+VolumeMesh<T> MakeBoxWithPointMa(double length) {
+  // clang-format off
+  std::vector<VolumeElement> elements = {
+    // Every tetrahedron shares vertex 8, the MA point. Each tetrahedron has one
+    // vertex from the six face-center vertices (see description of vertex 9-14
+    // later) as the last vertex in each of the 4-vertex lists below. The
+    // remaining two vertices in each tetrahedron form an edge (two adjacent
+    // corners) of the cube (see description of vertex 0-7 later).
+    //
+    // Each of the six face-center vertices is used in four tetrahedra, and each
+    // of the twelve edges of the cube is used in two tetrahedra: 6x4 = 12x2 =
+    // 24 tetrahedra in total.
+    //
+    // We have verified the above properties in Paraview.
+    {8, 0, 4, 11},
+    {3, 8, 1,  9},
+    {0, 8, 4, 13},
+    {8, 7, 3, 14},
+    {8, 5, 4, 10},
+    {8, 0, 1,  9},
+    {5, 8, 1, 14},
+    {0, 8, 2,  9},
+    {2, 8, 3,  9},
+    {8, 4, 6, 10},
+    {7, 8, 6, 10},
+    {8, 5, 1, 11},
+    {4, 8, 6, 13},
+    {8, 5, 7, 14},
+    {8, 7, 6, 12},
+    {8, 6, 2, 12},
+    {5, 8, 7, 10},
+    {5, 8, 4, 11},
+    {8, 3, 1, 14},
+    {8, 2, 3, 12},
+    {7, 8, 3, 12},
+    {8, 0, 2, 13},
+    {6, 8, 2, 13},
+    {0, 8, 1, 11}};
+  // clang-format on
+
+  // clang-format off
+  const T L = length / 2.0;
+  std::vector<Vector3<T>> vertices  = {
+    // Vertex 0 to 7 are the eight corners (±L, ±L, ±L) of the box.
+    {-L, -L, -L},
+    {-L, -L,  L},
+    {-L,  L, -L},
+    {-L,  L,  L},
+    { L, -L, -L},
+    { L, -L,  L},
+    { L,  L, -L},
+    { L,  L,  L},
+    // Vertex 8 is the point MA at the origin of the box's frame.
+    {0., 0., 0.},
+    // Vertex 9 to 14 are the six face centers.
+    {-L, 0., 0.},
+    { L, 0., 0.},
+    {0., -L, 0.},
+    {0.,  L, 0.},
+    {0., 0., -L},
+    {0., 0.,  L}};
+  // clang-format on
+
+  return {std::move(elements), std::move(vertices)};
+}
+
+// Makes a mesh for a box having two lengths to be equal and smaller than the
+// third length. This tesselation:
+//  - splits all faces into four triangles, and
+//  - respects the medial axis.
+// @pre The box has a line MA.
+template <typename T>
+VolumeMesh<T> MakeBoxWithLineMa(const Box& box) {
+  // Below, `elements` and `vertices` define a tessellation of the box in a
+  // canonical frame in which the longest size is along the z-axis.
+
+  // clang-format off
+  // The medial surface partitions the box into two square pyramids on the
+  // square faces of the box and four rectangular hip-roofs
+  // (https://en.wikipedia.org/wiki/Hip_roof) on the four rectangular faces of
+  // the box.
+  //
+  // These pictures are examples of such a square pyramid and a rectangular
+  // hip-roof.
+  //
+  //           +-----------+          These pictures are intended to be
+  //           | ↘       ↙ |          three dimensional with the axis of
+  //           |   ↘   ↙   |          the third dimension perpendicular
+  //           |     x     |          to the screen. The arrows go from
+  //           |   ↗   ↖   |          lower altitude to higher altitude.
+  //           | ↗       ↖ |          All arrows have the same slope 1.
+  //           +-----------+
+  //
+  //   +--------------------------+
+  //   | ↘                      ↙ |
+  //   |   ↘                  ↙   |
+  //   |     x--------------x     |
+  //   |   ↗                  ↖   |
+  //   | ↗                      ↖ |
+  //   +--------------------------+
+  //
+  // We further subdivide the above polytopes by the six face centers (vertex 11
+  // to 16) of the box and the body center (vertex 10) of the box in the
+  // following ways.
+  //
+  // For each square pyramid, we connect a square-face center (vertex 15 or 16)
+  // of the box to each of the four triangles of the pyramid, so we have 4
+  // tetrahedra per pyramid. (The connectivity below shows 4 entries with vertex
+  // 15 and 4 entries with vertex 16.)
+  //
+  // For each hip-roof (two triangles and two trapezoids in the above picture),
+  // we subdivide each trapezoid into three triangles (one isosceles triangle
+  // and two obtuse triangles) by the body center (vertex 10) like this:
+  //
+  //   +---------------------------+
+  //     ↘  .                 .  ↙
+  //       ↘     .       .     ↙
+  //         x-------o-------x
+  //                V10
+  //
+  // Each hip-roof becomes 8 triangles (2 trapezoids x 3 triangles/trapezoid + 2
+  // triangles). To create tetrahedra, we connect a face center on the
+  // rectangular face of the box (vertex 11, 12, 13, or 14) to each of the eight
+  // triangles.  We have 8 tetrahedra per hip-roof. (Each of vertex 11, 12, 13,
+  // and 14 appears in 8 entries in the table below.)
+  //
+  // In total we have 40 tetrahedra:
+  //    2 pyramids x 4 tetrahedra/pyramid = 8 tetrahedra
+  //    4 hip roofs x 8 tetrahedra/hip roof = 32 tetrahedra
+  //
+  // We have verified the connectivity manually in Paraview.
+  std::vector<VolumeElement> elements = {
+    { 5,   10,    4,   13},
+    { 3,    1,    8,   16},
+    { 7,    8,    5,   16},
+    { 6,    9,    4,   12},
+    { 8,    1,    5,   16},
+    { 2,   10,    3,   11},
+    { 6,    7,   10,   12},
+    {10,    5,    4,   12},
+    {10,    0,    1,   11},
+    { 7,    6,   10,   14},
+    { 8,    7,    5,   12},
+    { 3,    8,    7,   16},
+    { 6,    9,    2,   15},
+    { 9,    0,    2,   15},
+    { 1,    8,   10,   11},
+    { 1,    3,    8,   11},
+    { 8,    3,   10,   11},
+    { 2,    9,   10,   11},
+    { 0,    9,    2,   11},
+    {10,    9,    0,   11},
+    { 8,    3,    7,   14},
+    { 8,    7,   10,   14},
+    { 9,    6,    2,   14},
+    {10,    6,    9,   14},
+    {10,    2,    3,   14},
+    { 3,    8,   10,   14},
+    { 9,    2,   10,   14},
+    { 9,    4,    0,   15},
+    { 9,    6,    4,   15},
+    {10,    9,    4,   13},
+    { 4,    9,    0,   13},
+    { 8,   10,    5,   13},
+    { 1,    8,    5,   13},
+    { 0,   10,    1,   13},
+    { 9,   10,    0,   13},
+    { 8,    1,   10,   13},
+    {10,    8,    5,   12},
+    { 7,    8,   10,   12},
+    { 9,   10,    4,   12},
+    { 6,   10,    9,   12}};
+  // clang-format on
+
+  // We first create the mesh in the canonical frame and then rotate it back to
+  // the original frame.
+  const Vector3d half_sizes = box.size() / 2.0;
+  int z_dir;
+  const T L2 = half_sizes.maxCoeff(&z_dir);
+  const int x_dir = (z_dir + 1) % 3;
+  const T L1 = half_sizes(x_dir);
+  const T Lm = L2 - L1;  // MA half size.
+
+  // Coordinates of the box in the canonical frame, where the z-axis is aligned
+  // along the longest size.
+  // clang-format off
+  std::vector<Vector3<T>> vertices  = {
+    // Vertex 0-7 are the eight corners (±L1, ±L1, ±L2) of the box.
+    {-L1, -L1, -L2},
+    {-L1, -L1,  L2},
+    {-L1,  L1, -L2},
+    {-L1,  L1,  L2},
+    { L1, -L1, -L2},
+    { L1, -L1,  L2},
+    { L1,  L1, -L2},
+    { L1,  L1,  L2},
+    // Vertices 8 and 9 are the endpoints of the median line.
+    { 0,  0,  Lm},
+    { 0,  0, -Lm},
+    // Vertex 10 is the center of the median line, i.e. the center of the box.
+    { 0,  0,  0},
+    {-L1,  0,  0},
+    { L1,  0,  0},
+    { 0, -L1,  0},
+    { 0,  L1,  0},
+    { 0,  0, -L2},
+    { 0,  0,  L2}};
+  // clang-format on
+
+  if (z_dir == 0) {
+    // Rotate 90 degrees around the canonical y axis.
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [](const Vector3<T>& p) {
+                     return Vector3<T>(-p(2), p(1), p(0));
+                   });
+  }
+
+  if (z_dir == 1) {
+    // Rotate 90 degrees around the canonical x axis.
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [](const Vector3<T>& p) {
+                     return Vector3<T>(p(0), -p(2), p(1));
+                   });
+  }
+
+  return {std::move(elements), std::move(vertices)};
+}
+
+// Makes a mesh for a box for which its medial axis forms a rectangular surface.
+// This tesselation:
+//  - splits all faces into four triangles, and
+//  - respects the medial axis.
+// @pre The box has a rectangular MA.
+template <typename T>
+VolumeMesh<T> MakeBoxWithRectangleMa(const Box& box) {
+  // Below, `elements` and `vertices` define a tessellation of the box in a
+  // canonical frame in which the shortest size is along the x-axis. This x-axis
+  // is then perpendicular to the plane that contains the rectangular MA.
+
+  // clang-format off
+  // The medial surface partitions the box into two frustums and four hip-roofs
+  // (https://en.wikipedia.org/wiki/Hip_roof). Examples of a frustum
+  // (perpendicular to the x-axis) and two hip-roofs (perpendicular to the
+  // y-axis and z-axis) are shown in this orthographic picture (Mᵢ are the
+  // medial vertices):
+  //
+  //     +--------------------------+      +---------+
+  //     | ↘  Mᵢ               Mⱼ ↙ |      | ↘    ↙  |
+  //     |   ↘------------------↙   |      |   ↘ ↙   |
+  //     |   |                  |   |      |    |    |
+  //     |   ↗------------------↖   |      |   ↗ ↖   |
+  //     | ↗  Mₖ               Mₗ ↖ |      | ↗     ↖ |
+  //     +--------------------------+      +---------+
+  //
+  //     +--------------------------+   These pictures are intended to be
+  //     | ↘                      ↙ |   three-dimensional with the axis of
+  //     |   x------------------x   |   the third dimension perpendicular
+  //     | ↗                      ↖ |   to the screen. The arrows go from
+  //     +--------------------------+   lower altitude to higher altitude.
+  //                                    All arrows have the same slope, 1.
+  //
+  // For each of the two frustums, we cut the medial rectangle MᵢMⱼMₖMₗ (vertex
+  // 8-11) into two triangles and cut each of the four trapezoids into two
+  // triangles. There are 2 + 2x4 = 10 such triangles. To create tetrahedra, we
+  // connect one of the two face centers on the x-axis (vertex 12 and 13) to the
+  // 10 triangles. Each of vertex 12 and vertex 13 is listed in 10 entries in
+  // the table below.
+  //
+  // For each of the four hip-roofs, we cut each of its two trapezoidal faces
+  // into two triangles, so we have six triangles per hip-roof.  To create
+  // tetrahedra, we connect a face center on the y-axis or z-axis (vertex 14,
+  // 15, 16, or 17) to the six triangles. Each of vertex 14 to 17 is listed 6
+  // times in the table below.
+  //
+  // In total there are 44 tetrahedra:
+  //     2 frustums x 10 tetrahedra/frustum = 20 tetrahedra,
+  //     4 hip-roofs x 6 tetrahedra/hip-roof = 24.
+  //
+  // We have manually verified the connectivity in Paraview.
+  std::vector<VolumeElement> elements = {
+    { 4, 11,  6, 16},
+    { 8,  5,  1, 14},
+    { 5,  9,  8, 17},
+    { 5,  4,  8, 13},
+    { 5,  8,  1, 17},
+    { 0, 11,  2, 12},
+    { 7,  9,  6, 13},
+    { 3,  7,  9, 15},
+    { 3,  2,  9, 12},
+    { 9,  7,  6, 15},
+    { 1,  9,  3, 17},
+    { 6, 11,  2, 16},
+    { 2, 11,  9, 12},
+    { 9,  8,  1, 12},
+    { 9,  5,  8, 13},
+    { 5,  9,  7, 13},
+    { 8,  9, 11, 12},
+    { 8,  0,  1, 12},
+    {11,  4,  6, 13},
+    { 9,  1,  3, 12},
+    { 4,  5,  8, 14},
+    { 7,  3,  9, 17},
+    { 9,  5,  7, 17},
+    { 8, 11, 10, 12},
+    { 0,  8, 10, 12},
+    {11,  0, 10, 12},
+    { 8,  9,  1, 17},
+    {11,  6,  2, 15},
+    {11,  9,  6, 15},
+    { 2,  3,  9, 15},
+    {11,  2,  9, 15},
+    { 4,  0, 10, 16},
+    {11,  4, 10, 16},
+    {11,  0,  2, 16},
+    { 0, 11, 10, 16},
+    { 4,  8, 10, 14},
+    { 0,  4, 10, 14},
+    { 0,  8,  1, 14},
+    { 8,  0, 10, 14},
+    { 9, 11,  6, 13},
+    { 9,  8, 11, 13},
+    { 8,  4, 10, 13},
+    {11,  8, 10, 13},
+    { 4, 11, 10, 13}};
+  // clang-format on
+
+  // We first make a mesh for the box int its canonical frame and then rotate it
+  // back to the original frame of the box.
+  const Vector3d half_sizes = box.size() / 2.0;
+
+  int x_dir;  // The MA normal is in the x_dir.
+  const T L1 = half_sizes.minCoeff(&x_dir);
+
+  // Default initialize L2 and L3 for the case x_dir == 0, when no rotation is
+  // needed.
+  T L2 = half_sizes(1);
+  T L3 = half_sizes(2);
+
+  if (x_dir == 2) {
+    // We'll rotate from the canonical frame along y.
+    // Therefore y axis length stays the same and x swaps with z.
+    L2 = half_sizes(1);  // stays the same
+    L3 = half_sizes(0);  // swaps x and z
+  }
+
+  if (x_dir == 1) {
+    // We'll rotate from the canonical frame along z.
+    // Therefore z axis length stays the same and x swaps with y.
+    L3 = half_sizes(2);  // stays the same.
+    L2 = half_sizes(0);  // swaps x and y.
+  }
+
+  // MA half sizes.
+  const T Lm2 = L2 - L1;
+  const T Lm3 = L3 - L1;
+
+  // Coordinates of the box in the canonical frame C. Lengths L1 < L2 < L3 are
+  // along Cx, Cy, Cz respectively and the MA plane is in the y-z plane (zero
+  // size in x).
+  // clang-format off
+  std::vector<Vector3<T>> vertices  = {
+    // Vertex 0-7 are at the 8 corners of the box.
+    {-L1, -L2, -L3},
+    {-L1, -L2,  L3},
+    {-L1,  L2, -L3},
+    {-L1,  L2,  L3},
+    { L1, -L2, -L3},
+    { L1, -L2,  L3},
+    { L1,  L2, -L3},
+    { L1,  L2,  L3},
+    // Vertex 8-11 are at the 4 corners of the rectangular face of MA.
+    { 0, -Lm2,  Lm3},
+    { 0,  Lm2,  Lm3},
+    { 0, -Lm2, -Lm3},
+    { 0,  Lm2, -Lm3},
+    // Vertex 12-17 are at the 6 face centers of the box.
+    {-L1,  0,  0},
+    { L1,  0,  0},
+    { 0, -L2,  0},
+    { 0,  L2,  0},
+    { 0,  0, -L3},
+    { 0,  0,  L3}};
+  // clang-format on
+
+  if (x_dir == 2) {
+    // Rotate 90 degrees around the canonical y axis.
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [](const Vector3<T>& p) {
+                     return Vector3<T>(-p(2), p(1), p(0));
+                   });
+  }
+
+  if (x_dir == 1) {
+    // Rotate 90 degrees around the canonical z axis.
+    std::transform(vertices.begin(), vertices.end(), vertices.begin(),
+                   [](const Vector3<T>& p) {
+                     return Vector3<T>(-p(1), p(0), p(2));
+                   });
+  }
+
+  return {std::move(elements), std::move(vertices)};
+}
+
 }  // namespace
+
+template <typename T>
+VolumeMesh<T> MakeBoxVolumeMeshWithMaAndSymmetricTriangles(const Box& box) {
+  const Vector3d half_box = box.size() / 2.;
+  const double min_half_box = half_box.minCoeff();
+
+  const Vector3d half_central_Ma_before_tolerancing =
+      half_box - Vector3d::Constant(min_half_box);
+  const Vector3d half_central_Ma =
+      (half_central_Ma_before_tolerancing.array() >
+       DistanceToPointRelativeTolerance(min_half_box))
+          .select(half_central_Ma_before_tolerancing, 0.);
+
+  // MA is zero in all directions, collapsing to a single point.
+  const bool ma_is_point = half_central_Ma.x() == 0 &&
+                           half_central_Ma.y() == 0 && half_central_Ma.z() == 0;
+  if (ma_is_point) return MakeBoxWithPointMa<T>(box.width());
+
+  // MA is zero in two directions, collapsing into a line.
+  const bool ma_is_line =
+      ((half_central_Ma.x() == 0) + (half_central_Ma.y() == 0) +
+       (half_central_Ma.z() == 0)) == 2;
+  if (ma_is_line) return MakeBoxWithLineMa<T>(box);
+
+  // MA is zero in one direction only, collapsing into a rectangle.
+  const bool ma_is_rectangle =
+      ((half_central_Ma.x() == 0) + (half_central_Ma.y() == 0) +
+       (half_central_Ma.z() == 0)) == 1;
+  DRAKE_DEMAND(ma_is_rectangle);
+  return MakeBoxWithRectangleMa<T>(box);
+}
 
 template <typename T>
 VolumeMesh<T> MakeBoxVolumeMeshWithMa(const Box& box) {
@@ -448,7 +887,8 @@ VolumeMesh<T> MakeBoxVolumeMesh(const Box& box, double resolution_hint) {
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
-    (&MakeBoxVolumeMesh<T>, &MakeBoxVolumeMeshWithMa<T>));
+    (&MakeBoxVolumeMesh<T>, &MakeBoxVolumeMeshWithMa<T>,
+     MakeBoxVolumeMeshWithMaAndSymmetricTriangles<T>));
 
 }  // namespace internal
 }  // namespace geometry
