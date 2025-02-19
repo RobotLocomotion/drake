@@ -1142,7 +1142,7 @@ class Meshcat::Impl {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     // Get internal collision map
-    const voxelized_geometry_tools::CollisionMap grid =
+    const voxelized_geometry_tools::CollisionMap& grid =
       planning::internal::GetInternalCollisionMap(voxel_collision_map);
     const auto total_cells = grid.GetTotalCells();
     const auto grid_sizes = grid.GetGridSizes();
@@ -1199,8 +1199,8 @@ class Meshcat::Impl {
     }
 
     // Set both BoxLists
-    SetObject(path, occupied_box_list, occupied_rgba);
-    SetObject(path, unknown_box_list, unknown_rgba);
+    SetObject(std::string(path) + "/occupied", occupied_box_list, occupied_rgba);
+    SetObject(std::string(path) + "/unknown", unknown_box_list, unknown_rgba);
   }
 
   // This function is public via the PIMPL.
