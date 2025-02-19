@@ -107,6 +107,28 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   time_ = diagram_context.get_time();
   time_step_ = h;
 
+  //////////////////////// DEBUG //////////////////////////
+  // introspect on the continuous state
+  ContinuousState<T>& xc = diagram_context.get_mutable_continuous_state();
+  fmt::print("Continuous state size: {}\n", xc.size());
+  fmt::print("Generalized positions: {}\n", xc.num_q());
+  fmt::print("Generalized velocities: {}\n", xc.num_v());
+  fmt::print("Miscellaneous continuous state: {}\n", xc.num_z());
+
+  ContinuousState<T>& xc_plant = context.get_mutable_continuous_state();
+  fmt::print("Plant continuous state size: {}\n", xc_plant.size());
+  fmt::print("Plant generalized positions: {}\n", xc_plant.num_q());
+  fmt::print("Plant generalized velocities: {}\n", xc_plant.num_v());
+  fmt::print("Plant miscellaneous continuous state: {}\n", xc_plant.num_z());
+
+  // What is in the plant's actuation input port?
+  // const auto& actuation_input = plant().get_actuation_input_port().Eval(context);
+  // fmt::print("Actuation input port size: {}\n", actuation_input.size());
+  // fmt::print("Actuation input port: {}\n", fmt_eigen(actuation_input));
+
+  getchar();
+  //////////////////////// DEBUG //////////////////////////
+
   // Workspace preallocations
   VectorX<T>& q = workspace_.q;
   VectorX<T>& v = workspace_.v;
@@ -788,8 +810,15 @@ void ConvexIntegrator<T>::CalcTimestepIndependentProblemData(
   data->v0 = plant().GetVelocities(context);  // initial velocity
   plant().CalcMassMatrix(context, &data->M);  // mass matrix
 
-  // accelerations
+  // TODO(vincekurtz): include external generalized and spatial forces
   plant().CalcForceElementsContribution(context, &f_ext);
+  if (plant().num_actuators() > 0) {
+    f_ext.mutable_generalized_forces() +=
+        plant().MakeActuationMatrix() *
+        plant().get_actuation_input_port().Eval(context);
+  }
+
+  // accelerations
   k = plant().CalcInverseDynamics(
       context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
   data->a = data->M.ldlt().solve(-k);
