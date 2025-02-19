@@ -343,8 +343,9 @@ std::optional<std::string> RotationalInertia<T>::CreateInvalidityReport()
   // Default return value is an empty string (this RotationalInertia is valid).
   std::string error_message;
   if (!IsFinite()) {
-    error_message = fmt::format("\nNon-finite moment or product of inertia "
-                                "detected in RotationalInertia.");
+    error_message = fmt::format(
+        "\nNon-finite moment or product of inertia "
+        "detected in RotationalInertia.");
   } else if constexpr (scalar_predicate<T>::is_bool) {
     if (!AreMomentsOfInertiaNearPositiveAndSatisfyTriangleInequality()) {
       const Vector3<double> p = CalcPrincipalMomentsOfInertia();
