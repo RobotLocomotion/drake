@@ -72,6 +72,11 @@ DEFINE_bool(full_newton, false, "Update Jacobian every iteration.");
 DEFINE_bool(save_csv, false, "Save CSV data for the convex integrator.");
 DEFINE_bool(trapezoid, false, "Implicit trapezoid rule for error estimation.");
 
+// PID controller parameters
+DEFINE_double(kp, 500, "Proportional gain for PID controller.");
+DEFINE_double(kd, 50, "Derivative gain for PID controller.");
+DEFINE_double(ki, 10, "Integral gain for PID controller.");
+
 using drake::geometry::CollisionFilterDeclaration;
 using drake::math::RigidTransform;
 using drake::math::RigidTransformd;
@@ -134,9 +139,12 @@ int do_main() {
   x_nom << q_nom, VectorXd::Zero(9);
 
   VectorXd Kp(9), Kd(9), Ki(9);
-  Kp << 100, 100, 100, 100, 100, 100, 100, 10, 10;
-  Kd << 20, 20, 20, 20, 20, 20, 20, 2, 2;
-  Ki << 10, 10, 10, 10, 10, 10, 10, 1, 1;
+  Kp << FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp,
+      0.1 * FLAGS_kp, 0.1 * FLAGS_kp;
+  Kd << FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd,
+      0.1 * FLAGS_kd, 0.1 * FLAGS_kd;
+  Ki << FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki,
+      0.1 * FLAGS_ki, 0.1 * FLAGS_ki;
 
   auto pid_controller = builder.AddSystem<PidController>(Kp, Ki, Kd);
   auto nominal_state_source = builder.AddSystem<ConstantVectorSource>(x_nom);
