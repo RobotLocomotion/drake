@@ -34,7 +34,8 @@ int do_main() {
 
   // Create a simple voxel collision map
   const std::string parent_frame = "world";
-  const RigidTransformd X_PG;  // Identity transform
+  const RigidTransformd X_PG (
+    math::RollPitchYawd{M_PI / 6, M_PI / 6., 0.}, {0., 0., 0.5});  // Translation: z = 0.5
   const Vector3d grid_dimensions(1.0, 1.0, 1.0);  // 1m cube
   const double grid_resolution = 0.1;  // 10cm voxels
   const float default_occupancy = 0.5;  // Unknown by default

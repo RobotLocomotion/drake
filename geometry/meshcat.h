@@ -213,7 +213,7 @@ class Meshcat {
 
   struct BoxList {
     Eigen::Vector3f box_size;
-    Eigen::Matrix<float, 16, Eigen::Dynamic> centers;
+    Eigen::Matrix<float, 16, Eigen::Dynamic> transforms;
   };
 
   /** Sets the "object" at a given `path` in the scene tree to be

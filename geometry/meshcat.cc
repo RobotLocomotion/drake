@@ -1121,8 +1121,8 @@ class Meshcat::Impl {
     mesh.type = "InstancedMesh";
     mesh.geometry = data.object.geometry->uuid;
     mesh.material =  data.object.material->uuid;
-    mesh.count = box_list.centers.cols();
-    mesh.instanceMatrix = std::move(box_list.centers);
+    mesh.count = box_list.transforms.cols();
+    mesh.instanceMatrix = std::move(box_list.transforms);
     data.object.object = std::move(mesh);
 
     Defer([this, data = std::move(data)]() {
@@ -1163,38 +1163,44 @@ class Meshcat::Impl {
 
     BoxList occupied_box_list;
     occupied_box_list.box_size = cell_sizes;
-    occupied_box_list.centers.resize(16, num_occupied_cells);
+    occupied_box_list.transforms.resize(16, num_occupied_cells);
 
     BoxList unknown_box_list;
     unknown_box_list.box_size = cell_sizes;
-    unknown_box_list.centers.resize(16, num_unknown_cells);
+    unknown_box_list.transforms.resize(16, num_unknown_cells);
 
-    // Dummy transform. Each cell instance will only modify the translation of
-    // this transform.
-    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+    // Transform between the parent frame and the grid frame.
+    // The origin of the grid frame is a corner of the grid.
+    const RigidTransformd X_PG (grid.GetOriginTransform());
+
+    // Transform between the grid frame and the cell's frame.
+    // This will be a pure translation.
+    RigidTransformd X_GC = RigidTransformd::Identity();
 
     for (int64_t data_index = 0, occupied_counter = 0, unknown_counter = 0;
          data_index < total_cells; ++data_index) {
       // Get cell.
       const auto& cell = grid.GetDataIndexImmutable(data_index);
 
-      // Get location in the grid's frame.
-      const auto& grid_index = grid_sizes.GetGridIndexFromDataIndex(data_index);
-      const Eigen::Vector3d& location =
-        grid.GridIndexToLocationInGridFrame(grid_index).head<3>();
+      // Compute transform only if cell is occupied or occupancy is unknown.
+      Eigen::Vector<float, 16> transform;
+      if (cell.Occupancy() > 0.)
+      {
+        const auto& grid_index = grid_sizes.GetGridIndexFromDataIndex(data_index);
+        const Eigen::Vector3d translation =
+          grid.GridIndexToLocationInGridFrame(grid_index).head<3>();
+        X_GC.set_translation(translation);
+        Eigen::Matrix4f X_PC = (X_PG * X_GC).GetAsMatrix4().cast<float>();
+        transform = Eigen::Map<Eigen::Vector<float, 16>>(X_PC.data());
+      }
 
       // Flatten the transform matrix in column-major order
       if (cell.Occupancy() > 0.5) {
         // Occupied voxel
-        transform.block<3,1>(0,3) = location.cast<float>();
-        occupied_box_list.centers.col(occupied_counter++) =
-          Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
+        occupied_box_list.transforms.col(occupied_counter++) = transform;
       }
       else if (cell.Occupancy() == 0.5) {
-        // Unknown voxel
-        transform.block<3,1>(0,3) = location.cast<float>();
-        unknown_box_list.centers.col(unknown_counter++) =
-         Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
+        unknown_box_list.transforms.col(unknown_counter++) = transform;
       }
     }
 
