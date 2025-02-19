@@ -29,15 +29,15 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
+#include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace multibody {
 namespace examples {
 namespace {
-
-constexpr double kHuge = 1.0e40;
 
 // Simulation parameters.
 DEFINE_double(simulation_time, 10.0, "Simulation duration in seconds");
@@ -49,37 +49,8 @@ DEFINE_double(
     "and no contact forces are displayed.  mbp_time_step must be >= 0.");
 
 // Physical parameters.
-DEFINE_double(density, 1000.0, "The density of all objects, in kg/m³.");
-DEFINE_double(friction_coefficient, 1.0,
-              "All friction coefficients have this value.");
-DEFINE_double(box_stiffness, 1.0e5, "Box point contact stiffness in N/m.");
-DEFINE_double(sphere_stiffness, 1.0e5,
-              "Sphere point contact stiffness in N/m.");
 DEFINE_bool(use_hydro, false, "If true, use hydro. Otherwise point contact.");
-DEFINE_double(sphere_resolution, 0.02, "Resolution hint for the sphere");
-DEFINE_double(dissipation_time_constant, 0.01,
-              "Dissipation time constant in seconds.");
-DEFINE_double(hc_dissipation, 10.0, "Hunt & Crossley dissipation [s/m].");
 DEFINE_double(stiction_tolerance, 1.0e-4, "Stiction tolerance [m/s].");
-
-// Contact geometry parameters.
-DEFINE_bool(
-    emulate_box_multicontact, true,
-    "Emulate multicontact by adding spheres to the faces of box geometries.");
-DEFINE_int32(
-    num_spheres_per_face, 3,
-    "Multi-contact emulation. We place num_sphere x num_spheres_per_face on "
-    "each box face, when emulate_box_multicontact = true.");
-DEFINE_bool(enable_box_box_collision, false, "Enable box vs. box contact.");
-DEFINE_bool(add_box_corners, false,
-            "Adds collision points at the corners of each box.");
-
-// Scenario parameters.
-DEFINE_int32(objects_per_pile, 5, "Number of objects per pile.");
-DEFINE_double(dz, 0.15, "Initial distance between objects in the pile.");
-DEFINE_double(scale_factor, 1.0, "Multiplicative factor to generate the pile.");
-DEFINE_bool(add_sink_walls, true, "Adds wall of a sink model.");
-DEFINE_bool(enable_boxes, false, "Make some of the objects boxes.");
 
 // Visualization.
 DEFINE_bool(visualize, true, "Whether to visualize (true) or not (false).");
@@ -88,7 +59,7 @@ DEFINE_bool(visualize_forces, false,
 DEFINE_double(viz_period, 1.0 / 60.0, "Viz period.");
 
 // Discrete contact solver.
-DEFINE_string(discrete_contact_approximation, "sap",
+DEFINE_string(discrete_contact_approximation, "lagged",
               "Discrete contact solver. Options are: 'tamsi', 'sap', 'lagged', "
               "'similar'.");
 DEFINE_double(near_rigid_threshold, 1.0, "SAP near rigid threshold.");
@@ -108,9 +79,11 @@ using drake::math::RollPitchYawd;
 using drake::math::RotationMatrixd;
 using drake::multibody::ContactResults;
 using drake::multibody::MultibodyPlant;
+using drake::systems::ConstantVectorSource;
 using drake::systems::ConvexIntegrator;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::IntegratorBase;
+using drake::systems::controllers::PidController;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -154,9 +127,26 @@ int do_main() {
                              &scene_graph, meshcat);
   }
 
-  // TODO(vincekurtz): Add a PID controller
+  // Add a PID controller
   VectorXd q_nom(9);
   q_nom << 0, 0, 0, -M_PI_2, 0, M_PI_2, 0, 0.01, 0.01;
+  VectorXd x_nom(18);
+  x_nom << q_nom, VectorXd::Zero(9);
+
+  VectorXd Kp(9), Kd(9), Ki(9);
+  Kp << 100, 100, 100, 100, 100, 100, 100, 10, 10;
+  Kd << 20, 20, 20, 20, 20, 20, 20, 2, 2;
+  Ki << 10, 10, 10, 10, 10, 10, 10, 1, 1;
+
+  auto pid_controller = builder.AddSystem<PidController>(Kp, Ki, Kd);
+  auto nominal_state_source = builder.AddSystem<ConstantVectorSource>(x_nom);
+
+  builder.Connect(nominal_state_source->get_output_port(),
+                  pid_controller->get_input_port_desired_state());
+  builder.Connect(plant.get_state_output_port(),
+                  pid_controller->get_input_port_estimated_state());
+  builder.Connect(pid_controller->get_output_port_control(),
+                  plant.get_actuation_input_port());
 
   auto diagram = builder.Build();
 
@@ -221,6 +211,12 @@ int do_main() {
   meshcat->PublishRecording();
 
   PrintSimulatorStatistics(*simulator);
+
+  // Wait for user input again b/c meshcat is too slow to publish the recording
+  if (FLAGS_visualize) {
+    std::cout << "Press any key to quit ...\n";
+    getchar();
+  }
 
   return 0;
 }
