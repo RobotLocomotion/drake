@@ -1,0 +1,37 @@
+# -*- python -*-
+# This file contains rules for Bazel; see drake/doc/bazel.rst.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_binary(
+    name = "franka",
+    srcs = [
+        "franka.cc",
+    ],
+    data = [
+        "@drake_models//:franka_description",
+    ],
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//geometry:drake_visualizer",
+        "//geometry:meshcat_visualizer",
+        "//multibody/contact_solvers/sap:sap_solver",
+        "//multibody/meshcat:contact_visualizer",
+        "//multibody/parsing:parser",
+        "//multibody/plant:contact_results_to_lcm",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "//visualization:visualization_config_functions",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
