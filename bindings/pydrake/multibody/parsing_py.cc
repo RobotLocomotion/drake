@@ -113,6 +113,12 @@ PYBIND11_MODULE(parsing, m) {
         .def(py::init<MultibodyPlant<double>*, std::string_view>(),
             py::arg("plant"), py::arg("model_name_prefix"),
             cls_doc.ctor.doc_2args_plant_model_name_prefix)
+        .def(py::init<systems::DiagramBuilder<double>*, MultibodyPlant<double>*,
+                 geometry::SceneGraph<double>*, std::string_view>(),
+            py::arg("builder"), py::arg("plant") = nullptr,
+            py::arg("scene_graph") = nullptr, py::arg("model_name_prefix") = "",
+            cls_doc.ctor.doc_4args_builder_plant_scene_graph_model_name_prefix)
+        .def("builder", &Class::builder, py_rvp::reference, cls_doc.builder.doc)
         .def("plant", &Class::plant, py_rvp::reference, cls_doc.plant.doc)
         .def("scene_graph", &Class::scene_graph, py_rvp::reference,
             cls_doc.scene_graph.doc)
