@@ -337,13 +337,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
     const Box& box, const ProximityProperties&) {
-  PositiveDouble validator("Box", "rigid");
-  // Use the coarsest mesh for the box. The safety factor 1.1 guarantees the
-  // resolution-hint argument is larger than the box size, so the mesh
-  // will have only 8 vertices and 12 triangles.
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
-      MakeBoxSurfaceMesh<double>(box, 1.1 * box.size().maxCoeff()));
-
+      MakeBoxSurfaceMeshWithSymmetricTriangles<double>(box));
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
@@ -458,7 +453,7 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
   // First, create an inflated mesh.
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
-      MakeBoxVolumeMeshWithMa<double>(inflated_box));
+      MakeBoxVolumeMeshWithMaAndSymmetricTriangles<double>(inflated_box));
 
   const double hydroelastic_modulus =
       PositiveDouble("Box", "soft").Extract(props, kHydroGroup, kElastic);
