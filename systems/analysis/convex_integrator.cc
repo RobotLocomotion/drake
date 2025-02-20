@@ -142,7 +142,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // Compute problem data at time (t)
   CalcTimestepIndependentProblemData(context, &data);
 
-  // Solve the for the full step (t+h)
+  // Solve the for the full step v_{t+h}
   solve_phase_ = 0;
   SapContactProblem<T> problem = MakeSapContactProblem(context, data, h);
   SapSolverStatus status = SolveWithGuess(problem, data.v0, &sap_results);
@@ -151,6 +151,14 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // q_{t+h} = q_t + h N(q_t) v_{t+h}
   plant().MapVelocityToQDot(context, h * sap_results.v, &q);
   q += plant().GetPositions(context);
+
+  // Compute z_{t+h} explicitly
+  // TODO(vincekurtz): avoid computing time derivatives for the plant
+  ContinuousState<T>& x = diagram_context.get_mutable_continuous_state();
+  const ContinuousState<T>& x_dot = this->EvalTimeDerivatives(diagram_context);
+  const VectorX<T>& z_dot = x_dot.get_misc_continuous_state().CopyToVector();
+  VectorX<T> z = x.get_misc_continuous_state().CopyToVector() + h * z_dot; 
+  x.get_mutable_misc_continuous_state().SetFromVector(z);
 
   if (this->get_fixed_step_mode()) {
     // No error control, so we'll just set x_{t+h} in the context.
