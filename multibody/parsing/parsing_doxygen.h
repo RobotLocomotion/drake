@@ -793,7 +793,7 @@ visuals.
 @subsection tag_drake_initial_tangent drake:initial_tangent
 
 - SDFormat path: `//model/drake:joint/drake:initial_tangent`
-- URDF path: `/robot/drake:joint/drake:initial_tangent`
+- URDF path: `/robot/drake:joint/drake:initial_tangent/@xyz`
 - Syntax: Three floating point values.
 
 @subsubsection tag_drake_initial_tangent_semantics Semantics
@@ -809,7 +809,7 @@ of the curvilinear path along which the joint moves at joint position `0`.
 @subsection tag_drake_is_periodic drake:is_periodic
 
 - SDFormat path: `//model/drake:joint/drake:is_periodic`
-- URDF path: `/robot/drake:joint/drake:is_periodic`
+- URDF path: `/robot/drake:joint/drake:is_periodic/@value`
 - Syntax: Boolean value, `true` or `false`, expressed
 
 @subsubsection tag_drake_is_periodic_semantics Semantics
@@ -875,7 +875,8 @@ Specifies length of a line segment in meters.
 
 - SDFormat path: `//model/drake:joint/drake:curves/drake:line_segment`
 - URDF path: `/robot/drake:joint/drake:curves/drake:line_segment`
-- Syntax: length in meters, expressed as a single floating point value for URDF and in a `drake:length` child element for SDF.
+- Syntax: length in meters, expressed as a single floating point value
+  in attribute `length` for URDF and in a `drake:length` child element for SDF.
 
 @subsubsection tag_drake_line_segment_semantics Semantics
 
@@ -1049,7 +1050,7 @@ with the parent link of the joint being defined.
 @subsection tag_drake_plane_normal drake:plane_normal
 
 - SDFormat path: `//model/drake:joint/drake:plane_normal`
-- URDF path: `/robot/drake:joint/drake:plane_normal`
+- URDF path: `/robot/drake:joint/drake:plane_normal/@xyz`
 - Syntax: Three floating point values.
 
 @subsubsection tag_drake_plane_normal_semantics Semantics
