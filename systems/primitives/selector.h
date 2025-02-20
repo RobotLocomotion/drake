@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -115,6 +116,8 @@ class Selector final : public LeafSystem<T> {
                   BasicVector<T>* output) const;
 
   const SelectorParams params_;
+
+  std::shared_ptr<const void> compiled_program_;
 };
 
 }  // namespace systems
