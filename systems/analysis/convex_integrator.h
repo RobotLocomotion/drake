@@ -307,7 +307,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     VectorX<T> q;                     // generalized positions
     VectorX<T> v;                     // generalized velocities
     SapSolverResults<T> sap_results;  // Container for convex solve results
-    VectorX<T> err;                   // error estimate for accuracy control
 
     // Used in CalcTimestepIndependentProblemData
     TimestepIndependentProblemData<T> timestep_independent_data;

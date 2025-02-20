@@ -77,7 +77,6 @@ void ConvexIntegrator<T>::DoInitialize() {
   // the workspace, but for now we'll just try to allocate most things here.
   workspace_.q.resize(nq);
   workspace_.v.resize(nv);
-  workspace_.err.resize(nq + nv);
   workspace_.k.resize(nv);
   workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
   workspace_.v_star.resize(nv);
@@ -131,7 +130,6 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   VectorX<T>& q = workspace_.q;
   VectorX<T>& v = workspace_.v;
   SapSolverResults<T>& sap_results = workspace_.sap_results;
-  // VectorX<T>& err = workspace_.err;  // TODO: use q_err, v_err, z_err instead
   TimestepIndependentProblemData<T>& data =
       workspace_.timestep_independent_data;
 
