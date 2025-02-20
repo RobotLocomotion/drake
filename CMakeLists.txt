@@ -487,6 +487,7 @@ function(open_solver_option SOLVER)
   if(NOT ${OPTION_NAME})
     string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=False")
   endif()
+  set(BAZEL_CONFIG ${BAZEL_CONFIG} PARENT_SCOPE)
 endfunction()
 
 open_solver_option("Clarabel")
