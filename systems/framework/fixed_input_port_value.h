@@ -173,8 +173,7 @@ class ContextBaseFixedInputAttorney {
     fixed->set_owning_subcontext(owning_subcontext);
   }
 
-  static void set_ticket(FixedInputPortValue* fixed,
-                         DependencyTicket ticket) {
+  static void set_ticket(FixedInputPortValue* fixed, DependencyTicket ticket) {
     DRAKE_DEMAND(fixed != nullptr);
     fixed->set_ticket(ticket);
   }

@@ -16,9 +16,8 @@ namespace {
 
 // Returns the next sample time for the given @p attribute.
 template <typename T>
-T GetNextSampleTime(
-    const PeriodicEventData& attribute,
-    const T& current_time_sec) {
+T GetNextSampleTime(const PeriodicEventData& attribute,
+                    const T& current_time_sec) {
   const double period = attribute.period_sec();
   DRAKE_ASSERT(period > 0);
   const double offset = attribute.offset_sec();
@@ -74,8 +73,7 @@ template <typename T>
 std::unique_ptr<EventCollection<DiscreteUpdateEvent<T>>>
 LeafSystem<T>::AllocateForcedDiscreteUpdateEventCollection() const {
   auto collection =
-      LeafEventCollection<
-          DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
+      LeafEventCollection<DiscreteUpdateEvent<T>>::MakeForcedEventCollection();
   if (this->forced_discrete_update_events_exist())
     collection->SetFrom(this->get_forced_discrete_update_events());
   return collection;
@@ -84,9 +82,8 @@ LeafSystem<T>::AllocateForcedDiscreteUpdateEventCollection() const {
 template <typename T>
 std::unique_ptr<EventCollection<UnrestrictedUpdateEvent<T>>>
 LeafSystem<T>::AllocateForcedUnrestrictedUpdateEventCollection() const {
-  auto collection =
-      LeafEventCollection<
-        UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
+  auto collection = LeafEventCollection<
+      UnrestrictedUpdateEvent<T>>::MakeForcedEventCollection();
   if (this->forced_unrestricted_update_events_exist())
     collection->SetFrom(this->get_forced_unrestricted_update_events());
   return collection;
@@ -118,18 +115,16 @@ std::unique_ptr<ContextBase> LeafSystem<T>::DoAllocateContext() const {
   // If xc is not BasicVector, the dynamic_cast will yield nullptr, and the
   // invariant-checker will complain.
   const VectorBase<T>* const xc = &context->get_continuous_state_vector();
-  internal::CheckBasicVectorInvariants(
-      dynamic_cast<const BasicVector<T>*>(xc));
+  internal::CheckBasicVectorInvariants(dynamic_cast<const BasicVector<T>*>(xc));
 
   // The discrete state must all be valid BasicVectors.
   for (const BasicVector<T>* group :
-      context->get_state().get_discrete_state().get_data()) {
+       context->get_state().get_discrete_state().get_data()) {
     internal::CheckBasicVectorInvariants(group);
   }
 
   // The numeric parameters must all be valid BasicVectors.
-  const int num_numeric_parameters =
-      context->num_numeric_parameter_groups();
+  const int num_numeric_parameters = context->num_numeric_parameter_groups();
   for (int i = 0; i < num_numeric_parameters; ++i) {
     const BasicVector<T>& group = context->get_numeric_parameter(i);
     internal::CheckBasicVectorInvariants(&group);
@@ -142,8 +137,8 @@ std::unique_ptr<ContextBase> LeafSystem<T>::DoAllocateContext() const {
 }
 
 template <typename T>
-void LeafSystem<T>::SetDefaultParameters(
-    const Context<T>& context, Parameters<T>* parameters) const {
+void LeafSystem<T>::SetDefaultParameters(const Context<T>& context,
+                                         Parameters<T>* parameters) const {
   this->ValidateContext(context);
   this->ValidateCreatedForThisSystem(parameters);
   for (int i = 0; i < parameters->num_numeric_parameter_groups(); i++) {
@@ -163,8 +158,8 @@ void LeafSystem<T>::SetDefaultParameters(
 }
 
 template <typename T>
-void LeafSystem<T>::SetDefaultState(
-    const Context<T>& context, State<T>* state) const {
+void LeafSystem<T>::SetDefaultState(const Context<T>& context,
+                                    State<T>* state) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(state != nullptr);
   this->ValidateCreatedForThisSystem(state);
@@ -175,7 +170,7 @@ void LeafSystem<T>::SetDefaultState(
 
   // Check that _if_ we have models, there is one for each group.
   DRAKE_DEMAND(model_discrete_state_.num_groups() == 0 ||
-      model_discrete_state_.num_groups() == xd.num_groups());
+               model_discrete_state_.num_groups() == xd.num_groups());
 
   if (model_discrete_state_.num_groups() > 0) {
     xd.SetFrom(model_discrete_state_);
@@ -288,8 +283,9 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   }
 
   // We might already be done.
-  if (unknown.empty())
+  if (unknown.empty()) {
     return feedthrough;
+  }
 
   // A helper function that removes an item from `unknown`.
   const auto remove_unknown = [&unknown](const auto& in_out_pair) {
@@ -325,8 +321,9 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
     const int64_t change_event = context->start_new_change_event();
     input_tracker.NoteValueChange(change_event);
 
-    if (value.is_out_of_date())
+    if (value.is_out_of_date()) {
       add_to_feedthrough(input_output);
+    }
 
     // Regardless of the result we have all we need to know now.
     remove_unknown(input_output);
@@ -338,8 +335,9 @@ std::multimap<int, int> LeafSystem<T>::GetDirectFeedthroughs() const {
   }
 
   // If the dependency graph resolved all pairs, no need for symbolic analysis.
-  if (unknown.empty())
+  if (unknown.empty()) {
     return feedthrough;
+  }
 
   // Otherwise, see if we can get a symbolic inspector to analyze them.
   // If not, we have to assume they are feedthrough.
@@ -360,8 +358,7 @@ LeafSystem<T>::LeafSystem() : LeafSystem(SystemScalarConverter{}) {}
 template <typename T>
 LeafSystem<T>::LeafSystem(SystemScalarConverter converter)
     : System<T>(std::move(converter)) {
-  this->set_forced_publish_events(
-      AllocateForcedPublishEventCollection());
+  this->set_forced_publish_events(AllocateForcedPublishEventCollection());
   this->set_forced_discrete_update_events(
       AllocateForcedDiscreteUpdateEventCollection());
   this->set_forced_unrestricted_update_events(
@@ -393,9 +390,9 @@ void LeafSystem<T>::AddTriggeredWitnessFunctionToCompositeEventCollection(
 }
 
 template <typename T>
-void LeafSystem<T>::DoCalcNextUpdateTime(
-    const Context<T>& context,
-    CompositeEventCollection<T>* events, T* time) const {
+void LeafSystem<T>::DoCalcNextUpdateTime(const Context<T>& context,
+                                         CompositeEventCollection<T>* events,
+                                         T* time) const {
   T min_time = std::numeric_limits<double>::infinity();
 
   if (!periodic_events_.HasEvents()) {
@@ -451,9 +448,8 @@ std::unique_ptr<ContinuousState<T>> LeafSystem<T>::AllocateContinuousState()
                this->num_continuous_states());
   const SystemBase::ContextSizes& sizes = this->get_context_sizes();
   auto result = std::make_unique<ContinuousState<T>>(
-      model_continuous_state_vector_->Clone(),
-      sizes.num_generalized_positions, sizes.num_generalized_velocities,
-      sizes.num_misc_continuous_states);
+      model_continuous_state_vector_->Clone(), sizes.num_generalized_positions,
+      sizes.num_generalized_velocities, sizes.num_misc_continuous_states);
   result->set_system_id(this->get_system_id());
   return result;
 }
@@ -522,11 +518,11 @@ ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
 }
 
 template <typename T>
-ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
-    int num_q, int num_v, int num_z) {
+ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(int num_q, int num_v,
+                                                           int num_z) {
   const int n = num_q + num_v + num_z;
-  return DeclareContinuousState(
-      BasicVector<T>(VectorX<T>::Zero(n)), num_q, num_v, num_z);
+  return DeclareContinuousState(BasicVector<T>(VectorX<T>::Zero(n)), num_q,
+                                num_v, num_z);
 }
 
 template <typename T>
@@ -545,8 +541,7 @@ ContinuousStateIndex LeafSystem<T>::DeclareContinuousState(
 
   // Note that only the last DeclareContinuousState() takes effect;
   // we're not accumulating these as we do for discrete & abstract states.
-  SystemBase::ContextSizes& context_sizes =
-      this->get_mutable_context_sizes();
+  SystemBase::ContextSizes& context_sizes = this->get_mutable_context_sizes();
   context_sizes.num_generalized_positions = num_q;
   context_sizes.num_generalized_velocities = num_v;
   context_sizes.num_misc_continuous_states = num_z;
@@ -609,8 +604,8 @@ InputPort<T>& LeafSystem<T>::DeclareVectorInputPort(
   MaybeDeclareVectorBaseInequalityConstraint(
       "input " + std::to_string(index), model_vector,
       [this, index](const Context<T>& context) -> const VectorBase<T>& {
-        return this->get_input_port(index).
-            template Eval<BasicVector<T>>(context);
+        return this->get_input_port(index).template Eval<BasicVector<T>>(
+            context);
       });
   return this->DeclareInputPort(NextInputPortName(std::move(name)),
                                 kVectorValued, size, random_type);
@@ -635,15 +630,14 @@ InputPort<T>& LeafSystem<T>::DeclareAbstractInputPort(
 }
 
 template <typename T>
-void LeafSystem<T>::DeprecateInputPort(
-    const InputPort<T>& port, std::string message) {
-  InputPort<T>& mutable_port = const_cast<InputPort<T>&>(
-      this->get_input_port(port.get_index()));
+void LeafSystem<T>::DeprecateInputPort(const InputPort<T>& port,
+                                       std::string message) {
+  InputPort<T>& mutable_port =
+      const_cast<InputPort<T>&>(this->get_input_port(port.get_index()));
   DRAKE_THROW_UNLESS(&mutable_port == &port);
   DRAKE_THROW_UNLESS(mutable_port.get_deprecation() == std::nullopt);
   mutable_port.set_deprecation({std::move(message)});
 }
-
 
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
@@ -651,9 +645,10 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareVectorOutputPort(
     const BasicVector<T>& model_vector,
     typename LeafOutputPort<T>::CalcVectorCallback vector_calc_function,
     std::set<DependencyTicket> prerequisites_of_calc) {
-  auto& port = CreateVectorLeafOutputPort(NextOutputPortName(std::move(name)),
-      model_vector.size(), MakeAllocateCallback(model_vector),
-      std::move(vector_calc_function), std::move(prerequisites_of_calc));
+  auto& port = CreateVectorLeafOutputPort(
+      NextOutputPortName(std::move(name)), model_vector.size(),
+      MakeAllocateCallback(model_vector), std::move(vector_calc_function),
+      std::move(prerequisites_of_calc));
   return port;
 }
 
@@ -664,7 +659,8 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareAbstractOutputPort(
     typename LeafOutputPort<T>::CalcCallback calc,
     std::set<DependencyTicket> prerequisites_of_calc) {
   auto calc_function = [captured_calc = std::move(calc)](
-      const ContextBase& context_base, AbstractValue* result) {
+                           const ContextBase& context_base,
+                           AbstractValue* result) {
     const Context<T>& context = dynamic_cast<const Context<T>&>(context_base);
     return captured_calc(context, result);
   };
@@ -722,10 +718,10 @@ LeafOutputPort<T>& LeafSystem<T>::DeclareStateOutputPort(
 }
 
 template <typename T>
-void LeafSystem<T>::DeprecateOutputPort(
-    const OutputPort<T>& port, std::string message) {
-  OutputPort<T>& mutable_port = const_cast<OutputPort<T>&>(
-      this->get_output_port(port.get_index()));
+void LeafSystem<T>::DeprecateOutputPort(const OutputPort<T>& port,
+                                        std::string message) {
+  OutputPort<T>& mutable_port =
+      const_cast<OutputPort<T>&>(this->get_output_port(port.get_index()));
   DRAKE_THROW_UNLESS(&mutable_port == &port);
   DRAKE_THROW_UNLESS(mutable_port.get_deprecation() == std::nullopt);
   mutable_port.set_deprecation({std::move(message)});
@@ -736,33 +732,30 @@ std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
     const std::string& description,
     const WitnessFunctionDirection& direction_type,
     std::function<T(const Context<T>&)> calc) const {
-  return std::make_unique<WitnessFunction<T>>(
-      this, this, description, direction_type, calc);
+  return std::make_unique<WitnessFunction<T>>(this, this, description,
+                                              direction_type, calc);
 }
 
 template <typename T>
 std::unique_ptr<WitnessFunction<T>> LeafSystem<T>::MakeWitnessFunction(
     const std::string& description,
     const WitnessFunctionDirection& direction_type,
-    std::function<T(const Context<T>&)> calc,
-    const Event<T>& e) const {
-  return std::make_unique<WitnessFunction<T>>(
-      this, this, description, direction_type, calc, e.Clone());
+    std::function<T(const Context<T>&)> calc, const Event<T>& e) const {
+  return std::make_unique<WitnessFunction<T>>(this, this, description,
+                                              direction_type, calc, e.Clone());
 }
 
 template <typename T>
 SystemConstraintIndex LeafSystem<T>::DeclareEqualityConstraint(
-    ContextConstraintCalc<T> calc, int count,
-    std::string description) {
-  return DeclareInequalityConstraint(
-      std::move(calc), SystemConstraintBounds::Equality(count),
-      std::move(description));
+    ContextConstraintCalc<T> calc, int count, std::string description) {
+  return DeclareInequalityConstraint(std::move(calc),
+                                     SystemConstraintBounds::Equality(count),
+                                     std::move(description));
 }
 
 template <typename T>
 SystemConstraintIndex LeafSystem<T>::DeclareInequalityConstraint(
-    ContextConstraintCalc<T> calc,
-    SystemConstraintBounds bounds,
+    ContextConstraintCalc<T> calc, SystemConstraintBounds bounds,
     std::string description) {
   return this->AddConstraint(std::make_unique<SystemConstraint<T>>(
       this, std::move(calc), std::move(bounds), std::move(description)));
@@ -819,7 +812,7 @@ EventStatus LeafSystem<T>::DispatchPublishHandler(
     const Context<T>& context,
     const EventCollection<PublishEvent<T>>& events) const {
   const LeafEventCollection<PublishEvent<T>>& leaf_events =
-     dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
+      dynamic_cast<const LeafEventCollection<PublishEvent<T>>&>(events);
   // This function shouldn't have been called if no publish events.
   DRAKE_DEMAND(leaf_events.HasEvents());
 
@@ -840,8 +833,7 @@ EventStatus LeafSystem<T>::DispatchDiscreteVariableUpdateHandler(
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state) const {
   const LeafEventCollection<DiscreteUpdateEvent<T>>& leaf_events =
-      dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(
-          events);
+      dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>&>(events);
   // This function shouldn't have been called if no discrete update events.
   DRAKE_DEMAND(leaf_events.HasEvents());
 
@@ -862,9 +854,8 @@ template <typename T>
 void LeafSystem<T>::DoApplyDiscreteVariableUpdate(
     const EventCollection<DiscreteUpdateEvent<T>>& events,
     DiscreteValues<T>* discrete_state, Context<T>* context) const {
-  DRAKE_ASSERT(
-      dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>*>(
-          &events) != nullptr);
+  DRAKE_ASSERT(dynamic_cast<const LeafEventCollection<DiscreteUpdateEvent<T>>*>(
+                   &events) != nullptr);
   DRAKE_DEMAND(events.HasEvents());
   // TODO(sherm1) Should swap rather than copy.
   context->get_mutable_discrete_state().SetFrom(*discrete_state);
@@ -898,8 +889,8 @@ EventStatus LeafSystem<T>::DispatchUnrestrictedUpdateHandler(
 
 template <typename T>
 void LeafSystem<T>::DoApplyUnrestrictedUpdate(
-    const EventCollection<UnrestrictedUpdateEvent<T>>& events,
-    State<T>* state, Context<T>* context) const {
+    const EventCollection<UnrestrictedUpdateEvent<T>>& events, State<T>* state,
+    Context<T>* context) const {
   DRAKE_ASSERT(
       dynamic_cast<const LeafEventCollection<UnrestrictedUpdateEvent<T>>*>(
           &events) != nullptr);
@@ -951,36 +942,33 @@ void LeafSystem<T>::DoFindUniquePeriodicDiscreteUpdatesOrThrow(
 
 template <typename T>
 void LeafSystem<T>::DoGetPeriodicEvents(
-      const Context<T>&,
-      CompositeEventCollection<T>* events) const {
+    const Context<T>&, CompositeEventCollection<T>* events) const {
   events->SetFrom(periodic_events_);
 }
 
 template <typename T>
 void LeafSystem<T>::DoGetPerStepEvents(
-    const Context<T>&,
-    CompositeEventCollection<T>* events) const {
+    const Context<T>&, CompositeEventCollection<T>* events) const {
   events->SetFrom(per_step_events_);
 }
 
 template <typename T>
 void LeafSystem<T>::DoGetInitializationEvents(
-    const Context<T>&,
-    CompositeEventCollection<T>* events) const {
+    const Context<T>&, CompositeEventCollection<T>* events) const {
   events->SetFrom(initialization_events_);
 }
 
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
-    std::string name,
-    int fixed_size,
+    std::string name, int fixed_size,
     typename LeafOutputPort<T>::AllocCallback vector_allocator,
     typename LeafOutputPort<T>::CalcVectorCallback vector_calculator,
     std::set<DependencyTicket> calc_prerequisites) {
   // Construct a suitable type-erased cache calculator from the given
   // BasicVector<T> calculator function.
   auto cache_calc_function = [vector_calculator](
-      const ContextBase& context_base, AbstractValue* abstract) {
+                                 const ContextBase& context_base,
+                                 AbstractValue* abstract) {
     // Profiling revealed that it is too expensive to do a dynamic_cast here.
     // A static_cast is safe as long as this is invoked only by methods that
     // validate the SystemId, so that we know this Context is ours. As of this
@@ -1007,19 +995,18 @@ LeafOutputPort<T>& LeafSystem<T>::CreateVectorLeafOutputPort(
   // The allocator function is identical between output port and cache.
   return CreateCachedLeafOutputPort(
       std::move(name), fixed_size,
-      ValueProducer(
-          std::move(vector_allocator), std::move(cache_calc_function)),
+      ValueProducer(std::move(vector_allocator),
+                    std::move(cache_calc_function)),
       std::move(calc_prerequisites));
 }
 
 template <typename T>
 LeafOutputPort<T>& LeafSystem<T>::CreateAbstractLeafOutputPort(
-    std::string name,
-    ValueProducer producer,
+    std::string name, ValueProducer producer,
     std::set<DependencyTicket> calc_prerequisites) {
-  return CreateCachedLeafOutputPort(
-      std::move(name), std::nullopt /* size */, std::move(producer),
-      std::move(calc_prerequisites));
+  return CreateCachedLeafOutputPort(std::move(name), std::nullopt /* size */,
+                                    std::move(producer),
+                                    std::move(calc_prerequisites));
 }
 
 template <typename T>
@@ -1041,12 +1028,10 @@ LeafOutputPort<T>& LeafSystem<T>::CreateCachedLeafOutputPort(
   auto port = internal::FrameworkFactory::Make<LeafOutputPort<T>>(
       this,  // implicit_cast<const System<T>*>(this)
       this,  // implicit_cast<const SystemBase*>(this)
-      this->get_system_id(),
-      std::move(name),
-      oport_index, this->assign_next_dependency_ticket(),
+      this->get_system_id(), std::move(name), oport_index,
+      this->assign_next_dependency_ticket(),
       fixed_size.has_value() ? kVectorValued : kAbstractValued,
-      fixed_size.value_or(0),
-      &cache_entry);
+      fixed_size.value_or(0), &cache_entry);
   LeafOutputPort<T>* const port_ptr = port.get();
   this->AddOutputPort(std::move(port));
   return *port_ptr;

@@ -68,9 +68,8 @@ std::vector<std::string> GetPreferredJointOrdering() {
   return joint_name_mapping;
 }
 
-void GetControlPortMapping(
-    const MultibodyPlant<double>& plant,
-    MatrixX<double>* Sx, MatrixX<double>* Sy) {
+void GetControlPortMapping(const MultibodyPlant<double>& plant,
+                           MatrixX<double>* Sx, MatrixX<double>* Sy) {
   // Retrieve the list of finger joints in a user-defined ordering.
   const std::vector<std::string> joints_in_preferred_order =
       GetPreferredJointOrdering();

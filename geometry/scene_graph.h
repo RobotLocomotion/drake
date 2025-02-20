@@ -69,18 +69,12 @@ class QueryObject;
      update geometry pose/configuration values.
 
  @section geom_sys_inputs Inputs
- @cond
- In future versions, this will *also* include velocity and (possibly)
- acceleration ports.
- // TODO(SeanCurtis-TRI): Modify this to reflect the number of actual port
- // types.
- @endcond
 
  For each registered geometry source, there is one input port for each order
- of kinematics values (e.g., pose, velocity, acceleration, and configuration).
- If a source registers a frame or a deformable geometry, it must connect to the
- corresponding ports. Failure to connect to the ports (or to provide valid
- kinematics values) will lead to runtime exceptions.
+ of kinematics values (i.e., pose and configuration). If a source registers a
+ frame or a deformable geometry, it must connect to the corresponding ports.
+ Failure to connect to the ports (or to provide valid kinematics values) will
+ lead to runtime exceptions.
 
  __pose port__: An abstract-valued port providing an instance of
  FramePoseVector. For each registered frame, this "pose vector" maps the

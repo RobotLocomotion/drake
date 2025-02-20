@@ -20,7 +20,7 @@ namespace internal {
 /// A type-safe non-negative index class.
 ///
 /// @note This is *purposely* a separate class from Identifier.
-/// For more information, see @ref TypeSafeIndexVsIndentifier "this section".
+/// For more information, see @ref TypeSafeIndexVsIdentifier "this section".
 ///
 /// This class serves as an upgrade to the standard practice of passing `int`s
 /// around as indices. In the common practice, a method that takes indices into

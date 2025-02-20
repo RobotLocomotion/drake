@@ -126,10 +126,12 @@ drake_pybind_library(
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:identifier_pybind",
+        "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:type_safe_index_pybind",
         "//bindings/pydrake/common:value_pybind",
+        "//bindings/pydrake/systems:builder_life_support_pybind",
     ],
     cc_srcs = ["plant_py.cc"],
     package_info = PACKAGE_INFO,
@@ -149,6 +151,7 @@ drake_pybind_library(
     name = "parsing_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:serialize_pybind",
         "//bindings/pydrake/common:sorted_pair_pybind",
@@ -474,6 +477,14 @@ drake_py_unittest(
         ":inverse_kinematics_py",
         ":parsing_py",
         "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "lifetime_test",
+    deps = [
+        ":plant_py",
+        "//bindings/pydrake/systems:test_util_py",
     ],
 )
 

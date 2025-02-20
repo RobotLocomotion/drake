@@ -56,12 +56,12 @@ class LeafContext : public Context<T> {
 
  private:
   friend class LeafContextTest;
-  using ContextBase::AddInputPort;    // For LeafContextTest.
-  using ContextBase::AddOutputPort;
-  using ContextBase::AddDiscreteStateTicket;
-  using ContextBase::AddAbstractStateTicket;
-  using ContextBase::AddNumericParameterTicket;
   using ContextBase::AddAbstractParameterTicket;
+  using ContextBase::AddAbstractStateTicket;
+  using ContextBase::AddDiscreteStateTicket;
+  using ContextBase::AddInputPort;  // For LeafContextTest.
+  using ContextBase::AddNumericParameterTicket;
+  using ContextBase::AddOutputPort;
 
   const State<T>& do_access_state() const final {
     DRAKE_ASSERT(state_ != nullptr);

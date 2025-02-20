@@ -57,10 +57,8 @@ typedef std::map<std::string, UrdfMaterial> MaterialMap;
 */
 UrdfMaterial AddMaterialToMaterialMap(
     const drake::internal::DiagnosticPolicy& policy,
-    const std::string& material_name,
-    UrdfMaterial material,
-    bool error_if_name_clash,
-    MaterialMap* materials);
+    const std::string& material_name, UrdfMaterial material,
+    bool error_if_name_clash, MaterialMap* materials);
 
 /* Returns the material specified by a <material> @p node. If the material has
  a name associated with it, the material will be reconciled with the given
@@ -95,8 +93,7 @@ UrdfMaterial AddMaterialToMaterialMap(
 UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
                            const tinyxml2::XMLElement* node, bool name_required,
                            const PackageMap& package_map,
-                           const std::string& root_dir,
-                           MaterialMap* materials);
+                           const std::string& root_dir, MaterialMap* materials);
 
 /* Default value of numeric suffix limit for generation of geometry names.*/
 constexpr int kDefaultNumericSuffixLimit = 10000;
@@ -148,12 +145,12 @@ constexpr int kDefaultNumericSuffixLimit = 10000;
 */
 std::optional<geometry::GeometryInstance> ParseVisual(
     const TinyXml2Diagnostic& diagnostic,
-    const std::string& parent_element_name,
-    const PackageMap& package_map,
+    const std::string& parent_element_name, const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
     MaterialMap* materials, std::unordered_set<std::string>* geometry_names,
     int numeric_name_suffix_limit = kDefaultNumericSuffixLimit);
 
+// clang-format off
 /* @anchor urdf_contact_material
  Parses a <collision> element in @p node.
 
@@ -225,10 +222,10 @@ std::optional<geometry::GeometryInstance> ParseVisual(
  @param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
                                       numeric suffixes.
 */
+// clang-format on
 std::optional<geometry::GeometryInstance> ParseCollision(
     const TinyXml2Diagnostic& diagnostic,
-    const std::string& parent_element_name,
-    const PackageMap& package_map,
+    const std::string& parent_element_name, const PackageMap& package_map,
     const std::string& root_dir, const tinyxml2::XMLElement* node,
     std::unordered_set<std::string>* geometry_names,
     int numeric_name_suffix_limit = kDefaultNumericSuffixLimit);

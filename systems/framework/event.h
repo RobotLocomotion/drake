@@ -16,7 +16,8 @@ namespace drake {
 namespace systems {
 
 // Forward declaration to avoid circular dependencies.
-template <typename T> class System;
+template <typename T>
+class System;
 
 /** @defgroup events_description System Events
     @ingroup systems
@@ -482,7 +483,8 @@ class Event {
 #if !defined(DRAKE_DOXYGEN_CXX)
   /* (Internal use only) Sets the trigger type. */
   void set_trigger_type(const TriggerType trigger_type) {
-    trigger_type_ = trigger_type; }
+    trigger_type_ = trigger_type;
+  }
 
   /* (Internal use only) Sets data to one of the available variants. */
   template <typename EventDataType>
@@ -555,10 +557,10 @@ class Event {
  */
 struct PeriodicEventDataComparator {
   bool operator()(const PeriodicEventData& a,
-    const PeriodicEventData& b) const {
-      if (a.period_sec() == b.period_sec())
-        return a.offset_sec() < b.offset_sec();
-      return a.period_sec() < b.period_sec();
+                  const PeriodicEventData& b) const {
+    if (a.period_sec() == b.period_sec())
+      return a.offset_sec() < b.offset_sec();
+    return a.period_sec() < b.period_sec();
   }
 };
 

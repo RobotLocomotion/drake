@@ -35,8 +35,8 @@ class CompositeParse;
 /// The output of parsing is one or more model instances added to the
 /// MultibodyPlant provided to the parser at construction.
 ///
-/// For an introductory tutorial about parsing, see the
-/// <a href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/authoring_multibody_simulation-3c9697070d3541ee82c0bfe4054ada2d">Authoring
+/// For an introductory tutorial about parsing, see the <a
+/// href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/authoring_multibody_simulation-3c9697070d3541ee82c0bfe4054ada2d">Authoring
 /// a Multibody Simulation</a> page.
 ///
 /// SDFormat files may contain multiple `<model>` elements.  New model
@@ -133,6 +133,25 @@ class Parser final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parser);
 
+  /// Create a Parser given a DiagramBuilder (and optionally plant and
+  /// scene_graph). If specified, the resulting parser will apply
+  /// `model_name_prefix` to the names of any models parsed. `builder` may be
+  /// nullptr, but then you must specify a `plant`.
+  ///
+  /// @pre Either the given `builder` contains a MultibodyPlant system named
+  ///   "plant" or else the provided `plant` is non-null.
+  /// @pre If both `builder` and `plant` are specified, then
+  ///   plant ∈ builder.GetSystems()
+  /// @param scene_graph A pointer to a mutable SceneGraph object used for
+  ///   geometry registration (either to model visual or contact geometry).
+  ///   May be nullptr.
+  /// @pre If both `builder` and `scene_graph` are specified, then
+  ///   scene_graph ∈ builder.GetSystems().
+  explicit Parser(systems::DiagramBuilder<double>* builder,
+                  MultibodyPlant<double>* plant = nullptr,
+                  geometry::SceneGraph<double>* scene_graph = nullptr,
+                  std::string_view model_name_prefix = {});
+
   /// Creates a Parser that adds models to the given plant and (optionally)
   /// scene_graph.
   ///
@@ -175,6 +194,10 @@ class Parser final {
   Parser(MultibodyPlant<double>* plant, std::string_view model_name_prefix);
 
   ~Parser();
+
+  /// Gets a mutable pointer to the DiagramBuilder that will be modified by
+  /// this parser, or nullptr if this parser does not have a DiagramBuilder.
+  systems::DiagramBuilder<double>* builder() { return builder_; }
 
   /// Gets a mutable reference to the plant that will be modified by this
   /// parser.
@@ -230,8 +253,7 @@ class Parser final {
   /// @returns The set of model instance indices for the newly added models,
   /// including nested models.
   /// @throws std::exception in case of errors.
-  std::vector<ModelInstanceIndex> AddModelsFromUrl(
-      const std::string& url);
+  std::vector<ModelInstanceIndex> AddModelsFromUrl(const std::string& url);
 
   /// Provides same functionality as AddModels, but instead parses
   /// the model description text data via @p file_contents with format dictated
@@ -257,7 +279,8 @@ class Parser final {
   bool enable_auto_rename_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
-  MultibodyPlant<double>* const plant_;
+  systems::DiagramBuilder<double>* const builder_;
+  MultibodyPlant<double>* plant_;
   std::optional<std::string> model_name_prefix_;
   struct ParserInternalData;
   std::unique_ptr<ParserInternalData> data_;

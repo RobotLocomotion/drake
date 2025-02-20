@@ -335,7 +335,7 @@ class ScrewJoint final : public Joint<T> {
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) final {
-    if (this->has_implementation()) {
+    if (this->has_mobilizer()) {
       get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
@@ -349,7 +349,7 @@ class ScrewJoint final : public Joint<T> {
   }
 
   // Joint<T> overrides:
-  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint(
+  std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
       const internal::SpanningForest::Mobod& mobod) const final;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(

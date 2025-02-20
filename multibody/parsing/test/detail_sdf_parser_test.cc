@@ -99,7 +99,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_,  &resolver,    TestingSelect};
     std::optional<ModelInstanceIndex> result =
         AddModelFromSdf(data_source, model_name, parent_model_name, w);
@@ -114,7 +114,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_,  &resolver,    TestingSelect};
     auto result = AddModelsFromSdf(data_source, parent_model_name, w);
     last_parsed_groups_ = ConvertInstancedNamesToStrings(
@@ -127,7 +127,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kContents, &file_contents};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_,  &resolver,    TestingSelect};
     auto result = AddModelsFromSdf(data_source, parent_model_name, w);
     last_parsed_groups_ = ConvertInstancedNamesToStrings(
@@ -1296,7 +1296,7 @@ TEST_F(SdfParserTest, AddModelFromSdfNoModelError) {
 
   const DataSource data_source{DataSource::kContents, &sdf_string};
   internal::CollisionFilterGroupResolver resolver{&plant_};
-  ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+  ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                      &plant_,  &resolver,    TestingSelect};
   std::optional<ModelInstanceIndex> result =
       AddModelFromSdf(data_source, "", "", w);
@@ -3750,7 +3750,7 @@ TEST_F(SdfParserTest, TestSingleModelEnforcement) {
 
   const DataSource data_source{DataSource::kContents, &multi_models};
   internal::CollisionFilterGroupResolver resolver{&plant_};
-  ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+  ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                      &plant_,  &resolver,    TestingSelect};
   std::optional<ModelInstanceIndex> result =
       AddModelFromSdf(data_source, "", {}, w);

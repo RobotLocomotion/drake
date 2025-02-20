@@ -20,20 +20,20 @@ class MujocoParserExamplesTest : public test::DiagnosticPolicyTestBase {
   }
 
   std::optional<ModelInstanceIndex> AddModelFromFile(
-      const std::string& file_name,
-      const std::string& model_name) {
+      const std::string& file_name, const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_, &resolver, NoSelect};
-    auto result = wrapper_.AddModel(
-        {DataSource::kFilename, &file_name}, model_name, {}, w);
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
+    auto result = wrapper_.AddModel({DataSource::kFilename, &file_name},
+                                    model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
 
   // Mujoco cannot delegate to any other parsers.
-  static ParserInterface& NoSelect(
-      const drake::internal::DiagnosticPolicy&, const std::string&) {
+  static ParserInterface& NoSelect(const drake::internal::DiagnosticPolicy&,
+                                   const std::string&) {
     DRAKE_UNREACHABLE();
   }
 
@@ -92,12 +92,15 @@ INSTANTIATE_TEST_SUITE_P(DeepMindControl, DeepMindControlTest,
                          }));
 
 constexpr std::string_view kItWorks{""};
-constexpr std::string_view kTooSlow{"skip me"};  // #22412
+constexpr std::string_view kTooSlow =  // #22412
+    "skip me";
 namespace KnownErrors {
-constexpr std::string_view kNonUniformScale{".*non-uniform scale.*"};  // #22046
-constexpr std::string_view kSizeFromMesh =
-    ".*size of the shape from the mesh.*";  // #22372
-constexpr std::string_view kStlMesh{".*[.][Ss][Tt][Ll].*"};  // #19408
+constexpr std::string_view kNonUniformScale =  // #22046
+    ".*non-uniform scale.*";
+constexpr std::string_view kSizeFromMesh =  // #22372
+    ".*size of the shape from the mesh.*";
+constexpr std::string_view kStlMesh =  // #19408
+    ".*[.][Ss][Tt][Ll].*";
 }  // namespace KnownErrors
 
 constexpr std::string_view DebugIsTooSlow(std::string_view non_debug_result) {
@@ -119,8 +122,8 @@ TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
   if (error_regex == kTooSlow) {
     GTEST_SKIP_("Skipping this test case.");
   }
-  const RlocationOrError rlocation = FindRunfile(
-      fmt::format("mujoco_menagerie_internal/{}.xml", model));
+  const RlocationOrError rlocation =
+      FindRunfile(fmt::format("mujoco_menagerie_internal/{}.xml", model));
   ASSERT_EQ(rlocation.error, "");
   AddModelFromFile(rlocation.abspath, model);
 
@@ -180,14 +183,10 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"google_barkour_vb/scene_mjx", KnownErrors::kStlMesh},
     {"google_robot/robot", KnownErrors::kStlMesh},
     {"google_robot/scene", KnownErrors::kStlMesh},
-    {"hello_robot_stretch/scene",
-     DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"hello_robot_stretch/stretch",
-     DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"hello_robot_stretch_3/scene",
-     DebugIsTooSlow(KnownErrors::kStlMesh)},
-    {"hello_robot_stretch_3/stretch",
-     DebugIsTooSlow(KnownErrors::kStlMesh)},
+    {"hello_robot_stretch/scene", DebugIsTooSlow(KnownErrors::kStlMesh)},
+    {"hello_robot_stretch/stretch", DebugIsTooSlow(KnownErrors::kStlMesh)},
+    {"hello_robot_stretch_3/scene", DebugIsTooSlow(KnownErrors::kStlMesh)},
+    {"hello_robot_stretch_3/stretch", DebugIsTooSlow(KnownErrors::kStlMesh)},
     {"kinova_gen3/gen3", KnownErrors::kStlMesh},
     {"kinova_gen3/scene", KnownErrors::kStlMesh},
     {"kuka_iiwa_14/iiwa14", kItWorks},
@@ -283,7 +282,6 @@ INSTANTIATE_TEST_SUITE_P(MujocoMenagerie, MujocoMenagerieTest,
                            const auto& [model, error_regex] = test_info.param;
                            return MakeSafeTestCaseName(model);
                          }));
-
 
 }  // namespace
 }  // namespace internal

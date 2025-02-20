@@ -470,11 +470,14 @@ void DefineMeshcatAnimation(py::module m) {
             cls_doc.frames_per_second.doc)
         .def("frame", &Class::frame, py::arg("time_from_start"),
             cls_doc.frame.doc)
+        .def("start_time", &Class::start_time, cls_doc.start_time.doc)
         .def("autoplay", &Class::autoplay, cls_doc.autoplay.doc)
         .def("loop_mode", &Class::loop_mode, cls_doc.loop_mode.doc)
         .def("repetitions", &Class::repetitions, cls_doc.repetitions.doc)
         .def("clamp_when_finished", &Class::clamp_when_finished,
             cls_doc.clamp_when_finished.doc)
+        .def("set_start_time", &Class::set_start_time, py::arg("time"),
+            cls_doc.set_start_time.doc)
         .def("set_autoplay", &Class::set_autoplay, py::arg("play"),
             cls_doc.set_autoplay.doc)
         .def("set_loop_mode", &Class::set_loop_mode, py::arg("mode"),

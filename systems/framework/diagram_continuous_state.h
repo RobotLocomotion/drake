@@ -28,7 +28,7 @@ namespace systems {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class DiagramContinuousState final: public ContinuousState<T> {
+class DiagramContinuousState final : public ContinuousState<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramContinuousState);
 

@@ -3,6 +3,7 @@ from enum import Enum
 import logging
 import os
 from pathlib import Path
+import re
 import sys
 import time
 from webbrowser import open as _webbrowser_open
@@ -260,15 +261,66 @@ class ModelVisualizer:
             raise ValueError("Finalize has already been called.")
         if sum([filename is not None, url is not None]) != 1:
             raise ValueError("Must provide either filename= or url=")
+        if isinstance(filename, str):
+            # Silently clean up the common mistake of passing the wrong type.
+            filename = Path(filename)
         self._check_rep(finalized=False)
         if filename is not None:
-            kwargs = dict(file_name=filename)
+            if filename.suffix == ".gltf":
+                # TODO(jwnimmer-tri) Add glTF support to the detail_mesh_parser
+                # (which involves computing its volume / inertia), instead of
+                # doing the halfway flavor (visual-only) here.
+                kwargs = self._wrap_gltf_as_visual(filename=filename)
+            else:
+                kwargs = dict(file_name=str(filename))
         else:
             assert url is not None
-            kwargs = dict(url=url)
+            if url.endswith(".gltf"):
+                # TODO(jwnimmer-tri) Add glTF support to the detail_mesh_parser
+                # (which involves computing its volume / inertia), instead of
+                # doing the halfway flavor (visual-only) here.
+                kwargs = self._wrap_gltf_as_visual(url=url)
+            else:
+                kwargs = dict(url=url)
         self._builder.parser().AddModels(**kwargs)
         if self._added_models is not None:
             self._added_models.append(kwargs)
+
+    def _wrap_gltf_as_visual(self, *, filename: Path = None, url: str = None):
+        """Given a filename xor url that refers to a glTF mesh, returns a dict
+        of kwargs to Parser.AddModels which will load it as visual-only (i.e.,
+        without collision geometry)"""
+        assert sum([filename is not None, url is not None]) == 1
+        if filename is not None:
+            package_name = re.sub(r"[^A-Za-z0-9_]", "", str(filename.parent))
+            self._builder.parser().package_map().Add(
+                package_name=package_name,
+                package_path=str(filename.parent),
+            )
+            url = f"package://{package_name}/{filename.name}"
+        assert url is not None
+        name = Path(url.split("/")[-1]).stem
+        file_type = "sdf"
+        file_contents = f"""
+        <?xml version="1.0"?>
+        <sdf version="1.12">
+          <model name="{name}">
+            <link name="body">
+              <visual name="visual">
+                <geometry>
+                  <mesh>
+                    <uri>{url}</uri>
+                  </mesh>
+                </geometry>
+              </visual>
+            </link>
+          </model>
+        </sdf>
+        """
+        return dict(
+            file_type=file_type,
+            file_contents=file_contents,
+        )
 
     def Finalize(self, position=None):
         """

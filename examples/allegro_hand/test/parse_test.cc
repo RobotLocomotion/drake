@@ -19,14 +19,14 @@ class ParseTest : public testing::TestWithParam<std::string> {};
 
 TEST_P(ParseTest, Quantities) {
   const std::string file_extension = GetParam();
-  const std::string url_right =
-      fmt::format("package://drake_models/allegro_hand_description/{}/"
-                  "allegro_hand_description_right.{}",
-                  file_extension, file_extension);
-  const std::string url_left =
-      fmt::format("package://drake_models/allegro_hand_description/{}/"
-                  "allegro_hand_description_left.{}",
-                  file_extension, file_extension);
+  const std::string url_right = fmt::format(
+      "package://drake_models/allegro_hand_description/{}/"
+      "allegro_hand_description_right.{}",
+      file_extension, file_extension);
+  const std::string url_left = fmt::format(
+      "package://drake_models/allegro_hand_description/{}/"
+      "allegro_hand_description_left.{}",
+      file_extension, file_extension);
 
   MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);

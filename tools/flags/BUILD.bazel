@@ -199,6 +199,23 @@ string_flag(
     ],
 )
 
+# The :zlib_repo flag configures where Drake obtains @zlib from.
+# The public dependency alias is `@drake//tools/workspace/zlib` or use the
+# drake_dep_repositories() module extension at //tools/workspace:default.bzl.
+string_flag(
+    name = "zlib_repo",
+    build_setting_default = "default",
+    values = [
+        # The default is based on :private_runtime_repo_default -- "internal"
+        # maps to "source" and "external" maps to "hardcoded".
+        "default",
+        # Compile zlib from source.
+        "source",
+        # Hard-coded linkopts.
+        "hardcoded",
+    ],
+)
+
 # -----------------------------------------------------------------------------
 # Configuration for solver back-ends.
 #

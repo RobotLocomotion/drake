@@ -1717,6 +1717,7 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q.size() == num_positions());
+  DRAKE_THROW_UNLESS(AllFinite(q));
   for (JointIndex i : GetJointIndices()) {
     Joint<T>& joint = get_mutable_joint(i);
     joint.set_default_positions(
@@ -1730,6 +1731,7 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q_instance) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
+  DRAKE_THROW_UNLESS(AllFinite(q_instance));
   VectorX<T> q_T(num_positions());
   internal_tree().SetPositionsInArray(model_instance, q_instance.cast<T>(),
                                       &q_T);
@@ -4126,6 +4128,29 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
     std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
   DRAKE_DEMAND(builder != nullptr);
   DRAKE_THROW_UNLESS(plant != nullptr);
+  return internal::AddMultibodyPlantSceneGraphFromShared<T>(
+      builder, std::move(plant), std::move(scene_graph));
+}
+
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
+    systems::DiagramBuilder<T>* builder,  // BR
+    double time_step,                     // BR
+    std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
+  DRAKE_DEMAND(builder != nullptr);
+  auto plant = std::make_unique<MultibodyPlant<T>>(time_step);
+  return internal::AddMultibodyPlantSceneGraphFromShared<T>(
+      builder, std::move(plant), std::move(scene_graph));
+}
+
+namespace internal {
+template <typename T>
+AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraphFromShared(
+    systems::DiagramBuilder<T>* builder,
+    std::shared_ptr<MultibodyPlant<T>> plant,
+    std::shared_ptr<geometry::SceneGraph<T>> scene_graph) {
+  DRAKE_DEMAND(builder != nullptr);
+  DRAKE_THROW_UNLESS(plant != nullptr);
   plant->set_name("plant");
   if (!scene_graph) {
     scene_graph = std::make_unique<geometry::SceneGraph<T>>();
@@ -4144,17 +4169,7 @@ AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
                        plant_ptr->get_source_id().value()));
   return {plant_ptr, scene_graph_ptr};
 }
-
-template <typename T>
-AddMultibodyPlantSceneGraphResult<T> AddMultibodyPlantSceneGraph(
-    systems::DiagramBuilder<T>* builder, double time_step,
-    std::unique_ptr<geometry::SceneGraph<T>> scene_graph) {
-  DRAKE_DEMAND(builder != nullptr);
-  auto plant = std::make_unique<MultibodyPlant<T>>(time_step);
-  plant->set_name("plant");
-  return AddMultibodyPlantSceneGraph(builder, std::move(plant),
-                                     std::move(scene_graph));
-}
+}  // namespace internal
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     /* Use static_cast to disambiguate the two different overloads. */
@@ -4166,7 +4181,8 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<AddMultibodyPlantSceneGraphResult<T> (*)(
         systems::DiagramBuilder<T>*, std::unique_ptr<MultibodyPlant<T>>,
         std::unique_ptr<geometry::SceneGraph<T>>)>(
-        &AddMultibodyPlantSceneGraph)));
+        &AddMultibodyPlantSceneGraph),
+    &internal::AddMultibodyPlantSceneGraphFromShared<T>));
 
 }  // namespace multibody
 }  // namespace drake

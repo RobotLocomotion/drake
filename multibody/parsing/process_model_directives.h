@@ -24,8 +24,7 @@ ModelDirectives LoadModelDirectivesFromString(
 /// `package://somepackage/somepath/somefile.sdf`, where somepackage refers to
 /// the ROS-style package.xml system.
 std::string ResolveModelDirectiveUri(
-    const std::string& uri,
-    const drake::multibody::PackageMap& package_map);
+    const std::string& uri, const drake::multibody::PackageMap& package_map);
 
 /// Flatten model directives into a single object.
 ///
@@ -49,8 +48,7 @@ void FlattenModelDirectives(const ModelDirectives& directives,
 /// implicitly associated with the Parser object.
 /// Returns the list of added models.
 std::vector<ModelInstanceInfo> ProcessModelDirectives(
-    const ModelDirectives& directives,
-    drake::multibody::Parser* parser);
+    const ModelDirectives& directives, drake::multibody::Parser* parser);
 
 /// Processes model directives for a given MultibodyPlant.
 void ProcessModelDirectives(

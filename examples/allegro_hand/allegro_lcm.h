@@ -61,9 +61,7 @@ class AllegroCommandReceiver : public systems::LeafSystem<double> {
     return this->get_output_port(torque_output_port_);
   }
 
-  double lcm_period() const {
-    return lcm_period_;
-  }
+  double lcm_period() const { return lcm_period_; }
 
  private:
   void CopyStateToOutput(const systems::Context<double>& context, int start_idx,

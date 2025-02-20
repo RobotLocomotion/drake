@@ -64,9 +64,7 @@ class Context : public ContextBase {
   const T& get_time() const { return time_; }
 
   /** Returns a const reference to the whole State. */
-  const State<T>& get_state() const {
-    return do_access_state();
-  }
+  const State<T>& get_state() const { return do_access_state(); }
 
   /** Returns true if the Context has no state. */
   bool is_stateless() const {
@@ -106,9 +104,7 @@ class Context : public ContextBase {
   }
 
   /** Returns the number of continuous state variables `xc = {q, v, z}`. */
-  int num_continuous_states() const {
-    return get_continuous_state().size();
-  }
+  int num_continuous_states() const { return get_continuous_state().size(); }
 
   /** Returns a const reference to the continuous component of the state,
   which may be of size zero. */
@@ -374,7 +370,8 @@ class Context : public ContextBase {
       throw std::logic_error(fmt::format(
           "Context::SetDiscreteState(): expected exactly 1 discrete state "
           "group but there were {} groups. Use the other signature if "
-          "you have multiple groups.", num_discrete_state_groups()));
+          "you have multiple groups.",
+          num_discrete_state_groups()));
     }
     SetDiscreteState(DiscreteStateIndex(0), xd);
   }
@@ -808,7 +805,8 @@ class Context : public ContextBase {
   default implementation does nothing, which is suitable for leaf contexts.
   Diagram contexts must override. */
   virtual void DoPropagateTimeChange(const T& time_sec,
-      const std::optional<T>& true_time, int64_t change_event) {
+                                     const std::optional<T>& true_time,
+                                     int64_t change_event) {
     unused(time_sec, true_time, change_event);
   }
 
@@ -843,8 +841,7 @@ class Context : public ContextBase {
 
  private:
   // Call with arguments like (__func__, "Time"), capitalized as shown.
-  void ThrowIfNotRootContext(const char* func_name,
-                             const char* quantity) const;
+  void ThrowIfNotRootContext(const char* func_name, const char* quantity) const;
 
   // TODO(xuchenhan-tri) Should treat fixed input port values the same as
   //  parameters.
@@ -869,7 +866,7 @@ class Context : public ContextBase {
   // These helpers allow us to reuse this code in several APIs while the
   // error message contains the actual API name.
   void SetTimeAndNoteContinuousStateChangeHelper(const char* func_name,
-      const T& time_sec);
+                                                 const T& time_sec);
 
   ContinuousState<T>& SetTimeAndGetMutableContinuousStateHelper(
       const char* func_name, const T& time_sec) {

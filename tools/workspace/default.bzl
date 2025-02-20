@@ -434,6 +434,7 @@ REPOS_ALREADY_PROVIDED_BY_BAZEL_MODULES = [
     "rules_shell",
     "spdlog",
     "toolchains_llvm",
+    "zlib",
 ]
 
 # This is the list of repositories that Drake provides as a module extension
@@ -486,7 +487,7 @@ def _drake_dep_repositories_impl(module_ctx):
     snopt_repository(name = "snopt")
     styleguide_repository(name = "styleguide", mirrors = mirrors)
     x11_repository(name = "x11")
-    zlib_repository(name = "zlib")
+    zlib_repository(name = "zlib", _legacy_workspace = False)
     for name in ["eigen", "fmt", "spdlog"]:
         alias_repository(
             name = name,

@@ -52,6 +52,18 @@ GTEST_TEST(ScopedNamesTest, GetScopedFrameByName) {
       ".*no.*bar_model.*instances are.*scoped_names_model.*");
 }
 
+GTEST_TEST(ScopedNamesTest, AutoDiffXd) {
+  MultibodyPlant<AutoDiffXd> plant(0.0);
+  EXPECT_NO_THROW(GetScopedFrameByName(plant, "world"));
+  EXPECT_NO_THROW(GetScopedFrameByNameMaybe(plant, "world"));
+}
+
+GTEST_TEST(ScopedNamesTest, Expression) {
+  MultibodyPlant<symbolic::Expression> plant(0.0);
+  EXPECT_NO_THROW(GetScopedFrameByName(plant, "world"));
+  EXPECT_NO_THROW(GetScopedFrameByNameMaybe(plant, "world"));
+}
+
 }  // namespace
 }  // namespace parsing
 }  // namespace multibody

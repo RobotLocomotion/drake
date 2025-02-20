@@ -80,17 +80,20 @@ class InputPortBase : public PortBase {
   @param random_type
     Input ports may optionally be labeled as random, if the port is intended to
     model a random-source "noise" or "disturbance" input. */
-  InputPortBase(
-      internal::SystemMessageInterface* owning_system,
-      internal::SystemId owning_system_id, std::string name,
-      InputPortIndex index, DependencyTicket ticket, PortDataType data_type,
-      int size, const std::optional<RandomDistribution>& random_type,
-      EvalAbstractCallback eval, ValueProducer::AllocateCallback alloc);
+  InputPortBase(internal::SystemMessageInterface* owning_system,
+                internal::SystemId owning_system_id, std::string name,
+                InputPortIndex index, DependencyTicket ticket,
+                PortDataType data_type, int size,
+                const std::optional<RandomDistribution>& random_type,
+                EvalAbstractCallback eval,
+                ValueProducer::AllocateCallback alloc);
 
   /** Evaluate this port; throws an exception if the port is not connected. */
   const AbstractValue& DoEvalRequired(const ContextBase& context) const {
     const AbstractValue* const result = eval_(context);
-    if (!result) { ThrowRequiredMissing(); }
+    if (!result) {
+      ThrowRequiredMissing();
+    }
     return *result;
   }
 

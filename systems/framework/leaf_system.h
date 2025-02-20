@@ -137,8 +137,7 @@ class LeafSystem : public System<T> {
                        const WitnessFunction<T>& witness_func) const final;
 
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      Event<T>* event,
-      CompositeEventCollection<T>* events) const final;
+      Event<T>* event, CompositeEventCollection<T>* events) const final;
 
   /** Computes the next update time based on the configured periodic events, for
   scalar types that are arithmetic, or aborts for scalar types that are not
@@ -274,13 +273,13 @@ class LeafSystem : public System<T> {
 
     DeclarePeriodicEvent(
         period_sec, offset_sec,
-        PublishEvent<T>(TriggerType::kPeriodic, [publish](
-                            const System<T>& system,
-                            const Context<T>& context,
-                            const PublishEvent<T>&) {
-          const auto& sys = dynamic_cast<const MySystem&>(system);
-          return (sys.*publish)(context);
-        }));
+        PublishEvent<T>(
+            TriggerType::kPeriodic,
+            [publish](const System<T>& system, const Context<T>& context,
+                      const PublishEvent<T>&) {
+              const auto& sys = dynamic_cast<const MySystem&>(system);
+              return (sys.*publish)(context);
+            }));
   }
 
   /** This variant accepts a handler that is assumed to succeed rather than
@@ -302,8 +301,7 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         PublishEvent<T>(
             TriggerType::kPeriodic,
-            [publish](const System<T>& system,
-                      const Context<T>& context,
+            [publish](const System<T>& system, const Context<T>& context,
                       const PublishEvent<T>&) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*publish)(context);
@@ -343,10 +341,8 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         DiscreteUpdateEvent<T>(
             TriggerType::kPeriodic,
-            [update](const System<T>& system,
-                     const Context<T>& context,
-                     const DiscreteUpdateEvent<T>&,
-                     DiscreteValues<T>* xd) {
+            [update](const System<T>& system, const Context<T>& context,
+                     const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               return (sys.*update)(context, &*xd);
             }));
@@ -372,10 +368,8 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         DiscreteUpdateEvent<T>(
             TriggerType::kPeriodic,
-            [update](const System<T>& system,
-                     const Context<T>& context,
-                     const DiscreteUpdateEvent<T>&,
-                     DiscreteValues<T>* xd) {
+            [update](const System<T>& system, const Context<T>& context,
+                     const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               (sys.*update)(context, &*xd);
               return EventStatus::Succeeded();
@@ -412,8 +406,7 @@ class LeafSystem : public System<T> {
         period_sec, offset_sec,
         UnrestrictedUpdateEvent<T>(
             TriggerType::kPeriodic,
-            [update](const System<T>& system,
-                     const Context<T>& context,
+            [update](const System<T>& system, const Context<T>& context,
                      const UnrestrictedUpdateEvent<T>&, State<T>* x) {
               const auto& sys = dynamic_cast<const MySystem&>(system);
               return (sys.*update)(context, &*x);
@@ -593,14 +586,13 @@ class LeafSystem : public System<T> {
                   "Expected to be invoked from a LeafSystem-derived System.");
     DRAKE_DEMAND(update != nullptr);
 
-    DeclarePerStepEvent(
-        DiscreteUpdateEvent<T>(
-            TriggerType::kPerStep,
-            [update](const System<T>& system, const Context<T>& context,
-                     const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
-              const auto& sys = dynamic_cast<const MySystem&>(system);
-              return (sys.*update)(context, &*xd);
-            }));
+    DeclarePerStepEvent(DiscreteUpdateEvent<T>(
+        TriggerType::kPerStep,
+        [update](const System<T>& system, const Context<T>& context,
+                 const DiscreteUpdateEvent<T>&, DiscreteValues<T>* xd) {
+          const auto& sys = dynamic_cast<const MySystem&>(system);
+          return (sys.*update)(context, &*xd);
+        }));
   }
 
   /** Declares that an UnrestrictedUpdate event should occur at the start of
@@ -669,7 +661,7 @@ class LeafSystem : public System<T> {
   template <typename EventType>
   void DeclarePerStepEvent(const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
-        event.get_trigger_type() == TriggerType::kPerStep);
+                 event.get_trigger_type() == TriggerType::kPerStep);
     event.AddToComposite(TriggerType::kPerStep, &per_step_events_);
   }
   //@}
@@ -712,7 +704,7 @@ class LeafSystem : public System<T> {
   @see DeclareInitializationEvent() */
   template <class MySystem>
   void DeclareInitializationPublishEvent(
-      EventStatus(MySystem::*publish)(const Context<T>&) const) {
+      EventStatus (MySystem::*publish)(const Context<T>&) const) {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -748,9 +740,8 @@ class LeafSystem : public System<T> {
   @see DeclareInitializationUnrestrictedUpdateEvent()
   @see DeclareInitializationEvent() */
   template <class MySystem>
-  void DeclareInitializationDiscreteUpdateEvent(
-      EventStatus(MySystem::*update)
-          (const Context<T>&, DiscreteValues<T>*) const) {
+  void DeclareInitializationDiscreteUpdateEvent(EventStatus (MySystem::*update)(
+      const Context<T>&, DiscreteValues<T>*) const) {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -787,8 +778,7 @@ class LeafSystem : public System<T> {
   @see DeclareInitializationEvent() */
   template <class MySystem>
   void DeclareInitializationUnrestrictedUpdateEvent(
-      EventStatus(MySystem::*update)
-          (const Context<T>&, State<T>*) const) {
+      EventStatus (MySystem::*update)(const Context<T>&, State<T>*) const) {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -832,7 +822,7 @@ class LeafSystem : public System<T> {
   template <typename EventType>
   void DeclareInitializationEvent(const EventType& event) {
     DRAKE_DEMAND(event.get_trigger_type() == TriggerType::kUnknown ||
-        event.get_trigger_type() == TriggerType::kInitialization);
+                 event.get_trigger_type() == TriggerType::kInitialization);
     event.AddToComposite(TriggerType::kInitialization, &initialization_events_);
   }
   //@}
@@ -881,7 +871,7 @@ class LeafSystem : public System<T> {
   @pre `publish` must not be null. */
   template <class MySystem>
   void DeclareForcedPublishEvent(
-    EventStatus (MySystem::*publish)(const Context<T>&) const) {
+      EventStatus (MySystem::*publish)(const Context<T>&) const) {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -919,8 +909,8 @@ class LeafSystem : public System<T> {
   @pre `this` must be dynamic_cast-able to MySystem.
   @pre `update` must not be null. */
   template <class MySystem>
-  void DeclareForcedDiscreteUpdateEvent(EventStatus
-      (MySystem::*update)(const Context<T>&, DiscreteValues<T>*) const) {
+  void DeclareForcedDiscreteUpdateEvent(EventStatus (MySystem::*update)(
+      const Context<T>&, DiscreteValues<T>*) const) {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived System.");
     auto this_ptr = dynamic_cast<const MySystem*>(this);
@@ -1071,10 +1061,8 @@ class LeafSystem : public System<T> {
 
   @param model_value The abstract state model value to be cloned as needed.
   @returns index of the declared abstract state variable. */
-  AbstractStateIndex DeclareAbstractState(
-      const AbstractValue& model_value);
+  AbstractStateIndex DeclareAbstractState(const AbstractValue& model_value);
   //@}
-
 
   /** @name    (Advanced) Declare size of implicit time derivatives residual
   for use with System::CalcImplicitTimeDerivativeResidual(). Most commonly
@@ -1134,8 +1122,7 @@ class LeafSystem : public System<T> {
   @see System::DeclareInputPort() for more information.
   @pydrake_mkdoc_identifier{3args_size} */
   InputPort<T>& DeclareVectorInputPort(
-      std::variant<std::string, UseDefaultName> name,
-      int size,
+      std::variant<std::string, UseDefaultName> name, int size,
       std::optional<RandomDistribution> random_type = std::nullopt);
 
   /** Declares an abstract-valued input port using the given @p model_value.
@@ -1412,10 +1399,10 @@ class LeafSystem : public System<T> {
       void (MySystem::*calc)(const Context<T>&, OutputType*) const,
       std::set<DependencyTicket> prerequisites_of_calc = {
           all_sources_ticket()}) {
-    auto& port = CreateAbstractLeafOutputPort(
-        NextOutputPortName(std::move(name)),
-        ValueProducer(this, model_value, calc),
-        std::move(prerequisites_of_calc));
+    auto& port =
+        CreateAbstractLeafOutputPort(NextOutputPortName(std::move(name)),
+                                     ValueProducer(this, model_value, calc),
+                                     std::move(prerequisites_of_calc));
     return port;
   }
 
@@ -1531,8 +1518,8 @@ class LeafSystem : public System<T> {
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const) const {
-    return std::make_unique<WitnessFunction<T>>(
-        this, this, description, direction_type, calc);
+    return std::make_unique<WitnessFunction<T>>(this, this, description,
+                                                direction_type, calc);
   }
 
   /** Constructs the witness function with the given description (used primarily
@@ -1558,8 +1545,8 @@ class LeafSystem : public System<T> {
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
-      void (MySystem::*publish_callback)(
-          const Context<T>&, const PublishEvent<T>&) const) const {
+      void (MySystem::*publish_callback)(const Context<T>&,
+                                         const PublishEvent<T>&) const) const {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
     PublishEvent<T> event(
@@ -1587,7 +1574,8 @@ class LeafSystem : public System<T> {
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*du_callback)(const Context<T>&,
-          const DiscreteUpdateEvent<T>&, DiscreteValues<T>*) const) const {
+                                    const DiscreteUpdateEvent<T>&,
+                                    DiscreteValues<T>*) const) const {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
     DiscreteUpdateEvent<T> event(
@@ -1616,7 +1604,8 @@ class LeafSystem : public System<T> {
       const WitnessFunctionDirection& direction_type,
       T (MySystem::*calc)(const Context<T>&) const,
       void (MySystem::*uu_callback)(const Context<T>&,
-          const UnrestrictedUpdateEvent<T>&, State<T>*) const) const {
+                                    const UnrestrictedUpdateEvent<T>&,
+                                    State<T>*) const) const {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
     UnrestrictedUpdateEvent<T> event(
@@ -1647,8 +1636,7 @@ class LeafSystem : public System<T> {
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
-      T (MySystem::*calc)(const Context<T>&) const,
-      const Event<T>& e) const {
+      T (MySystem::*calc)(const Context<T>&) const, const Event<T>& e) const {
     static_assert(std::is_base_of_v<LeafSystem<T>, MySystem>,
                   "Expected to be invoked from a LeafSystem-derived system.");
     return std::make_unique<WitnessFunction<T>>(
@@ -1668,8 +1656,7 @@ class LeafSystem : public System<T> {
   std::unique_ptr<WitnessFunction<T>> MakeWitnessFunction(
       const std::string& description,
       const WitnessFunctionDirection& direction_type,
-      std::function<T(const Context<T>&)> calc,
-      const Event<T>& e) const;
+      std::function<T(const Context<T>&)> calc, const Event<T>& e) const;
   //@}
 
   /** Declares a system constraint of the form
@@ -1689,8 +1676,8 @@ class LeafSystem : public System<T> {
   these constraints. */
   template <class MySystem>
   SystemConstraintIndex DeclareEqualityConstraint(
-      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      int count, std::string description) {
+      void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const, int count,
+      std::string description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareEqualityConstraint(
@@ -1715,9 +1702,9 @@ class LeafSystem : public System<T> {
 
   @see SystemConstraint<T> for more information about the meaning of
   these constraints. */
-  SystemConstraintIndex DeclareEqualityConstraint(
-      ContextConstraintCalc<T> calc, int count,
-      std::string description);
+  SystemConstraintIndex DeclareEqualityConstraint(ContextConstraintCalc<T> calc,
+                                                  int count,
+                                                  std::string description);
 
   /** Declares a system constraint of the form
     bounds.lower() <= calc(context) <= bounds.upper()
@@ -1736,8 +1723,7 @@ class LeafSystem : public System<T> {
   template <class MySystem>
   SystemConstraintIndex DeclareInequalityConstraint(
       void (MySystem::*calc)(const Context<T>&, VectorX<T>*) const,
-      SystemConstraintBounds bounds,
-      std::string description) {
+      SystemConstraintBounds bounds, std::string description) {
     auto this_ptr = dynamic_cast<const MySystem*>(this);
     DRAKE_DEMAND(this_ptr != nullptr);
     return DeclareInequalityConstraint(
@@ -1762,8 +1748,7 @@ class LeafSystem : public System<T> {
   @see SystemConstraint<T> for more information about the meaning of
   these constraints. */
   SystemConstraintIndex DeclareInequalityConstraint(
-      ContextConstraintCalc<T> calc,
-      SystemConstraintBounds bounds,
+      ContextConstraintCalc<T> calc, SystemConstraintBounds bounds,
       std::string description);
 
  private:
@@ -1776,7 +1761,7 @@ class LeafSystem : public System<T> {
       const InputPort<T>& input_port) const final;
 
   std::unique_ptr<CompositeEventCollection<T>>
-      DoAllocateCompositeEventCollection() const final;
+  DoAllocateCompositeEventCollection() const final;
 
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
            PeriodicEventDataComparator>
@@ -1824,13 +1809,11 @@ class LeafSystem : public System<T> {
       const EventCollection<UnrestrictedUpdateEvent<T>>& events,
       State<T>* state, Context<T>* context) const final;
 
-  void DoGetPeriodicEvents(
-      const Context<T>& context,
-      CompositeEventCollection<T>* events) const final;
+  void DoGetPeriodicEvents(const Context<T>& context,
+                           CompositeEventCollection<T>* events) const final;
 
-  void DoGetPerStepEvents(
-      const Context<T>& context,
-      CompositeEventCollection<T>* events) const final;
+  void DoGetPerStepEvents(const Context<T>& context,
+                          CompositeEventCollection<T>* events) const final;
 
   void DoGetInitializationEvents(
       const Context<T>& context,
@@ -1839,8 +1822,7 @@ class LeafSystem : public System<T> {
   // Creates a new cached, vector-valued LeafOutputPort in this LeafSystem and
   // returns a reference to it.
   LeafOutputPort<T>& CreateVectorLeafOutputPort(
-      std::string name,
-      int fixed_size,
+      std::string name, int fixed_size,
       typename LeafOutputPort<T>::AllocCallback vector_allocator,
       typename LeafOutputPort<T>::CalcVectorCallback vector_calculator,
       std::set<DependencyTicket> calc_prerequisites);
@@ -1848,8 +1830,7 @@ class LeafSystem : public System<T> {
   // Creates a new cached, abstract-valued LeafOutputPort in this LeafSystem and
   // returns a reference to it.
   LeafOutputPort<T>& CreateAbstractLeafOutputPort(
-      std::string name,
-      ValueProducer producer,
+      std::string name, ValueProducer producer,
       std::set<DependencyTicket> calc_prerequisites);
 
   // Creates a new cached LeafOutputPort in this LeafSystem and returns a

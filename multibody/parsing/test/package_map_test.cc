@@ -24,16 +24,15 @@ namespace fs = std::filesystem;
 string GetTestDataRoot() {
   const string desired_dir =
       "drake/multibody/parsing/test/package_map_test_packages/";
-  const string contained_file =
-      "package_map_test_package_a/package.xml";
-  const string absolute_file_path = FindResourceOrThrow(
-      desired_dir + contained_file);
+  const string contained_file = "package_map_test_package_a/package.xml";
+  const string absolute_file_path =
+      FindResourceOrThrow(desired_dir + contained_file);
   return absolute_file_path.substr(
       0, absolute_file_path.size() - contained_file.size());
 }
 
 void VerifyMatch(const PackageMap& package_map,
-    const map<string, string>& expected_packages) {
+                 const map<string, string>& expected_packages) {
   EXPECT_EQ(package_map.size(), static_cast<int>(expected_packages.size()));
   for (const auto& [package_name, package_path] : expected_packages) {
     ASSERT_TRUE(package_map.Contains(package_name));
@@ -69,18 +68,18 @@ void VerifyMatch(const PackageMap& package_map,
 void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
   const string root_path = GetTestDataRoot();
   map<string, string> expected_packages = {
-    {"package_map_test_package_a", root_path +
-        "package_map_test_package_a/"},
-    {"package_map_test_package_aa", root_path +
-        "package_map_test_package_a/package_map_test_package_aa/"},
-    {"package_map_test_package_b", root_path +
-        "package_map_test_package_b/"},
-    {"package_map_test_package_c", root_path +
-        "package_map_test_package_set/package_map_test_package_c/"},
-    {"package_map_test_package_d", root_path +
-        "package_map_test_package_set/package_map_test_package_d/"},
-    {"package_map_test_package_e", root_path +
-        "package_map_test_package_e/"},
+      {"package_map_test_package_a",  // BR
+       root_path + "package_map_test_package_a/"},
+      {"package_map_test_package_aa",
+       root_path + "package_map_test_package_a/package_map_test_package_aa/"},
+      {"package_map_test_package_b",  // BR
+       root_path + "package_map_test_package_b/"},
+      {"package_map_test_package_c",
+       root_path + "package_map_test_package_set/package_map_test_package_c/"},
+      {"package_map_test_package_d",
+       root_path + "package_map_test_package_set/package_map_test_package_d/"},
+      {"package_map_test_package_e",  // BR
+       root_path + "package_map_test_package_e/"},
   };
   VerifyMatch(package_map, expected_packages);
 }
@@ -128,10 +127,8 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   fs::create_directory("package_foo");
   fs::create_directory("package_bar");
   fs::create_directory("package_baz");
-  map<string, string> expected_packages = {
-    {"package_foo", "package_foo"},
-    {"my_package", "package_bar"}
-  };
+  map<string, string> expected_packages = {{"package_foo", "package_foo"},
+                                           {"my_package", "package_bar"}};
 
   // Add packages + paths.
   PackageMap package_map = PackageMap::MakeEmpty();
@@ -144,13 +141,11 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   // Adding a duplicate package with the same path is OK.
   package_map.Add("package_foo", "package_foo");
   // Adding a duplicate package with a different path throws.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      package_map.Add("package_foo", "package_baz"),
-      ".*paths are not eq.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(package_map.Add("package_foo", "package_baz"),
+                              ".*paths are not eq.*");
   // Adding a package with a nonexistent path throws.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      package_map.Add("garbage", "garbage"),
-      ".*does not exist.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(package_map.Add("garbage", "garbage"),
+                              ".*does not exist.*");
 
   VerifyMatch(package_map, expected_packages);
 
@@ -182,23 +177,16 @@ GTEST_TEST(PackageMapTest, TestAddMap) {
   fs::create_directory("package_foo");
   fs::create_directory("package_bar");
   fs::create_directory("package_baz");
-  map<string, string> expected_packages_1 = {
-    {"package_foo", "package_foo"},
-    {"package_bar", "package_bar"}
-  };
-  map<string, string> expected_packages_2 = {
-    {"package_foo", "package_foo"},
-    {"package_baz", "package_baz"}
-  };
+  map<string, string> expected_packages_1 = {{"package_foo", "package_foo"},
+                                             {"package_bar", "package_bar"}};
+  map<string, string> expected_packages_2 = {{"package_foo", "package_foo"},
+                                             {"package_baz", "package_baz"}};
   map<string, string> expected_packages_combined = {
-    {"package_foo", "package_foo"},
-    {"package_bar", "package_bar"},
-    {"package_baz", "package_baz"}
-  };
+      {"package_foo", "package_foo"},
+      {"package_bar", "package_bar"},
+      {"package_baz", "package_baz"}};
   map<string, string> expected_packages_conflicting = {
-    {"package_foo", "package_foo"},
-    {"package_baz", "package_bar"}
-  };
+      {"package_foo", "package_foo"}, {"package_baz", "package_bar"}};
 
   // Populate package maps.
   PackageMap package_map_1 = PackageMap::MakeEmpty();
@@ -274,13 +262,12 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
   const string xml_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/"
       "package_map_test_packages/package_map_test_package_a/package.xml");
-  const string xml_dirname =
-      fs::path(xml_filename).parent_path().string();
+  const string xml_dirname = fs::path(xml_filename).parent_path().string();
   PackageMap package_map = PackageMap::MakeEmpty();
   package_map.AddPackageXml(xml_filename);
 
   map<string, string> expected_packages = {
-    {"package_map_test_package_a", xml_dirname},
+      {"package_map_test_package_a", xml_dirname},
   };
   VerifyMatch(package_map, expected_packages);
 
@@ -371,14 +358,14 @@ GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
   ::setenv("ROS_PACKAGE_PATH", value.c_str(), 1);
   package_map.PopulateFromRosPackagePath();
   map<string, string> expected_packages = {
-    {"package_map_test_package_a", root_path +
-        "package_map_test_package_a/"},
-    {"package_map_test_package_b", root_path +
-        "package_map_test_package_b/"},
-    {"package_map_test_package_c", root_path +
-        "package_map_test_package_set/package_map_test_package_c/"},
-    {"package_map_test_package_d", root_path +
-        "package_map_test_package_set/package_map_test_package_d/"},
+      {"package_map_test_package_a",  // BR
+       root_path + "package_map_test_package_a/"},
+      {"package_map_test_package_b",  // BR
+       root_path + "package_map_test_package_b/"},
+      {"package_map_test_package_c",
+       root_path + "package_map_test_package_set/package_map_test_package_c/"},
+      {"package_map_test_package_d",
+       root_path + "package_map_test_package_set/package_map_test_package_d/"},
   };
   VerifyMatch(package_map, expected_packages);
 
@@ -391,19 +378,16 @@ GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
 GTEST_TEST(PackageMapTest, TestStreamingToString) {
   fs::create_directory("package_foo");
   fs::create_directory("package_bar");
-  map<string, string> expected_packages = {
-    {"package_foo", "package_foo"},
-    {"my_package", "package_bar"}
-  };
+  map<string, string> expected_packages = {{"package_foo", "package_foo"},
+                                           {"my_package", "package_bar"}};
 
   PackageMap package_map = PackageMap::MakeEmpty();
   for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
   const std::string url = "file:///tmp/missing.zip";
-  package_map.AddRemote("remote", {
-      .urls = {url},
-      .sha256 = std::string(64u, '0')});
+  package_map.AddRemote("remote",
+                        {.urls = {url}, .sha256 = std::string(64u, '0')});
 
   std::stringstream string_buffer;
   string_buffer << package_map;
@@ -441,25 +425,23 @@ GTEST_TEST(PackageMapTest, TestResolveUrl) {
 
   EXPECT_EQ(filename, expected_filename);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(package_map.ResolveUrl(
-      "package://bad_package_name/sdf/test_model.sdf"),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      package_map.ResolveUrl("package://bad_package_name/sdf/test_model.sdf"),
       ".*unknown package.*");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(package_map.ResolveUrl(
-      "package://package_map_test_package_a/bad_filename.sdf"),
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      package_map.ResolveUrl(
+          "package://package_map_test_package_a/bad_filename.sdf"),
       ".*does not exist.*");
 }
 
 // Tests that PackageMap is parsing deprecation messages
 GTEST_TEST(PackageMapTest, TestDeprecation) {
-  const
-  std::map<std::string, std::optional<std::string>> expected_deprecations = {
-    {
-      "package_map_test_package_b",
-      "package_map_test_package_b is deprecated, and will be removed on or "
-          "around 2038-01-19. Please use the 'drake' package instead."
-    },
-    {"package_map_test_package_d", "(no explanation given)"},
+  const std::map<std::string, std::optional<std::string>> expected_deprecations{
+      {"package_map_test_package_b",
+       "package_map_test_package_b is deprecated, and will be removed on or "
+       "around 2038-01-19. Please use the 'drake' package instead."},
+      {"package_map_test_package_d", "(no explanation given)"},
   };
   const string root_path = GetTestDataRoot();
   PackageMap package_map;

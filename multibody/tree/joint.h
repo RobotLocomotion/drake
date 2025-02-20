@@ -19,10 +19,6 @@ namespace drake {
 namespace multibody {
 
 namespace internal {
-// This is a class used by MultibodyTree internals to create the implementation
-// for a particular joint object.
-template <typename T>
-class JointImplementationBuilder;
 class MobilizerTester;
 }  // namespace internal
 
@@ -72,6 +68,16 @@ class MobilizerTester;
 /// @warning Do not ever attempt to instantiate and manipulate %Joint objects
 /// on the stack; it will fail. Add joints to your plant using the provided API
 /// MultibodyPlant::AddJoint() as in the example above.
+///
+/// @note To developers: this is the base class for all concrete Joint types.
+/// Extending this class to add a new Joint type necessarily requires working
+/// with internal implementation classes for which we cannot guarantee API
+/// stability due to the need for ongoing improvements to these
+/// performance-critical classes. So while our usual stability guarantees
+/// apply to the Joint `public` API, the `protected` API here is subject to
+/// change when the underlying internal objects change. Our release notes will
+/// say when we have made changes that might affect your Joint implementations,
+/// but we won't necessarily be able to provide a deprecation period.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -253,7 +259,7 @@ class Joint : public MultibodyElement<T> {
   std::string position_suffix(int position_index_in_joint) const {
     DRAKE_DEMAND(0 <= position_index_in_joint &&
                  position_index_in_joint < num_positions());
-    DRAKE_DEMAND(has_implementation());
+    DRAKE_DEMAND(has_mobilizer());
     return do_get_position_suffix(position_index_in_joint);
   }
 
@@ -264,7 +270,7 @@ class Joint : public MultibodyElement<T> {
   std::string velocity_suffix(int velocity_index_in_joint) const {
     DRAKE_DEMAND(0 <= velocity_index_in_joint &&
                  velocity_index_in_joint < num_velocities());
-    DRAKE_DEMAND(has_implementation());
+    DRAKE_DEMAND(has_mobilizer());
     return do_get_velocity_suffix(velocity_index_in_joint);
   }
 
@@ -341,20 +347,20 @@ class Joint : public MultibodyElement<T> {
   /// Lock the joint. Its generalized velocities will be 0 until it is
   /// unlocked.
   void Lock(systems::Context<T>* context) const {
-    DRAKE_DEMAND(implementation_->has_mobilizer());
-    implementation_->mobilizer->Lock(context);
+    DRAKE_DEMAND(has_mobilizer());
+    mobilizer_->Lock(context);
   }
 
   /// Unlock the joint.
   void Unlock(systems::Context<T>* context) const {
-    DRAKE_DEMAND(implementation_->has_mobilizer());
-    implementation_->mobilizer->Unlock(context);
+    DRAKE_DEMAND(has_mobilizer());
+    mobilizer_->Unlock(context);
   }
 
   /// @return true if the joint is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
-    DRAKE_DEMAND(implementation_->has_mobilizer());
-    return implementation_->mobilizer->is_locked(context);
+    DRAKE_DEMAND(has_mobilizer());
+    return mobilizer_->is_locked(context);
   }
 
   /// @name            Methods to get and set limits
@@ -746,6 +752,10 @@ class Joint : public MultibodyElement<T> {
 
   // Hide the following section from Doxygen.
 #ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Model this joint using the appropriate Mobilizer.
+  std::unique_ptr<internal::Mobilizer<T>> Build(
+      const internal::SpanningForest::Mobod& mobod);
+
   // NVI to DoCloneToScalar() templated on the scalar type of the new clone to
   // be created. This method is intended to be called by
   // MultibodyTree::CloneToScalar().
@@ -753,13 +763,7 @@ class Joint : public MultibodyElement<T> {
   std::unique_ptr<Joint<ToScalar>> CloneToScalar(
       internal::MultibodyTree<ToScalar>* tree_clone) const {
     std::unique_ptr<Joint<ToScalar>> joint_clone = DoCloneToScalar(*tree_clone);
-
-    std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
-        implementation_clone =
-            this->get_implementation().template CloneToScalar<ToScalar>(
-                tree_clone);
-    joint_clone->OwnImplementation(std::move(implementation_clone));
-
+    joint_clone->mobilizer_ = FindMobilizerToScalarClone<ToScalar>(tree_clone);
     return joint_clone;
   }
 
@@ -769,67 +773,14 @@ class Joint : public MultibodyElement<T> {
   std::unique_ptr<Joint<T>> ShallowClone() const;
 
   const internal::Mobilizer<T>& GetMobilizerInUse() const {
-    // Currently we model each joint with a mobilizer.
-    DRAKE_DEMAND(get_implementation().has_mobilizer());
-    return *get_implementation().mobilizer;
+    // We model each joint with a mobilizer.
+    DRAKE_DEMAND(has_mobilizer());
+    return *mobilizer_;
   }
 #endif
   // End of hidden Doxygen section.
 
  protected:
-  /// (Advanced) Structure containing all the information needed to build the
-  /// MultibodyTree implementation for a %Joint. At MultibodyTree::Finalize() a
-  /// %Joint creates a BluePrint of its implementation so that MultibodyTree can
-  /// build an implementation for it.
-  struct BluePrint {
-    std::unique_ptr<internal::Mobilizer<T>> mobilizer;
-    // TODO(sherm1): add constraints and force elements as needed.
-  };
-
-  /// (Advanced) A Joint is implemented in terms of MultibodyTree elements,
-  /// typically a Mobilizer. However, some Joints may be better modeled with
-  /// constraints or force elements. This object contains the internal details
-  /// of the MultibodyTree implementation for a joint. The implementation does
-  /// not own the MbT elements, it just keeps references to them. This is
-  /// intentionally made a protected member so that derived classes have
-  /// access to its definition.
-  struct JointImplementation {
-    /// Default constructor to create an empty implementation. Used by
-    /// Joint::CloneToScalar().
-    JointImplementation() {}
-
-    /// This constructor creates an implementation for `this` joint from the
-    /// blueprint provided.
-    explicit JointImplementation(const BluePrint& blue_print) {
-      DRAKE_DEMAND(blue_print.mobilizer != nullptr);
-      mobilizer = blue_print.mobilizer.get();
-    }
-
-    /// Returns `true` if the implementation of this Joint uses a Mobilizer.
-    bool has_mobilizer() const { return mobilizer != nullptr; }
-
-    // Hide the following section from Doxygen.
-#ifndef DRAKE_DOXYGEN_CXX
-    // Helper method to be called within Joint::CloneToScalar() to clone its
-    // implementation to the appropriate scalar type.
-    template <typename ToScalar>
-    std::unique_ptr<typename Joint<ToScalar>::JointImplementation>
-    CloneToScalar(internal::MultibodyTree<ToScalar>* tree_clone) const {
-      auto implementation_clone =
-          std::make_unique<typename Joint<ToScalar>::JointImplementation>();
-      internal::Mobilizer<ToScalar>* mobilizer_clone =
-          &tree_clone->get_mutable_variant(*mobilizer);
-      implementation_clone->mobilizer = mobilizer_clone;
-      return implementation_clone;
-    }
-#endif
-    // End of hidden Doxygen section.
-
-    /// Reference (raw pointer) to the mobilizer implementing this Joint.
-    internal::Mobilizer<T>* mobilizer{};
-    // TODO(sherm1): add constraints and force elements as needed.
-  };
-
   /// Implementation of the NVI velocity_start(), see velocity_start() for
   /// details. Note that this must be the offset within just the velocity
   /// vector, _not_ within the composite state vector.
@@ -975,27 +926,6 @@ class Joint : public MultibodyElement<T> {
   virtual std::unique_ptr<Joint<T>> DoShallowClone() const;
   /// @}
 
-  /// This method must be implemented by derived classes in order to provide
-  /// JointImplementationBuilder a BluePrint of their internal implementation
-  /// JointImplementation.
-  virtual std::unique_ptr<BluePrint> MakeImplementationBlueprint(
-      const internal::SpanningForest::Mobod& mobod) const = 0;
-
-  /// Returns a const reference to the internal implementation of `this` joint.
-  /// @warning The MultibodyTree model must have already been finalized, or
-  /// this method will abort.
-  const JointImplementation& get_implementation() const {
-    // The MultibodyTree must have been finalized for the implementation to be
-    // valid.
-    DRAKE_DEMAND(this->get_parent_tree().topology_is_valid());
-    return *implementation_;
-  }
-
-  /// Returns whether `this` joint owns a particular implementation.
-  /// If the MultibodyTree has been finalized, this will return true.
-  bool has_implementation() const { return implementation_ != nullptr; }
-
- protected:
   /// Utility for concrete joint implementations to use to select the
   /// inboard/outboard frames for a tree in the spanning forest, given
   /// whether they should be reversed from the parent/child frames that are
@@ -1010,42 +940,53 @@ class Joint : public MultibodyElement<T> {
   /// (Internal use only) Returns the mobilizer implementing this joint,
   /// downcast to its specific type.
   ///
-  /// @pre get_implementation().has_mobilizer() is true
+  /// @pre A mobilizer has been created for this Joint.
   /// @pre ConcreteMobilizer must exactly match the dynamic type of the
   /// mobilizer associated with this Joint. This requirement is (only) checked
   /// in Debug builds.
   template <template <typename> class ConcreteMobilizer>
   const ConcreteMobilizer<T>& get_mobilizer_downcast() const {
-    const internal::Mobilizer<T>* result = this->get_implementation().mobilizer;
-    DRAKE_DEMAND(result != nullptr);
-    DRAKE_ASSERT(typeid(*result) == typeid(ConcreteMobilizer<T>));
-    return static_cast<const ConcreteMobilizer<T>&>(*result);
+    DRAKE_DEMAND(has_mobilizer());
+    DRAKE_ASSERT(typeid(*mobilizer_) == typeid(ConcreteMobilizer<T>));
+    return static_cast<const ConcreteMobilizer<T>&>(*mobilizer_);
   }
 
   /// (Internal use only) Mutable flavor of get_mobilizer_downcast().
   template <template <typename> class ConcreteMobilizer>
   ConcreteMobilizer<T>& get_mutable_mobilizer_downcast() {
-    internal::Mobilizer<T>* result = this->get_implementation().mobilizer;
-    DRAKE_DEMAND(result != nullptr);
-    DRAKE_ASSERT(typeid(*result) == typeid(ConcreteMobilizer<T>));
-    return static_cast<ConcreteMobilizer<T>&>(*result);
+    DRAKE_DEMAND(has_mobilizer());
+    DRAKE_ASSERT(typeid(*mobilizer_) == typeid(ConcreteMobilizer<T>));
+    return static_cast<ConcreteMobilizer<T>&>(*mobilizer_);
   }
 
+  /// (Internal use only) Returns true if this Joint has an implementing
+  /// Mobilizer.
+  bool has_mobilizer() const { return mobilizer_ != nullptr; }
+
+  DRAKE_DEPRECATED(
+      "2025-06-01",
+      "Use has_mobilizer() instead (JointImplementation class is gone).")
+  bool has_implementation() const { return has_mobilizer(); }
+
  private:
-  // Make all other Joint<U> objects a friend of Joint<T> so they can make
-  // Joint<ToScalar>::JointImplementation from CloneToScalar<ToScalar>().
+  // Make all other Joint<U> objects a friend of Joint<T> so they can clone
+  // successfully.
   template <typename>
   friend class Joint;
 
-  // JointImplementationBuilder is a friend so that it can access the
-  // Joint<T>::BluePrint and protected method MakeImplementationBlueprint().
-  friend class internal::JointImplementationBuilder<T>;
+  // This method must be implemented by derived Joint classes in order to
+  // create a Mobilizer as the Joint's internal representation.
+  virtual std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
+      const internal::SpanningForest::Mobod& mobod) const = 0;
 
-  // When an implementation is created, either by
-  // internal::JointImplementationBuilder or by Joint::CloneToScalar(), this
-  // method is called to pass ownership of an implementation to the Joint.
-  void OwnImplementation(std::unique_ptr<JointImplementation> implementation) {
-    implementation_ = std::move(implementation);
+  // Helper method to be called within Joint::CloneToScalar() to locate the
+  // cloned Mobilizer corresponding to this Joint's Mobilizer.
+  template <typename ToScalar>
+  internal::Mobilizer<ToScalar>* FindMobilizerToScalarClone(
+      internal::MultibodyTree<ToScalar>* tree_clone) const {
+    internal::Mobilizer<ToScalar>* mobilizer_clone =
+        &tree_clone->get_mutable_variant(*mobilizer_);
+    return mobilizer_clone;
   }
 
   // Implementation for MultibodyElement::DoDeclareParameters().
@@ -1096,7 +1037,7 @@ class Joint : public MultibodyElement<T> {
   VectorX<double> default_positions_;
 
   // The Joint<T> implementation:
-  std::unique_ptr<JointImplementation> implementation_;
+  internal::Mobilizer<T>* mobilizer_{};
 
   // System parameter indices.
   systems::NumericParameterIndex damping_parameter_index_;

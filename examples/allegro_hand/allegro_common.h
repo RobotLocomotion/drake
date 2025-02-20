@@ -33,9 +33,8 @@ void SetPositionControlledGains(double pid_frequency, double Ieff,
 /// of the finger joints in the desired order.
 /// @param Sy the matrix to match the output torque for the hand joint
 /// actuators in the desired order into the input actuation of the plant.
-void GetControlPortMapping(
-    const multibody::MultibodyPlant<double>& plant,
-    MatrixX<double>* Sx, MatrixX<double>* Sy);
+void GetControlPortMapping(const multibody::MultibodyPlant<double>& plant,
+                           MatrixX<double>* Sx, MatrixX<double>* Sy);
 
 /// Defines the desired ordering of the finger joints by name. The fingers are
 /// ordered as [thumb, index, middle, ring] and the joints of each finger are

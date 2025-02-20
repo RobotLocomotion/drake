@@ -24,6 +24,8 @@ class TestModelVisualizerReload(unittest.TestCase):
         dut = mut.ModelVisualizer(meshcat=meshcat)
         filename = "drake/multibody/benchmarks/acrobot/acrobot.sdf"
         dut.AddModels(FindResourceOrThrow(filename))
+        dut.AddModels(url="package://drake_models/veggies/assets/"
+                          + "yellow_bell_pepper_no_stem_low.gltf")
         dut.Finalize()
 
         # Check that it allowed reloading.
@@ -54,7 +56,7 @@ class TestModelVisualizerReload(unittest.TestCase):
 
         # Run once. If a reload() happened, the diagram will have changed out.
         # Use a non-default position so we can check that it is maintained.
-        original_q = [1.0, 2.0]
+        original_q = [1.0, 2.0] + [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         dut.Run(position=original_q, loop_once=True)
         self.assertNotEqual(id(orig_diagram), id(dut._diagram))
 

@@ -55,7 +55,7 @@ class BasicVector : public VectorBase<T> {
   /// placewise-corresponding member of @p args as the sole constructor
   /// argument.  For instance:
   ///   BasicVector<symbolic::Expression>::Make("x", "y", "z");
-  template<typename... Fargs>
+  template <typename... Fargs>
   static std::unique_ptr<BasicVector<T>> Make(Fargs&&... args) {
     auto data = std::make_unique<BasicVector<T>>(sizeof...(args));
     BasicVector<T>::MakeRecursive(data.get(), 0, args...);
@@ -69,7 +69,9 @@ class BasicVector : public VectorBase<T> {
   /// @throws std::exception if the new value has different dimensions.
   void set_value(const Eigen::Ref<const VectorX<T>>& value) {
     const int n = value.rows();
-    if (n != size()) { this->ThrowMismatchedSize(n); }
+    if (n != size()) {
+      this->ThrowMismatchedSize(n);
+    }
     values_ = value;
   }
 
@@ -94,7 +96,9 @@ class BasicVector : public VectorBase<T> {
                            EigenPtr<VectorX<T>> vec) const final {
     DRAKE_THROW_UNLESS(vec != nullptr);
     const int n = vec->rows();
-    if (n != size()) { this->ThrowMismatchedSize(n); }
+    if (n != size()) {
+      this->ThrowMismatchedSize(n);
+    }
     *vec += scale * values_;
   }
 
@@ -131,12 +135,16 @@ class BasicVector : public VectorBase<T> {
   }
 
   const T& DoGetAtIndexChecked(int index) const final {
-    if (index >= size()) { this->ThrowOutOfRange(index); }
+    if (index >= size()) {
+      this->ThrowOutOfRange(index);
+    }
     return values_[index];
   }
 
   T& DoGetAtIndexChecked(int index) final {
-    if (index >= size()) { this->ThrowOutOfRange(index); }
+    if (index >= size()) {
+      this->ThrowOutOfRange(index);
+    }
     return values_[index];
   }
 
@@ -154,15 +162,15 @@ class BasicVector : public VectorBase<T> {
   /// single-argument constructor invoked via @p constructor_arg, and then
   /// recursively invokes itself on the next index with @p recursive args.
   /// Helper for BasicVector<T>::Make.
-  template<typename F, typename... Fargs>
-  static void MakeRecursive(BasicVector<T>* data, int index,
-                            F constructor_arg, Fargs&&... recursive_args) {
+  template <typename F, typename... Fargs>
+  static void MakeRecursive(BasicVector<T>* data, int index, F constructor_arg,
+                            Fargs&&... recursive_args) {
     (*data)[index++] = T(constructor_arg);
     BasicVector<T>::MakeRecursive(data, index, recursive_args...);
   }
 
   /// Base case for the MakeRecursive template recursion.
-  template<typename F, typename... Fargs>
+  template <typename F, typename... Fargs>
   static void MakeRecursive(BasicVector<T>* data, int index,
                             F constructor_arg) {
     (*data)[index++] = T(constructor_arg);

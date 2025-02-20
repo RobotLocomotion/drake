@@ -9,7 +9,7 @@ namespace drake {
 namespace systems {
 
 std::string CacheEntryValue::GetPathDescription() const {
-  DRAKE_DEMAND(owning_subcontext_!= nullptr);
+  DRAKE_DEMAND(owning_subcontext_ != nullptr);
   return owning_subcontext_->GetSystemPathname() + ":" + description();
 }
 
@@ -58,16 +58,16 @@ void CacheEntryValue::ThrowIfBadOtherValue(
 }
 
 CacheEntryValue& Cache::CreateNewCacheEntryValue(
-    CacheIndex index, DependencyTicket ticket,
-    const std::string& description,
+    CacheIndex index, DependencyTicket ticket, const std::string& description,
     const std::set<DependencyTicket>& prerequisites,
     DependencyGraph* trackers) {
   DRAKE_DEMAND(trackers != nullptr);
   DRAKE_DEMAND(index.is_valid() && ticket.is_valid());
 
   // Make sure there is a place for this cache entry in the cache.
-  if (index >= cache_size())
+  if (index >= cache_size()) {
     store_.resize(index + 1);
+  }
 
   // Create the new cache entry value and install it into this Cache. Note that
   // indirection here means the CacheEntryValue object's address is stable
@@ -96,9 +96,7 @@ CacheEntryValue& Cache::CreateNewCacheEntryValue(
     // the tracker. That requires that the Cache and DependencyGraph are
     // contained in the same Context.
     tracker = &trackers->CreateNewDependencyTracker(
-        ticket,
-        "cache " + description,
-        &value);
+        ticket, "cache " + description, &value);
   }
 
   // Subscribe to prerequisites (trackers must already exist).
@@ -113,7 +111,6 @@ void Cache::DisableCaching() {
   for (auto& entry : store_)
     if (entry) entry->disable_caching();
 }
-
 
 void Cache::EnableCaching() {
   for (auto& entry : store_)

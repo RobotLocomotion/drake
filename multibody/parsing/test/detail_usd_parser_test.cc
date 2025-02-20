@@ -24,7 +24,8 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
     const std::optional<std::string> parent_model_name;
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
-                       &plant_,  &resolver,    NoSelect};
+                       nullptr,  &plant_,      &resolver,
+                       NoSelect};
     UsdParserWrapper dut;
     auto result = dut.AddAllModels(source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
@@ -46,9 +47,9 @@ class UsdParserTest : public test::DiagnosticPolicyTestBase {
 
 // Finds a file resource within 'usd_parser_test'.
 std::string FindUsdTestResourceOrThrow(const std::string& filename) {
-    const std::string resource_dir{
+  const std::string resource_dir{
       "drake/multibody/parsing/test/usd_parser_test/"};
-    return FindResourceOrThrow(resource_dir + filename);
+  return FindResourceOrThrow(resource_dir + filename);
 }
 
 TEST_F(UsdParserTest, BasicImportTest) {
@@ -68,20 +69,19 @@ TEST_F(UsdParserTest, NoSuchFile) {
 }
 
 TEST_F(UsdParserTest, InvalidFileTest) {
-  std::string filename =
-    FindUsdTestResourceOrThrow("invalid/invalid_file.usd");
+  std::string filename = FindUsdTestResourceOrThrow("invalid/invalid_file.usd");
   const DataSource source{DataSource::kFilename, &filename};
   ParseFile(source);
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to open USD stage:.*"));
+  EXPECT_THAT(TakeError(),
+              ::testing::MatchesRegex(".*Failed to open USD stage:.*"));
 }
 
 TEST_F(UsdParserTest, InvalidInMemoryStageTest) {
   std::string file_content = R"""(Invalid USD File})""";
   const DataSource source{DataSource::kContents, &file_content};
   ParseFile(source);
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to load in-memory USD stage."));
+  EXPECT_THAT(TakeError(),
+              ::testing::MatchesRegex(".*Failed to load in-memory USD stage."));
 }
 
 TEST_F(UsdParserTest, MissingStageMetadataTest) {
@@ -89,10 +89,12 @@ TEST_F(UsdParserTest, MissingStageMetadataTest) {
     def "SomePrim" { })""";
   const DataSource source{DataSource::kContents, &file_content};
   ParseFile(source);
-  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
-    ".*Failed to read metersPerUnit in stage metadata.*"));
-  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
-    ".*Failed to read upAxis in stage metadata.*"));
+  EXPECT_THAT(TakeWarning(),
+              ::testing::MatchesRegex(
+                  ".*Failed to read metersPerUnit in stage metadata.*"));
+  EXPECT_THAT(
+      TakeWarning(),
+      ::testing::MatchesRegex(".*Failed to read upAxis in stage metadata.*"));
 }
 
 TEST_F(UsdParserTest, UnsupportedPrimTypesTest) {
@@ -109,15 +111,16 @@ TEST_F(UsdParserTest, UnsupportedPrimTypesTest) {
   const DataSource source{DataSource::kContents, &file_content};
   ParseFile(source);
   // Errors from the `/World/Box` prim.
+  EXPECT_THAT(TakeError(),
+              ::testing::MatchesRegex(
+                  ".*The type of the Prim at /World/Box is not specified.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*The type of the Prim at /World/Box is not specified.*"));
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to create collision geometry.*"));
+                               ".*Failed to create collision geometry.*"));
   // Errors from the `/World/Cone` Prim.
+  EXPECT_THAT(TakeError(),
+              ::testing::MatchesRegex(".*Unsupported Prim type 'Cone'.*"));
   EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Unsupported Prim type 'Cone'.*"));
-  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
-    ".*Failed to create collision geometry.*"));
+                               ".*Failed to create collision geometry.*"));
 }
 
 }  // namespace

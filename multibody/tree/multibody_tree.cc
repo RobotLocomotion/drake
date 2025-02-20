@@ -48,29 +48,6 @@ using math::RotationMatrix;
 #define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 template <typename T>
-class JointImplementationBuilder {
- public:
-  JointImplementationBuilder() = delete;
-
-  static Mobilizer<T>* Build(const SpanningForest::Mobod& mobod,
-                             Joint<T>* joint, MultibodyTree<T>* tree) {
-    std::unique_ptr<JointBluePrint> blue_print =
-        joint->MakeImplementationBlueprint(mobod);
-    auto implementation = std::make_unique<JointImplementation>(*blue_print);
-    DRAKE_DEMAND(implementation->has_mobilizer());
-    Mobilizer<T>* mobilizer = blue_print->mobilizer.get();
-    tree->AddMobilizer(std::move(blue_print->mobilizer));
-    // TODO(amcastro-tri): add force elements, bodies, constraints, etc.
-    joint->OwnImplementation(std::move(implementation));
-    return mobilizer;
-  }
-
- private:
-  typedef typename Joint<T>::BluePrint JointBluePrint;
-  typedef typename Joint<T>::JointImplementation JointImplementation;
-};
-
-template <typename T>
 MultibodyTree<T>::MultibodyTree() {
   // Adds a "world" body to MultibodyTree having a NaN SpatialInertia.
   ModelInstanceIndex world_instance = AddModelInstance("WorldModelInstance");
@@ -806,8 +783,9 @@ void MultibodyTree<T>::CreateJointImplementations() {
           GetModelInstanceName(joint.model_instance())));
     }
 
-    Mobilizer<T>* mobilizer =
-        internal::JointImplementationBuilder<T>::Build(mobod, &joint, this);
+    std::unique_ptr<Mobilizer<T>> owned_mobilizer = joint.Build(mobod);
+    Mobilizer<T>* mobilizer = owned_mobilizer.get();
+    AddMobilizer(std::move(owned_mobilizer));  // ownership->tree
     mobilizer->set_model_instance(joint.model_instance());
     DRAKE_DEMAND(mobilizer->index() == mobod.index());
     // Record the joint to mobilizer map.
