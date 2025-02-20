@@ -477,40 +477,25 @@ endif()
 
 set(BAZEL_CONFIG)
 
-option(WITH_CLARABEL "Build with support for Clarabel" ON)
-if(NOT WITH_CLARABEL)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_clarabel=False")
-endif()
+# Defines common options for open-source solver dependencies.
+# By default, these are all ON.
+# Passes the corresponding options to Bazel.
+function(open_solver_option SOLVER)
+  string(TOUPPER "WITH_${SOLVER}" OPTION_NAME)
+  string(TOLOWER "with_${SOLVER}" OPTION_BAZEL_ARG)
+  option("${OPTION_NAME}" "Build with support for ${SOLVER}" ON)
+  if(NOT ${OPTION_NAME})
+    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=False")
+  endif()
+endfunction()
 
-option(WITH_CLP "Build with support for CLP" ON)
-if(NOT WITH_CLP)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_clp=False")
-endif()
-
-option(WITH_CSDP "Build with support for CSDP" ON)
-if(NOT WITH_CSDP)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_csdp=False")
-endif()
-
-option(WITH_IPOPT "Build with support for Ipopt" ON)
-if(NOT WITH_IPOPT)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_ipopt=False")
-endif()
-
-option(WITH_NLOPT "Build with support for NLopt" ON)
-if(NOT WITH_NLOPT)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_nlopt=False")
-endif()
-
-option(WITH_OSQP "Build with support for OSQP" ON)
-if(NOT WITH_OSQP)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_osqp=False")
-endif()
-
-option(WITH_SCS "Build with support for SCS" ON)
-if(NOT WITH_SCS)
-  string(APPEND BAZEL_CONFIG " --@drake//tools/flags:with_scs=False")
-endif()
+open_solver_option("Clarabel")
+open_solver_option("CLP")
+open_solver_option("CSDP")
+open_solver_option("Ipopt")
+open_solver_option("NLopt")
+open_solver_option("OSQP")
+open_solver_option("SCS")
 
 option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
