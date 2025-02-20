@@ -178,11 +178,11 @@ int do_main() {
 
   VectorXd Kp(9), Kd(9), Ki(9);
   Kp << FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp,
-      0.1 * FLAGS_kp, 0.1 * FLAGS_kp;
+      0.2 * FLAGS_kp, 0.2 * FLAGS_kp;
   Kd << FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd,
-      0.1 * FLAGS_kd, 0.1 * FLAGS_kd;
+      0.2 * FLAGS_kd, 0.2 * FLAGS_kd;
   Ki << FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki,
-      0.1 * FLAGS_ki, 0.1 * FLAGS_ki;
+      0.2 * FLAGS_ki, 0.2 * FLAGS_ki;
 
   auto pid_controller = builder.AddSystem<PidController>(Px, Kp, Ki, Kd);
   auto nominal_state_source =
