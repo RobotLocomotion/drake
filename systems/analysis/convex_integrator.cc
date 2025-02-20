@@ -42,7 +42,7 @@ constexpr char kNanValuesMessage[] =
     "minimal reproduction example to help debug your problem.";
 }
 
-template <class T>
+template <typename T>
 ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
                                       Context<T>* context)
     : IntegratorBase<T>(system, context) {
@@ -64,7 +64,7 @@ ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
   DRAKE_DEMAND(x.num_v() == plant_->num_velocities());
 }
 
-template <class T>
+template <typename T>
 void ConvexIntegrator<T>::DoInitialize() {
   using std::isnan;
   const int nq = plant().num_positions();
@@ -113,109 +113,119 @@ void ConvexIntegrator<T>::DoInitialize() {
     csv_file_ << "t,h,k,residual,refresh_hessian,problem_changed,theta_"
                  "converged,theta,solve_phase\n";
   }
+
+  // Allocate intermediate states for error control
+  x_next_full_ = this->get_system().AllocateTimeDerivatives();
+  x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
+  x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
 }
 
-template <class T>
+template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
-  // Get the plant context. Note that we assume the only continuous state is the
-  // plant's, and there are no controllers connected to it.
-  Context<T>& diagram_context = *this->get_mutable_context();
-  Context<T>& context = plant().GetMyMutableContextFromRoot(&diagram_context);
+  // Get references to the overall diagram context and the plant context
+  const Context<T>& diagram_context = this->get_context();
+  const Context<T>& plant_context =
+      plant().GetMyContextFromRoot(diagram_context);
 
-  // Set time step for debugging
+  // Set time and time-step for debugging
   time_ = diagram_context.get_time();
   time_step_ = h;
 
   // Workspace preallocations
-  VectorX<T>& q = workspace_.q;
-  VectorX<T>& v = workspace_.v;
-  SapSolverResults<T>& sap_results = workspace_.sap_results;
+  VectorX<T>& v_tmp = workspace_.v;
   TimestepIndependentProblemData<T>& data =
       workspace_.timestep_independent_data;
 
-  // Error estimate that we'll set
-  ContinuousState<T>& err = *this->get_mutable_error_estimate();
-  VectorBase<T>& q_err = err.get_mutable_generalized_position();
-  VectorBase<T>& v_err = err.get_mutable_generalized_velocity();
-  VectorBase<T>& z_err = err.get_mutable_misc_continuous_state();
-
   // Compute problem data at time (t)
-  CalcTimestepIndependentProblemData(context, &data);
+  CalcTimestepIndependentProblemData(plant_context, &data);
 
-  // Solve the for the full step v_{t+h}
+  // Solve the for the full step x_{t+h}
   solve_phase_ = 0;
-  SapContactProblem<T> problem = MakeSapContactProblem(context, data, h);
-  SapSolverStatus status = SolveWithGuess(problem, data.v0, &sap_results);
-  DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
-
-  // q_{t+h} = q_t + h N(q_t) v_{t+h}
-  plant().MapVelocityToQDot(context, h * sap_results.v, &q);
-  q += plant().GetPositions(context);
-
-  // Compute z_{t+h} explicitly
-  // TODO(vincekurtz): avoid computing time derivatives for the plant
-  ContinuousState<T>& x = diagram_context.get_mutable_continuous_state();
-  const ContinuousState<T>& x_dot = this->EvalTimeDerivatives(diagram_context);
-  const VectorX<T>& z_dot = x_dot.get_misc_continuous_state().CopyToVector();
-  VectorX<T> z = x.get_misc_continuous_state().CopyToVector() + h * z_dot; 
-  x.get_mutable_misc_continuous_state().SetFromVector(z);
+  CalcNextContinuousState(h, data, data.v0, x_next_full_.get());
 
   if (this->get_fixed_step_mode()) {
-    // No error control, so we'll just set x_{t+h} in the context.
-    plant().SetPositions(&context, q);
-    plant().SetVelocities(&context, sap_results.v);
-
+    // We're using fixed step mode, so we can just set the state to x_{t+h} and
+    // move on. No need for error estimation.
+    ContinuousState<T>& x_next =
+        this->get_mutable_context()->get_mutable_continuous_state();
+    x_next.SetFrom(*x_next_full_);
   } else {
-    // We're using error control, and will compare with two half-steps. So we'll
-    // start by putting the full-step result x_{t+h} in the error buffer.
-    q_err.SetFromVector(q);
-    v_err.SetFromVector(sap_results.v);
+    // We're using error control, and will compare with two half-sized steps.
 
-    // Solve the first half-step (t + h/2) with SAP. Here we can reuse the
-    // problem data from the full step.
+    // For the first half-step to (t + h/2), we'll re-use the h-independent
+    // problem data from the full step above.
     solve_phase_ = 1;
-    problem = MakeSapContactProblem(context, data, 0.5 * h);
-    status = SolveWithGuess(problem, data.v0, &sap_results);
-    DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
+    CalcNextContinuousState(0.5 * h, data, data.v0, x_next_half_1_.get());
 
-    // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
-    plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
-    q += plant().GetPositions(context);
-
-    // Put x_{t+h/2} in the context to prepare the next step
-    plant().SetPositions(&context, q);
-    plant().SetVelocities(&context, sap_results.v);
-
-    // Set up the second half-step from (t+h/2) to (t+h). We reset the initial
-    // velocity, but freeze the mass matrix and coriolis/centripedal terms.
-    data.v0 = plant().GetVelocities(context);
-    problem = MakeSapContactProblem(context, data, 0.5 * h);
-
-    // Solve the second half-step problem. We'll use the full step from before
-    // as the initial guess.
+    // For the second half-step to (t + h), we need to start from (t + h/2). So
+    // we'll first set the system state to the result of the first half-step.
+    ContinuousState<T>& x_next =
+        this->get_mutable_context()->get_mutable_continuous_state();
+    x_next.SetFrom(*x_next_half_1_);
+    
+    // Now we can take the second half-step, re-using as much h-indpenendent
+    // problem data as possible (mass matrix, coriolis terms, etc are frozen).
     solve_phase_ = 2;
-    v_err.CopyToPreSizedVector(&v);  // v_err = v_{t+h}
-    status = SolveWithGuess(problem, v, &sap_results);
-    DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
+    data.v0 = plant().GetVelocities(plant_context);
 
-    // q_{t+h} = q_{t+h/2} + h/2 N(q_{t+h/2}) v_{t+h}
-    plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
-    q += plant().GetPositions(context);
+    // The guess for the second half-step is the result of the full step
+    v_tmp = x_next_full_->get_generalized_velocity().CopyToVector();
+    CalcNextContinuousState(0.5 * h, data, v_tmp, x_next_half_2_.get());
 
-    // Set x_{t+h} in the context using the two half-steps.
-    plant().SetPositions(&context, q);
-    plant().SetVelocities(&context, sap_results.v);
+    // Estimate the error as the difference between the full step and the
+    // two half-steps.
+    ContinuousState<T>& err = *this->get_mutable_error_estimate();
+    err.SetFrom(*x_next_full_);
+    err.get_mutable_vector().PlusEqScaled(-1.0, x_next_half_2_->get_vector());
 
-    // Finish out the error computation (compare with the full step)
-    q_err.PlusEqScaled(-1.0, BasicVector(q));
-    v_err.PlusEqScaled(-1.0, BasicVector(sap_results.v));
-    z_err.SetZero();  // TODO(vincekurtz): add error estimate for z
+    // Set the state to the result of the second half-step (since this is more
+    // accurate than the full step, and we have it anyway).
+    x_next.SetFrom(*x_next_half_2_);
   }
 
   // Advance time to t+h
-  diagram_context.SetTime(diagram_context.get_time() + h);
+  this->get_mutable_context()->SetTime(diagram_context.get_time() + h);
 
   return true;  // step was successful
+}
+
+template <typename T>
+void ConvexIntegrator<T>::CalcNextContinuousState(
+    const T& h, const TimestepIndependentProblemData<T>& data,
+    const VectorX<T>& v_guess, ContinuousState<T>* x_next) {
+  // Get context for the overall diagram and the plant in particular
+  const Context<T>& diagram_context = this->get_context();
+  const Context<T>& plant_context =
+      plant().GetMyContextFromRoot(diagram_context);
+
+  // Workspace preallocations
+  // TODO(vincekurtz) allocate z
+  VectorX<T>& q = workspace_.q;
+  SapSolverResults<T>& sap_results = workspace_.sap_results;
+
+  // Solve the SAP problem for next-step plant velocities v_{t+h}
+  SapContactProblem<T> problem = MakeSapContactProblem(plant_context, data, h);
+  SapSolverStatus status = SolveWithGuess(problem, v_guess, &sap_results);
+  DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
+  x_next->get_mutable_generalized_velocity().SetFromVector(sap_results.v);
+
+  // Advance the plant positions, q_{t+h} = q_t + h N(q_t) v_{t+h}
+  plant().MapVelocityToQDot(plant_context, h * sap_results.v, &q);
+  q += plant().GetPositions(plant_context);
+  x_next->get_mutable_generalized_position().SetFromVector(q);
+
+  // Advance the miscellaneous state explicitly, z_{t+h} = z_t + h z_dot
+  // TODO(vincekurtz): avoid computing time derivatives for the plant
+  if (x_next->num_z() > 0) {
+    const VectorX<T> z_dot = this->EvalTimeDerivatives(diagram_context)
+                            .get_misc_continuous_state()
+                            .CopyToVector();
+    VectorX<T> z = diagram_context.get_continuous_state()
+                      .get_misc_continuous_state()
+                      .CopyToVector();
+    z += h * z_dot;
+    x_next->get_mutable_misc_continuous_state().SetFromVector(z);
+  }
 }
 
 template <>
@@ -783,7 +793,7 @@ T ConvexIntegrator<T>::CalcCostAlongLine(
   return ell;
 }
 
-template <class T>
+template <typename T>
 void ConvexIntegrator<T>::CalcTimestepIndependentProblemData(
     const Context<T>& context, TimestepIndependentProblemData<T>* data) {
   // workspace pre-allocations
@@ -807,7 +817,7 @@ void ConvexIntegrator<T>::CalcTimestepIndependentProblemData(
   data->a = data->M.ldlt().solve(-k);
 }
 
-template <class T>
+template <typename T>
 SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
     const Context<T>& context, const TimestepIndependentProblemData<T>& data,
     const T& h) {
@@ -840,7 +850,7 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   return problem;
 }
 
-template <class T>
+template <typename T>
 void ConvexIntegrator<T>::AddContactConstraints(const Context<T>& context,
                                                 SapContactProblem<T>* problem) {
   // N.B. this is essentially copy-pasted from SapDriver, with some
@@ -888,7 +898,7 @@ void ConvexIntegrator<T>::AddContactConstraints(const Context<T>& context,
   }
 }
 
-template <class T>
+template <typename T>
 void ConvexIntegrator<T>::CalcContactPairs(
     const Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* result) const {
@@ -905,7 +915,7 @@ void ConvexIntegrator<T>::CalcContactPairs(
   }
 }
 
-template <class T>
+template <typename T>
 void ConvexIntegrator<T>::AppendDiscreteContactPairsForPointContact(
     const Context<T>& context,
     DiscreteContactData<DiscreteContactPair<T>>* contact_pairs) const {

@@ -161,8 +161,23 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Allocate the workspace
   void DoInitialize() final;
 
-  // The main integration step, sets x_{t+h} in this->context.
+  // The main integration step, sets x_{t+h} and the error estimate in
+  // this->context.
   bool DoStep(const T& h) override;
+
+  // Solve the SAP problem to compute x_{t+h} at a given step size. This will be
+  // called multiple times for each DoStep to compute the error estimate.
+  //
+  // @param h the time step to use
+  // @param data frozen data like M(q), k(q,v) that might be re-used from a
+  //             previous SAP solve.
+  // @param v_guess the initial guess for the MbP plant velocities.
+  // @param x_next the output continuous state, includes both the plant and any
+  //        external systems
+  void CalcNextContinuousState(const T& h,
+                              const TimestepIndependentProblemData<T>& data,
+                              const VectorX<T>& v_guess,
+                              ContinuousState<T>* x_next);
 
   // Create the sap problem, including contact constraints, for a particular
   // step size h.
@@ -268,6 +283,12 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   BodyIndex FindBodyByGeometryId(GeometryId geometry_id) const {
     return plant().FindBodyByGeometryId(geometry_id);
   }
+
+  // Intermediate states for error control, which compares a single large
+  // step (x_next_full_) to the result of two smaller steps (x_next_half_2_).
+  std::unique_ptr<ContinuousState<T>> x_next_full_;    // x_{t+h}
+  std::unique_ptr<ContinuousState<T>> x_next_half_1_;  // x_{t+h/2}
+  std::unique_ptr<ContinuousState<T>> x_next_half_2_;  // x_{t+h/2+h/2}
 
   // Stored Hessian factorization. Computing this is expensive, so we reuse it
   // whenever possible.
