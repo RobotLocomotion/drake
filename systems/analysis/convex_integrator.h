@@ -113,17 +113,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
    * specific.
    */
   explicit ConvexIntegrator(const System<T>& system,
-                            Context<T>* context = nullptr)
-      : IntegratorBase<T>(system, context) {
-    // Check that the system we're simulating is a diagram with a plant in it
-    const Diagram<T>* diagram = dynamic_cast<const Diagram<T>*>(&system);
-    DRAKE_DEMAND(diagram != nullptr);
-
-    // Extract the plant that we're dealing with
-    plant_ = dynamic_cast<const MultibodyPlant<T>*>(
-        &diagram->GetSubsystemByName("plant"));
-    DRAKE_DEMAND(plant_ != nullptr);
-  }
+                            Context<T>* context = nullptr);
 
   bool supports_error_estimation() const final { return true; }
 

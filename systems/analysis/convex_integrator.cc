@@ -43,6 +43,28 @@ constexpr char kNanValuesMessage[] =
 }
 
 template <class T>
+ConvexIntegrator<T>::ConvexIntegrator(const System<T>& system,
+                                      Context<T>* context)
+    : IntegratorBase<T>(system, context) {
+  // Check that the system we're simulating is a diagram with a plant in it
+  const Diagram<T>* diagram = dynamic_cast<const Diagram<T>*>(&system);
+  DRAKE_DEMAND(diagram != nullptr);
+
+  // Extract the plant that we're dealing with
+  plant_ = dynamic_cast<const MultibodyPlant<T>*>(
+      &diagram->GetSubsystemByName("plant"));
+  DRAKE_DEMAND(plant_ != nullptr);
+
+  // Make sure that the plant is the only subsystem with a second-order
+  // continuous state. E.g. for the continuous state x = (q, v, z), (q, v) must
+  // exclusively be from the plant. The continuous state from other (e.g.,
+  // controller) subsystems must be put in the "miscellaneous" state z.
+  const ContinuousState<T>& x = context->get_continuous_state();
+  DRAKE_DEMAND(x.num_q() == plant_->num_positions());
+  DRAKE_DEMAND(x.num_v() == plant_->num_velocities());
+}
+
+template <class T>
 void ConvexIntegrator<T>::DoInitialize() {
   using std::isnan;
   const int nq = plant().num_positions();
@@ -100,42 +122,26 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // plant's, and there are no controllers connected to it.
   Context<T>& diagram_context = *this->get_mutable_context();
   Context<T>& context = plant().GetMyMutableContextFromRoot(&diagram_context);
-  const int nq = plant().num_positions();
+  // const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
 
   // Set time step for debugging
   time_ = diagram_context.get_time();
   time_step_ = h;
 
-  //////////////////////// DEBUG //////////////////////////
-  // introspect on the continuous state
-  ContinuousState<T>& xc = diagram_context.get_mutable_continuous_state();
-  fmt::print("Continuous state size: {}\n", xc.size());
-  fmt::print("Generalized positions: {}\n", xc.num_q());
-  fmt::print("Generalized velocities: {}\n", xc.num_v());
-  fmt::print("Miscellaneous continuous state: {}\n", xc.num_z());
-
-  ContinuousState<T>& xc_plant = context.get_mutable_continuous_state();
-  fmt::print("Plant continuous state size: {}\n", xc_plant.size());
-  fmt::print("Plant generalized positions: {}\n", xc_plant.num_q());
-  fmt::print("Plant generalized velocities: {}\n", xc_plant.num_v());
-  fmt::print("Plant miscellaneous continuous state: {}\n", xc_plant.num_z());
-
-  // What is in the plant's actuation input port?
-  // const auto& actuation_input = plant().get_actuation_input_port().Eval(context);
-  // fmt::print("Actuation input port size: {}\n", actuation_input.size());
-  // fmt::print("Actuation input port: {}\n", fmt_eigen(actuation_input));
-
-  getchar();
-  //////////////////////// DEBUG //////////////////////////
-
   // Workspace preallocations
   VectorX<T>& q = workspace_.q;
   VectorX<T>& v = workspace_.v;
   SapSolverResults<T>& sap_results = workspace_.sap_results;
-  VectorX<T>& err = workspace_.err;
+  // VectorX<T>& err = workspace_.err;  // TODO: use q_err, v_err, z_err instead
   TimestepIndependentProblemData<T>& data =
       workspace_.timestep_independent_data;
+
+  // Error estimate that we'll set
+  ContinuousState<T>& err = *this->get_mutable_error_estimate();
+  VectorBase<T>& q_err = err.get_mutable_generalized_position();
+  VectorBase<T>& v_err = err.get_mutable_generalized_velocity();
+  VectorBase<T>& z_err = err.get_mutable_misc_continuous_state();
 
   // Compute problem data at time (t)
   CalcTimestepIndependentProblemData(context, &data);
@@ -158,8 +164,10 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   } else {
     // We're using error control, and will compare with two half-steps. So we'll
     // start by putting the full-step result x_{t+h} in the error buffer.
-    err.head(nq) = q;
-    err.tail(nv) = sap_results.v;
+    // err.head(nq) = q;
+    // err.tail(nv) = sap_results.v;
+    q_err.SetFromVector(q);
+    v_err.SetFromVector(sap_results.v);
 
     solve_phase_ = 1;
     if (!get_use_implicit_trapezoid_error_estimation()) {
@@ -204,7 +212,8 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     // Solve the second half-step problem. We'll use the full step from before
     // as the initial guess.
     solve_phase_ = 2;
-    const Eigen::Ref<const VectorX<T>> v_full = err.tail(nv);
+    // const Eigen::Ref<const VectorX<T>> v_full = err.tail(nv);
+    const VectorX<T> v_full = v_err.CopyToVector();
     status = SolveWithGuess(problem, v_full, &sap_results);
     DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
@@ -212,21 +221,16 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
     q += plant().GetPositions(context);
 
-    // Set x_{t+h} in the context
-    if (get_use_implicit_trapezoid_error_estimation()) {
-      // We'll set the next state with the larger fully implicit step
-      plant().SetPositions(&context, err.head(nq));
-      plant().SetVelocities(&context, err.tail(nv));
-    } else {
-      // We'll set the next state with the two half-steps
-      plant().SetPositions(&context, q);
-      plant().SetVelocities(&context, sap_results.v);
-    }
+    // Set x_{t+h} in the context using the two half-steps.
+    plant().SetPositions(&context, q);
+    plant().SetVelocities(&context, sap_results.v);
 
     // Finish out the error computation (compare with the full step)
-    err.head(nq) -= q;
-    err.tail(nv) -= sap_results.v;
-    this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(err);
+    // err.head(nq) -= q;
+    // err.tail(nv) -= sap_results.v;
+    q_err.PlusEqScaled(-1.0, BasicVector(q));
+    v_err.PlusEqScaled(-1.0, BasicVector(sap_results.v));
+    z_err.SetZero();  // TODO(vincekurtz): add error estimate for z
   }
 
   // Advance time to t+h
