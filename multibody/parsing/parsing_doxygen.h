@@ -309,7 +309,7 @@ emit a warning.
 @subsection tag_drake_angle drake:angle
 
 - SDFormat path: `//model/drake:joint/drake:curves/drake:circular_arc/drake:angle`
-- URDF path: n/a
+- URDF path: n/a (see @ref tag_drake_circular_arc).
 - Syntax: Floating point value.
 
 @subsubsection tag_drake_angle_semantics Semantics
@@ -862,7 +862,7 @@ joint moves, specified as the following:
 @subsection tag_drake_length drake:length
 
 - SDFormat path: `//model/drake:joint/drake:curves/drake:line_segment/drake:length`
-- URDF path: n/a
+- URDF path: n/a (see @ref tag_drake_line_segment).
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_length_semantics Semantics
@@ -1112,7 +1112,7 @@ drake::geometry::ProximityProperties
 @subsection tag_drake_radius drake:radius
 
 - SDFormat path: `//model/drake:joint/drake:curves/drake:circular_arc/drake:radius`
-- URDF path: n/a
+- URDF path: n/a (see @ref tag_drake_circular_arc).
 - Syntax: Non-negative floating point value.
 
 @subsubsection tag_drake_radius_semantics Semantics
