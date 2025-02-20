@@ -122,8 +122,6 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // plant's, and there are no controllers connected to it.
   Context<T>& diagram_context = *this->get_mutable_context();
   Context<T>& context = plant().GetMyMutableContextFromRoot(&diagram_context);
-  // const int nq = plant().num_positions();
-  const int nv = plant().num_velocities();
 
   // Set time step for debugging
   time_ = diagram_context.get_time();
@@ -164,45 +162,23 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   } else {
     // We're using error control, and will compare with two half-steps. So we'll
     // start by putting the full-step result x_{t+h} in the error buffer.
-    // err.head(nq) = q;
-    // err.tail(nv) = sap_results.v;
     q_err.SetFromVector(q);
     v_err.SetFromVector(sap_results.v);
 
+    // Solve the first half-step (t + h/2) with SAP. Here we can reuse the
+    // problem data from the full step.
     solve_phase_ = 1;
-    if (!get_use_implicit_trapezoid_error_estimation()) {
-      // Solve the first half-step (t + h/2) with SAP. Here we can reuse the
-      // problem data from the full step.
-      problem = MakeSapContactProblem(context, data, 0.5 * h);
-      status = SolveWithGuess(problem, data.v0, &sap_results);
-      DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
+    problem = MakeSapContactProblem(context, data, 0.5 * h);
+    status = SolveWithGuess(problem, data.v0, &sap_results);
+    DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
-      // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
-      plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
-      q += plant().GetPositions(context);
+    // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
+    plant().MapVelocityToQDot(context, 0.5 * h * sap_results.v, &q);
+    q += plant().GetPositions(context);
 
-      // Put x_{t+h/2} in the context to prepare the next step
-      plant().SetPositions(&context, q);
-      plant().SetVelocities(&context, sap_results.v);
-    } else {
-      // Solve for the first half step (t + h/2) explicitly. This results in in
-      // an implicit trapezoid step,
-      //    x_{t+h} = x_t + h/2 [ f(t, x_t) + f(t+h, x_{t+h}) ]
-      // for the second-order estimate.
-      const VectorX<T> xdot =
-          plant().EvalTimeDerivatives(context).CopyToVector();
-
-      // v_{t+h/2} = v_t + h/2 vdot_t
-      v = plant().GetVelocities(context) + 0.5 * h * xdot.tail(nv);
-
-      // q_{t+h/2} = q_t + h/2 N(q_t) v_{t+h/2}
-      plant().MapVelocityToQDot(context, 0.5 * h * v, &q);
-      q += plant().GetPositions(context);
-
-      // Set x_{t+h/2} in the context
-      plant().SetPositions(&context, q);
-      plant().SetVelocities(&context, v);
-    }
+    // Put x_{t+h/2} in the context to prepare the next step
+    plant().SetPositions(&context, q);
+    plant().SetVelocities(&context, sap_results.v);
 
     // Set up the second half-step from (t+h/2) to (t+h). We reset the initial
     // velocity, but freeze the mass matrix and coriolis/centripedal terms.
@@ -212,9 +188,8 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     // Solve the second half-step problem. We'll use the full step from before
     // as the initial guess.
     solve_phase_ = 2;
-    // const Eigen::Ref<const VectorX<T>> v_full = err.tail(nv);
-    const VectorX<T> v_full = v_err.CopyToVector();
-    status = SolveWithGuess(problem, v_full, &sap_results);
+    v_err.CopyToPreSizedVector(&v);  // v_err = v_{t+h}
+    status = SolveWithGuess(problem, v, &sap_results);
     DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
 
     // q_{t+h} = q_{t+h/2} + h/2 N(q_{t+h/2}) v_{t+h}
@@ -226,8 +201,6 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     plant().SetVelocities(&context, sap_results.v);
 
     // Finish out the error computation (compare with the full step)
-    // err.head(nq) -= q;
-    // err.tail(nv) -= sap_results.v;
     q_err.PlusEqScaled(-1.0, BasicVector(q));
     v_err.PlusEqScaled(-1.0, BasicVector(sap_results.v));
     z_err.SetZero();  // TODO(vincekurtz): add error estimate for z

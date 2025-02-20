@@ -196,7 +196,6 @@ int do_main() {
     auto& ci = dynamic_cast<ConvexIntegrator<double>&>(integrator);
     ci.set_use_full_newton(FLAGS_full_newton);
     ci.set_write_to_csv(FLAGS_save_csv);
-    ci.set_use_implicit_trapezoid_error_estimation(FLAGS_trapezoid);
   }
 
   simulator->set_publish_every_time_step(true);
