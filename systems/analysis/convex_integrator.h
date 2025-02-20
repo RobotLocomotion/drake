@@ -175,9 +175,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // @param x_next the output continuous state, includes both the plant and any
   //        external systems
   void CalcNextContinuousState(const T& h,
-                              const TimestepIndependentProblemData<T>& data,
-                              const VectorX<T>& v_guess,
-                              ContinuousState<T>* x_next);
+                               const TimestepIndependentProblemData<T>& data,
+                               const VectorX<T>& v_guess,
+                               ContinuousState<T>* x_next);
 
   // Create the sap problem, including contact constraints, for a particular
   // step size h.

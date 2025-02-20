@@ -146,9 +146,8 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   if (this->get_fixed_step_mode()) {
     // We're using fixed step mode, so we can just set the state to x_{t+h} and
     // move on. No need for error estimation.
-    ContinuousState<T>& x_next =
-        this->get_mutable_context()->get_mutable_continuous_state();
-    x_next.SetFrom(*x_next_full_);
+    this->get_mutable_context()->get_mutable_continuous_state().SetFrom(
+        *x_next_full_);
   } else {
     // We're using error control, and will compare with two half-sized steps.
 
@@ -162,7 +161,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     ContinuousState<T>& x_next =
         this->get_mutable_context()->get_mutable_continuous_state();
     x_next.SetFrom(*x_next_half_1_);
-    
+
     // Now we can take the second half-step, re-using as much h-indpenendent
     // problem data as possible (mass matrix, coriolis terms, etc are frozen).
     solve_phase_ = 2;
@@ -218,11 +217,11 @@ void ConvexIntegrator<T>::CalcNextContinuousState(
   // TODO(vincekurtz): avoid computing time derivatives for the plant
   if (x_next->num_z() > 0) {
     const VectorX<T> z_dot = this->EvalTimeDerivatives(diagram_context)
-                            .get_misc_continuous_state()
-                            .CopyToVector();
+                                 .get_misc_continuous_state()
+                                 .CopyToVector();
     VectorX<T> z = diagram_context.get_continuous_state()
-                      .get_misc_continuous_state()
-                      .CopyToVector();
+                       .get_misc_continuous_state()
+                       .CopyToVector();
     z += h * z_dot;
     x_next->get_mutable_misc_continuous_state().SetFromVector(z);
   }
