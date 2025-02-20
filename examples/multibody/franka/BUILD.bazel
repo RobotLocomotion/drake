@@ -16,6 +16,7 @@ drake_cc_binary(
     ],
     data = [
         "@drake_models//:franka_description",
+        "@drake_models//:ycb",
     ],
     deps = [
         "//common:add_text_logging_gflags",
