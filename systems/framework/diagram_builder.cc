@@ -620,8 +620,9 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
       "depends on an input port, making one of the 'is direct-feedthrough to' "
       "lines above spurious.  If that is the case, remove the spurious "
       "dependency per the Drake API documentation for declaring output ports. "
-      // NOLINTNEXTLINE(whitespace/line_length)
-      "https://drake.mit.edu/doxygen_cxx/classdrake_1_1systems_1_1_leaf_system.html#DeclareLeafOutputPort_feedthrough";
+      "https://drake.mit.edu/doxygen_cxx/"
+      "classdrake_1_1systems_1_1_leaf_system.html"
+      "#DeclareLeafOutputPort_feedthrough";
 
   // Evaluate the graph for cycles.
   std::set<PortIdentifier> visited;

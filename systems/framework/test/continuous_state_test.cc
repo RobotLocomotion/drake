@@ -40,9 +40,7 @@ std::unique_ptr<VectorBase<T>> MakeSomeVector() {
 
 class ContinuousStateTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    continuous_state_ = MakeSomeState<double>();
-  }
+  void SetUp() override { continuous_state_ = MakeSomeState<double>(); }
 
   template <typename T>
   std::unique_ptr<ContinuousState<T>> MakeSomeState() {
@@ -55,8 +53,8 @@ class ContinuousStateTest : public ::testing::Test {
   template <typename T>
   std::unique_ptr<ContinuousState<T>> MakeNanState() {
     auto result = std::make_unique<ContinuousState<T>>(
-        std::make_unique<BasicVector<T>>(kLength),
-        kPositionLength, kVelocityLength, kMiscLength);
+        std::make_unique<BasicVector<T>>(kLength), kPositionLength,
+        kVelocityLength, kMiscLength);
     result->set_system_id(system_id_);
     return result;
   }
@@ -110,21 +108,19 @@ TEST_F(ContinuousStateTest, OutOfBoundsAccess) {
 // Tests that std::out_of_range is thrown if the component dimensions do not
 // sum to the state vector dimension.
 TEST_F(ContinuousStateTest, OutOfBoundsConstruction) {
-  EXPECT_THROW(
-      continuous_state_.reset(new ContinuousState<double>(
-          MakeSomeVector<double>(),
-          kPositionLength, kVelocityLength, kMiscLength + 1)),
-      std::out_of_range);
+  EXPECT_THROW(continuous_state_.reset(new ContinuousState<double>(
+                   MakeSomeVector<double>(), kPositionLength, kVelocityLength,
+                   kMiscLength + 1)),
+               std::out_of_range);
 }
 
 // Tests that std::logic_error is thrown if there are more velocity than
 // position variables.
 TEST_F(ContinuousStateTest, MoreVelocityThanPositionVariables) {
-  EXPECT_THROW(
-      continuous_state_.reset(new ContinuousState<double>(
-          MakeSomeVector<double>(),
-          1 /* num_q */, 2 /* num_v */, kMiscLength + 1)),
-      std::out_of_range);
+  EXPECT_THROW(continuous_state_.reset(new ContinuousState<double>(
+                   MakeSomeVector<double>(), 1 /* num_q */, 2 /* num_v */,
+                   kMiscLength + 1)),
+               std::out_of_range);
 }
 
 TEST_F(ContinuousStateTest, SetFrom) {
@@ -154,9 +150,8 @@ TEST_F(ContinuousStateTest, SetFrom) {
   // If there was an unbound variable, we get an exception.
   auto unbound_symbolic = expected_symbolic->Clone();
   unbound_symbolic->get_mutable_vector()[0] = symbolic::Variable("q");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      actual_double->SetFrom(*unbound_symbolic),
-      ".*variable q.*\n*");
+  DRAKE_EXPECT_THROWS_MESSAGE(actual_double->SetFrom(*unbound_symbolic),
+                              ".*variable q.*\n*");
 
   // Check ContinuousState<AutoDiff>::SetFrom<U> for U=double and U=Expression.
   actual_autodiff = MakeNanState<AutoDiffXd>();
@@ -194,8 +189,8 @@ TEST_F(ContinuousStateTest, SetFrom) {
 TEST_F(ContinuousStateTest, SetFromException) {
   const auto dut = MakeSomeState<double>();
   const auto wrong = std::make_unique<ContinuousState<double>>(
-      MakeSomeVector<double>(),
-      kPositionLength - 1, kVelocityLength, kMiscLength + 1);
+      MakeSomeVector<double>(), kPositionLength - 1, kVelocityLength,
+      kMiscLength + 1);
   EXPECT_THROW(dut->SetFrom(*wrong), std::exception);
 }
 
@@ -214,8 +209,7 @@ TEST_F(ContinuousStateTest, Clone) {
 
   // Make sure underlying BasicVector type, and 2nd-order structure,
   // is preserved in the clone.
-  ContinuousState<double> state(MyVector3d::Make(1.25, 1.5, 1.75),
-                                2, 1, 0);
+  ContinuousState<double> state(MyVector3d::Make(1.25, 1.5, 1.75), 2, 1, 0);
   clone_ptr = state.Clone();
   const ContinuousState<double>& clone2 = *clone_ptr;
   EXPECT_EQ(clone2[0], 1.25);
@@ -254,8 +248,8 @@ class DiagramContinuousStateTest : public ::testing::Test {
         new ContinuousState<double>(MyVector3d::Make(1, 2, 3), 1, 1, 1));
     state1_.reset(new ContinuousState<double>(
         BasicVector<double>::Make(4, 5, 6, 7, 8), 2, 1, 2));
-    state2_.reset(new ContinuousState<double>(
-        BasicVector<double>::Make(10, 11), 0, 0, 2));
+    state2_.reset(new ContinuousState<double>(BasicVector<double>::Make(10, 11),
+                                              0, 0, 2));
     state3_.reset(new ContinuousState<double>(
         BasicVector<double>::Make(-1, -2, -3, -4), 2, 1, 1));
 
@@ -269,8 +263,8 @@ class DiagramContinuousStateTest : public ::testing::Test {
     //   state0 q v z           1       2     3
     //   state1 2q v 2z         4,5     6     7,8
     //   state2 2z                            10,11
-    unowned_.reset(new DiagramContinuousState<double>(
-        {&*state0_, &*state1_, &*state2_}));
+    unowned_.reset(
+        new DiagramContinuousState<double>({&*state0_, &*state1_, &*state2_}));
     unowned_->set_system_id(internal::SystemId::get_new_id());
 
     // root_unowned 5q 3v 6z
@@ -353,9 +347,9 @@ TEST_F(DiagramContinuousStateTest, Values) {
   // are all mixed together rather than grouped.
   const VectorXd unowned_value = unowned_->CopyToVector();
   VectorXd unowned_expected(10);
-  unowned_expected << 1,      2,   3,       // state0
-                      4, 5,   6,   7, 8,    // state1
-                                   10, 11;  // state2
+  unowned_expected << 1, 2, 3,  // state0
+      4, 5, 6, 7, 8,            // state1
+      10, 11;                   // state2
   EXPECT_EQ(unowned_value, unowned_expected);
 
   // Asking for individual partitions groups like variables together.
@@ -374,8 +368,8 @@ TEST_F(DiagramContinuousStateTest, Values) {
 
   const VectorXd root_unowned_value = root_unowned_->CopyToVector();
   VectorXd root_unowned_expected(14);
-  root_unowned_expected << -1, -2, -3, -4,                   // state3
-                            1, 2, 3, 4, 5, 6, 7, 8, 10, 11;  // unowned
+  root_unowned_expected << -1, -2, -3, -4,  // state3
+      1, 2, 3, 4, 5, 6, 7, 8, 10, 11;       // unowned
   EXPECT_EQ(root_unowned_value, root_unowned_expected);
 
   const VectorXd root_unowned_q =
@@ -396,9 +390,9 @@ TEST_F(DiagramContinuousStateTest, Values) {
 
   const VectorXd root_owned_value = root_owned_->CopyToVector();
   VectorXd root_owned_expected(19);
-  root_owned_expected << -1, -2, -3, -4,                   // state3
-                          1, 2, 3, 4, 5, 6, 7, 8, 10, 11,  // unowned
-                          4, 5, 6, 7, 8;                   // state1
+  root_owned_expected << -1, -2, -3, -4,  // state3
+      1, 2, 3, 4, 5, 6, 7, 8, 10, 11,     // unowned
+      4, 5, 6, 7, 8;                      // state1
   EXPECT_EQ(root_owned_value, root_owned_expected);
 
   const VectorXd root_owned_q =
@@ -427,9 +421,9 @@ TEST_F(DiagramContinuousStateTest, Clone) {
   auto clone_of_root_unowned = root_unowned_->Clone();
 
   // Show that values got copied.
-  for (int i=0; i < unowned_->size(); ++i)
+  for (int i = 0; i < unowned_->size(); ++i)
     EXPECT_EQ((*clone_of_unowned)[i], (*unowned_)[i]);
-  for (int i=0; i < root_unowned_->size(); ++i)
+  for (int i = 0; i < root_unowned_->size(); ++i)
     EXPECT_EQ((*clone_of_root_unowned)[i], (*root_unowned_)[i]);
 
   (*state0_)[1] = 99;  // Should affect unowned but not the clones (was 2).
@@ -444,8 +438,7 @@ TEST_F(DiagramContinuousStateTest, CloneSystemId) {
   auto clone_of_unowned = unowned_->Clone();
   auto clone_of_root_unowned = root_unowned_->Clone();
 
-  EXPECT_EQ(clone_of_unowned->get_system_id(),
-            unowned_->get_system_id());
+  EXPECT_EQ(clone_of_unowned->get_system_id(), unowned_->get_system_id());
   for (int i = 0; i < unowned_->num_substates(); ++i) {
     EXPECT_EQ(clone_of_unowned->get_substate(i).get_system_id(),
               unowned_->get_substate(i).get_system_id());

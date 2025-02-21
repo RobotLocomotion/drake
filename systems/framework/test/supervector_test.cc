@@ -77,8 +77,8 @@ TEST_F(SupervectorTest, OutOfRange) {
 
 // Tests that a supervector can be SetFrom another vector.
 TEST_F(SupervectorTest, SetFromVector) {
-  auto next_value = BasicVector<double>::Make({
-      10, 11, 12, 13, 14, 15, 16, 17, 18});
+  auto next_value =
+      BasicVector<double>::Make({10, 11, 12, 13, 14, 15, 16, 17, 18});
   supervector_->SetFromVector(next_value->CopyToVector());
   EXPECT_EQ(10, supervector_->GetAtIndex(0));
   EXPECT_EQ(11, supervector_->GetAtIndex(1));
@@ -89,8 +89,8 @@ TEST_F(SupervectorTest, SetFromVector) {
 
 // Tests that a supervector can be SetFrom another VectorBase.
 TEST_F(SupervectorTest, SetFrom) {
-  auto next_value = BasicVector<double>::Make({
-      10, 11, 12, 13, 14, 15, 16, 17, 18});
+  auto next_value =
+      BasicVector<double>::Make({10, 11, 12, 13, 14, 15, 16, 17, 18});
   supervector_->SetFrom(*next_value);
   EXPECT_EQ(10, supervector_->GetAtIndex(0));
   EXPECT_EQ(11, supervector_->GetAtIndex(1));

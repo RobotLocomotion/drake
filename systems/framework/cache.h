@@ -579,9 +579,11 @@ class CacheEntryValue {
   // instruction whether it must recalculate. Only if flags==0 (kReadyToUse) can
   // we reuse the existing value. See needs_recomputation() above.
   enum Flags : int {
+    // clang-format off
     kReadyToUse           = 0b00,
     kValueIsOutOfDate     = 0b01,
     kCacheEntryIsDisabled = 0b10
+    // clang-format on
   };
 
   // The index for this CacheEntryValue within its containing subcontext.

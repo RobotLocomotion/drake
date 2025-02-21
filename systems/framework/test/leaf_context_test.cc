@@ -55,8 +55,7 @@ class LeafContextTest : public ::testing::Test {
     // counter here so this test can add more ticketed things later.
     // (That's not allowed in user code.)
     for (int i = 0; i < kNumInputPorts; ++i) {
-      context_.FixInputPort(
-          i, Value<BasicVector<double>>(kInputSize[i]));
+      context_.FixInputPort(i, Value<BasicVector<double>>(kInputSize[i]));
       ++next_ticket_;
     }
 
@@ -85,8 +84,7 @@ class LeafContextTest : public ::testing::Test {
     // Add a tracker for the discrete variable xd0 and subscribe the xd
     // tracker to it.
     DependencyGraph& graph = context_.get_mutable_dependency_graph();
-    auto& xd0_tracker = graph.CreateNewDependencyTracker(next_ticket_++,
-                                                         "xd0");
+    auto& xd0_tracker = graph.CreateNewDependencyTracker(next_ticket_++, "xd0");
     context_.AddDiscreteStateTicket(xd0_tracker.ticket());
     graph.get_mutable_tracker(DependencyTicket(internal::kXdTicket))
         .SubscribeToPrerequisite(&xd0_tracker);
@@ -100,8 +98,7 @@ class LeafContextTest : public ::testing::Test {
 
     // Add a tracker for the abstract variable xa0 and subscribe the xa
     // tracker to it.
-    auto& xa0_tracker = graph.CreateNewDependencyTracker(next_ticket_++,
-                                                         "xa0");
+    auto& xa0_tracker = graph.CreateNewDependencyTracker(next_ticket_++, "xa0");
     context_.AddAbstractStateTicket(xa0_tracker.ticket());
     graph.get_mutable_tracker(DependencyTicket(internal::kXaTicket))
         .SubscribeToPrerequisite(&xa0_tracker);
@@ -355,8 +352,8 @@ TEST_F(LeafContextTest, GetVectorInput) {
   AddInputPorts(2, &context);
 
   // Add input port 0 to the context, but leave input port 1 uninitialized.
-  context.FixInputPort(0, Value<BasicVector<double>>(
-                              Eigen::Vector2d(5.0, 6.0)));
+  context.FixInputPort(0,
+                       Value<BasicVector<double>>(Eigen::Vector2d(5.0, 6.0)));
 
   // Test that port 0 is retrievable.
   VectorX<double> expected(2);
@@ -515,9 +512,8 @@ class InvalidContext : public LeafContext<double> {
 
 TEST_F(LeafContextTest, BadClone) {
   InvalidContext bad_context;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      bad_context.Clone(),
-      ".*typeid.source. == typeid.clone.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(bad_context.Clone(),
+                              ".*typeid.source. == typeid.clone.*");
 }
 
 // Tests that a LeafContext can provide a clone of its State.
@@ -558,9 +554,8 @@ TEST_F(LeafContextTest, SetTimeStateAndParametersFrom) {
   // In actual applications, System<T>::CreateDefaultContext does this.
   LeafContext<AutoDiffXd> target;
   target.init_continuous_state(std::make_unique<ContinuousState<AutoDiffXd>>(
-      std::make_unique<BasicVector<AutoDiffXd>>(5),
-      kGeneralizedPositionSize, kGeneralizedVelocitySize,
-      kMiscContinuousStateSize));
+      std::make_unique<BasicVector<AutoDiffXd>>(5), kGeneralizedPositionSize,
+      kGeneralizedVelocitySize, kMiscContinuousStateSize));
 
   std::vector<std::unique_ptr<BasicVector<AutoDiffXd>>> xd;
   xd.push_back(std::make_unique<BasicVector<AutoDiffXd>>(1));
@@ -669,33 +664,37 @@ TEST_F(LeafContextTest, Invalidation) {
   // Modify time.
   MarkAllCacheValuesUpToDate(&cache);
   context_.SetTime(context_.get_time() + 1);  // Ensure this is a change.
-  CheckAllCacheValuesUpToDateExcept(cache,
-      {depends[internal::kTimeTicket],
-       depends[internal::kAllSourcesExceptInputPortsTicket],
-       depends[internal::kAllSourcesTicket]});
+  CheckAllCacheValuesUpToDateExcept(
+      cache, {depends[internal::kTimeTicket],
+              depends[internal::kAllSourcesExceptInputPortsTicket],
+              depends[internal::kAllSourcesTicket]});
 
   // Accuracy.
   MarkAllCacheValuesUpToDate(&cache);
   context_.SetAccuracy(7.123e-4);  // Ensure this is a change.
-  CheckAllCacheValuesUpToDateExcept(cache,
-      {depends[internal::kAccuracyTicket],
-       depends[internal::kConfigurationTicket],
-       depends[internal::kKinematicsTicket],
-       depends[internal::kAllSourcesExceptInputPortsTicket],
-       depends[internal::kAllSourcesTicket]});
+  CheckAllCacheValuesUpToDateExcept(
+      cache, {depends[internal::kAccuracyTicket],
+              depends[internal::kConfigurationTicket],
+              depends[internal::kKinematicsTicket],
+              depends[internal::kAllSourcesExceptInputPortsTicket],
+              depends[internal::kAllSourcesTicket]});
 
   // This is everything that depends on generalized positions q.
   const std::set<CacheIndex> q_dependent{
-      depends[internal::kQTicket], depends[internal::kXcTicket],
-      depends[internal::kXTicket], depends[internal::kConfigurationTicket],
+      depends[internal::kQTicket],
+      depends[internal::kXcTicket],
+      depends[internal::kXTicket],
+      depends[internal::kConfigurationTicket],
       depends[internal::kKinematicsTicket],
       depends[internal::kAllSourcesExceptInputPortsTicket],
       depends[internal::kAllSourcesTicket]};
 
   // This is everything that depends on generalized velocities v and misc. z.
   const std::set<CacheIndex> vz_dependent{
-      depends[internal::kVTicket], depends[internal::kZTicket],
-      depends[internal::kXcTicket], depends[internal::kXTicket],
+      depends[internal::kVTicket],
+      depends[internal::kZTicket],
+      depends[internal::kXcTicket],
+      depends[internal::kXTicket],
       depends[internal::kConfigurationTicket],
       depends[internal::kKinematicsTicket],
       depends[internal::kAllSourcesExceptInputPortsTicket],
@@ -772,13 +771,13 @@ TEST_F(LeafContextTest, Invalidation) {
   EXPECT_EQ(z1, &context_.get_continuous_state().get_misc_continuous_state());
 
   // Modify discrete state).
-  const std::set<CacheIndex> xd_dependent
-      {depends[internal::kXdTicket],
-       depends[internal::kXTicket],
-       depends[internal::kConfigurationTicket],
-       depends[internal::kKinematicsTicket],
-       depends[internal::kAllSourcesExceptInputPortsTicket],
-       depends[internal::kAllSourcesTicket]};
+  const std::set<CacheIndex> xd_dependent{
+      depends[internal::kXdTicket],
+      depends[internal::kXTicket],
+      depends[internal::kConfigurationTicket],
+      depends[internal::kKinematicsTicket],
+      depends[internal::kAllSourcesExceptInputPortsTicket],
+      depends[internal::kAllSourcesTicket]};
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_discrete_state();
   CheckAllCacheValuesUpToDateExcept(cache, xd_dependent);
@@ -801,13 +800,13 @@ TEST_F(LeafContextTest, Invalidation) {
   CheckAllCacheValuesUpToDateExcept(cache, xd_dependent);
 
   // Modify abstract state.
-  const std::set<CacheIndex> xa_dependent
-      {depends[internal::kXaTicket],
-       depends[internal::kXTicket],
-       depends[internal::kConfigurationTicket],
-       depends[internal::kKinematicsTicket],
-       depends[internal::kAllSourcesExceptInputPortsTicket],
-       depends[internal::kAllSourcesTicket]};
+  const std::set<CacheIndex> xa_dependent{
+      depends[internal::kXaTicket],
+      depends[internal::kXTicket],
+      depends[internal::kConfigurationTicket],
+      depends[internal::kKinematicsTicket],
+      depends[internal::kAllSourcesExceptInputPortsTicket],
+      depends[internal::kAllSourcesTicket]};
   MarkAllCacheValuesUpToDate(&cache);
   context_.get_mutable_abstract_state();
   CheckAllCacheValuesUpToDateExcept(cache, xa_dependent);
@@ -821,21 +820,21 @@ TEST_F(LeafContextTest, Invalidation) {
   CheckAllCacheValuesUpToDateExcept(cache, xa_dependent);
 
   // Modify parameters.
-  const std::set<CacheIndex> pn_dependent
-      {depends[internal::kPnTicket],
-       depends[internal::kConfigurationTicket],
-       depends[internal::kKinematicsTicket],
-       depends[internal::kAllParametersTicket],
-       depends[internal::kAllSourcesExceptInputPortsTicket],
-       depends[internal::kAllSourcesTicket]};
+  const std::set<CacheIndex> pn_dependent{
+      depends[internal::kPnTicket],
+      depends[internal::kConfigurationTicket],
+      depends[internal::kKinematicsTicket],
+      depends[internal::kAllParametersTicket],
+      depends[internal::kAllSourcesExceptInputPortsTicket],
+      depends[internal::kAllSourcesTicket]};
 
-  const std::set<CacheIndex> pa_dependent
-      {depends[internal::kPaTicket],
-       depends[internal::kConfigurationTicket],
-       depends[internal::kKinematicsTicket],
-       depends[internal::kAllParametersTicket],
-       depends[internal::kAllSourcesExceptInputPortsTicket],
-       depends[internal::kAllSourcesTicket]};
+  const std::set<CacheIndex> pa_dependent{
+      depends[internal::kPaTicket],
+      depends[internal::kConfigurationTicket],
+      depends[internal::kKinematicsTicket],
+      depends[internal::kAllParametersTicket],
+      depends[internal::kAllSourcesExceptInputPortsTicket],
+      depends[internal::kAllSourcesTicket]};
 
   std::set<CacheIndex> p_dependent(pn_dependent);
   p_dependent.insert(depends[internal::kPaTicket]);
@@ -859,8 +858,8 @@ TEST_F(LeafContextTest, Invalidation) {
   MarkAllCacheValuesUpToDate(&cache);
   port_value->GetMutableData();
   CheckAllCacheValuesUpToDateExcept(cache,
-      {depends[internal::kAllInputPortsTicket],
-       depends[internal::kAllSourcesTicket]});
+                                    {depends[internal::kAllInputPortsTicket],
+                                     depends[internal::kAllSourcesTicket]});
 }
 
 // Verify that safe Set() sugar for modifying state variables works. Cache
