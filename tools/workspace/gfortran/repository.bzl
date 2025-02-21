@@ -1,4 +1,5 @@
 load("//tools/workspace:execute.bzl", "execute_or_fail", "which")
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 
 def _gfortran_impl(repo_ctx):
     # Find the compiler.
@@ -37,7 +38,7 @@ def _gfortran_impl(repo_ctx):
         "BUILD.bazel",
     )
 
-gfortran_repository = repository_rule(
+_gfortran_repository = repository_rule(
     doc = """
         Locate gfortran and alias it to `:compiler`; locate libgfortran
         (and libquadmath when relevant) and alias them to `:runtime`.
@@ -46,3 +47,14 @@ gfortran_repository = repository_rule(
     configure = True,
     implementation = _gfortran_impl,
 )
+
+def gfortran_repository(
+        name,
+        _is_drake_self_call = False,
+        **kwargs):
+    if not _is_drake_self_call:
+        print_warning("gfortran_repository")
+    _gfortran_repository(
+        name = name,
+        **kwargs
+    )

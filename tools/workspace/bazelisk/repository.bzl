@@ -1,8 +1,12 @@
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 
 def bazelisk_repository(
         name,
-        mirrors = None):
+        mirrors = None,
+        _is_drake_self_call = False):
+    if not _is_drake_self_call:
+        print_warning("bazelisk_repository")
     github_archive(
         name = name,
         repository = "bazelbuild/bazelisk",

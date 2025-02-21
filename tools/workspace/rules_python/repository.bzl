@@ -3,6 +3,7 @@ load(
     "internal_config_repo",
 )
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 
 # (Internal use only) Creates a @rules_python_drake_constants repository that
 # communicates whether @rules_python is using Drake's pinned version or Bazel's
@@ -26,7 +27,8 @@ _rules_python_drake_constants_repository = repository_rule(
 def rules_python_repository(
         name,
         mirrors = None,
-        _constants_only = False):
+        _constants_only = False,
+        _is_drake_self_call = False):
     """Declares the @rules_python repository (if necessary) as well as the
     @rules_python_drake_constants repository (always).
 
@@ -38,6 +40,8 @@ def rules_python_repository(
     Even when _constants_only is false, the @rules_python repository still
     might not be declared according to the heuristic described below.
     """
+    if not _is_drake_self_call:
+        print_warning("rules_python_repository")
 
     # For Bazel versions < 8, we pin our own particular copy of rules_python,
     # because the bazel's default (vendored) version is somewhat stale. For

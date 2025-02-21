@@ -116,6 +116,10 @@ For Drake's dependencies:
       it prior to removing it.
 * When using Bazel to depend on Drake via `WORKSPACE.bazel` (i.e., without
   bzlmod):
+  * WARNING: Using Drake as a WORKSPACE style external is deprecated and will
+    be removed from Drake on or after 2025-09-01. Please switch to MODULE style
+    externals (i.e., Bzlmod) instead; for an example, see
+    [drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_external).
   * The `add_default_...` macros defined in
     `@drake//tools/workspace:default.bzl` are all part of the Stable API.
     * For any Bazel external loaded by these functions (e.g., `"@eigen"`), we
