@@ -249,33 +249,22 @@ TEST_F(DiscreteTimeApproximatedMultibodyPlantTest, SynthesizeDiscreteTimeLQR) {
 
 TEST_F(DiscreteTimeApproximatedMultibodyPlantTest,
        DiscreteTimeSystemSimulatable) {
-  const int num_states = discrete_context_->num_total_states();
-
   DiagramBuilder<double> builder;
   auto controller = builder.AddSystem(DiscreteStabilizingController());
   auto plant = builder.AddSystem(std::move(discrete_sys_));
-  auto z_inv =
-      builder.AddSystem<DiscreteTimeDelay>(time_period_, 0, num_states);
-  // Add a discrete-time delay to avoid algebraic loop.
-  builder.Connect(plant->get_output_port(0), z_inv->get_input_port());
-  builder.Connect(z_inv->get_output_port(), controller->get_input_port());
+  builder.Connect(plant->get_output_port(0), controller->get_input_port());
   builder.Connect(controller->get_output_port(), plant->get_input_port());
   auto diagram = builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
 
-  EXPECT_EQ(diagram_context->num_discrete_state_groups(), 2);
-  EXPECT_EQ(diagram_context->get_discrete_state(0).size(), num_states);
-  EXPECT_EQ(diagram_context->get_discrete_state(1).size(), num_states);
-
   const double theta_init = M_PI * 0.9;
   Eigen::VectorXd x_init(4);
   x_init << 0, theta_init, 0, 0;
-  diagram_context->SetDiscreteState(0, x_init);
-  diagram_context->SetDiscreteState(1, x_init);
+  diagram_context->SetDiscreteState(x_init);
 
   Simulator simulator(*diagram, std::move(diagram_context));
   simulator.AdvanceTo(10);
-  const double theta_final = simulator.get_context().get_discrete_state(0)[1];
+  const double theta_final = simulator.get_context().get_discrete_state()[1];
   // Check discrete-time controller stabilizes discrete-time cart-pole.
   const double theta_d = M_PI;
   EXPECT_LT(std::abs(theta_final - theta_d), std::abs(theta_init - theta_d));
