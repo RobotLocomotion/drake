@@ -203,12 +203,13 @@ class QuadraticConstraint : public Constraint {
 
   /**
    Whether the Hessian matrix is positive semidefinite, negative semidefinite,
-   or indefinite.
+   indefinite or a zero-matrix.
    */
   enum class HessianType {
     kPositiveSemidefinite,
     kNegativeSemidefinite,
     kIndefinite,
+    kZero,
   };
 
   /**

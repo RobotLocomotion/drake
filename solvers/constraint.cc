@@ -141,6 +141,8 @@ QuadraticConstraint::~QuadraticConstraint() = default;
 
 bool QuadraticConstraint::is_convex() const {
   switch (hessian_type_) {
+    case HessianType::kZero:
+      return true;
     case HessianType::kPositiveSemidefinite: {
       // lower_bound is -inf
       return std::isinf(lower_bound()(0)) && lower_bound()(0) < 0;
@@ -160,6 +162,19 @@ void QuadraticConstraint::UpdateHessianType(
     std::optional<HessianType> hessian_type) {
   if (hessian_type.has_value()) {
     hessian_type_ = hessian_type.value();
+    return;
+  }
+  if (Q_.isZero(/*precision=*/0)) {
+    hessian_type_ = HessianType::kZero;
+    return;
+  }
+  if (Q_.trace() == 0) {
+    // trace(Q_) is the summation of the eigen values. Since all eigen values
+    // are real, then some eigen values are positive while some other eigen
+    // values are negative (except the special case when all eigen values are
+    // 0). We conclude that Q_ is indefinite (since we have checked zero matrix
+    // already).
+    hessian_type_ = HessianType::kIndefinite;
     return;
   }
   Eigen::LDLT<Eigen::MatrixXd> ldlt_solver;
