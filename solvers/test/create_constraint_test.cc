@@ -92,6 +92,14 @@ TEST_F(ParseQuadraticConstraintTest, Test0) {
   CheckParseQuadraticConstraint(
       -x0_ * x0_ + 2 * x1_, -kInf, 3, std::nullopt,
       QuadraticConstraint::HessianType::kNegativeSemidefinite);
+
+  // Special case that the Hessian is a zero-matrix.
+  CheckParseQuadraticConstraint(-x0_ + 2 * x1_, -kInf, 3, std::nullopt,
+                                QuadraticConstraint::HessianType::kZero);
+
+  // Special case that the Hessian has trace 0.
+  CheckParseQuadraticConstraint(-x0_ * x1_ + 2 * x1_, -kInf, 3, std::nullopt,
+                                QuadraticConstraint::HessianType::kIndefinite);
 }
 
 void CheckParseLorentzConeConstraint(

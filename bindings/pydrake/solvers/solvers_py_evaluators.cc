@@ -388,7 +388,9 @@ void BindEvaluatorsAndBindings(py::module m) {
           QuadraticConstraint::HessianType::kNegativeSemidefinite,
           doc.QuadraticConstraint.HessianType.kNegativeSemidefinite.doc)
       .value("kIndefinite", QuadraticConstraint::HessianType::kIndefinite,
-          doc.QuadraticConstraint.HessianType.kIndefinite.doc);
+          doc.QuadraticConstraint.HessianType.kIndefinite.doc)
+      .value("kZero", QuadraticConstraint::HessianType::kZero,
+          doc.QuadraticConstraint.HessianType.kZero.doc);
 
   quadratic_constraint_cls
       .def(py::init([](const Eigen::Ref<const Eigen::MatrixXd>& Q0,
