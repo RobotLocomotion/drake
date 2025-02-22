@@ -1001,9 +1001,9 @@ class Meshcat::Impl {
       return;
     }
     if (std::holds_alternative<internal::MeshData>(data.object.object)) {
-      auto& meshfile_object = std::get<internal::MeshData>(data.object.object);
+      auto& mesh_object = std::get<internal::MeshData>(data.object.object);
       DRAKE_DEMAND(data.object.geometry != nullptr);
-      meshfile_object.geometry = data.object.geometry->uuid;
+      mesh_object.geometry = data.object.geometry->uuid;
 
       // Add a material if not already defined.
       if (data.object.material == nullptr) {
@@ -1026,8 +1026,8 @@ class Meshcat::Impl {
         material->wireframe = false;
         material->wireframeLineWidth = 1.0;
 
-        meshfile_object.uuid = uuid_generator_.GenerateRandom();
-        meshfile_object.material = material->uuid;
+        mesh_object.uuid = uuid_generator_.GenerateRandom();
+        mesh_object.material = material->uuid;
         data.object.material = std::move(material);
       }
     }
