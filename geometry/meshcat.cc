@@ -321,8 +321,8 @@ class MeshcatShapeReifier : public ShapeReifier {
   // This encapsulates the "return value" of the reifier. The `void*` argument
   // to ImplementGeometry() should always be passed as this type.
   struct Output {
-    internal::LumpedObjectData& lumped;
-    std::vector<std::shared_ptr<const MemoryFile>>& assets;
+    internal::LumpedObjectData lumped;
+    std::vector<std::shared_ptr<const MemoryFile>> assets;
   };
 
   using ShapeReifier::ImplementGeometry;
@@ -977,36 +977,25 @@ class Meshcat::Impl {
     }
   }
 
-  // This function is public via the PIMPL.
-  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
-    DRAKE_DEMAND(IsThread(main_thread_id_));
-
-    internal::SetObjectData data;
-    data.path = FullPath(path);
-
+  MeshcatShapeReifier::Output ReifyShape(const Shape& shape, const Rgba& rgba) {
     // TODO(russt): This current meshcat set_object interface couples geometry,
     // material, and object for convenience, but we might consider decoupling
     // them again for efficiency. We don't want to send meshes over the network
     // (which could be from the cloud to a local browser) more than necessary.
 
     MeshcatShapeReifier reifier(&uuid_generator_, &file_storage_, rgba);
-    std::vector<std::shared_ptr<const MemoryFile>> assets;
-    MeshcatShapeReifier::Output reifier_output{.lumped = data.object,
-                                               .assets = assets};
+    MeshcatShapeReifier::Output reifier_output;
     shape.Reify(&reifier, &reifier_output);
 
-    if (std::holds_alternative<std::monostate>(data.object.object)) {
-      // Then this shape is not supported, and I should not send the message,
-      // nor add the object to the tree.
-      return;
-    }
-    if (std::holds_alternative<internal::MeshData>(data.object.object)) {
-      auto& mesh_object = std::get<internal::MeshData>(data.object.object);
-      DRAKE_DEMAND(data.object.geometry != nullptr);
-      mesh_object.geometry = data.object.geometry->uuid;
+    auto& lumped = reifier_output.lumped;
+
+    if (std::holds_alternative<internal::MeshData>(lumped.object)) {
+      auto& mesh_object = std::get<internal::MeshData>(lumped.object);
+      DRAKE_DEMAND(lumped.geometry != nullptr);
+      mesh_object.geometry = lumped.geometry->uuid;
 
       // Add a material if not already defined.
-      if (data.object.material == nullptr) {
+      if (lumped.material == nullptr) {
         auto material = std::make_unique<internal::MaterialData>();
         material->uuid = uuid_generator_.GenerateRandom();
         material->type = "MeshPhongMaterial";
@@ -1028,9 +1017,31 @@ class Meshcat::Impl {
 
         mesh_object.uuid = uuid_generator_.GenerateRandom();
         mesh_object.material = material->uuid;
-        data.object.material = std::move(material);
+        lumped.material = std::move(material);
       }
     }
+
+    return reifier_output;
+  }
+
+  // This function is public via the PIMPL.
+  void SetObject(std::string_view path, const Shape& shape, const Rgba& rgba) {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    internal::SetObjectData data;
+    data.path = FullPath(path);
+
+    auto reified_output = ReifyShape(shape, rgba);
+    auto& lumped = reified_output.lumped;
+    auto& assets = reified_output.assets;
+
+    if (std::holds_alternative<std::monostate>(lumped.object)) {
+      // Then this shape is not supported, and I should not send the message,
+      // nor add the object to the tree.
+      return;
+    }
+
+    data.object = std::move(lumped);
 
     Defer([this, data = std::move(data), assets = std::move(assets)]() {
       DRAKE_DEMAND(IsThread(websocket_thread_id_));
@@ -1092,28 +1103,20 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void SetObject(std::string_view path, BoxList box_list, const Rgba& rgba) {
+  void SetObjectInstanced(std::string_view path, const Shape& shape,
+                          const std::vector<RigidTransformd>& instances,
+                          const Rgba& rgba) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetObjectData data;
     data.path = FullPath(path);
 
-    // Create a cube geometry that will be instanced.
-    auto geometry = std::make_unique<internal::BoxGeometryData>();
-    geometry->uuid = uuid_generator_.GenerateRandom();
-    geometry->width = box_list.box_size.x();
-    geometry->height = box_list.box_size.y();
-    geometry->depth = box_list.box_size.z();
-    data.object.geometry = std::move(geometry);
+    auto reified_output = ReifyShape(shape, rgba);
 
-    // Create material for voxels.
-    auto material = std::make_unique<internal::MaterialData>();
-    material->uuid = uuid_generator_.GenerateRandom();
-    material->type = "MeshPhongMaterial";
-    material->color = ToMeshcatColor(rgba);
-    material->transparent = rgba.a() != 1.0;
-    material->opacity = rgba.a();
-    data.object.material = std::move(material);
+    if (!std::holds_alternative<internal::MeshData>(reified_output.lumped.object)) {
+      throw std::runtime_error("SetObjectInstanced only supports shapes that create a mesh.");
+    }
+    data.object = std::move(reified_output.lumped);
 
     // Create instanced mesh object.
     internal::InstancedMeshData mesh;
@@ -1121,8 +1124,14 @@ class Meshcat::Impl {
     mesh.type = "InstancedMesh";
     mesh.geometry = data.object.geometry->uuid;
     mesh.material =  data.object.material->uuid;
-    mesh.count = box_list.transforms.cols();
-    mesh.instanceMatrix = std::move(box_list.transforms);
+    mesh.count = static_cast<int>(instances.size());
+
+    // Convert vector of RigidTransforms to a 16xN Eigen float matrix.
+    mesh.instanceMatrix = Eigen::MatrixXf(16, mesh.count);
+    for (int i = 0; i < mesh.count; ++i) {
+      Eigen::Matrix4f transform = instances[i].GetAsMatrix4().cast<float>();
+      mesh.instanceMatrix.col(i) = Eigen::Map<Eigen::Vector<float, 16>>(transform.data());
+    }
     data.object.object = std::move(mesh);
 
     Defer([this, data = std::move(data)]() {
@@ -1146,7 +1155,7 @@ class Meshcat::Impl {
       planning::internal::GetInternalCollisionMap(voxel_collision_map);
     const auto total_cells = grid.GetTotalCells();
     const auto grid_sizes = grid.GetGridSizes();
-    const Eigen::Vector3f cell_sizes = grid.GetCellSizes().cast<float>();
+    const Eigen::Vector3d cell_sizes = grid.GetCellSizes();
 
     // First iterate through the grid to count the number of occupied and
     // unknown voxels.
@@ -1161,13 +1170,9 @@ class Meshcat::Impl {
       }
     }
 
-    BoxList occupied_box_list;
-    occupied_box_list.box_size = cell_sizes;
-    occupied_box_list.transforms.resize(16, num_occupied_cells);
-
-    BoxList unknown_box_list;
-    unknown_box_list.box_size = cell_sizes;
-    unknown_box_list.transforms.resize(16, num_unknown_cells);
+    Box cell_shape (cell_sizes.x(), cell_sizes.y(), cell_sizes.z());
+    std::vector<RigidTransformd> occupied_transforms (num_occupied_cells);
+    std::vector<RigidTransformd> unknown_transforms (num_unknown_cells);
 
     // Transform between the parent frame and the grid frame.
     // The origin of the grid frame is a corner of the grid.
@@ -1183,30 +1188,29 @@ class Meshcat::Impl {
       const auto& cell = grid.GetDataIndexImmutable(data_index);
 
       // Compute transform only if cell is occupied or occupancy is unknown.
-      Eigen::Vector<float, 16> transform;
       if (cell.Occupancy() > 0.)
       {
         const auto& grid_index = grid_sizes.GetGridIndexFromDataIndex(data_index);
         const Eigen::Vector3d translation =
           grid.GridIndexToLocationInGridFrame(grid_index).head<3>();
         X_GC.set_translation(translation);
-        Eigen::Matrix4f X_PC = (X_PG * X_GC).GetAsMatrix4().cast<float>();
-        transform = Eigen::Map<Eigen::Vector<float, 16>>(X_PC.data());
       }
 
       // Flatten the transform matrix in column-major order
       if (cell.Occupancy() > 0.5) {
         // Occupied voxel
-        occupied_box_list.transforms.col(occupied_counter++) = transform;
+        occupied_transforms[occupied_counter++] = X_PG * X_GC;
       }
       else if (cell.Occupancy() == 0.5) {
-        unknown_box_list.transforms.col(unknown_counter++) = transform;
+        unknown_transforms[unknown_counter++] = X_PG * X_GC;
       }
     }
 
-    // Set both BoxLists
-    SetObject(std::string(path) + "/occupied", occupied_box_list, occupied_rgba);
-    SetObject(std::string(path) + "/unknown", unknown_box_list, unknown_rgba);
+    // Set both instanced objects
+    SetObjectInstanced(std::string(path) + "/occupied", cell_shape,
+                       occupied_transforms, occupied_rgba);
+    SetObjectInstanced(std::string(path) + "/unknown", cell_shape,
+                       unknown_transforms, unknown_rgba);
   }
 
   // This function is public via the PIMPL.
@@ -2681,6 +2685,12 @@ void Meshcat::SetObject(std::string_view path,
                         const perception::PointCloud& cloud, double point_size,
                         const Rgba& rgba) {
   impl().SetObject(path, cloud, point_size, rgba);
+}
+
+void Meshcat::SetObjectInstanced(std::string_view path, const Shape& shape,
+                                 const std::vector<RigidTransformd>& instances,
+                                 const Rgba& rgba) {
+  impl().SetObjectInstanced(path, shape, instances, rgba);
 }
 
 void Meshcat::SetObject(std::string_view path,
