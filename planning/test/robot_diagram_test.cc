@@ -58,6 +58,9 @@ GTEST_TEST(RobotDiagramBuilderTest, Getters) {
   SceneGraph<double>& mutable_scene_graph = dut->scene_graph();
   const SceneGraph<double>& scene_graph = const_dut->scene_graph();
 
+  // The parser has a reference to the builder.
+  EXPECT_EQ(mutable_parser.builder(), &mutable_builder);
+
   // The getters for mutable vs readonly are consistent.
   EXPECT_EQ(&mutable_builder, &builder);
   EXPECT_EQ(&mutable_parser, &parser);

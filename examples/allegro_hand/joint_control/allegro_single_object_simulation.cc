@@ -107,7 +107,7 @@ void DoMain() {
 
   const std::string object_model_url =
       "package://drake/examples/allegro_hand/joint_control/simple_mug.sdf";
-  multibody::Parser parser(&plant);
+  multibody::Parser parser(&builder);
   parser.AddModelsFromUrl(hand_model_url);
   parser.AddModelsFromUrl(object_model_url);
 

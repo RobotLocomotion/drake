@@ -29,7 +29,7 @@ for env_name in ['BUILD_WORKING_DIRECTORY', 'TEST_TMPDIR']:
 builder = DiagramBuilder()
 cart_pole, scene_graph = AddMultibodyPlantSceneGraph(
     builder=builder, time_step=0.0)
-Parser(plant=cart_pole).AddModelsFromUrl(
+Parser(builder=builder).AddModelsFromUrl(
     url="package://drake/examples/multibody/cart_pole/cart_pole.sdf")
 
 plt.figure(figsize=(11, 8.5), dpi=300)
