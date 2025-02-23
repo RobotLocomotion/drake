@@ -52,7 +52,7 @@ def main():
     # Assemble the Pendulum plant.
     builder = DiagramBuilder()
     pendulum = builder.AddSystem(MultibodyPlant(0.0))
-    Parser(pendulum).AddModelsFromUrl(
+    Parser(builder, plant=pendulum).AddModelsFromUrl(
         url="package://drake/examples/pendulum/Pendulum.urdf")
     pendulum.Finalize()
 

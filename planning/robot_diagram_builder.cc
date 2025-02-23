@@ -23,7 +23,7 @@ RobotDiagramBuilder<T>::RobotDiagramBuilder(double time_step)
       pair_(AddMultibodyPlantSceneGraph<T>(builder_.get(), time_step)),
       plant_(pair_.plant),
       scene_graph_(pair_.scene_graph),
-      parser_(&plant_) {}
+      parser_(builder_.get()) {}
 
 template <typename T>
 RobotDiagramBuilder<T>::~RobotDiagramBuilder() = default;

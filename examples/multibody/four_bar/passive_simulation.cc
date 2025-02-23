@@ -78,7 +78,7 @@ int do_main() {
   // Make and add the four_bar model from an SDF model.
   const std::string sdf_url =
       "package://drake/examples/multibody/four_bar/four_bar.sdf";
-  Parser parser(&four_bar);
+  Parser parser(&builder);
   parser.AddModelsFromUrl(sdf_url);
 
   // Get the two frames that define the bushing, namely frame Bc that is

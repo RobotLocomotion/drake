@@ -35,7 +35,7 @@ def make_ball_paddle(contact_model, contact_surface_representation,
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
 
-    parser = Parser(plant)
+    parser = Parser(builder)
     paddle_sdf_url = \
         "package://drake/examples/hydroelastic/python_ball_paddle/paddle.sdf"
     (paddle,) = parser.AddModels(url=paddle_sdf_url)

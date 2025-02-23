@@ -130,7 +130,7 @@ int do_main() {
     strandbeest.set_discrete_contact_approximation(
         drake::multibody::DiscreteContactApproximation::kSap);
   }
-  Parser parser(&strandbeest);
+  Parser parser(&builder);
   parser.AddModelsFromUrl(urdf_url);
 
   // We are done defining the model. Finalize.
