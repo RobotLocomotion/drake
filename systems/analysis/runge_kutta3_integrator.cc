@@ -148,6 +148,95 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   return true;
 }
 
+template <class T>
+bool RungeKutta3Integrator<T>::DoStepConst(const T& h, Context<T>* context) const {
+  using std::abs;
+  const T t0 = context->get_time();
+  const T t1 = t0 + h;
+
+  // CAUTION: This is performance-sensitive inner loop code that uses dangerous
+  // long-lived references into state and cache to avoid unnecessary copying and
+  // cache invalidation. Be careful not to insert calls to methods that could
+  // invalidate any of these references before they are used.
+
+  // TODO(sherm1) Consider moving this notation description to IntegratorBase
+  //              when it is more widely adopted.
+  // Notation: we're using numeric subscripts for times t₀ and t₁, and
+  // lower-case letter superscripts like t⁽ᵃ⁾ and t⁽ᵇ⁾ to indicate values
+  // for intermediate stages of which there are two here, a and b.
+  // State x₀ = {xc₀, xd₀, xa₀}. We modify only t and xc here, but
+  // derivative calculations depend on everything in the context, including t,
+  // x and inputs u (which may depend on t and x).
+  // Define x⁽ᵃ⁾ ≜ {xc⁽ᵃ⁾, xd₀, xa₀} and u⁽ᵃ⁾ ≜ u(t⁽ᵃ⁾, x⁽ᵃ⁾).
+
+  // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)). Copy the result
+  // into a temporary since we'll be calculating more derivatives below.
+  derivs0_->get_mutable_vector().SetFrom(
+      this->EvalTimeDerivatives(*context).get_vector());
+  const VectorBase<T>& xcdot0 = derivs0_->get_vector();
+
+  // Cache: xcdot0 references a *copy* of the derivative result so is immune
+  // to subsequent evaluations.
+
+  // Compute the first intermediate state and derivative
+  // (at t⁽ᵃ⁾=t₀+h/2, x⁽ᵃ⁾, u⁽ᵃ⁾).
+
+  // This call marks t- and xc-dependent cache entries out of date, including
+  // the derivative cache entry. Note that xc is a live reference into the
+  // context -- subsequent changes through that reference are unobservable so
+  // will require manual out-of-date notifications.
+  VectorBase<T>& xc = context->SetTimeAndGetMutableContinuousStateVector(
+      t0 + h / 2);                      // t⁽ᵃ⁾ ← t₀ + h/2
+  xc.CopyToPreSizedVector(&save_xc0_);  // Save xc₀ while we can.
+  xc.PlusEqScaled(h / 2, xcdot0);       // xc⁽ᵃ⁾ ← xc₀ + h/2 xcdot₀
+
+  derivs1_->get_mutable_vector().SetFrom(
+      this->EvalTimeDerivatives(*context).get_vector());
+  const VectorBase<T>& xcdot_a = derivs1_->get_vector();  // xcdot⁽ᵃ⁾
+
+  // Cache: xcdot_a references a *copy* of the derivative result so is immune
+  // to subsequent evaluations.
+
+  // Compute the second intermediate state and derivative
+  // (at t⁽ᵇ⁾=t₁, x⁽ᵇ⁾, u⁽ᵇ⁾).
+
+  // This call marks t- and xc-dependent cache entries out of date, including
+  // the derivative cache entry. (We already have the xc reference but must
+  // issue the out-of-date notification here since we're about to change it.)
+  context->SetTimeAndNoteContinuousStateChange(t1);
+
+  // xcⱼ ← xc₀ - h xcdot₀ + 2 h xcdot⁽ᵃ⁾
+  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+  xc.PlusEqScaled({{-h, xcdot0}, {2 * h, xcdot_a}});
+
+  const VectorBase<T>& xcdot_b =  // xcdot⁽ᵇ⁾
+      this->EvalTimeDerivatives(*context).get_vector();
+
+  // Cache: xcdot_b references the live derivative cache value, currently
+  // up to date but about to be marked out of date. We do not want to make
+  // an unnecessary copy of this data.
+
+  // Cache: we're about to write through the xc reference again, so need to
+  // mark xc-dependent cache entries out of date, including xcdot_b; time
+  // doesn't change here.
+  context->NoteContinuousStateChange();
+
+  // Calculate the final O(h³) state at t₁.
+  // xc₁ ← xc₀ + h/6 xcdot₀ + 2/3 h xcdot⁽ᵃ⁾ + h/6 xcdot⁽ᵇ⁾
+  xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
+  const T h6 = h / 6.0;
+
+  // Cache: xcdot_b still references the derivative cache value, which is
+  // unchanged, although it is marked out of date. xcdot0 and xcdot_a are
+  // unaffected.
+  xc.PlusEqScaled({{h6,     xcdot0},
+                   {4 * h6, xcdot_a},
+                   {h6,     xcdot_b}});
+
+  // RK3 always succeeds in taking its desired step.
+  return true;
+}
+
 }  // namespace systems
 }  // namespace drake
 

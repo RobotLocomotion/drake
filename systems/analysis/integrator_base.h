@@ -1050,7 +1050,8 @@ class IntegratorBase {
      integrator convergence)
    - Takes only a single step forward.
    */
-  [[nodiscard]] bool IntegrateWithSingleFixedStepToTime(const T& t_target) {
+  [[nodiscard]] bool IntegrateWithSingleFixedStepToTime(
+      const T& t_target) const {
     using std::max;
     using std::abs;
 
@@ -1063,10 +1064,10 @@ class IntegratorBase {
       throw std::logic_error("IntegrateWithSingleFixedStepToTime() requires "
                              "fixed stepping.");
 
-    if (!Step(h))
+    if (!DoStepConst(h, context_))
       return false;
 
-    UpdateStepStatistics(h);
+//    UpdateStepStatistics(h);
 
     if constexpr (scalar_predicate<T>::is_bool) {
       // Correct any round-off error that has occurred. Formula below requires
@@ -1318,7 +1319,8 @@ class IntegratorBase {
    Subclasses should call this function rather than calling
    system.EvalTimeDerivatives() directly.
    */
-  const ContinuousState<T>& EvalTimeDerivatives(const Context<T>& context) {
+  const ContinuousState<T>& EvalTimeDerivatives(
+      const Context<T>& context) const {
     return EvalTimeDerivatives(get_system(), context);  // See below.
   }
 
@@ -1330,8 +1332,8 @@ class IntegratorBase {
    function evaluations.
    */
   template <typename U>
-  const ContinuousState<U>& EvalTimeDerivatives(const System<U>& system,
-                                                const Context<U>& context) {
+  const ContinuousState<U>& EvalTimeDerivatives(
+      const System<U>& system, const Context<U>& context) const {
     const CacheEntry& entry = system.get_time_derivatives_cache_entry();
     const CacheEntryValue& value = entry.get_cache_entry_value(context);
     const int64_t serial_number_before = value.serial_number();
@@ -1460,7 +1462,7 @@ class IntegratorBase {
             example, by switching to an algorithm not subject to convergence
             failures (e.g., explicit Euler) for very small step sizes.
    */
-  virtual bool DoStep(const T& h) = 0;
+  virtual bool DoStep(const T& h) { return DoStepConst(h, context_); }
 
   // TODO(russt): Allow subclasses to override the interpolation scheme used, as
   // the 'optimal' dense output scheme is only known by the specific integration
@@ -1514,6 +1516,12 @@ class IntegratorBase {
             {start_state, state.CopyToVector()},
             {start_derivatives, derivatives.CopyToVector()}));
     return true;
+  }
+
+  virtual bool DoStepConst(const T& h, Context<T>* context) const {
+    unused(h, context);
+    throw std::runtime_error(
+        "This integrator does not (yet) implement the const DoStep() variant.");
   }
 
   /**
@@ -1628,7 +1636,7 @@ class IntegratorBase {
   T smallest_adapted_step_size_taken_{nan()};
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
-  int64_t num_ode_evals_{0};
+  mutable int64_t num_ode_evals_{0};
   int64_t num_shrinkages_from_error_control_{0};
   int64_t num_shrinkages_from_substep_failures_{0};
   int64_t num_substep_failures_{0};
