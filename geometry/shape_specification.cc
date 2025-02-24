@@ -42,7 +42,7 @@ namespace {
 // shape_specification_thread_test.cc.
 void ComputeConvexHullAsNecessary(
     std::shared_ptr<PolygonSurfaceMesh<double>>* hull_ptr,
-    const MeshSource& mesh_source, double scale) {
+    const MeshSource& mesh_source, const Vector3<double>& scale) {
   std::shared_ptr<PolygonSurfaceMesh<double>> check =
       std::atomic_load(hull_ptr);
   if (check == nullptr) {
@@ -58,7 +58,7 @@ void ComputeConvexHullAsNecessary(
 // converting the MeshSource into the appropriate parameter name and value
 // representation and then packages it into the full Mesh string representation.
 std::string MeshToString(std::string_view class_name, const MeshSource& source,
-                         double scale) {
+                         const Vector3<double>& scale) {
   const std::string mesh_parameter = [&source]() {
     if (source.is_path()) {
       return fmt::format("filename='{}'", source.path().string());
@@ -66,13 +66,15 @@ std::string MeshToString(std::string_view class_name, const MeshSource& source,
       return fmt::format("mesh_data={}", source.in_memory());
     }
   }();
-  return fmt::format("{}({}, scale={})", class_name, mesh_parameter, scale);
+  return fmt::format("{}({}, scale=[{}])", class_name, mesh_parameter,
+                     fmt_eigen(scale.transpose()));
 }
 
-void ThrowForBadScale(double scale, std::string_view source) {
-  if (std::abs(scale) < 1e-8) {
+void ThrowForBadScale(const Vector3<double>& scale, std::string_view source) {
+  if ((scale.array().abs() < 1e-8).any()) {
     throw std::logic_error(
-        fmt::format("{} |scale| cannot be < 1e-8, given {}.", source, scale));
+        fmt::format("{} |scale| cannot be < 1e-8 on any axis, given [{}].",
+                    source, fmt_eigen(scale.transpose())));
   }
 }
 
@@ -133,23 +135,37 @@ std::string Capsule::do_to_string() const {
 }
 
 Convex::Convex(const std::filesystem::path& filename, double scale)
-    : Convex(MeshSource(std::filesystem::absolute(filename)), scale) {}
+    : Convex(filename, Vector3<double>::Constant(scale)) {}
+
+Convex::Convex(const std::filesystem::path& filename,
+               const Vector3<double>& scale3)
+    : Convex(MeshSource(std::filesystem::absolute(filename)), scale3) {}
 
 Convex::Convex(InMemoryMesh mesh_data, double scale)
-    : Convex(MeshSource(std::move(mesh_data)), scale) {}
+    : Convex(std::move(mesh_data), Vector3<double>::Constant(scale)) {}
+
+Convex::Convex(InMemoryMesh mesh_data, const Vector3<double>& scale3)
+    : Convex(MeshSource(std::move(mesh_data)), scale3) {}
 
 Convex::Convex(MeshSource source, double scale)
-    : source_(std::move(source)), scale_(scale) {
+    : Convex(std::move(source), Vector3<double>::Constant(scale)) {}
+
+Convex::Convex(MeshSource source, const Vector3<double>& scale3)
+    : source_(std::move(source)), scale_(scale3) {
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.
-  ThrowForBadScale(scale, "Convex");
+  ThrowForBadScale(scale_, "Convex");
 }
 
 Convex::Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
                double scale)
+    : Convex(points, label, Vector3<double>::Constant(scale)) {}
+
+Convex::Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
+               const Vector3<double>& scale3)
     : Convex(InMemoryMesh{.mesh_file = MemoryFile(PointsToObjString(points),
                                                   ".obj", label)},
-             scale) {}
+             scale3) {}
 
 std::string Convex::filename() const {
   if (source_.is_path()) {
@@ -162,13 +178,23 @@ std::string Convex::filename() const {
                   source_.in_memory().mesh_file.filename_hint()));
 }
 
+double Convex::scale() const {
+  if ((scale_.array() != scale_[0]).any()) {
+    throw std::runtime_error(
+        fmt::format("Convex::scale() can only be called for uniform scaling. "
+                    "This mesh has scale [{}]. Use Convex::scale3() instead.",
+                    fmt_eigen(scale_.transpose())));
+  }
+  return scale_[0];
+}
+
 const PolygonSurfaceMesh<double>& Convex::GetConvexHull() const {
   ComputeConvexHullAsNecessary(&hull_, source_, scale_);
   return *hull_;
 }
 
 std::string Convex::do_to_string() const {
-  return MeshToString(type_name(), source(), scale());
+  return MeshToString(type_name(), source(), scale_);
 }
 
 Cylinder::Cylinder(double radius, double length)
@@ -242,16 +268,25 @@ std::string HalfSpace::do_to_string() const {
 }
 
 Mesh::Mesh(const std::filesystem::path& filename, double scale)
-    : Mesh(MeshSource(std::filesystem::absolute(filename)), scale) {}
+    : Mesh(filename, Vector3<double>::Constant(scale)) {}
+
+Mesh::Mesh(const std::filesystem::path& filename, const Vector3<double>& scale3)
+    : Mesh(MeshSource(std::filesystem::absolute(filename)), scale3) {}
 
 Mesh::Mesh(InMemoryMesh mesh_data, double scale)
-    : Mesh(MeshSource(std::move(mesh_data)), scale) {}
+    : Mesh(std::move(mesh_data), Vector3<double>::Constant(scale)) {}
+
+Mesh::Mesh(InMemoryMesh mesh_data, const Vector3<double>& scale3)
+    : Mesh(MeshSource(std::move(mesh_data)), scale3) {}
 
 Mesh::Mesh(MeshSource source, double scale)
-    : source_(std::move(source)), scale_(scale) {
+    : Mesh(std::move(source), Vector3<double>::Constant(scale)) {}
+
+Mesh::Mesh(MeshSource source, const Vector3<double>& scale3)
+    : source_(std::move(source)), scale_(scale3) {
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.
-  ThrowForBadScale(scale, "Mesh");
+  ThrowForBadScale(scale_, "Mesh");
 }
 
 std::string Mesh::filename() const {
@@ -265,13 +300,23 @@ std::string Mesh::filename() const {
                   source_.in_memory().mesh_file.filename_hint()));
 }
 
+double Mesh::scale() const {
+  if ((scale_.array() != scale_[0]).any()) {
+    throw std::runtime_error(
+        fmt::format("Mesh::scale() can only be called for uniform scaling. "
+                    "This mesh has scale [{}]. Use Mesh::scale3() instead.",
+                    fmt_eigen(scale_.transpose())));
+  }
+  return scale_[0];
+}
+
 const PolygonSurfaceMesh<double>& Mesh::GetConvexHull() const {
   ComputeConvexHullAsNecessary(&hull_, source_, scale_);
   return *hull_;
 }
 
 std::string Mesh::do_to_string() const {
-  return MeshToString(type_name(), source(), scale());
+  return MeshToString(type_name(), source(), scale_);
 }
 
 MeshcatCone::MeshcatCone(double height, double a, double b)
@@ -361,7 +406,7 @@ double CalcMeshVolume(const Mesh& mesh) {
         mesh_source.description()));
   }
   TriangleSurfaceMesh<double> surface_mesh =
-      ReadObjToTriangleSurfaceMesh(mesh_source, mesh.scale());
+      ReadObjToTriangleSurfaceMesh(mesh_source, mesh.scale3());
   return internal::CalcEnclosedVolume(surface_mesh);
 }
 

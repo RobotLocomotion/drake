@@ -533,11 +533,19 @@ class TestGeometryCore(unittest.TestCase):
             mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
             mut.Mesh(filename="arbitrary/path", scale=1.0),
+            mut.Mesh(filename="arbitrary/path", scale3=[1.0, 2.0, 3.0]),
             mut.Mesh(mesh_data=mut.InMemoryMesh(
                 mesh_file=MemoryFile("# ", ".obj", "junk")), scale=1.0),
+            mut.Mesh(mesh_data=mut.InMemoryMesh(
+                mesh_file=MemoryFile("# ", ".obj", "junk")),
+                scale3=[1.0, 2.0, 3.0]),
             mut.Convex(filename="arbitrary/path", scale=1.0),
+            mut.Convex(filename="arbitrary/path", scale3=[1.0, 2.0, 3.0]),
             mut.Convex(mesh_data=mut.InMemoryMesh(
                 mesh_file=MemoryFile("# ", ".obj", "junk")), scale=1.0),
+            mut.Convex(mesh_data=mut.InMemoryMesh(
+                mesh_file=MemoryFile("# ", ".obj", "junk")),
+                scale3=[1.0, 2.0, 3.0]),
             mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
         ]
         for shape in shapes:
@@ -592,13 +600,24 @@ class TestGeometryCore(unittest.TestCase):
         # Note: Convex has generally been rolled in with Mesh because of their
         # common APIs (below). This test covers the Convex-only constructor
         # from point cloud (which gets converted to an in-memory .obj).
+
+        # Throw away Convex; we just want to make sure the scalar-valued
+        # `scale` parameter is bound.
         convex = mut.Convex(points=np.array(((0, 0, 0),
                                              (1, 0, 0),
                                              (0, 1, 0),
                                              (0, 0, 1))).T,
-                            label="test_label", scale=2.0)
+                            label="test_label", scale=2)
+
+        # For the test, we'll test the non-uniform scale API; the two are
+        # otherwise equivalent.
+        convex = mut.Convex(points=np.array(((0, 0, 0),
+                                             (1, 0, 0),
+                                             (0, 1, 0),
+                                             (0, 0, 1))).T,
+                            label="test_label", scale3=[1, 2, 3])
         self.assertEqual(".obj", convex.extension())
-        self.assertEqual(convex.scale(), 2.0)
+        np.testing.assert_array_equal(convex.scale3(), [1, 2, 3])
         self.assertTrue(convex.source().is_in_memory())
         convex_file = convex.source().in_memory().mesh_file
         self.assertTrue(convex_file.filename_hint(), "test_label")
@@ -639,6 +658,7 @@ class TestGeometryCore(unittest.TestCase):
             assert_shape_api(dut_mesh)
             self.assertEqual(".ext", dut_mesh.extension())
             self.assertEqual(dut_mesh.scale(), 1.5)
+            np.testing.assert_array_equal(dut_mesh.scale3(), [1.5, 1.5, 1.5])
             self.assertIsInstance(dut_mesh.source(), mut.MeshSource)
             with self.assertRaisesRegex(RuntimeError,
                                         "MakeConvexHull only applies to"):
@@ -676,4 +696,5 @@ class TestGeometryCore(unittest.TestCase):
         self.assertTrue(obj.source().is_path())
         ref_mesh = mut.Mesh(filename="/path/to/file.obj", scale=2)
         self.assertEqual(obj.source().path(), ref_mesh.source().path())
+        np.testing.assert_array_equal(obj.scale3(), ref_mesh.scale3())
         self.assertEqual(obj.scale(), ref_mesh.scale())

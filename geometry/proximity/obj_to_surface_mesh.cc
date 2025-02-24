@@ -18,7 +18,7 @@ using Eigen::Vector3d;
 namespace internal {
 
 std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
-    const MeshSource& mesh_source, double scale,
+    const MeshSource& mesh_source, const Vector3d& scale,
     const DiagnosticPolicy& diagnostic) {
   std::shared_ptr<std::vector<Eigen::Vector3d>> vertices;
   std::shared_ptr<std::vector<int>> face_data;
@@ -52,13 +52,20 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
 }  // namespace internal
 
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    const std::filesystem::path& filename, const double scale,
+    const std::filesystem::path& filename, const Eigen::Vector3d scale3,
     std::function<void(std::string_view)> on_warning) {
-  return ReadObjToTriangleSurfaceMesh(MeshSource(filename), scale, on_warning);
+  return ReadObjToTriangleSurfaceMesh(MeshSource(filename), scale3, on_warning);
 }
 
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    const MeshSource& mesh_source, double scale,
+    const std::filesystem::path& filename, const double scale,
+    std::function<void(std::string_view)> on_warning) {
+  return ReadObjToTriangleSurfaceMesh(
+      filename, Eigen::Vector3d::Constant(scale), on_warning);
+}
+
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
+    const MeshSource& mesh_source, const Eigen::Vector3d scale3,
     std::function<void(std::string_view)> on_warning) {
   DiagnosticPolicy policy;
   if (on_warning != nullptr) {
@@ -67,7 +74,14 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     });
   }
   // We will either throw or return a mesh here (courtesy of ReadObj).
-  return *internal::DoReadObjToSurfaceMesh(mesh_source, scale, policy);
+  return *internal::DoReadObjToSurfaceMesh(mesh_source, scale3, policy);
+}
+
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
+    const MeshSource& mesh_source, double scale,
+    std::function<void(std::string_view)> on_warning) {
+  return ReadObjToTriangleSurfaceMesh(
+      mesh_source, Eigen::Vector3d::Constant(scale), on_warning);
 }
 
 }  // namespace geometry

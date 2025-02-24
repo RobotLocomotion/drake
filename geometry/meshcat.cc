@@ -548,15 +548,16 @@ class MeshcatShapeReifier : public ShapeReifier {
       lumped.object.emplace<internal::MeshData>();
     }
 
-    // Set the scale.
-    const double scale = mesh.scale();
+    // Set the scale; note we don't have to worry about this interfering with
+    // the pose transform. The pose and scale are applied to different nodes.
+    const Vector3<double>& scale = mesh.scale3();
     std::visit<void>(
         overloaded{[](std::monostate) {},
                    [scale](auto& lumped_object) {
                      Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
-                     matrix(0, 0) = scale;
-                     matrix(1, 1) = scale;
-                     matrix(2, 2) = scale;
+                     matrix(0, 0) = scale.x();
+                     matrix(1, 1) = scale.y();
+                     matrix(2, 2) = scale.z();
                    }},
         lumped.object);
   }

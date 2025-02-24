@@ -427,35 +427,14 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
       "  <uri>" +
       absolute_file_path +
       "</uri>"
-      "  <scale> 3 3 3 </scale>"
+      "  <scale> 3 2 1 </scale>"
       "</mesh>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Mesh* mesh = dynamic_cast<const Mesh*>(shape.get());
   ASSERT_NE(mesh, nullptr);
   ASSERT_TRUE(mesh->source().is_path());
   EXPECT_EQ(mesh->source().path(), absolute_file_path);
-  EXPECT_EQ(mesh->scale(), 3);
-}
-
-// Verify error when mesh scale is not isotropic.
-TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometryIsotropicError) {
-  // TODO(amcastro-tri): Be warned, the result of this test might (should)
-  // change as we add support allowing to specify paths relative to the SDF file
-  // location.
-  const std::string absolute_file_path = "/path/to/some/mesh.obj";
-  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
-      "<mesh>"
-      "  <uri>" +
-      absolute_file_path +
-      "</uri>"
-      "  <scale> 3 1 2 </scale>"
-      "</mesh>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_EQ(shape, nullptr);
-  EXPECT_THAT(TakeError(),
-              ::testing::MatchesRegex(
-                  ".*Drake meshes only support isotropic scaling. Therefore"
-                  " all three scaling factors must be exactly equal."));
+  EXPECT_TRUE(CompareMatrices(mesh->scale3(), Vector3d(3, 2, 1)));
 }
 
 // Verify MakeShapeFromSdfGeometry can make a convex mesh from an sdf::Geometry.
@@ -467,14 +446,15 @@ TEST_F(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
       "  <uri>" +
       absolute_file_path +
       "</uri>"
-      "  <scale> 3 3 3 </scale>"
+      "  <scale> 3 2 1 </scale>"
       "</mesh>");
   unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
   const Convex* convex = dynamic_cast<const Convex*>(shape.get());
   ASSERT_NE(convex, nullptr);
   EXPECT_TRUE(convex->source().is_path());
   EXPECT_EQ(convex->source().path(), absolute_file_path);
-  EXPECT_EQ(convex->scale(), 3);
+  // EXPECT_EQ(convex->scale(), 3);
+  EXPECT_TRUE(CompareMatrices(convex->scale3(), Vector3d(3, 2, 1)));
 }
 
 // Verify that MakeShapeFromSdfGeometry does nothing with a heightmap.

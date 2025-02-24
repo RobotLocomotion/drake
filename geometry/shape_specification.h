@@ -266,6 +266,9 @@ class Convex final : public Shape {
                                 considering revisiting the model itself. */
   explicit Convex(const std::filesystem::path& filename, double scale = 1.0);
 
+  /** File variant that allows for specification of non-uniform scale. */
+  Convex(const std::filesystem::path& filename, const Vector3<double>& scale3);
+
   /** Constructs a convex shape specification from the contents of a
    Drake-supported mesh file type.
 
@@ -280,11 +283,19 @@ class Convex final : public Shape {
    @param scale       An optional scale to coordinates. */
   explicit Convex(InMemoryMesh mesh_data, double scale = 1.0);
 
+  /** Mesh-contents variant that allows for specification of non-uniform scale.
+   */
+  Convex(InMemoryMesh mesh_data, const Vector3<double>& scale3);
+
   /** Constructs a convex shape specification from the given `source`.
 
    @param source   The source for the mesh data.
    @param scale    An optional scale to coordinates. */
   explicit Convex(MeshSource source, double scale = 1.0);
+
+  /** Mesh-source variant that allows for specification of non-uniform scale.
+   */
+  Convex(MeshSource source, const Vector3<double>& scale3);
 
   /** Constructs an in-memory convex shape specification from the given points.
 
@@ -300,8 +311,12 @@ class Convex final : public Shape {
 
    @throws std::exception       if label contains newlines.
    @throws std::exception       if |scale| < 1e-8. */
-  explicit Convex(const Eigen::Matrix3X<double>& points,
-                  const std::string& label, double scale = 1.0);
+  Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
+         double scale = 1.0);
+
+  /** Point variant that allows for specification of non-uniform scale. */
+  Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
+         const Vector3<double>& scale3);
 
   ~Convex() final;
 
@@ -332,7 +347,13 @@ class Convex final : public Shape {
    of the MemoryFile passed to the constructor. */
   const std::string& extension() const { return source_.extension(); }
 
-  double scale() const { return scale_; }
+  /** Returns a single scale representing the _uniform_ scale factor.
+   @throws if the scale is not uniform in all directions. */
+  double scale() const;
+
+  /** Returns general scale factors for this mesh.*/
+  const Vector3<double>& scale3() const { return scale_; }
+
 
   /** Reports the convex hull of the named mesh.
 
@@ -353,7 +374,7 @@ class Convex final : public Shape {
   VariantShapeConstPtr get_variant_this() const final;
 
   MeshSource source_;
-  double scale_{};
+  Vector3<double> scale_;
   // Allows the deferred computation of the hull on an otherwise const Convex.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
 };
@@ -524,6 +545,9 @@ class Mesh final : public Shape {
                                 considering revisiting the model itself. */
   explicit Mesh(const std::filesystem::path& filename, double scale = 1.0);
 
+  /** Mesh-file variant that allows for specification of non-uniform scale. */
+  Mesh(const std::filesystem::path& filename, const Vector3<double>& scale3);
+
   /** Constructs a mesh shape specification from the contents of a
    Drake-supported mesh file type.
 
@@ -537,11 +561,19 @@ class Mesh final : public Shape {
    @param scale       An optional scale to coordinates. */
   explicit Mesh(InMemoryMesh mesh_data, double scale = 1.0);
 
+  /** Mesh-contents variant that allows for specification of non-uniform scale.
+   */
+  Mesh(InMemoryMesh mesh_data, const Vector3<double>& scale3);
+
   /** Constructs a mesh shape specification from the given `source`.
 
    @param source   The source for the mesh data.
    @param scale    An optional scale to coordinates. */
   explicit Mesh(MeshSource source, double scale = 1.0);
+
+  /** Mesh-source variant that allows for specification of non-uniform scale.
+   */
+  Mesh(MeshSource source, const Vector3<double>& scale3);
 
   ~Mesh() final;
 
@@ -568,7 +600,12 @@ class Mesh final : public Shape {
    of the MemoryFile passed to the constructor. */
   const std::string& extension() const { return source_.extension(); }
 
-  double scale() const { return scale_; }
+  /** Returns a single scale representing the _uniform_ scale factor.
+   @throws if the scale is not uniform in all directions. */
+  double scale() const;
+
+  /** Returns general scale factors for this mesh.*/
+  const Vector3<double>& scale3() const { return scale_; }
 
   /** Reports the convex hull of the named mesh.
 
@@ -590,7 +627,7 @@ class Mesh final : public Shape {
 
   // NOTE: Cannot be const to support default copy/move semantics.
   MeshSource source_;
-  double scale_{};
+  Vector3<double> scale_;
   // Allows the deferred computation of the hull on an otherwise const Mesh.
   mutable std::shared_ptr<PolygonSurfaceMesh<double>> hull_{nullptr};
 };
