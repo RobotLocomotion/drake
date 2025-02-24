@@ -163,7 +163,19 @@ PYBIND11_MODULE(analysis, m) {
               cls_doc.StartDenseIntegration.doc)
           .def("get_dense_output", &Class::get_dense_output,
               py_rvp::reference_internal, cls_doc.get_dense_output.doc)
-          .def("StopDenseIntegration", &Class::StopDenseIntegration,
+          .def("StopDenseIntegration",
+               [](Class* self) -> trajectories::PiecewisePolynomial<T>* {
+                 // Having abandoned the old RobotLocomotion pybind11 branch
+                 // with special handling of std::unique_ptr<>, this binding's
+                 // return value path started deleting the C++ object and
+                 // returning a dead non-null pointer. To avoid that, we
+                 // instead explicitly unwrap the pointer here and rely on the
+                 // take_ownership return value policy. The take_ownership
+                 // policy would be the default policy in this case, but it
+                 // seems safer and more clear to apply it explicitly.
+                 auto got = self->StopDenseIntegration();
+                 return got.release();
+               }, py_rvp::take_ownership,
               cls_doc.StopDenseIntegration.doc)
           .def("ResetStatistics", &Class::ResetStatistics,
               cls_doc.ResetStatistics.doc)
