@@ -342,6 +342,23 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     // Used in AddContactConstraint
     DiscreteContactData<DiscreteContactPair<T>> contact_data;
   } workspace_;
+
+  // Linearization of an external (e.g. controller) system attached to the plant.
+  // The original external system dynamics are 
+  //    ż = f(z,x),
+  //    u = g(z, x),
+  // with z the external system state and x the MbP state.
+  // The linearized dynamics are
+  //   ż = Az + Bx + f₀,
+  //   u = Cz + Dx + g₀,
+  struct LinearizedExternalSystem {
+    MatrixX<double> A;
+    MatrixX<double> B;
+    VectorX<double> f0;
+    MatrixX<double> C;
+    MatrixX<double> D;
+    VectorX<double> g0;
+  } linearized_external_system_;
 };
 
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
