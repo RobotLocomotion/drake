@@ -199,6 +199,14 @@ void DoMeshDependentDefinitions(py::module m) {
       py::arg("filename"), py::arg("scale") = 1.0,
       // N.B. We have not bound the optional "on_warning" argument.
       doc.ReadObjToTriangleSurfaceMesh.doc_3args_filename_scale_on_warning);
+  m.def(
+      "ReadObjToTriangleSurfaceMesh",
+      [](const std::filesystem::path& filename, const Eigen::Vector3d& scale3) {
+        return geometry::ReadObjToTriangleSurfaceMesh(filename, scale3);
+      },
+      py::arg("filename"), py::arg("scale3"),
+      // N.B. We have not bound the optional "on_warning" argument.
+      doc.ReadObjToTriangleSurfaceMesh.doc_3args_filename_scale3_on_warning);
 }
 
 }  // namespace

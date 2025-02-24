@@ -44,7 +44,7 @@ void CaptureName(void* storage, const char* parsed_name) {
 // value contains a null mesh.
 NamedMesh DoGetObjMesh(const DiagnosticPolicy& diagnostic,
                        const geometry::MeshSource& obj_source) {
-  const double kUnitScale = 1.0;
+  const Eigen::Vector3d kUnitScale(1, 1, 1);
   std::optional<TriangleSurfaceMesh<double>> mesh =
       geometry::internal::DoReadObjToSurfaceMesh(obj_source, kUnitScale,
                                                  diagnostic);

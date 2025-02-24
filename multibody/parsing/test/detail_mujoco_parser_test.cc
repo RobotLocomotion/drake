@@ -632,7 +632,8 @@ class BoxMeshTest : public MujocoParserTest {
   // Note: This method can only be used once per test case, since it hard-codes
   // the geometry name.
   void TestBoxMesh(std::string expected_filename, std::string mesh_asset,
-                   std::string compiler = "", double expected_scale = 1.0) {
+                   std::string compiler = "",
+                   const Vector3d& expected_scale = Vector3d::Constant(1.0)) {
     std::string xml = fmt::format(
         R"""(
 <mujoco model="test">
@@ -658,7 +659,7 @@ class BoxMeshTest : public MujocoParserTest {
     EXPECT_NE(mesh, nullptr);
     DRAKE_DEMAND(mesh->source().is_path());
     EXPECT_EQ(mesh->source().path(), expected_filename);
-    EXPECT_EQ(mesh->scale(), expected_scale);
+    EXPECT_TRUE(CompareMatrices(mesh->scale3(), expected_scale));
   }
 };
 
@@ -725,8 +726,8 @@ TEST_F(BoxMeshTest, MeshFileRelativePathCompiler) {
 TEST_F(BoxMeshTest, MeshFileScale) {
   // Test the scale attribute.
   std::string mesh_asset = fmt::format(
-      R"""(<mesh name="box" file="{}" scale="2 2 2"/>)""", box_obj_);
-  TestBoxMesh(box_obj_, mesh_asset, "", 2.0);
+      R"""(<mesh name="box" file="{}" scale="2 3 1.5"/>)""", box_obj_);
+  TestBoxMesh(box_obj_, mesh_asset, "", Vector3d(2, 3, 1.5));
 }
 
 TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
@@ -734,8 +735,8 @@ TEST_F(BoxMeshTest, MeshFileScaleViaDefault) {
   // the only supported mesh default.
   std::string mesh_asset =
       fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj_);
-  std::string defaults = R"""(<default><mesh scale="2 2 2"/></default>)""";
-  TestBoxMesh(box_obj_, mesh_asset, defaults, 2.0);
+  std::string defaults = R"""(<default><mesh scale="2 3 4"/></default>)""";
+  TestBoxMesh(box_obj_, mesh_asset, defaults, Vector3d(2, 3, 4));
 }
 
 // CalcSpatialInertia() cannot necessarily compute a physical spatial inertia
@@ -826,7 +827,7 @@ TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
   EXPECT_NE(mesh, nullptr);
   ASSERT_TRUE(mesh->source().is_path());
   EXPECT_EQ(mesh->source().path(), box_obj_);
-  EXPECT_EQ(mesh->scale(), 1.0);
+  EXPECT_TRUE(CompareMatrices(mesh->scale3(), Vector3d::Constant(1.0)));
 }
 
 TEST_F(MujocoParserTest, InertialFromGeometry) {
@@ -1128,7 +1129,6 @@ TEST_F(MujocoParserTest, AssetErrors) {
                                 box_obj_, quad_cube_stl);
 
   AddModelFromString(xml, "test");
-  EXPECT_THAT(TakeError(), MatchesRegex(".*non-uniform scale.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*only supports.*obj format.*"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*not.*found.*"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*not specify.*file.*ignored.*"));

@@ -21,11 +21,11 @@ namespace internal {
 using Eigen::Vector3d;
 
 VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
-                                       double scale) {
-  if (!(scale > 0.0)) {
+                                       const Eigen::Vector3d& scale) {
+  if ((scale.array() <= 0).any()) {
     throw std::runtime_error(fmt::format(
-        "ReadVtkToVolumeMesh() requires a positive scale. Given {} for '{}'.",
-        scale, mesh_source.description()));
+        "ReadVtkToVolumeMesh() requires a positive scale. Given [{}] for '{}'.",
+        fmt_eigen(scale.transpose()), mesh_source.description()));
   }
   vtkNew<vtkUnstructuredGridReader> reader;
   if (mesh_source.is_path()) {
@@ -48,7 +48,7 @@ VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
   for (vtkIdType id = 0; id < num_vertices; id++) {
     double xyz[3];
     vtk_vertices->GetPoint(id, xyz);
-    vertices.push_back(scale * Vector3d(xyz));
+    vertices.push_back(scale.cwiseProduct(Vector3d(xyz)));
   }
 
   std::vector<VolumeElement> elements;

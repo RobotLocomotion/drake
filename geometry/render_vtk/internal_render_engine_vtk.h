@@ -201,7 +201,8 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
 
   // Helper function for mapping a RenderMesh instance into the appropriate VTK
   // polydata.
-  void ImplementRenderMesh(geometry::internal::RenderMesh&& mesh, double scale,
+  void ImplementRenderMesh(geometry::internal::RenderMesh&& mesh,
+                           const Vector3<double>& scale,
                            const RegistrationData& data);
 
   // Adds an .obj to the scene for the id currently being reified (data->id).

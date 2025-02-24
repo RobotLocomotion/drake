@@ -10,6 +10,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_sphere_field.h"
@@ -735,45 +736,48 @@ void TestRigidMeshCube(const Mesh& mesh) {
   EXPECT_EQ(surface_mesh.num_vertices(), 8);
   EXPECT_EQ(surface_mesh.num_triangles(), 12);
 
-  // The scale factor multiplies the measure of every vertex position, so
-  // the expected distance of the vertex to the origin should be:
-  // scale * sqrt(3) (because the original mesh was the unit sphere).
-  const double expected_dist = std::sqrt(3) * mesh.scale();
+  // The original mesh was the unit cube. The mesh will be scaled by scale3.
+  // Each vertex is the same distance from the origin. The expected distance is
+  // simply the distance of one "unit" corner with the scale applied.
+  const double expected_dist =
+      mesh.scale3().cwiseProduct(Vector3d::Ones()).norm();
+  const double tolerance = mesh.scale3().norm() * kEps;
   for (int v = 0; v < surface_mesh.num_vertices(); ++v) {
     const double dist = surface_mesh.vertex(v).norm();
-    ASSERT_NEAR(dist, expected_dist, mesh.scale() * kEps)
-        << "for scale: " << mesh.scale() << " at vertex " << v;
+    ASSERT_NEAR(dist, expected_dist, tolerance)
+        << "for scale: " << fmt::to_string(fmt_eigen(mesh.scale3().transpose()))
+        << " at vertex " << v;
   }
 }
 
 // Confirm support for a rigid Mesh. Tests that a hydroelastic representation
 // is made.
 TEST_F(HydroelasticRigidGeometryTest, Mesh) {
-  // We just want a non-unit scale.
-  constexpr double kScale = 0.75;
+  // Non-unit, non-uniform scale.
+  const Vector3d kScale3(2, 3, 4);
   const std::string obj_path =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   const std::string vtk_path =
       FindResourceOrThrow("drake/geometry/test/cube_as_volume.vtk");
   {
     SCOPED_TRACE("Rigid Mesh, on-disk obj");
-    TestRigidMeshCube(Mesh(obj_path, kScale));
+    TestRigidMeshCube(Mesh(obj_path, kScale3));
   }
   {
     SCOPED_TRACE("Rigid Mesh, in-memory obj");
-    TestRigidMeshCube(Mesh(InMemoryMesh{MemoryFile::Make(obj_path)}, kScale));
+    TestRigidMeshCube(Mesh(InMemoryMesh{MemoryFile::Make(obj_path)}, kScale3));
   }
   {
     SCOPED_TRACE("Rigid Mesh, on-disk vtk");
-    TestRigidMeshCube(Mesh(vtk_path, kScale));
+    TestRigidMeshCube(Mesh(vtk_path, kScale3));
   }
   {
     SCOPED_TRACE("Rigid Mesh, in-memory vtk");
-    TestRigidMeshCube(Mesh(InMemoryMesh{MemoryFile::Make(vtk_path)}, kScale));
+    TestRigidMeshCube(Mesh(InMemoryMesh{MemoryFile::Make(vtk_path)}, kScale3));
   }
   {
     SCOPED_TRACE("Rigid Mesh, unsupported extension");
-    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshCube(Mesh("invalid.stl", kScale)),
+    DRAKE_EXPECT_THROWS_MESSAGE(TestRigidMeshCube(Mesh("invalid.stl", kScale3)),
                                 ".*Mesh shapes can only use .*invalid.stl");
   }
 }
@@ -782,7 +786,8 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
 // hull.
 TEST_F(HydroelasticRigidGeometryTest, Convex) {
   auto expect_convex_cube = [](const std::string& file) {
-    const Convex convex(file, 1.0);
+    const Vector3d kScale3(2, 3, 4);
+    const Convex convex(file, kScale3);
     // Empty properties since its contents do not matter.
     const std::optional<RigidGeometry> geometry =
         MakeRigidRepresentation(convex, ProximityProperties());
@@ -793,6 +798,9 @@ TEST_F(HydroelasticRigidGeometryTest, Convex) {
     const TriangleSurfaceMesh<double>& surface_mesh = geometry->mesh();
     EXPECT_EQ(surface_mesh.num_vertices(), 8);
     EXPECT_EQ(surface_mesh.num_triangles(), 12);
+    // The box is a 2x2x2 cube. We've scaled it up.
+    const auto& [_, size] = surface_mesh.CalcBoundingBox();
+    EXPECT_TRUE(CompareMatrices(size, 2 * kScale3));
   };
 
   {
@@ -1296,9 +1304,14 @@ TEST_F(HydroelasticSoftGeometryTest, Ellipsoid) {
 TEST_F(HydroelasticSoftGeometryTest, Convex) {
   // Construct off of a known convex mesh.
   std::string file = FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  const Convex convex_spec(file);
+  const Vector3d kScale3(2, 3, 4);
+  const Convex convex_spec(file, kScale3);
 
   ProximityProperties properties = soft_properties(0.16);
+  // We need a non-zero margin value to trigger the recomputation of the convex
+  // hull -- confirm it passes margin and scale.
+  const double margin_value = 0.0001;
+  properties.AddProperty(kHydroGroup, kMargin, margin_value);
   std::optional<SoftGeometry> convex =
       MakeSoftRepresentation(convex_spec, properties);
 
@@ -1307,11 +1320,23 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
   const int expected_num_vertices = 9;
   EXPECT_EQ(convex->mesh().num_vertices(), expected_num_vertices);
   const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+  // We want the bound of the box to see if scale was applied.
+  Vector3d min_pt = Vector3d::Constant(std::numeric_limits<double>::infinity());
+  Vector3d max_pt = -min_pt;
   for (int v = 0; v < convex->mesh().num_vertices(); ++v) {
     const double pressure = convex->pressure_field().EvaluateAtVertex(v);
-    EXPECT_GE(pressure, 0);
+    // The non-zero margin gives us negative pressure on the boundary. The
+    // magnitude of that negative pressure is _essentially_:
+    //   margin_value / box_depth * E.
+    // Box depth is essentially one for `quad_cube.obj`.
+    EXPECT_GE(pressure, -margin_value * E);
     EXPECT_LE(pressure, E);
+    min_pt = min_pt.cwiseMin(convex->mesh().vertex(v));
+    max_pt = max_pt.cwiseMax(convex->mesh().vertex(v));
   }
+  EXPECT_TRUE(CompareMatrices(max_pt - min_pt,
+                              2 * (kScale3 + Vector3d::Constant(margin_value)),
+                              1e-14));
 }
 
 // Test construction of a compliant (generally non-convex) tetrahedral mesh.
@@ -1321,8 +1346,10 @@ TEST_F(HydroelasticSoftGeometryTest, Convex) {
 TEST_F(HydroelasticSoftGeometryTest, Mesh) {
   const std::string path =
       FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk");
-  const std::vector<Mesh> meshes{Mesh(path),
-                                 Mesh(InMemoryMesh{MemoryFile::Make(path)})};
+  // Non-unit, non-uniform scale.
+  const Vector3d kScale3(2, 3, 4);
+  const std::vector<Mesh> meshes{
+      Mesh(path, kScale3), Mesh(InMemoryMesh{MemoryFile::Make(path)}, kScale3)};
   for (const Mesh& mesh_specification : meshes) {
     ProximityProperties properties = soft_properties();
     std::optional<SoftGeometry> compliant_geometry =
@@ -1334,12 +1361,19 @@ TEST_F(HydroelasticSoftGeometryTest, Mesh) {
     EXPECT_EQ(compliant_geometry->mesh().num_vertices(), expected_num_vertices);
     const double E =
         properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
+    // We want the bound of the box to see if scale was applied.
+    Vector3d min_pt =
+        Vector3d::Constant(std::numeric_limits<double>::infinity());
+    Vector3d max_pt = -min_pt;
     for (int v = 0; v < compliant_geometry->mesh().num_vertices(); ++v) {
       const double pressure =
           compliant_geometry->pressure_field().EvaluateAtVertex(v);
       EXPECT_GE(pressure, 0);
       EXPECT_LE(pressure, E);
+      min_pt = min_pt.cwiseMin(compliant_geometry->mesh().vertex(v));
+      max_pt = max_pt.cwiseMax(compliant_geometry->mesh().vertex(v));
     }
+    EXPECT_TRUE(CompareMatrices(max_pt - min_pt, kScale3, 1e-14));
   }
 }
 
