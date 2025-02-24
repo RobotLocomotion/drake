@@ -27,27 +27,38 @@ LuenbergerObserver<T>::LuenbergerObserver(
       observed_system_->get_output_port();
   DRAKE_DEMAND(observed_system_output.get_data_type() == kVectorValued);
 
-  DRAKE_DEMAND(observed_system_context.has_only_continuous_state());
-  // Otherwise there is nothing to estimate.
-
-  // TODO(russt): Add support for discrete-time systems (should be easy enough
-  // to support both discrete and continuous simultaneously).
+  DRAKE_DEMAND(observed_system_context.has_only_continuous_state() ||
+               observed_system_context.has_only_discrete_state());
+  const bool is_continuous =
+      observed_system_context.has_only_continuous_state();
 
   // Observer state is the (estimated) state of the observed system,
   // but the best we can do for now is to allocate a similarly-sized
   // BasicVector (see #6998).
-  const auto& xc = observed_system_context.get_continuous_state();
-  const int num_q = xc.get_generalized_position().size();
-  const int num_v = xc.get_generalized_velocity().size();
-  const int num_z = xc.get_misc_continuous_state().size();
-  this->DeclareContinuousState(num_q, num_v, num_z);
+  int num_states;
+  if (is_continuous) {
+    const auto& xc = observed_system_context.get_continuous_state();
+    num_states = xc.size();
+    const int num_q = xc.get_generalized_position().size();
+    const int num_v = xc.get_generalized_velocity().size();
+    const int num_z = xc.get_misc_continuous_state().size();
+    ContinuousStateIndex state_index =
+        this->DeclareContinuousState(num_q, num_v, num_z);
+    this->DeclareStateOutputPort("estimated_state", state_index);
+  } else {
+    num_states = observed_system_context.get_discrete_state_vector().size();
+    DiscreteStateIndex state_index = this->DeclareDiscreteState(num_states);
+    this->DeclareStateOutputPort("estimated_state", state_index);
 
-  // Output port is the (estimated) state of the observed system.
-  // Note: Again, the derived type of the state vector is lost here, because xc
-  // is only guaranteed to be a VectorBase, not a BasicVector.
-  this->DeclareVectorOutputPort("estimated_state", xc.size(),
-                                &LuenbergerObserver::CalcEstimatedState,
-                                {this->xc_ticket()});
+    DRAKE_THROW_UNLESS(
+        observed_system_->GetUniquePeriodicDiscreteUpdateAttribute()
+            .has_value());
+    auto discrete_attr =
+        observed_system_->GetUniquePeriodicDiscreteUpdateAttribute().value();
+    this->DeclarePeriodicDiscreteUpdateEvent(
+        discrete_attr.period_sec(), discrete_attr.offset_sec(),
+        &LuenbergerObserver::DiscreteUpdate);
+  }
 
   // First input port is the output of the observed system.
   const auto& y_input_port = this->DeclareVectorInputPort(
@@ -57,7 +68,7 @@ LuenbergerObserver<T>::LuenbergerObserver(
   std::set<DependencyTicket> input_port_tickets{y_input_port.ticket()};
 
   // Check the size of the gain matrix.
-  DRAKE_DEMAND(observer_gain_.rows() == xc.size());
+  DRAKE_DEMAND(observer_gain_.rows() == num_states);
   DRAKE_DEMAND(observer_gain_.cols() == observed_system_output.size());
 
   // Second input port is the input to the observed system (if it exists).
@@ -88,12 +99,6 @@ LuenbergerObserver<T>::LuenbergerObserver(
                          observed_system_context, observer_gain) {}
 
 template <typename T>
-void LuenbergerObserver<T>::CalcEstimatedState(const Context<T>& context,
-                                               BasicVector<T>* output) const {
-  output->set_value(context.get_continuous_state_vector().CopyToVector());
-}
-
-template <typename T>
 void LuenbergerObserver<T>::UpdateObservedSystemContext(
     const Context<T>& context, Context<T>* observed_system_context) const {
   // (Note that all relevant data in the observed_system_context is set here
@@ -109,8 +114,13 @@ void LuenbergerObserver<T>::UpdateObservedSystemContext(
         this->get_observed_system_input_input_port().Eval(context));
   }
   // Set observed system state.
-  observed_system_context->get_mutable_continuous_state_vector().SetFrom(
-      context.get_continuous_state_vector());
+  if (observed_system_context->has_only_continuous_state()) {
+    observed_system_context->get_mutable_continuous_state_vector().SetFrom(
+        context.get_continuous_state_vector());
+  } else {
+    observed_system_context->SetDiscreteState(
+        context.get_discrete_state_vector().CopyToVector());
+  }
 }
 
 template <typename T>
@@ -132,6 +142,29 @@ void LuenbergerObserver<T>::DoCalcTimeDerivatives(
 
   // xdothat = f(xhat,u) + L(y-yhat).
   derivatives->SetFromVector(xdothat + observer_gain_ * (y - yhat));
+}
+
+template <typename T>
+void LuenbergerObserver<T>::DiscreteUpdate(const Context<T>& context,
+                                           DiscreteValues<T>* update) const {
+  // Ensure observed system context is up to date.
+  const Context<T>& observed_system_context =
+      observed_system_context_cache_entry_->Eval<Context<T>>(context);
+
+  // Evaluate the observed system.
+  const VectorX<T>& yhat =
+      observed_system_->get_output_port().Eval(observed_system_context);
+  const VectorX<T> xhat_next =
+      observed_system_
+          ->EvalUniquePeriodicDiscreteUpdate(observed_system_context)
+          .value();
+
+  // Get the measurements.
+  const VectorX<T>& y =
+      this->get_observed_system_output_input_port().Eval(context);
+
+  // x̂[n+1] = f(x̂[n],u) + L(y - g(x̂[n],u[n]))
+  update->set_value(xhat_next + observer_gain_ * (y - yhat));
 }
 
 }  // namespace estimators
