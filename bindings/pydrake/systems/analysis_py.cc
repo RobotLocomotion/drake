@@ -162,8 +162,7 @@ PYBIND11_MODULE(analysis, m) {
           .def("StartDenseIntegration", &Class::StartDenseIntegration,
               cls_doc.StartDenseIntegration.doc)
           .def("get_dense_output", &Class::get_dense_output,
-              py_rvp::reference_internal, py_rvp::reference_internal,
-              cls_doc.get_dense_output.doc)
+              py_rvp::reference_internal, cls_doc.get_dense_output.doc)
           .def("StopDenseIntegration", &Class::StopDenseIntegration,
               cls_doc.StopDenseIntegration.doc)
           .def("ResetStatistics", &Class::ResetStatistics,
