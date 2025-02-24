@@ -453,7 +453,8 @@ GTEST_TEST(BoxTest, Cube) {
 }
 
 // Simple test that exercises all constructors and confirms the construction
-// parameters are reflected in the getters.
+// parameters are reflected in the getters. Mesh and Convex are included in
+// their own tests as their family of constructors is so large.
 GTEST_TEST(ShapeTest, Constructors) {
   const std::string kFilename = "/fictitious_name.obj";
 
@@ -473,14 +474,7 @@ GTEST_TEST(ShapeTest, Constructors) {
   EXPECT_EQ(capsule2.radius(), 4);
   EXPECT_EQ(capsule2.length(), 5);
 
-  const Convex convex{kFilename, 1.5};
-  EXPECT_EQ(convex.source().description(), kFilename);
-  EXPECT_EQ(convex.extension(), ".obj");
-  EXPECT_EQ(convex.scale(), 1.5);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(convex.filename(), kFilename);
-#pragma GCC diagnostic pop
+  // For Convex, see ConvexConstructor, below.
 
   const Cylinder cylinder{1, 2};
   EXPECT_EQ(cylinder.radius(), 1);
@@ -503,14 +497,7 @@ GTEST_TEST(ShapeTest, Constructors) {
   const HalfSpace hs{};
   unused(hs);
 
-  const Mesh mesh{kFilename, 1.4};
-  EXPECT_EQ(mesh.source().description(), kFilename);
-  EXPECT_EQ(mesh.extension(), ".obj");
-  EXPECT_EQ(mesh.scale(), 1.4);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_EQ(mesh.filename(), kFilename);
-#pragma GCC diagnostic pop
+  // For Mesh, see MeshConstructor, below.
 
   const MeshcatCone cone{1.2, 3.4, 5.6};
   EXPECT_EQ(cone.height(), 1.2);
@@ -523,6 +510,173 @@ GTEST_TEST(ShapeTest, Constructors) {
 
   const Sphere s(1.0);
   EXPECT_EQ(s.radius(), 1.0);
+}
+
+using ScaleVariant = std::variant<std::monostate, double, Vector3<double>>;
+
+// This function can exercise all Convex constructors (the power set of vertex
+// sources and scale types -- even omiting scale entirely).
+template <typename... NonScaleArgs>
+Convex MakeConvex(const ScaleVariant& scale, NonScaleArgs... args) {
+  if (std::holds_alternative<std::monostate>(scale)) {
+    return Convex(args...);
+  } else if (std::holds_alternative<double>(scale)) {
+    return Convex(args..., std::get<double>(scale));
+  } else {
+    return Convex(args..., std::get<Vector3<double>>(scale));
+  }
+}
+
+GTEST_TEST(ShapeTest, ConvexConstructor) {
+  const double kScale = 1.5;
+  const Vector3<double> kScale3(2, 3, 4);
+
+  const std::string kFileName = "/fictitious_name.obj";
+
+  using Source = std::variant<std::filesystem::path, InMemoryMesh, MeshSource,
+                              Eigen::Matrix3X<double>>;
+
+  // Note: We're setting up each vertex source so that its "description" is
+  // always kFileName. This simplifies the test.
+  std::vector<Source> sources{
+      kFileName, InMemoryMesh{MemoryFile("v 0 0 0", ".obj", kFileName)},
+      MeshSource(kFileName), Eigen::Matrix<double, 3, 1>::Zero()};
+
+  for (const auto& convex_source : sources) {
+    for (const auto& scale :
+         {ScaleVariant{}, ScaleVariant{kScale}, ScaleVariant{kScale3}}) {
+      const auto convex = std::visit<Convex>(
+          overloaded{
+              [&scale, &kFileName](const std::filesystem::path& path) {
+                Convex c = MakeConvex(scale, path);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                EXPECT_EQ(c.filename(), kFileName);
+#pragma GCC diagnostic pop
+                return c;
+              },
+              [&scale](const InMemoryMesh& memory_mesh) {
+                Convex c = MakeConvex(scale, memory_mesh);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                EXPECT_THROW(c.filename(), std::exception);
+#pragma GCC diagnostic pop
+                return c;
+              },
+              [&scale](const MeshSource& source) {
+                return MakeConvex(scale, source);
+              },
+              [&scale, &kFileName](const Eigen::Matrix3X<double>& points) {
+                // Source of points is, again, kFileName.
+                return MakeConvex(scale, points, kFileName);
+              }},
+          convex_source);
+      EXPECT_EQ(convex.source().description(), kFileName);
+      EXPECT_EQ(convex.extension(), ".obj");
+      std::visit(overloaded{[&convex](std::monostate) {
+                              EXPECT_EQ(convex.scale(), 1.0);
+                            },
+                            [&convex](double s) {
+                              EXPECT_EQ(convex.scale(), s);
+                            },
+                            [&convex](const Vector3<double>& s3) {
+                              DRAKE_EXPECT_THROWS_MESSAGE(
+                                  convex.scale(),
+                                  ".*uniform scaling.*\\[2 3 4\\].*");
+                              EXPECT_TRUE(CompareMatrices(convex.scale3(), s3));
+                            }},
+                 scale);
+    }
+  }
+}
+
+// This function can exercise all Mesh constructors (the power set of mesh
+// sources and scale types -- even omiting scale entirely).
+template <typename SourceType>
+Mesh MakeMesh(const SourceType& source, const ScaleVariant& scale) {
+  if (std::holds_alternative<std::monostate>(scale)) {
+    return Mesh(source);
+  } else if (std::holds_alternative<double>(scale)) {
+    return Mesh(source, std::get<double>(scale));
+  } else {
+    return Mesh(source, std::get<Vector3<double>>(scale));
+  }
+}
+
+GTEST_TEST(ShapeTest, MeshConstructor) {
+  const double kScale = 1.5;
+  const Vector3<double> kScale3(2, 3, 4);
+
+  const std::string kFileName = "/fictitious_name.obj";
+
+  using Source = std::variant<std::filesystem::path, InMemoryMesh, MeshSource>;
+
+  // Note: We're setting up each vertex source so that its "description" is
+  // always kFileName. This simplifies the test.
+  std::vector<Source> sources{
+      kFileName, InMemoryMesh{MemoryFile("v 0 0 0", ".obj", kFileName)},
+      MeshSource(kFileName)};
+
+  for (const auto& mesh_source : sources) {
+    for (const auto& scale :
+         {ScaleVariant{}, ScaleVariant{kScale}, ScaleVariant{kScale3}}) {
+      const auto mesh = std::visit<Mesh>(
+          overloaded{[&scale, &kFileName](const std::filesystem::path& path) {
+                       Mesh m = MakeMesh(path, scale);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                       EXPECT_EQ(m.filename(), kFileName);
+#pragma GCC diagnostic pop
+                       return m;
+                     },
+                     [&scale](const InMemoryMesh& memory_mesh) {
+                       Mesh m = MakeMesh(memory_mesh, scale);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                       EXPECT_THROW(m.filename(), std::exception);
+#pragma GCC diagnostic pop
+                       return m;
+                     },
+                     [&scale](const MeshSource& source) {
+                       return MakeMesh(source, scale);
+                     }},
+          mesh_source);
+      EXPECT_EQ(mesh.source().description(), kFileName);
+      EXPECT_EQ(mesh.extension(), ".obj");
+      std::visit(overloaded{[&mesh](std::monostate) {
+                              EXPECT_EQ(mesh.scale(), 1.0);
+                            },
+                            [&mesh](double s) {
+                              EXPECT_EQ(mesh.scale(), s);
+                            },
+                            [&mesh](const Vector3<double>& s3) {
+                              DRAKE_EXPECT_THROWS_MESSAGE(
+                                  mesh.scale(),
+                                  ".*uniform scaling.*\\[2 3 4\\].*");
+                              EXPECT_TRUE(CompareMatrices(mesh.scale3(), s3));
+                            }},
+                 scale);
+    }
+  }
+}
+
+// Confirms the scale factors are tested in Mesh and Convex constructors.
+GTEST_TEST(ShapeTest, MeshAndConvexValidateScale) {
+  const std::string kFilename = "/fictitious_name.obj";
+
+  using V3 = Vector3<double>;
+  using S = std::variant<double, Vector3<double>>;
+
+  // We're using the single scalar to test a range of bad values and using the
+  // non-uniform scalar to test each axis independently.
+  for (const auto& bad_scale : {S(0.0), S(1e-9), S(-1e-9), S(V3(0, 1, 1)),
+                                S(V3(1, 0, 1)), S(V3(1, 1, 0))}) {
+    std::visit(overloaded{[&f = kFilename](auto&& scale) {
+                 DRAKE_EXPECT_THROWS_MESSAGE(Mesh(f, scale), ".*|scale|.*");
+                 DRAKE_EXPECT_THROWS_MESSAGE(Convex(f, scale), ".*|scale|.*");
+               }},
+               bad_scale);
+  }
 }
 
 // Confirms that shape parameters are validated. For the vector-based
@@ -620,7 +774,20 @@ GTEST_TEST(ShapeTest, ConvexHull) {
   expect_convex_hull(Convex(cube_path));
 }
 
-GTEST_TEST(ShapeTest, ConvexFromMemory) {
+// Confirmation that Mesh and Convex can successfully produce convex hulls
+// from memory. (Construction has otherwise already been tested.)
+GTEST_TEST(ShapeTest, ConvexHullsFromMemory) {
+  // We'll confirm computation doesn't throw and produces a mesh with expected
+  // topology. We don't test all file formats; we trust that visual
+  // inspection of the code under test shows that it doesn't depend on file
+  // format.
+  auto confirm_hull = [](const auto&& shape, std::string_view description) {
+    SCOPED_TRACE(description);
+    const PolygonSurfaceMesh<double>& hull = shape.GetConvexHull();
+    EXPECT_EQ(hull.num_vertices(), 8);
+    EXPECT_EQ(hull.num_elements(), 6);
+  };
+
   // This will get normalized to ".obj".
   const std::string mesh_name = "a_mesh.OBJ";
   const std::string obj_contents = R"""(
@@ -634,32 +801,13 @@ GTEST_TEST(ShapeTest, ConvexFromMemory) {
     v 0 1 1
     # intentionally omit faces.
   )""";
-  InMemoryMesh mesh_data{MemoryFile(obj_contents, ".OBJ", mesh_name)};
-  const Convex convex(std::move(mesh_data), 2.0);
-  EXPECT_EQ(convex.scale(), 2.0);
-  EXPECT_EQ(convex.extension(), ".obj");
-  const MeshSource& source = convex.source();
-  ASSERT_TRUE(source.is_in_memory());
-  EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
+  const MeshSource source(
+      InMemoryMesh{MemoryFile(obj_contents, ".OBJ", mesh_name)});
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_THROW(convex.filename(), std::exception);
-#pragma GCC diagnostic pop
-
-  const Convex from_source(source, 3.0);
-  ASSERT_TRUE(from_source.source().is_in_memory());
-  EXPECT_EQ(from_source.source().in_memory().mesh_file.filename_hint(),
-            mesh_name);
-  EXPECT_EQ(from_source.scale(), 3);
-
-  // Also confirm that we can compute the convex hull from the in-memory
-  // representation. We don't test all file formats; we trust that visual
-  // inspection of the code under test shows that it doesn't depend on file
-  // format.
-  const PolygonSurfaceMesh<double>& hull = convex.GetConvexHull();
-  EXPECT_EQ(hull.num_vertices(), 8);
-  EXPECT_EQ(hull.num_elements(), 6);
+  confirm_hull(Convex(source.in_memory()), "Convex from InMemoryMesh");
+  confirm_hull(Convex(source), "Convex from MeshSource");
+  confirm_hull(Mesh(source.in_memory()), "Mesh from InMemoryMesh");
+  confirm_hull(Mesh(source), "Mesh from MeshSource");
 }
 
 GTEST_TEST(ShapeTest, ConvexFromVertices) {
@@ -671,12 +819,11 @@ GTEST_TEST(ShapeTest, ConvexFromVertices) {
   points.col(3) << 0, 1, 0;
   points.col(4) << 0, 0, 1;
 
-  const double scale = 2.0;
-
   const std::string mesh_name = "a_convex";
-  const Convex convex(points, mesh_name, scale);
+  // Note: passing scale (of various flavors) has already been ested in the
+  // ConvexConstruction test.
+  const Convex convex(points, mesh_name);
 
-  EXPECT_EQ(convex.scale(), scale);
   const MeshSource& source = convex.source();
   EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
 
@@ -690,49 +837,6 @@ v 0.25 0.25 0.25
 v 0 1 0
 v 0 0 1
 )""");
-}
-
-GTEST_TEST(ShapeTest, MeshFromMemory) {
-  // This will get normalized to ".obj".
-  const std::string mesh_name = "a_mesh.OBJ";
-  const std::string obj_contents = R"""(
-    v 0 0 0
-    v 1 0 0
-    v 1 1 0
-    v 0 1 0
-    v 0 0 1
-    v 1 0 1
-    v 1 1 1
-    v 0 1 1
-    f 1 2 3 4
-    f 5 6 7 8
-  )""";
-  InMemoryMesh mesh_data{MemoryFile(obj_contents, ".OBJ", mesh_name)};
-  const Mesh mesh(std::move(mesh_data), 2.0);
-  EXPECT_EQ(mesh.scale(), 2.0);
-  EXPECT_EQ(mesh.extension(), ".obj");
-  const MeshSource& source = mesh.source();
-  ASSERT_TRUE(source.is_in_memory());
-  EXPECT_EQ(source.in_memory().mesh_file.filename_hint(), mesh_name);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  EXPECT_THROW(mesh.filename(), std::exception);
-#pragma GCC diagnostic pop
-
-  const Mesh from_source(source, 3.0);
-  ASSERT_TRUE(from_source.source().is_in_memory());
-  EXPECT_EQ(from_source.source().in_memory().mesh_file.filename_hint(),
-            mesh_name);
-  EXPECT_EQ(from_source.scale(), 3);
-
-  // Also confirm that we can compute the convex hull from the in-memory
-  // representation. We don't test all file formats; we trust that visual
-  // inspection of the code under test shows that it doesn't depend on file
-  // format.
-  const PolygonSurfaceMesh<double>& hull = mesh.GetConvexHull();
-  EXPECT_EQ(hull.num_vertices(), 8);
-  EXPECT_EQ(hull.num_elements(), 6);
 }
 
 class DefaultReifierTest : public ShapeReifier, public ::testing::Test {};
@@ -798,18 +902,20 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   // Mesh and Convex both defer to InMemoryMesh to format the member, so we
   // simply need to prove that it calls the right method based on the type of
   // the source (we don't have to worry about *how* InMemoryMesh is written as
-  // a string.
-  static constexpr const char* mem_fmt = "{}(mesh_data={}, scale=1.5)";
+  // a string). We do need to make sure they have the [2, 3, 4] scale factor
+  // as hard-coded here.
+  static constexpr const char* mem_fmt =
+      "{}(mesh_data={}, scale=[2 3 4])";
 
   const Box box(1.5, 2.5, 3.5);
   const Capsule capsule(1.25, 2.5);
   const Convex convex("/some/file", 1.5);
-  const Convex mem_convex(in_memory, 1.5);
+  const Convex mem_convex(in_memory, Vector3<double>(2, 3, 4));
   const Cylinder cylinder(1.25, 2.5);
   const Ellipsoid ellipsoid(1.25, 2.5, 0.5);
   const HalfSpace half_space;
   const Mesh mesh("/some/file", 1.5);
-  const Mesh mem_mesh(in_memory, 1.5);
+  const Mesh mem_mesh(in_memory, Vector3<double>(2, 3, 4));
   const MeshcatCone cone(1.5, 0.25, 0.5);
   const Sphere sphere(1.25);
 
@@ -827,13 +933,15 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
 
   EXPECT_EQ(box.to_string(), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(capsule.to_string(), "Capsule(radius=1.25, length=2.5)");
-  EXPECT_EQ(convex.to_string(), "Convex(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(convex.to_string(),
+            "Convex(filename='/some/file', scale=[1.5 1.5 1.5])");
   EXPECT_EQ(mem_convex.to_string(),
             fmt::format(mem_fmt, "Convex", in_memory.to_string()));
   EXPECT_EQ(cylinder.to_string(), "Cylinder(radius=1.25, length=2.5)");
   EXPECT_EQ(ellipsoid.to_string(), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(half_space.to_string(), "HalfSpace()");
-  EXPECT_EQ(mesh.to_string(), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(mesh.to_string(),
+            "Mesh(filename='/some/file', scale=[1.5 1.5 1.5])");
   EXPECT_EQ(mem_mesh.to_string(),
             fmt::format(mem_fmt, "Mesh", in_memory.to_string()));
   EXPECT_EQ(cone.to_string(), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
@@ -841,12 +949,14 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
 
   EXPECT_EQ(fmt::to_string(box), "Box(width=1.5, depth=2.5, height=3.5)");
   EXPECT_EQ(fmt::to_string(capsule), "Capsule(radius=1.25, length=2.5)");
-  EXPECT_EQ(fmt::to_string(convex), "Convex(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(convex),
+            "Convex(filename='/some/file', scale=[1.5 1.5 1.5])");
   EXPECT_EQ(fmt::to_string(mem_convex), mem_convex.to_string());
   EXPECT_EQ(fmt::to_string(cylinder), "Cylinder(radius=1.25, length=2.5)");
   EXPECT_EQ(fmt::to_string(ellipsoid), "Ellipsoid(a=1.25, b=2.5, c=0.5)");
   EXPECT_EQ(fmt::to_string(half_space), "HalfSpace()");
-  EXPECT_EQ(fmt::to_string(mesh), "Mesh(filename='/some/file', scale=1.5)");
+  EXPECT_EQ(fmt::to_string(mesh),
+            "Mesh(filename='/some/file', scale=[1.5 1.5 1.5])");
   EXPECT_EQ(fmt::to_string(mem_mesh), mem_mesh.to_string());
   EXPECT_EQ(fmt::to_string(cone), "MeshcatCone(height=1.5, a=0.25, b=0.5)");
   EXPECT_EQ(fmt::to_string(sphere), "Sphere(radius=1.25)");

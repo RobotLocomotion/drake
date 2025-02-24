@@ -302,7 +302,7 @@ class RenderEngineGltfClientGltfTest : public ::testing::Test {
   PerceptionProperties properties_;
   const RigidTransformd X_WG_;
   const render::RenderLabel label_;
-  const double scale_ = 2.0;
+  const Vector3d scale_ = Vector3d(2, 3, 4);
   const std::filesystem::path temp_dir_;
 };
 
@@ -331,7 +331,7 @@ TEST_F(RenderEngineGltfClientGltfTest, RegisteringMeshes) {
       Tester::gltfs(engine_);
   ASSERT_TRUE(gltfs.contains(gltf_id));
   const Tester::GltfRecord& record = gltfs.at(gltf_id);
-  EXPECT_EQ(record.scale, scale_);
+  EXPECT_TRUE(CompareMatrices(record.scale, scale_));
   EXPECT_EQ(record.label, label_);
   // There are three nodes in the gltf, but only two root nodes. One of the
   // root nodes is empty.
@@ -531,7 +531,7 @@ TEST_F(RenderEngineGltfClientGltfTest, InMemorySupportingFilesToDataUris) {
  where:
     X_t: a transform that translates the geometry.
     X_r: a transform that rotates the geometry.
-    S: a transform that uniformly scales the geometry.
+    S: a transform that scales the geometry (possibly non-uniformly).
     R_zy: The rotation from y-up to z-up.
     F: The transform (not necessarily rigid) of the root node in the file.
 
@@ -546,13 +546,15 @@ TEST_F(RenderEngineGltfClientGltfTest, PoseComputation) {
    in the file's frame (T_FN). */
   auto extract_T_FN = [](const Matrix4<double> T_WN,
                          const RigidTransformd& X_WF,
-                         double scale_in) -> Matrix4<double> {
+                         const Vector3d& scale_in) -> Matrix4<double> {
     Matrix4<double> X_t_inv = Matrix4<double>::Identity();
     X_t_inv.block<3, 1>(0, 3) = -X_WF.translation();
     Matrix4<double> X_R_inv = Matrix4<double>::Identity();
     X_R_inv.block<3, 3>(0, 0) = X_WF.rotation().inverse().matrix();
     Matrix4<double> S_inv = Matrix4<double>::Identity();
-    S_inv(0, 0) = S_inv(1, 1) = S_inv(2, 2) = 1.0 / scale_in;
+    S_inv(0, 0) /= scale_in.x();
+    S_inv(1, 1) /= scale_in.y();
+    S_inv(2, 2) /= scale_in.z();
     const RigidTransformd X_zy_inv(RotationMatrixd::MakeXRotation(-M_PI / 2));
     const Matrix4<double> R_zy_inv = X_zy_inv.GetAsMatrix4();
     return R_zy_inv * S_inv * X_R_inv * X_t_inv * T_WN;

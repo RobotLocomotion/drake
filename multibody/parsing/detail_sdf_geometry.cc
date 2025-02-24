@@ -170,23 +170,13 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
       DRAKE_DEMAND(mesh_uri.has_value());
       if (!mesh_uri.has_value()) return nullptr;
       const std::string file_name = resolve_filename(diagnostic, *mesh_uri);
-      double scale = 1.0;
+      Vector3d scale(1, 1, 1);
       if (mesh_element->HasElement("scale")) {
-        std::optional<gz::math::Vector3d> scale_vector =
+        std::optional<gz::math::Vector3d> gz_scale =
             GetChildElementValue<gz::math::Vector3d>(diagnostic, mesh_element,
                                                      "scale");
-        if (!scale_vector.has_value()) return nullptr;
-        // geometry::Mesh only supports isotropic scaling and therefore we
-        // enforce it.
-        if (!(scale_vector->X() == scale_vector->Y() &&
-              scale_vector->X() == scale_vector->Z())) {
-          std::string message =
-              "Drake meshes only support isotropic scaling. Therefore all "
-              "three scaling factors must be exactly equal.";
-          diagnostic.Error(mesh_element, std::move(message));
-          return nullptr;
-        }
-        scale = scale_vector->X();
+        if (!gz_scale.has_value()) return nullptr;
+        scale = Vector3d(gz_scale->X(), gz_scale->Y(), gz_scale->Z());
       }
       // TODO(amcastro-tri): Fix the given path to be an absolute path.
       if (mesh_element->HasElement("drake:declare_convex")) {

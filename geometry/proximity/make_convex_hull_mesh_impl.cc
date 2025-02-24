@@ -121,7 +121,7 @@ struct VertexCloud {
 /* Returns the scaled vertices from the contents of an obj file.
  @pre `obj_source` contains obj geometry data. */
 std::vector<Vector3d> ReadObjVertices(const MeshSource& obj_source,
-                                      double scale) {
+                                      const Vector3d& scale) {
   const auto [tinyobj_vertices_ptr, _1, _2] =
       geometry::internal::ReadObj(obj_source, scale,
                                   /* triangulate = */ false,
@@ -132,7 +132,7 @@ std::vector<Vector3d> ReadObjVertices(const MeshSource& obj_source,
 /* Returns the scaled vertices from the contents of a vtk file.
  @pre `vtk_source` contains vtk geometry data. */
 std::vector<Vector3d> ReadVtkVertices(const MeshSource& vtk_source,
-                                      double scale) {
+                                      const Vector3d& scale) {
   const VolumeMesh<double> volume_mesh = ReadVtkToVolumeMesh(vtk_source, scale);
 
   // It would be nice if we could simply steal the vertices rather than copy.
@@ -151,7 +151,7 @@ Vector3d VtkMultiply(vtkMatrix4x4* T_BA, const Vector3d& p_AQ) {
  @pre `gltf_source` contains glTF geometry data.
  @pre `gltf_source.is_path()` is `true`. */
 std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
-                                       double scale) {
+                                       const Vector3d& scale) {
   vtkNew<vtkGLTFDocumentLoader> loader;
   loader->SetConfig({.include_animation = false,
                      .include_images = false,
@@ -215,7 +215,7 @@ std::vector<Vector3d> ReadGltfVertices(const MeshSource& gltf_source,
         for (vtkIdType vi = 0; vi < point_data->GetNumberOfPoints(); ++vi) {
           const Vector3d p_NV(point_data->GetPoint(vi));
           const Vector3d p_FV = VtkMultiply(T_FN, p_NV);
-          vertices.emplace_back((X_GF * p_FV) * scale);
+          vertices.emplace_back(scale.cwiseProduct(X_GF * p_FV));
         }
       }
     }
@@ -278,7 +278,7 @@ Vector3d FindNormal(const std::vector<Vector3d>& vertices,
 
 /* Simply reads the vertices from an OBJ, VTK or glTF file indicated by the
  given `mesh_source`. */
-VertexCloud ReadVertices(const MeshSource& mesh_source, double scale) {
+VertexCloud ReadVertices(const MeshSource& mesh_source, const Vector3d& scale) {
   VertexCloud cloud;
   if (mesh_source.extension() == ".obj") {
     cloud.vertices = ReadObjVertices(mesh_source, scale);
@@ -537,8 +537,8 @@ class ConvexHull {
 }  // namespace
 
 PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& mesh_source,
-                                          double scale, double margin) {
-  DRAKE_THROW_UNLESS(scale > 0);
+                                          const Vector3d& scale,
+                                          double margin) {
   DRAKE_THROW_UNLESS(margin >= 0);
   VertexCloud cloud = ReadVertices(mesh_source, scale);
 

@@ -380,7 +380,7 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
   const std::string extension = mesh_spec.extension();
   if (extension == ".obj") {
     mesh = make_unique<TriangleSurfaceMesh<double>>(
-        ReadObjToTriangleSurfaceMesh(mesh_spec.source(), mesh_spec.scale()));
+        ReadObjToTriangleSurfaceMesh(mesh_spec.source(), mesh_spec.scale3()));
   } else if (extension == ".vtk") {
     mesh = make_unique<TriangleSurfaceMesh<double>>(
         ConvertVolumeToSurfaceMesh(MakeVolumeMeshFromVtk<double>(mesh_spec)));
@@ -552,8 +552,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   // For zero margin, use the pre-computed convex hull for the shape.
   const TriangleSurfaceMesh<double> inflated_surface_mesh =
       MakeTriangleFromPolygonMesh(
-          margin > 0 ? MakeConvexHull(convex_spec.source(), convex_spec.scale(),
-                                      margin)
+          margin > 0 ? MakeConvexHull(convex_spec.source(),
+                                      convex_spec.scale3(), margin)
                      : convex_spec.GetConvexHull());
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
       MakeConvexVolumeMesh<double>(inflated_surface_mesh));

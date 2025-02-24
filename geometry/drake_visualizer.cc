@@ -371,9 +371,10 @@ class ShapeToLcm : public ShapeReifier {
     // No specific mesh beat out the mesh file, so we'll simply send that.
     geometry_data_.type = geometry_data_.MESH;
     geometry_data_.num_float_data = 3;
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
-    geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
+    const Vector3<double>& scale = mesh.scale3();
+    geometry_data_.float_data.push_back(static_cast<float>(scale.x()));
+    geometry_data_.float_data.push_back(static_cast<float>(scale.y()));
+    geometry_data_.float_data.push_back(static_cast<float>(scale.z()));
     const MeshSource& mesh_source = mesh.source();
     if (mesh_source.is_path()) {
       geometry_data_.string_data = mesh_source.path().string();

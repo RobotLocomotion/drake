@@ -495,14 +495,28 @@ void DefineShapes(py::module m) {
               return Capsule(dims.first, dims.second);
             }));
 
+    // Note: meshes used to get pickled with a single scale value (representing
+    // uniform scale). While we now allow for non-uniform scaling, we still
+    // need to depickle the old representation. So, we need to handle both
+    // scale representations.
+    using ScaleVariant = std::variant<double, Vector3<double>>;
+
     py::class_<Convex, Shape> convex_cls(m, "Convex", doc.Convex.doc);
     convex_cls
         .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_filename_scale)
+        .def(py::init<std::filesystem::path, const Vector3<double>&>(),
+            py::arg("filename"), py::arg("scale3"),
+            doc.Convex.ctor.doc_2args_filename_scale3)
         .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_mesh_data_scale)
+        .def(py::init<InMemoryMesh, const Vector3<double>&>(),
+            py::arg("mesh_data"), py::arg("scale3"),
+            doc.Convex.ctor.doc_2args_mesh_data_scale3)
         .def(py::init<MeshSource, double>(), py::arg("source"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc_2args_source_scale)
+        .def(py::init<MeshSource, const Vector3<double>&>(), py::arg("source"),
+            py::arg("scale3"), doc.Convex.ctor.doc_2args_source_scale3)
         .def(py::init<const Eigen::Matrix3X<double>&, const std::string&,
                  double>(),
             py::arg("points"), py::arg("label"), py::arg("scale") = 1.0,
@@ -510,14 +524,18 @@ void DefineShapes(py::module m) {
         .def("source", &Convex::source, doc.Convex.source.doc)
         .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
+        .def("scale3", &Convex::scale3, doc.Convex.scale3.doc)
         .def("GetConvexHull", &Convex::GetConvexHull,
             doc.Convex.GetConvexHull.doc)
         .def(py::pickle(
             [](const Convex& self) {
-              return std::make_pair(self.source(), self.scale());
+              return std::make_pair(self.source(), ScaleVariant(self.scale3()));
             },
-            [](std::pair<MeshSource, double> info) {
-              return Convex(std::move(info.first), info.second);
+            [](std::pair<MeshSource, ScaleVariant> info) {
+              return std::visit<Convex>(overloaded{[&info](auto&& scale) {
+                return Convex(std::move(info.first), scale);
+              }},
+                  info.second);
             }));
     // Note: Convex.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
@@ -570,22 +588,34 @@ void DefineShapes(py::module m) {
     mesh_cls
         .def(py::init<std::filesystem::path, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_filename_scale)
+        .def(py::init<std::filesystem::path, const Vector3<double>&>(),
+            py::arg("filename"), py::arg("scale3"),
+            doc.Mesh.ctor.doc_2args_filename_scale3)
         .def(py::init<InMemoryMesh, double>(), py::arg("mesh_data"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_mesh_data_scale)
+        .def(py::init<InMemoryMesh, const Vector3<double>&>(),
+            py::arg("mesh_data"), py::arg("scale3"),
+            doc.Mesh.ctor.doc_2args_mesh_data_scale3)
         .def(py::init<MeshSource, double>(), py::arg("source"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc_2args_source_scale)
+        .def(py::init<MeshSource, const Vector3<double>&>(), py::arg("source"),
+            py::arg("scale3"), doc.Mesh.ctor.doc_2args_source_scale3)
         .def("source", &Mesh::source, doc.Mesh.source.doc)
         .def("extension", &Mesh::extension, doc.Mesh.extension.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
+        .def("scale3", &Mesh::scale3, doc.Mesh.scale3.doc)
         .def("GetConvexHull", &Mesh::GetConvexHull, doc.Mesh.GetConvexHull.doc)
         .def(py::pickle(
             [](const Mesh& self) {
-              return std::make_pair(self.source(), self.scale());
+              return std::make_pair(self.source(), ScaleVariant(self.scale3()));
             },
-            [](std::pair<MeshSource, double> info) {
-              return Mesh(std::move(info.first), info.second);
+            [](std::pair<MeshSource, ScaleVariant> info) {
+              return std::visit<Mesh>(overloaded{[&info](auto&& scale) {
+                return Mesh(std::move(info.first), scale);
+              }},
+                  info.second);
             }));
-    // Note: Convex.__repr__ is redefined in _geometry_extra.py;
+    // Note: Mesh.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
 
 #pragma GCC diagnostic push
