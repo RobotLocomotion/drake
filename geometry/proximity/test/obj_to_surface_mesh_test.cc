@@ -22,21 +22,22 @@ namespace {
 
 namespace fs = std::filesystem;
 
-// Creates the TriangleSurfaceMesh expected when parsing quad_cube.obj. Note:
-// this depends on tinyobj's triangulation method. If that changes, this mesh
-// definition may have to adapt. That's fine.
-TriangleSurfaceMesh<double> MeshForQuadCube() {
+// Creates the TriangleSurfaceMesh expected when parsing quad_cube.obj scaled
+// by the given scale factor. Note: this depends on tinyobj's triangulation
+// method. If that changes, this mesh definition may have to adapt. That's fine.
+TriangleSurfaceMesh<double> MeshForQuadCube(
+    const Vector3<double>& scale = Vector3<double>::Ones()) {
   // clang-format off
-  // Vertices copied from the file.
+  // Vertices copied from the file and then scaled.
   std::vector<Vector3<double>> vertices {
-      { 1.000000, -1.000000, -1.000000},
-      { 1.000000, -1.000000,  1.000000},
-      {-1.000000, -1.000000,  1.000000},
-      {-1.000000, -1.000000, -1.000000},
-      { 1.000000,  1.000000, -1.000000},
-      { 1.000000,  1.000000,  1.000000},
-      {-1.000000,  1.000000,  1.000000},
-      {-1.000000,  1.000000, -1.000000}
+      scale.cwiseProduct(Vector3<double>{ 1.000000, -1.000000, -1.000000}),
+      scale.cwiseProduct(Vector3<double>{ 1.000000, -1.000000,  1.000000}),
+      scale.cwiseProduct(Vector3<double>{-1.000000, -1.000000,  1.000000}),
+      scale.cwiseProduct(Vector3<double>{-1.000000, -1.000000, -1.000000}),
+      scale.cwiseProduct(Vector3<double>{ 1.000000,  1.000000, -1.000000}),
+      scale.cwiseProduct(Vector3<double>{ 1.000000,  1.000000,  1.000000}),
+      scale.cwiseProduct(Vector3<double>{-1.000000,  1.000000,  1.000000}),
+      scale.cwiseProduct(Vector3<double>{-1.000000,  1.000000, -1.000000})
   };
   // clang-format on
 
@@ -72,26 +73,42 @@ TriangleSurfaceMesh<double> MeshForQuadCube() {
 GTEST_TEST(ObjToSurfaceMeshTest, FromPath) {
   const fs::path filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
-  const TriangleSurfaceMesh<double> surface =
-      ReadObjToTriangleSurfaceMesh(filename);
 
-  EXPECT_TRUE(surface.Equal(MeshForQuadCube()));
+  // Uniform scale.
+  {
+    const TriangleSurfaceMesh<double> surface =
+        ReadObjToTriangleSurfaceMesh(filename, 2);
+
+    EXPECT_TRUE(surface.Equal(MeshForQuadCube(Vector3<double>::Constant(2))));
+  }
+
+  // Non-uniform scale.
+  {
+    const Vector3<double> scale(2, 3, 4);
+    const TriangleSurfaceMesh<double> surface =
+        ReadObjToTriangleSurfaceMesh(filename, scale);
+
+    EXPECT_TRUE(surface.Equal(MeshForQuadCube(scale)));
+  }
 }
 
-// Tests the MeshSource-based overload.
+// Tests the MeshSource-based overload. We'll use one kind of source to test
+// uniform scale and the other to test non-uniform scale.
 GTEST_TEST(ObjToSurfaceMeshTest, MeshSource) {
-  constexpr double kUnitScale = 1.0;
+  constexpr double scale = 2.0;
+  const Vector3<double> scale3(2, 3, 4);
   const std::string filename =
       FindResourceOrThrow("drake/geometry/test/quad_cube.obj");
   MeshSource disk_source(filename);
   MeshSource memory_source(InMemoryMesh{MemoryFile::Make(filename)});
   const TriangleSurfaceMesh<double> disk_surface =
-      ReadObjToTriangleSurfaceMesh(disk_source, kUnitScale);
+      ReadObjToTriangleSurfaceMesh(disk_source, scale);
   const TriangleSurfaceMesh<double> memory_surface =
-      ReadObjToTriangleSurfaceMesh(memory_source, kUnitScale);
+      ReadObjToTriangleSurfaceMesh(memory_source, scale3);
 
-  EXPECT_TRUE(disk_surface.Equal(memory_surface));
-  EXPECT_TRUE(disk_surface.Equal(MeshForQuadCube()));
+  EXPECT_TRUE(
+      disk_surface.Equal(MeshForQuadCube(Vector3<double>::Constant(scale))));
+  EXPECT_TRUE(memory_surface.Equal(MeshForQuadCube(scale3)));
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionInvalidFilePath) {
@@ -218,12 +235,13 @@ TEST_F(ObjToMeshDiagnosticsTest, ErrorModes) {
   )""";
   const MeshSource source(
       InMemoryMesh{MemoryFile(no_face_obj, ".obj", "no_faces")});
+  const Eigen::Vector3d scale(1, 2, 3);
   auto maybe_mesh =
-      internal::DoReadObjToSurfaceMesh(source, 1.0, diagnostic_policy_);
+      internal::DoReadObjToSurfaceMesh(source, scale, diagnostic_policy_);
   ASSERT_FALSE(maybe_mesh.has_value());
   EXPECT_THAT(TakeError(), testing::HasSubstr("no objects"));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      internal::DoReadObjToSurfaceMesh(source, 1.0,
+      internal::DoReadObjToSurfaceMesh(source, scale,
                                        drake::internal::DiagnosticPolicy()),
       "[^]*no objects[^]*");
 }

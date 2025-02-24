@@ -40,7 +40,8 @@ vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size);
 // matrix with `scale` on the diagonal). This is the standard transform matrix
 // for graphics.
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
-    const math::RigidTransformd& transform, double scale = 1.0);
+    const math::RigidTransformd& transform,
+    const Vector3<double>& scale = Vector3<double>::Ones());
 
 // Makes vtkPointerArray from one or multiple pointer(s) for VTK objects
 // wrapped by vtkNew.

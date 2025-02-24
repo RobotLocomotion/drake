@@ -617,7 +617,7 @@ class MujocoParser {
           // As with mujoco, failure leads to using the convex hull.
           // https://github.com/google-deepmind/mujoco/blob/df7ea3ed3350164d0f111c12870e46bc59439a96/src/user/user_mesh.cc#L1379-L1382
           result = CalcSpatialInertiaImpl(
-              geometry::Convex(mesh.source().path(), mesh.scale()),
+              geometry::Convex(mesh.source().path(), mesh.scale3()),
               1.0 /* density */);
           if (std::holds_alternative<std::string>(result)) {
             policy_.Error(fmt::format(
@@ -1415,18 +1415,7 @@ class MujocoParser {
         }
 
         Vector3d scale{1, 1, 1};
-        if (ParseVectorAttribute(mesh_node, "scale", &scale)) {
-          if (scale[0] != scale[1] || scale[1] != scale[2]) {
-            Error(*node,
-                  fmt::format(
-                      "mesh {} was defined with a non-uniform scale; but Drake "
-                      "currently only supports uniform scaling. See "
-                      "https://drake.mit.edu/troubleshooting.html for "
-                      "additional resources.",
-                      name));
-            continue;
-          }
-        }
+        ParseVectorAttribute(mesh_node, "scale", &scale);
 
         std::filesystem::path filename(file);
 
@@ -1460,7 +1449,7 @@ class MujocoParser {
                          ::tolower);
           // TODO(russt): Support .vtk files.
           if (extension == ".obj") {
-            mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
+            mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale);
           } else {
             Error(
                 *node,
