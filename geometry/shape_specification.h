@@ -249,6 +249,9 @@ class Convex final : public Shape {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex);
 
+  // TODO(SeanCurtis-TRI): WHen scale is Vector3, make it clear that mirroring
+  // meshes can reverse winding, leading to a permutation of per-face ordering.
+
   /** Constructs a convex shape specification from the file located at the
    given file path. Optionally uniformly scaled by the given scale factor.
 

@@ -35,15 +35,28 @@ namespace internal {
  or per-tetrahedron velocity field are ignored.
 
  @param mesh_source      The source of mesh data to parse.
- @param scale            An optional scale to coordinates.
+ @param scale            An optional scale to coordinates. Negative scales can
+                         be used to mirror the geometry over axes. Zero scale
+                         is considered valid for this function, but will likely
+                         produce a degenerate mesh when used in Drake.
  @return tetrahedral volume mesh
+
+ @note Negative scales will cause the geometry to mirror itself over the scale
+ factor's corresponding axis. Depending on how many scale values are negative,
+ the "winding" of the tets would get reversed (so what was previously considered
+ inside is now outside). This function prevents this inside/outside inversion by
+ changing the ordering of the per-tet vertex ordering (maintaining the original
+ meshes definition of "inside" and "outside", even when the mesh has been
+ mirrored.) This means that the ordering of vertices within each tet may not
+ match the ordering of the input file; the index order will be permuted; indices
+ [0 1 2 3] would become [2 1 0 3].
 
  @note Error handling from parsing the file is performed by VTK library.
 
- @throw  std::exception if the file does not exist or unsupported.
-         std::exception for non-positive scale factors. */
+ @throw  std::exception if the file does not exist or unsupported. */
 VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
-                                       double scale = 1.0);
+                                       const Eigen::Vector3d& scale = {1, 1,
+                                                                       1});
 
 }  // namespace internal
 }  // namespace geometry
