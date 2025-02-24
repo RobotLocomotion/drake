@@ -42,63 +42,96 @@ GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
        27., 28., 29.;
   // clang-format on
 
-  // Run the test using both constructors.
-  for (int i = 0; i < 2; ++i) {
-    auto plant = std::make_shared<const LinearSystem<double>>(A, B, C, D);
-    auto plant_context = plant->CreateDefaultContext();
-    std::unique_ptr<LuenbergerObserver<double>> observer{nullptr};
-    switch (i) {
-      case 0: {
-        // Construct using the shared_ptr overload. We move the plant into the
-        // constructor so that the constructor argument is the only thing
-        // keeping it alive.
-        observer = std::make_unique<LuenbergerObserver<double>>(
-            std::move(plant), *plant_context, L);
-        break;
+  // Run the test for both contiuous- and discrete-time case using both
+  // constructors.
+  const double time_steps[] = {0.0, 0.01};
+  for (double h : time_steps) {
+    for (int i = 0; i < 2; ++i) {
+      auto plant = std::make_shared<const LinearSystem<double>>(A, B, C, D, h);
+      auto plant_context = plant->CreateDefaultContext();
+      std::unique_ptr<LuenbergerObserver<double>> observer{nullptr};
+      switch (i) {
+        case 0: {
+          // Construct using the shared_ptr overload. We move the plant into the
+          // constructor so that the constructor argument is the only thing
+          // keeping it alive.
+          observer = std::make_unique<LuenbergerObserver<double>>(
+              std::move(plant), *plant_context, L);
+          break;
+        }
+        case 1: {
+          // Construct using the const-ref overload. The local variable `plant`
+          // must remain intact because the LuenbergerObserver still aliases it.
+          observer = std::make_unique<LuenbergerObserver<double>>(
+              *plant, *plant_context, L);
+          break;
+        }
       }
-      case 1: {
-        // Construct using the const-ref overload. The local variable `plant`
-        // must remain intact because the LuenbergerObserver still aliases it.
-        observer = std::make_unique<LuenbergerObserver<double>>(
-            *plant, *plant_context, L);
-        break;
+      plant_context.reset();
+
+      auto context = observer->CreateDefaultContext();
+      auto output = observer->AllocateOutput();
+      auto derivatives = observer->AllocateTimeDerivatives();
+
+      EXPECT_FALSE(observer->HasAnyDirectFeedthrough());
+
+      if (h == 0.0) {
+        // The expected dynamics are:
+        //  xhatdot = Axhat + Bu + L(y-yhat)
+        //  output = xhat
+
+        Eigen::Vector3d xhat(1.0, 2.0, 3.0);
+        Vector1d u(4.0);
+
+        Eigen::Vector2d y(5.0, 6.0);
+
+        Eigen::Vector3d xhatdot = A * xhat + B * u + L * (y - C * xhat - D * u);
+
+        observer->get_input_port(0).FixValue(context.get(), y);
+        observer->get_input_port(1).FixValue(context.get(), u);
+        context->get_mutable_continuous_state_vector().SetFromVector(xhat);
+
+        observer->CalcTimeDerivatives(*context, derivatives.get());
+        observer->CalcOutput(*context, output.get());
+
+        double tol = 1e-10;
+
+        EXPECT_TRUE(CompareMatrices(xhatdot, derivatives->CopyToVector(), tol));
+        EXPECT_TRUE(CompareMatrices(
+            xhat, output->GetMutableVectorData(0)->CopyToVector(), tol));
+      } else {
+        // The expected dynamics are:
+        // x̂[n+1] = Ax̂[n] + Bu[n] + L(y - yhat)
+        // output = x̂[n+1]
+
+        Eigen::Vector3d xhat(1.0, 2.0, 3.0);
+        Vector1d u(4.0);
+
+        Eigen::Vector2d y(5.0, 6.0);
+
+        Eigen::VectorXd x_est = A * xhat + B * u + L * (y - C * xhat - D * u);
+
+        observer->get_input_port(0).FixValue(context.get(), y);
+        observer->get_input_port(1).FixValue(context.get(), u);
+        context->SetDiscreteState(xhat);
+
+        const DiscreteValues<double>& updated =
+            observer->EvalUniquePeriodicDiscreteUpdate(*context);
+        context->SetDiscreteState(updated);
+        observer->CalcOutput(*context, output.get());
+
+        double tol = 1e-10;
+
+        EXPECT_TRUE(CompareMatrices(
+            x_est, context->get_discrete_state_vector().value(), tol));
+        EXPECT_TRUE(CompareMatrices(
+            x_est, output->GetMutableVectorData(0)->CopyToVector(), tol));
       }
+
+      // TODO(russt): Support scalar conversion.
+      EXPECT_FALSE(is_autodiffxd_convertible(*observer));
+      EXPECT_FALSE(is_symbolic_convertible(*observer));
     }
-    plant_context.reset();
-
-    auto context = observer->CreateDefaultContext();
-    auto derivatives = observer->AllocateTimeDerivatives();
-    auto output = observer->AllocateOutput();
-
-    EXPECT_FALSE(observer->HasAnyDirectFeedthrough());
-
-    // The expected dynamics are:
-    //  xhatdot = Axhat + Bu + L(y-yhat)
-    //  y = xhat
-
-    Eigen::Vector3d xhat(1.0, 2.0, 3.0);
-    Vector1d u(4.0);
-
-    Eigen::Vector2d y(5.0, 6.0);
-
-    Eigen::Vector3d xhatdot = A * xhat + B * u + L * (y - C * xhat - D * u);
-
-    observer->get_input_port(0).FixValue(context.get(), y);
-    observer->get_input_port(1).FixValue(context.get(), u);
-    context->get_mutable_continuous_state_vector().SetFromVector(xhat);
-
-    observer->CalcTimeDerivatives(*context, derivatives.get());
-    observer->CalcOutput(*context, output.get());
-
-    double tol = 1e-10;
-
-    EXPECT_TRUE(CompareMatrices(xhatdot, derivatives->CopyToVector(), tol));
-    EXPECT_TRUE(CompareMatrices(
-        xhat, output->GetMutableVectorData(0)->CopyToVector(), tol));
-
-    // TODO(russt): Support scalar conversion.
-    EXPECT_FALSE(is_autodiffxd_convertible(*observer));
-    EXPECT_FALSE(is_symbolic_convertible(*observer));
   }
 }
 
