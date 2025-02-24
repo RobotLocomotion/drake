@@ -99,6 +99,14 @@ Adjusting open-source dependencies:
 * WITH_USER_ZLIB (default ON). When ON, uses `find_package(ZLIB)` to locate a
   user-provided `ZLIB::ZLIB` library instead of building from source. Caveat:
   On macOS, for now this hardcodes `-lz` instead of calling `find_package`.
+* WITH_CLARABEL (default ON). When ON, enables the `ClarabelSolver`
+  in the build.
+* WITH_CLP (default ON). When ON, enables the `ClpSolver` in the build.
+* WITH_CSDP (default ON). When ON, enables the `CsdpSolver` in the build.
+* WITH_IPOPT (default ON). When ON, enables the `IpoptSolver` in the build.
+* WITH_NLOPT (default ON). When ON, enables the `NloptSolver` in the build.
+* WITH_OSQP (default ON). When ON, enables the `OsqpSolver` in the build.
+* WITH_SCS (default ON). When ON, enables the `ScsSolver` in the build.
 
 Adjusting closed-source (commercial) software dependencies:
 
