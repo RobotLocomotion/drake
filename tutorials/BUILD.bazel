@@ -3,6 +3,18 @@ load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_test")
 
+filegroup(
+    name = "resources",
+    data = [
+        "resources/sphere.gltf",
+        "resources/sphere.bin",
+        "resources/env_color_room.png",
+        "resources/env_color_room_75.hdr",
+        "resources/env_color_room_150.hdr",
+        "resources/env_color_room_1200.hdr",
+    ],
+)
+
 drake_jupyter_py_binary(
     name = "authoring_leaf_systems",
     add_test_rule = 1,
@@ -14,6 +26,17 @@ drake_jupyter_py_binary(
 drake_jupyter_py_binary(
     name = "authoring_multibody_simulation",
     add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
+    name = "configuring_lighting",
+    add_test_rule = 1,
+    data = [
+        "resources",
+    ],
     deps = [
         "//bindings/pydrake",
     ],
