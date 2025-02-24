@@ -1,8 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
-#include "drake/systems/analysis/simulator_config.h"
+#include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/primitives/linear_system.h"
@@ -11,7 +12,7 @@ namespace drake {
 namespace systems {
 
 /// Converts a continuous-time linear system to a discrete-time linear system
-/// using the zero-order hold (ZOH) method.
+/// using the zero-order hold method.
 ///
 /// @param system The continuous-time LinearSystem.
 /// @param time_period The discrete time period.
@@ -27,7 +28,7 @@ std::unique_ptr<LinearSystem<T>> DiscreteTimeApproximation(
     const LinearSystem<T>& system, double time_period);
 
 /// Converts a continuous-time affine system to a discrete-time affine system
-/// using the zero-order hold (ZOH) method.
+/// using the zero-order hold method.
 ///
 /// @param system The continuous-time AffineSystem.
 /// @param time_period The discrete time period.
@@ -46,13 +47,13 @@ std::unique_ptr<AffineSystem<T>> DiscreteTimeApproximation(
 /// to a discrete-time system with zero-order hold on the input. The approximate
 /// discrete-time dynamics is given by @f$ x[n+1] = f_d(n,x[n],u[n]) = x[n] +
 /// \int_{t[n]}^{t[n+1]} f(t,x(t),u[n]) \, dt @f$, where the integration is
-/// performed using a numerical IntegratorBase.
+/// performed using an IntegratorBase.
 ///
 /// @param system The continuous-time System.
 /// @param time_period The discrete time period.
 /// @param time_offset The discrete time offset.
-/// @param integrator_config Use this parameter to choose a non-default
-/// integrator or integrator parameters.
+/// @param integration_scheme Integration scheme to be used. See
+/// GetIntegrationSchemes() for a the list of valid options.
 ///
 /// @returns A discrete-time System.
 /// @pre @p system must be a continuous-time system. @p time_period must be
@@ -64,7 +65,7 @@ std::unique_ptr<AffineSystem<T>> DiscreteTimeApproximation(
 template <typename T>
 std::unique_ptr<System<T>> DiscreteTimeApproximation(
     const System<T>& system, double time_period, double time_offset = 0.0,
-    const SimulatorConfig& integrator_config = SimulatorConfig());
+    const std::string& integration_scheme = "runge_kutta3");
 
 }  // namespace systems
 }  // namespace drake

@@ -387,9 +387,9 @@ Parameter ``interruptible``:
 
     m.def("DiscreteTimeApproximation",
         overload_cast_explicit<std::unique_ptr<System<T>>, const System<T>&,
-            double, double, const SimulatorConfig&>(&DiscreteTimeApproximation),
+            double, double, const std::string&>(&DiscreteTimeApproximation),
         py::arg("system"), py::arg("time_period"), py::arg("time_offset") = 0.0,
-        py::arg("integrator_config") = SimulatorConfig(),
+        py::arg("integration_scheme") = "runge_kutta3",
         doc.DiscreteTimeApproximation.doc_system);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});

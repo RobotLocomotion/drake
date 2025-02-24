@@ -72,15 +72,14 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteTimeSystem);
 
   DiscreteTimeSystem(std::unique_ptr<System<T>> system, double time_period,
-                     double time_offset,
-                     const SimulatorConfig& integrator_config)
+                     double time_offset, const std::string& integration_scheme)
       : LeafSystem<T>(SystemTypeTag<DiscreteTimeSystem>{}),
         continuous_system_(std::move(system)),
         continuous_context_model_value_(
             continuous_system_->CreateDefaultContext()),
         time_period_(time_period),
         time_offset_(time_offset),
-        integrator_config_(integrator_config) {
+        integration_scheme_(integration_scheme) {
     this->Initialize();
   }
 
@@ -89,7 +88,8 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
   explicit DiscreteTimeSystem(const DiscreteTimeSystem<U>& other)
       : DiscreteTimeSystem<T>(
             other.continuous_system_->template ToScalarType<T>(),
-            other.time_period_, other.time_offset_, other.integrator_config_) {}
+            other.time_period_, other.time_offset_, other.integration_scheme_) {
+  }
 
  private:
   template <typename U>
@@ -183,8 +183,9 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
                       DiscreteValues<T>* out) const {
     // TODO(wei-chen): Make the simulator/integrator a cache variable.
     Simulator<T> simulator(*continuous_system_);
-    ApplySimulatorConfig(integrator_config_, &simulator);
-    auto& integrator = simulator.get_mutable_integrator();
+    auto& integrator = ResetIntegratorFromFlags<T>(
+        &simulator, integration_scheme_, std::numeric_limits<double>::max());
+    integrator.set_fixed_step_mode(true);
 
     // Ensure that the continuous system context is up-to-date.
     continuous_context_cache_entry_->template Eval<Context<T>>(
@@ -201,8 +202,8 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
         cache_entry_value.template GetMutableValueOrThrow<Context<T>>();
     integrator.reset_context(&continuous_context);
     integrator.Initialize();
-    integrator.IntegrateWithMultipleStepsToTime(continuous_context.get_time() +
-                                                time_period_);
+    DRAKE_THROW_UNLESS(integrator.IntegrateWithSingleFixedStepToTime(
+        continuous_context.get_time() + time_period_));
 
     // (b) after updating `DiscreteValues<T>* out`, CopyAllContext() will be
     // invoked next time continuous_context_cache_entry_->Eval() is called
@@ -244,7 +245,7 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
   const CacheEntry* continuous_context2_cache_entry_;
   const double time_period_;
   const double time_offset_;
-  const SimulatorConfig integrator_config_;
+  const std::string integration_scheme_;
 };
 
 }  // namespace
@@ -257,14 +258,14 @@ struct Traits<DiscreteTimeSystem> : public NonSymbolicTraits {};
 template <typename T>
 std::unique_ptr<System<T>> DiscreteTimeApproximation(
     const System<T>& system, double time_period, double time_offset,
-    const SimulatorConfig& integrator_config) {
+    const std::string& integration_scheme) {
   // Check that the original system is continuous.
   DRAKE_THROW_UNLESS(system.IsDifferentialEquationSystem());
   // Check that the discrete time_period is greater than zero.
   DRAKE_THROW_UNLESS(time_period > 0);
 
   return std::make_unique<DiscreteTimeSystem<T>>(
-      system.Clone(), time_period, time_offset, integrator_config);
+      system.Clone(), time_period, time_offset, integration_scheme);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
@@ -273,9 +274,9 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
      static_cast<std::unique_ptr<AffineSystem<T>> (*)(
          const AffineSystem<T>&, double)>(&DiscreteTimeApproximation<T>)));
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-    static_cast<std::unique_ptr<System<T>> (*)(const System<T>&, double, double,
-                                               const SimulatorConfig&)>(
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (static_cast<std::unique_ptr<System<T>> (*)(const System<T>&, double,
+                                                double, const std::string&)>(
         &DiscreteTimeApproximation<T>)));
 
 }  // namespace systems
