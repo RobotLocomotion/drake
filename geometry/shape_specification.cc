@@ -48,8 +48,9 @@ void ComputeConvexHullAsNecessary(
   if (check == nullptr) {
     // Note: This approach means that multiple threads *may* redundantly compute
     // the convex hull; but only the first one will set the hull.
-    auto new_hull = std::make_shared<PolygonSurfaceMesh<double>>(
-        internal::MakeConvexHull(mesh_source, scale));
+    auto new_hull =
+        std::make_shared<PolygonSurfaceMesh<double>>(internal::MakeConvexHull(
+            mesh_source, Vector3<double>::Constant(scale)));
     std::atomic_compare_exchange_strong(hull_ptr, &check, new_hull);
   }
 }

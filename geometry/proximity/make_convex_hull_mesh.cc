@@ -27,11 +27,13 @@ class Hullifier final : public ShapeReifier {
   using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const Mesh& mesh, void*) final {
-    hull_ = MakeConvexHull(mesh.source(), mesh.scale());
+    hull_ =
+        MakeConvexHull(mesh.source(), Eigen::Vector3d::Constant(mesh.scale()));
   }
 
   void ImplementGeometry(const Convex& convex, void*) final {
-    hull_ = MakeConvexHull(convex.source(), convex.scale());
+    hull_ = MakeConvexHull(convex.source(),
+                           Eigen::Vector3d::Constant(convex.scale()));
   }
 
   PolygonSurfaceMesh<double> hull_;

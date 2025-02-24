@@ -23,7 +23,8 @@ VolumeMesh<T> MakeVolumeMeshFromVtk(const Mesh& mesh) {
 
   const double scale = mesh.scale();
 
-  VolumeMesh<double> read_mesh = ReadVtkToVolumeMesh(mesh.source(), scale);
+  VolumeMesh<double> read_mesh =
+      ReadVtkToVolumeMesh(mesh.source(), Eigen::Vector3d::Constant(scale));
 
   for (int e = 0; e < read_mesh.num_elements(); ++e) {
     if (read_mesh.CalcTetrahedronVolume(e) <= 0.) {
