@@ -1324,7 +1324,8 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::LinearizeExternalSystem(LinearizedExternalSystem<T>* linear_sys) {
+void ConvexIntegrator<T>::LinearizeExternalSystem(
+    LinearizedExternalSystem<T>* linear_sys) {
   using std::abs;
 
   // Make sure everything is the correct size
@@ -1352,13 +1353,10 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(LinearizedExternalSystem<T>* l
   // Get the initial values f0 and g0. We'll do this before marking any context
   // items as stale.
   linear_sys->f0 = this->EvalTimeDerivatives(context)
-                      .get_misc_continuous_state()
-                      .CopyToVector();
+                       .get_misc_continuous_state()
+                       .CopyToVector();
   linear_sys->g0 = plant().get_actuation_input_port().Eval(
       plant().GetMyContextFromRoot(context));
-
-  fmt::print("f0: {}\n", fmt_eigen(linear_sys->f0.transpose()));
-  fmt::print("g0: {}\n", fmt_eigen(linear_sys->g0.transpose()));
 
   // Do forward differences to compute A, B, C, D. We'll be changing the system
   // context, but will but it back at the end of this function.
@@ -1383,8 +1381,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(LinearizedExternalSystem<T>* l
     dsi = s_prime(i) - s(i);
 
     // Put s' in the context and mark it as stale
-    mutable_context->get_mutable_continuous_state()
-        .SetFromVector(s_prime);
+    mutable_context->get_mutable_continuous_state().SetFromVector(s_prime);
     mutable_context->NoteContinuousStateChange();
 
     // Compute the relevant matrix entries. Note that this assumes the state is
@@ -1415,13 +1412,6 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(LinearizedExternalSystem<T>* l
     // Reset s' to s
     s_prime(i) = s(i);
   }
-
-  fmt::print("A:\n{}\n", fmt_eigen(A));
-  fmt::print("C:\n{}\n", fmt_eigen(C));
-  fmt::print("B:\n{}\n", fmt_eigen(B));
-  fmt::print("D:\n{}\n", fmt_eigen(D));
-  fmt::print("f0: {}\n", fmt_eigen(f0.transpose()));
-  fmt::print("g0: {}\n", fmt_eigen(g0.transpose()));
 
   // Reset the context back to how we found it
   mutable_context->get_mutable_continuous_state().SetFromVector(s);

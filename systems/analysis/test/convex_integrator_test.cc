@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
@@ -17,8 +18,8 @@
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
-#include "drake/visualization/visualization_config_functions.h"
 #include "drake/systems/primitives/linear_system.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 namespace drake {
 namespace systems {
@@ -29,19 +30,19 @@ using multibody::AddMultibodyPlantSceneGraph;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using systems::ConstantVectorSource;
+using systems::FirstOrderTaylorApproximation;
 using systems::controllers::PidController;
 using visualization::AddDefaultVisualization;
-using systems::FirstOrderTaylorApproximation;
 
 class ConvexIntegratorTester {
-  public:
-    ConvexIntegratorTester() = delete;
+ public:
+  ConvexIntegratorTester() = delete;
 
-    static void LinearizeExternalSystem(
-        ConvexIntegrator<double>* integrator,
-        LinearizedExternalSystem<double>* linear_sys) {
-      integrator->LinearizeExternalSystem(linear_sys);
-    }
+  static void LinearizeExternalSystem(
+      ConvexIntegrator<double>* integrator,
+      LinearizedExternalSystem<double>* linear_sys) {
+    integrator->LinearizeExternalSystem(linear_sys);
+  }
 };
 
 // MJCF model of a simple double pendulum
@@ -266,13 +267,20 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
       *ctrl, ctrl_context, ctrl->get_input_port_estimated_state().get_index(),
       ctrl->get_output_port().get_index());
 
-  fmt::print("\n");
-  fmt::print("A:\n{}\n", fmt_eigen(true_linearization->A()));
-  fmt::print("B:\n{}\n", fmt_eigen(true_linearization->B()));
-  fmt::print("C:\n{}\n", fmt_eigen(true_linearization->C()));
-  fmt::print("D:\n{}\n", fmt_eigen(true_linearization->D()));
-  fmt::print("f0: {}\n", fmt_eigen(true_linearization->f0().transpose()));
-  fmt::print("g0: {}\n", fmt_eigen(true_linearization->y0().transpose()));
+  // Confirm that our finite difference linearization is close to the reference
+  const double kTolerance = std::sqrt(std::numeric_limits<double>::epsilon());
+  EXPECT_TRUE(CompareMatrices(linear_sys.A, true_linearization->A(), kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(linear_sys.B, true_linearization->B(), kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(linear_sys.C, true_linearization->C(), kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(linear_sys.D, true_linearization->D(), kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(linear_sys.f0, true_linearization->f0(),
+                              kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(linear_sys.g0, true_linearization->y0(),
+                              kTolerance, MatrixCompareType::relative));
 
   // // Simulate for a few seconds
   // const int fps = 32;

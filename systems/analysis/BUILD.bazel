@@ -610,6 +610,7 @@ drake_cc_googletest(
         ":simulator",
         ":simulator_config_functions",
         ":simulator_print_stats",
+        "//common/test_utilities:eigen_matrix_compare",
         "//geometry:meshcat_visualizer",
         "//multibody/parsing",
         "//multibody/plant",

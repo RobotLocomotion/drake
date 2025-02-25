@@ -94,7 +94,7 @@ class HessianFactorization : public HessianFactorizationCache {
  *    ż = f(z,x),
  *    u = g(z, x),
  * with z the external system state and x the MbP state, the linearized dynamics
- * are 
+ * are
  *    ż = Az + Bx + f₀,
  *    u = Cz + Dx + g₀.
  */
