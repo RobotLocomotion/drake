@@ -247,7 +247,11 @@ struct RenderEngineVtkParams {
 
   If the option is set to one of the permissible values but the related graphics
   library has not been compiled into current build (e.g., "GLX" on macOS), then
-  the default choice (empty string) will be used instead, with a warning. */
+  the default choice (empty string) will be used instead, with a warning.
+
+  Note: %RenderEngineVtk can optionally display the current rendering in a
+  window only if the backend is set to "GLX" or "Cocoa". For any other backend
+  value, the request to show the debug window during rendering is ignored. */
   std::string backend;
 };
 
