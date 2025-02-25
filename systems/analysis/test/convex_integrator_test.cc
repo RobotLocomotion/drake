@@ -63,18 +63,23 @@ const char cylinder_xml[] = R"""(
 </mujoco>
 )""";
 
-// MJCF model of an actuated pendulum
+// MJCF model of an actuated double pendulum
 const char actuated_pendulum_xml[] = R"""(
 <?xml version="1.0"?>
 <mujoco model="robot">
   <worldbody>
     <body>
-      <joint name="joint" type="hinge" axis="0 1 0" pos="0 0 0.1" damping="1e-3"/>
+      <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1" damping="1e-3"/>
       <geom type="capsule" size="0.01 0.1"/>
+      <body>
+        <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="1e-3"/>
+        <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
+      </body>
     </body>
   </worldbody>
   <actuator>
-    <motor joint="joint"/>
+    <motor joint="joint1"/>
+    <motor joint="joint2"/>
   </actuator>
 </mujoco>
 )""";
@@ -208,14 +213,14 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
 
   AddDefaultVisualization(&builder, meshcat);
 
-  VectorXd x_nom(2);
-  x_nom << M_PI_2, 0.0;
+  VectorXd x_nom(4);
+  x_nom << M_PI_2, M_PI_2, 0.0, 0.0;
   auto target_state = builder.AddSystem<ConstantVectorSource<double>>(x_nom);
 
-  VectorXd Kp(1), Kd(1), Ki(1);
-  Kp << 0.2;
-  Kd << 0.1;
-  Ki << 0.01;
+  VectorXd Kp(2), Kd(2), Ki(2);
+  Kp << 0.2, 0.2;
+  Kd << 0.1, 0.1;
+  Ki << 0.01, 0.01;
   auto ctrl = builder.AddSystem<PidController>(Kp, Kd, Ki);
 
   builder.Connect(target_state->get_output_port(),
