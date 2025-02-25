@@ -47,7 +47,7 @@ int do_main() {
       AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
   const std::string sdf_url =
       "package://drake/examples/multibody/cart_pole/cart_pole.sdf";
-  Parser(&cart_pole, &scene_graph).AddModelsFromUrl(sdf_url);
+  Parser(&builder).AddModelsFromUrl(sdf_url);
 
   // Now the model is complete.
   cart_pole.Finalize();

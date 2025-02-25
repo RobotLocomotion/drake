@@ -28,7 +28,7 @@ def main():
     builder = DiagramBuilder()
     cart_pole, scene_graph = AddMultibodyPlantSceneGraph(
         builder=builder, time_step=args.time_step)
-    Parser(plant=cart_pole).AddModelsFromUrl(
+    Parser(builder=builder).AddModelsFromUrl(
         url="package://drake/examples/multibody/cart_pole/cart_pole.sdf")
     cart_pole.Finalize()
 
