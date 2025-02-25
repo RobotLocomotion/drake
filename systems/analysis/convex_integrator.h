@@ -343,8 +343,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     DiscreteContactData<DiscreteContactPair<T>> contact_data;
   } workspace_;
 
-  // Linearization of an external (e.g. controller) system attached to the plant.
-  // The original external system dynamics are 
+  // Linearization of an external (e.g. controller) system attached to the
+  // plant. The original external system dynamics are
   //    ż = f(z,x),
   //    u = g(z, x),
   // with z the external system state and x the MbP state.
