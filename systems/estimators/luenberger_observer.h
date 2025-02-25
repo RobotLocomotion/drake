@@ -25,7 +25,7 @@ namespace estimators {
 ///  @f[ x[n+1] = f_d(x[n],u[n]) @f]
 ///  @f[ y[n] = g(x[n],u[n]) @f]
 /// the observer dynamics takes the form
-///  @f[ \hat{x}[n+1] = f(\hat{x}[n],u[n]) + L(y - g(\hat{x}[n],u[n])) @f]
+///  @f[ \hat{x}[n+1] = f_d(\hat{x}[n],u[n]) + L(y - g(\hat{x}[n],u[n])) @f]
 /// where @f$\hat{x}@f$ is the estimated state of the original system.
 /// The output of the observer system is @f$\hat{x}[n+1]@f$.
 ///
@@ -69,7 +69,9 @@ class LuenbergerObserver final : public LeafSystem<T> {
                      const Context<T>& observed_system_context,
                      const Eigen::Ref<const Eigen::MatrixXd>& observer_gain);
 
-  // TODO(russt): Support scalar conversion.
+  // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit LuenbergerObserver(const LuenbergerObserver<U>& other);
 
   // Returns the input port that expects the input passed to the observed
   // system.
@@ -94,6 +96,15 @@ class LuenbergerObserver final : public LeafSystem<T> {
   const Eigen::MatrixXd& L() { return observer_gain_; }
 
  private:
+  template <typename U>
+  friend class LuenbergerObserver;
+
+  // All constructors delegate to here.
+  template <typename U>
+  LuenbergerObserver(std::shared_ptr<const System<T>> observed_system,
+                     const Context<U>& observed_system_context,
+                     const Eigen::Ref<const Eigen::MatrixXd>& observer_gain, U);
+
   // Advance the state estimate using forward dynamics and the observer
   // gains. Continuous-time version.
   void DoCalcTimeDerivatives(const Context<T>& context,
