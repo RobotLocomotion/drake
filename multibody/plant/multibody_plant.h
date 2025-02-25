@@ -24,6 +24,7 @@
 #include "drake/multibody/plant/constraint_specs.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
+#include "drake/multibody/plant/desired_state_input.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model_collection.h"
@@ -606,12 +607,6 @@ actuator, see JointActuator::set_controller_gains(). Unless these gains are
 specified, joint actuators will not be PD controlled and
 JointActuator::has_controller() will return `false`.
 
-@warning For PD controlled models, all joint actuators in a model instance are
-required to have PD controllers defined. That is, partially PD controlled model
-instances are not supported. An exception will be thrown when evaluating the
-actuation input ports if only a subset of the actuators in a model instance is
-PD controlled.
-
 For models with PD controllers, the actuation torque per actuator is computed
 according to: <pre>
   ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
@@ -637,20 +632,19 @@ through examples:
 @anchor pd_controllers_and_ports
   #### Actuation input ports requirements
 
-The following table specifies whether actuation ports are required to be
-connected or not:
+If your model has joint actuators, even if some are PD-controlled, neither the
+actuation input port nor the desired state input port needs to be connected.
 
-|               Port               |   without PD control  | with PD control |
-| :------------------------------: | :-------------------: | :-------------: |
-|  get_actuation_input_port()      |          yes          |       no¹       |
-|  get_desired_state_input_port()  |          no²          |       yes       |
+Both ports are always created but will be zero-sized for model instances without
+actuation or PD controllers.
 
-¹ Feed-forward actuation is not required for models with PD controlled
-  actuators. This simplifies the diagram wiring for models that only rely on PD
-  controllers.
+Unconnected actuation inputs default to zero, simplifying diagram wiring for
+models relying solely on PD controllers.
 
-² This port is always declared, though it will be zero sized for model instances
-  with no PD controllers.
+PD controllers are disarmed when their model instance's desired state input port
+is disconnected. In this state, they have no effect on dynamics, behaving as if
+no PD controller exists. This allows a %MultibodyPlant model to be used outside
+simulation (e.g., for visualization).
 
   #### Net actuation
 
@@ -1118,33 +1112,52 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       ModelInstanceIndex model_instance) const;
 
   /// For models with PD controlled joint actuators, returns the port to provide
-  /// the desired state for the full `model_instance`.
+  /// the desired state for the given `model_instance`.
   /// Refer to @ref mbp_actuation "Actuation" for further details.
   ///
   /// For consistency with get_actuation_input_port(), each model instance in
   /// `this` plant model has a desired states input port, even if zero sized
   /// (for model instance with no actuators.)
   ///
-  /// @note This is a vector valued port of size
-  /// 2*num_actuators(model_instance), where we assumed 1-DOF actuated joints.
-  /// This is true even for unactuated models, for which this port is zero
-  /// sized. This port must provide one desired position and one desired
-  /// velocity per joint actuator. Desired state is assumed to be packed as xd =
-  /// [qd, vd] that is, configurations first followed by velocities.
-  /// The actuation value for a particular actuator can be found at offset
-  /// JointActuator::input_start() in both qd and vd. For example:
-  /// ```
-  /// const double qd_actuator = xd[actuator.input_start()];
-  /// const double vd_actuator =
-  ///    xd[actuator.input_start() + plant.num_actuated_dofs()];
-  /// ```
+  /// @note This port always has size
+  /// 2 * NumPdControlledActuators(model_instance), where we assume 1-DOF
+  /// actuated joints. This port must provide one desired position and one
+  /// desired velocity per PD-controlled joint actuator, packed as xd = [qd,
+  /// vd], with positions and velocities in order of increasing
+  /// JointActuatorIndex. In general, NumPdControlledActuators(model_instance)
+  /// is lower or equal than num_actuators(model_instance), and thus only a
+  /// subset of actuators can be PD-controlled.
   ///
-  /// @warning If a user specifies a PD controller for an actuator from a given
-  /// model instance, then all actuators of that model instance are required to
-  /// be PD controlled.
+  /// @note The desired state input port for a given model instance is not
+  /// required to be connected. If disconnected, the controllers for such model
+  /// instance will be _disarmed_. Refer to @ref pd_controllers_and_ports for
+  /// further details
   ///
-  /// @warning It is required to connect this port for PD controlled model
-  /// instances.
+  /// As an example of this structure, consider the following code to fix
+  /// desired states input values:
+  /// ```
+  /// MultibodyPlant<double> plant;
+  /// // ... Load/parse plant model ...
+  /// plant.Finalize();
+  /// auto context = plant.CreateDefaultContext();
+  /// const int num_pds = plant.NumPdControlledActuators(model_instance);
+  /// const VectorXd model_xd(2 * num_pds);
+  /// auto model_qd = model_xd.head(num_pds);
+  /// auto model_vd = model_xd.tail(num_pds);
+  ///
+  /// int a = 0;
+  /// // Specify qd and vd in increasing order of @ref JointActuatorIndex, as
+  /// // returned by GetJointActuatorIndices().
+  /// for (const JointActuatorIndex actuator_index :
+  ///     plant.GetJointActuatorIndices(model_instance)) {
+  ///   qd[a] = .... desired q value for actuator_index
+  ///   vd[a] = .... desired v value for actuator_index
+  ///   ++a;
+  /// }
+  /// // As an example, fix values in the context.
+  /// plant.get_desired_state_input_port(model_instance).FixValue(
+  ///     &plant_context, model_xd);
+  /// ```
   const systems::InputPort<T>& get_desired_state_input_port(
       ModelInstanceIndex model_instance) const;
 
@@ -5128,6 +5141,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().num_actuators(model_instance);
   }
 
+  /// @returns the number of actuators for which JointActuator::has_controller()
+  /// is `true`. In general, NumPdControlledActuators(model_instance) is lower
+  /// or equal than num_actuators(model_instance), and thus only a subset of
+  /// actuators can be PD-controlled.
+  int NumPdControlledActuators(ModelInstanceIndex model_instance) const;
+
   /// Returns the total number of actuated degrees of freedom.
   /// That is, the vector of actuation values u has this size.
   /// See AddJointActuator().
@@ -5742,14 +5761,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                       const systems::Context<T>& context,
                                       systems::BasicVector<T>* output) const;
 
-  // For models with joint actuators with PD control, this method helps to
-  // assemble desired states for the full model from the input ports for
-  // individual model instances.
-  // The return stacks desired state as xd = [qd, vd].
-  // The actuation value for a particular actuator can be found at offset
-  // JointActuator::input_start() in both qd and vd (see
-  // MultibodyPlant::get_actuation_input_port()).
-  VectorX<T> AssembleDesiredStateInput(
+  // This fuction evaluates the desired state input ports and returns them as a
+  // DesiredStateInput.
+  internal::DesiredStateInput<T> AssembleDesiredStateInput(
       const systems::Context<T>& context) const;
 
   // Computes all non-contact applied forces including:
