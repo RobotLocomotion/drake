@@ -89,6 +89,26 @@ class HessianFactorization : public HessianFactorizationCache {
 };
 
 /**
+ * Container for a linearized version of an external (e.g. controller) system
+ * attached to the plant. If the original dynamics are
+ *    ż = f(z,x),
+ *    u = g(z, x),
+ * with z the external system state and x the MbP state, the linearized dynamics
+ * are 
+ *    ż = Az + Bx + f₀,
+ *    u = Cz + Dx + g₀.
+ */
+template <class T>
+struct AffineSystem {
+  MatrixX<T> A;
+  MatrixX<T> B;
+  VectorX<T> f0;
+  MatrixX<T> C;
+  MatrixX<T> D;
+  VectorX<T> g0;
+};
+
+/**
  * An experimental implicit integrator that solves a convex SAP problem to
  * advance the state, rather than relying on non-convex Newton-Raphson.
  */
@@ -143,6 +163,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void set_write_to_csv(bool flag) { write_to_csv_ = flag; }
 
  private:
+  friend class ConvexIntegratorTester;
+
   // Struct used to store the result of computing the search direction. Clone of
   // SapSolver::SearchDirectionData
   struct SearchDirectionData {
@@ -262,6 +284,21 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                       T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
                       VectorX<T>* d2ell_dalpha2_scratch = nullptr) const;
 
+  // Compute a linearization of the external (e.g. controller) system around the
+  // current state. This approximates the overall system diagram as
+  //
+  //        --------------------
+  //  --> u |  MultibodyPlant  | --> x
+  //  |     --------------------     |
+  //  |                              |
+  //  |     --------------------     |
+  //  |     | External System  |     |
+  //  u <-- | ż = Az + Bx + f₀ |<-----
+  //        | u = Cz + Dx + g₀ |
+  //        --------------------
+  //
+  void LinearizeExternalSystem(AffineSystem<T>* linear_sys);
+
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {
     return GetInternalTree(plant()).get_topology();
@@ -343,22 +380,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     DiscreteContactData<DiscreteContactPair<T>> contact_data;
   } workspace_;
 
-  // Linearization of an external (e.g. controller) system attached to the
-  // plant. The original external system dynamics are
-  //    ż = f(z,x),
-  //    u = g(z, x),
-  // with z the external system state and x the MbP state.
-  // The linearized dynamics are
-  //   ż = Az + Bx + f₀,
-  //   u = Cz + Dx + g₀,
-  struct LinearizedExternalSystem {
-    MatrixX<double> A;
-    MatrixX<double> B;
-    VectorX<double> f0;
-    MatrixX<double> C;
-    MatrixX<double> D;
-    VectorX<double> g0;
-  } linearized_external_system_;
+  // Linearization of an external controller system attached to the plant.
+  AffineSystem<T> linearized_external_system_;
 };
 
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.

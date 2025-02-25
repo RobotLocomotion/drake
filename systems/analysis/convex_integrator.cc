@@ -1323,6 +1323,11 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
   }
 }
 
+template <typename T>
+void ConvexIntegrator<T>::LinearizeExternalSystem(AffineSystem<T>* linear_sys) {
+  (void)linear_sys;
+}
+
 }  // namespace systems
 }  // namespace drake
 

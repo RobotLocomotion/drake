@@ -21,7 +21,6 @@
 
 namespace drake {
 namespace systems {
-namespace analysis_test {
 
 using Eigen::VectorXd;
 using geometry::SceneGraph;
@@ -31,6 +30,17 @@ using multibody::Parser;
 using systems::ConstantVectorSource;
 using systems::controllers::PidController;
 using visualization::AddDefaultVisualization;
+
+class ConvexIntegratorTester {
+  public:
+    ConvexIntegratorTester() = delete;
+
+    static void LinearizeExternalSystem(
+        ConvexIntegrator<double>* integrator,
+        AffineSystem<double>* linear_sys) {
+      integrator->LinearizeExternalSystem(linear_sys);
+    }
+};
 
 // MJCF model of a simple double pendulum
 const char double_pendulum_xml[] = R"""(
@@ -236,23 +246,28 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   SimulatorConfig config;
   config.target_realtime_rate = 1.0;
   config.publish_every_time_step = true;
-  config.integration_scheme = "convex";
-  config.accuracy = 0.1;
   ApplySimulatorConfig(config, &simulator);
+
+  ConvexIntegrator<double>& integrator =
+      simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.set_maximum_step_size(0.1);
   simulator.Initialize();
 
-  // Simulate for a few seconds
-  const int fps = 32;
-  meshcat->StartRecording(fps);
-  simulator.AdvanceTo(10.0);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
+  // Linearize the non-plant system dynamics around the current state
+  AffineSystem<double> linear_sys;
+  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, &linear_sys);
 
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
+  // // Simulate for a few seconds
+  // const int fps = 32;
+  // meshcat->StartRecording(fps);
+  // simulator.AdvanceTo(10.0);
+  // meshcat->StopRecording();
+  // meshcat->PublishRecording();
+
+  // std::cout << std::endl;
+  // PrintSimulatorStatistics(simulator);
+  // std::cout << std::endl;
 }
 
-}  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
