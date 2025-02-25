@@ -3897,8 +3897,8 @@ void MultibodyPlant<T>::CalcReactionForces(
   // for the discrete solvers we have today, though it might change for future
   // solvers that prefer an implicit evaluation of these terms.
   // TODO(amcastro-tri): Consider having a
-  // DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
-  // this computation consistently with its discrete update.
+  //  DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
+  //  this computation consistently with its discrete update.
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
@@ -3910,9 +3910,9 @@ void MultibodyPlant<T>::CalcReactionForces(
   // Since vdot is the result of Fapplied and tau_applied we expect the result
   // from inverse dynamics to be zero.
   // TODO(amcastro-tri): find a better estimation for this bound. For instance,
-  // we can make an estimation based on the trace of the mass matrix (Jain 2011,
-  // Eq. 4.21). For now we only ASSERT though with a better estimation we could
-  // promote this to a DEMAND.
+  //  we can make an estimation based on the trace of the mass matrix (Jain
+  //  2011, Eq. 4.21). For now we only ASSERT though with a better estimation we
+  //  could promote this to a DEMAND.
   // TODO(amcastro-tri) Uncomment this line once issue #12473 is resolved.
   // DRAKE_ASSERT(tau_id.norm() <
   //              100 * num_velocities() *
@@ -3926,61 +3926,50 @@ void MultibodyPlant<T>::CalcReactionForces(
         internal_tree().get_joint_mobilizer(joint_index);
     const internal::Mobilizer<T>& mobilizer =
         internal_tree().get_mobilizer(mobilizer_index);
-    const internal::MobodIndex mobod_index = mobilizer.mobod().index();
+    DRAKE_DEMAND(mobilizer.mobod().index() == mobilizer_index);
+
+    // Reversed means the joint's parent(child) body is the outboard(inboard)
+    // body for the mobilizer.
+    const bool is_reversed = mobilizer.mobod().is_reversed();
 
     // F_BMo_W is the mobilizer reaction force on mobilized body B at the origin
     // Mo of the mobilizer's outboard frame M, expressed in the world frame W.
-    const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[mobod_index];
+    const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[mobilizer_index];
+
+    // But the quantity of interest, F_CJc_Jc, is the joint's reaction force on
+    // the joint's child body C at the joint's child frame Jc, expressed in Jc.
+    SpatialForce<T>& F_CJc_Jc = output->at(joint.ordinal());
 
     // Frames of interest:
-    const Frame<T>& frame_Jp = joint.frame_on_parent();
     const Frame<T>& frame_Jc = joint.frame_on_child();
-    const FrameIndex F_index = mobilizer.inboard_frame().index();
-    const FrameIndex M_index = mobilizer.outboard_frame().index();
-    const FrameIndex Jp_index = frame_Jp.index();
-    const FrameIndex Jc_index = frame_Jc.index();
-
-    // In Drake we must have either:
-    //  - Jp == F and Jc == M (typical case)
-    //  - Jp == M and Jc == F (mobilizer is reversed from joint)
-    DRAKE_DEMAND((Jp_index == F_index && Jc_index == M_index) ||
-                 (Jp_index == M_index && Jc_index == F_index));
-
-    // Mobilizer is reversed if the joint's parent frame Jp is the mobilizer's
-    // outboard frame M.
-    const bool is_reversed = (Jp_index == M_index);
+    const Frame<T>& frame_M = mobilizer.outboard_frame();
 
     // We'll need this in both cases below since we're required to report
     // the reaction force expressed in the joint's child frame Jc.
     const RotationMatrix<T> R_JcW =
         frame_Jc.CalcRotationMatrixInWorld(context).inverse();
 
-    // The quantity of interest, F_CJc_Jc, is the joint's reaction force on the
-    // joint's child body C at the joint's child frame Jc, expressed in Jc.
-    SpatialForce<T>& F_CJc_Jc = output->at(joint.ordinal());
-    if (!is_reversed) {
-      F_CJc_Jc = R_JcW * F_BMo_W;  // The typical case: Mo==Jc and B==C.
-    } else {
-      // For this reversed case, F_BMo_W is the reaction on the joint's _parent_
-      // body at Jp, expressed in W.
-      const SpatialForce<T>& F_PJp_W = F_BMo_W;  // Reversed: Mo==Jp and B==P.
-
-      // Newton's 3ʳᵈ law (action/reaction) (and knowing Drake's joints are
-      // massless) says the force on the child _at Jp_ is equal and opposite to
-      // the force on the parent at Jp.
-      const SpatialForce<T> F_CJp_W = -F_PJp_W;
-      const SpatialForce<T> F_CJp_Jc = R_JcW * F_CJp_W;  // Reexpress in Jc.
-
-      // However, the reaction force we want to report on the child is at Jc,
-      // not Jp. We need to shift the application point from Jp to Jc.
-
-      // Find the shift vector p_JpJc_Jc (= -p_JcJp_Jc).
-      const RigidTransform<T> X_JcJp = frame_Jp.CalcPose(context, frame_Jc);
-      const Vector3<T> p_JpJc_Jc = -X_JcJp.translation();
-
-      // Perform  the Jp->Jc shift.
-      F_CJc_Jc = F_CJp_Jc.Shift(p_JpJc_Jc);
+    if (&frame_M == &frame_Jc) {
+      // This is the easy case. Just need to re-express.
+      F_CJc_Jc = R_JcW * F_BMo_W;
+      continue;
     }
+
+    // If the mobilizer is reversed, Newton's 3ʳᵈ law (action/reaction) (and
+    // knowing Drake's joints are massless) says the force on the child _at M_
+    // is equal and opposite to the force on the parent at M.
+    const SpatialForce<T> F_CMo_W = is_reversed ? -F_BMo_W : F_BMo_W;
+    const SpatialForce<T> F_CMo_Jc = R_JcW * F_CMo_W;  // Reexpress in Jc.
+
+    // However, the reaction force we want to report on the child is at Jc,
+    // not M. We need to shift the application point from Mo to Jco.
+
+    // Find the shift vector p_MoJco_Jc (= -p_JcoMo_Jc).
+    const RigidTransform<T> X_JcM = frame_M.CalcPose(context, frame_Jc);
+    const Vector3<T> p_MoJco_Jc = -X_JcM.translation();
+
+    // Perform  the M->Jc shift.
+    F_CJc_Jc = F_CMo_Jc.Shift(p_MoJco_Jc);
   }
 }
 
