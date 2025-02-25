@@ -18,6 +18,7 @@
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/visualization/visualization_config_functions.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace systems {
@@ -30,6 +31,7 @@ using multibody::Parser;
 using systems::ConstantVectorSource;
 using systems::controllers::PidController;
 using visualization::AddDefaultVisualization;
+using systems::FirstOrderTaylorApproximation;
 
 class ConvexIntegratorTester {
   public:
@@ -37,7 +39,7 @@ class ConvexIntegratorTester {
 
     static void LinearizeExternalSystem(
         ConvexIntegrator<double>* integrator,
-        AffineSystem<double>* linear_sys) {
+        LinearizedExternalSystem<double>* linear_sys) {
       integrator->LinearizeExternalSystem(linear_sys);
     }
 };
@@ -254,8 +256,23 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   simulator.Initialize();
 
   // Linearize the non-plant system dynamics around the current state
-  AffineSystem<double> linear_sys;
+  LinearizedExternalSystem<double> linear_sys;
   ConvexIntegratorTester::LinearizeExternalSystem(&integrator, &linear_sys);
+
+  // Reference linearization
+  const Context<double>& ctrl_context =
+      ctrl->GetMyContextFromRoot(simulator.get_context());
+  auto true_linearization = FirstOrderTaylorApproximation(
+      *ctrl, ctrl_context, ctrl->get_input_port_estimated_state().get_index(),
+      ctrl->get_output_port().get_index());
+
+  fmt::print("\n");
+  fmt::print("A:\n{}\n", fmt_eigen(true_linearization->A()));
+  fmt::print("B:\n{}\n", fmt_eigen(true_linearization->B()));
+  fmt::print("C:\n{}\n", fmt_eigen(true_linearization->C()));
+  fmt::print("D:\n{}\n", fmt_eigen(true_linearization->D()));
+  fmt::print("f0: {}\n", fmt_eigen(true_linearization->f0().transpose()));
+  fmt::print("g0: {}\n", fmt_eigen(true_linearization->y0().transpose()));
 
   // // Simulate for a few seconds
   // const int fps = 32;

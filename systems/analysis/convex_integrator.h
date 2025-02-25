@@ -99,7 +99,7 @@ class HessianFactorization : public HessianFactorizationCache {
  *    u = Cz + Dx + g₀.
  */
 template <class T>
-struct AffineSystem {
+struct LinearizedExternalSystem {
   MatrixX<T> A;
   MatrixX<T> B;
   VectorX<T> f0;
@@ -297,7 +297,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   //        | u = Cz + Dx + g₀ |
   //        --------------------
   //
-  void LinearizeExternalSystem(AffineSystem<T>* linear_sys);
+  void LinearizeExternalSystem(LinearizedExternalSystem<T>* linear_sys);
 
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {
@@ -381,7 +381,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   } workspace_;
 
   // Linearization of an external controller system attached to the plant.
-  AffineSystem<T> linearized_external_system_;
+  LinearizedExternalSystem<T> linearized_external_system_;
 };
 
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.

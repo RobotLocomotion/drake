@@ -1324,8 +1324,139 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::LinearizeExternalSystem(AffineSystem<T>* linear_sys) {
-  (void)linear_sys;
+void ConvexIntegrator<T>::LinearizeExternalSystem(LinearizedExternalSystem<T>* linear_sys) {
+  using std::abs;
+
+  // Make sure everything is the correct size
+  // TODO(vincekurtz): allocate this->linearized_external_system_ in Initialize
+  const Context<T>& context = this->get_context();
+  const ContinuousState<T>& state = context.get_continuous_state();
+  const int nq = state.num_q();
+  const int nv = state.num_v();
+  const int nx = nq + nv;
+  const int nz = state.num_z();
+  const int nu = plant().num_actuators();
+
+  MatrixX<T>& A = linear_sys->A;
+  MatrixX<T>& B = linear_sys->B;
+  MatrixX<T>& C = linear_sys->C;
+  MatrixX<T>& D = linear_sys->D;
+  VectorX<T>& f0 = linear_sys->f0;
+  VectorX<T>& g0 = linear_sys->g0;
+
+  A.resize(nz, nz);
+  B.resize(nz, nx);
+  C.resize(nu, nz);
+  D.resize(nu, nx);
+  f0.resize(nz);
+  g0.resize(nu);
+
+  // Get the initial values f0 and g0. We'll do this before marking any context
+  // items as stale.
+  linear_sys->f0 = this->EvalTimeDerivatives(context)
+                      .get_misc_continuous_state()
+                      .CopyToVector();
+  linear_sys->g0 = plant().get_actuation_input_port().Eval(
+      plant().GetMyContextFromRoot(context));
+
+  fmt::print("f0: {}\n", fmt_eigen(linear_sys->f0.transpose()));
+  fmt::print("g0: {}\n", fmt_eigen(linear_sys->g0.transpose()));
+
+  // Set up forward differences to compute A, B, C, D
+  const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
+  Context<T>* mutable_context = this->get_mutable_context();
+
+  const VectorX<T> z = state.get_misc_continuous_state().CopyToVector();
+  VectorX<T> z_prime = z;
+  VectorX<T> x(nq + nv);
+  x << state.get_generalized_position().CopyToVector(),
+      state.get_generalized_velocity().CopyToVector();
+  VectorX<T> x_prime = x;
+
+  // Perturb the miscellaneous state z to compute the A and C matrices.
+  for (int i = 0; i < nz; ++i) {
+    // Choose an increment following implicit_integrator.cc
+    const T abs_zi = abs(z(i));
+    T dzi(abs_zi);
+    if (dzi <= 1) {
+      dzi = eps;
+    } else {
+      dzi = eps * abs_zi;
+    }
+
+    // Ensure that z' and z differ by an exactly representable number
+    z_prime(i) = z(i) + dzi;
+    dzi = z_prime(i) - z(i);
+
+    // Put z' in the context and mark it as stale
+    mutable_context->get_mutable_continuous_state()
+        .get_mutable_misc_continuous_state()
+        .SetFromVector(z_prime);
+    mutable_context->NoteContinuousStateChange();
+
+    // Compute the A and C matrices
+    A.col(i) = (this->EvalTimeDerivatives(*mutable_context)
+                      .get_misc_continuous_state()
+                      .CopyToVector() - f0) / dzi;
+    C.col(i) = (plant().get_actuation_input_port().Eval(
+                    plant().GetMyContextFromRoot(*mutable_context)) -
+                g0) /
+               dzi;
+
+    // Reset z' to z
+    z_prime(i) = z(i);
+  }
+
+  // Perturb the plant state x to compute the B and D matrices
+  // TODO(vincekurtz): reduce redundancy between this and the above loop
+  for (int i=0; i < nx; ++i) {
+    // Choose an increment following implicit_integrator.cc
+    const T abs_xi = abs(x(i));
+    T dxi(abs_xi);
+    if (dxi <= 1) {
+      dxi = eps;
+    } else {
+      dxi = eps * abs_xi;
+    }
+
+    // Ensure that x' and x differ by an exactly representable number
+    x_prime(i) = x(i) + dxi;
+    dxi = x_prime(i) - x(i);
+
+    // Put x' in the context and mark it as stale
+    mutable_context->get_mutable_continuous_state()
+        .get_mutable_generalized_position()
+        .SetFromVector(x_prime.head(nq));
+    mutable_context->get_mutable_continuous_state()
+        .get_mutable_generalized_velocity()
+        .SetFromVector(x_prime.tail(nv));
+    mutable_context->NoteContinuousStateChange();
+
+    // Compute the B and D matrices
+    B.col(i) = (this->EvalTimeDerivatives(*mutable_context)
+                    .get_misc_continuous_state()
+                    .CopyToVector() -
+                f0) /
+               dxi;
+    D.col(i) = (plant().get_actuation_input_port().Eval(
+                    plant().GetMyContextFromRoot(*mutable_context)) -
+                g0) /
+               dxi;
+
+    // Reset x' to x
+    x_prime = x;
+    x_prime(i) = x(i);
+
+  }
+
+  fmt::print("A:\n{}\n", fmt_eigen(A));
+  fmt::print("C:\n{}\n", fmt_eigen(C));
+  fmt::print("B:\n{}\n", fmt_eigen(B));
+  fmt::print("D:\n{}\n", fmt_eigen(D));
+  fmt::print("f0: {}\n", fmt_eigen(f0.transpose()));
+  fmt::print("g0: {}\n", fmt_eigen(g0.transpose()));
+
+  // TODO: Perturb the plant state x to compute the B and D matrices
 }
 
 }  // namespace systems
