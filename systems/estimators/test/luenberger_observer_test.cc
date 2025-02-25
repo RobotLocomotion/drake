@@ -128,9 +128,8 @@ GTEST_TEST(LuenbergerObserverTest, ErrorDynamics) {
             x_est, output->GetMutableVectorData(0)->CopyToVector(), tol));
       }
 
-      // TODO(russt): Support scalar conversion.
-      EXPECT_FALSE(is_autodiffxd_convertible(*observer));
-      EXPECT_FALSE(is_symbolic_convertible(*observer));
+      EXPECT_TRUE(is_autodiffxd_convertible(*observer));
+      EXPECT_TRUE(is_symbolic_convertible(*observer));
     }
   }
 }
