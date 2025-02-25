@@ -412,7 +412,8 @@ struct CameraConfig {
    rendered). Because both RGB and label images are configured from the same
    `ColorRenderCamera`, this setting applies to both images. Even when set to
    true, whether or not the image is able to be displayed depends on the
-   specific render engine and its configuration.
+   specific render engine and its configuration (see e.g.,
+   geometry::RenderEngineVtkParams::backend).
 
    Note: This flag is intended for quick debug use during development instead of
    serving as an image viewer. Currently, there are known issues, e.g.,
