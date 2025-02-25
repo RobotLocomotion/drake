@@ -1,4 +1,5 @@
 load("//tools/workspace:metadata.bzl", "generate_repository_metadata")
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 load("//tools/workspace/rust_toolchain:lock/archives.bzl", "ARCHIVES")
 
 def _rust_toolchain_downloads_impl(repo_ctx):
@@ -34,10 +35,16 @@ rust_toolchain_downloads = repository_rule(
     },
 )
 
-def rust_toolchain_repositories(*, mirrors, excludes = []):
+def rust_toolchain_repositories(
+        *,
+        mirrors,
+        excludes = [],
+        _is_drake_self_call = False):
     """Adds multiple repository rules pointing to rust-lang.org downloads.
     Refer to README.md for details.
     """
+    if not _is_drake_self_call:
+        print_warning("rust_toolchain_repositories")
     for kwargs in ARCHIVES:
         if kwargs["name"] not in excludes:
             rust_toolchain_downloads(
@@ -45,11 +52,13 @@ def rust_toolchain_repositories(*, mirrors, excludes = []):
                 **kwargs
             )
 
-def register_rust_toolchains():
+def register_rust_toolchains(_is_drake_self_call = False):
     """Registers all of the Rust toolchains that rust_toolchain_repositories()
     knows how to downloaded. Refer to README.md for details. If you've excluded
     certain downloads via `excludes = ...` above, then don't use this function.
     """
+    if not _is_drake_self_call:
+        print_warning("register_rust_toolchains")
     for name in [kwargs["name"] for kwargs in ARCHIVES]:
         if name.startswith("rust_") and name.endswith("__stable"):
             native.register_toolchains("@{}//:toolchain".format(name))
