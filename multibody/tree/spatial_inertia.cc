@@ -335,50 +335,54 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
 }
 
 template <typename T>
-boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
-  // This spatial inertia is not physically valid if the mass is negative or
-  // non-finite or the center of mass or unit inertia matrix have NaN elements.
-  boolean<T> ret_value = is_nonnegative_finite(mass_);
-  if (ret_value) {
-    // Form a rotational inertia about the body's center of mass and then use
-    // the well-documented tests in RotationalInertia to test validity.
+std::optional<std::string> SpatialInertia<T>::CreateInvalidityReport() const {
+  // Default return value is an empty optional (this SpatialInertia is valid).
+  std::string error_message;
+  const Vector3<T>& p_PBcm = get_com();
+
+  // Is invalid if the mass is negative or non-finite.
+  const T& mass = get_mass();
+  if (!is_nonnegative_finite(mass)) {
+    error_message =
+        fmt::format("\nmass = {} is negative or not finite.\n", mass);
+
+  } else if (!p_PBcm.array().isFinite().all()) {
+    error_message =
+        fmt::format("\nPosition vector [{}  {}  {}] has non-finite elements.\n",
+                    p_PBcm(0), p_PBcm(1), p_PBcm(2));
+  } else {
+    // This is invalid if rotational inertia about Bcm is invalid.
+    // To avoid a validity check in RotationalInertia::ShiftToCenterOfMass()
+    // that throws an exception, use SpatialInertia::ShiftToCenterOfMass().
     const SpatialInertia<T> M_SScm_E = ShiftToCenterOfMass();
     const UnitInertia<T>& G_SScm_E = M_SScm_E.get_unit_inertia();
     const RotationalInertia<T> I_SScm_E =
         G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
-    ret_value = I_SScm_E.CouldBePhysicallyValid();
+    if (!I_SScm_E.CouldBePhysicallyValid()) {
+      error_message += fmt::format("{}", *this);
+      WriteExtraCentralInertiaProperties(&error_message);
+    }
   }
-  return ret_value;
+  if (error_message.empty()) return std::nullopt;
+  const std::string full_error_message = fmt::format(
+      "Spatial inertia fails SpatialInertia::IsPhysicallyValid()."
+      "{}",
+      error_message);
+  return full_error_message;
 }
 
 template <typename T>
-std::string SpatialInertia<T>::CriticizeNotPhysicallyValid() const {
-  if (IsPhysicallyValid()) {
-    return {};
-  }
-  return MakeNotPhysicallyValidErrorMessage();
+boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
+  return boolean<T>(!CreateInvalidityReport().has_value());
 }
 
 template <typename T>
-std::string SpatialInertia<T>::MakeNotPhysicallyValidErrorMessage() const {
-  std::string error_message =
-      fmt::format("Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
-  const T& mass = get_mass();
-  if (!is_positive_finite(mass)) {
-    error_message +=
-        fmt::format("\nmass = {} is not positive and finite.\n", mass);
-  } else {
-    error_message += fmt::format("{}", *this);
-    WriteExtraCentralInertiaProperties(&error_message);
+void SpatialInertia<T>::ThrowIfNotPhysicallyValidImpl() const {
+  const std::optional<std::string> invalidity_report = CreateInvalidityReport();
+  if (invalidity_report.has_value()) {
+    throw std::runtime_error(*invalidity_report);
   }
-  return error_message;
 }
-
-template <typename T>
-void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
-  throw std::runtime_error(MakeNotPhysicallyValidErrorMessage());
-}
-
 template <typename T>
 SpatialInertia<T>& SpatialInertia<T>::operator+=(
     const SpatialInertia<T>& M_BP_E) {
