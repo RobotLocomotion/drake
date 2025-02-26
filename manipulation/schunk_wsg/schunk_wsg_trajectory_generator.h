@@ -29,14 +29,17 @@ namespace schunk_wsg {
 /// input_ports:
 /// - desired_position
 /// - force_limit
-/// - u0
+/// - <span style="color:gray">u2</span>
 /// output_ports:
 /// - y0
-/// - y1
+/// - <span style="color:gray">y1</span>
 /// @endsystem
 ///
-/// Port `u0` accepts state. Port `y0` emits target position/velocity. Port
+/// Port `u2` accepts state. Port `y0` emits target position/velocity. Port
 /// `y1` emits max force.
+///
+/// Note that the `force_limit` input port and `y1` output port (max force) can
+/// be opted-out with a constructor argument.
 ///
 /// @ingroup manipulation_systems
 class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
@@ -47,13 +50,18 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// finger).
   /// @param position_index The index in the state input vector
   /// which contains the position of the actuated finger.
-  SchunkWsgTrajectoryGenerator(int input_size, int position_index);
+  /// @param use_force_limit when false, the port `force_limit` and `y0` ports
+  /// will be omitted.
+  SchunkWsgTrajectoryGenerator(int input_size, int position_index,
+                               bool use_force_limit = true);
 
   const systems::InputPort<double>& get_desired_position_input_port() const {
     return get_input_port(desired_position_input_port_);
   }
 
+  /// @pre The constructor argument use_force_limit was set to true.
   const systems::InputPort<double>& get_force_limit_input_port() const {
+    DRAKE_THROW_UNLESS(use_force_limit_);
     return get_input_port(force_limit_input_port_);
   }
 
@@ -65,7 +73,9 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
     return this->get_output_port(target_output_port_);
   }
 
+  /// @pre The constructor argument use_force_limit was set to true.
   const systems::OutputPort<double>& get_max_force_output_port() const {
+    DRAKE_THROW_UNLESS(use_force_limit_);
     return this->get_output_port(max_force_output_port_);
   }
 
@@ -90,12 +100,13 @@ class SchunkWsgTrajectoryGenerator : public systems::LeafSystem<double> {
   /// small as 0.1mm.
   const double kTargetEpsilon = 0.0001;
 
-  const int position_index_{};
-  const systems::InputPortIndex desired_position_input_port_{};
-  const systems::InputPortIndex force_limit_input_port_{};
-  const systems::InputPortIndex state_input_port_{};
-  const systems::OutputPortIndex target_output_port_{};
-  const systems::OutputPortIndex max_force_output_port_{};
+  const int position_index_;
+  const bool use_force_limit_;
+  const systems::InputPortIndex desired_position_input_port_;
+  const systems::InputPortIndex force_limit_input_port_;  // (Might be missing.)
+  const systems::InputPortIndex state_input_port_;
+  const systems::OutputPortIndex target_output_port_;
+  const systems::OutputPortIndex max_force_output_port_;  // (Might be missing.)
 
   // TODO(sam.creasey) I'd prefer to store the trajectory as
   // discrete state, but unfortunately that's not currently possible

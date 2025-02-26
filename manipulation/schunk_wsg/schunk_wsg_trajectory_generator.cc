@@ -1,5 +1,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h"
 
+#include <limits>
+
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator_state_vector.h"
 
@@ -11,25 +13,32 @@ using systems::BasicVector;
 using systems::Context;
 using systems::DiscreteValues;
 using systems::EventStatus;
+using systems::InputPortIndex;
+using systems::OutputPortIndex;
 
 SchunkWsgTrajectoryGenerator::SchunkWsgTrajectoryGenerator(int input_size,
-                                                           int position_index)
+                                                           int position_index,
+                                                           bool use_force_limit)
     : position_index_(position_index),
+      use_force_limit_(use_force_limit),
       desired_position_input_port_(
           this->DeclareVectorInputPort("desired_position", 1).get_index()),
       force_limit_input_port_(
-          this->DeclareVectorInputPort("force_limit", 1).get_index()),
+          use_force_limit
+              ? this->DeclareVectorInputPort("force_limit", 1).get_index()
+              : InputPortIndex{}),
       state_input_port_(
-          this->DeclareVectorInputPort(systems::kUseDefaultName, input_size)
+          this->DeclareVectorInputPort("u2", input_size).get_index()),
+      target_output_port_(
+          this->DeclareVectorOutputPort(
+                  "y0", 2, &SchunkWsgTrajectoryGenerator::OutputTarget)
               .get_index()),
-      target_output_port_(this->DeclareVectorOutputPort(
-                                  systems::kUseDefaultName, 2,
-                                  &SchunkWsgTrajectoryGenerator::OutputTarget)
-                              .get_index()),
-      max_force_output_port_(this->DeclareVectorOutputPort(
-                                     systems::kUseDefaultName, 1,
-                                     &SchunkWsgTrajectoryGenerator::OutputForce)
-                                 .get_index()) {
+      max_force_output_port_(
+          use_force_limit
+              ? this->DeclareVectorOutputPort(
+                        "y1", 1, &SchunkWsgTrajectoryGenerator::OutputForce)
+                    .get_index()
+              : OutputPortIndex{}) {
   this->DeclareDiscreteState(SchunkWsgTrajectoryGeneratorStateVector<double>());
   // The update period below matches the polling rate from
   // drake-schunk-driver.
@@ -56,6 +65,7 @@ void SchunkWsgTrajectoryGenerator::OutputTarget(
 
 void SchunkWsgTrajectoryGenerator::OutputForce(
     const Context<double>& context, BasicVector<double>* output) const {
+  DRAKE_DEMAND(use_force_limit_);
   const SchunkWsgTrajectoryGeneratorStateVector<double>* traj_state =
       dynamic_cast<const SchunkWsgTrajectoryGeneratorStateVector<double>*>(
           &context.get_discrete_state(0));
@@ -85,7 +95,9 @@ EventStatus SchunkWsgTrajectoryGenerator::CalcDiscreteUpdate(
           &discrete_state->get_mutable_vector(0));
   new_traj_state->set_last_position(cur_position);
 
-  const double max_force = get_force_limit_input_port().Eval(context)[0];
+  const double max_force = use_force_limit_
+                               ? get_force_limit_input_port().Eval(context)[0]
+                               : std::numeric_limits<double>::quiet_NaN();
   new_traj_state->set_max_force(max_force);
 
   if (!trajectory_ || std::abs(last_traj_state->last_target_position() -
