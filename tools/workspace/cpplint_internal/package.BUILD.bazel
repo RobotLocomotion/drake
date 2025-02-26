@@ -12,29 +12,21 @@ exports_files(glob([
     "include/*",
 ]))
 
-# We can't set name="cpplint" here because that's the directory name so the
-# sandbox gets confused.  We'll give it a private name with a public alias.
+
 py_binary(
-    name = "cpplint_binary",
-    srcs = ["cpplint/cpplint.py"],
-    imports = ["cpplint"],
-    main = "cpplint/cpplint.py",
+    name = "cpplint",
+    srcs = ["cpplint.py"],
+    main = "cpplint.py",
     python_version = "PY3",
     srcs_version = "PY3",
     visibility = [],
-)
-
-alias(
-    name = "cpplint",
-    actual = ":cpplint_binary",
 )
 
 filegroup(
     name = "test_files",
     testonly = True,
     srcs = [
-        "cpplint/cpplint.py",
-        "cpplint/cpplint_test_header.h",
-        "cpplint/cpplint_unittest.py",
+        "cpplint.py",
+        "cpplint_unittest.py",
     ],
 )
