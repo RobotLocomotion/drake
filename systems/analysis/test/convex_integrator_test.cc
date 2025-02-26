@@ -25,6 +25,7 @@ namespace drake {
 namespace systems {
 
 using Eigen::VectorXd;
+using Eigen::MatrixXd;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
 using multibody::MultibodyPlant;
@@ -306,6 +307,39 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
       ConvexIntegratorTester::GetImplicitExternalSystemData(&integrator);
   ConvexIntegratorTester::CalcImplicitExternalSystemData(&integrator,
       linear_sys, h, &implicit_data);    
+
+  // Reference implicit integration data
+  const MatrixXd A = true_linearization->A();
+  const MatrixXd B = true_linearization->B();
+  const MatrixXd C = true_linearization->C();
+  const MatrixXd D = true_linearization->D();
+  const VectorXd f0 = true_linearization->f0();
+  const VectorXd g0 = true_linearization->y0();
+  const VectorXd z = ctrl_context.get_continuous_state()
+                        .get_misc_continuous_state()
+                        .CopyToVector();
+  const VectorXd q =
+      plant.GetPositions(plant.GetMyContextFromRoot(simulator.get_context()));
+  const MatrixXd I = MatrixXd::Identity(A.rows(), A.cols());
+
+  const MatrixXd H = h * (I - h * A).inverse() * B;
+  const VectorXd h0 = (I - h * A).inverse() * (z + h * f0);
+  const MatrixXd P = D + h * C * (I - h * A).inverse() * B;
+  const VectorXd p = C * (I - h * A).inverse() * (z + h * f0) + g0;
+  const MatrixXd Pq = P.leftCols(plant.num_positions());
+  const MatrixXd Pv = P.rightCols(plant.num_velocities());
+  const MatrixXd K = Pv;
+  const VectorXd k0 = p + Pq * q;
+
+  // Check that we're close to the reference
+  EXPECT_TRUE(CompareMatrices(implicit_data.H, H, kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(implicit_data.h0, h0, kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(implicit_data.K, K, kTolerance,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(implicit_data.k0, k0, kTolerance,
+                              MatrixCompareType::relative));
 
   // // Simulate for a few seconds
   // const int fps = 32;

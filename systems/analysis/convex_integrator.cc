@@ -1451,17 +1451,13 @@ void ConvexIntegrator<T>::CalcImplicitExternalSystemData(
 
   // u = (D + C H) x_{t+h} + C h_0 + g0
   //   = K v_{t+h} + k0
+  // N.B. this is assuming that q is constant. We could do slightly better by
+  // using q_{t+h} = q_t + h N(q_t) v_{t+h}.
   const MatrixX<T> P = D + C * implicit_data->H;
-  const MatrixX<T> Pq = P.topRows(plant().num_positions());
-  const MatrixX<T> Pv = P.bottomRows(plant().num_velocities());
+  const MatrixX<T> Pq = P.leftCols(plant().num_positions());
+  const MatrixX<T> Pv = P.rightCols(plant().num_velocities());
   implicit_data->K = Pv;
   implicit_data->k0 = Pq * q_t + C * implicit_data->h0 + g0;
-
-  fmt::print("H =\n{}\n", fmt_eigen(implicit_data->H));
-  fmt::print("h0 =\n{}\n", fmt_eigen(implicit_data->h0));
-
-  fmt::print("K =\n{}\n", fmt_eigen(implicit_data->K));
-  fmt::print("k0 =\n{}\n", fmt_eigen(implicit_data->k0));
 }
 
 }  // namespace systems
