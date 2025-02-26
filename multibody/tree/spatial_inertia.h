@@ -594,7 +594,9 @@ class SpatialInertia {
   /// invalid, otherwise returns an empty optional.
   std::optional<std::string> CreateInvalidityReport() const;
 
-  DRAKE_DEPRECATED("2025-06-01", "Use SpatialInertia::CreateInvalidityReport()")
+  DRAKE_DEPRECATED("2025-06-01",
+                   "Will be removed.  There is no replacement. "
+                   " File an issue if that is a problem.")
   std::string CriticizeNotPhysicallyValid() const {
     std::optional<std::string> invalidity_report = CreateInvalidityReport();
     if (invalidity_report.has_value()) return *invalidity_report;
