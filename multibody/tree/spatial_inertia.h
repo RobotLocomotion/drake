@@ -590,8 +590,8 @@ class SpatialInertia {
   /// @see RotationalInertia::CouldBePhysicallyValid().
   boolean<T> IsPhysicallyValid() const;
 
-  /// Returns an optional string if this SpatialInertia is invalid, otherwise
-  /// returns an empty optional. Check the return value with has_value().
+  /// (Internal use only). Returns an optional string if this SpatialInertia is
+  /// invalid, otherwise returns an empty optional.
   std::optional<std::string> CreateInvalidityReport() const;
 
   DRAKE_DEPRECATED("2025-06-01", "Use SpatialInertia::CreateInvalidityReport()")
