@@ -43,6 +43,11 @@ class ConvexIntegratorTester {
       LinearizedExternalSystem<double>* linear_sys) {
     integrator->LinearizeExternalSystem(linear_sys);
   }
+
+  static LinearizedExternalSystem<double> GetLinearizedExternalSystem(
+      ConvexIntegrator<double>* integrator) {
+    return integrator->linearized_external_system_;
+  }
 };
 
 // MJCF model of a simple double pendulum
@@ -257,7 +262,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   simulator.Initialize();
 
   // Linearize the non-plant system dynamics around the current state
-  LinearizedExternalSystem<double> linear_sys;
+  LinearizedExternalSystem<double> linear_sys =
+      ConvexIntegratorTester::GetLinearizedExternalSystem(&integrator);
   ConvexIntegratorTester::LinearizeExternalSystem(&integrator, &linear_sys);
 
   // Reference linearization

@@ -118,6 +118,17 @@ void ConvexIntegrator<T>::DoInitialize() {
   x_next_full_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
+  
+  // Allocate linearization of external controller system
+  const int nx = nq + nv;
+  const int nu = plant().num_actuators();
+  const int nz = x_next_full_->num_z();
+  linearized_external_system_.A.resize(nz, nz);
+  linearized_external_system_.B.resize(nz, nx);
+  linearized_external_system_.C.resize(nu, nz);
+  linearized_external_system_.D.resize(nu, nx);
+  linearized_external_system_.f0.resize(nz);
+  linearized_external_system_.g0.resize(nu);
 }
 
 template <typename T>
@@ -1328,27 +1339,19 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(
     LinearizedExternalSystem<T>* linear_sys) {
   using std::abs;
 
-  // Make sure everything is the correct size
-  // TODO(vincekurtz): allocate this->linearized_external_system_ in Initialize
+  // Get some useful sizes
   const Context<T>& context = this->get_context();
   const ContinuousState<T>& state = context.get_continuous_state();
   const int nx = state.num_q() + state.num_v();
   const int nz = state.num_z();
-  const int nu = plant().num_actuators();
 
+  // Convienent references to what we're going to set
   MatrixX<T>& A = linear_sys->A;
   MatrixX<T>& B = linear_sys->B;
   MatrixX<T>& C = linear_sys->C;
   MatrixX<T>& D = linear_sys->D;
   VectorX<T>& f0 = linear_sys->f0;
   VectorX<T>& g0 = linear_sys->g0;
-
-  A.resize(nz, nz);
-  B.resize(nz, nx);
-  C.resize(nu, nz);
-  D.resize(nu, nx);
-  f0.resize(nz);
-  g0.resize(nu);
 
   // Get the initial values f0 and g0. We'll do this before marking any context
   // items as stale.
