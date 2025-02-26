@@ -10,7 +10,7 @@ package(default_visibility = ["//visibility:public"])
 exports_files(glob([
     "*",
     "include/*",
-]))
+], allow_empty=True))
 
 
 py_binary(
@@ -19,7 +19,6 @@ py_binary(
     main = "cpplint.py",
     python_version = "PY3",
     srcs_version = "PY3",
-    visibility = [],
 )
 
 filegroup(
@@ -28,5 +27,7 @@ filegroup(
     srcs = [
         "cpplint.py",
         "cpplint_unittest.py",
+        "pyproject.toml",
+        "setup.py"
     ],
 )
