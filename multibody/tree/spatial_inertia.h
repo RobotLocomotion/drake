@@ -12,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/math/cross_product.h"
@@ -587,12 +588,13 @@ class SpatialInertia {
   /// condition when performed on a rotational inertia about a body's center of
   /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
-  boolean<T> IsPhysicallyValid() const {
-    return boolean<T>(!CreateInvalidityReport().has_value());
-  }
+  boolean<T> IsPhysicallyValid() const;
 
-  /// Performs the same checks as the boolean typed IsPhysicallyValid().
-  /// @returns empty string if valid, otherwise, a detailed error message.
+  /// Returns an optional string if this SpatialInertia is invalid, otherwise
+  /// returns an empty optional. Check the return value with has_value().
+  std::optional<std::string> CreateInvalidityReport() const;
+
+  DRAKE_DEPRECATED("2025-06-01", "Use SpatialInertia::CreateInvalidityReport()")
   std::string CriticizeNotPhysicallyValid() const {
     std::optional<std::string> invalidity_report = CreateInvalidityReport();
     if (invalidity_report.has_value()) return *invalidity_report;
@@ -901,9 +903,6 @@ class SpatialInertia {
     return std::numeric_limits<
         typename Eigen::NumTraits<T>::Literal>::quiet_NaN();
   }
-
-  // Returns an error string if `this` SpatialInertia is invalid.
-  std::optional<std::string> CreateInvalidityReport() const;
 
   // If type T is Symbolic, validity is not checked and no exception is thrown.
   void ThrowIfNotPhysicallyValid() {

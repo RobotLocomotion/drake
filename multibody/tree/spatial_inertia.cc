@@ -372,6 +372,11 @@ std::optional<std::string> SpatialInertia<T>::CreateInvalidityReport() const {
 }
 
 template <typename T>
+boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
+  return boolean<T>(!CreateInvalidityReport().has_value());
+}
+
+template <typename T>
 void SpatialInertia<T>::ThrowIfNotPhysicallyValidImpl() const {
   const std::optional<std::string> invalidity_report = CreateInvalidityReport();
   if (invalidity_report.has_value()) {
