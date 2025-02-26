@@ -341,16 +341,16 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   EXPECT_TRUE(CompareMatrices(implicit_data.k0, k0, kTolerance,
                               MatrixCompareType::relative));
 
-  // // Simulate for a few seconds
-  // const int fps = 32;
-  // meshcat->StartRecording(fps);
-  // simulator.AdvanceTo(10.0);
-  // meshcat->StopRecording();
-  // meshcat->PublishRecording();
+  // Simulate for a few seconds
+  const int fps = 32;
+  meshcat->StartRecording(fps);
+  simulator.AdvanceTo(10.0);
+  meshcat->StopRecording();
+  meshcat->PublishRecording();
 
-  // std::cout << std::endl;
-  // PrintSimulatorStatistics(simulator);
-  // std::cout << std::endl;
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
 }
 
 }  // namespace systems

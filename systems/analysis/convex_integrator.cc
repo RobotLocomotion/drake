@@ -153,6 +153,13 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   TimestepIndependentProblemData<T>& data =
       workspace_.timestep_independent_data;
 
+  // Compute data for implicit integration of the external system
+  // Note that this needs to happen before CalcTimestepIndependentProblemData,
+  // since that method will set actuator forces to k0.
+  LinearizeExternalSystem(&linearized_external_system_);
+  CalcImplicitExternalSystemData(linearized_external_system_, h,
+                                 &implicit_external_system_data_);
+
   // Compute problem data at time (t)
   CalcTimestepIndependentProblemData(plant_context, &data);
 
@@ -239,6 +246,10 @@ void ConvexIntegrator<T>::CalcNextContinuousState(
     VectorX<T> z = diagram_context.get_continuous_state()
                        .get_misc_continuous_state()
                        .CopyToVector();
+    // VectorX<T> x(plant().num_positions() + plant().num_velocities());
+    // x << x_next->get_generalized_position().CopyToVector(),
+    //     x_next->get_generalized_velocity().CopyToVector();
+    // z = implicit_external_system_data_.H * x + implicit_external_system_data_.k0;
     z += h * z_dot;
     x_next->get_mutable_misc_continuous_state().SetFromVector(z);
   }
@@ -825,6 +836,7 @@ void ConvexIntegrator<T>::CalcTimestepIndependentProblemData(
     f_ext.mutable_generalized_forces() +=
         plant().MakeActuationMatrix() *
         plant().get_actuation_input_port().Eval(context);
+    // plant().MakeActuationMatrix() * implicit_external_system_data_.k0;
   }
 
   // accelerations
@@ -845,9 +857,16 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // free-motion velocities v*
   v_star = data.v0 + h * data.a;
 
-  // linearized dynamics matrix A = M + hD
+  // linearized dynamics matrix A = M + hD + h B K
   A_dense = data.M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
+
+  MatrixX<T> BK = plant().MakeActuationMatrix() * implicit_external_system_data_.K;
+  fmt::print("BK =\n{}\n", fmt_eigen(BK));
+  A_dense += h * BK;
+
+  // TODO(vincekurtz): consider what happens when the external system messes with the sparsity pattern
+  // TODO(vincekurtz): enforce positive definiteness of B K
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
