@@ -129,6 +129,12 @@ void ConvexIntegrator<T>::DoInitialize() {
   linearized_external_system_.D.resize(nu, nx);
   linearized_external_system_.f0.resize(nz);
   linearized_external_system_.g0.resize(nu);
+
+  // Allocate data for implicit external system integration
+  implicit_external_system_data_.K.resize(nu, nv);
+  implicit_external_system_data_.k0.resize(nu);
+  implicit_external_system_data_.H.resize(nz, nq + nv);
+  implicit_external_system_data_.h0.resize(nz);
 }
 
 template <typename T>
@@ -1419,6 +1425,43 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(
   // Reset the context back to how we found it
   mutable_context->get_mutable_continuous_state().SetFromVector(s);
   mutable_context->NoteContinuousStateChange();
+}
+
+template <typename T>
+void ConvexIntegrator<T>::CalcImplicitExternalSystemData(
+    const LinearizedExternalSystem<T>& linear_sys, const T& h,
+    ImplicitExternalSystemData<T>* implicit_data) const {
+  const MatrixX<T>& A = linear_sys.A;
+  const MatrixX<T>& B = linear_sys.B;
+  const MatrixX<T>& C = linear_sys.C;
+  const MatrixX<T>& D = linear_sys.D;
+  const VectorX<T>& f0 = linear_sys.f0;
+  const VectorX<T>& g0 = linear_sys.g0;
+  
+  const ContinuousState<T>& state = this->get_context().get_continuous_state();
+  const VectorX<T> z_t = state.get_misc_continuous_state().CopyToVector();
+  const VectorX<T> q_t = state.get_generalized_position().CopyToVector();
+
+  // z_{t+h} = h(I - hA)^{-1} B x_{t+h} + (I - hA)^{-1} (z_t + h f0)
+  //         = H x_{t+h} + h_0
+  Eigen::LDLT<MatrixX<T>> ldlt_I_minus_hA(
+      MatrixX<T>::Identity(A.rows(), A.cols()) - h * A);
+  implicit_data->H = h * ldlt_I_minus_hA.solve(B);
+  implicit_data->h0 = ldlt_I_minus_hA.solve(z_t + h * f0);
+
+  // u = (D + C H) x_{t+h} + C h_0 + g0
+  //   = K v_{t+h} + k0
+  const MatrixX<T> P = D + C * implicit_data->H;
+  const MatrixX<T> Pq = P.topRows(plant().num_positions());
+  const MatrixX<T> Pv = P.bottomRows(plant().num_velocities());
+  implicit_data->K = Pv;
+  implicit_data->k0 = Pq * q_t + C * implicit_data->h0 + g0;
+
+  fmt::print("H =\n{}\n", fmt_eigen(implicit_data->H));
+  fmt::print("h0 =\n{}\n", fmt_eigen(implicit_data->h0));
+
+  fmt::print("K =\n{}\n", fmt_eigen(implicit_data->K));
+  fmt::print("k0 =\n{}\n", fmt_eigen(implicit_data->k0));
 }
 
 }  // namespace systems

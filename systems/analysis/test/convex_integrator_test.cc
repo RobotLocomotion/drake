@@ -48,6 +48,18 @@ class ConvexIntegratorTester {
       ConvexIntegrator<double>* integrator) {
     return integrator->linearized_external_system_;
   }
+
+  static void CalcImplicitExternalSystemData(
+      ConvexIntegrator<double>* integrator,
+      const LinearizedExternalSystem<double>& linear_sys, const double& h,
+      ImplicitExternalSystemData<double>* implicit_data) {
+    integrator->CalcImplicitExternalSystemData(linear_sys, h, implicit_data);
+  }
+
+  static ImplicitExternalSystemData<double> GetImplicitExternalSystemData(
+      ConvexIntegrator<double>* integrator) {
+    return integrator->implicit_external_system_data_;
+  }
 };
 
 // MJCF model of a simple double pendulum
@@ -288,16 +300,23 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   EXPECT_TRUE(CompareMatrices(linear_sys.g0, true_linearization->y0(),
                               kTolerance, MatrixCompareType::relative));
 
-  // // Simulate for a few seconds
-  const int fps = 32;
-  meshcat->StartRecording(fps);
-  simulator.AdvanceTo(10.0);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
+  // Compute implicit integration data for the external system
+  const double h = 0.01;
+  ImplicitExternalSystemData<double> implicit_data = 
+      ConvexIntegratorTester::GetImplicitExternalSystemData(&integrator);
+  ConvexIntegratorTester::CalcImplicitExternalSystemData(&integrator,
+      linear_sys, h, &implicit_data);    
 
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
+  // // Simulate for a few seconds
+  // const int fps = 32;
+  // meshcat->StartRecording(fps);
+  // simulator.AdvanceTo(10.0);
+  // meshcat->StopRecording();
+  // meshcat->PublishRecording();
+
+  // std::cout << std::endl;
+  // PrintSimulatorStatistics(simulator);
+  // std::cout << std::endl;
 }
 
 }  // namespace systems

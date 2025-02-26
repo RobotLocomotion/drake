@@ -109,6 +109,20 @@ struct LinearizedExternalSystem {
 };
 
 /**
+ * Container for linear maps for external system implicit integration. In
+ * particular, stores
+ *    u = K v_{t+h} + k_0
+ *    z_{t+h} = H x_{t+h} + h_0 
+ */
+template <class T>
+struct ImplicitExternalSystemData {
+  MatrixX<T> K;
+  VectorX<T> k0;
+  MatrixX<T> H;
+  VectorX<T> h0;
+};
+
+/**
  * An experimental implicit integrator that solves a convex SAP problem to
  * advance the state, rather than relying on non-convex Newton-Raphson.
  */
@@ -299,6 +313,15 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   //
   void LinearizeExternalSystem(LinearizedExternalSystem<T>* linear_sys);
 
+  // Compute the linear maps that we'll use to implicitly integrate the external
+  // system, 
+  //    u = K v_{t+h} + k_0,
+  // and 
+  //    z_{t+h} = H x_{t+h} + h_0.
+  void CalcImplicitExternalSystemData(
+      const LinearizedExternalSystem<T>& linear_sys, const T& h,
+      ImplicitExternalSystemData<T>* implicit_data) const;
+
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {
     return GetInternalTree(plant()).get_topology();
@@ -382,6 +405,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // Linearization of an external controller system attached to the plant.
   LinearizedExternalSystem<T> linearized_external_system_;
+
+  // Stores linear maps for implicit external system integration
+  ImplicitExternalSystemData<T> implicit_external_system_data_;
 };
 
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
