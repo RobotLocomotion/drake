@@ -15,7 +15,7 @@ exports_files(glob([
 
 py_binary(
     name = "cpplint",
-    srcs = ["cpplint.py"],
+    srcs = ["cpplint.py", "pyproject.toml"],
     main = "cpplint.py",
     python_version = "PY3",
     srcs_version = "PY3",
