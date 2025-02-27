@@ -76,7 +76,7 @@ def _add_linter_rules(
         srcs = ["@cpplint_internal//:cpplint"],
         data = cpplint_data + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
-        main = "@cpplint_internal//:cpplint/cpplint.py",
+        main = "@cpplint_internal//:cpplint.py",
         size = size,
         tags = ["cpplint", "lint"],
     )
