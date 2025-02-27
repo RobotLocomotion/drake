@@ -203,6 +203,13 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1> {
     return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_), p_FM);
   }
 
+  /* We're not yet attempting to optimize the X_FM update. */
+  // TODO(sherm1) Optimize this.
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
    M measured and expressed in frame F as a function of the input velocity v,
    which is the angular velocity. We scale that by the pitch to find the

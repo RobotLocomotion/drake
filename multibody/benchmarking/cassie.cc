@@ -402,9 +402,9 @@ BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamics)
   ->Arg(kWantGradV|kWantGradVdot)
   ->Arg(kWantGradX|kWantGradVdot);
 
+BENCHMARK_DEFINE_F(CassieAutoDiff, InverseDynamicsInM)
 // NOLINTNEXTLINE(runtime/references)
-BENCHMARK_DEFINE_F(CassieAutoDiff,
-                   InverseDynamicsInM)(benchmark::State& state) {
+(benchmark::State& state) {
   DoInverseDynamicsInM(state);
 }
 BENCHMARK_REGISTER_F(CassieAutoDiff, InverseDynamicsInM)
