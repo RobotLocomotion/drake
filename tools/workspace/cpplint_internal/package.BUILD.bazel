@@ -10,8 +10,7 @@ package(default_visibility = ["//visibility:public"])
 exports_files(glob([
     "*",
     "include/*",
-], allow_empty=True))
-
+], allow_empty = True))
 
 py_binary(
     name = "cpplint",
@@ -28,6 +27,6 @@ filegroup(
         "cpplint.py",
         "cpplint_unittest.py",
         "pyproject.toml",
-        "setup.py"
+        "setup.py",
     ],
 )
