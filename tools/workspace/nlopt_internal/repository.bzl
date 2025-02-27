@@ -6,8 +6,8 @@ def nlopt_internal_repository(
     github_archive(
         name = name,
         repository = "stevengj/nlopt",
-        commit = "v2.9.1",
-        sha256 = "1e6c33f8cbdc4138d525f3326c231f14ed50d99345561e85285638c49b64ee93",  # noqa
+        commit = "v2.10.0",
+        sha256 = "506f83a9e778ad4f204446e99509cb2bdf5539de8beccc260a014bd560237be1",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/pr582.patch",
