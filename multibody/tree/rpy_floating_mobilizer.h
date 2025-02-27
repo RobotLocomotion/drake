@@ -237,6 +237,12 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
                                    Vector3<T>(q[3], q[4], q[5]));
   }
 
+  /* There's nothing to optimize for the X_FM update. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame M
   // measured and expressed in frame F as a function of the input generalized
   // velocity v, packed as documented in get_generalized_velocities(). (That's

@@ -339,9 +339,7 @@ class RotationMatrix {
     // MakeFromXRotation() etc. to see that this is correct.
     static_assert(0 <= axis && axis <= 2, "Axis value out of range");
     const Matrix3<T>& M = Rx_BC.matrix();
-    constexpr int x = axis;
-    constexpr int y = (axis + 1) % 3;
-    constexpr int z = (axis + 2) % 3;
+    constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
     DRAKE_ASSERT(M(x, x) == 1 && M(x, y) == 0 && M(x, z) == 0);
     DRAKE_ASSERT(M(y, x) == 0 && M(z, x) == 0);
     const T& c = M(y, y);   // cosine
@@ -384,9 +382,7 @@ class RotationMatrix {
     static_assert(0 <= axis && axis <= 2, "Axis value out of range");
     DRAKE_ASSERT(R_AC != nullptr);
     const Matrix3<T>& M_BC = Rx_BC.matrix();
-    constexpr int x = axis;
-    constexpr int y = (axis + 1) % 3;
-    constexpr int z = (axis + 2) % 3;
+    constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
     DRAKE_ASSERT(M_BC(x, x) == 1 && M_BC(x, y) == 0 && M_BC(x, z) == 0);
     DRAKE_ASSERT(M_BC(y, x) == 0 && M_BC(z, x) == 0);
     const T& c = M_BC(y, y);  // cosine

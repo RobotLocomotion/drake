@@ -1,6 +1,5 @@
 #include "drake/multibody/tree/body_node_impl.h"
 
-#include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/curvilinear_mobilizer.h"
 #include "drake/multibody/tree/planar_mobilizer.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
@@ -36,19 +35,84 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
   DRAKE_ASSERT(mobod_index() != world_mobod_index());
   DRAKE_ASSERT(pc != nullptr);
 
-  // TODO(sherm1) This should be an update rather than generating a whole
-  //  new transform.
+  // RigidBody for this node.
+  const RigidBody<T>& body_B = body();
+
+  // RigidBody for this node's parent, or the parent body P.
+  const RigidBody<T>& body_P = parent_body();
+
+  // Inboard (F)/Outboard (M) frames of this node's mobilizer.
+  const Frame<T>& frame_F = inboard_frame();
+  DRAKE_ASSERT(frame_F.body().index() == body_P.index());
+  const Frame<T>& frame_M = outboard_frame();
+  DRAKE_ASSERT(frame_M.body().index() == body_B.index());
+
+  // Input (const):
+  // - X_PF
+  // - X_MB
+  // - X_WP(q(W:P)), where q(W:P) includes all positions in the kinematics
+  //                 path from parent body P to the world W.
+  const math::RigidTransform<T>& X_PF =
+      frame_F.get_X_BF(frame_body_pose_cache);  // B==P
+  const bool X_PF_is_identity = frame_F.is_X_BF_identity(frame_body_pose_cache);
+
+  const math::RigidTransform<T>& X_MB =
+      frame_M.get_X_FB(frame_body_pose_cache);  // F==M
+  const bool X_MB_is_identity = frame_M.is_X_BF_identity(frame_body_pose_cache);
+  const math::RigidTransform<T>& X_WP = pc->get_X_WB(inboard_mobod_index());
+
+  // Output (updating a cache entry):
+  // - X_FM(q_B)
+  // - X_PB(q_B)
+  // - X_WB(q(W:P), q_B)
+  // - p_PoBo_W(q_B)
+  math::RigidTransform<T>& X_FM = pc->get_mutable_X_FM(mobod_index());
+  math::RigidTransform<T>& X_PB = pc->get_mutable_X_PB(mobod_index());
+  math::RigidTransform<T>& X_WB = pc->get_mutable_X_WB(mobod_index());
+  Vector3<T>& p_PoBo_W = pc->get_mutable_p_PoBo_W(mobod_index());
 
   // Update mobilizer-specific position dependent kinematics.
-  math::RigidTransform<T>& X_FM = get_mutable_X_FM(pc);
-  X_FM = mobilizer_->calc_X_FM(get_q(positions));
+  mobilizer_->update_X_FM(get_q(positions), &X_FM);
 
-  // Given X_FM that we just put into PositionKinematicsCache (pc), and
-  // calculations already done through the parent mobilizer, this
-  // calculates into pc: X_PB, X_WB, p_PoBo_W
-  // Not mobilizer specific so implemented in the base class.
-  BodyNode<T>::CalcAcrossMobilizerBodyPoses_BaseToTip(frame_body_pose_cache,
-                                                      pc);
+  // Cases: 0 general case
+  //        1 only X_PF is identity
+  //        2 only X_MB is identity
+  //        3 both are identity
+  const int special_case = X_MB_is_identity << 1 | X_PF_is_identity;
+  switch (special_case) {
+    case 0:  // The general case.
+    {
+      const math::RigidTransform<T> X_FB =
+          mobilizer_->compose_X_FM_with(X_FM, X_MB);
+      X_PB = X_PF * X_FB;
+      X_WB = X_WP * X_PB;
+    } break;
+    case 1:  // Only X_PF is identity.
+      // X_PB = X_PF * X_FM * X_MB
+      //      =   I  * X_FM * X_MB
+      X_PB = mobilizer_->compose_X_FM_with(X_FM, X_MB);
+      X_WB = X_WP * X_PB;  // No shortcut  }
+      break;
+    case 2:  // Only X_MB is identity.
+      // X_PB = X_PF * X_FM * X_MB
+      //      = X_PF * X_FM *  I
+      X_PB = mobilizer_->compose_with_X_FM(X_PF, X_FM);
+      X_WB = X_WP * X_PB;  // No shortcut.
+      break;
+    case 3:  // The best case: both X_PF and X_BM are identity.
+      // X_PB = X_PF * X_FM * X_MB
+      //      =   I  * X_FM *  I
+      // X_WB = X_WP * X_PB
+      //      = X_WP * X_FM
+      X_PB = X_FM;
+      X_WB = mobilizer_->compose_with_X_FM(X_WP, X_FM);
+      break;
+  }
+
+  // Compute shift vector p_PoBo_W from the parent origin to the body origin.
+  const Vector3<T>& p_PoBo_P = X_PB.translation();
+  const math::RotationMatrix<T>& R_WP = X_WP.rotation();
+  p_PoBo_W = R_WP * p_PoBo_P;
 }
 
 // Calculate and save X_FM, X_MpM, X_WM

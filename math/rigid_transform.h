@@ -309,7 +309,7 @@ class RigidTransform {
   ///   same `axis`. Updated on output.
   template <int axis>
   static void UpdateAxialRotation(const T& theta, RigidTransform<T>* Xx_BC) {
-    DRAKE_ASSERT(Xx_BC.translation() == Vector3<T>::Zero());
+    DRAKE_ASSERT(Xx_BC->translation() == Vector3<T>::Zero());
     RotationMatrix<T>::UpdateAxialRotation(theta, &Xx_BC->R_AB_);
   }
 

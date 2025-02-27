@@ -164,15 +164,16 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
     }
   }
 
-  void compose_with_X_FM(const math::RigidTransform<T>& X_AF,
-                         const math::RigidTransform<T>& X_FM,
-                         math::RigidTransform<T>* X_AM) const {
-    DRAKE_ASSERT(X_AM != nullptr);
+  math::RigidTransform<T> compose_with_X_FM(
+      const math::RigidTransform<T>& X_AF,
+      const math::RigidTransform<T>& X_FM) const {
+    math::RigidTransform<T> X_AM;
     if constexpr (true) {
-      X_AF.ComposeWithRotation(X_FM, &*X_AM);
+      X_AF.ComposeWithRotation(X_FM, &X_AM);
     } else {
       X_AF.ComposeWithAxialRotation<2>(X_FM, &*X_AM);
     }
+    return X_AM;
   }
 
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard

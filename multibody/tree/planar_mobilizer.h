@@ -161,6 +161,12 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
                                    Vector3<T>(q[0], q[1], 0.0));
   }
 
+  /* We're not attempting to optimize the X_FM update. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   /* Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
   M measured and expressed in frame F as a function of the input velocity v. */
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {

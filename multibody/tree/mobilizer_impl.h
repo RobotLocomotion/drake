@@ -17,12 +17,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// TODO(sherm1) Weld should be templatized 0 (X_FM=identity), 1 (X_FM is
-//  translate only), 2 (X_FM is general).
-
-// TODO(sherm1) Revolute should be templatized 0,1,2 -> x,y,z rotation or
-//  4 rotation about a general axis.
-
 /* Base class for specific Mobilizer implementations with the number of
 generalized positions and velocities resolved at compile time as template
 parameters. This allows specific mobilizer implementations to only work on
@@ -38,20 +32,20 @@ following (ideally inline) methods.
 state variables for the particular mobilizer. They are only 8-byte aligned so be
 careful when interpreting them as Eigen vectors for computation purposes.
 
-  // Returns X_FM(q)
+  // Computes X_FM(q)
   // TODO(sherm1) Do we need this one?
   RigidTransform<T> calc_X_FM(const T* q) const;
 
-  // Returns a transform that has the right constants set so that only changes
-  // need be written subsequently. In most cases returning an identity transform
-  // is sufficient. A Weld mobilizer may set its final transform here.
+  // Returns a transform that has the right constants set so that only changed
+  // elements need be written subsequently. In most cases returning an identity
+  // transform is sufficient.
   RigidTransform<T> init_X_FM0() const;
 
   // Given current q and an X_FM that has been properly initialized with
-  // init_X_FM() or previous updates, update to X_FM(q) by filling in only
+  // init_X_FM0() or previous updates, update to X_FM(q) by filling in only
   // the potentially-changed elements. For example, a revolute mobilizer about
   // one of the frame axes will update only the four sine & cosine entries.
-  // A prismatic mobilizer update only the three shift vector elements.
+  // A prismatic mobilizer along the Z axis updates only the z shift element.
   void update_X_FM(const T* q, RigidTransform<T>* X_FM) const;
 
   // Returns v_F = X_FM ⋅ v_M (shift and re-express)
@@ -63,11 +57,16 @@ careful when interpreting them as Eigen vectors for computation purposes.
                         const Vector3<T>& v_M) const;
 
   // Compose X_AM = X_AF ⋅ X_FM, optimized for the known structure of X_FM.
-  // For example, a revolute (prismatic) mobilizer has only 4 (3) significant
-  // entries in X_FM out of 12.
+  // For example, a revolute mobilizer has only 4 significant entries in X_FM
+  // out of 12, and a prismatic along Z has only 1.
   void compose_with_X_FM(const RigidTransform<T>& X_AF,
                          const RigidTransform<T>& X_FM,
                          RigidTransform<T>* X_AM) const;
+
+  // Compose X_FB = X_FM ⋅ X_MB, optimized for the known structure of X_FM.
+  void compose_X_FM_with(const RigidTransform<T>& X_FM,
+                         const RigidTransform<T>& X_MB,
+                         RigidTransform<T>* X_FB) const;
 
   // Returns V_FM_F = H_FM_F(q)⋅v
   SpatialVelocity<T> calc_V_FM(const T* q,
@@ -208,7 +207,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // to return a cross-mobilizer transform with the appropriate structure for
   // each mobilizer. The idea is that during computation, a mobilizer need only
   // update the changing entries in X_FM(q) because all the constant entries
-  // were properly set by this function. In most cases, and identity transform
+  // were properly set by this function. In most cases, an identity transform
   // is sufficient.
   math::RigidTransform<T> init_X_FM0() const {
     return math::RigidTransform<T>::Identity();
@@ -237,11 +236,21 @@ class MobilizerImpl : public Mobilizer<T> {
   // Returns the composition X_AM = X_AF ⋅ X_FM. The default implementation
   // treats X_FM as fully general and performs this in 63 flops. Mobilizers
   // that know more about the structure of their X_FM should override.
-  void compose_with_X_FM(const math::RigidTransform<T>& X_AF,
-                         const math::RigidTransform<T>& X_FM,
-                         math::RigidTransform<T>* X_AM) const {
-    DRAKE_ASSERT(X_AM != nullptr);
-    *X_AM = X_AF * X_FM;
+  math::RigidTransform<T> compose_with_X_FM(
+      const math::RigidTransform<T>& X_AF,
+      const math::RigidTransform<T>& X_FM) const {
+    const math::RigidTransform<T> X_AM = X_AF * X_FM;
+    return X_AM;
+  }
+
+  // Returns the composition X_FB = X_FM ⋅ X_MB. The default implementation
+  // treats X_FM as fully general and performs this in 63 flops. Mobilizers
+  // that know more about the structure of their X_FM should override.
+  math::RigidTransform<T> compose_X_FM_with(
+      const math::RigidTransform<T>& X_FM,
+      const math::RigidTransform<T>& X_MB) const {
+    const math::RigidTransform<T> X_FB = X_FM * X_MB;
+    return X_FB;
   }
 
  protected:
