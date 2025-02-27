@@ -380,6 +380,7 @@ Ignore those for now; we'll need to circle back and fix them later.
   - the same purple triangle mesh drawn as a wireframe.
   - the same triangle mesh drawn in multicolor.
   - a blue mesh plot of the function z = y*sin(5*x).
+  - floating text that says "Hello, world!".
 )""");
   MaybePauseForUser();
 
