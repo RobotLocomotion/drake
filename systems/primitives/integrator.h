@@ -24,9 +24,15 @@ class Integrator final : public VectorSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Integrator);
 
-  /// Constructs an %Integrator system.
+  /// Constructs an %Integrator system. The initial output value will be zero.
   /// @param size number of elements in the signal to be processed.
-  explicit Integrator(int size);
+  explicit Integrator(int size) : Integrator(VectorX<double>::Zero(size)) {}
+
+  /// Constructs an %Integrator system with a particular initial output value.
+  /// The size of both input and output are inferred from the given
+  /// `initial_value`.
+  /// @param initial_value the initial output value.
+  explicit Integrator(const VectorX<double>& initial_value);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -40,6 +46,9 @@ class Integrator final : public VectorSystem<T> {
                           const Eigen::Ref<const VectorX<T>>& value) const;
 
  private:
+  template <typename U>
+  friend class Integrator;
+
   // VectorSystem<T> override.
   void DoCalcVectorOutput(const Context<T>& context,
                           const Eigen::VectorBlock<const VectorX<T>>& input,
@@ -52,6 +61,8 @@ class Integrator final : public VectorSystem<T> {
       const Eigen::VectorBlock<const VectorX<T>>& input,
       const Eigen::VectorBlock<const VectorX<T>>& state,
       Eigen::VectorBlock<VectorX<T>>* derivatives) const final;
+
+  VectorX<double> initial_value_;  // Save for use during scalar conversion.
 };
 
 }  // namespace systems
