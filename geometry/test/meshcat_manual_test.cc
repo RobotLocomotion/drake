@@ -103,7 +103,7 @@ int do_main() {
   // For every items we add to the initial array, decrement start_x by one half
   // to keep things centered.
   // Use ++x as the x-position of new items.
-  const double start_x = -8.5;
+  const double start_x = -9.5;
   double x = start_x;
 
   Vector3d sphere_home{++x, 0, 0};
@@ -264,6 +264,55 @@ int do_main() {
     meshcat->PlotSurface("plot_surface", X, Y, Z, Rgba(0, 0, 0.9, 1.0), true);
     meshcat->SetTransform("plot_surface",
                           RigidTransformd(Vector3d{++x, -0.25, 0}));
+  }
+
+  // Text using SetObjectFromThreeJsCode.
+  {
+    std::string javascript = R"""(() => {
+      // Create a plane geometry to serve as the canvas for our text
+      const geometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+
+      // Create a canvas to draw the text
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = 1024;
+      canvas.height = 1024;
+
+      // Set up the canvas with a transparent background
+      context.fillStyle = 'rgba(0, 0, 0, 0)';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the text
+      context.font = '320px sans-serif';
+      context.fillStyle = 'red';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+
+      // Draw "Hello" slightly above the center
+      context.fillText('Hello,', canvas.width / 2, canvas.height / 2 - 140);
+
+      // Draw "world!" slightly below the center
+      context.fillText('world!', canvas.width / 2, canvas.height / 2 + 140);
+
+      // Create a texture from the canvas
+      const texture = new THREE.CanvasTexture(canvas);
+
+      // Create a material using the texture
+      const material = new THREE.MeshPhongMaterial({
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide
+      });
+
+      // Create and return the mesh
+      return new THREE.Mesh(geometry, material);
+    })""";
+    meshcat->SetObjectFromThreeJsCode("text", javascript);
+
+    x += 2;  // the previous surface occupies 2 spots.
+    meshcat->SetTransform("text", RigidTransformd(
+        RotationMatrixd::MakeXRotation(M_PI/2),  // Rotate 90° around X axis
+        Vector3d{x, 0, 0.4}));
   }
 
   std::cout << "\nDo *not* open up your browser to the URL above. Instead use "
