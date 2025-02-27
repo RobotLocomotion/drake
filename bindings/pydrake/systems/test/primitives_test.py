@@ -400,6 +400,30 @@ class TestGeneral(unittest.TestCase):
             test_input = np.arange(input_size)
             mytest(np.arange(input_size), k*np.arange(input_size))
 
+    def test_integrator(self):
+        n = 3
+        initial_value = np.array((1.0, 2.0, 3.0))
+        size_integrator = Integrator(size=n)
+        value_integrator = Integrator(initial_value=initial_value)
+        size_context = size_integrator.CreateDefaultContext()
+        value_context = value_integrator.CreateDefaultContext()
+        self.assertTrue(np.array_equal(
+            size_integrator.get_output_port(0).Eval(size_context),
+            (0.0, 0.0, 0.0)))
+        self.assertTrue(np.array_equal(
+            value_integrator.get_output_port(0).Eval(value_context),
+            initial_value))
+        value_integrator.set_default_integral_value(2 * initial_value)
+        value_context2 = value_integrator.CreateDefaultContext()
+        self.assertTrue(np.array_equal(
+            value_integrator.get_output_port(0).Eval(value_context2),
+            2 * initial_value))
+        size_integrator.set_integral_value(context=size_context,
+                                           value=initial_value)
+        self.assertTrue(np.array_equal(
+            size_integrator.get_output_port(0).Eval(size_context),
+            initial_value))
+
     def test_saturation(self):
         system = Saturation((0., -1., 3.), (1., 2., 4.))
         context = system.CreateDefaultContext()
