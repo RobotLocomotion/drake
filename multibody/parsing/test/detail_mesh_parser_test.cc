@@ -296,6 +296,19 @@ TEST_F(MeshParserTest, RegisteredGeometry) {
   EXPECT_EQ(inspector.NumGeometriesForFrameWithRole(*frame_id,
                                                     geometry::Role::kProximity),
             1);
+
+  // Confirm that geometries registered as meshes have empty proximity
+  // properties. We partially confirm this by checking that the friction
+  // property is not set.
+  const std::vector<geometry::GeometryId> proximity_geometries =
+      inspector.GetGeometries(*frame_id, geometry::Role::kProximity);
+  for (const geometry::GeometryId id : proximity_geometries) {
+    const geometry::ProximityProperties* properties =
+        inspector.GetProximityProperties(id);
+    ASSERT_NE(properties, nullptr);
+    EXPECT_FALSE(properties->HasProperty(geometry::internal::kMaterialGroup,
+                                         geometry::internal::kFriction));
+  }
 }
 
 }  // namespace
