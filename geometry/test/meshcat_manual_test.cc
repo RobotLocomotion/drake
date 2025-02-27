@@ -270,7 +270,7 @@ int do_main() {
   {
     std::string javascript = R"""(() => {
       // Create a plane geometry to serve as the canvas for our text
-      const geometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+      const geometry = new THREE.PlaneGeometry(0.5, 0.5, 1, 1);
 
       // Create a canvas to draw the text
       const canvas = document.createElement('canvas');
@@ -283,16 +283,16 @@ int do_main() {
       context.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw the text
-      context.font = '320px sans-serif';
+      context.font = '380px sans-serif';
       context.fillStyle = 'red';
       context.textAlign = 'center';
       context.textBaseline = 'middle';
 
       // Draw "Hello" slightly above the center
-      context.fillText('Hello,', canvas.width / 2, canvas.height / 2 - 140);
+      context.fillText('Hello,', canvas.width / 2, canvas.height / 2 - 180);
 
       // Draw "world!" slightly below the center
-      context.fillText('world!', canvas.width / 2, canvas.height / 2 + 140);
+      context.fillText('world!', canvas.width / 2, canvas.height / 2 + 180);
 
       // Create a texture from the canvas
       const texture = new THREE.CanvasTexture(canvas);
@@ -309,10 +309,10 @@ int do_main() {
     })""";
     meshcat->SetObjectFromThreeJsCode("text", javascript);
 
-    x += 2;  // the previous surface occupies 2 spots.
+    x += 1.5;  // the previous surface occupies 1 meter.
     meshcat->SetTransform("text", RigidTransformd(
         RotationMatrixd::MakeXRotation(M_PI/2),  // Rotate 90° around X axis
-        Vector3d{x, 0, 0.4}));
+        Vector3d{x, 0, 0.25}));
   }
 
   std::cout << "\nDo *not* open up your browser to the URL above. Instead use "
