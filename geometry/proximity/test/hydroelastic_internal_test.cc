@@ -760,6 +760,10 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
     TestRigidMeshCube(Mesh(obj_path, kScale));
   }
   {
+    SCOPED_TRACE("Rigid Mesh, in-memory obj");
+    TestRigidMeshCube(Mesh(InMemoryMesh{MemoryFile::Make(obj_path)}, kScale));
+  }
+  {
     SCOPED_TRACE("Rigid Mesh, on-disk vtk");
     TestRigidMeshCube(Mesh(vtk_path, kScale));
   }
