@@ -188,6 +188,13 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                                    Vector3<T>::Zero());
   }
 
+  /* We're not attempting to optimize the update, but could improve slightly
+  since the translation never changes (always zero). */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
   // M measured and expressed in frame F as a function of the input generalized
   // velocity v which contains the components of the angular velocity w_FM

@@ -141,6 +141,13 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
         Vector3<T>::Zero());
   }
 
+  /* We're not attempting to optimize the update, but could improve slightly
+  since the translation never changes (always zero). */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame
   // M measured and expressed in frame F as a function of the angles (θ₀, θ₁)
   // stored in context and of the input angular rates v, formatted as
