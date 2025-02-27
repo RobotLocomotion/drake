@@ -16,7 +16,7 @@ py_binary(
     name = "cpplint",
     srcs = [
         "cpplint.py",
-        "setup.py"
+        "setup.py",
     ],
     data = ["pyproject.toml"],
     main = "cpplint.py",
