@@ -267,6 +267,16 @@ TEST_F(MeshParserTest, ZeroVolume) {
 TEST_F(MeshParserTest, RegisteredGeometry) {
   plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
 
+  // Plant some values for default friction that's unlikely to be mistaken for
+  // anything else.
+  const double kDefaultFriction = 0.123;
+  const CoulombFriction<double> default_friction(kDefaultFriction,
+                                                 kDefaultFriction);
+  scene_graph_.set_config(geometry::SceneGraphConfig{
+      .default_proximity_properties = geometry::DefaultProximityProperties{
+          .dynamic_friction = kDefaultFriction,
+          .static_friction = kDefaultFriction}});
+
   // A 2x2x2 (meter) box centered on its canonical frame.
   const std::string obj_path = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj");
@@ -296,6 +306,28 @@ TEST_F(MeshParserTest, RegisteredGeometry) {
   EXPECT_EQ(inspector.NumGeometriesForFrameWithRole(*frame_id,
                                                     geometry::Role::kProximity),
             1);
+
+  // Confirm that from the perspective of the plant, the proximity properties
+  // of the registered geometries are as expected. We do this by verifying that
+  // the default friction values were applied.
+  auto sg_context = scene_graph_.CreateDefaultContext();
+  const geometry::SceneGraphInspector<double>& live_inspector =
+      scene_graph_.get_query_output_port()
+          .Eval<geometry::QueryObject<double>>(*sg_context)
+          .inspector();
+  const std::vector<geometry::GeometryId> collision_geometries =
+      plant_.GetCollisionGeometriesForBody(body);
+  for (const geometry::GeometryId id : collision_geometries) {
+    const geometry::ProximityProperties* properties =
+        live_inspector.GetProximityProperties(id);
+    ASSERT_NE(properties, nullptr);
+    ASSERT_TRUE(properties->HasProperty(geometry::internal::kMaterialGroup,
+                                        geometry::internal::kFriction));
+    const CoulombFriction<double>& friction =
+        properties->GetProperty<CoulombFriction<double>>(
+            geometry::internal::kMaterialGroup, geometry::internal::kFriction);
+    EXPECT_EQ(friction, default_friction);
+  }
 }
 
 }  // namespace

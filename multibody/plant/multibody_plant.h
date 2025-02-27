@@ -2226,14 +2226,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @param[in] X_BG
   ///   The fixed pose of the geometry frame G in the body frame B.
   /// @param[in] shape
-  ///   The geometry::Shape used for visualization. E.g.: geometry::Sphere,
-  ///   geometry::Cylinder, etc.
+  ///   The geometry::Shape used for collision and contact. E.g.:
+  ///   geometry::Sphere, geometry::Cylinder, etc.
   /// @param[in] properties
-  ///   The proximity properties associated with the collision geometry. They
-  ///   *must* include the (`material`, `coulomb_friction`) property of type
-  ///   CoulombFriction<double>.
-  /// @throws std::exception if called post-finalize or if the properties are
-  /// missing the coulomb friction property (or if it is of the wrong type).
+  ///   The proximity properties associated with the collision geometry.
+  /// @throws std::exception if called post-finalize.
   geometry::GeometryId RegisterCollisionGeometry(
       const RigidBody<T>& body, const math::RigidTransform<double>& X_BG,
       const geometry::Shape& shape, const std::string& name,
