@@ -244,7 +244,7 @@ following values for the fields:
 * **Name:** ``Cpplint File``
 * **Description:** ``Apply cpplint to the current file``
 * **Program:** ``bazel``
-* **Arguments:** ``run @styleguide//:cpplint -- --output=eclipse
+* **Arguments:** ``run @cpplint_internal//:cpplint -- --output=eclipse
                  $FilePath$``
 * **Working directory:** ``$Projectpath$``
 * **Advanced Options:** Confirm ``Open console for tool output`` is checked
@@ -304,7 +304,7 @@ Change the following fields in the instructions given above:
 
 Building the google styleguide lint tool:
 
-``bazel build @styleguide//:cpplint``
+``bazel build @cpplint_internal//:cpplint``
 
 **Drake style addenda**
 

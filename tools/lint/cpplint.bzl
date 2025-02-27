@@ -73,10 +73,10 @@ def _add_linter_rules(
     # Google cpplint.
     py_test_isolated(
         name = name + "_cpplint",
-        srcs = ["@styleguide//:cpplint"],
+        srcs = ["@cpplint_internal//:cpplint"],
         data = cpplint_data + source_labels,
         args = _EXTENSIONS_ARGS + source_filenames,
-        main = "@styleguide//:cpplint/cpplint.py",
+        main = "@cpplint_internal//:cpplint/cpplint.py",
         size = size,
         tags = ["cpplint", "lint"],
     )
