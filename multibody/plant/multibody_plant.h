@@ -1157,6 +1157,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called before Finalize().
   const systems::InputPort<T>& get_applied_generalized_force_input_port() const;
 
+  // TODO(jwnimmer-tri) This input port should use BusValue instead of vector<>,
+  // so that the ExternallyAppliedSpatialForceMultiplexer hassle is unnecessary.
+  // Add the new port with a different name (maybe "applied_spatial_force_bus")
+  // and deprecate this port and that force mux for removal.
   /// Returns a constant reference to the input port for applying spatial
   /// forces to bodies in the plant. The data type for the port is an
   /// std::vector of ExternallyAppliedSpatialForce; any number of spatial forces
