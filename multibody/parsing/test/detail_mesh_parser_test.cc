@@ -296,6 +296,18 @@ TEST_F(MeshParserTest, RegisteredGeometry) {
   EXPECT_EQ(inspector.NumGeometriesForFrameWithRole(*frame_id,
                                                     geometry::Role::kProximity),
             1);
+
+  // Confirm that geometries registered as meshes have empty proximity
+  // properties -- the only property group is the default property group.
+  const std::vector<geometry::GeometryId> proximity_geometries =
+      inspector.GetGeometries(*frame_id, geometry::Role::kProximity);
+  for (const geometry::GeometryId id : proximity_geometries) {
+    const geometry::ProximityProperties* properties =
+        inspector.GetProximityProperties(id);
+    ASSERT_NE(properties, nullptr);
+    EXPECT_THAT(properties->GetGroupNames(),
+                ::testing::ElementsAre(properties->default_group_name()));
+  }
 }
 
 }  // namespace
