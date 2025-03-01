@@ -418,7 +418,21 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
+  m.def(
+      "MakeRenderEngineVtk",
+      [](const RenderEngineVtkParams& params) -> RenderEngine* {
+        // Having abandoned the old RobotLocomotion pybind11 branch
+        // with special handling of std::unique_ptr<>, this binding's
+        // return value path started deleting the C++ object and
+        // returning a dead non-null pointer. To avoid that, we
+        // instead explicitly unwrap the pointer here and rely on the
+        // take_ownership return value policy. The take_ownership
+        // policy would be the default policy in this case, but it
+        // seems safer and more clear to apply it explicitly.
+        std::unique_ptr<RenderEngine> result = MakeRenderEngineVtk(params);
+        return result.release();
+      },
+      py::arg("params"), py_rvp::take_ownership,
       doc_geometry.MakeRenderEngineVtk.doc);
 
   {
@@ -432,8 +446,21 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
-      py::arg("params") = RenderEngineGlParams(),
+  m.def(
+      "MakeRenderEngineGl",
+      [](const RenderEngineGlParams& params) -> RenderEngine* {
+        // Having abandoned the old RobotLocomotion pybind11 branch
+        // with special handling of std::unique_ptr<>, this binding's
+        // return value path started deleting the C++ object and
+        // returning a dead non-null pointer. To avoid that, we
+        // instead explicitly unwrap the pointer here and rely on the
+        // take_ownership return value policy. The take_ownership
+        // policy would be the default policy in this case, but it
+        // seems safer and more clear to apply it explicitly.
+        std::unique_ptr<RenderEngine> result = MakeRenderEngineGl(params);
+        return result.release();
+      },
+      py::arg("params") = RenderEngineGlParams(), py_rvp::take_ownership,
       doc_geometry.MakeRenderEngineGl.doc);
 
   {
@@ -447,9 +474,23 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineGltfClient", &MakeRenderEngineGltfClient,
+  m.def(
+      "MakeRenderEngineGltfClient",
+      [](const RenderEngineGltfClientParams& params) -> RenderEngine* {
+        // Having abandoned the old RobotLocomotion pybind11 branch
+        // with special handling of std::unique_ptr<>, this binding's
+        // return value path started deleting the C++ object and
+        // returning a dead non-null pointer. To avoid that, we
+        // instead explicitly unwrap the pointer here and rely on the
+        // take_ownership return value policy. The take_ownership
+        // policy would be the default policy in this case, but it
+        // seems safer and more clear to apply it explicitly.
+        std::unique_ptr<RenderEngine> result =
+            MakeRenderEngineGltfClient(params);
+        return result.release();
+      },
       py::arg("params") = RenderEngineGltfClientParams(),
-      doc_geometry.MakeRenderEngineGltfClient.doc);
+      py_rvp::take_ownership, doc_geometry.MakeRenderEngineGltfClient.doc);
 
   AddValueInstantiation<RenderLabel>(m);
 }
