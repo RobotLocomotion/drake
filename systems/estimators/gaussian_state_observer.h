@@ -22,6 +22,7 @@ namespace estimators {
  * @endsystem
  *
  * @see ExtendedKalmanFilter()
+ * @see UnscentedKalmanFilter()
  *
  * @tparam_default_scalar
  * @ingroup estimator_systems

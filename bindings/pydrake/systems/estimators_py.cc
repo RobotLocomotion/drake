@@ -5,6 +5,7 @@
 #include "drake/systems/estimators/gaussian_state_observer.h"
 #include "drake/systems/estimators/kalman_filter.h"
 #include "drake/systems/estimators/luenberger_observer.h"
+#include "drake/systems/estimators/unscented_kalman_filter.h"
 
 namespace drake {
 namespace pydrake {
@@ -183,6 +184,74 @@ PYBIND11_MODULE(estimators, m) {
         py::arg("W"), py::arg("V"),
         py::arg("options") = ExtendedKalmanFilterOptions(),
         doc.ExtendedKalmanFilter.doc_System_double);
+  }
+
+  {
+    using Class = UnscentedKalmanFilterOptions;
+    constexpr auto& cls_doc = doc.UnscentedKalmanFilterOptions;
+    py::class_<UnscentedKalmanFilterOptions> cls(
+        m, "UnscentedKalmanFilterOptions", cls_doc.doc);
+    {
+      using Nested = Class::UnscentedTransformParameters;
+      constexpr auto& nested_doc = cls_doc.UnscentedTransformParameters;
+      py::class_<Nested> nested(
+          cls, "UnscentedTransformParameters", nested_doc.doc);
+      nested  // BR
+          .def(py::init<double, double,
+                   std::variant<double, std::function<double(int)>>>(),
+              py::arg("alpha") = 1.0, py::arg("beta") = 2.0,
+              py::arg("kappa") = 0.0)
+          .def_readwrite("alpha", &Nested::alpha, nested_doc.alpha.doc)
+          .def_readwrite("beta", &Nested::beta, nested_doc.beta.doc)
+          .def_readwrite("kappa", &Nested::kappa, nested_doc.kappa.doc);
+    }
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def_readwrite("initial_state_estimate", &Class::initial_state_estimate,
+            cls_doc.initial_state_estimate.doc)
+        .def_readwrite("initial_state_covariance",
+            &Class::initial_state_covariance,
+            cls_doc.initial_state_covariance.doc)
+        .def_readwrite("actuation_input_port_index",
+            &Class::actuation_input_port_index,
+            cls_doc.actuation_input_port_index.doc)
+        .def_readwrite("measurement_output_port_index",
+            &Class::measurement_output_port_index,
+            cls_doc.measurement_output_port_index.doc)
+        .def_readwrite("process_noise_input_port_index",
+            &Class::process_noise_input_port_index,
+            cls_doc.process_noise_input_port_index.doc)
+        .def_readwrite("measurement_noise_input_port_index",
+            &Class::measurement_noise_input_port_index,
+            cls_doc.measurement_noise_input_port_index.doc)
+        .def_readwrite("unscented_transform_parameters",
+            &Class::unscented_transform_parameters,
+            cls_doc.unscented_transform_parameters.doc)
+        .def_readwrite("discrete_measurement_time_period",
+            &Class::discrete_measurement_time_period,
+            cls_doc.discrete_measurement_time_period.doc)
+        .def_readwrite("discrete_measurement_time_offset",
+            &Class::discrete_measurement_time_offset,
+            cls_doc.discrete_measurement_time_offset.doc);
+
+    m.def(
+        "UnscentedKalmanFilter",
+        [](const System<double>& observed_system,
+            const Context<double>& observed_system_context,
+            const Eigen::Ref<const Eigen::MatrixXd>& W,
+            const Eigen::Ref<const Eigen::MatrixXd>& V,
+            const UnscentedKalmanFilterOptions& options) {
+          return UnscentedKalmanFilter(
+              // The lifetime of `observed_system` is managed by the keep_alive
+              // below, not the C++ shared_ptr.
+              make_unowned_shared_ptr_from_raw(&observed_system),
+              observed_system_context, W, V, options);
+        },
+        py::arg("observed_system"), py::arg("observed_system_context"),
+        py::arg("W"), py::arg("V"),
+        py::arg("options") = UnscentedKalmanFilterOptions(),
+        // Keep alive, reference: `result` keeps `observed_system` alive.
+        py::keep_alive<0, 1>(), doc.UnscentedKalmanFilter.doc);
   }
 }
 

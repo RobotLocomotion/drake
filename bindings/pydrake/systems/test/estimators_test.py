@@ -11,6 +11,8 @@ from pydrake.systems.estimators import (
     ExtendedKalmanFilterOptions,
     LuenbergerObserver,
     SteadyStateKalmanFilter,
+    UnscentedKalmanFilter,
+    UnscentedKalmanFilterOptions,
 )
 from pydrake.systems.framework import (
     DiagramBuilder,
@@ -97,6 +99,58 @@ class TestEstimators(unittest.TestCase):
         # Overload taking System_[AutoDiffXd].
         plant = plant.ToAutoDiffXd()
         observer = ExtendedKalmanFilter(
+            observed_system=plant,
+            observed_system_context=plant.CreateDefaultContext(),
+            W=W, V=V, options=options)
+
+        self.assertTrue(
+            observer.get_observed_system_input_input_port().size(), 1)
+        self.assertTrue(
+            observer.get_observed_system_output_input_port().size(), 1)
+        self.assertTrue(observer.get_estimated_state_output_port().size(), 2)
+
+        context = observer.CreateDefaultContext()
+        xhat = np.array([1, 2])
+        Phat = np.eye(2)
+        observer.SetStateEstimateAndCovariance(context, xhat, Phat)
+        np.testing.assert_array_equal(observer.GetStateEstimate(context), xhat)
+        np.testing.assert_array_equal(
+            observer.GetStateCovariance(context), Phat)
+
+        spy = weakref.finalize(observer, lambda: None)
+        builder = DiagramBuilder()
+        builder.AddSystem(observer)
+        del observer
+        gc.collect()
+        self.assertTrue(spy.alive)
+        diagram = builder.Build()
+        del builder
+        gc.collect()
+        self.assertTrue(spy.alive)
+
+    def test_unscented_kalman_filter(self):
+        options = UnscentedKalmanFilterOptions()
+        self.assertIsNone(options.initial_state_estimate)
+        self.assertIsNone(options.initial_state_covariance)
+        self.assertEqual(options.actuation_input_port_index,
+                         InputPortSelection.kUseFirstInputIfItExists)
+        self.assertEqual(options.measurement_output_port_index,
+                         OutputPortSelection.kUseFirstOutputIfItExists)
+        self.assertIsNone(options.process_noise_input_port_index)
+        self.assertIsNone(options.measurement_noise_input_port_index)
+        options.unscented_transform_parameters = \
+            UnscentedKalmanFilterOptions.UnscentedTransformParameters(
+                alpha=1, beta=2, kappa=lambda n: 3-n)
+        self.assertEqual(options.unscented_transform_parameters.kappa(2), 1)
+        self.assertIsNone(options.discrete_measurement_time_period)
+        self.assertEqual(options.discrete_measurement_time_offset, 0.0)
+
+        plant = LinearSystem(
+            np.array([[0, 1], [0, 0]]), np.array([[0], [1]]),
+            np.array([[1, 0]]), np.array([[0]]), 0.01)
+        W = np.eye(2)
+        V = np.eye(1)
+        observer = UnscentedKalmanFilter(
             observed_system=plant,
             observed_system_context=plant.CreateDefaultContext(),
             W=W, V=V, options=options)
