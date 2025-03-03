@@ -3,6 +3,7 @@ import unittest
 import pydrake.planning as mut
 from pydrake.common import RandomGenerator, Parallelism
 from pydrake.geometry.optimization import Hyperellipsoid, HPolyhedron
+from pydrake.multibody.rational import RationalForwardKinematics
 from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
@@ -97,13 +98,16 @@ class TestIrisZo(unittest.TestCase):
         test_point2 = np.array([0.0, 1])
         self.assertTrue(region.PointInSet(test_point2))
 
+        kin = RationalForwardKinematics(plant)
+        q_star = np.zeros(2)
         options = mut.IrisZoOptions.\
-            CreateWithRationalKinematicParameterization(2)
+            CreateWithRationalKinematicParameterization(kin, q_star)
         self.assertTrue(options.get_parameterization_is_threadsafe())
         self.assertEqual(options.get_parameterization_dimension(), 2)
         self.assertTrue(callable(options.get_parameterization()))
-        q = options.get_parameterization()(np.array([0, 1]))
-        np.testing.assert_array_equal(q, np.array([0, np.pi/2]))
+        s = np.array([0, 1])
+        q = options.get_parameterization()(s)
+        np.testing.assert_array_equal(q, kin.ComputeQValue(s, q_star))
 
         options2 = mut.IrisZoOptions()
         options2.set_parameterization(options.get_parameterization(),
@@ -111,5 +115,5 @@ class TestIrisZo(unittest.TestCase):
         self.assertFalse(options2.get_parameterization_is_threadsafe())
         self.assertEqual(options2.get_parameterization_dimension(), 2)
         self.assertTrue(callable(options2.get_parameterization()))
-        q2 = options2.get_parameterization()(np.array([0, 1]))
-        np.testing.assert_array_equal(q2, np.array([0, np.pi/2]))
+        q2 = options2.get_parameterization()(np.array(s))
+        np.testing.assert_array_equal(q2, kin.ComputeQValue(s, q_star))

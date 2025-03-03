@@ -14,6 +14,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
+#include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 
@@ -230,10 +231,20 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   }
 
   // We now test an example of a region grown along a parameterization of the
-  // space. We use the rational parameterization s=tan(θ/2), so our
-  // parameterization function is θ=2arctan(s).
+  // space. We use the parameterization from rational forward kinematics, so
+  // we must re-create the plant.
+
+  RobotDiagramBuilder<double> builder(0.0);
+  builder.parser().package_map().AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/package.xml"));
+  builder.parser().AddModelsFromString(double_pendulum_urdf, "urdf");
+  auto plant_ptr = &(builder.plant());
+  plant_ptr->Finalize();
+
+  auto rational_kinematics = multibody::RationalForwardKinematics(plant_ptr);
   options = IrisZoOptions::CreateWithRationalKinematicParameterization(
-      /* dimension */ 2);
+      rational_kinematics,
+      /* q_star_val */ Vector2d::Zero());
   options.verbose = true;
   options.meshcat = meshcat;
 
