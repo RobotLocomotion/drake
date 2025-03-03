@@ -37,9 +37,8 @@ IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
   DRAKE_DEMAND(dimension > 0);
   IrisZoOptions instance;
 
-  Eigen::VectorXd q_star_captured = q_star_val;
-
-  auto evaluate_s_to_q = [kin, q_star_captured](const Eigen::VectorXd& s_val) {
+  auto evaluate_s_to_q = [kin, q_star_captured = Eigen::VectorXd(q_star_val)](
+                             const Eigen::VectorXd& s_val) {
     return kin->ComputeQValue(s_val, q_star_captured);
   };
 
