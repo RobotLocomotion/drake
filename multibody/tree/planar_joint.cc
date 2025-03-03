@@ -70,8 +70,7 @@ std::unique_ptr<Joint<T>> PlanarJoint<T>::DoShallowClone() const {
 // in the header file.
 template <typename T>
 std::unique_ptr<internal::Mobilizer<T>> PlanarJoint<T>::MakeMobilizerForJoint(
-    const internal::SpanningForest::Mobod& mobod,
-    internal::MultibodyTree<T>*) const {
+    const internal::SpanningForest::Mobod& mobod) const {
   const auto [inboard_frame, outboard_frame] =
       this->tree_frames(mobod.is_reversed());
   // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.

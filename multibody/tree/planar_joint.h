@@ -305,11 +305,11 @@ class PlanarJoint final : public Joint<T> {
 
   int do_get_num_positions() const final { return 3; }
 
-  std::string do_get_position_suffix(int index) const final {
+  std::string do_get_position_suffix(int index) const override {
     return get_mobilizer().position_suffix(index);
   }
 
-  std::string do_get_velocity_suffix(int index) const final {
+  std::string do_get_velocity_suffix(int index) const override {
     return get_mobilizer().velocity_suffix(index);
   }
 
@@ -322,8 +322,7 @@ class PlanarJoint final : public Joint<T> {
 
   // Joint<T> overrides:
   std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
-      const internal::SpanningForest::Mobod& mobod,
-      internal::MultibodyTree<T>* tree) const final;
+      const internal::SpanningForest::Mobod& mobod) const final;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
       const internal::MultibodyTree<double>& tree_clone) const final;

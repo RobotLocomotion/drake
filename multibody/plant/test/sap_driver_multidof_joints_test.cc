@@ -92,15 +92,13 @@ class MultiDofJointWithLimits final : public Joint<T> {
   int do_get_position_start() const override { return 0; }
 
   std::unique_ptr<Mobilizer<T>> MakeMobilizerForJoint(
-      const SpanningForest::Mobod& mobod,
-      MultibodyTree<T>* tree) const override {
-    DRAKE_DEMAND(tree != nullptr);  // Just a sanity check; we don't need it.
+      const SpanningForest::Mobod& mobod) const override {
     const auto [inboard_frame, outboard_frame] =
         this->tree_frames(mobod.is_reversed());
     // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
-    //  The only restriction here relevant for these tests is that we provide a
-    //  mobilizer with kNumDofs positions and velocities, so that indexes are
-    //  consistent during MultibodyPlant::Finalize().
+    // The only restriction here relevant for these tests is that we provide a
+    // mobilizer with kNumDofs positions and velocities, so that indexes are
+    // consistent during MultibodyPlant::Finalize().
     auto revolute_mobilizer = std::make_unique<internal::RpyBallMobilizer<T>>(
         mobod, *inboard_frame, *outboard_frame);
     return revolute_mobilizer;

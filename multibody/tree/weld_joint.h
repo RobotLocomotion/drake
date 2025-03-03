@@ -50,9 +50,9 @@ class WeldJoint final : public Joint<T> {
                  VectorX<double>() /* no acc upper limits */),
         X_JpJc_(X_FM) {}
 
-  ~WeldJoint() final;
+  ~WeldJoint() override;
 
-  const std::string& type_name() const final;
+  const std::string& type_name() const override;
 
   // See note above. We're returning X_JpJc here.
   /// Returns the pose X_FM of frame M in F.
@@ -64,54 +64,53 @@ class WeldJoint final : public Joint<T> {
   /// apply forces between them. Therefore this method throws an exception if
   /// invoked.
   void DoAddInOneForce(const systems::Context<T>&, int, const T&,
-                       MultibodyForces<T>*) const final {
+                       MultibodyForces<T>*) const override {
     throw std::logic_error("Weld joints do not allow applying forces.");
   }
 
  private:
-  int do_get_velocity_start() const final {
+  int do_get_velocity_start() const override {
     // Since WeldJoint has no state, the start index has no meaning. However,
     // we let its decide the return value for this case (this has to do with
     // allowing zero sized Eigen blocks).
     return get_mobilizer().velocity_start_in_v();
   }
 
-  int do_get_num_velocities() const final { return 0; }
+  int do_get_num_velocities() const override { return 0; }
 
-  int do_get_position_start() const final {
+  int do_get_position_start() const override {
     // Since WeldJoint has no state, the start index has no meaning. However,
     // we let it decide the return value for this case (this has to do with
     // allowing zero sized Eigen blocks).
     return get_mobilizer().position_start_in_q();
   }
 
-  int do_get_num_positions() const final { return 0; }
+  int do_get_num_positions() const override { return 0; }
 
-  std::string do_get_position_suffix(int index) const final {
+  std::string do_get_position_suffix(int index) const override {
     return get_mobilizer().position_suffix(index);
   }
 
-  std::string do_get_velocity_suffix(int index) const final {
+  std::string do_get_velocity_suffix(int index) const override {
     return get_mobilizer().velocity_suffix(index);
   }
 
-  void do_set_default_positions(const VectorX<double>&) final { return; }
+  void do_set_default_positions(const VectorX<double>&) override { return; }
 
   // Joint<T> overrides:
   std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
-      const internal::SpanningForest::Mobod& mobod,
-      internal::MultibodyTree<T>* tree) const final;
+      const internal::SpanningForest::Mobod& mobod) const override;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const final;
+      const internal::MultibodyTree<double>& tree_clone) const override;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>& x) const final;
+      const internal::MultibodyTree<symbolic::Expression>& x) const override;
 
-  std::unique_ptr<Joint<T>> DoShallowClone() const final;
+  std::unique_ptr<Joint<T>> DoShallowClone() const override;
 
   // Make WeldJoint templated on every other scalar type a friend of
   // WeldJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access
