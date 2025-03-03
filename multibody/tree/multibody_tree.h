@@ -387,13 +387,10 @@ class MultibodyTree {
   // _parent_ body is made inboard and the _child_ outboard in the tree.
   //
   // As explained in the Joint class's documentation, in Drake we define a
-  // frame Jp attached to the parent body P with pose `X_PJp` and a frame Jc
-  // attached to the child body C with pose `X_CJc`. This method helps create
-  // a joint between two bodies with fixed poses `X_PJp` and `X_CJc`.
-  // Refer to the Joint class's documentation for more details. (We have
-  // sometimes used F for Jp and M for Jc in documentation; don't confuse
-  // those with the implementing Mobilizer's inboard F frame and outboard M
-  // frame which in general are not the same.)
+  // frame F attached to the parent body P with pose `X_PF` and a frame M
+  // attached to the child body B with pose `X_BM`. This method helps create
+  // a joint between two bodies with fixed poses `X_PF` and `X_BM`.
+  // Refer to the Joint class's documentation for more details.
   //
   // The arguments to this method `args` are forwarded to `JointType`'s
   // constructor. The newly created `JointType` object will be specialized on
@@ -403,45 +400,43 @@ class MultibodyTree {
   //   The name of the joint.
   // @param[in] parent
   //   The parent body connected by the new joint.
-  // @param[in] X_PJp
-  //   The fixed pose of frame Jp attached to the parent body, measured in
-  //   the frame P of that body. X_PJp is an optional parameter; empty curly
-  //   braces {} imply that frame Jp **is** the same body frame P. If instead
-  //   your intention is to make a separate frame Jp that is coincident
-  //   (by default at least) with P, provide
-  //   X_PJp = RigidTransform<double>::Identity() as your input.
+  // @param[in] X_PF
+  //   The fixed pose of frame F attached to the parent body, measured in
+  //   the frame P of that body. `X_PF` is an optional parameter; empty curly
+  //   braces `{}` imply that frame F **is** the same body frame P. If instead
+  //   your intention is to make a frame F with pose `X_PF`, provide
+  //   `RigidTransform<double>::Identity()` as your input.
   // @param[in] child
   //   The child body connected by the new joint.
-  // @param[in] X_CJc
-  //   The fixed pose of frame Jc attached to the child body, measured in
-  //   the frame C of that body. X_CJc is an optional parameter; empty curly
-  //   braces {} imply that frame Jc **is** the same body frame C. If instead
-  //   your intention is to make a separate frame Jc that is coincident
-  //   (by default at least) with C, provide
-  //   X_CJc = RigidTransform<double>::Identity() as your input.
+  // @param[in] X_BM
+  //   The fixed pose of frame M attached to the child body, measured in
+  //   the frame B of that body. `X_BM` is an optional parameter; empty curly
+  //   braces `{}` imply that frame M **is** the same body frame B. If instead
+  //   your intention is to make a frame F with pose `X_PF`, provide
+  //   `RigidTransform<double>::Identity()` as your input.
   // @tparam JointType
   //   The type of the new joint to add, which must be a subclass of Joint<T>.
-  // @returns A const reference to the new joint just added, of type
-  //   JointType<T> specialized on the scalar type T of `this`
+  // @returns A constant reference to the new joint just added, of type
+  //   `JointType<T>` specialized on the scalar type T of `this`
   //   %MultibodyTree. It will remain valid for the lifetime of `this`
   //   %MultibodyTree.
   //
   // Example of usage:
   // @code
   //   MultibodyTree<T> model;
-  //   // ... Code to define a parent body P and a child body C.
+  //   // ... Code to define a parent body P and a child body B.
   //   const RigidBody<double>& parent_body =
   //     model.AddRigidBody(parent_name, SpatialInertia<double>(...));
   //   const RigidBody<double>& child_body =
   //     model.AddRigidBody(child_name, SpatialInertia<double>(...));
-  //   // Define the pose X_CJc of a frame Jc rigidly attached to child body C.
+  //   // Define the pose X_BM of a frame M rigidly attached to child body B.
   //   const RevoluteJoint<double>& elbow =
   //     model.AddJoint<RevoluteJoint>(
   //       "Elbow",                /* joint name */
   //       model.world_body(),     /* parent body */
-  //       {},                     /* frame Jp IS the parent body frame P */
+  //       {},                     /* frame F IS the parent body frame P */
   //       pendulum,               /* child body, the pendulum */
-  //       X_CJc,                  /* pose of frame Jc in child body frame C */
+  //       X_BM,                   /* pose of frame M in the body frame B */
   //       Vector3d::UnitZ());     /* revolute axis in this case */
   // @endcode
   //
@@ -454,16 +449,17 @@ class MultibodyTree {
   template <template <typename> class JointType, typename... Args>
   const JointType<T>& AddJoint(
       const std::string& name, const RigidBody<T>& parent,
-      const std::optional<math::RigidTransform<double>>& X_PJp,
+      const std::optional<math::RigidTransform<double>>& X_PF,
       const RigidBody<T>& child,
-      const std::optional<math::RigidTransform<double>>& X_CJc, Args&&... args);
+      const std::optional<math::RigidTransform<double>>& X_BM, Args&&... args);
 
   // See MultibodyPlant documentation.
   void RemoveJoint(const Joint<T>& joint);
 
   // Creates and adds a JointActuator model for an actuator acting on a given
-  // `joint`. This method returns a const reference to the actuator just added,
-  // which will remain valid for the lifetime of `this` %MultibodyTree.
+  // `joint`.
+  // This method returns a constant reference to the actuator just added, which
+  // will remain valid for the lifetime of `this` %MultibodyTree.
   //
   // @param[in] name
   //   A string that identifies the new actuator to be added to `this`

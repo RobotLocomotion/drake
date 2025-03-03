@@ -233,7 +233,8 @@ class RationalForwardKinematics {
   // Computes the pose of the body, connected to its parent body through a
   // weld joint.
   template <typename T>
-  Pose<T> CalcWeldJointChildBodyPose(const math::RigidTransformd& X_PF,
+  Pose<T> CalcWeldJointChildBodyPose(const math::RigidTransformd& X_FM,
+                                     const math::RigidTransformd& X_PF,
                                      const math::RigidTransformd& X_MC,
                                      const Pose<T>& X_AP) const;
 

@@ -179,11 +179,10 @@ RationalForwardKinematics::Pose<T> RationalForwardKinematics::
 template <typename T>
 RationalForwardKinematics::Pose<T>
 RationalForwardKinematics::CalcWeldJointChildBodyPose(
-    const math::RigidTransformd& X_PF, const math::RigidTransformd& X_MC,
-    const Pose<T>& X_AP) const {
-  // X_FM is always identity for a Weld mobilizer.
-  const Matrix3<double> R_FM = Matrix3<double>::Identity();
-  const Vector3<double> p_FM = Vector3<double>::Zero();
+    const math::RigidTransformd& X_FM, const math::RigidTransformd& X_PF,
+    const math::RigidTransformd& X_MC, const Pose<T>& X_AP) const {
+  const Matrix3<double> R_FM = X_FM.rotation().matrix();
+  const Vector3<double> p_FM = X_FM.translation();
   const Matrix3<T>& R_AP = X_AP.rotation;
   const Vector3<T>& p_AP = X_AP.position;
   return CalcChildPose(R_AP, p_AP, X_PF, X_MC, R_FM, p_FM);
@@ -288,9 +287,17 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
     return CalcPrismaticJointChildLinkPose(axis_F, X_PF, X_MC, X_AP,
                                            q_star(s_index), s_[s_index]);
   } else if (IsWeld(*mobilizer)) {
-    return CalcWeldJointChildBodyPose(X_PF, X_MC, X_AP);
+    const internal::WeldMobilizer<double>* weld_mobilizer =
+        static_cast<const internal::WeldMobilizer<double>*>(mobilizer);
+    math::RigidTransformd X_FM;
+    if (!is_order_reversed) {
+      X_FM = weld_mobilizer->get_X_FM();
+    } else {
+      X_FM = weld_mobilizer->get_X_FM().inverse();
+    }
+    return CalcWeldJointChildBodyPose(X_FM, X_PF, X_MC, X_AP);
   }
-  // Successful construction guarantees that all supported mobilizers are
+  // Successful construction guarantess that all supported mobilizers are
   // handled.
   DRAKE_UNREACHABLE();
 }
