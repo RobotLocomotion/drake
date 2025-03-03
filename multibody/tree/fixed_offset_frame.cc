@@ -79,7 +79,7 @@ FixedOffsetFrame<T>::DoCloneToScalar(
 template <typename T>
 std::unique_ptr<Frame<T>> FixedOffsetFrame<T>::DoShallowClone() const {
   return std::make_unique<FixedOffsetFrame<T>>(this->name(), parent_frame_,
-                                               X_PF_);
+                                               X_PF_, this->model_instance());
 }
 
 template <typename T>

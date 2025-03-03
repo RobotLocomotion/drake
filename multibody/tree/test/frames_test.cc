@@ -76,10 +76,22 @@ class FrameTests : public ::testing::Test {
 
     // Frame S is arbitrary, but named and with a specific model instance.
     extra_instance_ = model->AddModelInstance("extra_instance");
-    frameS_ = &model->AddFrame<FixedOffsetFrame>(
-        "S", model->world_frame(), math::RigidTransformd::Identity(),
-        extra_instance_);
+    const RigidTransformd X_WF = X_BP_;  // Arbitrary.
+    frameS_ = &model->AddFrame<FixedOffsetFrame>("S", model->world_frame(),
+                                                 X_WF, extra_instance_);
     EXPECT_EQ(frameS_->scoped_name().get_full(), "extra_instance::S");
+
+    // Make sure ShallowClone() preserves a FixedOffsetFrame's properties.
+    const std::unique_ptr<Frame<double>> clone_of_frameS =
+        frameS_->ShallowClone();
+    EXPECT_NE(clone_of_frameS.get(), frameS_);
+    EXPECT_EQ(clone_of_frameS->name(), frameS_->name());
+    EXPECT_EQ(clone_of_frameS->model_instance(), frameS_->model_instance());
+    const auto& downcast_clone =
+        dynamic_cast<const FixedOffsetFrame<double>&>(*clone_of_frameS);
+    EXPECT_TRUE(
+        downcast_clone.GetFixedPoseInBodyFrame().IsExactlyEqualTo(X_WF));
+
     // Ensure that the model instance propagates implicitly.
     frameSChild_ = &model->AddFrame<FixedOffsetFrame>(
         "SChild", *frameS_, math::RigidTransformd::Identity());
