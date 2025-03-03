@@ -85,9 +85,8 @@ std::unique_ptr<internal::Mobilizer<T>> WeldJoint<T>::MakeMobilizerForJoint(
   // its model instance) and the name of the parent or child frame (not
   // necessarily unique). New frames go in the joint's model instance.
   auto F_frame_name = [this, tree](const Frame<T>& frame) -> std::string {
-    const std::string F_name =
-        fmt::format("{}_{}_F", this->name(), frame.name());
-    DRAKE_DEMAND(!tree->HasFrameNamed(F_name, this->model_instance()));
+    std::string F_name = fmt::format("{}_{}_F", this->name(), frame.name());
+    while (tree->HasFrameNamed(F_name, this->model_instance())) F_name += "_";
     return F_name;
   };
 
