@@ -146,7 +146,9 @@ class IrisZoOptions {
   only one thread will be used.
   @note If the user has specified a parameterization, then these constraints are
   imposed on the points in the parameterized space Q, not the configuration
-  space C. */
+  space C.
+  @note Internally, these constraints are checked after collisions checking is
+  performed. */
   const solvers::MathematicalProgram* prog_with_additional_constraints{};
 
   typedef std::function<Eigen::VectorXd(const Eigen::VectorXd&)>
