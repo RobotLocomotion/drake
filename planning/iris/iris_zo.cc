@@ -30,6 +30,23 @@ using geometry::optimization::VPolytope;
 using math::RigidTransform;
 using solvers::MathematicalProgram;
 
+IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
+    const multibody::RationalForwardKinematics* kin,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
+  const int dimension = kin->plant().num_positions();
+  DRAKE_DEMAND(dimension > 0);
+  IrisZoOptions instance;
+
+  auto evaluate_s_to_q = [kin, q_star_val](const Eigen::VectorXd& s_val) {
+    return kin->ComputeQValue(s_val, q_star_val);
+  };
+
+  instance.set_parameterization(evaluate_s_to_q,
+                                /* parameterization_is_threadsafe */ true,
+                                /* parameterization_dimension */ dimension);
+  return instance;
+}
+
 namespace {
 
 using values_t = std::vector<double>;

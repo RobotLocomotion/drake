@@ -243,7 +243,7 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
 
   auto rational_kinematics = multibody::RationalForwardKinematics(plant_ptr);
   options = IrisZoOptions::CreateWithRationalKinematicParameterization(
-      rational_kinematics,
+      &rational_kinematics,
       /* q_star_val */ Vector2d::Zero());
   options.verbose = true;
   options.meshcat = meshcat;

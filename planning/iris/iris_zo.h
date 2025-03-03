@@ -181,28 +181,15 @@ class IrisZoOptions {
     return parameterization_dimension_;
   }
 
-  /** Construct an instance of IrisZoOptions that handles a rational kinematic
+  /** Constructs an instance of IrisZoOptions that handles a rational kinematic
    * parameterization. Regions are grown in the `s` variables, so as to minimize
    * collisions in the `q` variables. See RationalForwardKinematics for details.
    * @note The user is responsible for ensuring `kin` (and the underlying
    * MultibodyPlant it is built on) is kept alive. If that object is deleted,
    * then the parametrization can no longer be used. */
   static IrisZoOptions CreateWithRationalKinematicParameterization(
-      const multibody::RationalForwardKinematics& kin,
-      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
-    const int dimension = kin.plant().num_positions();
-    DRAKE_DEMAND(dimension > 0);
-    IrisZoOptions instance;
-
-    auto evaluate_s_to_q = [&kin, q_star_val](const Eigen::VectorXd& s_val) {
-      return kin.ComputeQValue(s_val, q_star_val);
-    };
-
-    instance.set_parameterization(evaluate_s_to_q,
-                                  /* parameterization_is_threadsafe */ true,
-                                  /* parameterization_dimension */ dimension);
-    return instance;
-  }
+      const multibody::RationalForwardKinematics* kin,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val);
 
  private:
   bool parameterization_is_threadsafe_{true};
