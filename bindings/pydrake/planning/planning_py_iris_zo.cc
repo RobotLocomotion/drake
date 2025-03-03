@@ -12,6 +12,8 @@ void DefinePlanningIrisZo(py::module m) {
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc.drake.planning;
 
+  py::module::import("pydrake.multibody.rational");
+
   // IrisZoOptions
   const auto& cls_doc = doc.IrisZoOptions;
   py::class_<IrisZoOptions>(m, "IrisZoOptions", cls_doc.doc)
@@ -62,19 +64,11 @@ void DefinePlanningIrisZo(py::module m) {
                 parameterization_dimension);
           },
           py::arg("parameterization"), py::arg("parameterization_dimension"),
-          "Ordinarily, IRIS-ZO grows collision free regions in the robot's "
-          "configuration space C. This allows the user to specify a function "
-          "f:Q→C, and grow the region in Q instead. The function should be a "
-          "map R^m to R^n, where n is the dimension of the plant configuration "
-          "space, determined via `checker.plant().num_positions()` and m is "
-          "`parameterization_dimension` if specified. The user must provide "
-          "`parameterization`, which is the function f, "
-          "`parameterization_is_threadsafe`, which is whether or not "
-          "`parametrization` can be called concurrently, and "
-          "`parameterization_dimension`, the dimension of the input space Q. "
-          "@note Because a python function cannot be called concurrently by "
-          "multiple C++ threads (due to GIL), the parameterization setter "
-          "function automatically sets threadsafe to false")
+          (std::string(cls_doc.set_parameterization.doc) +
+              "@note Because a python function cannot be called concurrently "
+              "by multiple C++ threads (due to GIL), the parameterization "
+              "setter function automatically sets threadsafe to false")
+              .c_str())
       .def("get_parameterization_is_threadsafe",
           &IrisZoOptions::get_parameterization_is_threadsafe,
           cls_doc.get_parameterization_is_threadsafe.doc)
@@ -115,7 +109,7 @@ void DefinePlanningIrisZo(py::module m) {
           })
       .def_static("CreateWithRationalKinematicParameterization",
           IrisZoOptions::CreateWithRationalKinematicParameterization,
-          py::arg("dimension"),
+          py::arg("kin"), py::arg("q_star_val"),
           cls_doc.CreateWithRationalKinematicParameterization.doc);
 
   // The `options` contains a `Parallelism`; we must release the GIL.
