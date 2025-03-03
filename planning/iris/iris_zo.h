@@ -194,7 +194,7 @@ class IrisZoOptions {
     DRAKE_DEMAND(dimension > 0);
     IrisZoOptions instance;
 
-    auto evaluate_s_to_q = [&kin, &q_star_val](const Eigen::VectorXd& s_val) {
+    auto evaluate_s_to_q = [&kin, q_star_val](const Eigen::VectorXd& s_val) {
       return kin.ComputeQValue(s_val, q_star_val);
     };
 
