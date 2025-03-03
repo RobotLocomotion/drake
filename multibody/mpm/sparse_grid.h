@@ -49,21 +49,15 @@ class SparseGrid {
   explicit SparseGrid(double dx);
 
   /* Creates a deep copy of `this` sparse grid. */
-  std::unique_ptr<SparseGrid<T>> Clone() const {
-    auto result = std::make_unique<SparseGrid<T>>(dx_);
-    result->spgrid_.SetFrom(this->spgrid_);
-    return result;
-  }
+  std::unique_ptr<SparseGrid<T>> Clone() const;
 
   /* Allocates memory for all blocks that contain at least one supported grid
    node. All allocated grid data are default constructed.
    @note With T == float, GridData is 32 bytes. With T == double, GridData is 64
          bytes. Since each block is 4kB, each allocated block contains 4*4*8 =
          128 grid nodes (float) or 4*4*4 = 64 grid nodes (double).
-   @param[in] particles  A ParticleSorter that has called `Sort()` on this
-                         SparseGrid's SPGrid and dx and the particle positions.
-  */
-  void Allocate(const ParticleSorter& particles);
+   @param[in] q_WPs  The world frame positions of all MPM particles. */
+  void Allocate(const std::vector<Vector3<T>>& q_WPs);
 
   /* Grid spacing in meters. */
   double dx() const { return dx_; }
@@ -107,13 +101,11 @@ class SparseGrid {
   /* Returns the SpGrid underlying this SparseGrid. */
   const SpGrid<GridData<T>>& spgrid() const { return spgrid_; }
 
-  /* Returns the SpGrid underlying this SparseGrid. */
-  SpGrid<GridData<T>>& mutable_spgrid() { return spgrid_; }
-
  private:
   /* Grid spacing (in meters). */
   double dx_{};
   SpGrid<GridData<T>> spgrid_;
+  ParticleSorter particle_sorter_;
 };
 
 }  // namespace internal

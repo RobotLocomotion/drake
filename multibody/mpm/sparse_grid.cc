@@ -2,8 +2,6 @@
 
 #include <utility>
 
-#include "drake/common/ssize.h"
-
 namespace drake {
 namespace multibody {
 namespace mpm {
@@ -15,8 +13,16 @@ SparseGrid<T>::SparseGrid(double dx) : dx_(dx) {
 }
 
 template <typename T>
-void SparseGrid<T>::Allocate(const ParticleSorter& particles) {
-  spgrid_.Allocate(particles.GetActiveBlockOffsets());
+std::unique_ptr<SparseGrid<T>> SparseGrid<T>::Clone() const {
+  auto result = std::make_unique<SparseGrid<T>>(dx_);
+  result->spgrid_.SetFrom(this->spgrid_);
+  return result;
+}
+
+template <typename T>
+void SparseGrid<T>::Allocate(const std::vector<Vector3<T>>& q_WPs) {
+  particle_sorter_.Sort(spgrid_, dx_, q_WPs);
+  spgrid_.Allocate(particle_sorter_.GetActiveBlockOffsets());
 }
 
 template <typename T>

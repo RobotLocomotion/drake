@@ -27,9 +27,7 @@ TYPED_TEST(SparseGridTest, Allocate) {
 
   const Vector3<T> q_WP(1.001, 0.001, 0.001);
   const std::vector<Vector3<T>> q_WPs = {q_WP};
-  ParticleSorter sorter;
-  sorter.Sort(grid.spgrid(), grid.dx(), q_WPs);
-  grid.Allocate(sorter);
+  grid.Allocate(q_WPs);
 
   /* Verify grid data is all zeroed out. */
   const auto grid_data = grid.GetGridData();
@@ -65,9 +63,7 @@ TYPED_TEST(SparseGridTest, Clone) {
       }
     }
   }
-  ParticleSorter sorter;
-  sorter.Sort(grid.spgrid(), grid.dx(), q_WPs);
-  grid.Allocate(sorter);
+  grid.Allocate(q_WPs);
 
   /* Set an arbitrary grid data. */
   auto set_data = [](const Eigen::Vector3i& coordinate) {
@@ -120,15 +116,9 @@ TYPED_TEST(SparseGridTest, PadData) {
   SparseGrid<T> grid(dx);
   /* Base node is (2, 3, 0). */
   const Vector3<T> q_WP(0.021, 0.031, -0.001);
+  const uint64_t base_node_offset = grid.spgrid().CoordinateToOffset(2, 3, 0);
   std::vector<Vector3<T>> q_WPs = {q_WP};
-
-  ParticleSorter sorter;
-  sorter.Sort(grid.spgrid(), grid.dx(), q_WPs);
-  grid.Allocate(sorter);
-
-  const auto& base_node_offsets = sorter.base_node_offsets();
-  ASSERT_EQ(base_node_offsets.size(), 1);
-  const uint64_t base_node_offset = base_node_offsets[0];
+  grid.Allocate(q_WPs);
 
   Pad<GridData<T>> arbitrary_data;
   for (int i = 0; i < 3; ++i) {
@@ -178,10 +168,7 @@ TYPED_TEST(SparseGridTest, ComputeTotalMassAndMomentum) {
   SparseGrid<T> grid(dx);
   const Vector3<T> q_WP(0.001, 0.001, 0.001);
   std::vector<Vector3<T>> q_WPs = {q_WP};
-
-  ParticleSorter sorter;
-  sorter.Sort(grid.spgrid(), grid.dx(), q_WPs);
-  grid.Allocate(sorter);
+  grid.Allocate(q_WPs);
 
   const T mass = 1.2;
   const Vector3<T> velocity(1, 2, 3);
@@ -190,7 +177,7 @@ TYPED_TEST(SparseGridTest, ComputeTotalMassAndMomentum) {
   const Vector3<T> q_WN(dx, dx, dx);
 
   /* Set grid data so that node (1,1,1) has velocity (1,2,3) and all others
-   * zero. */
+   are zero. */
   auto set_grid_data = [mass, velocity](const Eigen::Vector3i& node) {
     GridData<T> result;
     if (node[0] == 1 && node[1] == 1 && node[2] == 1) {
