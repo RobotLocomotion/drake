@@ -42,7 +42,7 @@ namespace {
 // Simulation parameters.
 DEFINE_double(simulation_time, 10.0, "Simulation duration in seconds");
 DEFINE_double(
-    mbp_time_step, 1.0E-2,
+    mbp_time_step, 0.0,
     "If mbp_time_step > 0, the fixed-time step period (in seconds) of discrete "
     "updates for the plant (modeled as a discrete system). "
     "If mbp_time_step = 0, the plant is modeled as a continuous system "
