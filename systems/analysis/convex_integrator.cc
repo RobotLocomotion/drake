@@ -146,10 +146,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   workspace_.v_star.resize(nv);
   workspace_.A_dense.resize(nv, nv);
   workspace_.A.assign(tree_topology().num_trees(), MatrixX<T>(nv, nv));
-
-  workspace_.timestep_independent_data.M.resize(nv, nv);
-  workspace_.timestep_independent_data.a.resize(nv);
-  workspace_.timestep_independent_data.v0.resize(nv);
+  workspace_.M.resize(nv, nv);
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -182,7 +179,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   x_next_full_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
-  
+
   // Allocate linearization of external controller system
   const int nx = nq + nv;
   const int nu = plant().num_actuators();
@@ -212,24 +209,13 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   time_ = diagram_context.get_time();
   time_step_ = h;
 
-  // Workspace preallocations
-  VectorX<T>& v_tmp = workspace_.v;
-  TimestepIndependentProblemData<T>& data =
-      workspace_.timestep_independent_data;
-  
-  // Compute data for implicit integration of the external system
-  // Note that this needs to happen before CalcTimestepIndependentProblemData,
-  // since that method will set actuator forces to k0.
-  // LinearizeExternalSystem(&linearized_external_system_);
-  // CalcImplicitExternalSystemData(linearized_external_system_, h,
-  //                                &implicit_external_system_data_);
-
-  // Compute problem data at time (t)
-  CalcTimestepIndependentProblemData(plant_context, &data);
+  // Workspace allocations
+  VectorX<T>& v_guess = workspace_.v;
 
   // Solve the for the full step x_{t+h}
   solve_phase_ = 0;
-  CalcNextContinuousState(h, data, data.v0, x_next_full_.get());
+  v_guess = plant().GetVelocities(plant_context);
+  CalcNextContinuousState(h, v_guess, x_next_full_.get());
 
   if (this->get_fixed_step_mode()) {
     // We're using fixed step mode, so we can just set the state to x_{t+h} and
@@ -239,10 +225,9 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   } else {
     // We're using error control, and will compare with two half-sized steps.
 
-    // For the first half-step to (t + h/2), we'll re-use the h-independent
-    // problem data from the full step above.
+    // First half-step to (t + h/2) uses the initial velocity as a guess again
     solve_phase_ = 1;
-    CalcNextContinuousState(0.5 * h, data, data.v0, x_next_half_1_.get());
+    CalcNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get());
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
     // we'll first set the system state to the result of the first half-step.
@@ -250,14 +235,11 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
         this->get_mutable_context()->get_mutable_continuous_state();
     x_next.SetFrom(*x_next_half_1_);
 
-    // Now we can take the second half-step, re-using as much h-indpenendent
-    // problem data as possible (mass matrix, coriolis terms, etc are frozen).
+    // Now we can take the second half-step. We'll use the solution of the full
+    // step as our initial guess here.
     solve_phase_ = 2;
-    data.v0 = plant().GetVelocities(plant_context);
-
-    // The guess for the second half-step is the result of the full step
-    v_tmp = x_next_full_->get_generalized_velocity().CopyToVector();
-    CalcNextContinuousState(0.5 * h, data, v_tmp, x_next_half_2_.get());
+    v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
+    CalcNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get());
 
     // Estimate the error as the difference between the full step and the
     // two half-steps.
@@ -277,13 +259,10 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
 }
 
 template <typename T>
-void ConvexIntegrator<T>::CalcNextContinuousState(
-    const T& h, const TimestepIndependentProblemData<T>& data,
-    const VectorX<T>& v_guess, ContinuousState<T>* x_next) {
-
+void ConvexIntegrator<T>::CalcNextContinuousState(const T& h,
+                                                  const VectorX<T>& v_guess,
+                                                  ContinuousState<T>* x_next) {
   // Compute data for implicit integration of the external system
-  // Note that this needs to happen before CalcTimestepIndependentProblemData,
-  // since that method will set actuator forces to k0.
   // LinearizeExternalSystem(&linearized_external_system_);
   // CalcImplicitExternalSystemData(linearized_external_system_, h,
   //                                &implicit_external_system_data_);
@@ -299,7 +278,6 @@ void ConvexIntegrator<T>::CalcNextContinuousState(
   SapSolverResults<T>& sap_results = workspace_.sap_results;
 
   // Solve the SAP problem for next-step plant velocities v_{t+h}
-  (void)data;
   SapContactProblem<T> problem = MakeSapContactProblem(plant_context, h);
   SapSolverStatus status = SolveWithGuess(problem, v_guess, &sap_results);
   DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
@@ -322,7 +300,8 @@ void ConvexIntegrator<T>::CalcNextContinuousState(
     // VectorX<T> x(plant().num_positions() + plant().num_velocities());
     // x << x_next->get_generalized_position().CopyToVector(),
     //     x_next->get_generalized_velocity().CopyToVector();
-    // z = implicit_external_system_data_.H * x + implicit_external_system_data_.k0;
+    // z = implicit_external_system_data_.H * x +
+    // implicit_external_system_data_.k0;
     z += h * z_dot;
     x_next->get_mutable_misc_continuous_state().SetFromVector(z);
   }
@@ -332,7 +311,6 @@ template <>
 SapSolverStatus ConvexIntegrator<double>::SolveWithGuess(
     const SapContactProblem<double>& problem, const VectorXd& v_guess,
     SapSolverResults<double>* results) {
-
   // We should have at least one constraint
   DRAKE_DEMAND(problem.num_constraints() > 0);
 
@@ -893,56 +871,21 @@ T ConvexIntegrator<T>::CalcCostAlongLine(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::CalcTimestepIndependentProblemData(
-    const Context<T>& context, TimestepIndependentProblemData<T>* data) {
-  // workspace pre-allocations
-  VectorX<T>& k = workspace_.k;
-  MultibodyForces<T>& f_ext = *workspace_.f_ext;
-
-  data->v0 = plant().GetVelocities(context);  // initial velocity
-  plant().CalcMassMatrix(context, &data->M);  // mass matrix
-
-  // TODO(vincekurtz): include external generalized and spatial forces
-  plant().CalcForceElementsContribution(context, &f_ext);
-  if (plant().num_actuators() > 0) {
-    f_ext.mutable_generalized_forces() +=
-        plant().MakeActuationMatrix() *
-        plant().get_actuation_input_port().Eval(context);
-  }
-
-  // accelerations
-  k = plant().CalcInverseDynamics(
-      context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
-  data->a = data->M.ldlt().solve(-k);
-}
-
-template <typename T>
 SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
     const Context<T>& context, const T& h) {
   // workspace pre-allocations
   MatrixX<T>& A_dense = workspace_.A_dense;
   std::vector<MatrixX<T>>& A = workspace_.A;
+  MatrixX<T>& M = workspace_.M;
   VectorX<T>& k = workspace_.k;
   MultibodyForces<T>& f_ext = *workspace_.f_ext;
   VectorX<T>& v_star = workspace_.v_star;
-  
-  // TODO(vincekurtz): consider allocating these in the workspace as well 
-  const int nv = plant().num_velocities();
-  MatrixX<T> M(nv, nv);
-  VectorX<T> vdot0(nv);
-  
+
   // linearized dynamics matrix A = M + hD - h B K
   plant().CalcMassMatrix(context, &M);
   A_dense = M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
-
   // TODO(vincekurtz): add external system implicit dynamics
-  // MatrixX<T> BK = plant().MakeActuationMatrix() * implicit_external_system_data_.K;
-  // fmt::print("h = {}\n", h);
-  // fmt::print("BK =\n{}\n", fmt_eigen(BK));
-  // A_dense -= h * BK;
-  // TODO(vincekurtz): consider what happens when the external system messes with the sparsity pattern
-  // TODO(vincekurtz): enforce positive definiteness of B K
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
@@ -951,6 +894,7 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   }
 
   // free-motion velocities v* = A^{-1}(M * v0 - h k0 + h B u0)
+  // TODO(vincekurtz): consider using a sparse solve here
   // TODO(vincekurtz): include external generalized and spatial forces
   plant().CalcForceElementsContribution(context, &f_ext);
   if (plant().num_actuators() > 0) {
@@ -959,7 +903,8 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
         plant().get_actuation_input_port().Eval(context);
   }
 
-  k = plant().CalcInverseDynamics(context, VectorX<T>::Zero(nv), f_ext);
+  k = plant().CalcInverseDynamics(
+      context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
   const VectorX<T>& v0 = plant().GetVelocities(context);
   v_star = A_dense.ldlt().solve(M * v0 - h * k);
 
@@ -978,7 +923,8 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::AddDummyConstraints(SapContactProblem<T>* problem) const {
+void ConvexIntegrator<T>::AddDummyConstraints(
+    SapContactProblem<T>* problem) const {
   for (int c = 0; c < problem->num_cliques(); ++c) {
     const int nv = problem->num_velocities(c);
     if (nv > 0) {
@@ -1558,7 +1504,7 @@ void ConvexIntegrator<T>::CalcImplicitExternalSystemData(
   const MatrixX<T>& D = linear_sys.D;
   const VectorX<T>& f0 = linear_sys.f0;
   const VectorX<T>& g0 = linear_sys.g0;
-  
+
   const ContinuousState<T>& state = this->get_context().get_continuous_state();
   const VectorX<T> z_t = state.get_misc_continuous_state().CopyToVector();
   const VectorX<T> q_t = state.get_generalized_position().CopyToVector();

@@ -42,18 +42,6 @@ using multibody::internal::MultibodyTree;
 using multibody::internal::MultibodyTreeTopology;
 
 /**
- * A container for SAP problem data that can be reused with multiple timesteps
- * (h). This is useful for error control, where we attempt multiple step sizes
- * from the same initial conditions.
- */
-template <class T>
-struct TimestepIndependentProblemData {
-  MatrixX<T> M;   // mass matrix
-  VectorX<T> a;   // accelerations (= M^{-1} k)
-  VectorX<T> v0;  // initial velocities
-};
-
-/**
  * An improved version of HessianFactorizationCache that keeps track of the
  * number of constraints. This allows us to re-use the factorization whenever
  * possible.
@@ -205,13 +193,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // called multiple times for each DoStep to compute the error estimate.
   //
   // @param h the time step to use
-  // @param data frozen data like M(q), k(q,v) that might be re-used from a
-  //             previous SAP solve.
   // @param v_guess the initial guess for the MbP plant velocities.
   // @param x_next the output continuous state, includes both the plant and any
   //        external systems
   void CalcNextContinuousState(const T& h,
-                               const TimestepIndependentProblemData<T>& data,
                                const VectorX<T>& v_guess,
                                ContinuousState<T>* x_next);
 
@@ -219,12 +204,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // step size h.
   SapContactProblem<T> MakeSapContactProblem(const Context<T>& context,
                                              const T& h);
-
-  // Compute all the data we need for constructing the SAP problem for any time
-  // step h. This data can be re-used to solve the SAP problem with multiple
-  // step sizes for error control.
-  void CalcTimestepIndependentProblemData(
-      const Context<T>& context, TimestepIndependentProblemData<T>* data);
 
   // Adds contact constraints to the SAP problem.
   void AddContactConstraints(const Context<T>& context,
@@ -393,15 +372,13 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     VectorX<T> v;                     // generalized velocities
     SapSolverResults<T> sap_results;  // Container for convex solve results
 
-    // Used in CalcTimestepIndependentProblemData
-    TimestepIndependentProblemData<T> timestep_independent_data;
-    VectorX<T> k;  // coriolis and gravity terms from inverse dynamics
-    std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
-
     // Used in MakeSapContactProblem
-    VectorX<T> v_star;          // velocities of the unconstrained system
     MatrixX<T> A_dense;         // dense linear dynamics matrix
     std::vector<MatrixX<T>> A;  // linear dynamics matrix
+    VectorX<T> v_star;          // velocities of the unconstrained system
+    MatrixX<T> M;               // mass matrix
+    VectorX<T> k;               // coriolis terms from inverse dynamics
+    std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
 
     // Used in AddContactConstraint
     DiscreteContactData<DiscreteContactPair<T>> contact_data;
