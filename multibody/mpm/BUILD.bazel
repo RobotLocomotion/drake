@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":bspline_weights",
         ":grid_data",
+        ":mass_and_momentum",
         ":particle_data",
         ":particle_sorter",
         ":spgrid_flags",
@@ -43,6 +44,16 @@ drake_cc_library(
     ],
     deps = [
         "//common:bit_cast",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "mass_and_momentum",
+    hdrs = [
+        "mass_and_momentum.h",
+    ],
+    deps = [
         "//common:essential",
     ],
 )
@@ -80,6 +91,23 @@ drake_cc_library(
 
 # TODO(xuchenhan-tri): when we enable SPGrid in our releases, we also need to
 # install its license file in drake/tools/workspace/BUILD.bazel.
+
+drake_cc_library_linux_only(
+    name = "sparse_grid",
+    srcs = [
+        "sparse_grid.cc",
+    ],
+    hdrs = [
+        "sparse_grid.h",
+    ],
+    deps = [
+        ":grid_data",
+        ":mass_and_momentum",
+        ":particle_sorter",
+        ":spgrid",
+        "//common:essential",
+    ],
+)
 
 drake_cc_library_linux_only(
     name = "spgrid",
@@ -137,6 +165,14 @@ drake_cc_googletest_linux_only(
         ":grid_data",
         ":particle_sorter",
         ":spgrid",
+    ],
+)
+
+drake_cc_googletest_linux_only(
+    name = "sparse_grid_test",
+    deps = [
+        ":sparse_grid",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

@@ -153,10 +153,10 @@ class SpGrid {
 
   /* Clears the contents of this SpGrid and ensures that each block in the
    one-ring of blocks containing the given offsets is allocated and
-   zero-initialized.
+   default-initialized.
    @note Actual allocation only happens the first time a block is used in the
    lifetime of an SpGrid. Subsequent calls to `Allocate()` touching the same
-   block only zero out the grid data. */
+   block only resets the grid data to default values. */
   void Allocate(const std::vector<Offset>& offsets) {
     helper_blocks_.Clear();
     for (const Offset& offset : offsets) {
