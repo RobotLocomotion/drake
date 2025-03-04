@@ -505,15 +505,16 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   const ContactProblemGraph& graph = problem().graph();
   const PartialPermutation& cliques_permutation = graph.participating_cliques();
 
+  int i_cluster = 0;
   for (const ContactProblemGraph::ConstraintCluster& e :
        problem().graph().clusters()) {
     for (int i : e.constraint_index()) {
       const SapConstraint<T>& constraint = problem().get_constraint(i);
       const int ni = constraint.num_constraint_equations();
-      if (W[i].size() == 0) {
+      if (W[i_cluster].size() == 0) {
         // Resize and initialize to zero on the first time it gets accessed.
-        W[i].resize(ni, ni);
-        W[i].setZero();
+        W[i_cluster].resize(ni, ni);
+        W[i_cluster].setZero();
       }
 
       // Clique 0 is always present. Add its contribution.
@@ -521,7 +522,7 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
         const int c =
             cliques_permutation.permuted_index(constraint.first_clique());
         const MatrixBlock<T>& Jic = constraint.first_clique_jacobian();
-        Jic.MultiplyWithScaledTransposeAndAddTo(A_diag_inv[c], &W[i]);
+        Jic.MultiplyWithScaledTransposeAndAddTo(A_diag_inv[c], &W[i_cluster]);
       }
 
       // Adds clique 1 contribution, if present.
@@ -529,8 +530,9 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
         const int c =
             cliques_permutation.permuted_index(constraint.second_clique());
         const MatrixBlock<T>& Jic = constraint.second_clique_jacobian();
-        Jic.MultiplyWithScaledTransposeAndAddTo(A_diag_inv[c], &W[i]);
+        Jic.MultiplyWithScaledTransposeAndAddTo(A_diag_inv[c], &W[i_cluster]);
       }
+      ++i_cluster;
     }
   }
 

@@ -584,8 +584,12 @@ class DummyModelTest : public ::testing::Test {
   // mismatch.
   VectorXd CalcDelassusDiagonalApproximation() const {
     // First compute the block diagonal approximation of the Delassus operator.
+    // Entries in W_approximation are in the original problem's constraint
+    // order.
     std::vector<MatrixXd> W_approximation(sap_problem_->num_constraints());
     for (int i = 0; i < sap_problem_->num_constraints(); ++i) {
+      // N.B. Traverse constraints in their original order as defined in the
+      // contact problem.
       const SapConstraint<double>& constraint = sap_problem_->get_constraint(i);
       const int ni = constraint.num_constraint_equations();
       W_approximation[i].setZero(ni, ni);
@@ -607,41 +611,44 @@ class DummyModelTest : public ::testing::Test {
       }
     }
 
+    // We make index_map store constraint indexes in the order specified
+    // by the SapModel (by clusters).
+    std::vector<int> index_map(sap_problem_->num_constraints());
+    const ContactProblemGraph& graph = sap_problem_->graph();
+    int cluster_index = 0;
+    for (const auto& cluster : graph.clusters()) {
+      for (int i : cluster.constraint_index()) {
+        index_map[cluster_index++] = i;
+      }
+    }
+
     // Now we compute a diagonal scaling for each constraints by taking the RMS
     // norm of the diagonal block for that constraint.
-    // The i-th entry in W_diagonal_approximation must contain the approximation
-    // corresponding to the i-th constraint.
+    // W_diagonal_approximation must be indexed in cluster order.
     VectorXd W_diagonal_approximation =
         VectorXd::Zero(sap_problem_->num_constraint_equations());
     int offset = 0;
+    // Traverse constraints in cluster order using index_map.
     for (int i = 0; i < sap_problem_->num_constraints(); ++i) {
-      const SapConstraint<double>& constraint = sap_problem_->get_constraint(i);
+      int problem_index = index_map[i];  // Original index in the problem.
+      const SapConstraint<double>& constraint =
+          sap_problem_->get_constraint(problem_index);
       const int ni = constraint.num_constraint_equations();
+      EXPECT_TRUE(W_approximation[problem_index].rows() == ni);
       W_diagonal_approximation.segment(offset, ni)
-          .setConstant(W_approximation[i].norm() / W_approximation[i].rows());
+          .setConstant(W_approximation[problem_index].norm() /
+                       W_approximation[problem_index].rows());
       offset += ni;
-    }
-
-    // We make cluster_indexes store constraint indexes in the order specified
-    // by the SapModel (by clusters).
-    std::vector<int> cluster_indexes(sap_problem_->num_constraints());
-    const ContactProblemGraph& graph = sap_problem_->graph();
-    int i_permuted = 0;
-    for (const auto& cluster : graph.clusters()) {
-      for (int i : cluster.constraint_index()) {
-        cluster_indexes[i_permuted++] = i;
-      }
     }
 
     // According to the documentation of
     // SapModel::CalcDelassusDiagonalApproximation(), entries in the Delassus
-    // operator diagonal approximation should be ordered by constraints, not by
-    // constraint clusters. Here we make sure that, for this problem, clusters
-    // are not ordered. This way we ensure the test wouldn't accidentally pass
-    // because W_diagonal_approximation happens to be ordered by constraints
-    // because constraint clusters are ordered.
-    EXPECT_FALSE(
-        std::is_sorted(cluster_indexes.begin(), cluster_indexes.end()));
+    // operator diagonal approximation should be ordered by clusters in the
+    // graph, not by their original index in the problem. Here we make sure
+    // that, for this problem, clusters are not ordered. This way we ensure the
+    // test wouldn't accidentally pass because W_diagonal_approximation happens
+    // to be trivially ordered by clusters.
+    EXPECT_FALSE(std::is_sorted(index_map.begin(), index_map.end()));
 
     return W_diagonal_approximation;
   }
