@@ -271,8 +271,6 @@ drake_cc_googletest(
     ],
     # Be sure to exercise OpenMP-related features.
     num_threads = 2,
-    # TODO(calderpg-tri) Fix voxel self-filter to re-enable TSAN.
-    tags = ["no_tsan"],
     deps = [
         ":voxel_grid_internal",
         ":voxel_self_filter",
