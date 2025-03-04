@@ -217,9 +217,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // Create the sap problem, including contact constraints, for a particular
   // step size h.
-  SapContactProblem<T> MakeSapContactProblem(
-      const Context<T>& context, const TimestepIndependentProblemData<T>& data,
-      const T& h);
+  SapContactProblem<T> MakeSapContactProblem(const Context<T>& context,
+                                             const T& h);
 
   // Compute all the data we need for constructing the SAP problem for any time
   // step h. This data can be re-used to solve the SAP problem with multiple

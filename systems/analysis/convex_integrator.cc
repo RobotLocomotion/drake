@@ -220,9 +220,9 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   // Compute data for implicit integration of the external system
   // Note that this needs to happen before CalcTimestepIndependentProblemData,
   // since that method will set actuator forces to k0.
-  LinearizeExternalSystem(&linearized_external_system_);
-  CalcImplicitExternalSystemData(linearized_external_system_, h,
-                                 &implicit_external_system_data_);
+  // LinearizeExternalSystem(&linearized_external_system_);
+  // CalcImplicitExternalSystemData(linearized_external_system_, h,
+  //                                &implicit_external_system_data_);
 
   // Compute problem data at time (t)
   CalcTimestepIndependentProblemData(plant_context, &data);
@@ -284,9 +284,9 @@ void ConvexIntegrator<T>::CalcNextContinuousState(
   // Compute data for implicit integration of the external system
   // Note that this needs to happen before CalcTimestepIndependentProblemData,
   // since that method will set actuator forces to k0.
-  LinearizeExternalSystem(&linearized_external_system_);
-  CalcImplicitExternalSystemData(linearized_external_system_, h,
-                                 &implicit_external_system_data_);
+  // LinearizeExternalSystem(&linearized_external_system_);
+  // CalcImplicitExternalSystemData(linearized_external_system_, h,
+  //                                &implicit_external_system_data_);
 
   // Get context for the overall diagram and the plant in particular
   const Context<T>& diagram_context = this->get_context();
@@ -299,7 +299,8 @@ void ConvexIntegrator<T>::CalcNextContinuousState(
   SapSolverResults<T>& sap_results = workspace_.sap_results;
 
   // Solve the SAP problem for next-step plant velocities v_{t+h}
-  SapContactProblem<T> problem = MakeSapContactProblem(plant_context, data, h);
+  (void)data;
+  SapContactProblem<T> problem = MakeSapContactProblem(plant_context, h);
   SapSolverStatus status = SolveWithGuess(problem, v_guess, &sap_results);
   DRAKE_DEMAND(status == SapSolverStatus::kSuccess);
   x_next->get_mutable_generalized_velocity().SetFromVector(sap_results.v);
@@ -917,20 +918,25 @@ void ConvexIntegrator<T>::CalcTimestepIndependentProblemData(
 
 template <typename T>
 SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
-    const Context<T>& context, const TimestepIndependentProblemData<T>& data,
-    const T& h) {
+    const Context<T>& context, const T& h) {
   // workspace pre-allocations
-  VectorX<T>& v_star = workspace_.v_star;
   MatrixX<T>& A_dense = workspace_.A_dense;
   std::vector<MatrixX<T>>& A = workspace_.A;
-
-  // free-motion velocities v*
-  v_star = data.v0 + h * data.a;
-
+  VectorX<T>& k = workspace_.k;
+  MultibodyForces<T>& f_ext = *workspace_.f_ext;
+  VectorX<T>& v_star = workspace_.v_star;
+  
+  // TODO(vincekurtz): consider allocating these in the workspace as well 
+  const int nv = plant().num_velocities();
+  MatrixX<T> M(nv, nv);
+  VectorX<T> vdot0(nv);
+  
   // linearized dynamics matrix A = M + hD - h B K
-  A_dense = data.M;
+  plant().CalcMassMatrix(context, &M);
+  A_dense = M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
 
+  // TODO(vincekurtz): add external system implicit dynamics
   // MatrixX<T> BK = plant().MakeActuationMatrix() * implicit_external_system_data_.K;
   // fmt::print("h = {}\n", h);
   // fmt::print("BK =\n{}\n", fmt_eigen(BK));
@@ -943,6 +949,19 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
     const int tree_nv = tree_topology().num_tree_velocities(t);
     A[t] = A_dense.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
   }
+
+  // free-motion velocities v* = A^{-1}(M * v0 - h k0 + h B u0)
+  // TODO(vincekurtz): include external generalized and spatial forces
+  plant().CalcForceElementsContribution(context, &f_ext);
+  if (plant().num_actuators() > 0) {
+    f_ext.mutable_generalized_forces() +=
+        plant().MakeActuationMatrix() *
+        plant().get_actuation_input_port().Eval(context);
+  }
+
+  k = plant().CalcInverseDynamics(context, VectorX<T>::Zero(nv), f_ext);
+  const VectorX<T>& v0 = plant().GetVelocities(context);
+  v_star = A_dense.ldlt().solve(M * v0 - h * k);
 
   // problem creation
   // TODO(vincekurtz): consider updating rather than recreating
