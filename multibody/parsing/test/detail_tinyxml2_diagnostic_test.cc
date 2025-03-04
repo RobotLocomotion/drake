@@ -121,15 +121,15 @@ TEST_F(TinyXml2DiagnosticContentsTest, PolicyForNode) {
 }
 
 TEST_F(TinyXml2DiagnosticContentsTest, Unsuppported) {
-  diagnostic_.WarnUnsupportedElement(
-      GetFirstChildNamed("warning"), "unsupported_element");
+  diagnostic_.WarnUnsupportedElement(GetFirstChildNamed("warning"),
+                                     "unsupported_element");
   EXPECT_EQ(TakeWarning(),
             "<literal-string>.stuff:6: warning: The tag 'unsupported_element'"
             " found as a child of 'warning' is currently unsupported and will"
             " be ignored.");
 
-  diagnostic_.WarnUnsupportedAttribute(
-      GetFirstChildNamed("warning"), "unsupported_attribute");
+  diagnostic_.WarnUnsupportedAttribute(GetFirstChildNamed("warning"),
+                                       "unsupported_attribute");
   EXPECT_EQ(TakeWarning(),
             "<literal-string>.stuff:5: warning: The attribute"
             " 'unsupported_attribute' found in a 'warning' tag is currently"

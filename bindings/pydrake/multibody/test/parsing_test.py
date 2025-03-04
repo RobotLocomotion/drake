@@ -27,13 +27,17 @@ import re
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.geometry import SceneGraph
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
 )
 from pydrake.multibody.plant import (
+    AddMultibodyPlantSceneGraph,
     MultibodyPlant,
+    MultibodyPlant_,
 )
+from pydrake.systems.framework import DiagramBuilder
 
 
 class TestParsing(unittest.TestCase):
@@ -226,6 +230,16 @@ class TestParsing(unittest.TestCase):
         groups = parser.GetCollisionFilterGroups()
         self.assertTrue(groups.empty())
 
+    def test_parser_diagram_builder(self):
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(
+            builder, time_step=0.0)
+        parser = Parser(builder=builder, plant=plant, scene_graph=scene_graph,
+                        model_name_prefix="prefix")
+        self.assertEqual(parser.builder(), builder)
+        self.assertEqual(parser.plant(), plant)
+        self.assertEqual(parser.scene_graph(), scene_graph)
+
     def test_model_instance_info(self):
         """Checks that ModelInstanceInfo bindings exist."""
         ModelInstanceInfo.model_name
@@ -235,8 +249,9 @@ class TestParsing(unittest.TestCase):
         ModelInstanceInfo.X_PC
         ModelInstanceInfo.model_instance
 
-    def test_scoped_frame_names(self):
-        plant = MultibodyPlant(time_step=0.01)
+    @numpy_compare.check_all_types
+    def test_scoped_frame_names(self, T):
+        plant = MultibodyPlant_[T](time_step=0.01)
         GetScopedFrameByName(plant, "world")
         GetScopedFrameByNameMaybe(plant, "world")
 

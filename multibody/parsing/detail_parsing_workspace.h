@@ -134,16 +134,20 @@ struct ParsingWorkspace {
   // All parameters are aliased; they must have a lifetime greater than that of
   // this struct.
   ParsingWorkspace(
-      const ParsingOptions& options_in,
-      const PackageMap& package_map_in,
+      const ParsingOptions& options_in, const PackageMap& package_map_in,
       const drake::internal::DiagnosticPolicy& diagnostic_in,
+      systems::DiagramBuilder<double>* builder_in,
       MultibodyPlant<double>* plant_in,
       internal::CollisionFilterGroupResolver* collision_resolver_in,
       ParserSelector parser_selector_in)
       : options(options_in),
         package_map(package_map_in),
         diagnostic(diagnostic_in),
+        builder(builder_in),
         plant(plant_in),
+        scene_graph(plant_in->geometry_source_is_registered()
+                        ? plant_in->GetMutableSceneGraphPreFinalize()
+                        : nullptr),
         collision_resolver(collision_resolver_in),
         parser_selector(parser_selector_in) {
     DRAKE_DEMAND(plant != nullptr);
@@ -154,7 +158,9 @@ struct ParsingWorkspace {
   const ParsingOptions& options;
   const PackageMap& package_map;
   const drake::internal::DiagnosticPolicy& diagnostic;
+  systems::DiagramBuilder<double>* const builder;
   MultibodyPlant<double>* const plant;
+  geometry::SceneGraph<double>* const scene_graph;
   internal::CollisionFilterGroupResolver* const collision_resolver;
   const ParserSelector parser_selector;
 };

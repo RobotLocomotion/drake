@@ -1,11 +1,12 @@
-load(
-    "//tools/workspace:java.bzl",
-    "drake_java_import",
-)
+load("//tools/workspace:java.bzl", "drake_java_import")
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 
 def net_sf_jchart2d_repository(
         name,
-        mirrors = None):
+        mirrors = None,
+        _is_drake_self_call = False):
+    if not _is_drake_self_call:
+        print_warning("net_sf_jchart2d_repository")
     drake_java_import(
         name = name,
         licenses = ["restricted"],  # LGPL-3.0+

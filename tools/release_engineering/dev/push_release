@@ -98,8 +98,8 @@ if [[ "${push_apt}" -ne 0 ]]; then
     mkdir -p "${platform}"
     pushd "${platform}"
 
-    readonly remote_filename="drake-dev_${source_version}-1_amd64-${platform}.deb"
-    readonly local_filename="drake-dev_${source_version}-1_amd64.deb"
+    remote_filename="drake-dev_${source_version}-1_amd64-${platform}.deb"
+    local_filename="drake-dev_${source_version}-1_amd64.deb"
 
     curl --fail --location -o "${local_filename}" \
       "https://drake-packages.csail.mit.edu/drake/release/${remote_filename}"

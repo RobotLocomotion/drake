@@ -60,7 +60,7 @@ void LcmPlanInterpolator::Initialize(double plan_start_time,
   robot_plan_interpolator_->Initialize(
       plan_start_time, q0,
       &this->GetMutableSubsystemContext(*robot_plan_interpolator_, context)
-          .get_mutable_state());
+           .get_mutable_state());
 }
 
 }  // namespace kuka_iiwa_arm

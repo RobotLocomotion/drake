@@ -17,8 +17,8 @@ class SelectParserTest : public test::DiagnosticPolicyTestBase {
   MultibodyPlant<double> plant_{0.0};
   CollisionFilterGroupResolver resolver_{&plant_};
   ParsingOptions options_;
-  ParsingWorkspace w_{options_, {}, diagnostic_policy_, &plant_,
-                      &resolver_, SelectParser};
+  ParsingWorkspace w_{options_, {},         diagnostic_policy_, nullptr,
+                      &plant_,  &resolver_, SelectParser};
 };
 
 // File names may use any mix of upper and lower case. A recognized extension
@@ -52,12 +52,10 @@ TEST_F(SelectParserTest, UnknownFileType) {
   // The resulting parser ignores input, does not emit errors or warnings, and
   // does not crash.
   std::string empty;
-  EXPECT_EQ(
-      parser.AddModel({DataSource::kContents, &empty}, "", {}, w_),
-      std::nullopt);
-  EXPECT_EQ(
-      parser.AddAllModels({DataSource::kContents, &empty}, "", w_).size(),
-      0);
+  EXPECT_EQ(parser.AddModel({DataSource::kContents, &empty}, "", {}, w_),
+            std::nullopt);
+  EXPECT_EQ(parser.AddAllModels({DataSource::kContents, &empty}, "", w_).size(),
+            0);
   FlushDiagnostics();
 }
 
@@ -65,4 +63,3 @@ TEST_F(SelectParserTest, UnknownFileType) {
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
-

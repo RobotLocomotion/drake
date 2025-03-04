@@ -20,7 +20,7 @@ int64_t get_new_identifier();
  A simple identifier class.
 
  @note This is *purposely* a separate class from @ref TypeSafeIndex. For more
- explanatation, see @ref TypeSafeIndexVsIndentifier "this section".
+ explanation, see @ref TypeSafeIndexVsIdentifier "this section".
 
  This class serves as an upgrade to the standard practice of passing `int`s
  around as unique identifiers (or, as in this case, `int64_t`s). In the common
@@ -104,7 +104,7 @@ int64_t get_new_identifier();
     a3 = 7;                              // Compiler error.
  @endcode
 
- @anchor TypeSafeIndexVsIndentifier
+ @anchor TypeSafeIndexVsIdentifier
  __TypeSafeIndex vs Identifier__
 
  In principle, the *identifier* is related to the @ref TypeSafeIndex. In

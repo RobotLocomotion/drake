@@ -22,10 +22,10 @@ officially supports when building from source:
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java          |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.0   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.0   | 3.28  | GCC 13 (default) or Clang 15 | OpenJDK 21 |
-| macOS Sonoma (14)                  | arm64        | 3.12       | 8.0   | 3.31  | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
-| macOS Sequoia (15)                 | arm64        | 3.12       | 8.0   | 3.31  | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.1   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.1   | 3.28  | GCC 13 (default) or Clang 15 | OpenJDK 21 |
+| macOS Sonoma (14)                  | arm64        | 3.12       | 8.1   | 3.31  | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
+| macOS Sequoia (15)                 | arm64        | 3.12       | 8.1   | 3.31  | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -96,6 +96,17 @@ Adjusting open-source dependencies:
   user-provided `LAPACK::LAPACK` library instead of building from source.
   This option is not available on macOS.
   When ON, WITH_USER_BLAS must also be ON.
+* WITH_USER_ZLIB (default ON). When ON, uses `find_package(ZLIB)` to locate a
+  user-provided `ZLIB::ZLIB` library instead of building from source. Caveat:
+  On macOS, for now this hardcodes `-lz` instead of calling `find_package`.
+* WITH_CLARABEL (default ON). When ON, enables the `ClarabelSolver`
+  in the build.
+* WITH_CLP (default ON). When ON, enables the `ClpSolver` in the build.
+* WITH_CSDP (default ON). When ON, enables the `CsdpSolver` in the build.
+* WITH_IPOPT (default ON). When ON, enables the `IpoptSolver` in the build.
+* WITH_NLOPT (default ON). When ON, enables the `NloptSolver` in the build.
+* WITH_OSQP (default ON). When ON, enables the `OsqpSolver` in the build.
+* WITH_SCS (default ON). When ON, enables the `ScsSolver` in the build.
 
 Adjusting closed-source (commercial) software dependencies:
 

@@ -15,8 +15,8 @@ using std::type_info;
 namespace drake {
 namespace systems {
 
-SystemScalarConverter::Key::Key(
-    const type_info& t_info, const type_info& u_info)
+SystemScalarConverter::Key::Key(const type_info& t_info,
+                                const type_info& u_info)
     : pair<type_index, type_index>(t_info, u_info) {}
 
 size_t SystemScalarConverter::KeyHasher::operator()(const Key& key) const {
@@ -29,9 +29,9 @@ size_t SystemScalarConverter::KeyHasher::operator()(const Key& key) const {
 
 SystemScalarConverter::SystemScalarConverter() = default;
 
-void SystemScalarConverter::Insert(
-    const std::type_info& t_info, const std::type_info& u_info,
-    const ErasedConverterFunc& converter) {
+void SystemScalarConverter::Insert(const std::type_info& t_info,
+                                   const std::type_info& u_info,
+                                   const ErasedConverterFunc& converter) {
   const auto& key = Key{t_info, u_info};
   const auto& insert_result = funcs_.insert({key, converter});
   DRAKE_DEMAND(insert_result.second);
@@ -47,8 +47,8 @@ bool SystemScalarConverter::IsConvertible() const {
   return IsConvertible(typeid(T), typeid(U));
 }
 
-bool SystemScalarConverter::IsConvertible(
-    const std::type_info& t_info, const std::type_info& u_info) const {
+bool SystemScalarConverter::IsConvertible(const std::type_info& t_info,
+                                          const std::type_info& u_info) const {
   const auto* converter = Find(t_info, u_info);
   return (converter != nullptr);
 }
@@ -68,7 +68,7 @@ void SystemScalarConverter::RemoveUnlessAlsoSupportedBy(
     const SystemScalarConverter& other) {
   // Remove the items from `funcs_` whose key is absent from `other`.
   // (This would use erase_if, if we had it.)
-  for (auto iter = funcs_.begin(); iter != funcs_.end(); ) {
+  for (auto iter = funcs_.begin(); iter != funcs_.end();) {
     const Key& our_key = iter->first;
     if (!other.funcs_.contains(our_key)) {
       iter = funcs_.erase(iter);
@@ -80,9 +80,9 @@ void SystemScalarConverter::RemoveUnlessAlsoSupportedBy(
 
 namespace system_scalar_converter_internal {
 
-void ThrowConversionMismatch(
-    const type_info& s_t_info, const type_info& s_u_info,
-    const type_info& other_info) {
+void ThrowConversionMismatch(const type_info& s_t_info,
+                             const type_info& s_u_info,
+                             const type_info& other_info) {
   throw std::runtime_error(fmt::format(
       "SystemScalarConverter was configured to convert a {} into a {}"
       " but was called with a {} at runtime",
@@ -93,7 +93,7 @@ void ThrowConversionMismatch(
 template <typename T, typename U>
 void AddPydrakeConverterFunction(
     SystemScalarConverter* converter,
-    const std::function<System<T>* (const System<U>&)>& func) {
+    const std::function<System<T>*(const System<U>&)>& func) {
   DRAKE_DEMAND(converter != nullptr);
   DRAKE_DEMAND(func != nullptr);
   // Copy `func` into a lambda that ends up stored into `funcs_`.  The lambda
@@ -110,16 +110,14 @@ void AddPydrakeConverterFunction(
   });
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &AddPydrakeConverterFunction<T, U>
-));
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&AddPydrakeConverterFunction<T, U>));
 
 }  // namespace system_scalar_converter_internal
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
-    &SystemScalarConverter::IsConvertible<T, U>,
-    &SystemScalarConverter::Remove<T, U>
-));
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&SystemScalarConverter::IsConvertible<T, U>,
+     &SystemScalarConverter::Remove<T, U>));
 
 }  // namespace systems
 }  // namespace drake

@@ -284,7 +284,7 @@ class PrismaticJoint final : public Joint<T> {
 
   void do_set_default_positions(
       const VectorX<double>& default_positions) override {
-    if (this->has_implementation()) {
+    if (this->has_mobilizer()) {
       get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
@@ -298,9 +298,8 @@ class PrismaticJoint final : public Joint<T> {
   }
 
   // Joint<T> finals:
-  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint(
+  std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
       const internal::SpanningForest::Mobod& mobod) const final {
-    auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     const auto [inboard_frame, outboard_frame] =
         this->tree_frames(mobod.is_reversed());
     // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
@@ -308,8 +307,7 @@ class PrismaticJoint final : public Joint<T> {
         std::make_unique<internal::PrismaticMobilizer<T>>(
             mobod, *inboard_frame, *outboard_frame, axis_);
     prismatic_mobilizer->set_default_position(this->default_positions());
-    blue_print->mobilizer = std::move(prismatic_mobilizer);
-    return blue_print;
+    return prismatic_mobilizer;
   }
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(

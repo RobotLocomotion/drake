@@ -2,7 +2,7 @@
 
 namespace drake::systems {
 
-template<typename T>
+template <typename T>
 void OutputPort<T>::CheckValidAllocation(const AbstractValue& proposed) const {
   if (this->get_data_type() != kVectorValued)
     return;  // Nothing we can check for an abstract port.

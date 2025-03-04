@@ -149,7 +149,10 @@ TEST_F(VectorSystemTest, TopologyFailFast) {
     DRAKE_EXPECT_NO_THROW(dut.CreateDefaultContext());
     dut.DeclareAbstractOutputPort(
         kUseDefaultName,
-        []() { return AbstractValue::Make<int>(); },  // Dummies.
+        // Dummies.
+        []() {
+          return AbstractValue::Make<int>();
+        },
         [](const ContextBase&, AbstractValue*) {});
     EXPECT_THROW(dut.CreateDefaultContext(), std::exception);
   }
@@ -453,7 +456,8 @@ class OpenScalarTypeSystem : public VectorSystem<T> {
 
  private:
   // Allow different specializations to access each other's private data.
-  template <typename> friend class OpenScalarTypeSystem;
+  template <typename>
+  friend class OpenScalarTypeSystem;
 
   const int some_number_{};
 };
@@ -498,10 +502,12 @@ class DirectScalarTypeConversionSystem : public VectorSystem<T> {
 
 // Only support double => AutoDiffXd.
 namespace scalar_conversion {
-template <> struct Traits<DirectScalarTypeConversionSystem> {
+template <>
+struct Traits<DirectScalarTypeConversionSystem> {
   template <typename T, typename U>
-  using supported = typename std::bool_constant<
-    std::is_same_v<U, double> && !std::is_same_v<T, symbolic::Expression>>;
+  using supported =
+      typename std::bool_constant<std::is_same_v<U, double> &&
+                                  !std::is_same_v<T, symbolic::Expression>>;
 };
 }  // namespace scalar_conversion
 
@@ -538,9 +544,8 @@ TEST_F(VectorSystemTest, MissingMethodsContinuousTimeSystemTest) {
       ".*TimeDerivatives.*derivatives->size.. == 0.*failed.*");
 
   const auto& output = dut.get_output_port();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      output.Eval(*context),
-      ".*Output.*'output->size.. == 0.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(output.Eval(*context),
+                              ".*Output.*'output->size.. == 0.*failed.*");
 }
 
 // This system declares an output and discrete state, but does not define
@@ -566,9 +571,8 @@ TEST_F(VectorSystemTest, MissingMethodsDiscreteTimeSystemTest) {
       ".*DiscreteVariableUpdates.*next_state->size.. == 0.*failed.*");
 
   const auto& output = dut.get_output_port();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      output.Eval(*context),
-      ".*Output.*'output->size.. == 0.*failed.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(output.Eval(*context),
+                              ".*Output.*'output->size.. == 0.*failed.*");
 }
 
 }  // namespace

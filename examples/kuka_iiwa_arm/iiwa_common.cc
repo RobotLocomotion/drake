@@ -6,8 +6,7 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp,
-                                    Eigen::VectorXd* Ki,
+void SetPositionControlledIiwaGains(Eigen::VectorXd* Kp, Eigen::VectorXd* Ki,
                                     Eigen::VectorXd* Kd) {
   // All the gains are for acceleration, not directly responsible for generating
   // torques. These are set to high values to ensure good tracking. These gains
@@ -26,7 +25,7 @@ void SetTorqueControlledIiwaGains(Eigen::VectorXd* stiffness,
                                   Eigen::VectorXd* damping_ratio) {
   // All the gains are for directly generating torques. These gains are set
   // according to the values in the drake-iiwa-driver repository:
-  // https://github.com/RobotLocomotion/drake-iiwa-driver/blob/master/kuka-driver/sunrise_1.11/DrakeFRITorqueDriver.java NOLINT
+  // https://github.com/RobotLocomotion/drake-iiwa-driver/blob/master/kuka-driver/sunrise_1.11/DrakeFRITorqueDriver.java
 
   // The spring stiffness in Nm/rad.
   stiffness->resize(7);

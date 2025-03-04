@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -22,7 +23,10 @@ namespace planning {
  * @experimental
  * @see IrisZo for more details.
  **/
-struct IrisZoOptions {
+class IrisZoOptions {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(IrisZoOptions);
+
   /** Passes this object to an Archive.
   Refer to @ref yaml_serialization "YAML Serialization" for background.
   Note: This only serializes options that are YAML built-in types. */
@@ -92,7 +96,8 @@ struct IrisZoOptions {
 
   /** Number of threads to use when updating the particles. If the user requests
    * more threads than the CollisionChecker supports, that number of threads
-   * will be used instead. */
+   * will be used instead. However, see also `parameterization_is_threadsafe`.
+   */
   Parallelism parallelism{Parallelism::Max()};
 
   /** Enables print statements indicating the progress of IrisZo. */
@@ -128,6 +133,62 @@ struct IrisZoOptions {
   currently and when the
   configuration space is <= 3 dimensional.*/
   std::shared_ptr<geometry::Meshcat> meshcat{};
+
+  typedef std::function<Eigen::VectorXd(const Eigen::VectorXd&)>
+      ParameterizationFunction;
+
+  /** Ordinarily, IRIS-ZO grows collision free regions in the robot's
+   * configuration space C. This allows the user to specify a function f:Q→C ,
+   * and grow the region in Q instead. The function should be a map R^m to
+   * R^n, where n is the dimension of the plant configuration space, determined
+   * via `checker.plant().num_positions()` and m is `parameterization_dimension`
+   * if specified. The user must provide `parameterization`, which is the
+   * function f, `parameterization_is_threadsafe`, which is whether or not
+   * `parametrization` can be called concurrently, and
+   * `parameterization_dimension`, the dimension of the input space Q. */
+  void set_parameterization(const ParameterizationFunction& parameterization,
+                            bool parameterization_is_threadsafe,
+                            int parameterization_dimension) {
+    parameterization_ = parameterization;
+    parameterization_is_threadsafe_ = parameterization_is_threadsafe;
+    parameterization_dimension_ = parameterization_dimension;
+  }
+
+  /** Get the parameterization function.
+   * @note If the user has not specified this with `set_parameterization()`,
+   * then the default value of `parameterization_` is the identity function,
+   * indicating that the regions should be grown in the full configuration space
+   * (in the standard coordinate system). */
+  const ParameterizationFunction& get_parameterization() const {
+    return parameterization_;
+  }
+
+  /** Returns whether or not the user has specified the parameterization to be
+   * threadsafe.
+   * @note The default `parameterization_` is the identity function, which is
+   * threadsafe. */
+  bool get_parameterization_is_threadsafe() const {
+    return parameterization_is_threadsafe_;
+  }
+
+  /** Returns what the user has specified as the input dimension for the
+   * parameterization function, or std::nullopt if it has not been set. A
+   * std::nullopt value indicates that
+   * IrisZo should use the ambient configuration space dimension as the input
+   * dimension to the parameterization. */
+  std::optional<int> get_parameterization_dimension() const {
+    return parameterization_dimension_;
+  }
+
+ private:
+  bool parameterization_is_threadsafe_{true};
+
+  std::optional<int> parameterization_dimension_{std::nullopt};
+
+  std::function<Eigen::VectorXd(const Eigen::VectorXd&)> parameterization_{
+      [](const Eigen::VectorXd& q) -> Eigen::VectorXd {
+        return q;
+      }};
 };
 
 /** The IRIS-ZO (Iterative Regional Inflation by Semidefinite programming - Zero
@@ -160,7 +221,9 @@ box representing joint limits (e.g. from HPolyhedron::MakeBox).
 fraction, confidence level, and various algorithmic settings.
 
 The @p starting_ellipsoid and @p domain must describe elements in the same
-ambient dimension as the configuration space of the robot.
+ambient dimension as the configuration space of the robot, unless a
+parameterization is specified (in which case, they must match
+`options.parameterization_dimension`).
 @return A HPolyhedron representing the computed collision-free region in
 configuration space.
 @ingroup robot_planning

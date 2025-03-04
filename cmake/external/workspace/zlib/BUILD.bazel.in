@@ -1,0 +1,23 @@
+# -*- bazel -*-
+
+load("@rules_cc//cc:cc_import.bzl", "cc_import")
+load(":conversion.bzl", "split_cmake_list")
+
+_DEFINES = split_cmake_list(
+    "$<TARGET_PROPERTY:ZLIB::ZLIB,INTERFACE_COMPILE_DEFINITIONS>",
+)
+
+cc_library(
+    name = "zlib",
+    srcs = glob(
+        ["lib/**"],
+        allow_empty = False,
+    ),
+    hdrs = [
+        "include/zconf.h",
+        "include/zlib.h",
+    ],
+    defines = _DEFINES,
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)

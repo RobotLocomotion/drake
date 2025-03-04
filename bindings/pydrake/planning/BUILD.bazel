@@ -74,6 +74,7 @@ drake_py_unittest(
     num_threads = 2,
     deps = [
         ":planning",
+        "//bindings/pydrake/common/test_utilities:memory_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],
@@ -105,6 +106,9 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "trajectory_optimization_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+    ],
     deps = [
         ":planning",
         "//bindings/pydrake/examples",

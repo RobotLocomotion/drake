@@ -24,8 +24,8 @@ using geometry::GeometryId;
 
 // Fixture to setup a simple model with both collision and visual geometry,
 // loaded with the SDF parser.
-class MultibodyPlantLinkTests :
-      public testing::TestWithParam<test::ModelLoadFunction> {
+class MultibodyPlantLinkTests
+    : public testing::TestWithParam<test::ModelLoadFunction> {
  public:
   // Loads the MultibodyPlant part of the model. Geometry is ignored.
   void LoadMultibodyPlantOnly() {
@@ -45,8 +45,8 @@ class MultibodyPlantLinkTests :
  protected:
   MultibodyPlant<double> plant_{0.0};
   geometry::SceneGraph<double> scene_graph_;
-  const std::string base_name_{"drake/multibody/parsing/test/"
-        "links_with_visuals_and_collisions"};
+  const std::string base_name_{
+      "drake/multibody/parsing/test/links_with_visuals_and_collisions"};
 };
 
 TEST_P(MultibodyPlantLinkTests, LinkWithVisuals) {
@@ -150,14 +150,11 @@ TEST_P(MultibodyPlantLinkTests, LinksWithCollisions) {
             default_friction());
 }
 
+INSTANTIATE_TEST_SUITE_P(SdfMultibodyPlantLinkTests, MultibodyPlantLinkTests,
+                         ::testing::Values(test::LoadFromSdf));
 
-INSTANTIATE_TEST_SUITE_P(SdfMultibodyPlantLinkTests,
-                        MultibodyPlantLinkTests,
-                        ::testing::Values(test::LoadFromSdf));
-
-INSTANTIATE_TEST_SUITE_P(UrdfMultibodyPlantLinkTests,
-                        MultibodyPlantLinkTests,
-                        ::testing::Values(test::LoadFromUrdf));
+INSTANTIATE_TEST_SUITE_P(UrdfMultibodyPlantLinkTests, MultibodyPlantLinkTests,
+                         ::testing::Values(test::LoadFromUrdf));
 
 }  // namespace
 }  // namespace internal

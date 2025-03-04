@@ -25,12 +25,12 @@
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using Eigen::VectorXi;
 using drake::Vector1d;
+using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
+using Eigen::VectorXi;
 
 namespace drake {
 namespace examples {
@@ -53,12 +53,9 @@ class RobotPlanRunner {
   /// plant is aliased
   explicit RobotPlanRunner(const multibody::MultibodyPlant<double>& plant)
       : plant_(plant), plan_number_(0) {
-    lcm_.subscribe(kLcmStatusChannel,
-                    &RobotPlanRunner::HandleStatus, this);
-    lcm_.subscribe(kLcmPlanChannel,
-                    &RobotPlanRunner::HandlePlan, this);
-    lcm_.subscribe(kLcmStopChannel,
-                    &RobotPlanRunner::HandleStop, this);
+    lcm_.subscribe(kLcmStatusChannel, &RobotPlanRunner::HandleStatus, this);
+    lcm_.subscribe(kLcmPlanChannel, &RobotPlanRunner::HandlePlan, this);
+    lcm_.subscribe(kLcmStopChannel, &RobotPlanRunner::HandleStop, this);
   }
 
   void Run() {
@@ -79,7 +76,8 @@ class RobotPlanRunner {
     while (true) {
       // Call lcm handle until at least one status message is
       // processed.
-      while (0 == lcm_.handleTimeout(10) || iiwa_status_.utime == -1) { }
+      while (0 == lcm_.handleTimeout(10) || iiwa_status_.utime == -1) {
+      }
 
       cur_time_us = iiwa_status_.utime;
 
@@ -196,7 +194,6 @@ int do_main() {
 }  // namespace kuka_iiwa_arm
 }  // namespace examples
 }  // namespace drake
-
 
 int main() {
   return drake::examples::kuka_iiwa_arm::do_main();

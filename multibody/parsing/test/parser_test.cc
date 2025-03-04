@@ -9,16 +9,17 @@
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
+#include "drake/planning/robot_diagram_builder.h"
 
 namespace drake {
 namespace multibody {
 namespace {
 
 GTEST_TEST(FileParserTest, BasicTest) {
-  const std::string sdf_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-  const std::string urdf_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/acrobot.urdf");
+  const std::string sdf_name =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  const std::string urdf_name =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.urdf");
   const std::string xml_name = FindResourceOrThrow(
       "drake/multibody/parsing/dm_control/suite/acrobot.xml");
   const std::string dmd_name = FindResourceOrThrow(
@@ -34,6 +35,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
     Parser dut(&plant);
     EXPECT_EQ(&dut.plant(), &plant);
     EXPECT_EQ(dut.scene_graph(), nullptr);
+    EXPECT_EQ(dut.builder(), nullptr);
     EXPECT_EQ(dut.AddModels(sdf_name).size(), 1);
     const auto prefix_ids = Parser(&plant, "prefix").AddModels(sdf_name);
     EXPECT_EQ(prefix_ids.size(), 1);
@@ -48,6 +50,7 @@ GTEST_TEST(FileParserTest, BasicTest) {
     Parser dut(&plant, &scene_graph);
     EXPECT_EQ(&dut.plant(), &plant);
     EXPECT_EQ(dut.scene_graph(), &scene_graph);
+    EXPECT_EQ(dut.builder(), nullptr);
     EXPECT_EQ(dut.AddModels(urdf_name).size(), 1);
     const auto prefix_ids = Parser(&plant, "prefix").AddModels(urdf_name);
     EXPECT_EQ(prefix_ids.size(), 1);
@@ -98,6 +101,73 @@ GTEST_TEST(FileParserTest, BasicTest) {
   }
 }
 
+GTEST_TEST(FileParserTest, BuilderTest) {
+  const std::string sdf_name =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
+
+  {  // Pass the builder only (using RobotDiagramBuilder).
+    planning::RobotDiagramBuilder<double> builder(0.0);
+    Parser dut(&builder.builder());
+    EXPECT_EQ(dut.builder(), &builder.builder());
+    EXPECT_EQ(&dut.plant(), &builder.plant());
+    EXPECT_EQ(dut.scene_graph(), &builder.scene_graph());
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(builder.plant().GetModelInstanceName(ids[0]), "acrobot");
+  }
+
+  {  // Pass the builder only (the Diagram has only the plant).
+    systems::DiagramBuilder<double> builder;
+    auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+    plant->set_name("plant");
+    Parser dut(&builder);
+    EXPECT_EQ(dut.builder(), &builder);
+    EXPECT_EQ(&dut.plant(), plant);
+    EXPECT_EQ(dut.scene_graph(), nullptr);
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant->GetModelInstanceName(ids[0]), "acrobot");
+  }
+
+  {  // The Diagram has a plant named "random", but no SceneGraph. Passing just
+     // the builder fails but if we pass the plant pointer it succeeds.
+    systems::DiagramBuilder<double> builder;
+    auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+    plant->set_name("random");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        Parser(&builder),
+        "DiagramBuilder does not contain a subsystem named plant.*");
+    Parser dut(&builder, plant);
+    EXPECT_EQ(dut.builder(), &builder);
+    EXPECT_EQ(&dut.plant(), plant);
+    EXPECT_EQ(dut.scene_graph(), nullptr);
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant->GetModelInstanceName(ids[0]), "acrobot");
+  }
+
+  {  // The Diagram has a plant and scene_graph with non-default names. Passing
+     // just the builder and scene_graph fails but if we pass the plant pointer
+     // it succeeds.
+    systems::DiagramBuilder<double> builder;
+    auto plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
+    auto scene_graph = builder.AddSystem<geometry::SceneGraph<double>>();
+    plant->set_name("random");
+    scene_graph->set_name("arbitrary");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        Parser(&builder, nullptr, scene_graph),
+        "DiagramBuilder does not contain a subsystem named plant.*");
+    Parser dut(&builder, plant, scene_graph);
+    EXPECT_EQ(dut.builder(), &builder);
+    EXPECT_EQ(&dut.plant(), plant);
+    EXPECT_EQ(dut.scene_graph(), scene_graph);
+    EXPECT_EQ(plant->geometry_source_is_registered(), true);
+    auto ids = dut.AddModels(sdf_name);
+    EXPECT_EQ(ids.size(), 1);
+    EXPECT_EQ(plant->GetModelInstanceName(ids[0]), "acrobot");
+  }
+}
+
 // Load from SDF using a PackageMap URL.
 GTEST_TEST(FileParserTest, UrlTest) {
   MultibodyPlant<double> plant(0.0);
@@ -114,12 +184,12 @@ GTEST_TEST(FileParserTest, UrlTest) {
 }
 
 GTEST_TEST(FileParserTest, BasicStringTest) {
-  const std::string sdf_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/acrobot.sdf");
-  const std::string urdf_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/acrobot.urdf");
-  const std::string xml_name = FindResourceOrThrow(
-      "drake/multibody/benchmarks/acrobot/acrobot.xml");
+  const std::string sdf_name =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  const std::string urdf_name =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.urdf");
+  const std::string xml_name =
+      FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.xml");
   const std::string dmd_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/process_model_directives_test/"
       "acrobot.dmd.yaml");
@@ -212,17 +282,15 @@ GTEST_TEST(FileParserTest, ExtensionMatchTest) {
   // An unknown extension is an error.
   // (Check both singular and plural overloads.)
   MultibodyPlant<double> plant(0.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModels("acrobot.foo"),
-      ".*file.*\\.foo.* is not.*recognized.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Parser(&plant).AddModels("acrobot.foo"),
+                              ".*file.*\\.foo.* is not.*recognized.*");
   DRAKE_EXPECT_THROWS_MESSAGE(Parser(&plant).AddModels("acrobot.foo"),
                               ".*file.*\\.foo.* is not.*recognized.*");
 
   // Uppercase extensions are accepted (i.e., still call the underlying SDF or
   // URDF parser, shown here by it generating a different exception message).
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModels("acrobot.SDF"),
-      "error: Error finding file.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(Parser(&plant).AddModels("acrobot.SDF"),
+                              "error: Error finding file.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModels("acrobot.URDF"),
       "/.*/acrobot.URDF:0: error: "
@@ -253,8 +321,7 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // TODO(#18052): Until the underlying parser supports diagnostic policy, the
   // input needs to crafted to avoid reachable fatal assertions.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      Parser(&plant).AddModelsFromString("bad:", "dmd.yaml"),
-      ".*YAML.*bad.*");
+      Parser(&plant).AddModelsFromString("bad:", "dmd.yaml"), ".*YAML.*bad.*");
 
   // Syntactically well-formed DMD data, but semantically invalid.
   {
@@ -292,7 +359,7 @@ GTEST_TEST(FileParserTest, PrefixConstructors) {
   // Reload the same model, but use model_name_prefix to avoid name collisions.
   EXPECT_NO_THROW(Parser(&plant, "prefix1").AddModelsFromString(model, "urdf"));
   EXPECT_NO_THROW(Parser(&plant, &scene_graph, "prefix2")
-                  .AddModelsFromString(model, "urdf"));
+                      .AddModelsFromString(model, "urdf"));
 }
 
 // If a non-Drake URDF or SDF file uses package URIs, this confirms that it is
@@ -328,7 +395,7 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   // Attempt to read in the SDF file without setting the package map first.
   const std::string new_sdf_filename = sdf_path + "/box.sdf";
   DRAKE_EXPECT_THROWS_MESSAGE(parser.AddModels(new_sdf_filename),
-      ".*error.*unknown package.*box_model.*");
+                              ".*error.*unknown package.*box_model.*");
 
   // Move the failed parse out of the way.
   plant.RenameModelInstance(plant.GetModelInstanceByName("box"), "broken");
@@ -353,8 +420,7 @@ GTEST_TEST(FileParserTest, StrictParsing) {
     MultibodyPlant<double> plant(0.0);
     geometry::SceneGraph<double> scene_graph;
     Parser parser(&plant, &scene_graph);
-    EXPECT_NO_THROW(
-        parser.AddModelsFromString(model_provokes_warning, "urdf"));
+    EXPECT_NO_THROW(parser.AddModelsFromString(model_provokes_warning, "urdf"));
   }
 
   {
@@ -380,9 +446,8 @@ GTEST_TEST(FileParserTest, AutoRenaming) {
   parser.AddModelsFromString(model, "urdf");
   EXPECT_TRUE(plant.HasModelInstanceNamed("robot"));
   // Auto renaming is off; fail to load it again.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      parser.AddModelsFromString(model, "urdf"),
-      ".*names must be unique.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(parser.AddModelsFromString(model, "urdf"),
+                              ".*names must be unique.*");
 
   // Load it again with auto renaming.
   parser.SetAutoRenaming(true);
@@ -393,9 +458,8 @@ GTEST_TEST(FileParserTest, AutoRenaming) {
   // Disable auto renaming and show repeat loading subsequently fails.
   parser.SetAutoRenaming(false);
   EXPECT_FALSE(parser.GetAutoRenaming());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      parser.AddModelsFromString(model, "urdf"),
-      ".*names must be unique.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(parser.AddModelsFromString(model, "urdf"),
+                              ".*names must be unique.*");
 }
 
 // This is a regression test for issue #21316. The code is adapted from that
@@ -431,12 +495,10 @@ GTEST_TEST(FileParserTest, InterleavedRenaming) {
   // after renaming.
   CollisionFilterGroups expected;
   expected.AddGroup("my_kuka_iiwa0::iiwa_wrist",
-                    {"my_kuka_iiwa0::iiwa_link_5",
-                     "my_kuka_iiwa0::iiwa_link_6",
+                    {"my_kuka_iiwa0::iiwa_link_5", "my_kuka_iiwa0::iiwa_link_6",
                      "my_kuka_iiwa0::iiwa_link_7"});
   expected.AddGroup("my_kuka_iiwa1::iiwa_wrist",
-                    {"my_kuka_iiwa1::iiwa_link_5",
-                     "my_kuka_iiwa1::iiwa_link_6",
+                    {"my_kuka_iiwa1::iiwa_link_5", "my_kuka_iiwa1::iiwa_link_6",
                      "my_kuka_iiwa1::iiwa_link_7"});
   expected.AddExclusionPair(
       {"my_kuka_iiwa0::iiwa_wrist", "my_kuka_iiwa0::iiwa_wrist"});

@@ -27,17 +27,17 @@ namespace {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using std::make_unique;
 using std::string;
 using std::unique_ptr;
-using std::make_unique;
 
 // A hollow shell of a System.
 class DummySystem : public LeafSystem<double> {
  public:
   DummySystem() {}
   ~DummySystem() override {}
-  using SystemBase::DeclareCacheEntry;
   using SystemBase::assign_next_dependency_ticket;
+  using SystemBase::DeclareCacheEntry;
   using SystemBase::get_system_id;
 };
 
@@ -49,8 +49,8 @@ class MyOutputPort : public OutputPort<double> {
  public:
   MyOutputPort(DummySystem* dummy, OutputPortIndex index,
                DependencyTicket ticket)
-      : OutputPort<double>(dummy, dummy, dummy->get_system_id(),
-                           "my_output", index, ticket, kVectorValued, 2) {}
+      : OutputPort<double>(dummy, dummy, dummy->get_system_id(), "my_output",
+                           index, ticket, kVectorValued, 2) {}
 
   std::unique_ptr<AbstractValue> DoAllocate() const override {
     return AbstractValue::Make<BasicVector<double>>(
@@ -76,8 +76,7 @@ class MyOutputPort : public OutputPort<double> {
   }
 
   void ThrowIfInvalidPortValueType(
-      const Context<double>&,
-      const AbstractValue& proposed_value) const final {
+      const Context<double>&, const AbstractValue& proposed_value) const final {
     // Note: this is a very expensive way to check -- fine for this test
     // case (which has no alternative) but don't copy into real code!
     auto good_value = Allocate();
@@ -129,8 +128,7 @@ GTEST_TEST(TestBaseClass, BadAllocators) {
   MyStringAllocatorPort string_allocator{&dummy, OutputPortIndex(0),
                                          dummy.assign_next_dependency_ticket()};
   MyBadSizeAllocatorPort bad_size_allocator{
-      &dummy, OutputPortIndex(1),
-      dummy.assign_next_dependency_ticket()};
+      &dummy, OutputPortIndex(1), dummy.assign_next_dependency_ticket()};
   MyNullAllocatorPort null_allocator{&dummy, OutputPortIndex(2),
                                      dummy.assign_next_dependency_ticket()};
 
@@ -212,19 +210,17 @@ class LeafOutputPortTest : public ::testing::Test {
       internal::FrameworkFactory::Make<LeafOutputPort<double>>(
           &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
           &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
-          dummy_.get_system_id(),
-          "absport",
+          dummy_.get_system_id(), "absport",
           OutputPortIndex(dummy_.num_output_ports()),
           dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
-          &dummy_.DeclareCacheEntry(
-              "absport", ValueProducer(alloc_string, calc_string)));
+          &dummy_.DeclareCacheEntry("absport",
+                                    ValueProducer(alloc_string, calc_string)));
   LeafOutputPort<double>& absport_general_ = *absport_general_ptr_;
   std::unique_ptr<LeafOutputPort<double>> vecport_general_ptr_ =
       internal::FrameworkFactory::Make<LeafOutputPort<double>>(
           &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
           &dummy_,  // implicit_cast<SystemBase*>(&dummy_)
-          dummy_.get_system_id(),
-          "vecport",
+          dummy_.get_system_id(), "vecport",
           OutputPortIndex(dummy_.num_output_ports()),
           dummy_.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
           &dummy_.DeclareCacheEntry(
@@ -243,8 +239,7 @@ void AbstractPortCheck(const Context<double>& context,
   const string new_value("from calc_string");
   EXPECT_EQ(val->get_value<string>(), new_value);
   EXPECT_EQ(port.Eval<string>(context), new_value);
-  EXPECT_EQ(port.Eval<AbstractValue>(context).get_value<string>(),
-            new_value);
+  EXPECT_EQ(port.Eval<AbstractValue>(context).get_value<string>(), new_value);
 
   // Can't Eval into the wrong type.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -279,8 +274,7 @@ TEST_F(LeafOutputPortTest, AbstractPorts) {
 
 // Helper function for testing a vector-valued port.
 void VectorPortCheck(const Context<double>& context,
-                     const LeafOutputPort<double>& port,
-                     Vector3d alloc_value) {
+                     const LeafOutputPort<double>& port, Vector3d alloc_value) {
   // Treat the vector-valued port as a BasicVector, which
   // should have MyVector3d as concrete type.
   unique_ptr<AbstractValue> val = port.Allocate();
@@ -302,9 +296,8 @@ void VectorPortCheck(const Context<double>& context,
   EXPECT_EQ(eval_eigen, new_value);
   EXPECT_EQ(eval_basic.CopyToVector(), new_value);
   EXPECT_EQ(eval_myvec3.CopyToVector(), new_value);
-  EXPECT_EQ(
-      eval_abs.get_value<BasicVector<double>>().CopyToVector(),
-      new_value);
+  EXPECT_EQ(eval_abs.get_value<BasicVector<double>>().CopyToVector(),
+            new_value);
 }
 
 // Check for proper construction and functioning of vector-valued
@@ -326,13 +319,11 @@ TEST_F(LeafOutputPortTest, ThrowIfNullAlloc) {
   auto null_port = internal::FrameworkFactory::Make<LeafOutputPort<double>>(
       &dummy_,  // implicit_cast<const System<T>*>(&dummy_)
       &dummy_,  // implicit_cast<SystemBase*>(&dummy_),
-      dummy_.get_system_id(),
-      "null_port",
+      dummy_.get_system_id(), "null_port",
       OutputPortIndex(dummy_.num_output_ports()),
-      dummy_.assign_next_dependency_ticket(),
-      kAbstractValued, 0 /* size */,
-      &dummy_.DeclareCacheEntry(
-          "null", ValueProducer(alloc_null, calc_string)));
+      dummy_.assign_next_dependency_ticket(), kAbstractValued, 0 /* size */,
+      &dummy_.DeclareCacheEntry("null",
+                                ValueProducer(alloc_null, calc_string)));
 
   // Creating a context for this system should fail when it tries to allocate
   // a cache entry for null_port.
@@ -374,10 +365,11 @@ class SystemWithNStates : public LeafSystem<double> {
  public:
   explicit SystemWithNStates(int num_states) {
     DeclareContinuousState(num_states);
-    DeclareAbstractOutputPort(
-        kUseDefaultName, &SystemWithNStates::ReturnNumContinuous);
+    DeclareAbstractOutputPort(kUseDefaultName,
+                              &SystemWithNStates::ReturnNumContinuous);
   }
   ~SystemWithNStates() override {}
+
  private:
   void ReturnNumContinuous(const Context<double>& context, int* nc) const {
     ASSERT_NE(nc, nullptr);
@@ -435,8 +427,8 @@ GTEST_TEST(DiagramOutputPortTest, OneLevel) {
 
   // When given an inapproprate context, we fail-fast.
   const auto& diagram_context = dynamic_cast<DiagramContext<double>&>(*context);
-  const auto& sys1_context = diagram_context.GetSubsystemContext(
-      SubsystemIndex{0});
+  const auto& sys1_context =
+      diagram_context.GetSubsystemContext(SubsystemIndex{0});
   DRAKE_EXPECT_THROWS_MESSAGE(
       out0.Eval<int>(sys1_context),
       ".*Context.*was not created for this OutputPort.*");

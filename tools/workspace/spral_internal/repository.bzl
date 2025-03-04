@@ -6,8 +6,8 @@ def spral_internal_repository(
     github_archive(
         name = name,
         repository = "ralna/spral",
-        commit = "v2025.01.08",
-        sha256 = "c141878e36cb01a3c6f5e677a43d0f7781781755036f59ef91f38090a8f26f71",  # noqa
+        commit = "v2025.03.03",
+        sha256 = "5f2d68fb4009b3a57b844183cb33228603819a974c349a47c0e745b04cd919c9",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/drake_vendor.patch",

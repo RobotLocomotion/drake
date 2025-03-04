@@ -15,10 +15,8 @@ using drake::systems::BasicVector;
 
 namespace {
 Eigen::VectorXd CalcGravityCompensationTorque(
-    const multibody::MultibodyPlant<double>& plant,
-    const Eigen::VectorXd& q,
+    const multibody::MultibodyPlant<double>& plant, const Eigen::VectorXd& q,
     Eigen::MatrixXd* H = nullptr) {
-
   // Compute gravity compensation torque.
   std::unique_ptr<systems::Context<double>> plant_context =
       plant.CreateDefaultContext();
@@ -88,14 +86,13 @@ GTEST_TEST(KukaTorqueControllerTest, GravityCompensationTest) {
   controller.get_input_port_commanded_torque().FixValue(context.get(),
                                                         desired_torque_input);
 
-  Eigen::VectorXd expected_torque =
-      CalcGravityCompensationTorque(plant, q);
+  Eigen::VectorXd expected_torque = CalcGravityCompensationTorque(plant, q);
 
   // Check output.
   controller.CalcOutput(*context, output.get());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
-  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(),
-                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(), 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
@@ -149,8 +146,7 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
                                                         desired_torque_input);
 
   // Compute gravity compensation torque.
-  Eigen::VectorXd expected_torque =
-      CalcGravityCompensationTorque(plant, q);
+  Eigen::VectorXd expected_torque = CalcGravityCompensationTorque(plant, q);
 
   // Compute spring torque.
   expected_torque += -((q - q_des).array() * stiffness.array()).matrix();
@@ -158,8 +154,8 @@ GTEST_TEST(KukaTorqueControllerTest, SpringTorqueTest) {
   // Check output.
   controller.CalcOutput(*context, output.get());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
-  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(),
-                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(), 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
@@ -214,8 +210,7 @@ GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
 
   // Compute gravity compensation torque and mass matrix.
   Eigen::MatrixXd H(kIiwaArmNumJoints, kIiwaArmNumJoints);
-  Eigen::VectorXd expected_torque =
-      CalcGravityCompensationTorque(plant, q, &H);
+  Eigen::VectorXd expected_torque = CalcGravityCompensationTorque(plant, q, &H);
 
   // Compute spring torque.
   expected_torque += -((q - q_des).array() * stiffness.array()).matrix();
@@ -231,8 +226,8 @@ GTEST_TEST(KukaTorqueControllerTest, DampingTorqueTest) {
   // Check output.
   controller.CalcOutput(*context, output.get());
   const BasicVector<double>* output_vector = output->get_vector_data(0);
-  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(),
-                              1e-10, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(expected_torque, output_vector->value(), 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 }  // namespace kuka_iiwa_arm

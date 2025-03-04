@@ -73,6 +73,25 @@ spdlog_repository = use_repo_rule(
 
 spdlog_repository(name = "pkgconfig_spdlog")
 
+# Add C++ module dependencies that are NOT used by Drake's public API, but are
+# used by Drake's implementation. Builds have the option to opt-out of these
+# depdencies by providing a replacement:
+#
+# For our CMake builds from source, the "WITH_USER_..." CMake options find a
+# user-supplied library are converted into a module override.
+#
+# For wheel builds, the module flavor is always used.
+#
+# For Bazel builds using Drake as an external, the module flavor is used by
+# default but can be changed using the Bazel flags at @drake//tools/flags.
+# For first-party Bazel builds (by Drake Developers), the non-module flavor
+# is used by default.
+
+bazel_dep(name = "zlib", version = "1.3.1.bcr.4", repo_name = "module_zlib")
+
+# TODO(jwnimmer-tri) These as well should be module-or-external.
+# - glib
+
 # Add additional modules we use as tools (not runtime dependencies).
 
 bazel_dep(name = "toolchains_llvm", version = "1.3.0")
@@ -82,6 +101,26 @@ llvm = use_repo_rule("@toolchains_llvm//toolchain:rules.bzl", "llvm")
 llvm(
     name = "llvm",
     llvm_version = "19.1.3",
+    # TODO(jwnimmer-tri) Once we upgrade toolchains_llvm past 1.3.0, we won't
+    # need to specify the `urls` (nor the `strip_prefix` and `sha256`) anymore.
+    sha256 = {
+        "darwin-aarch64": "80a54a467e9e770a76ba9670e89a235224ec47578cc4d4dbd928592813732518",  # noqa
+        "darwin-x86_64": "52ea30f3089af4e086a98638a16167c5a20d253d43f7146c058e3e9e6d33274f",  # noqa
+        "linux-aarch64": "a730175e58233f20a99ecab0015d8cd0f1af5d92411ca1f9e3e472645d889bcd",  # noqa
+        "linux-x86_64": "052a5ee117782aab5893dba2cdf2cb97c3d873f7a50ba6b1690594161c75c519",  # noqa
+    },
+    strip_prefix = {
+        "darwin-aarch64": "LLVM-19.1.3-macOS-ARM64",
+        "darwin-x86_64": "LLVM-19.1.3-macOS-X64",
+        "linux-aarch64": "clang+llvm-19.1.3-aarch64-linux-gnu",
+        "linux-x86_64": "LLVM-19.1.3-Linux-X64",
+    },
+    urls = {
+        "darwin-aarch64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-macOS-ARM64.tar.xz"],  # noqa
+        "darwin-x86_64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-macOS-X64.tar.xz"],  # noqa
+        "linux-aarch64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/clang%2Bllvm-19.1.3-aarch64-linux-gnu.tar.xz"],  # noqa
+        "linux-x86_64": ["https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.3/LLVM-19.1.3-Linux-X64.tar.xz"],  # noqa
+    },
 )
 
 # Load dependencies which are "public", i.e., made available to downstream
@@ -130,7 +169,10 @@ use_repo(
 # TODO(jwnimmer-tri) By historical accident, not all of the repository names
 # here end with "internal". We should work on improving the consistency, either
 # by switching them to use BCR modules instead (e.g., nasm) or renaming them
-# with any necessary deprecations (e.g., statsjs).
+# to internal (e.g., statsjs). Specifics are listed inline below. For renaming,
+# we'll wait until after the WORKSPACE deprecation is done (2025-09-01) so that
+# users can naturally stop using them during their bzlmod porting process and
+# we won't need to provide any additional temporary infrastructure.
 
 internal_repositories = use_extension(
     "@drake//tools/workspace:default.bzl",
@@ -139,26 +181,26 @@ internal_repositories = use_extension(
 use_repo(
     internal_repositories,
     "abseil_cpp_internal",
-    "bazelisk",
+    "bazelisk",  # TODO(jwnimmer-tri) Mark as internal.
     "ccd_internal",
     "clang_cindex_python3_internal",
     "clarabel_cpp_internal",
     "clp_internal",
     "coinutils_internal",
-    "com_jidesoft_jide_oss",
+    "com_jidesoft_jide_oss",  # TODO(jwnimmer-tri) Mark as internal.
     "common_robotics_utilities_internal",
-    "commons_io",
+    "commons_io",  # TODO(jwnimmer-tri) Mark as internal.
     "conex_internal",
     "csdp_internal",
     "curl_internal",
     "dm_control_internal",
-    "doxygen",
+    "doxygen",  # TODO(jwnimmer-tri) Mark as internal.
     "fcl_internal",
-    "gfortran",
+    "gfortran",  # TODO(jwnimmer-tri) Mark as internal.
     "github3_py_internal",
     "gklib_internal",
-    "googlebenchmark",
-    "gymnasium_py",
+    "googlebenchmark",  # TODO(jwnimmer-tri) Switch to module.
+    "gymnasium_py",  # TODO(jwnimmer-tri) Mark as internal.
     "gz_math_internal",
     "gz_utils_internal",
     "highway_internal",
@@ -175,13 +217,13 @@ use_repo(
     "mypy_extensions_internal",
     "mypy_internal",
     "nanoflann_internal",
-    "nasm",
-    "net_sf_jchart2d",
+    "nasm",  # TODO(jwnimmer-tri) Switch to module.
+    "net_sf_jchart2d",  # TODO(jwnimmer-tri) Mark as internal.
     "nlohmann_internal",
     "nlopt_internal",
     "onetbb_internal",
     "openusd_internal",
-    "org_apache_xmlgraphics_commons",
+    "org_apache_xmlgraphics_commons",  # TODO(jwnimmer-tri) Mark as internal.
     "osqp_internal",
     "picosha2_internal",
     "pkgconfig_blas_internal",
@@ -190,13 +232,13 @@ use_repo(
     "qdldl_internal",
     "qhull_internal",
     "ros_xacro_internal",
-    "rules_python_drake_constants",
+    "rules_python_drake_constants",  # TODO(jwnimmer-tri) Remove 2025-09-01.
     "scs_internal",
     "sdformat_internal",
     "spgrid_internal",
     "spral_internal",
     "stable_baselines3_internal",
-    "statsjs",
+    "statsjs",  # TODO(jwnimmer-tri) Mark as internal.
     "stduuid_internal",
     "suitesparse_internal",
     "sympy_py_internal",
@@ -210,7 +252,7 @@ use_repo(
     "uwebsockets_internal",
     "voxelized_geometry_tools_internal",
     "vtk_internal",
-    "xmlrunner_py",
+    "xmlrunner_py",  # TODO(jwnimmer-tri) Mark as internal.
     "yaml_cpp_internal",
 )
 
@@ -263,8 +305,3 @@ use_repo(
     "crate__thiserror-impl-1.0.69",
     "crate__unicode-ident-1.0.16",
 )
-
-# TODO(#20731) More improvements are still needed to our MODULE organization:
-# - Provide better configuration options for choosing dependencies.
-# - Adjust the wheel build to build more dependencies as Bazel modules.
-# - Deprecate non-bzlmod use of Drake downstream.

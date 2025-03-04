@@ -91,9 +91,8 @@ class MultiDofJointWithLimits final : public Joint<T> {
   int do_get_velocity_start() const override { return 0; }
   int do_get_position_start() const override { return 0; }
 
-  std::unique_ptr<typename Joint<T>::BluePrint> MakeImplementationBlueprint(
+  std::unique_ptr<Mobilizer<T>> MakeMobilizerForJoint(
       const SpanningForest::Mobod& mobod) const override {
-    auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     const auto [inboard_frame, outboard_frame] =
         this->tree_frames(mobod.is_reversed());
     // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.
@@ -102,8 +101,7 @@ class MultiDofJointWithLimits final : public Joint<T> {
     // consistent during MultibodyPlant::Finalize().
     auto revolute_mobilizer = std::make_unique<internal::RpyBallMobilizer<T>>(
         mobod, *inboard_frame, *outboard_frame);
-    blue_print->mobilizer = std::move(revolute_mobilizer);
-    return blue_print;
+    return revolute_mobilizer;
   }
 
   // We do not need an implementation for the methods below since the unit tests

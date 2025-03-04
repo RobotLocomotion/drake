@@ -32,6 +32,7 @@ from pydrake.solvers import (
     ExpressionConstraint
 )
 from pydrake.multibody.plant import MultibodyPlant
+from pydrake.multibody.parsing import Parser
 import pydrake.solvers as mp
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
@@ -237,6 +238,9 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertIsInstance(trajopt.duration(), Variable)
         self.assertEqual(trajopt.prog().GetInitialGuess(trajopt.duration()),
                          2.0)
+        self.assertEqual(len(trajopt.q()), 2)
+        self.assertEqual(len(trajopt.qdot()), 2)
+        self.assertEqual(len(trajopt.qddot()), 2)
 
         b = np.zeros((2, 1))
         trajopt.AddPathPositionConstraint(lb=b, ub=b, s=0)
@@ -246,13 +250,35 @@ class TestTrajectoryOptimization(unittest.TestCase):
         velocity_constraint = mp.LinearConstraint(np.eye(4),
                                                   lb=np.zeros((4, 1)),
                                                   ub=np.zeros((4, 1)))
+        velocity_binding = mp.Binding[mp.LinearConstraint](
+            mp.LinearConstraint(
+                np.eye(2),
+                lb=np.zeros(2),
+                ub=np.zeros(2)),
+            trajopt.qdot()
+        )
         trajopt.AddVelocityConstraintAtNormalizedTime(velocity_constraint, s=0)
+        trajopt.AddVelocityConstraintAtNormalizedTime(
+            binding=velocity_binding,
+            s=0
+        )
         trajopt.AddPathAccelerationConstraint(lb=b, ub=b, s=0)
         trajopt.AddDurationConstraint(1, 1)
         trajopt.AddPositionBounds(lb=b, ub=b)
         trajopt.AddVelocityBounds(lb=b, ub=b)
         trajopt.AddAccelerationBounds(lb=b, ub=b)
         trajopt.AddJerkBounds(lb=b, ub=b)
+
+        plant = MultibodyPlant(time_step=0.0)
+        Parser(plant).AddModelsFromUrl(
+            url="package://drake/examples/multibody/cart_pole/cart_pole.sdf")
+        plant.Finalize()
+        plant_context = plant.CreateDefaultContext()
+        trajopt.AddEffortBoundsAtNormalizedTimes(
+            plant=plant, s=[0.1, 0.9],
+            lb=[-1]*plant.num_actuators(),
+            ub=[3]*plant.num_actuators(),
+            plant_context=plant_context)
 
         trajopt.AddDurationCost(weight=1)
         trajopt.AddPathLengthCost(weight=1)

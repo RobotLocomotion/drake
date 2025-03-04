@@ -59,8 +59,7 @@ TEST_F(SubvectorTest, Copy) {
   EXPECT_EQ(expected, pre_sized_good);
 
   Eigen::Vector3d pre_sized_bad;
-  EXPECT_THROW(subvec.CopyToPreSizedVector(&pre_sized_bad),
-      std::exception);
+  EXPECT_THROW(subvec.CopyToPreSizedVector(&pre_sized_bad), std::exception);
 }
 
 // Tests that writes to the subvector pass through to the sliced vector.

@@ -18,6 +18,7 @@
 #include "drake/geometry/proximity/obb.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
@@ -29,6 +30,7 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/scoped_name.h"
 #include "drake/multibody/tree/weld_joint.h"
+#include "drake/systems/sensors/camera_config_functions.h"
 
 namespace drake {
 namespace multibody {
@@ -56,15 +58,15 @@ constexpr std::array kOrientationAttributes = {  // BR
 
 class MujocoParser {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MujocoParser)
+
   explicit MujocoParser(const ParsingWorkspace& workspace,
                         const DataSource& data_source)
       : workspace_(workspace),
         diagnostic_(&workspace.diagnostic, &data_source),
-        plant_(workspace.plant) {
-    // Clang complains that the workspace_ field is unused. Nerf the warning
-    // for now; it will be used soon.
-    unused(workspace_);
-  }
+        builder_(workspace.builder),
+        plant_(workspace.plant),
+        scene_graph_(workspace.scene_graph) {}
 
   void ErrorIfMoreThanOneOrientation(const XMLElement& node) {
     int num_orientation_attrs = 0;
@@ -76,7 +78,7 @@ class MujocoParser {
     if (num_orientation_attrs > 1) {
       std::string attributes;
       for (const XMLAttribute* attr = node.FirstAttribute(); attr;
-            attr = attr->Next()) {
+           attr = attr->Next()) {
         attributes += fmt::format("{}={} ", attr->Name(),
                                   fmt_debug_string(attr->Value()));
       }
@@ -93,8 +95,14 @@ class MujocoParser {
   // Any attributes from `default` that are not specified in `node` will be
   // added to `node`. For orientation attributes, we do not apply orientation
   // attribute defaults if the node already has an orientation attribute.
-  void ApplyDefaultAttributes(const XMLElement& default_node,
-                              XMLElement* node) {
+  void ApplyDefaultAttributes(const std::string& element_name,
+                              const std::string& class_name, XMLElement* node) {
+    const std::pair<std::string, std::string> key{element_name, class_name};
+    if (!defaults_.contains(key)) {
+      return;
+    }
+    const XMLElement* default_node = defaults_.at(key);
+
     bool node_has_orientation_attr = false;
     for (const char* attr : kOrientationAttributes) {
       if (node->Attribute(attr) != nullptr) {
@@ -103,7 +111,7 @@ class MujocoParser {
       }
     }
 
-    for (const XMLAttribute* default_attr = default_node.FirstAttribute();
+    for (const XMLAttribute* default_attr = default_node->FirstAttribute();
          default_attr != nullptr; default_attr = default_attr->Next()) {
       if (!node->Attribute(default_attr->Name())) {
         if (node_has_orientation_attr &&
@@ -257,6 +265,12 @@ class MujocoParser {
       name = fmt::format("motor{}", plant_->num_actuators());
     }
 
+    std::string class_name;
+    if (!ParseStringAttribute(node, "class", &class_name)) {
+      class_name = "main";
+    }
+    ApplyDefaultAttributes(node->Name(), class_name, node);
+
     std::string joint_name;
     if (!ParseStringAttribute(node, "joint", &joint_name)) {
       Warning(*node, fmt::format(
@@ -322,7 +336,6 @@ class MujocoParser {
 
     // Unsupported attributes are listed in the order from the MuJoCo docs:
     // https://mujoco.readthedocs.io/en/stable/XMLreference.html#actuator-motor
-    WarnUnsupportedAttribute(*node, "class");
     WarnUnsupportedAttribute(*node, "group");
 
     WarnUnsupportedAttribute(*node, "lengthrange");
@@ -424,9 +437,7 @@ class MujocoParser {
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
     }
-    if (default_joint_.contains(class_name)) {
-      ApplyDefaultAttributes(*default_joint_.at(class_name), node);
-    }
+    ApplyDefaultAttributes("joint", class_name, node);
 
     Vector3d pos = Vector3d::Zero();
     ParseVectorAttribute(node, "pos", &pos);
@@ -480,7 +491,7 @@ class MujocoParser {
       // of position = 0. This is equivalent to inserting a translating of
       // ref*axis between the joint and the child body, and setting the default
       // position to ref (which we do below).
-      X_CJ = X_CJ * RigidTransformd(ref*axis);
+      X_CJ = X_CJ * RigidTransformd(ref * axis);
       index = plant_
                   ->AddJoint<PrismaticJoint>(
                       name, parent, X_PJ, child, X_CJ, axis,
@@ -562,12 +573,9 @@ class MujocoParser {
     // up mesh inertias, it uses the mujoco geometry _name_ and not the
     // mesh filename.
     InertiaCalculator(
-        const DiagnosticPolicy& policy,
-        std::string name,
+        const DiagnosticPolicy& policy, std::string name,
         std::map<std::string, SpatialInertia<double>>* mesh_inertia)
-        : policy_(policy),
-          name_(std::move(name)),
-          mesh_inertia_(mesh_inertia) {
+        : policy_(policy), name_(std::move(name)), mesh_inertia_(mesh_inertia) {
       DRAKE_DEMAND(mesh_inertia != nullptr);
     }
 
@@ -707,11 +715,9 @@ class MujocoParser {
     if (!ParseStringAttribute(node, "class", &class_name)) {
       class_name = child_class.empty() ? "main" : child_class;
     }
-    if (default_geometry_.contains(class_name)) {
-      // TODO(russt): Add a test case covering childclass/default nesting once
-      // the body element is supported.
-      ApplyDefaultAttributes(*default_geometry_.at(class_name), node);
-    }
+    // TODO(russt): Add a test case covering childclass/default nesting once
+    // the body element is supported.
+    ApplyDefaultAttributes("geom", class_name, node);
 
     // Per the MuJoCo documentation, the name is not part of the defaults. This
     // is consistent with Drake requiring that geometry names are unique.
@@ -864,7 +870,7 @@ class MujocoParser {
         Error(*node, fmt::format("geom {} specified type 'mesh', but did not "
                                  "set the mesh attribute",
                                  geom.name));
-          return geom;
+        return geom;
       }
       if (mesh_.contains(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
@@ -1014,15 +1020,16 @@ class MujocoParser {
       }
       double mass{};
       if (!ParseScalarAttribute(node, "mass", &mass)) {
-        double density{1000};  /* fallback default ≈ water density */
+        double density{1000}; /* fallback default ≈ water density */
         ParseScalarAttribute(node, "density", &density);
         mass = volume * density;
       }
       SpatialInertia<double> M_GGo_G(mass, p_GoGcm_G, G_GGo_G,
                                      /*skip_validity_check=*/true);
-      if (!M_GGo_G.IsPhysicallyValid()) {
-        Error(*node, fmt::format("geom {} {}", geom.name,
-                                 M_GGo_G.CriticizeNotPhysicallyValid()));
+      std::optional<std::string> invalidity_report =
+          M_GGo_G.CreateInvalidityReport();
+      if (invalidity_report.has_value()) {
+        Error(*node, fmt::format("geom {} {}", geom.name, *invalidity_report));
         return geom;
       }
 
@@ -1032,6 +1039,93 @@ class MujocoParser {
       geom.M_GBo_B = M_GGo_G.ReExpress(R_BG).Shift(-p_BoGo_B);
     }
     return geom;
+  }
+
+  void ParseCamera(XMLElement* node, const RigidBody<double>& parent,
+                   const std::string& child_class = "") {
+    if (builder_ == nullptr || scene_graph_ == nullptr) {
+      Warning(*node,
+              "camera element ignored; to register cameras, you must pass a "
+              "DiagramBuilder to the Parser and the plant must be registered "
+              "with a scene graph.");
+      return;
+    }
+
+    std::string class_name;
+    if (!ParseStringAttribute(node, "class", &class_name)) {
+      class_name = child_class.empty() ? "main" : child_class;
+    }
+    ApplyDefaultAttributes("camera", class_name, node);
+
+    systems::sensors::CameraConfig config;
+
+    std::string name;
+    if (!ParseStringAttribute(node, "name", &name)) {
+      name = fmt::format("camera{}", num_cameras_);
+    }
+    // We add the model instance name as a prefix to the camera name.
+    config.name = fmt::format(
+        "{}/{}", plant_->GetModelInstanceName(model_instance_), name);
+
+    std::string mode;
+    if (ParseStringAttribute(node, "mode", &mode)) {
+      if (mode != "fixed") {
+        Warning(*node,
+                fmt::format("camera {} requested mode '{}', which is not "
+                            "supported yet. A fixed mode will be used instead.",
+                            config.name, mode));
+      }
+    }
+
+    std::string orthographic;
+    if (ParseStringAttribute(node, "orthographic", &orthographic)) {
+      if (orthographic == "true") {
+        Warning(
+            *node,
+            fmt::format(
+                "camera {} requested orthographic projection, which is not "
+                "supported yet. A perspective projection will be used instead.",
+                config.name));
+      }
+    }
+
+    config.X_PB = schema::Transform(ParseTransform(node));
+    config.X_PB.base_frame = parent.body_frame().scoped_name().get_full();
+
+    double fovy{45};
+    ParseScalarAttribute(node, "fovy", &fovy);
+    // MuJoCo's fovy is always in degrees; it does not follow the
+    // compiler/angle setting.
+    config.focal = systems::sensors::CameraConfig::FovDegrees{.y = fovy};
+
+    // MuJoCo's specified a default resolution of (1,1); but Drake doesn't
+    // support this (and it's a silly default). We'll use Drake's default
+    // resolution unless a resolution is specified explicitly.
+    Vector2d resolution;
+    if (ParseVectorAttribute(node, "resolution", &resolution)) {
+      config.width = resolution[0];
+      config.height = resolution[1];
+    }
+
+    // TODO(russt): Support drake-specific elements/attributes to e.g. set the
+    // renderer name and other Drake camera configurable parameters.
+
+    // Note: we're opting-out of LCM by passing lcm_buses = nullptr and a
+    // throw-away DrakeLcm instance.
+    lcm::DrakeLcm lcm(systems::lcm::LcmBuses::kLcmUrlMemqNull);
+    ApplyCameraConfig(config, builder_, nullptr, plant_, scene_graph_, &lcm);
+    ++num_cameras_;
+
+    // Unsupported elements are listed in the order from the MuJoCo docs:
+    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#body-camera
+    WarnUnsupportedAttribute(*node, "target");
+    WarnUnsupportedAttribute(*node, "focal");
+    WarnUnsupportedAttribute(*node, "focalpixel");
+    WarnUnsupportedAttribute(*node, "principal");
+    WarnUnsupportedAttribute(*node, "principalpixel");
+    WarnUnsupportedAttribute(*node, "sensorsize");
+    WarnUnsupportedAttribute(*node, "ipd");
+    WarnUnsupportedAttribute(*node, "user");
   }
 
   void ParseBody(XMLElement* node, const RigidBody<double>& parent,
@@ -1148,13 +1242,17 @@ class MujocoParser {
       }
     }
 
+    for (XMLElement* camera_node = node->FirstChildElement("camera");
+         camera_node; camera_node = camera_node->NextSiblingElement("camera")) {
+      ParseCamera(camera_node, body, child_class);
+    }
+
     // Unsupported attributes are listed in the order from the MuJoCo docs:
     // https://mujoco.readthedocs.io/en/stable/XMLreference.html#body
     WarnUnsupportedAttribute(*node, "mocap");
     WarnUnsupportedAttribute(*node, "gravcomp");
     WarnUnsupportedAttribute(*node, "user");
     WarnUnsupportedElement(*node, "site");
-    WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "composite");
     WarnUnsupportedElement(*node, "flexcomp");
@@ -1189,13 +1287,17 @@ class MujocoParser {
       }
     }
 
+    for (XMLElement* camera_node = node->FirstChildElement("camera");
+         camera_node; camera_node = camera_node->NextSiblingElement("camera")) {
+      ParseCamera(camera_node, plant_->world_body());
+    }
+
     // Unsupported attributes are listed in the order from the MuJoCo docs:
     // https://mujoco.readthedocs.io/en/stable/XMLreference.html#body
     WarnUnsupportedAttribute(*node, "mocap");
     WarnUnsupportedAttribute(*node, "gravcomp");
     WarnUnsupportedAttribute(*node, "user");
     WarnUnsupportedElement(*node, "site");
-    WarnUnsupportedElement(*node, "camera");
     WarnUnsupportedElement(*node, "light");
     WarnUnsupportedElement(*node, "composite");
     WarnUnsupportedElement(*node, "flexcomp");
@@ -1214,18 +1316,16 @@ class MujocoParser {
   // updating `default_map`. Implements the inheritance mechanism for
   // defaults; see
   // https://mujoco.readthedocs.io/en/latest/modeling.html#cdefault
-  void ParseClassDefaults(XMLElement* node,
-                          const std::string& class_name,
+  void ParseClassDefaults(XMLElement* node, const std::string& class_name,
                           const std::string& parent_default,
-                          const std::string& element_name,
-                          std::map<std::string, XMLElement*>* default_map) {
+                          const std::string& element_name) {
+    std::pair<std::string, std::string> key{element_name, class_name};
     const char* elt_name = element_name.c_str();
     for (XMLElement* e = node->FirstChildElement(elt_name); e;
          e = e->NextSiblingElement(elt_name)) {
-      (*default_map)[class_name] = e;
-      if (!parent_default.empty() &&
-          default_map->contains(parent_default)) {
-        ApplyDefaultAttributes(*default_map->at(parent_default), e);
+      defaults_[key] = e;
+      if (!parent_default.empty()) {
+        ApplyDefaultAttributes(element_name, parent_default, e);
       }
     }
   }
@@ -1244,17 +1344,27 @@ class MujocoParser {
     }
 
     // This sugar forwards common local arguments to ParseClassDefaults().
-    auto parse_class_defaults =
-        [&](const std::string& element_name,
-            std::map<std::string, XMLElement*>* default_map) {
-          ParseClassDefaults(node, class_name, parent_default, element_name,
-                             default_map);
+    auto parse_class_defaults = [&](const std::string& element_name) {
+      ParseClassDefaults(node, class_name, parent_default, element_name);
     };
 
-    parse_class_defaults("geom", &default_geometry_);
-    parse_class_defaults("joint", &default_joint_);
-    parse_class_defaults("mesh", &default_mesh_);
-    parse_class_defaults("equality", &default_equality_);
+    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#default-r
+    parse_class_defaults("geom");
+    parse_class_defaults("joint");
+    parse_class_defaults("mesh");
+    parse_class_defaults("equality");
+    parse_class_defaults("material");
+    parse_class_defaults("site");
+    parse_class_defaults("camera");
+    parse_class_defaults("light");
+    parse_class_defaults("pair");
+    parse_class_defaults("tendon");
+    parse_class_defaults("general");
+    parse_class_defaults("motor");
+    parse_class_defaults("position");
+    parse_class_defaults("velocity");
+    parse_class_defaults("cylinder");
+    parse_class_defaults("muscle");
 
     // Parse child defaults.
     for (XMLElement* default_node = node->FirstChildElement("default");
@@ -1262,21 +1372,6 @@ class MujocoParser {
          default_node = default_node->NextSiblingElement("default")) {
       ParseDefault(default_node, class_name);
     }
-
-    // Unsupported attributes are listed in the order from the MuJoCo docs:
-    // https://mujoco.readthedocs.io/en/stable/XMLreference.html#default-r
-    WarnUnsupportedElement(*node, "material");
-    WarnUnsupportedElement(*node, "site");
-    WarnUnsupportedElement(*node, "camera");
-    WarnUnsupportedElement(*node, "light");
-    WarnUnsupportedElement(*node, "pair");
-    WarnUnsupportedElement(*node, "tendon");
-    WarnUnsupportedElement(*node, "general");
-    WarnUnsupportedElement(*node, "motor");
-    WarnUnsupportedElement(*node, "position");
-    WarnUnsupportedElement(*node, "velocity");
-    WarnUnsupportedElement(*node, "cylinder");
-    WarnUnsupportedElement(*node, "muscle");
   }
 
   void ParseAsset(XMLElement* node) {
@@ -1297,9 +1392,7 @@ class MujocoParser {
       if (!ParseStringAttribute(mesh_node, "class", &class_name)) {
         class_name = "main";
       }
-      if (default_mesh_.contains(class_name)) {
-        ApplyDefaultAttributes(*default_mesh_.at(class_name), mesh_node);
-      }
+      ApplyDefaultAttributes("mesh", class_name, mesh_node);
 
       // Unsupported attributes are listed in the order from the MuJoCo docs:
       // https://mujoco.readthedocs.io/en/stable/XMLreference.html#mesh
@@ -1324,14 +1417,13 @@ class MujocoParser {
         Vector3d scale{1, 1, 1};
         if (ParseVectorAttribute(mesh_node, "scale", &scale)) {
           if (scale[0] != scale[1] || scale[1] != scale[2]) {
-            Error(
-                *node,
-                fmt::format("mesh {} was defined with a non-uniform scale; "
-                            "but Drake currently only supports uniform "
-                            "scaling. See "
-                            "https://drake.mit.edu/troubleshooting.html for "
-                            "additional resources.",
-                            name));
+            Error(*node,
+                  fmt::format(
+                      "mesh {} was defined with a non-uniform scale; but Drake "
+                      "currently only supports uniform scaling. See "
+                      "https://drake.mit.edu/troubleshooting.html for "
+                      "additional resources.",
+                      name));
             continue;
           }
         }
@@ -1373,31 +1465,32 @@ class MujocoParser {
             Error(
                 *node,
                 fmt::format(
-                  "Drake's MuJoCo parser currently only supports mesh files "
-                  "in .obj format, but the meshfile \"{}\" was requested. See "
-                  "https://drake.mit.edu/troubleshooting.html for additional "
-                  "resources.", filename.string()));
+                    "Drake's MuJoCo parser currently only supports mesh files "
+                    "in .obj format, but the meshfile \"{}\" was requested. "
+                    "See https://drake.mit.edu/troubleshooting.html for "
+                    "additional resources.",
+                    filename.string()));
             continue;
           }
         } else {
-          Error(*node,
-                  fmt::format("The mesh asset \"{}\" could not be found.",
-                              filename.string()));
+          Error(*node, fmt::format("The mesh asset \"{}\" could not be found.",
+                                   filename.string()));
           continue;
         }
       } else {
         std::string name;
         ParseStringAttribute(mesh_node, "name", &name);
         Warning(*node, fmt::format("The mesh asset named {} did not specify a "
-                                    "'file' attribute and so will be ignored.",
-                                    name));
+                                   "'file' attribute and so will be ignored.",
+                                   name));
       }
     }
 
     if (node->FirstChildElement("texture") != nullptr) {
-      Warning(*node, "The texture element is not supported, see "
-                     "https://drake.mit.edu/troubleshooting.html for "
-                     "additional resources.");
+      Warning(*node,
+              "The texture element is not supported, see "
+              "https://drake.mit.edu/troubleshooting.html for "
+              "additional resources.");
     }
 
     // Unsupported attributes are listed in the order from the MuJoCo docs:
@@ -1552,12 +1645,10 @@ class MujocoParser {
       return;
     }
 
-    geometry::SceneGraph<double>* scene_graph =
-        plant_->GetMutableSceneGraphPreFinalize();
     geometry::CollisionFilterManager manager =
-        scene_graph->collision_filter_manager();
+        scene_graph_->collision_filter_manager();
     const geometry::SceneGraphInspector<double>& inspector =
-        scene_graph->model_inspector();
+        scene_graph_->model_inspector();
     const auto geom_ids = inspector.GetGeometryIds(
         geometry::GeometrySet(inspector.GetAllGeometryIds()),
         geometry::Role::kProximity);
@@ -1589,6 +1680,12 @@ class MujocoParser {
 
     for (XMLElement* pair_node = node->FirstChildElement("pair"); pair_node;
          pair_node = pair_node->NextSiblingElement("pair")) {
+      std::string class_name;
+      if (!ParseStringAttribute(node, "class", &class_name)) {
+        class_name = "main";
+      }
+      ApplyDefaultAttributes("pair", class_name, pair_node);
+
       std::string geom1, geom2;
       if (!ParseStringAttribute(pair_node, "geom1", &geom1) ||
           !ParseStringAttribute(pair_node, "geom2", &geom2)) {
@@ -1620,7 +1717,6 @@ class MujocoParser {
       // Unsupported attributes are listed in the order from the MuJoCo docs:
       // https://mujoco.readthedocs.io/en/stable/XMLreference.html#contact-pair
       // Silently ignored attributes a very specific to the MuJoCo solver.
-      WarnUnsupportedAttribute(*pair_node, "class");
       WarnUnsupportedAttribute(*pair_node, "condim");
       WarnUnsupportedAttribute(*pair_node, "friction");
       LogIgnoredAttribute(*pair_node, "solref");
@@ -1698,10 +1794,7 @@ class MujocoParser {
       if (!ParseStringAttribute(node_on_which_to_apply, "class", &class_name)) {
         class_name = "main";
       }
-      if (default_equality_.contains(class_name)) {
-        ApplyDefaultAttributes(*default_equality_.at(class_name),
-                               node_on_which_to_apply);
-      }
+      ApplyDefaultAttributes("equality", class_name, node_on_which_to_apply);
     };
 
     for (XMLElement* connect_node = node->FirstChildElement("connect");
@@ -2000,16 +2093,16 @@ class MujocoParser {
  private:
   const ParsingWorkspace& workspace_;
   TinyXml2Diagnostic diagnostic_;
-  MultibodyPlant<double>* plant_;
+  systems::DiagramBuilder<double>* const builder_;
+  MultibodyPlant<double>* const plant_;
+  geometry::SceneGraph<double>* const scene_graph_;
   ModelInstanceIndex model_instance_{};
   std::filesystem::path main_mjcf_path_{};
   bool autolimits_{true};
   enum Angle { kRadian, kDegree };
   Angle angle_{kDegree};
-  std::map<std::string, XMLElement*> default_geometry_{};
-  std::map<std::string, XMLElement*> default_joint_{};
-  std::map<std::string, XMLElement*> default_mesh_{};
-  std::map<std::string, XMLElement*> default_equality_{};
+  // The defaults_ map is from (element name, class name) to the XMLElement.
+  std::map<std::pair<std::string, std::string>, XMLElement*> defaults_{};
   enum InertiaFromGeometry { kFalse, kTrue, kAuto };
   InertiaFromGeometry inertia_from_geom_{kAuto};
   std::map<std::string, XMLElement*> material_{};
@@ -2019,6 +2112,7 @@ class MujocoParser {
   // Spatial inertia of mesh assets assuming density = 1.
   std::map<std::string, SpatialInertia<double>> mesh_inertia_{};
   std::map<JointIndex, double> armature_{};
+  int num_cameras_{0};
 };
 
 std::pair<std::optional<ModelInstanceIndex>, std::string>
@@ -2064,7 +2158,8 @@ std::optional<ModelInstanceIndex> AddModelFromMujocoXml(
     const ParsingWorkspace& workspace) {
   return AddOrMergeModelFromMujocoXml(data_source, model_name_in,
                                       parent_model_name, workspace,
-                                      std::nullopt).first;
+                                      std::nullopt)
+      .first;
 }
 
 MujocoParserWrapper::MujocoParserWrapper() {}
@@ -2087,7 +2182,6 @@ std::string MujocoParserWrapper::MergeModel(
                                       workspace, merge_into_model_instance)
       .second;
 }
-
 
 std::vector<ModelInstanceIndex> MujocoParserWrapper::AddAllModels(
     const DataSource& data_source,

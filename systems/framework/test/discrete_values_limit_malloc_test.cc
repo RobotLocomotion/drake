@@ -14,7 +14,7 @@ namespace systems {
 namespace {
 
 template <typename T>
-class DiscreteValuesLimitMallocFixture :public testing::Test {
+class DiscreteValuesLimitMallocFixture : public testing::Test {
  protected:
   void SetUp() override {
     // Build a first object with some arbitrary data.

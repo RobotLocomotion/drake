@@ -9,8 +9,9 @@ namespace internal {
 std::string MakeModelName(std::string_view candidate_name,
                           const std::optional<std::string>& parent_model_name,
                           const ParsingWorkspace& workspace) {
-  std::string model_name = ScopedName::Join(
-      parent_model_name.value_or(""), candidate_name).to_string();
+  std::string model_name =
+      ScopedName::Join(parent_model_name.value_or(""), candidate_name)
+          .to_string();
 
   if (workspace.options.enable_auto_renaming &&
       workspace.plant->HasModelInstanceNamed(model_name)) {
@@ -37,4 +38,3 @@ std::string MakeModelName(std::string_view candidate_name,
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
-

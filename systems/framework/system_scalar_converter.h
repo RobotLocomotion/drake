@@ -19,7 +19,8 @@ namespace systems {
 
 #if !defined(DRAKE_DOXYGEN_CXX)
 // We need a bunch of forward declarations here.
-template <typename T> class System;
+template <typename T>
+class System;
 class SystemScalarConverter;
 namespace system_scalar_converter_internal {
 template <typename T, typename U>
@@ -115,9 +116,8 @@ class SystemScalarConverter {
 
   /// Returns true iff this object can convert a System<U> into a System<T>,
   /// i.e., whether Convert() will return non-null.
-  bool IsConvertible(
-      const std::type_info& t_info,
-      const std::type_info& u_info) const;
+  bool IsConvertible(const std::type_info& t_info,
+                     const std::type_info& u_info) const;
 
   /// Converts a System<U> into a System<T>.  This is the API that LeafSystem
   /// uses to provide a default implementation of DoToAutoDiffXd, etc.
@@ -163,19 +163,18 @@ class SystemScalarConverter {
 
   // Adds a converter for an S<U> into an S<T> using S's scalar-converting copy
   // constructor, unless the traits have disabled the conversion.
-  template <bool subtype_preservation,
-            template <typename> class S, typename T, typename U>
+  template <bool subtype_preservation, template <typename> class S, typename T,
+            typename U>
   void MaybeAddConstructor();
 
   // Given typeid(T), typeid(U), returns a converter.  If no converter has been
   // added yet, returns nullptr.
-  const ErasedConverterFunc* Find(
-      const std::type_info&, const std::type_info&) const;
+  const ErasedConverterFunc* Find(const std::type_info&,
+                                  const std::type_info&) const;
 
   // Given typeid(T), typeid(U), adds a converter.
-  void Insert(
-      const std::type_info&, const std::type_info&,
-      const ErasedConverterFunc&);
+  void Insert(const std::type_info&, const std::type_info&,
+              const ErasedConverterFunc&);
 
   // Maps from {T, U} to the function that converts from U into T.
   std::unordered_map<Key, ErasedConverterFunc, KeyHasher> funcs_;
@@ -197,15 +196,14 @@ std::unique_ptr<System<T>> SystemScalarConverter::Convert(
 
 namespace system_scalar_converter_internal {
 // Throws an exception that `other` cannot be converted from S<U> to S<T>.
-[[noreturn]] void ThrowConversionMismatch(
-    const std::type_info& s_t_info,
-    const std::type_info& s_u_info,
-    const std::type_info& other_info);
+[[noreturn]] void ThrowConversionMismatch(const std::type_info& s_t_info,
+                                          const std::type_info& s_u_info,
+                                          const std::type_info& other_info);
 
 // N.B. This logic should be reflected in `TemplateSystem._make` in the file
 // `scalar_conversion.py`.
-template <bool subtype_preservation,
-          template <typename> class S, typename T, typename U>
+template <bool subtype_preservation, template <typename> class S, typename T,
+          typename U>
 static std::unique_ptr<System<T>> Make(const System<U>& other) {
   // We conditionally require that system scalar conversion maintain the exact
   // system type.  Fail fast if `other` is not of exact type S<U>.
@@ -223,8 +221,8 @@ static std::unique_ptr<System<T>> Make(const System<U>& other) {
 }
 }  // namespace system_scalar_converter_internal
 
-template <bool subtype_preservation,
-          template <typename> class S, typename T, typename U>
+template <bool subtype_preservation, template <typename> class S, typename T,
+          typename U>
 void SystemScalarConverter::MaybeAddConstructor() {
   using Traits = typename scalar_conversion::Traits<S>;
   if constexpr (Traits::template supported<T, U>::value) {
@@ -237,8 +235,8 @@ void SystemScalarConverter::MaybeAddConstructor() {
       // (At runtime, this block is only executed for supported conversions,
       // but at compile time, Make will be instantiated unconditionally.)
       std::unique_ptr<System<T>> result =
-          system_scalar_converter_internal::
-              Make<subtype_preservation, S, T, U>(other);
+          system_scalar_converter_internal::Make<subtype_preservation, S, T, U>(
+              other);
       return result.release();
     };
     Insert(typeid(T), typeid(U), func);

@@ -5,7 +5,8 @@
 namespace drake {
 namespace systems {
 
-template <typename T> class System;
+template <typename T>
+class System;
 
 /// A tag object that denotes a System subclass `S` in function signatures.
 ///

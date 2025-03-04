@@ -28,6 +28,8 @@ using math::EigenToStdVector;
 using math::ExtractValue;
 using math::InitializeAutoDiff;
 using math::StdVectorToEigen;
+using multibody::MultibodyForces;
+using multibody::MultibodyPlant;
 using solvers::Binding;
 using solvers::BoundingBoxConstraint;
 using solvers::Constraint;
@@ -193,12 +195,84 @@ class DerivativeConstraint : public Constraint {
   const int derivative_order_;
 };
 
+// Constraint of the form tau_lb <= InverseDynamics(q, v, a) <= tau_ub. The
+// constraint should be bound to the duration followed by all of the control
+// points in the bspline. TODO(russt): The constraint actually only depends on
+// a subset of the control points, depending on s, so we could consider
+// optimizing this aspect.
+class EffortConstraint : public Constraint {
+ public:
+  // Note: We use shared_ptr for the plant_context in addition to the plant in
+  // order to support more advanced uses like per-thread contexts.
+  EffortConstraint(const std::shared_ptr<MultibodyPlant<AutoDiffXd>>& plant,
+                   std::shared_ptr<systems::Context<AutoDiffXd>> plant_context,
+                   const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
+                   const BsplineTrajectory<double>& bspline, double s)
+      : Constraint(lb.size(), 1 + bspline.num_control_points() * bspline.rows(),
+                   lb, ub),
+        plant_(plant),
+        plant_context_(std::move(plant_context)),
+        num_control_points_(bspline.num_control_points()),
+        s_(s) {
+    // Note: consistency checks on the input arguments already happened in
+    // AddEffortBoundsAtNormalizedTimes().
+    M_q_ = bspline.EvaluateLinearInControlPoints(s, 0).cast<AutoDiffXd>();
+    M_qdot_ = bspline.EvaluateLinearInControlPoints(s, 1).cast<AutoDiffXd>();
+    M_qddot_ = bspline.EvaluateLinearInControlPoints(s, 2).cast<AutoDiffXd>();
+  }
+
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override {
+    AutoDiffVecXd y_t;
+    Eval(InitializeAutoDiff(x), &y_t);
+    *y = ExtractValue(y_t);
+  }
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    y->resize(plant_->num_velocities());
+    const AutoDiffXd duration = x[0];
+    const MatrixX<AutoDiffXd> control_points =
+        x.tail(plant_->num_positions() * num_control_points_)
+            .reshaped(plant_->num_positions(), num_control_points_);
+    plant_context_->SetTime(s_ * duration);
+    plant_->SetPositions(plant_context_.get(), control_points * M_q_);
+    plant_->SetVelocities(plant_context_.get(),
+                          control_points * M_qdot_ / duration);
+    const VectorX<AutoDiffXd> qddot =
+        control_points * M_qddot_ / pow(duration, 2);
+    // TODO(russt): Handle the case where qdot != v. (Requires e.g.
+    // MapQddotToAcceleration).
+    MultibodyForces<AutoDiffXd> forces_(*plant_);
+    plant_->CalcForceElementsContribution(*plant_context_, &forces_);
+    *y = plant_->CalcInverseDynamics(*plant_context_, qddot, forces_);
+  }
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+              VectorX<symbolic::Expression>*) const override {
+    throw std::runtime_error(
+        "EffortConstraint does not support evaluation with Expression.");
+  }
+
+ private:
+  const std::shared_ptr<MultibodyPlant<AutoDiffXd>> plant_;
+  std::shared_ptr<systems::Context<AutoDiffXd>> plant_context_;
+  // M_q_, M_v_, M_vdot_ are matrices such that by multiplying control_points
+  // with these matrices, we get the position q, dqds, and d²qds² respectively.
+  VectorX<AutoDiffXd> M_q_;
+  VectorX<AutoDiffXd> M_qdot_;
+  VectorX<AutoDiffXd> M_qddot_;
+  int num_control_points_{0};
+  double s_{0};
+};
+
 // solvers::LinearConstraint stores linear constraints in the form A*x <= b.
-// When constraints are naturally expressed in the form X*a <= b (the decision
-// variables on the left), it is still a vector constraint, but we must do some
-// work to rewrite it as A*x, and the result is a big sparse A. This method
-// does precisely that. For MatrixXDecisionVariable X and VectorXd a, returns
-// SparseMatrix A and VectorXDecisionVariable x such that Ax == Xa.
+// When constraints are naturally expressed in the form X*a <= b (the
+// decision variables on the left), it is still a vector constraint, but we
+// must do some work to rewrite it as A*x, and the result is a big sparse A.
+// This method does precisely that. For MatrixXDecisionVariable X and
+// VectorXd a, returns SparseMatrix A and VectorXDecisionVariable x such that
+// Ax == Xa.
 std::pair<SparseMatrix<double>, VectorXDecisionVariable> RewriteXa(
     const MatrixXDecisionVariable& X, const VectorXd& a) {
   const int num_nonzeros = (a.array() != 0).count();
@@ -237,8 +311,14 @@ KinematicTrajectoryOptimization::KinematicTrajectoryOptimization(
 KinematicTrajectoryOptimization::KinematicTrajectoryOptimization(
     const trajectories::BsplineTrajectory<double>& trajectory)
     : num_positions_(trajectory.rows()),
-      num_control_points_(trajectory.num_control_points()) {
-  // basis = trajectory.basis() normalized to s∈[0,1].
+      num_control_points_(trajectory.num_control_points()),
+      placeholder_q_vars_(
+          symbolic::MakeVectorContinuousVariable(num_positions_, "q")),
+      placeholder_qdot_vars_(
+          symbolic::MakeVectorContinuousVariable(num_positions_, "qdot")),
+      placeholder_qddot_vars_(
+          symbolic::MakeVectorContinuousVariable(num_positions_, "qddot")) {
+  // basis_ = trajectory.basis() normalized to s∈[0,1].
   const double duration = trajectory.end_time() - trajectory.start_time();
   std::vector<double> normalized_knots = trajectory.basis().knots();
   for (auto& knot : normalized_knots) {
@@ -360,6 +440,116 @@ KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
   binding.evaluator()->set_description(
       fmt::format("velocity constraint at s={}", s));
   return binding;
+}
+
+namespace {
+std::optional<int> FindVariableIndex(
+    const symbolic::Variable& var, const VectorX<symbolic::Variable>& var_vec) {
+  // Find the index of var in var_vec. If var isn't found in var_vec, return
+  // std::nullopt. We assume var_vec doesn't contain repeated variables.
+  for (int i = 0; i < var_vec.rows(); ++i) {
+    if (var.equal_to(var_vec(i))) {
+      return i;
+    }
+  }
+  return std::nullopt;
+}
+}  // namespace
+
+std::vector<Binding<LinearConstraint>>
+KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
+    const Binding<LinearConstraint>& binding, double s) {
+  DRAKE_DEMAND(0 <= s && s <= 1);
+  // binding.variables() might be a subset of placeholder_qdot_vars, and might
+  // not be in the same order as the placeholder variables. So I first need to
+  // get the mapping from binding.variables() to placeholder_qdot_vars
+  // P * qdot = binding.variables()
+  // where P is a selection matrix.
+  std::vector<Eigen::Triplet<double>> P_triplets;
+  for (int i = 0; i < binding.variables().size(); ++i) {
+    const symbolic::Variable& var = binding.variables()(i);
+    const std::optional<int> var_to_qdot =
+        FindVariableIndex(var, placeholder_qdot_vars_);
+    if (!var_to_qdot.has_value()) {
+      throw std::runtime_error(fmt::format(
+          "AddVelocityConstraintAtNormalizedTime(): placeholder {} is used for "
+          "the constraint. Currently we can only accept constraints depending "
+          "on placeholder qdot variable.",
+          binding.variables()[i].get_name()));
+    }
+    P_triplets.emplace_back(i, var_to_qdot.value(), 1);
+  }
+  Eigen::SparseMatrix<double> P(binding.variables().size(), num_positions_);
+  P.setFromTriplets(P_triplets.begin(), P_triplets.end());
+  // Since binding is a linear constraint on a subset of qdot (let's denote it
+  // as P * qdot, where P is a selection matrix with one and only one 1 each
+  // row and 0 otherwise), namely
+  // lb <= A * P * qdot(s) <= ub,
+  // we have qdot = rdot / T,
+  // so the constraint is
+  // lb <= A * P * rdot / T <= ub
+  // Namely
+  // A * P * rdot - lb * T >= 0
+  // A * P * rdot - ub * T <= 0
+  // I call these new constraints as
+  // lb_new <= A_new * vars <= ub_new
+  //
+  // Since some entries of lb and ub might be infinity, when then go through
+  // each line of lb <= A * qdot <= ub, and only add the constraint with finite
+  // lb or ub.
+
+  // rdot = control_points_ * a_vel
+  const VectorXd a_vel =
+      bspline_.EvaluateLinearInControlPoints(s, /* derivative_order= */ 1);
+  // rdot = M * x
+  const auto [M, x] = RewriteXa(control_points_, a_vel);
+  VectorXDecisionVariable vars(x.rows() + 1);
+  vars.head(x.rows()) = x;
+  vars(x.rows()) = duration_;
+  const Eigen::MatrixXd A = binding.evaluator()->GetDenseA();
+  Eigen::MatrixXd A_new(A.rows() * 2, vars.rows());
+  Eigen::VectorXd lb_new(A.rows() * 2);
+  Eigen::VectorXd ub_new(A.rows() * 2);
+  int A_new_row_count = 0;
+  const int x_size = x.rows();
+
+  auto set_A_new_bound_new = [&A_new, &lb_new, &ub_new, &A_new_row_count,
+                              x_size](const Eigen::RowVectorXd& x_coeff,
+                                      double T_coeff, double lb, double ub) {
+    A_new.block(A_new_row_count, 0, 1, x_size) = x_coeff;
+    A_new(A_new_row_count, x_size) = T_coeff;
+    lb_new(A_new_row_count) = lb;
+    ub_new(A_new_row_count) = ub;
+    A_new_row_count++;
+  };
+  // A * P * rdot = A * P * M * x
+  for (int i = 0; i < binding.evaluator()->num_constraints(); ++i) {
+    if (!std::isinf(binding.evaluator()->lower_bound()(i)) &&
+        binding.evaluator()->lower_bound()(i) ==
+            binding.evaluator()->upper_bound()(i)) {
+      // Constraint A * P * M * x - lb * T = 0
+      set_A_new_bound_new(A.row(i) * P * M,
+                          -binding.evaluator()->lower_bound()(i), 0, 0);
+    } else {
+      if (!std::isinf(binding.evaluator()->lower_bound()(i))) {
+        // Constraint A * P * M * x - lb * T >= 0
+        set_A_new_bound_new(A.row(i) * P * M,
+                            -binding.evaluator()->lower_bound()(i), 0, kInf);
+      }
+      if (!std::isinf(binding.evaluator()->upper_bound()(i))) {
+        // Constraint A * P * M * x - ub * T <= 0
+        set_A_new_bound_new(A.row(i) * P * M,
+                            -binding.evaluator()->upper_bound()(i), -kInf, 0);
+      }
+    }
+  }
+  std::vector<solvers::Binding<solvers::LinearConstraint>> ret;
+  ret.push_back(prog_.AddLinearConstraint(A_new.topRows(A_new_row_count),
+                                          lb_new.head(A_new_row_count),
+                                          ub_new.head(A_new_row_count), vars));
+  ret.back().evaluator()->set_description(
+      fmt::format("velocity constraint at s={}", s));
+  return ret;
 }
 
 Binding<LinearConstraint>
@@ -499,6 +689,59 @@ std::vector<Binding<Constraint>> KinematicTrajectoryOptimization::AddJerkBounds(
         std::make_shared<DerivativeConstraint>(A, 3, lb(i), ub(i)), vars));
     bindings.back().evaluator()->set_description(
         fmt::format("jerk bound for position {}", i));
+  }
+  return bindings;
+}
+
+std::vector<Binding<Constraint>>
+KinematicTrajectoryOptimization::AddEffortBoundsAtNormalizedTimes(
+    const MultibodyPlant<double>& plant,
+    const Eigen::Ref<const Eigen::VectorXd>& s,
+    const std::optional<Eigen::Ref<const Eigen::VectorXd>>& lb,
+    const std::optional<Eigen::Ref<const Eigen::VectorXd>>& ub,
+    const systems::Context<double>* plant_context) {
+  DRAKE_THROW_UNLESS(num_positions_ == plant.num_positions());
+  DRAKE_THROW_UNLESS(s.array().minCoeff() >= 0 && s.array().maxCoeff() <= 1);
+  DRAKE_THROW_UNLESS(!lb.has_value() ||
+                     lb.value().size() == plant.num_actuators());
+  DRAKE_THROW_UNLESS(!ub.has_value() ||
+                     ub.value().size() == plant.num_actuators());
+  // Currently we require qdot == v. See the TODO in EffortConstraint about
+  // MapQddotToAcceleration.
+  DRAKE_THROW_UNLESS(plant.IsVelocityEqualToQDot());
+  const MatrixXd B = plant.MakeActuationMatrix();
+  VectorXd B_tau_lb = B * (lb.value_or(plant.GetEffortLowerLimits()));
+  VectorXd B_tau_ub = B * (ub.value_or(plant.GetEffortUpperLimits()));
+  // If B is not full row rank and the effort limits are inf, then 0*inf =>
+  // nan. We handle this case directly; zero is the sensible effort bound in
+  // this case.
+  B_tau_lb = (B_tau_lb.array().isNaN()).select(0, B_tau_lb);
+  B_tau_ub = (B_tau_ub.array().isNaN()).select(0, B_tau_ub);
+  DRAKE_THROW_UNLESS((B_tau_lb.array() <= B_tau_ub.array()).all());
+  if (plant_context != nullptr) {
+    plant.ValidateContext(plant_context);
+  }
+
+  VectorXDecisionVariable vars(1 + num_control_points_ * num_positions_);
+  vars << duration_, control_points_.reshaped(control_points_.size(), 1);
+  std::shared_ptr<MultibodyPlant<AutoDiffXd>> plant_ad(
+      systems::System<double>::ToAutoDiffXd(plant));
+  std::vector<Binding<Constraint>> bindings;
+  for (int i = 0; i < ssize(s); ++i) {
+    // Note: we choose to make a separate context for each s so that the
+    // constraints are thread-safe.
+    std::shared_ptr<systems::Context<AutoDiffXd>> plant_context_ad(
+        plant_ad->CreateDefaultContext());
+    if (plant_context != nullptr) {
+      plant_context_ad->SetTimeStateAndParametersFrom(*plant_context);
+    }
+    bindings.emplace_back(prog_.AddConstraint(
+        std::make_shared<EffortConstraint>(plant_ad,
+                                           std::move(plant_context_ad),
+                                           B_tau_lb, B_tau_ub, bspline_, s[i]),
+        vars));
+    bindings.back().evaluator()->set_description(
+        fmt::format("effort bound at s={}", s[i]));
   }
   return bindings;
 }

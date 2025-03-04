@@ -42,10 +42,9 @@ class KukaTorqueController
 
   /// @p plant is aliased and must remain valid for the lifetime of the
   /// controller.
-  KukaTorqueController(
-      const multibody::MultibodyPlant<T>& plant,
-      const VectorX<double>& stiffness,
-      const VectorX<double>& damping);
+  KukaTorqueController(const multibody::MultibodyPlant<T>& plant,
+                       const VectorX<double>& stiffness,
+                       const VectorX<double>& damping);
 
   const systems::InputPort<T>& get_input_port_commanded_torque() const {
     return systems::Diagram<T>::get_input_port(

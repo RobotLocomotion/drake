@@ -12,8 +12,8 @@ DiagramContext<T>::DiagramContext(int num_subcontexts)
       state_(std::make_unique<DiagramState<T>>(num_subcontexts)) {}
 
 template <typename T>
-void DiagramContext<T>::AddSystem(
-    SubsystemIndex index, std::unique_ptr<Context<T>> context) {
+void DiagramContext<T>::AddSystem(SubsystemIndex index,
+                                  std::unique_ptr<Context<T>> context) {
   DRAKE_DEMAND(index >= 0 && index < num_subcontexts());
   DRAKE_DEMAND(contexts_[index] == nullptr);
   ContextBase::set_parent(context.get(), this);
@@ -104,6 +104,8 @@ void DiagramContext<T>::SubscribeDiagramCompositeTrackersToChildrens() {
   // discrete or abstract state or individual numerical or abstract parameters.
   // That means we need only subscribe the aggregate trackers xd, xa, pn, pa
   // to their children's xd, xa, pn, pa, resp.
+  //
+  // clang-format off
   std::vector<internal::BuiltInTicketNumbers> composites{
       internal::kQTicket,  // Value sources.
       internal::kVTicket,
@@ -117,6 +119,7 @@ void DiagramContext<T>::SubscribeDiagramCompositeTrackersToChildrens() {
       internal::kKeTicket,
       internal::kPcTicket,
       internal::kPncTicket};
+  // clang-format on
 
   // Validate the claim above that Diagrams do not have tickets for individual
   // variables and parameters.
@@ -262,10 +265,9 @@ std::string DiagramContext<T>::do_to_string() const {
 }
 
 template <typename T>
-void DiagramContext<T>::DoPropagateTimeChange(
-    const T& time_sec,
-    const std::optional<T>& true_time,
-    int64_t change_event) {
+void DiagramContext<T>::DoPropagateTimeChange(const T& time_sec,
+                                              const std::optional<T>& true_time,
+                                              int64_t change_event) {
   for (auto& subcontext : contexts_) {
     DRAKE_ASSERT(subcontext != nullptr);
     Context<T>::PropagateTimeChange(&*subcontext, time_sec, true_time,
@@ -275,8 +277,7 @@ void DiagramContext<T>::DoPropagateTimeChange(
 
 template <typename T>
 void DiagramContext<T>::DoPropagateAccuracyChange(
-    const std::optional<double>& accuracy,
-    int64_t change_event) {
+    const std::optional<double>& accuracy, int64_t change_event) {
   for (auto& subcontext : contexts_) {
     DRAKE_ASSERT(subcontext != nullptr);
     Context<T>::PropagateAccuracyChange(&*subcontext, accuracy, change_event);

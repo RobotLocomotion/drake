@@ -230,9 +230,7 @@ class CacheEntry {
   observed a difference between cached and non-cached behavior that can't be
   diagnosed with the runtime disable_caching() method.
   @see disable_caching() */
-  void disable_caching_by_default() {
-    is_disabled_by_default_ = true;
-  }
+  void disable_caching_by_default() { is_disabled_by_default_ = true; }
 
   /** (Debugging) Returns the current value of this flag. It is `false` unless
   a call to `disable_caching_by_default()` has previously been made. */
@@ -328,8 +326,9 @@ class CacheEntry {
   const ValueType& ExtractValueOrThrow(const AbstractValue& abstract,
                                        const char* api) const {
     const ValueType* value = abstract.maybe_get_value<ValueType>();
-    if (!value)
+    if (!value) {
       ThrowBadValueType<ValueType>(api, abstract);
+    }
     return *value;
   }
 

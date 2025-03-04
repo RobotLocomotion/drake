@@ -1,4 +1,5 @@
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 
 # Note that we do NOT install a LICENSE file as part of the Drake install
 # because this repository is required only when building and testing with
@@ -6,7 +7,10 @@ load("//tools/workspace:github.bzl", "github_archive")
 
 def rules_java_repository(
         name,
-        mirrors = None):
+        mirrors = None,
+        _is_drake_self_call = False):
+    if not _is_drake_self_call:
+        print_warning("rules_java_repository")
     if native.bazel_version[0:2] == "7.":
         # The new rules_java only works with Bazel 8; for bazel 7 we'll use the
         # built-in rules_java. We can remove this once Drake's minimum Bazel

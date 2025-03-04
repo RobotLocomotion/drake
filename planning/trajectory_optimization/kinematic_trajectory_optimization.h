@@ -9,6 +9,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/binding.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -142,6 +143,21 @@ class KinematicTrajectoryOptimization {
   solvers::Binding<solvers::Constraint> AddVelocityConstraintAtNormalizedTime(
       const std::shared_ptr<solvers::Constraint>& constraint, double s);
 
+  /** Adds a linear constraint on some (or all) of the placeholder variables
+   qdot, evaluated at a normalized time s.
+
+   @pre binding Can only associate with qdot().
+   @pre 0 <= `s` <= 1.
+
+   @code{cpp}
+   Binding<LinearConstraint> b(LinearConstraint(A, b), trajopt.qdot());
+   trajopt.AddVelocityConstraintAtNormalizedTime(b, 0);
+   @endcode
+  */
+  std::vector<solvers::Binding<solvers::LinearConstraint>>
+  AddVelocityConstraintAtNormalizedTime(
+      const solvers::Binding<solvers::LinearConstraint>& binding, double s);
+
   /** Adds a linear constraint on the second derivative of the path,
   `lb` ≤ r̈(s) ≤ `ub`. Note that this does NOT directly constrain q̈(t).
   @pre 0 <= `s` <= 1. */
@@ -208,6 +224,39 @@ class KinematicTrajectoryOptimization {
       const Eigen::Ref<const Eigen::VectorXd>& lb,
       const Eigen::Ref<const Eigen::VectorXd>& ub);
 
+  /** Adds generic (nonlinear) constraints to enforce the effort limits defined
+  in the plant at a sequence of normalized times, `s`:
+  @verbatim
+  B lb ≤ M(q)v̇ + C(q, v)v - τ_g(q) - τ_app ≤ B ub
+  @endverbatim
+  where q, v, and v̇ are evaluated at s. B is the plant's actuation matrix, and
+  M, C, τ_g, and τ_app are the plant's mass matrix, Coriolis force, gravity,
+  and applied force, respectively. `ub` and `lb` are the upper and lower effort
+  bounds, respectively; if they are not provided then
+  plant.GetEffortLowerLimits() and plant.GetEffortUpperLimits() are used.
+
+  Pass `plant_context` if you have non-default parameters in the context. Note
+  that there are no lifetime requirements on `plant` nor `plant_context`.
+
+  Note that the convex hull property of the B-splines is not guaranteed to hold
+  here -- effort limits maybe be violated away from the normalized times `s`.
+
+  @pre plant.is_finalized()
+  @pre plant.num_positions() == num_positions()
+  @pre plant.IsVelocityEqualToQDot() == true
+  @pre s[i] ∈ [0, 1] for all i
+  @pre B lb ≤ B ub
+
+  @returns A vector of bindings with one effort limit constraint for each `s`.
+  */
+  std::vector<solvers::Binding<solvers::Constraint>>
+  AddEffortBoundsAtNormalizedTimes(
+      const multibody::MultibodyPlant<double>& plant,
+      const Eigen::Ref<const Eigen::VectorXd>& s,
+      const std::optional<Eigen::Ref<const Eigen::VectorXd>>& lb = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::VectorXd>>& ub = std::nullopt,
+      const systems::Context<double>* plant_context = nullptr);
+
   /** Adds a linear cost on the duration of the trajectory. */
   solvers::Binding<solvers::LinearCost> AddDurationCost(double weight = 1.0);
 
@@ -238,8 +287,40 @@ class KinematicTrajectoryOptimization {
   std::vector<solvers::Binding<solvers::Cost>> AddPathEnergyCost(
       double weight = 1.0);
 
+  /** Returns the placeholder variable for generalized position q. Note these
+   are NOT decision variables in the MathematicalProgram. These variables will
+   be substituted for the real decision variables at particular times. Passing
+   these variables directily into objective/constraints for the
+   MathematicalProgram will result in an error.
+   */
+  const VectorX<symbolic::Variable>& q() const { return placeholder_q_vars_; }
+
+  /** Returns the placeholder variable for the time derivative of generalized
+   position. Note these are NOT decision variables in the MathematicalProgram.
+   These variables will be substituted for the real decision variables at
+   particular times. Passing these variables directily into
+   objective/constraints for the MathematicalProgram will result in an error.
+   */
+  const VectorX<symbolic::Variable>& qdot() const {
+    return placeholder_qdot_vars_;
+  }
+
+  /** Returns the placeholder variable for the second time derivative of
+   generalized position. Note these are NOT decision variables in the
+   MathematicalProgram. These variables will be substituted for the real
+   decision variables at particular times. Passing these variables directily
+   into objective/constraints for the MathematicalProgram will result in an
+   error.
+   */
+  const VectorX<symbolic::Variable>& qddot() const {
+    return placeholder_qddot_vars_;
+  }
+
   /* TODO(russt):
   - Support additional (non-convex) costs/constraints on q(t) directly.
+  - AddMultibodyPlantConstraints which adds joint, velocity, acceleration, and
+    effort limits + multibody constraints. Presumably we can't have quaternions
+    in a fully-actuated system.
   */
 
  private:
@@ -250,6 +331,9 @@ class KinematicTrajectoryOptimization {
   trajectories::BsplineTrajectory<double> bspline_;
   solvers::MatrixXDecisionVariable control_points_;
   symbolic::Variable duration_;
+  VectorX<symbolic::Variable> placeholder_q_vars_;
+  VectorX<symbolic::Variable> placeholder_qdot_vars_;
+  VectorX<symbolic::Variable> placeholder_qddot_vars_;
 };
 
 }  // namespace trajectory_optimization

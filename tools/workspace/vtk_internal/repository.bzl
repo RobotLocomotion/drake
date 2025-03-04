@@ -176,11 +176,13 @@ def vtk_internal_repository(
         sha256 = "0f3a99feb51a0ae5e46f4b07c74cea206c636c00cbabd20c72eb9bc042ca880b",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            ":patches/upstream/scaled_albedo_for_ibl.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_version.patch",
             ":patches/disable_static_destructors.patch",
             ":patches/io_image_formats.patch",
             ":patches/nerf_pegtl.patch",
+            ":patches/preserve_direct_light_specular_reflections.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
             ":patches/vtkdoubleconversion_hidden.patch",

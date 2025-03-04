@@ -451,10 +451,56 @@ if(NOT APPLE)
   endif()
 endif()
 
+option(WITH_USER_ZLIB "Use user-provided ZLIB" ${DEFAULT_WITH_USER_LIBS})
+
+if(APPLE)
+  # TODO(jwnimmer-tri) Unfortunately we can't use find_package() here because
+  # symlink_external_repository_libs() is not compatible with the `zlib.tbd`
+  # linker script that CMake finds on macOS. We should work on fixing that
+  # routine, and then remove this APPLE-specific logic. When doing so, don't
+  # forget to fix our doc/_pages/from_source.md documentation at the same time.
+  if(WITH_USER_ZLIB)
+    string(APPEND BAZEL_REPO_ENV
+        " --@drake//tools/flags:zlib_repo=hardcoded")
+  else()
+    string(APPEND BAZEL_REPO_ENV
+        " --@drake//tools/flags:zlib_repo=source")
+  endif()
+else()
+  if(WITH_USER_ZLIB)
+    find_package(ZLIB REQUIRED)
+    symlink_external_repository_includes(zlib ZLIB::ZLIB)
+    symlink_external_repository_libs(zlib ZLIB::ZLIB)
+    override_module(zlib)
+  endif()
+endif()
+
 set(BAZEL_CONFIG)
 
-option(WITH_GUROBI "Build with support for Gurobi" OFF)
+# Defines common options for open-source solver dependencies.
+# By default, these are all ON.
+# Passes the corresponding options to Bazel.
+function(open_solver_option SOLVER)
+  string(TOUPPER "WITH_${SOLVER}" OPTION_NAME)
+  string(TOLOWER "with_${SOLVER}" OPTION_BAZEL_ARG)
+  option("${OPTION_NAME}" "Build with support for ${SOLVER}" ON)
+  if(${OPTION_NAME})
+    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=True")
+  else()
+    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=False")
+  endif()
+  set(BAZEL_CONFIG ${BAZEL_CONFIG} PARENT_SCOPE)
+endfunction()
 
+open_solver_option("Clarabel")
+open_solver_option("CLP")
+open_solver_option("CSDP")
+open_solver_option("Ipopt")
+open_solver_option("NLopt")
+open_solver_option("OSQP")
+open_solver_option("SCS")
+
+option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
   find_package(Gurobi 10.0 EXACT MODULE REQUIRED)
 
@@ -467,13 +513,11 @@ if(WITH_GUROBI)
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
-
 if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
 
 option(WITH_OPENMP "Build with support for OpenMP" OFF)
-
 if(WITH_OPENMP)
   string(APPEND BAZEL_CONFIG " --config=omp")
 endif()
