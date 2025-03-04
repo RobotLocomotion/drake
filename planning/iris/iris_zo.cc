@@ -53,14 +53,16 @@ IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
 
 void IrisZoOptions::SetParameterizationFromExpression(
     const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
-    const Eigen::VectorX<symbolic::Variable>& variables) {
+    const std::shared_ptr<Eigen::VectorX<symbolic::Variable>> variables) {
+  DRAKE_THROW_UNLESS(variables != nullptr);
+
   // First, we check that the variables in expression_parameterization match the
   // user-supplied variables.
   symbolic::Variables expression_variables, user_supplied_variables;
   for (const auto& expression : expression_parameterization) {
     expression_variables.insert(expression.GetVariables());
   }
-  user_supplied_variables.insert(variables.begin(), variables.end());
+  user_supplied_variables.insert(variables->begin(), variables->end());
   DRAKE_THROW_UNLESS(ssize(expression_variables) ==
                      ssize(user_supplied_variables));
   int dimension = ssize(expression_variables);
@@ -72,15 +74,19 @@ void IrisZoOptions::SetParameterizationFromExpression(
     DRAKE_THROW_UNLESS(user_supplied_variables.include(variable));
   }
 
+  // Note that in this lambda, we copy the shared_ptr variables, ensuring that
+  // variables is kept alive without making a copy of the individual Variable
+  // objects (which would break the substitution machinery).
   auto evaluate_expression =
       [expression_parameterization_captured =
            Eigen::VectorX<symbolic::Expression>(expression_parameterization),
-       variables_captured = Eigen::VectorX<symbolic::Variable>(variables)](
+       variables](
           const Eigen::VectorXd& q) {
-        DRAKE_ASSERT(q.size() == ssize(variables));
+        DRAKE_ASSERT(variables != nullptr);
+        DRAKE_ASSERT(q.size() == ssize(*variables));
         symbolic::Environment env;
         for (int i = 0; i < q.size(); ++i) {
-          env.insert(variables_captured[i], q[i]);
+          env.insert((*variables)[i], q[i]);
         }
         return expression_parameterization_captured.unaryExpr(
             [&env](const symbolic::Expression expression) {

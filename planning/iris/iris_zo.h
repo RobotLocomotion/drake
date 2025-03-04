@@ -172,7 +172,7 @@ class IrisZoOptions {
    * `expression_parameterization`. */
   void SetParameterizationFromExpression(
       const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
-      const Eigen::VectorX<symbolic::Variable>& variables);
+      const std::shared_ptr<Eigen::VectorX<symbolic::Variable>> variables);
 
   /** Get the parameterization function.
    * @note If the user has not specified this with `set_parameterization()`,

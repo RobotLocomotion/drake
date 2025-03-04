@@ -102,11 +102,11 @@ GTEST_TEST(IrisZoTest, JointLimits) {
       /* parameterization_is_threadsafe */ true,
       /* parameterization_dimension */ 1);
 
-  Eigen::VectorX<symbolic::Variable> variables(1);
-  variables[0] = symbolic::Variable("q");
+  auto variables = std::make_shared<Eigen::VectorX<symbolic::Variable>>(1);
+  (*variables)[0] = symbolic::Variable("q");
 
   Eigen::VectorX<symbolic::Expression> parameterization_expression(1);
-  parameterization_expression[0] = symbolic::Expression(variables[0]);
+  parameterization_expression[0] = symbolic::Expression((*variables)[0]);
 
   vector_of_options[2].SetParameterizationFromExpression(parameterization_expression, variables);
 
