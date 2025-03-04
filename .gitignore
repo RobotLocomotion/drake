@@ -29,4 +29,3 @@
 
 # User-specified configuration
 /user.bazelrc
-/venv
