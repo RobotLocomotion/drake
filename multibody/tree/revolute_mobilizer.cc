@@ -138,6 +138,26 @@ void RevoluteMobilizer<T>::MapQDotToVelocity(
 }
 
 template <typename T>
+void RevoluteMobilizer<T>::MapVelocityDotToQDDot(
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& vdot,
+    EigenPtr<VectorX<T>> qddot) const {
+  DRAKE_ASSERT(vdot.size() == kNv);
+  DRAKE_ASSERT(qddot != nullptr);
+  DRAKE_ASSERT(qddot->size() == kNq);
+  *qddot = vdot;
+}
+
+template <typename T>
+void RevoluteMobilizer<T>::MapQDDotToVelocityDot(
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qddot,
+    EigenPtr<VectorX<T>> vdot) const {
+  DRAKE_ASSERT(qddot.size() == kNq);
+  DRAKE_ASSERT(vdot != nullptr);
+  DRAKE_ASSERT(vdot->size() == kNv);
+  *vdot = qddot;
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
 RevoluteMobilizer<T>::TemplatedDoCloneToScalar(
