@@ -202,6 +202,15 @@ TEST_F(RevoluteMobilizerTest, MapVelocityToQDotAndBack) {
   qdot(0) = -std::sqrt(2);
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
   EXPECT_NEAR(v(0), qdot(0), kTolerance);
+
+  Vector1d vdot(1.2345);
+  Vector1d qddot;
+  mobilizer_->MapVelocityDotToQDDot(*context_, vdot, &qddot);
+  EXPECT_NEAR(qddot(0), vdot(0), kTolerance);
+
+  qddot(0) = -std::sqrt(5);
+  mobilizer_->MapQDotToVelocity(*context_, qddot, &vdot);
+  EXPECT_NEAR(vdot(0), qddot(0), kTolerance);
 }
 
 TEST_F(RevoluteMobilizerTest, KinematicMapping) {

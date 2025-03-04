@@ -614,6 +614,22 @@ class Mobilizer : public MultibodyElement<T> {
   virtual void MapQDotToVelocity(const systems::Context<T>& context,
                                  const Eigen::Ref<const VectorX<T>>& qdot,
                                  EigenPtr<VectorX<T>> v) const = 0;
+
+  // Uses the kinematic mapping `q̈ = N(q)⋅v̇` to calculate q̈ from v̇.
+  // @param[in] vdot 1ˢᵗ time derivatives of generalized velocities (v̇).
+  // @param[out] qddot 2ⁿᵈ time derivatives of the generalized positions (q̈).
+  // Note: Generalized positions and velocities are stored in `context`.
+  virtual void MapVelocityDotToQDDot(const systems::Context<T>& context,
+                                     const Eigen::Ref<const VectorX<T>>& vdot,
+                                     EigenPtr<VectorX<T>> qddot) const;
+
+  // Uses the kinematic mapping `v̇ = N(q)⋅q̈` to calculate v̇ from q̈.
+  // @param[in] qddot 2ⁿᵈ time derivatives of the generalized positions (q̈).
+  // @param[out] vdot 1ˢᵗ time derivatives of generalized velocities (v̇).
+  // Note: Generalized positions and velocities are stored in `context`.
+  virtual void MapQDDotToVelocityDot(const systems::Context<T>& context,
+                                     const Eigen::Ref<const VectorX<T>>& qddot,
+                                     EigenPtr<VectorX<T>> v) const;
   // @}
 
   // Returns a const Eigen expression of the vector of generalized positions

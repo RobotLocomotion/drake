@@ -17,6 +17,32 @@ std::pair<Eigen::Quaternion<T>, Vector3<T>> Mobilizer<T>::GetPosePair(
   return std::pair(X_FM.rotation().ToQuaternion(), X_FM.translation());
 }
 
+template <typename T>
+void Mobilizer<T>::MapVelocityDotToQDDot(const systems::Context<T>&,
+                                         const Eigen::Ref<const VectorX<T>>&,
+                                         EigenPtr<VectorX<T>>) const {
+  // TODO(Mitiguy) remove this function when Mobilizer::MapVelocityDotToQDDot()
+  //  is changed to a pure virtual function that requires override.
+  const std::string error_message = fmt::format(
+      "The function {}() has not been implemented for this "
+      "mobilizer.",
+      __func__);
+  throw std::logic_error(error_message);
+}
+
+template <typename T>
+void Mobilizer<T>::MapQDDotToVelocityDot(const systems::Context<T>&,
+                                         const Eigen::Ref<const VectorX<T>>&,
+                                         EigenPtr<VectorX<T>>) const {
+  // TODO(Mitiguy) remove this function when Mobilizer::MapVelocityDotToQDDot()
+  //  is changed to a pure virtual function that requires override.
+  const std::string error_message = fmt::format(
+      "The function {}() has not been implemented for this "
+      "mobilizer.",
+      __func__);
+  throw std::logic_error(error_message);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
