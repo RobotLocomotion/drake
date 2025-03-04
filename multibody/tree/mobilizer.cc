@@ -18,10 +18,10 @@ std::pair<Eigen::Quaternion<T>, Vector3<T>> Mobilizer<T>::GetPosePair(
 }
 
 template <typename T>
-void Mobilizer<T>::MapVelocityDotToQDDot(const systems::Context<T>&,
-                                         const Eigen::Ref<const VectorX<T>>&,
-                                         EigenPtr<VectorX<T>>) const {
-  // TODO(Mitiguy) remove this function when Mobilizer::MapVelocityDotToQDDot()
+void Mobilizer<T>::MapAccelerationToQDDot(const systems::Context<T>&,
+                                          const Eigen::Ref<const VectorX<T>>&,
+                                          EigenPtr<VectorX<T>>) const {
+  // TODO(Mitiguy) remove this function when Mobilizer::MapAccelerationToQDDot()
   //  is changed to a pure virtual function that requires override.
   const std::string error_message = fmt::format(
       "The function {}() has not been implemented for this "
@@ -31,10 +31,10 @@ void Mobilizer<T>::MapVelocityDotToQDDot(const systems::Context<T>&,
 }
 
 template <typename T>
-void Mobilizer<T>::MapQDDotToVelocityDot(const systems::Context<T>&,
-                                         const Eigen::Ref<const VectorX<T>>&,
-                                         EigenPtr<VectorX<T>>) const {
-  // TODO(Mitiguy) remove this function when Mobilizer::MapVelocityDotToQDDot()
+void Mobilizer<T>::MapQDDotToAcceleration(const systems::Context<T>&,
+                                          const Eigen::Ref<const VectorX<T>>&,
+                                          EigenPtr<VectorX<T>>) const {
+  // TODO(Mitiguy) remove this function when Mobilizer::MapAccelerationToQDDot()
   //  is changed to a pure virtual function that requires override.
   const std::string error_message = fmt::format(
       "The function {}() has not been implemented for this "
