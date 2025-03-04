@@ -24,11 +24,11 @@ class IntegratorTest : public ::testing::Test {
     context_ = integrator_->CreateDefaultContext();
     derivatives_ = integrator_->AllocateTimeDerivatives();
 
-    // Set the state to zero initially.
+    // State will be zero initially.
     ContinuousState<double>& xc = continuous_state();
     EXPECT_EQ(3, xc.size());
     EXPECT_EQ(3, xc.get_misc_continuous_state().size());
-    xc.SetFromVector(Eigen::VectorXd::Zero(kLength));
+    EXPECT_EQ(xc.CopyToVector(), Eigen::VectorXd::Zero(kLength));
   }
 
   ContinuousState<double>& continuous_state() {
@@ -59,12 +59,27 @@ TEST_F(IntegratorTest, Output) {
   integrator_->get_input_port(0).FixValue(context_.get(),
                                           Eigen::Vector3d{1.0, 2.0, 3.0});
 
+  // With no initial state specified, output should be zero initially.
   Eigen::Vector3d expected = Eigen::Vector3d::Zero();
   EXPECT_EQ(expected, integrator_->get_output_port(0).Eval(*context_));
 
   continuous_state().get_mutable_vector().SetAtIndex(1, 42.0);
   expected << 0.0, 42.0, 0.0;
   EXPECT_EQ(expected, integrator_->get_output_port(0).Eval(*context_));
+}
+
+GTEST_TEST(InitializedIntegratorTest, InitialValue) {
+  const Eigen::Vector3d initial_value{1.0, 2.0, 3.0};
+  Integrator<double> integrator(initial_value);
+  auto context = integrator.CreateDefaultContext();
+  EXPECT_EQ(integrator.get_output_port(0).Eval(*context), initial_value);
+
+  // Check that initial value is retained on scalar conversion.
+  auto integrator_ad = integrator.ToAutoDiffXd();
+  auto context_ad = integrator_ad->CreateDefaultContext();
+  EXPECT_EQ(
+      ExtractDoubleOrThrow(integrator_ad->get_output_port(0).Eval(*context_ad)),
+      initial_value);
 }
 
 // Tests that the derivatives of an integrator's state are its input.

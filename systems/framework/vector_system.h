@@ -94,12 +94,7 @@ class VectorSystem : public LeafSystem<T> {
         prerequisites_of_calc = {this->all_sources_ticket()};
       } else {
         // Depend on everything *except* for the inputs.
-        prerequisites_of_calc = {
-            this->time_ticket(),
-            this->accuracy_ticket(),
-            this->all_state_ticket(),
-            this->all_parameters_ticket(),
-        };
+        prerequisites_of_calc = {this->all_sources_except_input_ports_ticket()};
       }
       this->DeclareVectorOutputPort(kUseDefaultName, output_size,
                                     &VectorSystem::CalcVectorOutput,

@@ -8,16 +8,19 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Integrator<T>::Integrator(int size)
-    : VectorSystem<T>(SystemTypeTag<Integrator>{}, size, size,
+Integrator<T>::Integrator(const VectorX<double>& initial_value)
+    : VectorSystem<T>(SystemTypeTag<Integrator>{}, initial_value.size(),
+                      initial_value.size(),
                       /* direct_feedthrough = */ false) {
-  this->DeclareContinuousState(size);
+  initial_value_ = initial_value;
+  const BasicVector<T> basic_vector(initial_value_.template cast<T>());
+  this->DeclareContinuousState(basic_vector);
 }
 
 template <typename T>
 template <typename U>
 Integrator<T>::Integrator(const Integrator<U>& other)
-    : Integrator<T>(other.get_input_port().size()) {}
+    : Integrator<T>(other.initial_value_) {}
 
 template <typename T>
 Integrator<T>::~Integrator() = default;
