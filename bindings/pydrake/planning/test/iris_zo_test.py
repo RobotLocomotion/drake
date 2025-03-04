@@ -87,8 +87,9 @@ class TestIrisZo(unittest.TestCase):
         options.random_seed = 1337
         options.mixing_steps = 50
         starting_ellipsoid = Hyperellipsoid.MakeHypersphere(0.01, seed_point)
-        ik = InverseKinematics(plant)
-        options.prog_with_additional_constraints = ik.prog()
+        options.prog_with_additional_constraints = InverseKinematics(
+            plant
+        ).prog()
         domain = HPolyhedron.MakeBox(plant.GetPositionLowerLimits(),
                                      plant.GetPositionUpperLimits())
         region = mut.IrisZo(checker=checker,

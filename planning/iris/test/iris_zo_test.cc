@@ -542,7 +542,41 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   double ub = -0.3;
   prog.AddLinearConstraint(a, lb, ub, q);
   options.prog_with_additional_constraints = &prog;
+  options.max_iterations = 1;
+  options.max_iterations_separating_planes = 1;
   region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
+
+  // Due to the configuration space margin, this point can never be in the
+  // region.
+  Vector2d query_point_not_in_set(-0.29, 0.0);
+  Vector2d query_point_in_set(-0.31, 0.0);
+  EXPECT_FALSE(region.PointInSet(query_point_not_in_set));
+  EXPECT_TRUE(region.PointInSet(query_point_in_set));
+
+  {
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    MaybePauseForUser();
+  }
+
+  // If we have a containment point violating this constraint, IrisZo should
+  // throw. Three points are needed to ensure the center of the starting
+  // ellipsoid is within the convex hull of the points we must contain.
+  Eigen::Matrix2Xd single_containment_point(2, 3);
+  // clang-format off
+  single_containment_point << -0.2, -0.6, -0.6,
+                               0.0,  0.1, -0.1;
+  // clang-format on
+  options.containment_points = single_containment_point;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options),
+      ".*containment points violates a constraint.*");
+  options.containment_points = std::nullopt;
 
   // We now test an example of a region grown along a subspace.
   options.set_parameterization(
