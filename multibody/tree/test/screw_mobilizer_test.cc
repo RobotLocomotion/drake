@@ -286,6 +286,17 @@ TEST_F(ScrewMobilizerTest, MapVelocityToQDotAndBack) {
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
   EXPECT_TRUE(
       CompareMatrices(v, qdot, kTolerance, MatrixCompareType::relative));
+
+  // Test relationship between q̈ (2ⁿᵈ time derivatives of generalized positions)
+  // and v̇ (1ˢᵗ time derivatives of generalized velocities) and vice-versa.
+  Vector1d vdot(1.2345);
+  Vector1d qddot;
+  mobilizer_->MapAccelerationToQDDot(*context_, vdot, &qddot);
+  EXPECT_NEAR(qddot(0), vdot(0), kTolerance);
+
+  qddot(0) = -std::sqrt(5);
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &vdot);
+  EXPECT_NEAR(vdot(0), qddot(0), kTolerance);
 }
 
 TEST_F(ScrewMobilizerTest, KinematicMapping) {
