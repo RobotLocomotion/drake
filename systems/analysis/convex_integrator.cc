@@ -216,13 +216,13 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
   VectorX<T>& v_tmp = workspace_.v;
   TimestepIndependentProblemData<T>& data =
       workspace_.timestep_independent_data;
-
+  
   // Compute data for implicit integration of the external system
   // Note that this needs to happen before CalcTimestepIndependentProblemData,
   // since that method will set actuator forces to k0.
-  // LinearizeExternalSystem(&linearized_external_system_);
-  // CalcImplicitExternalSystemData(linearized_external_system_, h,
-  //                                &implicit_external_system_data_);
+  LinearizeExternalSystem(&linearized_external_system_);
+  CalcImplicitExternalSystemData(linearized_external_system_, h,
+                                 &implicit_external_system_data_);
 
   // Compute problem data at time (t)
   CalcTimestepIndependentProblemData(plant_context, &data);
@@ -280,6 +280,14 @@ template <typename T>
 void ConvexIntegrator<T>::CalcNextContinuousState(
     const T& h, const TimestepIndependentProblemData<T>& data,
     const VectorX<T>& v_guess, ContinuousState<T>* x_next) {
+
+  // Compute data for implicit integration of the external system
+  // Note that this needs to happen before CalcTimestepIndependentProblemData,
+  // since that method will set actuator forces to k0.
+  LinearizeExternalSystem(&linearized_external_system_);
+  CalcImplicitExternalSystemData(linearized_external_system_, h,
+                                 &implicit_external_system_data_);
+
   // Get context for the overall diagram and the plant in particular
   const Context<T>& diagram_context = this->get_context();
   const Context<T>& plant_context =
@@ -919,13 +927,14 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // free-motion velocities v*
   v_star = data.v0 + h * data.a;
 
-  // linearized dynamics matrix A = M + hD + h B K
+  // linearized dynamics matrix A = M + hD - h B K
   A_dense = data.M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
 
   // MatrixX<T> BK = plant().MakeActuationMatrix() * implicit_external_system_data_.K;
+  // fmt::print("h = {}\n", h);
   // fmt::print("BK =\n{}\n", fmt_eigen(BK));
-  // A_dense += h * BK;
+  // A_dense -= h * BK;
   // TODO(vincekurtz): consider what happens when the external system messes with the sparsity pattern
   // TODO(vincekurtz): enforce positive definiteness of B K
 
