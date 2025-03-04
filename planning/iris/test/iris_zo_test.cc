@@ -17,6 +17,8 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/expression/variable.h"
 
 namespace drake {
 namespace planning {
@@ -81,43 +83,58 @@ GTEST_TEST(IrisZoTest, JointLimits) {
   const Vector1d sample = Vector1d::Zero();
   Hyperellipsoid starting_ellipsoid =
       Hyperellipsoid::MakeHypersphere(1e-2, sample);
-  IrisZoOptions options;
-  options.verbose = true;
 
-  options.set_parameterization(
+  std::vector<IrisZoOptions> vector_of_options(3);
+
+  vector_of_options[0].set_parameterization(
       [](const VectorXd& q) -> VectorXd {
         return q;
       },
       /* parameterization_is_threadsafe */ false,
       /* parameterization_dimension */ 1);
 
-  // Check that the parameterization was set correctly. (Note the non-default
-  // value for parameterization_is_threadsafe.)
-  EXPECT_EQ(options.get_parameterization_is_threadsafe(), false);
-  ASSERT_TRUE(options.get_parameterization_dimension().has_value());
-  EXPECT_EQ(options.get_parameterization_dimension().value(), 1);
-  const Vector1d output = options.get_parameterization()(Vector1d(3.0));
-  EXPECT_NEAR(output[0], 3.0, 1e-15);
-
   // Now set the parameterization with parameterization_is_threadsafe set to
   // true.
-  options.set_parameterization(
+  vector_of_options[1].set_parameterization(
       [](const VectorXd& q) -> VectorXd {
         return q;
       },
       /* parameterization_is_threadsafe */ true,
       /* parameterization_dimension */ 1);
 
-  HPolyhedron region = IrisZoFromUrdf(limits_urdf, starting_ellipsoid, options);
+  Eigen::VectorX<symbolic::Variable> variables(1);
+  variables[0] = symbolic::Variable("q");
 
-  EXPECT_EQ(region.ambient_dimension(), 1);
+  Eigen::VectorX<symbolic::Expression> parameterization_expression(1);
+  parameterization_expression[0] = symbolic::Expression(variables[0]);
 
-  const double kTol = 1e-5;
-  const double qmin = -2.0, qmax = 2.0;
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  vector_of_options[2].SetParameterizationFromExpression(parameterization_expression, variables);
+
+  // The first and second parameterizations were defined to be not threadsafe and threadsafe (respectively). The final parameterization is defined using an Expression, so it is threadsafe.
+  EXPECT_EQ(vector_of_options[0].get_parameterization_is_threadsafe(), false);
+  EXPECT_EQ(vector_of_options[1].get_parameterization_is_threadsafe(), true);
+  EXPECT_EQ(vector_of_options[2].get_parameterization_is_threadsafe(), true);
+
+  for (auto& options : vector_of_options) {
+    options.verbose = true;
+
+    // Check that the parameterization was set correctly.
+    ASSERT_TRUE(options.get_parameterization_dimension().has_value());
+    EXPECT_EQ(options.get_parameterization_dimension().value(), 1);
+    const Vector1d output = options.get_parameterization()(Vector1d(3.0));
+    EXPECT_NEAR(output[0], 3.0, 1e-15);
+
+    HPolyhedron region = IrisZoFromUrdf(limits_urdf, starting_ellipsoid, options);
+
+    EXPECT_EQ(region.ambient_dimension(), 1);
+
+    const double kTol = 1e-5;
+    const double qmin = -2.0, qmax = 2.0;
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  }
 }
 
 // Reproduced from the IrisInConfigurationSpace unit tests.
