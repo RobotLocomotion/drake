@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/expression/variable.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/common/text_logging.h"
@@ -17,8 +19,6 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
-#include "drake/common/symbolic/expression.h"
-#include "drake/common/symbolic/expression/variable.h"
 
 namespace drake {
 namespace planning {
@@ -108,9 +108,12 @@ GTEST_TEST(IrisZoTest, JointLimits) {
   Eigen::VectorX<symbolic::Expression> parameterization_expression(1);
   parameterization_expression[0] = symbolic::Expression((*variables)[0]);
 
-  vector_of_options[2].SetParameterizationFromExpression(parameterization_expression, variables);
+  vector_of_options[2].SetParameterizationFromExpression(
+      parameterization_expression, variables);
 
-  // The first and second parameterizations were defined to be not threadsafe and threadsafe (respectively). The final parameterization is defined using an Expression, so it is threadsafe.
+  // The first and second parameterizations were defined to be not threadsafe
+  // and threadsafe (respectively). The final parameterization is defined using
+  // an Expression, so it is threadsafe.
   EXPECT_EQ(vector_of_options[0].get_parameterization_is_threadsafe(), false);
   EXPECT_EQ(vector_of_options[1].get_parameterization_is_threadsafe(), true);
   EXPECT_EQ(vector_of_options[2].get_parameterization_is_threadsafe(), true);
@@ -124,7 +127,8 @@ GTEST_TEST(IrisZoTest, JointLimits) {
     const Vector1d output = options.get_parameterization()(Vector1d(3.0));
     EXPECT_NEAR(output[0], 3.0, 1e-15);
 
-    HPolyhedron region = IrisZoFromUrdf(limits_urdf, starting_ellipsoid, options);
+    HPolyhedron region =
+        IrisZoFromUrdf(limits_urdf, starting_ellipsoid, options);
 
     EXPECT_EQ(region.ambient_dimension(), 1);
 

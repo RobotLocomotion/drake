@@ -103,8 +103,8 @@ drake_cc_googletest(
         "no_lsan",
     ],
     deps = [
-        "//common/symbolic:expression",
         ":iris_zo",
+        "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry:meshcat",

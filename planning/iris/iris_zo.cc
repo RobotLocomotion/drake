@@ -77,22 +77,35 @@ void IrisZoOptions::SetParameterizationFromExpression(
   // Note that in this lambda, we copy the shared_ptr variables, ensuring that
   // variables is kept alive without making a copy of the individual Variable
   // objects (which would break the substitution machinery).
-  auto evaluate_expression =
-      [expression_parameterization_captured =
-           Eigen::VectorX<symbolic::Expression>(expression_parameterization),
-       variables](
-          const Eigen::VectorXd& q) {
-        DRAKE_ASSERT(variables != nullptr);
-        DRAKE_ASSERT(q.size() == ssize(*variables));
-        symbolic::Environment env;
-        for (int i = 0; i < q.size(); ++i) {
-          env.insert((*variables)[i], q[i]);
-        }
-        return expression_parameterization_captured.unaryExpr(
-            [&env](const symbolic::Expression expression) {
-              return expression.Evaluate(env);
-            });
-      };
+  auto evaluate_expression = [expression_parameterization_captured =
+                                  Eigen::VectorX<symbolic::Expression>(
+                                      expression_parameterization),
+                              variables](const Eigen::VectorXd& q) {
+    DRAKE_THROW_UNLESS(variables != nullptr);
+    DRAKE_THROW_UNLESS(q.size() == ssize(*variables));
+    symbolic::Environment env;
+    for (int i = 0; i < q.size(); ++i) {
+      env.insert((*variables)[i], q[i]);
+    }
+    DRAKE_THROW_UNLESS(
+        *(expression_parameterization_captured[0].GetVariables().begin()) ==
+        (*variables)[0]);
+    DRAKE_THROW_UNLESS(
+        env.find(*(
+            expression_parameterization_captured[0].GetVariables().begin())) !=
+        env.end());
+    for (const auto& expression : expression_parameterization_captured) {
+      for (const auto& variable : expression.GetVariables()) {
+        DRAKE_THROW_UNLESS(env.find(variable) != env.end());
+      }
+    }
+    Eigen::VectorXd out =
+        Eigen::VectorXd::Zero(expression_parameterization_captured.size());
+    for (int i = 0; i < out.size(); ++i) {
+      out[i] = expression_parameterization_captured[i].Evaluate(env);
+    }
+    return out;
+  };
 
   set_parameterization(evaluate_expression,
                        /* parameterization_is_threadsafe */ true,
