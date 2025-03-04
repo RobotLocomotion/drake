@@ -6,6 +6,9 @@
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/expression/environment.h"
+#include "drake/common/symbolic/expression/variable.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -46,6 +49,48 @@ IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
                                 /* parameterization_is_threadsafe */ true,
                                 /* parameterization_dimension */ dimension);
   return instance;
+}
+
+void IrisZoOptions::SetParameterizationFromExpression(
+    const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
+    const Eigen::VectorX<symbolic::Variable>& variables) {
+  // First, we check that the variables in expression_parameterization match the
+  // user-supplied variables.
+  symbolic::Variables expression_variables, user_supplied_variables;
+  for (const auto& expression : expression_parameterization) {
+    expression_variables.insert(expression.GetVariables());
+  }
+  user_supplied_variables.insert(variables.begin(), variables.end());
+  DRAKE_THROW_UNLESS(ssize(expression_variables) ==
+                     ssize(user_supplied_variables));
+  int dimension = ssize(expression_variables);
+
+  // If the size of the two Variables objects match, it's sufficient to check
+  // that each variable in expression_variables is also contained in
+  // user_supplied_variables.
+  for (const auto& variable : expression_variables) {
+    DRAKE_THROW_UNLESS(user_supplied_variables.include(variable));
+  }
+
+  auto evaluate_expression =
+      [expression_parameterization_captured =
+           Eigen::VectorX<symbolic::Expression>(expression_parameterization),
+       variables_captured = Eigen::VectorX<symbolic::Variable>(variables)](
+          const Eigen::VectorXd& q) {
+        DRAKE_ASSERT(q.size() == ssize(variables));
+        symbolic::Environment env;
+        for (int i = 0; i < q.size(); ++i) {
+          env.insert(variables_captured[i], q[i]);
+        }
+        return expression_parameterization_captured.unaryExpr(
+            [&env](const symbolic::Expression expression) {
+              return expression.Evaluate(env);
+            });
+      };
+
+  set_parameterization(evaluate_expression,
+                       /* parameterization_is_threadsafe */ true,
+                       /* parameterization_dimension */ dimension);
 }
 
 namespace {
