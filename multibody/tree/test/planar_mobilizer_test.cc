@@ -262,6 +262,19 @@ TEST_F(PlanarMobilizerTest, MapVelocityToQDotAndBack) {
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
   EXPECT_TRUE(
       CompareMatrices(v, qdot, kTolerance, MatrixCompareType::relative));
+
+  // Test relationship between q̈ (2ⁿᵈ time derivatives of generalized positions)
+  // and v̇ (1ˢᵗ time derivatives of generalized velocities) and vice-versa.
+  Vector3d vdot(1.23, 4.56, 7.89);
+  Vector3d qddot;
+  mobilizer_->MapAccelerationToQDDot(*context_, vdot, &qddot);
+  EXPECT_TRUE(
+      CompareMatrices(qddot, vdot, kTolerance, MatrixCompareType::relative));
+
+  qddot = Vector3d(-std::sqrt(5), 9.87, 6.54);
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &vdot);
+  EXPECT_TRUE(
+      CompareMatrices(vdot, qddot, kTolerance, MatrixCompareType::relative));
 }
 
 TEST_F(PlanarMobilizerTest, KinematicMapping) {

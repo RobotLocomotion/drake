@@ -104,15 +104,15 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   // This override is a no-op since this mobilizer has no generalized
   // velocities associated with it.
-  void MapVelocityDotToQDDot(const systems::Context<T>& context,
-                             const Eigen::Ref<const VectorX<T>>& vdot,
-                             EigenPtr<VectorX<T>> qddot) const final;
+  void MapAccelerationToQDDot(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& vdot,
+                              EigenPtr<VectorX<T>> qddot) const final;
 
   // This override is a no-op since this mobilizer has no generalized
   // velocities associated with it.
-  void MapQDDotToVelocityDot(const systems::Context<T>& context,
-                             const Eigen::Ref<const VectorX<T>>& qddot,
-                             EigenPtr<VectorX<T>> vdot) const final;
+  void MapQDDotToAcceleration(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& qddot,
+                              EigenPtr<VectorX<T>> vdot) const final;
 
   bool can_rotate() const final { return false; }
   bool can_translate() const final { return false; }

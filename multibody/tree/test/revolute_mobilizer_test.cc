@@ -205,13 +205,15 @@ TEST_F(RevoluteMobilizerTest, MapVelocityToQDotAndBack) {
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
   EXPECT_NEAR(v(0), qdot(0), kTolerance);
 
+  // Test relationship between q̈ (2ⁿᵈ time derivatives of generalized positions)
+  // and v̇ (1ˢᵗ time derivatives of generalized velocities) and vice-versa.
   Vector1d vdot(1.2345);
   Vector1d qddot;
-  mobilizer_->MapVelocityDotToQDDot(*context_, vdot, &qddot);
+  mobilizer_->MapAccelerationToQDDot(*context_, vdot, &qddot);
   EXPECT_NEAR(qddot(0), vdot(0), kTolerance);
 
   qddot(0) = -std::sqrt(5);
-  mobilizer_->MapQDotToVelocity(*context_, qddot, &vdot);
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &vdot);
   EXPECT_NEAR(vdot(0), qddot(0), kTolerance);
 }
 

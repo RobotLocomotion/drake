@@ -186,19 +186,21 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   void MapVelocityToQDot(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& v,
-                         EigenPtr<VectorX<T>> qdot) const override;
+                         EigenPtr<VectorX<T>> qdot) const final;
 
   void MapQDotToVelocity(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,
-                         EigenPtr<VectorX<T>> v) const override;
+                         EigenPtr<VectorX<T>> v) const final;
 
-  void MapVelocityDotToQDDot(const systems::Context<T>& context,
-                             const Eigen::Ref<const VectorX<T>>& vdot,
-                             EigenPtr<VectorX<T>> qddot) const override;
+  // Maps vdot to qddot, which for this mobilizer is q̈ = v̇.
+  void MapAccelerationToQDDot(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& vdot,
+                              EigenPtr<VectorX<T>> qddot) const final;
 
-  void MapQDDotToVelocityDot(const systems::Context<T>& context,
-                             const Eigen::Ref<const VectorX<T>>& qddot,
-                             EigenPtr<VectorX<T>> vdot) const override;
+  // Maps qddot to vdot, which for this mobilizer is v̇ = q̈.
+  void MapQDDotToAcceleration(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& qddot,
+                              EigenPtr<VectorX<T>> vdot) const final;
 
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
