@@ -4030,8 +4030,11 @@ GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
     const ModelInstanceIndex table_model =
         parser.AddModelsFromUrl(table_sdf_url).at(0);
     const RigidBody<double>& table = plant.GetBodyByName("link", table_model);
-    plant.AddJoint(std::make_unique<PrismaticJoint<double>>(
-        "table", plant.world_frame(), table.body_frame(), Vector3d(1, 1, 1)));
+    const auto& prismatic_joint =
+        plant.AddJoint(std::make_unique<PrismaticJoint<double>>(
+            "table", plant.world_frame(), table.body_frame(),
+            Vector3d(1, 1, 1)));
+    EXPECT_FALSE(prismatic_joint.is_ephemeral());
 
     // Add a mug with no joint. This will become a floating base body at
     // finalization unless we add a joint.
@@ -4040,7 +4043,10 @@ GTEST_TEST(StateSelection, FreeBodiesVsFloatingBaseBodies) {
     if (!mug_in_world) {
       // Explicitly put a 6-dof joint between mug and table, making this a
       // "free" body, but _not_ a floating base body.
-      plant.AddJoint<QuaternionFloatingJoint>("sixdof", table, {}, mug, {});
+      const auto& joint =
+          plant.AddJoint<QuaternionFloatingJoint>("sixdof", table, {}, mug, {});
+      // An explicitly added joint is not ephemeral.
+      EXPECT_FALSE(joint.is_ephemeral());
     }
 
     plant.Finalize();
@@ -4280,6 +4286,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
 // Verify that we can control what kind of joint is used to connect an
 // unconnected body to World, globally or per-model instance. The default
 // should be QuaternionFloatingJoint, with RpyFloating and Weld as options.
+// These should all be marked "ephemeral" since they aren't user-added.
 //
 // We'll also verify that we can set state (q & v), pose, and velocity using the
 // generic Joint API applied to the floating joints. We'll also check that we
@@ -4321,9 +4328,10 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
     EXPECT_EQ(plant->num_positions(), 14);
     EXPECT_EQ(plant->num_velocities(), 12);
 
-    // When base joints are added they are named after the base body.
+    // When ephemeral base joints are added they are named after the base body.
     const Joint<double>& quaternion_joint =
         plant->GetJointByName("InstanceBody");
+    EXPECT_TRUE(quaternion_joint.is_ephemeral());
     auto context = plant->CreateDefaultContext();
     Eigen::Vector<double, 7> set_q;
     set_q << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
@@ -4380,6 +4388,7 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
 
     // When base joints are added they are named after the base body.
     const Joint<double>& instance_joint = plant->GetJointByName("InstanceBody");
+    EXPECT_TRUE(instance_joint.is_ephemeral());
     auto context = plant->CreateDefaultContext();
     Vector6d set_q;
     set_q << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
@@ -4445,6 +4454,7 @@ GTEST_TEST(MultibodyPlantTest, BaseBodyJointChoice) {
     // We'll use the weld joint to generate some Joint API errors.
     const Joint<double>& weld_joint = plant->GetJointByName("DefaultBody");
     EXPECT_EQ(weld_joint.type_name(), "weld");
+    EXPECT_TRUE(weld_joint.is_ephemeral());
     auto context = plant->CreateDefaultContext();
 
     // SetPositions() and SetVelocities() should work for every joint as

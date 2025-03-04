@@ -73,11 +73,28 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
 }
 
 template <typename T>
+template <template <typename Scalar> class FrameType>
+const FrameType<T>& MultibodyTree<T>::AddEphemeralFrame(
+    std::unique_ptr<FrameType<T>> frame) {
+  frame->set_is_ephemeral(true);
+  return AddFrame(std::move(frame));
+}
+
+template <typename T>
 template <template <typename Scalar> class FrameType, typename... Args>
 const FrameType<T>& MultibodyTree<T>::AddFrame(Args&&... args) {
   static_assert(std::is_convertible_v<FrameType<T>*, Frame<T>*>,
                 "FrameType must be a sub-class of Frame<T>.");
   return AddFrame(std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
+}
+
+template <typename T>
+template <template <typename Scalar> class FrameType, typename... Args>
+const FrameType<T>& MultibodyTree<T>::AddEphemeralFrame(Args&&... args) {
+  static_assert(std::is_convertible_v<FrameType<T>*, Frame<T>*>,
+                "FrameType must be a sub-class of Frame<T>.");
+  return AddEphemeralFrame(
+      std::make_unique<FrameType<T>>(std::forward<Args>(args)...));
 }
 
 template <typename T>
@@ -228,6 +245,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   // during modeling are already in the graph.
   if (!is_ephemeral_joint) RegisterJointAndMaybeJointTypeInGraph(*joint.get());
 
+  joint->set_is_ephemeral(is_ephemeral_joint);
   joint->set_parent_tree(this, joints_.next_index());
   joint->set_ordinal(joints_.num_elements());
   JointType<T>* raw_joint_ptr = joint.get();

@@ -205,6 +205,10 @@ class MultibodyTree {
   template <template <typename Scalar> class FrameType>
   const FrameType<T>& AddFrame(std::unique_ptr<FrameType<T>> frame);
 
+  // Same as above but sets the `is_ephemeral` bit.
+  template <template <typename Scalar> class FrameType>
+  const FrameType<T>& AddEphemeralFrame(std::unique_ptr<FrameType<T>> frame);
+
   // Constructs a new frame with type `FrameType` with the given `args`, and
   // adds it to `this` %MultibodyTree, which retains ownership. The `FrameType`
   // will be specialized on the scalar type T of this %MultibodyTree.
@@ -242,6 +246,10 @@ class MultibodyTree {
   //                   this %MultibodyTree.
   template <template <typename Scalar> class FrameType, typename... Args>
   const FrameType<T>& AddFrame(Args&&... args);
+
+  // Same as above but sets the `is_ephemeral` bit.
+  template <template <typename Scalar> class FrameType, typename... Args>
+  const FrameType<T>& AddEphemeralFrame(Args&&... args);
 
   // Takes ownership of `mobilizer` and adds it to `this` %MultibodyTree.
   // Returns a constant reference to the mobilizer just added, which will
@@ -977,14 +985,18 @@ class MultibodyTree {
     return forest().mobods(index);
   }
 
-  // This method must be called after all elements in the plant (joints, bodies,
-  // force elements, constraints) were added and before any computations are
-  // performed. It compiles all the necessary "topological information", i.e.
-  // how bodies, mobilizers, and any other elements connect with each other, and
-  // performs all the required pre-processing to permit efficient computations
-  // at a later stage.
+  // Finalize() must be called after all user-defined elements in the plant
+  // (joints, bodies, force elements, constraints, etc.) have been added and
+  // before any computations are performed. It compiles all the necessary
+  // topological information, i.e. how bodies, mobilizers, and any other
+  // elements connect with each other, and performs all the required
+  // pre-processing to permit efficient computations at a later stage. During
+  // this process, we may add additional elements (e.g. joints, frames,
+  // and constraints) to facilitate computation; we call those "ephemeral"
+  // elements and mark them as such in the base MultibodyElement class to
+  // distinguish them from user-defined elements.
   //
-  // If the finalize stage is successful, the topology of this MultibodyTree
+  // If the Finalize operation is successful, the topology of this MultibodyTree
   // is validated, meaning that the topology is up-to-date after this call.
   // No more multibody plant elements can be added after a call to Finalize().
   //
