@@ -59,6 +59,10 @@ if [[ "${with_update}" -eq 1 ]]; then
   brew update || (sleep 30; brew update)
 fi
 
+# Do not genereate a brew lockfile. This behavior was previously implemented
+# with the now deprecated '--no-lock' flag. This env variable allows
+# for the behavior to be consistent without using the flag.
+export HOMEBREW_BUNDLE_NO_LOCK=1
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
 if ! command -v pip3.12 &>/dev/null; then

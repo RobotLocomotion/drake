@@ -72,8 +72,11 @@ def _provision(python_targets):
     Prepares wheel build environment.
     """
     packages_path = os.path.join(resource_root, 'image', 'packages-macos')
-    command = ['brew', 'bundle', f'--file={packages_path}',]
-    subprocess.check_call(command)
+
+    env=['HOMEBREW_BUNDLE_NO_LOCK'] = '1'
+
+    command = ['brew','bundle',f'--file={packages_path}',]
+    subprocess.check_call(command, env=env)
 
     for t in python_targets:
         subprocess.check_call(['brew', 'install', f'python@{t.version}'])
