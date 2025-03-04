@@ -343,44 +343,6 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   EXPECT_TRUE(CompareMatrices(implicit_data.k0, k0, kTolerance,
                               MatrixCompareType::relative));
 
-  // Set up another diagram that uses SAP and an implicit PD controller
-  DiagramBuilder<double> builder2;
-  auto [plant2, scene_graph2] = AddMultibodyPlantSceneGraph(&builder2, h);
-  Parser(&plant2, &scene_graph2)
-      .AddModelsFromString(actuated_pendulum_xml, "xml");
-
-  for (JointActuatorIndex actuator_index : plant2.GetJointActuatorIndices()) {
-    JointActuator<double>& actuator =
-        plant2.get_mutable_joint_actuator(actuator_index);
-    actuator.set_controller_gains({Kp(0), Kd(0)});
-  }
-  plant2.Finalize();
-  auto target_state2 = builder2.AddSystem<ConstantVectorSource<double>>(x_nom);
-  builder2.Connect(
-    target_state2->get_output_port(),
-    plant2.get_desired_state_input_port(plant2.GetModelInstanceByName("robot"))
-  );
-  auto diagram2 = builder2.Build();
-  (void)diagram2;
-
-  // Set an interesting initial state for both systems
-  VectorXd q0(2), v0(2);
-  q0 << 0.1, 0.2;
-  v0 << 0.3, 0.4;
-
-  auto diagram2_context = diagram2->CreateDefaultContext();
-  Context<double>& plant2_context =
-      plant2.GetMyMutableContextFromRoot(diagram2_context.get());
-  Context<double>& plant_context =
-      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
-
-  plant.SetPositions(&plant_context, q0);
-  plant.SetVelocities(&plant_context, v0);
-  plant2.SetPositions(&plant2_context, q0);
-  plant2.SetVelocities(&plant2_context, v0);
-
-  // Get the SAP Hessian for each problem
-
   // Simulate for a few seconds
   const int fps = 32;
   meshcat->StartRecording(fps);
