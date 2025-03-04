@@ -4,8 +4,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/multibody/mpm/bspline_weights.h"
 #include "drake/multibody/mpm/grid_data.h"
+#include "drake/multibody/mpm/particle_data.h"
+#include "drake/multibody/mpm/sparse_grid.h"
 #include "drake/multibody/mpm/spgrid.h"
 
 namespace drake {
@@ -14,6 +17,7 @@ namespace mpm {
 namespace internal {
 namespace {
 
+using Eigen::Vector3d;
 using Eigen::Vector3i;
 
 GTEST_TEST(ConvertToRangeVectorTest, ConvertToRangeVector) {
@@ -140,6 +144,105 @@ GTEST_TEST(ParticleSorterTest, Sort) {
           EXPECT_TRUE(allocated_offsets.contains(neighbor_offset));
         }
       }
+    }
+  }
+}
+
+template <typename Grid>
+class ParticleSorterTypedTest : public ::testing::Test {};
+
+using GridTypes = ::testing::Types<SparseGrid<double>, SparseGrid<float>>;
+TYPED_TEST_SUITE(ParticleSorterTypedTest, GridTypes);
+
+TYPED_TEST(ParticleSorterTypedTest, Iterate) {
+  TypeParam grid(0.1);
+
+  using T = typename TypeParam::Scalar;
+  ParticleData<T> particle_data;
+  const Vector3d x0(0.01, 0.0, 0.0);
+  const Vector3d x1(1.01, 0.0, 0.0);
+  const std::vector<Vector3d> positions = {x0, x1};
+  const double total_volume = 1.0;
+  fem::DeformableBodyConfig<double> config;
+  particle_data.AddParticles(positions, total_volume, config);
+
+  grid.Allocate(particle_data.x());
+  /* Set some arbitrary data. All grid mass set to 1.0 and grid velocity set to
+   be the same as the coordinate of the grid node in the world frame. */
+  grid.SetGridData([&](const Vector3<int>& coordinate) {
+    GridData<T> node_data;
+    node_data.m = 1.0;
+    node_data.v = coordinate.cast<T>();
+    return node_data;
+  });
+
+  /* An arbitrary kernel that
+   1. sets the particle postion to be the grid node coordinate of the center
+      node in the grid pad affected by the particle, scaled by 2, and
+   2. sets the particle velocity as the average of the grid node velocity in the
+      pad. */
+  auto g2p_kernel = [](const Pad<typename TypeParam::NodeType>& pad_nodes,
+                       Pad<GridData<T>>* pad_data, ParticleData<T>* particles,
+                       int data_index) {
+    Vector3<T>& xp = particles->mutable_x()[data_index];
+    Vector3<T>& vp = particles->mutable_v()[data_index];
+    xp = 2.0 * pad_nodes[1][1][1];
+    vp.setZero();
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        for (int k = 0; k < 3; ++k) {
+          vp += (*pad_data)[i][j][k].v;
+        }
+      }
+    }
+    vp /= 27.0;
+  };
+
+  grid.IterateAndUpdateParticles(&particle_data, g2p_kernel);
+
+  EXPECT_EQ(particle_data.x()[0], Vector3<T>(0.0, 0.0, 0.0));
+  EXPECT_EQ(particle_data.x()[1], Vector3<T>(2.0, 0.0, 0.0));
+  EXPECT_TRUE(CompareMatrices(particle_data.v()[0], Vector3<T>(0.0, 0.0, 0.0)));
+  EXPECT_TRUE(
+      CompareMatrices(particle_data.v()[1], Vector3<T>(10.0, 0.0, 0.0)));
+
+  /* Reset the grid to arbitrary values. */
+  grid.SetGridData([&](const Vector3<int>&) {
+    GridData<T> node_data;
+    node_data.m = -1.0;
+    node_data.v = Vector3<T>(-1.0, -1.0, -1.0);
+    return node_data;
+  });
+
+  /* Now we test writing to grid flag. The arbitrary kernel writes the particle
+   velocity to all grid nodes in the particles' support. It sets grid mass
+   to 1.0. */
+  auto p2g_kernel = [](const Pad<typename TypeParam::NodeType>&,
+                       Pad<GridData<T>>* pad_data,
+                       const ParticleData<T>* particles, int data_index) {
+    const Vector3<T>& vp = particles->v()[data_index];
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        for (int k = 0; k < 3; ++k) {
+          (*pad_data)[i][j][k].v = vp;
+          (*pad_data)[i][j][k].m = 1.0;
+        }
+      }
+    }
+  };
+  grid.IterateAndUpdateGrid(particle_data, p2g_kernel);
+  const std::vector<std::pair<Vector3<int>, GridData<T>>> grid_data =
+      grid.GetGridData();
+  for (const auto& pair : grid_data) {
+    /* If the grid node is in the support of the particle, then the velocity
+     should be the same as the particle velocity. Otherwise, it should be
+     the arbitrary value given by the grid reset. */
+    if (pair.second.m > 0.0) {
+      EXPECT_TRUE(CompareMatrices(pair.second.v, Vector3<T>(10.0, 0.0, 0.0)));
+      EXPECT_EQ(pair.second.m, 1.0);
+    } else {
+      EXPECT_TRUE(CompareMatrices(pair.second.v, Vector3<T>(-1.0, -1.0, -1.0)));
+      EXPECT_EQ(pair.second.m, -1.0);
     }
   }
 }

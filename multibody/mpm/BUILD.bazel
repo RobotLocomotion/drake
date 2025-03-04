@@ -103,6 +103,7 @@ drake_cc_library_linux_only(
     deps = [
         ":grid_data",
         ":mass_and_momentum",
+        ":particle_data",
         ":particle_sorter",
         ":spgrid",
     ],
@@ -166,8 +167,11 @@ drake_cc_googletest_linux_only(
     deps = [
         ":bspline_weights",
         ":grid_data",
+        ":particle_data",
         ":particle_sorter",
+        ":sparse_grid",
         ":spgrid",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
