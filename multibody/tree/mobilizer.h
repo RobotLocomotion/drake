@@ -619,6 +619,8 @@ class Mobilizer : public MultibodyElement<T> {
   // @param[in] vdot 1ˢᵗ time derivatives of generalized velocities (v̇).
   // @param[out] qddot 2ⁿᵈ time derivatives of the generalized positions (q̈).
   // Note: Generalized positions and velocities are stored in `context`.
+  // TODO(Mitiguy) change this function to a pure virtual function when it has
+  //  been overridden in all subclasses.
   virtual void MapVelocityDotToQDDot(const systems::Context<T>& context,
                                      const Eigen::Ref<const VectorX<T>>& vdot,
                                      EigenPtr<VectorX<T>> qddot) const;
@@ -627,6 +629,8 @@ class Mobilizer : public MultibodyElement<T> {
   // @param[in] qddot 2ⁿᵈ time derivatives of the generalized positions (q̈).
   // @param[out] vdot 1ˢᵗ time derivatives of generalized velocities (v̇).
   // Note: Generalized positions and velocities are stored in `context`.
+  // TODO(Mitiguy) change this function to a pure virtual function when it has
+  //  been overridden in all subclasses.
   virtual void MapQDDotToVelocityDot(const systems::Context<T>& context,
                                      const Eigen::Ref<const VectorX<T>>& qddot,
                                      EigenPtr<VectorX<T>> v) const;
