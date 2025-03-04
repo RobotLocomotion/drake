@@ -532,10 +532,56 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
     MaybePauseForUser();
   }
 
+  // Another version of the test, adding the additional constraint that
+  // x <= -0.3.
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(2, "q");
+  Eigen::RowVectorXd a(2);
+  a << 1, 0;
+  double lb = -std::numeric_limits<double>::infinity();
+  double ub = -0.3;
+  prog.AddLinearConstraint(a, lb, ub, q);
+  options.prog_with_additional_constraints = &prog;
+  options.max_iterations = 1;
+  options.max_iterations_separating_planes = 1;
+  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
+
+  // Due to the configuration space margin, this point can never be in the
+  // region.
+  Vector2d query_point_not_in_set(-0.29, 0.0);
+  Vector2d query_point_in_set(-0.31, 0.0);
+  EXPECT_FALSE(region.PointInSet(query_point_not_in_set));
+  EXPECT_TRUE(region.PointInSet(query_point_in_set));
+
+  {
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    MaybePauseForUser();
+  }
+
+  // If we have a containment point violating this constraint, IrisZo should
+  // throw. Three points are needed to ensure the center of the starting
+  // ellipsoid is within the convex hull of the points we must contain.
+  Eigen::Matrix2Xd single_containment_point(2, 3);
+  // clang-format off
+  single_containment_point << -0.2, -0.6, -0.6,
+                               0.0,  0.1, -0.1;
+  // clang-format on
+  options.containment_points = single_containment_point;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options),
+      ".*containment points violates a constraint.*");
+  options.containment_points = std::nullopt;
+
   // We now test an example of a region grown along a subspace.
   options.set_parameterization(
-      [](const Vector1d& q) -> Vector2d {
-        return Vector2d{q[0], 2 * q[0] + 1};
+      [](const Vector1d& config) -> Vector2d {
+        return Vector2d{config[0], 2 * config[0] + 1};
       },
       /* parameterization_is_threadsafe */ true,
       /* parameterization_dimension */ 1);
@@ -544,6 +590,15 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   // This domain matches the "x" dimension of C-space, so the region generated
   // will respect the joint limits.
   HPolyhedron domain = HPolyhedron::MakeBox(Vector1d(-1.5), Vector1d(0));
+
+  // Since we have a parameterization, the prog with additional constraints will
+  // have the wrong dimension. We expect an error message.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain),
+      ".*num_vars.*parameterized_dimension.*");
+
+  // Reset the parameterization, and now generate the region.
+  options.prog_with_additional_constraints = nullptr;
   region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain);
 
   EXPECT_EQ(region.ambient_dimension(), 1);
