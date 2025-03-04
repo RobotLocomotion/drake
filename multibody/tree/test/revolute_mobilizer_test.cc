@@ -34,6 +34,8 @@ class RevoluteMobilizerTest : public MobilizerTester {
         std::make_unique<RevoluteJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame(),
             axis_F_));
+    // Mobilizers are always ephemeral (i.e. not added by user).
+    EXPECT_TRUE(mobilizer_->is_ephemeral());
     mutable_mobilizer_ = const_cast<RevoluteMobilizer<double>*>(mobilizer_);
   }
 
