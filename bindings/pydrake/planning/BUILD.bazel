@@ -51,6 +51,7 @@ drake_pybind_library(
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/multibody:rational_py",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:primitives_py",
         "//bindings/pydrake/solvers",

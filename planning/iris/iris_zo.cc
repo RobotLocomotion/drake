@@ -6,6 +6,9 @@
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/expression/environment.h"
+#include "drake/common/symbolic/expression/variable.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -29,6 +32,85 @@ using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::VPolytope;
 using math::RigidTransform;
 using solvers::MathematicalProgram;
+
+IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
+    const multibody::RationalForwardKinematics* kin,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
+  const int dimension = kin->plant().num_positions();
+  DRAKE_DEMAND(dimension > 0);
+  IrisZoOptions instance;
+
+  auto evaluate_s_to_q = [kin, q_star_captured = Eigen::VectorXd(q_star_val)](
+                             const Eigen::VectorXd& s_val) {
+    return kin->ComputeQValue(s_val, q_star_captured);
+  };
+
+  instance.set_parameterization(evaluate_s_to_q,
+                                /* parameterization_is_threadsafe */ true,
+                                /* parameterization_dimension */ dimension);
+  return instance;
+}
+
+void IrisZoOptions::SetParameterizationFromExpression(
+    const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
+    const std::shared_ptr<Eigen::VectorX<symbolic::Variable>> variables) {
+  DRAKE_THROW_UNLESS(variables != nullptr);
+
+  // First, we check that the variables in expression_parameterization match the
+  // user-supplied variables.
+  symbolic::Variables expression_variables, user_supplied_variables;
+  for (const auto& expression : expression_parameterization) {
+    expression_variables.insert(expression.GetVariables());
+  }
+  user_supplied_variables.insert(variables->begin(), variables->end());
+  DRAKE_THROW_UNLESS(ssize(expression_variables) ==
+                     ssize(user_supplied_variables));
+  int dimension = ssize(expression_variables);
+
+  // If the size of the two Variables objects match, it's sufficient to check
+  // that each variable in expression_variables is also contained in
+  // user_supplied_variables.
+  for (const auto& variable : expression_variables) {
+    DRAKE_THROW_UNLESS(user_supplied_variables.include(variable));
+  }
+
+  // Note that in this lambda, we copy the shared_ptr variables, ensuring that
+  // variables is kept alive without making a copy of the individual Variable
+  // objects (which would break the substitution machinery).
+  auto evaluate_expression = [expression_parameterization_captured =
+                                  Eigen::VectorX<symbolic::Expression>(
+                                      expression_parameterization),
+                              variables](const Eigen::VectorXd& q) {
+    DRAKE_THROW_UNLESS(variables != nullptr);
+    DRAKE_THROW_UNLESS(q.size() == ssize(*variables));
+    symbolic::Environment env;
+    for (int i = 0; i < q.size(); ++i) {
+      env.insert((*variables)[i], q[i]);
+    }
+    DRAKE_THROW_UNLESS(
+        *(expression_parameterization_captured[0].GetVariables().begin()) ==
+        (*variables)[0]);
+    DRAKE_THROW_UNLESS(
+        env.find(*(
+            expression_parameterization_captured[0].GetVariables().begin())) !=
+        env.end());
+    for (const auto& expression : expression_parameterization_captured) {
+      for (const auto& variable : expression.GetVariables()) {
+        DRAKE_THROW_UNLESS(env.find(variable) != env.end());
+      }
+    }
+    Eigen::VectorXd out =
+        Eigen::VectorXd::Zero(expression_parameterization_captured.size());
+    for (int i = 0; i < out.size(); ++i) {
+      out[i] = expression_parameterization_captured[i].Evaluate(env);
+    }
+    return out;
+  };
+
+  set_parameterization(evaluate_expression,
+                       /* parameterization_is_threadsafe */ true,
+                       /* parameterization_dimension */ dimension);
+}
 
 namespace {
 
