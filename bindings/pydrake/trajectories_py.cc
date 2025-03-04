@@ -12,6 +12,7 @@
 #include "drake/common/trajectories/bspline_trajectory.h"
 #include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/derivative_trajectory.h"
+#include "drake/common/trajectories/discrete_time_trajectory.h"
 #include "drake/common/trajectories/exponential_plus_piecewise_polynomial.h"
 #include "drake/common/trajectories/function_handle_trajectory.h"
 #include "drake/common/trajectories/path_parameterized_trajectory.h"
@@ -712,6 +713,26 @@ struct Impl {
                 return CompositeTrajectory<T>::AlignAndConcatenate(segments);
               },
               py::arg("segments"), cls_doc.AlignAndConcatenate.doc);
+      DefCopyAndDeepCopy(&cls);
+    }
+
+    {
+      using Class = DiscreteTimeTrajectory<T>;
+      constexpr auto& cls_doc = doc.DiscreteTimeTrajectory;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "DiscreteTimeTrajectory", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init<std::vector<T>, std::vector<MatrixX<T>>, double>(),
+              py::arg("times"), py::arg("values"),
+              py::arg("time_comparison_tolerance") =
+                  std::numeric_limits<double>::epsilon(),
+              cls_doc.ctor.doc_stdvector)
+          .def("ToZeroOrderHold", &Class::ToZeroOrderHold,
+              cls_doc.ToZeroOrderHold.doc)
+          .def("time_comparison_tolerance", &Class::time_comparison_tolerance,
+              cls_doc.time_comparison_tolerance.doc)
+          .def("num_times", &Class::num_times, cls_doc.num_times.doc)
+          .def("get_times", &Class::get_times, cls_doc.get_times.doc);
       DefCopyAndDeepCopy(&cls);
     }
 
