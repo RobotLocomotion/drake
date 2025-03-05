@@ -1026,9 +1026,10 @@ class MujocoParser {
       }
       SpatialInertia<double> M_GGo_G(mass, p_GoGcm_G, G_GGo_G,
                                      /*skip_validity_check=*/true);
-      if (!M_GGo_G.IsPhysicallyValid()) {
-        Error(*node, fmt::format("geom {} {}", geom.name,
-                                 M_GGo_G.CriticizeNotPhysicallyValid()));
+      std::optional<std::string> invalidity_report =
+          M_GGo_G.CreateInvalidityReport();
+      if (invalidity_report.has_value()) {
+        Error(*node, fmt::format("geom {} {}", geom.name, *invalidity_report));
         return geom;
       }
 

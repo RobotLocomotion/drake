@@ -25,7 +25,11 @@ void DefineSensorsCameraConfig(py::module m) {
     py::class_<CameraConfig::FovDegrees> fov_class(
         config_cls, "FovDegrees", fov_degrees_doc.doc);
     fov_class  // BR
-        .def(ParamInit<CameraConfig::FovDegrees>());
+        .def(ParamInit<CameraConfig::FovDegrees>())
+        .def("focal_x", &CameraConfig::FovDegrees::focal_x, py::arg("width"),
+            py::arg("height"), fov_degrees_doc.focal_x.doc)
+        .def("focal_y", &CameraConfig::FovDegrees::focal_y, py::arg("width"),
+            py::arg("height"), fov_degrees_doc.focal_y.doc);
     DefAttributesUsingSerialize(&fov_class, fov_degrees_doc);
     DefReprUsingSerialize(&fov_class);
     DefCopyAndDeepCopy(&fov_class);
@@ -35,7 +39,11 @@ void DefineSensorsCameraConfig(py::module m) {
     py::class_<CameraConfig::FocalLength> focal_class(
         config_cls, "FocalLength", focal_doc.doc);
     focal_class  // BR
-        .def(ParamInit<CameraConfig::FocalLength>());
+        .def(ParamInit<CameraConfig::FocalLength>())
+        .def("focal_x", &CameraConfig::FocalLength::focal_x,
+            focal_doc.focal_x.doc)
+        .def("focal_y", &CameraConfig::FocalLength::focal_y,
+            focal_doc.focal_y.doc);
     DefAttributesUsingSerialize(&focal_class, focal_doc);
     DefReprUsingSerialize(&focal_class);
     DefCopyAndDeepCopy(&focal_class);

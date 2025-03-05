@@ -194,10 +194,10 @@ CalcSpatialInertiaResult CalcSpatialInertiaImpl(
 
   auto result = SpatialInertia<double>{mass, p_GoGcm, G_GGo_G,
                                        /* skip_validity_check = */ true};
-  std::string message = result.CriticizeNotPhysicallyValid();
-  if (!message.empty()) {
-    return message;
-  }
+  std::optional<std::string> invalidity_report =
+      result.CreateInvalidityReport();
+  if (invalidity_report.has_value()) return *invalidity_report;
+
   return result;
 }
 
