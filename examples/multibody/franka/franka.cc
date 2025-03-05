@@ -29,6 +29,8 @@
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_gflags.h"
 #include "drake/systems/analysis/simulator_print_stats.h"
+#include "drake/systems/controllers/inverse_dynamics_controller.h"
+#include "drake/systems/controllers/joint_stiffness_controller.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
@@ -74,7 +76,12 @@ DEFINE_bool(full_newton, false, "Update Jacobian every iteration.");
 DEFINE_bool(save_csv, false, "Save CSV data for the convex integrator.");
 DEFINE_bool(trapezoid, false, "Implicit trapezoid rule for error estimation.");
 
-// PID controller parameters
+// Which controller to use
+DEFINE_string(
+    controller, "pid",
+    "Controller type: 'pid', 'inverse_dynamics', or 'joint_stiffness'.");
+
+// PID controller gains
 DEFINE_double(kp, 500, "Proportional gain for PID controller.");
 DEFINE_double(kd, 50, "Derivative gain for PID controller.");
 DEFINE_double(ki, 10, "Integral gain for PID controller.");
@@ -93,6 +100,8 @@ using drake::systems::ConstantVectorSource;
 using drake::systems::ConvexIntegrator;
 using drake::systems::ImplicitEulerIntegrator;
 using drake::systems::IntegratorBase;
+using drake::systems::controllers::InverseDynamicsController;
+using drake::systems::controllers::JointStiffnessController;
 using drake::systems::controllers::PidController;
 using Eigen::MatrixXd;
 using Eigen::Translation3d;
@@ -128,8 +137,9 @@ int do_main() {
 
   // Add the franka arm model
   multibody::Parser parser(&plant);
-  parser.AddModelsFromUrl(
-      "package://drake_models/franka_description/urdf/panda_arm_hand.urdf");
+  const std::string panda_url =
+      "package://drake_models/franka_description/urdf/panda_arm_hand.urdf";
+  parser.AddModelsFromUrl(panda_url);
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("panda_link0"));
 
   // Add an object to hold, if requested
@@ -158,14 +168,14 @@ int do_main() {
   VectorXd x_nom(plant.num_multibody_states());
 
   if (FLAGS_manipuland) {
-    q_nom << 0, 0, 0, -M_PI_2, 0, M_PI_2, M_PI_4, 0.01, 0.01,  // robot
-        0.707, 0.707, 0, 0, 0.55, 0.0, 0.43;                   // box
+    q_nom << 0, -0.4, 0.5, -M_PI_2, 0, M_PI_2, M_PI_4, 0.01, 0.01,  // robot
+        0.707, 0.707, 0, 0, 0.55, 0.0, 0.43;                        // box
   } else {
-    q_nom << 0, 0, 0, -M_PI_2, 0, M_PI_2, 0, 0.01, 0.01;
+    q_nom << 0, -0.4, 0.5, -M_PI_2, 0, M_PI_2, 0, 0.01, 0.01;
   }
   x_nom << q_nom, VectorXd::Zero(plant.num_velocities());
 
-  // Add a PID controller
+  // Set controller gains
   MatrixXd Px = MatrixXd::Identity(plant.num_multibody_states(),
                                    plant.num_multibody_states());
 
@@ -177,23 +187,64 @@ int do_main() {
   }
 
   VectorXd Kp(9), Kd(9), Ki(9);
-  Kp << FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp, FLAGS_kp,
-      0.2 * FLAGS_kp, 0.2 * FLAGS_kp;
-  Kd << FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd, FLAGS_kd,
-      0.2 * FLAGS_kd, 0.2 * FLAGS_kd;
-  Ki << FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki, FLAGS_ki,
-      0.2 * FLAGS_ki, 0.2 * FLAGS_ki;
+  Kp.fill(FLAGS_kp);
+  Kd.fill(FLAGS_kd);
+  Ki.fill(FLAGS_ki);
 
-  auto pid_controller = builder.AddSystem<PidController>(Px, Kp, Ki, Kd);
+  // System than outputs desired joint positions and velocities
   auto nominal_state_source =
       builder.AddSystem<ConstantVectorSource>(Px * x_nom);
 
-  builder.Connect(nominal_state_source->get_output_port(),
-                  pid_controller->get_input_port_desired_state());
-  builder.Connect(plant.get_state_output_port(),
-                  pid_controller->get_input_port_estimated_state());
-  builder.Connect(pid_controller->get_output_port_control(),
-                  plant.get_actuation_input_port());
+  // Set up a simplified plant model for the controller, which does not include
+  // the manipuland.
+  MultibodyPlant<double> control_plant(1.0);
+  Parser(&control_plant).AddModelsFromUrl(panda_url);
+  control_plant.WeldFrames(control_plant.world_frame(),
+                           control_plant.GetFrameByName("panda_link0"));
+  control_plant.Finalize();
+
+  // Select the model instance for the franka itself, which we'll use to get the
+  // state of the robot but not the manipuland.
+  ModelInstanceIndex robot = plant.GetModelInstanceByName("panda");
+
+  // Create and connect the controller
+  if (FLAGS_controller == "pid") {
+    auto controller = builder.AddSystem<PidController>(Px, Kp, Ki, Kd);
+
+    builder.Connect(nominal_state_source->get_output_port(),
+                    controller->get_input_port_desired_state());
+    builder.Connect(plant.get_state_output_port(),
+                    controller->get_input_port_estimated_state());
+    builder.Connect(controller->get_output_port_control(),
+                    plant.get_actuation_input_port());
+
+  } else if (FLAGS_controller == "inverse_dynamics") {
+    auto controller = builder.AddSystem<InverseDynamicsController>(
+        control_plant, Kp, Ki, Kd, false);
+
+    builder.Connect(nominal_state_source->get_output_port(),
+                    controller->get_input_port_desired_state());
+    builder.Connect(plant.get_state_output_port(robot),
+                    controller->get_input_port_estimated_state());
+    builder.Connect(controller->get_output_port_control(),
+                    plant.get_actuation_input_port());
+
+  } else if (FLAGS_controller == "joint_stiffness") {
+    auto controller =
+        builder.AddSystem<JointStiffnessController>(control_plant, Kp, Kd);
+
+    builder.Connect(nominal_state_source->get_output_port(),
+                    controller->get_input_port_desired_state());
+    builder.Connect(plant.get_state_output_port(robot),
+                    controller->get_input_port_estimated_state());
+    builder.Connect(controller->get_output_port_actuation(),
+                    plant.get_actuation_input_port());
+
+  } else {
+    throw std::runtime_error(
+        "Unknown controller, options are 'pid', 'inverse_dynamics', and "
+        "'joint_stiffness'");
+  }
 
   auto diagram = builder.Build();
 
@@ -207,6 +258,8 @@ int do_main() {
 
   // Set initial condition. The gripper is open a bit wider than in q_nom
   VectorXd q_init = q_nom;
+  q_init(1) = 0.0;
+  q_init(2) = 0.0;
   q_init(7) = 0.035;
   q_init(8) = 0.035;
   plant.SetPositions(&plant_context, q_init);
