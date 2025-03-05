@@ -862,11 +862,26 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   MultibodyForces<T>& f_ext = *workspace_.f_ext;
   VectorX<T>& v_star = workspace_.v_star;
 
+  // Linearization of external controller, u = K v + u0
+  // TODO(vincekurtz): pre-allocate these
+  const int nu = plant().num_actuators();
+  const int nv = plant().num_velocities();
+  MatrixX<T> B = plant().MakeActuationMatrix();
+  MatrixX<T> K(nu, nv);
+  VectorX<T> u0(nu);
+
+  if (nu > 0) {
+    // Only do the linearization if a controller is connected
+    LinearizeExternalSystem(h, &K, &u0);
+
+    // TODO(vincekurtz): ensure BK is symmetric negative definite
+  }
+
   // linearized dynamics matrix A = M + hD - h B K
   plant().CalcMassMatrix(context, &M);
   A_dense = M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
-  // TODO(vincekurtz): add external system implicit dynamics
+  A_dense -= h * B * K;
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
@@ -878,11 +893,7 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // TODO(vincekurtz): consider using a sparse solve here
   // TODO(vincekurtz): include external generalized and spatial forces
   plant().CalcForceElementsContribution(context, &f_ext);
-  if (plant().num_actuators() > 0) {
-    f_ext.mutable_generalized_forces() +=
-        plant().MakeActuationMatrix() *
-        plant().get_actuation_input_port().Eval(context);
-  }
+  f_ext.mutable_generalized_forces() += B * u0;
 
   k = plant().CalcInverseDynamics(
       context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
