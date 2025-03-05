@@ -878,7 +878,13 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
     // Only do the linearization if a controller is connected
     LinearizeExternalSystem(h, &K, &u0);
     A_tilde = - h * B * K;
-    // TODO(vincekurtz): ensure A_tilde is SPD
+
+    // Ensure A_tilde is SPD
+    A_tilde = 0.5 * (A_tilde + A_tilde.transpose());
+    const Eigen::SelfAdjointEigenSolver<MatrixX<T>> solver(A_tilde);
+    const MatrixX<T> Q = solver.eigenvectors();
+    const VectorX<T> D = solver.eigenvalues();
+    A_tilde = Q * D.cwiseMax(0).asDiagonal() * Q.transpose();
 
   } else {
     A_tilde.setZero();
