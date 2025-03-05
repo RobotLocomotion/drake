@@ -1,4 +1,5 @@
 load("@drake//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 
 # Note that we do NOT install a LICENSE file as part of the Drake install
 # because this repository is required only when building and testing with
@@ -6,7 +7,10 @@ load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def rules_rust_tinyjson_repository(
         name,
-        mirrors = None):
+        mirrors = None,
+        _is_drake_self_call = False):
+    if not _is_drake_self_call:
+        print_warning("rules_rust_tinyjson_repository")
     github_archive(
         name = name,
         repository = "rhysd/tinyjson",  # License: Apache-2.0

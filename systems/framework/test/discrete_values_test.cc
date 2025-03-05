@@ -35,11 +35,11 @@ class DiscreteValuesTest : public ::testing::Test {
   }
 
  protected:
-  const VectorXd v00_ = Vector2d{1., 1.},
-                 v01_ = Vector2d{2., 3.},
-                 v10_ = Vector3d{9., 10., 11.},
-                 v11_ = Vector3d{-1.25, -2.5, -3.75},
-                 v12_ = Vector2d{5., 6.};
+  const VectorXd v00_ = Vector2d{1.0, 1.0};
+  const VectorXd v01_ = Vector2d{2.0, 3.0};
+  const VectorXd v10_ = Vector3d{9.0, 10.0, 11.0};
+  const VectorXd v11_ = Vector3d{-1.25, -2.5, -3.75};
+  const VectorXd v12_ = Vector2d{5.0, 6.0};
   std::vector<std::unique_ptr<BasicVector<double>>> data_;
   std::vector<std::unique_ptr<BasicVector<double>>> data1_;
 };
@@ -86,7 +86,7 @@ TEST_F(DiscreteValuesTest, AppendGroup) {
 TEST_F(DiscreteValuesTest, NoNullsAllowed) {
   // Unowned.
   EXPECT_THROW(DiscreteValues<double>(
-      std::vector<BasicVector<double>*>{nullptr, data_[1].get()}),
+                   std::vector<BasicVector<double>*>{nullptr, data_[1].get()}),
                std::logic_error);
   // Owned.
   data_.push_back(nullptr);
@@ -121,8 +121,7 @@ TEST_F(DiscreteValuesTest, Clone) {
 }
 
 TEST_F(DiscreteValuesTest, SetFrom) {
-  DiscreteValues<double> dut_double(
-      BasicVector<double>::Make({1.0, 2.0}));
+  DiscreteValues<double> dut_double(BasicVector<double>::Make({1.0, 2.0}));
   DiscreteValues<AutoDiffXd> dut_autodiff(
       BasicVector<AutoDiffXd>::Make({3.0, 4.0}));
   DiscreteValues<symbolic::Expression> dut_symbolic(
@@ -156,9 +155,8 @@ TEST_F(DiscreteValuesTest, SetFrom) {
 
   // If there was an unbound variable, we get an exception.
   dut_symbolic.get_mutable_vector(0)[0] = symbolic::Variable("x");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dut_double.SetFrom(dut_symbolic),
-      ".*variable x.*\n*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut_double.SetFrom(dut_symbolic),
+                              ".*variable x.*\n*");
 }
 
 // Tests that the convenience accessors for a DiscreteValues that contains

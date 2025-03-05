@@ -30,17 +30,13 @@ constexpr double kTime = 12.0;
 
 class SystemWithDiscreteState : public LeafSystem<double> {
  public:
-  SystemWithDiscreteState() {
-    DeclareDiscreteState(1);
-  }
+  SystemWithDiscreteState() { DeclareDiscreteState(1); }
   ~SystemWithDiscreteState() override {}
 };
 
 class SystemWithAbstractState : public LeafSystem<double> {
  public:
-  SystemWithAbstractState() {
-    DeclareAbstractState(Value<int>(42));
-  }
+  SystemWithAbstractState() { DeclareAbstractState(Value<int>(42)); }
   ~SystemWithAbstractState() override {}
 };
 
@@ -54,9 +50,7 @@ class SystemWithNumericParameters : public LeafSystem<double> {
 
 class SystemWithAbstractParameters : public LeafSystem<double> {
  public:
-  SystemWithAbstractParameters() {
-    DeclareAbstractParameter(Value<int>(2048));
-  }
+  SystemWithAbstractParameters() { DeclareAbstractParameter(Value<int>(2048)); }
   ~SystemWithAbstractParameters() override {}
 };
 
@@ -152,10 +146,10 @@ class DiagramContextTest : public ::testing::Test {
   }
 
   void AttachInputPorts() {
-    context_->FixInputPort(0, Value<BasicVector<double>>(
-                                  Vector1<double>(128.0)));
-    context_->FixInputPort(1, Value<BasicVector<double>>(
-                                  Vector1<double>(256.0)));
+    context_->FixInputPort(0,
+                           Value<BasicVector<double>>(Vector1<double>(128.0)));
+    context_->FixInputPort(1,
+                           Value<BasicVector<double>>(Vector1<double>(256.0)));
   }
 
   // Reads a FixedInputPortValue connected to @p context at @p index.
@@ -166,7 +160,6 @@ class DiagramContextTest : public ::testing::Test {
         context.MaybeGetFixedInputPortValue(InputPortIndex(index));
     return free_value ? &free_value->get_vector_value<double>() : nullptr;
   }
-
 
   // Check that time is set as expected in the Diagram and all the subcontexts.
   void VerifyTimeValue(double expected_time) {
@@ -240,8 +233,8 @@ class DiagramContextTest : public ::testing::Test {
     for (int i = 0; i <= kNumSystems; ++i) {
       const int n = should_have_been_notified.contains(i) ? 1 : 0;
       (*before_count)[i] += n;
-      EXPECT_EQ(count_now[i], (*before_count)[i]) << which << " of system "
-                                                  << i;
+      EXPECT_EQ(count_now[i], (*before_count)[i])
+          << which << " of system " << i;
     }
   }
 
@@ -259,8 +252,8 @@ class DiagramContextTest : public ::testing::Test {
   static int64_t NumNotifications(const ContextBase& context,
                                   DependencyTicket ticket) {
     const auto& tracker = context.get_tracker(ticket);
-    return tracker.num_notifications_received()
-        - tracker.num_ignored_notifications();
+    return tracker.num_notifications_received() -
+           tracker.num_ignored_notifications();
   }
 
   std::unique_ptr<DiagramContext<double>> context_;
@@ -402,8 +395,8 @@ TEST_F(DiagramContextTest, MutableStateNotifications) {
   // Make sure state got delivered to the integrators.
   VerifyContinuousStateValue(new_xc2);
   // Make sure notifications got delivered.
-  VerifyNotifications("SetTimeAndContinuousState: t",
-                      SystemBase::time_ticket(), &t_before);
+  VerifyNotifications("SetTimeAndContinuousState: t", SystemBase::time_ticket(),
+                      &t_before);
   VerifyNotifications("SetTimeAndContinuousState: x", has_continuous_state(),
                       SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("SetTimeAndContinuousState: xc", has_continuous_state(),
@@ -428,8 +421,8 @@ TEST_F(DiagramContextTest, MutableStateNotifications) {
 
   context_->get_mutable_discrete_state_vector();  // Return value ignored.
   VerifyNotifications("get_mutable_discrete_state_vector: x",
-                      has_discrete_state(),
-                      SystemBase::all_state_ticket(), &x_before);
+                      has_discrete_state(), SystemBase::all_state_ticket(),
+                      &x_before);
   VerifyNotifications("get_mutable_discrete_state_vector: xd",
                       has_discrete_state(), SystemBase::xd_ticket(),
                       &xd_before);
@@ -473,8 +466,7 @@ TEST_F(DiagramContextTest, MutableStateNotifications) {
 }
 
 TEST_F(DiagramContextTest, MutableParameterNotifications) {
-  auto p_before =
-      SaveNotifications(SystemBase::all_parameters_ticket());
+  auto p_before = SaveNotifications(SystemBase::all_parameters_ticket());
   auto pn_before = SaveNotifications(SystemBase::pn_ticket());
   auto pa_before = SaveNotifications(SystemBase::pa_ticket());
 
@@ -495,8 +487,8 @@ TEST_F(DiagramContextTest, MutableParameterNotifications) {
                       has_numeric_parameter(),
                       SystemBase::all_parameters_ticket(), &p_before);
   VerifyNotifications("get_mutable_numeric_parameter(0): pn",
-                      has_numeric_parameter(),
-                      SystemBase::pn_ticket(), &pn_before);
+                      has_numeric_parameter(), SystemBase::pn_ticket(),
+                      &pn_before);
   VerifyNotifications("get_mutable_numeric_parameter(0): pa", {},  // None.
                       SystemBase::pa_ticket(), &pa_before);
 
@@ -505,8 +497,8 @@ TEST_F(DiagramContextTest, MutableParameterNotifications) {
                       has_abstract_parameter(),
                       SystemBase::all_parameters_ticket(), &p_before);
   VerifyNotifications("get_mutable_abstract_parameter(0): pa",
-                      has_abstract_parameter(),
-                      SystemBase::pa_ticket(), &pa_before);
+                      has_abstract_parameter(), SystemBase::pa_ticket(),
+                      &pa_before);
   VerifyNotifications("get_mutable_abstract_parameter(0): pn", {},  // None.
                       SystemBase::pn_ticket(), &pn_before);
 }
@@ -537,8 +529,7 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
 
   auto t_before = SaveNotifications(SystemBase::time_ticket());
   auto a_before = SaveNotifications(SystemBase::accuracy_ticket());
-  auto p_before =
-      SaveNotifications(SystemBase::all_parameters_ticket());
+  auto p_before = SaveNotifications(SystemBase::all_parameters_ticket());
   auto pn_before = SaveNotifications(SystemBase::pn_ticket());
   auto pa_before = SaveNotifications(SystemBase::pa_ticket());
   auto x_before = SaveNotifications(SystemBase::all_state_ticket());
@@ -556,20 +547,25 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
   // Check that non-continuous states and parameter got set in diagram and
   // subcontext that has the resource.
   EXPECT_EQ(context_->get_discrete_state_vector()[0], new_xd);
-  EXPECT_EQ(context_->GetSubsystemContext(SubsystemIndex(4))  // discrete state
+  EXPECT_EQ(context_
+                ->GetSubsystemContext(SubsystemIndex(4))  // discrete state
                 .get_discrete_state_vector()[0],
             new_xd);
   EXPECT_EQ(context_->get_abstract_state<int>(0), new_xa);
-  EXPECT_EQ(context_->GetSubsystemContext(SubsystemIndex(5))  // abstract state
+  EXPECT_EQ(context_
+                ->GetSubsystemContext(SubsystemIndex(5))  // abstract state
                 .get_abstract_state<int>(0),
             new_xa);
   EXPECT_EQ(context_->get_numeric_parameter(0)[0], new_pn);
-  EXPECT_EQ(context_->GetSubsystemContext(SubsystemIndex(6))  // numeric param.
+  EXPECT_EQ(context_
+                ->GetSubsystemContext(SubsystemIndex(6))  // numeric param.
                 .get_numeric_parameter(0)[0],
             new_pn);
   EXPECT_EQ(context_->get_abstract_parameter(0).get_value<int>(), new_pa);
-  EXPECT_EQ(context_->GetSubsystemContext(SubsystemIndex(7))  // abstract param.
-                .get_abstract_parameter(0).get_value<int>(),
+  EXPECT_EQ(context_
+                ->GetSubsystemContext(SubsystemIndex(7))  // abstract param.
+                .get_abstract_parameter(0)
+                .get_value<int>(),
             new_pa);
 
   VerifyNotifications("SetTimeStateAndParametersFrom: t",
@@ -577,14 +573,13 @@ TEST_F(DiagramContextTest, MutableEverythingNotifications) {
   VerifyNotifications("SetTimeStateAndParametersFrom: a",
                       SystemBase::accuracy_ticket(), &a_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: p", has_parameter(),
-                      SystemBase::all_parameters_ticket(),
-                      &p_before);
+                      SystemBase::all_parameters_ticket(), &p_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: pn",
-                      has_numeric_parameter(),
-                      SystemBase::pn_ticket(), &pn_before);
+                      has_numeric_parameter(), SystemBase::pn_ticket(),
+                      &pn_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: pa",
-                      has_abstract_parameter(),
-                      SystemBase::pa_ticket(), &pa_before);
+                      has_abstract_parameter(), SystemBase::pa_ticket(),
+                      &pa_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: x", has_state(),
                       SystemBase::all_state_ticket(), &x_before);
   VerifyNotifications("SetTimeStateAndParametersFrom: xc",
@@ -639,8 +634,8 @@ TEST_F(DiagramContextTest, State) {
 // Tests that the pointers to substates in the DiagramState are equal to the
 // substates in the subsystem contexts.
 TEST_F(DiagramContextTest, DiagramState) {
-  auto diagram_state = dynamic_cast<DiagramState<double>*>(
-      &context_->get_mutable_state());
+  auto diagram_state =
+      dynamic_cast<DiagramState<double>*>(&context_->get_mutable_state());
   ASSERT_NE(nullptr, diagram_state);
   for (SubsystemIndex i(0); i < kNumSystems; ++i) {
     EXPECT_EQ(&context_->GetMutableSubsystemContext(i).get_mutable_state(),

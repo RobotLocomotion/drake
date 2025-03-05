@@ -15,6 +15,32 @@ namespace manipulation {
 namespace schunk_wsg {
 namespace {
 
+GTEST_TEST(SchunkWsgTrajectoryGeneratorTest, DefaultPorts) {
+  SchunkWsgTrajectoryGenerator dut(1, 0);
+  EXPECT_EQ(dut.num_input_ports(), 3);
+  EXPECT_EQ(dut.num_output_ports(), 2);
+
+  EXPECT_EQ(dut.get_desired_position_input_port().get_name(),
+            "desired_position");
+  EXPECT_EQ(dut.get_force_limit_input_port().get_name(), "force_limit");
+  EXPECT_EQ(dut.get_state_input_port().get_name(), "u2");
+  EXPECT_EQ(dut.get_target_output_port().get_name(), "y0");
+  EXPECT_EQ(dut.get_max_force_output_port().get_name(), "y1");
+}
+
+GTEST_TEST(SchunkWsgTrajectoryGeneratorTest, NonForceLimitPorts) {
+  SchunkWsgTrajectoryGenerator dut(1, 0, /* use_force_limit = */ false);
+  EXPECT_EQ(dut.num_input_ports(), 2);
+  EXPECT_EQ(dut.num_output_ports(), 1);
+
+  EXPECT_EQ(dut.get_desired_position_input_port().get_name(),
+            "desired_position");
+  EXPECT_THROW(dut.get_force_limit_input_port(), std::exception);
+  EXPECT_EQ(dut.get_state_input_port().get_name(), "u2");
+  EXPECT_EQ(dut.get_target_output_port().get_name(), "y0");
+  EXPECT_THROW(dut.get_max_force_output_port(), std::exception);
+}
+
 GTEST_TEST(SchunkWsgTrajectoryGeneratorTest, BasicTest) {
   SchunkWsgTrajectoryGenerator dut(1, 0);
   std::unique_ptr<systems::Context<double>> context =

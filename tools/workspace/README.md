@@ -151,6 +151,9 @@ Once all upgrades are ready, open a Drake pull request and label it
 change the drop-down that says "Combine commits for review" to choose
 "Review each commit separately" instead.
 
+If any packages suggested that additional pre-merge testing is needed,
+launch jobs as specified in the output of ``new_release``.
+
 Once all of the Jenkins builds of the pull request have passed, assign the
 pull request for review. If the pull request contains no especially complicated
 changes, it may be assigned to the on-call platform reviewer and labelled
@@ -296,8 +299,16 @@ stable, but dependencies that we compile from source code should be internal.
 If the new dependency should be in internal, name it like "foo_internal" (not
 just "foo") throughout all of the below.
 
-Referring to some new third-party software as "foo", the steps to incorporate
-it into Drake are roughly:
+When the software is available in the
+[Bazel Central Registry](https://registry.bazel.build/), we generally prefer to
+declare it as a `bazel_dep` in our `MODULE.bazel` file, even if we sometimes
+conditionally replace it with a Drake-specific build recipe. We don't yet have
+good documentation for how to add a `bazel_dep`, but hopefully the existing
+dependencies can serve as a starting point.
+
+Otherwise (for module extensions, not available in the Registry), for adopting
+new third-party software named "foo", the steps to incorporate it into Drake are
+roughly:
 
 - Create a new sub-directory `tools/workspace/foo`.
 - Create `tools/workspace/foo/BUILD.bazel` that calls `add_lint_tests()`.

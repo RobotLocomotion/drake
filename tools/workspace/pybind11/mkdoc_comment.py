@@ -527,6 +527,7 @@ def reflow(s):
         "cpp": "c++",
         "python": "python",
         "py": "python",
+        "txt": "txt",
         "yaml": "yaml",
     }
 

@@ -235,10 +235,14 @@ class TestSensors(unittest.TestCase):
         self.assertIsInstance(depth, DepthRenderCamera)
 
         fov = mut.CameraConfig.FovDegrees(x=10, y=20)
+        fov.focal_x(width=64, height=48)
+        fov.focal_y(width=64, height=48)
         self.assertIn("x=10", repr(fov))
         copy.copy(fov)
 
         focal = mut.CameraConfig.FocalLength(x=10, y=20)
+        focal.focal_x()
+        focal.focal_y()
         self.assertIn("x=10", repr(focal))
         copy.copy(focal)
 

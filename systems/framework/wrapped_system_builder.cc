@@ -33,8 +33,7 @@ WrappedSystem<T>::WrappedSystem(std::shared_ptr<System<T>> system)
   builder.BuildInto(this);
 }
 
-template WrappedSystem<double>::WrappedSystem(
-    std::shared_ptr<System<double>>);
+template WrappedSystem<double>::WrappedSystem(std::shared_ptr<System<double>>);
 template WrappedSystem<AutoDiffXd>::WrappedSystem(
     std::shared_ptr<System<AutoDiffXd>>);
 template WrappedSystem<symbolic::Expression>::WrappedSystem(

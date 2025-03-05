@@ -54,9 +54,7 @@ class OwnedSystems {
   void push_back(std::shared_ptr<System<T>>&& sys) {
     vec_.push_back(std::move(sys));
   }
-  void pop_back() {
-    vec_.pop_back();
-  }
+  void pop_back() { vec_.pop_back(); }
 
  private:
   std::vector<std::shared_ptr<System<T>>> vec_;
@@ -186,22 +184,22 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// @pre The Scalar type of MyUntemplatizedSystem matches the %Diagram
   ///      Scalar type T (will fail to compile if not).
   template <class MyUntemplatizedSystem>
-  const MyUntemplatizedSystem& GetDowncastSubsystemByName(std::string_view name)
-      const {
-    static_assert(std::is_same_v<
-        typename MyUntemplatizedSystem::Scalar, T>,
+  const MyUntemplatizedSystem& GetDowncastSubsystemByName(
+      std::string_view name) const {
+    static_assert(
+        std::is_same_v<typename MyUntemplatizedSystem::Scalar, T>,
         "Scalar type of untemplatized System doesn't match the Diagram's.");
     const System<T>& subsystem = this->GetSubsystemByName(name);
-    return *dynamic_pointer_cast_or_throw<const MyUntemplatizedSystem>
-        (&subsystem);
+    return *dynamic_pointer_cast_or_throw<const MyUntemplatizedSystem>(
+        &subsystem);
   }
 
   /// Retrieves the state derivatives for a particular subsystem from the
   /// derivatives for the entire diagram. Aborts if @p subsystem is not
   /// actually a subsystem of this diagram. Returns a 0-length ContinuousState
   /// if @p subsystem has none.
-  const ContinuousState<T>& GetSubsystemDerivatives(const System<T>& subsystem,
-      const ContinuousState<T>& derivatives) const;
+  const ContinuousState<T>& GetSubsystemDerivatives(
+      const System<T>& subsystem, const ContinuousState<T>& derivatives) const;
 
   /// Retrieves the discrete state values for a particular subsystem from the
   /// discrete values for the entire diagram. Aborts if @p subsystem is not
@@ -214,8 +212,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// Returns the const subsystem composite event collection from @p events
   /// that corresponds to @p subsystem. Aborts if @p subsystem is not a
   /// subsystem of this diagram.
-  const CompositeEventCollection<T>&
-  GetSubsystemCompositeEventCollection(const System<T>& subsystem,
+  const CompositeEventCollection<T>& GetSubsystemCompositeEventCollection(
+      const System<T>& subsystem,
       const CompositeEventCollection<T>& events) const;
 
   /// Returns the mutable subsystem composite event collection that corresponds
@@ -301,14 +299,14 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// the ContinuousState pointers for the associated subsystem instead. Aborts
   /// if the subsystem is not part of this Diagram.
   void AddTriggeredWitnessFunctionToCompositeEventCollection(
-      Event<T>* event,
-      CompositeEventCollection<T>* events) const final;
+      Event<T>* event, CompositeEventCollection<T>* events) const final;
 
   /// Provides witness functions of subsystems that are active at the beginning
   /// of a continuous time interval. The vector of witness functions is not
   /// ordered in a particular manner.
-  void DoGetWitnessFunctions(const Context<T>& context,
-                std::vector<const WitnessFunction<T>*>* witnesses) const final;
+  void DoGetWitnessFunctions(
+      const Context<T>& context,
+      std::vector<const WitnessFunction<T>*>* witnesses) const final;
 
   /// Returns a pointer to const context if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
@@ -317,19 +315,18 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   /// Returns a pointer to mutable state if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
-  State<T>* DoGetMutableTargetSystemState(
-      const System<T>& target_system, State<T>* state) const final;
+  State<T>* DoGetMutableTargetSystemState(const System<T>& target_system,
+                                          State<T>* state) const final;
 
   /// Returns a pointer to const state if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
   const ContinuousState<T>* DoGetTargetSystemContinuousState(
-      const System<T>& target_system,
-      const ContinuousState<T>* xc) const final;
+      const System<T>& target_system, const ContinuousState<T>* xc) const final;
 
   /// Returns a pointer to const state if @p target_system is a subsystem
   /// of this, nullptr is returned otherwise.
-  const State<T>* DoGetTargetSystemState(
-      const System<T>& target_system, const State<T>* state) const final;
+  const State<T>* DoGetTargetSystemState(const System<T>& target_system,
+                                         const State<T>* state) const final;
 
   /// Returns a pointer to mutable composite event collection if
   /// @p target_system is a subsystem of this, nullptr is returned otherwise.
@@ -504,13 +501,11 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
       std::optional<PeriodicEventData>* timing,
       EventCollection<DiscreteUpdateEvent<T>>* events) const final;
 
-  void DoGetPeriodicEvents(
-      const Context<T>& context,
-      CompositeEventCollection<T>* events) const final;
+  void DoGetPeriodicEvents(const Context<T>& context,
+                           CompositeEventCollection<T>* events) const final;
 
-  void DoGetPerStepEvents(
-      const Context<T>& context,
-      CompositeEventCollection<T>* event_info) const final;
+  void DoGetPerStepEvents(const Context<T>& context,
+                          CompositeEventCollection<T>* event_info) const final;
 
   void DoGetInitializationEvents(
       const Context<T>& context,
@@ -627,7 +622,8 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   // For any T1 & T2, Diagram<T1> considers Diagram<T2> a friend, so that
   // Diagram can provide transmogrification methods across scalar types.
   // See Diagram<T>::ConvertScalarType.
-  template <typename> friend class Diagram;
+  template <typename>
+  friend class Diagram;
 };
 
 }  // namespace systems

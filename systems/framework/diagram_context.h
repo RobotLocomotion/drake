@@ -130,7 +130,7 @@ class DiagramContext final : public Context<T> {
 
  private:
   friend class DiagramContextTest;
-  using ContextBase::AddInputPort;    // For DiagramContextTest.
+  using ContextBase::AddInputPort;  // For DiagramContextTest.
   using ContextBase::AddOutputPort;
 
   std::unique_ptr<ContextBase> DoCloneWithoutPointers() const final;
@@ -142,9 +142,7 @@ class DiagramContext final : public Context<T> {
   std::string do_to_string() const final;
 
   // Returns the number of immediate child subcontexts in this DiagramContext.
-  int num_subcontexts() const {
-    return static_cast<int>(contexts_.size());
-  }
+  int num_subcontexts() const { return static_cast<int>(contexts_.size()); }
 
   const State<T>& do_access_state() const final {
     DRAKE_ASSERT(state_ != nullptr);
@@ -171,8 +169,7 @@ class DiagramContext final : public Context<T> {
       void (ContextBase::*note_bulk_change)(int64_t change_event)) final;
 
   // Recursively notifies subcontexts of some caching behavior change.
-  void DoPropagateCachingChange(
-      void (Cache::*caching_change)()) const final;
+  void DoPropagateCachingChange(void (Cache::*caching_change)()) const final;
 
   // For this method `this` is the source being copied into `clone`.
   void DoPropagateBuildTrackerPointerMap(

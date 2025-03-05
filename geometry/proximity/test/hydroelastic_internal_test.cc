@@ -582,11 +582,10 @@ TEST_F(HydroelasticRigidGeometryTest, Sphere) {
 // *right* representation.
 TEST_F(HydroelasticRigidGeometryTest, Box) {
   const double edge_len = 0.5;
-  // Pick a characteristic length *larger* than the box dimensions so that
-  // I only get 8 vertices - one at each corner. This is merely evidence that
-  // the box method is called -- we rely on tests of that functionality to
-  // create more elaborate meshes with smaller edge lengths.
-  ProximityProperties props = rigid_properties(1.5 * edge_len);
+  // Proximity properties can be empty. Currently rigid boxes do not need a
+  // resolution hint since we produce a coarse tesselation where each face is
+  // split into a fan of four triangles around the center of the face.
+  ProximityProperties props;  // empty.
 
   std::optional<RigidGeometry> box =
       MakeRigidRepresentation(Box(edge_len, edge_len, edge_len), props);
@@ -594,12 +593,17 @@ TEST_F(HydroelasticRigidGeometryTest, Box) {
   ASSERT_FALSE(box->is_half_space());
 
   const TriangleSurfaceMesh<double>& mesh = box->mesh();
-  EXPECT_EQ(mesh.num_vertices(), 8);
+  EXPECT_EQ(mesh.num_vertices(), 14);  // 8 corners + 6 face centers.
   // Because it is a cube centered at the origin, the distance from the origin
-  // to each vertex should be sqrt(3) * edge_len / 2.
-  const double expected_dist = std::sqrt(3) * edge_len / 2;
-  for (int v = 0; v < mesh.num_vertices(); ++v) {
-    ASSERT_NEAR(mesh.vertex(v).norm(), expected_dist, 1e-15);
+  // to each corner vertex should be sqrt(3) * edge_len / 2.
+  const double expected_corner_dist = std::sqrt(3) * edge_len / 2;
+  for (int v = 0; v < 8 /* only the first 8 */; ++v) {
+    ASSERT_NEAR(mesh.vertex(v).norm(), expected_corner_dist, 1e-15);
+  }
+
+  const double expected_face_dist = 0.25;
+  for (int v = 8; v < 14 /* only the face centers */; ++v) {
+    ASSERT_NEAR(mesh.vertex(v).norm(), expected_face_dist, 1e-15);
   }
 }
 
@@ -754,6 +758,10 @@ TEST_F(HydroelasticRigidGeometryTest, Mesh) {
   {
     SCOPED_TRACE("Rigid Mesh, on-disk obj");
     TestRigidMeshCube(Mesh(obj_path, kScale));
+  }
+  {
+    SCOPED_TRACE("Rigid Mesh, in-memory obj");
+    TestRigidMeshCube(Mesh(InMemoryMesh{MemoryFile::Make(obj_path)}, kScale));
   }
   {
     SCOPED_TRACE("Rigid Mesh, on-disk vtk");
@@ -1146,7 +1154,7 @@ TEST_F(HydroelasticSoftGeometryTest, Box) {
 
   // Smoke test the mesh and the pressure field. It relies on unit tests for
   // the generators of the mesh and the pressure field.
-  const int expected_num_vertices = 12;
+  const int expected_num_vertices = 18;
   EXPECT_EQ(box->mesh().num_vertices(), expected_num_vertices);
   const double E = properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e8);
   for (int v = 0; v < box->mesh().num_vertices(); ++v) {

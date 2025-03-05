@@ -103,24 +103,26 @@ class OutputPort : public OutputPortBase {
   }
   // With ValueType == AbstractValue, we don't need to downcast.
   template <typename ValueType, typename = std::enable_if_t<
-      std::is_same_v<AbstractValue, ValueType>>>
+                                    std::is_same_v<AbstractValue, ValueType>>>
   const AbstractValue& Eval(const Context<T>& context) const {
     ValidateSystemId(context.get_system_id());
     return DoEval(context);
   }
   // With anything but a BasicVector subclass, we can just DoEval then cast.
-  template <typename ValueType, typename = std::enable_if_t<
-      !std::is_same_v<AbstractValue, ValueType> && (
-        !std::is_base_of_v<BasicVector<T>, ValueType> ||
-        std::is_same_v<BasicVector<T>, ValueType>)>>
+  template <typename ValueType,
+            typename = std::enable_if_t<
+                !std::is_same_v<AbstractValue, ValueType> &&
+                (!std::is_base_of_v<BasicVector<T>, ValueType> ||
+                 std::is_same_v<BasicVector<T>, ValueType>)>>
   const ValueType& Eval(const Context<T>& context) const {
     ValidateSystemId(context.get_system_id());
     return PortEvalCast<ValueType>(DoEval(context));
   }
   // With a BasicVector subclass, we need to downcast twice.
-  template <typename ValueType, typename = std::enable_if_t<
-      std::is_base_of_v<BasicVector<T>, ValueType> &&
-      !std::is_same_v<BasicVector<T>, ValueType>>>
+  template <typename ValueType,
+            typename =
+                std::enable_if_t<std::is_base_of_v<BasicVector<T>, ValueType> &&
+                                 !std::is_same_v<BasicVector<T>, ValueType>>>
   const ValueType& Eval(const Context<T>& context, int = 0) const {
     return PortEvalCast<ValueType>(Eval<BasicVector<T>>(context));
   }
@@ -161,18 +163,18 @@ class OutputPort : public OutputPortBase {
   /** Returns a reference to the System that owns this output port. Note that
   for a diagram output port this will be the diagram, not the leaf system whose
   output port was forwarded. */
-  const System<T>& get_system() const {
-    return system_;
-  }
+  const System<T>& get_system() const { return system_; }
 
   // A using-declaration adds these methods into our class's Doxygen.
   // (Placed in an order that makes sense for the class's table of contents.)
+  // clang-format off
   using PortBase::get_name;
   using PortBase::GetFullDescription;
   using OutputPortBase::get_index;
   using PortBase::get_data_type;
   using PortBase::size;
   using PortBase::ticket;
+  // clang-format on
 
  protected:
   /** Provides derived classes the ability to set the base class members at
@@ -230,9 +232,9 @@ class OutputPort : public OutputPortBase {
       const Context<T>& context, const AbstractValue& proposed_value) const = 0;
 
   /** Static method allows DiagramOutputPort to call this recursively. */
-  static void ThrowIfInvalidPortValueType(
-      const OutputPort<T>& port,
-      const Context<T>& context, const AbstractValue& proposed_value) {
+  static void ThrowIfInvalidPortValueType(const OutputPort<T>& port,
+                                          const Context<T>& context,
+                                          const AbstractValue& proposed_value) {
     port.ThrowIfInvalidPortValueType(context, proposed_value);
   }
 

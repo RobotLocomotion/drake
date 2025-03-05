@@ -63,9 +63,7 @@ GTEST_TEST(EventStatusTest, ConstructionAndRetrieval) {
 
 class TestSystem : public LeafSystem<double> {
  public:
-  TestSystem() {
-    this->set_name("my_system");
-  }
+  TestSystem() { this->set_name("my_system"); }
 };
 
 // Check that the ThrowOnFailure() function formats correctly.
@@ -73,13 +71,12 @@ GTEST_TEST(EventStatusTest, ThrowOnFailure) {
   TestSystem test_system;
   const EventStatus success = EventStatus::Succeeded();
   const EventStatus did_nothing = EventStatus::DidNothing();
-  const EventStatus terminated = EventStatus::ReachedTermination(
-      &test_system, "this shouldn't throw");
+  const EventStatus terminated =
+      EventStatus::ReachedTermination(&test_system, "this shouldn't throw");
   const EventStatus failed_no_system =
       EventStatus::Failed(nullptr, "error from somewhere");
   const EventStatus failed_with_system =
       EventStatus::Failed(&test_system, "error from test system");
-
 
   EXPECT_NO_THROW(success.ThrowOnFailure("ApiName"));
   EXPECT_NO_THROW(did_nothing.ThrowOnFailure("ApiName"));

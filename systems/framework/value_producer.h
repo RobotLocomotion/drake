@@ -194,9 +194,8 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const)
+  ValueProducer(const SomeInstance* instance,
+                void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const)
       : ValueProducer(make_allocate_mode_a<SomeOutput>(),
                       make_calc_mode_1(instance, calc)) {}
 
@@ -205,10 +204,8 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      const SomeOutput& model_value,
-      void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const)
+  ValueProducer(const SomeInstance* instance, const SomeOutput& model_value,
+                void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const)
       : ValueProducer(make_allocate_mode_b(model_value),
                       make_calc_mode_1(instance, calc)) {}
 
@@ -217,10 +214,9 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
-      void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const)
+  ValueProducer(const SomeInstance* instance,
+                std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
+                void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const)
       : ValueProducer(make_allocate_mode_c(instance, allocate),
                       make_calc_mode_1(instance, calc)) {}
 
@@ -229,21 +225,17 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      AllocateCallback allocate,
-      void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const)
-      : ValueProducer(std::move(allocate),
-                      make_calc_mode_1(instance, calc)) {}
+  ValueProducer(const SomeInstance* instance, AllocateCallback allocate,
+                void (SomeClass::*calc)(const SomeContext&, SomeOutput*) const)
+      : ValueProducer(std::move(allocate), make_calc_mode_1(instance, calc)) {}
 
   /** Overload (2a). Refer to the
   @ref ValueProducer_constructors "Constructor overloads" for details.
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      SomeOutput (SomeClass::*calc)(const SomeContext&) const)
+  ValueProducer(const SomeInstance* instance,
+                SomeOutput (SomeClass::*calc)(const SomeContext&) const)
       : ValueProducer(make_allocate_mode_a<SomeOutput>(),
                       make_calc_mode_2(instance, calc)) {}
 
@@ -252,10 +244,8 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      const SomeOutput& model_value,
-      SomeOutput (SomeClass::*calc)(const SomeContext&) const)
+  ValueProducer(const SomeInstance* instance, const SomeOutput& model_value,
+                SomeOutput (SomeClass::*calc)(const SomeContext&) const)
       : ValueProducer(make_allocate_mode_b(model_value),
                       make_calc_mode_2(instance, calc)) {}
 
@@ -264,10 +254,9 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
-      SomeOutput (SomeClass::*calc)(const SomeContext&) const)
+  ValueProducer(const SomeInstance* instance,
+                std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
+                SomeOutput (SomeClass::*calc)(const SomeContext&) const)
       : ValueProducer(make_allocate_mode_c(instance, allocate),
                       make_calc_mode_2(instance, calc)) {}
 
@@ -276,12 +265,9 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      AllocateCallback allocate,
-      SomeOutput (SomeClass::*calc)(const SomeContext&) const)
-      : ValueProducer(std::move(allocate),
-                      make_calc_mode_2(instance, calc)) {}
+  ValueProducer(const SomeInstance* instance, AllocateCallback allocate,
+                SomeOutput (SomeClass::*calc)(const SomeContext&) const)
+      : ValueProducer(std::move(allocate), make_calc_mode_2(instance, calc)) {}
 
   /** Overload (3a). Refer to the
   @ref ValueProducer_constructors "Constructor overloads" for details.
@@ -296,9 +282,8 @@ class ValueProducer final {
   @ref ValueProducer_constructors "Constructor overloads" for details.
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <typename SomeContext, typename SomeOutput>
-  ValueProducer(
-      const SomeOutput& model_value,
-      std::function<void(const SomeContext&, SomeOutput*)> calc)
+  ValueProducer(const SomeOutput& model_value,
+                std::function<void(const SomeContext&, SomeOutput*)> calc)
       : ValueProducer(make_allocate_mode_b(model_value),
                       make_calc_mode_3(std::move(calc))) {}
 
@@ -307,10 +292,9 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
-      std::function<void(const SomeContext&, SomeOutput*)> calc)
+  ValueProducer(const SomeInstance* instance,
+                std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
+                std::function<void(const SomeContext&, SomeOutput*)> calc)
       : ValueProducer(make_allocate_mode_c(instance, allocate),
                       make_calc_mode_3(std::move(calc))) {}
 
@@ -318,18 +302,15 @@ class ValueProducer final {
   @ref ValueProducer_constructors "Constructor overloads" for details.
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <typename SomeContext, typename SomeOutput>
-  ValueProducer(
-      AllocateCallback allocate,
-      std::function<void(const SomeContext&, SomeOutput*)> calc)
-      : ValueProducer(std::move(allocate),
-                      make_calc_mode_3(std::move(calc))) {}
+  ValueProducer(AllocateCallback allocate,
+                std::function<void(const SomeContext&, SomeOutput*)> calc)
+      : ValueProducer(std::move(allocate), make_calc_mode_3(std::move(calc))) {}
 
   /** Overload (4a). Refer to the
   @ref ValueProducer_constructors "Constructor overloads" for details.
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <typename SomeContext, typename SomeOutput>
-  explicit ValueProducer(
-      std::function<SomeOutput(const SomeContext&)> calc)
+  explicit ValueProducer(std::function<SomeOutput(const SomeContext&)> calc)
       : ValueProducer(make_allocate_mode_a<SomeOutput>(),
                       make_calc_mode_4(std::move(calc))) {}
 
@@ -337,9 +318,8 @@ class ValueProducer final {
   @ref ValueProducer_constructors "Constructor overloads" for details.
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <typename SomeContext, typename SomeOutput>
-  ValueProducer(
-      const SomeOutput& model_value,
-      std::function<SomeOutput(const SomeContext&)> calc)
+  ValueProducer(const SomeOutput& model_value,
+                std::function<SomeOutput(const SomeContext&)> calc)
       : ValueProducer(make_allocate_mode_b(model_value),
                       make_calc_mode_4(std::move(calc))) {}
 
@@ -348,10 +328,9 @@ class ValueProducer final {
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeContext,
             typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
-      std::function<SomeOutput(const SomeContext&)> calc)
+  ValueProducer(const SomeInstance* instance,
+                std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
+                std::function<SomeOutput(const SomeContext&)> calc)
       : ValueProducer(make_allocate_mode_c(instance, allocate),
                       make_calc_mode_4(std::move(calc))) {}
 
@@ -359,11 +338,9 @@ class ValueProducer final {
   @ref ValueProducer_constructors "Constructor overloads" for details.
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <typename SomeContext, typename SomeOutput>
-  ValueProducer(
-      AllocateCallback allocate,
-      std::function<SomeOutput(const SomeContext&)> calc)
-      : ValueProducer(std::move(allocate),
-                      make_calc_mode_4(std::move(calc))) {}
+  ValueProducer(AllocateCallback allocate,
+                std::function<SomeOutput(const SomeContext&)> calc)
+      : ValueProducer(std::move(allocate), make_calc_mode_4(std::move(calc))) {}
 
   // Overload (5a) is omitted because we cannot infer the type of SomeOutput
   // from a generic CalcCallback.
@@ -372,22 +349,18 @@ class ValueProducer final {
   @ref ValueProducer_constructors "Constructor overloads" for details.
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <typename SomeOutput,
-      typename = std::enable_if_t<!std::is_convertible_v<
-          SomeOutput, AllocateCallback>>>
-  ValueProducer(
-      const SomeOutput& model_value,
-      CalcCallback calc)
-      : ValueProducer(make_allocate_mode_b(model_value),
-                      std::move(calc)) {}
+            typename = std::enable_if_t<
+                !std::is_convertible_v<SomeOutput, AllocateCallback>>>
+  ValueProducer(const SomeOutput& model_value, CalcCallback calc)
+      : ValueProducer(make_allocate_mode_b(model_value), std::move(calc)) {}
 
   /** Overload (5c). Refer to the
   @ref ValueProducer_constructors "Constructor overloads" for details.
   @exclude_from_pydrake_mkdoc{Not bound} */
   template <class SomeInstance, typename SomeClass, typename SomeOutput>
-  ValueProducer(
-      const SomeInstance* instance,
-      std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
-      CalcCallback calc)
+  ValueProducer(const SomeInstance* instance,
+                std::unique_ptr<SomeOutput> (SomeClass::*allocate)() const,
+                CalcCallback calc)
       : ValueProducer(make_allocate_mode_c(instance, allocate),
                       std::move(calc)) {}
 
@@ -429,9 +402,8 @@ class ValueProducer final {
   [[noreturn]] static void ThrowBadNull();
 
   /** Reports that a dynamic_cast failed. */
-  [[noreturn]] static void ThrowBadCast(
-      const std::type_info& actual_type,
-      const std::type_info& desired_type);
+  [[noreturn]] static void ThrowBadCast(const std::type_info& actual_type,
+                                        const std::type_info& desired_type);
 
   template <typename SomeClass, class SomeInstance>
   static const SomeClass* instance_cast(const SomeInstance* instance) {
@@ -540,7 +512,7 @@ class ValueProducer final {
         "When ValueProducer is used with an output type that is not default"
         " constructible, then you must provide either a model_value or an"
         " allocate callback function.");
-    return static_cast<std::unique_ptr<drake::AbstractValue>(*)()>(
+    return static_cast<std::unique_ptr<drake::AbstractValue> (*)()>(
         &AbstractValue::Make<SomeOutput>);
   }
 

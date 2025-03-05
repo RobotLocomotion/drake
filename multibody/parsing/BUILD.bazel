@@ -323,7 +323,9 @@ drake_cc_library(
         ":detail_make_model_name",
         ":detail_misc",
         ":detail_parsing_workspace",
+        "//lcm",
         "//multibody/plant",
+        "//systems/sensors:camera_config_functions",
         "@fmt",
         "@tinyxml2_internal//:tinyxml2",
     ],
@@ -537,6 +539,7 @@ drake_cc_googletest(
         ":parser",
         "//common:find_resource",
         "//common/test_utilities",
+        "//planning:robot_diagram_builder",
     ],
 )
 
@@ -681,6 +684,7 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry/test_utilities:meshcat_environment",
+        "//systems/sensors:rgbd_sensor",
         "//visualization",
     ],
 )

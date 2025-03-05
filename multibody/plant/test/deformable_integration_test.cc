@@ -165,7 +165,7 @@ namespace {
 TEST_F(DeformableIntegrationTest, SteadyState) {
   Simulator<double> simulator(*diagram_);
   /* Run simulation for long enough to reach steady state. */
-  simulator.AdvanceTo(2.5);
+  simulator.AdvanceTo(5.0);
 
   /* Verify the system has reached steady state. */
   const Context<double>& diagram_context = simulator.get_context();

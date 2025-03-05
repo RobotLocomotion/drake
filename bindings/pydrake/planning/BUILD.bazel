@@ -51,6 +51,7 @@ drake_pybind_library(
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/multibody:rational_py",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:primitives_py",
         "//bindings/pydrake/solvers",
@@ -74,6 +75,7 @@ drake_py_unittest(
     num_threads = 2,
     deps = [
         ":planning",
+        "//bindings/pydrake/common/test_utilities:memory_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",
     ],

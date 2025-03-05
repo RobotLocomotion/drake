@@ -1,13 +1,15 @@
 #include "drake/multibody/parsing/scoped_names.h"
 
+#include "drake/common/default_scalars.h"
 #include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
 namespace multibody {
 namespace parsing {
 
-const drake::multibody::Frame<double>* GetScopedFrameByNameMaybe(
-    const drake::multibody::MultibodyPlant<double>& plant,
+template <typename T>
+const drake::multibody::Frame<T>* GetScopedFrameByNameMaybe(
+    const drake::multibody::MultibodyPlant<T>& plant,
     const std::string& full_name) {
   if (full_name == "world") {
     return &plant.world_frame();
@@ -26,8 +28,9 @@ const drake::multibody::Frame<double>* GetScopedFrameByNameMaybe(
   return nullptr;
 }
 
-const drake::multibody::Frame<double>& GetScopedFrameByName(
-    const drake::multibody::MultibodyPlant<double>& plant,
+template <typename T>
+const drake::multibody::Frame<T>& GetScopedFrameByName(
+    const drake::multibody::MultibodyPlant<T>& plant,
     const std::string& full_name) {
   if (full_name == "world") {
     return plant.world_frame();
@@ -40,6 +43,13 @@ const drake::multibody::Frame<double>& GetScopedFrameByName(
     return plant.GetFrameByName(scoped_name.get_element());
   }
 }
+
+// clang-format off
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
+    &GetScopedFrameByNameMaybe<T>,
+    &GetScopedFrameByName<T>
+));
+// clang-format on
 
 }  // namespace parsing
 }  // namespace multibody

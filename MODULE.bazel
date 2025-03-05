@@ -169,7 +169,10 @@ use_repo(
 # TODO(jwnimmer-tri) By historical accident, not all of the repository names
 # here end with "internal". We should work on improving the consistency, either
 # by switching them to use BCR modules instead (e.g., nasm) or renaming them
-# with any necessary deprecations (e.g., statsjs).
+# to internal (e.g., statsjs). Specifics are listed inline below. For renaming,
+# we'll wait until after the WORKSPACE deprecation is done (2025-09-01) so that
+# users can naturally stop using them during their bzlmod porting process and
+# we won't need to provide any additional temporary infrastructure.
 
 internal_repositories = use_extension(
     "@drake//tools/workspace:default.bzl",
@@ -178,26 +181,26 @@ internal_repositories = use_extension(
 use_repo(
     internal_repositories,
     "abseil_cpp_internal",
-    "bazelisk",
+    "bazelisk",  # TODO(jwnimmer-tri) Mark as internal.
     "ccd_internal",
     "clang_cindex_python3_internal",
     "clarabel_cpp_internal",
     "clp_internal",
     "coinutils_internal",
-    "com_jidesoft_jide_oss",
+    "com_jidesoft_jide_oss",  # TODO(jwnimmer-tri) Mark as internal.
     "common_robotics_utilities_internal",
-    "commons_io",
+    "commons_io",  # TODO(jwnimmer-tri) Mark as internal.
     "conex_internal",
     "csdp_internal",
     "curl_internal",
     "dm_control_internal",
-    "doxygen",
+    "doxygen",  # TODO(jwnimmer-tri) Mark as internal.
     "fcl_internal",
-    "gfortran",
+    "gfortran",  # TODO(jwnimmer-tri) Mark as internal.
     "github3_py_internal",
     "gklib_internal",
-    "googlebenchmark",
-    "gymnasium_py",
+    "googlebenchmark",  # TODO(jwnimmer-tri) Switch to module.
+    "gymnasium_py",  # TODO(jwnimmer-tri) Mark as internal.
     "gz_math_internal",
     "gz_utils_internal",
     "highway_internal",
@@ -214,13 +217,13 @@ use_repo(
     "mypy_extensions_internal",
     "mypy_internal",
     "nanoflann_internal",
-    "nasm",
-    "net_sf_jchart2d",
+    "nasm",  # TODO(jwnimmer-tri) Switch to module.
+    "net_sf_jchart2d",  # TODO(jwnimmer-tri) Mark as internal.
     "nlohmann_internal",
     "nlopt_internal",
     "onetbb_internal",
     "openusd_internal",
-    "org_apache_xmlgraphics_commons",
+    "org_apache_xmlgraphics_commons",  # TODO(jwnimmer-tri) Mark as internal.
     "osqp_internal",
     "picosha2_internal",
     "pkgconfig_blas_internal",
@@ -229,13 +232,13 @@ use_repo(
     "qdldl_internal",
     "qhull_internal",
     "ros_xacro_internal",
-    "rules_python_drake_constants",
+    "rules_python_drake_constants",  # TODO(jwnimmer-tri) Remove 2025-09-01.
     "scs_internal",
     "sdformat_internal",
     "spgrid_internal",
     "spral_internal",
     "stable_baselines3_internal",
-    "statsjs",
+    "statsjs",  # TODO(jwnimmer-tri) Mark as internal.
     "stduuid_internal",
     "suitesparse_internal",
     "sympy_py_internal",
@@ -249,7 +252,7 @@ use_repo(
     "uwebsockets_internal",
     "voxelized_geometry_tools_internal",
     "vtk_internal",
-    "xmlrunner_py",
+    "xmlrunner_py",  # TODO(jwnimmer-tri) Mark as internal.
     "yaml_cpp_internal",
 )
 
@@ -302,6 +305,3 @@ use_repo(
     "crate__thiserror-impl-1.0.69",
     "crate__unicode-ident-1.0.16",
 )
-
-# TODO(#20731) More improvements are still needed to our MODULE organization:
-# - Deprecate non-bzlmod use of Drake downstream.

@@ -374,6 +374,8 @@ class TestGeometryVisualizers(unittest.TestCase):
         animation = mut.MeshcatAnimation(frames_per_second=64)
         self.assertEqual(animation.frames_per_second(), 64)
         self.assertEqual(animation.frame(1.0), 64)
+        animation.set_start_time(time=1.0)
+        self.assertEqual(animation.start_time(), 1.0)
         animation.set_autoplay(play=False)
         self.assertEqual(animation.autoplay(), False)
         animation.set_loop_mode(mode=mut.MeshcatAnimation.LoopMode.kLoopOnce)

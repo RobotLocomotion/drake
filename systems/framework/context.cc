@@ -29,24 +29,21 @@ State<T>& Context<T>::get_mutable_state() {
 template <typename T>
 ContinuousState<T>& Context<T>::get_mutable_continuous_state() {
   const int64_t change_event = this->start_new_change_event();
-  PropagateBulkChange(change_event,
-                      &Context<T>::NoteAllContinuousStateChanged);
+  PropagateBulkChange(change_event, &Context<T>::NoteAllContinuousStateChanged);
   return do_access_mutable_state().get_mutable_continuous_state();
 }
 
 template <typename T>
 DiscreteValues<T>& Context<T>::get_mutable_discrete_state() {
   const int64_t change_event = this->start_new_change_event();
-  PropagateBulkChange(change_event,
-                      &Context<T>::NoteAllDiscreteStateChanged);
+  PropagateBulkChange(change_event, &Context<T>::NoteAllDiscreteStateChanged);
   return do_access_mutable_state().get_mutable_discrete_state();
 }
 
 template <typename T>
 AbstractValues& Context<T>::get_mutable_abstract_state() {
   const int64_t change_event = this->start_new_change_event();
-  PropagateBulkChange(change_event,
-                      &Context<T>::NoteAllAbstractStateChanged);
+  PropagateBulkChange(change_event, &Context<T>::NoteAllAbstractStateChanged);
   return do_access_mutable_state().get_mutable_abstract_state();
 }
 
@@ -125,9 +122,9 @@ template <typename T>
 Context<T>::Context(const Context<T>&) = default;
 
 template <typename T>
-void Context<T>::PropagateTimeChange(
-    Context<T>* context, const T& time, const std::optional<T>& true_time,
-    int64_t change_event) {
+void Context<T>::PropagateTimeChange(Context<T>* context, const T& time,
+                                     const std::optional<T>& true_time,
+                                     int64_t change_event) {
   DRAKE_ASSERT(context != nullptr);
   context->NoteTimeChanged(change_event);
   context->time_ = time;
@@ -136,9 +133,9 @@ void Context<T>::PropagateTimeChange(
 }
 
 template <typename T>
-void Context<T>::PropagateAccuracyChange(
-    Context<T>* context, const std::optional<double>& accuracy,
-    int64_t change_event) {
+void Context<T>::PropagateAccuracyChange(Context<T>* context,
+                                         const std::optional<double>& accuracy,
+                                         int64_t change_event) {
   DRAKE_ASSERT(context != nullptr);
   context->NoteAccuracyChanged(change_event);
   context->accuracy_ = accuracy;
@@ -204,8 +201,8 @@ void Context<T>::init_parameters(std::unique_ptr<Parameters<T>> params) {
 }
 
 template <typename T>
-void Context<T>::ThrowIfNotRootContext(
-    const char* func_name, const char* quantity) const {
+void Context<T>::ThrowIfNotRootContext(const char* func_name,
+                                       const char* quantity) const {
   if (!is_root_context()) {
     throw std::logic_error(
         fmt::format("{}(): {} change allowed only in the root Context.",
@@ -219,8 +216,7 @@ void Context<T>::SetTimeAndNoteContinuousStateChangeHelper(
   ThrowIfNotRootContext(func_name, "Time");
   const int64_t change_event = this->start_new_change_event();
   PropagateTimeChange(this, time_sec, {}, change_event);
-  PropagateBulkChange(change_event,
-                      &Context<T>::NoteAllContinuousStateChanged);
+  PropagateBulkChange(change_event, &Context<T>::NoteAllContinuousStateChanged);
 }
 
 }  // namespace systems

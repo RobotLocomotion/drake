@@ -35,7 +35,7 @@ class MeshParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_,  &resolver,    TestingSelect};
     // The wrapper simply delegates to AddModelFromMesh(), so we're testing
     // the underlying implementation *and* confirming that the wrapper delegates
@@ -51,7 +51,7 @@ class MeshParserTest : public test::DiagnosticPolicyTestBase {
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_,  &resolver,    TestingSelect};
     // The wrapper is responsible for building the vector from whatever a call
     // to AddModelFromMesh() does; this confirms invocation and successful
@@ -210,7 +210,7 @@ TEST_F(MeshParserTest, ErrorModes) {
     const std::string data("Just some text");
     const DataSource data_source{DataSource::kContents, &data};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
                        &plant_,  &resolver,    TestingSelect};
     DRAKE_EXPECT_THROWS_MESSAGE(
         AddModelFromMesh(data_source, "", std::nullopt, w),
@@ -296,6 +296,18 @@ TEST_F(MeshParserTest, RegisteredGeometry) {
   EXPECT_EQ(inspector.NumGeometriesForFrameWithRole(*frame_id,
                                                     geometry::Role::kProximity),
             1);
+
+  // Confirm that geometries registered as meshes have empty proximity
+  // properties -- the only property group is the default property group.
+  const std::vector<geometry::GeometryId> proximity_geometries =
+      inspector.GetGeometries(*frame_id, geometry::Role::kProximity);
+  for (const geometry::GeometryId id : proximity_geometries) {
+    const geometry::ProximityProperties* properties =
+        inspector.GetProximityProperties(id);
+    ASSERT_NE(properties, nullptr);
+    EXPECT_THAT(properties->GetGroupNames(),
+                ::testing::ElementsAre(properties->default_group_name()));
+  }
 }
 
 }  // namespace

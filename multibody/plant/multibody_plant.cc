@@ -974,8 +974,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     geometry::ProximityProperties properties) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  DRAKE_THROW_UNLESS(properties.HasProperty(geometry::internal::kMaterialGroup,
-                                            geometry::internal::kFriction));
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
@@ -1717,6 +1715,7 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q.size() == num_positions());
+  DRAKE_THROW_UNLESS(AllFinite(q));
   for (JointIndex i : GetJointIndices()) {
     Joint<T>& joint = get_mutable_joint(i);
     joint.set_default_positions(
@@ -1730,6 +1729,7 @@ void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q_instance) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q_instance.size() == num_positions(model_instance));
+  DRAKE_THROW_UNLESS(AllFinite(q_instance));
   VectorX<T> q_T(num_positions());
   internal_tree().SetPositionsInArray(model_instance, q_instance.cast<T>(),
                                       &q_T);
