@@ -68,7 +68,7 @@ void DoMain() {
         "package://drake_models/"
         "allegro_hand_description/sdf/allegro_hand_description_left.sdf";
   }
-  multibody::Parser(&plant).AddModelsFromUrl(hand_url);
+  multibody::Parser(&builder).AddModelsFromUrl(hand_url);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");
