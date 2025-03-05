@@ -109,6 +109,7 @@ drake_cc_googletest(
         "//multibody/inverse_kinematics",
         "//planning:robot_diagram_builder",
         "//planning:scene_graph_collision_checker",
+        "//solvers",
     ],
 )
 

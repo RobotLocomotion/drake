@@ -16,6 +16,7 @@
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/solvers/evaluator_base.h"
 
 namespace drake {
 namespace planning {
@@ -421,6 +422,16 @@ GTEST_TEST(IrisZoTest, BlockOnGround) {
   }
 }
 
+struct IdentityConstraint {
+  static size_t numInputs() { return 2; }
+  static size_t numOutputs() { return 2; }
+  template <typename ScalarType>
+  void eval(const Eigen::Ref<const VectorX<ScalarType>>& x,
+            VectorX<ScalarType>* y) const {
+    (*y) = x;
+  }
+};
+
 // Reproduced from the IrisInConfigurationSpace unit tests.
 // A (somewhat contrived) example of a concave configuration-space obstacle
 // (resulting in a convex configuration-space, which we approximate with
@@ -563,6 +574,29 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
 
     MaybePauseForUser();
   }
+
+  // We also verify the code path when one of the additional constraints is not
+  // threadsafe. We construct the constraint (-2, -0.5) <= (x, y) <= (0, 1.5) in
+  // terms of the above struct IdentityConstraint, which is not tagged as
+  // threadsafe.
+  Eigen::VectorXd simple_constraint_lb = Eigen::Vector2d(-2.0, -0.5);
+  Eigen::VectorXd simple_constraint_ub = Eigen::Vector2d(0.0, 1.5);
+  std::shared_ptr<solvers::Constraint> simple_constraint =
+      std::make_shared<solvers::EvaluatorConstraint<
+          solvers::FunctionEvaluator<IdentityConstraint>>>(
+          std::make_shared<solvers::FunctionEvaluator<IdentityConstraint>>(
+              IdentityConstraint{}),
+          simple_constraint_lb, simple_constraint_ub);
+  prog.AddConstraint(simple_constraint, q);
+
+  options.max_iterations = 3;
+  options.max_iterations_separating_planes = 20;
+
+  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
+  query_point_not_in_set = Vector2d(-1.0, -0.55);
+  query_point_in_set = Vector2d(-1.0, -0.45);
+  EXPECT_FALSE(region.PointInSet(query_point_not_in_set));
+  EXPECT_TRUE(region.PointInSet(query_point_in_set));
 
   // If we have a containment point violating this constraint, IrisZo should
   // throw. Three points are needed to ensure the center of the starting
