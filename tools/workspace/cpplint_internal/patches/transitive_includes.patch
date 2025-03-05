@@ -1,0 +1,82 @@
+Restore UpdateIncludeState function to fix dependency issues
+
+This restores the UpdateIncludeState function which was removed but is still
+needed by our codebase. Without this function, code that depends on it breaks.
+
+n.b. In the future we should consider finding a more sustainable solution that
+doesn't depend on this deprecated functionality.
+
+--- cpplint.py
++++ cpplint.py
+@@ -6040,6 +6040,34 @@ def FilesBelongToSameModule(filename_cc, filename_h):
+   return files_belong_to_same_module, common_path
+
+
++def UpdateIncludeState(filename, include_dict, io=codecs):
++  """Fill up the include_dict with new includes found from the file.
++
++  Args:
++    filename: the name of the header to read.
++    include_dict: a dictionary in which the headers are inserted.
++    io: The io factory to use to read the file. Provided for testability.
++
++  Returns:
++    True if a header was successfully added. False otherwise.
++  """
++  headerfile = None
++  try:
++    with io.open(filename, 'r', 'utf8', 'replace') as headerfile:
++      linenum = 0
++      for line in headerfile:
++        linenum += 1
++        clean_line = CleanseComments(line)
++        match = _RE_PATTERN_INCLUDE.search(clean_line)
++        if match:
++          include = match.group(2)
++          include_dict.setdefault(include, linenum)
++    return True
++  except IOError:
++    return False
++
++
++
+ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
+                               io=codecs):
+   """Reports for missing stl includes.
+@@ -6095,10 +6095,36 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
+         if prefix.endswith('std::') or not prefix.endswith('::'):
+           required[header] = (linenum, template)
+
++  # The policy is that if you #include something in foo.h you don't need to
++  # include it again in foo.cc. Here, we will look at possible includes.
+   # Let's flatten the include_state include_list and copy it into a dictionary.
+   include_dict = dict([item for sublist in include_state.include_list
+                        for item in sublist])
+ 
++  # Did we find the header for this file (if any) and successfully load it?
++  header_found = False
++
++  # Use the absolute path so that matching works properly.
++  abs_filename = FileInfo(filename).FullName()
++
++  # For Emacs's flymake.
++  # If cpplint is invoked from Emacs's flymake, a temporary file is generated
++  # by flymake and that file name might end with '_flymake.cc'. In that case,
++  # restore original file name here so that the corresponding header file can be
++  # found.
++  # e.g. If the file name is 'foo_flymake.cc', we should search for 'foo.h'
++  # instead of 'foo_flymake.h'
++  abs_filename = re.sub(r'_flymake\.cc$', '.cc', abs_filename)
++
++  # include_dict is modified during iteration, so we iterate over a copy of
++  # the keys.
++  header_keys = list(include_dict.keys())
++  for header in header_keys:
++    (same_module, common_path) = FilesBelongToSameModule(abs_filename, header)
++    fullpath = common_path + header
++    if same_module and UpdateIncludeState(fullpath, include_dict, io):
++      header_found = True
++
+   # All the lines have been processed, report the errors found.
+   for required_header_unstripped in sorted(required, key=required.__getitem__):
+     template = required[required_header_unstripped][1]
