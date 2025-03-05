@@ -1473,7 +1473,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   const MatrixX<T> Dq = D.leftCols(nq);
   const MatrixX<T> Dv = D.rightCols(nv);
 
-  // K = (Dv + h Dq N)
+  // K = Dv + h Dq N
   (*K) = Dv + h * Dq * N;
 
   // u0 = g0 - Dv v0
