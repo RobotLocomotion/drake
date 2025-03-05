@@ -56,9 +56,48 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   // is independent of the state stored in `context`.
   math::RigidTransform<T> calc_X_FM(const T*) const { return X_FM_.cast<T>(); }
 
+  /* We should do exactly nothing to update X_FM since it remains identity
+  forever. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    DRAKE_ASSERT(X_FM->IsExactlyIdentity());
+    // Do nothing.
+  }
+
+  /* Since X_FM is identity, applying it to a vector does nothing. */
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>&,
+                        const Vector3<T>& v_M) const {
+    return v_M;
+  }
+
+  /* Since R_FM is identity, applying it to a vector does nothing. */
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>&,
+                        const Vector3<T>& v_M) const {
+    return v_M;
+  }
+
+  /* Since X_FM is identity, X_AF * X_FM is just X_AF. */
+  math::RigidTransform<T> compose_with_X_FM(
+      const math::RigidTransform<T>& X_AF,
+      const math::RigidTransform<T>&) const {
+    return X_AF;
+  }
+
+  /* Since X_FM is identity, X_FM * X_MB is just X_MB. */
+  math::RigidTransform<T> compose_X_FM_with(
+      const math::RigidTransform<T>&,
+      const math::RigidTransform<T>& X_MB) const {
+    return X_MB;
+  }
+
   // Computes the across-mobilizer velocity V_FM which for this mobilizer is
   // always zero since the outboard frame M is fixed to the inboard frame F.
   SpatialVelocity<T> calc_V_FM(const T*, const T*) const {
+    return SpatialVelocity<T>::Zero();
+  }
+
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T*) const {
     return SpatialVelocity<T>::Zero();
   }
 
@@ -66,8 +105,15 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
     return SpatialAcceleration<T>::Zero();
   }
 
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T*) const {
+    return SpatialAcceleration<T>::Zero();
+  }
+
   // Does nothing since there are no taus.
   void calc_tau(const T*, const SpatialForce<T>&, T*) const {}
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const SpatialForce<T>&, T*) const {}
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>&) const final;

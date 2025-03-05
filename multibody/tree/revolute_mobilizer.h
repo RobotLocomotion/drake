@@ -22,7 +22,9 @@ namespace internal {
 // outboard frames, while the distance between the two frames does not vary.
 // To fully specify this mobilizer a user must provide the inboard frame F,
 // the outboard (or "mobilized") frame M and the axis `axis_F` (expressed in
-// frame F) about which frame M rotates with respect to F.
+// frame F or equivalently in frame M since the measure numbers are identical
+// in either frame) about which frame M rotates with respect to F.
+//
 // The single generalized coordinate q introduced by this mobilizer
 // corresponds to the rotation angle in radians of frame M with respect to
 // frame F about the rotation axis `axis_F`. When `q = 0`, frames F and M are
@@ -30,9 +32,11 @@ namespace internal {
 // right-hand-rule with the thumb aligned in the direction of the `axis_F`.
 // Notice that the components of the rotation axis as expressed in
 // either frame F or M are constant. That is, `axis_F` and `axis_M` remain
-// unchanged w.r.t. both frames by this mobilizer's motion.
+// identical and unchanged w.r.t. both frames by this mobilizer's motion.
 //
-// H_FM₆ₓ₁=[axis_F 0₃]ᵀ     Hdot_FM₆ₓ₁ = 0₆
+// H_FM_F₆ₓ₁=[axis_F 0₃]ᵀ     Hdot_FM_F₆ₓ₁ = 0₆
+// H_FM_M₆ₓ₁=[axis_M 0₃]ᵀ     Hdot_FM_M₆ₓ₁ = 0₆
+//    where axis_M == axis_F
 //
 // @tparam_default_scalar
 template <typename T>
@@ -127,28 +131,95 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   // stored in `context`.
   // This method aborts in Debug builds if `v.size()` is not one.
   math::RigidTransform<T> calc_X_FM(const T* q) const {
-    return math::RigidTransform<T>(Eigen::AngleAxis<T>(q[0], axis_F_),
+    // axis is already a unit vector; this constructor avoids normalizing.
+    // sin+cos+22 flops
+    return math::RigidTransform<T>(math::RotationMatrix<T>(q[0], axis_F_),
                                    Vector3<T>::Zero());
+  }
+
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    if constexpr (true) {
+      X_FM->set_rotation(Eigen::AngleAxis<T>(q[0], axis_F_));
+    } else {
+      math::RigidTransform<T>::UpdateAxialRotation<2>(q, &*X_FM);
+    }
+  }
+
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>& X_FM,
+                        const Vector3<T>& v_M) const {
+    if constexpr (true) {
+      return X_FM.rotation() * v_M;
+    } else {
+      return math::RigidTransform<T>::ApplyAxialRotation<2>(X_FM, v_M);
+    }
+  }
+
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const {
+    if constexpr (true) {
+      return R_FM * v_M;
+    } else {
+      return math::RotationMatrix<T>::ApplyAxialRotation<2>(R_FM, v_M);
+    }
+  }
+
+  math::RigidTransform<T> compose_with_X_FM(
+      const math::RigidTransform<T>& X_AF,
+      const math::RigidTransform<T>& X_FM) const {
+    math::RigidTransform<T> X_AM;
+    if constexpr (true) {
+      X_AF.ComposeWithRotation(X_FM, &X_AM);
+    } else {
+      X_AF.ComposeWithAxialRotation<2>(X_FM, &*X_AM);
+    }
+    return X_AM;
   }
 
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
   // frame M measured and expressed in frame F as a function of the input
   // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
-    return SpatialVelocity<T>(v[0] * axis_F_, Vector3<T>::Zero());
+    return SpatialVelocity<T>(v[0] * axis_F_,  // 3 flops
+                              Vector3<T>::Zero());
   }
 
-  // Here H₆ₓ₁=[axis, 0₃]ᵀ so Hdot = 0 and
-  // A_FM = H⋅vdot + Hdot⋅v = [axis⋅vdot, 0₃]ᵀ
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T* v) const {
+    return SpatialVelocity<T>(v[0] * axis_F_,  // really axis_M, 3 flops
+                              Vector3<T>::Zero());
+  }
+
+  // Here H_F₆ₓ₁=[axis_F, 0₃]ᵀ so Hdot_F = 0 and
+  // A_FM_F = H_F⋅vdot + Hdot_F⋅v = [axis_F⋅vdot, 0₃]ᵀ
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
-    return SpatialAcceleration<T>(vdot[0] * axis_F_, Vector3<T>::Zero());
+    return SpatialAcceleration<T>(vdot[0] * axis_F_,  // 3 flops
+                                  Vector3<T>::Zero());
   }
 
-  // Returns tau = H_FMᵀ⋅F, where H_FMᵀ = [axis_Fᵀ 0₃ᵀ].
+  // Here H_M₆ₓ₁=[axis_M, 0₃]ᵀ so Hdot_M = 0 and
+  // A_FM_M = H_M⋅vdot + Hdot_M⋅v = [axis_M⋅vdot, 0₃]ᵀ
+  // But axis_M == axis_F.
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T* vdot) const {
+    return SpatialAcceleration<T>(vdot[0] * axis_F_,  // really axis_M, 3 flops
+                                  Vector3<T>::Zero());
+  }
+
+  // Returns tau = H_FM_Fᵀ⋅F_F, where H_FM_Fᵀ = [axis_Fᵀ 0₃ᵀ].
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     const Vector3<T>& t_BMo_F = F_BMo_F.rotational();
-    tau[0] = axis_F_.dot(t_BMo_F);
+    tau[0] = axis_F_.dot(t_BMo_F);  // 5 flops
+  }
+
+  // Returns tau = H_FM_Mᵀ⋅F_M, where H_FM_Mᵀ = [axis_Mᵀ 0₃ᵀ] and
+  // axis_M == axis_F (see class comments).
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(tau != nullptr);
+    const Vector3<T>& t_BMo_M = F_BMo_M.rotational();
+    tau[0] = axis_F_.dot(t_BMo_M);  // This is axis_M also, 5 flops
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
@@ -215,7 +286,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const MultibodyTree<ToScalar>& tree_clone) const;
 
   // Default joint axis expressed in the inboard frame F.
-  Vector3<double> axis_F_;
+  Vector3<double> axis_F_;  // This is also axis_M.
 };
 
 }  // namespace internal
