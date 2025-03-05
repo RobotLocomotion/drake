@@ -178,7 +178,6 @@ GTEST_TEST(FiniteHorizonLQRTest, DoubleIntegratorWithNonZeroGoal) {
 
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
   Vector1d R = Vector1d(4.12);
-  Eigen::Vector2d N(2.2, 1.3);
 
   LinearQuadraticRegulatorResult lqr_result =
       LinearQuadraticRegulator(A, B, Q, R);
@@ -378,15 +377,17 @@ GTEST_TEST(DiscreteTimeFiniteHorizonLQRTest, InfiniteHorizonTest) {
 
   Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
   Vector1d R = Vector1d(4.12);
+  Eigen::Vector2d N(0.2, 1.3);
 
   LinearQuadraticRegulatorResult lqr_result =
-      DiscreteTimeLinearQuadraticRegulator(A, B, Q, R);
+      DiscreteTimeLinearQuadraticRegulator(A, B, Q, R, N);
 
   const double t0 = 0;
   const double tf = 40.0;
   FiniteHorizonLinearQuadraticRegulatorOptions options;
   auto context = sys.CreateDefaultContext();
   sys.get_input_port().FixValue(context.get(), 0.0);
+  options.N = N;
 
   // Test that it converges towards the fixed point from zero final cost.
   FiniteHorizonLinearQuadraticRegulatorResult result =
@@ -514,12 +515,14 @@ GTEST_TEST(DiscreteTimeFiniteHorizonLQRTest, AffineSystemTest) {
 
   Eigen::Matrix2d Q;
   Eigen::Matrix2d R;
+  Eigen::Matrix2d N;
   Q << 0.8, 0.7, 0.7, 0.9;
   R << 1.4, 0.2, 0.2, 1.2;
+  N << 0.1, 0.2, 0.3, 0.4;
 
   // Solve it again with the other interface to get access to S.
   LinearQuadraticRegulatorResult lqr_result =
-      DiscreteTimeLinearQuadraticRegulator(A, B, Q, R);
+      DiscreteTimeLinearQuadraticRegulator(A, B, Q, R, N);
 
   const double t0 = 0;
   const double tf = 70.0;
@@ -530,6 +533,7 @@ GTEST_TEST(DiscreteTimeFiniteHorizonLQRTest, AffineSystemTest) {
   const Eigen::Vector2d udv = -B.inverse() * c;
   trajectories::PiecewisePolynomial<double> ud_traj(udv);
   options.ud = &ud_traj;
+  options.N = N;
   options.Qf = lqr_result.S;
 
   FiniteHorizonLinearQuadraticRegulatorResult result =
