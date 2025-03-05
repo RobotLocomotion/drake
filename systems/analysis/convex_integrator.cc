@@ -179,23 +179,6 @@ void ConvexIntegrator<T>::DoInitialize() {
   x_next_full_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_1_ = this->get_system().AllocateTimeDerivatives();
   x_next_half_2_ = this->get_system().AllocateTimeDerivatives();
-
-  // Allocate linearization of external controller system
-  const int nx = nq + nv;
-  const int nu = plant().num_actuators();
-  const int nz = x_next_full_->num_z();
-  linearized_external_system_.A.resize(nz, nz);
-  linearized_external_system_.B.resize(nz, nx);
-  linearized_external_system_.C.resize(nu, nz);
-  linearized_external_system_.D.resize(nu, nx);
-  linearized_external_system_.f0.resize(nz);
-  linearized_external_system_.g0.resize(nu);
-
-  // Allocate data for implicit external system integration
-  implicit_external_system_data_.K.resize(nu, nv);
-  implicit_external_system_data_.k0.resize(nu);
-  implicit_external_system_data_.H.resize(nz, nq + nv);
-  implicit_external_system_data_.h0.resize(nz);
 }
 
 template <typename T>
@@ -1409,7 +1392,7 @@ template <typename T>
 void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
                                                   VectorX<T>* u0) {
   using std::abs;
-  
+
   // Get some useful sizes
   const Context<T>& context = this->get_context();
   const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
@@ -1436,7 +1419,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
   const VectorX<T> s = state.CopyToVector();  // s = [x; z]
   VectorX<T> s_prime = s;
-  
+
   for (int i = 0; i < nx; ++i) {
     // Choose a step size (following implicit_integrator.cc)
     const T abs_si = abs(s(i));
@@ -1464,7 +1447,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
     // Reset s' to s
     s_prime(i) = s(i);
   }
-  
+
   // Reset the context back to how we found it
   mutable_state.SetFromVector(s);
   mutable_context->NoteContinuousStateChange();
@@ -1479,126 +1462,6 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   // u0 = g0 - Dv v0
   const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
   (*u0) = g0 - Dv * v0;
-}
-
-template <typename T>
-void ConvexIntegrator<T>::LinearizeExternalSystem(
-    LinearizedExternalSystem<T>* linear_sys) {
-  using std::abs;
-
-  // Get some useful sizes
-  const Context<T>& context = this->get_context();
-  const ContinuousState<T>& state = context.get_continuous_state();
-  const int nx = state.num_q() + state.num_v();
-  const int nz = state.num_z();
-
-  // Convienent references to what we're going to set
-  MatrixX<T>& A = linear_sys->A;
-  MatrixX<T>& B = linear_sys->B;
-  MatrixX<T>& C = linear_sys->C;
-  MatrixX<T>& D = linear_sys->D;
-  VectorX<T>& f0 = linear_sys->f0;
-  VectorX<T>& g0 = linear_sys->g0;
-
-  // Get the initial values f0 and g0. We'll do this before marking any context
-  // items as stale.
-  linear_sys->f0 = this->EvalTimeDerivatives(context)
-                       .get_misc_continuous_state()
-                       .CopyToVector();
-  linear_sys->g0 = plant().get_actuation_input_port().Eval(
-      plant().GetMyContextFromRoot(context));
-
-  // Do forward differences to compute A, B, C, D. We'll be changing the system
-  // context, but will but it back at the end of this function.
-  Context<T>* mutable_context = this->get_mutable_context();
-  const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
-
-  const VectorX<T> s = state.CopyToVector();  // s = [x; z]
-  VectorX<T> s_prime = s;
-
-  for (int i = 0; i < nx + nz; ++i) {
-    // Choose a step size (following implicit_integrator.cc)
-    const T abs_si = abs(s(i));
-    T dsi(abs_si);
-    if (dsi <= 1) {
-      dsi = eps;
-    } else {
-      dsi = eps * abs_si;
-    }
-
-    // Ensure that s' and s differ by an exactly representable number
-    s_prime(i) = s(i) + dsi;
-    dsi = s_prime(i) - s(i);
-
-    // Put s' in the context and mark it as stale
-    mutable_context->get_mutable_continuous_state().SetFromVector(s_prime);
-    mutable_context->NoteContinuousStateChange();
-
-    // Compute the relevant matrix entries. Note that this assumes the state is
-    // organized as s = [x; z] where x is the plant state and z is the external
-    // system state.
-    if (i < nx) {
-      B.col(i) = (this->EvalTimeDerivatives(*mutable_context)
-                      .get_misc_continuous_state()
-                      .CopyToVector() -
-                  f0) /
-                 dsi;
-      D.col(i) = (plant().get_actuation_input_port().Eval(
-                      plant().GetMyContextFromRoot(*mutable_context)) -
-                  g0) /
-                 dsi;
-    } else {
-      A.col(i - nx) = (this->EvalTimeDerivatives(*mutable_context)
-                           .get_misc_continuous_state()
-                           .CopyToVector() -
-                       f0) /
-                      dsi;
-      C.col(i - nx) = (plant().get_actuation_input_port().Eval(
-                           plant().GetMyContextFromRoot(*mutable_context)) -
-                       g0) /
-                      dsi;
-    }
-
-    // Reset s' to s
-    s_prime(i) = s(i);
-  }
-
-  // Reset the context back to how we found it
-  mutable_context->get_mutable_continuous_state().SetFromVector(s);
-  mutable_context->NoteContinuousStateChange();
-}
-
-template <typename T>
-void ConvexIntegrator<T>::CalcImplicitExternalSystemData(
-    const LinearizedExternalSystem<T>& linear_sys, const T& h,
-    ImplicitExternalSystemData<T>* implicit_data) const {
-  const MatrixX<T>& A = linear_sys.A;
-  const MatrixX<T>& B = linear_sys.B;
-  const MatrixX<T>& C = linear_sys.C;
-  const MatrixX<T>& D = linear_sys.D;
-  const VectorX<T>& f0 = linear_sys.f0;
-  const VectorX<T>& g0 = linear_sys.g0;
-
-  const ContinuousState<T>& state = this->get_context().get_continuous_state();
-  const VectorX<T> z_t = state.get_misc_continuous_state().CopyToVector();
-  const VectorX<T> q_t = state.get_generalized_position().CopyToVector();
-
-  // z_{t+h} = h(I - hA)^{-1} B x_{t+h} + (I - hA)^{-1} (z_t + h f0)
-  //         = H x_{t+h} + h_0
-  Eigen::LDLT<MatrixX<T>> ldlt_I_minus_hA(
-      MatrixX<T>::Identity(A.rows(), A.cols()) - h * A);
-  implicit_data->H = h * ldlt_I_minus_hA.solve(B);
-  implicit_data->h0 = ldlt_I_minus_hA.solve(z_t + h * f0);
-
-  // u = (D + C H) x_{t+h} + C h_0 + g0
-  //   = K v_{t+h} + k0
-  // N.B. this is assuming that q is constant. We could do slightly better by
-  // using q_{t+h} = q_t + h N(q_t) v_{t+h}.
-  const MatrixX<T> P = D + C * implicit_data->H;
-  const MatrixX<T> Pq = P.leftCols(plant().num_positions());
-  const MatrixX<T> Pv = P.rightCols(plant().num_velocities());
-  implicit_data->K = Pv;
-  implicit_data->k0 = Pq * q_t + C * implicit_data->h0 + g0;
 }
 
 }  // namespace systems

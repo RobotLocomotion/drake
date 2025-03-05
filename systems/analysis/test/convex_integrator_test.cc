@@ -24,14 +24,14 @@
 namespace drake {
 namespace systems {
 
-using Eigen::VectorXd;
 using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using geometry::SceneGraph;
 using multibody::AddMultibodyPlantSceneGraph;
-using multibody::MultibodyPlant;
-using multibody::Parser;
 using multibody::JointActuator;
 using multibody::JointActuatorIndex;
+using multibody::MultibodyPlant;
+using multibody::Parser;
 using systems::ConstantVectorSource;
 using systems::FirstOrderTaylorApproximation;
 using systems::controllers::PidController;
@@ -41,27 +41,10 @@ class ConvexIntegratorTester {
  public:
   ConvexIntegratorTester() = delete;
 
-  static void LinearizeExternalSystem(
-      ConvexIntegrator<double>& integrator,
-      const double h, MatrixXd* K, VectorXd* u0) {
+  static void LinearizeExternalSystem(ConvexIntegrator<double>& integrator,
+                                      const double h, MatrixXd* K,
+                                      VectorXd* u0) {
     integrator.LinearizeExternalSystem(h, K, u0);
-  }
-
-  static LinearizedExternalSystem<double> GetLinearizedExternalSystem(
-      ConvexIntegrator<double>* integrator) {
-    return integrator->linearized_external_system_;
-  }
-
-  static void CalcImplicitExternalSystemData(
-      ConvexIntegrator<double>* integrator,
-      const LinearizedExternalSystem<double>& linear_sys, const double& h,
-      ImplicitExternalSystemData<double>* implicit_data) {
-    integrator->CalcImplicitExternalSystemData(linear_sys, h, implicit_data);
-  }
-
-  static ImplicitExternalSystemData<double> GetImplicitExternalSystemData(
-      ConvexIntegrator<double>* integrator) {
-    return integrator->implicit_external_system_data_;
   }
 };
 
@@ -236,7 +219,7 @@ GTEST_TEST(ConvexIntegratorTest, CylinderSim) {
 GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   // Some options
   const double h = 0.01;
-  
+
   VectorXd Kp(2), Kd(2), Ki(2);
   Kp << 0.24, 0.19;
   Kd << 0.35, 0.3;
@@ -301,35 +284,33 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const Context<double>& ctrl_context =
       ctrl->GetMyContextFromRoot(simulator.get_context());
   auto true_linearization = FirstOrderTaylorApproximation(
-      *ctrl, ctrl_context,
-      ctrl->get_input_port_estimated_state().get_index(),
+      *ctrl, ctrl_context, ctrl->get_input_port_estimated_state().get_index(),
       ctrl->get_output_port().get_index());
-  
+
   const MatrixXd& D = true_linearization->D();
 
   const MatrixXd K_ref = D.rightCols(2) + h * D.leftCols(2);  // N(q) = I
-  const VectorXd u0_ref =
-      plant.get_actuation_input_port().Eval(plant_context) -
-      D.rightCols(2) * plant.GetVelocities(plant_context);
+  const VectorXd u0_ref = plant.get_actuation_input_port().Eval(plant_context) -
+                          D.rightCols(2) * plant.GetVelocities(plant_context);
 
-  // Confirm that our finite difference linearization is close to the reference 
+  // Confirm that our finite difference linearization is close to the reference
   const double kTolerance = std::sqrt(std::numeric_limits<double>::epsilon());
 
-  EXPECT_TRUE(CompareMatrices(K, K_ref, kTolerance,
-                              MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(u0, u0_ref, kTolerance,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(K, K_ref, kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(u0, u0_ref, kTolerance, MatrixCompareType::relative));
 
-  // // Simulate for a few seconds
-  // const int fps = 32;
-  // meshcat->StartRecording(fps);
-  // simulator.AdvanceTo(10.0);
-  // meshcat->StopRecording();
-  // meshcat->PublishRecording();
+  // Simulate for a few seconds
+  const int fps = 32;
+  meshcat->StartRecording(fps);
+  simulator.AdvanceTo(10.0);
+  meshcat->StopRecording();
+  meshcat->PublishRecording();
 
-  // std::cout << std::endl;
-  // PrintSimulatorStatistics(simulator);
-  // std::cout << std::endl;
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
 }
 
 }  // namespace systems

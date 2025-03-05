@@ -77,40 +77,6 @@ class HessianFactorization : public HessianFactorizationCache {
 };
 
 /**
- * Container for a linearized version of an external (e.g. controller) system
- * attached to the plant. If the original dynamics are
- *    ż = f(z,x),
- *    u = g(z, x),
- * with z the external system state and x the MbP state, the linearized dynamics
- * are
- *    ż = Az + Bx + f₀,
- *    u = Cz + Dx + g₀.
- */
-template <class T>
-struct LinearizedExternalSystem {
-  MatrixX<T> A;
-  MatrixX<T> B;
-  VectorX<T> f0;
-  MatrixX<T> C;
-  MatrixX<T> D;
-  VectorX<T> g0;
-};
-
-/**
- * Container for linear maps for external system implicit integration. In
- * particular, stores
- *    u = K v_{t+h} + k_0
- *    z_{t+h} = H x_{t+h} + h_0 
- */
-template <class T>
-struct ImplicitExternalSystemData {
-  MatrixX<T> K;
-  VectorX<T> k0;
-  MatrixX<T> H;
-  VectorX<T> h0;
-};
-
-/**
  * An experimental implicit integrator that solves a convex SAP problem to
  * advance the state, rather than relying on non-convex Newton-Raphson.
  */
@@ -196,8 +162,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // @param v_guess the initial guess for the MbP plant velocities.
   // @param x_next the output continuous state, includes both the plant and any
   //        external systems
-  void CalcNextContinuousState(const T& h,
-                               const VectorX<T>& v_guess,
+  void CalcNextContinuousState(const T& h, const VectorX<T>& v_guess,
                                ContinuousState<T>* x_next);
 
   // Create the sap problem, including contact constraints, for a particular
@@ -281,21 +246,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                       T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
                       VectorX<T>* d2ell_dalpha2_scratch = nullptr) const;
 
-  // Compute a linearization of the external (e.g. controller) system around the
-  // current state. This approximates the overall system diagram as
-  //
-  //        --------------------
-  //  --> u |  MultibodyPlant  | --> x
-  //  |     --------------------     |
-  //  |                              |
-  //  |     --------------------     |
-  //  |     | External System  |     |
-  //  u <-- | ż = Az + Bx + f₀ |<-----
-  //        | u = Cz + Dx + g₀ |
-  //        --------------------
-  //
-  void LinearizeExternalSystem(LinearizedExternalSystem<T>* linear_sys);
-
   // Linearize the external (e.g. controller) system around the current state.
   //
   // The original nonlinear controller
@@ -307,15 +257,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   //
   // We do the linearization via finite differences
   void LinearizeExternalSystem(const T& h, MatrixX<T>* K, VectorX<T>* u0);
-
-  // Compute the linear maps that we'll use to implicitly integrate the external
-  // system, 
-  //    u = K v_{t+h} + k_0,
-  // and 
-  //    z_{t+h} = H x_{t+h} + h_0.
-  void CalcImplicitExternalSystemData(
-      const LinearizedExternalSystem<T>& linear_sys, const T& h,
-      ImplicitExternalSystemData<T>* implicit_data) const;
 
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {
@@ -395,12 +336,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     // Used in AddContactConstraint
     DiscreteContactData<DiscreteContactPair<T>> contact_data;
   } workspace_;
-
-  // Linearization of an external controller system attached to the plant.
-  LinearizedExternalSystem<T> linearized_external_system_;
-
-  // Stores linear maps for implicit external system integration
-  ImplicitExternalSystemData<T> implicit_external_system_data_;
 };
 
 // Forward-declare specializations, prior to DRAKE_DECLARE... below.
