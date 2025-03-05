@@ -72,7 +72,7 @@ def _provision(python_targets):
     Prepares wheel build environment.
     """
     packages_path = os.path.join(resource_root, 'image', 'packages-macos')
-    command = ['brew', 'bundle', f'--file={packages_path}', '--no-lock']
+    command = ['brew', 'bundle', f'--file={packages_path}',]
     subprocess.check_call(command)
 
     for t in python_targets:
