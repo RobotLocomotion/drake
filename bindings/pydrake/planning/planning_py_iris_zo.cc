@@ -12,8 +12,6 @@ void DefinePlanningIrisZo(py::module m) {
   using namespace drake::planning;
   constexpr auto& doc = pydrake_doc.drake.planning;
 
-  py::module::import("pydrake.multibody.rational");
-
   // IrisZoOptions
   const auto& cls_doc = doc.IrisZoOptions;
   py::class_<IrisZoOptions>(m, "IrisZoOptions", cls_doc.doc)
@@ -65,9 +63,10 @@ void DefinePlanningIrisZo(py::module m) {
           },
           py::arg("parameterization"), py::arg("parameterization_dimension"),
           (std::string(cls_doc.set_parameterization.doc) +
-              "@note Because a python function cannot be called concurrently "
-              "by multiple C++ threads (due to GIL), the parameterization "
-              "setter function automatically sets threadsafe to false")
+              "@note Due to GIL, it is inefficient to call a python function "
+              "concurrently across multiple C++ threads. So the "
+              "parameterization setter function automatically sets threadsafe "
+              "to false")
               .c_str())
       .def("get_parameterization_is_threadsafe",
           &IrisZoOptions::get_parameterization_is_threadsafe,

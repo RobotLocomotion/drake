@@ -238,10 +238,10 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   builder.parser().package_map().AddPackageXml(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/package.xml"));
   builder.parser().AddModelsFromString(double_pendulum_urdf, "urdf");
-  auto plant_ptr = &(builder.plant());
+  auto* plant_ptr = &(builder.plant());
   plant_ptr->Finalize();
 
-  auto rational_kinematics = multibody::RationalForwardKinematics(plant_ptr);
+  multibody::RationalForwardKinematics rational_kinematics(plant_ptr);
   options = IrisZoOptions::CreateWithRationalKinematicParameterization(
       &rational_kinematics,
       /* q_star_val */ Vector2d::Zero());
