@@ -32,4 +32,4 @@ if ! command -v brew &>/dev/null; then
   exit 4
 fi
 
-brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
+brew bundle --file="${BASH_SOURCE%/*}/Brewfile"

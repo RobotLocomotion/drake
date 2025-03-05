@@ -54,7 +54,7 @@ std::unique_ptr<Frame<ToScalar>> FixedOffsetFrame<T>::TemplatedDoCloneToScalar(
   const Frame<ToScalar>& parent_frame_clone =
       tree_clone.get_variant(parent_frame_);
   return std::make_unique<FixedOffsetFrame<ToScalar>>(
-      this->name(), parent_frame_clone, X_PF_);
+      this->name(), parent_frame_clone, X_PF_, this->model_instance());
 }
 
 template <typename T>
@@ -79,7 +79,7 @@ FixedOffsetFrame<T>::DoCloneToScalar(
 template <typename T>
 std::unique_ptr<Frame<T>> FixedOffsetFrame<T>::DoShallowClone() const {
   return std::make_unique<FixedOffsetFrame<T>>(this->name(), parent_frame_,
-                                               X_PF_);
+                                               X_PF_, this->model_instance());
 }
 
 template <typename T>
