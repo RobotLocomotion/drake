@@ -2,8 +2,8 @@ diff --git b/cpplint.py a/cpplint.py
 old mode 100755
 new mode 100644
 index 10a69c0..a918b8c
---- b/cpplint.py
-+++ a/cpplint.py
+--- cpplint.py
++++ cpplint.py
 @@ -42,7 +42,6 @@ same line, but it is far from perfect (in either direction).
  """
  
