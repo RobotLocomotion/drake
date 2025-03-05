@@ -11,9 +11,10 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
     BasicVector, BasicVector_,
+    BusValue,
     Parameters,
     VectorBase,
-    )
+)
 
 
 def pass_through(x):
@@ -191,3 +192,32 @@ class TestValue(unittest.TestCase):
             Parameters(vec=model_numeric.Clone()),
             Parameters(value=model_abstract.Clone()),
             ]
+
+    def test_bus_value(self):
+        dut = BusValue()
+        dut.Set("foo", Value[str]("Hello"))
+        dut.Set("bar", Value[str]("World"))
+        self.assertEqual(dut.Find("foo").get_value(), "Hello")
+        self.assertEqual(dut.Find("bar").get_value(), "World")
+        self.assertIsNone(dut.Find("quux"))
+
+        # Iterating a non-empty BusValue.
+        found_something = False
+        for i, name in enumerate(dut):
+            found_something = True,
+            if i == 0:
+                self.assertEqual(name, "foo")
+                self.assertEqual(dut[name], "Hello")
+            elif i == 1:
+                self.assertEqual(name, "bar")
+                self.assertEqual(dut[name], "World")
+            else:
+                self.fail(f"i should not be {i}")
+        self.assertTrue(found_something)
+
+        # Iterating an empty BusValue.
+        dut.Clear()
+        for name in dut:
+            self.fail(f"wrong iteration for {name}")
+
+        copy.copy(dut)
