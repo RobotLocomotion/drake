@@ -68,6 +68,28 @@ void DefinePlanningIrisZo(py::module m) {
               "parameterization setter function automatically sets threadsafe "
               "to false")
               .c_str())
+      .def(
+          "SetParameterizationFromExpression",
+          [](IrisZoOptions& self,
+              const std::vector<symbolic::Expression>&
+                  expression_parameterization,
+              const std::vector<symbolic::Variable>& variables) {
+            Eigen::VectorX<symbolic::Expression> expression_vector(
+                expression_parameterization.size());
+            Eigen::VectorX<symbolic::Variable> variable_vector(
+                variables.size());
+            for (int i = 0; i < ssize(expression_parameterization); ++i) {
+              expression_vector[i] = expression_parameterization[i];
+            }
+            for (int i = 0; i < ssize(variables); ++i) {
+              variable_vector[i] = variables[i];
+            }
+
+            self.SetParameterizationFromExpression(
+                expression_vector, variable_vector);
+          },
+          py::arg("expression_parameterization"), py::arg("variables"),
+          cls_doc.SetParameterizationFromExpression.doc)
       .def("get_parameterization_is_threadsafe",
           &IrisZoOptions::get_parameterization_is_threadsafe,
           cls_doc.get_parameterization_is_threadsafe.doc)
