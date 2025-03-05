@@ -33,9 +33,9 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
 
     this->DeclareEqualityConstraint(&SparseSystem::CalcConstraint, kSize,
                                     "equality constraint");
-    this->DeclareInequalityConstraint(&SparseSystem::CalcConstraint,
-                                      { Eigen::VectorXd::Zero(kSize),
-                                      std::nullopt }, "inequality constraint");
+    this->DeclareInequalityConstraint(
+        &SparseSystem::CalcConstraint,
+        {Eigen::VectorXd::Zero(kSize), std::nullopt}, "inequality constraint");
   }
 
   void AddAbstractInputPort() {
@@ -109,8 +109,7 @@ class SparseSystem : public LeafSystem<symbolic::Expression> {
     const Eigen::Matrix2d B1 = 8 * Eigen::Matrix2d::Identity();
     const Eigen::Matrix2d B2 = 9 * Eigen::Matrix2d::Identity();
     const Eigen::Vector2d f0(10.0, 11.0);
-    Vector2<symbolic::Expression> next_xd =
-        A * xd + B1 * u0 + B2 * u1 + f0;
+    Vector2<symbolic::Expression> next_xd = A * xd + B1 * u0 + B2 * u1 + f0;
     if (!discrete_update_is_affine_) {
       next_xd(0) += cos(u0(0));
     }
@@ -180,9 +179,10 @@ TEST_F(SystemSymbolicInspectorTest, ConstraintTest) {
       "((xc0 >= 0) and (xc1 >= 0) and (xc0 <= inf) and (xc1 <= inf))",
   };
   std::vector<std::string> actual;
-  std::transform(
-      constraints.begin(), constraints.end(), std::back_inserter(actual),
-      [](const auto& item) { return item.to_string(); });
+  std::transform(constraints.begin(), constraints.end(),
+                 std::back_inserter(actual), [](const auto& item) {
+                   return item.to_string();
+                 });
   EXPECT_EQ(actual, expected);
 }
 

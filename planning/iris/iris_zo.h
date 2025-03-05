@@ -13,6 +13,7 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/collision_checker.h"
 
 namespace drake {
@@ -179,6 +180,16 @@ class IrisZoOptions {
   std::optional<int> get_parameterization_dimension() const {
     return parameterization_dimension_;
   }
+
+  /** Constructs an instance of IrisZoOptions that handles a rational kinematic
+   * parameterization. Regions are grown in the `s` variables, so as to minimize
+   * collisions in the `q` variables. See RationalForwardKinematics for details.
+   * @note The user is responsible for ensuring `kin` (and the underlying
+   * MultibodyPlant it is built on) is kept alive. If that object is deleted,
+   * then the parametrization can no longer be used. */
+  static IrisZoOptions CreateWithRationalKinematicParameterization(
+      const multibody::RationalForwardKinematics* kin,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val);
 
  private:
   bool parameterization_is_threadsafe_{true};

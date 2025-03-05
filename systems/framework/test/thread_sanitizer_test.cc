@@ -57,10 +57,10 @@ GTEST_TEST(ThreadSanitizerTest, PerThreadContextTest) {
   };
 
   // Dispatch parallel read & write operations on separate contexts.
-  std::future<void> context_A_rw_operation = std::async(
-      std::launch::async, context_rw_operation, context_A.get());
-  std::future<void> context_B_rw_operation = std::async(
-      std::launch::async, context_rw_operation, context_B.get());
+  std::future<void> context_A_rw_operation =
+      std::async(std::launch::async, context_rw_operation, context_A.get());
+  std::future<void> context_B_rw_operation =
+      std::async(std::launch::async, context_rw_operation, context_B.get());
 
   // Wait for operations to complete, and ensure they don't throw.
   DRAKE_EXPECT_NO_THROW(context_A_rw_operation.get());
@@ -86,10 +86,10 @@ GTEST_TEST(ThreadSanitizerTest, SharedFrozenContextTest) {
   context->FreezeCache();
 
   // Dispatch parallel read operations on the same context.
-  std::future<Eigen::VectorXd> context_ro_operation_1 = std::async(
-      std::launch::async, context_ro_operation, context.get());
-  std::future<Eigen::VectorXd> context_ro_operation_2 = std::async(
-      std::launch::async, context_ro_operation, context.get());
+  std::future<Eigen::VectorXd> context_ro_operation_1 =
+      std::async(std::launch::async, context_ro_operation, context.get());
+  std::future<Eigen::VectorXd> context_ro_operation_2 =
+      std::async(std::launch::async, context_ro_operation, context.get());
 
   // Wait for operations to complete, and ensure they don't throw.
   DRAKE_EXPECT_NO_THROW(context_ro_operation_1.get());

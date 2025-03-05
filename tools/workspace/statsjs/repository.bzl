@@ -1,8 +1,12 @@
 load("//tools/workspace:github.bzl", "github_archive")
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
 
 def statsjs_repository(
         name,
-        mirrors = None):
+        mirrors = None,
+        _is_drake_self_call = False):
+    if not _is_drake_self_call:
+        print_warning("statsjs_repository")
     github_archive(
         name = name,
         repository = "mrdoob/stats.js",

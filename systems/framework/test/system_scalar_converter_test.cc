@@ -42,8 +42,7 @@ class NonSymbolicSystem : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(NonSymbolicSystem);
 
   // User constructor.
-  explicit NonSymbolicSystem(int magic)
-      : magic_(magic) {
+  explicit NonSymbolicSystem(int magic) : magic_(magic) {
     // Declare input-output relation of `y[0] = copysign(magic, u[0])`.
     this->DeclareVectorInputPort(kUseDefaultName, 1);
     this->DeclareVectorOutputPort(
@@ -80,8 +79,8 @@ class FromDoubleSystem : public LeafSystem<T> {
   // are not templated on U, since FromDoubleSystem can only come from double.
   // Note that we need a dummy argument in order to avoid conflicting with our
   // copy constructor.
-  explicit FromDoubleSystem(
-      const FromDoubleSystem<double>& other, int dummy = 0)
+  explicit FromDoubleSystem(const FromDoubleSystem<double>& other,
+                            int dummy = 0)
       : FromDoubleSystem(other.magic()) {}
 
   int magic() const { return magic_; }
@@ -108,8 +107,10 @@ class SubclassOfAnyToAnySystem : public AnyToAnySystem<T> {
 }  // namespace
 
 namespace scalar_conversion {
-template <> struct Traits<NonSymbolicSystem> : public NonSymbolicTraits {};
-template <> struct Traits<FromDoubleSystem> : public FromDoubleTraits {};
+template <>
+struct Traits<NonSymbolicSystem> : public NonSymbolicTraits {};
+template <>
+struct Traits<FromDoubleSystem> : public FromDoubleTraits {};
 }  // namespace scalar_conversion
 
 namespace {
@@ -158,9 +159,9 @@ GTEST_TEST(SystemScalarConverterTest, Empty) {
 GTEST_TEST(SystemScalarConverterTest, DefaualtConstructor) {
   // With the default ctor, nothing is convertible.
   const SystemScalarConverter dut;
-  EXPECT_FALSE((dut.IsConvertible<double,     double>()));
-  EXPECT_FALSE((dut.IsConvertible<double,     AutoDiffXd>()));
-  EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_FALSE((dut.IsConvertible<double, double>()));
+  EXPECT_FALSE((dut.IsConvertible<double, AutoDiffXd>()));
+  EXPECT_FALSE((dut.IsConvertible<double, Expression>()));
   EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, double>()));
   EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, AutoDiffXd>()));
   EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
@@ -172,22 +173,22 @@ GTEST_TEST(SystemScalarConverterTest, DefaualtConstructor) {
 GTEST_TEST(SystemScalarConverterTest, TestAnyToAnySystem) {
   // We don't support T => T conversion -- that's the copy constructor, which
   // is usually disabled.
-  TestConversionFail<AnyToAnySystem, double,     double>();
+  TestConversionFail<AnyToAnySystem, double, double>();
   TestConversionFail<AnyToAnySystem, AutoDiffXd, AutoDiffXd>();
   TestConversionFail<AnyToAnySystem, Expression, Expression>();
 
   // We support all remaining combinations of standard types.
-  TestConversionPass<AnyToAnySystem, double,     AutoDiffXd, 1>();
-  TestConversionPass<AnyToAnySystem, double,     Expression, 2>();
-  TestConversionPass<AnyToAnySystem, AutoDiffXd, double,     3>();
+  TestConversionPass<AnyToAnySystem, double, AutoDiffXd, 1>();
+  TestConversionPass<AnyToAnySystem, double, Expression, 2>();
+  TestConversionPass<AnyToAnySystem, AutoDiffXd, double, 3>();
   TestConversionPass<AnyToAnySystem, AutoDiffXd, Expression, 4>();
-  TestConversionPass<AnyToAnySystem, Expression, double,     5>();
+  TestConversionPass<AnyToAnySystem, Expression, double, 5>();
   TestConversionPass<AnyToAnySystem, Expression, AutoDiffXd, 6>();
 }
 
 GTEST_TEST(SystemScalarConverterTest, TestNonSymbolicSystem) {
   // The always-disabled cases.
-  TestConversionFail<NonSymbolicSystem, double,     double>();
+  TestConversionFail<NonSymbolicSystem, double, double>();
   TestConversionFail<NonSymbolicSystem, AutoDiffXd, AutoDiffXd>();
 
   // All Expression conversions are disabled.
@@ -203,21 +204,21 @@ GTEST_TEST(SystemScalarConverterTest, TestNonSymbolicSystem) {
   EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
 
   // We support all remaining combinations of standard types.
-  TestConversionPass<NonSymbolicSystem, double,     AutoDiffXd, 1>();
-  TestConversionPass<NonSymbolicSystem, AutoDiffXd, double,     2>();
+  TestConversionPass<NonSymbolicSystem, double, AutoDiffXd, 1>();
+  TestConversionPass<NonSymbolicSystem, AutoDiffXd, double, 2>();
 }
 
 GTEST_TEST(SystemScalarConverterTest, TestFromDoubleSystem) {
   // The always-disabled cases.
-  TestConversionFail<FromDoubleSystem, double,     double>();
+  TestConversionFail<FromDoubleSystem, double, double>();
   TestConversionFail<FromDoubleSystem, AutoDiffXd, AutoDiffXd>();
   TestConversionFail<FromDoubleSystem, Expression, Expression>();
 
   // The from-non-double conversions are disabled.
-  TestConversionFail<FromDoubleSystem, double,     Expression>();
+  TestConversionFail<FromDoubleSystem, double, Expression>();
   TestConversionFail<FromDoubleSystem, AutoDiffXd, Expression>();
   TestConversionFail<FromDoubleSystem, Expression, AutoDiffXd>();
-  TestConversionFail<FromDoubleSystem, double,     AutoDiffXd>();
+  TestConversionFail<FromDoubleSystem, double, AutoDiffXd>();
 
   // We support all remaining combinations of standard types.
   TestConversionPass<FromDoubleSystem, Expression, double, 1>();
@@ -238,26 +239,28 @@ GTEST_TEST(SystemScalarConverterTest, SubclassMismatch) {
   {
     SystemScalarConverter dut(SystemTypeTag<AnyToAnySystem>{});
     const SubclassOfAnyToAnySystem<double> original;
-    EXPECT_THROW(({
-      try {
-        dut.Convert<AutoDiffXd, double>(original);
-      } catch (const std::runtime_error& e) {
-        EXPECT_THAT(
-            std::string(e.what()),
-            testing::MatchesRegex(
-                "SystemScalarConverter was configured to convert a "
-                ".*::AnyToAnySystem<double> into a "
-                ".*::AnyToAnySystem<drake::AutoDiffXd> but was called with a "
-                ".*::SubclassOfAnyToAnySystem<double> at runtime"));
-        throw;
-      }
-    }), std::runtime_error);
+    EXPECT_THROW(
+        ({
+          try {
+            dut.Convert<AutoDiffXd, double>(original);
+          } catch (const std::runtime_error& e) {
+            EXPECT_THAT(
+                std::string(e.what()),
+                testing::MatchesRegex(
+                    "SystemScalarConverter was configured to convert a "
+                    ".*::AnyToAnySystem<double> into a "
+                    ".*::AnyToAnySystem<drake::AutoDiffXd> but was called with "
+                    ".*::SubclassOfAnyToAnySystem<double> at runtime"));
+            throw;
+          }
+        }),
+        std::runtime_error);
   }
 
   // However, if subtype checking is off, the conversion is allowed to upcast.
   {
-    auto dut = SystemScalarConverter::MakeWithoutSubtypeChecking<
-        AnyToAnySystem>();
+    auto dut =
+        SystemScalarConverter::MakeWithoutSubtypeChecking<AnyToAnySystem>();
     const SubclassOfAnyToAnySystem<double> original;
     EXPECT_TRUE(is_dynamic_castable<AnyToAnySystem<AutoDiffXd>>(
         dut.Convert<AutoDiffXd, double>(original)));
@@ -270,29 +273,29 @@ GTEST_TEST(SystemScalarConverterTest, RemoveUnlessAlsoSupportedBy) {
   const SystemScalarConverter from_double(SystemTypeTag<FromDoubleSystem>{});
 
   // These are the defaults per TestAnyToAnySystem above.
-  EXPECT_TRUE((dut.IsConvertible<double,     AutoDiffXd>()));
-  EXPECT_TRUE((dut.IsConvertible<double,     Expression>()));
-  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<double, AutoDiffXd>()));
+  EXPECT_TRUE((dut.IsConvertible<double, Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double>()));
   EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, Expression>()));
-  EXPECT_TRUE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<Expression, double>()));
   EXPECT_TRUE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
   // We remove symbolic support.  Only double <=> AutoDiff remains.
   dut.RemoveUnlessAlsoSupportedBy(non_symbolic);
-  EXPECT_TRUE((dut.IsConvertible< double,     AutoDiffXd>()));
-  EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
-  EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<double, AutoDiffXd>()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double>()));
+  EXPECT_FALSE((dut.IsConvertible<double, Expression>()));
   EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
-  EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, double>()));
   EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
   // We remove from-AutoDiff support.  Only AutoDiff <= double remains.
   dut.RemoveUnlessAlsoSupportedBy(from_double);
-  EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
-  EXPECT_FALSE((dut.IsConvertible<double,     AutoDiffXd>()));
-  EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double>()));
+  EXPECT_FALSE((dut.IsConvertible<double, AutoDiffXd>()));
+  EXPECT_FALSE((dut.IsConvertible<double, Expression>()));
   EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
-  EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, double>()));
   EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
   // The conversion still actually works.
@@ -305,23 +308,23 @@ GTEST_TEST(SystemScalarConverterTest, Remove) {
   SystemScalarConverter dut(SystemTypeTag<AnyToAnySystem>{});
 
   // These are the defaults per TestAnyToAnySystem above.
-  EXPECT_TRUE((dut.IsConvertible<double,     AutoDiffXd>()));
-  EXPECT_TRUE((dut.IsConvertible<double,     Expression>()));
-  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<double, AutoDiffXd>()));
+  EXPECT_TRUE((dut.IsConvertible<double, Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double>()));
   EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, Expression>()));
-  EXPECT_TRUE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<Expression, double>()));
   EXPECT_TRUE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
   // We remove symbolic support.  Only double <=> AutoDiff remains.
-  dut.Remove<double,     Expression>();
+  dut.Remove<double, Expression>();
   dut.Remove<AutoDiffXd, Expression>();
-  dut.Remove<Expression, double    >();
+  dut.Remove<Expression, double>();
   dut.Remove<Expression, AutoDiffXd>();
-  EXPECT_TRUE((dut.IsConvertible< double,     AutoDiffXd>()));
-  EXPECT_FALSE((dut.IsConvertible<double,     Expression>()));
-  EXPECT_TRUE((dut.IsConvertible< AutoDiffXd, double    >()));
+  EXPECT_TRUE((dut.IsConvertible<double, AutoDiffXd>()));
+  EXPECT_FALSE((dut.IsConvertible<double, Expression>()));
+  EXPECT_TRUE((dut.IsConvertible<AutoDiffXd, double>()));
   EXPECT_FALSE((dut.IsConvertible<AutoDiffXd, Expression>()));
-  EXPECT_FALSE((dut.IsConvertible<Expression, double    >()));
+  EXPECT_FALSE((dut.IsConvertible<Expression, double>()));
   EXPECT_FALSE((dut.IsConvertible<Expression, AutoDiffXd>()));
 
   // The conversion still actually works.

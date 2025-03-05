@@ -974,8 +974,6 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
     geometry::ProximityProperties properties) {
   DRAKE_MBP_THROW_IF_FINALIZED();
   DRAKE_THROW_UNLESS(geometry_source_is_registered());
-  DRAKE_THROW_UNLESS(properties.HasProperty(geometry::internal::kMaterialGroup,
-                                            geometry::internal::kFriction));
 
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,

@@ -379,14 +379,8 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 
   const std::string extension = mesh_spec.extension();
   if (extension == ".obj") {
-    if (!mesh_spec.source().is_path()) {
-      throw std::runtime_error(
-          "In-memory meshes are still in development. Rigid hydroelastic "
-          "meshes from .obj must still be named with a file path.");
-    }
-    mesh =
-        make_unique<TriangleSurfaceMesh<double>>(ReadObjToTriangleSurfaceMesh(
-            mesh_spec.source().path(), mesh_spec.scale()));
+    mesh = make_unique<TriangleSurfaceMesh<double>>(
+        ReadObjToTriangleSurfaceMesh(mesh_spec.source(), mesh_spec.scale()));
   } else if (extension == ".vtk") {
     mesh = make_unique<TriangleSurfaceMesh<double>>(
         ConvertVolumeToSurfaceMesh(MakeVolumeMeshFromVtk<double>(mesh_spec)));

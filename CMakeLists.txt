@@ -477,8 +477,30 @@ endif()
 
 set(BAZEL_CONFIG)
 
-option(WITH_GUROBI "Build with support for Gurobi" OFF)
+# Defines common options for open-source solver dependencies.
+# By default, these are all ON.
+# Passes the corresponding options to Bazel.
+function(open_solver_option SOLVER)
+  string(TOUPPER "WITH_${SOLVER}" OPTION_NAME)
+  string(TOLOWER "with_${SOLVER}" OPTION_BAZEL_ARG)
+  option("${OPTION_NAME}" "Build with support for ${SOLVER}" ON)
+  if(${OPTION_NAME})
+    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=True")
+  else()
+    string(APPEND BAZEL_CONFIG " --@drake//tools/flags:${OPTION_BAZEL_ARG}=False")
+  endif()
+  set(BAZEL_CONFIG ${BAZEL_CONFIG} PARENT_SCOPE)
+endfunction()
 
+open_solver_option("Clarabel")
+open_solver_option("CLP")
+open_solver_option("CSDP")
+open_solver_option("Ipopt")
+open_solver_option("NLopt")
+open_solver_option("OSQP")
+open_solver_option("SCS")
+
+option(WITH_GUROBI "Build with support for Gurobi" OFF)
 if(WITH_GUROBI)
   find_package(Gurobi 10.0 EXACT MODULE REQUIRED)
 
@@ -491,13 +513,11 @@ if(WITH_GUROBI)
 endif()
 
 option(WITH_MOSEK "Build with support for MOSEK" OFF)
-
 if(WITH_MOSEK)
   string(APPEND BAZEL_CONFIG " --config=mosek")
 endif()
 
 option(WITH_OPENMP "Build with support for OpenMP" OFF)
-
 if(WITH_OPENMP)
   string(APPEND BAZEL_CONFIG " --config=omp")
 endif()

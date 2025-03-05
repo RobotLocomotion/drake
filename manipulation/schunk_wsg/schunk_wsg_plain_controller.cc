@@ -11,6 +11,7 @@
 #include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/saturation.h"
+#include "drake/systems/primitives/selector.h"
 
 using Eigen::Matrix;
 
@@ -111,51 +112,61 @@ SchunkWsgPlainController::SchunkWsgPlainController(ControlMode control_mode,
           Vector2<double>::Zero());
   switch (control_mode) {
     case ControlMode::kPosition: {
-      // Add a multiplexer to concatenate the desired grip state and the desired
-      // mean finger state.
-      auto concatenate_desired_states =
-          builder.AddSystem<systems::Multiplexer<double>>(
-              std::vector<int>({2, 2}));
-
-      // The output of concatenate_desired_states has the form
-      //
-      //   [q_tilde_0, v_tilde_0, q_tilde_1, v_tilde_1].
-      //
-      // whereas the PID controller takes
-      //
-      //   [q_tilde_0, q_tilde_0, v_tilde_0, v_tilde_1]
-      //
-      // We now construct a matrix gain block to swap the order of th
-      // elements.
-      Matrix4<double> D;
-      // clang-format off
-      D << 1, 0, 0, 0,
-           0, 0, 1, 0,
-           0, 1, 0, 0,
-           0, 0, 0, 1;
-      // clang-format on
-      auto convert_to_x_tilde_desired =
-          builder.AddSystem<systems::MatrixGain<double>>(D);
+      // Implement the following recipe:
+      //  x_tilde_desired = [q_tilde_0, q_tilde_1, v_tilde_0, v_tilde_1]
+      // with
+      //  q_tilde_0 = desired_mean_finger_state[0]
+      //  v_tilde_0 = desired_mean_finger_state[1]
+      //  q_tilde_1 = desired_grip_state[0]
+      //  v_tilde_1 = desired_grip_state[1]
+      // using a selector system.
+      const systems::SelectorParams params{
+          .inputs{systems::SelectorParams::InputPortParams{
+                      .name = "desired_mean_finger_state",
+                      .size = 2,
+                  },
+                  systems::SelectorParams::InputPortParams{
+                      .name = "desired_grip_state",
+                      .size = 2,
+                  }},
+          .outputs{systems::SelectorParams::OutputPortParams{
+              .name = "x_tilde_desired",
+              .selections{
+                  {
+                      .input_port_index = 0,
+                      .input_offset = 0,
+                  },
+                  {
+                      .input_port_index = 1,
+                      .input_offset = 0,
+                  },
+                  {
+                      .input_port_index = 0,
+                      .input_offset = 1,
+                  },
+                  {
+                      .input_port_index = 1,
+                      .input_offset = 1,
+                  },
+              }}}};
+      auto x_tilde_desired =
+          builder.AddSystem<systems::Selector<double>>(std::move(params));
+      builder.Connect(desired_mean_finger_state->get_output_port(),
+                      x_tilde_desired->get_input_port(0));
 
       // Get the input port.
-      desired_grip_state_input_port =
-          &concatenate_desired_states->get_input_port(1);
+      desired_grip_state_input_port = &x_tilde_desired->get_input_port(1);
 
       // Get the output port.
-      desired_control_state_output_port =
-          &convert_to_x_tilde_desired->get_output_port();
-
-      // Connect the subsystems.
-      builder.Connect(desired_mean_finger_state->get_output_port(),
-                      concatenate_desired_states->get_input_port(0));
-      builder.Connect(concatenate_desired_states->get_output_port(0),
-                      convert_to_x_tilde_desired->get_input_port());
-    } break;
+      desired_control_state_output_port = &x_tilde_desired->get_output_port();
+      break;
+    }
     case ControlMode::kForce: {
       // Get the output port.
       desired_control_state_output_port =
           &desired_mean_finger_state->get_output_port();
-    } break;
+      break;
+    }
   }
 
   // Add blocks to handle the feed-forward force

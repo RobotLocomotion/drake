@@ -1,3 +1,5 @@
+load("//tools/workspace:workspace_deprecation.bzl", "print_warning")
+
 def _impl(repo_ctx):
     repo_ctx.symlink(
         Label("@drake//tools/workspace/doxygen:package.BUILD.bazel"),
@@ -22,10 +24,21 @@ def _impl(repo_ctx):
         # provide a dummy binary.
         repo_ctx.file("doxygen", "# Doxygen is not supported on this platform")
 
-doxygen_repository = repository_rule(
+_doxygen_repository = repository_rule(
     doc = """Provides a @doxygen//:doxygen binary only supported on Ubuntu.""",
     attrs = {
         "mirrors": attr.string_list_dict(),
     },
     implementation = _impl,
 )
+
+def doxygen_repository(
+        name,
+        _is_drake_self_call = False,
+        **kwargs):
+    if not _is_drake_self_call:
+        print_warning("doxygen_repository")
+    _doxygen_repository(
+        name = name,
+        **kwargs
+    )

@@ -176,8 +176,10 @@ std::optional<ModelInstanceIndex> AddModelFromMesh(
     // and some shenanigans to placate MbP.
     const auto X_BG = math::RigidTransformd::Identity();
     const geometry::Mesh mesh(filename);
+    // We don't know any better than providing an empty ProximityProperties
+    // and waiting for SceneGraph to backfill with the default values.
     plant.RegisterCollisionGeometry(body, X_BG, mesh, "collision",
-                                    CoulombFriction<double>());
+                                    geometry::ProximityProperties());
     // TODO(SeanCurtis-TRI): If there's a material applied to the object, use
     // the specified color.
     plant.RegisterVisualGeometry(body, X_BG, mesh, "visual");

@@ -114,6 +114,7 @@ build:lsan --test_env=LSAN_OPTIONS
 build:lsan --test_env=LSAN_SYMBOLIZER_PATH
 build:lsan --test_tag_filters=-gurobi,-mosek,-snopt,-no_lsan
 build:lsan --test_lang_filters=-sh,-py
+build:lsan --test_timeout=120,600,1800,7200  # 2x
 build:lsan --define=USING_SANITIZER=ON
 
 ### LSan everything build. Clang only. ###
@@ -135,6 +136,7 @@ build:lsan_everything --run_under=//tools/dynamic_analysis:lsan
 build:lsan_everything --test_env=LSAN_OPTIONS
 build:lsan_everything --test_env=LSAN_SYMBOLIZER_PATH
 build:lsan_everything --test_lang_filters=-sh,-py
+build:lsan_everything --test_timeout=120,600,1800,7200  # 2x
 build:lsan_everything --define=USING_SANITIZER=ON
 
 ### TSan build. ###

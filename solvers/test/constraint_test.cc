@@ -360,6 +360,35 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   // Construct a constraint with psd Hessian and lower bound being -inf.
   QuadraticConstraint constraint3(Eigen::Matrix2d::Identity(), b, -kInf, 1);
   EXPECT_TRUE(constraint3.is_convex());
+
+  // Construct a constraint with a zero Hessian.
+  QuadraticConstraint constraint4(Eigen::Matrix2d::Zero(), b, 1, 1);
+  EXPECT_EQ(constraint4.hessian_type(),
+            QuadraticConstraint::HessianType::kZero);
+  EXPECT_TRUE(constraint4.is_convex());
+
+  // Construct a constraint with hessian trace being 0.
+  QuadraticConstraint constraint5((Eigen::Matrix2d() << 0, 1, 1, 0).finished(),
+                                  b, 1, 1);
+  EXPECT_EQ(constraint5.hessian_type(),
+            QuadraticConstraint::HessianType::kIndefinite);
+  EXPECT_FALSE(constraint5.is_convex());
+
+  // Construct a constraint whose Hessian is almost a zero-matrix.
+  const double kEps = std::numeric_limits<double>::epsilon();
+  QuadraticConstraint constraint6(
+      (Eigen::Matrix2d() << kEps, 2 * kEps, 2 * kEps, -2 * kEps).finished(), b,
+      1, 1);
+  EXPECT_EQ(constraint6.hessian_type(),
+            QuadraticConstraint::HessianType::kIndefinite);
+  EXPECT_FALSE(constraint6.is_convex());
+
+  // Construct a constraint whose Hessian's trace is almost zero.
+  QuadraticConstraint constraint7(
+      (Eigen::Matrix2d() << 2 * kEps, 0, 0, 3 * kEps).finished(), b, 1, 1);
+  EXPECT_EQ(constraint7.hessian_type(),
+            QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  EXPECT_FALSE(constraint7.is_convex());
 }
 
 GTEST_TEST(testConstraint, QudraticConstraintLDLtFailute) {
