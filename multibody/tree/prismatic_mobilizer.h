@@ -180,14 +180,12 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 
-  // Computes the kinematic mapping from generalized velocities v to time
-  // derivatives of the generalized positions `q̇`. For this mobilizer `q̇ = v`.
+  // Maps v to qdot, which for this mobilizer is q̇ = v̇.
   void MapVelocityToQDot(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& v,
                          EigenPtr<VectorX<T>> qdot) const final;
 
-  // Computes the kinematic mapping from time derivatives of the generalized
-  // positions `q̇` to generalized velocities v. For this mobilizer `v = q̇`.
+  // Maps qdot to v, which for this mobilizer is v = q̇.
   void MapQDotToVelocity(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          EigenPtr<VectorX<T>> v) const final;
