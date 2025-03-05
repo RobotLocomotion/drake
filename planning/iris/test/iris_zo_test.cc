@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/symbolic/expression.h"
+#include "drake/common/symbolic/expression/variable.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/maybe_pause_for_user.h"
 #include "drake/common/text_logging.h"
@@ -81,43 +83,95 @@ GTEST_TEST(IrisZoTest, JointLimits) {
   const Vector1d sample = Vector1d::Zero();
   Hyperellipsoid starting_ellipsoid =
       Hyperellipsoid::MakeHypersphere(1e-2, sample);
-  IrisZoOptions options;
-  options.verbose = true;
 
-  options.set_parameterization(
+  std::vector<IrisZoOptions> vector_of_options(3);
+
+  vector_of_options[0].set_parameterization(
       [](const VectorXd& q) -> VectorXd {
         return q;
       },
       /* parameterization_is_threadsafe */ false,
       /* parameterization_dimension */ 1);
 
-  // Check that the parameterization was set correctly. (Note the non-default
-  // value for parameterization_is_threadsafe.)
-  EXPECT_EQ(options.get_parameterization_is_threadsafe(), false);
-  ASSERT_TRUE(options.get_parameterization_dimension().has_value());
-  EXPECT_EQ(options.get_parameterization_dimension().value(), 1);
-  const Vector1d output = options.get_parameterization()(Vector1d(3.0));
-  EXPECT_NEAR(output[0], 3.0, 1e-15);
-
   // Now set the parameterization with parameterization_is_threadsafe set to
   // true.
-  options.set_parameterization(
+  vector_of_options[1].set_parameterization(
       [](const VectorXd& q) -> VectorXd {
         return q;
       },
       /* parameterization_is_threadsafe */ true,
       /* parameterization_dimension */ 1);
 
-  HPolyhedron region = IrisZoFromUrdf(limits_urdf, starting_ellipsoid, options);
+  auto variables = std::make_shared<Eigen::VectorX<symbolic::Variable>>(1);
+  (*variables)[0] = symbolic::Variable("q");
 
-  EXPECT_EQ(region.ambient_dimension(), 1);
+  Eigen::VectorX<symbolic::Expression> parameterization_expression(1);
+  parameterization_expression[0] = symbolic::Expression((*variables)[0]);
 
-  const double kTol = 1e-5;
-  const double qmin = -2.0, qmax = 2.0;
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
-  EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
-  EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  vector_of_options[2].SetParameterizationFromExpression(
+      parameterization_expression, variables);
+
+  // The first and second parameterizations were defined to be not threadsafe
+  // and threadsafe (respectively). The final parameterization is defined using
+  // an Expression, so it is threadsafe.
+  EXPECT_EQ(vector_of_options[0].get_parameterization_is_threadsafe(), false);
+  EXPECT_EQ(vector_of_options[1].get_parameterization_is_threadsafe(), true);
+  EXPECT_EQ(vector_of_options[2].get_parameterization_is_threadsafe(), true);
+
+  for (auto& options : vector_of_options) {
+    options.verbose = true;
+
+    // Check that the parameterization was set correctly.
+    ASSERT_TRUE(options.get_parameterization_dimension().has_value());
+    EXPECT_EQ(options.get_parameterization_dimension().value(), 1);
+    const Vector1d output = options.get_parameterization()(Vector1d(3.0));
+    EXPECT_NEAR(output[0], 3.0, 1e-15);
+
+    HPolyhedron region =
+        IrisZoFromUrdf(limits_urdf, starting_ellipsoid, options);
+
+    EXPECT_EQ(region.ambient_dimension(), 1);
+
+    const double kTol = 1e-5;
+    const double qmin = -2.0, qmax = 2.0;
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
+    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
+    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+  }
+
+  // Now we test two cases of an Expression parameterization where an error
+  // should be thrown. The first is when the output dimension doesn't match the
+  // configuration space dimension. (This error doesn't occur until IrisZo is
+  // called.)
+  Eigen::VectorX<symbolic::Expression>
+      parameterization_expression_wrong_dimension(2);
+  parameterization_expression_wrong_dimension[0] =
+      symbolic::Expression((*variables)[0]);
+  parameterization_expression_wrong_dimension[1] =
+      symbolic::Expression((*variables)[0]);
+  vector_of_options[0].SetParameterizationFromExpression(
+      parameterization_expression_wrong_dimension, variables);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(limits_urdf, starting_ellipsoid, vector_of_options[0]),
+      ".*parameterization returned a point with the wrong dimension.*");
+
+  // The second is when the variables used in the parameterization don't match
+  // the variables given in the second argument.
+  symbolic::Variable extra_variable("oops");
+  Eigen::VectorX<symbolic::Expression>
+      parameterization_expression_extra_variable(1);
+  parameterization_expression_extra_variable[0] =
+      (*variables)[0] + extra_variable;
+  EXPECT_THROW(vector_of_options[0].SetParameterizationFromExpression(
+                   parameterization_expression_extra_variable, variables),
+               std::exception);
+  Eigen::VectorX<symbolic::Expression>
+      parameterization_expression_missing_variable(1);
+  parameterization_expression_missing_variable[0] = symbolic::Expression(1);
+  EXPECT_THROW(vector_of_options[0].SetParameterizationFromExpression(
+                   parameterization_expression_missing_variable, variables),
+               std::exception);
 }
 
 // Reproduced from the IrisInConfigurationSpace unit tests.
@@ -327,6 +381,28 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
 
     MaybePauseForUser();
   }
+
+  // Verify that we can get the same behavior by using an Expression
+  // parameterization.
+  auto variables = std::make_shared<Eigen::VectorX<symbolic::Variable>>(2);
+  (*variables)[0] = symbolic::Variable("s1");
+  (*variables)[1] = symbolic::Variable("s2");
+
+  // The parameterization is qᵢ = atan2(2sᵢ, 1-sᵢ²) for i=1,2.
+  Eigen::VectorX<symbolic::Expression> parameterization_expression(2);
+  for (int i = 0; i < 2; ++i) {
+    parameterization_expression[i] =
+        atan2(2 * (*variables)[i], 1 - pow((*variables)[i], 2));
+  }
+  options.SetParameterizationFromExpression(parameterization_expression,
+                                            variables);
+  EXPECT_TRUE(options.get_parameterization_is_threadsafe());
+  EXPECT_EQ(options.get_parameterization_dimension(), 2);
+
+  region = IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options,
+                          &domain);
+  EXPECT_TRUE(region.PointInSet(region_query_point_1));
+  EXPECT_TRUE(region.PointInSet(region_query_point_2));
 
   // Verify that we fail gracefully if the parameterization has the wrong output
   // dimension (even if we claim it outputs the correct dimension).
@@ -585,6 +661,25 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
 
     MaybePauseForUser();
   }
+
+  // Finally, we test that the parameterization matches what we get when we
+  // build it up manually using an Expression.
+  auto variables = std::make_shared<Eigen::VectorX<symbolic::Variable>>(1);
+  (*variables)[0] = symbolic::Variable("q");
+
+  // The parameterization is (x, y) = (q, 2*q + 1)
+  Eigen::VectorX<symbolic::Expression> parameterization_expression(2);
+  parameterization_expression[0] = symbolic::Expression((*variables)[0]);
+  parameterization_expression[1] =
+      2 * symbolic::Expression((*variables)[0]) + 1;
+
+  options.SetParameterizationFromExpression(parameterization_expression,
+                                            variables);
+  EXPECT_TRUE(options.get_parameterization_is_threadsafe());
+  EXPECT_EQ(options.get_parameterization_dimension(), 1);
+  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain);
+  EXPECT_TRUE(region.PointInSet(region_query_point_1));
+  EXPECT_TRUE(region.PointInSet(region_query_point_2));
 }
 /* A movable sphere with fixed boxes in all corners.
 ┌───────────────┐

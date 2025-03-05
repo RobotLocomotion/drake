@@ -44,6 +44,7 @@ drake_cc_library(
     hdrs = ["iris_zo.h"],
     deps = [
         "//common:parallelism",
+        "//common/symbolic:expression",
         "//geometry:meshcat",
         "//geometry/optimization:convex_set",
         "//multibody/rational:rational_forward_kinematics",
@@ -103,6 +104,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":iris_zo",
+        "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry:meshcat",
