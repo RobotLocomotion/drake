@@ -296,6 +296,18 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   //
   void LinearizeExternalSystem(LinearizedExternalSystem<T>* linear_sys);
 
+  // Linearize the external (e.g. controller) system around the current state.
+  //
+  // The original nonlinear controller
+  //     u = g(x)
+  // is approximated as
+  //     u = K v + u0,
+  // Where we use the fact that q = q0 + h N v to write everything in terms of
+  // velocities.
+  //
+  // We do the linearization via finite differences
+  void LinearizeExternalSystem(const T& h, MatrixX<T>* K, VectorX<T>* u0);
+
   // Compute the linear maps that we'll use to implicitly integrate the external
   // system, 
   //    u = K v_{t+h} + k_0,

@@ -300,11 +300,6 @@ void ConvexIntegrator<T>::CalcNextContinuousState(const T& h,
     VectorX<T> z = diagram_context.get_continuous_state()
                        .get_misc_continuous_state()
                        .CopyToVector();
-    // VectorX<T> x(plant().num_positions() + plant().num_velocities());
-    // x << x_next->get_generalized_position().CopyToVector(),
-    //     x_next->get_generalized_velocity().CopyToVector();
-    // z = implicit_external_system_data_.H * x +
-    // implicit_external_system_data_.k0;
     z += h * z_dot;
     x_next->get_mutable_misc_continuous_state().SetFromVector(z);
   }
@@ -1408,6 +1403,82 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
       }
     }
   }
+}
+
+template <typename T>
+void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
+                                                  VectorX<T>* u0) {
+  using std::abs;
+  
+  // Get some useful sizes
+  const Context<T>& context = this->get_context();
+  const Context<T>& plant_context = plant().GetMyContextFromRoot(context);
+  const ContinuousState<T>& state = context.get_continuous_state();
+  const int nq = state.num_q();
+  const int nv = state.num_v();
+  const int nx = nq + nv;
+  const int nu = plant().num_actuators();
+
+  // TODO(vincekurtz): preallocate these in workspace
+  MatrixX<T> D(nu, nx);
+  VectorX<T> g0(nu);
+  MatrixX<T> N(nq, nv);
+
+  // Compute some quantities that depend on the current state, before moving
+  // messing with the state with finite differences
+  g0 = plant().get_actuation_input_port().Eval(plant_context);
+  N = plant().MakeVelocityToQDotMap(plant_context);
+
+  // Compute u = D(x - x0) + g0 with finite differences
+  Context<T>* mutable_context = this->get_mutable_context();
+  ContinuousState<T>& mutable_state =
+      mutable_context->get_mutable_continuous_state();
+  const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
+  const VectorX<T> s = state.CopyToVector();  // s = [x; z]
+  VectorX<T> s_prime = s;
+  
+  for (int i = 0; i < nx; ++i) {
+    // Choose a step size (following implicit_integrator.cc)
+    const T abs_si = abs(s(i));
+    T dsi(abs_si);
+    if (dsi <= 1) {
+      dsi = eps;
+    } else {
+      dsi = eps * abs_si;
+    }
+
+    // Ensure that s' and s differ by an exactly representable number
+    s_prime(i) = s(i) + dsi;
+    dsi = s_prime(i) - s(i);
+
+    // Put s' in the context and mark it as stale
+    mutable_state.SetFromVector(s_prime);
+    mutable_context->NoteContinuousStateChange();
+
+    // Compute the relevant matrix entries. Note that this assumes the state is
+    // organized as s = [x; z] where x is the plant state and z is the external
+    // system state.
+    D.col(i) =
+        (plant().get_actuation_input_port().Eval(plant_context) - g0) / dsi;
+
+    // Reset s' to s
+    s_prime(i) = s(i);
+  }
+  
+  // Reset the context back to how we found it
+  mutable_state.SetFromVector(s);
+  mutable_context->NoteContinuousStateChange();
+
+  // With D = [Dq, Dv] and q = q0 + h N v, we can write u = K v + u0.
+  const MatrixX<T> Dq = D.leftCols(nq);
+  const MatrixX<T> Dv = D.rightCols(nv);
+
+  // K = (Dv + h Dq N)
+  (*K) = Dv + h * Dq * N;
+
+  // u0 = g0 - Dv v0
+  const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
+  (*u0) = g0 - Dv * v0;
 }
 
 template <typename T>

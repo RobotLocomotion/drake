@@ -42,9 +42,9 @@ class ConvexIntegratorTester {
   ConvexIntegratorTester() = delete;
 
   static void LinearizeExternalSystem(
-      ConvexIntegrator<double>* integrator,
-      LinearizedExternalSystem<double>* linear_sys) {
-    integrator->LinearizeExternalSystem(linear_sys);
+      ConvexIntegrator<double>& integrator,
+      const double h, MatrixXd* K, VectorXd* u0) {
+    integrator.LinearizeExternalSystem(h, K, u0);
   }
 
   static LinearizedExternalSystem<double> GetLinearizedExternalSystem(
@@ -236,7 +236,7 @@ GTEST_TEST(ConvexIntegratorTest, CylinderSim) {
 GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   // Some options
   const double h = 0.01;
-  const bool use_discrete_sap = true;
+  const bool use_discrete_sap = false;
   
   VectorXd Kp(2), Kd(2), Ki(2);
   Kp << 0.2, 0.2;
@@ -296,36 +296,52 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   config.publish_every_time_step = true;
   ApplySimulatorConfig(config, &simulator);
 
-  if (!use_discrete_sap) {
-    ConvexIntegrator<double>& integrator =
-        simulator.reset_integrator<ConvexIntegrator<double>>();
-    integrator.set_requested_minimum_step_size(1e-5);
-    integrator.set_fixed_step_mode(true);
-    integrator.set_maximum_step_size(h);
-  }
+  ConvexIntegrator<double>& integrator =
+      simulator.reset_integrator<ConvexIntegrator<double>>();
+  integrator.set_requested_minimum_step_size(1e-5);
+  integrator.set_fixed_step_mode(true);
+  integrator.set_maximum_step_size(h);
+
+  // Set an interesting initial state
+  VectorXd q0(2), v0(2);
+  q0 << 0.1, 0.2;
+  v0 << 0.3, 0.4;
+  Context<double>& plant_context =
+      plant.GetMyMutableContextFromRoot(&simulator.get_mutable_context());
+  plant.SetPositions(&plant_context, q0);
+  plant.SetVelocities(&plant_context, v0);
   simulator.Initialize();
 
-  // // Linearize the non-plant system dynamics around the current state
-  // LinearizedExternalSystem<double> linear_sys =
-  //     ConvexIntegratorTester::GetLinearizedExternalSystem(&integrator);
-  // ConvexIntegratorTester::LinearizeExternalSystem(&integrator, &linear_sys);
+  // Linearize the non-plant system dynamics around the current state
+  MatrixXd K(plant.num_actuators(), plant.num_positions());
+  VectorXd u0(plant.num_actuators());
+  ConvexIntegratorTester::LinearizeExternalSystem(integrator, h, &K, &u0);
+
+  fmt::print("K:\n{}\n", fmt_eigen(K));
+  fmt::print("u0: {}\n", fmt_eigen(u0.transpose()));
 
   // // Reference linearization
   // const Context<double>& ctrl_context =
   //     ctrl->GetMyContextFromRoot(simulator.get_context());
   // auto true_linearization = FirstOrderTaylorApproximation(
-  //     *ctrl, ctrl_context, ctrl->get_input_port_estimated_state().get_index(),
+  //     *ctrl, ctrl_context,
+  //     ctrl->get_input_port_estimated_state().get_index(),
   //     ctrl->get_output_port().get_index());
 
-  // // Confirm that our finite difference linearization is close to the reference
-  // const double kTolerance = std::sqrt(std::numeric_limits<double>::epsilon());
-  // EXPECT_TRUE(CompareMatrices(linear_sys.A, true_linearization->A(), kTolerance,
+  // // Confirm that our finite difference linearization is close to the
+  // reference const double kTolerance =
+  // std::sqrt(std::numeric_limits<double>::epsilon());
+  // EXPECT_TRUE(CompareMatrices(linear_sys.A, true_linearization->A(),
+  // kTolerance,
   //                             MatrixCompareType::relative));
-  // EXPECT_TRUE(CompareMatrices(linear_sys.B, true_linearization->B(), kTolerance,
+  // EXPECT_TRUE(CompareMatrices(linear_sys.B, true_linearization->B(),
+  // kTolerance,
   //                             MatrixCompareType::relative));
-  // EXPECT_TRUE(CompareMatrices(linear_sys.C, true_linearization->C(), kTolerance,
+  // EXPECT_TRUE(CompareMatrices(linear_sys.C, true_linearization->C(),
+  // kTolerance,
   //                             MatrixCompareType::relative));
-  // EXPECT_TRUE(CompareMatrices(linear_sys.D, true_linearization->D(), kTolerance,
+  // EXPECT_TRUE(CompareMatrices(linear_sys.D, true_linearization->D(),
+  // kTolerance,
   //                             MatrixCompareType::relative));
   // EXPECT_TRUE(CompareMatrices(linear_sys.f0, true_linearization->f0(),
   //                             kTolerance, MatrixCompareType::relative));
@@ -334,10 +350,10 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
 
   // // Compute implicit integration data for the external system
   // const double h = 0.01;
-  // ImplicitExternalSystemData<double> implicit_data = 
+  // ImplicitExternalSystemData<double> implicit_data =
   //     ConvexIntegratorTester::GetImplicitExternalSystemData(&integrator);
   // ConvexIntegratorTester::CalcImplicitExternalSystemData(&integrator,
-  //     linear_sys, h, &implicit_data);    
+  //     linear_sys, h, &implicit_data);
 
   // // Reference implicit integration data
   // const MatrixXd A = true_linearization->A();
@@ -372,16 +388,16 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   // EXPECT_TRUE(CompareMatrices(implicit_data.k0, k0, kTolerance,
   //                             MatrixCompareType::relative));
 
-  // Simulate for a few seconds
-  const int fps = 32;
-  meshcat->StartRecording(fps);
-  simulator.AdvanceTo(10.0);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
+  // // Simulate for a few seconds
+  // const int fps = 32;
+  // meshcat->StartRecording(fps);
+  // simulator.AdvanceTo(10.0);
+  // meshcat->StopRecording();
+  // meshcat->PublishRecording();
 
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
+  // std::cout << std::endl;
+  // PrintSimulatorStatistics(simulator);
+  // std::cout << std::endl;
 }
 
 }  // namespace systems
