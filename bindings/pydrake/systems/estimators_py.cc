@@ -55,6 +55,15 @@ PYBIND11_MODULE(estimators, m) {
         py::arg("A"), py::arg("C"), py::arg("W"), py::arg("V"),
         doc.SteadyStateKalmanFilter.doc_ACWV);
 
+    m.def("DiscreteTimeSteadyStateKalmanFilter",
+        py::overload_cast<const Eigen::Ref<const Eigen::MatrixXd>&,
+            const Eigen::Ref<const Eigen::MatrixXd>&,
+            const Eigen::Ref<const Eigen::MatrixXd>&,
+            const Eigen::Ref<const Eigen::MatrixXd>&>(
+            &DiscreteTimeSteadyStateKalmanFilter),
+        py::arg("A"), py::arg("C"), py::arg("W"), py::arg("V"),
+        doc.DiscreteTimeSteadyStateKalmanFilter.doc);
+
     m.def(
         "SteadyStateKalmanFilter",
         [](const LinearSystem<double>& system,
