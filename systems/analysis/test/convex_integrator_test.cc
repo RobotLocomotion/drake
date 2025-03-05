@@ -41,10 +41,10 @@ class ConvexIntegratorTester {
  public:
   ConvexIntegratorTester() = delete;
 
-  static void LinearizeExternalSystem(ConvexIntegrator<double>& integrator,
+  static void LinearizeExternalSystem(ConvexIntegrator<double>* integrator,
                                       const double h, MatrixXd* K,
                                       VectorXd* u0) {
-    integrator.LinearizeExternalSystem(h, K, u0);
+    integrator->LinearizeExternalSystem(h, K, u0);
   }
 };
 
@@ -278,7 +278,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   // Linearize the non-plant system dynamics around the current state
   MatrixXd K(plant.num_actuators(), plant.num_positions());
   VectorXd u0(plant.num_actuators());
-  ConvexIntegratorTester::LinearizeExternalSystem(integrator, h, &K, &u0);
+  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &K, &u0);
 
   // Reference linearization via autodiff
   const Context<double>& ctrl_context =

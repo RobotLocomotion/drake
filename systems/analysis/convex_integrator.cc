@@ -133,6 +133,8 @@ void ConvexIntegrator<T>::DoInitialize() {
   using std::isnan;
   const int nq = plant().num_positions();
   const int nv = plant().num_velocities();
+  const int nu = plant().num_actuators();
+  const int nz = this->get_context().get_continuous_state().num_z();
 
   // TODO(vincekurtz): figure out some reasonable accuracy bounds and defaults
   const double kDefaultAccuracy = 1e-1;
@@ -141,12 +143,20 @@ void ConvexIntegrator<T>::DoInitialize() {
   // the workspace, but for now we'll just try to allocate most things here.
   workspace_.q.resize(nq);
   workspace_.v.resize(nv);
+  workspace_.z.resize(nz);
   workspace_.k.resize(nv);
   workspace_.f_ext = std::make_unique<MultibodyForces<T>>(plant());
   workspace_.v_star.resize(nv);
   workspace_.A_dense.resize(nv, nv);
   workspace_.A.assign(tree_topology().num_trees(), MatrixX<T>(nv, nv));
   workspace_.M.resize(nv, nv);
+  workspace_.B.resize(nv, nu);
+  workspace_.K.resize(nu, nv);
+  workspace_.u0.resize(nu);
+  workspace_.A_tilde.resize(nv, nv);
+  workspace_.D.resize(nu, nq + nv);
+  workspace_.g0.resize(nu);
+  workspace_.N.resize(nq, nv);
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -259,8 +269,8 @@ void ConvexIntegrator<T>::CalcNextContinuousState(const T& h,
       plant().GetMyContextFromRoot(diagram_context);
 
   // Workspace preallocations
-  // TODO(vincekurtz) allocate z
   VectorX<T>& q = workspace_.q;
+  VectorX<T>& z = workspace_.z;
   SapSolverResults<T>& sap_results = workspace_.sap_results;
 
   // Solve the SAP problem for next-step plant velocities v_{t+h}
@@ -280,7 +290,7 @@ void ConvexIntegrator<T>::CalcNextContinuousState(const T& h,
     const VectorX<T> z_dot = this->EvalTimeDerivatives(diagram_context)
                                  .get_misc_continuous_state()
                                  .CopyToVector();
-    VectorX<T> z = diagram_context.get_continuous_state()
+    z = diagram_context.get_continuous_state()
                        .get_misc_continuous_state()
                        .CopyToVector();
     z += h * z_dot;
@@ -861,27 +871,28 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   VectorX<T>& k = workspace_.k;
   MultibodyForces<T>& f_ext = *workspace_.f_ext;
   VectorX<T>& v_star = workspace_.v_star;
+  MatrixX<T>& B = workspace_.B;
+  MatrixX<T>& K = workspace_.K;
+  VectorX<T>& u0 = workspace_.u0;
+  MatrixX<T>& A_tilde = workspace_.A_tilde;
 
   // Linearization of external controller, u = K v + u0
-  // TODO(vincekurtz): pre-allocate these
-  const int nu = plant().num_actuators();
-  const int nv = plant().num_velocities();
-  MatrixX<T> B = plant().MakeActuationMatrix();
-  MatrixX<T> K(nu, nv);
-  VectorX<T> u0(nu);
-
-  if (nu > 0) {
+  B = plant().MakeActuationMatrix();
+  if (plant().num_actuators() > 0) {
     // Only do the linearization if a controller is connected
     LinearizeExternalSystem(h, &K, &u0);
+    A_tilde = - h * B * K;
+    // TODO(vincekurtz): ensure A_tilde is SPD
 
-    // TODO(vincekurtz): ensure BK is symmetric negative definite
+  } else {
+    A_tilde.setZero();
   }
 
   // linearized dynamics matrix A = M + hD - h B K
   plant().CalcMassMatrix(context, &M);
   A_dense = M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
-  A_dense -= h * B * K;
+  A_dense += A_tilde;
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
@@ -1411,12 +1422,11 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   const int nq = state.num_q();
   const int nv = state.num_v();
   const int nx = nq + nv;
-  const int nu = plant().num_actuators();
 
-  // TODO(vincekurtz): preallocate these in workspace
-  MatrixX<T> D(nu, nx);
-  VectorX<T> g0(nu);
-  MatrixX<T> N(nq, nv);
+  // Workspace pre-allocations
+  MatrixX<T>& D = workspace_.D;
+  VectorX<T>& g0 = workspace_.g0;
+  MatrixX<T>& N = workspace_.N;
 
   // Compute some quantities that depend on the current state, before moving
   // messing with the state with finite differences
@@ -1464,8 +1474,8 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   mutable_context->NoteContinuousStateChange();
 
   // With D = [Dq, Dv] and q = q0 + h N v, we can write u = K v + u0.
-  const MatrixX<T> Dq = D.leftCols(nq);
-  const MatrixX<T> Dv = D.rightCols(nv);
+  const Eigen::Ref<MatrixX<T>> Dq = D.leftCols(nq);
+  const Eigen::Ref<MatrixX<T>> Dv = D.rightCols(nv);
 
   // K = Dv + h Dq N
   (*K) = Dv + h * Dq * N;

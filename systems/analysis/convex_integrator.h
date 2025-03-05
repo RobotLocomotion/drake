@@ -321,8 +321,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Scratch space for intermediate calculations
   struct Workspace {
     // Used in DoStep
-    VectorX<T> q;                     // generalized positions
     VectorX<T> v;                     // generalized velocities
+
+    // Used in CalcNextContinuousState
+    VectorX<T> q;                     // generalized positions
+    VectorX<T> z;                     // controller states
     SapSolverResults<T> sap_results;  // Container for convex solve results
 
     // Used in MakeSapContactProblem
@@ -332,6 +335,16 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     MatrixX<T> M;               // mass matrix
     VectorX<T> k;               // coriolis terms from inverse dynamics
     std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
+
+    MatrixX<T> B;  // actuator selection matrix
+    MatrixX<T> K;  // linearized external system dynamics, u = Kv + u0
+    VectorX<T> u0;
+    MatrixX<T> A_tilde;  // SPD Hessian correction term, A_tilde = -hBK
+
+    // Used in LinearizeExternalSystem
+    MatrixX<T> D;
+    VectorX<T> g0;
+    MatrixX<T> N;
 
     // Used in AddContactConstraint
     DiscreteContactData<DiscreteContactPair<T>> contact_data;
