@@ -82,6 +82,7 @@ all of their maintainers, whose work is essential to Drake's success:
   * [gbench](https://github.com/google/benchmark)
   * [gflags](https://github.com/gflags/gflags)
   * [gtest](https://github.com/google/googletest)
+  * [highway](https://github.com/google/highway)
   * [numpy](https://numpy.org/)
   * [onetbb](https://github.com/oneapi-src/oneTBB)
   * [pybind11](https://pybind11.readthedocs.io/)
@@ -118,6 +119,8 @@ all of their maintainers, whose work is essential to Drake's success:
   * [libccd](https://github.com/danfis/libccd)
   * [nanoflann](https://github.com/jlblancoc/nanoflann)
   * [qhull](https://github.com/qhull/qhull)
+  * [spgrid](https://pages.cs.wisc.edu/~sifakis/project_pages/SPGrid.html)
+  * [tph_poisson](https://github.com/thinks/tph_poisson)
   * [voxelized_geometry_tools](https://github.com/ToyotaResearchInstitute/voxelized_geometry_tools)
 
 * Graphics
@@ -141,8 +144,11 @@ all of their maintainers, whose work is essential to Drake's success:
   * [conex](https://github.com/ToyotaResearchInstitute/conex)
   * [csdp](https://github.com/coin-or/csdp)
   * [ipopt](https://github.com/coin-or/ipopt)
+  * [lapack](https://github.com/Reference-LAPACK/lapack)
+  * [metis](https://github.com/KarypisLab/METIS)
   * [nlopt](https://github.com/stevengj/nlopt)
   * [osqp](https://github.com/osqp)
   * [scs](https://github.com/cvxgrp/scs)
+  * [spral](https://ralna.github.io/spral/)
   * [suitesparse](https://github.com/DrTimothyAldenDavis/SuiteSparse)
   * [sympy](https://github.com/sympy/sympy)

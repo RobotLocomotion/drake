@@ -14,6 +14,7 @@ and/or trajectories of dynamical systems.
   py::module::import("pydrake.geometry");
   py::module::import("pydrake.multibody.parsing");
   py::module::import("pydrake.multibody.plant");
+  py::module::import("pydrake.multibody.rational");
   py::module::import("pydrake.solvers");
   py::module::import("pydrake.symbolic");
   py::module::import("pydrake.systems.framework");

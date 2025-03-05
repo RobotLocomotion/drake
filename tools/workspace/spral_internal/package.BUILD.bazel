@@ -210,7 +210,6 @@ fortran_module(
     name = "spral_ssids_ciface",
     src = "interfaces/C/ssids.f90",
     uses = [
-        "spral_hw_topology",
         "spral_ssids",
     ],
 )
