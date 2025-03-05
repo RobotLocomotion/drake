@@ -1,13 +1,3 @@
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/skylark:py.bzl", "py_test")
-
-py_test(
-    name = "cpplint_unittest",
-    size = "small",
-    srcs = ["@cpplint_internal//:test_files"],
-    data = ["@cpplint_internal//:test_files"],
-    main = "@cpplint_internal//:cpplint_unittest.py",
-    tags = ["no_kcov"],
-)
 
 add_lint_tests()

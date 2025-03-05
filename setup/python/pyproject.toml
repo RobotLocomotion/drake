@@ -32,8 +32,6 @@ test = [
     "six",
     "u-msgpack-python",
     "websockets",
-    "parameterized",
-    "pytest",
 ]
 # (Additional) dependencies needed to build a Drake wheel.
 wheel = [

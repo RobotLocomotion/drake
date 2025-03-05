@@ -23,14 +23,3 @@ py_binary(
     python_version = "PY3",
     srcs_version = "PY3",
 )
-
-filegroup(
-    name = "test_files",
-    testonly = True,
-    srcs = [
-        "cpplint.py",
-        "cpplint_unittest.py",
-        "pyproject.toml",
-        "setup.py",
-    ],
-)
