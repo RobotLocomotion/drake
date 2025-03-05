@@ -199,6 +199,7 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
       plant().GetMyContextFromRoot(diagram_context);
 
   // Set time and time-step for debugging
+  const T t0 = diagram_context.get_time();
   time_ = diagram_context.get_time();
   time_step_ = h;
 
@@ -217,18 +218,21 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     // We're using fixed step mode, so we can just set the state to x_{t+h} and
     // move on. No need for error estimation.
     x_next.SetFrom(*x_next_full_);
-    mutable_context.NoteContinuousStateChange();
+    mutable_context.SetTimeAndNoteContinuousStateChange(t0 + h);
   } else {
     // We're using error control, and will compare with two half-sized steps.
 
-    // First half-step to (t + h/2) uses the initial velocity as a guess again
+    // First half-step to (t + h/2) uses the average of v_t and v_{t+1} as the
+    // initial guess
     solve_phase_ = 1;
+    v_guess += x_next_full_->get_generalized_velocity().CopyToVector();
+    v_guess /= 2.0;
     CalcNextContinuousState(0.5 * h, v_guess, x_next_half_1_.get());
 
     // For the second half-step to (t + h), we need to start from (t + h/2). So
     // we'll first set the system state to the result of the first half-step.
     x_next.SetFrom(*x_next_half_1_);
-    mutable_context.NoteContinuousStateChange();
+    mutable_context.SetTimeAndNoteContinuousStateChange(t0 + 0.5 * h);
 
     // Now we can take the second half-step. We'll use the solution of the full
     // step as our initial guess here.
@@ -236,20 +240,17 @@ bool ConvexIntegrator<T>::DoStep(const T& h) {
     v_guess = x_next_full_->get_generalized_velocity().CopyToVector();
     CalcNextContinuousState(0.5 * h, v_guess, x_next_half_2_.get());
 
+    // Set the state to the result of the second half-step (since this is more
+    // accurate than the full step, and we have it anyway).
+    x_next.SetFrom(*x_next_half_2_);
+    mutable_context.SetTimeAndNoteContinuousStateChange(t0 + h);
+
     // Estimate the error as the difference between the full step and the
     // two half-steps.
     ContinuousState<T>& err = *this->get_mutable_error_estimate();
     err.SetFrom(*x_next_full_);
     err.get_mutable_vector().PlusEqScaled(-1.0, x_next_half_2_->get_vector());
-
-    // Set the state to the result of the second half-step (since this is more
-    // accurate than the full step, and we have it anyway).
-    x_next.SetFrom(*x_next_half_2_);
-    mutable_context.NoteContinuousStateChange();
   }
-
-  // Advance time to t+h
-  mutable_context.SetTime(diagram_context.get_time() + h);
 
   return true;  // step was successful
 }
@@ -258,11 +259,6 @@ template <typename T>
 void ConvexIntegrator<T>::CalcNextContinuousState(const T& h,
                                                   const VectorX<T>& v_guess,
                                                   ContinuousState<T>* x_next) {
-  // Compute data for implicit integration of the external system
-  // LinearizeExternalSystem(&linearized_external_system_);
-  // CalcImplicitExternalSystemData(linearized_external_system_, h,
-  //                                &implicit_external_system_data_);
-
   // Get context for the overall diagram and the plant in particular
   const Context<T>& diagram_context = this->get_context();
   const Context<T>& plant_context =
