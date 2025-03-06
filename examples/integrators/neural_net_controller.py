@@ -45,7 +45,7 @@ if __name__=="__main__":
 
     plant, scene_graph = AddMultibodyPlantSceneGraph(
         builder, time_step=args.mbp_time_step)
-    
+
     ground_box = plant.AddRigidBody(
         "ground", SpatialInertia(1, np.array([0, 0, 0]), UnitInertia(1, 1, 1)))
     X_WG = RigidTransform([0, 0, -0.05])
@@ -59,17 +59,21 @@ if __name__=="__main__":
 
     Parser(plant).AddModels(
         url="package://drake_models/atlas/atlas_convex_hull.urdf")
-    
+
+    plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, 0.0])
     plant.Finalize()
 
-    # TODO: use neural net for the controller
-    ctrl = builder.AddSystem(
-        ConstantVectorSource(np.zeros(plant.num_actuators())))
+    nu = plant.num_actuators()
+    nx = plant.num_multibody_states()
+    ctrl = builder.AddSystem(MultilayerPerceptron([nx, 128, 128, nu]))
     builder.Connect(ctrl.get_output_port(), plant.get_actuation_input_port())
+    builder.Connect(plant.get_state_output_port(), ctrl.get_input_port())
 
     AddDefaultVisualization(builder=builder, meshcat=meshcat)
 
+    print("Building the diagram...")
     diagram = builder.Build()
+    print("done building.")
 
     # Set the initial state
     context = diagram.CreateDefaultContext()
@@ -77,6 +81,10 @@ if __name__=="__main__":
     q0 = plant.GetPositions(plant_context)
     q0[6] = 1.0
     plant.SetPositions(plant_context, q0)
+
+    # Set random weights for the controller
+    ctrl_context = ctrl.GetMyMutableContextFromRoot(context)
+    ctrl.SetRandomContext(ctrl_context, RandomGenerator(0))
 
     # Set up the simulator
     config = SimulatorConfig()
@@ -105,4 +113,3 @@ if __name__=="__main__":
 
     # Print a summary of solver statistics
     PrintSimulatorStatistics(simulator)
-    
