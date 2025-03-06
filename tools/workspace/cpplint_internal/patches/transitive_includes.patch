@@ -59,7 +59,7 @@ index 7a8b8ab..b52a4e5 100755
 +  for header in header_keys:
 +    (same_module, common_path) = FilesBelongToSameModule(abs_filename, header)
 +    fullpath = common_path + header
-+    if same_module and UpdateIncludeState(fullpath, include_dict, io):
++    if same_module:
 +      header_found = True
 +
 +  # If we can't find the header file for a .cc, assume it's because we don't
