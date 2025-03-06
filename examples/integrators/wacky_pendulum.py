@@ -25,7 +25,6 @@ class WackyController(LeafSystem):
     def CalcOutput(self, context, output):
         x = self.state_input_port.Eval(context)
         u = -np.sin(2 * np.pi * x[1])
-        print(f"v = {x[1]}")
         output.SetFromVector([u])
 
 
@@ -51,7 +50,15 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--sim_time",
-        type=float, default=10.0, help="Simulation time (in seconds)."
+        type=float,
+        default=10.0,
+        help="Simulation time (in seconds)."
+    )
+    parser.add_argument(
+        "--dont_wait_for_meshcat",
+        action="store_true",
+        default=False,
+        help="Don't wait for meshcat to load (good for unit tests)."
     )
     args = parser.parse_args()
 
@@ -91,13 +98,21 @@ if __name__ == "__main__":
     simulator.Initialize()
 
     print(f"Running with {args.integrator} at accuracy = {args.accuracy}.")
-    input("Waiting for meshcat... press [ENTER] to continue")
+    if not args.dont_wait_for_meshcat:
+        input("Waiting for meshcat... press [ENTER] to continue")
 
     # Run the sim
     meshcat.StartRecording()
     simulator.AdvanceTo(args.sim_time)
     meshcat.StopRecording()
     meshcat.PublishRecording()
+
+    # Check the final velocity
+    v = plant.GetVelocities(plant_context)
+    print(f"Final velocity: {v}")
+    if args.v0 > 0.5 and args.v0 < 1.5:
+        # Final velocity should be near the faster equilibrium
+        assert np.linalg.norm(v - 1.0) < 0.1
 
     # Print a summary of solver statistics
     PrintSimulatorStatistics(simulator)

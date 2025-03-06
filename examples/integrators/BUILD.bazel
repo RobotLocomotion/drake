@@ -49,7 +49,15 @@ drake_py_binary(
 drake_py_binary(
     name = "wacky_pendulum",
     srcs = ["wacky_pendulum.py"],
+    add_test_rule = 1,
     data = ["//examples/pendulum:models"],
+    test_rule_args = [
+        "--dont_wait_for_meshcat",
+        "--accuracy=0.01",
+        "--sim_time=1.0",
+        "--integrator=convex",
+        "--v0=0.6",
+    ],
     deps = [
         "//bindings/pydrake",
     ],
