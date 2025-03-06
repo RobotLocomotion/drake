@@ -16,6 +16,7 @@ from pydrake.systems.framework import (
     InputPort,
     TriggerType,
     VectorBase,
+    kUseDefaultName,
 )
 from pydrake.systems.test.test_util import (
     MyVector2,
@@ -24,6 +25,8 @@ from pydrake.systems.primitives import (
     Adder, Adder_,
     AddRandomInputs,
     AffineSystem, AffineSystem_,
+    BusCreator, BusCreator_,
+    BusSelector, BusSelector_,
     ConstantValueSource, ConstantValueSource_,
     ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
@@ -92,6 +95,8 @@ class TestGeneral(unittest.TestCase):
         # resolved for dtype=object, or dtype=custom is used.
         self._check_instantiations(Adder_)
         self._check_instantiations(AffineSystem_)
+        self._check_instantiations(BusCreator_)
+        self._check_instantiations(BusSelector_)
         self._check_instantiations(ConstantValueSource_)
         self._check_instantiations(ConstantVectorSource_)
         self._check_instantiations(Demultiplexer_)
@@ -329,6 +334,24 @@ class TestGeneral(unittest.TestCase):
 
         self.assertEqual(dut.get_output_port_w_out().size(), 3)
         self.assertEqual(dut.get_output_port_w_out_density().size(), 1)
+
+    @numpy_compare.check_all_types
+    def test_bus_creator(self, T):
+        dut = BusCreator_[T](output_port_name="foo")
+        dut.DeclareVectorInputPort(name="vec", size=2)
+        dut.DeclareVectorInputPort(name=kUseDefaultName, size=2)
+        dut.DeclareAbstractInputPort(name="abs", model_value=Value[str]())
+        dut.DeclareAbstractInputPort(name=kUseDefaultName,
+                                     model_value=Value[object]())
+
+    @numpy_compare.check_all_types
+    def test_bus_selector(self, T):
+        dut = BusSelector_[T](input_port_name="bar")
+        dut.DeclareVectorOutputPort(name="vec", size=2)
+        dut.DeclareVectorOutputPort(name=kUseDefaultName, size=2)
+        dut.DeclareAbstractOutputPort(name="abs", model_value=Value[str]())
+        dut.DeclareAbstractOutputPort(name=kUseDefaultName,
+                                      model_value=Value[object]())
 
     def test_vector_pass_through(self):
         model_value = BasicVector([1., 2, 3])
