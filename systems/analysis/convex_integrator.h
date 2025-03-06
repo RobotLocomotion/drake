@@ -326,7 +326,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Scratch space for intermediate calculations
   struct Workspace {
     // Used in DoStep
-    VectorX<T> v;                     // generalized velocities
+    VectorX<T> v;  // generalized velocities
 
     // Used in CalcNextContinuousState
     VectorX<T> q;                     // generalized positions

@@ -5,7 +5,7 @@ import numpy as np
 ##
 #
 # Simulate a simple pendulum with a strange controller that applies torques
-# 
+#
 #   u = - sin(2πv).
 #
 # This gives a controller with various unstable regions, and stable equilibria
@@ -13,19 +13,23 @@ import numpy as np
 #
 ##
 
+
 class WackyController(LeafSystem):
     def __init__(self):
         super().__init__()
-        self.state_input_port = self.DeclareVectorInputPort(name="state", size=2)
-        self.DeclareVectorOutputPort(name="control", size=1, calc=self.CalcOutput)
+        self.state_input_port = self.DeclareVectorInputPort(
+            name="state", size=2)
+        self.DeclareVectorOutputPort(
+            name="control", size=1, calc=self.CalcOutput)
 
     def CalcOutput(self, context, output):
         x = self.state_input_port.Eval(context)
-        u = - np.sin(2 * np.pi * x[1])
+        u = -np.sin(2 * np.pi * x[1])
         print(f"v = {x[1]}")
         output.SetFromVector([u])
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--v0",
@@ -37,7 +41,7 @@ if __name__=="__main__":
         "--integrator",
         type=str,
         default="convex",
-        help="Integrator to use, e.g., 'convex', 'implicit_euler'."
+        help="Integrator to use, e.g., 'convex', 'implicit_euler'.",
     )
     parser.add_argument(
         "--accuracy",
@@ -47,9 +51,7 @@ if __name__=="__main__":
     )
     parser.add_argument(
         "--sim_time",
-        type=float,
-        default=10.0,
-        help="Simulation time (in seconds)."
+        type=float, default=10.0, help="Simulation time (in seconds)."
     )
     args = parser.parse_args()
 
@@ -58,19 +60,14 @@ if __name__=="__main__":
     builder = DiagramBuilder()
 
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, time_step=0.0)
-    Parser(plant).AddModels(url="package://drake/examples/pendulum/Pendulum.urdf")
+    Parser(plant).AddModels(
+        url="package://drake/examples/pendulum/Pendulum.urdf")
     plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, 0.0])
     plant.Finalize()
 
     ctrl = builder.AddSystem(WackyController())
-    builder.Connect(
-        ctrl.get_output_port(),
-        plant.get_actuation_input_port()
-    )
-    builder.Connect(
-        plant.get_state_output_port(),
-        ctrl.get_input_port()
-    )
+    builder.Connect(ctrl.get_output_port(), plant.get_actuation_input_port())
+    builder.Connect(plant.get_state_output_port(), ctrl.get_input_port())
 
     AddDefaultVisualization(builder=builder, meshcat=meshcat)
 
@@ -93,7 +90,7 @@ if __name__=="__main__":
     ApplySimulatorConfig(config, simulator)
     simulator.Initialize()
 
-    print(f"Running with {args.integrator} integration at accuracy = {args.accuracy}.")
+    print(f"Running with {args.integrator} at accuracy = {args.accuracy}.")
     input("Waiting for meshcat... press [ENTER] to continue")
 
     # Run the sim
@@ -104,4 +101,3 @@ if __name__=="__main__":
 
     # Print a summary of solver statistics
     PrintSimulatorStatistics(simulator)
-    

@@ -288,8 +288,8 @@ void ConvexIntegrator<T>::CalcNextContinuousState(const T& h,
                                  .get_misc_continuous_state()
                                  .CopyToVector();
     z = diagram_context.get_continuous_state()
-                       .get_misc_continuous_state()
-                       .CopyToVector();
+            .get_misc_continuous_state()
+            .CopyToVector();
     z += h * z_dot;
     x_next->get_mutable_misc_continuous_state().SetFromVector(z);
   }
@@ -881,7 +881,7 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
     tau0.setZero();
   }
 
-  // linearized dynamics matrix A = M + hD + Ã 
+  // linearized dynamics matrix A = M + hD + Ã
   plant().CalcMassMatrix(context, &M);
   A_dense = M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
@@ -1472,14 +1472,14 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   mutable_state.SetFromVector(s);
   mutable_context->NoteContinuousStateChange();
 
-  // We'll use D = [Dq, Dv] and q = q0 + h N v to write everything in terms of 
+  // We'll use D = [Dq, Dv] and q = q0 + h N v to write everything in terms of
   // velocities.
   const Eigen::Ref<MatrixX<T>> Dq = D.leftCols(nq);
   const Eigen::Ref<MatrixX<T>> Dv = D.rightCols(nv);
 
   // Square matrices that we can project to be symmetric positive definite
-  P = - B * Dv;
-  Q = - B * Dq * N;
+  P = -B * Dv;
+  Q = -B * Dq * N;
 
   // We'll do SPD projection on P and Q rather than Ã to ensure that non-convex
   // components of the external system dynamics are treated explicitly.
@@ -1496,7 +1496,7 @@ template <typename T>
 void ConvexIntegrator<T>::ProjectSPD(MatrixX<T>* M_ptr) const {
   MatrixX<T>& M = *M_ptr;
   DRAKE_ASSERT(M.rows() == M.cols());
-  
+
   // Enforce symmetry
   M = 0.5 * (M + M.transpose());
 

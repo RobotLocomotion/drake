@@ -276,9 +276,10 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   simulator.Initialize();
 
   // Linearize the non-plant system dynamics around the current state
-  MatrixXd K(plant.num_actuators(), plant.num_positions());
-  VectorXd u0(plant.num_actuators());
-  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &K, &u0);
+  const int nv = plant.num_velocities();
+  MatrixXd A(nv, nv);
+  VectorXd tau(nv);
+  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &A, &tau);
 
   // Reference linearization via autodiff
   const Context<double>& ctrl_context =
@@ -287,19 +288,22 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
       *ctrl, ctrl_context, ctrl->get_input_port_estimated_state().get_index(),
       ctrl->get_output_port().get_index());
 
+  const MatrixXd B = plant.MakeActuationMatrix();
   const MatrixXd& D = true_linearization->D();
-
-  const MatrixXd K_ref = D.rightCols(2) + h * D.leftCols(2);  // N(q) = I
-  const VectorXd u0_ref = plant.get_actuation_input_port().Eval(plant_context) -
+  const MatrixXd K = D.rightCols(2) + h * D.leftCols(2);  // N(q) = I
+  const VectorXd u0 = plant.get_actuation_input_port().Eval(plant_context) -
                           D.rightCols(2) * plant.GetVelocities(plant_context);
+
+  const MatrixXd A_ref = - h * B * K;
+  const VectorXd tau_ref = B * u0;
 
   // Confirm that our finite difference linearization is close to the reference
   const double kTolerance = std::sqrt(std::numeric_limits<double>::epsilon());
 
   EXPECT_TRUE(
-      CompareMatrices(K, K_ref, kTolerance, MatrixCompareType::relative));
+      CompareMatrices(A, A_ref, kTolerance, MatrixCompareType::relative));
   EXPECT_TRUE(
-      CompareMatrices(u0, u0_ref, kTolerance, MatrixCompareType::relative));
+      CompareMatrices(tau, tau_ref, kTolerance, MatrixCompareType::relative));
 
   // Simulate for a few seconds
   const int fps = 32;
