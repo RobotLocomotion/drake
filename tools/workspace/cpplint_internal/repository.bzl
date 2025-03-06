@@ -6,8 +6,8 @@ def cpplint_internal_repository(
     github_archive(
         name = name,
         repository = "cpplint/cpplint",
-        commit = "f4363d7fc0d5f38c4fd41b658e069e96583da0d5",
-        sha256 = "c1502a16e609c65731cd6eb62b94eb2e4ef5be195e57d85a5619f4ff12a0de3e",  # noqa
+        commit = "80da3c1ef37af017715dc1366fbda8263179bdeb",
+        sha256 = "006d8ce87a2dcc8a644b78fe0c2d4d45bc52ca41414ea66d3c7dcd6ae3e61d9e",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/transitive_includes.patch"
