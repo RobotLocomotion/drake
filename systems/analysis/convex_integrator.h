@@ -249,14 +249,19 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Linearize the external (e.g. controller) system around the current state.
   //
   // The original nonlinear controller
-  //     u = g(x)
+  //     τ = B u = B g(x)
   // is approximated as
-  //     u = K v + u0,
-  // Where we use the fact that q = q0 + h N v to write everything in terms of
-  // velocities.
+  //     τ = τ₀ − Ãv,
+  // where Ã is symmetric and positive definite, and we use the fact that q = q0
+  // + h N v to write everything in terms of velocities.
   //
   // We do the linearization via finite differences
-  void LinearizeExternalSystem(const T& h, MatrixX<T>* K, VectorX<T>* u0);
+  void LinearizeExternalSystem(const T& h, MatrixX<T>* A_tilde,
+                               VectorX<T>* tau0);
+
+  // Project the given (square) matrix to a nearby symmetric positive
+  // (semi)-definite matrix.
+  void ProjectSPD(MatrixX<T>* M) const;
 
   // Tree topology used for defining the sparsity pattern in A.
   const MultibodyTreeTopology& tree_topology() const {

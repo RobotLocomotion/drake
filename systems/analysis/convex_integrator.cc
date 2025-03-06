@@ -867,30 +867,26 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   VectorX<T>& k = workspace_.k;
   MultibodyForces<T>& f_ext = *workspace_.f_ext;
   VectorX<T>& v_star = workspace_.v_star;
-  MatrixX<T>& B = workspace_.B;
-  MatrixX<T>& K = workspace_.K;
-  VectorX<T>& u0 = workspace_.u0;
   MatrixX<T>& A_tilde = workspace_.A_tilde;
 
-  // Linearization of external controller, u = K v + u0
-  B = plant().MakeActuationMatrix();
+  //TODO: pre-allocate
+  VectorX<T> tau0(plant().num_velocities());
+
+  // Linearization of external controller connected to the actuation input port,
+  // τ = B u = B g(x) ≈ τ₀ − Ã v.
   if (plant().num_actuators() > 0) {
     // Only do the linearization if a controller is connected
-    LinearizeExternalSystem(h, &K, &u0);
-    A_tilde = - h * B * K;
+    LinearizeExternalSystem(h, &A_tilde, &tau0);
 
     // Ensure A_tilde is SPD
-    A_tilde = 0.5 * (A_tilde + A_tilde.transpose());
-    const Eigen::SelfAdjointEigenSolver<MatrixX<T>> solver(A_tilde);
-    const MatrixX<T> Q = solver.eigenvectors();
-    const VectorX<T> D = solver.eigenvalues();
-    A_tilde = Q * D.cwiseMax(0).asDiagonal() * Q.transpose();
+    // ProjectSPD(&A_tilde);
 
   } else {
     A_tilde.setZero();
+    tau0.setZero();
   }
 
-  // linearized dynamics matrix A = M + hD - h B K
+  // linearized dynamics matrix A = M + hD + Ã 
   plant().CalcMassMatrix(context, &M);
   A_dense = M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
@@ -906,7 +902,7 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // TODO(vincekurtz): consider using a sparse solve here
   // TODO(vincekurtz): include external generalized and spatial forces
   plant().CalcForceElementsContribution(context, &f_ext);
-  f_ext.mutable_generalized_forces() += B * u0;
+  f_ext.mutable_generalized_forces() += tau0;
 
   k = plant().CalcInverseDynamics(
       context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
@@ -1413,8 +1409,9 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
-                                                  VectorX<T>* u0) {
+void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
+                                                  MatrixX<T>* A_tilde,
+                                                  VectorX<T>* tau0) {
   using std::abs;
 
   // Get some useful sizes
@@ -1430,10 +1427,16 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   VectorX<T>& g0 = workspace_.g0;
   MatrixX<T>& N = workspace_.N;
 
+  // TODO: allocate in workspace
+  MatrixX<T> P(nv, nv);
+  MatrixX<T> Q(nv, nv);
+
   // Compute some quantities that depend on the current state, before moving
   // messing with the state with finite differences
+  const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
   g0 = plant().get_actuation_input_port().Eval(plant_context);
   N = plant().MakeVelocityToQDotMap(plant_context);
+  MatrixX<T> B = plant().MakeActuationMatrix();
 
   // Compute u = D(x - x0) + g0 with finite differences
   Context<T>* mutable_context = this->get_mutable_context();
@@ -1475,16 +1478,40 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   mutable_state.SetFromVector(s);
   mutable_context->NoteContinuousStateChange();
 
-  // With D = [Dq, Dv] and q = q0 + h N v, we can write u = K v + u0.
+  // We'll use D = [Dq, Dv] and q = q0 + h N v to write everything in terms of 
+  // velocities.
   const Eigen::Ref<MatrixX<T>> Dq = D.leftCols(nq);
   const Eigen::Ref<MatrixX<T>> Dv = D.rightCols(nv);
 
-  // K = Dv + h Dq N
-  (*K) = Dv + h * Dq * N;
+  // Square matrices that we can project to be symmetric positive definite
+  P = - B * Dv;
+  Q = - B * Dq * N;
 
-  // u0 = g0 - Dv v0
-  const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
-  (*u0) = g0 - Dv * v0;
+  // We'll do SPD projection on P and Q rather than Ã to ensure that non-convex
+  // components of the external system dynamics are treated explicitly.
+  // Otherwise these components would be ingored entirely, resulting in wrong
+  // dynamics.
+  ProjectSPD(&P);
+  ProjectSPD(&Q);
+
+  (*A_tilde) = h * P + h * h * Q;
+  (*tau0) = B * g0 + P * v0;
+}
+
+template <typename T>
+void ConvexIntegrator<T>::ProjectSPD(MatrixX<T>* M_ptr) const {
+  MatrixX<T>& M = *M_ptr;
+  DRAKE_ASSERT(M.rows() == M.cols());
+  
+  // Enforce symmetry
+  M = 0.5 * (M + M.transpose());
+
+  // Clip eigenvalues, using the fact that all eigenvalues are real since M is
+  // now symmetric.
+  const Eigen::SelfAdjointEigenSolver<MatrixX<T>> solver(M);
+  const MatrixX<T> Q = solver.eigenvectors();
+  const VectorX<T> D = solver.eigenvalues();
+  M = Q * D.cwiseMax(0).asDiagonal() * Q.transpose();
 }
 
 }  // namespace systems
