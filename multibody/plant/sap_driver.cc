@@ -725,48 +725,64 @@ void SapDriver<T>::AddPdControllerConstraints(
   // Do nothing if not PD controllers were specified.
   if (plant().num_actuators() == 0) return;
 
-  // Desired positions & velocities.
-  const int num_actuated_dofs = plant().num_actuated_dofs();
-
   // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
   // allocations.
-  const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
+  const DesiredStateInput<T> desired_states =
+      manager_->AssembleDesiredStateInput(context);
   const VectorX<T> feed_forward_actuation =
       manager_->AssembleActuationInput(context);
 
-  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
-    const JointActuator<T>& actuator =
-        plant().get_joint_actuator(actuator_index);
-    if (actuator.has_controller()) {
-      const Joint<T>& joint = actuator.joint();
-      // There is no point in modeling PD controllers if the joint is locked.
-      // Therefore we do not add these constraints and actuation due to PD
-      // controllers on locked joints is considered to be zero.
-      if (!joint.is_locked(context)) {
-        const double effort_limit = actuator.effort_limit();
-        const T& qd = desired_state[actuator.input_start()];
-        const T& vd = desired_state[num_actuated_dofs + actuator.input_start()];
-        const T& u0 = feed_forward_actuation[actuator.input_start()];
+  for (ModelInstanceIndex model_instance_index(0);
+       model_instance_index < plant().num_model_instances();
+       ++model_instance_index) {
+    if (desired_states.is_armed(model_instance_index)) {
+      const VectorX<T>& instance_qd =
+          desired_states.positions(model_instance_index);
+      const VectorX<T>& instance_vd =
+          desired_states.velocities(model_instance_index);
 
-        const T& q0 = joint.GetOnePosition(context);
-        const int dof = joint.velocity_start();
-        const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
-        const int tree_dof =
-            dof - tree_topology().tree_velocities_start_in_v(tree);
-        const int tree_nv = tree_topology().num_tree_velocities(tree);
+      // Sanity check sizes before accessing qd and vd below.
+      DRAKE_DEMAND(instance_qd.size() ==
+                   plant().num_actuators(model_instance_index));
+      DRAKE_DEMAND(instance_vd.size() ==
+                   plant().num_actuators(model_instance_index));
 
-        // Controller gains.
-        const PdControllerGains& gains = actuator.get_controller_gains();
-        const T& Kp = gains.p;
-        const T& Kd = gains.d;
+      int a = 0;  // Actuator index local to its model-instance.
+      for (JointActuatorIndex actuator_index :
+           plant().GetJointActuatorIndices(model_instance_index)) {
+        const JointActuator<T>& actuator =
+            plant().get_joint_actuator(actuator_index);
+        const Joint<T>& joint = actuator.joint();
+        // There is no point in modeling PD controllers if the joint is locked.
+        // Therefore we do not add these constraints and actuation due to PD
+        // controllers on locked joints is considered to be zero.
+        if (actuator.has_controller() && !joint.is_locked(context)) {
+          const double effort_limit = actuator.effort_limit();
+          const T& qd = instance_qd[a];
+          const T& vd = instance_vd[a];
+          const T& u0 = feed_forward_actuation[actuator.input_start()];
 
-        typename SapPdControllerConstraint<T>::Parameters parameters{
-            Kp, Kd, effort_limit};
-        typename SapPdControllerConstraint<T>::Configuration configuration{
-            tree, tree_dof, tree_nv, q0, qd, vd, u0};
+          const T& q0 = joint.GetOnePosition(context);
+          const int dof = joint.velocity_start();
+          const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
+          const int tree_dof =
+              dof - tree_topology().tree_velocities_start_in_v(tree);
+          const int tree_nv = tree_topology().num_tree_velocities(tree);
 
-        problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
-            std::move(configuration), std::move(parameters)));
+          // Controller gains.
+          const PdControllerGains& gains = actuator.get_controller_gains();
+          const T& Kp = gains.p;
+          const T& Kd = gains.d;
+
+          typename SapPdControllerConstraint<T>::Parameters parameters{
+              Kp, Kd, effort_limit};
+          typename SapPdControllerConstraint<T>::Configuration configuration{
+              tree, tree_dof, tree_nv, q0, qd, vd, u0};
+
+          problem->AddConstraint(std::make_unique<SapPdControllerConstraint<T>>(
+              std::move(configuration), std::move(parameters)));
+        }
+        ++a;
       }
     }
   }
