@@ -2,6 +2,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/planning/iris/iris_zo.h"
 
 namespace drake {
@@ -69,6 +70,10 @@ void DefinePlanningIrisZo(py::module m) {
               "parameterization setter function automatically sets threadsafe "
               "to false")
               .c_str())
+      .def("SetParameterizationFromExpression",
+          &IrisZoOptions::SetParameterizationFromExpression,
+          py::arg("expression_parameterization"), py::arg("variables"),
+          cls_doc.SetParameterizationFromExpression.doc)
       .def("get_parameterization_is_threadsafe",
           &IrisZoOptions::get_parameterization_is_threadsafe,
           cls_doc.get_parameterization_is_threadsafe.doc)
