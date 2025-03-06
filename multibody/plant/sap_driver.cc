@@ -17,6 +17,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_coupler_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_distance_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_fixed_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_fixed_tendon_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
@@ -45,6 +46,7 @@ using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapCouplerConstraint;
 using drake::multibody::contact_solvers::internal::SapDistanceConstraint;
 using drake::multibody::contact_solvers::internal::SapFixedConstraint;
+using drake::multibody::contact_solvers::internal::SapFixedTendonConstraint;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
 using drake::multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
@@ -795,6 +797,129 @@ void SapDriver<T>::AddFixedConstraints(
 }
 
 template <typename T>
+void SapDriver<T>::AddFixedTendonConstraints(
+    const systems::Context<T>& context, SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+
+  // "Near-rigid" parameter. See [Castro et al., 2021].
+  constexpr double kBeta = 0.1;
+
+  // N.B. For any fixed tendon constraint with default stiffness/dissipation we
+  // set the stiffness parameter to a very high value so that SAP works in the
+  // "near-rigid" regime as described in the SAP paper, [Castro et al., 2021].
+  // As shown in the SAP paper, a dissipation timescale of the order of the time
+  // step leads to a critically damped constraint. N.B. Units of stiffness (say
+  // N/m for a translational q) are consistent with the units of the
+  // corresponding generalized coordinate (say m for a translational q) so that
+  // their product has units of the corresponding generalized force (say N for a
+  // translational q).
+  const double default_stiffness = 1.0e12;
+
+  const std::map<MultibodyConstraintId, bool>& constraint_active_status =
+      manager().GetConstraintActiveStatus(context);
+
+  for (const auto& [id, info] : manager().fixed_tendon_constraints_specs()) {
+    // Skip this constraint if it is not active.
+    if (!constraint_active_status.at(id)) continue;
+
+    // If the user did not indicate a stiffness value (indicated by k = ∞), set
+    // the stiffness and damping to default values.
+    double stiffness = info.stiffness;
+    if (stiffness == kInf) {
+      stiffness = default_stiffness;
+    }
+
+    const typename SapFixedTendonConstraint<T>::Parameters parameters(
+        info.lower_limit, info.upper_limit, stiffness, info.damping, kBeta);
+
+    // Find the set of trees that the joints of this constraint belong to.
+    std::set<TreeIndex> trees;
+    for (int i = 0; i < ssize(info.joints); ++i) {
+      const Joint<T>& joint = plant().get_joint(info.joints[i]);
+      const TreeIndex tree =
+          tree_topology().velocity_to_tree_index(joint.velocity_start());
+      trees.insert(tree);
+    }
+
+    // Constraints can have at most 2 participating cliques.
+    if (ssize(trees) > 2) {
+      throw std::logic_error(
+          "Creating a fixed tendon constraint for a set of joints that belong "
+          "to more than two kinematic trees is not allowed.");
+    }
+
+    // Single clique version.
+    if (ssize(trees) == 1) {
+      const TreeIndex tree = *trees.begin();
+      const int tree_nv = tree_topology().num_tree_velocities(tree);
+      VectorX<T> q0(tree_nv);
+      VectorX<T> a0(tree_nv);
+      q0.setZero();
+      a0.setZero();
+
+      for (int i = 0; i < ssize(info.joints); ++i) {
+        const Joint<T>& joint = plant().get_joint(info.joints[i]);
+        const int dof = joint.velocity_start();
+        // DOFs local to their tree.
+        const int tree_dof =
+            dof - tree_topology().tree_velocities_start_in_v(tree);
+        q0(tree_dof) = joint.GetOnePosition(context);
+        a0(tree_dof) = info.a[i];
+      }
+
+      const typename SapFixedTendonConstraint<T>::Kinematics kinematics(
+          tree, tree_nv, q0, a0, info.offset);
+
+      problem->AddConstraint(std::make_unique<SapFixedTendonConstraint<T>>(
+          std::move(parameters), std::move(kinematics)));
+
+    } else if (ssize(trees) == 2) {
+      // 2 clique version.
+      const TreeIndex tree0 = *trees.begin();
+      const TreeIndex tree1 = *(++trees.begin());
+      const int tree_nv0 = tree_topology().num_tree_velocities(tree0);
+      const int tree_nv1 = tree_topology().num_tree_velocities(tree1);
+      VectorX<T> q0(tree_nv0);
+      VectorX<T> q1(tree_nv1);
+      VectorX<T> a0(tree_nv0);
+      VectorX<T> a1(tree_nv1);
+      q0.setZero();
+      q1.setZero();
+      a0.setZero();
+      a1.setZero();
+
+      for (int i = 0; i < ssize(info.joints); ++i) {
+        const Joint<T>& joint = plant().get_joint(info.joints[i]);
+        const TreeIndex tree =
+            tree_topology().velocity_to_tree_index(joint.velocity_start());
+        const int dof = joint.velocity_start();
+        if (tree == tree0) {
+          const int tree_dof =
+              dof - tree_topology().tree_velocities_start_in_v(tree0);
+          q0(tree_dof) = joint.GetOnePosition(context);
+          a0(tree_dof) = info.a[i];
+        } else {
+          const int tree_dof =
+              dof - tree_topology().tree_velocities_start_in_v(tree1);
+          q1(tree_dof) = joint.GetOnePosition(context);
+          a1(tree_dof) = info.a[i];
+        }
+      }
+
+      const typename SapFixedTendonConstraint<T>::Kinematics kinematics(
+          tree0, tree1, tree_nv0, tree_nv1, q0, q1, a0, a1, info.offset);
+
+      problem->AddConstraint(std::make_unique<SapFixedTendonConstraint<T>>(
+          std::move(parameters), std::move(kinematics)));
+    } else {
+      DRAKE_UNREACHABLE();
+    }
+  }
+}
+
+template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   std::vector<MatrixX<T>> A;
@@ -828,6 +953,7 @@ void SapDriver<T>::CalcContactProblemCache(
   AddBallConstraints(context, &problem);
   AddWeldConstraints(context, &problem);
   AddFixedConstraints(context, &problem);
+  AddFixedTendonConstraints(context, &problem);
 
   // Make a reduced version of the original contact problem using joint locking
   // data.
