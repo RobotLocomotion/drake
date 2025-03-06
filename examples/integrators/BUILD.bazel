@@ -64,8 +64,8 @@ drake_py_binary(
 )
 
 drake_py_binary(
-    name = "neural_net_controller",
-    srcs = ["neural_net_controller.py"],
+    name = "atlas",
+    srcs = ["atlas.py"],
     data = [
         "@drake_models//:atlas",
     ],

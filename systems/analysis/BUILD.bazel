@@ -117,8 +117,8 @@ drake_cc_library(
     srcs = ["convex_integrator.cc"],
     hdrs = ["convex_integrator.h"],
     deps = [
-        "//common:timer",
         ":integrator_base",
+        "//common:timer",
         "//multibody/plant",
         "//multibody/plant:contact_properties",
     ],

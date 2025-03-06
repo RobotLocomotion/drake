@@ -37,6 +37,36 @@ if __name__ == "__main__":
         default=0.0,
         help="MultibodyPlant time step (>0 for discrete simulation)",
     )
+    parser.add_argument(
+        "--mlp_controller",
+        action="store_true",
+        default=False,
+        help="Whether to use a neural network controller."
+    )
+    parser.add_argument(
+        "--zero_gravity",
+        action="store_true",
+        default=False,
+        help="Whether to turn off gravity."
+    )
+    parser.add_argument(
+        "--max_step_size",
+        type=float,
+        default=0.1,
+        help="Maximum step size for error-controlled integration",
+    )
+    parser.add_argument(
+        "--min_step_size",
+        type=float,
+        default=0.0,
+        help="Minimum step size for error-controlled integration",
+    )
+    parser.add_argument(
+        "--disable_error_control",
+        action="store_true",
+        default=False,
+        help="Whether to disable error control and use dt=max_step_size.",
+    )
     args = parser.parse_args()
 
     # Set up the system diagram
@@ -60,14 +90,19 @@ if __name__ == "__main__":
     Parser(plant).AddModels(
         url="package://drake_models/atlas/atlas_convex_hull.urdf")
 
-    plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, 0.0])
+    if args.zero_gravity:
+        plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, 0.0])
     plant.Finalize()
 
     nu = plant.num_actuators()
     nx = plant.num_multibody_states()
-    ctrl = builder.AddSystem(MultilayerPerceptron([nx, 128, 128, nu]))
+    if args.mlp_controller:
+        ctrl = builder.AddSystem(MultilayerPerceptron([nx, 128, 128, nu]))
+        builder.Connect(plant.get_state_output_port(), ctrl.get_input_port())
+    else:
+        ctrl = builder.AddSystem(ConstantVectorSource(np.zeros(nu)))
+
     builder.Connect(ctrl.get_output_port(), plant.get_actuation_input_port())
-    builder.Connect(plant.get_state_output_port(), ctrl.get_input_port())
 
     AddDefaultVisualization(builder=builder, meshcat=meshcat)
 
@@ -91,11 +126,18 @@ if __name__ == "__main__":
     config.integration_scheme = args.integrator
     config.accuracy = args.accuracy
     config.target_realtime_rate = 0.0
-    config.use_error_control = True
+    config.use_error_control = not args.disable_error_control
+    config.max_step_size = args.max_step_size
     config.publish_every_time_step = True
 
     simulator = Simulator(diagram, context)
     ApplySimulatorConfig(config, simulator)
+
+    if args.min_step_size > 0.0:
+        integrator = simulator.get_mutable_integrator()
+        integrator.set_requested_minimum_step_size(args.min_step_size)
+        integrator.set_throw_on_minimum_step_size_violation(False)
+
     simulator.Initialize()
 
     print(f"Running with {args.integrator} at accuracy = {args.accuracy}.")
