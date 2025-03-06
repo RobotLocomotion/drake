@@ -10,6 +10,7 @@
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/vpolytope.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/mosek_solver.h"
@@ -43,6 +44,116 @@ IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
   };
 
   instance.set_parameterization(evaluate_s_to_q,
+                                /* parameterization_is_threadsafe */ true,
+                                /* parameterization_dimension */ dimension);
+  return instance;
+}
+
+namespace {
+
+using multibody::JointIndex;
+using multibody::MultibodyConstraintId;
+using multibody::internal::CouplerConstraintSpec;
+
+std::vector<CouplerConstraintSpec> TopologicalSortCouplerConstraints(
+    const std::map<multibody::MultibodyConstraintId, CouplerConstraintSpec>&
+        coupler_constraints) {
+  std::map<JointIndex, JointIndex> next_map;             // joint1 -> joint0
+  std::map<JointIndex, CouplerConstraintSpec> node_map;  // joint0 -> constraint
+  std::map<JointIndex, bool>
+      has_predecessor;  // Tracks if a joint has an incoming connection
+
+  // Step 1: Populate maps.
+  for (const auto& [_, constraint] : coupler_constraints) {
+    next_map[constraint.joint1_index] = constraint.joint0_index;
+    node_map[constraint.joint0_index] = constraint;
+    has_predecessor[constraint.joint0_index] = true;
+    has_predecessor[constraint.joint1_index] =
+        has_predecessor[constraint.joint1_index];  // Ensure it exists
+  }
+
+  // Step 2: Find the start node (a joint that is never a joint0_index).
+  JointIndex start_joint{-1};
+  for (const auto& [_, constraint] : coupler_constraints) {
+    if (!has_predecessor[constraint.joint1_index]) {
+      start_joint = constraint.joint1_index;
+      break;
+    }
+  }
+
+  // Step 3: Follow the chain to construct the sorted order.
+  std::vector<CouplerConstraintSpec> sorted_constraints;
+  while (next_map.find(start_joint) != next_map.end()) {
+    JointIndex next = next_map[start_joint];
+    sorted_constraints.push_back(node_map[next]);
+    start_joint = next;
+  }
+
+  return sorted_constraints;
+}
+
+}  // namespace
+
+IrisZoOptions IrisZoOptions::CreateWithMimicJointsParameterization(
+    const multibody::MultibodyPlant<double>& plant) {
+  const int dimension = plant.num_positions() - plant.num_coupler_constraints();
+  DRAKE_DEMAND(dimension > 0);
+  const auto& coupler_constraints = plant.get_coupler_constraint_specs();
+  const std::vector<multibody::JointIndex>& joint_indices =
+      plant.GetJointIndices();
+
+  std::map<multibody::JointIndex, int> joint_index_to_position_start;
+  for (const auto& joint_index : joint_indices) {
+    int position_start = plant.get_joint(joint_index).position_start();
+    joint_index_to_position_start.insert({joint_index, position_start});
+  }
+
+  // Sort the coupler constraints, and find the independent degrees of freedom.
+  std::set<int> dependent_joint_indices;
+  for (const auto& [_, coupler_constraint] : coupler_constraints) {
+    dependent_joint_indices.insert(
+        joint_index_to_position_start.at(coupler_constraint.joint0_index));
+  }
+  std::set<int> all_joint_indices;
+  for (int i = 0; i < plant.num_positions(); ++i) {
+    all_joint_indices.insert(i);
+  }
+  std::vector<int> independent_joint_indices;
+  std::set_difference(all_joint_indices.begin(), all_joint_indices.end(),
+                      dependent_joint_indices.begin(),
+                      dependent_joint_indices.end(),
+                      std::inserter(independent_joint_indices,
+                                    independent_joint_indices.end()));
+
+  std::vector<multibody::internal::CouplerConstraintSpec>
+      sorted_coupler_constraints =
+          TopologicalSortCouplerConstraints(coupler_constraints);
+
+  // Construct the lambda.
+  auto evaluate_parameterization =
+      [independent_joint_indices, sorted_coupler_constraints,
+       joint_index_to_position_start](const Eigen::VectorXd& q_in) {
+        DRAKE_ASSERT(ssize(independent_joint_indices) == q_in.size());
+        const int dimension_out = ssize(independent_joint_indices) +
+                                  ssize(sorted_coupler_constraints);
+        Eigen::VectorXd q_out(dimension_out);
+        for (int i = 0; i < ssize(independent_joint_indices); ++i) {
+          q_out[independent_joint_indices[i]] = q_in[i];
+        }
+        for (int j = 0; j < ssize(sorted_coupler_constraints); ++j) {
+          const auto& coupler_constraint = sorted_coupler_constraints[j];
+          int in_index =
+              joint_index_to_position_start.at(coupler_constraint.joint1_index);
+          int out_index =
+              joint_index_to_position_start.at(coupler_constraint.joint0_index);
+          q_out[out_index] = q_out[in_index] * coupler_constraint.gear_ratio +
+                             coupler_constraint.offset;
+        }
+        return q_out;
+      };
+
+  IrisZoOptions instance;
+  instance.set_parameterization(evaluate_parameterization,
                                 /* parameterization_is_threadsafe */ true,
                                 /* parameterization_dimension */ dimension);
   return instance;

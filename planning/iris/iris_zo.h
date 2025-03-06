@@ -13,6 +13,7 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/collision_checker.h"
 
@@ -207,6 +208,11 @@ class IrisZoOptions {
   static IrisZoOptions CreateWithRationalKinematicParameterization(
       const multibody::RationalForwardKinematics* kin,
       const Eigen::Ref<const Eigen::VectorXd>& q_star_val);
+
+  /** Constructs an instance of IrisZoOptions that handles mimic joints, by
+   * inspecting a MultibodyPlant for coupler constraints. */
+  static IrisZoOptions CreateWithMimicJointsParameterization(
+      const multibody::MultibodyPlant<double>& plant);
 
  private:
   bool parameterization_is_threadsafe_{true};
