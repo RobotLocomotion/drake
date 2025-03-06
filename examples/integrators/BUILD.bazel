@@ -63,7 +63,6 @@ drake_py_binary(
     ],
 )
 
-
 drake_py_binary(
     name = "neural_net_controller",
     srcs = ["neural_net_controller.py"],
