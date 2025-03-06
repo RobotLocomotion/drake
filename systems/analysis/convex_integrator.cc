@@ -1,5 +1,6 @@
 #include "drake/systems/analysis/convex_integrator.h"
 
+#include "drake/common/timer.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/plant/contact_properties.h"
@@ -1485,8 +1486,12 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   // components of the external system dynamics are treated explicitly.
   // Otherwise these components would be ingored entirely, resulting in wrong
   // dynamics.
+  SteadyTimer timer;
+  timer.Start();
   ProjectSPD(&P);
   ProjectSPD(&Q);
+  const double projection_time = timer.Tick();
+  fmt::print("projection time: {}\n", projection_time);
 
   (*A_tilde) = h * P + h * h * Q;
   (*tau0) = B * g0 + P * v0;
