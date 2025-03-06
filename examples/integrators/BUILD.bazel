@@ -63,4 +63,16 @@ drake_py_binary(
     ],
 )
 
+
+drake_py_binary(
+    name = "neural_net_controller",
+    srcs = ["neural_net_controller.py"],
+    data = [
+        "@drake_models//:atlas",
+    ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 add_lint_tests()
