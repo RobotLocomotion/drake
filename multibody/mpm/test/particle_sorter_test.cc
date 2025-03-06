@@ -14,6 +14,9 @@ namespace mpm {
 namespace internal {
 namespace {
 
+/* Our default choice of 10 is too large for Valgrind. */
+const int kLog2MaxGridSize = 5;
+
 using Eigen::Vector3i;
 
 GTEST_TEST(ConvertToRangeVectorTest, ConvertToRangeVector) {
@@ -54,7 +57,7 @@ bool OverlapOneRing(const Vector3i& a, const Vector3i& b) {
 }
 
 GTEST_TEST(ParticleSorterTest, Sort) {
-  using Grid = SpGrid<GridData<double>>;
+  using Grid = SpGrid<GridData<double>, kLog2MaxGridSize>;
   const Grid spgrid;
   const double dx = 0.2;
   const std::vector<Vector3<double>> particle_positions = SamplePoints(7);

@@ -7,26 +7,29 @@ namespace multibody {
 namespace mpm {
 namespace internal {
 
-template <typename T>
-SparseGrid<T>::SparseGrid(double dx) : dx_(dx) {
+template <typename T, int log2_max_grid_size>
+SparseGrid<T, log2_max_grid_size>::SparseGrid(double dx) : dx_(dx) {
   DRAKE_DEMAND(dx > 0);
 }
 
-template <typename T>
-std::unique_ptr<SparseGrid<T>> SparseGrid<T>::Clone() const {
-  auto result = std::make_unique<SparseGrid<T>>(dx_);
+template <typename T, int log2_max_grid_size>
+std::unique_ptr<SparseGrid<T, log2_max_grid_size>>
+SparseGrid<T, log2_max_grid_size>::Clone() const {
+  auto result = std::make_unique<SparseGrid<T, log2_max_grid_size>>(dx_);
   result->spgrid_.SetFrom(this->spgrid_);
   return result;
 }
 
-template <typename T>
-void SparseGrid<T>::Allocate(const std::vector<Vector3<T>>& q_WPs) {
+template <typename T, int log2_max_grid_size>
+void SparseGrid<T, log2_max_grid_size>::Allocate(
+    const std::vector<Vector3<T>>& q_WPs) {
   particle_sorter_.Sort(spgrid_, dx_, q_WPs);
   spgrid_.Allocate(particle_sorter_.GetActiveBlockOffsets());
 }
 
-template <typename T>
-Pad<Vector3<T>> SparseGrid<T>::GetPadNodes(const Vector3<T>& q_WP) const {
+template <typename T, int log2_max_grid_size>
+Pad<Vector3<T>> SparseGrid<T, log2_max_grid_size>::GetPadNodes(
+    const Vector3<T>& q_WP) const {
   Pad<Vector3<T>> result;
   const Vector3<int> base_node = ComputeBaseNode<T>(q_WP / static_cast<T>(dx_));
   for (int i = 0; i < 3; ++i) {
@@ -40,8 +43,8 @@ Pad<Vector3<T>> SparseGrid<T>::GetPadNodes(const Vector3<T>& q_WP) const {
   return result;
 }
 
-template <typename T>
-void SparseGrid<T>::SetGridData(
+template <typename T, int log2_max_grid_size>
+void SparseGrid<T, log2_max_grid_size>::SetGridData(
     const std::function<GridData<T>(const Vector3<int>&)>& callback) {
   spgrid_.IterateGridWithOffset([&](uint64_t offset, GridData<T>* node_data) {
     const Vector3<int> coordinate = spgrid_.OffsetToCoordinate(offset);
@@ -49,9 +52,9 @@ void SparseGrid<T>::SetGridData(
   });
 }
 
-template <typename T>
-std::vector<std::pair<Vector3<int>, GridData<T>>> SparseGrid<T>::GetGridData()
-    const {
+template <typename T, int log2_max_grid_size>
+std::vector<std::pair<Vector3<int>, GridData<T>>>
+SparseGrid<T, log2_max_grid_size>::GetGridData() const {
   std::vector<std::pair<Vector3<int>, GridData<T>>> result;
   spgrid_.IterateConstGridWithOffset(
       [&](uint64_t offset, const GridData<T>& node_data) {
@@ -63,8 +66,9 @@ std::vector<std::pair<Vector3<int>, GridData<T>>> SparseGrid<T>::GetGridData()
   return result;
 }
 
-template <typename T>
-MassAndMomentum<T> SparseGrid<T>::ComputeTotalMassAndMomentum() const {
+template <typename T, int log2_max_grid_size>
+MassAndMomentum<T>
+SparseGrid<T, log2_max_grid_size>::ComputeTotalMassAndMomentum() const {
   MassAndMomentum<T> result;
   spgrid_.IterateConstGridWithOffset(
       [&](uint64_t offset, const GridData<T>& node_data) {
@@ -85,5 +89,7 @@ MassAndMomentum<T> SparseGrid<T>::ComputeTotalMassAndMomentum() const {
 }  // namespace multibody
 }  // namespace drake
 
-template class drake::multibody::mpm::internal::SparseGrid<float>;
-template class drake::multibody::mpm::internal::SparseGrid<double>;
+template class drake::multibody::mpm::internal::SparseGrid<float, 10>;
+template class drake::multibody::mpm::internal::SparseGrid<double, 10>;
+template class drake::multibody::mpm::internal::SparseGrid<float, 5>;
+template class drake::multibody::mpm::internal::SparseGrid<double, 5>;
