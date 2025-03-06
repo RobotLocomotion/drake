@@ -14,8 +14,10 @@ namespace mpm {
 namespace internal {
 namespace {
 
-using Eigen::Vector3i;
+/* Our default choice of 10 is too large for Valgrind. */
 const int kLog2MaxGridSize = 5;
+
+using Eigen::Vector3i;
 
 GTEST_TEST(ConvertToRangeVectorTest, ConvertToRangeVector) {
   std::vector<int> data = {1, 3, 6, 9};
