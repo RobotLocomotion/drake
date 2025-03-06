@@ -46,4 +46,13 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "wacky_pendulum",
+    srcs = ["wacky_pendulum.py"],
+    data = ["//examples/pendulum:models"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 add_lint_tests()
