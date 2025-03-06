@@ -340,16 +340,16 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     MatrixX<T> M;               // mass matrix
     VectorX<T> k;               // coriolis terms from inverse dynamics
     std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
-
-    MatrixX<T> B;  // actuator selection matrix
-    MatrixX<T> K;  // linearized external system dynamics, u = Kv + u0
-    VectorX<T> u0;
-    MatrixX<T> A_tilde;  // SPD Hessian correction term, A_tilde = -hBK
+    MatrixX<T> A_tilde;  // SPD Hessian correction term, A_tilde = h P + h^2 Q
+    VectorX<T> tau0;     // Explicit external forces, tau0 = B g0 + P v0
 
     // Used in LinearizeExternalSystem
-    MatrixX<T> D;
     VectorX<T> g0;
+    MatrixX<T> B;
+    MatrixX<T> D;
     MatrixX<T> N;
+    MatrixX<T> P;
+    MatrixX<T> Q;
 
     // Used in AddContactConstraint
     DiscreteContactData<DiscreteContactPair<T>> contact_data;

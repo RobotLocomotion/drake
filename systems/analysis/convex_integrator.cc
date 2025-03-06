@@ -151,12 +151,13 @@ void ConvexIntegrator<T>::DoInitialize() {
   workspace_.A.assign(tree_topology().num_trees(), MatrixX<T>(nv, nv));
   workspace_.M.resize(nv, nv);
   workspace_.B.resize(nv, nu);
-  workspace_.K.resize(nu, nv);
-  workspace_.u0.resize(nu);
+  workspace_.tau0.resize(nv);
   workspace_.A_tilde.resize(nv, nv);
   workspace_.D.resize(nu, nq + nv);
   workspace_.g0.resize(nu);
   workspace_.N.resize(nq, nv);
+  workspace_.P.resize(nv, nv);
+  workspace_.Q.resize(nv, nv);
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -868,19 +869,13 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   MultibodyForces<T>& f_ext = *workspace_.f_ext;
   VectorX<T>& v_star = workspace_.v_star;
   MatrixX<T>& A_tilde = workspace_.A_tilde;
-
-  //TODO: pre-allocate
-  VectorX<T> tau0(plant().num_velocities());
+  VectorX<T>& tau0 = workspace_.tau0;
 
   // Linearization of external controller connected to the actuation input port,
   // τ = B u = B g(x) ≈ τ₀ − Ã v.
   if (plant().num_actuators() > 0) {
     // Only do the linearization if a controller is connected
     LinearizeExternalSystem(h, &A_tilde, &tau0);
-
-    // Ensure A_tilde is SPD
-    // ProjectSPD(&A_tilde);
-
   } else {
     A_tilde.setZero();
     tau0.setZero();
@@ -1426,17 +1421,16 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   MatrixX<T>& D = workspace_.D;
   VectorX<T>& g0 = workspace_.g0;
   MatrixX<T>& N = workspace_.N;
-
-  // TODO: allocate in workspace
-  MatrixX<T> P(nv, nv);
-  MatrixX<T> Q(nv, nv);
+  MatrixX<T>& B = workspace_.B;
+  MatrixX<T>& P = workspace_.P;
+  MatrixX<T>& Q = workspace_.Q;
 
   // Compute some quantities that depend on the current state, before moving
   // messing with the state with finite differences
   const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
   g0 = plant().get_actuation_input_port().Eval(plant_context);
   N = plant().MakeVelocityToQDotMap(plant_context);
-  MatrixX<T> B = plant().MakeActuationMatrix();
+  B = plant().MakeActuationMatrix();
 
   // Compute u = D(x - x0) + g0 with finite differences
   Context<T>* mutable_context = this->get_mutable_context();
