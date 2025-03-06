@@ -11,9 +11,6 @@ namespace mpm {
 namespace internal {
 namespace {
 
-/* Our default choice of 10 is too large for Valgrind. */
-const int kLog2MaxGridSize = 5;
-
 template <typename T>
 class SparseGridTest : public ::testing::Test {};
 
@@ -25,7 +22,7 @@ TYPED_TEST(SparseGridTest, Allocate) {
 
   const double dx = 0.1;
 
-  SparseGrid<T, kLog2MaxGridSize> grid(dx);
+  SparseGrid<T> grid(dx);
   EXPECT_EQ(grid.dx(), 0.1);
 
   const Vector3<T> q_WP(1.001, 0.001, 0.001);
@@ -56,7 +53,7 @@ TYPED_TEST(SparseGridTest, Clone) {
 
   /* Set up a grid with grid nodes in [0, 2] x [0, 2] x [0, 2] all active. */
   const double dx = 0.5;
-  SparseGrid<T, kLog2MaxGridSize> grid(dx);
+  SparseGrid<T> grid(dx);
   std::vector<Vector3<T>> q_WPs;
   for (int i = 0; i < 5; ++i) {
     for (int j = 0; j < 5; ++j) {
@@ -95,7 +92,7 @@ TYPED_TEST(SparseGridTest, GetPadNodes) {
   using T = TypeParam;
 
   const double dx = 0.01;
-  SparseGrid<T, kLog2MaxGridSize> grid(dx);
+  SparseGrid<T> grid(dx);
   const Vector3<T> q_WP(0.001, 0.001, 0.001);
   /* Base node is (0, 0, 0), so we should get the 27 neighbors of (0,0,0). */
   const auto pad_nodes = grid.GetPadNodes(q_WP);
@@ -113,7 +110,7 @@ TYPED_TEST(SparseGridTest, PadData) {
   using T = TypeParam;
 
   const double dx = 0.01;
-  SparseGrid<T, kLog2MaxGridSize> grid(dx);
+  SparseGrid<T> grid(dx);
   /* Base node is (2, 3, 0). */
   const Vector3<T> q_WP(0.021, 0.031, -0.001);
   const Vector3<int> base_node = ComputeBaseNode<T>(q_WP / static_cast<T>(dx));
@@ -166,7 +163,7 @@ TYPED_TEST(SparseGridTest, ComputeTotalMassAndMomentum) {
   using T = TypeParam;
 
   const double dx = 0.01;
-  SparseGrid<T, kLog2MaxGridSize> grid(dx);
+  SparseGrid<T> grid(dx);
   const Vector3<T> q_WP(0.001, 0.001, 0.001);
   std::vector<Vector3<T>> q_WPs = {q_WP};
   grid.Allocate(q_WPs);

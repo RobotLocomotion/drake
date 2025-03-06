@@ -38,11 +38,8 @@ namespace internal {
  allocates memory in units of these blocks; it allocates for a block if it might
  contain a supported grid node. See `Allocate` for more details.
 
- @tparam T float or double.
- @tparam T log2_max_grid_size Log 2 of the maximum grid size. Non-default value
- is used for testing only. Valgrind doesn't like our default choice. Must be 10
- (default value) or 5 (for testing). */
-template <typename T, int log2_max_grid_size = 10>
+ @tparam T float or double. */
+template <typename T>
 class SparseGrid {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseGrid);
@@ -52,7 +49,7 @@ class SparseGrid {
   explicit SparseGrid(double dx);
 
   /* Creates a deep copy of `this` sparse grid. */
-  std::unique_ptr<SparseGrid<T, log2_max_grid_size>> Clone() const;
+  std::unique_ptr<SparseGrid<T>> Clone() const;
 
   /* Allocates memory for all blocks that may contain at least one supported
    grid node. All allocated grid data are default constructed.
@@ -105,14 +102,12 @@ class SparseGrid {
   MassAndMomentum<T> ComputeTotalMassAndMomentum() const;
 
   /* Returns the SpGrid underlying this SparseGrid. */
-  const SpGrid<GridData<T>, log2_max_grid_size>& spgrid() const {
-    return spgrid_;
-  }
+  const SpGrid<GridData<T>>& spgrid() const { return spgrid_; }
 
  private:
   /* Grid spacing (in meters). */
   double dx_{};
-  SpGrid<GridData<T>, log2_max_grid_size> spgrid_;
+  SpGrid<GridData<T>> spgrid_;
   ParticleSorter particle_sorter_;
 };
 
