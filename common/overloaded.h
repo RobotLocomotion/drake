@@ -27,7 +27,7 @@ use the variant visit pattern, i.e.
 
 // We put this in the anonymous namespace to ensure that it will not generate
 // linkable symbols for every specialization in every library that uses it.
-namespace {  // NOLINT(build/namespaces)
+namespace {  // NOLINT (build/namespaces)
 
 // Boilerplate for `std::visit`; see
 // https://en.cppreference.com/w/cpp/utility/variant/visit
