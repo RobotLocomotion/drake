@@ -328,6 +328,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::map<MultibodyConstraintId, internal::WeldConstraintSpec>&
   weld_constraints_specs() const;
 
+  const std::map<MultibodyConstraintId, internal::FixedTendonConstraintSpec>&
+  fixed_tendon_constraints_specs() const;
+
   const std::map<MultibodyConstraintId, bool>& GetConstraintActiveStatus(
       const systems::Context<T>& context) const;
 

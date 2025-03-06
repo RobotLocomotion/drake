@@ -402,6 +402,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     distance_constraints_specs_ = other.distance_constraints_specs_;
     ball_constraints_specs_ = other.ball_constraints_specs_;
     weld_constraints_specs_ = other.weld_constraints_specs_;
+    fixed_tendon_constraints_specs_ = other.fixed_tendon_constraints_specs_;
 
     adjacent_bodies_collision_filters_ =
         other.adjacent_bodies_collision_filters_;
@@ -460,6 +461,10 @@ std::vector<MultibodyConstraintId> MultibodyPlant<T>::GetConstraintIds() const {
   for (const auto& [id, _] : weld_constraints_specs_) {
     ids.push_back(id);
   }
+  for (const auto& [id, _] : fixed_tendon_constraints_specs_) {
+    ids.push_back(id);
+  }
+
   return ids;
 }
 
@@ -660,6 +665,85 @@ MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
 }
 
 template <typename T>
+MultibodyConstraintId MultibodyPlant<T>::AddFixedTendonConstraint(
+    std::vector<JointIndex> joints, std::vector<double> a,
+    std::optional<double> offset, std::optional<double> lower_limit,
+    std::optional<double> upper_limit, std::optional<double> stiffness,
+    std::optional<double> damping) {
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  // N.B. The manager is set up at Finalize() and therefore we must require
+  // constraints to be added pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Currently ball constraints are only supported for discrete "
+        "MultibodyPlant models.");
+  }
+
+  // TAMSI does not support fixed tendon constraints. For all other solvers, we
+  // let the discrete update manager throw an exception at finalize time.
+  if (get_discrete_contact_solver() == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support fixed tendon constraints. Use "
+        "set_discrete_contact_approximation() to set a model approximation "
+        "that uses the SAP solver instead (kSap, kSimilar, or kLagged).");
+  }
+
+  DRAKE_DEMAND(joints.size() > 0);
+  DRAKE_DEMAND(a.size() == joints.size());
+
+  for (int i = 0; i < ssize(joints); ++i) {
+    DRAKE_DEMAND(this->has_joint(joints[i]));
+    DRAKE_DEMAND(this->get_joint(joints[i]).num_velocities() == 1);
+    DRAKE_DEMAND(a[i] != 0.0);
+  }
+
+  if (!offset.has_value()) {
+    offset = 0.0;
+  }
+
+  if (lower_limit.has_value()) {
+    DRAKE_DEMAND(*lower_limit < kInf);
+  } else {
+    lower_limit = -kInf;
+  }
+
+  if (upper_limit.has_value()) {
+    DRAKE_DEMAND(*upper_limit > -kInf);
+  } else {
+    upper_limit = kInf;
+  }
+
+  DRAKE_DEMAND(*lower_limit != -kInf || *upper_limit != kInf);
+  DRAKE_DEMAND(*lower_limit <= *upper_limit);
+
+  if (stiffness.has_value()) {
+    DRAKE_DEMAND(*stiffness > 0.0);
+  } else {
+    stiffness = kInf;
+  }
+
+  if (damping.has_value()) {
+    DRAKE_DEMAND(*damping >= 0.0);
+  } else {
+    damping = 0.0;
+  }
+
+  const MultibodyConstraintId constraint_id =
+      MultibodyConstraintId::get_new_id();
+
+  internal::FixedTendonConstraintSpec spec{
+      std::move(joints), std::move(a), *offset, *lower_limit,
+      *upper_limit,      *stiffness,   *damping};
+
+  fixed_tendon_constraints_specs_[constraint_id] = spec;
+
+  return constraint_id;
+}
+
+template <typename T>
 void MultibodyPlant<T>::RemoveConstraint(MultibodyConstraintId id) {
   // N.B. The manager and parameters are set up at Finalize() and therefore we
   // must require constraints to be removed pre-finalize.
@@ -670,6 +754,7 @@ void MultibodyPlant<T>::RemoveConstraint(MultibodyConstraintId id) {
   num_removed += distance_constraints_specs_.erase(id);
   num_removed += ball_constraints_specs_.erase(id);
   num_removed += weld_constraints_specs_.erase(id);
+  num_removed += fixed_tendon_constraints_specs_.erase(id);
   if (num_removed != 1) {
     throw std::runtime_error(fmt::format(
         "RemoveConstraint(): The constraint id {} does not match "
@@ -3527,6 +3612,9 @@ void MultibodyPlant<T>::DeclareParameters() {
     constraint_active_status_map[id] = true;
   }
   for (const auto& [id, spec] : weld_constraints_specs_) {
+    constraint_active_status_map[id] = true;
+  }
+  for (const auto& [id, spec] : fixed_tendon_constraints_specs_) {
     constraint_active_status_map[id] = true;
   }
 
