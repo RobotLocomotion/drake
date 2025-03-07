@@ -519,19 +519,28 @@ class SapModel {
   PartialPermutation MakeImpulsesPermutation(
       const ContactProblemGraph& graph) const;
 
-  /* Computes a diagonal approximation of the Delassus operator used to compute
-   a per constraint diagonal scaling into delassus_diagonal. Given an
-   approximation Wᵢᵢ of the block diagonal element corresponding to the i-th
-   constraint, the scaling is computed as delassus_diagonal[i] = ‖Wᵢᵢ‖ᵣₘₛ =
-   ‖Wᵢᵢ‖/nᵢ, where nᵢ is the number of equations for the i-th constraint (and
-   the size of Wᵢᵢ). See [Castro et al. 2022] for details.
+  /* Computes a diagonal approximation of the Delassus operator used for
+   regularization of the contact problem leading to better numerical
+   conditioning.
+
+   The output of this method is later consumed by
+   SapConstraintBundle<T>::MakeData(), and therefore delassus_diagonal has size
+   num_constraint_equations() and its entries correspond to constraint equations
+   in cluster order as specified by the contact problem's graph. Refer to the
+   class documentation for ContactProblemGraph for a definition of cluster and
+   their ordering in the graph. See also SapContactProblem::graph(),
+   ContactProblemGraph::clusters().
+
+   Given an approximation Wᵢᵢ of the r×r diagonal block of the Delassus operator
+   corresponding to the r-equations in the i-th constraint (in cluster order),
+   the scaling for this constraint is the vector (one element per equation)
+   𝙚ᵣ⋅‖Wᵢᵢ‖ᵣₘₛ, with ‖Wᵢᵢ‖ᵣₘₛ = ‖Wᵢᵢ‖/nᵢ, 𝙚ᵣ = [1, 1, …, 1]ᵀ ∈ ℝʳ. See [Castro
+   et al. 2022] for details.
 
    @param[in]  A linear dynamics matrix for each participating clique in the
    model.
-   @param[out] delassus_diagonal On output an array of size nc (number of
-   constraints) where each entry stores the Delassus operator constraint
-   scaling. That is, wi = delassus_diagonal[i] corresponds to the scaling for
-   the i-th constraint.
+   @param[out] delassus_diagonal On output an array of size
+   num_constraint_equations()
 
    @pre delassus_diagonal is not nullptr.
    @pre A.size() equals num_cliques().

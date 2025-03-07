@@ -14,8 +14,10 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
+#include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
+#include "drake/solvers/evaluator_base.h"
 
 namespace drake {
 namespace planning {
@@ -230,14 +232,22 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   }
 
   // We now test an example of a region grown along a parameterization of the
-  // space. We use the rational parameterization s=tan(θ/2), so our
-  // parameterization function is θ=2arctan(s).
-  options.set_parameterization(
-      [](const VectorXd& q) -> VectorXd {
-        return (2 * q.array().atan()).matrix();
-      },
-      /* parameterization_is_threadsafe */ true,
-      /* parameterization_dimension */ 2);
+  // space. We use the parameterization from rational forward kinematics, so
+  // we must re-create the plant.
+
+  RobotDiagramBuilder<double> builder(0.0);
+  builder.parser().package_map().AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/package.xml"));
+  builder.parser().AddModelsFromString(double_pendulum_urdf, "urdf");
+  auto* plant_ptr = &(builder.plant());
+  plant_ptr->Finalize();
+
+  multibody::RationalForwardKinematics rational_kinematics(plant_ptr);
+  options = IrisZoOptions::CreateWithRationalKinematicParameterization(
+      &rational_kinematics,
+      /* q_star_val */ Vector2d::Zero());
+  options.verbose = true;
+  options.meshcat = meshcat;
 
   // Check that the parameterization was set correctly.
   EXPECT_EQ(options.get_parameterization_is_threadsafe(), true);
@@ -421,6 +431,16 @@ GTEST_TEST(IrisZoTest, BlockOnGround) {
   }
 }
 
+struct IdentityConstraint {
+  static size_t numInputs() { return 2; }
+  static size_t numOutputs() { return 2; }
+  template <typename ScalarType>
+  void eval(const Eigen::Ref<const VectorX<ScalarType>>& x,
+            VectorX<ScalarType>* y) const {
+    (*y) = x;
+  }
+};
+
 // Reproduced from the IrisInConfigurationSpace unit tests.
 // A (somewhat contrived) example of a concave configuration-space obstacle
 // (resulting in a convex configuration-space, which we approximate with
@@ -532,10 +552,79 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
     MaybePauseForUser();
   }
 
+  // Another version of the test, adding the additional constraint that
+  // x <= -0.3.
+  solvers::MathematicalProgram prog;
+  auto q = prog.NewContinuousVariables(2, "q");
+  Eigen::RowVectorXd a(2);
+  a << 1, 0;
+  double lb = -std::numeric_limits<double>::infinity();
+  double ub = -0.3;
+  prog.AddLinearConstraint(a, lb, ub, q);
+  options.prog_with_additional_constraints = &prog;
+  options.max_iterations = 1;
+  options.max_iterations_separating_planes = 1;
+  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
+
+  // Due to the configuration space margin, this point can never be in the
+  // region.
+  Vector2d query_point_not_in_set(-0.29, 0.0);
+  Vector2d query_point_in_set(-0.31, 0.0);
+  EXPECT_FALSE(region.PointInSet(query_point_not_in_set));
+  EXPECT_TRUE(region.PointInSet(query_point_in_set));
+
+  {
+    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+    points.resize(3, vregion.vertices().cols() + 1);
+    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+    points.topRightCorner(2, 1) = vregion.vertices().col(0);
+    points.bottomRows<1>().setZero();
+    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+    MaybePauseForUser();
+  }
+
+  // We also verify the code path when one of the additional constraints is not
+  // threadsafe. We construct the constraint (-2, -0.5) <= (x, y) <= (0, 1.5) in
+  // terms of the above struct IdentityConstraint, which is not tagged as
+  // threadsafe.
+  Eigen::VectorXd simple_constraint_lb = Eigen::Vector2d(-2.0, -0.5);
+  Eigen::VectorXd simple_constraint_ub = Eigen::Vector2d(0.0, 1.5);
+  std::shared_ptr<solvers::Constraint> simple_constraint =
+      std::make_shared<solvers::EvaluatorConstraint<
+          solvers::FunctionEvaluator<IdentityConstraint>>>(
+          std::make_shared<solvers::FunctionEvaluator<IdentityConstraint>>(
+              IdentityConstraint{}),
+          simple_constraint_lb, simple_constraint_ub);
+  prog.AddConstraint(simple_constraint, q);
+
+  options.max_iterations = 3;
+  options.max_iterations_separating_planes = 20;
+
+  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
+  query_point_not_in_set = Vector2d(-1.0, -0.55);
+  query_point_in_set = Vector2d(-1.0, -0.45);
+  EXPECT_FALSE(region.PointInSet(query_point_not_in_set));
+  EXPECT_TRUE(region.PointInSet(query_point_in_set));
+
+  // If we have a containment point violating this constraint, IrisZo should
+  // throw. Three points are needed to ensure the center of the starting
+  // ellipsoid is within the convex hull of the points we must contain.
+  Eigen::Matrix2Xd single_containment_point(2, 3);
+  // clang-format off
+  single_containment_point << -0.2, -0.6, -0.6,
+                               0.0,  0.1, -0.1;
+  // clang-format on
+  options.containment_points = single_containment_point;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options),
+      ".*containment points violates a constraint.*");
+  options.containment_points = std::nullopt;
+
   // We now test an example of a region grown along a subspace.
   options.set_parameterization(
-      [](const Vector1d& q) -> Vector2d {
-        return Vector2d{q[0], 2 * q[0] + 1};
+      [](const Vector1d& config) -> Vector2d {
+        return Vector2d{config[0], 2 * config[0] + 1};
       },
       /* parameterization_is_threadsafe */ true,
       /* parameterization_dimension */ 1);
@@ -544,6 +633,15 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   // This domain matches the "x" dimension of C-space, so the region generated
   // will respect the joint limits.
   HPolyhedron domain = HPolyhedron::MakeBox(Vector1d(-1.5), Vector1d(0));
+
+  // Since we have a parameterization, the prog with additional constraints will
+  // have the wrong dimension. We expect an error message.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain),
+      ".*num_vars.*parameterized_dimension.*");
+
+  // Reset the parameterization, and now generate the region.
+  options.prog_with_additional_constraints = nullptr;
   region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain);
 
   EXPECT_EQ(region.ambient_dimension(), 1);

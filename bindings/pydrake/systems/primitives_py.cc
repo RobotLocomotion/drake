@@ -268,7 +268,14 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<Integrator<T>, LeafSystem<T>>(
         m, "Integrator", GetPyParam<T>(), doc.Integrator.doc)
-        .def(py::init<int>(), doc.Integrator.ctor.doc)
+        .def(py::init<int>(), py::arg("size"),
+            doc.Integrator.ctor.doc_1args_size)
+        .def(py::init<const VectorXd&>(), py::arg("initial_value"),
+            doc.Integrator.ctor.doc_1args_initial_value)
+        .def("set_default_integral_value",
+            &Integrator<T>::set_default_integral_value,
+            py::arg("initial_value"),
+            doc.Integrator.set_default_integral_value.doc)
         .def("set_integral_value", &Integrator<T>::set_integral_value,
             py::arg("context"), py::arg("value"),
             doc.Integrator.set_integral_value.doc);
