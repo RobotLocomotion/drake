@@ -124,10 +124,12 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   // Updates the error estimate from the propagated solution and the embedded
   // solution.
-  void ComputeAndSetErrorEstimate(
-      const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed);
+  void ComputeAndSetErrorEstimate(const VectorX<T>& xtplus_prop,
+                                  const VectorX<T>& xtplus_embed) const;
 
   // Steps Radau forward by h, if possible.
+  // @param context the Context of the system, at time and continuous state
+  // unknown.
   // @param t0 the initial time.
   // @param h the integration step size to attempt.
   // @param xt0 the continuous state at time t0.
@@ -141,19 +143,23 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   //       will be set to t0+h and `xtplus_radau` on successful exit (indicated
   //       by this function returning `true`) and will be indeterminate on
   //       unsuccessful exit (indicated by this function returning `false`).
-  bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus_radau, VectorX<T>* xtplus_itr);
+  bool AttemptStepPaired(Context<T>* context, const T& t0, const T& h,
+                         const VectorX<T>& xt0, VectorX<T>* xtplus_radau,
+                         VectorX<T>* xtplus_itr) const;
 
   // Computes F(Z) used in [Hairer, 1996], (IV.8.4). This method evaluates
   // the time derivatives of the system given the current iterate Z.
+  // @param context the Context of the system, at time and continuous state
+  // unknown.
   // @param t0 the initial time.
   // @param h the integration step size to attempt.
   // @param xt0 the continuous state at time t0.
   // @param Z the current iterate, of dimension state_dim * num_stages.
   // @post the state of the internal context will be set to (t0, xt0) on return.
   // @return a (state_dim * num_stages)-dimensional vector.
-  const VectorX<T>& ComputeFofZ(
-      const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z);
+  const VectorX<T>& ComputeFofZ(Context<T>* context, const T& t0, const T& h,
+                                const VectorX<T>& xt0,
+                                const VectorX<T>& Z) const;
   void DoInitialize() final;
   void DoResetCachedJacobianRelatedMatrices() final {
       iteration_matrix_radau_ = {};
@@ -163,15 +169,18 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   void DoResetImplicitIntegratorStatistics() final;
 
   // Takes a given step of the requested size, if possible.
+  // @param context The context to perform integration on.
   // @param h the integration step size to attempt.
   // @returns `true` if successful.
   // @post the time and continuous state will be advanced only if `true` is
   //       returned (if `false` is returned, the time and state will be reset
   //       to their values on entry).
-  bool DoImplicitIntegratorStep(const T& h) final;
+  bool DoImplicitIntegratorStep(Context<T>* context, const T& h) const final;
 
   // Computes the next continuous state (at t0 + h) using the Radau method,
   // assuming that the method is able to converge at that step size.
+  // @param context the Context of the system, at time and continuous state
+  // unknown.
   // @param t0 the initial time.
   // @param h the integration step size to attempt.
   // @param xt0 the continuous state at time t0.
@@ -182,11 +191,14 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   //       `false`.
   // @returns `true` if the method was successfully able to take an integration
   //           step of size `h`.
-  bool StepRadau(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus, int trial = 1);
+  bool StepRadau(Context<T>* context, const T& t0, const T& h,
+                 const VectorX<T>& xt0, VectorX<T>* xtplus,
+                 int trial = 1) const;
 
   // Computes the next continuous state (at t0 + h) using the implicit trapezoid
   // method, assuming that the method is able to converge at that step size.
+  // @param context the Context of the system, at time and continuous state
+  // unknown.
   // @param t0 the initial time.
   // @param h the integration step size to attempt.
   // @param xt0 the continuous state at time t0.
@@ -195,9 +207,10 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   // @param[out] xtplus the value for x(t+h) on return.
   // @returns `true` if the method was successfully able to take an integration
   //           step of size `h`.
-  bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
-      const VectorX<T>& dx0, const VectorX<T>& xtplus_radau,
-      VectorX<T>* xtplus);
+  bool StepImplicitTrapezoid(Context<T>* context, const T& t0, const T& h,
+                             const VectorX<T>& xt0, const VectorX<T>& dx0,
+                             const VectorX<T>& xtplus_radau,
+                             VectorX<T>* xtplus) const;
 
   // Computes the tensor product between two matrices. Given
   // A = | a11 ... a1m |
@@ -220,9 +233,11 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
   // Does all of the real work for the implicit trapezoid method.
-  bool StepImplicitTrapezoidDetail(const T& t0, const T& h,
-      const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
-      const VectorX<T>& xtplus_radau, VectorX<T>* xtplus, int trial = 1);
+  bool StepImplicitTrapezoidDetail(Context<T>* context, const T& t0, const T& h,
+                                   const VectorX<T>& xt0,
+                                   const std::function<VectorX<T>()>& g,
+                                   const VectorX<T>& xtplus_radau,
+                                   VectorX<T>* xtplus, int trial = 1) const;
 
   // The num_stages-dimensional (constant) vector of time-scaling coefficients
   // common to Runge-Kutta-type integrators.
@@ -233,10 +248,11 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   MatrixX<double> A_;
 
   // The iteration matrix for the Radau method.
-  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_radau_;
+  mutable
+      typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_radau_;
 
   // The iteration matrix for the implicit trapezoid method.
-  typename ImplicitIntegrator<T>::IterationMatrix
+  mutable typename ImplicitIntegrator<T>::IterationMatrix
       iteration_matrix_implicit_trapezoid_;
 
   // The (constant) tensor product between A_ and an identity matrix. This
@@ -253,32 +269,32 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   // A num_stages * |xc|-dimensional vector of the current iterate for the
   // Newton-Raphson process.
-  VectorX<T> Z_;
+  mutable VectorX<T> Z_;
 
   // The num_stages dimensional vector of derivative evaluations at every stage.
-  VectorX<T> F_of_Z_;
+  mutable VectorX<T> F_of_Z_;
 
   // Vector used in error estimate calculations.
-  VectorX<T> err_est_vec_;
+  mutable VectorX<T> err_est_vec_;
 
   // The continuous state update vector used during Newton-Raphson.
-  std::unique_ptr<ContinuousState<T>> dx_state_;
+  mutable std::unique_ptr<ContinuousState<T>> dx_state_;
 
   // Continuous state at the beginning of an integration step (stored to avoid
   // heap allocations).
-  VectorX<T> xt0_;
+  mutable VectorX<T> xt0_;
 
   // Time-derivative of continuous state (stored to avoid heap allocations).
-  VectorX<T> xdot_;
+  mutable VectorX<T> xdot_;
 
   // "Propagated" solution computed by the integrator (stored to avoid heap
   // allocations)- this is the solution that will be propagated forward in time.
-  VectorX<T> xtplus_prop_;
+  mutable VectorX<T> xtplus_prop_;
 
   // "Error estimate" solution computed by the embedded method (stored to avoid
   // allocations)- this is the solution that will be used in concert with the
   // propagated solution to compute the error estimate.
-  VectorX<T> xtplus_embed_;
+  mutable VectorX<T> xtplus_embed_;
 
   // 3/2 Bogacki-Shampine integrator used for propagation and error estimation
   // when the step size becomes smaller than the working minimum step size.
@@ -289,14 +305,14 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   std::unique_ptr<RungeKutta2Integrator<T>> rk2_;
 
   // Statistics specific to this integrator.
-  int64_t num_nr_iterations_{0};
+  mutable int64_t num_nr_iterations_{0};
 
   // Implicit trapezoid specific statistics.
-  int64_t num_err_est_jacobian_reforms_{0};
-  int64_t num_err_est_jacobian_function_evaluations_{0};
-  int64_t num_err_est_iter_factorizations_{0};
-  int64_t num_err_est_function_evaluations_{0};
-  int64_t num_err_est_nr_iterations_{0};
+  mutable int64_t num_err_est_jacobian_reforms_{0};
+  mutable int64_t num_err_est_jacobian_function_evaluations_{0};
+  mutable int64_t num_err_est_iter_factorizations_{0};
+  mutable int64_t num_err_est_function_evaluations_{0};
+  mutable int64_t num_err_est_nr_iterations_{0};
 };
 
 /** A third-order fully implicit integrator with error estimation.
