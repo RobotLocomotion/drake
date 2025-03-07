@@ -43,10 +43,9 @@ void RungeKutta5Integrator<T>::DoInitialize() {
 }
 
 template <typename T>
-bool RungeKutta5Integrator<T>::DoStep(const T& h) {
+bool RungeKutta5Integrator<T>::DoStep(const T& h, Context<T>* context) const {
   using std::abs;
-  Context<T>& context = *this->get_mutable_context();
-  const T t0 = context.get_time();
+  const T t0 = context->get_time();
   const T t1 = t0 + h;
 
   // CAUTION: This is performance-sensitive inner loop code that uses dangerous
@@ -69,11 +68,11 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   */
 
   // Save the continuous state at t₀.
-  context.get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
+  context->get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
 
   // Evaluate the derivative at t₀, xc₀ and copy the result into a temporary.
   derivs1_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k1 = derivs1_->get_vector();
 
   // Cache: k1 references a *copy* of the derivative result so is immune
@@ -87,12 +86,12 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   const double c2 = 1.0 / 5;
   const double a21 = 1.0 / 5;
   VectorBase<T>& xc =
-      context.SetTimeAndGetMutableContinuousStateVector(t0 + c2 * h);
+      context->SetTimeAndGetMutableContinuousStateVector(t0 + c2 * h);
   xc.PlusEqScaled(a21 * h, k1);
 
   // Evaluate the derivative (denoted k2) at t₀ + c2 * h, xc₀ + a21 * h * k1.
   derivs2_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k2 = derivs2_->get_vector();
 
   // Cache: k2 references a *copy* of the derivative result so is immune
@@ -105,14 +104,14 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
-  context.SetTimeAndNoteContinuousStateChange(t0 + c3 * h);
+  context->SetTimeAndNoteContinuousStateChange(t0 + c3 * h);
 
   // Evaluate the derivative (denoted k3) at t₀ + c3 * h,
   //   xc₀ + a31 * h * k1 + a32 * h * k2.
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{a31 * h, k1}, {a32 * h, k2}});
   derivs3_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k3 = derivs3_->get_vector();
 
   // Compute the third intermediate state and derivative (i.e., Stage 4).
@@ -123,14 +122,14 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
-  context.SetTimeAndNoteContinuousStateChange(t0 + c4 * h);
+  context->SetTimeAndNoteContinuousStateChange(t0 + c4 * h);
 
   // Evaluate the derivative (denoted k4) at t₀ + c4 * h,
   //   xc₀ + a41 * h * k1 + a42 * h * k2 + a43 * h * k3.
   xc.SetFromVector(save_xc0_);
   xc.PlusEqScaled({{a41 * h, k1}, {a42 * h, k2}, {a43 * h, k3}});
   derivs4_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k4 = derivs4_->get_vector();
 
   // Compute the fourth intermediate state and derivative (i.e., Stage 5).
@@ -142,14 +141,14 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
-  context.SetTimeAndNoteContinuousStateChange(t0 + c5 * h);
+  context->SetTimeAndNoteContinuousStateChange(t0 + c5 * h);
 
   // Evaluate the derivative (denoted k5) at t₀ + c5 * h,
   //   xc₀ + a51 * h * k1 + a52 * h * k2 + a53 * h * k3 + a54 * h * k4.
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{a51 * h, k1}, {a52 * h, k2}, {a53 * h, k3}, {a54 * h, k4}});
   derivs5_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k5 = derivs5_->get_vector();
 
   // Compute the fifth intermediate state and derivative (i.e., Stage 6).
@@ -161,7 +160,7 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
-  context.SetTimeAndNoteContinuousStateChange(t1);
+  context->SetTimeAndNoteContinuousStateChange(t1);
 
   // Evaluate the derivative (denoted k6) at t₀ + c6 * h,
   //   xc₀ + a61 * h * k1 + a62 * h * k2 + a63 * h * k3 + a64 * h * k4 +
@@ -173,12 +172,12 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
                    {a64 * h, k4},
                    {a65 * h, k5}});
   derivs6_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k6 = derivs6_->get_vector();
 
   // Cache: we're about to write through the xc reference again, so need to
   // mark xc-dependent cache entries out of date; time doesn't change here.
-  context.NoteContinuousStateChange();
+  context->NoteContinuousStateChange();
 
   // Compute the propagated solution (we're able to do this because b1 = a71,
   // b2 = a72, b3 = a73, b4 = a74, b5 = a75, and b6 = a76).
@@ -192,7 +191,7 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
   // Note that we use the simplification t1 = t0 + h * c7 = t0 + h * 1.
-  context.SetTimeAndNoteContinuousStateChange(t1);
+  context->SetTimeAndNoteContinuousStateChange(t1);
 
   // Evaluate the derivative (denoted k7) at t₀ + c7 * h,
   //   xc₀ + a71 * h * k1 + a72 * h * k2 + a73 * h * k3 + a74 * h * k4 +
@@ -203,7 +202,7 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
                    {a74 * h, k4},
                    {a75 * h, k5},
                    {a76 * h, k6}});
-  const ContinuousState<T>& derivs7 = this->EvalTimeDerivatives(context);
+  const ContinuousState<T>& derivs7 = this->EvalTimeDerivatives(*context);
   const VectorBase<T>& k7 = derivs7.get_vector();
 
   // WARNING: k7 is a live reference into the cache. Be careful of adding
