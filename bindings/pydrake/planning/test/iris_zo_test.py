@@ -3,6 +3,7 @@ import unittest
 import pydrake.planning as mut
 from pydrake.common import RandomGenerator, Parallelism
 from pydrake.geometry.optimization import Hyperellipsoid, HPolyhedron
+from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.multibody.rational import RationalForwardKinematics
 from pydrake.planning import (
     RobotDiagramBuilder,
@@ -87,6 +88,9 @@ class TestIrisZo(unittest.TestCase):
         options.random_seed = 1337
         options.mixing_steps = 50
         starting_ellipsoid = Hyperellipsoid.MakeHypersphere(0.01, seed_point)
+        options.prog_with_additional_constraints = InverseKinematics(
+            plant
+        ).prog()
         domain = HPolyhedron.MakeBox(plant.GetPositionLowerLimits(),
                                      plant.GetPositionUpperLimits())
         region = mut.IrisZo(checker=checker,

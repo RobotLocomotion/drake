@@ -111,6 +111,7 @@ drake_cc_googletest(
         "//multibody/rational:rational_forward_kinematics",
         "//planning:robot_diagram_builder",
         "//planning:scene_graph_collision_checker",
+        "//solvers",
     ],
 )
 
