@@ -338,7 +338,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   void DoInitialize() final;
 
-  bool DoImplicitIntegratorStep(const T& h) final;
+  bool DoImplicitIntegratorStep(const T& h, Context<T>* context) const final;
 
   // Steps the system forward by a single step of h using the velocity-implicit
   // Euler method.
@@ -363,7 +363,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       const T& t0, const T& h, const VectorX<T>& xn,
       const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      MatrixX<T>* Jy, int trial = 1);
+      MatrixX<T>* Jy, Context<T>* context, int trial = 1) const;
 
   // Steps the system forward by two half-sized steps of size h/2 using the
   // velocity-implicit Euler method, and keeps track of separate statistics
@@ -387,7 +387,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
       const T& t0, const T& h, const VectorX<T>& xn,
       const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      MatrixX<T>* Jy);
+      MatrixX<T>* Jy, Context<T>* context) const;
 
   // Takes a large velocity-implicit Euler step (of size h) and two half-sized
   // velocity-implicit Euler steps (of size h/2), if possible.
@@ -401,7 +401,8 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @returns `true` if all three step attempts were successful, `false`
   //          otherwise.
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
-                         VectorX<T>* xtplus_vie, VectorX<T>* xtplus_hvie);
+                         VectorX<T>* xtplus_vie, VectorX<T>* xtplus_hvie,
+                         Context<T>* context) const;
 
   // Compute the partial derivatives of the ordinary differential equations with
   // respect to the y variables of a given x(t). In particular, we compute the
@@ -428,7 +429,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   //       be indeterminate on return.
   void CalcVelocityJacobian(const T& t, const T& h, const VectorX<T>& y,
                             const VectorX<T>& qk, const VectorX<T>& qn,
-                            MatrixX<T>* Jy);
+                            MatrixX<T>* Jy, Context<T>* context) const;
 
   // Uses automatic differentiation to compute the Jacobian, Jₗ(y), of the
   // function ℓ(y), used in this integrator's residual computation, with
@@ -452,7 +453,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                                        const VectorX<T>& y,
                                        const VectorX<T>& qk,
                                        const VectorX<T>& qn,
-                                       MatrixX<T>* Jy);
+                                       MatrixX<T>* Jy) const;
 
   // Computes necessary matrices (Jacobian and iteration matrix) for
   // Newton-Raphson (NR) iterations, as necessary. This method is based off of
@@ -509,7 +510,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                typename ImplicitIntegrator<T>::IterationMatrix*)>&
           compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      MatrixX<T>* Jy);
+      MatrixX<T>* Jy, Context<T>* context) const;
 
   // Computes necessary matrices (Jacobian and iteration matrix) for full
   // Newton-Raphson (NR) iterations, if full Newton-Raphson method is activated
@@ -537,7 +538,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
                typename ImplicitIntegrator<T>::IterationMatrix*)>&
           compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-      MatrixX<T>* Jy);
+      MatrixX<T>* Jy, Context<T>* context) const;
 
   // This helper method evaluates the Newton-Raphson residual R(y), defined as
   // the following:
@@ -561,7 +562,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   VectorX<T> ComputeResidualR(const T& t, const VectorX<T>& y,
                               const VectorX<T>& qk, const VectorX<T>& qn,
                               const VectorX<T>& yn, const T& h,
-                              BasicVector<T>* qdot);
+                              BasicVector<T>* qdot, Context<T>* context) const;
 
   // This helper method evaluates ℓ(y), defined as the following:
   //     ℓ(y) = f_y(tⁿ⁺¹, qⁿ + h N(qₖ) v, y),          (7)
@@ -579,10 +580,10 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @param [out] result is set to ℓ(y).
   // @post The context is set to (tⁿ⁺¹, qⁿ + h N(qₖ) v, y).
   VectorX<T> ComputeLOfY(const T& t, const VectorX<T>& y, const VectorX<T>& qk,
-                         const VectorX<T>& qn, const T& h,
-                         BasicVector<T>* qdot) {
+                         const VectorX<T>& qn, const T& h, BasicVector<T>* qdot,
+                         Context<T>* context) const {
     return this->ComputeLOfY(t, y, qk, qn, h, qdot, this->get_system(),
-        this->get_mutable_context());
+                             context);
   }
 
   // This helper method evaluates ℓ(y), defined as the following:
@@ -613,43 +614,42 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @post context is set to (tⁿ⁺¹, qⁿ + h N(qₖ) v, y).
   template <typename U>
   VectorX<U> ComputeLOfY(const T& t, const VectorX<U>& y, const VectorX<T>& qk,
-                         const VectorX<T>& qn, const T& h,
-                         BasicVector<U>* qdot, const System<U>& system,
-                         Context<U>* context);
+                         const VectorX<T>& qn, const T& h, BasicVector<U>* qdot,
+                         const System<U>& system, Context<U>* context) const;
 
   // The last computed iteration matrix and factorization.
-  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_vie_;
+  mutable typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_vie_;
 
   // Vector used in error estimate calculations. At the end of every step, we
   // set this to ε* = x̅ⁿ⁺¹ - x̃ⁿ⁺¹, which is our estimate for ε = x̃ⁿ⁺¹ - xⁿ⁺¹,
   // the error of the propagated half-sized steps.
-  VectorX<T> err_est_vec_;
+  mutable VectorX<T> err_est_vec_;
 
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
 
   // Variables to avoid heap allocations.
-  VectorX<T> xn_, xdot_, xtplus_vie_, xtplus_hvie_;
-  std::unique_ptr<BasicVector<T>> qdot_;
+  mutable VectorX<T> xn_, xdot_, xtplus_vie_, xtplus_hvie_;
+  mutable std::unique_ptr<BasicVector<T>> qdot_;
   // The following will help avoid repeated heap allocations when computing a
   // velocity Jacobian using automatic differentiation.
-  std::unique_ptr<System<AutoDiffXd>>      system_ad_;
-  std::unique_ptr<Context<AutoDiffXd>>     context_ad_;
-  std::unique_ptr<BasicVector<AutoDiffXd>> qdot_ad_;
+  mutable std::unique_ptr<System<AutoDiffXd>> system_ad_;
+  mutable std::unique_ptr<Context<AutoDiffXd>> context_ad_;
+  mutable std::unique_ptr<BasicVector<AutoDiffXd>> qdot_ad_;
 
   // The last computed velocity+misc Jacobian matrix.
-  MatrixX<T> Jy_vie_;
+  mutable MatrixX<T> Jy_vie_;
 
   // Various statistics.
-  int64_t num_nr_iterations_{0};
+  mutable int64_t num_nr_iterations_{0};
 
   // Half-sized-step-specific statistics, only updated when taking the half-
   // sized steps.
-  int64_t num_half_vie_jacobian_reforms_{0};
-  int64_t num_half_vie_iter_factorizations_{0};
-  int64_t num_half_vie_function_evaluations_{0};
-  int64_t num_half_vie_jacobian_function_evaluations_{0};
-  int64_t num_half_vie_nr_iterations_{0};
+  mutable int64_t num_half_vie_jacobian_reforms_{0};
+  mutable int64_t num_half_vie_iter_factorizations_{0};
+  mutable int64_t num_half_vie_function_evaluations_{0};
+  mutable int64_t num_half_vie_jacobian_function_evaluations_{0};
+  mutable int64_t num_half_vie_nr_iterations_{0};
 };
 
 // We do not support computing the Velocity Jacobian matrix using automatic
@@ -657,12 +657,11 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 // Note: must be declared inline because it's specialized and located in the
 // header file (to avoid multiple definition errors).
 template <>
-inline void VelocityImplicitEulerIntegrator<AutoDiffXd>::
-    ComputeAutoDiffVelocityJacobian(const AutoDiffXd&, const AutoDiffXd&,
-                                    const VectorX<AutoDiffXd>&,
-                                    const VectorX<AutoDiffXd>&,
-                                    const VectorX<AutoDiffXd>&,
-                                    MatrixX<AutoDiffXd>*) {
+inline void
+VelocityImplicitEulerIntegrator<AutoDiffXd>::ComputeAutoDiffVelocityJacobian(
+    const AutoDiffXd&, const AutoDiffXd&, const VectorX<AutoDiffXd>&,
+    const VectorX<AutoDiffXd>&, const VectorX<AutoDiffXd>&,
+    MatrixX<AutoDiffXd>*) const {
   throw std::runtime_error("AutoDiff'd Jacobian not supported for "
                            "AutoDiff'd VelocityImplicitEulerIntegrator");
 }
