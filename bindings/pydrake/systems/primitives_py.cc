@@ -851,18 +851,6 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsDetectable", &IsDetectable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsDetectable.doc);
-
-  m.def("DiscreteTimeApproximation",
-      overload_cast_explicit<std::unique_ptr<LinearSystem<double>>,
-          const LinearSystem<double>&, double>(&DiscreteTimeApproximation),
-      py::arg("system"), py::arg("time_period"),
-      doc.DiscreteTimeApproximation.doc_linearsystem);
-
-  m.def("DiscreteTimeApproximation",
-      overload_cast_explicit<std::unique_ptr<AffineSystem<double>>,
-          const AffineSystem<double>&, double>(&DiscreteTimeApproximation),
-      py::arg("system"), py::arg("time_period"),
-      doc.DiscreteTimeApproximation.doc_affinesystem);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
