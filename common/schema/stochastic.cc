@@ -107,7 +107,9 @@ double UniformDiscrete::Mean() const {
         "Cannot Mean() empty UniformDiscrete distribution.");
   }
   double sum = 0;
-  for (double value : values) { sum += value; }
+  for (double value : values) {
+    sum += value;
+  }
   return sum / values.size();
 }
 

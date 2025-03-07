@@ -26,7 +26,9 @@ void ThrowUnlessAbsentOr(
     std::string_view name,
     std::optional<double> property,
     Condition condition) {
-  if (!property.has_value()) { return; }
+  if (!property.has_value()) {
+    return;
+  }
   double value = *property;
   std::string_view condition_name;
   bool should_throw{false};

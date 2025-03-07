@@ -44,7 +44,9 @@ template <typename ToScalar, template <typename> class S, typename Callback>
         dut.template ToScalarTypeMaybe<ToScalar>();
     ::testing::AssertionResult result =
           is_dynamic_castable<S<ToScalar>>(converted);
-    if (!result) { return result; }
+    if (!result) {
+      return result;
+    }
 
     // Allow calling code to specify additional tests on the converted System.
     const S<ToScalar>& downcast =
