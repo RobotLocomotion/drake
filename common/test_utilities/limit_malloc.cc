@@ -178,9 +178,7 @@ class ActiveMonitor {
 };
 
 void Monitor::ObserveAllocation() {
-  if (!IsSupportedConfiguration()) {
-    return;
-  }
+  if (!IsSupportedConfiguration()) { return; }
 
   bool failure = false;
 
@@ -193,9 +191,7 @@ void Monitor::ObserveAllocation() {
 
   // TODO(jwnimmer-tri) Add more limits (requested bytes?) here.
 
-  if (!failure) {
-    return;
-  }
+  if (!failure) { return; }
 
   // Non-fatal breakpoint action; use with helper script:
   // tools/dynamic_analysis/dump_limit_malloc_stacks
@@ -288,9 +284,7 @@ void* realloc(void* ptr, size_t size) {
 }
 
 static void EvaluateMinNumAllocations(int observed, int min_num_allocations) {
-  if (!drake::test::IsSupportedConfiguration()) {
-    return;
-  }
+  if (!drake::test::IsSupportedConfiguration()) { return; }
 
   if ((min_num_allocations >= 0) && (observed < min_num_allocations)) {
     std::cerr << "abort due to scope end with "

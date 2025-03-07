@@ -64,9 +64,7 @@ string GetIntegratorName() {
   string result;
   for (char ch : camel_name) {
     if (std::isupper(ch)) {
-      if (!result.empty()) {
-        result.push_back('_');
-      }
+      if (!result.empty()) { result.push_back('_'); }
       result.push_back(std::tolower(ch));
     } else {
       result.push_back(ch);

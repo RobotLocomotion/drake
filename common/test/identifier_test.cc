@@ -247,9 +247,7 @@ TEST_F(IdentifierTests, Convertible) {
 
 // Attempting to acquire the value is an error.
 TEST_F(IdentifierTests, InvalidGetValueCall) {
-  if (kDrakeAssertIsDisarmed) {
-    return;
-  }
+  if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   DRAKE_EXPECT_THROWS_MESSAGE(
       invalid.get_value(),
@@ -258,18 +256,14 @@ TEST_F(IdentifierTests, InvalidGetValueCall) {
 
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierTests, InvalidEqualityCompare) {
-  if (kDrakeAssertIsDisarmed) {
-    return;
-  }
+  if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   DRAKE_EXPECT_THROWS_MESSAGE(invalid == a1_, ".*is_valid.*failed.*");
 }
 
 // Comparison of invalid ids is an error.
 TEST_F(IdentifierTests, InvalidInequalityCompare) {
-  if (kDrakeAssertIsDisarmed) {
-    return;
-  }
+  if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   DRAKE_EXPECT_THROWS_MESSAGE(invalid != a1_, ".*is_valid.*failed.*");
 }
@@ -296,9 +290,7 @@ TEST_F(IdentifierTests, InvalidHash) {
 
 // Streaming an invalid id is an error.
 TEST_F(IdentifierTests, InvalidStream) {
-  if (kDrakeAssertIsDisarmed) {
-    return;
-  }
+  if (kDrakeAssertIsDisarmed) { return; }
   AId invalid;
   std::stringstream ss;
   DRAKE_EXPECT_THROWS_MESSAGE(ss << invalid, ".*is_valid.*failed.*");

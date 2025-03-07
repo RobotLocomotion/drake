@@ -18,9 +18,7 @@ void CallMalloc() {
   void* dummy = malloc(16);
   g_dummy = dummy;
   free(dummy);
-  if (g_dummy == nullptr) {
-    throw std::runtime_error("null dummy");
-  }
+  if (g_dummy == nullptr) { throw std::runtime_error("null dummy"); }
 }
 
 // Calls calloc (and then immediately frees).
@@ -28,9 +26,7 @@ void CallCalloc() {
   void* dummy = calloc(1, 16);
   g_dummy = dummy;
   free(dummy);
-  if (g_dummy == nullptr) {
-    throw std::runtime_error("null dummy");
-  }
+  if (g_dummy == nullptr) { throw std::runtime_error("null dummy"); }
 }
 
 // Calls realloc (and then immediately frees).
@@ -38,9 +34,7 @@ void CallRealloc() {
   void* dummy = realloc(nullptr, 16);
   g_dummy = dummy;
   free(dummy);
-  if (g_dummy == nullptr) {
-    throw std::runtime_error("null dummy");
-  }
+  if (g_dummy == nullptr) { throw std::runtime_error("null dummy"); }
 }
 
 // A value-parameterized test fixture.
