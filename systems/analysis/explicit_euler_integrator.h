@@ -52,7 +52,7 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
   int get_error_estimate_order() const override { return 0; }
 
  private:
-  bool DoStep(const T& h) override;
+  bool DoStep(const T& h, Context<T>* context) const override;
 };
 
 /**
@@ -60,16 +60,14 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
  * This value of h is determined by IntegratorBase::Step().
  */
 template <class T>
-bool ExplicitEulerIntegrator<T>::DoStep(const T& h) {
-  Context<T>& context = *this->get_mutable_context();
-
+bool ExplicitEulerIntegrator<T>::DoStep(const T& h, Context<T>* context) const {
   // CAUTION: This is performance-sensitive inner loop code that uses dangerous
   // long-lived references into state and cache to avoid unnecessary copying and
   // cache invalidation. Be careful not to insert calls to methods that could
   // invalidate any of these references before they are used.
 
   // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)).
-  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(context);
+  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(*context);
   const VectorBase<T>& xcdot0 = xc_deriv.get_vector();
 
   // Cache: xcdot0 references the live derivative cache value, currently
@@ -78,8 +76,8 @@ bool ExplicitEulerIntegrator<T>::DoStep(const T& h) {
 
   // Update continuous state and time. This call marks t- and xc-dependent
   // cache entries out of date, including xcdot0.
-  VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
-      context.get_time() + h);  // t ← t₀ + h
+  VectorBase<T>& xc = context->SetTimeAndGetMutableContinuousStateVector(
+      context->get_time() + h);  // t ← t₀ + h
 
   // Cache: xcdot0 still references the derivative cache value, which is
   // unchanged, although it is marked out of date.
