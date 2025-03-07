@@ -71,9 +71,9 @@ class BallRpyJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(damping >= 0);
   }
 
-  ~BallRpyJoint() override;
+  ~BallRpyJoint() final;
 
-  const std::string& type_name() const override;
+  const std::string& type_name() const final;
 
   /// Returns `this` joint's default damping constant in N⋅m⋅s. The damping
   /// torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e. opposing motion, with
@@ -191,7 +191,7 @@ class BallRpyJoint final : public Joint<T> {
   /// Adding forces per-dof makes no physical sense. Therefore, this method
   /// throws an exception if invoked.
   void DoAddInOneForce(const systems::Context<T>&, int, const T&,
-                       MultibodyForces<T>*) const override {
+                       MultibodyForces<T>*) const final {
     throw std::logic_error(
         "Ball RPY joints do not allow applying forces to individual degrees of "
         "freedom.");
@@ -203,7 +203,7 @@ class BallRpyJoint final : public Joint<T> {
   /// viscous law `τ = -d⋅ω`, with d the damping coefficient (see
   /// default_damping()).
   void DoAddInDamping(const systems::Context<T>& context,
-                      MultibodyForces<T>* forces) const override {
+                      MultibodyForces<T>* forces) const final {
     Eigen::Ref<VectorX<T>> t_BMo_F =
         get_mobilizer().get_mutable_generalized_forces_from_array(
             &forces->mutable_generalized_forces());
@@ -212,28 +212,28 @@ class BallRpyJoint final : public Joint<T> {
   }
 
  private:
-  int do_get_velocity_start() const override {
+  int do_get_velocity_start() const final {
     return get_mobilizer().velocity_start_in_v();
   }
 
-  int do_get_num_velocities() const override { return 3; }
+  int do_get_num_velocities() const final { return 3; }
 
-  int do_get_position_start() const override {
+  int do_get_position_start() const final {
     return get_mobilizer().position_start_in_q();
   }
 
-  int do_get_num_positions() const override { return 3; }
+  int do_get_num_positions() const final { return 3; }
 
-  std::string do_get_position_suffix(int index) const override {
+  std::string do_get_position_suffix(int index) const final {
     return get_mobilizer().position_suffix(index);
   }
 
-  std::string do_get_velocity_suffix(int index) const override {
+  std::string do_get_velocity_suffix(int index) const final {
     return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
-      const VectorX<double>& default_positions) override {
+      const VectorX<double>& default_positions) final {
     if (this->has_mobilizer()) {
       get_mutable_mobilizer().set_default_position(default_positions);
     }
@@ -241,18 +241,19 @@ class BallRpyJoint final : public Joint<T> {
 
   // Joint<T> overrides:
   std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
-      const internal::SpanningForest::Mobod& mobod) const override;
+      const internal::SpanningForest::Mobod& mobod,
+      internal::MultibodyTree<T>* tree) const final;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyTree<double>& tree_clone) const final;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyTree<symbolic::Expression>&) const final;
 
-  std::unique_ptr<Joint<T>> DoShallowClone() const override;
+  std::unique_ptr<Joint<T>> DoShallowClone() const final;
 
   // Make BallRpyJoint templated on every other scalar type a friend of
   // BallRpyJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access

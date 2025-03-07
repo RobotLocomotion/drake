@@ -16,8 +16,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// This mobilizer fixes the relative pose `X_FM` of an outboard frame M in an
-// inboard frame F as if "welding" them together at this fixed relative pose.
+// This mobilizer fixes the relative pose of an outboard frame M to be
+// coincident with an inboard frame F as if "welding" them together.
 // Therefore, this mobilizer has no associated state with it.
 //
 // @tparam_default_scalar
@@ -35,13 +35,11 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   using HMatrix = typename MobilizerBase::template HMatrix<U>;
 
   // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
-  // `outboard_frame_M`.
-  // @param[in] X_FM Pose of `outboard_frame_M` in the `inboard_frame_F`.
+  // `outboard_frame_M`. The frames will be held coincident forever.
   WeldMobilizer(const SpanningForest::Mobod& mobod,
                 const Frame<T>& inboard_frame_F,
-                const Frame<T>& outboard_frame_M,
-                const math::RigidTransform<double>& X_FM)
-      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
+                const Frame<T>& outboard_frame_M)
+      : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
   ~WeldMobilizer() final;
 
@@ -49,12 +47,50 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
-  // @retval X_FM The pose of the outboard frame M in the inboard frame F.
-  const math::RigidTransform<double>& get_X_FM() const { return X_FM_; }
+  // TODO(sherm1) Replace this method with operators like
+  //  compose_with_X_FM(X_WF) and apply_X_FM(v) so that we can take advantage
+  //  of the mobilizer's knowledge of its kinematic structure (part of
+  //  performance epic #18442).
 
   // Computes the across-mobilizer transform `X_FM`, which for this mobilizer
-  // is independent of the state stored in `context`.
-  math::RigidTransform<T> calc_X_FM(const T*) const { return X_FM_.cast<T>(); }
+  // is always the identity transform since F==M by construction.
+  math::RigidTransform<T> calc_X_FM(const T*) const {
+    return math::RigidTransform<T>();
+  }
+
+  /* We should do exactly nothing to update X_FM since it remains identity
+  forever. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    DRAKE_ASSERT(X_FM->IsExactlyIdentity());
+    // Do nothing.
+  }
+
+  /* Since X_FM is identity, applying it to a vector does nothing. */
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>&,
+                        const Vector3<T>& v_M) const {
+    return v_M;
+  }
+
+  /* Since R_FM is identity, applying it to a vector does nothing. */
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>&,
+                        const Vector3<T>& v_M) const {
+    return v_M;
+  }
+
+  /* Since X_FM is identity, X_AF * X_FM is just X_AF. */
+  math::RigidTransform<T> compose_with_X_FM(
+      const math::RigidTransform<T>& X_AF,
+      const math::RigidTransform<T>&) const {
+    return X_AF;
+  }
+
+  /* Since X_FM is identity, X_FM * X_MB is just X_MB. */
+  math::RigidTransform<T> compose_X_FM_with(
+      const math::RigidTransform<T>&,
+      const math::RigidTransform<T>& X_MB) const {
+    return X_MB;
+  }
 
   // Computes the across-mobilizer velocity V_FM which for this mobilizer is
   // always zero since the outboard frame M is fixed to the inboard frame F.
@@ -62,12 +98,24 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
     return SpatialVelocity<T>::Zero();
   }
 
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>&, const T*,
+                                 const T*) const {
+    return SpatialVelocity<T>::Zero();
+  }
+
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T*) const {
+    return SpatialAcceleration<T>::Zero();
+  }
+
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>&, const T*,
+                                     const T*, const T*) const {
     return SpatialAcceleration<T>::Zero();
   }
 
   // Does nothing since there are no taus.
   void calc_tau(const T*, const SpatialForce<T>&, T*) const {}
+  void calc_tau_from_M(const math::RigidTransform<T>&, const T*,
+                       const SpatialForce<T>&, T*) const {}
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>&) const final;
@@ -138,9 +186,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
-
-  // Pose of the outboard frame M in the inboard frame F.
-  math::RigidTransform<double> X_FM_;
 };
 
 }  // namespace internal
