@@ -148,6 +148,34 @@ struct DeformableRigidFixedConstraintSpec {
   MultibodyConstraintId id;  // Id of this constraint in the plant.
 };
 
+// Struct to store fixed tendon constraint parameters.
+// Fixed tendon constraints are modeled as a unilateral constraints on an
+// abstract length of the form:
+//   l(q) = aᵀ⋅q + offset ∈ ℝ
+// Where q is the configuration of the model, a is a vector of coefficients, and
+// offset a scalar offset. Note: the coefficients in a are expected to have
+// units such that the length l(q) has consistent units (either meters or
+// radians). This constraint imposes:
+//   lₗ ≤ l(q) ≤ lᵤ
+// where lₗ and lᵤ are (possibly infinite) lower and upper bounds,
+// respectively.
+// @see SapFixedTendonConstraint for more details.
+struct FixedTendonConstraintSpec {
+  bool operator==(const FixedTendonConstraintSpec&) const = default;
+  // Vector of single-dof joints corresponding to the non-zero elements of a.
+  std::vector<JointIndex> joints;
+  // Vector of non-zero coefficients, where each a[i] corresponds to qᵢ, the
+  // configuration of joints[i].
+  std::vector<double> a;
+
+  double offset;             // Constraint offset in [m] or [rad].
+  double lower_limit;        // Lower limit lₗ in [m] or [rad].
+  double upper_limit;        // Upper limit lᵤ in [m] or [rad].
+  double stiffness;          // Constraint stiffness in [N/m] or [N⋅m/rad].
+  double damping;            // Constraint damping in [N⋅s/m] or [N⋅m⋅rad/s].
+  MultibodyConstraintId id;  // Id of this constraint in the plant.
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

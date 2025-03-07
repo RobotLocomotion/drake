@@ -315,6 +315,13 @@ DiscreteUpdateManager<T>::weld_constraints_specs() const {
 }
 
 template <typename T>
+const std::map<MultibodyConstraintId, internal::FixedTendonConstraintSpec>&
+DiscreteUpdateManager<T>::fixed_tendon_constraints_specs() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::fixed_tendon_constraints_specs(*plant_);
+}
+
+template <typename T>
 const std::map<MultibodyConstraintId, bool>&
 DiscreteUpdateManager<T>::GetConstraintActiveStatus(
     const systems::Context<T>& context) const {
