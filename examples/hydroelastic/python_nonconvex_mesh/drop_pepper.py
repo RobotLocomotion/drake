@@ -31,7 +31,7 @@ def make_pepper_bowl_table(contact_model, time_step):
                              contact_surface_representation="polygon"),
                            builder)
 
-    parser = Parser(plant)
+    parser = Parser(builder)
     parser.AddModels(
         url="package://drake_models/veggies/"
             "yellow_bell_pepper_no_stem_low.sdf")
