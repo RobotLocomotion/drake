@@ -257,7 +257,7 @@ class GenericPolynomial {
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
   friend void hash_append(
-      // NOLINTNEXTLINE (runtime/references) Per hash_append convention.
+      // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
       HashAlgorithm& hasher,
       const GenericPolynomial<BasisElement>& item) noexcept {
     using drake::hash_append;

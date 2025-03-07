@@ -100,7 +100,7 @@ class ChebyshevPolynomial {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  // NOLINTNEXTLINE (runtime/references)
+  // NOLINTNEXTLINE(runtime/references)
   friend void hash_append(HashAlgorithm& hasher,
                           const ChebyshevPolynomial& item) noexcept {
     if (item.degree() == 0) {

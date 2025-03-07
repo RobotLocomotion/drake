@@ -93,7 +93,7 @@ class Variable {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
-  // NOLINTNEXTLINE (runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   friend void hash_append(HashAlgorithm& hasher,
                           const Variable& item) noexcept {
     using drake::hash_append;
