@@ -1,5 +1,5 @@
 ---
-title: GitHub PR Interaction with Jenkins
+title: Continuous Integration with GitHub Pull Requests
 ---
 
 When a new pull request is opened in the project and the author of the pull
@@ -189,3 +189,46 @@ env/bin/pip install --upgrade pip
 env/bin/pip install <url-of-experimental-wheel>
 source env/bin/activate
 ```
+
+# Testing via External Examples
+
+The examples within Drake's
+[gallery of external examples](https://github.com/RobotLocomotion/drake-external-examples)
+provide continuous integration via both Jenkins and GitHub Actions. This provides
+downstream test coverage for Drake developers to ensure reliability in the
+build infrastructure. Additionally, the GitHub Actions provide a bonus benefit
+for end users, in that examples of lightweight, open-source builds using Drake
+on public CI servers are made easily accessible.
+
+When a new pull request is opened in Drake, members of the RobotLocomotion
+organization can utilize Jenkins and GitHub Actions to run custom builds.
+This is especially pertinent for pull requests which affect the build infrastructure.
+
+## Jenkins
+
+To test the examples which use Jenkins for CI with a PR branch of Drake,
+comment on an open pull request using the following command:
+
+* ``@drake-jenkins-bot linux-jammy-unprovisioned-external-examples please``
+
+or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
+to schedule a build of the
+[external examples job](https://drake-jenkins.csail.mit.edu/view/Linux%20Jammy%20Unprovisioned/job/linux-jammy-unprovisioned-external-examples/).
+Note that this job provides parameters for branches of
+drake and drake-external-examples.
+
+## GitHub Actions
+
+You can schedule "experimental" builds of a [binary package](/from_binary.html),
+[debian package](/apt.html), and/or a [wheel package](/pip.html) by following the
+instructions [above](#building-packages-on-demand).
+Copy the download URL(s) obtained from the build as described.
+
+From the [GitHub Actions workflow](https://github.com/RobotLocomotion/drake-external-examples/actions/workflows/ci.yml)
+in drake-external-examples, notice the message "This workflow has a
+`workflow_dispatch` event trigger." Click "Run workflow" and input the
+download URL(s) copied from Jenkins in the drop-down menu.
+All parameters are optional, so you can ignore the package(s) and/or platform(s)
+that you don't need. (For those left blank, the default workflow will run using
+a more "stable" version of Drake, which is usually either source code from
+`master` or a nightly release depending on the example).
