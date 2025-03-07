@@ -616,7 +616,7 @@ class Mobilizer : public MultibodyElement<T> {
                                  const Eigen::Ref<const VectorX<T>>& qdot,
                                  EigenPtr<VectorX<T>> v) const = 0;
 
-  // Calculates q̈ from v̇ and v using q̈ = N(q)⋅v̇ + Ṅ(q,v)⋅v.
+  // Calculates q̈ from v̇, v, q using q̈ = N(q)⋅v̇ + Ṅ(q,v)⋅v.
   // @param[in] context stores generalized positions q and velocities v.
   // @param[in] vdot (v̇) 1ˢᵗ time derivatives of generalized velocities.
   // @param[out] qddot (q̈) 2ⁿᵈ time derivatives of the generalized positions.
@@ -626,7 +626,7 @@ class Mobilizer : public MultibodyElement<T> {
                                       const Eigen::Ref<const VectorX<T>>& vdot,
                                       EigenPtr<VectorX<T>> qddot) const;
 
-  // Calculates v̇ from q̈ and v using v̇ = N⁺(q)⋅q̈ + Ṅ⁺(q,v)⋅q̇ where q̇ = N(q)⋅v.
+  // Calculates v̇ from q̈, v, q using v̇ = N⁺(q)⋅q̈ + Ṅ⁺(q,v)⋅q̇ where q̇ = N(q)⋅v.
   // @param[in] context stores generalized positions q and velocities v.
   // @param[in] qddot (q̈) 2ⁿᵈ time derivatives of the generalized positions.
   // @param[out] vdot (v̇) 1ˢᵗ time derivatives of generalized velocities.
