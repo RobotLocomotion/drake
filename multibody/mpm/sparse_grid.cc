@@ -1,6 +1,4 @@
-#include "sparse_grid.h"
-
-#include <utility>
+#include "drake/multibody/mpm/sparse_grid.h"
 
 namespace drake {
 namespace multibody {

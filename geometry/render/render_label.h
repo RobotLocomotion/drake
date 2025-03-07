@@ -106,6 +106,7 @@ class RenderLabel {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
+  // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   friend void hash_append(HashAlgorithm& hasher,
                           const RenderLabel& item) noexcept {
     using drake::hash_append;
