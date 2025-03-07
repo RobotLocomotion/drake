@@ -119,6 +119,7 @@ class Binding {
 
   /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
+  // NOLINTNEXTLINE (runtime/references)
   friend void hash_append(HashAlgorithm& hasher,
                           const Binding<C>& item) noexcept {
     using drake::hash_append;

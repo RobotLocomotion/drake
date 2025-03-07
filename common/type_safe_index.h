@@ -489,6 +489,7 @@ class TypeSafeIndex {
   /// the user to confirm it is valid before using it as a key (or other hashing
   /// application).
   template <typename HashAlgorithm>
+  // NOLINTNEXTLINE (runtime/references)
   friend void hash_append(HashAlgorithm& hasher,
                           const TypeSafeIndex& i) noexcept {
     using drake::hash_append;
