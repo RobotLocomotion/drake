@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <bitset>
+#include <utility>
 #include <vector>
 
 #include "drake/common/drake_assert.h"
@@ -43,6 +44,29 @@ using RangeVector = std::vector<Range>;
  elements.
  @pre ranges != nullptr */
 void ConvertToRangeVector(const std::vector<int>& data, RangeVector* ranges);
+
+/* Helper alias: Given a grid pointer type, deduce the type of the pad nodes. */
+template <typename GridPtr>
+using GridPadNodesType =
+    decltype(std::declval<std::remove_pointer_t<GridPtr>>().GetPadNodes(
+        std::declval<typename std::remove_pointer_t<GridPtr>::NodeType>()));
+
+/* Helper alias: Given a grid pointer type, deduce the type of the pad data. */
+template <typename GridPtr>
+using GridPadDataType =
+    decltype(std::declval<std::remove_pointer_t<GridPtr>>().GetPadData(
+        uint64_t{}));
+
+/* Callback type used by ParticleSorter::Iterate.
+ It takes as parameters:
+   1. A const reference to the pad nodes (of type GridPadNodesType<GridPtr>).
+   2. A pointer to the pad data (of type GridPadDataType<GridPtr>*).
+   3. A ParticleData pointer (ParticleDataPtr).
+   4. An integer particle index. */
+template <typename GridPtr, typename ParticleDataPtr>
+using IterateFuncType =
+    std::function<void(const GridPadNodesType<GridPtr>&,
+                       GridPadDataType<GridPtr>*, ParticleDataPtr, int)>;
 
 /* ParticleSorter sorts MPM particle data based on their positions within the
  grid.
@@ -179,6 +203,78 @@ class ParticleSorter {
    Transactions on Graphics (TOG) 37.4 (2018): 1-14. */
   const std::array<RangeVector, 8>& colored_ranges() const {
     return colored_ranges_;
+  }
+
+  /* Iterates over all particles and their associated supported grid nodes,
+   applying a user-defined function.
+
+   This function traverses particles in blocks. For each particle, it retrieves
+   the associated pad nodes and pad data from the grid, then invokes the
+   provided function. If the passed-in grid pointer is mutable, the modified pad
+   data is automatically written back to the grid after processing all particles
+   associated with the pad. If a const grid pointer is provided, no grid update
+   is performed.
+
+   @tparam GridPtr Pointer-like type to the grid (e.g., SparseGrid<double>* or
+   const SparseGrid<double>*).
+   @tparam ParticleDataPtr Pointer-like type to the particle data (e.g.,
+   ParticleData<double>*, or const ParticleData<double>*).
+
+   @param grid          Pointer to the grid object.
+   @param particle_data Pointer to the particle data object.
+   @param func          A function to be applied to each particle. Its signature
+                        is defined by the alias IterateFuncType. */
+  template <typename GridPtr, typename ParticleDataPtr>
+  void Iterate(GridPtr grid, ParticleDataPtr particle_data,
+               IterateFuncType<GridPtr, ParticleDataPtr> func) const {
+    const int num_blocks = grid->num_blocks();
+    DRAKE_DEMAND(ssize(sentinel_particles_) == num_blocks + 1);
+
+    /* Deduce the grid type. */
+    using Grid = std::remove_pointer_t<GridPtr>;
+    /* Deduce types for pad nodes and pad data. */
+    using PadNodesType = decltype(std::declval<Grid>().GetPadNodes(
+        std::declval<typename Grid::NodeType>()));
+    using PadDataType = decltype(std::declval<Grid>().GetPadData(uint64_t{}));
+
+    /* Temporary variables for pad nodes and pad data. */
+    PadNodesType grid_nodes{};
+    PadDataType grid_data{};
+
+    /* Flag indicating when to fetch new pad data. */
+    bool need_new_pad = true;
+
+    /* Iterate over each block. */
+    for (int b = 0; b < num_blocks; ++b) {
+      const int particle_start = sentinel_particles_[b];
+      const int particle_end = sentinel_particles_[b + 1];
+
+      /* Process each particle within the current block. */
+      for (int p = particle_start; p < particle_end; ++p) {
+        const int data_index = data_indices_[p];
+
+        /* Fetch new pad data and nodes when we meet particles belonging to a
+         new pad. */
+        if (need_new_pad) {
+          grid_data = grid->GetPadData(base_node_offsets_[p]);
+          grid_nodes = grid->GetPadNodes(particle_data->x()[data_index]);
+        }
+
+        /* Apply the provided function to the current particle. */
+        func(grid_nodes, &grid_data, particle_data, data_index);
+
+        /* Determine if the next particle requires new pad data. */
+        need_new_pad = (p + 1 == particle_end) ||
+                       (base_node_offsets_[p] != base_node_offsets_[p + 1]);
+
+        /* Automatically write back pad data if the grid pointer is mutable. */
+        if constexpr (!std::is_const_v<std::remove_pointer_t<GridPtr>>) {
+          if (need_new_pad) {
+            grid->SetPadData(base_node_offsets_[p], grid_data);
+          }
+        }
+      }
+    }
   }
 
  private:
