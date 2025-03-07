@@ -29,9 +29,11 @@ void ImplicitIntegrator<T>::DoReset() {
 }
 
 template <class T>
-void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
-    const System<T>& system, const T& t, const VectorX<T>& xt,
-    const Context<T>& context, MatrixX<T>* J) {
+void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(const System<T>& system,
+                                                    const T& t,
+                                                    const VectorX<T>& xt,
+                                                    const Context<T>& context,
+                                                    MatrixX<T>* J) const {
   DRAKE_LOGGER_DEBUG("  ImplicitIntegrator Compute Autodiff Jacobian t={}", t);
   // TODO(antequ): Investigate how to refactor this method to use
   // math::jacobian(), if possible.
@@ -74,9 +76,11 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
 }
 
 template <class T>
-void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
-    const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context,
-    MatrixX<T>* J) {
+void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(const System<T>&,
+                                                       const T& t,
+                                                       const VectorX<T>& xt,
+                                                       Context<T>* context,
+                                                       MatrixX<T>* J) const {
   using std::abs;
 
   // Set epsilon to the square root of machine precision.
@@ -134,9 +138,11 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
 }
 
 template <class T>
-void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
-    const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context,
-    MatrixX<T>* J) {
+void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(const System<T>&,
+                                                       const T& t,
+                                                       const VectorX<T>& xt,
+                                                       Context<T>* context,
+                                                       MatrixX<T>* J) const {
   using std::abs;
 
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
@@ -277,10 +283,9 @@ bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
 }
 
 template <class T>
-const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
-    const VectorX<T>& x) {
+const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(
+    const T& t, const VectorX<T>& x, Context<T>* context) const {
   // We change the context but will change it back.
-  Context<T>* context = this->get_mutable_context();
 
   // Get the current time and state.
   const T t_current = context->get_time();
@@ -333,9 +338,10 @@ template <class T>
 void ImplicitIntegrator<T>::FreshenMatricesIfFullNewton(
     const T& t, const VectorX<T>& xt, const T& h,
     const std::function<void(const MatrixX<T>&, const T&,
-        typename ImplicitIntegrator<T>::IterationMatrix*)>&
+                             typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
-    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
+    Context<T>* context) const {
   DRAKE_DEMAND(iteration_matrix != nullptr);
 
   // Return immediately if full-Newton is not in use.
@@ -343,7 +349,7 @@ void ImplicitIntegrator<T>::FreshenMatricesIfFullNewton(
 
   // Compute the initial Jacobian and iteration matrices and factor them.
   MatrixX<T>& J = get_mutable_jacobian();
-  J = CalcJacobian(t, xt);
+  J = CalcJacobian(t, xt, context);
   ++num_iter_factorizations_;
   compute_and_factor_iteration_matrix(J, h, iteration_matrix);
 }
@@ -352,14 +358,15 @@ template <class T>
 bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
     const T& t, const VectorX<T>& xt, const T& h, int trial,
     const std::function<void(const MatrixX<T>&, const T&,
-        typename ImplicitIntegrator<T>::IterationMatrix*)>&
+                             typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
-    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
+    Context<T>* context) const {
   // Compute the initial Jacobian and iteration matrices and factor them, if
   // necessary.
   MatrixX<T>& J = get_mutable_jacobian();
   if (!get_reuse() || J.rows() == 0 || IsBadJacobian(J)) {
-    J = CalcJacobian(t, xt);
+    J = CalcJacobian(t, xt, context);
     ++num_iter_factorizations_;
     compute_and_factor_iteration_matrix(J, h, iteration_matrix);
     return true;  // Indicate success.
@@ -431,7 +438,7 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
 
       // Otherwise, we can reform the Jacobian matrix and refactor the
       // iteration matrix.
-      J = CalcJacobian(t, xt);
+      J = CalcJacobian(t, xt, context);
       ++num_iter_factorizations_;
       compute_and_factor_iteration_matrix(J, h, iteration_matrix);
       return true;
