@@ -108,7 +108,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
         compute_and_factor_iteration_matrix,
     const VectorX<T>& xtplus_guess,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
-    VectorX<T>* xtplus, int trial) {
+    VectorX<T>* xtplus, Context<T>* context, int trial) const {
   using std::max;
   using std::min;
 
@@ -127,7 +127,6 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
 
   // Advance the context time and state to compute derivatives at t0 + h.
   const T tf = t0 + h;
-  Context<T>* context = this->get_mutable_context();
   context->SetTimeAndContinuousState(tf, *xtplus);
 
   // Initialize the "last" state update norm; this will be used to detect
@@ -144,7 +143,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   if (!this->get_use_full_newton() &&
       !this->MaybeFreshenMatrices(t0, xt0, h, trial,
                                   compute_and_factor_iteration_matrix,
-                                  iteration_matrix)) {
+                                  iteration_matrix, context)) {
     return false;
   }
 
@@ -152,7 +151,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
     this->FreshenMatricesIfFullNewton(tf, *xtplus, h,
                                       compute_and_factor_iteration_matrix,
-                                      iteration_matrix);
+                                      iteration_matrix, context);
 
     // Evaluate the residual error using:
     // g(x(t0+h)) = x(t0+h) - x(t0) - h f(t0+h,x(t0+h)).
@@ -203,31 +202,35 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
   // Try StepAbstract again. That method will freshen Jacobians and iteration
   // matrix factorizations as necessary.
   return StepAbstract(t0, h, xt0, g, compute_and_factor_iteration_matrix,
-                      xtplus_guess, iteration_matrix, xtplus, trial + 1);
+                      xtplus_guess, iteration_matrix, xtplus, context,
+                      trial + 1);
 }
 
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitEuler(const T& t0, const T& h,
-    const VectorX<T>& xt0, VectorX<T>* xtplus) {
+                                                   const VectorX<T>& xt0,
+                                                   VectorX<T>* xtplus,
+                                                   Context<T>* context) const {
   DRAKE_LOGGER_DEBUG("StepImplicitEuler(h={}) t={}", h, t0);
 
   // Use the current state as the candidate value for the next state.
   // [Hairer 1996] validates this choice (p. 120).
   const VectorX<T>& xtplus_guess = xt0;
 
-  return this->StepImplicitEulerWithGuess(t0, h, xt0, xtplus_guess, xtplus);
+  return this->StepImplicitEulerWithGuess(t0, h, xt0, xtplus_guess, xtplus,
+                                          context);
 }
 
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitEulerWithGuess(
     const T& t0, const T& h, const VectorX<T>& xt0,
-    const VectorX<T>& xtplus_guess, VectorX<T>* xtplus) {
+    const VectorX<T>& xtplus_guess, VectorX<T>* xtplus,
+    Context<T>* context) const {
   using std::abs;
 
   DRAKE_LOGGER_DEBUG("StepImplicitEulerWithGuess(h={}) t={}", h, t0);
 
   // Set g for the implicit Euler method.
-  Context<T>* context = this->get_mutable_context();
   std::function<VectorX<T>()> g =
       [&xt0, h, context, this]() {
         return (context->get_continuous_state().CopyToVector() - xt0 -
@@ -237,13 +240,13 @@ bool ImplicitEulerIntegrator<T>::StepImplicitEulerWithGuess(
   // Attempt the step.
   return StepAbstract(t0, h, xt0, g,
                       ComputeAndFactorImplicitEulerIterationMatrix,
-                      xtplus_guess, &ie_iteration_matrix_, &*xtplus);
+                      xtplus_guess, &ie_iteration_matrix_, &*xtplus, context);
 }
 
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepHalfSizedImplicitEulers(
-    const T& t0, const T& h, const VectorX<T>& xt0,
-    const VectorX<T>& xtplus_ie, VectorX<T>* xtplus) {
+    const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& xtplus_ie,
+    VectorX<T>* xtplus, Context<T>* context) const {
   using std::abs;
 
   DRAKE_LOGGER_DEBUG("StepHalfSizedImplicitEulers(h={}) t={}", h, t0);
@@ -267,7 +270,8 @@ bool ImplicitEulerIntegrator<T>::StepHalfSizedImplicitEulers(
   // guess for the final state, xtplus_ie, and the initial state, xt0.
   VectorX<T> xtmp = 0.5 * (xt0 + xtplus_ie);
   // Attempt to step.
-  bool success = StepImplicitEulerWithGuess(t0, 0.5 * h, xt0, xtmp, xtplus);
+  bool success =
+      StepImplicitEulerWithGuess(t0, 0.5 * h, xt0, xtmp, xtplus, context);
   if (!success) {
     DRAKE_LOGGER_DEBUG("First Half IE convergence failed.");
   } else {
@@ -295,7 +299,7 @@ bool ImplicitEulerIntegrator<T>::StepHalfSizedImplicitEulers(
     // Revision 1 of PR 13224 for an implementation of this optimization.
 
     success = StepImplicitEulerWithGuess(t0 + 0.5 * h, 0.5 * h, xthalf,
-        xtplus_ie, xtplus);
+                                         xtplus_ie, xtplus, context);
     if (!success) {
       DRAKE_LOGGER_DEBUG("Second Half IE convergence failed.");
       // After a failure, the Jacobians were updated, so we have to mark that
@@ -334,7 +338,8 @@ bool ImplicitEulerIntegrator<T>::StepHalfSizedImplicitEulers(
 template <class T>
 bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(
     const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
-    const VectorX<T>& xtplus_ie, VectorX<T>* xtplus) {
+    const VectorX<T>& xtplus_ie, VectorX<T>* xtplus,
+    Context<T>* context) const {
   using std::abs;
 
   DRAKE_LOGGER_DEBUG("StepImplicitTrapezoid(h={}) t={}", h, t0);
@@ -342,7 +347,6 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(
   // Set g for the implicit trapezoid method.
   // Define g(x(t+h)) ≡ x(t0+h) - x(t0) - h/2 (f(t0,x(t0)) + f(t0+h,x(t0+h)) and
   // evaluate it at the current x(t+h).
-  Context<T>* context = this->get_mutable_context();
   std::function<VectorX<T>()> g =
       [&xt0, h, &dx0, context, this]() {
         return (context->get_continuous_state().CopyToVector() - xt0 - h/2 *
@@ -365,9 +369,9 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(
       this->get_num_newton_raphson_iterations();
 
   // Attempt to step.
-  bool success = StepAbstract(t0, h, xt0, g,
-                              ComputeAndFactorImplicitTrapezoidIterationMatrix,
-                              xtplus_ie, &itr_iteration_matrix_, xtplus);
+  bool success = StepAbstract(
+      t0, h, xt0, g, ComputeAndFactorImplicitTrapezoidIterationMatrix,
+      xtplus_ie, &itr_iteration_matrix_, xtplus, context);
 
   // Move statistics to implicit trapezoid-specific.
   // Notice that we log the statistics even if the step fails.
@@ -389,7 +393,10 @@ bool ImplicitEulerIntegrator<T>::StepImplicitTrapezoid(
 
 template <class T>
 bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
-    const VectorX<T>& xt0, VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie) {
+                                                   const VectorX<T>& xt0,
+                                                   VectorX<T>* xtplus_ie,
+                                                   VectorX<T>* xtplus_hie,
+                                                   Context<T>* context) const {
   using std::abs;
   DRAKE_ASSERT(xtplus_ie != nullptr);
   DRAKE_ASSERT(xtplus_hie != nullptr);
@@ -402,7 +409,7 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
       this->get_context()).CopyToVector();
 
   // Do the Euler step.
-  if (!StepImplicitEuler(t0, h, xt0, xtplus_ie)) {
+  if (!StepImplicitEuler(t0, h, xt0, xtplus_ie, context)) {
     DRAKE_LOGGER_DEBUG("Implicit Euler approach did not converge for "
         "step size {}", h);
     return false;
@@ -411,8 +418,8 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
   if (!use_implicit_trapezoid_error_estimation_) {
     // In this case, step two half-sized implicit Euler steps along
     // with the full step for error estimation.
-    if (StepHalfSizedImplicitEulers(t0, h, xt0, *xtplus_ie, xtplus_hie)) {
-      Context<T>* context = this->get_mutable_context();
+    if (StepHalfSizedImplicitEulers(t0, h, xt0, *xtplus_ie, xtplus_hie,
+                                    context)) {
       context->SetTimeAndContinuousState(t0 + h, *xtplus_hie);
       return true;
     } else {
@@ -436,12 +443,12 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
     // xᵢₑ(t0+h) - xₜᵣ(t0+h) = O(h²).
 
     // Attempt to compute the implicit trapezoid solution.
-    if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_ie, xtplus_hie)) {
+    if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_ie, xtplus_hie,
+                              context)) {
       // Reset the state to that computed by implicit Euler.
       // TODO(edrumwri): Explore using the implicit trapezoid method solution
       //                 instead as *the* solution, rather than the implicit
       //                 Euler. Refer to [Lambert, 1991], Ch 6.
-      Context<T>* context = this->get_mutable_context();
       context->SetTimeAndContinuousState(t0 + h, *xtplus_ie);
       return true;
     } else {
@@ -453,9 +460,9 @@ bool ImplicitEulerIntegrator<T>::AttemptStepPaired(const T& t0, const T& h,
 }
 
 template <class T>
-bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
+bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(
+    const T& h, Context<T>* context) const {
   // Save the current time and state.
-  Context<T>* context = this->get_mutable_context();
   const T t0 = context->get_time();
   DRAKE_LOGGER_DEBUG("IE DoStep(h={}) t={}", h, t0);
 
@@ -536,7 +543,8 @@ bool ImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
 
   } else {
     // Try taking the requested step.
-    bool success = AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_hie_);
+    bool success =
+        AttemptStepPaired(t0, h, xt0_, &xtplus_ie_, &xtplus_hie_, context);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
