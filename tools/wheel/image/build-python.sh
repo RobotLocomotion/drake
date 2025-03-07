@@ -7,7 +7,7 @@ set -eu -o pipefail
 
 readonly VERSION=$1
 readonly PREFIX=$2
-readonly SHA=$3
+readonly EXPECTED_SHA=$3
 
 apt-get -y update
 apt-get -y install --no-install-recommends \
@@ -23,7 +23,10 @@ mkdir -p $SRC_DIR
 cd $SRC_DIR
 
 wget $URL
-echo "$SHA  $ARCHIVE" | sha256sum -c
+readonly ACTUAL_SHA=$(sha256sum $ARCHIVE | cut -d' ' -f1)
+echo "    Actual SHA: $ACTUAL_SHA"
+echo "  Expected SHA: $EXPECTED_SHA"
+test $ACTUAL_SHA == $EXPECTED_SHA
 
 tar --strip-components=1 -xf $ARCHIVE
 rm $ARCHIVE
