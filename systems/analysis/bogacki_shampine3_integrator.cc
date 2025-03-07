@@ -47,10 +47,10 @@ void BogackiShampine3Integrator<T>::DoInitialize() {
 }
 
 template <class T>
-bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
+bool BogackiShampine3Integrator<T>::DoStep(const T& h,
+                                           Context<T>* context) const {
   using std::abs;
-  Context<T>& context = *this->get_mutable_context();
-  const T t0 = context.get_time();
+  const T t0 = context->get_time();
 
   // CAUTION: This is performance-sensitive inner loop code that uses dangerous
   // long-lived references into state and cache to avoid unnecessary copying and
@@ -67,11 +67,11 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   //              7/24 (d1)       1/4 (d2)     1/3 (d3)     1/8 (d4)
 
   // Save the continuous state at t₀.
-  context.get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
+  context->get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
 
   // Evaluate the derivative at t₀, xc₀.
   derivs1_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k1 = derivs1_->get_vector();
 
   // Cache: k1 references a *copy* of the derivative result so is immune
@@ -84,13 +84,13 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // will require manual out-of-date notifications.
   const double c2 = 1.0 / 2;
   const double a21 = 1.0 / 2;
-  VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
-      t0 + c2 * h);
+  VectorBase<T>& xc =
+      context->SetTimeAndGetMutableContinuousStateVector(t0 + c2 * h);
   xc.PlusEqScaled(a21 * h, k1);
 
   // Evaluate the derivative (denoted k2) at t₀ + c2 * h, xc₀ + a21 * h * k1.
   derivs2_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k2 = derivs2_->get_vector();  // xcdot⁽ᵃ⁾
 
   // Cache: k2 references a *copy* of the derivative result so is immune
@@ -103,7 +103,7 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
-  context.SetTimeAndNoteContinuousStateChange(t0 + c3 * h);
+  context->SetTimeAndNoteContinuousStateChange(t0 + c3 * h);
 
   // Evaluate the derivative (denoted k3) at t₀ + c3 * h,
   //   xc₀ + a31 * h * k1 + a32 * h * k2.
@@ -112,7 +112,7 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{a32 * h, k2}});
   derivs3_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& k3 =  derivs3_->get_vector();
 
   // Compute the propagated solution (we're able to do this because b1 = a41,
@@ -124,14 +124,14 @@ bool BogackiShampine3Integrator<T>::DoStep(const T& h) {
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
-  context.SetTimeAndNoteContinuousStateChange(t0 + c4 * h);
+  context->SetTimeAndNoteContinuousStateChange(t0 + c4 * h);
 
   // Evaluate the derivative (denoted k4) at t₀ + c4 * h, xc₀ + a41 * h * k1 +
   // a42 * h * k2 + a43 * h * k3. This will be used to compute the second
   // order solution.
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{a41 * h, k1}, {a42 * h, k2}, {a43 * h, k3}});
-  const ContinuousState<T>& derivs4 = this->EvalTimeDerivatives(context);
+  const ContinuousState<T>& derivs4 = this->EvalTimeDerivatives(*context);
   const VectorBase<T>& k4 = derivs4.get_vector();
 
   // WARNING: k4 is a live reference into the cache. Be careful of adding
