@@ -6,11 +6,13 @@
 /// current calculated position of the end effector is printed before,
 /// during, and after the commanded motion.
 
-#include "lcm/lcm-cpp.hpp"
+#include <iostream>
+
 #include <gflags/gflags.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/examples/kuka_iiwa_arm/iiwa_common.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_robot_plan.hpp"
 #include "drake/manipulation/util/move_ik_demo_base.h"
@@ -35,6 +37,8 @@ namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
 
+using lcm::DrakeLcm;
+using lcm::Subscriber;
 using manipulation::util::MoveIkDemoBase;
 using multibody::PackageMap;
 
@@ -52,26 +56,30 @@ int DoMain() {
       "base", FLAGS_ee_name, 100);
   demo.set_joint_velocity_limits(get_iiwa_max_joint_velocities());
 
-  ::lcm::LCM lc;
-  lc.subscribe<lcmt_iiwa_status>(
-      FLAGS_lcm_status_channel,
-      [&](const ::lcm::ReceiveBuffer*, const std::string&,
-          const lcmt_iiwa_status* status) {
-        Eigen::VectorXd iiwa_q(status->num_joints);
-        for (int i = 0; i < status->num_joints; i++) {
-          iiwa_q[i] = status->joint_position_measured[i];
-        }
-        demo.HandleStatus(iiwa_q);
-        if (demo.status_count() == 1) {
-          std::optional<lcmt_robot_plan> plan = demo.Plan(pose);
-          if (plan.has_value()) {
-            lc.publish(FLAGS_lcm_plan_channel, &plan.value());
-          }
-        }
-      });
-
-  while (lc.handle() >= 0) {
+  // Wait for a status message.
+  DrakeLcm lcm;
+  Subscriber<lcmt_iiwa_status> subscriber(&lcm, FLAGS_lcm_status_channel);
+  while (subscriber.count() == 0) {
+    lcm.HandleSubscriptions(10);
   }
+
+  // Read the positions.
+  const lcmt_iiwa_status& status = subscriber.message();
+  Eigen::VectorXd iiwa_q(status.num_joints);
+  for (int i = 0; i < status.num_joints; i++) {
+    iiwa_q[i] = status.joint_position_measured[i];
+  }
+
+  // Make a plan.
+  demo.HandleStatus(iiwa_q);
+  std::optional<lcmt_robot_plan> plan = demo.Plan(pose);
+  if (!plan.has_value()) {
+    std::cerr << "Plan failed; exiting!\n";
+    return 0;
+  }
+
+  // Run the plan.
+  Publish(&lcm, FLAGS_lcm_plan_channel, plan.value());
   return 0;
 }
 

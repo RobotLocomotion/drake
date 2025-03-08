@@ -14,11 +14,10 @@
 #include <iostream>
 #include <memory>
 
-#include "lcm/lcm-cpp.hpp"
-
 #include "drake/common/drake_assert.h"
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
 #include "drake/lcmt_robot_plan.hpp"
@@ -43,6 +42,8 @@ const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
 const char* const kLcmStopChannel = "STOP";
 const int kNumJoints = 7;
 
+using lcm::DrakeLcm;
+using lcm::Subscriber;
 using trajectories::PiecewisePolynomial;
 typedef PiecewisePolynomial<double> PPType;
 typedef Polynomial<double> PPPoly;
@@ -52,71 +53,72 @@ class RobotPlanRunner {
  public:
   /// plant is aliased
   explicit RobotPlanRunner(const multibody::MultibodyPlant<double>& plant)
-      : plant_(plant), plan_number_(0) {
-    lcm_.subscribe(kLcmStatusChannel, &RobotPlanRunner::HandleStatus, this);
-    lcm_.subscribe(kLcmPlanChannel, &RobotPlanRunner::HandlePlan, this);
-    lcm_.subscribe(kLcmStopChannel, &RobotPlanRunner::HandleStop, this);
-  }
+      : plant_(plant),
+        plan_number_(0),
+        status_subscriber_(&lcm_, kLcmStatusChannel),
+        plan_subscriber_(&lcm_, kLcmPlanChannel),
+        stop_subscriber_(&lcm_, kLcmStopChannel) {}
 
   void Run() {
     int cur_plan_number = plan_number_;
-    int64_t cur_time_us = -1;
-    int64_t start_time_us = -1;
+    int64_t cur_plan_start_time_us = -1;
 
-    // Initialize the timestamp to an invalid number so we can detect
-    // the first message.
-    iiwa_status_.utime = cur_time_us;
-
-    lcmt_iiwa_command iiwa_command;
+    lcmt_iiwa_command iiwa_command{};
     iiwa_command.num_joints = kNumJoints;
-    iiwa_command.joint_position.resize(kNumJoints, 0.);
-    iiwa_command.num_torques = 0;
-    iiwa_command.joint_torque.resize(kNumJoints, 0.);
+    iiwa_command.joint_position.resize(kNumJoints, 0.0);
 
+    // Wait until at least one status message is processed.
+    while (status_subscriber_.count() == 0) {
+      lcm_.HandleSubscriptions(10);
+    }
+
+    // Run forever.
     while (true) {
-      // Call lcm handle until at least one status message is
-      // processed.
-      while (0 == lcm_.handleTimeout(10) || iiwa_status_.utime == -1) {
+      // Wait for the next message (of any kind).
+      while (lcm_.HandleSubscriptions(10) == 0) {
       }
 
-      cur_time_us = iiwa_status_.utime;
+      // Check for stopping.
+      if (stop_subscriber_.count() > 0) {
+        HandleStop();
+        stop_subscriber_.clear();
+      }
 
-      if (plan_) {
+      // Check for starting.
+      const int64_t cur_time_us = status_subscriber_.message().utime;
+      if (plan_subscriber_.count() > 0) {
+        HandlePlan();
+        plan_subscriber_.clear();
         if (plan_number_ != cur_plan_number) {
           std::cout << "Starting new plan." << std::endl;
-          start_time_us = cur_time_us;
           cur_plan_number = plan_number_;
+          cur_plan_start_time_us = cur_time_us;
         }
-
-        const double cur_traj_time_s =
-            static_cast<double>(cur_time_us - start_time_us) / 1e6;
-        const auto desired_next = plan_->value(cur_traj_time_s);
-
-        iiwa_command.utime = iiwa_status_.utime;
-
-        for (int joint = 0; joint < kNumJoints; joint++) {
-          iiwa_command.joint_position[joint] = desired_next(joint);
-        }
-
-        lcm_.publish(kLcmCommandChannel, &iiwa_command);
       }
+
+      // If no plan is active, go back to sleep.
+      if (plan_ == nullptr) {
+        continue;
+      }
+
+      // Transcribe the desired command at cur_time_us.
+      iiwa_command.utime = cur_time_us;
+      const Eigen::MatrixXd desired_next =
+          plan_->value((cur_time_us - cur_plan_start_time_us) / 1e6);
+      for (int joint = 0; joint < kNumJoints; ++joint) {
+        iiwa_command.joint_position[joint] = desired_next(joint);
+      }
+
+      // Send the command.
+      Publish(&lcm_, kLcmCommandChannel, iiwa_command);
     }
   }
 
  private:
-  void HandleStatus(const ::lcm::ReceiveBuffer*, const std::string&,
-                    const lcmt_iiwa_status* status) {
-    iiwa_status_ = *status;
-  }
-
-  void HandlePlan(const ::lcm::ReceiveBuffer*, const std::string&,
-                  const lcmt_robot_plan* plan) {
+  void HandlePlan() {
+    const lcmt_robot_plan* plan = &plan_subscriber_.message();
     std::cout << "New plan received." << std::endl;
-    if (iiwa_status_.utime == -1) {
-      std::cout << "Discarding plan, no status message received yet"
-                << std::endl;
-      return;
-    } else if (plan->num_states < 2) {
+    if (plan->num_states < 2) {
       std::cout << "Discarding plan, Not enough knot points." << std::endl;
       return;
     }
@@ -139,8 +141,9 @@ class RobotPlanRunner {
         if (i == 0) {
           // Always start moving from the position which we're
           // currently commanding.
-          DRAKE_DEMAND(iiwa_status_.utime != -1);
-          knots[0](idx, 0) = iiwa_status_.joint_position_commanded[j];
+          DRAKE_DEMAND(status_subscriber_.count() > 0);
+          knots[0](idx, 0) =
+              status_subscriber_.message().joint_position_commanded[j];
 
         } else {
           knots[i](idx, 0) = state.joint_position[j];
@@ -163,17 +166,18 @@ class RobotPlanRunner {
     ++plan_number_;
   }
 
-  void HandleStop(const ::lcm::ReceiveBuffer*, const std::string&,
-                  const lcmt_robot_plan*) {
+  void HandleStop() {
     std::cout << "Received stop command. Discarding plan." << std::endl;
     plan_.reset();
   }
 
-  ::lcm::LCM lcm_;
+  DrakeLcm lcm_;
   const multibody::MultibodyPlant<double>& plant_;
   int plan_number_{};
   std::unique_ptr<PiecewisePolynomial<double>> plan_;
-  lcmt_iiwa_status iiwa_status_;
+  Subscriber<lcmt_iiwa_status> status_subscriber_;
+  Subscriber<lcmt_robot_plan> plan_subscriber_;
+  Subscriber<lcmt_robot_plan> stop_subscriber_;
 };
 
 int do_main() {
