@@ -19,6 +19,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff.h"
@@ -88,6 +89,12 @@ class ProximityEngineTester {
   static const internal::deformable::Geometries&
   get_deformable_contact_geometries(const ProximityEngine<T>& engine) {
     return engine.deformable_contact_geometries();
+  }
+
+  template <typename T>
+  static const std::unordered_map<GeometryId, MeshDistanceBoundary>&
+  get_mesh_distance_boundaries(const ProximityEngine<T>& engine) {
+    return engine.mesh_distance_boundaries();
   }
 };
 
@@ -537,6 +544,30 @@ GTEST_TEST(ProximityEngineTests, ProcessVtkConvexUndefHydro) {
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
               HydroelasticType::kUndefined);
   }
+}
+
+// TODO(SeanCurtis-TRI): Confirm that SDF data gets computed for Mesh(vtk) and
+// all Convex().
+
+// Tests that the SDF data computed for an obj correctly accounts for its
+// scale factor.
+GTEST_TEST(ProximityEngineTest, ProcessMeshSdfDataForObj) {
+  ProximityEngine<double> engine;
+
+  const GeometryId g_id = GeometryId::get_new_id();
+  const Vector3d scale(2, 3, 4);
+  const Mesh mesh(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+                  scale);
+  engine.AddAnchoredGeometry(mesh, {}, g_id);
+
+  const std::unordered_map<GeometryId, MeshDistanceBoundary>& sdf_data =
+      ProximityEngineTester::get_mesh_distance_boundaries(engine);
+
+  ASSERT_TRUE(sdf_data.contains(g_id));
+  // The cube is 2x2x2. The bounding box of the boundary mesh should be that,
+  // scaled by the given scale factors.
+  const auto& [_, size] = sdf_data.at(g_id).tri_mesh().CalcBoundingBox();
+  EXPECT_TRUE(CompareMatrices(size, 2 * scale));
 }
 
 // Adds a single shape to the given engine with the indicated anchored/dynamic

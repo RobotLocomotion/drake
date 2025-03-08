@@ -1233,6 +1233,98 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   }
 }
 
+// Confirm that non-uniform scale is correctly applied. We'll render create
+// two renderings: one with a reference mesh and one with the mesh pre-scaled
+// (applying the inverse scale to the Shape). The two images should end up
+// identical.
+TEST_F(RenderEngineGlTest, NonUniformScaleTest) {
+  RenderEngineGl ref_engine;
+  RenderEngineGl scale_engine;
+
+  // Makes a MeshSource scaled such that if the scale `s` is applied, it becomes
+  // a 2x2x2 cube.
+  auto make_cube_mesh_source = [](const Vector3d& s) {
+    const std::string obj_contents =
+        fmt::format(R"""(
+    mtllib test_cube.mtl
+    v -{x} -{y} -{z}
+    v -{x}  {y} -{z}
+    v  {x} -{y} -{z}
+    v  {x}  {y} -{z}
+    v -{x} -{y}  {z}
+    v -{x}  {y}  {z}
+    v  {x} -{y}  {z}
+    v  {x}  {y}  {z}
+    vn  1  0  0
+    vn -1  0  0
+    vn  0  1  0
+    vn  0 -1  0
+    vn  0  0  1
+    vn  0  0 -1
+    usemtl red
+    f 1//6 2//6 4//6 3//6
+    f 1//4 3//4 7//4 5//4
+    f 1//2 5//2 6//2 2//2
+    f 8//5 6//5 5//5 7//5
+    f 8//1 7//1 3//1 4//1
+    f 8//3 4//3 2//3 6//3
+    )""",
+                    fmt::arg("x", 1.0 / s.x()), fmt::arg("y", 1.0 / s.y()),
+                    fmt::arg("z", 1.0 / s.z()));
+    return InMemoryMesh{
+        .mesh_file = MemoryFile(obj_contents, ".obj", "cube.obj"),
+        .supporting_files = {
+            {"test_cube.mtl",
+             MemoryFile("newmtl red\nKd 0.8 0 0\n", ".mtl", "test mtl")}}};
+  };
+
+  const auto convex_id = GeometryId::get_new_id();
+  const auto mesh_id = GeometryId::get_new_id();
+  PerceptionProperties material;
+  material.AddProperty("label", "id", RenderLabel::kDontCare);
+
+  const Vector3d unit_scale(1, 1, 1);
+  ref_engine.RegisterVisual(
+      mesh_id, Mesh(make_cube_mesh_source(unit_scale), unit_scale), material,
+      RigidTransformd(Vector3d(-1.5, 0, 0)), /* needs_update =*/false);
+  ref_engine.RegisterVisual(
+      convex_id, Convex(make_cube_mesh_source(unit_scale), unit_scale),
+      material, RigidTransformd(Vector3d(1.5, 0, 0)), /* needs_update =*/false);
+
+  const Vector3d stretch(2, 4, 8);  // powers of two for perfect math.
+  scale_engine.RegisterVisual(
+      mesh_id, Mesh(make_cube_mesh_source(stretch), stretch), material,
+      RigidTransformd(Vector3d(-1.5, 0, 0)), /* needs_update =*/false);
+  scale_engine.RegisterVisual(
+      convex_id, Convex(make_cube_mesh_source(stretch), stretch), material,
+      RigidTransformd(Vector3d(1.5, 0, 0)), /* needs_update =*/false);
+
+  // The camera is above the Wz = 0 plane, looking generally down and in the
+  // +Wy direction.
+  const RigidTransformd X_WC(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
+                             Vector3d(0, -3, 4.4));
+  ref_engine.UpdateViewpoint(X_WC);
+  scale_engine.UpdateViewpoint(X_WC);
+
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+  const int w = camera.core().intrinsics().width();
+  const int h = camera.core().intrinsics().height();
+  ImageRgba8U ref_color(w, h);
+  ImageRgba8U scale_color(w, h);
+  EXPECT_NO_THROW(ref_engine.RenderColorImage(camera, &ref_color));
+  EXPECT_NO_THROW(scale_engine.RenderColorImage(camera, &scale_color));
+
+  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+    const fs::path out_dir(dir);
+    const std::string file_prefix = "NonUniformScaleTest";
+    ImageIo{}.Save(ref_color,
+                   out_dir / fmt::format("{}_ref_color.png", file_prefix));
+    ImageIo{}.Save(scale_color,
+                   out_dir / fmt::format("{}_scale_color.png", file_prefix));
+  }
+  EXPECT_EQ(ref_color, scale_color);
+}
+
 // Repeats various mesh-based tests, but this time the meshes are loaded from
 // memory. We render the scene twice: once with the one mesh and once with the
 // other to confirm they are rendered the same.

@@ -43,7 +43,8 @@ namespace internal {
  @throw  std::exception if the file does not exist or unsupported.
          std::exception for non-positive scale factors. */
 VolumeMesh<double> ReadVtkToVolumeMesh(const MeshSource& mesh_source,
-                                       double scale = 1.0);
+                                       const Eigen::Vector3d& scale = {1, 1,
+                                                                       1});
 
 }  // namespace internal
 }  // namespace geometry
