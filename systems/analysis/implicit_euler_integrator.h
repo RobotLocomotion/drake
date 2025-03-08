@@ -408,7 +408,8 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   //              `x(t0+h)`) on return, or the implicit Trapezoid solution.
   // @returns `true` if the step of size `h` was successful.
   bool AttemptStepPaired(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie);
+                         VectorX<T>* xtplus_ie, VectorX<T>* xtplus_hie,
+                         Context<T>* context) const;
 
   // Performs the bulk of the stepping computation for both implicit Euler and
   // implicit trapezoid method; all those methods need to do is provide a
@@ -437,22 +438,23 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   //       exit.
   // TODO(edrumwri) Explicitly test this method's fallback logic (i.e., how it
   //                calls MaybeFreshenMatrices()) in a unit test).
-  bool StepAbstract(const T& t0, const T& h, const VectorX<T>& xt0,
-                    const std::function<VectorX<T>()>& g,
-                    const std::function<
-                        void(const MatrixX<T>&, const T&,
-                             typename ImplicitIntegrator<T>::IterationMatrix*)>&
-                        compute_and_factor_iteration_matrix,
-                    const VectorX<T>& xtplus_guess,
-                    typename ImplicitIntegrator<T>::IterationMatrix*
-                    iteration_matrix, VectorX<T>* xtplus, int trial = 1);
+  bool StepAbstract(
+      const T& t0, const T& h, const VectorX<T>& xt0,
+      const std::function<VectorX<T>()>& g,
+      const std::function<
+          void(const MatrixX<T>&, const T&,
+               typename ImplicitIntegrator<T>::IterationMatrix*)>&
+          compute_and_factor_iteration_matrix,
+      const VectorX<T>& xtplus_guess,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix,
+      VectorX<T>* xtplus, Context<T>* context, int trial = 1) const;
 
   // Takes a given step of the requested size, if possible.
   // @returns `true` if successful; on `true`, the time and continuous state
   //          will be advanced in the context (e.g., from t0 to t0 + h). On a
   //          `false` return, the time and continuous state in the context will
   //          be restored to its original value (at t0).
-  bool DoImplicitIntegratorStep(const T& h) final;
+  bool DoImplicitIntegratorStep(const T& h, Context<T>* context) const final;
 
   // Steps the system forward by a single step of at most h using the implicit
   // Euler method.
@@ -464,7 +466,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @post The time and continuous state in the context are indeterminate upon
   //       exit.
   bool StepImplicitEuler(const T& t0, const T& h, const VectorX<T>& xt0,
-      VectorX<T>* xtplus);
+                         VectorX<T>* xtplus, Context<T>* context) const;
 
   // Steps the system forward by a single step of at most h using the implicit
   // Euler method, starting with a guess for the state xtplus.
@@ -477,8 +479,10 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @post The time and continuous state in the context are indeterminate upon
   //       exit.
   bool StepImplicitEulerWithGuess(const T& t0, const T& h,
-      const VectorX<T>& xt0, const VectorX<T>& xtplus_guess,
-      VectorX<T>* xtplus);
+                                  const VectorX<T>& xt0,
+                                  const VectorX<T>& xtplus_guess,
+                                  VectorX<T>* xtplus,
+                                  Context<T>* context) const;
 
   // Steps forward by two steps of `h/2` using the implicit Euler
   // method, if possible.
@@ -492,7 +496,10 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @post The time and continuous state in the context are indeterminate upon
   //       exit.
   bool StepHalfSizedImplicitEulers(const T& t0, const T& h,
-      const VectorX<T>& xt0, const VectorX<T>& xtplus_ie, VectorX<T>* xtplus);
+                                   const VectorX<T>& xt0,
+                                   const VectorX<T>& xtplus_ie,
+                                   VectorX<T>* xtplus,
+                                   Context<T>* context) const;
 
   // Steps forward by a single step of `h` using the implicit trapezoid
   // method, if possible.
@@ -507,23 +514,24 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // @post The time and continuous state in the context are indeterminate upon
   //       exit.
   bool StepImplicitTrapezoid(const T& t0, const T& h, const VectorX<T>& xt0,
-      const VectorX<T>& dx0, const VectorX<T>& xtplus_ie, VectorX<T>* xtplus);
+                             const VectorX<T>& dx0, const VectorX<T>& xtplus_ie,
+                             VectorX<T>* xtplus, Context<T>* context) const;
 
   // The last computed iteration matrix and factorization for implicit Euler.
-  typename ImplicitIntegrator<T>::IterationMatrix ie_iteration_matrix_;
+  mutable typename ImplicitIntegrator<T>::IterationMatrix ie_iteration_matrix_;
 
   // The last computed iteration matrix and factorization for implicit
   // trapezoid.
-  typename ImplicitIntegrator<T>::IterationMatrix itr_iteration_matrix_;
+  mutable typename ImplicitIntegrator<T>::IterationMatrix itr_iteration_matrix_;
 
   // Vector used in error estimate calculations.
-  VectorX<T> err_est_vec_;
+  mutable VectorX<T> err_est_vec_;
 
   // The continuous state update vector used during Newton-Raphson.
   std::unique_ptr<ContinuousState<T>> dx_state_;
 
   // Variables to avoid heap allocations.
-  VectorX<T> xt0_, xdot_, xtplus_ie_, xtplus_hie_;
+  mutable VectorX<T> xt0_, xdot_, xtplus_ie_, xtplus_hie_;
 
   // Second order Runge-Kutta method for estimating the integration error when
   // the requested step size lies below the working step size.
@@ -535,14 +543,14 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // or the half-sized implicit Eulers. This is used in ImplicitIntegrator::
   // get_num_newton_raphson_iterations(). Other statistics integers for the
   // total are defined in ImplicitIntegrator.
-  int64_t num_nr_iterations_{0};
+  mutable int64_t num_nr_iterations_{0};
 
   // These track statistics specific to implicit trapezoid or the two half-
   // sized steps. Only one of the following two will be used at a time, the
   // other one will remain at 0 as long as
   // use_implicit_trapezoid_error_estimation_ does not change.
-  Statistics itr_statistics_;
-  Statistics hie_statistics_;
+  mutable Statistics itr_statistics_;
+  mutable Statistics hie_statistics_;
 
   // Since this integrator computes two small steps for its solution and
   // simultaneously computes a large step to estimate the error, this is a
@@ -553,7 +561,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // will not attempt to compute a Jacobian. This flag tells the next step that
   // the Jacobian is still not "fresh", or computed from (t0,x0) at the
   // beginning of the step, even after the step has failed.
-  bool failed_jacobian_is_from_second_small_step_{false};
+  mutable bool failed_jacobian_is_from_second_small_step_{false};
 
   // If set to true, the integrator uses implicit trapezoid instead of two
   // half-sized steps for error estimation.

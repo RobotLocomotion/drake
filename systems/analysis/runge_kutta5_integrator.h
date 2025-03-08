@@ -73,13 +73,13 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
 
  private:
   void DoInitialize() override;
-  bool DoStep(const T& h) override;
+  bool DoStepConst(const T& h, Context<T>* context) const override;
 
   // Vector used in error estimate calculations.
   std::unique_ptr<BasicVector<T>> err_est_vec_;
 
   // Vector used to save initial value of xc.
-  VectorX<T> save_xc0_;
+  mutable VectorX<T> save_xc0_;
 
   // These are pre-allocated temporaries for use by integration. They store
   // the derivatives computed at various points within the integration

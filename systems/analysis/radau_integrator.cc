@@ -125,8 +125,8 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
 
 template <typename T, int num_stages>
 const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
-      const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
-  Context<T>* context = this->get_mutable_context();
+    const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z,
+    Context<T>* context) const {
   const int state_dim = xt0.size();
 
   // Evaluate the derivative at each stage.
@@ -156,7 +156,10 @@ void RadauIntegrator<T, num_stages>::ComputeSolutionFromIterate(
 
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
-    const VectorX<T>& xt0, VectorX<T>* xtplus, int trial) {
+                                               const VectorX<T>& xt0,
+                                               VectorX<T>* xtplus,
+                                               Context<T>* context,
+                                               int trial) const {
   using std::max;
   using std::min;
 
@@ -167,7 +170,6 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   DRAKE_ASSERT(1 <= trial && trial <= 4);
 
   // Set the state.
-  Context<T>* context = this->get_mutable_context();
   context->SetTimeAndContinuousState(t0, xt0);
 
   const int state_dim = xt0.size();
@@ -203,7 +205,7 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   //                (necessarily) be fresh upon fallback to a smaller step size.
   if (!this->get_use_full_newton() &&
       !this->MaybeFreshenMatrices(t0, xt0, h, trial, construct_iteration_matrix,
-      &iteration_matrix_radau_)) {
+                                  &iteration_matrix_radau_, context)) {
     return false;
   }
 
@@ -214,14 +216,15 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
   for (int iter = 0; iter < this->max_newton_raphson_iterations(); ++iter) {
     DRAKE_LOGGER_DEBUG("Newton-Raphson iteration {}", iter);
 
-    this->FreshenMatricesIfFullNewton(
-        tf, *xtplus, h, construct_iteration_matrix, &iteration_matrix_radau_);
+    this->FreshenMatricesIfFullNewton(tf, *xtplus, h,
+                                      construct_iteration_matrix,
+                                      &iteration_matrix_radau_, context);
 
     // Update the number of Newton-Raphson iterations.
     ++num_nr_iterations_;
 
     // Evaluate the derivatives using the current iterate.
-    const VectorX<T>& F_of_Z = ComputeFofZ(t0, h, xt0, Z_);
+    const VectorX<T>& F_of_Z = ComputeFofZ(t0, h, xt0, Z_, context);
 
     // Compute the state update using (IV.8.4) in [Hairer, 1996], p. 119, i.e.:
     // Solve (I − hA⊗J) ΔZᵏ = h (A⊗I) F(Zᵏ) - Zᵏ for ΔZᵏ, where:
@@ -289,13 +292,14 @@ bool RadauIntegrator<T, num_stages>::StepRadau(const T& t0, const T& h,
 
   // Try StepRadau again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
-  return StepRadau(t0, h, xt0, xtplus, trial+1);
+  return StepRadau(t0, h, xt0, xtplus, context, trial + 1);
 }
 
 template <typename T, int num_stages>
-bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
-    const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
-    const VectorX<T>& radau_xtplus, VectorX<T>* xtplus) {
+bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(
+    const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& dx0,
+    const VectorX<T>& radau_xtplus, VectorX<T>* xtplus,
+    Context<T>* context) const {
   using std::abs;
 
   DRAKE_LOGGER_DEBUG("StepImplicitTrapezoid(h={}) t={}",
@@ -303,7 +307,6 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
 
   // Define g(x(t+h)) ≡ x(t+h) - x(t) - h/2 (f(t,x(t)) + f(t+h,x(t+h)) and
   // evaluate it at the current x(t+h).
-  Context<T>* context = this->get_mutable_context();
   std::function<VectorX<T>()> g =
       [&xt0, h, &dx0, context, this]() {
         return (context->get_continuous_state().CopyToVector() - xt0 - h/2 *
@@ -324,8 +327,8 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
   int stored_num_nr_iterations = this->get_num_newton_raphson_iterations();
 
   // Step.
-  bool success = StepImplicitTrapezoidDetail(
-      t0, h, xt0, g, radau_xtplus, xtplus);
+  bool success =
+      StepImplicitTrapezoidDetail(t0, h, xt0, g, radau_xtplus, xtplus, context);
 
   // Move statistics to implicit trapezoid-specific.
   num_err_est_jacobian_reforms_ +=
@@ -346,9 +349,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoid(const T& t0,
 
 template <typename T, int num_stages>
 bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
-    const T& t0, const T& h,
-    const VectorX<T>& xt0, const std::function<VectorX<T>()>& g,
-    const VectorX<T>& radau_xtplus, VectorX<T>* xtplus, int trial) {
+    const T& t0, const T& h, const VectorX<T>& xt0,
+    const std::function<VectorX<T>()>& g, const VectorX<T>& radau_xtplus,
+    VectorX<T>* xtplus, Context<T>* context, int trial) const {
   using std::max;
   using std::min;
 
@@ -356,7 +359,6 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   DRAKE_ASSERT(trial >= 1 && trial <= 4);
 
   // Verify xtplus.
-  Context<T>* context = this->get_mutable_context();
   DRAKE_ASSERT(xtplus &&
                xtplus->size() == context->get_continuous_state_vector().size());
 
@@ -386,9 +388,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
   //                logic, since the Jacobian would no longer (necessarily) be
   //                fresh upon fallback to a smaller step size.
   if (!this->get_use_full_newton() &&
-      !this->MaybeFreshenMatrices(t0, xt0, h, trial,
-                                  ComputeImplicitTrapezoidIterationMatrix,
-                                  &iteration_matrix_implicit_trapezoid_)) {
+      !this->MaybeFreshenMatrices(
+          t0, xt0, h, trial, ComputeImplicitTrapezoidIterationMatrix,
+          &iteration_matrix_implicit_trapezoid_, context)) {
     return false;
   }
 
@@ -396,10 +398,9 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
     DRAKE_LOGGER_DEBUG("Newton-Raphson iteration {}", iter);
     ++num_nr_iterations_;
 
-    this->FreshenMatricesIfFullNewton(tf, *xtplus, h,
-                                      ComputeImplicitTrapezoidIterationMatrix,
-                                      &iteration_matrix_implicit_trapezoid_);
-
+    this->FreshenMatricesIfFullNewton(
+        tf, *xtplus, h, ComputeImplicitTrapezoidIterationMatrix,
+        &iteration_matrix_implicit_trapezoid_, context);
 
     // Evaluate the residual error using the current x(t+h).
     VectorX<T> goutput = g();
@@ -447,13 +448,14 @@ bool RadauIntegrator<T, num_stages>::StepImplicitTrapezoidDetail(
 
   // Try the step again, freshening Jacobians and iteration matrix
   // factorizations as helpful.
-  return StepImplicitTrapezoidDetail(
-      t0, h, xt0, g, radau_xtplus, xtplus, trial + 1);
+  return StepImplicitTrapezoidDetail(t0, h, xt0, g, radau_xtplus, xtplus,
+                                     context, trial + 1);
 }
 
 template <typename T, int num_stages>
-bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
-    const VectorX<T>& xt0, VectorX<T>* xtplus_radau, VectorX<T>* xtplus_itr) {
+bool RadauIntegrator<T, num_stages>::AttemptStepPaired(
+    const T& t0, const T& h, const VectorX<T>& xt0, VectorX<T>* xtplus_radau,
+    VectorX<T>* xtplus_itr, Context<T>* context) const {
   using std::abs;
   DRAKE_ASSERT(xtplus_radau != nullptr);
   DRAKE_ASSERT(xtplus_itr != nullptr);
@@ -461,21 +463,20 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   DRAKE_ASSERT(xtplus_itr->size() == xt0.size());
 
   // Set the time and state in the context.
-  this->get_mutable_context()->SetTimeAndContinuousState(t0, xt0);
+  context->SetTimeAndContinuousState(t0, xt0);
 
   // Compute the derivative at xt0. NOTE: the derivative is calculated at this
   // point (early on in the integration process) in order to reuse the
   // derivative evaluation, via the cache, from the last integration step (if
   // possible).
-  const VectorX<T> dx0 = this->EvalTimeDerivatives(
-      this->get_context()).CopyToVector();
+  const VectorX<T> dx0 = this->EvalTimeDerivatives(*context).CopyToVector();
 
   // Use the current state as the candidate value for the next state.
   // [Hairer 1996] validates this choice (p. 120).
   *xtplus_radau = xt0;
 
   // Do the Radau step.
-  if (!StepRadau(t0, h, xt0, xtplus_radau)) {
+  if (!StepRadau(t0, h, xt0, xtplus_radau, context)) {
     DRAKE_LOGGER_DEBUG("Radau approach did not converge for "
         "step size {}", h);
     return false;
@@ -511,10 +512,10 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
   // result is propagated in the 1st order method.
 
   // Attempt to compute the implicit trapezoid solution.
-  if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_radau, xtplus_itr)) {
+  if (StepImplicitTrapezoid(t0, h, xt0, dx0, *xtplus_radau, xtplus_itr,
+                            context)) {
     // Reset the state to that computed by Radau3.
-    this->get_mutable_context()->SetTimeAndContinuousState(
-        t0 + h, *xtplus_radau);
+    context->SetTimeAndContinuousState(t0 + h, *xtplus_radau);
     return true;
   } else {
     DRAKE_LOGGER_DEBUG("Implicit trapezoid approach FAILED with a step"
@@ -527,7 +528,7 @@ bool RadauIntegrator<T, num_stages>::AttemptStepPaired(const T& t0, const T& h,
 
 template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
-    const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed) {
+    const VectorX<T>& xtplus_prop, const VectorX<T>& xtplus_embed) const {
   err_est_vec_ = xtplus_prop - xtplus_embed;
   err_est_vec_ = err_est_vec_.cwiseAbs();
 
@@ -538,9 +539,8 @@ void RadauIntegrator<T, num_stages>::ComputeAndSetErrorEstimate(
 }
 
 template <typename T, int num_stages>
-bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
-  Context<T>* context = this->get_mutable_context();
-
+bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(
+    const T& h, Context<T>* context) const {
   // Save the current time and state.
   const T t0 = context->get_time();
   DRAKE_LOGGER_DEBUG("Radau DoStep(h={}) t={}", h, t0);
@@ -562,7 +562,7 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
       // The BS3 integrator provides exactly the same order as 2-stage
       // Radau + embedded implicit trapezoid.
       const int evals_before_bs3 = bs3_->get_num_derivative_evaluations();
-      DRAKE_DEMAND(bs3_->IntegrateWithSingleFixedStepToTime(t0 + h));
+      DRAKE_DEMAND(bs3_->IntegrateWithSingleFixedStepToTime(t0 + h, context));
       const int evals_after_bs3 = bs3_->get_num_derivative_evaluations();
       this->get_mutable_error_estimate()->SetFrom(*bs3_->get_error_estimate());
       this->add_derivative_evaluations(evals_after_bs3 - evals_before_bs3);
@@ -577,7 +577,7 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
 
       // Compute the RK2 step.
       const int evals_before_rk2 = rk2_->get_num_derivative_evaluations();
-      DRAKE_DEMAND(rk2_->IntegrateWithSingleFixedStepToTime(t0 + h));
+      DRAKE_DEMAND(rk2_->IntegrateWithSingleFixedStepToTime(t0 + h, context));
       const int evals_after_rk2 = rk2_->get_num_derivative_evaluations();
 
       // Update the error estimation ODE counts.
@@ -594,8 +594,8 @@ bool RadauIntegrator<T, num_stages>::DoImplicitIntegratorStep(const T& h) {
     }
   } else {
     // Try taking the requested step.
-    bool success = AttemptStepPaired(
-        t0, h, xt0_, &xtplus_prop_, &xtplus_embed_);
+    bool success =
+        AttemptStepPaired(t0, h, xt0_, &xtplus_prop_, &xtplus_embed_, context);
 
     // If the step was not successful, reset the time and state.
     if (!success) {
