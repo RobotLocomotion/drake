@@ -521,6 +521,10 @@ void DefineShapes(py::module m) {
                  double>(),
             py::arg("points"), py::arg("label"), py::arg("scale") = 1.0,
             doc.Convex.ctor.doc_3args_points_label_scale)
+        .def(py::init<const Eigen::Matrix3X<double>&, const std::string&,
+                 const Vector3<double>&>(),
+            py::arg("points"), py::arg("label"), py::arg("scale3"),
+            doc.Convex.ctor.doc_3args_points_label_scale3)
         .def("source", &Convex::source, doc.Convex.source.doc)
         .def("extension", &Convex::extension, doc.Convex.extension.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
