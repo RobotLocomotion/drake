@@ -23,7 +23,8 @@ drake_cc_library(
     hdrs = ["kalman_filter.h"],
     deps = [
         ":luenberger_observer",
-        "//systems/controllers:linear_quadratic_regulator",
+        "//math:continuous_algebraic_riccati_equation",
+        "//math:discrete_algebraic_riccati_equation",
         "//systems/framework",
         "//systems/primitives:linear_system",
     ],
