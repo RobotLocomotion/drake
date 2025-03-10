@@ -76,12 +76,12 @@ void ParticleSorter::ComputeBitInformation(const SpGridFlags& flags,
   // TODO(xuchenhan-tri): This should be checked when we register particles to
   // the MPM model.
   /* Confirm that index_bits_ is enough to store num_particles. */
-  const uint64_t capacity = (static_cast<uint64_t>(1) << index_bits_);
+  const uint64_t capacity = (uint64_t{1} << index_bits_);
   DRAKE_DEMAND(capacity > static_cast<uint64_t>(num_particles));
 }
 
 void ParticleSorter::UnpackResults() {
-  const uint64_t index_mask = ((static_cast<uint64_t>(1) << index_bits_) - 1);
+  const uint64_t index_mask = ((uint64_t{1} << index_bits_) - 1);
 
   for (int p = 0; p < static_cast<int>(particle_sorters_.size()); ++p) {
     /* Lower bits store the particle's original index. */
