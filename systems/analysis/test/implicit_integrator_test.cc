@@ -53,7 +53,8 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
     has_reset_cached_matrices_ = true;
   }
 
-  bool DoImplicitIntegratorStep(const double& h) override {
+  bool DoImplicitIntegratorStep(const double& h,
+                                Context<double>* context) const override {
     throw std::logic_error("Dummy integrator not meant to be stepped.");
   }
 
