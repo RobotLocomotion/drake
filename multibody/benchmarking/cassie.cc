@@ -78,7 +78,7 @@ class Cassie : public benchmark::Fixture {
   // For T=double, any request for gradients is an error.
   // For T=AutoDiffXd, sets the specified gradients to the identity matrix.
   // For T=Expression, sets the specified quantities to symbolic variables.
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references)
   void SetUpGradientsOrVariables(benchmark::State& state);
 
   // Use these functions to invalidate input- or state-dependent computations
@@ -97,7 +97,7 @@ class Cassie : public benchmark::Fixture {
   }
 
   // Runs the PositionKinematics benchmark.
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references)
   void DoPositionKinematics(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
@@ -111,7 +111,7 @@ class Cassie : public benchmark::Fixture {
   }
 
   // Runs the PosAndVelKinematics benchmark.
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references)
   void DoPosAndVelKinematics(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
@@ -126,7 +126,7 @@ class Cassie : public benchmark::Fixture {
   }
 
   // Runs the MassMatrix benchmark.
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references)
   void DoMassMatrix(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     DRAKE_DEMAND(want_grad_u(state) == false);
@@ -137,7 +137,7 @@ class Cassie : public benchmark::Fixture {
   }
 
   // Runs the InverseDynamics benchmark.
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references)
   void DoInverseDynamics(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_u(state) == false);
     for (auto _ : state) {
@@ -147,7 +147,7 @@ class Cassie : public benchmark::Fixture {
   }
 
   // Runs the ForwardDynamics benchmark.
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references)
   void DoForwardDynamics(benchmark::State& state) {
     DRAKE_DEMAND(want_grad_vdot(state) == false);
     for (auto _ : state) {

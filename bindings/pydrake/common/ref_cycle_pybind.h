@@ -75,7 +75,7 @@ class process_attribute<drake::pydrake::internal::ref_cycle<Peer0, Peer1>>
     : public process_attribute_default<
           drake::pydrake::internal::ref_cycle<Peer0, Peer1>> {
  public:
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references)
   static void precall(function_call& call) {
     // Only generate code if this invocation doesn't need the return value.
     if constexpr (!needs_return_value()) {
@@ -83,7 +83,7 @@ class process_attribute<drake::pydrake::internal::ref_cycle<Peer0, Peer1>>
     }
   }
 
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+  // NOLINTNEXTLINE(runtime/references)
   static void postcall(function_call& call, handle ret) {
     // Only generate code if this invocation *does* need the return value.
     if constexpr (needs_return_value()) {
