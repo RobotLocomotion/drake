@@ -1,0 +1,25 @@
+[vtk] Remove prompting on std::cin
+
+We never want to allow Drake to interface with cin, at least not from
+third-party library code.
+
+Reasoning for not upstreaming this patch: Drake-specific build option.
+
+--- Common/Core/vtkOutputWindow.cxx
++++ Common/Core/vtkOutputWindow.cxx
+@@ -246,6 +246,7 @@
+       break;
+   }
+ 
++#if 0  // Disabled for Drake.
+   if (this->PromptUser && this->CurrentMessageType != MESSAGE_TYPE_TEXT &&
+     stream_type != StreamType::Null)
+   {
+@@ -261,6 +262,7 @@
+       this->PromptUser = false;
+     }
+   }
++#endif
+ 
+   this->InvokeEvent(vtkCommand::MessageEvent, const_cast<char*>(txt));
+   if (this->CurrentMessageType == MESSAGE_TYPE_TEXT)

@@ -1,0 +1,415 @@
+[vtk] Remove <iostream> from core header file
+
+Including <iostream> in a header induces global constructors into
+every downstream translation unit that includes it (transitively).
+Sometimes that's fine in a cc file, but it's totally inappropriate
+for a header file, especially such a widely-used one.
+
+Remove the include statement (and using statement) from the header,
+copying it to the necessary locations in downstream cc files where
+it's actually used.
+
+--- Common/Core/vtkIOStream.h
++++ Common/Core/vtkIOStream.h
+@@ -16,13 +16,13 @@
+ 
+ #include <fstream>  // Include real ansi ifstream and ofstream.
+ #include <iomanip>  // Include real ansi io manipulators.
+-#include <iostream> // Include real ansi istream and ostream.
++#include <istream>    // Include real ansi istream.
++#include <ostream>    // Include real ansi ostream.
++#include <ios>        // Ala <iostream>.
++#include <streambuf>  // Ala <iostream>.
+ 
+ // Need these in global namespace so the same code will work with ansi
+ // and old-style streams.
+-using std::cerr;
+-using std::cin;
+-using std::cout;
+ using std::dec;
+ using std::endl;
+ using std::ends;
+
+--- Common/Core/vtkBreakPoint.cxx
++++ Common/Core/vtkBreakPoint.cxx
+@@ -6,6 +6,10 @@
+ #include <unistd.h> // gethostname(), sleep()
+ #endif
+ 
++#include <iostream>
++
++using std::cout;
++
+ //------------------------------------------------------------------------------
+ VTK_ABI_NAMESPACE_BEGIN
+ void vtkBreakPoint::Break()
+
+--- Common/Core/vtkInformationKey.cxx
++++ Common/Core/vtkInformationKey.cxx
+@@ -3,6 +3,10 @@
+ #include "vtkInformationKey.h"
+ #include "vtkInformationKeyLookup.h"
+ 
+ #include "vtkDebugLeaks.h"
+ #include "vtkInformation.h"
++
++#include <iostream>
++
++ using std::cout;
+ 
+
+--- Common/Core/vtkOutputWindow.cxx
++++ Common/Core/vtkOutputWindow.cxx
+@@ -13,10 +13,14 @@
+ #include "vtkObjectFactory.h"
+ #include "vtkSmartPointer.h"
+ 
++#include <iostream>
+ #include <mutex>
+ #include <sstream>
+ #include <thread>
+ 
++using std::cerr;
++using std::cout;
++
+ namespace
+ {
+ // helps in set and restore value when an instance goes in
+
+--- Common/Core/vtkVariant.cxx
++++ Common/Core/vtkVariant.cxx
+@@ -20,9 +20,12 @@
+ 
+ #include <cassert>
+ #include <cctype> // std::isspace
++#include <iostream>
+ #include <locale> // C++ locale
+ #include <sstream>
+ 
++using std::cerr;
++
+ //------------------------------------------------------------------------------
+ 
+ // Implementation of vtkVariant's
+
+--- Common/DataModel/vtkAMRBox.cxx
++++ Common/DataModel/vtkAMRBox.cxx
+@@ -13,8 +13,11 @@
+ #include <cassert>
+ #include <cstring>
+ #include <fstream>
++#include <iostream>
+ #include <sstream>
+ 
++using std::cerr;
++
+ //------------------------------------------------------------------------------
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkAMRBox::vtkAMRBox()
+
+--- Common/DataModel/vtkAMRInformation.cxx
++++ Common/DataModel/vtkAMRInformation.cxx
+@@ -10,6 +10,7 @@
+ #include "vtkStructuredGrid.h"
+ #include "vtkUnsignedIntArray.h"
+ #include <cassert>
++#include <iostream>
+ #include <set>
+ 
+ VTK_ABI_NAMESPACE_BEGIN
+@@ -293,7 +294,7 @@ unsigned int vtkAMRInformation::GetNumberOfDataSets(unsigned int level) const
+ {
+   if (level >= this->GetNumberOfLevels())
+   {
+-    cerr << "WARNING: No data set at this level" << endl;
++    std::cerr << "WARNING: No data set at this level" << endl;
+     return 0;
+   }
+   return this->NumBlocks[level + 1] - this->NumBlocks[level];
+
+--- Common/DataModel/vtkBSPCuts.cxx
++++ Common/DataModel/vtkBSPCuts.cxx
+@@ -6,6 +6,10 @@
+ #include "vtkKdTree.h"
+ #include "vtkObjectFactory.h"
+ 
++#include <iostream>
++
++using std::cout;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkStandardNewMacro(vtkBSPCuts);
+ 
+
+--- Common/DataModel/vtkDataObjectTypes.cxx
++++ Common/DataModel/vtkDataObjectTypes.cxx
+@@ -43,8 +43,11 @@
+ #include "vtkUniformHyperTreeGrid.h"
+ #include "vtkUnstructuredGrid.h"
+ 
++#include <iostream>
+ #include <map>
+ 
++using std::cerr;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkStandardNewMacro(vtkDataObjectTypes);
+ 
+
+--- Common/DataModel/vtkGenericEdgeTable.cxx
++++ Common/DataModel/vtkGenericEdgeTable.cxx
+@@ -5,8 +5,12 @@
+ 
+ #include <cassert>
+ #include <cmath>
++#include <iostream>
+ #include <vector>
+ 
++using std::cerr;
++using std::cout;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkStandardNewMacro(vtkGenericEdgeTable);
+ 
+
+--- Common/DataModel/vtkGeometricErrorMetric.cxx
++++ Common/DataModel/vtkGeometricErrorMetric.cxx
+@@ -9,6 +9,9 @@
+ #include "vtkMath.h"
+ #include "vtkObjectFactory.h"
+ #include <cassert>
++#include <iostream>
++
++using std::cout;
+ 
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkStandardNewMacro(vtkGeometricErrorMetric);
+
+--- Common/DataModel/vtkGraph.cxx
++++ Common/DataModel/vtkGraph.cxx
+@@ -30,9 +30,12 @@
+ 
+ #include <algorithm>
+ #include <cassert>
++#include <iostream>
+ #include <set>
+ #include <vector>
+ 
++using std::cout;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ double vtkGraph::DefaultPoint[3] = { 0, 0, 0 };
+ 
+
+--- Common/DataModel/vtkKdNode.cxx
++++ Common/DataModel/vtkKdNode.cxx
+@@ -9,6 +9,10 @@
+ #include "vtkPlanesIntersection.h"
+ #include "vtkPoints.h"
+ 
++#include <iostream>
++
++using std::cout;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkStandardNewMacro(vtkKdNode);
+ vtkCxxSetObjectMacro(vtkKdNode, Left, vtkKdNode);
+
+--- Common/DataModel/vtkOrderedTriangulator.cxx
++++ Common/DataModel/vtkOrderedTriangulator.cxx
+@@ -17,11 +17,14 @@
+ #include "vtkUnstructuredGrid.h"
+ 
+ #include <cassert>
++#include <iostream>
+ #include <list>
+ #include <map>
+ #include <stack>
+ #include <vector>
+ 
++using std::cout;
++
+ // Dumps insertion cavity when the cavity is invalid.
+ // #define DEBUG_vtkOrderedTriangulator
+ 
+
+--- Common/DataModel/vtkPixelExtent.h
++++ Common/DataModel/vtkPixelExtent.h
+@@ -21,7 +21,7 @@
+ #include <algorithm> // for inline impl
+ #include <climits>   // for inline impl
+ #include <deque>     // for inline impl
+-#include <iostream>  // for inline impl
++#include <ostream>   // for inline impl
+ 
+ VTK_ABI_NAMESPACE_BEGIN
+ class VTKCOMMONDATAMODEL_EXPORT vtkPixelExtent
+
+--- Common/DataModel/vtkReebGraph.cxx
++++ Common/DataModel/vtkReebGraph.cxx
+@@ -15,10 +15,13 @@
+ #include "vtkVariantArray.h"
+ 
+ #include <algorithm>
++#include <iostream>
+ #include <map>
+ #include <queue>
+ #include <vector>
+ 
++using std::cout;
++
+ //------------------------------------------------------------------------------
+ // Contain all of the internal data structures, and macros, in the
+ // implementation.
+
+--- Common/DataModel/vtkSelection.cxx
++++ Common/DataModel/vtkSelection.cxx
+@@ -21,12 +21,16 @@
+ #include <atomic>
+ #include <cassert>
+ #include <cctype>
++#include <iostream>
+ #include <map>
+ #include <memory>
+ #include <sstream>
+ #include <string>
+ #include <vector>
+ 
++using std::cerr;
++using std::cout;
++
+ //============================================================================
+ namespace parser
+ {
+
+--- Common/DataModel/vtkTable.cxx
++++ Common/DataModel/vtkTable.cxx
+@@ -15,8 +15,11 @@
+ #include "vtkVariantArray.h"
+ 
+ #include <algorithm>
++#include <iostream>
+ #include <vector>
+ 
++using std::cout;
++
+ //
+ // Standard functions
+ //
+
+--- Common/DataModel/vtkUniformHyperTreeGrid.cxx
++++ Common/DataModel/vtkUniformHyperTreeGrid.cxx
+@@ -9,6 +9,7 @@
+ #include "vtkHyperTreeGridScales.h"
+ 
+ #include <deque>
++#include <iostream>
+ 
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkStandardNewMacro(vtkUniformHyperTreeGrid);
+
+--- Common/ExecutionModel/vtkExtentRCBPartitioner.cxx
++++ Common/ExecutionModel/vtkExtentRCBPartitioner.cxx
+@@ -10,6 +10,9 @@
+ #include <algorithm>
+ #include <cassert>
+ #include <cmath>
++#include <iostream>
++
++using std::cout;
+ 
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkStandardNewMacro(vtkExtentRCBPartitioner);
+
+--- Common/System/vtkTimerLog.cxx
++++ Common/System/vtkTimerLog.cxx
+@@ -20,6 +20,7 @@
+ #include <cmath>
+ #include <cstdarg>
+ #include <iomanip>
++#include <iostream>
+ #include <iterator>
+ #include <string>
+ #include <vector>
+@@ -36,6 +37,8 @@
+ #endif
+ #include "vtkObjectFactory.h"
+ 
++using std::cerr;
++
+ //==============================================================================
+ VTK_ABI_NAMESPACE_BEGIN
+ static unsigned int vtkTimerLogCleanupCounter = 0;
+
+--- IO/Image/vtkTIFFReader.cxx
++++ IO/Image/vtkTIFFReader.cxx
+@@ -14,8 +14,11 @@
+ 
+ #include <algorithm>
+ #include <cassert>
++#include <iostream>
+ #include <string>
+ 
++using std::cerr;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ namespace
+ {
+
+--- Rendering/Core/vtkGlyph3DMapper.cxx
++++ Rendering/Core/vtkGlyph3DMapper.cxx
+@@ -30,8 +30,11 @@
+ #include "vtkTrivialProducer.h"
+ 
+ #include <cassert>
++#include <iostream>
+ #include <vector>
+ 
++using std::cerr;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ namespace
+ {
+
+--- Rendering/Core/vtkRenderWidget.cxx
++++ Rendering/Core/vtkRenderWidget.cxx
+@@ -7,6 +7,10 @@
+ #include "vtkObjectFactory.h"
+ #include "vtkRect.h"
+ 
++#include <iostream>
++
++using std::cout;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ vtkStandardNewMacro(vtkRenderWidget);
+ 
+
+--- Rendering/Core/vtkScenePicker.cxx
++++ Rendering/Core/vtkScenePicker.cxx
+@@ -11,6 +13,10 @@
+ #include "vtkRenderWindowInteractor.h"
+ #include "vtkRenderer.h"
+ 
++#include <iostream>
++
++using std::cout;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ class vtkScenePickerSelectionRenderCommand : public vtkCommand
+ {
+
+--- Rendering/OpenGL2/vtkOpenGLFramebufferObject.cxx
++++ Rendering/OpenGL2/vtkOpenGLFramebufferObject.cxx
+@@ -16,8 +16,11 @@
+ #include "vtkTextureObject.h"
+ 
+ #include <cassert>
++#include <iostream>
+ #include <vector>
+ 
++using std::cout;
++
+ VTK_ABI_NAMESPACE_BEGIN
+ class vtkFOInfo
+ {
