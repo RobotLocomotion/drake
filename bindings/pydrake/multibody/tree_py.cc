@@ -76,6 +76,7 @@ void BindMultibodyElementMixin(PyClass* pcls) {
   cls  // BR
       .def("index", &Class::index)
       .def("model_instance", &Class::model_instance)
+      .def("is_ephemeral", &Class::is_ephemeral)
       .def("GetParentPlant",
           [](const Class& self) -> const multibody::MultibodyPlant<T>& {
             return self.GetParentPlant();

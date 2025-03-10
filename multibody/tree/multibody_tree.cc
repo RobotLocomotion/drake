@@ -927,7 +927,10 @@ void MultibodyTree<T>::Finalize() {
   elements" to provide a uniform interface to the additional elements that were
   required to build the model. Below, we will augment the MultibodyPlant
   elements to match, so that advanced users can use the familiar Plant API to
-  access and control these ephemeral elements. */
+  access and control these ephemeral elements. The process of modeling Joints
+  with available Mobilizers may introduce ephemeral Frames as well. All
+  ephemeral elements must be marked as such in the base MultibodyElement class;
+  public API element.is_ephemeral() is available to check. */
   link_joint_graph_.BuildForest();
   const LinkJointGraph& graph = link_joint_graph_;
 

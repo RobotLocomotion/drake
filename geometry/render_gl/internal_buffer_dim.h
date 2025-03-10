@@ -25,6 +25,7 @@ class BufferDim {
 
   /* Implements the @ref hash_append concept.  */
   template <class HashAlgorithm>
+  // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   friend void hash_append(HashAlgorithm& hasher,
                           const BufferDim& dim) noexcept {
     using drake::hash_append;

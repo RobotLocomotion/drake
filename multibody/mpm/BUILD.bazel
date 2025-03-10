@@ -116,6 +116,10 @@ drake_cc_library_linux_only(
     hdrs = [
         "spgrid.h",
     ],
+    defines = select({
+        "//tools:using_memcheck": ["DRAKE_MPM_TESTING_LOG2_MAX_GRID_SIZE=5"],
+        "//conditions:default": [],
+    }),
     deps = [
         ":spgrid_flags",
         "//common:essential",
