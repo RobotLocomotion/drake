@@ -130,10 +130,18 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   map<string, string> expected_packages = {{"package_foo", "package_foo"},
                                            {"my_package", "package_bar"}};
 
-  // Add packages + paths.
+  // Add packages + paths. Check all overloads.
   PackageMap package_map = PackageMap::MakeEmpty();
+  int i = 0;
   for (const auto& [package, path] : expected_packages) {
-    package_map.Add(package, path);
+    if (i % 3 == 0) {
+      package_map.Add(package, fs::path{path});
+    } else if (i % 3 == 1) {
+      package_map.Add(package, std::string{path});
+    } else {
+      package_map.Add(package, path.c_str());
+    }
+    ++i;
   }
 
   VerifyMatch(package_map, expected_packages);
@@ -264,7 +272,7 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
       "package_map_test_packages/package_map_test_package_a/package.xml");
   const string xml_dirname = fs::path(xml_filename).parent_path().string();
   PackageMap package_map = PackageMap::MakeEmpty();
-  package_map.AddPackageXml(xml_filename);
+  package_map.AddPackageXml(fs::path{xml_filename});
 
   map<string, string> expected_packages = {
       {"package_map_test_package_a", xml_dirname},
@@ -272,17 +280,17 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
   VerifyMatch(package_map, expected_packages);
 
   // Adding the same package.xml again is OK, since it provides an identical
-  // package name + path.
-  package_map.AddPackageXml(xml_filename);
+  // package name + path. Use a different overload for coverage.
+  package_map.AddPackageXml(std::string{xml_filename});
   VerifyMatch(package_map, expected_packages);
 
   // Adding a conflicting package.xml with the same package name but different
-  // path throws.
+  // path throws. Use a different overload for coverage.
   const string conflicting_xml_filename = FindResourceOrThrow(
       "drake/multibody/parsing/test/package_map_test_package_conflicting/"
       "package.xml");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      package_map.AddPackageXml(conflicting_xml_filename),
+      package_map.AddPackageXml(conflicting_xml_filename.c_str()),
       ".*paths are not eq.*");
 
   // Adding the same filesystem-canonical package.xml twice is not an error.
@@ -295,7 +303,7 @@ GTEST_TEST(PackageMapTest, TestPopulateFromXml) {
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
   const string root_path = GetTestDataRoot();
   PackageMap package_map = PackageMap::MakeEmpty();
-  package_map.PopulateFromFolder(root_path);
+  package_map.PopulateFromFolder(fs::path{root_path});
   VerifyMatchWithTestDataRoot(package_map);
 }
 
@@ -303,8 +311,16 @@ GTEST_TEST(PackageMapTest, TestPopulateMapFromFolder) {
 // tree when it is provided a path with extraneous trailing slashes.
 GTEST_TEST(PackageMapTest, TestPopulateMapFromFolderExtraTrailingSlashes) {
   const string root_path = GetTestDataRoot();
+  const string with_extra_slashes = root_path + "///////";
+
+  // First with std::string.
   PackageMap package_map = PackageMap::MakeEmpty();
-  package_map.PopulateFromFolder(root_path + "///////");
+  package_map.PopulateFromFolder(with_extra_slashes);
+  VerifyMatchWithTestDataRoot(package_map);
+
+  // Again with c_str for coverage.
+  package_map = PackageMap::MakeEmpty();
+  package_map.PopulateFromFolder(with_extra_slashes.c_str());
   VerifyMatchWithTestDataRoot(package_map);
 }
 
