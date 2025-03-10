@@ -95,8 +95,6 @@ constexpr std::string_view kItWorks{""};
 constexpr std::string_view kTooSlow =  // #22412
     "skip me";
 namespace KnownErrors {
-constexpr std::string_view kNonUniformScale =  // #22046
-    ".*non-uniform scale.*";
 constexpr std::string_view kSizeFromMesh =  // #22372
     ".*size of the shape from the mesh.*";
 constexpr std::string_view kStlMesh =  // #19408
@@ -142,8 +140,6 @@ TEST_P(MujocoMenagerieTest, MujocoMenagerie) {
 // TODO(russt): Some of the tests are redundant (e.g. the scene models load the
 // main robot models.)
 const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
-    {"agility_cassie/cassie", KnownErrors::kNonUniformScale},
-    {"agility_cassie/scene", KnownErrors::kNonUniformScale},
     {"aloha/aloha", KnownErrors::kStlMesh},
     {"aloha/scene", KnownErrors::kStlMesh},
     {"anybotics_anymal_b/anymal_b", kItWorks},
@@ -226,9 +222,7 @@ const std::pair<const char*, std::string_view> mujoco_menagerie_models[] = {
     {"shadow_dexee/scene", KnownErrors::kStlMesh},
     {"shadow_dexee/shadow_dexee", KnownErrors::kStlMesh},
     {"shadow_hand/keyframes", kItWorks},
-    {"shadow_hand/left_hand", KnownErrors::kNonUniformScale},
     {"shadow_hand/right_hand", kItWorks},
-    {"shadow_hand/scene_left", KnownErrors::kNonUniformScale},
     {"shadow_hand/scene_right", kItWorks},
     {"skydio_x2/scene", kItWorks},
     {"skydio_x2/x2", kItWorks},

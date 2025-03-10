@@ -75,6 +75,9 @@ drake_cc_library(
         "//common:sorted_pair",
         "//geometry/proximity:collision_filter",
         "//geometry/proximity:deformable_contact_internal",
+        # TODO(SeanCurtis-TRI) Separate mesh_distance_boundary out of the
+        # callback so its *types* can be referenced without all of the math.
+        "//geometry/proximity:distance_to_point_callback",
         "//geometry/proximity:hydroelastic_internal",
         "//geometry/proximity:make_mesh_from_vtk",
         "//geometry/query_results",
@@ -86,7 +89,6 @@ drake_cc_library(
         "//geometry/proximity",
         "//geometry/proximity:collisions_exist_callback",
         "//geometry/proximity:deformable_contact_geometries",
-        "//geometry/proximity:distance_to_point_callback",
         "//geometry/proximity:distance_to_shape_callback",
         "//geometry/proximity:find_collision_candidates_callback",
         "//geometry/proximity:hydroelastic_calculator",

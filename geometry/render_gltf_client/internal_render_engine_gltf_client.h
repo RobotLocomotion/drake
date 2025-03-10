@@ -124,8 +124,8 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
     // file's frame F. Note this "pose" is not necessarily a RigidTransform. It
     // can include scale. It is the node matrix stored in the gltf.
     std::map<int, Matrix4<double>> root_nodes;
-    // The isotropic scale of the mesh.
-    double scale{};
+    // The anisotropic scale of the mesh.
+    Vector3<double> scale;
     // The render label associated with the geometry.
     render::RenderLabel label;
   };
