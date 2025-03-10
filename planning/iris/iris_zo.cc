@@ -96,6 +96,12 @@ std::vector<CouplerConstraintSpec> TopologicalSortCouplerConstraints(
 
 IrisZoOptions IrisZoOptions::CreateWithMimicJointsParameterization(
     const multibody::MultibodyPlant<double>& plant) {
+  if (plant.time_step() == 0.0) {
+    drake::log()->warn(
+        "The provided MultibodyPlant is continuous-time, so it does not "
+        "support constraints. Thus, the coupling between mimic joints cannot "
+        "be parsed.");
+  }
   const int dimension = plant.num_positions() - plant.num_coupler_constraints();
   DRAKE_DEMAND(dimension > 0);
   const auto& coupler_constraints = plant.get_coupler_constraint_specs();
