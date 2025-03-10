@@ -194,7 +194,7 @@ class Identifier {
    confirm it is valid before using it as a key (or other hashing application).
    */
   template <typename HashAlgorithm>
-  // NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   friend void hash_append(HashAlgorithm& hasher, const Identifier& i) noexcept {
     using drake::hash_append;
     hash_append(hasher, i.value_);

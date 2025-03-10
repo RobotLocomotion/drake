@@ -138,7 +138,7 @@ class process_attribute<
     : public process_attribute_default<
           drake::pydrake::internal::builder_life_support_stash<T, Builder>> {
  public:
-  // NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   static void postcall(function_call& call, handle ret) {
     drake::pydrake::internal::builder_life_support_stash_impl<T>(
         Builder, call, ret);

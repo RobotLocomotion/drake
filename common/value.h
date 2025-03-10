@@ -624,7 +624,7 @@ struct ValueTraitsImpl<T, true> {
     return *other;
   }
   static const T& access(const Storage& storage) { return storage; }
-  // NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   static T& access(Storage& storage) { return storage; }
 };
 
@@ -655,7 +655,7 @@ struct ValueTraitsImpl<T, false> {
     return Storage{std::move(other)};
   }
   static const T& access(const Storage& storage) { return *storage; }
-  // NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   static T& access(Storage& storage) { return *storage; }
 };
 

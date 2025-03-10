@@ -77,7 +77,7 @@ class RenderBenchmark : public benchmark::Fixture {
   void SetUp(::benchmark::State&) { depth_cameras_.clear(); }
 
   template <EngineType engine_type>
-  // NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   void ColorImage(::benchmark::State& state, const std::string& name) {
     auto renderer = MakeEngine<engine_type>(bg_rgb_);
     auto [sphere_count, camera_count, width, height] = ReadState(state);
@@ -110,7 +110,7 @@ class RenderBenchmark : public benchmark::Fixture {
   }
 
   template <EngineType engine_type>
-  // NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   void DepthImage(::benchmark::State& state, const std::string& name) {
     auto renderer = MakeEngine<engine_type>(bg_rgb_);
     auto [sphere_count, camera_count, width, height] = ReadState(state);
@@ -139,7 +139,7 @@ class RenderBenchmark : public benchmark::Fixture {
   }
 
   template <EngineType engine_type>
-  // NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
   void LabelImage(::benchmark::State& state, const std::string& name) {
     auto renderer = MakeEngine<engine_type>(bg_rgb_);
     auto [sphere_count, camera_count, width, height] = ReadState(state);
