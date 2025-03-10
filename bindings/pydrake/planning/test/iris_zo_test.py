@@ -124,3 +124,13 @@ class TestIrisZo(unittest.TestCase):
         q2 = options2.get_parameterization()(np.array(s))
         self.assertTrue(np.allclose(q2,
                                     kin.ComputeQValue(s, q_star), atol=0))
+
+        options3 = mut.IrisZoOptions.\
+            CreateWithMimicJointsParameterization(plant)
+        self.assertTrue(options3.get_parameterization_is_threadsafe())
+        self.assertEqual(options3.get_parameterization_dimension(), 1)
+        self.assertTrue(callable(options3.get_parameterization()))
+        # Because there are no mimic joints, the parameterization is the
+        # identity function.
+        q3 = options3.get_parameterization()(np.array(s))
+        self.assertTrue(np.allclose(q3, s))
