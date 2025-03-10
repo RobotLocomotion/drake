@@ -47,7 +47,7 @@ int DoMain() {
   const PendulumState<AutoDiffXd>& xdot =
       PendulumPlant<AutoDiffXd>::get_state(*derivatives);
 
-  // NOLINTNEXTLINE (build/namespaces)  Usage documented by fmt library.
+  // NOLINTNEXTLINE(build/namespaces_literals)  Usage documented by fmt library.
   using namespace fmt::literals;
   // Derivatives values
   fmt::print("Forward dynamics, ẋ = [θ̇, ω̇]:\n");
