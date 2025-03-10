@@ -77,7 +77,7 @@ namespace drake {
 template <class HashAlgorithm, class T>
 std::enable_if_t<std::is_integral_v<T>>
 hash_append(
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   hasher(std::addressof(item), sizeof(item));
 }
@@ -93,7 +93,7 @@ void hash_append(HashAlgorithm& hasher, const T* item) noexcept {
 template <class HashAlgorithm, class T>
 std::enable_if_t<std::is_enum_v<T>>
 hash_append(
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   hasher(std::addressof(item), sizeof(item));
 }
@@ -102,7 +102,7 @@ hash_append(
 template <class HashAlgorithm, class T>
 std::enable_if_t<std::is_floating_point_v<T>>
 hash_append(
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   // Hashing a NaN makes no sense, since they cannot compare as equal.
   DRAKE_ASSERT(!std::isnan(item));
@@ -119,7 +119,7 @@ hash_append(
 /// (Technically, any string based on `CharT = char`.)
 template <class HashAlgorithm, class Traits, class Allocator>
 void hash_append(
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher,
     const std::basic_string<char, Traits, Allocator>& item) noexcept {
   using drake::hash_append;
@@ -195,7 +195,7 @@ void hash_append(HashAlgorithm& hasher, const std::optional<T>& item) noexcept {
 /// Provides @ref hash_append for a range, as given by two iterators.
 template <class HashAlgorithm, class Iter>
 void hash_append_range(
-// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, Iter begin, Iter end) noexcept {
   using drake::hash_append;
   size_t count{0};
