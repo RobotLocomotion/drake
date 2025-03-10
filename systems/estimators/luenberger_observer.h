@@ -13,19 +13,26 @@ namespace drake {
 namespace systems {
 namespace estimators {
 
-/// A simple state observer for a dynamical system of the form:
-/// @f[\dot{x} = f(x,u) @f]
-/// @f[y = g(x,u) @f]
+/// A simple state observer for a continuous-time dynamical system of the form:
+///  @f[ \dot{x} = f(x,u) @f]
+///  @f[ y = g(x,u) @f]
 /// the observer dynamics takes the form
-/// @f[\dot{\hat{x}} = f(\hat{x},u) + L(y - g(\hat{x},u)) @f]
-/// where @f$\hat{x}@f$ is the estimated state of the original system.
+///  @f[ \dot{\hat{x}} = f(\hat{x},u) + L(y - g(\hat{x},u)) @f]
+/// where @f$\hat{x}@f$ is the estimated state of the original system. The
+/// output of the observer system is @f$\hat{x}@f$.
 ///
-/// The output of the observer system is @f$\hat{x}@f$.
+/// Or a simple state observer for a discrete-time dynamical system of the form:
+///  @f[ x[n+1] = f_d(x[n],u[n]) @f]
+///  @f[ y[n] = g(x[n],u[n]) @f]
+/// the observer dynamics takes the form
+///  @f[ \hat{x}[n+1] = f(\hat{x}[n],u[n]) + L(y - g(\hat{x}[n],u[n])) @f]
+/// where @f$\hat{x}@f$ is the estimated state of the original system.
+/// The output of the observer system is @f$\hat{x}[n+1]@f$.
 ///
 /// @system
 /// name: LuenbergerObserver
 /// input_ports:
-/// - observed system input
+/// - observed_system_input
 /// - observed_system_output
 /// output_ports:
 /// - estimated_state
@@ -34,7 +41,7 @@ namespace estimators {
 /// @ingroup estimator_systems
 /// @tparam_default_scalar
 template <typename T>
-class LuenbergerObserver final: public LeafSystem<T> {
+class LuenbergerObserver final : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LuenbergerObserver);
 
@@ -88,13 +95,12 @@ class LuenbergerObserver final: public LeafSystem<T> {
 
  private:
   // Advance the state estimate using forward dynamics and the observer
-  // gains.
+  // gains. Continuous-time version.
   void DoCalcTimeDerivatives(const Context<T>& context,
                              ContinuousState<T>* derivatives) const override;
-
-  // Outputs the estimated state.
-  void CalcEstimatedState(const Context<T>& context,
-                          BasicVector<T>* output) const;
+  // Discrete-time version.
+  void DiscreteUpdate(const Context<T>& context,
+                      DiscreteValues<T>* x_estimate) const;
 
   void UpdateObservedSystemContext(const Context<T>& context,
                                    Context<T>* observed_system_context) const;
