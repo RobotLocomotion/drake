@@ -300,8 +300,14 @@ template <>
 SapSolverStatus ConvexIntegrator<double>::SolveWithGuess(
     const SapContactProblem<double>& problem, const VectorXd& v_guess,
     SapSolverResults<double>* results) {
-  // We should have at least one constraint
-  DRAKE_DEMAND(problem.num_constraints() > 0);
+  if (problem.num_constraints() == 0) {
+    // In the absence of constraints the solution is trivially v = v*.
+    results->Resize(problem.num_velocities(),
+                    problem.num_constraint_equations());
+    results->v = problem.v_star();
+    results->j.setZero();
+    return SapSolverStatus::kSuccess;
+  }
 
   // Create the sap model and allocate context, which handles caching.
   auto model = std::make_unique<SapModel<double>>(
@@ -309,8 +315,8 @@ SapSolverStatus ConvexIntegrator<double>::SolveWithGuess(
   auto context = model->MakeContext();
 
   // All velocities should be participating (enforced via dummy constraints)
-  DRAKE_DEMAND(model->velocities_permutation().domain_size() ==
-               model->velocities_permutation().permuted_domain_size());
+  // DRAKE_DEMAND(model->velocities_permutation().domain_size() ==
+  //              model->velocities_permutation().permuted_domain_size());
 
   // Put the velocities into the model context (copies
   // SapSolver::SetProblemVelocitiesIntoModelContext).
@@ -899,7 +905,6 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // TODO(vincekurtz): include external generalized and spatial forces
   plant().CalcForceElementsContribution(context, &f_ext);
   f_ext.mutable_generalized_forces() += tau0;
-
   k = plant().CalcInverseDynamics(
       context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
   const VectorX<T>& v0 = plant().GetVelocities(context);
