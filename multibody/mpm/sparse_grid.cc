@@ -1,4 +1,4 @@
-#include "sparse_grid.h"
+#include "drake/multibody/mpm/sparse_grid.h"
 
 #include <utility>
 

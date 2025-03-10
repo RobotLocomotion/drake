@@ -77,12 +77,14 @@ namespace drake {
 template <class HashAlgorithm, class T>
 std::enable_if_t<std::is_integral_v<T>>
 hash_append(
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   hasher(std::addressof(item), sizeof(item));
 }
 
 /// Provides @ref hash_append for bare pointers.
 template <class HashAlgorithm, class T>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher, const T* item) noexcept {
   hash_append(hasher, reinterpret_cast<std::uintptr_t>(item));
 };
@@ -91,6 +93,7 @@ void hash_append(HashAlgorithm& hasher, const T* item) noexcept {
 template <class HashAlgorithm, class T>
 std::enable_if_t<std::is_enum_v<T>>
 hash_append(
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   hasher(std::addressof(item), sizeof(item));
 }
@@ -99,6 +102,7 @@ hash_append(
 template <class HashAlgorithm, class T>
 std::enable_if_t<std::is_floating_point_v<T>>
 hash_append(
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher, const T& item) noexcept {
   // Hashing a NaN makes no sense, since they cannot compare as equal.
   DRAKE_ASSERT(!std::isnan(item));
@@ -115,6 +119,7 @@ hash_append(
 /// (Technically, any string based on `CharT = char`.)
 template <class HashAlgorithm, class Traits, class Allocator>
 void hash_append(
+    // NOLINTNEXTLINE(runtime/references) Per hash_append convention.
     HashAlgorithm& hasher,
     const std::basic_string<char, Traits, Allocator>& item) noexcept {
   using drake::hash_append;
@@ -133,6 +138,7 @@ void hash_append(
 
 /// Provides @ref hash_append for std::pair.
 template <class HashAlgorithm, class T1, class T2>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher, const std::pair<T1, T2>& item) noexcept;
 
 /// Provides @ref hash_append for std::optional.
@@ -142,6 +148,7 @@ void hash_append(HashAlgorithm& hasher, const std::pair<T1, T2>& item) noexcept;
 /// same hash as that of the value `v` itself.  Hash operations implemented
 /// with this `hash_append` do *not* provide that invariant.
 template <class HashAlgorithm, class T>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher, const std::optional<T>& item) noexcept;
 
 /// Provides @ref hash_append for std::map.
@@ -151,6 +158,7 @@ void hash_append(HashAlgorithm& hasher, const std::optional<T>& item) noexcept;
 /// for details.
 template <class HashAlgorithm, class T1, class T2, class Compare,
           class Allocator>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher,
                  const std::map<T1, T2, Compare, Allocator>& item) noexcept;
 
@@ -160,12 +168,14 @@ void hash_append(HashAlgorithm& hasher,
 /// [N3980](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3980.html#unordered)
 /// for details.
 template <class HashAlgorithm, class Key, class Compare, class Allocator>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher,
                  const std::set<Key, Compare, Allocator>& item) noexcept;
 
 // Now that all of the templated hashers are declared, we can define them.
 
 template <class HashAlgorithm, class T1, class T2>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher,
                  const std::pair<T1, T2>& item) noexcept {
   using drake::hash_append;
@@ -174,6 +184,7 @@ void hash_append(HashAlgorithm& hasher,
 }
 
 template <class HashAlgorithm, class T>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher, const std::optional<T>& item) noexcept {
   if (item) {
     hash_append(hasher, *item);
@@ -198,12 +209,14 @@ void hash_append_range(
 
 template <class HashAlgorithm, class T1, class T2, class Compare,
           class Allocator>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher,
                  const std::map<T1, T2, Compare, Allocator>& item) noexcept {
   return hash_append_range(hasher, item.begin(), item.end());
 };
 
 template <class HashAlgorithm, class Key, class Compare, class Allocator>
+// NOLINTNEXTLINE(runtime/references) Per hash_append convention.
 void hash_append(HashAlgorithm& hasher,
                  const std::set<Key, Compare, Allocator>& item) noexcept {
   return hash_append_range(hasher, item.begin(), item.end());
