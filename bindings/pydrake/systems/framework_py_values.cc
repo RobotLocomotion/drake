@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/framework/basic_vector.h"
+#include "drake/systems/framework/bus_value.h"
 #include "drake/systems/framework/subvector.h"
 #include "drake/systems/framework/supervector.h"
 
@@ -131,9 +132,59 @@ void DoScalarDependentDefinitions(py::module m) {
           },
           py::arg("value"));
 }
+
+void DefineBusValue(py::module m) {
+  using Class = systems::BusValue;
+  constexpr auto& cls_doc = pydrake_doc.drake.systems.BusValue;
+  py::class_<Class> cls(m, "BusValue", cls_doc.doc);
+  cls  // BR
+      .def(py::init<>(), cls_doc.ctor.doc)
+      .def(
+          "Find",
+          // Similar to OutputPort::Eval, instead of binding the function
+          // call directly we'll amend it to unwrap the AbstractValue.
+          [](const Class& self, std::string_view name) -> py::object {
+            const AbstractValue* found_cxx = self.Find(name);
+            if (found_cxx == nullptr) {
+              return py::none();
+            }
+            py::object found_py = py::cast(
+                found_cxx, py_rvp::reference_internal, py::cast(&self));
+            return found_py.attr("get_value")();
+          },
+          py::arg("name"), cls_doc.Find.doc)
+      .def("Clear", &Class::Clear, cls_doc.Clear.doc)
+      .def("Set", &Class::Set, py::arg("name"), py::arg("value"),
+          cls_doc.Set.doc)
+      // To behave like a dict in Python, we'll bind __iterator__ to traverse
+      // our keys (i.e., our names) and __getitem__ to look up by name. Unlike
+      // the binding for Find() which returns None when not found, __getitem__
+      // must raise a KeyError instead.
+      .def(
+          "__iter__",
+          [](const Class& self) {
+            return py::make_key_iterator(self.begin(), self.end());
+          },
+          // Keep alive, reference: `return` keeps `self` alive.
+          py::keep_alive<0, 1>())
+      .def(
+          "__getitem__",
+          [](py::object self, py::str key) -> py::object {
+            py::object result = self.attr("Find")(key);
+            if (result.is_none()) {
+              throw py::key_error(std::string{key});
+            }
+            return result;
+          },
+          py::arg("key"));
+  DefCopyAndDeepCopy(&cls);
+  AddValueInstantiation<Class>(m);
+}
+
 }  // namespace
 
 void DefineFrameworkPyValues(py::module m) {
+  DefineBusValue(m);
   // Do templated instantiations.
   auto bind_common_scalar_types = [m](auto dummy) {
     using T = decltype(dummy);

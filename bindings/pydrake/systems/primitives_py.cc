@@ -7,6 +7,8 @@
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/primitives/barycentric_system.h"
+#include "drake/systems/primitives/bus_creator.h"
+#include "drake/systems/primitives/bus_selector.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
@@ -162,6 +164,33 @@ PYBIND11_MODULE(primitives, m) {
             &TimeVaryingAffineSystem<T>::configure_random_state,
             py::arg("covariance"),
             doc.TimeVaryingAffineSystem.configure_random_state.doc);
+
+    DefineTemplateClassWithDefault<BusCreator<T>, LeafSystem<T>>(
+        m, "BusCreator", GetPyParam<T>(), doc.BusCreator.doc)
+        .def(py::init<std::variant<std::string, UseDefaultName>>(),
+            py::arg("output_port_name") = kUseDefaultName,
+            doc.BusCreator.ctor.doc)
+        .def("DeclareVectorInputPort", &BusCreator<T>::DeclareVectorInputPort,
+            py::arg("name"), py::arg("size"), py_rvp::reference_internal,
+            doc.BusCreator.DeclareVectorInputPort.doc)
+        .def("DeclareAbstractInputPort",
+            &BusCreator<T>::DeclareAbstractInputPort, py::arg("name"),
+            py::arg("model_value"), py_rvp::reference_internal,
+            doc.BusCreator.DeclareAbstractInputPort.doc);
+
+    DefineTemplateClassWithDefault<BusSelector<T>, LeafSystem<T>>(
+        m, "BusSelector", GetPyParam<T>(), doc.BusSelector.doc)
+        .def(py::init<std::variant<std::string, UseDefaultName>>(),
+            py::arg("input_port_name") = kUseDefaultName,
+            doc.BusSelector.ctor.doc)
+        .def("DeclareVectorOutputPort",
+            &BusSelector<T>::DeclareVectorOutputPort, py::arg("name"),
+            py::arg("size"), py_rvp::reference_internal,
+            doc.BusSelector.DeclareVectorOutputPort.doc)
+        .def("DeclareAbstractOutputPort",
+            &BusSelector<T>::DeclareAbstractOutputPort, py::arg("name"),
+            py::arg("model_value"), py_rvp::reference_internal,
+            doc.BusSelector.DeclareAbstractOutputPort.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
         m, "ConstantValueSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
