@@ -237,7 +237,7 @@ can look into the question.
 # Continuous Integration Notes
 
 * [CDash](https://drake-cdash.csail.mit.edu/index.php?project=Drake)
-* [GitHub PR Interaction with Jenkins](/jenkins.html)
+* [Continuous Integration with GitHub Pull Requests](/jenkins.html)
 * [Build Cop](/buildcop.html)
 
 # Programming Tools
