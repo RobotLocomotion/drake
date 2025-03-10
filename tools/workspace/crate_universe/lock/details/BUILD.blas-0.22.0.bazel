@@ -104,7 +104,7 @@ rust_library(
     version = "0.22.0",
     deps = [
         "@crate__blas-sys-0.7.1//:blas_sys",
-        "@crate__libc-0.2.169//:libc",
+        "@crate__libc-0.2.170//:libc",
         "@crate__num-complex-0.4.6//:num_complex",
     ],
 )
