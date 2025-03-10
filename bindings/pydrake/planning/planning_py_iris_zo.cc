@@ -110,6 +110,10 @@ void DefinePlanningIrisZo(py::module m) {
       .def_static("CreateWithRationalKinematicParameterization",
           IrisZoOptions::CreateWithRationalKinematicParameterization,
           py::arg("kin"), py::arg("q_star_val"),
+          cls_doc.CreateWithRationalKinematicParameterization.doc)
+      .def_static("CreateWithMimicJointsParameterization",
+          IrisZoOptions::CreateWithMimicJointsParameterization,
+          py::arg("plant"),
           cls_doc.CreateWithRationalKinematicParameterization.doc);
 
   DefReadWriteKeepAlive(&iris_zo_options, "prog_with_additional_constraints",
