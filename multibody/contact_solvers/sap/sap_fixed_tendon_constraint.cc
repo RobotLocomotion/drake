@@ -202,9 +202,15 @@ void SapFixedTendonConstraint<T>::DoCalcData(
   data.gamma_ = VectorX<T>::Zero(this->num_constraint_equations());
   data.cost_ = T(0);
 
+  // If false, the heaviside in the formulation is ignored, effectively
+  // allowing action at a distance. In this case gamma is projected to 0
+  // only when the spring force is negative.
+  const bool use_heaviside = true;
+
   for (int i = 0; i < this->num_constraint_equations(); ++i) {
-    const T v_tilde = std::min(v_hat(i), -g_(i) / dt);
-    // Constraint is active when v < ṽ
+    const T v_tilde =
+        use_heaviside ? std::min(v_hat(i), -g_(i) / dt) : v_hat(i);
+    //  Constraint is active when v < ṽ
     if (v(i) < v_tilde) {
       const T dv = v_hat(i) - v(i);
       const T dv_tilde = v_hat(i) - v_tilde;

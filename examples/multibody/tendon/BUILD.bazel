@@ -1,0 +1,29 @@
+load("//tools/lint:lint.bzl", "add_lint_tests")
+load(
+    "//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+)
+
+package(default_visibility = ["//visibility:private"])
+
+drake_cc_binary(
+    name = "tendon",
+    testonly = True,
+    srcs = ["tendon.cc"],
+    data = [],
+    deps = [
+        "//common/test_utilities:maybe_pause_for_user",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/framework:diagram",
+        "//systems/primitives:constant_vector_source",
+        "//visualization:visualization_config_functions",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
