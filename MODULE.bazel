@@ -191,6 +191,7 @@ use_repo(
     "common_robotics_utilities_internal",
     "commons_io",  # TODO(jwnimmer-tri) Mark as internal.
     "conex_internal",
+    "cpplint_internal",
     "csdp_internal",
     "curl_internal",
     "dm_control_internal",

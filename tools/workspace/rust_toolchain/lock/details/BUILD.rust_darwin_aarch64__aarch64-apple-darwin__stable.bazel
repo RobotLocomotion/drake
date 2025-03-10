@@ -2,9 +2,15 @@
 
 toolchain(
     name = "toolchain",
-    exec_compatible_with = ["@platforms//cpu:aarch64","@platforms//os:osx"],
-    target_compatible_with = ["@platforms//cpu:aarch64","@platforms//os:osx"],
+    exec_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:osx",
+    ],
+    target_compatible_with = [
+        "@platforms//cpu:aarch64",
+        "@platforms//os:osx",
+    ],
+    target_settings = ["@rules_rust//rust/toolchain/channel:stable"],
     toolchain = "@rust_darwin_aarch64__aarch64-apple-darwin__stable_tools//:rust_toolchain",
     toolchain_type = "@rules_rust//rust:toolchain",
-    target_settings = ["@rules_rust//rust/toolchain/channel:stable"],
 )
