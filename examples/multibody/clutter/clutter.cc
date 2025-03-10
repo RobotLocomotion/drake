@@ -25,6 +25,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/convex_integrator.h"
@@ -97,10 +98,11 @@ DEFINE_bool(visualize_forces, false,
 DEFINE_double(viz_period, 1.0 / 60.0, "Viz period.");
 
 // Discrete contact solver.
-DEFINE_string(discrete_contact_approximation, "sap",
+DEFINE_string(discrete_contact_approximation, "lagged",
               "Discrete contact solver. Options are: 'tamsi', 'sap', 'lagged', "
               "'similar'.");
 DEFINE_double(near_rigid_threshold, 1.0, "SAP near rigid threshold.");
+DEFINE_bool(dense_algebra, true, "Whether to use dense algebra in SAP.");
 
 // Continuous integration parameters
 DEFINE_string(
@@ -123,7 +125,9 @@ using drake::systems::IntegratorBase;
 using Eigen::Translation3d;
 using Eigen::Vector3d;
 using clock = std::chrono::steady_clock;
+using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
+using drake::multibody::internal::CompliantContactManager;
 using drake::visualization::ApplyVisualizationConfig;
 using drake::visualization::VisualizationConfig;
 
@@ -507,6 +511,19 @@ int do_main() {
                              &scene_graph, meshcat);
   }
   auto diagram = builder.Build();
+
+  if (FLAGS_dense_algebra) {
+    // Use dense algebra for SAP
+    SapSolverParameters sap_parameters;
+    sap_parameters.linear_solver_type = SapHessianFactorizationType::kDense;
+
+    auto owned_contact_manager =
+        std::make_unique<CompliantContactManager<double>>();
+    CompliantContactManager<double>* contact_manager =
+        owned_contact_manager.get();
+    plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+    contact_manager->set_sap_solver_parameters(sap_parameters);
+  }
 
   // Create a context for this system:
   std::unique_ptr<systems::Context<double>> diagram_context =
