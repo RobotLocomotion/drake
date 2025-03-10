@@ -512,7 +512,7 @@ int do_main() {
   }
   auto diagram = builder.Build();
 
-  if (FLAGS_dense_algebra) {
+  if (FLAGS_dense_algebra && plant.is_discrete()) {
     // Use dense algebra for SAP
     SapSolverParameters sap_parameters;
     sap_parameters.linear_solver_type = SapHessianFactorizationType::kDense;
