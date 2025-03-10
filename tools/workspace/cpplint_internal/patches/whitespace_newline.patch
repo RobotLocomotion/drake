@@ -1,0 +1,49 @@
+Address discrepancy between cpplint upstream and Google styleguide.
+
+Google styleguide allows for certain simple if statements to fit on
+one line with spaces between the curly braces. While this is technically
+a violation of the general styleguide, Google permits this exeption
+"for historical reasons." Nevertheless, cpplint does not allow this.
+
+The fix basically adds a "made-up" error category and diverts the
+expressions that trigger the aforementioned cases out of the more 
+general "whitespace/newline" category. The "made-up" name is then
+added to the "_DEFAULT_FILTERS" list, effectively suppressing the
+error violations in these specific cases. 
+
+diff --git a/cpplint.py b/cpplint.py
+index 7a8b8ab..130fd9d 100755
+--- cpplint.py
++++ cpplint.py
+@@ -355,6 +355,7 @@ _ERROR_CATEGORIES = [
+     'whitespace/indent_namespace',
+     'whitespace/line_length',
+     'whitespace/newline',
++    'whitespace/newline_controlled_statement',
+     'whitespace/operators',
+     'whitespace/parens',
+     'whitespace/semicolon',
+@@ -414,6 +415,7 @@ _OTHER_NOLINT_CATEGORY_PREFIXES = [
+ _DEFAULT_FILTERS = [
+     '-build/include_alpha',
+     '-readability/fn_size',
++    '-whitespace/newline_controlled_statement',
+     ]
+ 
+ # The default list of categories suppressed for C (not C++) files.
+@@ -4390,13 +4392,13 @@ def CheckBraces(filename, clean_lines, linenum, error):
+   if keyword := re.search(
+       r'\b(else if|if|while|for|switch)'  # These have parens
+       r'\s*\(.*\)\s*(?:\[\[(?:un)?likely\]\]\s*)?{\s*[^\s\\};]', line):
+-    error(filename, linenum, 'whitespace/newline', 5,
++    error(filename, linenum, 'whitespace/newline_controlled_statement', 5,
+           f'Controlled statements inside brackets of {keyword.group(1)} clause'
+           ' should be on a separate line')
+   elif keyword := re.search(
+       r'\b(else|do|try)'  # These don't have parens
+       r'\s*(?:\[\[(?:un)?likely\]\]\s*)?{\s*[^\s\\}]', line):
+-    error(filename, linenum, 'whitespace/newline', 5,
++    error(filename, linenum, 'whitespace/newline_controlled_statement', 5,
+           f'Controlled statements inside brackets of {keyword.group(1)} clause'
+           ' should be on a separate line')
+ 
