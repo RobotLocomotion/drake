@@ -60,8 +60,8 @@ drake_contact_approximations = ['sap', 'tamsi', 'similar', 'lagged']
 contact_approximation = drake_contact_approximations[0]
 
 
-def AddAgent(plant):
-    parser = Parser(plant)
+def AddAgent(builder=None, plant=None):
+    parser = Parser(builder=builder, plant=plant)
     model_file = FindResourceOrThrow(
         "drake/bindings/pydrake/examples/gym/models/cartpole_BSA.sdf")
     agent, = parser.AddModels(model_file)
@@ -86,13 +86,13 @@ def make_sim(meshcat=None,
     plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
 
     # Add assets to the plant.
-    agent = AddAgent(plant)
+    agent = AddAgent(builder=builder)
     plant.Finalize()
     plant.set_name("plant")
 
     # Add assets to the controller plant.
     controller_plant = MultibodyPlant(time_step=controller_time_step)
-    AddAgent(controller_plant)
+    AddAgent(plant=controller_plant)
 
     if meshcat:
         MeshcatVisualizer.AddToBuilder(builder, scene_graph, meshcat)

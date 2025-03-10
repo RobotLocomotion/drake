@@ -118,7 +118,7 @@ int do_main() {
                                "ground_visual", illustration_props);
 
   /* Parse the gripper model (without the bubbles). */
-  Parser parser(&plant, &scene_graph);
+  Parser parser(&builder);
   ModelInstanceIndex gripper_instance = parser.AddModelsFromUrl(
       "package://drake_models/wsg_50_description/sdf/"
       "schunk_wsg_50_deformable_bubble.sdf")[0];

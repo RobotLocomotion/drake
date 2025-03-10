@@ -177,7 +177,7 @@ int do_main() {
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, scene_graph_config, &builder);
 
-  Parser parser(&plant);
+  Parser parser(&builder);
   parser.AddModelsFromUrl(
       "package://drake/examples/simple_gripper/simple_gripper.sdf");
   parser.AddModelsFromUrl(
