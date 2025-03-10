@@ -63,11 +63,11 @@ drake_cc_binary(
     ],
     deps = [
         "//common:add_text_logging_gflags",
+        "//lcm:drake_lcm",
         "//lcmtypes:jaco",
         "//manipulation/kinova_jaco:jaco_constants",
         "//manipulation/util:move_ik_demo_base",
         "//math:geometric_transform",
-        "@lcm",
     ],
 )
 

@@ -45,9 +45,9 @@ drake_cc_binary(
     deps = [
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
+        "//lcm:drake_lcm",
         "//lcmtypes:allegro",
         "@gflags",
-        "@lcm",
     ],
 )
 

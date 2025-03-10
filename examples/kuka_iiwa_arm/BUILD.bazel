@@ -93,7 +93,7 @@ drake_cc_binary(
         ":iiwa_lcm",
         ":kuka_torque_controller",
         "//common:add_text_logging_gflags",
-        "//lcm",
+        "//lcm:drake_lcm",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
@@ -115,11 +115,11 @@ drake_cc_binary(
     ],
     deps = [
         "//common/trajectories:piecewise_polynomial",
+        "//lcm:drake_lcm",
         "//lcmtypes:iiwa",
         "//lcmtypes:robot_plan",
         "//multibody/parsing",
         "//multibody/plant",
-        "@lcm",
     ],
 )
 
@@ -133,10 +133,10 @@ drake_cc_binary(
     deps = [
         ":iiwa_common",
         "//common:add_text_logging_gflags",
+        "//lcm:drake_lcm",
         "//lcmtypes:iiwa",
         "//manipulation/util:move_ik_demo_base",
         "//math:geometric_transform",
-        "@lcm",
     ],
 )
 
