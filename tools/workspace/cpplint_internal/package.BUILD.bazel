@@ -6,12 +6,6 @@ licenses(["notice"])  # BSD-3-Clause
 
 package(default_visibility = ["//visibility:public"])
 
-# Export doc files for website publication.
-exports_files(glob([
-    "*",
-    "include/*",
-], allow_empty = True))
-
 py_binary(
     name = "cpplint",
     srcs = [
