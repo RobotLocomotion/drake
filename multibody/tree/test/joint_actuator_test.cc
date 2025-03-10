@@ -86,6 +86,8 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
       tree.AddJointActuator("act4", body4_world, kPositiveEffortLimit);
 
   tree.Finalize();
+  auto tree_system = std::make_unique<internal::MultibodyTreeSystem<double>>(
+      std::move(tree_pointer), /* is_discrete = */ true);
 
   // Tally of *successfully* added actuators:
   // - act1 has 1 dof
@@ -104,11 +106,10 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   // Changing the gains post-Finalize doesn't throw.
   EXPECT_NO_THROW(mutable_actuator1.set_controller_gains(gains));
 
-  // Trying to add new gains post-Finalize throws.
+  // Trying to add new gains post-Finalize is also okay.
   JointActuator<double>& mutable_actuator4 =
       tree.get_mutable_joint_actuator(actuator4.index());
-  DRAKE_EXPECT_THROWS_MESSAGE(mutable_actuator4.set_controller_gains(gains),
-                              ".*add PD.*Finalize.*");
+  EXPECT_NO_THROW(mutable_actuator4.set_controller_gains(gains));
 }
 
 GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {
