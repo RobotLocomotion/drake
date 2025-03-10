@@ -343,6 +343,136 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
       ".*wrong dimension.*");
 }
 
+// A variant of the double pendulum test above, where the second joint mimics
+// the first, and we grow a region along the resulting affine subspace. The
+// configuration space is visualized at
+// https://www.desmos.com/calculator/pktvu66uh4
+GTEST_TEST(IrisZoTest, DoublePendulumMimic) {
+  const double l1 = 2.0;
+  const double l2 = 1.0;
+  const double r = .5;
+  const double w = 1.83;
+  const double multiplier = 2.0;
+  const double offset = 1.0;
+  const std::string double_pendulum_mimic_urdf = fmt::format(
+      R"(
+<robot name="double_pendulum">
+  <link name="fixed">
+    <collision name="right">
+      <origin rpy="0 0 0" xyz="{w_plus_one_half} 0 0"/>
+      <geometry><box size="1 1 10"/></geometry>
+    </collision>
+    <collision name="left">
+      <origin rpy="0 0 0" xyz="-{w_plus_one_half} 0 0"/>
+      <geometry><box size="1 1 10"/></geometry>
+    </collision>
+  </link>
+  <joint name="fixed_link_weld" type="fixed">
+    <parent link="world"/>
+    <child link="fixed"/>
+  </joint>
+  <link name="link1"/>
+  <joint name="joint1" type="revolute">
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57"/>
+    <parent link="world"/>
+    <child link="link1"/>
+  </joint>
+  <link name="link2">
+    <collision name="ball">
+      <origin rpy="0 0 0" xyz="0 0 -{l2}"/>
+      <geometry><sphere radius="{r}"/></geometry>
+    </collision>
+  </link>
+  <joint name="joint2" type="revolute">
+    <origin rpy="0 0 0" xyz="0 0 -{l1}"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57"/>
+    <parent link="link1"/>
+    <child link="link2"/>
+    <mimic joint="joint1" multiplier="{multiplier}" offset="{offset}"/>
+  </joint>
+</robot>
+)",
+      fmt::arg("w_plus_one_half", w + .5), fmt::arg("l1", l1),
+      fmt::arg("l2", l2), fmt::arg("r", r), fmt::arg("multiplier", multiplier),
+      fmt::arg("offset", offset));
+
+  CollisionCheckerParams params;
+  RobotDiagramBuilder<double> builder(0.01);
+  // Note: we must use a discrete builder to ensure the coupler constraints
+  // induced by the mimic joints are added!
+
+  builder.parser().package_map().AddPackageXml(FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/package.xml"));
+  params.robot_model_instances =
+      builder.parser().AddModelsFromString(double_pendulum_mimic_urdf, "urdf");
+
+  auto plant_ptr = &(builder.plant());
+  plant_ptr->Finalize();
+
+  IrisZoOptions options =
+      IrisZoOptions::CreateWithMimicJointsParameterization(*plant_ptr);
+  EXPECT_TRUE(options.get_parameterization_is_threadsafe());
+  EXPECT_EQ(options.get_parameterization_dimension(), 1);
+  double check_parameterization_q1 = 1.0;
+  double q2_expected = multiplier * check_parameterization_q1 + offset;
+  double q2_actual =
+      options.get_parameterization()(Vector1d(check_parameterization_q1))[1];
+  EXPECT_EQ(q2_expected, q2_actual);
+
+  params.model = builder.Build();
+  params.edge_step_size = 0.01;
+  planning::SceneGraphCollisionChecker checker(std::move(params));
+
+  // Compute the joint limits in the parameterized space. If
+  //    q₂ = multiplier * q₁ + offset,
+  // then we can obtain the image of the limits of the mimic joint via
+  //    q₁ = (q₂ - offset) / multiplier.
+  // We then pick the larger of the lower limits of the two joints, and the
+  // smaller of the upper limits of the two joints.
+  double joint1_lower_limit = plant_ptr->GetPositionLowerLimits()[0];
+  double joint1_upper_limit = plant_ptr->GetPositionUpperLimits()[0];
+  double joint2_induced_lower_limit =
+      (joint1_lower_limit - offset) / multiplier;
+  double joint2_induced_upper_limit =
+      (joint1_upper_limit - offset) / multiplier;
+  if (joint2_induced_lower_limit > joint2_induced_upper_limit) {
+    // If the lower limit is larger than the upper limit, then we must switch
+    // due to a negative offset.
+    std::swap(joint2_induced_lower_limit, joint2_induced_upper_limit);
+  }
+  double lower_limit = std::min(joint1_lower_limit, joint2_induced_lower_limit);
+  double upper_limit = std::min(joint1_upper_limit, joint2_induced_upper_limit);
+  HPolyhedron domain =
+      HPolyhedron::MakeBox(Vector1d(lower_limit), Vector1d(upper_limit));
+
+  Vector1d seed_point(-0.25);
+  EXPECT_TRUE(checker.CheckConfigCollisionFree(
+      options.get_parameterization()(seed_point)));
+  Hyperellipsoid starting_ellipsoid =
+      Hyperellipsoid::MakeHypersphere(1e-2, seed_point);
+  options.verbose = true;
+  // options.epsilon = 1e-4;
+  HPolyhedron region = IrisZo(checker, starting_ellipsoid, domain, options);
+
+  std::vector<Vector1d> points_in, points_out;
+  points_in.emplace_back(0.1);
+  points_in.emplace_back(-0.4);
+  points_out.emplace_back(0.2);
+  points_out.emplace_back(-0.5);
+  for (const auto& point_in : points_in) {
+    EXPECT_TRUE(checker.CheckConfigCollisionFree(
+        options.get_parameterization()(point_in)));
+    EXPECT_TRUE(region.PointInSet(point_in));
+  }
+  for (const auto& point_out : points_out) {
+    EXPECT_FALSE(checker.CheckConfigCollisionFree(
+        options.get_parameterization()(point_out)));
+    EXPECT_FALSE(region.PointInSet(point_out));
+  }
+}
+
 const char block_urdf[] = R"(
 <robot name="block">
   <link name="fixed">
