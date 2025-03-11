@@ -74,4 +74,15 @@ drake_py_binary(
     ],
 )
 
+drake_py_binary(
+    name = "high_gain_effort_limits",
+    srcs = ["high_gain_effort_limits.py"],
+    data = [
+        "@drake_models//:franka_description",
+    ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
 add_lint_tests()
