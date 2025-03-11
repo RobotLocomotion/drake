@@ -568,6 +568,18 @@ GTEST_TEST(TestOptions, SetMaxIter) {
   }
 }
 
+GTEST_TEST(TestOptions, MaxThreads) {
+  SimpleSos1 dut;
+  const int kMaxThreadsValue = 4;
+  SolverOptions solver_options;
+  solver_options.SetOption(CommonSolverOption::kMaxThreads, kMaxThreadsValue);
+  ClarabelSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
+    EXPECT_TRUE(result.is_success());
+  }
+}
+
 GTEST_TEST(TestOptions, StandaloneReproduction) {
   MathematicalProgram prog;
   const auto x = prog.NewContinuousVariables<3>("x");
