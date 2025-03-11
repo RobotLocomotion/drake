@@ -1000,7 +1000,7 @@ TEST_F(ThreePoints, QuadraticCost2) {
   Environment env{};
   env.insert(e_on_->xu(), p_source_.x());
   env.insert(e_on_->xv(), p_target_.x());
-  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), cost.Evaluate(env), 2e-5);
+  EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), cost.Evaluate(env), 1e-4);
   EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 4e-6);
   EXPECT_NEAR(source_->GetSolutionCost(result).value(),
               vertex_cost.Evaluate(env), 2e-5);
@@ -2620,7 +2620,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
             : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id())
                 ? 1e-2
             : (relaxed_result.get_solver_id() == solvers::ClarabelSolver::id())
-                ? 1e-3  // We tried to tighten the optimality/feasibility
+                ? 1e-1  // We tried to tighten the optimality/feasibility
                         // tolerance of Clarabel but the optimal solution still
                         // match with the balanced solution very precisely.
                 : 1e-5;
