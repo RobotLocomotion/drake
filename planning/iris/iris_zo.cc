@@ -235,8 +235,10 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   // TODO(cohnt): Allow users to set this parameter if it ever becomes needed.
   const double constraints_tol = 1e-6;
 
+  const Eigen::VectorXd starting_ellipsoid_center_ambient =
+      options.get_parameterization()(starting_ellipsoid_center);
   const int computed_ambient_dimension =
-      options.get_parameterization()(starting_ellipsoid_center).size();
+      starting_ellipsoid_center_ambient.size();
   if (computed_ambient_dimension != ambient_dimension) {
     throw std::runtime_error(fmt::format(
         "The plant has {} positions, but the given parameterization "
@@ -244,6 +246,17 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         "{}) when called on {}.",
         ambient_dimension, computed_ambient_dimension,
         fmt_eigen(starting_ellipsoid_center.transpose())));
+  }
+
+  bool starting_ellipsoid_center_valid =
+      checker.CheckConfigCollisionFree(starting_ellipsoid_center_ambient) &&
+      CheckProgConstraints(options.prog_with_additional_constraints,
+                           starting_ellipsoid_center, constraints_tol);
+  if (!starting_ellipsoid_center_valid) {
+    throw std::runtime_error(
+        fmt::format("Starting ellipsoid center {} is in collision, or violates "
+                    "a constraint in options.prog_with_additional_constraints.",
+                    fmt_eigen(starting_ellipsoid_center.transpose())));
   }
 
   int current_num_faces = domain.A().rows();

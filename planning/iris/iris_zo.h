@@ -274,6 +274,8 @@ parameterization is specified (in which case, they must match
 configuration space.
 @ingroup robot_planning
 @experimental
+
+@throws if the center of `starting_ellipsoid` is in collision.
 */
 
 geometry::optimization::HPolyhedron IrisZo(
