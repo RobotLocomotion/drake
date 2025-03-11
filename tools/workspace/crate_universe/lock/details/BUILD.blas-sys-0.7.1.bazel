@@ -103,6 +103,6 @@ rust_library(
     }),
     version = "0.7.1",
     deps = [
-        "@crate__libc-0.2.170//:libc",
+        "@crate__libc-0.2.171//:libc",
     ],
 )
