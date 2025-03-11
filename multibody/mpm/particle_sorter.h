@@ -216,10 +216,10 @@ class ParticleSorter {
           spgrid.CoordinateToOffset(base_node[0], base_node[1], base_node[2]);
       /* Confirm the data bits of the base node offset are all zero. */
       DRAKE_ASSERT(
-          (base_node_offsets_[p] & ((uint64_t(1) << data_bits_) - 1)) == 0);
+          (base_node_offsets_[p] & ((uint64_t{1} << data_bits_) - 1)) == 0);
       /* Confirm the left most bits in the page bits are unused. */
       DRAKE_ASSERT((base_node_offsets_[p] &
-                    ~((uint64_t(1) << (64 - zero_page_bits_)) - 1)) == 0);
+                    ~((uint64_t{1} << (64 - zero_page_bits_)) - 1)) == 0);
       particle_sorters_[p] = (base_node_offsets_[p] << zero_page_bits_) + p;
     }
   }

@@ -83,13 +83,29 @@ void DefCopyAndDeepCopy(PyClass* ppy_class) {
 /// constructor.
 template <typename PyClass>
 void DefClone(PyClass* ppy_class) {
+  // Having abandoned the old RobotLocomotion pybind11 branch
+  // with special handling of std::unique_ptr<>, these bindings'
+  // return value paths started deleting the C++ object and
+  // returning a dead non-null pointer. To avoid that, we
+  // instead explicitly unwrap the pointer here and rely on the
+  // take_ownership return value policy. The take_ownership
+  // policy would be the default policy in this case, but it
+  // seems safer and more clear to apply it explicitly.
   using Class = typename PyClass::type;
   PyClass& py_class = *ppy_class;
   py_class  // BR
-      .def("Clone", &Class::Clone)
-      .def("__copy__", &Class::Clone)
-      .def("__deepcopy__",
-          [](const Class* self, py::dict /* memo */) { return self->Clone(); });
+      .def(
+          "Clone", [](const Class* self) { return self->Clone().release(); },
+          py_rvp::take_ownership)
+      .def(
+          "__copy__", [](const Class* self) { return self->Clone().release(); },
+          py_rvp::take_ownership)
+      .def(
+          "__deepcopy__",
+          [](const Class* self, py::dict /* memo */) {
+            return self->Clone().release();
+          },
+          py_rvp::take_ownership);
 }
 
 /// Returns a constructor for creating an instance of Class and initializing
