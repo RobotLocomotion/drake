@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<mujoco model="mesh_crate">
+  <!-- A model of crate with walls composed of thin wires. -->
+  <worldbody>
+    <!-- Base -->
+    <geom name="base_00" type="cylinder" pos="-0.2 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_01" type="cylinder" pos="-0.18 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_02" type="cylinder" pos="-0.16 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_03" type="cylinder" pos="-0.14 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_04" type="cylinder" pos="-0.12 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_05" type="cylinder" pos="-0.1 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_06" type="cylinder" pos="-0.08 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_07" type="cylinder" pos="-0.06 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_08" type="cylinder" pos="-0.04 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_09" type="cylinder" pos="-0.02 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_10" type="cylinder" pos="0.0 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_11" type="cylinder" pos="0.02 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_12" type="cylinder" pos="0.04 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_13" type="cylinder" pos="0.06 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_14" type="cylinder" pos="0.08 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_15" type="cylinder" pos="0.1 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_16" type="cylinder" pos="0.12 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_17" type="cylinder" pos="0.14 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_18" type="cylinder" pos="0.16 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_19" type="cylinder" pos="0.18 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="base_20" type="cylinder" pos="0.2 0.0 0.0" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+
+    <!-- Back wall -->
+    <geom name="back_00" type="cylinder" pos="0.0 0.2 0.0" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_01" type="cylinder" pos="0.0 0.2 0.02" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_02" type="cylinder" pos="0.0 0.2 0.04" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_03" type="cylinder" pos="0.0 0.2 0.06" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_04" type="cylinder" pos="0.0 0.2 0.08" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_05" type="cylinder" pos="0.0 0.2 0.1" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_06" type="cylinder" pos="0.0 0.2 0.12" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_07" type="cylinder" pos="0.0 0.2 0.14" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_08" type="cylinder" pos="0.0 0.2 0.16" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_09" type="cylinder" pos="0.0 0.2 0.18" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="back_10" type="cylinder" pos="0.0 0.2 0.2" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+
+    <!-- Front wall -->
+    <geom name="front_00" type="cylinder" pos="0.0 -0.2 0.0" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_01" type="cylinder" pos="0.0 -0.2 0.02" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_02" type="cylinder" pos="0.0 -0.2 0.04" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_03" type="cylinder" pos="0.0 -0.2 0.06" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_04" type="cylinder" pos="0.0 -0.2 0.08" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_05" type="cylinder" pos="0.0 -0.2 0.1" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_06" type="cylinder" pos="0.0 -0.2 0.12" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_07" type="cylinder" pos="0.0 -0.2 0.14" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_08" type="cylinder" pos="0.0 -0.2 0.16" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_09" type="cylinder" pos="0.0 -0.2 0.18" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="front_10" type="cylinder" pos="0.0 -0.2 0.2" euler="0 90 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+
+    <!-- Left wall -->
+    <geom name="left_01" type="cylinder" pos="-0.2 0.0 0.02" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_02" type="cylinder" pos="-0.2 0.0 0.04" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_03" type="cylinder" pos="-0.2 0.0 0.06" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_04" type="cylinder" pos="-0.2 0.0 0.08" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_05" type="cylinder" pos="-0.2 0.0 0.1" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_06" type="cylinder" pos="-0.2 0.0 0.12" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_07" type="cylinder" pos="-0.2 0.0 0.14" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_08" type="cylinder" pos="-0.2 0.0 0.16" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_09" type="cylinder" pos="-0.2 0.0 0.18" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="left_10" type="cylinder" pos="-0.2 0.0 0.2" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+
+    <!-- Right wall -->
+    <geom name="right_01" type="cylinder" pos="0.2 0.0 0.02" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_02" type="cylinder" pos="0.2 0.0 0.04" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_03" type="cylinder" pos="0.2 0.0 0.06" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_04" type="cylinder" pos="0.2 0.0 0.08" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_05" type="cylinder" pos="0.2 0.0 0.1" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_06" type="cylinder" pos="0.2 0.0 0.12" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_07" type="cylinder" pos="0.2 0.0 0.14" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_08" type="cylinder" pos="0.2 0.0 0.16" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_09" type="cylinder" pos="0.2 0.0 0.18" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="right_10" type="cylinder" pos="0.2 0.0 0.2" euler="90 0 0" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0"/>
+
+    <!-- Vertical bars at the corners -->
+    <geom name="corner_00" type="cylinder" pos="-0.2 0.2 0.1" euler="0 0 0" size="0.001 0.1" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="corner_01" type="cylinder" pos="-0.2 -0.2 0.1" euler="0 0 0" size="0.001 0.1" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="corner_02" type="cylinder" pos="0.2 0.2 0.1" euler="0 0 0" size="0.001 0.1" rgba="0.0 0.0 0.0 1.0"/>
+    <geom name="corner_03" type="cylinder" pos="0.2 -0.2 0.1" euler="0 0 0" size="0.001 0.1" rgba="0.0 0.0 0.0 1.0"/>
+
+  </worldbody>
+</mujoco>

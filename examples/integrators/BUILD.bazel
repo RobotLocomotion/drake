@@ -11,6 +11,7 @@ filegroup(
         "cylinder.xml",
         "double_pendulum.xml",
         "gripper.xml",
+        "mesh_crate.xml",
         "plate_and_spatula.sdf",
     ],
     visibility = ["//:__pkg__"],
@@ -79,6 +80,18 @@ drake_py_binary(
     srcs = ["high_gain_effort_limits.py"],
     data = [
         "@drake_models//:franka_description",
+    ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    name = "mesh_crate",
+    srcs = ["mesh_crate.py"],
+    data = [
+        ":models",
+        "@drake_models",
     ],
     deps = [
         "//bindings/pydrake",
