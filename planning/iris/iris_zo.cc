@@ -116,13 +116,19 @@ std::vector<CouplerConstraintSpec> TopologicalSortCouplerConstraints(
   }
 
   // Step 2: Find the start node (a joint that is never a joint0_index).
-  JointIndex start_joint{-1};
+  JointIndex start_joint;
+  bool found_start_joint = false;
   for (const auto& [_, constraint] : coupler_constraints) {
     if (!has_predecessor[constraint.joint1_index]) {
       start_joint = constraint.joint1_index;
+      found_start_joint = true;
       break;
     }
   }
+
+  // It should be impossible to not find a start joint, as this implies every
+  // joint has a predecessor, which is not allowed with coupler constraints.
+  DRAKE_ASSERT(found_start_joint);
 
   // Step 3: Follow the chain to construct the sorted order.
   std::vector<CouplerConstraintSpec> sorted_constraints;
