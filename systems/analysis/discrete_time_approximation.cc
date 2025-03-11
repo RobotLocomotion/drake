@@ -114,6 +114,19 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
         &DiscreteTimeSystem<T>::CopyAllContextExceptInput,
         {SystemBase::all_sources_except_input_ports_ticket()});
 
+    // Create a integrator based on integration_scheme_.
+    // TODO(wei-chen): Avoid creating a simulator once we can directly obtain an
+    // integrator.
+    Simulator<T> simulator(*continuous_system_);
+    auto& integrator = ResetIntegratorFromFlags<T>(
+        &simulator, integration_scheme_, std::numeric_limits<double>::max());
+    integrator.reset_context(nullptr);
+    integrator.set_fixed_step_mode(true);
+    // Put the integrator in a cache.
+    integrator_cache_entry_ = &this->DeclareCacheEntry(
+        "integrator", ValueProducer(integrator, &ValueProducer::NoopCalc),
+        {SystemBase::nothing_ticket()});
+
     // Declare input ports.
     for (int i = 0; i < continuous_system_->num_input_ports(); ++i) {
       const InputPort<T>& port = continuous_system_->get_input_port(i);
@@ -133,12 +146,12 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
       if (port.get_data_type() == PortDataType::kVectorValued) {
         this->DeclareVectorOutputPort(
             port.get_name(), port.size(),
-            [this, &port, input_dependent](const Context<T>& discrete_context,
+            [this, &port, input_dependent](const Context<T>& context,
                                            BasicVector<T>* out) {
               const Context<T>& continuous_context =
                   (input_dependent ? continuous_context_cache_entry_
                                    : continuous_context2_cache_entry_)
-                      ->template Eval<Context<T>>(discrete_context);
+                      ->template Eval<Context<T>>(context);
               out->SetFromVector(port.Eval(continuous_context));
             },
             {prerequisites_of_calc});
@@ -148,12 +161,12 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
             [&port] {
               return port.Allocate();
             },
-            [this, &port, input_dependent](const Context<T>& discrete_context,
+            [this, &port, input_dependent](const Context<T>& context,
                                            AbstractValue* out) {
               const Context<T>& continuous_context =
                   (input_dependent ? continuous_context_cache_entry_
                                    : continuous_context2_cache_entry_)
-                      ->template Eval<Context<T>>(discrete_context);
+                      ->template Eval<Context<T>>(context);
               port.Calc(continuous_context, out);
             },
             {prerequisites_of_calc});
@@ -179,37 +192,22 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
         time_period_, time_offset_, &DiscreteTimeSystem<T>::DiscreteUpdate);
   }
 
-  void DiscreteUpdate(const Context<T>& discrete_context,
-                      DiscreteValues<T>* out) const {
-    // TODO(wei-chen): Make the simulator/integrator a cache variable.
-    Simulator<T> simulator(*continuous_system_);
-    auto& integrator = ResetIntegratorFromFlags<T>(
-        &simulator, integration_scheme_, std::numeric_limits<double>::max());
-    integrator.set_fixed_step_mode(true);
+  void DiscreteUpdate(const Context<T>& context, DiscreteValues<T>* out) const {
+    Context<T>* continuous_context =
+        get_uptodate_mutable_continuous_context(context);
+    IntegratorBase<T>* integrator = get_mutable_integrator(context);
 
-    // Ensure that the continuous system context is up-to-date.
-    continuous_context_cache_entry_->template Eval<Context<T>>(
-        discrete_context);
-    auto& cache_entry_value =
-        continuous_context_cache_entry_->get_mutable_cache_entry_value(
-            discrete_context);
-    DRAKE_ASSERT(!cache_entry_value.is_out_of_date());
+    // This will only run one time.
+    if (integrator->get_mutable_context() == nullptr) {
+      integrator->reset_context(continuous_context);
+      integrator->Initialize();
+    }
 
-    // We allow the integrator to modify the continuous system context in place.
-    // This is fine because (a) we mark the cache entry as out-of-date, and
-    cache_entry_value.mark_out_of_date();
-    auto& continuous_context =
-        cache_entry_value.template GetMutableValueOrThrow<Context<T>>();
-    integrator.reset_context(&continuous_context);
-    integrator.Initialize();
-    DRAKE_THROW_UNLESS(integrator.IntegrateWithSingleFixedStepToTime(
-        continuous_context.get_time() + time_period_));
+    DRAKE_THROW_UNLESS(integrator->IntegrateWithSingleFixedStepToTime(
+        continuous_context->get_time() + time_period_));
 
-    // (b) after updating `DiscreteValues<T>* out`, CopyAllContext() will be
-    // invoked next time continuous_context_cache_entry_->Eval() is called
-    // anyway.
     out->get_mutable_vector().SetFromVector(
-        continuous_context.get_continuous_state_vector().CopyToVector());
+        continuous_context->get_continuous_state_vector().CopyToVector());
   }
 
   void CopyAllContextExceptInput(const Context<T>& from_discrete_context,
@@ -239,13 +237,38 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
     }
   }
 
+  Context<T>* get_uptodate_mutable_continuous_context(
+      const Context<T>& context) const {
+    continuous_context_cache_entry_->template Eval<Context<T>>(context);
+    auto& cache_entry_value =
+        continuous_context_cache_entry_->get_mutable_cache_entry_value(context);
+    // The cache entry should be up to date because we have called Eval().
+    DRAKE_ASSERT(!cache_entry_value.is_out_of_date());
+
+    cache_entry_value.mark_out_of_date();
+    auto& continuous_context =
+        cache_entry_value.template GetMutableValueOrThrow<Context<T>>();
+    return &continuous_context;
+  }
+
+  IntegratorBase<T>* get_mutable_integrator(const Context<T>& context) const {
+    auto& cache_entry_value =
+        integrator_cache_entry_->get_mutable_cache_entry_value(context);
+
+    cache_entry_value.mark_out_of_date();
+    auto& integrator =
+        cache_entry_value.template GetMutableValueOrThrow<IntegratorBase<T>>();
+    return &integrator;
+  }
+
   const std::unique_ptr<const System<T>> continuous_system_;
   const std::unique_ptr<const Context<T>> continuous_context_model_value_;
-  const CacheEntry* continuous_context_cache_entry_;
-  const CacheEntry* continuous_context2_cache_entry_;
   const double time_period_;
   const double time_offset_;
   const std::string integration_scheme_;
+  const CacheEntry* continuous_context_cache_entry_;
+  const CacheEntry* continuous_context2_cache_entry_;
+  const CacheEntry* integrator_cache_entry_;
 };
 
 }  // namespace
