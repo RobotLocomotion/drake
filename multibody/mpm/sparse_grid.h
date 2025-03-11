@@ -46,6 +46,7 @@ class SparseGrid {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseGrid);
 
   using Scalar = T;
+  using NodeScalarType = T;
   using NodeType = Vector3<T>;
   using PadNodeType = Pad<NodeType>;
   using PadDataType = Pad<GridData<T>>;
