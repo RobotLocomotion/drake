@@ -101,6 +101,11 @@ using multibody::internal::CouplerConstraintSpec;
 std::vector<CouplerConstraintSpec> TopologicalSortCouplerConstraints(
     const std::map<multibody::MultibodyConstraintId, CouplerConstraintSpec>&
         coupler_constraints) {
+  if (coupler_constraints.empty()) {
+    // If there are no constraints (i.e.  is empty), we return an empty vector.
+    return {};
+  }
+
   std::map<JointIndex, JointIndex> next_map;             // joint1 -> joint0
   std::map<JointIndex, CouplerConstraintSpec> node_map;  // joint0 -> constraint
   std::map<JointIndex, bool>
