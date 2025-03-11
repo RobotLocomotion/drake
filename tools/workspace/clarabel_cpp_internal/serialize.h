@@ -37,6 +37,7 @@ void Serialize(Archive* a, DefaultSettings<double>& settings) {
   DRAKE_VISIT(linesearch_backtrack_step);
   DRAKE_VISIT(min_switch_step_length);
   DRAKE_VISIT(min_terminate_step_length);
+  DRAKE_VISIT(max_threads);
   DRAKE_VISIT(direct_kkt_solver);
   // skipped: direct_solve_method
   DRAKE_VISIT(static_regularization_enable);
