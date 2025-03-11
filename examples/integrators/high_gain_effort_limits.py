@@ -102,7 +102,7 @@ if __name__ == "__main__":
     plant, scene_graph = AddMultibodyPlantSceneGraph(
         builder, time_step=args.mbp_time_step
     )
-    Parser(plant).AddModels(
+    Parser(plant).AddModelsFromUrl(
         "package://drake_models/franka_description/urdf/panda_arm_hand.urdf"
     )
     plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("panda_link0"))
