@@ -2,14 +2,14 @@ Address discrepancy between cpplint upstream and Google styleguide.
 
 Google styleguide allows for certain simple if statements to fit on
 one line with spaces between the curly braces. While this is technically
-a violation of the general styleguide, Google permits this exeption
+a violation of the general styleguide, Google permits this exception
 "for historical reasons." Nevertheless, cpplint does not allow this.
 
 The fix basically adds a "made-up" error category and diverts the
-expressions that trigger the aforementioned cases out of the more 
+expressions that trigger the aforementioned cases out of the more
 general "whitespace/newline" category. The "made-up" name is then
 added to the "_DEFAULT_FILTERS" list, effectively suppressing the
-error violations in these specific cases. 
+error violations in these specific cases.
 
 diff --git a/cpplint.py b/cpplint.py
 index 7a8b8ab..130fd9d 100755
