@@ -21,6 +21,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/convex_integrator.h"
@@ -109,7 +110,9 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using clock = std::chrono::steady_clock;
 using drake::geometry::SceneGraphConfig;
+using drake::multibody::contact_solvers::internal::SapHessianFactorizationType;
 using drake::multibody::contact_solvers::internal::SapSolverParameters;
+using drake::multibody::internal::CompliantContactManager;
 using drake::visualization::ApplyVisualizationConfig;
 using drake::visualization::VisualizationConfig;
 
@@ -145,6 +148,15 @@ int do_main() {
   // Add an object to hold, if requested
   if (FLAGS_manipuland) {
     parser.AddModelsFromUrl("package://drake_models/ycb/003_cracker_box.sdf");
+  }
+
+  // Set up implicit PD controller gains if we're doing discrete-time sim
+  if (plant.time_step() > 0.0) {
+    for (JointActuatorIndex actuator_index : plant.GetJointActuatorIndices()) {
+      JointActuator<double>& actuator =
+          plant.get_mutable_joint_actuator(actuator_index);
+      actuator.set_controller_gains({FLAGS_kp, FLAGS_kd});
+    }
   }
 
   plant.Finalize();
@@ -208,42 +220,63 @@ int do_main() {
   ModelInstanceIndex robot = plant.GetModelInstanceByName("panda");
 
   // Create and connect the controller
-  if (FLAGS_controller == "pid") {
-    auto controller = builder.AddSystem<PidController>(Px, Kp, Ki, Kd);
-
+  if (plant.time_step() > 0.0) {
+    // We'll use a discrete-time implicit PID controller
+    if (FLAGS_controller != "pid") {
+      throw std::runtime_error(
+          "Discrete-time simulation only supports an implicit PID controller.");
+    }
     builder.Connect(nominal_state_source->get_output_port(),
-                    controller->get_input_port_desired_state());
-    builder.Connect(plant.get_state_output_port(),
-                    controller->get_input_port_estimated_state());
-    builder.Connect(controller->get_output_port_control(),
-                    plant.get_actuation_input_port());
+                    plant.get_desired_state_input_port(robot));
 
-  } else if (FLAGS_controller == "inverse_dynamics") {
-    auto controller = builder.AddSystem<InverseDynamicsController>(
-        control_plant, Kp, Ki, Kd, false);
+    // And force SAP to use dense algebra
+    SapSolverParameters sap_parameters;
+    sap_parameters.linear_solver_type = SapHessianFactorizationType::kDense;
 
-    builder.Connect(nominal_state_source->get_output_port(),
-                    controller->get_input_port_desired_state());
-    builder.Connect(plant.get_state_output_port(robot),
-                    controller->get_input_port_estimated_state());
-    builder.Connect(controller->get_output_port_control(),
-                    plant.get_actuation_input_port());
-
-  } else if (FLAGS_controller == "joint_stiffness") {
-    auto controller =
-        builder.AddSystem<JointStiffnessController>(control_plant, Kp, Kd);
-
-    builder.Connect(nominal_state_source->get_output_port(),
-                    controller->get_input_port_desired_state());
-    builder.Connect(plant.get_state_output_port(robot),
-                    controller->get_input_port_estimated_state());
-    builder.Connect(controller->get_output_port_actuation(),
-                    plant.get_actuation_input_port());
-
+    auto owned_contact_manager =
+        std::make_unique<CompliantContactManager<double>>();
+    CompliantContactManager<double>* contact_manager =
+        owned_contact_manager.get();
+    plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
+    contact_manager->set_sap_solver_parameters(sap_parameters);
   } else {
-    throw std::runtime_error(
-        "Unknown controller, options are 'pid', 'inverse_dynamics', and "
-        "'joint_stiffness'");
+    if (FLAGS_controller == "pid") {
+      auto controller = builder.AddSystem<PidController>(Px, Kp, Ki, Kd);
+
+      builder.Connect(nominal_state_source->get_output_port(),
+                      controller->get_input_port_desired_state());
+      builder.Connect(plant.get_state_output_port(),
+                      controller->get_input_port_estimated_state());
+      builder.Connect(controller->get_output_port_control(),
+                      plant.get_actuation_input_port());
+
+    } else if (FLAGS_controller == "inverse_dynamics") {
+      auto controller = builder.AddSystem<InverseDynamicsController>(
+          control_plant, Kp, Ki, Kd, false);
+
+      builder.Connect(nominal_state_source->get_output_port(),
+                      controller->get_input_port_desired_state());
+      builder.Connect(plant.get_state_output_port(robot),
+                      controller->get_input_port_estimated_state());
+      builder.Connect(controller->get_output_port_control(),
+                      plant.get_actuation_input_port());
+
+    } else if (FLAGS_controller == "joint_stiffness") {
+      auto controller =
+          builder.AddSystem<JointStiffnessController>(control_plant, Kp, Kd);
+
+      builder.Connect(nominal_state_source->get_output_port(),
+                      controller->get_input_port_desired_state());
+      builder.Connect(plant.get_state_output_port(robot),
+                      controller->get_input_port_estimated_state());
+      builder.Connect(controller->get_output_port_actuation(),
+                      plant.get_actuation_input_port());
+
+    } else {
+      throw std::runtime_error(
+          "Unknown controller, options are 'pid', 'inverse_dynamics', and "
+          "'joint_stiffness'");
+    }
   }
 
   auto diagram = builder.Build();
