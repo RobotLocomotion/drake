@@ -672,6 +672,21 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                   options.max_iterations);
       break;
     }
+    if (!checker.CheckConfigCollisionFree(
+            options.get_parameterization()(current_ellipsoid_center)) ||
+        !CheckProgConstraints(options.prog_with_additional_constraints,
+                              current_ellipsoid_center, constraints_tol)) {
+      log()->info(fmt::format(
+          "IrisZo terminating early because new ellipsoid center "
+          "{} is in collision, or violates a constraint in "
+          "options.prog_with_additional_constraints. Consider decreasing "
+          "options.epsilon (which was {}) to require less of the region be in "
+          "collision, or decreasing options.delta (which was {}) to require a "
+          "higher confidence in how much of the region is in collision.",
+          fmt_eigen(current_ellipsoid_center.transpose()), options.epsilon,
+          options.delta));
+      break;
+    }
 
     if (options.require_sample_point_is_contained) {
       if (!(P.PointInSet(starting_ellipsoid_center))) {
