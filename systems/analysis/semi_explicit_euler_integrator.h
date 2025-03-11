@@ -104,10 +104,10 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
   bool supports_error_estimation() const override { return false; }
 
  private:
-  bool DoStep(const T& h) override;
+  bool DoStepConst(Context<T>* context, const T& h) const override;
 
   // This is a pre-allocated temporary for use by integration
-  BasicVector<T> qdot_;
+  mutable BasicVector<T> qdot_;
 };
 
 /**
@@ -115,9 +115,9 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
  * by IntegratorBase::StepOnce().
  */
 template <class T>
-bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
+bool SemiExplicitEulerIntegrator<T>::DoStepConst(Context<T>* context,
+                                                 const T& h) const {
   const System<T>& system = this->get_system();
-  Context<T>& context = *this->get_mutable_context();
 
   // CAUTION: This is performance-sensitive inner loop code that uses dangerous
   // long-lived references into state and cache to avoid unnecessary copying and
@@ -125,7 +125,7 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
   // invalidate any of these references before they are used.
 
   // Evaluate derivative xcdot(t₀) ← xcdot(t₀, x(t₀), u(t₀)).
-  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(context);
+  const ContinuousState<T>& xc_deriv = this->EvalTimeDerivatives(*context);
   // Retrieve the accelerations and auxiliary variable derivatives.
   const VectorBase<T>& vdot = xc_deriv.get_generalized_velocity();
   const VectorBase<T>& zdot = xc_deriv.get_misc_continuous_state();
@@ -137,7 +137,7 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
   // This invalidates computations that are dependent on v or z.
   // Marks v- and z-dependent cache entries out of date, including vdot and
   // zdot; time doesn't change here.
-  std::pair<VectorBase<T>*, VectorBase<T>*> vz = context.GetMutableVZVectors();
+  std::pair<VectorBase<T>*, VectorBase<T>*> vz = context->GetMutableVZVectors();
   VectorBase<T>& v = *vz.first;
   VectorBase<T>& z = *vz.second;
 
@@ -151,13 +151,13 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
   // Convert the updated generalized velocity to the time derivative of
   // generalized coordinates. Note that this mapping is q-dependent and
   // hasn't been invalidated if it was pre-computed.
-  system.MapVelocityToQDot(context, v, &qdot_);
+  system.MapVelocityToQDot(*context, v, &qdot_);
 
   // Now set time and q to their final values. This marks time- and
   // q-dependent cache entries out of date. That includes the derivative
   // cache entry though we don't need it again here.
   VectorBase<T>& q =
-      context.SetTimeAndGetMutableQVector(context.get_time() + h);
+      context->SetTimeAndGetMutableQVector(context->get_time() + h);
   q.PlusEqScaled(h, qdot_);
 
   // This integrator always succeeds at taking the step.

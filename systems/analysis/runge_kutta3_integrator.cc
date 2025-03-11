@@ -41,10 +41,10 @@ void RungeKutta3Integrator<T>::DoInitialize() {
 }
 
 template <class T>
-bool RungeKutta3Integrator<T>::DoStep(const T& h) {
+bool RungeKutta3Integrator<T>::DoStepConst(Context<T>* context,
+                                           const T& h) const {
   using std::abs;
-  Context<T>& context = *this->get_mutable_context();
-  const T t0 = context.get_time();
+  const T t0 = context->get_time();
   const T t1 = t0 + h;
 
   // CAUTION: This is performance-sensitive inner loop code that uses dangerous
@@ -65,7 +65,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   // Evaluate derivative xcdot₀ ← xcdot(t₀, x(t₀), u(t₀)). Copy the result
   // into a temporary since we'll be calculating more derivatives below.
   derivs0_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& xcdot0 = derivs0_->get_vector();
 
   // Cache: xcdot0 references a *copy* of the derivative result so is immune
@@ -78,13 +78,13 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   // the derivative cache entry. Note that xc is a live reference into the
   // context -- subsequent changes through that reference are unobservable so
   // will require manual out-of-date notifications.
-  VectorBase<T>& xc = context.SetTimeAndGetMutableContinuousStateVector(
+  VectorBase<T>& xc = context->SetTimeAndGetMutableContinuousStateVector(
       t0 + h / 2);                      // t⁽ᵃ⁾ ← t₀ + h/2
   xc.CopyToPreSizedVector(&save_xc0_);  // Save xc₀ while we can.
   xc.PlusEqScaled(h / 2, xcdot0);       // xc⁽ᵃ⁾ ← xc₀ + h/2 xcdot₀
 
   derivs1_->get_mutable_vector().SetFrom(
-      this->EvalTimeDerivatives(context).get_vector());
+      this->EvalTimeDerivatives(*context).get_vector());
   const VectorBase<T>& xcdot_a = derivs1_->get_vector();  // xcdot⁽ᵃ⁾
 
   // Cache: xcdot_a references a *copy* of the derivative result so is immune
@@ -96,14 +96,14 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   // This call marks t- and xc-dependent cache entries out of date, including
   // the derivative cache entry. (We already have the xc reference but must
   // issue the out-of-date notification here since we're about to change it.)
-  context.SetTimeAndNoteContinuousStateChange(t1);
+  context->SetTimeAndNoteContinuousStateChange(t1);
 
   // xcⱼ ← xc₀ - h xcdot₀ + 2 h xcdot⁽ᵃ⁾
   xc.SetFromVector(save_xc0_);  // Restore xc ← xc₀.
   xc.PlusEqScaled({{-h, xcdot0}, {2 * h, xcdot_a}});
 
   const VectorBase<T>& xcdot_b =  // xcdot⁽ᵇ⁾
-      this->EvalTimeDerivatives(context).get_vector();
+      this->EvalTimeDerivatives(*context).get_vector();
 
   // Cache: xcdot_b references the live derivative cache value, currently
   // up to date but about to be marked out of date. We do not want to make
@@ -112,7 +112,7 @@ bool RungeKutta3Integrator<T>::DoStep(const T& h) {
   // Cache: we're about to write through the xc reference again, so need to
   // mark xc-dependent cache entries out of date, including xcdot_b; time
   // doesn't change here.
-  context.NoteContinuousStateChange();
+  context->NoteContinuousStateChange();
 
   // Calculate the final O(h³) state at t₁.
   // xc₁ ← xc₀ + h/6 xcdot₀ + 2/3 h xcdot⁽ᵃ⁾ + h/6 xcdot⁽ᵇ⁾
