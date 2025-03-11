@@ -15,6 +15,10 @@ namespace multibody {
 namespace mpm {
 namespace internal {
 
+/* Note: MockSparseGrid mirrors the public APIs in SparseGrid to enable
+ derivative testing. Changes in this class's public API should be
+ reflected in MocSparseGrid. */
+
 /* SparseGrid is a 3D grid that is sparsely populated with GridData (see
  multibody::mpm::internal::GridData) implemented with a Sparse Paged Grid
  (SpGrid) data structure (see multibody::mpm::internal::SpGrid). The SparseGrid
@@ -46,6 +50,7 @@ class SparseGrid {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseGrid);
 
   using Scalar = T;
+  using NodeScalarType = T;
   using NodeType = Vector3<T>;
   using PadNodeType = Pad<NodeType>;
   using PadDataType = Pad<GridData<T>>;
