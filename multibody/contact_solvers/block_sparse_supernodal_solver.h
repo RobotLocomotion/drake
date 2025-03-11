@@ -19,6 +19,22 @@ class BlockSparseSuperNodalSolver final : public SuperNodalSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BlockSparseSuperNodalSolver);
 
+  /* Constructs BlockSparseSuperNodalSolver mass matrix A and Jacobian matrix J.
+   @param[in] A
+     Specifies a block-diagonal mass matrix A of size nᵥ x nᵥ. The block
+     columns of the mass matrix and the block columns of the Jacobian J both
+     induce a partition of the set {0, 1, ..., nᵥ - 1}, where nᵥ denotes the
+     number of scalar variables. These two partitions must be the same,
+     otherwise an exception is thrown.
+   @param[in] J
+     A BlockSparseMatrix specifying the Jacobian matrix. An exception is thrown
+     if there are more than two blocks  within the same block row. */
+  BlockSparseSuperNodalSolver(const std::vector<MatrixX<double>>& A,
+                              const BlockSparseMatrix<double>& J);
+
+  ~BlockSparseSuperNodalSolver() final;
+
+ private:
   /* Constructs a BlockSparseSuperNodalSolver.
    @param[in] num_jacobian_row_blocks
      Number of row blocks in the matrix J.
@@ -41,9 +57,6 @@ class BlockSparseSuperNodalSolver final : public SuperNodalSolver {
                               std::vector<BlockTriplet> jacobian_blocks,
                               std::vector<Eigen::MatrixXd> mass_matrices);
 
-  ~BlockSparseSuperNodalSolver() final;
-
- private:
   /* NVI implementations. */
   bool DoSetWeightMatrix(
       const std::vector<Eigen::MatrixXd>& block_diagonal_G) final;

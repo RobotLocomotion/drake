@@ -18,12 +18,6 @@ namespace internal {
 
 // Enum to specify the type of the factorization to be used by SAP.
 enum class SapHessianFactorizationType {
-  // Supernodal KKT solver as implemented in conex [Permenter, 2020].
-  //
-  // [Permenter, 2020] Permenter, Frank. "A geodesic interior-point method for
-  // linear optimization over symmetric cones." SIAM Journal on
-  // Optimization 33.2 (2023): 1006-1034.
-  kConex,
   // Block sparse supernodal solver implemented by BlockSparseCholeskySolver.
   kBlockSparseCholesky,
   // Dense algebra. Typically used for testing.
