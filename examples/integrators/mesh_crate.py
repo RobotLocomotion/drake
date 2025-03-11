@@ -10,15 +10,14 @@ import numpy as np
 ##
 
 
-def get_random_configuration(z_height=None):
-    """Sample a random configuration for an object above the crate."""
+def get_random_configuration():
+    """Sample a random configuration for an object above the sloped area."""
     quat = np.random.uniform(-1, 1, 4)
     quat /= np.linalg.norm(quat)
-    pos = np.random.uniform(-0.2, 0.2, 3)
-    if z_height is not None:
-        pos[2] = z_height
-    else:
-        pos[2] = np.random.uniform(0.0, 0.5)
+    pos = np.random.uniform(
+        np.array([-1.0, -0.5, 0.2]), np.array([0.0, 0.5, 1.0]), 3
+    )
+    pos[2] += -pos[0]
     return np.concatenate((quat, pos))
 
 
@@ -39,8 +38,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sim_time",
         type=float,
-        default=10.0,
-        help="Simulation time (in seconds). Default: 10.0.",
+        default=5.0,
+        help="Simulation time (in seconds). Default: 5.0.",
     )
     parser.add_argument(
         "--mbp_time_step",
@@ -69,9 +68,9 @@ if __name__ == "__main__":
         "package://drake_models/dishes/plate_8in.sdf",
         "package://drake_models/ycb/004_sugar_box.sdf",
         "package://drake_models/ycb/005_tomato_soup_can.sdf",
-        "package://drake_models/ycb/006_mustard_bottle.sdf",
         "package://drake_models/ycb/009_gelatin_box.sdf",
         "package://drake_models/ycb/010_potted_meat_can.sdf",
+        "package://drake_models/dishes/evo_bowl.sdf",
         "package://drake_models/veggies/yellow_bell_pepper_no_stem_low.sdf",
     ]
 
@@ -101,10 +100,10 @@ if __name__ == "__main__":
     plant_context = diagram.GetMutableSubsystemContext(plant, diagram_context)
 
     # Set the initial state
-    np.random.seed(0)
+    np.random.seed(1)
 
     for i in range(len(models)):
-        q0 = get_random_configuration(z_height=0.1 + 0.2 * i)
+        q0 = get_random_configuration()
         plant.SetPositions(plant_context, models[i], q0)
 
     # Set up the simulator
