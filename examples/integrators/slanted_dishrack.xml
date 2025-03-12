@@ -6,7 +6,7 @@
   </default>
 
   <worldbody>
-    <body name="mesh_grid" euler="0 -45 0" pos="0 0 0.2">
+    <body name="mesh_grid" euler="0 -45 0" pos="0.15 0.1 0.15">
       <!-- Vertical bars -->
       <geom name="bar_01" pos="0.0 -0.100 0.2"/>
       <geom name="bar_02" pos="0.0 -0.085 0.2"/>
