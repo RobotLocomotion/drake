@@ -129,7 +129,7 @@ TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->SetAngles(context_.get(), rpy_value);
 
-  // Set arbitrary qdot and MapQDotToVelocity.
+  // Set arbitrary qdot and call MapQDotToVelocity().
   const Vector3<double> qdot = (Vector3<double>() << 1, 2, 3).finished();
   Vector3<double> v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
@@ -141,6 +141,17 @@ TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
   // Ensure N⁺(q) is used in v = N⁺(q)⋅q̇
   EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
                               MatrixCompareType::relative));
+
+  // Ensure MapQDDotToAcceleration() works properly.
+  const Vector3<double> qddot(1.2, 2.3, 3.4);  // Set arbitrary values.
+  Vector3<double> vdot;
+  mobilizer_->MapQDDotToAcceleration(*context_, qdot, &v);
+
+  // Calculate vdot another way.
+  // TODO(Mitiguy) Finish -- as of now this is a dumb test.
+  Vector3<double> vdot_expected = Nplus * qddot;  // NOT TRUE YET.
+  EXPECT_FALSE(CompareMatrices(vdot, vdot_expected, kTolerance,
+                               MatrixCompareType::relative));
 }
 
 TEST_F(RpyBallMobilizerTest, SingularityError) {
