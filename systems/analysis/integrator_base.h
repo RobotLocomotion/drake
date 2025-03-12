@@ -1303,6 +1303,39 @@ class IntegratorBase {
   const T& get_previous_integration_step_size() const {
     return prev_step_size_;
   }
+  /**
+   @name               Methods for cloning
+   @anchor cloning
+   @{
+
+   These functions make a copy of an integrator.
+   */
+
+  /**
+   Returns a copy of this integrator with reset statistics, sharing the same
+   system reference and context pointer as the original.
+   @note The cloned instance shares the same context pointer as the original
+   instance.  If this is not desired, be sure to call reset_context() on the
+   cloned instance to assign a new context pointer.
+   */
+  std::unique_ptr<IntegratorBase<T>> Clone() const {
+    auto cloned = this->DoClone();
+    cloned->reset_context(this->context_);
+    if (cloned->supports_error_estimation()) {
+      cloned->set_target_accuracy(this->get_target_accuracy());
+    }
+    cloned->set_fixed_step_mode(this->get_fixed_step_mode());
+    cloned->set_maximum_step_size(this->get_maximum_step_size());
+    cloned->set_requested_minimum_step_size(
+        this->get_requested_minimum_step_size());
+    cloned->set_throw_on_minimum_step_size_violation(
+        this->get_throw_on_minimum_step_size_violation());
+    if (this->is_initialized()) {
+      cloned->Initialize();
+    }
+    return cloned;
+  }
+  // @}
 
  protected:
   /**
@@ -1428,6 +1461,17 @@ class IntegratorBase {
    Reset() is called. This default method does nothing.
    */
   virtual void DoReset() {}
+
+  /**
+   Derived classes must implement this method to return a copy of themselves
+   as an IntegratorBase instance. The returned object must correctly duplicate
+   all member variables specific to the derived class, while the parent class
+   members are assumed to be handled by the parent class.
+   */
+  virtual std::unique_ptr<IntegratorBase<T>> DoClone() const {
+    throw std::logic_error(
+        "This integrator has not implemented the DoClone() method yet.");
+  }
 
   /**
    Returns a mutable pointer to the internally-maintained PiecewisePolynomial

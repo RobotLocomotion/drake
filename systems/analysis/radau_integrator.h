@@ -163,6 +163,11 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   void DoResetImplicitIntegratorStatistics() final;
 
+  std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
+      const final {
+    return std::make_unique<RadauIntegrator>(this->get_system());
+  }
+
   // Takes a given step of the requested size, if possible.
   // @param h the integration step size to attempt.
   // @returns `true` if successful.
