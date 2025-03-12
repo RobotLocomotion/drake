@@ -558,6 +558,73 @@ MultibodyConstraintId MultibodyPlant<T>::AddDistanceConstraint(
 }
 
 template <typename T>
+const std::map<MultibodyConstraintId, DistanceConstraintParams>&
+MultibodyPlant<T>::GetDistanceConstraintParams(
+    const systems::Context<T>& context) const {
+  return context.get_parameters()
+      .template get_abstract_parameter<internal::DistanceConstraintParamsMap>(
+          parameter_indices_.distance_constraints)
+      .map;
+}
+
+template <typename T>
+std::map<MultibodyConstraintId, DistanceConstraintParams>&
+MultibodyPlant<T>::GetMutableDistanceConstraintParams(
+    systems::Context<T>* context) const {
+  return context->get_mutable_parameters()
+      .template get_mutable_abstract_parameter<
+          internal::DistanceConstraintParamsMap>(
+          parameter_indices_.distance_constraints)
+      .map;
+}
+
+template <typename T>
+const DistanceConstraintParams& MultibodyPlant<T>::GetDistanceConstraintParams(
+    const systems::Context<T>& context, MultibodyConstraintId id) const {
+  if (!distance_constraints_specs_.contains(id)) {
+    throw std::runtime_error(
+        fmt::format("The constraint id {} does not match any distance "
+                    "constraint registered with this plant. ",
+                    id));
+  }
+  const std::map<MultibodyConstraintId, DistanceConstraintParams>& all_params =
+      GetDistanceConstraintParams(context);
+  DRAKE_ASSERT(all_params.contains(id));
+  return all_params.at(id);
+}
+
+template <typename T>
+void MultibodyPlant<T>::SetDistanceConstraintParams(
+    systems::Context<T>* context, MultibodyConstraintId id,
+    DistanceConstraintParams params) const {
+  if (!distance_constraints_specs_.contains(id)) {
+    throw std::runtime_error(
+        fmt::format("The constraint id {} does not match any distance "
+                    "constraint registered with this plant. ",
+                    id));
+  }
+
+  if (!has_body(params.bodyA())) {
+    throw std::runtime_error(
+        fmt::format("Index {} provided for body A does not correspond to a "
+                    "rigid body in this MultibodyPlant.",
+                    params.bodyA()));
+  }
+
+  if (!has_body(params.bodyB())) {
+    throw std::runtime_error(
+        fmt::format("Index {} provided for body B does not correspond to a "
+                    "rigid body in this MultibodyPlant.",
+                    params.bodyB()));
+  }
+
+  std::map<MultibodyConstraintId, DistanceConstraintParams>& all_params =
+      GetMutableDistanceConstraintParams(context);
+  DRAKE_ASSERT(all_params.contains(id));
+  all_params.at(id) = std::move(params);
+}
+
+template <typename T>
 MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
     const RigidBody<T>& body_A, const Vector3<double>& p_AP,
     const RigidBody<T>& body_B, const std::optional<Vector3<double>>& p_BQ) {
@@ -3502,8 +3569,15 @@ void MultibodyPlant<T>::DeclareParameters() {
   for (const auto& [id, spec] : coupler_constraints_specs_) {
     constraint_active_status_map[id] = true;
   }
+
+  std::map<MultibodyConstraintId, DistanceConstraintParams>
+      distance_constraint_params_map;
   for (const auto& [id, spec] : distance_constraints_specs_) {
     constraint_active_status_map[id] = true;
+    distance_constraint_params_map.insert(
+        {id, DistanceConstraintParams(spec.body_A, spec.p_AP, spec.body_B,
+                                      spec.p_BQ, spec.distance, spec.stiffness,
+                                      spec.damping)});
   }
   for (const auto& [id, spec] : ball_constraints_specs_) {
     constraint_active_status_map[id] = true;
@@ -3512,10 +3586,16 @@ void MultibodyPlant<T>::DeclareParameters() {
     constraint_active_status_map[id] = true;
   }
 
+  // Active status parameters.
   internal::ConstraintActiveStatusMap map_wrapper{constraint_active_status_map};
-
   parameter_indices_.constraint_active_status = systems::AbstractParameterIndex{
       this->DeclareAbstractParameter(drake::Value(map_wrapper))};
+
+  // Constraint parameters.
+  parameter_indices_.distance_constraints =
+      systems::AbstractParameterIndex{this->DeclareAbstractParameter(
+          drake::Value(internal::DistanceConstraintParamsMap{
+              std::move(distance_constraint_params_map)}))};
 }
 
 template <typename T>
