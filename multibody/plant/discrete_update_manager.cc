@@ -294,10 +294,11 @@ DiscreteUpdateManager<T>::coupler_constraints_specs() const {
 }
 
 template <typename T>
-const std::map<MultibodyConstraintId, internal::DistanceConstraintSpec>&
-DiscreteUpdateManager<T>::distance_constraints_specs() const {
+const std::map<MultibodyConstraintId, DistanceConstraintParams>&
+DiscreteUpdateManager<T>::GetDistanceConstraintParams(
+    const systems::Context<T>& context) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::distance_constraints_specs(*plant_);
+      T>::GetDistanceConstraintParams(*plant_, context);
 }
 
 template <typename T>
