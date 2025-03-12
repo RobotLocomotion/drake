@@ -284,6 +284,93 @@ GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
   EXPECT_THROW(plant.get_weld_constraint_specs(distance_id), std::exception);
 }
 
+GTEST_TEST(DistanceConstraintsTests, DistanceConstraintParams) {
+  MultibodyPlant<double> plant{0.1};
+  const RigidBody<double>& bodyA =
+      plant.AddRigidBody("A", SpatialInertia<double>::NaN());
+  const RigidBody<double>& bodyB =
+      plant.AddRigidBody("B", SpatialInertia<double>::NaN());
+  const RigidBody<double>& bodyC =
+      plant.AddRigidBody("C", SpatialInertia<double>::NaN());
+  const Vector3d p_AP(1, 2, 3);
+  const Vector3d p_BQ(4, 5, 6);
+  const double distance = 1.2;
+  const double stiffness = 1.3e7;
+  const double damping = 0.5;
+  MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
+      bodyA, p_AP, bodyB, p_BQ, distance, stiffness, damping);
+  const DistanceConstraintSpec& distance_spec =
+      plant.get_distance_constraint_specs(distance_id);
+
+  auto params_are_equal = [](const DistanceConstraintParams<double>& p1,
+                             const DistanceConstraintParams<double>& p2) {
+    if (p1.bodyA() != p2.bodyA()) return false;
+    if (p1.bodyB() != p2.bodyB()) return false;
+    if (p1.p_AP() != p2.p_AP()) return false;
+    if (p1.p_BQ() != p2.p_BQ()) return false;
+    if (p1.distance() != p2.distance()) return false;
+    if (p1.stiffness() != p2.stiffness()) return false;
+    if (p1.damping() != p2.damping()) return false;
+    return true;
+  };
+
+  auto params_match_specs = [&params_are_equal](
+                                const DistanceConstraintParams<double>& p,
+                                const DistanceConstraintSpec& s) {
+    const DistanceConstraintParams<double> p_from_s(
+        s.body_A, s.p_AP, s.body_B, s.p_BQ, s.distance, s.stiffness, s.damping);
+    return params_are_equal(p, p_from_s);
+  };
+
+  // Retrieve parameters in the context.
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  {
+    const DistanceConstraintParams<double>& p =
+        plant.GetDistanceConstraintParams(*context, distance_id);
+    EXPECT_TRUE(params_match_specs(p, distance_spec));
+  }
+
+  // Set new parameters in the context.
+  const Vector3d new_p_AP = 2.0 * p_AP;
+  const Vector3d new_p_BQ = 2.0 * p_AP;
+  const double new_distance = 2.0 * distance;
+  const double new_stiffness = 2.0 * stiffness;
+  const double new_damping = 2.0 * damping;
+  // N.B. Updating the constrained bodies is allowed.
+  DistanceConstraintParams<double> new_params(
+      bodyB.index(), new_p_AP, bodyC.index(), new_p_BQ, new_distance,
+      new_stiffness, new_damping);
+  {
+    plant.SetDistanceConstraintParams(context.get(), distance_id, new_params);
+    const DistanceConstraintParams<double>& p =
+        plant.GetDistanceConstraintParams(*context, distance_id);
+    EXPECT_TRUE(params_are_equal(p, new_params));
+  }
+
+  // Updating to an invalid body throws.
+  {
+    const BodyIndex invalid_body_index(plant.num_bodies() + 10);
+    DistanceConstraintParams<double> invalid_bodyA_params(
+        invalid_body_index, p_AP, bodyB.index(), p_BQ, distance, stiffness,
+        damping);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.SetDistanceConstraintParams(context.get(), distance_id,
+                                          invalid_bodyA_params),
+        "Index .* provided for body A does not correspond to a rigid body in "
+        "this MultibodyPlant.");
+
+    DistanceConstraintParams<double> invalid_bodyB_params(
+        bodyA.index(), p_AP, invalid_body_index, p_BQ, distance, stiffness,
+        damping);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.SetDistanceConstraintParams(context.get(), distance_id,
+                                          invalid_bodyB_params),
+        "Index .* provided for body B does not correspond to a rigid body in "
+        "this MultibodyPlant.");
+  }
+}
+
 GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_approximation(

@@ -25,6 +25,7 @@
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/desired_state_input.h"
+#include "drake/multibody/plant/distance_constraint_params.h"
 #include "drake/multibody/plant/dummy_physical_model.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model_collection.h"
@@ -78,6 +79,13 @@ struct JointLockingCacheData {
 // type for an abstract parameter.
 struct ConstraintActiveStatusMap {
   std::map<MultibodyConstraintId, bool> map;
+};
+
+// Wrapper struct so that hashing works for a
+// std::map<MultibodyConstraintId, DistanceConstraintParams<double>> packed as a
+// Value parameter in the context.
+struct DistanceConstraintParamsMap {
+  std::map<MultibodyConstraintId, DistanceConstraintParams<double>> map;
 };
 
 // This struct contains the parameters to compute forces to enforce
@@ -1969,6 +1977,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// is singular in this case. Therefore we require the distance parameter to
   /// be strictly positive.
   ///
+  /// @note When a new context is created, a DistanceConstraintParams<double> is
+  /// initialized to store the parameters passed to this function. Parameters in
+  /// the context can be modified with calls to SetDistanceConstraintParams().
+  ///
   /// @throws std::exception if bodies A and B are the same body.
   /// @throws std::exception if `distance` is not strictly positive.
   /// @throws std::exception if `stiffness` is not positive or zero.
@@ -1984,6 +1996,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const RigidBody<T>& body_B, const Vector3<double>& p_BQ, double distance,
       double stiffness = std::numeric_limits<double>::infinity(),
       double damping = 0.0);
+
+  /// Returns a constant reference to the parameters for the distance constraint
+  /// that corresponds to identifier `id`.
+  /// @throws if `id` is not a valid identifier for a distance constraint.
+  const DistanceConstraintParams<double>& GetDistanceConstraintParams(
+      const systems::Context<T>& context, MultibodyConstraintId id) const;
+
+  /// Stores in `context` the parameters `params` for the distance constraint
+  /// with identifier `id`.
+  ///
+  /// @param[out] context The plant's context. On output it stores `params` for
+  ///                     the requested distance constraint.
+  /// @param[in]  id      Unique identifier of the constraint.
+  /// @param[in]  params  The new set of parameters to be stored in `context`.
+  ///
+  /// @throws if `id` is not a valid identifier for a distance constraint.
+  /// @throws if params.bodyA() or params.bodyB() do not correspond to rigid
+  /// bodies in `this` %MultibodyPlant.
+  void SetDistanceConstraintParams(
+      systems::Context<T>* context, MultibodyConstraintId id,
+      DistanceConstraintParams<double> params) const;
 
   /// Defines a constraint such that point P affixed to body A is coincident at
   /// all times with point Q affixed to body B, effectively modeling a
@@ -4829,6 +4862,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddRigidBody().
   int num_bodies() const { return internal_tree().num_bodies(); }
 
+  /// Returns `true` if plant has a rigid body with unique index `body_index`.
+  bool has_body(BodyIndex body_index) const {
+    return internal_tree().has_body(body_index);
+  }
+
   /// Returns a constant reference to the body with unique index `body_index`.
   /// @throws std::exception if `body_index` does not correspond to a body in
   /// this model.
@@ -5558,6 +5596,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // when the plant declares parameters.
   struct ParameterIndices {
     systems::AbstractParameterIndex constraint_active_status;
+    systems::AbstractParameterIndex distance_constraints;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -6071,6 +6110,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
             parameter_indices_.constraint_active_status)
         .map;
   }
+
+  // Helper to get parameters for all distance constraints.
+  const std::map<MultibodyConstraintId, DistanceConstraintParams<double>>&
+  GetDistanceConstraintParams(const systems::Context<T>& context) const;
+
+  // Helper to get mutable parameters for all distance constraints.
+  std::map<MultibodyConstraintId, DistanceConstraintParams<double>>&
+  GetMutableDistanceConstraintParams(systems::Context<T>* context) const;
 
   // Removes `this` MultibodyPlant's ability to convert to the scalar types
   // unsupported by the given `component`.

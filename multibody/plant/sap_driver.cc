@@ -442,22 +442,25 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
   const std::map<MultibodyConstraintId, bool>& constraint_active_status =
       manager().GetConstraintActiveStatus(context);
 
-  for (const auto& [id, spec] : manager().distance_constraints_specs()) {
+  for (const auto& [id, params] :
+       manager().GetDistanceConstraintParams(context)) {
     // skip this constraint if it is not active.
     if (!constraint_active_status.at(id)) continue;
 
-    const RigidBody<T>& body_A = plant().get_body(spec.body_A);
-    const RigidBody<T>& body_B = plant().get_body(spec.body_B);
+    const RigidBody<T>& body_A = plant().get_body(params.bodyA());
+    const RigidBody<T>& body_B = plant().get_body(params.bodyB());
     DRAKE_DEMAND(body_A.index() != body_B.index());
 
     const math::RigidTransform<T>& X_WA =
         plant().EvalBodyPoseInWorld(context, body_A);
     const math::RigidTransform<T>& X_WB =
         plant().EvalBodyPoseInWorld(context, body_B);
-    const Vector3<T> p_WP = X_WA * spec.p_AP.template cast<T>();
-    const Vector3<T> p_AP_W = X_WA.rotation() * spec.p_AP.template cast<T>();
-    const Vector3<T> p_WQ = X_WB * spec.p_BQ.template cast<T>();
-    const Vector3<T> p_BQ_W = X_WB.rotation() * spec.p_BQ.template cast<T>();
+    const Vector3<T> p_WP = X_WA * params.p_AP().template cast<T>();
+    const Vector3<T> p_AP_W =
+        X_WA.rotation() * params.p_AP().template cast<T>();
+    const Vector3<T> p_WQ = X_WB * params.p_BQ().template cast<T>();
+    const Vector3<T> p_BQ_W =
+        X_WB.rotation() * params.p_BQ().template cast<T>();
 
     // Jacobian for the velocity of point Q (on body B) relative to point P (on
     // body B).
@@ -505,11 +508,12 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
     };
 
     const typename SapDistanceConstraint<T>::Kinematics kinematics(
-        spec.body_A, p_WP, p_AP_W, spec.body_B, p_WQ, p_BQ_W, spec.distance,
-        make_constraint_jacobian(spec.body_A, spec.body_B));
+        params.bodyA(), p_WP, p_AP_W, params.bodyB(), p_WQ, p_BQ_W,
+        params.distance(),
+        make_constraint_jacobian(params.bodyA(), params.bodyB()));
 
     const typename SapDistanceConstraint<T>::ComplianceParameters parameters(
-        spec.stiffness, spec.damping);
+        params.stiffness(), params.damping());
 
     problem->AddConstraint(std::make_unique<SapDistanceConstraint<T>>(
         std::move(kinematics), std::move(parameters)));
