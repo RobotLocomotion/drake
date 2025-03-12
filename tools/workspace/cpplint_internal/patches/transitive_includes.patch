@@ -1,34 +1,43 @@
 diff --git a/cpplint.py b/cpplint.py
-index 7a8b8ab..b52a4e5 100755
+index 7a8b8ab..6ce7164 100755
 --- cpplint.py
 +++ cpplint.py
-@@ -6192,24 +6192,12 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
-     if not line or line[0] == '#':
-       continue
+@@ -6166,6 +6166,34 @@ def FilesBelongToSameModule(filename_cc, filename_h):
+   return files_belong_to_same_module, common_path
  
--    _re_patterns = []
--    _re_patterns.extend(_re_pattern_types_or_objs)
--    _re_patterns.extend(_re_pattern_functions)
--    for pattern, item, header in _re_patterns:
--      matched = pattern.search(line)
--      if matched:
--        # Don't warn about strings in non-STL namespaces:
--        # (We check only the first match per line; good enough.)
--        prefix = line[:matched.start()]
--        if prefix.endswith('std::') or not prefix.endswith('::'):
--          required[header] = (linenum, item)
--
-     for pattern, template, header in _re_pattern_headers_maybe_templates:
-       if pattern.search(line):
-         required[header] = (linenum, template)
  
-     # The following function is just a speed up, no semantics are changed.
--    if '<' not in line:  # Reduces the cpu time usage by skipping lines.
-+    if not '<' in line:  # Reduces the cpu time usage by skipping lines.
-       continue
- 
-     for pattern, template, header in _re_pattern_templates:
-@@ -6221,25 +6209,57 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
++def UpdateIncludeState(filename, include_dict, io=codecs):
++  """Fill up the include_dict with new includes found from the file.
++  Args:
++    filename: the name of the header to read.
++    include_dict: a dictionary in which the headers are inserted.
++    io: The io factory to use to read the file. Provided for testability.
++  Returns:
++    True if a header was successfully added. False otherwise.
++  """
++  headerfile = None
++  try:
++    with io.open(filename, 'r', 'utf8', 'replace') as headerfile:
++      linenum = 0
++      for line in headerfile:
++        linenum += 1
++        clean_line = CleanseComments(line)
++        match = _RE_PATTERN_INCLUDE.search(clean_line)
++        if match:
++          include = match.group(2)
++          include_dict.setdefault(include.strip('<>"'), linenum)
++    return True
++  except IOError:
++    return False
++
++
++print("THIS VERSION OF CPPLINT HAS BEEN MODIFIED BY HAND")
++
++
+ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
+                               io=codecs):
+   """Reports for missing stl includes.
+@@ -6221,10 +6249,36 @@ def CheckForIncludeWhatYouUse(filename, clean_lines, include_state, error,
          if prefix.endswith('std::') or not prefix.endswith('::'):
            required[header] = (linenum, template)
  
@@ -59,38 +68,9 @@ index 7a8b8ab..b52a4e5 100755
 +  for header in header_keys:
 +    (same_module, common_path) = FilesBelongToSameModule(abs_filename, header)
 +    fullpath = common_path + header
-+    if same_module:
++    if same_module and UpdateIncludeState(fullpath, include_dict, io):
 +      header_found = True
 +
-+  # If we can't find the header file for a .cc, assume it's because we don't
-+  # know where to look. In that case we'll give up as we're not sure they
-+  # didn't include it in the .h file.
-+  # TODO(unknown): Do a better job of finding .h files so we are confident that
-+  # not having the .h file means there isn't one.
-+  if filename.endswith('.cc') and not header_found:
-+    return
-+
    # All the lines have been processed, report the errors found.
--  for header in sorted(required, key=required.__getitem__):
--    template = required[header][1]
--    header_stripped = header.strip('<>"')
--    if (header_stripped not in include_dict
--            and not (header_stripped[0] == 'c'
--                     and (header_stripped[1:] + '.h') in include_dict)):
--      error(filename, required[header][0],
-+  for required_header_unstripped in required:
-+    template = required[required_header_unstripped][1]
-+    if required_header_unstripped.strip('<>"') not in include_dict:
-+      error(filename, required[required_header_unstripped][0],
-             'build/include_what_you_use', 4,
--            'Add #include ' + header + ' for ' + template)
-+            'Add #include ' + required_header_unstripped + ' for ' + template)
- 
- 
- _RE_PATTERN_EXPLICIT_MAKEPAIR = re.compile(r'\bmake_pair\s*<')
- 
- 
-+
- def CheckMakePairUsesDeduction(filename, clean_lines, linenum, error):
-   """Check that make_pair's template arguments are deduced.
- 
+   for header in sorted(required, key=required.__getitem__):
+     template = required[header][1]
