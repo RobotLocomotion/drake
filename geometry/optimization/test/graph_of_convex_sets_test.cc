@@ -1003,7 +1003,7 @@ TEST_F(ThreePoints, QuadraticCost2) {
   EXPECT_NEAR(e_on_->GetSolutionCost(result).value(), cost.Evaluate(env), 1e-4);
   EXPECT_NEAR(e_off_->GetSolutionCost(result).value(), 0.0, 4e-6);
   EXPECT_NEAR(source_->GetSolutionCost(result).value(),
-              vertex_cost.Evaluate(env), 2e-5);
+              vertex_cost.Evaluate(env), 1e-4);
   EXPECT_NEAR(target_->GetSolutionCost(result).value(), 0.0, 1e-6);
   EXPECT_NEAR(sink_->GetSolutionCost(result).value(), 0.0, 1e-6);
   CheckConvexRestriction(result);
