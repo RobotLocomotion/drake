@@ -97,10 +97,10 @@ class QuaternionFloatingJoint final : public Joint<T> {
     this->set_default_quaternion(Quaternion<double>::Identity());
   }
 
-  ~QuaternionFloatingJoint() override;
+  ~QuaternionFloatingJoint() final;
 
   /// Returns the name of this joint type: "quaternion_floating"
-  const std::string& type_name() const override {
+  const std::string& type_name() const final {
     static const never_destroyed<std::string> name{kTypeName};
     return name.access();
   }
@@ -361,7 +361,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Adding forces per-dof makes no physical sense. Therefore, this method
   /// throws an exception if invoked.
   void DoAddInOneForce(const systems::Context<T>&, int, const T&,
-                       MultibodyForces<T>*) const override;
+                       MultibodyForces<T>*) const final;
 
   /// Joint<T> override called through public NVI, Joint::AddInDamping().
   /// Therefore arguments were already checked to be valid.
@@ -372,31 +372,31 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// dissipative torque according to the viscous law `τ = -d⋅ω`, with d the
   /// damping coefficient (see default_angular_damping()).
   void DoAddInDamping(const systems::Context<T>& context,
-                      MultibodyForces<T>* forces) const override;
+                      MultibodyForces<T>* forces) const final;
 
  private:
-  int do_get_velocity_start() const override {
+  int do_get_velocity_start() const final {
     return get_mobilizer().velocity_start_in_v();
   }
 
-  int do_get_num_velocities() const override { return 6; }
+  int do_get_num_velocities() const final { return 6; }
 
-  int do_get_position_start() const override {
+  int do_get_position_start() const final {
     return get_mobilizer().position_start_in_q();
   }
 
-  int do_get_num_positions() const override { return 7; }
+  int do_get_num_positions() const final { return 7; }
 
-  std::string do_get_position_suffix(int index) const override {
+  std::string do_get_position_suffix(int index) const final {
     return get_mobilizer().position_suffix(index);
   }
 
-  std::string do_get_velocity_suffix(int index) const override {
+  std::string do_get_velocity_suffix(int index) const final {
     return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
-      const VectorX<double>& default_positions) override {
+      const VectorX<double>& default_positions) final {
     if (this->has_mobilizer()) {
       get_mutable_mobilizer().set_default_position(default_positions);
     }
@@ -418,18 +418,19 @@ class QuaternionFloatingJoint final : public Joint<T> {
 
   // Joint<T> overrides:
   std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
-      const internal::SpanningForest::Mobod& mobod) const override;
+      const internal::SpanningForest::Mobod& mobod,
+      internal::MultibodyTree<T>* tree) const final;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyTree<double>& tree_clone) const final;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyTree<symbolic::Expression>&) const final;
 
-  std::unique_ptr<Joint<T>> DoShallowClone() const override;
+  std::unique_ptr<Joint<T>> DoShallowClone() const final;
 
   // Make QuaternionFloatingJoint templated on every other scalar type a friend
   // of QuaternionFloatingJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can
