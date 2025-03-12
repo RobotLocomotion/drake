@@ -147,20 +147,27 @@ std::vector<Binding<Constraint>> AddMultibodyPlantConstraints(
             fmt::format("Coupler constraint for joint {} and joint {}",
                         spec.joint0_index, spec.joint1_index));
   }
-  for (const auto& [id, spec] : plant_ref.get_distance_constraint_specs()) {
+
+  // N.B. this code assumes hard distance constraints. Consider throwing or
+  // giving some sort of message if the constraint is compliant.
+  // N.B. Distance constraint parameters could change in the context. Consider
+  // retrieving from the context when plant_context != nullptr.
+  for (const auto& [id, params] :
+       plant_ref.GetDefaultDistanceConstraintParams()) {
     DRAKE_THROW_UNLESS(plant_context != nullptr);
     // d(q) == d₀.
     bindings
         .emplace_back(prog->AddConstraint(
             std::make_shared<PointToPointDistanceConstraint>(
-                &plant_ref, plant_ref.get_body(spec.body_A).body_frame(),
-                spec.p_AP, plant_ref.get_body(spec.body_B).body_frame(),
-                spec.p_BQ, spec.distance, spec.distance, plant_context),
+                &plant_ref, plant_ref.get_body(params.bodyA()).body_frame(),
+                params.p_AP(), plant_ref.get_body(params.bodyB()).body_frame(),
+                params.p_BQ(), params.distance(), params.distance(),
+                plant_context),
             q))
         .evaluator()
         ->set_description(
             fmt::format("Distance constraint between body {} and body {}",
-                        spec.body_A, spec.body_B));
+                        params.bodyA(), params.bodyB()));
     AddPlantLifetimeToBinding(plant, &bindings.back());
   }
   for (const auto& [id, spec] : plant_ref.get_ball_constraint_specs()) {
