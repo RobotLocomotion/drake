@@ -115,10 +115,10 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.coupler_constraints_specs_;
   }
 
-  static const std::map<MultibodyConstraintId,
-                        internal::DistanceConstraintSpec>&
-  distance_constraints_specs(const MultibodyPlant<T>& plant) {
-    return plant.distance_constraints_specs_;
+  static const std::map<MultibodyConstraintId, DistanceConstraintParams>&
+  GetDistanceConstraintParams(const MultibodyPlant<T>& plant,
+                              const systems::Context<T>& context) {
+    return plant.GetDistanceConstraintParams(context);
   }
 
   static const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&

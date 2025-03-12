@@ -33,6 +33,19 @@ constexpr double kInfinity = std::numeric_limits<double>::infinity();
 
 namespace drake {
 namespace multibody {
+
+bool operator==(const DistanceConstraintParams& p1,
+                const DistanceConstraintParams& p2) {
+  if (p1.bodyA() != p2.bodyA()) return false;
+  if (p1.bodyB() != p2.bodyB()) return false;
+  if (p1.p_AP() != p2.p_AP()) return false;
+  if (p1.p_BQ() != p2.p_BQ()) return false;
+  if (p1.distance() != p2.distance()) return false;
+  if (p1.stiffness() != p2.stiffness()) return false;
+  if (p1.damping() != p2.damping()) return false;
+  return true;
+}
+
 namespace internal {
 
 // Friend class used to provide access to a selection of private functions in
@@ -238,50 +251,100 @@ INSTANTIATE_TEST_SUITE_P(SapDistanceConstraintTests, TwoBodiesTest,
                          testing::ValuesIn(MakeTestCases()),
                          testing::PrintToStringParamName());
 
-GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
+GTEST_TEST(DistanceConstraintsTests, DistanceConstraintParams) {
   MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_approximation(DiscreteContactApproximation::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>::NaN());
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>::NaN());
+  const RigidBody<double>& bodyC =
+      plant.AddRigidBody("C", SpatialInertia<double>::NaN());
   const Vector3d p_AP(1, 2, 3);
   const Vector3d p_BQ(4, 5, 6);
   const double distance = 1.2;
-  MultibodyConstraintId distance_id =
-      plant.AddDistanceConstraint(bodyA, p_AP, bodyB, p_BQ, distance);
-  const DistanceConstraintSpec& distance_spec =
-      plant.get_distance_constraint_specs(distance_id);
-  EXPECT_EQ(distance_spec.id, distance_id);
-  EXPECT_EQ(distance_spec.body_A, bodyA.index());
-  EXPECT_EQ(distance_spec.body_B, bodyB.index());
-  EXPECT_EQ(distance_spec.p_AP, p_AP);
-  EXPECT_EQ(distance_spec.p_BQ, p_BQ);
-  EXPECT_EQ(distance_spec.distance, distance);
+  const double stiffness = 1.3e7;
+  const double damping = 0.5;
+  const MultibodyConstraintId distance_id = plant.AddDistanceConstraint(
+      bodyA, p_AP, bodyB, p_BQ, distance, stiffness, damping);
 
-  const std::map<MultibodyConstraintId, DistanceConstraintSpec>&
-      distance_specs = plant.get_distance_constraint_specs();
-  ASSERT_EQ(ssize(distance_specs), 1);
+  // Add another constraint that is not a distance constraint.
+  const MultibodyConstraintId ball_id =
+      plant.AddBallConstraint(bodyA, p_AP, bodyB, p_BQ);
 
-  const MultibodyConstraintId distance_id_from_map =
-      distance_specs.begin()->first;
-  const DistanceConstraintSpec& distance_spec_from_map =
-      distance_specs.begin()->second;
+  const std::map<MultibodyConstraintId, DistanceConstraintParams>&
+      all_default_parms = plant.GetDefaultDistanceConstraintParams();
+  const DistanceConstraintParams& default_distance_parms =
+      all_default_parms.at(distance_id);
 
-  // Check the id in the map matches the one returned.
-  EXPECT_EQ(distance_id, distance_id_from_map);
+  // Retrieve parameters in the context.
+  plant.Finalize();
+  auto context = plant.CreateDefaultContext();
+  {
+    const DistanceConstraintParams& p =
+        plant.GetDistanceConstraintParams(*context, distance_id);
+    EXPECT_EQ(p, default_distance_parms);
+    // At this point, the context should store the default parameters.
+    const std::map<MultibodyConstraintId, DistanceConstraintParams>& all_parms =
+        plant.GetDistanceConstraintParams(*context);
+    EXPECT_EQ(all_parms, all_default_parms);
+  }
 
-  // Check that the one spec in the map is equal to `distance_spec`.
-  EXPECT_EQ(distance_spec.id, distance_spec_from_map.id);
-  EXPECT_EQ(distance_spec.body_A, distance_spec_from_map.body_A);
-  EXPECT_EQ(distance_spec.body_B, distance_spec_from_map.body_B);
-  EXPECT_EQ(distance_spec.p_AP, distance_spec_from_map.p_AP);
-  EXPECT_EQ(distance_spec.p_BQ, distance_spec_from_map.p_BQ);
+  // Set new parameters in the context.
+  const Vector3d new_p_AP = 2.0 * p_AP;
+  const Vector3d new_p_BQ = 2.0 * p_AP;
+  const double new_distance = 2.0 * distance;
+  const double new_stiffness = 2.0 * stiffness;
+  const double new_damping = 2.0 * damping;
+  // N.B. Updating the constrained bodies is allowed.
+  DistanceConstraintParams new_params(bodyB.index(), new_p_AP, bodyC.index(),
+                                      new_p_BQ, new_distance, new_stiffness,
+                                      new_damping);
+  {
+    plant.SetDistanceConstraintParams(context.get(), distance_id, new_params);
+    const DistanceConstraintParams& p =
+        plant.GetDistanceConstraintParams(*context, distance_id);
+    EXPECT_EQ(p, new_params);
+    // Parameters in the context should now contain the new distance parameters.
+    const std::map<MultibodyConstraintId, DistanceConstraintParams>
+        updated_params{{distance_id, new_params}};
+    const std::map<MultibodyConstraintId, DistanceConstraintParams>& all_parms =
+        plant.GetDistanceConstraintParams(*context);
+    EXPECT_EQ(all_parms, updated_params);
+  }
 
-  // Throw on id to wrong constraint specs type.
-  EXPECT_THROW(plant.get_coupler_constraint_specs(distance_id), std::exception);
-  EXPECT_THROW(plant.get_ball_constraint_specs(distance_id), std::exception);
-  EXPECT_THROW(plant.get_weld_constraint_specs(distance_id), std::exception);
+  // Throws if the id does not correspond to a distance constraint.
+  {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.GetDistanceConstraintParams(*context, ball_id),
+        "The constraint id .* does not match any distance constraint "
+        "registered with this plant. ");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.SetDistanceConstraintParams(context.get(), ball_id, new_params),
+        "The constraint id .* does not match any distance constraint "
+        "registered with this plant. ");
+  }
+
+  // Updating to an invalid body throws.
+  {
+    const BodyIndex invalid_body_index(plant.num_bodies() + 10);
+    DistanceConstraintParams invalid_bodyA_params(invalid_body_index, p_AP,
+                                                  bodyB.index(), p_BQ, distance,
+                                                  stiffness, damping);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.SetDistanceConstraintParams(context.get(), distance_id,
+                                          invalid_bodyA_params),
+        "Index .* provided for body A does not correspond to a rigid body in "
+        "this MultibodyPlant.");
+
+    DistanceConstraintParams invalid_bodyB_params(bodyA.index(), p_AP,
+                                                  invalid_body_index, p_BQ,
+                                                  distance, stiffness, damping);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        plant.SetDistanceConstraintParams(context.get(), distance_id,
+                                          invalid_bodyB_params),
+        "Index .* provided for body B does not correspond to a rigid body in "
+        "this MultibodyPlant.");
+  }
 }
 
 GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {
@@ -337,28 +400,24 @@ GTEST_TEST(DistanceConstraintTests, FailOnInvalidSpecs) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyA,
                                   Vector3d{0, 0, 0}, 1 /* distance */),
-      ".*Invalid set of parameters for constraint between bodies 'A' and "
-      "'A'.*");
+      "Body indexes are equal.");
   // Fail on distance <= 0.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
                                   Vector3d{0, 0, 0}, 0 /* distance */),
-      ".*Invalid set of parameters for constraint between bodies 'A' and "
-      "'B'.*");
+      "Distance must be strictly positive.");
   // Fail on negative stiffness.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
                                   Vector3d{0, 0, 0}, 1 /* distance */,
                                   -1 /* stiffness */),
-      ".*Invalid set of parameters for constraint between bodies 'A' and "
-      "'B'.*");
+      "Stiffness must be strictly positive.");
   // Fail on negative damping.
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.AddDistanceConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
                                   Vector3d{0, 0, 0}, 1 /* distance */,
-                                  0 /* stiffness */, -1 /* damping */),
-      ".*Invalid set of parameters for constraint between bodies 'A' and "
-      "'B'.*");
+                                  1 /* stiffness */, -1 /* damping */),
+      "Damping must be positive or zero.");
 }
 
 // TODO(amcastro-tri): implement unit tests verifying:
