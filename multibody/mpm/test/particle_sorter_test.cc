@@ -198,7 +198,7 @@ TYPED_TEST(ParticleSorterTypedTest, Iterate) {
     vp /= 27.0;
   };
 
-  grid.IterateAndUpdateParticles(&particle_data, g2p_kernel);
+  grid.ApplyGridToParticleKernel(&particle_data, g2p_kernel);
 
   EXPECT_EQ(particle_data.x()[0], Vector3<T>(0.0, 0.0, 0.0));
   EXPECT_EQ(particle_data.x()[1], Vector3<T>(2.0, 0.0, 0.0));
@@ -230,7 +230,7 @@ TYPED_TEST(ParticleSorterTypedTest, Iterate) {
       }
     }
   };
-  grid.IterateAndUpdateGrid(particle_data, p2g_kernel);
+  grid.ApplyParticleToGridKernel(particle_data, p2g_kernel);
   const std::vector<std::pair<Vector3<int>, GridData<T>>> grid_data =
       grid.GetGridData();
   for (const auto& pair : grid_data) {

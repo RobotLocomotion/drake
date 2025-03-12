@@ -47,15 +47,11 @@ void ConvertToRangeVector(const std::vector<int>& data, RangeVector* ranges);
 
 /* Helper alias: Given a grid pointer type, deduce the type of the pad nodes. */
 template <typename GridPtr>
-using GridPadNodesType =
-    decltype(std::declval<std::remove_pointer_t<GridPtr>>().GetPadNodes(
-        std::declval<typename std::remove_pointer_t<GridPtr>::NodeType>()));
+using PadNodeType = typename std::remove_pointer_t<GridPtr>::PadNodeType;
 
 /* Helper alias: Given a grid pointer type, deduce the type of the pad data. */
 template <typename GridPtr>
-using GridPadDataType =
-    decltype(std::declval<std::remove_pointer_t<GridPtr>>().GetPadData(
-        uint64_t{}));
+using PadDataType = typename std::remove_pointer_t<GridPtr>::PadDataType;
 
 /* Callback type used by ParticleSorter::Iterate.
  It takes as parameters:
@@ -64,9 +60,8 @@ using GridPadDataType =
    3. A ParticleData pointer (ParticleDataPtr).
    4. An integer particle index. */
 template <typename GridPtr, typename ParticleDataPtr>
-using IterateFuncType =
-    std::function<void(const GridPadNodesType<GridPtr>&,
-                       GridPadDataType<GridPtr>*, ParticleDataPtr, int)>;
+using IterateFuncType = std::function<void(
+    const PadNodeType<GridPtr>&, PadDataType<GridPtr>*, ParticleDataPtr, int)>;
 
 /* ParticleSorter sorts MPM particle data based on their positions within the
  grid.
@@ -233,12 +228,11 @@ class ParticleSorter {
     /* Deduce the grid type. */
     using Grid = std::remove_pointer_t<GridPtr>;
     /* Deduce types for pad nodes and pad data. */
-    using PadNodesType = decltype(std::declval<Grid>().GetPadNodes(
-        std::declval<typename Grid::NodeType>()));
-    using PadDataType = decltype(std::declval<Grid>().GetPadData(uint64_t{}));
+    using PadNodeType = typename Grid::PadNodeType;
+    using PadDataType = typename Grid::PadDataType;
 
     /* Temporary variables for pad nodes and pad data. */
-    PadNodesType grid_nodes{};
+    PadNodeType grid_nodes{};
     PadDataType grid_data{};
 
     /* Flag indicating when to fetch new pad data. */

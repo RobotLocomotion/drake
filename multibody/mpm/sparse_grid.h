@@ -47,6 +47,8 @@ class SparseGrid {
 
   using Scalar = T;
   using NodeType = Vector3<T>;
+  using PadNodeType = Pad<NodeType>;
+  using PadDataType = Pad<GridData<T>>;
 
   /* Constructs a SparseGrid with grid spacing `dx` in meters.
    @pre dx > 0. */
@@ -132,10 +134,11 @@ class SparseGrid {
       @endcode
      For each particle, the kernel is invoked with the grid pad of nodes, the
      grid pad of data, a pointer to the particle data, and the particle index.
-
+     Note that the kernel should only modify the particle data with the given
+     particle index.
    @pre The grid's Allocate() method must have been called with the positions
    contained in the given particle_data. */
-  void IterateAndUpdateParticles(
+  void ApplyGridToParticleKernel(
       ParticleData<T>* particle_data,
       const std::function<void(const Pad<Vector3<T>>&, Pad<GridData<T>>*,
                                ParticleData<T>*, int)>& kernel) const {
@@ -145,7 +148,7 @@ class SparseGrid {
   /* Iterates over all particles and the grid nodes supported by them,
    applying the given kernel, and writes back the updated grid data.
 
-   This method is similar to IterateAndUpdateParticles(), but it is intended for
+   This method is similar to ApplyGridToParticleKernel(), but it is intended for
    cases where the particle data is read-only and the grid data is mutable. It
    accepts a const reference to the particle data and calls a kernel that
    receives a const pointer to that data. In this mode, the grid is
@@ -172,12 +175,15 @@ class SparseGrid {
    For each particle, the kernel is invoked with the corresponding grid node
    pad, grid data pad, a const pointer to the particle data, and the particle
    index.
+   Note that usually this kernel should only use the particle data with the
+   given particle index, and it should not assume an ordering of how the
+   particles are iterated.
    @post The grid data corresponding to each particle's support is updated
    with any modifications performed by the kernel. The particle data remains
    unchanged.
    @pre The grid's Allocate() method must have been called with the
    positions contained in the given particle_data. */
-  void IterateAndUpdateGrid(
+  void ApplyParticleToGridKernel(
       const ParticleData<T>& particle_data,
       const std::function<void(const Pad<Vector3<T>>&, Pad<GridData<T>>*,
                                const ParticleData<T>*, int)>& kernel) {
