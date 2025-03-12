@@ -88,7 +88,8 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
   SemiExplicitEulerIntegrator(const System<T>& system, const T& max_step_size,
                               Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context),
-        qdot_(context->get_continuous_state().num_q()) {
+        qdot_(context ? context->get_continuous_state().num_q()
+                      : system.AllocateTimeDerivatives()->num_q()) {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
   }
 
