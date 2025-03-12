@@ -23,15 +23,24 @@ JointActuator<T>::~JointActuator() = default;
 
 template <typename T>
 void JointActuator<T>::set_controller_gains(PdControllerGains gains) {
-  if (!pd_controller_gains_ && topology_.actuator_index_start >= 0) {
-    throw std::runtime_error(fmt::format(
-        "Cannot add PD gains on the actuator named '{}'. "
-        "The first call to JointActuator::set_controller_gains() must happen "
-        "before MultibodyPlant::Finalize().",
-        name()));
+  DRAKE_THROW_UNLESS(std::isfinite(gains.p));
+  DRAKE_THROW_UNLESS(std::isfinite(gains.d));
+  DRAKE_THROW_UNLESS(gains.p >= 0.0);
+  DRAKE_THROW_UNLESS(gains.d >= 0.0);
+  if (gains.p == 0.0 && gains.d == 0) {
+    pd_controller_gains_ = std::nullopt;
+    return;
   }
-  DRAKE_THROW_UNLESS(gains.p > 0);
-  DRAKE_THROW_UNLESS(gains.d >= 0);
+  const bool is_finalized = topology_.actuator_index_start >= 0;
+  if (is_finalized) {
+    const bool is_continuous = !this->get_parent_tree().is_state_discrete();
+    if (is_continuous) {
+      throw std::runtime_error(
+          fmt::format("Cannot set PD gains on the actuator named '{}'. "
+                      "This feature is only supported for discrete models.",
+                      name()));
+    }
+  }
   pd_controller_gains_ = gains;
 }
 
