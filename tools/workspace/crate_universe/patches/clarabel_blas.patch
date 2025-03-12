@@ -17,7 +17,7 @@ Reasoning for not upstreaming this patch: Drake-specific option.
 +++ src/algebra/dense/blas/traits.rs
 @@ -8,8 +8,6 @@ cfg_if::cfg_if! {
      }
-         else {   
+     else {
 -        // standard imports via blas-lapack-rs crates 
 -        extern crate blas_src;
 -        extern crate lapack_src;

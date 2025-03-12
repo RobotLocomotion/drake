@@ -478,8 +478,9 @@ void ClarabelSolver::DoSolve2(const MathematicalProgram& prog,
       WriteClarabelReproduction(common.standalone_reproduction_file_name, P,
                                 q_vec, A, b_vec, cones);
     }
-    // Clarabel does not support setting the number of threads so we ignore the
-    // kMaxThreads option.
+    if (common.max_threads.has_value()) {
+      respelled->emplace("max_threads", common.max_threads.value());
+    }
   });
   clarabel::DefaultSettings<double> settings =
       clarabel::DefaultSettingsBuilder<double>::default_settings().build();
