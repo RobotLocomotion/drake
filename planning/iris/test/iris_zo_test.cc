@@ -771,6 +771,20 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   options.prog_with_additional_constraints = &prog;
   options.max_iterations = 1;
   options.max_iterations_separating_planes = 1;
+
+  // Verify that we throw a reasonable error when the initial point is in
+  // collision, and when the initial point violates an additional constraint.
+  Hyperellipsoid ellipsoid_in_collision =
+      Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-1.0, 1.0));
+  Hyperellipsoid ellipsoid_violates_constraint =
+      Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-0.1, 0.0));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(convex_urdf, ellipsoid_in_collision, options),
+      ".*Starting ellipsoid center.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      IrisZoFromUrdf(convex_urdf, ellipsoid_violates_constraint, options),
+      ".*Starting ellipsoid center.*");
+
   region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
 
   // Due to the configuration space margin, this point can never be in the

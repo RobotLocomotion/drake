@@ -315,7 +315,7 @@ class FunctionEvaluator : public EvaluatorBase {
    * @param args Arguments to be forwarded to EvaluatorBase constructor.
    */
   template <typename FF, typename... Args>
-  FunctionEvaluator(FF&& f, Args&&... args)
+  explicit FunctionEvaluator(FF&& f, Args&&... args)
       : EvaluatorBase(internal::FunctionTraits<F>::numOutputs(f),
                       internal::FunctionTraits<F>::numInputs(f),
                       std::forward<Args>(args)...),
