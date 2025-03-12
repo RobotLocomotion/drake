@@ -623,6 +623,11 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
+  bool has_body(BodyIndex body_index) const {
+    return rigid_bodies_.has_element(body_index);
+  }
+
+  // See MultibodyPlant method.
   const RigidBody<T>& get_body(BodyIndex body_index) const {
     return rigid_bodies_.get_element(body_index);
   }

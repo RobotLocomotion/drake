@@ -82,6 +82,7 @@ from pydrake.multibody.plant import (
     DeformableModel,
     DiscreteContactApproximation,
     DiscreteContactSolver,
+    DistanceConstraintParams,
     ExternallyAppliedSpatialForce_,
     ExternallyAppliedSpatialForceMultiplexer_,
     MultibodyPlant,
@@ -2578,6 +2579,29 @@ class TestPlant(unittest.TestCase):
         # Verify the constraint was added.
         self.assertEqual(plant.num_constraints(), 1)
 
+    def test_distance_constraint_params_api(self):
+        bodyA = BodyIndex(1)
+        bodyB = BodyIndex(2)
+        p_AP = [1.0, 2.0, 3.0]
+        p_BQ = [4.0, 5.0, 6.0]
+        distance = 0.1
+        stiffness = 1.0e4
+        damping = 100.0
+        dut = DistanceConstraintParams(
+            bodyA, p_AP, bodyB, p_BQ, distance, stiffness, damping)
+        self.assertEqual(dut.bodyA(), bodyA)
+        self.assertEqual(dut.bodyB(), bodyB)
+        np.testing.assert_array_equal(dut.p_AP(), p_AP)
+        np.testing.assert_array_equal(dut.p_BQ(), p_BQ)
+        self.assertEqual(dut.distance(), distance)
+        self.assertEqual(dut.stiffness(), stiffness)
+        self.assertEqual(dut.damping(), damping)
+        copy = dut
+        self.assertEqual(dut, copy)
+        other = DistanceConstraintParams(
+            bodyA, p_AP, bodyB, p_BQ, 2 * distance, stiffness, damping)
+        self.assertNotEqual(dut, other)
+
     @numpy_compare.check_all_types
     def test_distance_constraint_api(self, T):
         plant = MultibodyPlant_[T](0.01)
@@ -2589,14 +2613,34 @@ class TestPlant(unittest.TestCase):
         body_B = plant.AddRigidBody(name="B")
         p_AP = [0.0, 0.0, 0.0]
         p_BQ = [0.0, 0.0, 0.0]
-        plant.AddDistanceConstraint(
+        id = plant.AddDistanceConstraint(
             body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
 
         # We are done creating the model.
         plant.Finalize()
+        context = plant.CreateDefaultContext()
 
         # Verify the constraint was added.
         self.assertEqual(plant.num_constraints(), 1)
+
+        all_default_params = plant.GetDefaultDistanceConstraintParams()
+        all_params = plant.GetDistanceConstraintParams(context)
+        distance_params = plant.GetDistanceConstraintParams(context, id)
+
+        self.assertEqual(len(all_default_params), 1)
+        self.assertEqual(len(all_params), 1)
+        self.assertIsInstance(distance_params, DistanceConstraintParams)
+        self.assertEqual(distance_params, all_default_params[id])
+        self.assertEqual(all_params, all_default_params)
+
+        new_params = DistanceConstraintParams(
+            body_A.index(), p_AP,
+            body_B.index(), p_BQ,
+            distance=0.05, stiffness=1e6, damping=0.1)
+        self.assertNotEqual(distance_params, new_params)
+        plant.SetDistanceConstraintParams(context, id, new_params)
+        updated_params = plant.GetDistanceConstraintParams(context, id)
+        self.assertEqual(updated_params, new_params)
 
     @numpy_compare.check_all_types
     def test_ball_constraint_api(self, T):
