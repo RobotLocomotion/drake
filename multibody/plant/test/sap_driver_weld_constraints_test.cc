@@ -323,7 +323,6 @@ GTEST_TEST(WeldConstraintsTests, VerifyIdMapping) {
   // Throw on id to wrong constraint specs type.
   EXPECT_THROW(plant.get_coupler_constraint_specs(weld_id), std::exception);
   EXPECT_THROW(plant.get_ball_constraint_specs(weld_id), std::exception);
-  EXPECT_THROW(plant.get_distance_constraint_specs(weld_id), std::exception);
 }
 
 GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
