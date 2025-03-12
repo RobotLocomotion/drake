@@ -577,6 +577,8 @@ GTEST_TEST(TestOptions, MaxThreads) {
   if (solver.available()) {
     auto result = solver.Solve(dut.prog(), std::nullopt, solver_options);
     EXPECT_TRUE(result.is_success());
+    // We can't really check that the threads setting was obeyed -- it doesn't
+    // even appear in the logs for eyeball inspection.
   }
 }
 
