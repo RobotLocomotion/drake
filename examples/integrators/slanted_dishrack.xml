@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<mujoco model="mesh_crate">
+  <!-- A model of a funky dishrack where friction holds the plates in place. -->
+  <default>
+    <geom type="cylinder" size="0.001 0.2" rgba="0.0 0.0 0.0 1.0" friction="0.5"/>
+  </default>
+
+  <worldbody>
+    <body name="mesh_grid" euler="0 -45 0" pos="0 0 0.2">
+      <!-- Vertical bars -->
+      <geom name="bar_01" pos="0.0 -0.100 0.2"/>
+      <geom name="bar_02" pos="0.0 -0.085 0.2"/>
+      <geom name="bar_03" pos="0.0 -0.070 0.2"/>
+      <geom name="bar_04" pos="0.0 -0.055 0.2"/>
+      <geom name="bar_05" pos="0.0 -0.040 0.2"/>
+      <geom name="bar_06" pos="0.0 -0.025 0.2"/>
+      <geom name="bar_07" pos="0.0 -0.010 0.2"/>
+      <geom name="bar_08" pos="0.0  0.005 0.2"/>
+      <geom name="bar_09" pos="0.0  0.020 0.2"/>
+      <geom name="bar_10" pos="0.0  0.035 0.2"/>
+      <geom name="bar_11" pos="0.0  0.050 0.2"/>
+      <geom name="bar_12" pos="0.0  0.065 0.2"/>
+      <geom name="bar_13" pos="0.0  0.080 0.2"/>
+      <geom name="bar_14" pos="0.0  0.095 0.2"/>
+      <geom name="bar_15" pos="0.0  0.110 0.2"/>
+      <geom name="bar_16" pos="0.0  0.125 0.2"/>
+      <geom name="bar_17" pos="0.0  0.140 0.2"/>
+      <geom name="bar_18" pos="0.0  0.155 0.2"/>
+      <geom name="bar_19" pos="0.0  0.170 0.2"/>
+      <geom name="bar_20" pos="0.0  0.185 0.2"/>
+
+      <!-- End pieces -->
+      <geom name="end_01" size="0.001 0.1425" pos="0.0 0.0425 0.0" euler="90 0 0" />
+      <geom name="end_02" size="0.001 0.1425" pos="0.0 0.0425 0.4" euler="90 0 0" />
+    </body>
+  </worldbody>
+</mujoco>

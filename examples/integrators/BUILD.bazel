@@ -13,6 +13,7 @@ filegroup(
         "gripper.xml",
         "mesh_crate.xml",
         "plate_and_spatula.sdf",
+        "slanted_dishrack.xml",
     ],
     visibility = ["//:__pkg__"],
 )
@@ -89,6 +90,18 @@ drake_py_binary(
 drake_py_binary(
     name = "mesh_crate",
     srcs = ["mesh_crate.py"],
+    data = [
+        ":models",
+        "@drake_models",
+    ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
+    name = "slanted_dishrack",
+    srcs = ["slanted_dishrack.py"],
     data = [
         ":models",
         "@drake_models",
