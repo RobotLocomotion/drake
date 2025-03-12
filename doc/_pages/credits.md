@@ -141,7 +141,6 @@ all of their maintainers, whose work is essential to Drake's success:
 * Optimization:
   * [clarabel](https://github.com/oxfordcontrol/Clarabel.cpp)
   * [clp](https://github.com/coin-or/clp)
-  * [conex](https://github.com/ToyotaResearchInstitute/conex)
   * [csdp](https://github.com/coin-or/csdp)
   * [ipopt](https://github.com/coin-or/ipopt)
   * [lapack](https://github.com/Reference-LAPACK/lapack)
