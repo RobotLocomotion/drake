@@ -40,11 +40,11 @@ if __name__ == "__main__":
     )
 
     # Add an ellipoidal spinner with offset inertial
-    friction = CoulombFriction(0.1, 0.1)
+    friction = CoulombFriction(0.2, 0.2)
     mass = 0.1
     l1, l2, l3 = 0.1, 0.02, 0.01
     unit_inertia = UnitInertia.SolidEllipsoid(l1, l2, l3)
-    spatial_inertia = SpatialInertia(mass, [0.01, 0, 0], unit_inertia)
+    spatial_inertia = SpatialInertia(mass, [0, 0, 0], unit_inertia)
 
     spinner = plant.AddRigidBody("spinner", spatial_inertia)
     X = RigidTransform(p=[0, 0, 0], rpy=RollPitchYaw([0.0, 0.0, 0.2]))
