@@ -301,6 +301,14 @@ DiscreteUpdateManager<T>::distance_constraints_specs() const {
 }
 
 template <typename T>
+const std::map<MultibodyConstraintId, DistanceConstraintParams<double>>&
+DiscreteUpdateManager<T>::GetDistanceConstraintParams(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::GetDistanceConstraintParams(*plant_, context);
+}
+
+template <typename T>
 const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&
 DiscreteUpdateManager<T>::ball_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::ball_constraints_specs(
