@@ -46,7 +46,6 @@ drake_py_binary(
         "@clarabel_cpp_internal//:__subpackages__",
         "@clp_internal//:__subpackages__",
         "@coinutils_internal//:__subpackages__",
-        "@conex_internal//:__subpackages__",
         "@fcl_internal//:__subpackages__",
         "@gz_math_internal//:__subpackages__",
         "@gz_utils_internal//:__subpackages__",
@@ -145,7 +144,6 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "abseil_cpp_internal",
     "blas",
-    "conex_internal",
     "eigen",
     "fmt",
     "gflags",

@@ -7,7 +7,6 @@
 #include "drake/math/linear_solve.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/block_sparse_supernodal_solver.h"
-#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/sap/dense_supernodal_solver.h"
 
@@ -24,13 +23,8 @@ HessianFactorizationCache::HessianFactorizationCache(
   DRAKE_DEMAND(A != nullptr);
   DRAKE_DEMAND(J != nullptr);
   switch (type) {
-    case SapHessianFactorizationType::kConex:
-      factorization_ = std::make_unique<ConexSuperNodalSolver>(
-          J->block_rows(), J->get_blocks(), *A);
-      break;
     case SapHessianFactorizationType::kBlockSparseCholesky:
-      factorization_ = std::make_unique<BlockSparseSuperNodalSolver>(
-          J->block_rows(), J->get_blocks(), *A);
+      factorization_ = std::make_unique<BlockSparseSuperNodalSolver>(*A, *J);
       break;
     case SapHessianFactorizationType::kDense:
       factorization_ = std::make_unique<DenseSuperNodalSolver>(A, J);
