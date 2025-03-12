@@ -50,6 +50,11 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
  private:
   bool DoStep(const T& h) override;
 
+  std::unique_ptr<IntegratorBase<T>> DoClone() const override {
+    return std::make_unique<RungeKutta2Integrator>(
+        this->get_system(), this->get_maximum_step_size());
+  }
+
   // A pre-allocated temporary for use by integration.
   std::unique_ptr<ContinuousState<T>> derivs0_;
 };

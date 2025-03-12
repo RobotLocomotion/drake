@@ -621,6 +621,7 @@ drake_cc_googletest(
     name = "implicit_integrator_test",
     deps = [
         ":implicit_integrator",
+        ":simulator_config_functions",
         "//common/test_utilities:expect_no_throw",
         "//systems/analysis/test_utilities:spring_mass_system",
     ],
@@ -630,8 +631,11 @@ drake_cc_googletest(
     name = "integrator_base_test",
     deps = [
         ":integrator_base",
+        ":simulator_config_functions",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/analysis/test_utilities:spring_mass_system",
+        "//systems/primitives:linear_system",
     ],
 )
 

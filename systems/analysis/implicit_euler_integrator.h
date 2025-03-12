@@ -398,6 +398,11 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   void DoInitialize() final;
 
+  std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
+      const final {
+    return std::make_unique<ImplicitEulerIntegrator>(this->get_system());
+  }
+
   // Steps both implicit Euler and implicit trapezoid forward by h, if possible.
   // @param t0 the time at the left end of the integration interval.
   // @param h the integration step size to attempt.
