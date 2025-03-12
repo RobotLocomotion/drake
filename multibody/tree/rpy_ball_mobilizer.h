@@ -274,6 +274,11 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          EigenPtr<VectorX<T>> v) const override;
 
+  // Maps qddot to vdot, which for this mobilizer is complicated.
+  void MapQDDotToAcceleration(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& qddot,
+                              EigenPtr<VectorX<T>> vdot) const final;
+
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
