@@ -51,19 +51,26 @@ class TargetStateProvider(LeafSystem):
     def CalcOutput(self, context, output):
         t = context.get_time()
 
+        q_start = np.array([0.0, 0.0, 0.0, 0.0, 0.0, np.pi / 2, 0.0, 0.0])
+        q_move = np.array(
+            [0.0, -np.pi / 2, -1.0, 2.6, -np.pi / 2, 0.0, 0.0, 0.0]
+        )
+        q_drop = np.array(
+            [0.0, -np.pi / 2, -1.0, 2.6, -np.pi / 2, 0.0, -0.01, 0.01]
+        )
+
         if t < 1.0:
             # Grip the plate in the initial configuration
-            q_nom = np.array([0.0, 0.0, 0.0, 0.0, 0.0, np.pi / 2, 0.0, 0.0])
+            q_nom = q_start
         elif t < 5.0:
             # Move over the dishrack
-            q_nom = np.array(
-                [0.0, -np.pi / 2, -1.0, 2.6, -np.pi / 2, 0.0, 0.0, 0.0]
-            )
-        else:
+            q_nom = q_move
+        elif t < 6.0:
             # Drop the plate
-            q_nom = np.array(
-                [0.0, -np.pi / 2, -1.0, 2.6, -np.pi / 2, 0.0, -0.01, 0.01]
-            )
+            q_nom = q_drop
+        else:
+            # Move back to the initial configuration
+            q_nom = q_start
 
         v_nom = np.zeros(8)
         output.SetFromVector(np.concatenate((q_nom, v_nom)))
