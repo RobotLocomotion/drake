@@ -21,12 +21,14 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   // Setup the integration step size.
   const double h = 1e-3;
 
+  // Create the integrator with a nullptr context.
+  SemiExplicitEulerIntegrator<double> integrator(spring_mass, h, nullptr);
+
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
-  // Create the integrator.
-  SemiExplicitEulerIntegrator<double> integrator(
-      spring_mass, h, context.get());  // Use default Context.
+  // Attach context to integrator.
+  integrator.reset_context(context.get());
 
   integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
