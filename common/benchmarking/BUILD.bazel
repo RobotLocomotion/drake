@@ -8,6 +8,23 @@ load(
 package(default_visibility = ["//visibility:public"])
 
 drake_cc_googlebench_binary(
+    name = "autodiff",
+    srcs = ["autodiff.cc"],
+    add_test_rule = True,
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//common/ad",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "autodiff_experiment",
+    googlebench_binary = ":autodiff",
+)
+
+drake_cc_googlebench_binary(
     name = "benchmark_polynomial",
     srcs = ["benchmark_polynomial.cc"],
     add_test_rule = True,
