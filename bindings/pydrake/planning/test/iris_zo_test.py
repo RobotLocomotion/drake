@@ -3,12 +3,14 @@ import unittest
 import pydrake.planning as mut
 from pydrake.common import RandomGenerator, Parallelism
 from pydrake.geometry.optimization import Hyperellipsoid, HPolyhedron
+from pydrake.multibody.inverse_kinematics import InverseKinematics
 from pydrake.multibody.rational import RationalForwardKinematics
 from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
     CollisionCheckerParams,
 )
+from pydrake.symbolic import Variable
 
 import numpy as np
 
@@ -87,6 +89,9 @@ class TestIrisZo(unittest.TestCase):
         options.random_seed = 1337
         options.mixing_steps = 50
         starting_ellipsoid = Hyperellipsoid.MakeHypersphere(0.01, seed_point)
+        options.prog_with_additional_constraints = InverseKinematics(
+            plant
+        ).prog()
         domain = HPolyhedron.MakeBox(plant.GetPositionLowerLimits(),
                                      plant.GetPositionUpperLimits())
         region = mut.IrisZo(checker=checker,
@@ -120,3 +125,12 @@ class TestIrisZo(unittest.TestCase):
         q2 = options2.get_parameterization()(np.array(s))
         self.assertTrue(np.allclose(q2,
                                     kin.ComputeQValue(s, q_star), atol=0))
+
+        options3 = mut.IrisZoOptions()
+        v = Variable("v")
+        options3.SetParameterizationFromExpression(
+              expression_parameterization=[2 * v + 1], variables=[v])
+        self.assertTrue(options3.get_parameterization_is_threadsafe())
+        self.assertEqual(options3.get_parameterization_dimension(), 1)
+        q3 = options3.get_parameterization()(np.zeros(1))[0]
+        self.assertEqual(q3, 2 * 0 + 1)

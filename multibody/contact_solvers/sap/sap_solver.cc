@@ -12,7 +12,6 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/linear_solve.h"
 #include "drake/multibody/contact_solvers/block_sparse_supernodal_solver.h"
-#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
 
 namespace drake {

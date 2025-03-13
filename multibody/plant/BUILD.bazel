@@ -21,6 +21,7 @@ drake_cc_package_library(
         ":contact_results",
         ":coulomb_friction",
         ":deformable_ids",
+        ":desired_state_input",
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
@@ -129,6 +130,7 @@ drake_cc_library(
         ":contact_results",
         ":coulomb_friction",
         ":deformable_ids",
+        ":desired_state_input",
         ":discrete_contact_data",
         ":discrete_contact_pair",
         ":externally_applied_spatial_force",
@@ -282,6 +284,20 @@ drake_cc_library(
     ],
     deps = [
         "//common:identifier",
+    ],
+)
+
+drake_cc_library(
+    name = "desired_state_input",
+    srcs = [
+        "desired_state_input.cc",
+    ],
+    hdrs = [
+        "desired_state_input.h",
+    ],
+    deps = [
+        "//common:default_scalars",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 

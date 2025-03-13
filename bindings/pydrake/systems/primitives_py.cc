@@ -7,6 +7,8 @@
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/affine_system.h"
 #include "drake/systems/primitives/barycentric_system.h"
+#include "drake/systems/primitives/bus_creator.h"
+#include "drake/systems/primitives/bus_selector.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/demultiplexer.h"
@@ -163,6 +165,33 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("covariance"),
             doc.TimeVaryingAffineSystem.configure_random_state.doc);
 
+    DefineTemplateClassWithDefault<BusCreator<T>, LeafSystem<T>>(
+        m, "BusCreator", GetPyParam<T>(), doc.BusCreator.doc)
+        .def(py::init<std::variant<std::string, UseDefaultName>>(),
+            py::arg("output_port_name") = kUseDefaultName,
+            doc.BusCreator.ctor.doc)
+        .def("DeclareVectorInputPort", &BusCreator<T>::DeclareVectorInputPort,
+            py::arg("name"), py::arg("size"), py_rvp::reference_internal,
+            doc.BusCreator.DeclareVectorInputPort.doc)
+        .def("DeclareAbstractInputPort",
+            &BusCreator<T>::DeclareAbstractInputPort, py::arg("name"),
+            py::arg("model_value"), py_rvp::reference_internal,
+            doc.BusCreator.DeclareAbstractInputPort.doc);
+
+    DefineTemplateClassWithDefault<BusSelector<T>, LeafSystem<T>>(
+        m, "BusSelector", GetPyParam<T>(), doc.BusSelector.doc)
+        .def(py::init<std::variant<std::string, UseDefaultName>>(),
+            py::arg("input_port_name") = kUseDefaultName,
+            doc.BusSelector.ctor.doc)
+        .def("DeclareVectorOutputPort",
+            &BusSelector<T>::DeclareVectorOutputPort, py::arg("name"),
+            py::arg("size"), py_rvp::reference_internal,
+            doc.BusSelector.DeclareVectorOutputPort.doc)
+        .def("DeclareAbstractOutputPort",
+            &BusSelector<T>::DeclareAbstractOutputPort, py::arg("name"),
+            py::arg("model_value"), py_rvp::reference_internal,
+            doc.BusSelector.DeclareAbstractOutputPort.doc);
+
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
         m, "ConstantValueSource", GetPyParam<T>(), doc.ConstantValueSource.doc)
         .def(py::init<const AbstractValue&>(), py::arg("value"),
@@ -268,7 +297,14 @@ PYBIND11_MODULE(primitives, m) {
 
     DefineTemplateClassWithDefault<Integrator<T>, LeafSystem<T>>(
         m, "Integrator", GetPyParam<T>(), doc.Integrator.doc)
-        .def(py::init<int>(), doc.Integrator.ctor.doc)
+        .def(py::init<int>(), py::arg("size"),
+            doc.Integrator.ctor.doc_1args_size)
+        .def(py::init<const VectorXd&>(), py::arg("initial_value"),
+            doc.Integrator.ctor.doc_1args_initial_value)
+        .def("set_default_integral_value",
+            &Integrator<T>::set_default_integral_value,
+            py::arg("initial_value"),
+            doc.Integrator.set_default_integral_value.doc)
         .def("set_integral_value", &Integrator<T>::set_integral_value,
             py::arg("context"), py::arg("value"),
             doc.Integrator.set_integral_value.doc);

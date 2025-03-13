@@ -264,6 +264,7 @@ class Mobilizer : public MultibodyElement<T> {
       throw std::runtime_error(
           "The provided inboard and outboard frames reference the same object");
     }
+    this->set_is_ephemeral(true);  // Mobilizers are never added by users.
   }
 
   ~Mobilizer() override;
@@ -614,6 +615,26 @@ class Mobilizer : public MultibodyElement<T> {
   virtual void MapQDotToVelocity(const systems::Context<T>& context,
                                  const Eigen::Ref<const VectorX<T>>& qdot,
                                  EigenPtr<VectorX<T>> v) const = 0;
+
+  // Calculates q̈ from v̇, v, q using q̈ = N(q)⋅v̇ + Ṅ(q,v)⋅v.
+  // @param[in] context stores generalized positions q and velocities v.
+  // @param[in] vdot (v̇) 1ˢᵗ time derivatives of generalized velocities.
+  // @param[out] qddot (q̈) 2ⁿᵈ time derivatives of the generalized positions.
+  // TODO(Mitiguy) change this function to a pure virtual function when it has
+  //  been overridden in all subclasses.
+  virtual void MapAccelerationToQDDot(const systems::Context<T>& context,
+                                      const Eigen::Ref<const VectorX<T>>& vdot,
+                                      EigenPtr<VectorX<T>> qddot) const;
+
+  // Calculates v̇ from q̈, v, q using v̇ = N⁺(q)⋅q̈ + Ṅ⁺(q,v)⋅q̇ where q̇ = N(q)⋅v.
+  // @param[in] context stores generalized positions q and velocities v.
+  // @param[in] qddot (q̈) 2ⁿᵈ time derivatives of the generalized positions.
+  // @param[out] vdot (v̇) 1ˢᵗ time derivatives of generalized velocities.
+  // TODO(Mitiguy) change this function to a pure virtual function when it has
+  //  been overridden in all subclasses.
+  virtual void MapQDDotToAcceleration(const systems::Context<T>& context,
+                                      const Eigen::Ref<const VectorX<T>>& qddot,
+                                      EigenPtr<VectorX<T>> vdot) const;
   // @}
 
   // Returns a const Eigen expression of the vector of generalized positions

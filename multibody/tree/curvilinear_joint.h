@@ -121,9 +121,9 @@ class CurvilinearJoint final : public Joint<T> {
           curvilinear_path,
       double pos_lower_limit, double pos_upper_limit, double damping = 0);
 
-  ~CurvilinearJoint() override;
+  ~CurvilinearJoint() final;
 
-  const std::string& type_name() const override;
+  const std::string& type_name() const final;
 
   /** Returns `this` joint's default damping constant in N⋅s/m. */
   double default_damping() const { return this->default_damping_vector()[0]; }
@@ -269,7 +269,7 @@ class CurvilinearJoint final : public Joint<T> {
    @see The public NVI AddInOneForce() for details. */
   void DoAddInOneForce(const systems::Context<T>&, int joint_dof,
                        const T& joint_tau,
-                       MultibodyForces<T>* forces) const override {
+                       MultibodyForces<T>* forces) const final {
     DRAKE_DEMAND(joint_dof == 0);
     Eigen::Ref<VectorX<T>> tau_mob =
         get_mobilizer().get_mutable_generalized_forces_from_array(
@@ -288,62 +288,63 @@ class CurvilinearJoint final : public Joint<T> {
    @param[out] forces The MultibodyForces object to which the damping force is
    added. */
   void DoAddInDamping(const systems::Context<T>& context,
-                      MultibodyForces<T>* forces) const override {
+                      MultibodyForces<T>* forces) const final {
     const T damping_force =
         -this->GetDamping(context) * get_tangential_velocity(context);
     AddInForce(context, damping_force, forces);
   }
 
  private:
-  int do_get_velocity_start() const override {
+  int do_get_velocity_start() const final {
     return get_mobilizer().velocity_start_in_v();
   }
 
-  int do_get_num_velocities() const override { return 1; }
+  int do_get_num_velocities() const final { return 1; }
 
-  int do_get_position_start() const override {
+  int do_get_position_start() const final {
     return get_mobilizer().position_start_in_q();
   }
 
-  int do_get_num_positions() const override { return 1; }
+  int do_get_num_positions() const final { return 1; }
 
-  std::string do_get_position_suffix(int index) const override {
+  std::string do_get_position_suffix(int index) const final {
     return get_mobilizer().position_suffix(index);
   }
 
-  std::string do_get_velocity_suffix(int index) const override {
+  std::string do_get_velocity_suffix(int index) const final {
     return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
-      const VectorX<double>& default_positions) override {
+      const VectorX<double>& default_positions) final {
     if (this->has_mobilizer()) {
       get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
-  const T& DoGetOnePosition(const systems::Context<T>& context) const override {
+  const T& DoGetOnePosition(const systems::Context<T>& context) const final {
     return get_distance(context);
   }
 
-  const T& DoGetOneVelocity(const systems::Context<T>& context) const override {
+  const T& DoGetOneVelocity(const systems::Context<T>& context) const final {
     return get_tangential_velocity(context);
   }
 
   // Joint<T> overrides:
   std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
-      const internal::SpanningForest::Mobod& mobod) const override;
+      const internal::SpanningForest::Mobod& mobod,
+      internal::MultibodyTree<T>* tree) const final;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyTree<double>& tree_clone) const final;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyTree<symbolic::Expression>&) const final;
 
-  std::unique_ptr<Joint<T>> DoShallowClone() const override;
+  std::unique_ptr<Joint<T>> DoShallowClone() const final;
 
   // Make CurvilinearJoint templated on every other scalar type a friend of
   // CurvilinearJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access

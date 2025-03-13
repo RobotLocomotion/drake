@@ -9,5 +9,5 @@ then so be it.
  
  [dependencies]
 -clarabel = { path = "../Clarabel.rs" }
-+clarabel = "0.9.0"
++clarabel = "0.10.0"
  

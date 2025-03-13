@@ -73,6 +73,14 @@ const FrameType<T>& MultibodyTree<T>::AddFrame(
 }
 
 template <typename T>
+template <template <typename Scalar> class FrameType>
+const FrameType<T>& MultibodyTree<T>::AddEphemeralFrame(
+    std::unique_ptr<FrameType<T>> frame) {
+  frame->set_is_ephemeral(true);
+  return AddFrame(std::move(frame));
+}
+
+template <typename T>
 template <template <typename Scalar> class FrameType, typename... Args>
 const FrameType<T>& MultibodyTree<T>::AddFrame(Args&&... args) {
   static_assert(std::is_convertible_v<FrameType<T>*, Frame<T>*>,
@@ -99,8 +107,8 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   // to this tree. This is a pathological case, but in theory nothing
   // (but this test) stops a user from adding frames to a tree1 and attempting
   // later to define mobilizers between those frames in a second tree2.
-  mobilizer->inboard_frame().HasThisParentTreeOrThrow(this);
-  mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);
+  mobilizer->inboard_frame().HasThisParentTreeOrThrow(this);   // F frame
+  mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);  // M frame
   MobodIndex mobilizer_index = topology_.add_mobilizer(
       mobilizer->mobod(), mobilizer->inboard_frame().index(),
       mobilizer->outboard_frame().index());
@@ -228,6 +236,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   // during modeling are already in the graph.
   if (!is_ephemeral_joint) RegisterJointAndMaybeJointTypeInGraph(*joint.get());
 
+  joint->set_is_ephemeral(is_ephemeral_joint);
   joint->set_parent_tree(this, joints_.next_index());
   joint->set_ordinal(joints_.num_elements());
   JointType<T>* raw_joint_ptr = joint.get();
@@ -239,9 +248,9 @@ template <typename T>
 template <template <typename> class JointType, typename... Args>
 const JointType<T>& MultibodyTree<T>::AddJoint(
     const std::string& name, const RigidBody<T>& parent,
-    const std::optional<math::RigidTransform<double>>& X_PF,
+    const std::optional<math::RigidTransform<double>>& X_PJp,
     const RigidBody<T>& child,
-    const std::optional<math::RigidTransform<double>>& X_BM, Args&&... args) {
+    const std::optional<math::RigidTransform<double>>& X_CJc, Args&&... args) {
   static_assert(std::is_base_of_v<Joint<T>, JointType<T>>,
                 "JointType<T> must be a sub-class of Joint<T>.");
 
@@ -259,9 +268,9 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   // model instance when creating any offset frames needed for the joint.
   const ModelInstanceIndex joint_instance = child.model_instance();
   const Frame<T>& frame_on_parent =
-      this->AddOrGetJointFrame(parent, X_PF, joint_instance, name, "parent");
+      this->AddOrGetJointFrame(parent, X_PJp, joint_instance, name, "parent");
   const Frame<T>& frame_on_child =
-      this->AddOrGetJointFrame(child, X_BM, joint_instance, name, "child");
+      this->AddOrGetJointFrame(child, X_CJc, joint_instance, name, "child");
   const JointType<T>& result = AddJoint(std::make_unique<JointType<T>>(
       name, frame_on_parent, frame_on_child, std::forward<Args>(args)...));
   DRAKE_DEMAND(result.model_instance() == joint_instance);

@@ -278,22 +278,6 @@ bool AnyActuatorHasPdControl(const MultibodyPlant<T>& plant) {
   return false;
 }
 
-// Helper that computes the number of PD controlled actuators in a given model
-// instance.
-template <typename T>
-int NumOfPdControlledActuators(const MultibodyPlant<T>& plant,
-                               ModelInstanceIndex model_instance) {
-  int num_actuators = 0;
-  for (JointActuatorIndex a : plant.GetJointActuatorIndices()) {
-    const JointActuator<T>& actuator = plant.get_joint_actuator(a);
-    if (actuator.model_instance() == model_instance &&
-        actuator.has_controller()) {
-      ++num_actuators;
-    }
-  }
-  return num_actuators;
-}
-
 // Retrieves the DiscreteStepMemory pointer from state in the given `context`.
 // If there is no memory (e.g., has never been updated by a step), returns null.
 // @pre The context is from a plant with use_sampled_output_ports() == true.
@@ -2693,63 +2677,61 @@ void MultibodyPlant<T>::CalcInstanceNetActuationOutput(
 }
 
 template <typename T>
-VectorX<T> MultibodyPlant<T>::AssembleDesiredStateInput(
+internal::DesiredStateInput<T> MultibodyPlant<T>::AssembleDesiredStateInput(
     const systems::Context<T>& context) const {
   this->ValidateContext(context);
 
+  // Checks if desired state x for model_instance has NaNs. Only entries
+  // corresponding to PD-controlled actuators on non-locked joints are checked
+  // and otherwise ignored.
+  auto has_nans_unless_ignored = [&](ModelInstanceIndex model_instance,
+                                     const VectorX<T>& x) -> bool {
+    using std::isnan;
+    const int nu = num_actuators(model_instance);
+    DRAKE_DEMAND(x.size() == 2 * nu);
+    const auto q = x.head(nu);
+    const auto v = x.tail(nu);
+    int a = 0;  // Actuator index local to its model-instance.
+    for (JointActuatorIndex actuator_index :
+         GetJointActuatorIndices(model_instance)) {
+      const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+      const bool is_locked = actuator.joint().is_locked(context);
+      if (actuator.has_controller() && !is_locked) {
+        if (isnan(q[a]) || isnan(v[a])) return true;
+      }
+      ++a;
+    }
+    return false;
+  };
+
   // Assemble the vector from the model instance input ports.
   // TODO(amcastro-tri): Heap allocation here. Get rid of it. Make it EvalFoo().
-  // Desired states of size 2 * num_actuators() for the full model packed as xd
-  // = [qd, vd].
-  VectorX<T> xd = VectorX<T>::Zero(2 * num_actuated_dofs());
-  auto qd = xd.head(num_actuated_dofs());
-  auto vd = xd.tail(num_actuated_dofs());
+  internal::DesiredStateInput<T> desired_states(num_model_instances());
 
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     // Ignore the port if the model instance has no actuated DoFs.
     const int instance_num_u = num_actuated_dofs(model_instance_index);
-    const int instance_num_xd = 2 * instance_num_u;
-    if (instance_num_xd == 0) continue;
+    if (instance_num_u == 0) continue;
 
     const auto& xd_input_port =
         this->get_desired_state_input_port(model_instance_index);
-
-    const int num_pd_controlled_actuators =
-        NumOfPdControlledActuators(*this, model_instance_index);
-    DRAKE_DEMAND(num_pd_controlled_actuators <= instance_num_u);
-
-    // Desired states input port is ignored for models without PD controllers.
-    if (num_pd_controlled_actuators == instance_num_u) {
-      if (xd_input_port.HasValue(context)) {
-        const auto& xd_instance = xd_input_port.Eval(context);
-        if (xd_instance.hasNaN()) {
-          throw std::runtime_error(
-              fmt::format("Desired state input port for model "
-                          "instance {} contains NaN.",
-                          GetModelInstanceName(model_instance_index)));
-        }
-        const auto qd_instance = xd_instance.head(instance_num_u);
-        SetActuationInArray(model_instance_index, qd_instance, &qd);
-        const auto vd_instance = xd_instance.tail(instance_num_u);
-        SetActuationInArray(model_instance_index, vd_instance, &vd);
-      } else {
+    if (xd_input_port.HasValue(context)) {
+      const auto& xd_instance = xd_input_port.Eval(context);
+      if (has_nans_unless_ignored(model_instance_index, xd_instance)) {
         throw std::runtime_error(
             fmt::format("Desired state input port for model "
-                        "instance {} not connected.",
+                        "instance {} contains NaN.",
                         GetModelInstanceName(model_instance_index)));
       }
-    } else if (0 < num_pd_controlled_actuators &&
-               num_pd_controlled_actuators < instance_num_u) {
-      // Partially controlled model. Not supported.
-      throw std::runtime_error(fmt::format(
-          "Model {} is partially PD controlled. For PD controlling a model "
-          "instance, all of its actuators must have gains defined.",
-          GetModelInstanceName(model_instance_index)));
+      const auto qd = xd_instance.head(instance_num_u);
+      const auto vd = xd_instance.tail(instance_num_u);
+      desired_states.SetModelInstanceDesiredStates(model_instance_index, qd,
+                                                   vd);
     }
   }
 
-  return xd;
+  return desired_states;
 }
 
 template <typename T>
@@ -3258,7 +3240,7 @@ void MultibodyPlant<T>::DeclareInputPorts() {
     // Input "{model_instance_name}_actuation".
     // Actuators can only be defined on single-dof joints. Therefore the number
     // of desired states per instance is twice the number of actuators.
-    const int instance_num_xd = 2 * NumOfPdControlledActuators(*this, i);
+    const int instance_num_xd = 2 * num_actuators(i);
     input_port_indices_.instance[i].desired_state =
         this->DeclareVectorInputPort(
                 fmt::format("{}_desired_state", model_instance_name),
@@ -3895,8 +3877,8 @@ void MultibodyPlant<T>::CalcReactionForces(
   // for the discrete solvers we have today, though it might change for future
   // solvers that prefer an implicit evaluation of these terms.
   // TODO(amcastro-tri): Consider having a
-  // DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
-  // this computation consistently with its discrete update.
+  //  DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
+  //  this computation consistently with its discrete update.
   const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
@@ -3908,9 +3890,9 @@ void MultibodyPlant<T>::CalcReactionForces(
   // Since vdot is the result of Fapplied and tau_applied we expect the result
   // from inverse dynamics to be zero.
   // TODO(amcastro-tri): find a better estimation for this bound. For instance,
-  // we can make an estimation based on the trace of the mass matrix (Jain 2011,
-  // Eq. 4.21). For now we only ASSERT though with a better estimation we could
-  // promote this to a DEMAND.
+  //  we can make an estimation based on the trace of the mass matrix (Jain
+  //  2011, Eq. 4.21). For now we only ASSERT though with a better estimation we
+  //  could promote this to a DEMAND.
   // TODO(amcastro-tri) Uncomment this line once issue #12473 is resolved.
   // DRAKE_ASSERT(tau_id.norm() <
   //              100 * num_velocities() *
@@ -3924,61 +3906,49 @@ void MultibodyPlant<T>::CalcReactionForces(
         internal_tree().get_joint_mobilizer(joint_index);
     const internal::Mobilizer<T>& mobilizer =
         internal_tree().get_mobilizer(mobilizer_index);
-    const internal::MobodIndex mobod_index = mobilizer.mobod().index();
+
+    // Reversed means the joint's parent(child) body is the outboard(inboard)
+    // body for the mobilizer.
+    const bool is_reversed = mobilizer.mobod().is_reversed();
 
     // F_BMo_W is the mobilizer reaction force on mobilized body B at the origin
     // Mo of the mobilizer's outboard frame M, expressed in the world frame W.
-    const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[mobod_index];
+    const SpatialForce<T>& F_BMo_W = F_BMo_W_vector[mobilizer_index];
+
+    // But the quantity of interest, F_CJc_Jc, is the joint's reaction force on
+    // the joint's child body C at the joint's child frame Jc, expressed in Jc.
+    SpatialForce<T>& F_CJc_Jc = output->at(joint.ordinal());
 
     // Frames of interest:
-    const Frame<T>& frame_Jp = joint.frame_on_parent();
     const Frame<T>& frame_Jc = joint.frame_on_child();
-    const FrameIndex F_index = mobilizer.inboard_frame().index();
-    const FrameIndex M_index = mobilizer.outboard_frame().index();
-    const FrameIndex Jp_index = frame_Jp.index();
-    const FrameIndex Jc_index = frame_Jc.index();
-
-    // In Drake we must have either:
-    //  - Jp == F and Jc == M (typical case)
-    //  - Jp == M and Jc == F (mobilizer is reversed from joint)
-    DRAKE_DEMAND((Jp_index == F_index && Jc_index == M_index) ||
-                 (Jp_index == M_index && Jc_index == F_index));
-
-    // Mobilizer is reversed if the joint's parent frame Jp is the mobilizer's
-    // outboard frame M.
-    const bool is_reversed = (Jp_index == M_index);
+    const Frame<T>& frame_M = mobilizer.outboard_frame();
 
     // We'll need this in both cases below since we're required to report
     // the reaction force expressed in the joint's child frame Jc.
     const RotationMatrix<T> R_JcW =
         frame_Jc.CalcRotationMatrixInWorld(context).inverse();
 
-    // The quantity of interest, F_CJc_Jc, is the joint's reaction force on the
-    // joint's child body C at the joint's child frame Jc, expressed in Jc.
-    SpatialForce<T>& F_CJc_Jc = output->at(joint.ordinal());
-    if (!is_reversed) {
-      F_CJc_Jc = R_JcW * F_BMo_W;  // The typical case: Mo==Jc and B==C.
-    } else {
-      // For this reversed case, F_BMo_W is the reaction on the joint's _parent_
-      // body at Jp, expressed in W.
-      const SpatialForce<T>& F_PJp_W = F_BMo_W;  // Reversed: Mo==Jp and B==P.
-
-      // Newton's 3ʳᵈ law (action/reaction) (and knowing Drake's joints are
-      // massless) says the force on the child _at Jp_ is equal and opposite to
-      // the force on the parent at Jp.
-      const SpatialForce<T> F_CJp_W = -F_PJp_W;
-      const SpatialForce<T> F_CJp_Jc = R_JcW * F_CJp_W;  // Reexpress in Jc.
-
-      // However, the reaction force we want to report on the child is at Jc,
-      // not Jp. We need to shift the application point from Jp to Jc.
-
-      // Find the shift vector p_JpJc_Jc (= -p_JcJp_Jc).
-      const RigidTransform<T> X_JcJp = frame_Jp.CalcPose(context, frame_Jc);
-      const Vector3<T> p_JpJc_Jc = -X_JcJp.translation();
-
-      // Perform  the Jp->Jc shift.
-      F_CJc_Jc = F_CJp_Jc.Shift(p_JpJc_Jc);
+    if (&frame_M == &frame_Jc) {
+      // This is the easy case. Just need to re-express.
+      F_CJc_Jc = R_JcW * F_BMo_W;
+      continue;
     }
+
+    // If the mobilizer is reversed, Newton's 3ʳᵈ law (action/reaction) (and
+    // knowing Drake's joints are massless) says the force on the child at M
+    // is equal and opposite to the force on the parent at M.
+    const SpatialForce<T> F_CMo_W = is_reversed ? -F_BMo_W : F_BMo_W;
+    const SpatialForce<T> F_CMo_Jc = R_JcW * F_CMo_W;  // Reexpress in Jc.
+
+    // However, the reaction force we want to report on the child is at Jc,
+    // not M. We need to shift the application point from Mo to Jco.
+
+    // Find the shift vector p_MoJco_Jc (= -p_JcoMo_Jc).
+    const RigidTransform<T> X_JcM = frame_M.CalcPose(context, frame_Jc);
+    const Vector3<T> p_MoJco_Jc = -X_JcM.translation();
+
+    // Perform  the M->Jc shift.
+    F_CJc_Jc = F_CMo_Jc.Shift(p_MoJco_Jc);
   }
 }
 

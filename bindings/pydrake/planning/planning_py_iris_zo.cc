@@ -1,6 +1,8 @@
+#include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/planning/iris/iris_zo.h"
 
 namespace drake {
@@ -14,8 +16,8 @@ void DefinePlanningIrisZo(py::module m) {
 
   // IrisZoOptions
   const auto& cls_doc = doc.IrisZoOptions;
-  py::class_<IrisZoOptions>(m, "IrisZoOptions", cls_doc.doc)
-      .def(py::init<>())
+  py::class_<IrisZoOptions> iris_zo_options(m, "IrisZoOptions", cls_doc.doc);
+  iris_zo_options.def(py::init<>())
       .def_readwrite("num_particles", &IrisZoOptions::num_particles,
           cls_doc.num_particles.doc)
       .def_readwrite("tau", &IrisZoOptions::tau, cls_doc.tau.doc)
@@ -68,6 +70,10 @@ void DefinePlanningIrisZo(py::module m) {
               "parameterization setter function automatically sets threadsafe "
               "to false")
               .c_str())
+      .def("SetParameterizationFromExpression",
+          &IrisZoOptions::SetParameterizationFromExpression,
+          py::arg("expression_parameterization"), py::arg("variables"),
+          cls_doc.SetParameterizationFromExpression.doc)
       .def("get_parameterization_is_threadsafe",
           &IrisZoOptions::get_parameterization_is_threadsafe,
           cls_doc.get_parameterization_is_threadsafe.doc)
@@ -110,6 +116,10 @@ void DefinePlanningIrisZo(py::module m) {
           IrisZoOptions::CreateWithRationalKinematicParameterization,
           py::arg("kin"), py::arg("q_star_val"),
           cls_doc.CreateWithRationalKinematicParameterization.doc);
+
+  DefReadWriteKeepAlive(&iris_zo_options, "prog_with_additional_constraints",
+      &IrisZoOptions::prog_with_additional_constraints,
+      cls_doc.prog_with_additional_constraints.doc);
 
   // The `options` contains a `Parallelism`; we must release the GIL.
   m.def("IrisZo", &IrisZo, py::arg("checker"), py::arg("starting_ellipsoid"),

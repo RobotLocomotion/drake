@@ -580,6 +580,7 @@ class TestPlant(unittest.TestCase):
         cls = type(element)
         self.assertIsInstance(element.index(), get_index_class(cls, T))
         self.assertIsInstance(element.model_instance(), ModelInstanceIndex)
+        self.assertFalse(element.is_ephemeral())
         element.GetParentPlant()
 
     def _test_frame_api(self, T, frame):

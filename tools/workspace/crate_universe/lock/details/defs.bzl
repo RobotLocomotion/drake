@@ -296,7 +296,7 @@ _NORMAL_DEPENDENCIES = {
     "": {
         _COMMON_CONDITION: {
             "cfg-if": Label("@crate__cfg-if-1.0.0//:cfg_if"),
-            "clarabel": Label("@crate__clarabel-0.9.0//:clarabel"),
+            "clarabel": Label("@crate__clarabel-0.10.0//:clarabel"),
         },
     },
 }
@@ -374,6 +374,8 @@ _CONDITIONS = {
     "arm-unknown-linux-gnueabi": ["@rules_rust//rust/platform:arm-unknown-linux-gnueabi"],
     "armv7-linux-androideabi": ["@rules_rust//rust/platform:armv7-linux-androideabi"],
     "armv7-unknown-linux-gnueabi": ["@rules_rust//rust/platform:armv7-unknown-linux-gnueabi"],
+    "cfg(all(target_family = \"wasm\", not(any(target_os = \"emscripten\", target_os = \"wasi\"))))": ["@rules_rust//rust/platform:wasm32-unknown-unknown"],
+    "cfg(target_family = \"wasm\")": ["@rules_rust//rust/platform:wasm32-unknown-unknown", "@rules_rust//rust/platform:wasm32-wasip1"],
     "i686-apple-darwin": ["@rules_rust//rust/platform:i686-apple-darwin"],
     "i686-linux-android": ["@rules_rust//rust/platform:i686-linux-android"],
     "i686-pc-windows-msvc": ["@rules_rust//rust/platform:i686-pc-windows-msvc"],
