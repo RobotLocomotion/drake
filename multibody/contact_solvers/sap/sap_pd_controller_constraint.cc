@@ -17,8 +17,14 @@ SapPdControllerConstraint<T>::Parameters::Parameters(T Kp, T Kd, T effort_limit)
     : Kp_(std::move(Kp)),
       Kd_(std::move(Kd)),
       effort_limit_(std::move(effort_limit)) {
-  DRAKE_DEMAND(Kp_ > 0.0);
+  using std::isfinite;
+  using std::isnan;
+  DRAKE_DEMAND(isfinite(Kp_));
+  DRAKE_DEMAND(isfinite(Kd_));
+  DRAKE_DEMAND(!isnan(effort_limit_));
+  DRAKE_DEMAND(Kp_ >= 0.0);
   DRAKE_DEMAND(Kd_ >= 0.0);
+  DRAKE_DEMAND(Kp_ > 0.0 || Kd_ > 0.0);
   DRAKE_DEMAND(effort_limit_ > 0.0);
 }
 
