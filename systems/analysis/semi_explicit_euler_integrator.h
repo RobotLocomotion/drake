@@ -62,7 +62,7 @@ namespace systems {
  * - [Stewart 2000]    D. Stewart. Rigid-body Dynamics with Friction and
  *                       Impact. SIAM Review, 42:1, 2000.
  *
- * @tparam_nonsymbolic_scalar
+ * @tparam_default_scalar
  * @ingroup integrators
  */
 template <class T>
@@ -167,5 +167,5 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::SemiExplicitEulerIntegrator);

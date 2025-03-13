@@ -173,6 +173,33 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GT(integrator.get_num_derivative_evaluations(), 0);
 }
 
+GTEST_TEST(IntegratorTest, Symbolic) {
+  using symbolic::Expression;
+  using symbolic::Variable;
+
+  // Create the mass spring system.
+  SpringMassSystem<Expression> spring_mass(1., 1.);
+  // Set the maximum step size.
+  const double max_h = .01;
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+  // Create the integrator.
+  SemiExplicitEulerIntegrator<Expression> integrator(
+      spring_mass, max_h, context.get());
+  integrator.Initialize();
+
+  const Variable q("q");
+  const Variable v("v");
+  const Variable work("work");
+  const Variable h("h");
+  context->SetContinuousState(Vector3<Expression>(q, v, work));
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(h));
+
+  EXPECT_TRUE(context->get_continuous_state_vector()[0].EqualTo(q + h*(v-h*q)));
+  EXPECT_TRUE(context->get_continuous_state_vector()[1].EqualTo(v - h*q));
+  EXPECT_TRUE(context->get_continuous_state_vector()[2].EqualTo(work - h*q*v));
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
