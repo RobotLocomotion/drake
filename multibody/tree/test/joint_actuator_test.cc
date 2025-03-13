@@ -21,18 +21,20 @@ constexpr double kPositiveEffortLimit = 1e3;
 constexpr double kZeroEffortLimit = 0;
 constexpr double kNegativeEffortLimit = -2;
 
+// Spatial inertia for adding body. The actual value is not important for
+// these tests and therefore we do not initialize it.
+SpatialInertia<double> M_NaN() {
+  return SpatialInertia<double>::NaN();
+}
+
 GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
   internal::MultibodyTree<double>& tree = *tree_pointer;
 
-  // Spatial inertia for adding body. The actual value is not important for
-  // these tests and therefore we do not initialize it.
-  const auto M_B = SpatialInertia<double>::NaN();
-
   // Add bodies so we can add joints to them.
-  const auto body1 = &tree.AddRigidBody("body1", M_B);
-  const auto body2 = &tree.AddRigidBody("body2", M_B);
-  const auto body3 = &tree.AddRigidBody("body3", M_B);
+  const auto body1 = &tree.AddRigidBody("body1", M_NaN());
+  const auto body2 = &tree.AddRigidBody("body2", M_NaN());
+  const auto body3 = &tree.AddRigidBody("body3", M_NaN());
 
   // Add a prismatic joint between the world and body1:
   const Joint<double>& body1_world =
@@ -44,14 +46,6 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   // Validate the actuator effort limit has been set up correctly.
   const auto& actuator1 = tree.GetJointActuatorByName("act1");
   EXPECT_EQ(actuator1.effort_limit(), kPositiveEffortLimit);
-
-  // Unit test PD controller APIs.
-  EXPECT_FALSE(actuator1.has_controller());
-  JointActuator<double>& mutable_actuator1 =
-      tree.get_mutable_joint_actuator(actuator1.index());
-  PdControllerGains gains{.p = 1000, .d = 100};
-  mutable_actuator1.set_controller_gains(gains);
-  EXPECT_TRUE(actuator1.has_controller());
 
   // Throw if the effort limit is set to 0.
   const Joint<double>& body2_body1 =
@@ -76,7 +70,7 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(actuator1.num_inputs(),
                               ".*after the MultibodyPlant is finalized.");
 
-  const auto body4 = &tree.AddRigidBody("body4", M_B);
+  const auto body4 = &tree.AddRigidBody("body4", M_NaN());
   const Joint<double>& body4_world =
       tree.AddJoint(std::make_unique<PlanarJoint<double>>(
           "planar4", tree.world_body().body_frame(), body4->body_frame(),
@@ -100,34 +94,100 @@ GTEST_TEST(JointActuatorTest, JointActuatorLimitTest) {
 
   EXPECT_THAT(tree.GetJointActuatorIndices(),
               testing::ElementsAre(actuator1.index(), actuator4.index()));
+}
 
-  // Changing the gains post-Finalize doesn't throw.
-  EXPECT_NO_THROW(mutable_actuator1.set_controller_gains(gains));
+namespace {
+// Adds an actuated 1-dof joint between the world and a body.
+JointActuator<double>& AddBodyJointAndActuator(
+    internal::MultibodyTree<double>* tree) {
+  const auto& body = tree->AddRigidBody("body1", M_NaN());
+  const Joint<double>& joint =
+      tree->AddJoint(std::make_unique<PrismaticJoint<double>>(
+          "joint1", tree->world_body().body_frame(), body.body_frame(),
+          Eigen::Vector3d(0, 0, 1)));
+  tree->AddJointActuator("actuator1", joint, kPositiveEffortLimit);
+  return tree->get_mutable_joint_actuator(
+      tree->GetJointActuatorByName("actuator1").index());
+}
+}  // namespace
 
-  // Trying to add new gains post-Finalize throws.
-  JointActuator<double>& mutable_actuator4 =
-      tree.get_mutable_joint_actuator(actuator4.index());
-  DRAKE_EXPECT_THROWS_MESSAGE(mutable_actuator4.set_controller_gains(gains),
-                              ".*add PD.*Finalize.*");
+GTEST_TEST(JointActuatorTest, PdControllerTest) {
+  auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
+  internal::MultibodyTree<double>& tree = *tree_pointer;
+  std::unique_ptr<internal::MultibodyTreeSystem<double>> tree_system{nullptr};
+  JointActuator<double>& dut = AddBodyJointAndActuator(&tree);
+  EXPECT_FALSE(dut.has_controller());
+
+  // Check lifecycle operations on a PD controller pre-Finalize, then check the
+  // same thing again post-Finalize.
+  for (int i = 0; i < 2; ++i) {
+    if (i == 1) {
+      tree.Finalize();
+      tree_system = std::make_unique<internal::MultibodyTreeSystem<double>>(
+          std::move(tree_pointer), /* is_discrete = */ true);
+    }
+
+    // Add.
+    EXPECT_NO_THROW(dut.set_controller_gains({.p = 1e3, .d = 1e2}));
+    EXPECT_TRUE(dut.has_controller());
+    EXPECT_EQ(dut.get_controller_gains().p, 1e3);
+    EXPECT_EQ(dut.get_controller_gains().d, 1e2);
+
+    // Remove.
+    EXPECT_NO_THROW(dut.set_controller_gains({}));
+    EXPECT_FALSE(dut.has_controller());
+
+    // Re-add (with only a single term, to make sure the code's if-check works).
+    EXPECT_NO_THROW(dut.set_controller_gains({.p = 1e3}));
+    EXPECT_TRUE(dut.has_controller());
+    EXPECT_EQ(dut.get_controller_gains().p, 1e3);
+    EXPECT_EQ(dut.get_controller_gains().d, 0);
+
+    // Change the gains (using the other single term, for the same reason).
+    EXPECT_NO_THROW(dut.set_controller_gains({.d = 1e2}));
+    EXPECT_TRUE(dut.has_controller());
+    EXPECT_EQ(dut.get_controller_gains().p, 0);
+    EXPECT_EQ(dut.get_controller_gains().d, 1e2);
+
+    // Remove.
+    EXPECT_NO_THROW(dut.set_controller_gains({}));
+    EXPECT_FALSE(dut.has_controller());
+  }
+}
+
+GTEST_TEST(JointActuatorTest, ContinuousTimePdControllerTest) {
+  auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
+  internal::MultibodyTree<double>& tree = *tree_pointer;
+  JointActuator<double>& dut = AddBodyJointAndActuator(&tree);
+  tree.Finalize();
+  auto tree_system = std::make_unique<internal::MultibodyTreeSystem<double>>(
+      std::move(tree_pointer), /* is_discrete = */ false);
+  EXPECT_FALSE(dut.has_controller());
+
+  // Call the set function with zeros to clear out controller (a no-op) is safe.
+  EXPECT_NO_THROW(dut.set_controller_gains({}));
+  EXPECT_FALSE(dut.has_controller());
+
+  // Trying to set any non-zero gain is forbidden.
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.p = 1e3}),
+                              ".*only.*discrete models.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.set_controller_gains({.d = 1e2}),
+                              ".*only.*discrete models.*");
 }
 
 GTEST_TEST(JointActuatorTest, RemoveJointActuatorTest) {
   auto tree_pointer = std::make_unique<internal::MultibodyTree<double>>();
   internal::MultibodyTree<double>& tree = *tree_pointer;
 
-  // Spatial inertia for adding body. The actual value is not important for
-  // these tests and therefore we do not initialize it.
-  const SpatialInertia<double> M_B = SpatialInertia<double>::NaN();
-
   // Add model instances.
   const auto model_instance1 = tree.AddModelInstance("instance1");
   const auto model_instance2 = tree.AddModelInstance("instance2");
 
   // Add bodies so we can add joints to them.
-  const auto body1 = &tree.AddRigidBody("body1", model_instance1, M_B);
-  const auto body2 = &tree.AddRigidBody("body2", model_instance1, M_B);
-  const auto body3 = &tree.AddRigidBody("body3", model_instance1, M_B);
-  const auto body4 = &tree.AddRigidBody("body4", model_instance2, M_B);
+  const auto body1 = &tree.AddRigidBody("body1", model_instance1, M_NaN());
+  const auto body2 = &tree.AddRigidBody("body2", model_instance1, M_NaN());
+  const auto body3 = &tree.AddRigidBody("body3", model_instance1, M_NaN());
+  const auto body4 = &tree.AddRigidBody("body4", model_instance2, M_NaN());
 
   // Add a prismatic joint between the world and body1:
   const Joint<double>& body1_world =

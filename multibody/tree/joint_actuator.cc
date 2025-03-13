@@ -23,15 +23,36 @@ JointActuator<T>::~JointActuator() = default;
 
 template <typename T>
 void JointActuator<T>::set_controller_gains(PdControllerGains gains) {
-  if (!pd_controller_gains_ && topology_.actuator_index_start >= 0) {
-    throw std::runtime_error(fmt::format(
-        "Cannot add PD gains on the actuator named '{}'. "
-        "The first call to JointActuator::set_controller_gains() must happen "
-        "before MultibodyPlant::Finalize().",
-        name()));
+  DRAKE_THROW_UNLESS(std::isfinite(gains.p));
+  DRAKE_THROW_UNLESS(std::isfinite(gains.d));
+  DRAKE_THROW_UNLESS(gains.p >= 0.0);
+  DRAKE_THROW_UNLESS(gains.d >= 0.0);
+  if (gains.p == 0.0 && gains.d == 0) {
+    pd_controller_gains_ = std::nullopt;
+    return;
   }
-  DRAKE_THROW_UNLESS(gains.p > 0);
-  DRAKE_THROW_UNLESS(gains.d >= 0);
+
+  // The continuous-time MultibodyPlant logic does not support implicit PD. The
+  // plant's Finalize() call already checks for this condition and throws if a
+  // PD controller exists during Finalize. However, take note that adding a
+  // controller and removing it again before calling Finalize is valid -- the
+  // only invalid condition is a PD controller on a finalized, continuous-time
+  // plant. On the other hand, if set_controller_gains is called post-Finalize
+  // to add a controller on a continuous-time plant, we need to reject that
+  // ourselves; the plant won't know to check for it.
+  const bool is_finalized = topology_.actuator_index_start >= 0;
+  if (is_finalized) {
+    // N.B. Calling is_state_discrete() on a non-finalized plant will segfault;
+    // we must be careful to only call it inside of the if-finalized guard.
+    const bool is_continuous = !this->get_parent_tree().is_state_discrete();
+    if (is_continuous) {
+      throw std::runtime_error(fmt::format(
+          "Cannot set PD gains on the actuator named '{}'. This feature "
+          "is only supported for discrete models.",
+          name()));
+    }
+  }
+
   pd_controller_gains_ = gains;
 }
 
