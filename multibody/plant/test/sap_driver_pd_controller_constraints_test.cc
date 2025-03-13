@@ -48,7 +48,7 @@ namespace kcov339_avoidance_magic {
 // Test fixture that sets up a model of an IIWA arm with PD controlled gripper.
 // Its purpose is to verify that the SAP driver defines constraints
 // appropriately to model the PD controllers on the gripper.
-class ActuatedIiiwaArmTest : public ::testing::Test {
+class ActuatedIiwaArmTest : public ::testing::Test {
  public:
   void SetUp() override {
     const char kArmSdfUrl[] =
@@ -146,7 +146,7 @@ class ActuatedIiiwaArmTest : public ::testing::Test {
 // controllers in the gripper fingers. We build a model in which only a subset
 // of non-consecutive joints in the arm have PD control. We do this to stress
 // test the proper assembly of the resulting SAP problem.
-TEST_F(ActuatedIiiwaArmTest, VerifyConstraints) {
+TEST_F(ActuatedIiwaArmTest, VerifyConstraints) {
   // We expect each of the 1-DOF joints to be actuated.
   EXPECT_EQ(plant_->num_actuators(), plant_->num_velocities());
 
@@ -256,6 +256,27 @@ TEST_F(ActuatedIiiwaArmTest, VerifyConstraints) {
       }
     }
   }
+}
+
+TEST_F(ActuatedIiwaArmTest, ZeroPTerm) {
+  // Add a velocity-only PD controller.
+  for (JointActuatorIndex actuator_index : plant_->GetJointActuatorIndices()) {
+    JointActuator<double>& actuator =
+        plant_->get_mutable_joint_actuator(actuator_index);
+    if (actuator.joint().name() == "iiwa_joint_3") {
+      actuator.set_controller_gains({.p = 0, .d = kArmDerivativeGain_});
+    }
+  }
+
+  // Set desired state for the arm.
+  const VectorXd arm_xd = VectorXd::Zero(2 * kKukaNumPositions_);
+  plant_->get_desired_state_input_port(arm_model_)
+      .FixValue(context_.get(), arm_xd);
+
+  // Check that the constraint is allowed. All we need is a non-crash test, to
+  // guard against input sanitization bugs.
+  EXPECT_NO_THROW(
+      SapDriverTest::EvalContactProblemCache(sap_driver(), *context_));
 }
 
 }  // namespace kcov339_avoidance_magic
