@@ -177,13 +177,13 @@ TYPED_TEST(ParticleSorterTypedTest, Iterate) {
   });
 
   /* An arbitrary kernel that
-   1. sets the particle postion to be the grid node coordinate of the center
+   1. sets the particle position to be the grid node coordinate of the center
       node in the grid pad affected by the particle, scaled by 2, and
    2. sets the particle velocity as the average of the grid node velocity in the
       pad. */
   auto g2p_kernel = [](const Pad<typename TypeParam::NodeType>& pad_nodes,
-                       Pad<GridData<T>>* pad_data, ParticleData<T>* particles,
-                       int data_index) {
+                       const Pad<GridData<T>>& pad_data,
+                       ParticleData<T>* particles, int data_index) {
     Vector3<T>& xp = particles->mutable_x()[data_index];
     Vector3<T>& vp = particles->mutable_v()[data_index];
     xp = 2.0 * pad_nodes[1][1][1];
@@ -191,7 +191,7 @@ TYPED_TEST(ParticleSorterTypedTest, Iterate) {
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
         for (int k = 0; k < 3; ++k) {
-          vp += (*pad_data)[i][j][k].v;
+          vp += pad_data[i][j][k].v;
         }
       }
     }
@@ -218,9 +218,9 @@ TYPED_TEST(ParticleSorterTypedTest, Iterate) {
    velocity to all grid nodes in the particles' support. It sets grid mass
    to 1.0. */
   auto p2g_kernel = [](const Pad<typename TypeParam::NodeType>&,
-                       Pad<GridData<T>>* pad_data,
-                       const ParticleData<T>* particles, int data_index) {
-    const Vector3<T>& vp = particles->v()[data_index];
+                       const ParticleData<T>& particles,
+                       Pad<GridData<T>>* pad_data, int data_index) {
+    const Vector3<T>& vp = particles.v()[data_index];
     for (int i = 0; i < 3; ++i) {
       for (int j = 0; j < 3; ++j) {
         for (int k = 0; k < 3; ++k) {

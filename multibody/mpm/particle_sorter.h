@@ -46,22 +46,24 @@ using RangeVector = std::vector<Range>;
 void ConvertToRangeVector(const std::vector<int>& data, RangeVector* ranges);
 
 /* Helper alias: Given a grid pointer type, deduce the type of the pad nodes. */
-template <typename GridPtr>
-using PadNodeType = typename std::remove_pointer_t<GridPtr>::PadNodeType;
+template <typename Grid>
+using PadNodeType = typename Grid::PadNodeType;
 
 /* Helper alias: Given a grid pointer type, deduce the type of the pad data. */
-template <typename GridPtr>
-using PadDataType = typename std::remove_pointer_t<GridPtr>::PadDataType;
+template <typename Grid>
+using PadDataType = typename Grid::PadDataType;
 
-/* Callback type used by ParticleSorter::Iterate.
- It takes as parameters:
-   1. A const reference to the pad nodes (of type GridPadNodesType<GridPtr>).
-   2. A pointer to the pad data (of type GridPadDataType<GridPtr>*).
-   3. A ParticleData pointer (ParticleDataPtr).
-   4. An integer particle index. */
-template <typename GridPtr, typename ParticleDataPtr>
-using IterateFuncType = std::function<void(
-    const PadNodeType<GridPtr>&, PadDataType<GridPtr>*, ParticleDataPtr, int)>;
+/* Callback type used by ParticleSorter::Iterate for grid to particle
+ operations. */
+template <typename Grid, typename ParticleData>
+using G2PKernelType = std::function<void(
+    const PadNodeType<Grid>&, const PadDataType<Grid>&, ParticleData*, int)>;
+
+/* Callback type used by ParticleSorter::Iterate for particle to grid
+ operations. */
+template <typename Grid, typename ParticleData>
+using P2GKernelType = std::function<void(
+    const PadNodeType<Grid>&, const ParticleData&, PadDataType<Grid>*, int)>;
 
 /* ParticleSorter sorts MPM particle data based on their positions within the
  grid.
@@ -208,28 +210,48 @@ class ParticleSorter {
    provided function. If the passed-in grid pointer is mutable, the modified pad
    data is automatically written back to the grid after processing all particles
    associated with the pad. If a const grid pointer is provided, no grid update
-   is performed.
+   is performed (but particle update might be performed by the kernel).
 
    @tparam GridPtr Pointer-like type to the grid (e.g., SparseGrid<double>* or
    const SparseGrid<double>*).
    @tparam ParticleDataPtr Pointer-like type to the particle data (e.g.,
    ParticleData<double>*, or const ParticleData<double>*).
+   @tparam Func Type of the function to be applied to each particle. Must be
+   either G2PKernelType or P2GKernelType.
 
-   @param grid          Pointer to the grid object.
-   @param particle_data Pointer to the particle data object.
-   @param func          A function to be applied to each particle. Its signature
-                        is defined by the alias IterateFuncType. */
-  template <typename GridPtr, typename ParticleDataPtr>
-  void Iterate(GridPtr grid, ParticleDataPtr particle_data,
-               IterateFuncType<GridPtr, ParticleDataPtr> func) const {
-    const int num_blocks = grid->num_blocks();
+   @param grid_ptr          Pointer to the grid object.
+   @param particle_data_ptr Pointer to the particle data object.
+   @param func              A function to be applied to each particle.
+   @pre  Exactly one of the grid/particle pointer is const and the other is
+   mutable. When the grid pointer is mutable, the Func signature is
+   P2GKernelType; when the particle pointer is mutable, the Func signature is
+   G2PKernelType. */
+  template <typename GridPtr, typename ParticleDataPtr, typename Func>
+  void Iterate(GridPtr grid_ptr, ParticleDataPtr particle_data_ptr,
+               const Func& func) const {
+    const int num_blocks = grid_ptr->num_blocks();
     DRAKE_DEMAND(ssize(sentinel_particles_) == num_blocks + 1);
 
     /* Deduce the grid type. */
     using Grid = std::remove_pointer_t<GridPtr>;
+    /* Deduce the particle type. */
+    using ParticleData = std::remove_pointer_t<ParticleDataPtr>;
     /* Deduce types for pad nodes and pad data. */
     using PadNodeType = typename Grid::PadNodeType;
     using PadDataType = typename Grid::PadDataType;
+
+    constexpr bool is_g2p = std::is_const_v<Grid>;
+    constexpr bool is_p2g = std::is_const_v<ParticleData>;
+    static_assert(is_g2p ^ is_p2g);
+    if constexpr (is_g2p) {
+      static_assert(std::is_same_v<Func, G2PKernelType<Grid, ParticleData>>,
+                    "The provided function does not match the expected "
+                    "signature for grid-to-particle operations.");
+    } else {
+      static_assert(std::is_same_v<Func, P2GKernelType<Grid, ParticleData>>,
+                    "The provided function does not match the expected "
+                    "signature for particle-to-grid operations.");
+    }
 
     /* Temporary variables for pad nodes and pad data. */
     PadNodeType grid_nodes{};
@@ -250,21 +272,26 @@ class ParticleSorter {
         /* Fetch new pad data and nodes when we meet particles belonging to a
          new pad. */
         if (need_new_pad) {
-          grid_data = grid->GetPadData(base_node_offsets_[p]);
-          grid_nodes = grid->GetPadNodes(particle_data->x()[data_index]);
+          grid_data = grid_ptr->GetPadData(base_node_offsets_[p]);
+          grid_nodes =
+              grid_ptr->GetPadNodes(particle_data_ptr->x()[data_index]);
         }
 
         /* Apply the provided function to the current particle. */
-        func(grid_nodes, &grid_data, particle_data, data_index);
+        if constexpr (is_g2p) {
+          func(grid_nodes, grid_data, particle_data_ptr, data_index);
+        } else {
+          func(grid_nodes, *particle_data_ptr, &grid_data, data_index);
+        }
 
         /* Determine if the next particle requires new pad data. */
         need_new_pad = (p + 1 == particle_end) ||
                        (base_node_offsets_[p] != base_node_offsets_[p + 1]);
 
-        /* Automatically write back pad data if the grid pointer is mutable. */
-        if constexpr (!std::is_const_v<std::remove_pointer_t<GridPtr>>) {
+        /* Write to the pad if this is a P2G operation. */
+        if constexpr (is_p2g) {
           if (need_new_pad) {
-            grid->SetPadData(base_node_offsets_[p], grid_data);
+            grid_ptr->SetPadData(base_node_offsets_[p], grid_data);
           }
         }
       }
