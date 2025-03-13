@@ -60,8 +60,8 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   /* We should do exactly nothing to update X_FM since it remains identity
   forever. */
-  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
-    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+  void update_X_FM(const T*, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(X_FM != nullptr);
     DRAKE_ASSERT(X_FM->IsExactlyIdentity());
     // Do nothing.
   }

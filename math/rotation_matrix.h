@@ -324,6 +324,8 @@ class RotationMatrix {
     return RotationMatrix<T>(Eigen::AngleAxis<T>(angle, normalized_axis));
   }
 
+  // TODO(sherm1) These functions should be able to work with negated axes.
+
   /// (Advanced) Given a rotation about a coordinate axis (x, y, or z), use it
   /// to efficiently re-express a vector.
   /// @param[in] Rx_BC A rotation about the indicated axis.
@@ -352,19 +354,26 @@ class RotationMatrix {
     return v_B;
   }
 
-  template <int axis>
-  static void UpdateAxialRotation(const T& theta, RotationMatrix<T>* Rx_BC) {
+  /// (Advanced) Given sin(θ) and cos(θ), update the axial rotation Rx_BC which
+  /// is a rotation θ or -θ about the given axis (x, y, or z).
+  template <int axis, bool negate>
+  static void UpdateAxialRotation(const T& sin_theta, const T& cos_theta,
+                                  RotationMatrix<T>* Rx_BC) {
     static_assert(0 <= axis && axis <= 2, "Axis value out of range");
     DRAKE_ASSERT(Rx_BC != nullptr);
     Matrix3<T>& M = Rx_BC->matrix();
     constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
     DRAKE_ASSERT(M(x, x) == 1 && M(x, y) == 0 && M(x, z) == 0);
     DRAKE_ASSERT(M(y, x) == 0 && M(z, x) == 0);
+    M(y, y) = M(z, z) = cos_theta;              // cos(-θ) = cos(θ).
+    M(z, y) = negate ? -sin_theta : sin_theta;  // sin(-θ) = -sin(θ).
+    M(y, z) = negate ? sin_theta : -sin_theta;
+  }
+
+  template <int axis>
+  static void UpdateAxialRotation(const T& theta, RotationMatrix<T>* Rx_BC) {
     using std::cos, std::sin;
-    const T c = cos(theta), s = sin(theta);
-    M(y, y) = M(z, z) = c;
-    M(z, y) = s;
-    M(y, z) = -s;
+    UpdateAxialRotation<axis, false>(sin(theta), cos(theta), &*Rx_BC);
   }
 
   /// With this a general rotation R_AB, given an axial rotation Rx_BC,
