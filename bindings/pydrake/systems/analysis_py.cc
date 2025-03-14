@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
 #include "drake/systems/analysis/batch_eval.h"
+#include "drake/systems/analysis/discrete_time_approximation.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
 #include "drake/systems/analysis/region_of_attraction.h"
@@ -43,6 +44,7 @@ PYBIND11_MODULE(analysis, m) {
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
   py::module::import("pydrake.systems.framework");
+  py::module::import("pydrake.systems.primitives");
   py::module::import("pydrake.solvers");
   py::module::import("pydrake.trajectories");
 
@@ -227,6 +229,18 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc);
+
+    m.def("DiscreteTimeApproximation",
+        overload_cast_explicit<std::unique_ptr<LinearSystem<T>>,
+            const LinearSystem<T>&, double>(&DiscreteTimeApproximation),
+        py::arg("system"), py::arg("time_period"),
+        doc.DiscreteTimeApproximation.doc_linearsystem);
+
+    m.def("DiscreteTimeApproximation",
+        overload_cast_explicit<std::unique_ptr<AffineSystem<T>>,
+            const AffineSystem<T>&, double>(&DiscreteTimeApproximation),
+        py::arg("system"), py::arg("time_period"),
+        doc.DiscreteTimeApproximation.doc_affinesystem);
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 

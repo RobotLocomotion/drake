@@ -8,6 +8,7 @@ from pydrake.math import isnan
 from pydrake.symbolic import Variable, Expression
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.systems.primitives import (
+    AffineSystem_,
     ConstantVectorSource,
     ConstantVectorSource_,
     FirstOrderLowPassFilter_,
@@ -20,6 +21,7 @@ from pydrake.systems.analysis import (
     ApplySimulatorConfig,
     BatchEvalUniquePeriodicDiscreteUpdate,
     BatchEvalTimeDerivatives,
+    DiscreteTimeApproximation,
     ExtractSimulatorConfig,
     InitializeParams,
     IntegratorBase_,
@@ -327,3 +329,38 @@ class TestAnalysis(unittest.TestCase):
         self.assertLess(status.return_time(), 1.1)
         simulator.clear_monitor()
         self.assertIsNone(simulator.get_monitor())
+
+    @numpy_compare.check_all_types
+    def test_discrete_time_approximation_affinesystem(self, T):
+        A = np.array([[0, 1], [0, 0]])
+        B = np.array([[0], [1]])
+        f0 = np.array([2, 1])
+        C = np.array([[1, 0]])
+        D = np.array([[1]])
+        y0 = np.array([1])
+
+        h = 0.031415926
+        Ad = np.array([[1, h], [0, 1]])
+        Bd = np.array([[0.5*h**2], [h]])
+        f0d = np.array([2*h+0.5*h**2, h])
+        Cd = C
+        Dd = D
+        y0d = y0
+
+        continuous_system = LinearSystem_[T](A, B, C, D)
+        discrete_system = DiscreteTimeApproximation(
+            system=continuous_system, time_period=h)
+        numpy_compare.assert_allclose(discrete_system.A(), Ad)
+        numpy_compare.assert_allclose(discrete_system.B(), Bd)
+        numpy_compare.assert_equal(discrete_system.C(), Cd)
+        numpy_compare.assert_equal(discrete_system.D(), Dd)
+
+        continuous_system = AffineSystem_[T](A, B, f0, C, D, y0)
+        discrete_system = DiscreteTimeApproximation(
+            system=continuous_system, time_period=h)
+        numpy_compare.assert_allclose(discrete_system.A(),  Ad)
+        numpy_compare.assert_allclose(discrete_system.B(),  Bd)
+        numpy_compare.assert_allclose(discrete_system.f0(), f0d)
+        numpy_compare.assert_equal(discrete_system.C(),  Cd)
+        numpy_compare.assert_equal(discrete_system.D(),  Dd)
+        numpy_compare.assert_equal(discrete_system.y0(), y0d)
