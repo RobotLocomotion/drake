@@ -3,6 +3,9 @@
 namespace drake {
 namespace systems {
 
+template <typename T>
+RungeKutta5Integrator<T>::~RungeKutta5Integrator() = default;
+
 /*
  * RK5-specific initialization function.
  * @throws std::exception if *neither* the initial step size target nor the

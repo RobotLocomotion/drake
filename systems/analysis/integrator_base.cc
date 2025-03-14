@@ -4,6 +4,9 @@ namespace drake {
 namespace systems {
 
 template <class T>
+IntegratorBase<T>::~IntegratorBase() = default;
+
+template <class T>
 bool IntegratorBase<T>::StepOnceErrorControlledAtMost(const T& h_max) {
   using std::isnan;
   using std::min;

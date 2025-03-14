@@ -48,7 +48,7 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta5Integrator);
 
-  ~RungeKutta5Integrator() override = default;
+  ~RungeKutta5Integrator() override;
 
   explicit RungeKutta5Integrator(const System<T>& system,
                                  Context<T>* context = nullptr)

@@ -15,6 +15,9 @@ namespace drake {
 namespace systems {
 
 template <class T>
+ImplicitEulerIntegrator<T>::~ImplicitEulerIntegrator() = default;
+
+template <class T>
 void ImplicitEulerIntegrator<T>::DoResetImplicitIntegratorStatistics() {
   num_nr_iterations_ = 0;
   hie_statistics_ = {};

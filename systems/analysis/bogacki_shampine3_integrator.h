@@ -38,7 +38,7 @@ class BogackiShampine3Integrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BogackiShampine3Integrator);
 
-  ~BogackiShampine3Integrator() override = default;
+  ~BogackiShampine3Integrator() override;
 
   explicit BogackiShampine3Integrator(const System<T>& system,
       Context<T>* context = nullptr) : IntegratorBase<T>(system, context) {

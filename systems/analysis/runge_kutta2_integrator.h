@@ -19,7 +19,7 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RungeKutta2Integrator);
 
-  ~RungeKutta2Integrator() override = default;
+  ~RungeKutta2Integrator() override;
 
   /**
    * Constructs fixed-step integrator for a given system using the given

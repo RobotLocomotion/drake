@@ -172,7 +172,7 @@ class IntegratorBase {
     initialization_done_ = false;
   }
 
-  virtual ~IntegratorBase() = default;
+  virtual ~IntegratorBase();
 
   /**
    @anchor integrator-accuracy
