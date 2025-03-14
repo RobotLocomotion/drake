@@ -15,6 +15,64 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+namespace {
+// @param[in] sp, cp, sy, cy are sin(pitch), cos(pitch), sin(yaw), cos(yaw).
+// @param[in] qdot vector to be pre-multiplied by the N⁺ Matrix. Typically, qdot
+// is q̇ or q̈ (1ˢᵗ or 2ⁿᵈ derivatives of this mobilizer's generalized positions).
+// @param[out] v vector to store the result of N⁺(q)⋅qdot. Typically, v is
+// v or v̇ (this mobilizer's generalized velocities or their time-derivatives).
+// Due to zeros in the N⁺ (NPlus) matrix, element-by-element computation of
+// v = N⁺(q)⋅qdot  is more efficient than using matrix multiplication.
+// @pre qdot.size() == kNq == 3, v != nullptr, v->size() == kNv = 3.
+template <typename T>
+void CalcNPlusMatrixTimes(const T& sp, const T& cp, const T& sy, const T& cy,
+                          const Eigen::Ref<const VectorX<T>>& qdot,
+                          EigenPtr<MatrixX<T>> v) {
+  const T& rdot = qdot[0];
+  const T& pdot = qdot[1];
+  const T& ydot = qdot[2];
+  const T cp_v0 = cp * rdot;
+  *v = Vector3<T>(cy * cp_v0 - sy * pdot,  // + 0 * ydot.
+                  sy * cp_v0 + cy * pdot,  // + 0 * ydot.
+                  -sp * rdot + ydot);      // + 0 * pdot.
+}
+
+// @param[in] sp, cp, sy, cy are sin(pitch), cos(pitch), sin(yaw), cos(yaw).
+// @param[in] v vector to be pre-multiplied by  of N(q)⋅v. Typically, v is
+// v or v̇ (this mobilizer's generalized velocities or their time-derivatives).
+// @param[in] qdot vector to store the result of N(q)⋅v. Typically, qdot
+// is q̇ or q̈ (1ˢᵗ or 2ⁿᵈ derivatives of this mobilizer's generalized positions).
+// Due to zeros in the N matrix, element-by-element computation of
+// qdot = N(q)⋅v  is more efficient than using matrix multiplication.
+// @pre v.size() == kNv == 3, qdot != nullptr, qdot->size() == kNq = 3.
+// @returns false if solution has (or nearly has) a divide-by-zero error,
+// otherwise returns true.
+template <typename T>
+[[nodiscard]] bool CalcNMatrixTimes(const T& sp, const T& cp, const T& sy,
+                                    const T& cy,
+                                    const Eigen::Ref<const VectorX<T>>& v,
+                                    EigenPtr<MatrixX<T>> qdot) {
+  // Test to see if solution will be singular or nearly singular.
+  using std::abs;
+  if (abs(cp) < 1.0e-3) return false;  // Avoid divide-by-zero error.
+  const T cpi = 1.0 / cp;
+
+  // Although the linear equations relating v to q̇ can be explicitly solved for
+  // q̇ in terms of w0, w1, w2, an implicit solution is more efficient.
+  // The first two equations in v = N_F(q) * q̇ are used to solve for ṙ and ṗ,
+  // then the 3ʳᵈ equation is used to solve for ẏ in terms of ṙ and w2.
+  // ṙ = (cos(y) * w0 + sin(y) * w1) / cos(p)
+  // ṗ = -sin(y) * w0 + cos(y) * w1
+  // ẏ = sin(p) * ṙ + w2
+  const T& w0 = v[0];
+  const T& w1 = v[1];
+  const T& w2 = v[2];
+  const T t = (cy * w0 + sy * w1) * cpi;  // Common factor.
+  *qdot = Vector3<T>(t, -sy * w0 + cy * w1, sp * t + w2);
+  return true;
+}
+}  // namespace
+
 template <typename T>
 RpyBallMobilizer<T>::~RpyBallMobilizer() = default;
 
@@ -218,31 +276,27 @@ void RpyBallMobilizer<T>::MapVelocityToQDot(
   DRAKE_ASSERT(v.size() == kNv);
   DRAKE_ASSERT(qdot != nullptr);
   DRAKE_ASSERT(qdot->size() == kNq);
-
-  using std::abs;
-  using std::cos;
-  using std::sin;
-
+  // --------------------------------------------------------------------------
+  // TODO(Mitiguy) Change Einv_F to N_F and E_F to N⁺.
   // The linear map E_F(q) allows computing v from q̇ as:
-  // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  // w_FM_F = E_F(q) * q̇;  q̇ = [ṙ, ṗ, ẏ]ᵀ
   //
   // Here, following a convention used by many dynamicists, we are calling the
   // angles θ₁, θ₂, θ₃ as roll (r), pitch (p) and yaw (y), respectively.
   //
   // The linear map from v to q̇ is given by the inverse of E_F(q):
-  //          [          cos(y) / cos(p),          sin(y) / cos(p), 0]
-  // Einv_F = [                  -sin(y),                   cos(y), 0]
-  //          [ sin(p) * cos(y) / cos(p), sin(p) * sin(y) / cos(p), 1]
+  //          [          cos(y) / cos(p),           sin(y) / cos(p),  0 ]
+  // Einv_F = [                  -sin(y),                    cos(y),  0 ]
+  //          [ sin(p) * cos(y) / cos(p),  sin(p) * sin(y) / cos(p),  1 ]
   //
-  // such that q̇ = Einv_F(q) * w_FM; q̇ = [ṙ, ṗ, ẏ]ᵀ
-  // where we intentionally wrote the expression for Einv_F in terms of sines
-  // and cosines only to arrive to the more computationally efficient version
-  // below.
+  // such that q̇ = Einv_F(q) * w_FM_F;  q̇ = [ṙ, ṗ, ẏ]ᵀ.  We explicitly write
+  // Einv_F in terms of sines and cosines so to arrive at a more computationally
+  // efficient version as shown in CalcNMatrixTimes().
   //
   // Notice Einv_F is singular for p = π/2 + kπ, ∀ k ∈ ℤ.
   //
   // Note to developers:
-  // Matrix E_F(q) is obtained by computing w_FM as the composition of the
+  // Matrix Einv_F(q) is obtained by computing w_FM as the composition of the
   // angular velocity induced by each Euler angle rate in its respective
   // body-fixed frame. This is outlined in [Diebel 2006, §5.2;
   // Mitiguy (July 22) 2016, §9.3]. Notice however that our rotation matrix R_FM
@@ -269,10 +323,65 @@ void RpyBallMobilizer<T>::MapVelocityToQDot(
   //               rotation vectors. Stanford University.
   // [Mitiguy (July 22) 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion
   //                          Simulation.
-
+  // --------------------------------------------------------------------------
+  using std::cos;
+  using std::sin;
   const Vector3<T> angles = get_angles(context);
+  const T sp = sin(angles[1]);
   const T cp = cos(angles[1]);
-  if (abs(cp) < 1.0e-3) {
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+  const bool is_ok = CalcNMatrixTimes<T>(sp, cp, sy, cy, v, qdot);
+  if (is_ok == false) {
+    throw std::runtime_error(fmt::format(
+        "The RpyBallMobilizer (implementing a BallRpyJoint) between "
+        "body {} and body {} has reached a singularity. This occurs when the "
+        "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
+        "configuration, we have pitch = {}. Drake does not yet support a "
+        "comparable joint using quaternions, but the feature request is "
+        "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
+        this->inboard_body().name(), this->outboard_body().name(), angles[1]));
+  }
+}
+
+template <typename T>
+void RpyBallMobilizer<T>::MapAccelerationToQDDot(
+    const systems::Context<T>& context,
+    const Eigen::Ref<const VectorX<T>>& vdot,
+    EigenPtr<VectorX<T>> qddot) const {
+  DRAKE_ASSERT(vdot.size() == kNv);
+  DRAKE_ASSERT(qddot != nullptr);
+  DRAKE_ASSERT(qddot->size() == kNq);
+  // --------------------------------------------------------------------------
+  // Seen in MapVelocityToQDot(), the time-derivatives of generalized positions
+  // q̇ = [ṙ, ṗ, ẏ]ᵀ are related to the generalized velocities v = [ωx, ωy, ωz]ᵀ
+  // as shown below, whose matrix form is q̇ = N(q)⋅v, where N is the 3x3 matrix.
+  //
+  // ⌈ ṙ ⌉   ⌈  cos(y) / cos(p)           sin(y) / cos(p)           0 ⌉ ⌈ ωx ⌉
+  // | ṗ | = | -sin(y)                    cos(y)                    0 | | ωy |
+  // ⌊ ẏ ⌋   ⌊  sin(p) * cos(y) / cos(p)  sin(p) * sin(y) / cos(p)  1 ⌋ ⌊ ωz ⌋
+  //
+  // where, for this mobilizer, the angular velocity of the "fixed frame" F in
+  // the "mobilized frame" M, expressed in frame F is w_FM_F = [ωx, ωy, ωz]ᵀ
+  // and r, p, y denote roll, pitch, yaw angles.
+  //
+  // There are various ways to calculate q̈ = [r̈, p̈, ÿ]ᵀ (the 2ⁿᵈ time
+  // derivatives of the generalized positions) in terms of v̇ = [ω̇x, ω̇y, ω̇z]ᵀ.
+  // One efficient calculation uses
+  //
+  // ⌈ r̈ ⌉   ⌈        ⌉ ⌈ ω̇x ⌉   ⌈ -ωy ẏ - sin(p) cos(y) ṙ ṗ ⌉
+  // | p̈ | = |  N(q)  | | ω̇y | - |  wx ẏ - sin(p) sin(y) ṙ ṗ |
+  // ⌊ ÿ ⌋   ⌊        ⌋ ⌊ ω̇z ⌋   ⌊               -cos(p) ṙ ṗ ⌋
+  // --------------------------------------------------------------------------
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T sp = sin(angles[1]);
+  const T cp = cos(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+  const bool is_ok = CalcNMatrixTimes<T>(sp, cp, sy, cy, vdot, qddot);
+  if (is_ok == false) {
     throw std::runtime_error(fmt::format(
         "The RpyBallMobilizer (implementing a BallRpyJoint) between "
         "body {} and body {} has reached a singularity. This occurs when the "
@@ -283,26 +392,17 @@ void RpyBallMobilizer<T>::MapVelocityToQDot(
         this->inboard_body().name(), this->outboard_body().name(), angles[1]));
   }
 
-  const T& w0 = v[0];
-  const T& w1 = v[1];
-  const T& w2 = v[2];
-
-  const T sp = sin(angles[1]);
-  const T sy = sin(angles[2]);
-  const T cy = cos(angles[2]);
-  const T cpi = 1.0 / cp;
-
-  // Although the linear equations relating v to q̇ can be used to explicitly
-  // solve the equation w_FM = E_F(q) * q̇ for q̇, a more computational efficient
-  // solution results by implicit solution of those linear equations.
-  // Namely, the first two equations in w_FM = E_F(q) * q̇ are used to solve for
-  // ṙ and ṗ, then the third equation is used to solve for ẏ in terms of just
-  // ṙ and w2:
-  // ṙ = (cos(y) * w0 + sin(y) * w1) / cos(p)
-  // ṗ = -sin(y) * w0 + cos(y) * w1
-  // ẏ = sin(p) * ṙ + w2
-  const T t = (cy * w0 + sy * w1) * cpi;  // Common factor.
-  *qdot = Vector3<T>(t, -sy * w0 + cy * w1, sp * t + w2);
+  const Vector3<T> v = get_angular_velocity(context);
+  const T& wx = v[0];
+  const T& wy = v[1];
+  const T& wz = v[2];
+  // const T rdot = (wx*cy + wy*sy) / cp;
+  const T pdot = wy * cy - wx * sy;
+  const T ydot = wz + sp / cp * (wx * cy + wy * sy);
+  const T pdot_ydot = pdot * ydot;
+  Vector3<T> alfExtra(-wy * ydot - sp * cy * pdot_ydot,
+                      wx * ydot - sp * sy * pdot_ydot, -cp * pdot_ydot);
+  *qddot -= alfExtra;  // PAUL CHECK and FIX THIS.
 }
 
 template <typename T>
@@ -312,9 +412,7 @@ void RpyBallMobilizer<T>::MapQDotToVelocity(
   DRAKE_ASSERT(qdot.size() == kNq);
   DRAKE_ASSERT(v != nullptr);
   DRAKE_ASSERT(v->size() == kNv);
-  using std::cos;
-  using std::sin;
-
+  // --------------------------------------------------------------------------
   // The linear map between q̇ and v is given by matrix E_F(q) defined by:
   //          [ cos(y) * cos(p), -sin(y), 0]
   // E_F(q) = [ sin(y) * cos(p),  cos(y), 0]
@@ -349,23 +447,15 @@ void RpyBallMobilizer<T>::MapQDotToVelocity(
   //               rotation vectors. Stanford University.
   // [Mitiguy (July 22) 2016] Mitiguy, P., 2016. Advanced Dynamics & Motion
   //                          Simulation.
-
+  // --------------------------------------------------------------------------
+  using std::cos;
+  using std::sin;
   const Vector3<T> angles = get_angles(context);
-  const T& rdot = qdot[0];
-  const T& pdot = qdot[1];
-  const T& ydot = qdot[2];
-
   const T sp = sin(angles[1]);
   const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  const T cp_x_rdot = cp * rdot;
-
-  // Compute the product w_FM = E_W * q̇ directly since it's cheaper than
-  // explicitly forming E_F and then multiplying with q̇.
-  *v = Vector3<T>(cy * cp_x_rdot - sy * pdot, /*+ 0 * ydot*/
-                  sy * cp_x_rdot + cy * pdot, /*+ 0 * ydot*/
-                  -sp * rdot /*+   0 * pdot */ + ydot);
+  CalcNPlusMatrixTimes<T>(sp, cp, sy, cy, qdot, v);
 }
 
 template <typename T>
@@ -376,7 +466,7 @@ void RpyBallMobilizer<T>::MapQDDotToAcceleration(
   DRAKE_ASSERT(qddot.size() == kNq);
   DRAKE_ASSERT(vdot != nullptr);
   DRAKE_ASSERT(vdot->size() == kNv);
-
+  // --------------------------------------------------------------------------
   // Shown in MapQDotToVelocity(), the generalized velocities v = [ωx, ωy, ωz]ᵀ
   // are linearly related to q̇ = [ṙ, ṗ, ẏ]ᵀ (the time-derivatives of generalized
   // positions) as
@@ -395,11 +485,7 @@ void RpyBallMobilizer<T>::MapQDDotToAcceleration(
   // ⌈ ω̇x ⌉   ⌈ cos(y) cos(p)  -sin(y)  0 ⌉ ⌈ r̈ ⌉   ⌈-ωy ẏ - sin(p) cos(y) ṙ ṗ ⌉
   // | ω̇y | = | sin(y) cos(p)   cos(y)  0 | | p̈ | + | wx ẏ - sin(p) sin(y) ṙ ṗ |
   // ⌊ ω̇z ⌋   ⌊       -sin(p)       0   1 ⌋ ⌊ ÿ ⌋   ⌊              -cos(p) ṙ ṗ ⌋
-
-  const T& rddot = qddot[0];
-  const T& pddot = qddot[1];
-  const T& yddot = qddot[2];
-
+  // --------------------------------------------------------------------------
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
@@ -407,13 +493,7 @@ void RpyBallMobilizer<T>::MapQDDotToAcceleration(
   const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  const T cp_x_rddot = cp * rddot;
-
-  // Compute the product w_FM = E_W * q̇ directly since it's cheaper than
-  // explicitly forming E_F and then multiplying with q̇.
-  *vdot = Vector3<T>(cy * cp_x_rddot - sy * pddot, /* + 0 * yddot */
-                     sy * cp_x_rddot + cy * pddot, /* + 0 * yddot */
-                     -sp * rddot /* + 0 * pddot */ + yddot);
+  CalcNPlusMatrixTimes<T>(sp, cp, sy, cy, qddot, vdot);
 
   const Vector3<T> v = get_angular_velocity(context);
   const T& wx = v[0];

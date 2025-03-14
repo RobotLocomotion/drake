@@ -282,9 +282,22 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                          EigenPtr<VectorX<T>> v) const override;
 
   // Maps qddot to vdot, which for this mobilizer is complicated.
+  // @param[in] context contains the state for this mobilizers's multibody tree.
+  // @param[in] qddot = [r̈, p̈, ÿ]ᵀ, 2ⁿᵈ derivatives of roll, pitch, yaw angles.
+  // @param[out] vdot vector to store the results as v̇ = [ω̇x, ω̇y, ω̇z]ᵀ.
+  // @throws std::exception if cos(pitch) ≈ 0.
   void MapQDDotToAcceleration(const systems::Context<T>& context,
                               const Eigen::Ref<const VectorX<T>>& qddot,
                               EigenPtr<VectorX<T>> vdot) const final;
+
+  // Maps vdot to qddot, which for this mobilizer is complicated.
+  // @param[in] context contains the state for this mobilizers's multibody tree.
+  // @param[out] vdot = [ω̇x, ω̇y, ω̇z]ᵀ, where w_FM_F = [ωx, ωy, ωz]ᵀ.
+  // @param[out] qddot vector to store the results as q̈ = [r̈, p̈, ÿ]ᵀ.
+  // @throws std::exception if cos(pitch) ≈ 0.
+  void MapAccelerationToQDDot(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& vdot,
+                              EigenPtr<VectorX<T>> qddot) const final;
 
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
