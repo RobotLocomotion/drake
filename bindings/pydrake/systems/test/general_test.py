@@ -5,6 +5,7 @@ import pydrake.systems.framework
 import copy
 import gc
 from textwrap import dedent
+import weakref
 
 import unittest
 import numpy as np
@@ -1015,3 +1016,37 @@ class TestGeneral(unittest.TestCase):
         system.Accept(v=visitor)
         self.assertEqual(visited_systems, ["adder1", "adder2"])
         self.assertEqual(visited_diagrams, ["diagram"])
+
+    def test_ports_lifetime_hazard(self):
+        # To ensure the test will fail if only one suitable annotation is
+        # missing, we must only test one API per returned port reference
+        # identity at a time.
+        api_kinds = ["default", "index", "name"]
+
+        def make_hazard_system(api_kind):
+            model_value = Value("Hello World")
+            system = PassThrough(copy.copy(model_value))
+
+            # Try to provoke a lifetime hazard like #22515.
+            stuff = set()
+            if api_kind == "default":
+                stuff.add(system.get_input_port())
+                stuff.add(system.get_output_port())
+            elif api_kind == "index":
+                stuff.add(system.get_input_port(0))
+                stuff.add(system.get_output_port(0))
+            else:
+                assert api_kind == "name"
+                stuff.add(system.GetInputPort("u"))
+                stuff.add(system.GetOutputPort("y"))
+            system.stuff = stuff
+            return system
+
+        for api_kind in api_kinds:
+            system = make_hazard_system(api_kind)
+
+            # Show that system is mortal.
+            spy = weakref.finalize(system, lambda: None)
+            del system
+            gc.collect()
+            self.assertFalse(spy.alive)

@@ -425,6 +425,7 @@ drake_py_unittest(
         ":plant_py",
         ":tree_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
+        "//bindings/pydrake/common/test_utilities:memory_test_util_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
         "//bindings/pydrake/common/test_utilities:scipy_stub_py",

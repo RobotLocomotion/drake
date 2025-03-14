@@ -4,6 +4,7 @@ import copy
 import gc
 import tempfile
 import unittest
+import weakref
 
 import numpy as np
 from pydrake.common import FindResourceOrThrow
@@ -663,3 +664,39 @@ class TestSensors(unittest.TestCase):
         numpy_compare.assert_equal(
             encoders.get_calibration_offsets(context=context),
             offsets)
+
+    def test_image_to_lcm_ports_lifetime_hazard(self):
+        dut = mut.ImageToLcmImageArrayT(do_compress=False)
+
+        # Try to provoke a lifetime hazard like #22515.
+        stuff = set()
+        for pixel_type in pixel_types:
+            name = str(pixel_type)
+            stuff.add(dut.DeclareImageInputPort[pixel_type](name=name))
+        dut.stuff = stuff
+
+        # Show that an image converter that saves its port references is
+        # mortal.
+        spy = weakref.finalize(dut, lambda: None)
+        del dut, stuff
+        gc.collect()
+        self.assertFalse(spy.alive)
+
+    def test_image_writer_ports_lifetime_hazard(self):
+        dut = mut.ImageWriter()
+
+        # Try to provoke a lifetime hazard like #22515.
+        stuff = set()
+        stuff.add(dut.DeclareImageInputPort(
+            pixel_type=mut.PixelType.kRgba8U,
+            port_name="color",
+            file_name_format="/tmp/{port_name}-{time_usec}",
+            publish_period=0.125,
+            start_time=0.0))
+        dut.stuff = stuff
+
+        # Show that an image writer that saves its port references is mortal.
+        spy = weakref.finalize(dut, lambda: None)
+        del dut, stuff
+        gc.collect()
+        self.assertFalse(spy.alive)

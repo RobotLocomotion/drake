@@ -3,6 +3,7 @@ import gc
 import scipy.sparse
 import unittest
 import numpy as np
+import weakref
 
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
@@ -1099,3 +1100,70 @@ class TestGeneral(unittest.TestCase):
         assert_array_close(discrete_system.C(),  Cd)
         assert_array_close(discrete_system.D(),  Dd)
         assert_array_close(discrete_system.y0(), y0d)
+
+    def test_bus_creator_ports_lifetime_hazard(self):
+        dut = BusCreator()
+
+        # Try to provoke a lifetime hazard like #22515.
+        stuff = set()
+        stuff.add(dut.DeclareVectorInputPort(name=kUseDefaultName, size=2))
+        stuff.add(dut.DeclareAbstractInputPort(name=kUseDefaultName,
+                                               model_value=Value[object]()))
+        dut.stuff = stuff
+
+        # Show that a bus creator that saves its port references is mortal.
+        spy = weakref.finalize(dut, lambda: None)
+        del dut, stuff
+        gc.collect()
+        self.assertFalse(spy.alive)
+
+    def test_bus_selector_ports_lifetime_hazard(self):
+        dut = BusSelector()
+
+        # Try to provoke a lifetime hazard like #22515.
+        stuff = set()
+        stuff.add(dut.DeclareVectorOutputPort(name=kUseDefaultName, size=2))
+        stuff.add(dut.DeclareAbstractOutputPort(name=kUseDefaultName,
+                                                model_value=Value[object]()))
+        dut.stuff = stuff
+
+        # Show that a bus selector that saves its port references is mortal.
+        spy = weakref.finalize(dut, lambda: None)
+        del dut, stuff
+        gc.collect()
+        self.assertFalse(spy.alive)
+
+    def test_port_switch_ports_lifetime_hazard(self):
+        dut = PortSwitch(2)
+
+        # Try to provoke a lifetime hazard like #22515.
+        stuff = set()
+        stuff.add(dut.DeclareInputPort(name="in"))
+        dut.stuff = stuff
+
+        # Show that a port switch that saves its port references is mortal.
+        spy = weakref.finalize(dut, lambda: None)
+        del dut, stuff
+        gc.collect()
+        self.assertFalse(spy.alive)
+
+    def test_linear_transform_density_ports_lifetime_hazard(self):
+        dut = LinearTransformDensity(
+            distribution=RandomDistribution.kGaussian,
+            input_size=3,
+            output_size=3)
+
+        # Try to provoke a lifetime hazard like #22515.
+        stuff = set()
+        stuff.add(dut.get_input_port_w_in())
+        stuff.add(dut.get_input_port_A())
+        stuff.add(dut.get_input_port_b())
+        stuff.add(dut.get_output_port_w_out())
+        stuff.add(dut.get_output_port_w_out_density())
+        dut.stuff = stuff
+
+        # Show that an Ltd system that saves its port references is mortal.
+        spy = weakref.finalize(dut, lambda: None)
+        del dut, stuff
+        gc.collect()
+        self.assertFalse(spy.alive)

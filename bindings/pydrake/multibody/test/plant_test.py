@@ -2,6 +2,7 @@
 
 import collections
 import copy
+import gc
 import itertools
 import pickle
 import unittest
@@ -3331,3 +3332,40 @@ class TestPlant(unittest.TestCase):
         # Ensure we can simulate this system.
         simulator = Simulator_[float](diagram)
         simulator.AdvanceTo(0.01)
+
+    def test_ports_lifetime_hazard(self):
+        from pydrake.common.test_utilities.memory_test_util import (
+            actual_ref_count)
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
+        plant.Finalize()
+        diagram = builder.Build()
+        world = world_model_instance()
+
+        # Try to provoke a lifetime hazard like #22515.
+        stuff = set()
+        stuff.add(plant.get_actuation_input_port())
+        stuff.add(plant.get_actuation_input_port(world))
+        stuff.add(plant.get_net_actuation_output_port())
+        stuff.add(plant.get_net_actuation_output_port(world))
+        stuff.add(plant.get_desired_state_input_port(world))
+        stuff.add(plant.get_applied_generalized_force_input_port())
+        stuff.add(plant.get_applied_spatial_force_input_port())
+        stuff.add(plant.get_body_poses_output_port())
+        stuff.add(plant.get_body_spatial_velocities_output_port())
+        stuff.add(plant.get_body_spatial_accelerations_output_port())
+        stuff.add(plant.get_state_output_port())
+        stuff.add(plant.get_state_output_port(world))
+        stuff.add(plant.get_generalized_acceleration_output_port())
+        stuff.add(plant.get_generalized_acceleration_output_port(world))
+        stuff.add(plant.get_reaction_forces_output_port())
+        stuff.add(plant.get_contact_results_output_port())
+        stuff.add(plant.get_generalized_contact_forces_output_port(world))
+        plant.stuff = stuff
+
+        # Show that plant is mortal.
+        print("@1: ", actual_ref_count(plant))
+        spy = weakref.finalize(plant, lambda: None)
+        del stuff, plant, scene_graph, builder, diagram
+        gc.collect()
+        self.assertFalse(spy.alive)

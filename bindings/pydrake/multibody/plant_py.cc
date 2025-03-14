@@ -1013,92 +1013,98 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `context` alive.
             py::keep_alive<0, 2>(), cls_doc.EvalSceneGraphInspector.doc)
-        // Port accessors.
+        // Port accessors. All returned port references use a ref_cycle (rather
+        // than the implicit keep-alive of reference_internal) to avoid
+        // immortality hazards like #22515.
         .def("get_actuation_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_actuation_input_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_actuation_input_port.doc_0args)
         .def("get_actuation_input_port",
             overload_cast_explicit<const systems::InputPort<T>&,
                 ModelInstanceIndex>(&Class::get_actuation_input_port),
-            py::arg("model_instance"), py_rvp::reference_internal,
-            cls_doc.get_actuation_input_port.doc_1args)
+            py::arg("model_instance"), internal::ref_cycle<0, 1>(),
+            py_rvp::reference, cls_doc.get_actuation_input_port.doc_1args)
         .def("get_net_actuation_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_net_actuation_output_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_net_actuation_output_port.doc_0args)
         .def("get_net_actuation_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
                 ModelInstanceIndex>(&Class::get_net_actuation_output_port),
-            py::arg("model_instance"), py_rvp::reference_internal,
-            cls_doc.get_net_actuation_output_port.doc_1args)
+            py::arg("model_instance"), internal::ref_cycle<0, 1>(),
+            py_rvp::reference, cls_doc.get_net_actuation_output_port.doc_1args)
         .def("get_desired_state_input_port",
             overload_cast_explicit<const systems::InputPort<T>&,
                 multibody::ModelInstanceIndex>(
                 &Class::get_desired_state_input_port),
-            py::arg("model_instance"), py_rvp::reference_internal,
-            cls_doc.get_desired_state_input_port.doc)
+            py::arg("model_instance"), internal::ref_cycle<0, 1>(),
+            py_rvp::reference, cls_doc.get_desired_state_input_port.doc)
         .def("get_applied_generalized_force_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_applied_generalized_force_input_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_applied_generalized_force_input_port.doc)
         .def("get_applied_spatial_force_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_applied_spatial_force_input_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_applied_spatial_force_input_port.doc)
         .def("get_body_poses_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_body_poses_output_port),
-            py_rvp::reference_internal, cls_doc.get_body_poses_output_port.doc)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            cls_doc.get_body_poses_output_port.doc)
         .def("get_body_spatial_velocities_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_body_spatial_velocities_output_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_body_spatial_velocities_output_port.doc)
         .def("get_body_spatial_accelerations_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_body_spatial_accelerations_output_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_body_spatial_accelerations_output_port.doc)
         .def("get_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_state_output_port),
-            py_rvp::reference_internal, cls_doc.get_state_output_port.doc_0args)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            cls_doc.get_state_output_port.doc_0args)
         .def("get_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
                 ModelInstanceIndex>(&Class::get_state_output_port),
-            py::arg("model_instance"), py_rvp::reference_internal,
-            cls_doc.get_state_output_port.doc_1args)
+            py::arg("model_instance"), internal::ref_cycle<0, 1>(),
+            py_rvp::reference, cls_doc.get_state_output_port.doc_1args)
         .def("get_generalized_acceleration_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_generalized_acceleration_output_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_generalized_acceleration_output_port.doc_0args)
         .def("get_generalized_acceleration_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
                 ModelInstanceIndex>(
                 &Class::get_generalized_acceleration_output_port),
-            py::arg("model_instance"), py_rvp::reference_internal,
+            py::arg("model_instance"), internal::ref_cycle<0, 1>(),
+            py_rvp::reference,
             cls_doc.get_generalized_acceleration_output_port.doc_1args)
         .def("get_reaction_forces_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_reaction_forces_output_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_reaction_forces_output_port.doc)
         .def("get_contact_results_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_contact_results_output_port),
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             cls_doc.get_contact_results_output_port.doc)
         .def("get_generalized_contact_forces_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
                 ModelInstanceIndex>(
                 &Class::get_generalized_contact_forces_output_port),
-            py_rvp::reference_internal, py::arg("model_instance"),
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("model_instance"),
             cls_doc.get_generalized_contact_forces_output_port.doc);
     // Property accessors.
     cls  // BR
