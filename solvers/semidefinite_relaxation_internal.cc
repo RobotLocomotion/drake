@@ -148,7 +148,7 @@ void DoLinearizeQuadraticCostsAndConstraints(
 
   // Remove the quadratic cost in relaxation and replace it with a linear cost
   // on the semidefinite variables i.e.
-  // 0.5 y'Qy + b'y + c => 0.5 tr(QY) + b'y + c
+  // 0.5 y'Qy + b'y + c -> 0.5 tr(QY) + b'y + c
   for (const auto& binding : prog.quadratic_costs()) {
     relaxation->RemoveCost(binding);
     const int N = binding.variables().size();
@@ -164,7 +164,8 @@ void DoLinearizeQuadraticCostsAndConstraints(
 
   // Remove the quadratic constraints and replace them with a linear  constraint
   // on the semidefinite variables i.e.
-  // lb ≤ 0.5 y'Qy + b'y ≤ ub => lb ≤ 0.5 tr(QY) + b'y ≤ ub
+  // lb ≤ 0.5 y'Qy + b'y ≤ ub -> lb ≤ 0.5 tr(QY) + b'y ≤ ub.
+  // if lb == ub then add as an equality constraint instead.
   for (const auto& binding : prog.quadratic_constraints()) {
     relaxation->RemoveConstraint(binding);
     const int N = binding.variables().size();
@@ -175,9 +176,15 @@ void DoLinearizeQuadraticCostsAndConstraints(
     VectorX<Variable> vars(num_vars);
     a << quadratic_terms.first, binding.evaluator()->b();
     vars << quadratic_terms.second, binding.variables();
-    relaxation->AddLinearConstraint(a.transpose(),
-                                    binding.evaluator()->lower_bound(),
-                                    binding.evaluator()->upper_bound(), vars);
+    if (binding.evaluator()->lower_bound() ==
+        binding.evaluator()->upper_bound()) {
+      relaxation->AddLinearEqualityConstraint(
+          a.transpose(), binding.evaluator()->lower_bound(), vars);
+    } else {
+      relaxation->AddLinearConstraint(a.transpose(),
+                                      binding.evaluator()->lower_bound(),
+                                      binding.evaluator()->upper_bound(), vars);
+    }
   }
 }
 

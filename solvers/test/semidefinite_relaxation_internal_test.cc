@@ -11,7 +11,6 @@
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/scs_solver.h"
 #include "drake/solvers/solve.h"
-
 namespace drake {
 namespace solvers {
 namespace internal {
@@ -228,6 +227,39 @@ TEST_F(
             lb);
   EXPECT_EQ(relaxation_->linear_constraints()[0].evaluator()->upper_bound()[0],
             ub);
+}
+
+TEST_F(MakeSemidefiniteRelaxationTestFixture,
+       DoLinearizeQuadraticCostsAndConstraintsCaseQuadraticEqualityConstraint) {
+  const auto y = prog_.NewContinuousVariables<2>("y");
+  Matrix2d Q;
+  Q << 1, 2, 3, 4;
+  const Vector2d b(0.2, 0.4);
+  const double lb = -0.4;
+  prog_.AddQuadraticConstraint(Q, b, lb, lb, y);
+
+  ReinitializeRelaxation();
+  DoLinearizeQuadraticCostsAndConstraints(
+      prog_, X_, variables_to_sorted_indices_, relaxation_.get());
+
+  EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
+  // The constraint the "one" variable is equal to one. The quadratic constraint
+  // is an equality constraint.
+  EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 2);
+  EXPECT_EQ(relaxation_->linear_constraints().size(), 0);
+  EXPECT_EQ(relaxation_->GetAllConstraints().size(), 3);
+
+  const Vector2d y_test(1.3, 0.24);
+  SetRelaxationInitialGuess(y_test, relaxation_.get());
+  EXPECT_NEAR(
+      relaxation_->EvalBindingAtInitialGuess(
+          relaxation_->linear_equality_constraints()[1])[0],
+      (0.5 * y_test.transpose() * Q * y_test + b.transpose() * y_test)[0],
+      1e-12);
+  EXPECT_EQ(relaxation_->linear_equality_constraints()[1]
+                .evaluator()
+                ->lower_bound()[0],
+            lb);
 }
 
 // This test checks that repeated variables in a quadratic constraint are
