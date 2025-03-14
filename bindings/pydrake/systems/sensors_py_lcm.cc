@@ -1,4 +1,5 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/systems/sensors_py.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
@@ -63,7 +64,10 @@ void DefineSensorsLcm(py::module m) {
           decltype(param)::template type_at<0>::value;
       AddTemplateMethod(cls, "DeclareImageInputPort",
           &Class::DeclareImageInputPort<kPixelType>, GetPyParam(param),
-          py::arg("name"), py_rvp::reference_internal,
+          py::arg("name"),
+          // Use a ref_cycle (rather than the implicit keep-alive of
+          // reference_internal) to avoid immortality hazards like #22515.
+          internal::ref_cycle<0, 1>(), py_rvp::reference,
           cls_doc.DeclareImageInputPort.doc);
     };
     type_visit(def_image_input_port, PixelTypeList{});

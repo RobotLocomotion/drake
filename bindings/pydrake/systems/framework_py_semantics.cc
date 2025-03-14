@@ -802,8 +802,8 @@ void DoDefineFrameworkDiagramBuilder(py::module m) {
 // should split it up into smaller pieces.
 template <typename T>
 void DefineRemainingScalarDependentDefinitions(py::module m) {
-  DefineTemplateClassWithDefault<OutputPort<T>>(
-      m, "OutputPort", GetPyParam<T>(), doc.OutputPort.doc)
+  DefineTemplateClassWithDefault<OutputPort<T>>(m, "OutputPort",
+      GetPyParam<T>(), doc.OutputPort.doc, std::nullopt, py::dynamic_attr())
       .def("size", &OutputPort<T>::size, doc.PortBase.size.doc)
       .def("get_data_type", &OutputPort<T>::get_data_type,
           doc.PortBase.get_data_type.doc)
@@ -873,8 +873,8 @@ void DefineRemainingScalarDependentDefinitions(py::module m) {
       .def("get_vector_data", &SystemOutput<T>::get_vector_data,
           py_rvp::reference_internal, doc.SystemOutput.get_vector_data.doc);
 
-  DefineTemplateClassWithDefault<InputPort<T>>(
-      m, "InputPort", GetPyParam<T>(), doc.InputPort.doc)
+  DefineTemplateClassWithDefault<InputPort<T>>(m, "InputPort", GetPyParam<T>(),
+      doc.InputPort.doc, std::nullopt, py::dynamic_attr())
       .def("get_name", &InputPort<T>::get_name, doc.PortBase.get_name.doc)
       .def("GetFullDescription", &InputPort<T>::GetFullDescription,
           doc.PortBase.GetFullDescription.doc)
