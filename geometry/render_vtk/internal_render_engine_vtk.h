@@ -174,9 +174,20 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
                         const PerceptionProperties& properties,
                         const math::RigidTransformd& X_WG) override;
 
+  // @see RenderEngine::DoRegisterDeforambleVisual().
+  bool DoRegisterDeformableVisual(
+      GeometryId id,
+      const std::vector<geometry::internal::RenderMesh>& render_meshes,
+      const PerceptionProperties& properties) override;
+
   // @see RenderEngine::DoUpdateVisualPose().
   void DoUpdateVisualPose(GeometryId id,
                           const math::RigidTransformd& X_WG) override;
+
+  // @see RenderEngine::DoUpdateDeformableConfigurations().
+  void DoUpdateDeformableConfigurations(
+      GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+      const std::vector<VectorX<double>>& nhats_W) override;
 
   // @see RenderEngine::DoRemoveGeometry().
   bool DoRemoveGeometry(GeometryId id) override;
