@@ -33,6 +33,7 @@ from pydrake.systems.framework import (
     OutputPort,
     )
 from pydrake.systems.lcm import LcmBuses, _Serializer_
+from pydrake.systems.test_utilities import framework_test_util
 from drake import (
     lcmt_image,
     lcmt_image_array,
@@ -663,3 +664,25 @@ class TestSensors(unittest.TestCase):
         numpy_compare.assert_equal(
             encoders.get_calibration_offsets(context=context),
             offsets)
+
+    def test_image_to_lcm_ports_lifetime_hazard(self):
+        dut = mut.ImageToLcmImageArrayT(do_compress=False)
+        ports = [
+            dut.DeclareImageInputPort[pixel_type](name=str(pixel_type))
+            for pixel_type in pixel_types
+        ]
+        dut = [dut]  # The helper function requires passing dut via a list.
+        framework_test_util.check_ports_lifetime_hazard(self, dut, ports)
+
+    def test_image_writer_ports_lifetime_hazard(self):
+        dut = mut.ImageWriter()
+        ports = [
+            dut.DeclareImageInputPort(
+                pixel_type=mut.PixelType.kRgba8U,
+                port_name="color",
+                file_name_format="/tmp/{port_name}-{time_usec}",
+                publish_period=0.125,
+                start_time=0.0),
+        ]
+        dut = [dut]  # The helper function requires passing dut via a list.
+        framework_test_util.check_ports_lifetime_hazard(self, dut, ports)
