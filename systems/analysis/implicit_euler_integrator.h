@@ -115,7 +115,7 @@ class ImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ImplicitEulerIntegrator);
 
-  ~ImplicitEulerIntegrator() override = default;
+  ~ImplicitEulerIntegrator() override;
 
   explicit ImplicitEulerIntegrator(const System<T>& system,
                                    Context<T>* context = nullptr)

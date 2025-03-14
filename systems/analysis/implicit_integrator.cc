@@ -13,6 +13,9 @@ namespace drake {
 namespace systems {
 
 template <class T>
+ImplicitIntegrator<T>::~ImplicitIntegrator() = default;
+
+template <class T>
 void ImplicitIntegrator<T>::DoResetStatistics() {
   num_iter_factorizations_ = 0;
   num_jacobian_function_evaluations_ = 0;
