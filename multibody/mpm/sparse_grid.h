@@ -6,6 +6,7 @@
 
 #include "drake/multibody/mpm/grid_data.h"
 #include "drake/multibody/mpm/mass_and_momentum.h"
+#include "drake/multibody/mpm/particle_data.h"
 #include "drake/multibody/mpm/particle_sorter.h"
 #include "drake/multibody/mpm/spgrid.h"
 
@@ -43,6 +44,11 @@ template <typename T>
 class SparseGrid {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SparseGrid);
+
+  using Scalar = T;
+  using NodeType = Vector3<T>;
+  using PadNodeType = Pad<NodeType>;
+  using PadDataType = Pad<GridData<T>>;
 
   /* Constructs a SparseGrid with grid spacing `dx` in meters.
    @pre dx > 0. */
@@ -103,6 +109,82 @@ class SparseGrid {
 
   /* Returns the SpGrid underlying this SparseGrid. */
   const SpGrid<GridData<T>>& spgrid() const { return spgrid_; }
+
+  /* Returns the number of blocks allocated in the SpGrid. */
+  int num_blocks() const { return spgrid_.num_blocks(); }
+
+  /* Iterates over all particles and the grid nodes supported by them, applying
+   the given kernel.
+
+   This method traverses every particle in the provided ParticleData instance.
+   For each particle, it:
+     - Retrieves the pad of grid nodes and grid data that the particle supports.
+     - Invokes the provided kernel function with:
+        - A const reference to the pad of grid nodes (of type Pad<Vector3<T>>).
+        - A const reference to the pad of grid data (of type Pad<GridData<T>>).
+        - A pointer to the particle data (ParticleData<T>*), allowing the kernel
+          to modify it.
+        - The index of the current particle.
+
+   @param[in,out] particle_data  Pointer to the particle data to iterate over.
+                                 This data may be modified by the kernel.
+   @param[in] kernel             A callable object (kernel) with the signature:
+   @code
+   void(const Pad<Vector3<T>>&, const Pad<GridData<T>>&, ParticleData<T>*, int)
+   @endcode
+   For each particle, the kernel is invoked with the pad of grid node it
+   supports, the grid data on that pad, the pointer to the particle data,
+   and the particle index. Note that this kernel should only read/modify the
+   particle data with the given particle index, and it should not assume an
+   ordering of how the particles are iterated.
+   @pre The grid's Allocate() method must have been called with the positions
+   contained in the given particle_data. */
+  void ApplyGridToParticleKernel(
+      ParticleData<T>* particle_data,
+      const std::function<void(const Pad<Vector3<T>>&, const Pad<GridData<T>>&,
+                               ParticleData<T>*, int)>& kernel) const {
+    particle_sorter_.Iterate(this, particle_data, kernel);
+  }
+
+  /* Iterates over all particles and the grid nodes supported by them,
+   applying the given kernel, and writes back the updated grid data.
+
+   This method is similar to ApplyGridToParticleKernel(), but it is intended for
+   cases where the particle data is read-only and the grid data is mutable.
+
+   This method traverses every particle in the provided ParticleData instance.
+   For each particle, it:
+    - Retrieves the pad of grid nodes and grid data that the particle supports.
+    - Invokes the provided kernel function with:
+      - A const reference to the pad of grid nodes (of type Pad<Vector3<T>>).
+      - The const reference to the particle data (const ParticleData<T>*).
+      - A pointer to the pad of grid data (of type Pad<GridData<T>>*).
+      - The index of the current particle.
+
+   The updated grid data on each pad is written back automatically to the grid
+   once all particles supporting the pad have been processed.
+
+   @param[in] particle_data  A const reference to the particle data to iterate
+                             over.
+   @param[in] kernel         A callable object (kernel) with the signature:
+   @code
+   void(const Pad<Vector3<T>>&, const ParticleData<T>&, Pad<GridData<T>>*, int)
+   @endcode
+   For each particle, the kernel is invoked with the pad of grid node it
+   supports, the particle data, a pointer to the pad of grid data it supports,
+   and the particle index. Note that this kernel should only read the particle
+   data with the given particle index, and it should not assume an ordering of
+   how the particles are iterated.
+   @post The grid data corresponding to each particle's support is updated
+   with any modifications performed by the kernel.
+   @pre The grid's Allocate() method must have been called with the
+   positions contained in the given particle_data. */
+  void ApplyParticleToGridKernel(
+      const ParticleData<T>& particle_data,
+      const std::function<void(const Pad<Vector3<T>>&, const ParticleData<T>&,
+                               Pad<GridData<T>>*, int)>& kernel) {
+    particle_sorter_.Iterate(this, &particle_data, kernel);
+  }
 
  private:
   /* Grid spacing (in meters). */
