@@ -228,6 +228,21 @@ class Meshcat {
                  bool wireframe = false, double wireframe_line_width = 1.0,
                  SideOfFaceToRender side = kDoubleSide);
 
+  /** Sets the "object" at a given `path` in the scene tree by executing native
+  THREE.js JavaScript code. The code snippet is expected to be a JavaScript
+  lambda function that returns a THREE.Object3D. This object is then set at
+  the specified `path`. See @ref meshcat_path. Any objects previously set at
+  this `path` will be replaced.
+  @param path a "/"-delimited string indicating the path in the scene tree. See
+              @ref meshcat_path "Meshcat paths" for the semantics.
+  @param three_js_lambda a string containing JavaScript code that returns a
+                         THREE.Object3D instance. The code should be a lambda
+                         function,
+                         e.g. "() => { ...; return new THREE.Mesh(...); }".
+  */
+  void SetObjectFromThreeJsCode(std::string_view path,
+                                std::string_view three_js_lambda);
+
   /** Sets the "object" at `path` in the scene tree to a piecewise-linear
   interpolation between the `vertices`.
 
