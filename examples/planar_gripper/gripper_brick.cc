@@ -57,7 +57,7 @@ std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
   const std::string gripper_url =
       "package://drake/examples/planar_gripper/planar_gripper.sdf";
-  multibody::Parser parser(*plant, *scene_graph);
+  multibody::Parser parser(&builder);
   parser.AddModelsFromUrl(gripper_url);
   examples::planar_gripper::WeldGripperFrames(*plant);
   const std::string brick_url =

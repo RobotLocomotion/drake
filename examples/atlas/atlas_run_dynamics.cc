@@ -52,7 +52,7 @@ int do_main() {
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, &builder);
 
-  multibody::Parser(&plant).AddModelsFromUrl(
+  multibody::Parser(&builder).AddModelsFromUrl(
       "package://drake_models/atlas/atlas_convex_hull.urdf");
 
   // Add model of the ground.
