@@ -70,7 +70,7 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SemiExplicitEulerIntegrator);
 
-  virtual ~SemiExplicitEulerIntegrator() {}
+  ~SemiExplicitEulerIntegrator() override;
 
   // TODO(edrumwri): update documentation to account for stretching (after
   //                 stretching has become a user settable).

@@ -9,6 +9,9 @@ namespace drake {
 namespace systems {
 
 template <typename T, int num_stages>
+RadauIntegrator<T, num_stages>::~RadauIntegrator() = default;
+
+template <typename T, int num_stages>
 void RadauIntegrator<T, num_stages>::DoResetImplicitIntegratorStatistics() {
   num_nr_iterations_ = 0;
   num_err_est_jacobian_reforms_ = 0;

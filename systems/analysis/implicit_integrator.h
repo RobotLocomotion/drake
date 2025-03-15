@@ -22,7 +22,7 @@ namespace systems {
 template <class T>
 class ImplicitIntegrator : public IntegratorBase<T> {
  public:
-  virtual ~ImplicitIntegrator() {}
+  virtual ~ImplicitIntegrator();
 
   explicit ImplicitIntegrator(const System<T>& system,
                                    Context<T>* context = nullptr)

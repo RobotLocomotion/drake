@@ -9,6 +9,9 @@
 namespace drake {
 namespace systems {
 
+template <class T>
+BogackiShampine3Integrator<T>::~BogackiShampine3Integrator() = default;
+
 /*
  * Bogacki-Shampine-specific initialization function.
  * @throws std::exception if *neither* the initial step size target nor the

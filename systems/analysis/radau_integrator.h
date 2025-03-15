@@ -70,7 +70,8 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
 
   explicit RadauIntegrator(const System<T>& system,
       Context<T>* context = nullptr);
-  ~RadauIntegrator() final = default;
+
+  ~RadauIntegrator() override;
 
   bool supports_error_estimation() const final { return true; }
 
