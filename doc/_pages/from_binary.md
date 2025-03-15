@@ -20,9 +20,11 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
+<div class="note" markdown="1">
 Drake's binary releases do not support the Gurobi solver. To use
 Gurobi, you will need to build Drake from source following the instructions in
 [Source Installation](/from_source.html).
+</div>
 
 ## Stable Releases
 
@@ -81,7 +83,7 @@ Install dependencies within the environment:
 
 ```bash
 sudo env/share/drake/setup/install_prereqs
-````
+```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
@@ -98,7 +100,7 @@ Install dependencies within the environment:
 
 ```bash
 env/share/drake/setup/install_prereqs
-````
+```
 
 Activate the environment:
 
@@ -117,21 +119,18 @@ Mac are generated nightly and are available to download at:
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-noble.tar.gz)
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz
 
-Older packages for specific dates are available by replacing ``latest`` with an
-8-digit date preceded by ``0.0.``, e.g., ``0.0.20240408`` for April 8th, 2024.
+Older packages for specific dates are available by replacing ``latest``
+with date YYYY-MM-DD preceded by `0.0`. For example,
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-jammy.tar.gz)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-noble.tar.gz)
-* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20240408-mac-arm64.tar.gz
-
-Users of macOS must download using a command-line tool such as ``curl`` instead
-of using a web browser, to avoid hassles from Gatekeeper checks for malicious
-software. See the "Stable Releases" section above for a sample command line.
-
-Nightly archives are retained for 56 days from their date of creation.
-
-The installation instructions are identical to stable releases as shown above.
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-jammy.tar.gz)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz)
+* https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-mac-arm64.tar.gz
 
 As with stable releases, users of macOS must download using a command-line tool
 such as ``curl`` instead of using a web browser, to avoid hassles from
 Gatekeeper checks for malicious software.
+See the "Stable Releases" section above for a sample command line.
+
+Nightly archives are retained for 56 days from their date of creation.
+
+The installation instructions are identical to stable releases as shown above.
