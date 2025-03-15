@@ -17,12 +17,15 @@ section.
 # Local Testing
 
 For CMake, see the
-[drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_cmake_installed#developer-testing)
+[drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed#developer-testing)
 example.
 
 For Bazel, see the
-[drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/master/drake_bazel_external)
-example, and note the comment in
-[WORKSPACE](https://github.com/RobotLocomotion/drake-external-examples/blob/master/drake_bazel_external/WORKSPACE)
-which mentions using something like
-[local_repository](https://docs.bazel.build/versions/master/be/workspace.html#local_repository) to consume a local checkout of Drake.
+[drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_external)
+example, and note the comments in:
+
+* the [README](https://github.com/RobotLocomotion/drake-external-examples/blob/main/drake_bazel_external#using-a-local-checkout-of-Drake),
+which mentions using
+[`--override-module`](https://bazel.build/reference/command-line-reference#flag--override_module) to consume a local checkout of Drake
+* [`MODULE.bazel`](https://github.com/RobotLocomotion/drake-external-examples/blob/main/drake_bazel_external/MODULE.bazel),
+which can be modified to use a particular revision (commit or release) of Drake
