@@ -1233,6 +1233,117 @@ TEST_F(RenderEngineGlTest, MeshTest) {
   }
 }
 
+// Confirm that non-uniform scale is correctly applied. We'll render create
+// two renderings: one with a reference mesh and one with the mesh pre-scaled
+// (applying the inverse scale to the Shape). The two images should end up
+// identical.
+TEST_F(RenderEngineGlTest, NonUniformScaleTest) {
+  RenderEngineGl ref_engine;
+  RenderEngineGl scale_engine;
+
+  // The mesh we're rendering has faces that are *not* aligned to the mesh's
+  // frame. This is important to confirm that the normals are handled properly.
+  // So, our mesh will be a cube rotated away from canonical orientation.
+
+  Eigen::Matrix3Xd vertices(3, 8);
+  Eigen::Matrix3Xd normals(3, 6);
+  // clang-format off
+  vertices << -1, -1,  1,  1, -1, -1,  1,  1,
+              -1,  1, -1,  1, -1,  1, -1,  1,
+              -1, -1, -1, -1,  1,  1,  1,  1;
+  normals <<   1, -1,  0,  0,  0,  0,
+               0,  0,  1, -1,  0,  0,
+               0,  0,  0,  0,  1, -1;
+  // clang-format on
+  RotationMatrixd R_GB(math::RollPitchYawd(M_PI / 4, M_PI / 4, 0));
+  // const RotationMatrixd R_GB;
+  for (int c = 0; c < vertices.cols(); ++c) {
+    vertices.col(c) = R_GB * vertices.col(c);
+  }
+  for (int n = 0; n < normals.cols(); ++n) {
+    normals.col(n) = R_GB * normals.col(n);
+  }
+
+  // Makes a MeshSource scaled such that if the scale `s` is applied, it becomes
+  // a 2x2x2 cube.
+  auto make_cube_mesh_source = [&vertices, &normals](const Vector3d& s) {
+    const Vector3d s_inv(1.0 / s[0], 1.0 / s[1], 1.0 / s[2]);
+    std::string obj_contents = "mtllib test_cube.mtl";
+    for (int v = 0; v < vertices.cols(); ++v) {
+      const Vector3d scaled = vertices.col(v).cwiseProduct(s_inv);
+      obj_contents +=
+          fmt::format("\nv {} {} {}", scaled[0], scaled[1], scaled[2]);
+    }
+    for (int n = 0; n < normals.cols(); ++n) {
+      const Vector3d scaled = normals.col(n).cwiseProduct(s).normalized();
+      obj_contents +=
+          fmt::format("\nvn {} {} {}", scaled[0], scaled[1], scaled[2]);
+    }
+    obj_contents += R"""(
+    usemtl red
+    f 1//6 2//6 4//6 3//6
+    f 1//4 3//4 7//4 5//4
+    f 1//2 5//2 6//2 2//2
+    f 8//5 6//5 5//5 7//5
+    f 8//1 7//1 3//1 4//1
+    f 8//3 4//3 2//3 6//3
+    )""";
+    // fmt::print(obj_contents);
+    std::cout << obj_contents << "\n";
+    return InMemoryMesh{
+        .mesh_file = MemoryFile(std::move(obj_contents), ".obj", "cube.obj"),
+        .supporting_files = {
+            {"test_cube.mtl",
+             MemoryFile("newmtl red\nKd 0.8 0 0\n", ".mtl", "test mtl")}}};
+  };
+
+  const auto convex_id = GeometryId::get_new_id();
+  const auto mesh_id = GeometryId::get_new_id();
+  PerceptionProperties material;
+  material.AddProperty("label", "id", RenderLabel::kDontCare);
+
+  const Vector3d unit_scale(1, 1, 1);
+  ref_engine.RegisterVisual(
+      mesh_id, Mesh(make_cube_mesh_source(unit_scale), unit_scale), material,
+      RigidTransformd(Vector3d(-1.5, 0, 0)), /* needs_update =*/false);
+  ref_engine.RegisterVisual(
+      convex_id, Convex(make_cube_mesh_source(unit_scale), unit_scale),
+      material, RigidTransformd(Vector3d(1.5, 0, 0)), /* needs_update =*/false);
+
+  const Vector3d stretch(2, 4, 8);  // powers of two for perfect math.
+  scale_engine.RegisterVisual(
+      mesh_id, Mesh(make_cube_mesh_source(stretch), stretch), material,
+      RigidTransformd(Vector3d(-1.5, 0, 0)), /* needs_update =*/false);
+  scale_engine.RegisterVisual(
+      convex_id, Convex(make_cube_mesh_source(stretch), stretch), material,
+      RigidTransformd(Vector3d(1.5, 0, 0)), /* needs_update =*/false);
+
+  // The camera is above the Wz = 0 plane, looking generally down and in the
+  // +Wy direction.
+  const RigidTransformd X_WC(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
+                             Vector3d(0, -3, 4.4));
+  ref_engine.UpdateViewpoint(X_WC);
+  scale_engine.UpdateViewpoint(X_WC);
+
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+  const int w = camera.core().intrinsics().width();
+  const int h = camera.core().intrinsics().height();
+  ImageRgba8U ref_color(w, h);
+  ImageRgba8U scale_color(w, h);
+  EXPECT_NO_THROW(ref_engine.RenderColorImage(camera, &ref_color));
+  EXPECT_NO_THROW(scale_engine.RenderColorImage(camera, &scale_color));
+
+  if (const char* dir = std::getenv("TEST_UNDECLARED_OUTPUTS_DIR")) {
+    const fs::path out_dir(dir);
+    const std::string file_prefix = "NonUniformScaleTest";
+    ImageIo{}.Save(ref_color,
+                   out_dir / fmt::format("{}_ref_color.png", file_prefix));
+    ImageIo{}.Save(scale_color,
+                   out_dir / fmt::format("{}_scale_color.png", file_prefix));
+  }
+  EXPECT_EQ(ref_color, scale_color);
+}
+
 // Repeats various mesh-based tests, but this time the meshes are loaded from
 // memory. We render the scene twice: once with the one mesh and once with the
 // other to confirm they are rendered the same.

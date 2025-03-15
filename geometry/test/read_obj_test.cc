@@ -40,67 +40,71 @@ void CheckVertices(
 // on tinyobj to triangulate correctly. We'll just confirm that quads become
 // triangles upon request.
 GTEST_TEST(ReadObjTest, Triangulate) {
+  const Eigen::Vector3d scale(1, 2, 3);
   for (const bool triangulate : {true, false}) {
     const auto [vertices, faces, num_faces] =
         ReadObj(FindPathOrThrow("drake/geometry/test/quad_cube.obj"),
-                /* scale= */ 1, triangulate);
+                scale, triangulate);
     EXPECT_EQ(vertices->size(), 8);
     EXPECT_EQ(num_faces, triangulate ? 12 : 6);
   }
 }
 
-// Performs the test over multiple scales to make sure scale is included.
+// Confirm that the scale factor is included.
 GTEST_TEST(ReadObjTest, QuadCube) {
-  for (const double scale : {0.5, 1.5}) {
-    const auto [vertices, faces, num_faces] =
-        ReadObj(FindPathOrThrow("drake/geometry/test/quad_cube.obj"), scale,
-                /* triangulate= */ false);
-    EXPECT_EQ(vertices->size(), 8);
-    EXPECT_EQ(num_faces, 6);
-    Eigen::Matrix<double, 8, 3> vertices_expected;
-    // clang-format off
-    vertices_expected << -1, -1, -1,
-                         -1, -1, 1,
-                         -1, 1, 1,
-                         -1, 1, -1,
-                         1, 1, -1,
-                         1, -1, -1,
-                         1, -1, 1,
-                         1, 1, 1;
-    // clang-format on
-    vertices_expected *= scale;
-    CheckVertices(vertices, vertices_expected.transpose(), 0.);
-    // Each face has 4 vertices, hence the size of faces is num_faces * (1 + 4).
-    // The point on the same face will have one coordinate with the same value.
-    EXPECT_EQ(faces->size(), num_faces * 5);
-    for (int i = 0; i < num_faces; ++i) {
-      bool found_coord = false;
-      for (int coord = 0; coord < 3; ++coord) {
-        bool coord_same_value = true;
-        for (int vert = 2; vert <= 4; ++vert) {
-          if ((*vertices)[(*faces)[5 * i + vert]](coord) !=
-              (*vertices)[(*faces)[5 * i + 1]](coord)) {
-            coord_same_value = false;
-            break;
-          }
-        }
-        if (coord_same_value) {
-          found_coord = true;
+  const double sx = 2;
+  const double sy = 3;
+  const double sz = 4;
+  const Eigen::Vector3d scale(sx, sy, sz);
+  const auto [vertices, faces, num_faces] =
+      ReadObj(FindPathOrThrow("drake/geometry/test/quad_cube.obj"), scale,
+              /* triangulate= */ false);
+  EXPECT_EQ(vertices->size(), 8);
+  EXPECT_EQ(num_faces, 6);
+  Eigen::Matrix<double, 8, 3> vertices_expected;
+  // clang-format off
+  // The cube obj has +/- 1 in all vertex coordinates.
+  vertices_expected << -sx, -sy, -sz,
+                       -sx, -sy,  sz,
+                       -sx,  sy,  sz,
+                       -sx,  sy, -sz,
+                        sx,  sy, -sz,
+                        sx, -sy, -sz,
+                        sx, -sy,  sz,
+                        sx,  sy,  sz;
+  // clang-format on
+  CheckVertices(vertices, vertices_expected.transpose(), 0.);
+  // Each face has 4 vertices, hence the size of faces is num_faces * (1 + 4).
+  // The point on the same face will have one coordinate with the same value.
+  EXPECT_EQ(faces->size(), num_faces * 5);
+  for (int i = 0; i < num_faces; ++i) {
+    bool found_coord = false;
+    for (int coord = 0; coord < 3; ++coord) {
+      bool coord_same_value = true;
+      for (int vert = 2; vert <= 4; ++vert) {
+        if ((*vertices)[(*faces)[5 * i + vert]](coord) !=
+            (*vertices)[(*faces)[5 * i + 1]](coord)) {
+          coord_same_value = false;
           break;
         }
       }
-      EXPECT_TRUE(found_coord);
+      if (coord_same_value) {
+        found_coord = true;
+        break;
+      }
     }
+    EXPECT_TRUE(found_coord);
   }
 }
 
 // The octahedron.obj is comprised only of triangles; we should get the same
 // result regardless of whether triangulate is true or false.
 GTEST_TEST(ReadObjTest, TriangulatingNoop) {
+  const Eigen::Vector3d scale(1, 1, 1);
   for (const bool triangulate : {true, false}) {
     const auto [vertices, faces, num_faces] =
         ReadObj(FindPathOrThrow("drake/geometry/test/octahedron.obj"),
-                /* scale= */ 1.0, triangulate);
+                scale, triangulate);
     EXPECT_EQ(vertices->size(), 6u);
     Eigen::Matrix<double, 6, 3> vertices_expected;
     // clang-format off
@@ -121,8 +125,9 @@ GTEST_TEST(ReadObjTest, TriangulatingNoop) {
 // Simply tests that multiple objects are supported. Scale and triangulate have
 // been tested elsewhere.
 GTEST_TEST(ReadObjTest, MultipleObjects) {
+  const Eigen::Vector3d scale(1, 1, 1);
   const auto [vertices, faces, num_faces] = ReadObj(
-      FindPathOrThrow("drake/geometry/test/two_cube_objects.obj"), 1.0,
+      FindPathOrThrow("drake/geometry/test/two_cube_objects.obj"), scale,
       /* triangulate= */ false);
   Eigen::Matrix<double, 16, 3> vertices_expected;
   // clang-format off
@@ -174,6 +179,7 @@ GTEST_TEST(ReadObjTest, MultipleObjects) {
 // A quick reality check that we can successfully invoke with a MeshSource.
 // Previous tests have relied on implicit conversion from path to source.
 GTEST_TEST(ReadObjTest, MeshSourceRegression) {
+  const Eigen::Vector3d scale(2, 2, 2);
   // In-memory source.
   {
     const MeshSource source(InMemoryMesh{MemoryFile(R"""(v 0 0 0
@@ -184,7 +190,7 @@ GTEST_TEST(ReadObjTest, MeshSourceRegression) {
                                                        )""",
                                                     ".obj", "test")});
     const auto [vertices, faces, num_faces] =
-        ReadObj(source, 2.0, /* triangulate= */ true);
+        ReadObj(source, scale, /* triangulate= */ true);
     EXPECT_EQ(vertices->size(), 4);
     EXPECT_EQ(faces->size(), 8);  // Two encoded triangles, 4 ints per tri.
   }
@@ -194,7 +200,7 @@ GTEST_TEST(ReadObjTest, MeshSourceRegression) {
     const MeshSource source(
         FindPathOrThrow("drake/geometry/test/quad_cube.obj"));
     const auto [vertices, faces, num_faces] =
-        ReadObj(source, 2.0, /* triangulate= */ false);
+        ReadObj(source, scale, /* triangulate= */ false);
     EXPECT_EQ(vertices->size(), 8);
     EXPECT_EQ(faces->size(), 30);  // Six encoded quads, 5 ints per quad.
   }
@@ -204,14 +210,15 @@ GTEST_TEST(ReadObjTest, MeshSourceRegression) {
 // vertices from an obj that would ordinarily throw if we asked for the face
 // data (see ErrorModes, below).
 GTEST_TEST(ReadObjTest, VertexOnly) {
+  const Eigen::Vector3d scale(2, 2, 2);
   const MeshSource source(InMemoryMesh{MemoryFile(R"""(v 0 0 0
                                                        v 0 1 0
                                                        v 1 0 0
                                                        v 1 1 0
                                                      )""",
                                                   ".obj", "no_faces")});
-  const auto [vertices, faces, num_faces] =
-      ReadObj(source, 2.0, /* triangulate= */ true, /* vertices_only= */ true);
+  const auto [vertices, faces, num_faces] = ReadObj(
+      source, scale, /* triangulate= */ true, /* vertices_only= */ true);
   EXPECT_EQ(vertices->size(), 4);
   EXPECT_EQ(faces->size(), 0);
   EXPECT_EQ(num_faces, 0);
@@ -221,6 +228,7 @@ class ReadObjDiagnosticsTest : public test::DiagnosticPolicyTestBase {};
 
 // Problems parsing the requested source.
 TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
+  const Eigen::Vector3d scale(2, 2, 2);
   // tinyobj errors broadcast as diagnostic errors. Without providing a
   // diagnostic policy, it throws.
   {
@@ -234,11 +242,11 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
     const MeshSource source(
         InMemoryMesh{MemoryFile(bad_index_obj, ".obj", "bad indices")});
     auto [verts, _1, _2] =
-        ReadObj(source, 2.0, /* triangulate= */ false,
+        ReadObj(source, scale, /* triangulate= */ false,
                 /* vertices_only= */ true, diagnostic_policy_);
     EXPECT_EQ(verts, nullptr);
     EXPECT_THAT(TakeError(), testing::HasSubstr("zero value for vertex"));
-    DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, 2.0, /* triangulate= */ false,
+    DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, scale, /* triangulate= */ false,
                                         /* vertices_only= */ true),
                                 "[^]*zero value for vertex[^]*");
   }
@@ -256,13 +264,13 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
     const MeshSource source(
         InMemoryMesh{MemoryFile(bad_index_obj, ".obj", "group")});
     auto [verts, _1, _2] =
-        ReadObj(source, 2.0, /* triangulate= */ false,
+        ReadObj(source, scale, /* triangulate= */ false,
                 /* vertices_only= */ true, diagnostic_policy_);
     EXPECT_EQ(verts->size(), 3);
     EXPECT_THAT(TakeWarning(),
                 testing::HasSubstr("Vertex indices out of bounds"));
     // This will write a warning to the console.
-    EXPECT_NO_THROW(ReadObj(source, 2.0, /* triangulate= */ false,
+    EXPECT_NO_THROW(ReadObj(source, scale, /* triangulate= */ false,
                             /* vertices_only= */ true));
   }
 
@@ -277,11 +285,11 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
     const MeshSource source(
         InMemoryMesh{MemoryFile(no_face_obj, ".obj", "no_faces")});
     auto [verts, _1, _2] =
-        ReadObj(source, 2.0, /* triangulate= */ false,
+        ReadObj(source, scale, /* triangulate= */ false,
                 /* vertices_only= */ false, diagnostic_policy_);
     EXPECT_EQ(verts, nullptr);
     EXPECT_THAT(TakeError(), testing::HasSubstr("no objects"));
-    DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, 2.0, /* triangulate= */ false,
+    DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, scale, /* triangulate= */ false,
                                         /* vertices_only= */ false),
                                 ".*no objects.*");
   }
@@ -291,11 +299,11 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
     const MeshSource source(
         InMemoryMesh{MemoryFile(no_face_obj, ".bad", "wrong_extension")});
     auto [verts, _1, _2] =
-        ReadObj(source, 2.0, /* triangulate= */ false,
+        ReadObj(source, scale, /* triangulate= */ false,
                 /* vertices_only= */ true, diagnostic_policy_);
     EXPECT_EQ(verts, nullptr);
     EXPECT_THAT(TakeError(), testing::HasSubstr("wrong extension: '.bad'"));
-    DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, 2.0, /* triangulate= */ false,
+    DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, scale, /* triangulate= */ false,
                                         /* vertices_only= */ false),
                                 ".*wrong extension.*");
   }
@@ -304,11 +312,11 @@ TEST_F(ReadObjDiagnosticsTest, ErrorModes) {
   {
     const MeshSource source("some_file.bad");
     auto [verts, _1, _2] =
-        ReadObj(source, 2.0, /* triangulate= */ false,
+        ReadObj(source, scale, /* triangulate= */ false,
                 /* vertices_only= */ true, diagnostic_policy_);
     EXPECT_EQ(verts, nullptr);
     EXPECT_THAT(TakeError(), testing::HasSubstr("wrong extension: '.bad'"));
-    DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, 2.0, /* triangulate= */ false,
+    DRAKE_EXPECT_THROWS_MESSAGE(ReadObj(source, scale, /* triangulate= */ false,
                                         /* vertices_only= */ false),
                                 ".*wrong extension.*");
   }

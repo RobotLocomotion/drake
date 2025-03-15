@@ -105,8 +105,9 @@ def _add_extraneous_repr_functions():
             data_param = f"filename={repr(str(mesh.source().path()))}"
         else:
             data_param = f"mesh_data={repr(mesh.source().in_memory())}"
+        # Convert array to list to ease converting repr to mesh type.
         return (
-            f"{type_name}({data_param}, scale={repr(mesh.scale())})"
+            f"{type_name}({data_param}, scale3={repr(list(mesh.scale3()))})"
         )
     Mesh.__repr__ = lambda x: mesh_or_convex_repr(x, "Mesh")
     Convex.__repr__ = lambda x: mesh_or_convex_repr(x, "Convex")

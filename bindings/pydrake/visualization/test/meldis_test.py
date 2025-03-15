@@ -40,6 +40,7 @@ from pydrake.geometry import (
     Mesh,
     MeshcatParams,
     Role,
+    SceneGraph,
 )
 from pydrake.lcm import (
     DrakeLcm,
@@ -200,6 +201,54 @@ class TestMeldis(unittest.TestCase):
         self._check_viewer_applet_on_model(
             "drake_models/iiwa_description/urdf/"
             "iiwa14_no_collision.urdf")
+
+    def test_viewer_applet_meshes_non_uniform_scale(self):
+        """Confirms that a mesh's non-uniform scale is taken from the lcm
+        message and passed to meshcat. This test relies on meshcat *handling*
+        the non-uniform scale by placing it into the packed object."""
+        dut = mut.Meldis()
+        meshcat = dut.meshcat
+        lcm = dut._lcm
+
+        builder = DiagramBuilder()
+        scene_graph = SceneGraph()
+        builder.AddSystem(scene_graph)
+        # Add scaled mesh to scene graph.
+        s_id = scene_graph.RegisterSource("meldis_test")
+        # Arbitrary scale values that are unlikely to be hard-coded anywhere.
+        scale3 = [-1.0, 3.0, -4.0]
+        obj_contents = """
+        v 0 0 0
+        v 1 0 0
+        v 0 1 0
+        f 1 2 3
+        """
+        mesh = Mesh(
+            mesh_data=InMemoryMesh(
+                mesh_file=MemoryFile(contents=obj_contents,
+                                     extension=".obj",
+                                     filename_hint="a.obj")),
+            scale3=scale3)
+        g_id = scene_graph.RegisterAnchoredGeometry(
+            s_id, GeometryInstance(RigidTransform(), mesh, "test_mesh"))
+        scene_graph.AssignRole(s_id, g_id, IllustrationProperties())
+
+        DrakeVisualizer.AddToBuilder(builder=builder, scene_graph=scene_graph,
+                                     params=DrakeVisualizerParams(), lcm=lcm)
+        diagram = builder.Build()
+        diagram.ForcedPublish(diagram.CreateDefaultContext())
+        lcm.HandleSubscriptions(timeout_millis=0)
+        dut._invoke_subscriptions()
+        path = "/DRAKE_VIEWER/0/world/0"
+        self.assertTrue(dut.meshcat.HasPath(path))
+        unpacked_obj = umsgpack.unpackb(meshcat._GetPackedObject(path))
+        scale_matrix = [0] * 16
+        scale_matrix[0] = scale3[0]
+        scale_matrix[5] = scale3[1]
+        scale_matrix[10] = scale3[2]
+        scale_matrix[15] = 1.0
+        self.assertListEqual(unpacked_obj['object']['object']['matrix'],
+                             scale_matrix)
 
     def test_viewer_applet_textured_meshes(self):
         """Checks _ViewerApplet support for textured meshes.
