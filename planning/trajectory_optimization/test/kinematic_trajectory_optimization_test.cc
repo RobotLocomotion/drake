@@ -143,6 +143,10 @@ TEST_F(KinematicTrajectoryOptimizationTest,
   auto binding = trajopt_.AddVelocityConstraintAtNormalizedTime(
       std::make_shared<solvers::BoundingBoxConstraint>(x_desired, x_desired),
       0.2);
+  // binding is not dense.
+  const auto gradient_sparsity_pattern =
+      binding.evaluator()->gradient_sparsity_pattern();
+  EXPECT_TRUE(gradient_sparsity_pattern.has_value());
   EXPECT_THAT(binding.to_string(), HasSubstr("velocity constraint"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 1);
 

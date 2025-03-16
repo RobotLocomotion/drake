@@ -117,6 +117,26 @@ class WrappedVelocityConstraint : public Constraint {
         num_positions_{num_positions},
         num_control_points_{num_control_points} {
     DRAKE_DEMAND(2 * num_positions_ == wrapped_constraint_->num_vars());
+    // Set the sparsity pattern.
+    std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+    // The constraint should depend on the duration.
+    for (int i = 0; i < this->num_outputs(); ++i) {
+      gradient_sparsity_pattern.emplace_back(i, 0);
+    }
+    // If q_pos(i) = 0 and a_vel(i) = 0, then neither q nor v depends on
+    // control_point.col(i). Therefor the constraint should not depend on
+    // control_point.col(i).
+    for (int i = 0; i < num_control_points; ++i) {
+      if (a_pos_(i) != 0 || a_vel_(i) != 0) {
+        for (int row = 0; row < this->num_outputs(); ++row) {
+          for (int col = 1 + i * num_positions;
+               col < 1 + (i + 1) * num_positions; ++col) {
+            gradient_sparsity_pattern.emplace_back(row, col);
+          }
+        }
+      }
+    }
+    this->SetGradientSparsityPattern(gradient_sparsity_pattern);
   }
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
