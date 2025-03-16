@@ -54,7 +54,7 @@ class DiagramDiscreteValues final : public DiscreteValues<T> {
 
   /// Destructor deletes any owned DiscreteValues objects but does nothing if
   /// the referenced DiscreteValues objects are unowned.
-  ~DiagramDiscreteValues() override {}
+  ~DiagramDiscreteValues() override;
 
   /// Creates a deep copy of this %DiagramDiscreteValues object, with the same
   /// substructure but with new, owned data. Intentionally shadows the

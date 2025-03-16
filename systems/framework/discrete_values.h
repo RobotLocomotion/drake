@@ -43,6 +43,8 @@ class DiscreteValues {
   /// Constructs an empty %DiscreteValues object containing no groups.
   DiscreteValues() {}
 
+  virtual ~DiscreteValues();
+
   /// Constructs a %DiscreteValues that does not own the underlying @p data.
   /// The referenced data must outlive this DiscreteValues. Every entry must be
   /// non-null.
@@ -88,8 +90,6 @@ class DiscreteValues {
     owned_data_.push_back(std::move(datum));
     return group_num;
   }
-
-  virtual ~DiscreteValues() {}
 
   int num_groups() const { return static_cast<int>(data_.size()); }
 
