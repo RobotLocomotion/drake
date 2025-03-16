@@ -160,11 +160,17 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "finite_horizon_linear_quadratic_regulator_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+    ],
     deps = [
         ":finite_horizon_linear_quadratic_regulator",
         ":linear_quadratic_regulator",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
         "//systems/framework/test_utilities:scalar_conversion",
         "//systems/primitives:linear_system",
         "//systems/primitives:symbolic_vector_system",

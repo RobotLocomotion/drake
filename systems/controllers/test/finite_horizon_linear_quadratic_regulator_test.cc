@@ -4,7 +4,11 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/trajectories/discrete_time_trajectory.h"
+#include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/multibody_plant.h"
+#include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/linear_quadratic_regulator.h"
+#include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/framework/test_utilities/scalar_conversion.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/symbolic_vector_system.h"
@@ -295,6 +299,65 @@ GTEST_TEST(FiniteHorizonLQRTest, AffineSystemTest) {
   EXPECT_TRUE(result.s0->value(t0).isZero(1e-5));
   EXPECT_TRUE(CompareMatrices(result.K->value(t0), lqr_result.K, 1e-4));
   EXPECT_TRUE(CompareMatrices(result.k0->value(t0), -udv + u0v, 1e-4));
+}
+
+// Ensures that the finite-horizon LQR works properly with a MultibodyPlant.
+GTEST_TEST(FiniteHorizonLQRTest, MultibodyPlantTest) {
+  using multibody::MultibodyPlant, multibody::Parser;
+
+  auto multibody_plant = std::make_unique<MultibodyPlant<double>>(0.0);
+  Parser(multibody_plant.get())
+      .AddModelsFromUrl(
+          "package://drake/examples/multibody/cart_pole/cart_pole.sdf");
+  multibody_plant->Finalize();
+
+  Eigen::VectorXd x0(4);
+  x0 << 0, M_PI, 0, 0;
+  Eigen::VectorXd u0(1);
+  u0 << 0;
+  auto context = multibody_plant->CreateDefaultContext();
+  EXPECT_TRUE(context->has_only_continuous_state());
+  multibody_plant->SetPositionsAndVelocities(context.get(), x0);
+  multibody_plant->get_actuation_input_port().FixValue(context.get(), u0);
+
+  const double t0 = 0.0;
+  const double tf = 1.0;
+
+  Eigen::DiagonalMatrix<double, 4> Q;
+  Q.diagonal() << 10, 10, 1, 1;
+  Eigen::DiagonalMatrix<double, 1> R;
+  R.diagonal() << 0.01;
+
+  FiniteHorizonLinearQuadraticRegulatorOptions options;
+  options.Qf = Q;
+  options.input_port_index =
+      multibody_plant->get_actuation_input_port().get_index();
+
+  auto finite_horizon_lqr = MakeFiniteHorizonLinearQuadraticRegulator(
+      *multibody_plant, *context, t0, tf, Eigen::MatrixXd(Q),
+      Eigen::MatrixXd(R), options);
+
+  DiagramBuilder<double> builder;
+  auto plant = builder.AddSystem(std::move(multibody_plant));
+  auto controller = builder.AddSystem(std::move(finite_horizon_lqr));
+  builder.Connect(controller->get_output_port(),
+                  plant->get_actuation_input_port());
+  builder.Connect(plant->get_state_output_port(), controller->get_input_port());
+
+  auto diagram = builder.Build();
+  Simulator simulator(*diagram);
+
+  const double theta_init = M_PI * 0.9;
+  Eigen::VectorXd x_init(4);
+  x_init << 0, theta_init, 0, 0;
+  simulator.get_mutable_context().SetContinuousState(x_init);
+
+  simulator.AdvanceTo(tf);
+  const double theta_final =
+      simulator.get_context().get_continuous_state_vector()[1];
+  // Check finite-horizon LQR controller regulates the cart-pole.
+  const double theta_d = M_PI;
+  EXPECT_LT(std::abs(theta_final - theta_d), std::abs(theta_init - theta_d));
 }
 
 // Ensures that we can scalar convert the System version of the regulator.

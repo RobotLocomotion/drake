@@ -294,8 +294,8 @@ ContinuousTimeFiniteHorizonLinearQuadraticRegulator(
   // Most argument consistency checks are handled by RiccatiSystem, but that
   // System doesn't need to understand the time range, so we perform (only)
   // those checks here.
-  DRAKE_DEMAND(system.IsDifferentialEquationSystem());
   system.ValidateContext(context);
+  DRAKE_DEMAND(context.has_only_continuous_state());
   DRAKE_DEMAND(system.num_input_ports() > 0);
   DRAKE_DEMAND(tf > t0);
   const int num_states = context.num_total_states();
@@ -409,8 +409,9 @@ DiscreteTimeFiniteHorizonLinearQuadraticRegulator(
     double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const FiniteHorizonLinearQuadraticRegulatorOptions& options) {
-  DRAKE_DEMAND(system.IsDifferenceEquationSystem());
   system.ValidateContext(context);
+  DRAKE_THROW_UNLESS(context.has_only_discrete_state() &&
+                     context.num_discrete_state_groups() == 1);
   DRAKE_THROW_UNLESS(system.num_input_ports() > 0);
   DRAKE_THROW_UNLESS(tf > t0);
 
@@ -602,17 +603,17 @@ FiniteHorizonLinearQuadraticRegulator(
     double tf, const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const FiniteHorizonLinearQuadraticRegulatorOptions& options) {
-  if (system.IsDifferentialEquationSystem()) {
+  system.ValidateContext(context);
+  if (context.has_only_continuous_state()) {
     return ContinuousTimeFiniteHorizonLinearQuadraticRegulator(
         system, context, t0, tf, Q, R, options);
-  } else if (system.IsDifferenceEquationSystem()) {
+  } else if (context.has_only_discrete_state()) {
     return DiscreteTimeFiniteHorizonLinearQuadraticRegulator(
         system, context, t0, tf, Q, R, options);
   } else {
     throw std::logic_error(
-        "FiniteHorizonLinearQuadraticRegulator only supports system where "
-        "either system.IsDifferentialEquationSystem() or "
-        "system.IsDifferenceEquationSystem() is true");
+        "FiniteHorizonLinearQuadraticRegulator only supports systems with "
+        "either only continuous states or only discrete states");
   }
 }
 
