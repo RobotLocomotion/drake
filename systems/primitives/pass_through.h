@@ -67,7 +67,7 @@ class PassThrough final : public LeafSystem<T> {
   template <typename U>
   explicit PassThrough(const PassThrough<U>&);
 
-  virtual ~PassThrough() = default;
+  ~PassThrough() final;
 
   // TODO(eric.cousineau): Possibly share single port interface with
   // ZeroOrderHold (#6490).
