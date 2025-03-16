@@ -54,7 +54,7 @@ class TrajectorySource final : public SingleOutputVectorSource<T> {
   template <typename U>
   explicit TrajectorySource(const TrajectorySource<U>& other);
 
-  ~TrajectorySource() final = default;
+  ~TrajectorySource() final;
 
   /// Updates the stored trajectory. @p trajectory must have the same number of
   /// rows as the trajectory passed to the constructor.

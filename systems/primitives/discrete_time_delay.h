@@ -72,7 +72,7 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
   template <typename U>
   explicit DiscreteTimeDelay(const DiscreteTimeDelay<U>& other);
 
-  ~DiscreteTimeDelay() final = default;
+  ~DiscreteTimeDelay() final;
 
   /// (Advanced) Manually samples the input port and updates the state of the
   /// block, sliding the delay buffer forward and placing the sampled input at

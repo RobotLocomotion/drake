@@ -4,6 +4,9 @@ namespace drake {
 namespace systems {
 
 template <typename T>
+VectorSystem<T>::~VectorSystem() = default;
+
+template <typename T>
 EventStatus VectorSystem<T>::CalcDiscreteUpdate(
     const Context<T>& context, DiscreteValues<T>* discrete_state) const {
   // Short-circuit when there's no work to do.

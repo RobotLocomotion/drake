@@ -3,6 +3,9 @@
 namespace drake::systems {
 
 template <typename T>
+LeafOutputPort<T>::~LeafOutputPort() = default;
+
+template <typename T>
 void LeafOutputPort<T>::ThrowIfInvalidPortValueType(
     const Context<T>& context, const AbstractValue& proposed) const {
   const CacheEntryValue& cache_value =

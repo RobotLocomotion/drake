@@ -29,7 +29,7 @@ class DiagramOutputPort final : public OutputPort<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiagramOutputPort);
 
-  ~DiagramOutputPort() final = default;
+  ~DiagramOutputPort() final;
 
   /** Obtains a reference to the subsystem output port that was exported to
   create this diagram port. Note that the source may itself be a diagram
