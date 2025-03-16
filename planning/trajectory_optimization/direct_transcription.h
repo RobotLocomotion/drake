@@ -134,7 +134,7 @@ class DirectTranscription : public MultipleShooting {
   // time as a decision variable; and perhaps add support for mixed
   // discrete-/continuous- systems.
 
-  ~DirectTranscription() override {}
+  ~DirectTranscription() override;
 
   /// Get the input trajectory at the solution as a PiecewisePolynomial.  The
   /// order of the trajectory will be determined by the integrator used in
