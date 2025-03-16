@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":check_constraint_eval_nonsymbolic",
+        ":check_gradient_sparsity_pattern",
     ],
 )
 
@@ -28,6 +29,18 @@ drake_cc_library(
         "//math:compute_numerical_gradient",
         "//math:gradient",
         "//solvers:constraint",
+    ],
+)
+
+drake_cc_library(
+    name = "check_gradient_sparsity_pattern",
+    testonly = 1,
+    srcs = ["check_gradient_sparsity_pattern.cc"],
+    hdrs = ["check_gradient_sparsity_pattern.h"],
+    deps = [
+        "//math:gradient",
+        "//solvers:constraint",
+        "@gtest//:without_main",
     ],
 )
 
