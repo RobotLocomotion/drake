@@ -46,6 +46,9 @@ ZeroOrderHold<T>::ZeroOrderHold(const ZeroOrderHold<U>& other)
                                         : nullptr) {}
 
 template <typename T>
+ZeroOrderHold<T>::~ZeroOrderHold() = default;
+
+template <typename T>
 void ZeroOrderHold<T>::SetVectorState(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   DRAKE_ASSERT(!is_abstract());

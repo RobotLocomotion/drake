@@ -59,6 +59,8 @@ OwnedPair MakeAutoDiffXd(const systems::System<double>& system,
 
 }  // namespace
 
+DirectCollocation::~DirectCollocation() {}
+
 DirectCollocationConstraint::DirectCollocationConstraint(
     const System<double>& system, const Context<double>& context,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
@@ -130,6 +132,8 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     }
   }
 }
+
+DirectCollocationConstraint::~DirectCollocationConstraint() = default;
 
 void DirectCollocationConstraint::CalcDynamics(
     const AutoDiffVecXd& x_with_dvars, const AutoDiffVecXd& u_with_dvars,

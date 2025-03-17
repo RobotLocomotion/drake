@@ -254,6 +254,8 @@ DirectTranscription::DirectTranscription(
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
 
+DirectTranscription::~DirectTranscription() {}
+
 void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   // Cost = \sum_n g(n,x[n],u[n]) dt
   for (int i = 0; i < N() - 1; i++) {

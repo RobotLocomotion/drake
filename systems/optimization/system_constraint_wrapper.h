@@ -80,7 +80,7 @@ class SystemConstraintWrapper : public solvers::Constraint {
       UpdateContextFromDecisionVariablesFunction<AutoDiffXd> updater_autodiff,
       int x_size);
 
-  ~SystemConstraintWrapper() override {}
+  ~SystemConstraintWrapper() override;
 
   /** Gets the AutoDiffXd type System stored in this constraint.*/
   const System<AutoDiffXd>& system_autodiff() const;

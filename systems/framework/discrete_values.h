@@ -73,6 +73,8 @@ class DiscreteValues {
     AppendGroup(std::move(datum));
   }
 
+  virtual ~DiscreteValues();
+
   /// Adds an additional group that owns the given @p datum, which must be
   /// non-null. Returns the assigned group number, counting up from 0 for the
   /// first group.
@@ -88,8 +90,6 @@ class DiscreteValues {
     owned_data_.push_back(std::move(datum));
     return group_num;
   }
-
-  virtual ~DiscreteValues() {}
 
   int num_groups() const { return static_cast<int>(data_.size()); }
 

@@ -77,7 +77,7 @@ class DirectCollocation : public MultipleShooting {
   // decision variables, has been (temporarily) removed since it complicates
   // the API and code.
 
-  ~DirectCollocation() override {}
+  ~DirectCollocation() override;
 
   trajectories::PiecewisePolynomial<double> ReconstructInputTrajectory(
       const solvers::MathematicalProgramResult& result) const override;
@@ -146,7 +146,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
               systems::InputPortSelection::kUseFirstInputIfItExists,
       bool assume_non_continuous_states_are_fixed = false);
 
-  ~DirectCollocationConstraint() override = default;
+  ~DirectCollocationConstraint() override;
 
   int num_states() const { return num_states_; }
   int num_inputs() const { return num_inputs_; }

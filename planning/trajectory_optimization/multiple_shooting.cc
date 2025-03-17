@@ -31,6 +31,8 @@ using trajectories::PiecewisePolynomial;
 // x state
 // u control input
 
+MultipleShooting::~MultipleShooting() {}
+
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples, double fixed_time_step,
                                    solvers::MathematicalProgram* prog)
