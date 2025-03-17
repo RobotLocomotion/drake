@@ -28,7 +28,7 @@ CalcSpatialInertiaResult CalcMeshSpatialInertia(const Mesh& mesh,
   const auto& extension = mesh.extension();
   if (extension == ".obj") {
     return internal::CalcSpatialInertiaImpl(
-        geometry::ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale()),
+        geometry::ReadObjToTriangleSurfaceMesh(mesh.source(), mesh.scale3()),
         density);
   }
   if (extension == ".vtk") {
