@@ -663,10 +663,10 @@ add_custom_target(drake_version ALL
 
 add_custom_target(drake_cxx_python ALL
   COMMAND "${Bazel_EXECUTABLE}" build ${BAZEL_INSTALL_TARGET}
-  DEPENDS "${PROJECT_BINARY_DIR}/VERSION.TXT"
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/drake_build_cwd"
   USES_TERMINAL
 )
+add_dependencies(drake_cxx_python drake_version)
 
 install(CODE
   "execute_process(
