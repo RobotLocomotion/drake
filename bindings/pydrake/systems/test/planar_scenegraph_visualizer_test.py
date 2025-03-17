@@ -1,8 +1,10 @@
 import unittest
 
 from python.runfiles import Create as CreateRunfiles
+import io
 import numpy as np
 import os
+from PIL import Image
 
 from pydrake.common import (
     FindResourceOrThrow,
@@ -14,7 +16,7 @@ from pydrake.geometry import (
     Mesh,
     MeshSource,
 )
-from pydrake.math import RigidTransform
+from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph, CoulombFriction)
@@ -230,6 +232,70 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
         self.assertIn("has an unsupported extension", str(cm.exception))
         self.assertNotIn("No supported alternative could be found.",
                          str(cm.exception))
+
+    def test_non_uniform_scale(self):
+        """
+        This test ensures that the visualizer handles non-uniform scale on
+        Mesh (and, by implication, Convex). We do this by creating three
+        visualizations:
+
+        1. Visualization of arbitrary mesh.
+        2. Visualization of reference mesh.
+        3. Visualization of scaled mesh, such when applying the scale factors,
+           it should appear the same as the reference mesh.
+
+        We confirm that the visualization of the arbitrary and reference meshes
+        are different. And then that the reference and scaled match.
+        """
+        def visualizer_with_mesh(mesh_contents: str, scale: list):
+            builder = DiagramBuilder()
+            mbp, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+            world_body = mbp.world_body()
+
+            mesh_body = mbp.AddRigidBody("mesh")
+            mbp.WeldFrames(world_body.body_frame(), mesh_body.body_frame(),
+                           RigidTransform())
+            mesh = Mesh(
+                InMemoryMesh(
+                    mesh_file=MemoryFile(contents=mesh_contents,
+                                         extension=".obj",
+                                         filename_hint="test.obj")),
+                scale3=scale)
+            X_BG = RigidTransform(rpy=RollPitchYaw(0.25, 0.25, 0.25),
+                                  p=[0, 0, 0])
+            mbp.RegisterVisualGeometry(mesh_body, X_BG, mesh, "mesh_vis",
+                                       np.array([0.5, 0.5, 0.5, 1.]))
+            mbp.Finalize()
+
+            return PlanarSceneGraphVisualizer(scene_graph)
+
+        # The meshes below have no faces; they get replaced by their convex
+        # hulls so the faces aren't needed.
+        viz_baseline = visualizer_with_mesh(
+            mesh_contents="v -1 0 0\nv 0 0 0\nv -1 1 0\nv -1 0 1\n",
+            scale=[1, 1, 1])
+        viz_reference = visualizer_with_mesh(
+            mesh_contents="v 0 0 0\nv 1 0 0\nv 0 1 0\nv 0 0 1\n",
+            scale=[1, 1, 1])
+        # Scale the tet vertex positions by the inverse of the non-uniform
+        # scale.
+        scale = [2, 4, 8]
+        viz_scaled = visualizer_with_mesh(
+            mesh_contents="v 0 0 0\nv 0.5 0 0\nv 0 0.25 0\nv 0 0 0.125\n",
+            scale=scale)
+
+        def get_plot_image(viz: PlanarSceneGraphVisualizer):
+            buf = io.BytesIO()
+            viz.fig.savefig(buf, format='png')
+            buf.seek(0)
+            image = Image.open(buf)
+            return np.array(image)
+
+        ref_plot = get_plot_image(viz_reference)
+        self.assertTrue(np.any(np.not_equal(ref_plot,
+                                            get_plot_image(viz_baseline))))
+        np.testing.assert_array_equal(ref_plot,
+                                      get_plot_image(viz_scaled))
 
     def testConnectPlanarSceneGraphVisualizer(self):
         """Cart-Pole with simple geometry."""
