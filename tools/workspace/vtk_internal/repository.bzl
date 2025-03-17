@@ -173,7 +173,7 @@ def vtk_internal_repository(
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
         commit = "d236d27dde52f1f14eb919adacf0d355af6a440a",
-        sha256 = "349aa9da6b2be0b21d522695af116219c0fd43fe62902508f21eb59251303185", # noqa
+        sha256 = "349aa9da6b2be0b21d522695af116219c0fd43fe62902508f21eb59251303185",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/common_core_rm_iostream.patch",
@@ -192,7 +192,7 @@ def vtk_internal_repository(
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
             ":patches/vtksys_hidden.patch",
-            ":patches/vtkiohdf_newline.patch"
+            ":patches/vtkiohdf_newline.patch",
         ],
         settings_bzl = ":settings.bzl",
         **kwargs):
