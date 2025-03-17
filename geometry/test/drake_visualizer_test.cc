@@ -390,14 +390,16 @@ class DrakeVisualizerTest : public ::testing::Test {
     const std::string kSupportingPngAsMemory(
         "fully_textured_pyramid_normal.png");
 
+    // Apply a non-uniform scale, so we can observe it in the LCM message.
+    const Vector3d scale(2, 3, 4);
     if (in_memory) {
       InMemoryMesh mesh_data = ReadGltfToMemory(fs::path(gltf_path));
       mesh_data.supporting_files[kSupportingPngAsMemory] =
           MemoryFile::Make(std::get<fs::path>(
               mesh_data.supporting_files[kSupportingPngAsMemory]));
-      mesh = make_unique<MeshType>(std::move(mesh_data));
+      mesh = make_unique<MeshType>(std::move(mesh_data), scale);
     } else {
-      mesh = make_unique<MeshType>(gltf_path);
+      mesh = make_unique<MeshType>(gltf_path, scale);
     }
 
     SCOPED_TRACE(fmt::format("{} {} shape with {} role",
@@ -480,6 +482,10 @@ class DrakeVisualizerTest : public ::testing::Test {
       EXPECT_TRUE(CompareMatrices(X_PC.GetAsMatrix34(),
                                   X_PG_test.GetAsMatrix34(), 1e-7));
     } else {
+      EXPECT_FALSE(geo_message.float_data.empty());
+      EXPECT_EQ(geo_message.float_data[0], scale.x());
+      EXPECT_EQ(geo_message.float_data[1], scale.y());
+      EXPECT_EQ(geo_message.float_data[2], scale.z());
       if (in_memory) {
         EXPECT_FALSE(geo_message.string_data.empty());
         nlohmann::json json_root =
