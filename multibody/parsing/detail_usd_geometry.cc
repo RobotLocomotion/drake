@@ -333,25 +333,6 @@ std::optional<Eigen::Vector2d> GetCapsuleDimension(
   return Eigen::Vector2d(capsule_radius, capsule_height);
 }
 
-std::optional<double> GetMeshScale(const pxr::UsdPrim& prim,
-                                   const DiagnosticPolicy& diagnostic) {
-  std::optional<Eigen::Vector3d> prim_scale_opt =
-      GetPrimScale(prim, diagnostic);
-  if (!prim_scale_opt.has_value()) {
-    return std::nullopt;
-  }
-  Eigen::Vector3d prim_scale = prim_scale_opt.value();
-
-  if (prim_scale[0] != prim_scale[1] || prim_scale[1] != prim_scale[2]) {
-    diagnostic.Error(fmt::format(
-        "The scaling of the mesh at {} is not isotropic. Non-isotropic scaling "
-        "of a mesh is not supported.",
-        prim.GetPath().GetString()));
-    return std::nullopt;
-  }
-  return prim_scale[0];
-}
-
 std::unique_ptr<geometry::Shape> CreateGeometryBox(
     const pxr::UsdPrim& prim, double meters_per_unit,
     const DiagnosticPolicy& diagnostic) {
@@ -417,7 +398,7 @@ std::unique_ptr<geometry::Shape> CreateGeometryMesh(
     return nullptr;
   }
 
-  std::optional<double> prim_scale = GetMeshScale(prim, diagnostic);
+  std::optional<Eigen::Vector3d> prim_scale = GetPrimScale(prim, diagnostic);
   if (!prim_scale.has_value()) {
     return nullptr;
   }
