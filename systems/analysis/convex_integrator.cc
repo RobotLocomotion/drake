@@ -110,8 +110,6 @@ void ConvexIntegrator<T>::DoInitialize() {
         VectorX<T>::Constant(n, actuator.effort_limit());
   }
 
-  fmt::print("u_max: {}\n", fmt_eigen(effort_limits_.transpose()));
-
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
     // Verify that maximum step size has been set.
