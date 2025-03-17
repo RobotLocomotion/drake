@@ -65,8 +65,7 @@ int DoMain() {
       "urdf/iiwa14_polytope_collision.urdf";
   const std::string urdf =
       (!FLAGS_urdf.empty() ? FLAGS_urdf : PackageMap{}.ResolveUrl(kModelUrl));
-  auto iiwa_instance =
-      multibody::Parser(&plant, &scene_graph).AddModels(urdf).at(0);
+  auto iiwa_instance = multibody::Parser(&builder).AddModels(urdf).at(0);
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("base"));
   plant.Finalize();
 

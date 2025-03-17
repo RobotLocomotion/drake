@@ -144,7 +144,7 @@ int DoMain() {
       multibody::AddMultibodyPlant(plant_config, &builder);
 
   // Parse the gripper and spatula models.
-  multibody::Parser parser(&plant, &scene_graph);
+  multibody::Parser parser(&builder);
   parser.AddModelsFromUrl(
       "package://drake_models/wsg_50_description/sdf/"
       "schunk_wsg_50_hydro_bubble.sdf");

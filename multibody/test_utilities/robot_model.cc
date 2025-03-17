@@ -68,7 +68,7 @@ RobotModel<T>::RobotModel(const RobotModelConfig& config,
   auto items = AddMultibodyPlantSceneGraph(&builder, kTimeStep);
   plant_ = &items.plant;
 
-  Parser parser(plant_);
+  Parser parser(&builder);
   robot_model_instance_ = parser.AddModelsFromUrl(
       "package://drake_models/iiwa_description/sdf/iiwa7_no_collision.sdf")[0];
   parser.AddModelsFromUrl("package://drake_models/dishes/plate_8in.sdf");

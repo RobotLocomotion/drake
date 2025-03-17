@@ -99,7 +99,7 @@ int do_main() {
   // Make and add the acrobot model.
   const std::string acrobot_url =
       "package://drake/multibody/benchmarks/acrobot/acrobot.sdf";
-  Parser parser(&acrobot);
+  Parser parser(&builder);
   parser.AddModelsFromUrl(acrobot_url);
 
   // We are done defining the model.
