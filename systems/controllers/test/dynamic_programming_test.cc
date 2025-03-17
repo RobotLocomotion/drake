@@ -276,12 +276,12 @@ GTEST_TEST(LinearProgrammingTest, SingleIntegrator) {
   };
 
   const int kNumParameters = 1;
-  const auto cost_to_go_function = [](
-      const Eigen::Ref<const Eigen::VectorXd>& state,
-      const VectorX<symbolic::Variable>& parameters) {
-    using std::abs;
-    return parameters[0] * abs(state[0]);
-  };
+  const auto cost_to_go_function =
+      [](const Eigen::Ref<const Eigen::VectorXd>& state,
+         const VectorX<symbolic::Variable>& parameters) {
+        using std::abs;
+        return parameters[0] * abs(state[0]);
+      };
 
   Eigen::RowVectorXd state_samples(9);
   state_samples << -4., -3., -2., -1., 0., 1., 2., 3., 4.;

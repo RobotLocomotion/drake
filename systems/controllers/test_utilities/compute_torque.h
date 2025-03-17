@@ -11,12 +11,11 @@ namespace controllers_test {
 
 // Computes torque predicted by inverse dynamics for use with inverse dynamics
 // and inverse dynamics controller testing.
-VectorX<double> ComputeTorque(
-    const multibody::MultibodyPlant<double>& plant,
-    const VectorX<double>& q,
-    const VectorX<double>& v,
-    const VectorX<double>& vd_d,
-    systems::Context<double>* context) {
+VectorX<double> ComputeTorque(const multibody::MultibodyPlant<double>& plant,
+                              const VectorX<double>& q,
+                              const VectorX<double>& v,
+                              const VectorX<double>& vd_d,
+                              systems::Context<double>* context) {
   // Populate the context.
   plant.SetPositions(context, q);
   plant.SetVelocities(context, v);

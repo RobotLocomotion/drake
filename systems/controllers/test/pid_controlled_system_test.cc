@@ -124,7 +124,7 @@ class TestPlantWithMoreOutputPorts : public TestPlant {
   }
 
   void CalcStateOutputVector(const Context<double>&,
-                        BasicVector<double>* output) const {
+                             BasicVector<double>* output) const {
     BasicVector<double>& output_vector = *output;
     output_vector[0] = 43.;
     output_vector[1] = 0.68;
@@ -136,9 +136,8 @@ class PidControlledSystemTest : public ::testing::Test {
   // Instantiates a PidControlledSystem based on the supplied plant and
   // feedback selector. Verifies that the output of the PID controller is
   // correct relative to the hard-coded input and gain values.
-  void DoPidControlledSystemTest(
-      std::unique_ptr<TestPlant> plant,
-      const MatrixX<double>& feedback_selector) {
+  void DoPidControlledSystemTest(std::unique_ptr<TestPlant> plant,
+                                 const MatrixX<double>& feedback_selector) {
     DiagramBuilder<double> builder;
     const Vector1d input(1.);
     const Eigen::Vector2d state(1.1, 0.2);
@@ -160,8 +159,7 @@ class PidControlledSystemTest : public ::testing::Test {
     auto output = diagram_->AllocateOutput();
 
     const systems::Context<double>& plant_context =
-        diagram_->GetSubsystemContext(*controller->plant(),
-                                      *context);
+        diagram_->GetSubsystemContext(*controller->plant(), *context);
 
     diagram_->CalcOutput(*context, output.get());
     const BasicVector<double>* output_vec = output->get_vector_data(0);
@@ -186,8 +184,8 @@ TEST_F(PidControlledSystemTest, ExistingNamesRespected) {
   const int state_size = plant->get_output_port(0).size();
 
   PidControlledSystem<double> controller(
-      std::move(plant), MatrixX<double>::Identity(state_size, state_size),
-      Kp_, Ki_, Kd_);
+      std::move(plant), MatrixX<double>::Identity(state_size, state_size), Kp_,
+      Ki_, Kd_);
   EXPECT_EQ("my awesome plant!", plant_ptr->get_name());
 }
 
@@ -199,7 +197,7 @@ TEST_F(PidControlledSystemTest, SimplePidControlledSystem) {
   auto plant = std::make_unique<TestPlantWithMinOutputs>();
   const int state_size = plant->get_output_port(0).size();
   DoPidControlledSystemTest(std::move(plant),
-      MatrixX<double>::Identity(state_size, state_size));
+                            MatrixX<double>::Identity(state_size, state_size));
 }
 
 // Tests a plant where the size of output port zero is more than twice the size
@@ -247,9 +245,9 @@ class ConnectControllerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     auto plant_ptr = std::make_unique<TestPlantWithMinOutputs>();
-    feedback_selector_ = MatrixX<double>::Identity(
-        plant_ptr->get_output_port(0).size(),
-        plant_ptr->get_output_port(0).size());
+    feedback_selector_ =
+        MatrixX<double>::Identity(plant_ptr->get_output_port(0).size(),
+                                  plant_ptr->get_output_port(0).size());
 
     plant_ = builder_.AddSystem(std::move(plant_ptr));
 
@@ -270,9 +268,8 @@ class ConnectControllerTest : public ::testing::Test {
     auto standard_diagram = builder_.Build();
     auto context = standard_diagram->CreateDefaultContext();
 
-    auto plant_output =
-        standard_diagram->GetSubsystemByName(plant_->get_name())
-        .AllocateOutput();
+    auto plant_output = standard_diagram->GetSubsystemByName(plant_->get_name())
+                            .AllocateOutput();
     auto& plant_context =
         standard_diagram->GetSubsystemContext(*plant_, *context);
 
@@ -306,8 +303,8 @@ class ConnectControllerTest : public ::testing::Test {
 // method.
 TEST_F(ConnectControllerTest, NonSaturatingController) {
   auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
-      plant_->get_input_port(0), plant_->get_output_port(0),
-      feedback_selector_, Kp, Ki, Kd, &builder_);
+      plant_->get_input_port(0), plant_->get_output_port(0), feedback_selector_,
+      Kp, Ki, Kd, &builder_);
 
   ConnectPidPorts(plant_pid_ports);
 
@@ -343,8 +340,8 @@ TEST_F(ConnectControllerTest, SaturatingController) {
 // this was broken at one point).
 TEST_F(ConnectControllerTest, MultipleControllerTest) {
   auto plant_pid_ports = PidControlledSystem<double>::ConnectController(
-      plant_->get_input_port(0), plant_->get_output_port(0),
-      feedback_selector_, Kp, Ki, Kd, &builder_);
+      plant_->get_input_port(0), plant_->get_output_port(0), feedback_selector_,
+      Kp, Ki, Kd, &builder_);
 
   ConnectPidPorts(plant_pid_ports);
 
@@ -352,8 +349,8 @@ TEST_F(ConnectControllerTest, MultipleControllerTest) {
   // prevents two plants from existing in the same diagram.
   SetUp();
   auto second_plant_pid_ports = PidControlledSystem<double>::ConnectController(
-      plant_->get_input_port(0), plant_->get_output_port(0),
-      feedback_selector_, Kp, Ki, Kd, &builder_);
+      plant_->get_input_port(0), plant_->get_output_port(0), feedback_selector_,
+      Kp, Ki, Kd, &builder_);
 
   ConnectPidPorts(second_plant_pid_ports);
   DRAKE_EXPECT_NO_THROW(builder_.Build());
