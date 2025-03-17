@@ -1,8 +1,9 @@
 #pragma once
 
-// Many C++20 std headers define ssize; pick one. This is needed even to
-// get the __cpp_lib_ssize define set.
-#include <vector>
+// Although many C++20 std headers define ssize, the standard specifies that
+// only <iterator> and <version> (the latter of which only exists in C++20 and
+// later) define the feature test macro.
+#include <iterator>
 
 #ifdef __cpp_lib_ssize
 namespace drake {
