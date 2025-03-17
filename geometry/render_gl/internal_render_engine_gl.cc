@@ -829,8 +829,8 @@ void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
   CacheConvexHullMesh(convex, *data);
   // Note: CacheConvexHullMesh() either succeeds or throws.
-  ImplementMeshesForSource(user_data, kUnitScale * convex.scale(),
-                           convex.source(), /* is_convex=*/true);
+  ImplementMeshesForSource(user_data, convex.scale3(), convex.source(),
+                           /* is_convex=*/true);
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
@@ -857,8 +857,8 @@ void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
   RegistrationData* data = static_cast<RegistrationData*>(user_data);
   CacheFileMeshesMaybe(mesh.source(), data);
   if (data->accepted) {
-    ImplementMeshesForSource(user_data, kUnitScale * mesh.scale(),
-                             mesh.source(), /* is_convex=*/false);
+    ImplementMeshesForSource(user_data, mesh.scale3(), mesh.source(),
+                             /* is_convex=*/false);
   }
 }
 
@@ -1332,10 +1332,13 @@ void RenderEngineGl::CacheConvexHullMesh(const Convex& convex,
   const std::string file_key = GetPathKey(convex.source(), /*is_convex=*/true);
 
   if (!meshes_.contains(file_key)) {
+    const bool unscaled = (convex.scale3().array() == 1.0).all();
+    // We store a hull of the mesh's *unscaled* vertices (applying a particular
+    // instance's scale when rendering that instance).
     const TriangleSurfaceMesh<double> tri_hull =
         geometry::internal::MakeTriangleFromPolygonMesh(
-            convex.scale() == 1.0 ? convex.GetConvexHull()
-                                  : Convex(convex.source()).GetConvexHull());
+            unscaled ? convex.GetConvexHull()
+                     : Convex(convex.source()).GetConvexHull());
     RenderMesh render_mesh =
         geometry::internal::MakeFacetedRenderMeshFromTriangleSurfaceMesh(
             tri_hull, data.properties);
