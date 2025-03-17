@@ -291,6 +291,26 @@ GTEST_TEST(TestLqr, DiscreteDoubleIntegrator) {
 
   // Test AffineSystem version of the LQR
   TestLqrAffineSystemAgainstKnownSolution(tol, sys, K, Q, R);
+
+  // A different cost function with the same Q and R, and an extra N = [1; 0].
+  Eigen::Vector2d N(1, 0);
+  // Solution from dlqr in Matlab.
+  K << 0.427961322156271, 1.06165953563278;
+
+  // clang-format off
+  S << 2.48073711494216, 1.33665975925470,
+       1.33665975925470, 4.45997883052027;
+  // clang-format on
+
+  result = DiscreteTimeLinearQuadraticRegulator(A, B, Q, R, N);
+  EXPECT_TRUE(CompareMatrices(result.K, K, tol));
+  EXPECT_TRUE(CompareMatrices(result.S, S, tol));
+
+  // Test LinearSystem version of the LQR
+  TestLqrLinearSystemAgainstKnownSolution(tol, sys, K, Q, R, N);
+
+  // Test AffineSystem version of the LQR
+  TestLqrAffineSystemAgainstKnownSolution(tol, sys, K, Q, R, N);
 }
 
 // Adds test coverage for calling LQR from a LeafSystem and from a
