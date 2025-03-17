@@ -966,6 +966,7 @@ void RenderEngineVtk::InitializePipelines() {
     vtkNew<vtkRenderPassCollection> passes;
     vtkNew<vtkShadowMapPass> shadows;
     passes->AddItem(shadows->GetShadowMapBakerPass());
+    shadows->GetShadowMapBakerPass()->SetExponentialConstant(80.0);
     shadows->GetShadowMapBakerPass()->SetResolution(
         parameters_.shadow_map_size);
     // The shadow map pass gets the full render sequence so that we get opaque
