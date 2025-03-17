@@ -41,7 +41,7 @@ class VectorSystem : public LeafSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorSystem);
 
-  ~VectorSystem() override = default;
+  ~VectorSystem() override;
 
  protected:
   /// Creates a system with one input port and one output port of the given

@@ -112,6 +112,18 @@ GTEST_TEST(ColorDepthImageTest, DefaultInvalidColor) {
   EXPECT_EQ(static_cast<int>(invalid.a() * 255), 255);
 }
 
+// Colorizes an image with valid, uniform depth across the board. The image
+// should be all white. This requires that the implementation take care when
+// scaling the depth range not to divide by zero.
+GTEST_TEST(ColorDepthImageTest, UniformDepth) {
+  const ImageDepth32F input(6, 2, 22.0f);
+  const ImageRgba8U expected(6, 2, uint8_t{255});
+  ColorizeDepthImage<double> dut;
+  ImageRgba8U actual;
+  dut.Calc(input, &actual);
+  EXPECT_EQ(actual, expected);
+}
+
 GTEST_TEST(ColorDepthImageTest, BadlyConnectedInputs) {
   ColorizeDepthImage<double> dut;
   auto context = dut.CreateDefaultContext();

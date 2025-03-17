@@ -27,6 +27,8 @@ MidPointIntegrationConstraint::MidPointIntegrationConstraint(int dim)
   SetGradientSparsityPattern(gradient_sparsity_pattern);
 }
 
+MidPointIntegrationConstraint::~MidPointIntegrationConstraint() {}
+
 template <typename T>
 void MidPointIntegrationConstraint::DoEvalGeneric(
     const Eigen::Ref<const VectorX<T>>& x, VectorX<T>* y) const {

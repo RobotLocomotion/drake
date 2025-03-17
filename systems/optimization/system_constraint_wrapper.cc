@@ -39,6 +39,8 @@ SystemConstraintWrapper::SystemConstraintWrapper(
   }
 }
 
+SystemConstraintWrapper::~SystemConstraintWrapper() {}
+
 const System<AutoDiffXd>& SystemConstraintWrapper::system_autodiff() const {
   return *system_autodiff_;
 }

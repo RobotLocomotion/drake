@@ -45,7 +45,7 @@ class MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultipleShooting);
 
-  virtual ~MultipleShooting() {}
+  virtual ~MultipleShooting();
 
   /// Returns a reference to the MathematicalProgram associated with the
   /// trajectory optimization problem.

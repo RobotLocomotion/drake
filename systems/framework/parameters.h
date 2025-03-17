@@ -62,7 +62,7 @@ class Parameters {
         abstract_parameters_(
             std::make_unique<AbstractValues>(std::move(value))) {}
 
-  virtual ~Parameters() {}
+  virtual ~Parameters();
 
   int num_numeric_parameter_groups() const {
     return numeric_parameters_->num_groups();

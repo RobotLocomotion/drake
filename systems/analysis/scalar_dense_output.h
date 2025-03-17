@@ -19,7 +19,7 @@ class ScalarDenseOutput : public DenseOutput<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScalarDenseOutput);
 
-  virtual ~ScalarDenseOutput() = default;
+  virtual ~ScalarDenseOutput();
 
   /// Evaluates output at the given time @p t.
   /// @param t Time at which to evaluate output.

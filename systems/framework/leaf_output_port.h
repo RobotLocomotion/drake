@@ -32,7 +32,7 @@ class LeafOutputPort final : public OutputPort<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(LeafOutputPort);
 
-  ~LeafOutputPort() final = default;
+  ~LeafOutputPort() final;
 
   // TODO(jwnimmer-tri) It's likely that nixing these output-specific callback
   // function types in favor of more ValueProducer sugar would lead to clearer

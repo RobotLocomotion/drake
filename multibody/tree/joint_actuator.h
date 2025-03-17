@@ -286,30 +286,28 @@ class JointActuator final : public MultibodyElement<T> {
   /// and Kd are the proportional and derivative gains specified in `gains`,
   /// u_ff is the feedforward actuation and `e` corresponds to effort_limit().
   ///
+  /// The gains must be finite and non-negative. Setting both gains to zero
+  /// will remove the controller (has_controller() will return false).
+  ///
   /// For simulation, feedforward actuation can be provided through
   /// MultibodyPlant::get_actuation_input_port(). Desired configuration and
   /// velocity are specified through
   /// MultibodyPlant::get_desired_state_input_port().
   ///
-  /// @pre The MultibodyPlant associated with this actuator has not yet
-  /// allocated a Context. In other words, although gains can be changed
-  /// post-Finalize, they cannot be changed during simulation.
-  ///
-  /// @throws iff the proportional gain is not strictly positive or if the
-  /// derivative gain is negative.
-  /// @throws iff the owning MultibodyPlant is finalized and no gains were set
-  /// pre-finalize. In other words, *editing* gains post-finalize is fine, but
-  /// *adding* gains post-finalize is an error. See MultibodyPlant::Finalize().
+  /// PD control is currently only supported for a discrete time
+  /// plant. Attempting to use non-zero gains on a continuous time plant will
+  /// result in an exception.
+  /// See @ref pd_controllers_and_ports for further details.
   void set_controller_gains(PdControllerGains gains);
 
-  /// Returns `true` if controller gains have been specified with a call to
-  /// set_controller_gains().
+  /// Returns `true` if any non-zero controller gains have been specified with
+  /// a call to set_controller_gains().
   ///
   /// @note A controller for a given model instance can be _disarmed_ if the
   /// desired state input port for its model instance is not connected. When a
   /// PD controller is disarmed, it has no effect on the MultibodyPlant's
   /// dynamics, as if there was no PD controller (still, this method returns
-  /// `true` whenever controller gains were set with set_controller_gains().)
+  /// `true` whenever non-zero gains were set with set_controller_gains().)
   /// See @ref pd_controllers_and_ports for further details.
   bool has_controller() const { return pd_controller_gains_.has_value(); }
 

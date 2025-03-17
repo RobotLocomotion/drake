@@ -24,7 +24,7 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExplicitEulerIntegrator);
 
-  ~ExplicitEulerIntegrator() override = default;
+  ~ExplicitEulerIntegrator() override;
 
   /**
    * Constructs a fixed-step integrator for a given system using the given

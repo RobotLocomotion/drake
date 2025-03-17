@@ -36,6 +36,10 @@ MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
 }
 
 template <typename T>
+MultibodyPositionToGeometryPose<T>::~MultibodyPositionToGeometryPose() =
+    default;
+
+template <typename T>
 void MultibodyPositionToGeometryPose<T>::Configure(bool input_multibody_state) {
   // Either we don't own the plant, or we own the plant we're storing the
   // reference for.

@@ -17,7 +17,7 @@ class MidPointIntegrationConstraint : public solvers::Constraint {
  public:
   explicit MidPointIntegrationConstraint(int dim);
 
-  ~MidPointIntegrationConstraint() override {}
+  ~MidPointIntegrationConstraint() override;
 
   /**
    * Compose x for the Eval input from individual variables.

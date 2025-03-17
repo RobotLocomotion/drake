@@ -36,7 +36,7 @@ class VectorBase {
   // VectorBase objects are neither copyable nor moveable.
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VectorBase);
 
-  virtual ~VectorBase() {}
+  virtual ~VectorBase();
 
   /// Returns the number of elements in the vector.
   ///

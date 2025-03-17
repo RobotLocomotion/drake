@@ -72,7 +72,7 @@ class MultibodyPositionToGeometryPose final : public LeafSystem<T> {
       std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
       bool input_multibody_state = false);
 
-  ~MultibodyPositionToGeometryPose() override = default;
+  ~MultibodyPositionToGeometryPose() override;
 
   const multibody::MultibodyPlant<T>& multibody_plant() const { return plant_; }
 

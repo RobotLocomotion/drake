@@ -73,7 +73,7 @@ class ZeroOrderHold final : public LeafSystem<T> {
   template <typename U>
   explicit ZeroOrderHold(const ZeroOrderHold<U>& other);
 
-  ~ZeroOrderHold() final = default;
+  ~ZeroOrderHold() final;
 
   /// Reports the period of this hold (in seconds).
   double period() const { return period_sec_; }

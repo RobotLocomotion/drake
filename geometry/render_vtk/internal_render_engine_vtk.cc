@@ -27,6 +27,7 @@
 #include <vtkOpenGLTexture.h>            // vtkRenderingOpenGL2
 #include <vtkPNGReader.h>                // vtkIOImage
 #include <vtkPlaneSource.h>              // vtkFiltersSources
+#include <vtkPointData.h>                // vtkCommonDataModel
 #include <vtkProperty.h>                 // vtkRenderingCore
 #include <vtkRenderPassCollection.h>     // vtkRenderingOpenGL2
 #include <vtkSequencePass.h>             // vtkRenderingOpenGL2
@@ -309,6 +310,17 @@ bool RenderEngineVtk::DoRegisterVisual(GeometryId id, const Shape& shape,
   return data.accepted;
 }
 
+bool RenderEngineVtk::DoRegisterDeformableVisual(
+    GeometryId id, const std::vector<RenderMesh>& render_meshes,
+    const PerceptionProperties& properties) {
+  RegistrationData data{properties, RigidTransformd::Identity(), id};
+  for (const RenderMesh& render_mesh : render_meshes) {
+    auto copy = render_mesh;
+    ImplementRenderMesh(std::move(copy), /* scale = */ 1.0, data);
+  }
+  return true;
+}
+
 void RenderEngineVtk::DoUpdateVisualPose(GeometryId id,
                                          const RigidTransformd& X_WG) {
   vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(X_WG);
@@ -327,6 +339,42 @@ void RenderEngineVtk::DoUpdateVisualPose(GeometryId id,
       } else {
         part.actor->SetUserTransform(vtk_X_WG);
       }
+    }
+  }
+}
+
+void RenderEngineVtk::DoUpdateDeformableConfigurations(
+    GeometryId id, const std::vector<VectorX<double>>& q_WGs,
+    const std::vector<VectorX<double>>& nhats_W) {
+  for (const Prop& prop : props_.at(id)) {
+    // We checked ssize(q_WGs) == ssize(nhats_W) in the base class.
+    DRAKE_THROW_UNLESS(ssize(q_WGs) == ssize(prop.parts));
+    for (int p = 0; p < ssize(prop.parts); ++p) {
+      const Part& part = prop.parts[p];
+      const Eigen::Map<const Matrix3X<double>> q_WG(q_WGs[p].data(), 3,
+                                                    q_WGs[p].size() / 3);
+      const Eigen::Map<const Matrix3X<double>> nhat_W(nhats_W[p].data(), 3,
+                                                      q_WGs[p].size() / 3);
+      // Retrieve and update the vertex positions for the actor.
+      vtkSmartPointer<vtkDataSet> dataset = part.actor->GetMapper()->GetInput();
+      DRAKE_THROW_UNLESS(dataset != nullptr);
+      vtkSmartPointer<vtkPoints> points = dataset->GetPoints();
+      DRAKE_THROW_UNLESS(points != nullptr &&
+                         q_WG.cols() == points->GetNumberOfPoints());
+      vtkSmartPointer<vtkDataArray> normals =
+          dataset->GetPointData()->GetNormals();
+      DRAKE_THROW_UNLESS(normals != nullptr &&
+                         nhat_W.cols() == normals->GetNumberOfTuples());
+      for (vtkIdType i = 0; i < points->GetNumberOfPoints(); ++i) {
+        points->SetPoint(i, q_WG(0, i), q_WG(1, i), q_WG(2, i));
+      }
+      for (vtkIdType i = 0; i < normals->GetNumberOfTuples(); ++i) {
+        normals->SetTuple3(i, nhat_W(0, i), nhat_W(1, i), nhat_W(2, i));
+      }
+
+      // Notify VTK that the data has changed
+      points->Modified();
+      normals->Modified();
     }
   }
 }

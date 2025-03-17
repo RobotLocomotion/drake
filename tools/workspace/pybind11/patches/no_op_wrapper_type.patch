@@ -1,0 +1,23 @@
+[pybind11] Add no-op wrapper CRTP type
+
+This patch is only needed for compatibility with existing Drake code,
+and will likely be retired soon.
+
+--- include/pybind11/pytypes.h
++++ include/pybind11/pytypes.h
+@@ -941,6 +941,15 @@ inline ssize_t hash(handle obj) {
+ 
+ /// @} python_builtins
+ 
++// This class used to do some tricky object lifetime management. Those features
++// are no longer needed, so what remains is just an empty source-code
++// compatibility shim.
++template <typename Base>
++class wrapper : public Base {
++ public:
++  using Base::Base;
++};
++
+ PYBIND11_NAMESPACE_BEGIN(detail)
+ inline handle get_function(handle value) {
+     if (value) {

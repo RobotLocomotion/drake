@@ -19,6 +19,10 @@ namespace drake {
 namespace systems {
 
 template <class T>
+VelocityImplicitEulerIntegrator<T>::~VelocityImplicitEulerIntegrator() =
+    default;
+
+template <class T>
 void VelocityImplicitEulerIntegrator<T>::DoResetImplicitIntegratorStatistics() {
   num_nr_iterations_ = 0;
   num_half_vie_jacobian_reforms_ = 0;

@@ -6,7 +6,6 @@
 #include <atomic>
 #include <cctype>
 #include <cstdlib>
-#include <filesystem>
 #include <initializer_list>
 #include <map>
 #include <optional>
@@ -556,6 +555,11 @@ PackageMap PackageMap::MakeEmpty() {
 }
 
 void PackageMap::Add(const std::string& package_name,
+                     const fs::path& package_path) {
+  this->Add(package_name, package_path.string());
+}
+
+void PackageMap::Add(const std::string& package_name,
                      const std::string& package_path) {
   drake::log()->trace("PackageMap.Add('{}', '{}')", package_name, package_path);
 
@@ -568,6 +572,12 @@ void PackageMap::Add(const std::string& package_name,
 
   // Add it now. Emplace will handle rejection of duplicates.
   impl_->Emplace(package_name, PackageData::MakeLocal(package_path));
+}
+
+void PackageMap::Add(const std::string& package_name,
+                     const char* package_path) {
+  DRAKE_THROW_UNLESS(package_path != nullptr);
+  this->Add(package_name, std::string(package_path));
 }
 
 namespace {
@@ -771,9 +781,18 @@ std::string PackageMap::ResolveUrl(const std::string& url) const {
   return resolved.GetStringPathIfExists();
 }
 
+void PackageMap::PopulateFromFolder(const fs::path& path) {
+  this->PopulateFromFolder(path.string());
+}
+
 void PackageMap::PopulateFromFolder(const std::string& path) {
   DRAKE_THROW_UNLESS(!path.empty());
   CrawlForPackages(path);
+}
+
+void PackageMap::PopulateFromFolder(const char* path) {
+  DRAKE_THROW_UNLESS(path != nullptr);
+  this->PopulateFromFolder(std::string(path));
 }
 
 void PackageMap::PopulateFromEnvironment(
@@ -940,6 +959,10 @@ void PackageMap::CrawlForPackages(
   }
 }
 
+void PackageMap::AddPackageXml(const fs::path& filename) {
+  this->AddPackageXml(filename.string());
+}
+
 void PackageMap::AddPackageXml(const std::string& filename) {
   DRAKE_THROW_UNLESS(!filename.empty());
   const auto [package_name, deprecated_message] =
@@ -947,6 +970,11 @@ void PackageMap::AddPackageXml(const std::string& filename) {
   const std::string package_path = GetParentDirectory(filename);
   Add(package_name, package_path);
   SetDeprecated(package_name, deprecated_message);
+}
+
+void PackageMap::AddPackageXml(const char* filename) {
+  DRAKE_THROW_UNLESS(filename != nullptr);
+  this->AddPackageXml(std::string(filename));
 }
 
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
