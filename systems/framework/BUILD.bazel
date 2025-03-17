@@ -18,6 +18,7 @@ drake_cc_package_library(
     deps = [
         ":abstract_value_cloner",
         ":abstract_values",
+        ":bus_value",
         ":cache_and_dependency_tracker",
         ":cache_entry",
         ":context",
@@ -129,6 +130,19 @@ drake_cc_library(
         ":framework_common",
         "//common:essential",
         "//common:value",
+    ],
+)
+
+drake_cc_library(
+    name = "bus_value",
+    srcs = ["bus_value.cc"],
+    hdrs = ["bus_value.h"],
+    deps = [
+        "//common:value",
+    ],
+    implementation_deps = [
+        "//common:drake_export",
+        "@abseil_cpp_internal//absl/container:flat_hash_map",
     ],
 )
 
@@ -740,6 +754,14 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework/test_utilities:my_vector",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bus_value_test",
+    deps = [
+        ":bus_value",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

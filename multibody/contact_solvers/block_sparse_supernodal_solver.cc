@@ -34,6 +34,10 @@ bool MassMatrixPartitionEqualsJacobianPartition(
 }  // namespace
 
 BlockSparseSuperNodalSolver::BlockSparseSuperNodalSolver(
+    const std::vector<MatrixX<double>>& A, const BlockSparseMatrix<double>& J)
+    : BlockSparseSuperNodalSolver(J.block_rows(), J.get_blocks(), A) {}
+
+BlockSparseSuperNodalSolver::BlockSparseSuperNodalSolver(
     int num_jacobian_row_blocks, std::vector<BlockTriplet> jacobian_blocks,
     std::vector<Eigen::MatrixXd> mass_matrices)
     : jacobian_blocks_(std::move(jacobian_blocks)),

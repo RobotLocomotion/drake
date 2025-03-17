@@ -13,9 +13,22 @@ namespace internal {
 
 using Eigen::Vector3d;
 
+void VolumeMeshRefiner::ResetVertexToTetrahedra(void) {
+  vertex_to_tetrahedra_.clear();
+  // Initialize each entry as an empty list.
+  vertex_to_tetrahedra_.resize(vertices_.size(), {});
+  int num_tetrahedra = tetrahedra_.size();
+  for (int i = 0; i < num_tetrahedra; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      vertex_to_tetrahedra_[tetrahedra_[i].vertex(j)].push_back(i);
+    }
+  }
+}
+
 VolumeMesh<double> VolumeMeshRefiner::Refine() {
   tetrahedra_ = input_mesh_.tetrahedra();
   vertices_ = input_mesh_.vertices();
+  ResetVertexToTetrahedra();
 
   // I found that refining the mesh in this order:
   //   1. problematic edges,
@@ -73,6 +86,8 @@ void VolumeMeshRefiner::RefineTetrahedron(int tetrahedron) {
                           vertices_.at(v2) + vertices_.at(v3)) /
                          4);
   const int new_vertex = vertices_.size() - 1;
+  DRAKE_THROW_UNLESS(vertices_.size() == vertex_to_tetrahedra_.size() + 1);
+  vertex_to_tetrahedra_.push_back({});
 
   CutTetrahedron(tetrahedron, {v0, v1, v2, v3}, new_vertex);
 }
@@ -85,6 +100,8 @@ void VolumeMeshRefiner::RefineTriangle(const SortedTriplet<int>& triangle) {
   vertices_.emplace_back(
       (vertices_.at(v0) + vertices_.at(v1) + vertices_.at(v2)) / 3);
   const int new_vertex = vertices_.size() - 1;
+  DRAKE_THROW_UNLESS(vertices_.size() == vertex_to_tetrahedra_.size() + 1);
+  vertex_to_tetrahedra_.push_back({});
 
   std::vector<int> incident_tetrahedra = GetTetrahedraOnTriangle(v0, v1, v2);
   DRAKE_THROW_UNLESS(incident_tetrahedra.size() == 2);
@@ -98,6 +115,8 @@ void VolumeMeshRefiner::RefineEdge(const SortedPair<int>& edge) {
 
   vertices_.emplace_back((vertices_.at(v0) + vertices_.at(v1)) / 2);
   const int new_vertex = vertices_.size() - 1;
+  DRAKE_THROW_UNLESS(vertices_.size() == vertex_to_tetrahedra_.size() + 1);
+  vertex_to_tetrahedra_.push_back({});
 
   std::vector<int> incident_tetrahedra = GetTetrahedraOnEdge(v0, v1);
   DRAKE_THROW_UNLESS(incident_tetrahedra.size() > 0);
@@ -135,7 +154,7 @@ void VolumeMeshRefiner::CutTetrahedron(const int tetrahedron,
   DRAKE_THROW_UNLESS(num_sub_simplex_vertices >= 2);
   DRAKE_THROW_UNLESS(num_sub_simplex_vertices <= 4);
   for (int i = 0; i < num_sub_simplex_vertices; ++i) {
-    int local_index = std::distance(
+    const int local_index = std::distance(
         original.begin(),
         std::find(original.begin(), original.end(), sub_simplex[i]));
 
@@ -145,9 +164,15 @@ void VolumeMeshRefiner::CutTetrahedron(const int tetrahedron,
     std::array<int, 4> replacement = original;
     replacement[local_index] = new_vertex;
     if (i == 0) {
+      std::erase(vertex_to_tetrahedra_[original[local_index]], tetrahedron);
       tetrahedra_[tetrahedron] = VolumeElement(replacement.data());
+      vertex_to_tetrahedra_[new_vertex].push_back(tetrahedron);
     } else {
       tetrahedra_.emplace_back(replacement.data());
+      const int new_tetrahedron = tetrahedra_.size() - 1;
+      for (int v : replacement) {
+        vertex_to_tetrahedra_[v].push_back(new_tetrahedron);
+      }
     }
   }
 }
@@ -156,15 +181,16 @@ std::vector<int> VolumeMeshRefiner::GetTetrahedraOnTriangle(int v0, int v1,
                                                             int v2) const {
   DRAKE_THROW_UNLESS(v0 != v1 && v1 != v2 && v2 != v0);
   std::vector<int> incident_tetrahedra;
-  const int num_tetrahedra = tetrahedra_.size();
-  for (int tetrahedron = 0; tetrahedron < num_tetrahedra; ++tetrahedron) {
-    const std::unordered_set<int> tetrahedron_vertices{
-        tetrahedra_[tetrahedron].vertex(0), tetrahedra_[tetrahedron].vertex(1),
-        tetrahedra_[tetrahedron].vertex(2), tetrahedra_[tetrahedron].vertex(3)};
-    if (tetrahedron_vertices.contains(v0) &&
-        tetrahedron_vertices.contains(v1) &&
-        tetrahedron_vertices.contains(v2)) {
-      incident_tetrahedra.push_back(tetrahedron);
+  const std::vector<int>& tetrahedra0 = vertex_to_tetrahedra_[v0];
+  const std::vector<int>& tetrahedra1 = vertex_to_tetrahedra_[v1];
+  const std::vector<int>& tetrahedra2 = vertex_to_tetrahedra_[v2];
+  for (const int& tet0 : tetrahedra0) {
+    if (std::find(tetrahedra1.begin(), tetrahedra1.end(), tet0) !=
+        tetrahedra1.end()) {
+      if (std::find(tetrahedra2.begin(), tetrahedra2.end(), tet0) !=
+          tetrahedra2.end()) {
+        incident_tetrahedra.push_back(tet0);
+      }
     }
   }
   return incident_tetrahedra;
@@ -173,14 +199,12 @@ std::vector<int> VolumeMeshRefiner::GetTetrahedraOnTriangle(int v0, int v1,
 std::vector<int> VolumeMeshRefiner::GetTetrahedraOnEdge(int v0, int v1) const {
   DRAKE_THROW_UNLESS(v0 != v1);
   std::vector<int> incident_tetrahedra;
-  const int num_tetrahedra = tetrahedra_.size();
-  for (int tetrahedron = 0; tetrahedron < num_tetrahedra; ++tetrahedron) {
-    const std::unordered_set<int> tetrahedron_vertices{
-        tetrahedra_[tetrahedron].vertex(0), tetrahedra_[tetrahedron].vertex(1),
-        tetrahedra_[tetrahedron].vertex(2), tetrahedra_[tetrahedron].vertex(3)};
-    if (tetrahedron_vertices.contains(v0) &&
-        tetrahedron_vertices.contains(v1)) {
-      incident_tetrahedra.push_back(tetrahedron);
+  const std::vector<int>& tetrahedra0 = vertex_to_tetrahedra_[v0];
+  const std::vector<int>& tetrahedra1 = vertex_to_tetrahedra_[v1];
+  for (const int& tet0 : tetrahedra0) {
+    if (std::find(tetrahedra1.begin(), tetrahedra1.end(), tet0) !=
+        tetrahedra1.end()) {
+      incident_tetrahedra.push_back(tet0);
     }
   }
   return incident_tetrahedra;

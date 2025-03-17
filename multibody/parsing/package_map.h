@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -67,7 +68,18 @@ class PackageMap final {
   /** Adds package `package_name` and its path, `package_path`. Throws if
   `package_name` is already present in this PackageMap with a different path, or
   if `package_path` does not exist. */
+  void Add(const std::string& package_name,
+           const std::filesystem::path& package_path);
+
+  /** Legacy overload of Add() that accepts a string instead of a
+  std::filesystem::path.
+  @exclude_from_pydrake_mkdoc{Only the fs::path overload is bound.} */
   void Add(const std::string& package_name, const std::string& package_path);
+
+  /** Legacy overload of Add() that accepts a null-terminated C string instead
+  of a std::filesystem::path.
+  @exclude_from_pydrake_mkdoc{Only the fs::path overload is bound.} */
+  void Add(const std::string& package_name, const char* package_path);
 
   /** Adds all packages from `other_map` into `this`. Throws if `other` contains
   a package with the same `package_name` as one already in this map but with
@@ -77,7 +89,17 @@ class PackageMap final {
   /** Adds an entry into this PackageMap for the given `package.xml` filename.
   Throws if `filename` does not exist or its embedded name already exists in
   this map. */
+  void AddPackageXml(const std::filesystem::path& filename);
+
+  /** Legacy overload of AddPackageXml() that accepts a string instead of a
+  std::filesystem::path.
+  @exclude_from_pydrake_mkdoc{Only the fs::path overload is bound.} */
   void AddPackageXml(const std::string& filename);
+
+  /** Legacy overload of AddPackageXml() that accepts a null-terminated C string
+  instead of a std::filesystem::path.
+  @exclude_from_pydrake_mkdoc{Only the fs::path overload is bound.} */
+  void AddPackageXml(const char* filename);
 
   /** Parameters used for AddRemote(). */
   struct RemoteParams {
@@ -141,7 +163,17 @@ class PackageMap final {
   If a package already known by the PackageMap is found again with a conflicting
   path, a warning is logged and the original path is kept. If the path does not
   exist or is unreadable, a warning is logged. */
+  void PopulateFromFolder(const std::filesystem::path& path);
+
+  /** Legacy overload of PopulateFromFolder() that accepts a string instead of a
+  std::filesystem::path.
+  @exclude_from_pydrake_mkdoc{Only the fs::path overload is bound.} */
   void PopulateFromFolder(const std::string& path);
+
+  /** Legacy overload of PopulateFromFolder() that accepts a null-terminated C
+  string instead of a std::filesystem::path.
+  @exclude_from_pydrake_mkdoc{Only the fs::path overload is bound.} */
+  void PopulateFromFolder(const char* path);
 
   /** Obtains one or more paths from environment variable
   `environment_variable`. Crawls downward through the directory tree(s) starting

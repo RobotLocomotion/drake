@@ -1,4 +1,4 @@
-#include "common/timer.h"
+#include "drake/common/timer.h"
 
 namespace drake {
 

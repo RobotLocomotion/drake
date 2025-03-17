@@ -38,16 +38,24 @@ targets = (
     Target(
         build_platform=Platform('ubuntu', '22.04', 'jammy'),
         test_platform=None,
-        python_version_tuple=(3, 10)),
+        python_version_tuple=(3, 10, 16),
+        python_sha='bfb249609990220491a1b92850a07135ed0831e41738cf681d63cf01b2a8fbd1'),  # noqa
     Target(
         build_platform=Platform('ubuntu', '22.04', 'jammy'),
         test_platform=None,
-        python_version_tuple=(3, 11)),
+        python_version_tuple=(3, 11, 11),
+        python_sha='2a9920c7a0cd236de33644ed980a13cbbc21058bfdc528febb6081575ed73be3'),  # noqa
     Target(
         build_platform=Platform('ubuntu', '22.04', 'jammy'),
         test_platform=Platform('ubuntu', '24.04', 'noble'),
-        python_version_tuple=(3, 12, 0),
-        python_sha='795c34f44df45a0e9b9710c8c71c15c671871524cd412ca14def212e8ccb155d'),  # noqa
+        python_version_tuple=(3, 12, 8),
+        python_sha='c909157bb25ec114e5869124cc2a9c4a4d4c1e957ca4ff553f1edc692101154e'),  # noqa
+    Target(
+        build_platform=Platform('ubuntu', '22.04', 'jammy'),
+        # TODO(jwnimmer-tri) Switch testing to 25.04 once it's been released.
+        test_platform=Platform('ubuntu', '24.10', 'oracular'),
+        python_version_tuple=(3, 13, 0),
+        python_sha='086de5882e3cb310d4dca48457522e2e48018ecd43da9cdf827f6a0759efb07d'),  # noqa
 )
 glibc_versions = {
     'jammy': '2_35',

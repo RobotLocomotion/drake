@@ -68,7 +68,8 @@ std::unique_ptr<Joint<T>> QuaternionFloatingJoint<T>::DoShallowClone() const {
 template <typename T>
 std::unique_ptr<internal::Mobilizer<T>>
 QuaternionFloatingJoint<T>::MakeMobilizerForJoint(
-    const internal::SpanningForest::Mobod& mobod) const {
+    const internal::SpanningForest::Mobod& mobod,
+    internal::MultibodyTree<T>*) const {
   const auto [inboard_frame, outboard_frame] =
       this->tree_frames(mobod.is_reversed());
   // TODO(sherm1) The mobilizer needs to be reversed, not just the frames.

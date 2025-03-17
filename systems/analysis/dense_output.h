@@ -46,7 +46,7 @@ class DenseOutput {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DenseOutput);
 
-  virtual ~DenseOutput() = default;
+  virtual ~DenseOutput();
 
   /// Evaluates the output at the given time @p t.
   /// @param t Time at which to evaluate output.

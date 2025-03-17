@@ -44,8 +44,10 @@ drake_cc_library(
     hdrs = ["iris_zo.h"],
     deps = [
         "//common:parallelism",
+        "//common/symbolic:expression",
         "//geometry:meshcat",
         "//geometry/optimization:convex_set",
+        "//multibody/rational:rational_forward_kinematics",
         "//planning:collision_checker",
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
@@ -102,13 +104,16 @@ drake_cc_googletest(
     ],
     deps = [
         ":iris_zo",
+        "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:maybe_pause_for_user",
         "//geometry:meshcat",
         "//geometry/test_utilities:meshcat_environment",
         "//multibody/inverse_kinematics",
+        "//multibody/rational:rational_forward_kinematics",
         "//planning:robot_diagram_builder",
         "//planning:scene_graph_collision_checker",
+        "//solvers",
     ],
 )
 

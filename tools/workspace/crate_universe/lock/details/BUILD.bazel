@@ -39,7 +39,7 @@ alias(
 
 alias(
     name = "clarabel",
-    actual = "@crate__clarabel-0.9.0//:clarabel",
+    actual = "@crate__clarabel-0.10.0//:clarabel",
     tags = ["manual"],
 )
 

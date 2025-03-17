@@ -100,6 +100,7 @@ class BodyNode : public MultibodyElement<T> {
         body_(body),
         mobilizer_(mobilizer) {
     DRAKE_DEMAND(!(parent_node == nullptr && body->index() != world_index()));
+    this->set_is_ephemeral(true);  // BodyNodes are never added by users.
   }
 
   ~BodyNode() override;

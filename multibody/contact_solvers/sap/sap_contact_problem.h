@@ -256,6 +256,10 @@ class SapContactProblem {
    num_velocities(). */
   const VectorX<T>& v_star() const { return v_star_; }
 
+  /* Returns a graph where cliques are nodes and clusters of constraints
+  (ContactProblemGraph::ConstraintCluster) are the edges. Refer to the class
+  documentation of ContactProblemGraph for a definition of constraint clusters.
+  */
   const ContactProblemGraph& graph() const { return graph_; }
 
   /* Compute generalized forces per DoF and spatial forces per object given

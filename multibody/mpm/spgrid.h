@@ -60,23 +60,10 @@ using Pad = std::array<std::array<std::array<T, 3>, 3>, 3>;
  following requirements:
   - It must have a default constructor.
   - It must have a member function `reset()`.
-  - Its size must be less than or equal to 4KB.
- @tparam log2_max_grid_size
- SPGrid imposes a limit on the maximum number of grid points per dimension,
- denoted as N. While N can be quite large (as discussed in Section 3.1 of
- [Setaluri, 2014]), increasing it excessively may lead to performance
- degradation due to a known limitation in the SPGrid library. To balance
- grid coverage and performance, we default N to 1024 (logN = 10). With this
- number of grid nodes and a typical grid spacing of 1 cm, the grid can
- span 10.24 meters per dimension. This coverage is sufficient for the
- majority of stationary manipulation simulations. We make it a template
- parameter so that in unit tests we can use a smaller max size because
- the underlying SPGrid library reserves a span of virtual memory space
- (without actually allocating them) according to the max size, and a large
- reservation upsets Valgrind. */
-// TODO(xuchenhan-tri): Enumerate all possible GridData so that we can move the
-// implementation to the .cc file.
-template <typename GridData, int log2_max_grid_size = 10>
+  - Its size must be less than or equal to 4KB. */
+// TODO(xuchenhan-tri): Enumerate all possible GridData so that we can move
+// the implementation to the .cc file.
+template <typename GridData>
 class SpGrid {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpGrid);
@@ -127,7 +114,7 @@ class SpGrid {
   }
 
   /* Makes `this` an exact copy of the `other` SpGrid. */
-  void SetFrom(const SpGrid<GridData, log2_max_grid_size>& other) {
+  void SetFrom(const SpGrid<GridData>& other) {
     /* Copy over the page maps. */
     helper_blocks_.Clear();
     auto [block_offsets, num_blocks] = other.helper_blocks_.Get_Blocks();
@@ -151,12 +138,16 @@ class SpGrid {
     cell_offset_strides_ = other.cell_offset_strides_;
   }
 
-  /* Clears the contents of this SpGrid and ensures that each block in the
-   one-ring of blocks containing the given offsets is allocated and
-   zero-initialized.
+  /* Clears this SpGrid and ensures that:
+
+   1. All blocks containing the specified offsets have their GridData allocated
+      and default-initialized.
+   2. Every block in the one-ring surrounding those blocks is also allocated and
+      default-initialized.
+
    @note Actual allocation only happens the first time a block is used in the
    lifetime of an SpGrid. Subsequent calls to `Allocate()` touching the same
-   block only zero out the grid data. */
+   block only resets the grid data to default values. */
   void Allocate(const std::vector<Offset>& offsets) {
     helper_blocks_.Clear();
     for (const Offset& offset : offsets) {
@@ -323,7 +314,7 @@ class SpGrid {
   /* Returns the flags associated with `this` SpGrid. */
   SpGridFlags flags() const {
     return SpGridFlags{.log2_page = kLog2Page,
-                       .log2_max_grid_size = log2_max_grid_size,
+                       .log2_max_grid_size = kLog2MaxGridSize,
                        .data_bits = kDataBits,
                        .num_nodes_in_block_x = kNumNodesInBlockX,
                        .num_nodes_in_block_y = kNumNodesInBlockY,
@@ -354,7 +345,23 @@ class SpGrid {
     return allocator_.Get_Array()(offset);
   }
 
-  static constexpr int kMaxGridSize = 1 << log2_max_grid_size;
+/* SPGrid imposes a limit on the maximum number of grid points per dimension,
+ denoted as N. While N can be quite large (as discussed in Section 3.1 of
+ [Setaluri, 2014]), increasing it excessively may lead to performance
+ degradation due to a known limitation in the SPGrid library. To balance
+ grid coverage and performance, we default N to 1024 (logN = 10). With this
+ number of grid nodes and a typical grid spacing of 1 cm, the grid can
+ span 10.24 meters per dimension. This coverage is sufficient for the
+ majority of stationary manipulation simulations. We use a smaller max size in
+ memcheck tests because the underlying SPGrid library reserves a span of virtual
+ memory space (without actually allocating them) according to the max size, and
+ a large reservation upsets Valgrind. */
+#ifndef DRAKE_MPM_TESTING_LOG2_MAX_GRID_SIZE
+  static constexpr int kLog2MaxGridSize = 10;
+#else
+  static constexpr int kLog2MaxGridSize = DRAKE_MPM_TESTING_LOG2_MAX_GRID_SIZE;
+#endif
+  static constexpr int kMaxGridSize = 1 << kLog2MaxGridSize;
 
   static constexpr int kDataBits = Mask::data_bits;
   static constexpr int kNumNodesInBlockX = 1 << Mask::block_xbits;

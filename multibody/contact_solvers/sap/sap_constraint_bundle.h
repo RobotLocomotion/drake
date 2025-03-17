@@ -94,9 +94,14 @@ class SapConstraintBundle {
     quantities to condition the problem better.
     @param[in] time_step The time step used in the contact problem.
     @param[in] delassus_diagonal An estimation of the diagonal of the Delassus
-    operator, with one entry per constraint equation. Of size
-    num_constraint_equations().
-    */
+    operator, with one entry per constraint equation in cluster order as given
+    by the contact problem's graph. Refer to the class documentation for
+    ContactProblemGraph for a definition of cluster and their ordering in the
+    graph. See also SapContactProblem::graph(), ContactProblemGraph::clusters().
+
+    @pre delassus_diagonal has size equal to num_constraint_equations().
+    @pre elements in delassus_diagonal are sorted in cluster order, see
+    SapModel::CalcDelassusDiagonalApproximation(). */
   SapConstraintBundleData MakeData(const T& time_step,
                                    const VectorX<T>& delassus_diagonal) const;
 
@@ -129,7 +134,8 @@ class SapConstraintBundle {
   void MakeConstraintBundleJacobian(const SapContactProblem<T>& problem);
 
   BlockSparseMatrix<T> J_;
-  // Constraint references in the order dictated by the ContactProblemGraph.
+  /* Constraint references in cluster order as dictated by the
+   ContactProblemGraph. */
   std::vector<const SapConstraint<T>*> constraints_;
 };
 

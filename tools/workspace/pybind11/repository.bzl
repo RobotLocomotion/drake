@@ -1,16 +1,15 @@
 load("//tools/workspace:generate_file.bzl", "generate_file")
 load("//tools/workspace:github.bzl", "github_archive")
 
-# Using the `drake` branch of this repository.
-_REPOSITORY = "RobotLocomotion/pybind11"
+# Any time you change either the _REPOSITORY or _COMMIT below, check the
+# version header within the file `include/pybind11/detail/common.h` in the
+# branch indicated by `_REPOSITORY` and `_COMMIT`, and if it has changed, then
+# update the version number in the two pybind11-*.cmake files in the current
+# directory to match.
+_REPOSITORY = "pybind/pybind11"
+_COMMIT = "v2.13.6"
 
-# When upgrading this commit, check the version header within
-#  https://github.com/RobotLocomotion/pybind11/blob/drake/include/pybind11/detail/common.h
-# and if it has changed, then update the version number in the two
-# pybind11-*.cmake files in the current directory to match.
-_COMMIT = "51d715e037386fcdbeda75ffab15f02f8e4388d8"
-
-_SHA256 = "1867ca13e237b92457e0a0364f55bcf5d913f6b8aed015b6fd4d252333828090"
+_SHA256 = "e08cb87f4773da97fa7b5f035de8763abc656d87d5773e62f6da0587d1f0ec20"
 
 def pybind11_repository(
         name,
@@ -23,6 +22,9 @@ def pybind11_repository(
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/check_signature_infection.patch",
+            ":patches/eigen_object_matrices.patch",
+            ":patches/no_op_wrapper_type.patch",
+            ":patches/shared_ptr_lifetime.patch",
         ],
         mirrors = mirrors,
     )

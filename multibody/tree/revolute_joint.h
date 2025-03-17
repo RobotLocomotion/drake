@@ -104,9 +104,9 @@ class RevoluteJoint final : public Joint<T> {
                 double pos_lower_limit, double pos_upper_limit,
                 double damping = 0);
 
-  ~RevoluteJoint() override;
+  ~RevoluteJoint() final;
 
-  const std::string& type_name() const override;
+  const std::string& type_name() const final;
 
   /// Returns the axis of revolution of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
@@ -271,7 +271,7 @@ class RevoluteJoint final : public Joint<T> {
   /// around the joint's axis.
   void DoAddInOneForce(const systems::Context<T>&, int joint_dof,
                        const T& joint_tau,
-                       MultibodyForces<T>* forces) const override {
+                       MultibodyForces<T>* forces) const final {
     // Right now we assume all the forces in joint_tau go into a single
     // mobilizer.
     DRAKE_DEMAND(joint_dof == 0);
@@ -287,62 +287,63 @@ class RevoluteJoint final : public Joint<T> {
   /// viscous law `τ = -d⋅ω`, with d the damping coefficient (see
   /// default_damping()).
   void DoAddInDamping(const systems::Context<T>& context,
-                      MultibodyForces<T>* forces) const override {
+                      MultibodyForces<T>* forces) const final {
     const T damping_torque =
         -this->GetDamping(context) * get_angular_rate(context);
     AddInTorque(context, damping_torque, forces);
   }
 
  private:
-  int do_get_velocity_start() const override {
+  int do_get_velocity_start() const final {
     return get_mobilizer().velocity_start_in_v();
   }
 
-  int do_get_num_velocities() const override { return 1; }
+  int do_get_num_velocities() const final { return 1; }
 
-  int do_get_position_start() const override {
+  int do_get_position_start() const final {
     return get_mobilizer().position_start_in_q();
   }
 
-  int do_get_num_positions() const override { return 1; }
+  int do_get_num_positions() const final { return 1; }
 
-  std::string do_get_position_suffix(int index) const override {
+  std::string do_get_position_suffix(int index) const final {
     return get_mobilizer().position_suffix(index);
   }
 
-  std::string do_get_velocity_suffix(int index) const override {
+  std::string do_get_velocity_suffix(int index) const final {
     return get_mobilizer().velocity_suffix(index);
   }
 
   void do_set_default_positions(
-      const VectorX<double>& default_positions) override {
+      const VectorX<double>& default_positions) final {
     if (this->has_mobilizer()) {
       get_mutable_mobilizer().set_default_position(default_positions);
     }
   }
 
-  const T& DoGetOnePosition(const systems::Context<T>& context) const override {
+  const T& DoGetOnePosition(const systems::Context<T>& context) const final {
     return get_angle(context);
   }
 
-  const T& DoGetOneVelocity(const systems::Context<T>& context) const override {
+  const T& DoGetOneVelocity(const systems::Context<T>& context) const final {
     return get_angular_rate(context);
   }
 
   // Joint<T> overrides:
   std::unique_ptr<internal::Mobilizer<T>> MakeMobilizerForJoint(
-      const internal::SpanningForest::Mobod& mobod) const override;
+      const internal::SpanningForest::Mobod& mobod,
+      internal::MultibodyTree<T>* tree) const final;
 
   std::unique_ptr<Joint<double>> DoCloneToScalar(
-      const internal::MultibodyTree<double>& tree_clone) const override;
+      const internal::MultibodyTree<double>& tree_clone) const final;
 
   std::unique_ptr<Joint<AutoDiffXd>> DoCloneToScalar(
-      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const internal::MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
-      const internal::MultibodyTree<symbolic::Expression>&) const override;
+      const internal::MultibodyTree<symbolic::Expression>&) const final;
 
-  std::unique_ptr<Joint<T>> DoShallowClone() const override;
+  std::unique_ptr<Joint<T>> DoShallowClone() const final;
 
   // Make RevoluteJoint templated on every other scalar type a friend of
   // RevoluteJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can access

@@ -108,6 +108,6 @@ rust_library(
     }),
     version = "0.11.0",
     deps = [
-        "@crate__either-1.13.0//:either",
+        "@crate__either-1.15.0//:either",
     ],
 )

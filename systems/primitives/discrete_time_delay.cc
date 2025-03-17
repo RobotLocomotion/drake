@@ -64,6 +64,9 @@ DiscreteTimeDelay<T>::DiscreteTimeDelay(const DiscreteTimeDelay<U>& other)
                               : nullptr) {}
 
 template <typename T>
+DiscreteTimeDelay<T>::~DiscreteTimeDelay() = default;
+
+template <typename T>
 void DiscreteTimeDelay<T>::CopyDelayedVector(const Context<T>& context,
                                              BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());

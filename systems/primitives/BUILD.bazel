@@ -15,6 +15,8 @@ drake_cc_package_library(
         ":adder",
         ":affine_system",
         ":barycentric_system",
+        ":bus_creator",
+        ":bus_selector",
         ":constant_value_source",
         ":constant_vector_source",
         ":demultiplexer",
@@ -78,6 +80,24 @@ drake_cc_library(
     deps = [
         "//math:barycentric",
         "//systems/framework:vector_system",
+    ],
+)
+
+drake_cc_library(
+    name = "bus_creator",
+    srcs = ["bus_creator.cc"],
+    hdrs = ["bus_creator.h"],
+    deps = [
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "bus_selector",
+    srcs = ["bus_selector.cc"],
+    hdrs = ["bus_selector.h"],
+    deps = [
+        "//systems/framework",
     ],
 )
 
@@ -462,6 +482,23 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "bus_creator_test",
+    deps = [
+        ":bus_creator",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+drake_cc_googletest(
+    name = "bus_selector_test",
+    deps = [
+        ":bus_selector",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/framework/test_utilities:scalar_conversion",
+    ],
+)
+
+drake_cc_googletest(
     name = "constant_value_source_test",
     deps = [
         ":constant_value_source",
@@ -559,6 +596,7 @@ drake_cc_googletest(
     deps = [
         ":integrator",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//systems/framework",
         "//systems/framework/test_utilities",
     ],

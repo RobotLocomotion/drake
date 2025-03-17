@@ -101,8 +101,10 @@ GTEST_TEST(VoxelSelfFilterTest, Test) {
   // We set a single cell empty to ensure a valid SDF is computed.
   auto& internal_collision_map =
       internal::GetMutableInternalCollisionMap(filled_environment);
-  internal_collision_map.GetLocationMutable(0.0, 0.0, 0.0).Value().Occupancy() =
-      empty_occupancy;
+
+  auto& zero_voxel =
+      internal_collision_map.GetLocationMutable(0.0, 0.0, 0.0).Value();
+  zero_voxel.SetOccupancy(empty_occupancy);
 
   // Check self-filter at a range of configurations.
   const double filter_padding = grid_resolution * 0.5;

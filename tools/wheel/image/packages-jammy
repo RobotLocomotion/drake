@@ -4,18 +4,27 @@ g++
 gfortran
 libgfortran-11-dev
 nasm
+
 # Clang (for mkdoc).
 libclang-15-dev
+
 # Other code tools.
 cmake
 make
 pkg-config
+
 # Other general tools.
 ca-certificates
 file
 patch
 patchelf
 wget
+
 # Build dependencies (general).
 libglib2.0-dev
 libxt-dev
+
+# Build dependencies (Python).
+xz-utils
+libc6-dev
+libssl-dev

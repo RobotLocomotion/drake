@@ -176,8 +176,11 @@ def vtk_internal_repository(
         sha256 = "349aa9da6b2be0b21d522695af116219c0fd43fe62902508f21eb59251303185", # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            ":patches/upstream/common_core_rm_iostream.patch",
             ":patches/upstream/scaled_albedo_for_ibl.patch",
+            ":patches/upstream/vtkpugixml_global_ctor.patch",
             ":patches/common_core_nobacktrace.patch",
+            ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
             ":patches/disable_static_destructors.patch",
             ":patches/io_image_formats.patch",

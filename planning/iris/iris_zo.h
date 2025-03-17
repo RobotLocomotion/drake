@@ -10,9 +10,11 @@
 #include <Eigen/Dense>
 
 #include "drake/common/parallelism.h"
+#include "drake/common/symbolic/expression.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/collision_checker.h"
 
 namespace drake {
@@ -134,6 +136,23 @@ class IrisZoOptions {
   configuration space is <= 3 dimensional.*/
   std::shared_ptr<geometry::Meshcat> meshcat{};
 
+  /** By default, IRIS-ZO only considers collision avoidance constraints. This
+  option can be used to pass additional constraints that should be satisfied by
+  the output region. We accept these in the form of a MathematicalProgram:
+
+    find q subject to g(q) ≤ 0.
+
+  The decision_variables() for the program are taken to define `q`. IRIS-ZO will
+  silently ignore any costs in `prog_with_additional_constraints`. If any
+  constraints are not threadsafe, then `parallelism` will be overridden, and
+  only one thread will be used.
+  @note If the user has specified a parameterization, then these constraints are
+  imposed on the points in the parameterized space Q, not the configuration
+  space C.
+  @note Internally, these constraints are checked after collisions checking is
+  performed. */
+  const solvers::MathematicalProgram* prog_with_additional_constraints{};
+
   typedef std::function<Eigen::VectorXd(const Eigen::VectorXd&)>
       ParameterizationFunction;
 
@@ -153,6 +172,23 @@ class IrisZoOptions {
     parameterization_is_threadsafe_ = parameterization_is_threadsafe;
     parameterization_dimension_ = parameterization_dimension;
   }
+
+  /** Alternative to `set_parameterization` that allows the user to define the
+   * parameterization using a `VectorX<Expression>`. The user must also provide
+   * a vector containing the variables used in `expression_parameterization`, in
+   * the order that they should be evaluated. Each `Variable` in `variables`
+   * must be used, each `Variable` used in `expression_parameterization` must
+   * appear in `variables`, and there must be no duplicates in `variables`.
+   * @note Expression parameterizations are always threadsafe.
+   * @throws if the number of variables used across
+   * `expression_parameterization` does not match `ssize(variables)`.
+   * @throws if any variables in `expression_parameterization` are not listed in
+   * `variables`.
+   * @throws if any variables in `variables` are not used anywhere in
+   * `expression_parameterization`. */
+  void SetParameterizationFromExpression(
+      const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
+      const Eigen::VectorX<symbolic::Variable>& variables);
 
   /** Get the parameterization function.
    * @note If the user has not specified this with `set_parameterization()`,
@@ -179,6 +215,16 @@ class IrisZoOptions {
   std::optional<int> get_parameterization_dimension() const {
     return parameterization_dimension_;
   }
+
+  /** Constructs an instance of IrisZoOptions that handles a rational kinematic
+   * parameterization. Regions are grown in the `s` variables, so as to minimize
+   * collisions in the `q` variables. See RationalForwardKinematics for details.
+   * @note The user is responsible for ensuring `kin` (and the underlying
+   * MultibodyPlant it is built on) is kept alive. If that object is deleted,
+   * then the parametrization can no longer be used. */
+  static IrisZoOptions CreateWithRationalKinematicParameterization(
+      const multibody::RationalForwardKinematics* kin,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val);
 
  private:
   bool parameterization_is_threadsafe_{true};
@@ -228,6 +274,9 @@ parameterization is specified (in which case, they must match
 configuration space.
 @ingroup robot_planning
 @experimental
+
+@throws if the center of `starting_ellipsoid` is in collision, or violates any
+of the user-specified constraints in `options.prog_with_additional_constraints`.
 */
 
 geometry::optimization::HPolyhedron IrisZo(

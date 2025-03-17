@@ -15,7 +15,6 @@ load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_
 load("//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
 load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository", "common_robotics_utilities_repository")  # noqa
 load("//tools/workspace/commons_io:repository.bzl", "commons_io_repository")
-load("//tools/workspace/conex_internal:repository.bzl", "conex_internal_repository")  # noqa
 load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
 load("//tools/workspace/curl_internal:repository.bzl", "curl_internal_repository")  # noqa
@@ -169,8 +168,6 @@ def add_default_repositories(
         common_robotics_utilities_internal_repository(name = "common_robotics_utilities_internal", mirrors = mirrors)  # noqa
     if "commons_io" not in excludes:
         commons_io_repository(name = "commons_io", mirrors = mirrors, _is_drake_self_call = True)  # noqa
-    if "conex_internal" not in excludes:
-        conex_internal_repository(name = "conex_internal", mirrors = mirrors)
     if "crate_universe" not in excludes:
         crate_universe_repositories(mirrors = mirrors, excludes = excludes, _is_drake_self_call = True)  # noqa
     if "csdp_internal" not in excludes:

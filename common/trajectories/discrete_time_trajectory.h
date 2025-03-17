@@ -68,7 +68,8 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
   monotonically increasing.
   @pre @p values must have times.size() columns.
   @pre @p time_comparison_tolerance must be >= 0.
-  @throw if T=symbolic:Expression and @p times are not constants. */
+  @throw if T=symbolic:Expression and @p times are not constants.
+  @pydrake_mkdoc_identifier{Eigen} */
   DiscreteTimeTrajectory(const Eigen::Ref<const VectorX<T>>& times,
                          const Eigen::Ref<const MatrixX<T>>& values,
                          double time_comparison_tolerance =
@@ -80,9 +81,9 @@ class DiscreteTimeTrajectory final : public Trajectory<T> {
   @pre @p values must have times.size() elements, each with the same number of
        rows and columns.
   @pre @p time_comparison_tolerance must be >= 0.
-  @throw if T=symbolic:Expression and @p times are not constants. */
-  DiscreteTimeTrajectory(const std::vector<T>& times,
-                         const std::vector<MatrixX<T>>& values,
+  @throw if T=symbolic:Expression and @p times are not constants.
+  @pydrake_mkdoc_identifier{stdvector} */
+  DiscreteTimeTrajectory(std::vector<T> times, std::vector<MatrixX<T>> values,
                          double time_comparison_tolerance =
                              std::numeric_limits<double>::epsilon());
 

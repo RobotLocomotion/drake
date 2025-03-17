@@ -15,7 +15,6 @@ namespace internal {
 namespace {
 
 using Eigen::Vector3i;
-const int kLog2MaxGridSize = 5;
 
 GTEST_TEST(ConvertToRangeVectorTest, ConvertToRangeVector) {
   std::vector<int> data = {1, 3, 6, 9};
@@ -55,7 +54,7 @@ bool OverlapOneRing(const Vector3i& a, const Vector3i& b) {
 }
 
 GTEST_TEST(ParticleSorterTest, Sort) {
-  using Grid = SpGrid<GridData<double>, kLog2MaxGridSize>;
+  using Grid = SpGrid<GridData<double>>;
   const Grid spgrid;
   const double dx = 0.2;
   const std::vector<Vector3<double>> particle_positions = SamplePoints(7);

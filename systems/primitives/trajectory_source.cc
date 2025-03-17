@@ -71,6 +71,9 @@ TrajectorySource<T>::TrajectorySource(const TrajectorySource<U>& other)
 }
 
 template <typename T>
+TrajectorySource<T>::~TrajectorySource() = default;
+
+template <typename T>
 void TrajectorySource<T>::CheckInvariants() const {
   const bool is_normal = (trajectory_ != nullptr);
   const bool is_failsafe = (failsafe_trajectory_ != nullptr);

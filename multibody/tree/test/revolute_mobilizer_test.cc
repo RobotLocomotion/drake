@@ -34,6 +34,8 @@ class RevoluteMobilizerTest : public MobilizerTester {
         std::make_unique<RevoluteJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame(),
             axis_F_));
+    // Mobilizers are always ephemeral (i.e. not added by user).
+    EXPECT_TRUE(mobilizer_->is_ephemeral());
     mutable_mobilizer_ = const_cast<RevoluteMobilizer<double>*>(mobilizer_);
   }
 
@@ -202,6 +204,17 @@ TEST_F(RevoluteMobilizerTest, MapVelocityToQDotAndBack) {
   qdot(0) = -std::sqrt(2);
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
   EXPECT_NEAR(v(0), qdot(0), kTolerance);
+
+  // Test relationship between q̈ (2ⁿᵈ time derivatives of generalized positions)
+  // and v̇ (1ˢᵗ time derivatives of generalized velocities) and vice-versa.
+  Vector1d vdot(1.2345);
+  Vector1d qddot;
+  mobilizer_->MapAccelerationToQDDot(*context_, vdot, &qddot);
+  EXPECT_NEAR(qddot(0), vdot(0), kTolerance);
+
+  qddot(0) = -std::sqrt(5);
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &vdot);
+  EXPECT_NEAR(vdot(0), qddot(0), kTolerance);
 }
 
 TEST_F(RevoluteMobilizerTest, KinematicMapping) {

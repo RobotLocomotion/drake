@@ -140,7 +140,7 @@ class SymbolicVectorSystem final : public LeafSystem<T> {
                                 other.dynamics_, other.output_,
                                 other.time_period_) {}
 
-  ~SymbolicVectorSystem() override = default;
+  ~SymbolicVectorSystem() override;
 
   /// @name Accessor methods.
   /// @{

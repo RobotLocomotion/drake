@@ -184,13 +184,25 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 
+  // Maps v to qdot, which for this mobilizer is q̇ = v.
   void MapVelocityToQDot(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& v,
-                         EigenPtr<VectorX<T>> qdot) const override;
+                         EigenPtr<VectorX<T>> qdot) const final;
 
+  // Maps qdot to v, which for this mobilizer is v = q̇.
   void MapQDotToVelocity(const systems::Context<T>& context,
                          const Eigen::Ref<const VectorX<T>>& qdot,
-                         EigenPtr<VectorX<T>> v) const override;
+                         EigenPtr<VectorX<T>> v) const final;
+
+  // Maps vdot to qddot, which for this mobilizer is q̈ = v̇.
+  void MapAccelerationToQDDot(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& vdot,
+                              EigenPtr<VectorX<T>> qddot) const final;
+
+  // Maps qddot to vdot, which for this mobilizer is v̇ = q̈.
+  void MapQDDotToAcceleration(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& qddot,
+                              EigenPtr<VectorX<T>> vdot) const final;
 
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,

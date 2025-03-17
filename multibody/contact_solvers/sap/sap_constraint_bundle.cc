@@ -116,6 +116,8 @@ SapConstraintBundleData SapConstraintBundle<T>::MakeData(
   SapConstraintBundleData data;
   data.reserve(num_constraints());
   int constraint_start = 0;
+  // N.B. Recall constraints_ stores constraints in cluster order, and therefore
+  // entries in delassus_diagonal are required to be in cluster order.
   for (int i = 0; i < num_constraints(); ++i) {
     const SapConstraint<T>& c = *constraints_[i];
     const int ni = c.num_constraint_equations();

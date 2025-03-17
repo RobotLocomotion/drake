@@ -73,9 +73,11 @@ Eigen::Ref<const VectorX<T>> Joint<T>::GetVelocities(
 
 template <typename T>
 std::unique_ptr<internal::Mobilizer<T>> Joint<T>::Build(
-    const internal::SpanningForest::Mobod& mobod) {
+    const internal::SpanningForest::Mobod& mobod,
+    internal::MultibodyTree<T>* tree) {
+  DRAKE_DEMAND(tree != nullptr);
   std::unique_ptr<internal::Mobilizer<T>> owned_mobilizer =
-      MakeMobilizerForJoint(mobod);
+      MakeMobilizerForJoint(mobod, tree);
   mobilizer_ = owned_mobilizer.get();
   return owned_mobilizer;
 }

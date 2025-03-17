@@ -26,6 +26,14 @@ class MultibodyPlant;
 /// BodyIndex index() const { return this->template index_impl<BodyIndex>(); }
 /// @endcode
 ///
+/// Some multibody elements are added during Finalize() and are not part of
+/// the user-specified model. These are called "ephemeral" elements and can
+/// be identified using the `is_ephemeral()` function here. Examples include
+///   - free joints added to connect lone bodies or free-floating trees
+///     to World
+///   - fixed offset frames added when joints are modeled by mobilizers
+///   - all mobilizers.
+///
 /// @tparam_default_scalar
 template <typename T>
 class MultibodyElement {
@@ -63,6 +71,15 @@ class MultibodyElement {
   /// @param[out] parameters A mutable collections of parameters in a context.
   /// @pre parameters != nullptr
   void SetDefaultParameters(systems::Parameters<T>* parameters) const;
+
+  /// Returns `true` if this %MultibodyElement was added during Finalize()
+  /// rather than something a user added. (See class comments.)
+  bool is_ephemeral() const { return is_ephemeral_; }
+
+  /// (Internal use only) Sets the `is_ephemeral` flag to the indicated value.
+  /// The default if this is never called is `false`. Any element that is added
+  /// during Finalize() should set this flag to `true`.
+  void set_is_ephemeral(bool is_ephemeral) { is_ephemeral_ = is_ephemeral; }
 
  protected:
   /// Default constructor made protected so that sub-classes can still declare
@@ -186,6 +203,8 @@ class MultibodyElement {
   // The default model instance id is *invalid*. This must be set to a
   // valid index value before the element is released to the wild.
   ModelInstanceIndex model_instance_;
+
+  bool is_ephemeral_{false};
 };
 
 }  // namespace multibody

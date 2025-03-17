@@ -14,6 +14,6 @@ apt-get -y install lsb-release
 # Install prerequisites.
 readonly DISTRO=$(lsb_release -sc)
 
-mapfile -t PACKAGES < <(sed -e '/^#/d' < /image/packages-${DISTRO})
+mapfile -t PACKAGES < <(sed -r -e '/^(#|$)/d' < /image/packages-${DISTRO})
 
 apt-get -y install --no-install-recommends ${PACKAGES[@]}

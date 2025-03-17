@@ -23,7 +23,7 @@ std::unique_ptr<internal::BodyNode<T>> WeldMobilizer<T>::CreateBodyNode(
 template <typename T>
 math::RigidTransform<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
     const systems::Context<T>&) const {
-  return X_FM_.cast<T>();
+  return math::RigidTransform<T>();  // Identity
 }
 
 template <typename T>
@@ -72,6 +72,24 @@ void WeldMobilizer<T>::MapQDotToVelocity(
 }
 
 template <typename T>
+void WeldMobilizer<T>::MapAccelerationToQDDot(
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& vdot,
+    EigenPtr<VectorX<T>> qddot) const {
+  DRAKE_ASSERT(vdot.size() == kNv);
+  DRAKE_ASSERT(qddot != nullptr);
+  DRAKE_ASSERT(qddot->size() == kNq);
+}
+
+template <typename T>
+void WeldMobilizer<T>::MapQDDotToAcceleration(
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qddot,
+    EigenPtr<VectorX<T>> vdot) const {
+  DRAKE_ASSERT(qddot.size() == kNq);
+  DRAKE_ASSERT(vdot != nullptr);
+  DRAKE_ASSERT(vdot->size() == kNv);
+}
+
+template <typename T>
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>> WeldMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
@@ -81,7 +99,7 @@ std::unique_ptr<Mobilizer<ToScalar>> WeldMobilizer<T>::TemplatedDoCloneToScalar(
       tree_clone.get_variant(this->outboard_frame());
   return std::make_unique<WeldMobilizer<ToScalar>>(
       tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
-      outboard_frame_clone, this->get_X_FM());
+      outboard_frame_clone);
 }
 
 template <typename T>

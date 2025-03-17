@@ -1,3 +1,0 @@
-# -*- bazel -*-
-
-exports_files(["LICENSE"])

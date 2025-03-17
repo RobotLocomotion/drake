@@ -41,6 +41,9 @@ PassThrough<T>::PassThrough(const PassThrough<U>& other)
                                       : nullptr) {}
 
 template <typename T>
+PassThrough<T>::~PassThrough() = default;
+
+template <typename T>
 void PassThrough<T>::DoCalcVectorOutput(const Context<T>& context,
                                         BasicVector<T>* output) const {
   DRAKE_ASSERT(!is_abstract());

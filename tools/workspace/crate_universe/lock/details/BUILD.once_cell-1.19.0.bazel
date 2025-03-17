@@ -52,12 +52,93 @@ rust_library(
             "WORKSPACE.bazel",
         ],
     ),
-    crate_features = [
-        "alloc",
-        "default",
-        "race",
-        "std",
-    ],
+    crate_features = select({
+        "@rules_rust//rust/platform:aarch64-apple-darwin": [
+            "alloc",  # aarch64-apple-darwin
+            "default",  # aarch64-apple-darwin
+            "race",  # aarch64-apple-darwin
+            "std",  # aarch64-apple-darwin
+        ],
+        "@rules_rust//rust/platform:aarch64-pc-windows-msvc": [
+            "alloc",  # aarch64-pc-windows-msvc
+            "default",  # aarch64-pc-windows-msvc
+            "race",  # aarch64-pc-windows-msvc
+            "std",  # aarch64-pc-windows-msvc
+        ],
+        "@rules_rust//rust/platform:aarch64-unknown-linux-gnu": [
+            "alloc",  # aarch64-unknown-linux-gnu
+            "default",  # aarch64-unknown-linux-gnu
+            "race",  # aarch64-unknown-linux-gnu
+            "std",  # aarch64-unknown-linux-gnu
+        ],
+        "@rules_rust//rust/platform:aarch64-unknown-nixos-gnu": [
+            "alloc",  # aarch64-unknown-nixos-gnu
+            "default",  # aarch64-unknown-nixos-gnu
+            "race",  # aarch64-unknown-nixos-gnu
+            "std",  # aarch64-unknown-nixos-gnu
+        ],
+        "@rules_rust//rust/platform:arm-unknown-linux-gnueabi": [
+            "alloc",  # arm-unknown-linux-gnueabi
+            "default",  # arm-unknown-linux-gnueabi
+            "race",  # arm-unknown-linux-gnueabi
+            "std",  # arm-unknown-linux-gnueabi
+        ],
+        "@rules_rust//rust/platform:i686-pc-windows-msvc": [
+            "alloc",  # i686-pc-windows-msvc
+            "default",  # i686-pc-windows-msvc
+            "race",  # i686-pc-windows-msvc
+            "std",  # i686-pc-windows-msvc
+        ],
+        "@rules_rust//rust/platform:i686-unknown-linux-gnu": [
+            "alloc",  # i686-unknown-linux-gnu
+            "default",  # i686-unknown-linux-gnu
+            "race",  # i686-unknown-linux-gnu
+            "std",  # i686-unknown-linux-gnu
+        ],
+        "@rules_rust//rust/platform:powerpc-unknown-linux-gnu": [
+            "alloc",  # powerpc-unknown-linux-gnu
+            "default",  # powerpc-unknown-linux-gnu
+            "race",  # powerpc-unknown-linux-gnu
+            "std",  # powerpc-unknown-linux-gnu
+        ],
+        "@rules_rust//rust/platform:s390x-unknown-linux-gnu": [
+            "alloc",  # s390x-unknown-linux-gnu
+            "default",  # s390x-unknown-linux-gnu
+            "race",  # s390x-unknown-linux-gnu
+            "std",  # s390x-unknown-linux-gnu
+        ],
+        "@rules_rust//rust/platform:x86_64-apple-darwin": [
+            "alloc",  # x86_64-apple-darwin
+            "default",  # x86_64-apple-darwin
+            "race",  # x86_64-apple-darwin
+            "std",  # x86_64-apple-darwin
+        ],
+        "@rules_rust//rust/platform:x86_64-pc-windows-msvc": [
+            "alloc",  # x86_64-pc-windows-msvc
+            "default",  # x86_64-pc-windows-msvc
+            "race",  # x86_64-pc-windows-msvc
+            "std",  # x86_64-pc-windows-msvc
+        ],
+        "@rules_rust//rust/platform:x86_64-unknown-freebsd": [
+            "alloc",  # x86_64-unknown-freebsd
+            "default",  # x86_64-unknown-freebsd
+            "race",  # x86_64-unknown-freebsd
+            "std",  # x86_64-unknown-freebsd
+        ],
+        "@rules_rust//rust/platform:x86_64-unknown-linux-gnu": [
+            "alloc",  # x86_64-unknown-linux-gnu
+            "default",  # x86_64-unknown-linux-gnu
+            "race",  # x86_64-unknown-linux-gnu
+            "std",  # x86_64-unknown-linux-gnu
+        ],
+        "@rules_rust//rust/platform:x86_64-unknown-nixos-gnu": [
+            "alloc",  # x86_64-unknown-nixos-gnu
+            "default",  # x86_64-unknown-nixos-gnu
+            "race",  # x86_64-unknown-nixos-gnu
+            "std",  # x86_64-unknown-nixos-gnu
+        ],
+        "//conditions:default": [],
+    }),
     crate_root = "src/lib.rs",
     edition = "2021",
     rustc_flags = [

@@ -3,6 +3,9 @@
 namespace drake {
 namespace systems {
 
+template <class T>
+RungeKutta3Integrator<T>::~RungeKutta3Integrator() = default;
+
 /*
  * RK3-specific initialization function.
  * @throws std::exception if *neither* the initial step size target nor the

@@ -64,11 +64,15 @@ PYBIND11_MODULE(parsing, m) {
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"), "Copy constructor")
-        .def("Add", &Class::Add, py::arg("package_name"),
-            py::arg("package_path"), cls_doc.Add.doc)
+        .def("Add",
+            py::overload_cast<const std::string&, const std::filesystem::path&>(
+                &Class::Add),
+            py::arg("package_name"), py::arg("package_path"), cls_doc.Add.doc)
         .def("AddMap", &Class::AddMap, py::arg("other_map"), cls_doc.AddMap.doc)
-        .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),
-            cls_doc.AddPackageXml.doc)
+        .def("AddPackageXml",
+            py::overload_cast<const std::filesystem::path&>(
+                &Class::AddPackageXml),
+            py::arg("filename"), cls_doc.AddPackageXml.doc)
         .def("AddRemote", &Class::AddRemote, py::arg("package_name"),
             py::arg("params"))
         .def("Contains", &Class::Contains, py::arg("package_name"),
@@ -88,8 +92,10 @@ PYBIND11_MODULE(parsing, m) {
             py::arg("package_name"), cls_doc.GetPath.doc)
         .def("ResolveUrl", &Class::ResolveUrl, py::arg("url"),
             cls_doc.ResolveUrl.doc)
-        .def("PopulateFromFolder", &Class::PopulateFromFolder, py::arg("path"),
-            cls_doc.PopulateFromFolder.doc)
+        .def("PopulateFromFolder",
+            py::overload_cast<const std::filesystem::path&>(
+                &Class::PopulateFromFolder),
+            py::arg("path"), cls_doc.PopulateFromFolder.doc)
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,
             py::arg("environment_variable"),
             cls_doc.PopulateFromEnvironment.doc)

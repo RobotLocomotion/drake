@@ -135,7 +135,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(VelocityImplicitEulerIntegrator);
 
-  ~VelocityImplicitEulerIntegrator() override = default;
+  ~VelocityImplicitEulerIntegrator() override;
 
   explicit VelocityImplicitEulerIntegrator(const System<T>& system,
                                            Context<T>* context = nullptr)

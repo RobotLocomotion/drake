@@ -62,7 +62,7 @@ namespace systems {
  * - [Stewart 2000]    D. Stewart. Rigid-body Dynamics with Friction and
  *                       Impact. SIAM Review, 42:1, 2000.
  *
- * @tparam_nonsymbolic_scalar
+ * @tparam_default_scalar
  * @ingroup integrators
  */
 template <class T>
@@ -70,7 +70,7 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SemiExplicitEulerIntegrator);
 
-  virtual ~SemiExplicitEulerIntegrator() {}
+  ~SemiExplicitEulerIntegrator() override;
 
   // TODO(edrumwri): update documentation to account for stretching (after
   //                 stretching has become a user settable).
@@ -88,7 +88,8 @@ class SemiExplicitEulerIntegrator final : public IntegratorBase<T> {
   SemiExplicitEulerIntegrator(const System<T>& system, const T& max_step_size,
                               Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context),
-        qdot_(context->get_continuous_state().num_q()) {
+        qdot_(context ? context->get_continuous_state().num_q()
+                      : system.AllocateTimeDerivatives()->num_q()) {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
   }
 
@@ -167,5 +168,5 @@ bool SemiExplicitEulerIntegrator<T>::DoStep(const T& h) {
 }  // namespace systems
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::systems::SemiExplicitEulerIntegrator);

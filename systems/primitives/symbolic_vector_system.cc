@@ -164,6 +164,9 @@ SymbolicVectorSystem<T>::SymbolicVectorSystem(
 }
 
 template <typename T>
+SymbolicVectorSystem<T>::~SymbolicVectorSystem() = default;
+
+template <typename T>
 bool SymbolicVectorSystem<T>::DependsOnInputs(
     const VectorX<Expression>& expr) const {
   Variables needed_variables;

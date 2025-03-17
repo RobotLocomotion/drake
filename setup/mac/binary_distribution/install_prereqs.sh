@@ -59,7 +59,7 @@ if [[ "${with_update}" -eq 1 ]]; then
   brew update || (sleep 30; brew update)
 fi
 
-brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
+brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
 if ! command -v pip3.12 &>/dev/null; then
   echo 'ERROR: pip3.12 is NOT installed. The post-install step for the python@3.12 formula may have failed.' >&2

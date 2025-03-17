@@ -102,10 +102,23 @@ class VolumeMeshRefiner {
   // @note This function has linear complexity on the number of tetrahedra.
   std::vector<int> GetTetrahedraOnEdge(int v0, int v1) const;
 
+  // Initializes vertex_to_tetrahedra_ from tetrahedra_;
+  void ResetVertexToTetrahedra();
+
   // As we incrementally refine the mesh, we collect tetrahedra and
   // vertices into these variables.
   std::vector<VolumeElement> tetrahedra_{};
   std::vector<Vector3<double>> vertices_{};
+  // For quick local searches in GetTetrahedraOnTriangle() and
+  // GetTetrahedraOnEdge() (as opposed to global search the entire mesh),
+  // we maintain vertex_to_tetrahedra_, which is the reverse of tetrahedra_:
+  //   tetrahedra_: tetrahedron -> 4 vertices,
+  //   vertex_to_tetrahedra_: vertex -> incident tetrahedra.
+  // Invariants:
+  // 1. vertex_to_tetrahedra_.size() == vertices_.size().
+  // 2. sum vertex_to_tetrahedra_[i].size() == 4 * tetrahedra_.size()
+  std::vector<std::vector<int>> vertex_to_tetrahedra_{};
+
   // Reference to the input mesh must be valid during the lifetime of this
   // object.
   const VolumeMesh<double>& input_mesh_;

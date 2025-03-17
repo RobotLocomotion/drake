@@ -37,7 +37,7 @@ class SingleOutputVectorSource : public LeafSystem<T> {
   /// vector to the single-argument constructor of `const BasicVector<T>&`.
   SingleOutputVectorSource() = delete;
 
-  ~SingleOutputVectorSource() override = default;
+  ~SingleOutputVectorSource() override;
 
   /// Returns the sole output port.
   const OutputPort<T>& get_output_port() const {

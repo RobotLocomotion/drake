@@ -21,12 +21,14 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   // Setup the integration step size.
   const double h = 1e-3;
 
+  // Create the integrator with a nullptr context.
+  SemiExplicitEulerIntegrator<double> integrator(spring_mass, h, nullptr);
+
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
 
-  // Create the integrator.
-  SemiExplicitEulerIntegrator<double> integrator(
-      spring_mass, h, context.get());  // Use default Context.
+  // Attach context to integrator.
+  integrator.reset_context(context.get());
 
   integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
@@ -171,6 +173,33 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   EXPECT_GT(integrator.get_num_steps_taken(), 0);
   EXPECT_EQ(integrator.get_error_estimate(), nullptr);
   EXPECT_GT(integrator.get_num_derivative_evaluations(), 0);
+}
+
+GTEST_TEST(IntegratorTest, Symbolic) {
+  using symbolic::Expression;
+  using symbolic::Variable;
+
+  // Create the mass spring system.
+  SpringMassSystem<Expression> spring_mass(1., 1.);
+  // Set the maximum step size.
+  const double max_h = .01;
+  // Create a context.
+  auto context = spring_mass.CreateDefaultContext();
+  // Create the integrator.
+  SemiExplicitEulerIntegrator<Expression> integrator(
+      spring_mass, max_h, context.get());
+  integrator.Initialize();
+
+  const Variable q("q");
+  const Variable v("v");
+  const Variable work("work");
+  const Variable h("h");
+  context->SetContinuousState(Vector3<Expression>(q, v, work));
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(h));
+
+  EXPECT_TRUE(context->get_continuous_state_vector()[0].EqualTo(q + h*(v-h*q)));
+  EXPECT_TRUE(context->get_continuous_state_vector()[1].EqualTo(v - h*q));
+  EXPECT_TRUE(context->get_continuous_state_vector()[2].EqualTo(work - h*q*v));
 }
 
 }  // namespace

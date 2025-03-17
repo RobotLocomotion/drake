@@ -66,7 +66,7 @@ class OutputPort : public OutputPortBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(OutputPort);
 
-  ~OutputPort() override = default;
+  ~OutputPort() override;
 
   /** Returns a reference to the up-to-date value of this output port contained
   in the given Context. This is the preferred way to obtain an output port's

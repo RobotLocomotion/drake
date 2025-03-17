@@ -8,16 +8,19 @@ namespace drake {
 namespace systems {
 
 template <typename T>
-Integrator<T>::Integrator(int size)
-    : VectorSystem<T>(SystemTypeTag<Integrator>{}, size, size,
+Integrator<T>::Integrator(const VectorX<double>& initial_value)
+    : VectorSystem<T>(SystemTypeTag<Integrator>{}, initial_value.size(),
+                      initial_value.size(),
                       /* direct_feedthrough = */ false) {
-  this->DeclareContinuousState(size);
+  initial_value_ = initial_value;
+  const BasicVector<T> basic_vector(initial_value_);
+  this->DeclareContinuousState(basic_vector);
 }
 
 template <typename T>
 template <typename U>
 Integrator<T>::Integrator(const Integrator<U>& other)
-    : Integrator<T>(other.get_input_port().size()) {}
+    : Integrator<T>(other.initial_value_) {}
 
 template <typename T>
 Integrator<T>::~Integrator() = default;
@@ -27,9 +30,15 @@ void Integrator<T>::set_integral_value(
     Context<T>* context, const Eigen::Ref<const VectorX<T>>& value) const {
   this->ValidateContext(context);
   VectorBase<T>& state_vector = context->get_mutable_continuous_state_vector();
-  // Asserts that the input value is a column vector of the appropriate size.
-  DRAKE_DEMAND(value.rows() == state_vector.size() && value.cols() == 1);
+  DRAKE_THROW_UNLESS(value.size() == state_vector.size());
   state_vector.SetFromVector(value);
+}
+
+template <typename T>
+void Integrator<T>::set_default_integral_value(
+    const VectorX<double>& initial_value) {
+  DRAKE_THROW_UNLESS(initial_value.size() == initial_value_.size());
+  initial_value_ = initial_value;
 }
 
 template <typename T>
@@ -50,6 +59,13 @@ void Integrator<T>::DoCalcVectorOutput(
   // TODO(david-german-tri): Remove this copy by allowing output ports to be
   // mere pointers to state variables (or cache lines).
   *output = state;
+}
+
+template <typename T>
+void Integrator<T>::SetDefaultState(const Context<T>&, State<T>* state) const {
+  ContinuousState<T>& continuous_state = state->get_mutable_continuous_state();
+  DRAKE_DEMAND(initial_value_.size() == continuous_state.size());
+  continuous_state.SetFromVector(initial_value_.template cast<T>());
 }
 
 }  // namespace systems
