@@ -2,10 +2,10 @@
 
 #include "drake/common/timer.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
+#include "drake/multibody/contact_solvers/sap/sap_dummy_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
-#include "drake/systems/analysis/sap_dummy_constraint.h"
 
 namespace drake {
 namespace systems {
@@ -19,12 +19,12 @@ using multibody::contact_solvers::internal::Bracket;
 using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
 using multibody::contact_solvers::internal::MakeContactConfiguration;
 using multibody::contact_solvers::internal::MatrixBlock;
+using multibody::contact_solvers::internal::SapConstraintJacobian;
+using multibody::contact_solvers::internal::SapDummyConstraint;
 using multibody::contact_solvers::internal::SapHessianFactorizationType;
 using multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
 using multibody::contact_solvers::internal::SapHuntCrossleyConstraint;
 using multibody::contact_solvers::internal::SapSolverStatus;
-using multibody::contact_solvers::internal::SapConstraintJacobian;
-using systems::custom_constraints::SapDummyConstraint;
 using multibody::internal::GetCombinedDissipationTimeConstant;
 using multibody::internal::GetCombinedDynamicCoulombFriction;
 using multibody::internal::GetCombinedHuntCrossleyDissipation;

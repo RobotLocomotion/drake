@@ -8,8 +8,9 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
 namespace drake {
-namespace systems {
-namespace custom_constraints {
+namespace multibody {
+namespace contact_solvers {
+namespace internal {
 
 using multibody::SpatialForce;
 using multibody::contact_solvers::internal::SapConstraint;
@@ -77,6 +78,7 @@ class SapDummyConstraint final : public SapConstraint<T> {
   }
 };
 
-}  // namespace custom_constraints
-}  // namespace systems
+}  // namespace internal
+}  // namespace contact_solvers
+}  // namespace multibody
 }  // namespace drake
