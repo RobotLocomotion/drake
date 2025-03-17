@@ -405,9 +405,12 @@ void ShapeMatcher<Mesh>::TestShapeParameters(const Mesh& test) {
     error() << "\nExpected description " << expected_.source().description()
             << ", received description " << test.source().description();
   }
-  if (test.scale() != expected_.scale()) {
-    error() << "\nExpected mesh scale " << expected_.scale()
-            << ", received mesh scale " << test.scale();
+  // Looking for *exact* match.
+  if (test.scale3() != expected_.scale3()) {
+    error() << "\nExpected mesh scale "
+            << fmt::to_string(fmt_eigen(expected_.scale3().transpose()))
+            << ", received mesh scale "
+            << fmt::to_string(fmt_eigen(test.scale3().transpose()));
   }
 }
 
@@ -418,9 +421,12 @@ void ShapeMatcher<Convex>::TestShapeParameters(const Convex& test) {
     error() << "\nExpected description " << expected_.source().description()
             << ", received description " << test.source().description();
   }
-  if (test.scale() != expected_.scale()) {
-    error() << "\nExpected convex scale " << expected_.scale()
-            << ", received convex scale " << test.scale();
+  // Looking for *exact* match.
+  if (test.scale3() != expected_.scale3()) {
+    error() << "\nExpected convex scale "
+            << fmt::to_string(fmt_eigen(expected_.scale3().transpose()))
+            << ", received convex scale "
+            << fmt::to_string(fmt_eigen(test.scale3().transpose()));
   }
 }
 
