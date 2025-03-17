@@ -239,12 +239,15 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     requires std::is_same_v<T, double>;
 
   // Clone of SapSolver::CalcCostAlongLine
-  T CalcCostAlongLine(const SapModel<T>& model,
-                      const systems::Context<T>& context,
+  T CalcCostAlongLine(const SapModel<T>& model, const Context<T>& context,
                       const SearchDirectionData& search_direction_data,
-                      const T& alpha, systems::Context<T>* scratch,
+                      const T& alpha, Context<T>* scratch,
                       T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
                       VectorX<T>* d2ell_dalpha2_scratch = nullptr) const;
+
+  // Get actuator inputs for the plant, clipped to effort limits
+  void GetLimitedActuationInput(const Context<T>& plant_context,
+                                EigenPtr<VectorX<T>> u) const;
 
   // Linearize the external (e.g. controller) system around the current state.
   //
@@ -296,6 +299,9 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   HessianFactorization hessian_factorization_;
   std::vector<MatrixX<T>> A_;  // Hack to keep these from going out of scope
   BlockSparseMatrix<T> J_;
+
+  // Stored vector of effort limits for each actuator
+  VectorX<T> effort_limits_;
 
   // Flag for enabling/disabling hessian re-use
   bool use_full_newton_{false};

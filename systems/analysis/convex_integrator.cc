@@ -14,6 +14,8 @@ using Eigen::VectorXd;
 using geometry::PenetrationAsPointPair;
 using multibody::DiscreteContactApproximation;
 using multibody::Frame;
+using multibody::JointActuator;
+using multibody::JointActuatorIndex;
 using multibody::RigidBody;
 using multibody::contact_solvers::internal::Bracket;
 using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
@@ -97,6 +99,18 @@ void ConvexIntegrator<T>::DoInitialize() {
   workspace_.N.resize(nq, nv);
   workspace_.P.resize(nv, nv);
   workspace_.Q.resize(nv, nv);
+
+  // Get effort limits for each joint actuator
+  effort_limits_.resize(plant().num_actuators());
+  for (JointActuatorIndex a : plant().GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator = plant().get_joint_actuator(a);
+    const int i = actuator.input_start();
+    const int n = actuator.num_inputs();
+    effort_limits_.segment(i, n) =
+        VectorX<T>::Constant(n, actuator.effort_limit());
+  }
+
+  fmt::print("u_max: {}\n", fmt_eigen(effort_limits_.transpose()));
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -1348,6 +1362,16 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 }
 
 template <typename T>
+void ConvexIntegrator<T>::GetLimitedActuationInput(
+    const Context<T>& plant_context, EigenPtr<VectorX<T>> u) const {
+  (*u) = plant()
+             .get_actuation_input_port()
+             .Eval(plant_context)
+             .cwiseMin(effort_limits_)
+             .cwiseMax(-effort_limits_);
+}
+
+template <typename T>
 void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
                                                   MatrixX<T>* A_tilde,
                                                   VectorX<T>* tau0) {
@@ -1372,7 +1396,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   // Compute some quantities that depend on the current state, before moving
   // messing with the state with finite differences
   const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
-  g0 = plant().get_actuation_input_port().Eval(plant_context);
+  GetLimitedActuationInput(plant_context, &g0);
   N = plant().MakeVelocityToQDotMap(plant_context);
   B = plant().MakeActuationMatrix();
 
@@ -1383,6 +1407,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   const double eps = std::sqrt(std::numeric_limits<double>::epsilon());
   const VectorX<T> s = state.CopyToVector();  // s = [x; z]
   VectorX<T> s_prime = s;
+  VectorX<T> g_prime = g0;
 
   for (int i = 0; i < nx; ++i) {
     // Choose a step size (following implicit_integrator.cc)
@@ -1405,8 +1430,8 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
     // Compute the relevant matrix entries. Note that this assumes the state is
     // organized as s = [x; z] where x is the plant state and z is the external
     // system state.
-    D.col(i) =
-        (plant().get_actuation_input_port().Eval(plant_context) - g0) / dsi;
+    GetLimitedActuationInput(plant_context, &g_prime);
+    D.col(i) = (g_prime - g0) / dsi;
 
     // Reset s' to s
     s_prime(i) = s(i);
