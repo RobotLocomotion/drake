@@ -64,7 +64,9 @@ void ColorizeDepthImage<T>::Calc(const ImageDepth32F& input,
   };
 
   // Convert the depths to grayscale.
-  const double depth_scale = 1.0 / (*max_pixel - *min_pixel);
+  const double depth_scale = (*min_pixel == *max_pixel)
+                                 ? 1.0  // Avoid divide-by-zero.
+                                 : (1.0 / (*max_pixel - *min_pixel));
   for (int v = 0; v < output->height(); ++v) {
     for (int u = 0; u < output->width(); ++u) {
       const float pixel = input.at(u, v)[0];
