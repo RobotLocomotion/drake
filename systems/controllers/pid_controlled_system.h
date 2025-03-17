@@ -199,20 +199,20 @@ class PidControlledSystem : public Diagram<T> {
   /// @p plant_output from an existing plant. The controlled states are selected
   /// by @p feedback_selector.
   static ConnectResult ConnectController(
-      const InputPort<T>& plant_input,
-      const OutputPort<T>& plant_output,
-      const MatrixX<double>& feedback_selector,
-      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
-      const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
+      const InputPort<T>& plant_input, const OutputPort<T>& plant_output,
+      const MatrixX<double>& feedback_selector, const Eigen::VectorXd& Kp,
+      const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
+      DiagramBuilder<T>* builder);
 
   /// Creates a PidController and uses @p builder to connect @p plant_input and
   /// @p plant_output from an existing plant. The plant's full state is used for
   /// feedback.
-  static ConnectResult ConnectController(
-      const InputPort<T>& plant_input,
-      const OutputPort<T>& plant_output,
-      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
-      const Eigen::VectorXd& Kd, DiagramBuilder<T>* builder);
+  static ConnectResult ConnectController(const InputPort<T>& plant_input,
+                                         const OutputPort<T>& plant_output,
+                                         const Eigen::VectorXd& Kp,
+                                         const Eigen::VectorXd& Ki,
+                                         const Eigen::VectorXd& Kd,
+                                         DiagramBuilder<T>* builder);
 
   /// Creates a PidController with input saturation and uses @p builder to
   /// connect @p plant_input and @p plant_output from an existing plant. The
@@ -221,12 +221,11 @@ class PidControlledSystem : public Diagram<T> {
   /// that using input limits along with integral gain constant may cause the
   /// integrator to windup.
   static ConnectResult ConnectControllerWithInputSaturation(
-      const InputPort<T>& plant_input,
-      const OutputPort<T>& plant_output,
-      const MatrixX<double>& feedback_selector,
-      const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
-      const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
-      const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder);
+      const InputPort<T>& plant_input, const OutputPort<T>& plant_output,
+      const MatrixX<double>& feedback_selector, const Eigen::VectorXd& Kp,
+      const Eigen::VectorXd& Ki, const Eigen::VectorXd& Kd,
+      const VectorX<T>& min_plant_input, const VectorX<T>& max_plant_input,
+      DiagramBuilder<T>* builder);
 
   /// Creates a PidController with input saturation and uses @p builder to
   /// connect @p plant_input and @p plant_output from an existing plant. The
@@ -235,8 +234,7 @@ class PidControlledSystem : public Diagram<T> {
   /// limits along with integral gain constant may cause the integrator to
   /// windup.
   static ConnectResult ConnectControllerWithInputSaturation(
-      const InputPort<T>& plant_input,
-      const OutputPort<T>& plant_output,
+      const InputPort<T>& plant_input, const OutputPort<T>& plant_output,
       const Eigen::VectorXd& Kp, const Eigen::VectorXd& Ki,
       const Eigen::VectorXd& Kd, const VectorX<T>& min_plant_input,
       const VectorX<T>& max_plant_input, DiagramBuilder<T>* builder);

@@ -22,19 +22,17 @@ GTEST_TEST(testQPInverseDynamicsController, testPoseSetpoint) {
 
   // Set Kp to 1, and everything else to zeros, so the computed acceleration
   // is the rotation difference.
-  CartesianSetpoint<double> setpoint(pose_d.GetAsIsometry3(),
-                                     Vector6<double>::Zero(),
-                                     Vector6<double>::Zero(),
-                                     Vector6<double>::Constant(1),
-                                     Vector6<double>::Zero());
+  CartesianSetpoint<double> setpoint(
+      pose_d.GetAsIsometry3(), Vector6<double>::Zero(), Vector6<double>::Zero(),
+      Vector6<double>::Constant(1), Vector6<double>::Zero());
   math::RigidTransform<double> pose = pose_d;
   Vector6<double> acc, expected;
   expected.setZero();
 
   for (double ang = ang_d; ang < ang_d + 2 * M_PI + 0.1; ang += 0.1) {
     pose.set_rotation(AngleAxis<double>(ang, vec_d));
-    acc = setpoint.ComputeTargetAcceleration(
-        pose.GetAsIsometry3(), Vector6<double>::Zero());
+    acc = setpoint.ComputeTargetAcceleration(pose.GetAsIsometry3(),
+                                             Vector6<double>::Zero());
 
     double err = ang_d - ang;
     if (err > M_PI)

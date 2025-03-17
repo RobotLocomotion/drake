@@ -148,9 +148,10 @@ std::unique_ptr<systems::LinearSystem<double>> LinearQuadraticRegulator(
 
   const int num_states = system.B().rows(), num_inputs = system.B().cols();
 
-  LinearQuadraticRegulatorResult lqr_result = (system.time_period() == 0.0) ?
-    LinearQuadraticRegulator(system.A(), system.B(), Q, R, N) :
-    DiscreteTimeLinearQuadraticRegulator(system.A(), system.B(), Q, R);
+  LinearQuadraticRegulatorResult lqr_result =
+      (system.time_period() == 0.0)
+          ? LinearQuadraticRegulator(system.A(), system.B(), Q, R, N)
+          : DiscreteTimeLinearQuadraticRegulator(system.A(), system.B(), Q, R);
 
   // Return the controller: u = -Kx.
   return std::make_unique<systems::LinearSystem<double>>(
@@ -165,8 +166,7 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
     const System<double>& system, const Context<double>& context,
     const Eigen::Ref<const Eigen::MatrixXd>& Q,
     const Eigen::Ref<const Eigen::MatrixXd>& R,
-    const Eigen::Ref<const Eigen::MatrixXd>& N,
-    int input_port_index) {
+    const Eigen::Ref<const Eigen::MatrixXd>& N, int input_port_index) {
   // TODO(russt): accept optional additional argument to return the cost-to-go
   // but note that it will be a full quadratic form (x'S2x + s1'x + s0).
 
@@ -180,9 +180,9 @@ std::unique_ptr<systems::AffineSystem<double>> LinearQuadraticRegulator(
 
   // Use specified input and no outputs (the output dynamics are irrelevant for
   // LQR design).
-  auto linear_system = Linearize(
-      system, context, InputPortIndex{input_port_index},
-      OutputPortSelection::kNoOutput);
+  auto linear_system =
+      Linearize(system, context, InputPortIndex{input_port_index},
+                OutputPortSelection::kNoOutput);
 
   // DiscreteTimeLinearQuadraticRegulator does not support N yet.
   DRAKE_DEMAND(linear_system->time_period() == 0.0 || N.rows() == 0);

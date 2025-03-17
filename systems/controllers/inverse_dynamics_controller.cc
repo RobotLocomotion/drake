@@ -60,7 +60,8 @@ https://stackoverflow.com/q/75917723/9510020 for some further discussion.)""",
 Your plant has {} positions, but {} velocities. Likely you have a quaternion 
 floating base. InverseDynamicsController currently requires that the 
 number of positions matches the number of velocities, and does not support 
-joints modeled with quaternions.)""", num_positions, num_velocities));
+joints modeled with quaternions.)""",
+                                         num_positions, num_velocities));
   }
 
   /*
@@ -145,8 +146,7 @@ template <typename T>
 InverseDynamicsController<T>::InverseDynamicsController(
     const MultibodyPlant<T>& plant, const VectorX<double>& kp,
     const VectorX<double>& ki, const VectorX<double>& kd,
-    bool has_reference_acceleration,
-    const Context<T>* plant_context)
+    bool has_reference_acceleration, const Context<T>* plant_context)
     : multibody_plant_for_control_(&plant),
       has_reference_acceleration_(has_reference_acceleration) {
   SetUp(nullptr, kp, ki, kd, plant_context);

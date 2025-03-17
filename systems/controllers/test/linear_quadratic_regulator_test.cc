@@ -29,10 +29,12 @@ GTEST_TEST(TestLqr, TestException) {
   DRAKE_EXPECT_NO_THROW(LinearQuadraticRegulator(A, B, Q, R));
 
   // R is not positive definite, should throw exception.
-  EXPECT_THROW(LinearQuadraticRegulator(
-        A, B, Q, Eigen::Matrix<double, 1, 1>::Zero()), std::runtime_error);
-  EXPECT_THROW(LinearQuadraticRegulator(
-        A, B, Q, Eigen::Matrix<double, 1, 1>::Zero(), N), std::runtime_error);
+  EXPECT_THROW(
+      LinearQuadraticRegulator(A, B, Q, Eigen::Matrix<double, 1, 1>::Zero()),
+      std::runtime_error);
+  EXPECT_THROW(
+      LinearQuadraticRegulator(A, B, Q, Eigen::Matrix<double, 1, 1>::Zero(), N),
+      std::runtime_error);
 }
 
 void TestLqrAgainstKnownSolution(
@@ -47,9 +49,9 @@ void TestLqrAgainstKnownSolution(
   LinearQuadraticRegulatorResult result =
       LinearQuadraticRegulator(A, B, Q, R, N);
   EXPECT_TRUE(CompareMatrices(K_known, result.K, tolerance,
-        MatrixCompareType::absolute));
+                              MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(S_known, result.S, tolerance,
-        MatrixCompareType::absolute));
+                              MatrixCompareType::absolute));
 }
 
 void TestLqrLinearSystemAgainstKnownSolution(
@@ -67,12 +69,10 @@ void TestLqrLinearSystemAgainstKnownSolution(
   EXPECT_TRUE(CompareMatrices(linear_lqr->A(),
                               Eigen::Matrix<double, 0, 0>::Zero(), tolerance,
                               MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(linear_lqr->B(),
-                              Eigen::MatrixXd::Zero(0, n), tolerance,
-                              MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(linear_lqr->C(),
-                              Eigen::MatrixXd::Zero(m, 0), tolerance,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(linear_lqr->B(), Eigen::MatrixXd::Zero(0, n),
+                              tolerance, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(linear_lqr->C(), Eigen::MatrixXd::Zero(m, 0),
+                              tolerance, MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(linear_lqr->D(), -K_known, tolerance,
                               MatrixCompareType::absolute));
   EXPECT_EQ(linear_lqr->time_period(), sys.time_period());
@@ -103,16 +103,16 @@ void TestLqrAffineSystemAgainstKnownSolution(
 
   EXPECT_TRUE(CompareMatrices(lqr->A(), Eigen::Matrix<double, 0, 0>::Zero(),
                               tolerance, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(lqr->B(), Eigen::MatrixXd::Zero(0, n),
-                              tolerance, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(lqr->B(), Eigen::MatrixXd::Zero(0, n), tolerance,
+                              MatrixCompareType::absolute));
   EXPECT_TRUE(CompareMatrices(lqr->f0(), Eigen::Matrix<double, 0, 1>::Zero(),
                               tolerance, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(lqr->C(), Eigen::MatrixXd::Zero(m, 0),
-                              tolerance, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(lqr->D(), -K_known,
-                              tolerance, MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(lqr->y0(), u0 + K_known * x0,
-                              tolerance, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(lqr->C(), Eigen::MatrixXd::Zero(m, 0), tolerance,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(lqr->D(), -K_known, tolerance,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(lqr->y0(), u0 + K_known * x0, tolerance,
+                              MatrixCompareType::absolute));
   EXPECT_EQ(lqr->time_period(), sys.time_period());
 }
 
@@ -315,8 +315,8 @@ GTEST_TEST(TestLqr, AcrobotTest) {
 
   // Confirm that I get the same result by linearizing explicitly.
   const auto linear_system = Linearize(plant, *context);
-  const auto lqr_result = LinearQuadraticRegulator(
-          linear_system->A(), linear_system->B(), Q, R);
+  const auto lqr_result =
+      LinearQuadraticRegulator(linear_system->A(), linear_system->B(), Q, R);
   EXPECT_TRUE(CompareMatrices(-lqr_result.K, controller->D(), 1e-12));
 
   // Confirm that I get the same result via MultibodyPlant.

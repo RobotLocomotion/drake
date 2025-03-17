@@ -34,7 +34,7 @@ struct DynamicProgrammingOptions {
     PeriodicBoundaryCondition(int state_index, double low, double high);
     int state_index{-1};
     double low{0.};
-    double high{2.*M_PI};
+    double high{2.0 * M_PI};
   };
   std::list<struct PeriodicBoundaryCondition> periodic_boundary_conditions;
 
@@ -119,7 +119,6 @@ FittedValueIteration(
 // TODO(russt): Implement more general FittedValueIteration methods as the
 // function approximation tools become available.
 
-
 /// Implements the Linear Programming approach to approximate dynamic
 /// programming.  It optimizes the linear program
 ///
@@ -171,14 +170,12 @@ FittedValueIteration(
 Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
     Simulator<double>* simulator,
     const std::function<double(const Context<double>& context)>& cost_function,
-    const std::function<symbolic::Expression(
-        const Eigen::Ref<const Eigen::VectorXd>& state,
-        const VectorX<symbolic::Variable>& parameters)>&
+    const std::function<
+        symbolic::Expression(const Eigen::Ref<const Eigen::VectorXd>& state,
+                             const VectorX<symbolic::Variable>& parameters)>&
         linearly_parameterized_cost_to_go_function,
-    int num_parameters,
-    const Eigen::Ref<const Eigen::MatrixXd>& state_samples,
-    const Eigen::Ref<const Eigen::MatrixXd>& input_samples,
-    double time_step,
+    int num_parameters, const Eigen::Ref<const Eigen::MatrixXd>& state_samples,
+    const Eigen::Ref<const Eigen::MatrixXd>& input_samples, double time_step,
     const DynamicProgrammingOptions& options = DynamicProgrammingOptions());
 
 // TODO(russt): could easily provide a version of LPADP that accepts the same
