@@ -196,9 +196,16 @@ The examples within Drake's
 [gallery of external examples](https://github.com/RobotLocomotion/drake-external-examples)
 provide continuous integration via both Jenkins and GitHub Actions. This provides
 downstream test coverage for Drake developers to ensure reliability in the
-build infrastructure. Additionally, the GitHub Actions provide a bonus benefit
-for end users, in that examples of lightweight, open-source builds using Drake
-on public CI servers are made easily accessible.
+build infrastructure. Additionally, the GitHub Actions provide a benefit
+for end users, in that examples of CI pipelines on public servers for
+external projects using Drake installations are made easily accessible.
+
+See the external examples
+[continuous integration](https://github.com/RobotLocomotion/drake-external-examples#continuous-integration)
+for details on which examples use Jenkins or GitHub Actions. In general,
+GitHub Actions is used for the lightweight examples which use some
+installed version of Drake, while Jenkins is used for complete coverage
+on examples which pull in Drake externally and build it.
 
 When a new pull request is opened in Drake, members of the RobotLocomotion
 organization can utilize Jenkins and GitHub Actions to run custom builds.
