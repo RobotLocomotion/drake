@@ -828,9 +828,12 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   MatrixX<T>& A_tilde = workspace_.A_tilde;
   VectorX<T>& tau0 = workspace_.tau0;
 
-  // Linearization of external controller connected to the actuation input port,
-  // τ = B u = B g(x) ≈ τ₀ − Ã v.
-  if (plant().num_actuators() > 0) {
+  // Linearization of external controllers connected to the plant,
+  //     τ = B u(x) + τₑₓₜ(x) + ∑ Jᵀ fₑₓₜ(x) = g(x) ≈ τ₀ − Ã v,
+  // where ̃A is SPD.
+  if (plant().num_actuators() > 0 ||
+      plant().get_applied_generalized_force_input_port().HasValue(context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(context)) {
     // Only do the linearization if a controller is connected
     LinearizeExternalSystem(h, &A_tilde, &tau0);
   } else {
@@ -1361,18 +1364,25 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 template <typename T>
 void ConvexIntegrator<T>::GetGeneralizedForcesFromInputPorts(
     const Context<T>& plant_context, const MatrixX<T>& B,
-    EigenPtr<VectorX<T>> tau) const {
+    MultibodyForces<T>* forces,
+    VectorX<T>* tau) const {
+  forces->SetZero();
+
   // Actuator forces, clipped to effort limits
   const VectorX<T> u = plant()
                            .AssembleActuationInput(plant_context)
                            .cwiseMin(effort_limits_)
                            .cwiseMax(-effort_limits_);
+  forces->mutable_generalized_forces() = B * u;
 
-  // Other generalized forces
+  // External generalized forces
+  plant().AddAppliedExternalGeneralizedForces(plant_context, forces);
 
-  // Spatial forces applied to each body
+  // External spatial forces applied to each body
+  plant().AddAppliedExternalSpatialForces(plant_context, forces);
 
-  (*tau) = B * u;
+  // Add up all the force contributions
+  plant().CalcGeneralizedForces(plant_context, *forces, tau);
 }
 
 template <typename T>
@@ -1396,13 +1406,14 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   MatrixX<T>& N = workspace_.N;
   MatrixX<T>& P = workspace_.P;
   MatrixX<T>& Q = workspace_.Q;
+  MultibodyForces<T>& forces = *workspace_.f_ext;
 
   // Compute some quantities that depend on the current state, before moving
   // messing with the state with finite differences
   N = plant().MakeVelocityToQDotMap(plant_context);
   B = plant().MakeActuationMatrix();
   const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
-  GetGeneralizedForcesFromInputPorts(plant_context, B, &g0);
+  GetGeneralizedForcesFromInputPorts(plant_context, B, &forces, &g0);
 
   // Compute τ = D(x − x₀) + g₀ with finite differences
   Context<T>* mutable_context = this->get_mutable_context();
@@ -1434,7 +1445,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
     // Compute the relevant matrix entries. Note that this assumes the state is
     // organized as s = [x; z] where x is the plant state and z is the external
     // system state.
-    GetGeneralizedForcesFromInputPorts(plant_context, B, &g_prime);
+    GetGeneralizedForcesFromInputPorts(plant_context, B, &forces, &g_prime);
     D.col(i) = (g_prime - g0) / dsi;
 
     // Reset s' to s

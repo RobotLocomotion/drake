@@ -249,7 +249,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   //   τ = B u + τₑₓₜ + ∑ Jᵀ fₑₓₜ
   void GetGeneralizedForcesFromInputPorts(const Context<T>& plant_context,
                                           const MatrixX<T>& B,
-                                          EigenPtr<VectorX<T>> tau) const;
+                                          MultibodyForces<T>* forces,
+                                          VectorX<T>* tau) const;
 
   // Linearize the external (e.g. controller) system around the current state.
   //
