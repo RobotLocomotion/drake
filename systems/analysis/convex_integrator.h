@@ -245,14 +245,16 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                       T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
                       VectorX<T>* d2ell_dalpha2_scratch = nullptr) const;
 
-  // Get actuator inputs for the plant, clipped to effort limits
-  void GetLimitedActuationInput(const Context<T>& plant_context,
-                                EigenPtr<VectorX<T>> u) const;
+  // Accumulate forces from all external input ports in a single vector,
+  //   τ = B u + τₑₓₜ + ∑ Jᵀ fₑₓₜ
+  void GetGeneralizedForcesFromInputPorts(const Context<T>& plant_context,
+                                          const MatrixX<T>& B,
+                                          EigenPtr<VectorX<T>> tau) const;
 
   // Linearize the external (e.g. controller) system around the current state.
   //
   // The original nonlinear controller
-  //     τ = B u = B g(x)
+  //     τ = B u = g(x)
   // is approximated as
   //     τ = τ₀ − Ãv,
   // where Ã is symmetric and positive definite, and we use the fact that q = q0

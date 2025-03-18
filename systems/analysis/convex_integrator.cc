@@ -94,8 +94,8 @@ void ConvexIntegrator<T>::DoInitialize() {
   workspace_.B.resize(nv, nu);
   workspace_.tau0.resize(nv);
   workspace_.A_tilde.resize(nv, nv);
-  workspace_.D.resize(nu, nq + nv);
-  workspace_.g0.resize(nu);
+  workspace_.D.resize(nv, nq + nv);
+  workspace_.g0.resize(nv);
   workspace_.N.resize(nq, nv);
   workspace_.P.resize(nv, nv);
   workspace_.Q.resize(nv, nv);
@@ -852,7 +852,6 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
 
   // free-motion velocities v* = A^{-1}(M * v0 - h k0 + h B u0)
   // TODO(vincekurtz): consider using a sparse solve here
-  // TODO(vincekurtz): include external generalized and spatial forces
   plant().CalcForceElementsContribution(context, &f_ext);
   f_ext.mutable_generalized_forces() += tau0;
   k = plant().CalcInverseDynamics(
@@ -1360,13 +1359,21 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::GetLimitedActuationInput(
-    const Context<T>& plant_context, EigenPtr<VectorX<T>> u) const {
-  (*u) = plant()
-             .get_actuation_input_port()
-             .Eval(plant_context)
-             .cwiseMin(effort_limits_)
-             .cwiseMax(-effort_limits_);
+void ConvexIntegrator<T>::GetGeneralizedForcesFromInputPorts(
+    const Context<T>& plant_context, const MatrixX<T>& B,
+    EigenPtr<VectorX<T>> tau) const {
+  // Actuator forces, clipped to effort limits
+  const VectorX<T> u = plant()
+                           .get_actuation_input_port()
+                           .Eval(plant_context)
+                           .cwiseMin(effort_limits_)
+                           .cwiseMax(-effort_limits_);
+
+  // Other generalized forces
+
+  // Spatial forces applied to each body
+
+  (*tau) = B * u;
 }
 
 template <typename T>
@@ -1386,19 +1393,19 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   // Workspace pre-allocations
   MatrixX<T>& D = workspace_.D;
   VectorX<T>& g0 = workspace_.g0;
-  MatrixX<T>& N = workspace_.N;
   MatrixX<T>& B = workspace_.B;
+  MatrixX<T>& N = workspace_.N;
   MatrixX<T>& P = workspace_.P;
   MatrixX<T>& Q = workspace_.Q;
 
   // Compute some quantities that depend on the current state, before moving
   // messing with the state with finite differences
-  const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
-  GetLimitedActuationInput(plant_context, &g0);
   N = plant().MakeVelocityToQDotMap(plant_context);
   B = plant().MakeActuationMatrix();
+  const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
+  GetGeneralizedForcesFromInputPorts(plant_context, B, &g0);
 
-  // Compute u = D(x - x0) + g0 with finite differences
+  // Compute τ = D(x − x₀) + g₀ with finite differences
   Context<T>* mutable_context = this->get_mutable_context();
   ContinuousState<T>& mutable_state =
       mutable_context->get_mutable_continuous_state();
@@ -1428,7 +1435,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
     // Compute the relevant matrix entries. Note that this assumes the state is
     // organized as s = [x; z] where x is the plant state and z is the external
     // system state.
-    GetLimitedActuationInput(plant_context, &g_prime);
+    GetGeneralizedForcesFromInputPorts(plant_context, B, &g_prime);
     D.col(i) = (g_prime - g0) / dsi;
 
     // Reset s' to s
@@ -1445,8 +1452,8 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   const Eigen::Ref<MatrixX<T>> Dv = D.rightCols(nv);
 
   // Square matrices that we can project to be symmetric positive definite
-  P = -B * Dv;
-  Q = -B * Dq * N;
+  P = -Dv;
+  Q = -Dq * N;
 
   // We'll do SPD projection on P and Q rather than Ã to ensure that non-convex
   // components of the external system dynamics are treated explicitly.
@@ -1456,7 +1463,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   ProjectSPD(&Q);
 
   (*A_tilde) = h * P + h * h * Q;
-  (*tau0) = B * g0 + P * v0;
+  (*tau0) = g0 + P * v0;
 }
 
 template <typename T>
