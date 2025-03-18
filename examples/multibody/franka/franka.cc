@@ -142,7 +142,7 @@ int do_main() {
   multibody::Parser parser(&plant);
   const std::string panda_url =
       "package://drake_models/franka_description/urdf/panda_arm_hand.urdf";
-  parser.AddModelsFromUrl(panda_url);
+  multibody::ModelInstanceIndex panda = parser.AddModelsFromUrl(panda_url)[0];
   plant.WeldFrames(plant.world_frame(), plant.GetFrameByName("panda_link0"));
 
   // Add an object to hold, if requested
@@ -248,7 +248,7 @@ int do_main() {
       builder.Connect(plant.get_state_output_port(),
                       controller->get_input_port_estimated_state());
       builder.Connect(controller->get_output_port_control(),
-                      plant.get_actuation_input_port());
+                      plant.get_actuation_input_port(panda));
 
     } else if (FLAGS_controller == "inverse_dynamics") {
       auto controller = builder.AddSystem<InverseDynamicsController>(

@@ -1364,8 +1364,7 @@ void ConvexIntegrator<T>::GetGeneralizedForcesFromInputPorts(
     EigenPtr<VectorX<T>> tau) const {
   // Actuator forces, clipped to effort limits
   const VectorX<T> u = plant()
-                           .get_actuation_input_port()
-                           .Eval(plant_context)
+                           .AssembleActuationInput(plant_context)
                            .cwiseMin(effort_limits_)
                            .cwiseMax(-effort_limits_);
 
