@@ -78,9 +78,9 @@ pre-compiled binaries.
 Stable and nightly release versions are available for each method.
 
 * [pip](/pip.html) (only supports Python)
-* [APT](\apt.html) (only supports Ubuntu)
-* [Binary (`*.tar.gz`) download](\from_binary.html)
-* [Docker Hub](\docker.html)
+* [APT](/apt.html) (only supports Ubuntu)
+* [Binary (`*.tar.gz`) download](/from_binary.html)
+* [Docker Hub](/docker.html)
 
 Alternatively, you can skip the pre-compiled binaries and build Drake
 following the instructions in [Source Installation](/from_source.html).

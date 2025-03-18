@@ -81,7 +81,7 @@ Ubuntu 24.04 (Noble) are available to download at:
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
 
 Older packages for specific dates are available by replacing ``latest``
-with date YYYY-MM-DD. For example,
+with date YYYYMMDD. For example,
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-jammy.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb)

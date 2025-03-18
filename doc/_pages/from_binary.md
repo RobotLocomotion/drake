@@ -120,7 +120,7 @@ Mac are generated nightly and are available to download at:
 * https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-mac-arm64.tar.gz
 
 Older packages for specific dates are available by replacing ``latest``
-with date YYYY-MM-DD preceded by `0.0`. For example,
+with date YYYYMMDD preceded by `0.0`. For example,
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-jammy.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-jammy.tar.gz)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz](https://drake-packages.csail.mit.edu/drake/nightly/drake-0.0.20250301-noble.tar.gz)
