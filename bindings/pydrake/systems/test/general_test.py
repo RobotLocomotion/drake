@@ -637,14 +637,18 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(simulator.has_context())
         context_default = simulator.get_mutable_context()
         self.assertIsInstance(context_default, Context)
-        # WARNING: Once we call `simulator.reset_context()`, it will delete the
-        # context it currently owns, which is `context_default` in this case.
-        # BE CAREFUL IN SITUATIONS LIKE THIS!
         context = system.CreateDefaultContext()
         simulator.reset_context(context)
+        # The python implementation of reset_context uses reference counting,
+        # so the evicted context will still be alive if python still has a live
+        # variable referring to it.
+        self.assertIsInstance(
+            context_default.get_continuous_state(), ContinuousState)
         self.assertIs(context, simulator.get_mutable_context())
-        # WARNING: This will also invalidate `context`. Be careful!
         simulator.reset_context(None)
+        # Similar to the case above, `context` is still alive.
+        self.assertIsInstance(
+            context.get_continuous_state(), ContinuousState)
         self.assertFalse(simulator.has_context())
 
     def test_simulator_flags(self):
