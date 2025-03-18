@@ -1,3 +1,4 @@
+import glob
 import platform
 import os
 import subprocess
@@ -40,7 +41,14 @@ def add_library_paths(parameters=None):
         # We expect Clang 15 to be installed.
         version = 15
         arch = platform.machine()
-        library_file = f'/usr/lib/{arch}-linux-gnu/libclang-{version}.so'
+        llvm_root = f'/usr/lib64/llvm{version}'
+        if os.path.exists(llvm_root):
+            library_file = f'{llvm_root}/lib/libclang.so'
+            cppinclude = glob.glob(f'{llvm_root}/lib/clang/*/include')
+            if len(cppinclude) == 1:
+                os.environ['CPLUS_INCLUDE_PATH'] = cppinclude[0]
+        else:
+            library_file = f'/usr/lib/{arch}-linux-gnu/libclang-{version}.so'
     if not os.path.exists(library_file):
         raise RuntimeError(f'Library file {library_file} does NOT exist')
     cindex.Config.set_library_file(library_file)
