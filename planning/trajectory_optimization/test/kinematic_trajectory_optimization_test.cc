@@ -17,6 +17,7 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solve.h"
+#include "drake/solvers/test_utilities/check_gradient_sparsity_pattern.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector2d;
@@ -143,6 +144,19 @@ TEST_F(KinematicTrajectoryOptimizationTest,
   auto binding = trajopt_.AddVelocityConstraintAtNormalizedTime(
       std::make_shared<solvers::BoundingBoxConstraint>(x_desired, x_desired),
       0.2);
+  // binding specifies gradient sparsity pattern.
+  const auto gradient_sparsity_pattern =
+      binding.evaluator()->gradient_sparsity_pattern();
+  EXPECT_TRUE(gradient_sparsity_pattern.has_value());
+  // Evaluate the gradient for an arbitrary input, make sure it matches with
+  // `gradient_sparsity_pattern`.
+  {
+    const auto x_ad = math::InitializeAutoDiff(Eigen::VectorXd::LinSpaced(
+        binding.variables().rows(), 1, binding.variables().rows()));
+    solvers::test::CheckGradientSparsityPattern(*binding.evaluator(), x_ad,
+                                                /*strict=*/false);
+  }
+
   EXPECT_THAT(binding.to_string(), HasSubstr("velocity constraint"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(), 1);
 
