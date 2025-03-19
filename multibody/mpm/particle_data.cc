@@ -39,6 +39,16 @@ DeformationGradientDataVariant<T> MakeDeformationGradientData(
   DRAKE_UNREACHABLE();
 }
 
+/* Computes A:ε (wₖ=Aᵢⱼεᵢⱼₖ) where ε is the Levi-Civita tensor. */
+template <typename T>
+Vector3<T> ContractWithLeviCivita(const Matrix3<T>& A) {
+  Vector3<T> A_dot_eps(0.0, 0.0, 0.0);
+  A_dot_eps(0) = A(1, 2) - A(2, 1);
+  A_dot_eps(1) = A(2, 0) - A(0, 2);
+  A_dot_eps(2) = A(0, 1) - A(1, 0);
+  return A_dot_eps;
+}
+
 }  // namespace
 
 template <typename T>
@@ -159,6 +169,23 @@ void ParticleData<T>::AddParticles(
   tau_volume_.insert(tau_volume_.end(), num_new_particles, Matrix3<T>::Zero());
 }
 
+template <typename T>
+MassAndMomentum<T> ComputeTotalMassAndMomentum(
+    const ParticleData<T>& particle_data, const T& dx) {
+  MassAndMomentum<T> result;
+  const T D = dx * dx * 0.25;
+  for (int i = 0; i < particle_data.num_particles(); ++i) {
+    result.mass += particle_data.m()[i];
+    result.linear_momentum += particle_data.m()[i] * particle_data.v()[i];
+    const Matrix3<T> B = particle_data.C()[i] * D;  // C = B * D^{-1}
+    result.angular_momentum +=
+        particle_data.m()[i] *
+        (particle_data.x()[i].cross(particle_data.v()[i]) +
+         ContractWithLeviCivita<T>(B.transpose()));
+  }
+  return result;
+}
+
 }  // namespace internal
 }  // namespace mpm
 }  // namespace multibody
@@ -167,3 +194,14 @@ void ParticleData<T>::AddParticles(
 template class drake::multibody::mpm::internal::ParticleData<float>;
 template class drake::multibody::mpm::internal::ParticleData<double>;
 template class drake::multibody::mpm::internal::ParticleData<drake::AutoDiffXd>;
+template drake::multibody::mpm::internal::MassAndMomentum<float>
+drake::multibody::mpm::internal::ComputeTotalMassAndMomentum(
+    const drake::multibody::mpm::internal::ParticleData<float>&, const float&);
+template drake::multibody::mpm::internal::MassAndMomentum<double>
+drake::multibody::mpm::internal::ComputeTotalMassAndMomentum(
+    const drake::multibody::mpm::internal::ParticleData<double>&,
+    const double&);
+template drake::multibody::mpm::internal::MassAndMomentum<drake::AutoDiffXd>
+drake::multibody::mpm::internal::ComputeTotalMassAndMomentum(
+    const drake::multibody::mpm::internal::ParticleData<drake::AutoDiffXd>&,
+    const drake::AutoDiffXd&);

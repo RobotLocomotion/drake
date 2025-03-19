@@ -56,7 +56,7 @@ std::vector<std::pair<Vector3<int>, GridData<T>>> SparseGrid<T>::GetGridData()
   std::vector<std::pair<Vector3<int>, GridData<T>>> result;
   spgrid_.IterateConstGridWithOffset(
       [&](uint64_t offset, const GridData<T>& node_data) {
-        if (!node_data.is_inactive()) {
+        if (node_data.m > 0.0) {
           const Vector3<int> coordinate = spgrid_.OffsetToCoordinate(offset);
           result.emplace_back(coordinate, node_data);
         }
