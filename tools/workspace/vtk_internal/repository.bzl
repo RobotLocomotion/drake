@@ -193,6 +193,7 @@ def vtk_internal_repository(
             ":patches/vtkpugixml_hidden.patch",
             ":patches/vtksys_hidden.patch",
             ":patches/vtkiohdf_newline.patch",
+            ":patches/gltf_scenes_vector.patch",
         ],
         settings_bzl = ":settings.bzl",
         **kwargs):
