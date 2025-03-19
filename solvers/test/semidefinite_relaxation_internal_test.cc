@@ -243,8 +243,9 @@ TEST_F(MakeSemidefiniteRelaxationTestFixture,
       prog_, X_, variables_to_sorted_indices_, relaxation_.get());
 
   EXPECT_EQ(relaxation_->positive_semidefinite_constraints().size(), 1);
-  // The constraint the "one" variable is equal to one. The quadratic constraint
-  // is an equality constraint.
+  // The constraint that the "one" variable is equal to one1.0, and the
+  // quadratic equality constraint which becomes a linear equality constraint in
+  // the relaxation.
   EXPECT_EQ(relaxation_->linear_equality_constraints().size(), 2);
   EXPECT_EQ(relaxation_->linear_constraints().size(), 0);
   EXPECT_EQ(relaxation_->GetAllConstraints().size(), 3);
