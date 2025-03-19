@@ -296,6 +296,11 @@ class ProximityEngine {
    use for proximity queries for deformable contact. */
   const deformable::Geometries& deformable_contact_geometries() const;
 
+  /* Returns the mesh-distance boundary surface associated with the given
+   geomtry id; if it exists (otherwise null). */
+  const TriangleSurfaceMesh<double>* mesh_distance_boundary(
+      GeometryId g_id) const;
+
  private:
   // Testing utilities:
   // These functions facilitate *limited* introspection into the engine state.

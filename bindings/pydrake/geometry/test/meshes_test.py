@@ -191,20 +191,34 @@ class TestGeometryMeshes(unittest.TestCase):
 
     def test_read_obj_to_surface_mesh(self):
         mesh_path = FindResourceOrThrow("drake/geometry/test/quad_cube.obj")
-        mesh = mut.ReadObjToTriangleSurfaceMesh(mesh_path)
-        vertices = mesh.vertices()
+        # Test default, uniform, and non-uniform scales.
+        for scale in [None, 2.0, [1.0, 2.0, 3.0]]:
+            if scale is None:
+                mesh = mut.ReadObjToTriangleSurfaceMesh(filename=mesh_path)
+                scale = [1.0, 1.0, 1.0]
+            elif isinstance(scale, float):
+                mesh = mut.ReadObjToTriangleSurfaceMesh(filename=mesh_path,
+                                                        scale=scale)
+                scale = [scale, scale, scale]
+            else:
+                mesh = mut.ReadObjToTriangleSurfaceMesh(filename=mesh_path,
+                                                        scale3=scale)
+            vertices = mesh.vertices()
 
-        # This test relies on the specific content of the file quad_cube.obj.
-        # These coordinates came from the first section of quad_cube.obj.
-        expected_vertices = [
-            [1.000000, -1.000000, -1.000000],
-            [1.000000, -1.000000,  1.000000],
-            [-1.000000, -1.000000,  1.000000],
-            [-1.000000, -1.000000, -1.000000],
-            [1.000000,  1.000000, -1.000000],
-            [1.000000,  1.000000,  1.000000],
-            [-1.000000,  1.000000,  1.000000],
-            [-1.000000,  1.000000, -1.000000],
-        ]
-        for i, expected in enumerate(expected_vertices):
-            self.assertListEqual(list(vertices[i]), expected)
+            # This test relies on the specific content of the file
+            # quad_cube.obj. These coordinates came from the first section of
+            # quad_cube.obj.
+            scale = np.array(scale)
+            scale.shape = (1, 3)
+            expected_vertices = np.array([
+                [1.000000, -1.000000, -1.000000],
+                [1.000000, -1.000000,  1.000000],
+                [-1.000000, -1.000000,  1.000000],
+                [-1.000000, -1.000000, -1.000000],
+                [1.000000,  1.000000, -1.000000],
+                [1.000000,  1.000000,  1.000000],
+                [-1.000000,  1.000000,  1.000000],
+                [-1.000000,  1.000000, -1.000000],
+            ]) * scale
+            for i, expected in enumerate(expected_vertices):
+                np.testing.assert_array_equal(vertices[i], expected)

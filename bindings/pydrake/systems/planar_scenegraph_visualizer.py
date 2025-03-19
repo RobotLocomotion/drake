@@ -265,7 +265,7 @@ class PlanarSceneGraphVisualizer(PyPlotVisualizer):
                             for suffix in known_suffixes:
                                 alt_path = source.path().with_suffix(suffix)
                                 if alt_path.exists():
-                                    convex = Convex(alt_path, shape.scale())
+                                    convex = Convex(alt_path, shape.scale3())
                                     convex_hull = convex.GetConvexHull()
                                     break
 

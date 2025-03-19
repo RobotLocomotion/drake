@@ -260,10 +260,10 @@ void MeshesAreEquivalent(const PolyMesh& dut_mesh,
   MeshesAreEquivalent(dut, expected, tolerance);
 }
 
-/* Creates a poly mesh cube that should be equivalent to the various geometries
- used in these tests. They should all be cubes, centered at the origin with
- edge length equal to two (based on the scale factor). */
-PolyMesh MakeCube(double scale) {
+/* Creates a poly mesh box that should be equivalent to the various geometries
+ used in these tests. They should all be boxes, centered at the origin with
+ edge length equal to two times the indicated scale factors. */
+PolyMesh MakeBox(const Vector3d& scale) {
   /* This is a transcription of the data in the obj referenced below with the
    scale factor pre-multiplied. */
   // clang-format off
@@ -275,22 +275,22 @@ PolyMesh MakeCube(double scale) {
       4, 7, 6, 2, 3,
       4, 7, 3, 1, 5
   }, {
-      Vector3d(-scale, -scale, -scale),
-      Vector3d(-scale, scale, -scale),
-      Vector3d(scale, -scale, -scale),
-      Vector3d(scale, scale, -scale),
-      Vector3d(-scale, -scale, scale),
-      Vector3d(-scale, scale, scale),
-      Vector3d(scale, -scale, scale),
-      Vector3d(scale, scale, scale)
+      Vector3d(-scale.x(), -scale.y(), -scale.z()),
+      Vector3d(-scale.x(), scale.y(), -scale.z()),
+      Vector3d(scale.x(), -scale.y(), -scale.z()),
+      Vector3d(scale.x(), scale.y(), -scale.z()),
+      Vector3d(-scale.x(), -scale.y(), scale.z()),
+      Vector3d(-scale.x(), scale.y(), scale.z()),
+      Vector3d(scale.x(), -scale.y(), scale.z()),
+      Vector3d(scale.x(), scale.y(), scale.z())
   });
   // clang-format on
 }
 
 /* This tests the case where the obj is its own convex hull. */
 GTEST_TEST(MakeConvexHullMeshTest, MeshIsHull) {
-  const double scale = 2.0;
-  const PolyMesh expected = MakeCube(scale);
+  const Vector3d scale(2, 3, 4);
+  const PolyMesh expected = MakeBox(scale);
 
   const PolyMesh dut = MakeConvexHull(
       FindPathOrThrow("drake/geometry/render/test/meshes/box.obj"), scale);
@@ -300,8 +300,8 @@ GTEST_TEST(MakeConvexHullMeshTest, MeshIsHull) {
 
 /* A more elaborate non-convex obj - a cube with a hole punched through. */
 GTEST_TEST(MakeConvexHullMeshTest, HullIsSubset) {
-  const double scale = 2.0;
-  const PolyMesh expected = MakeCube(scale);
+  const Vector3d scale(2, 2, 2);
+  const PolyMesh expected = MakeBox(scale);
 
   const PolyMesh dut = MakeConvexHull(
       FindPathOrThrow("drake/geometry/test/cube_with_hole.obj"), scale);
@@ -311,8 +311,8 @@ GTEST_TEST(MakeConvexHullMeshTest, HullIsSubset) {
 
 /* A multiple disjoint pieces have a cubical convex hull. */
 GTEST_TEST(MakeConvexHullMeshTest, DisjointMesh) {
-  const double scale = 2.0;
-  const PolyMesh expected = MakeCube(scale);
+  const Vector3d scale(2, 2, 2);
+  const PolyMesh expected = MakeBox(scale);
 
   const PolyMesh dut = MakeConvexHull(
       FindPathOrThrow("drake/geometry/test/cube_corners.obj"), scale);
@@ -322,7 +322,7 @@ GTEST_TEST(MakeConvexHullMeshTest, DisjointMesh) {
 
 /* A reality check that it also works on VTK volume mesh files. */
 GTEST_TEST(MakeConvexHullMeshTest, VolumeMesh) {
-  const double scale = 2.0;
+  const Vector3d scale(2, 3, 4);
   // Create a surface mesh corresponding to the tet in one_tetrahedron.vtk.
   // clang-format off
   const PolyMesh expected({
@@ -332,9 +332,9 @@ GTEST_TEST(MakeConvexHullMeshTest, VolumeMesh) {
       3, 1, 2, 3
     }, {
       Vector3d(0, 0, 0),
-      Vector3d(scale, 0, 0),
-      Vector3d(0, scale, 0),
-      Vector3d(0, 0, scale)
+      Vector3d(scale.x(), 0, 0),
+      Vector3d(0, scale.y(), 0),
+      Vector3d(0, 0, scale.z())
     });
   // clang-format on
 
@@ -346,7 +346,7 @@ GTEST_TEST(MakeConvexHullMeshTest, VolumeMesh) {
 
 /* A reality check that it also works on glTF mesh files. */
 GTEST_TEST(MakeConvexHullMeshTest, GltfMesh) {
-  const double scale = 2.0;
+  const Vector3d scale(2, 3, 4);
   /* The glTF's bin file contains a cube with a hole in the center. We'll
    apply a transform to the glTF node so it's no longer centered so we can
    confirm that we're handling the y-up vs z-up transformation.
@@ -354,12 +354,12 @@ GTEST_TEST(MakeConvexHullMeshTest, GltfMesh) {
    However, we're also applying a Drake scale factor to it. So, the expected
    cube is the unit cube, first offset and then scaled. So, we'll construct
    that expected cube here. */
-  const PolyMesh bin_cube = MakeCube(1);
+  const PolyMesh bin_cube = MakeBox(Vector3d::Ones());
   const Vector3d p_WC(1, 2, 3);
   vector<int> face_data = bin_cube.face_data();
   vector<Vector3d> vertices;
   for (int vi = 0; vi < bin_cube.num_vertices(); ++vi) {
-    vertices.push_back((bin_cube.vertex(vi) + p_WC) * scale);
+    vertices.push_back(scale.cwiseProduct(bin_cube.vertex(vi) + p_WC));
   }
   const PolyMesh expected(std::move(face_data), std::move(vertices));
 
@@ -440,7 +440,7 @@ f 1//1 2//1 4//1 3//1
     });
   // clang-format on
 
-  const PolyMesh dut = MakeConvexHull(obj_path, 1.0);
+  const PolyMesh dut = MakeConvexHull(obj_path, Vector3d::Constant(1));
 
   MeshesAreEquivalent(dut, expected, 1e-14);
 }
@@ -465,7 +465,7 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
   f 1 1 2
   )""");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeConvexHull(too_few_obj, 1.0),
+      MakeConvexHull(too_few_obj, Vector3d::Constant(1.0)),
       ".*fewer than three vertices; found 2 .*too_few.obj.");
 
   // Coincident points
@@ -476,10 +476,10 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
   f 1 2 3
   )""");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeConvexHull(coincident_obj, 1.0),
+      MakeConvexHull(coincident_obj, Vector3d::Constant(1.0)),
       ".*all vertices in the mesh were within a sphere.*coincident.obj.");
   // However, scaling it up puts us outside the threshold.
-  EXPECT_NO_THROW(MakeConvexHull(coincident_obj, 2));
+  EXPECT_NO_THROW(MakeConvexHull(coincident_obj, Vector3d::Constant(2.0)));
 
   // Colinear points.
   const fs::path colinear_obj = make_obj("colinear.obj", R"""(# Generated
@@ -489,7 +489,7 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
   f 1 2 3
   )""");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeConvexHull(colinear_obj, 1.0),
+      MakeConvexHull(colinear_obj, Vector3d::Constant(1.0)),
       ".*all vertices in the mesh appear to be co-linear.*colinear.obj.");
 }
 
@@ -504,8 +504,8 @@ GTEST_TEST(MakeConvexHullMeshTest, DegenerateMeshes) {
 // computations start from a well tested first convex hull.
 GTEST_TEST(MakeConvexHullMeshTest, NonZeroMargin) {
   const double margin = 0.01;
-  const double scale = 2.0;
-  const PolyMesh expected = MakeCube(scale + margin);
+  const Vector3d scale(2, 2, 2);
+  const PolyMesh expected = MakeBox(scale + Vector3d::Constant(margin));
 
   const PolyMesh dut = MakeConvexHull(
       FindPathOrThrow("drake/geometry/test/cube_with_hole.obj"), scale, margin);
@@ -515,11 +515,11 @@ GTEST_TEST(MakeConvexHullMeshTest, NonZeroMargin) {
 
 // Create a polygon mesh which is the equivalent of the tet defined in
 // one_tetrahedron.vtk, but with the faces offset by the given margin.
-PolyMesh GetTetrahedronWithMargin(double scale, double margin) {
+PolyMesh GetTetrahedronWithMargin(const Vector3d& scale, double margin) {
   // We look at the one tilted face on the original mesh.
-  Vector3d c(scale / 3.0, scale / 3.0, scale / 3.0);  // Face's centroid.
-  const double d = c.norm();                          // Distance to the origin.
-  const Vector3d n = c.normalized();                  // Face's normal.
+  Vector3d c = scale / 3;             // Face's centroid.
+  const double d = c.norm();          // Distance to the origin.
+  const Vector3d n = c.normalized();  // Face's normal.
 
   // We take a look at the original vertex with coordinates p = (0, 0, L). By
   // symmetry we know that the other two are (L, 0, 0) and (0, L, 0) (plus the
@@ -551,7 +551,7 @@ PolyMesh GetTetrahedronWithMargin(double scale, double margin) {
 // previous tests are not, therefore providing greater test coverage.
 GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
   const double kMargin = 0.01;
-  const double kScale = 2.0;
+  const Vector3d kScale(2, 2, 2);
 
   // Create an inflated surface mesh corresponding to the tet in
   // one_tetrahedron.vtk.
@@ -567,7 +567,7 @@ GTEST_TEST(MakeConvexHullMeshTest, TetrahedronWithMargin) {
 /* Simple regression test against passing a MeshSource to MakeConvexHull
  directly. The core functionality has already been tested above. */
 GTEST_TEST(MakeConvexHullMeshTest, MakeFromMeshSource) {
-  const double kScale = 2.0;
+  const Vector3d kScale(2, 2, 2);
   const double kMargin = 1.0;
   // The box in box.obj has edge length of 2 m. We'll scale it by s = kScale and
   // then inflate it δ = kMargin. The effective size will be 2s + 2δ. The cube
@@ -575,7 +575,7 @@ GTEST_TEST(MakeConvexHullMeshTest, MakeFromMeshSource) {
   const fs::path box_path =
       FindPathOrThrow("drake/geometry/render/test/meshes/box.obj");
   const MeshSource obj_source(InMemoryMesh{MemoryFile::Make(box_path)});
-  const PolyMesh expected_box = MakeCube(kScale + kMargin);
+  const PolyMesh expected_box = MakeBox(kScale + Vector3d::Constant(kMargin));
 
   // The tet in one_tetrahedron.vtk has vertices at origin and unit positions
   // along all axes.

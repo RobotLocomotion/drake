@@ -46,10 +46,10 @@ namespace internal {
                            of the vertices lying on a plane is *not* degenerate.
  @throws std::exception if there is an unforeseen error in computing the convex
                            hull.
- @throws std::exception if `scale` is not strictly positive.
  @throws std::exception if `margin` is negative. */
 PolygonSurfaceMesh<double> MakeConvexHull(const MeshSource& mesh_source,
-                                          double scale, double margin = 0);
+                                          const Vector3<double>& scale,
+                                          double margin = 0);
 
 }  // namespace internal
 }  // namespace geometry
