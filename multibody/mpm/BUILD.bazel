@@ -43,6 +43,7 @@ drake_cc_library(
         "grid_data.h",
     ],
     deps = [
+        "//common:autodiff",
         "//common:bit_cast",
         "//common:essential",
     ],
@@ -55,6 +56,23 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library_linux_only(
+    name = "mock_sparse_grid",
+    srcs = [
+        "mock_sparse_grid.cc",
+    ],
+    hdrs = [
+        "mock_sparse_grid.h",
+    ],
+    deps = [
+        ":grid_data",
+        ":mass_and_momentum",
+        ":particle_data",
+        ":particle_sorter",
+        ":spgrid",
     ],
 )
 
@@ -178,6 +196,7 @@ drake_cc_googletest_linux_only(
 drake_cc_googletest_linux_only(
     name = "sparse_grid_test",
     deps = [
+        ":mock_sparse_grid",
         ":sparse_grid",
         "//common/test_utilities:eigen_matrix_compare",
     ],

@@ -182,7 +182,7 @@ TYPED_TEST(ParticleSorterTypedTest, Iterate) {
    2. sets the particle velocity as the average of the grid node velocity in the
       pad. */
   auto g2p_kernel =
-      [](int data_index, const Pad<typename TypeParam::NodeType>& pad_nodes,
+      [](int data_index, const typename TypeParam::PadNodeType& pad_nodes,
          const Pad<GridData<T>>& pad_data, ParticleData<T>* particles) {
         Vector3<T>& xp = particles->mutable_x()[data_index];
         Vector3<T>& vp = particles->mutable_v()[data_index];
