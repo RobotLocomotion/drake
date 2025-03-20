@@ -18,7 +18,7 @@ def build_bazel_apple_support_repository(
         When updating, you must also manually propagate to the new version
         number into the MODULE.bazel file (at the top level of Drake).
         """,
-        commit = "1.17.1",
+        commit = "1.19.0",
         sha256 = "cfc295c5acb751fc3299425a1852e421ec0a560cdd97b6a7426d35a1271c2df5",  # noqa
         patches = [
             ":patches/no_bazel_features.patch",
