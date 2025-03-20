@@ -2057,17 +2057,26 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   /// Defines a set of unilateral constraints on the length of an abstract
   /// tendon defined as:
+  ///
   ///   l(q) = aᵀ⋅q + offset ∈ ℝ
-  /// where q is the configuration of the model, a is a vector of coefficients,
-  /// and offset a scalar offset. This constraint imposes:
+  ///
+  /// where **q** is the configuration of the model, **a** is a vector of
+  /// coefficients, and **offset** a scalar offset. This constraint imposes:
+  ///
   ///   lₗ ≤ l(q) ≤ lᵤ
-  /// where lₗ and lᵤ are (possibly infinite) lower and upper bounds,
+  ///
+  /// where **lₗ** and **lᵤ** are (possibly infinite) lower and upper bounds,
   /// respectively.
   ///
-  /// This constraint is modeled by compliant spring-like forces:
-  ///  fₗ = −stiffness ⋅ (l - lₗ) − damping ⋅ dl(q)/dt
-  ///  fᵤ = −stiffness ⋅ (lᵤ - l) + damping ⋅ dl(q)/dt
-  /// that act to keep the length within bounds.
+  /// For finite `stiffness` and `damping`, this constraint is modeled by
+  /// compliant spring-like forces:
+  ///
+  ///  fₗ = −stiffness⋅(l - lₗ) − damping⋅dl(q)/dt \n
+  ///  fᵤ = −stiffness⋅(lᵤ - l) + damping⋅dl(q)/dt
+  ///
+  /// that act to keep the length within bounds. If the user provided stiffness
+  /// is either omitted or set to ∞, this constraint is modeled as close to
+  /// rigid as possible by the underlying solver.
   ///
   /// @note The coefficients in a are expected to have units such that the
   /// abstract length l(q) has consistent units (either meters or radians) and
@@ -2075,7 +2084,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// (optionally user provided) `stiffness` and `damping` are expected to have
   /// consistent units such that their products have units of the corresponding
   /// generalized force. E.g. N/m for `stiffness` and N⋅s/m for `damping` when l
-  /// has units of m, so that fₗ and fᵤ have units of N.
+  /// has units of m, so that **fₗ** and **fᵤ** have units of N.
   ///
   /// @note Any joint involved in this constraint can still be actuated.
   ///
@@ -2087,8 +2096,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// configuration, qᵢ, of joints[i] corresponds to the non-zero entry a[i].
   /// @param[in] a Non-empty vector of non-zero coefficients where a[i]
   /// corresponds to the configuration, qᵢ, of joints[i].
-  /// @param[in] offset (optional) Scalar length offset. If std::nullopt, it is
-  /// set to 0.
+  /// @param[in] offset (optional) Scalar length offset in either [m] or [rad].
+  /// If std::nullopt, it is set to 0.
   /// @param[in] lower_limit (optional) Lower bound on l in either [m] or [rad].
   /// If std::nullopt, it is set to −∞.
   /// @param[in] upper_limit Upper bound on l in either [m] or [rad]. If
@@ -2100,25 +2109,30 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// [N⋅m⋅rad/s]. If std::nullopt, it is set to 0 to model a non-dissipative
   /// constraint.
   ///
-  /// @pre joints.size() > 0
-  /// @pre a.size() == joints.size()
-  /// @pre index ∈ joints is a valid (non-removed) index to a joint in this
+  /// @warning Because of a restriction in the SAP solver, the joints in
+  /// `joints` must belong to **at most** two kinematic trees. This violation is
+  /// only detected after the simulation has been started, in which case the
+  /// solver with throw an exception when trying to add the constraint.
+  ///
+  /// @pre `joints.size() > 0`
+  /// @pre `a.size() == joints.size()`
+  /// @pre `index ∈ joints` is a valid (non-removed) index to a joint in this
   /// plant.
-  /// @pre get_joint(index).num_velocities() == 1 for each index in `joints`.
-  /// @pre Every entry in a is non-zero.
-  /// @pre lower_limit < ∞  (if not std::nullopt).
-  /// @pre upper_limit > -∞ (if not std::nullopt).
-  /// @pre At least one of lower_limit and upper_limit are finite.
-  /// @pre lower_limit ≤ upper_limit (if not std::nullopt).
-  /// @pre stiffness > 0 (if not std::nullopt).
-  /// @pre damping >= 0 (if not std::nullopt).
+  /// @pre `get_joint(index).%num_velocities() == 1` for each index in `joints`.
+  /// @pre Every entry in `a` is non-zero.
+  /// @pre `lower_limit < ∞` (if not std::nullopt).
+  /// @pre `upper_limit > -∞` (if not std::nullopt).
+  /// @pre At least one of `lower_limit` and `upper_limit` are finite.
+  /// @pre `lower_limit ≤ upper_limit` (if not std::nullopt).
+  /// @pre `stiffness > 0` (if not std::nullopt).
+  /// @pre `damping >= 0` (if not std::nullopt).
   ///
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
   /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (is_discrete() == false)
+  /// (`is_discrete() == false`)
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
-  /// solver is not SAP. (i.e. get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap)
+  /// solver is not SAP. (i.e. `get_discrete_contact_solver() !=
+  /// DiscreteContactSolver::kSap`)
   MultibodyConstraintId AddTendonConstraint(std::vector<JointIndex> joints,
                                             std::vector<double> a,
                                             std::optional<double> offset,

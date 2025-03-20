@@ -168,11 +168,11 @@ struct TendonConstraintSpec {
   // configuration of joints[i].
   std::vector<double> a;
 
-  double offset;             // Constraint offset in [m] or [rad].
-  double lower_limit;        // Lower limit lₗ in [m] or [rad].
-  double upper_limit;        // Upper limit lᵤ in [m] or [rad].
-  double stiffness;          // Constraint stiffness in [N/m] or [N⋅m/rad].
-  double damping;            // Constraint damping in [N⋅s/m] or [N⋅m⋅rad/s].
+  double offset{};           // Constraint offset in [m] or [rad].
+  double lower_limit{};      // Lower limit lₗ in [m] or [rad].
+  double upper_limit{};      // Upper limit lᵤ in [m] or [rad].
+  double stiffness{};        // Constraint stiffness in [N/m] or [N⋅m/rad].
+  double damping{};          // Constraint damping in [N⋅s/m] or [N⋅m⋅rad/s].
   MultibodyConstraintId id;  // Id of this constraint in the plant.
 };
 

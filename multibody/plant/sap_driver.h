@@ -215,9 +215,9 @@ class SapDriver {
 
   // Adds unilateral holonomic constraints to model tendons constraints
   // specified in the MultibodyPlant.
-  // @throws std::exception if any of the joints for any given constraint have
-  // an invalid tree index or collectively belong to more than two distinct
-  // trees per-constraint.
+  // @pre All joints for each constraint have a valid tree index.
+  // @throws std::exception if the set of joints for a constraint  belong
+  // to more than two kinematic trees.
   void AddTendonConstraints(
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;

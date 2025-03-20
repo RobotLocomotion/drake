@@ -37,7 +37,7 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
-constexpr double kEpsilon = std::numeric_limits<double>::infinity();
+constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 namespace drake {
 namespace multibody {
@@ -128,7 +128,7 @@ class TwoTreesTest : public ::testing::TestWithParam<TestConfig> {
   }
 
   // Compute the expected value of l0 given the current configuration.
-  double expected_l0() const {
+  double GetExpectedL0() const {
     // The constraint function for a tendon constraint is defined as:
     //   g = | l0 - lower_limit |
     //       | upper_limit - l0 |
@@ -298,7 +298,7 @@ TEST_P(TwoTreesTest, ConfirmConstraintProperties) {
   // Verify the constraint function.
   const VectorXd& g = constraint->constraint_function();
   VectorXd g_expected(expected_num_constraint_equations);
-  const double l0 = expected_l0();
+  const double l0 = GetExpectedL0();
   if (has_lower_limit) {
     g_expected.head(1)(0) = l0 - config.lower_limit;
   }
@@ -306,12 +306,12 @@ TEST_P(TwoTreesTest, ConfirmConstraintProperties) {
     g_expected.tail(1)(0) = config.upper_limit - l0;
   }
   EXPECT_TRUE(
-      CompareMatrices(g, g_expected, kEpsilon, MatrixCompareType::absolute));
+      CompareMatrices(g, g_expected, kEpsilon, MatrixCompareType::relative));
 
   // Verify the constraint Jacobians (based on number of cliques).
   // We exploit internal knowledge of the size and ordering of dofs in the
   // cliques.
-  const MatrixXd& J1 = constraint->first_clique_jacobian().MakeDenseMatrix();
+  const MatrixXd J1 = constraint->first_clique_jacobian().MakeDenseMatrix();
   MatrixXd J1_expected(expected_num_constraint_equations, 2);
   EXPECT_EQ(J1.rows(), expected_num_constraint_equations);
   EXPECT_EQ(J1.cols(), 2);
@@ -324,7 +324,7 @@ TEST_P(TwoTreesTest, ConfirmConstraintProperties) {
   EXPECT_TRUE(CompareMatrices(J1, J1_expected));
 
   if (config.num_cliques == 2) {
-    const MatrixXd& J2 = constraint->second_clique_jacobian().MakeDenseMatrix();
+    const MatrixXd J2 = constraint->second_clique_jacobian().MakeDenseMatrix();
     MatrixXd J2_expected(expected_num_constraint_equations, 1);
     EXPECT_EQ(J2.rows(), expected_num_constraint_equations);
     EXPECT_EQ(J2.cols(), 1);
@@ -385,6 +385,9 @@ INSTANTIATE_TEST_SUITE_P(SapTendonConstraintTests, TwoTreesTest,
                          testing::ValuesIn(MakeTestCases()),
                          testing::PrintToStringParamName());
 
+// This test suite covers all expected failure modes of
+// MultibodyPlant::AddTendonConstraint(), as well as validating default values
+// for optional arguments.
 class SimplePlant : public ::testing::Test {
  public:
   // Makes a simple model for error testing.
@@ -401,10 +404,10 @@ class SimplePlant : public ::testing::Test {
 
  protected:
   std::unique_ptr<MultibodyPlant<double>> plant_;
-  const RigidBody<double>* bodyA_;
-  const RigidBody<double>* bodyB_;
-  const RevoluteJoint<double>* joint0_;
-  const UniversalJoint<double>* joint1_;
+  const RigidBody<double>* bodyA_{};
+  const RigidBody<double>* bodyB_{};
+  const RevoluteJoint<double>* joint0_{};
+  const UniversalJoint<double>* joint1_{};
 
   std::vector<JointIndex> valid_joints_;
   std::vector<double> valid_a_{1.0};
