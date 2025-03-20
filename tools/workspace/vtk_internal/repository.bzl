@@ -172,15 +172,11 @@ def vtk_internal_repository(
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "e43b7215c0f57781626c4cd31c95cd1c1b7a3d48",
-        sha256 = "6794ad2d95d36d1b6c83ed31ea18ffc1adef33d1ced94aab1aa04c0f10b5602a",  # noqa
+        commit = "d236d27dde52f1f14eb919adacf0d355af6a440a",
+        sha256 = "349aa9da6b2be0b21d522695af116219c0fd43fe62902508f21eb59251303185",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/upstream/common_core_rm_iostream.patch",
-            ":patches/upstream/fix_illumination_bugs.patch",
-            ":patches/upstream/gltf_selected_load.patch",
-            ":patches/upstream/io_geometry_gltf_default_scene.patch",
-            ":patches/upstream/gltf_importer_from_stream.patch",
             ":patches/upstream/scaled_albedo_for_ibl.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
             ":patches/common_core_nobacktrace.patch",
@@ -196,6 +192,8 @@ def vtk_internal_repository(
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
             ":patches/vtksys_hidden.patch",
+            ":patches/vtkiohdf_newline.patch",
+            ":patches/gltf_scenes_vector.patch",
         ],
         settings_bzl = ":settings.bzl",
         **kwargs):

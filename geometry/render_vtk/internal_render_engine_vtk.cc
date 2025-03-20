@@ -662,7 +662,9 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
     uri_loader->SetMeshSource(&mesh_source);
     vtkSmartPointer<vtkResourceStream> gltf_stream =
         uri_loader->MakeGltfStream();
-    importer->SetInputStream(gltf_stream, uri_loader, /* binary= */ false);
+    importer->SetStream(gltf_stream);
+    importer->SetStreamURILoader(uri_loader);
+    importer->SetStreamIsBinary(false);
   }
   importer->Update();
 
@@ -964,6 +966,7 @@ void RenderEngineVtk::InitializePipelines() {
     vtkNew<vtkRenderPassCollection> passes;
     vtkNew<vtkShadowMapPass> shadows;
     passes->AddItem(shadows->GetShadowMapBakerPass());
+    shadows->GetShadowMapBakerPass()->SetExponentialConstant(80.0);
     shadows->GetShadowMapBakerPass()->SetResolution(
         parameters_.shadow_map_size);
     // The shadow map pass gets the full render sequence so that we get opaque
