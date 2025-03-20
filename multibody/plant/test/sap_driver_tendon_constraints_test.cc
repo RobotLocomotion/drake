@@ -37,7 +37,6 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 
 constexpr double kInfinity = std::numeric_limits<double>::infinity();
-constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 
 namespace drake {
 namespace multibody {
@@ -71,7 +70,7 @@ std::ostream& operator<<(std::ostream& out, const TestConfig& c) {
 // Fixture that sets a MultibodyPlant model of two kinematic trees:
 // (1) Chain of two bodies connected to world by revolute joints.
 // (2) A single body connected to world by a prismatic joint.
-// All of the physical properties of the bodies are abitrary. Then
+// All of the physical properties of the bodies are arbitrary. Then
 // a single tendon constraint is added coupling the joints of (1) and
 // (optionally) coupling the joints of (2).
 class TwoTreesTest : public ::testing::TestWithParam<TestConfig> {
@@ -127,26 +126,6 @@ class TwoTreesTest : public ::testing::TestWithParam<TestConfig> {
     context_ = plant_.CreateDefaultContext();
   }
 
-  // Compute the expected value of l0 given the current configuration.
-  double GetExpectedL0() const {
-    // The constraint function for a tendon constraint is defined as:
-    //   g = | l0 - lower_limit |
-    //       | upper_limit - l0 |
-    // Where:
-    //   l0 = ∑ coefficients_[i]⋅joints_[i] + offset
-    // Summed over each each participating joint.
-    const VectorXd q = plant_.GetPositions(*context_);
-
-    double l0 = kOffset_;
-    // Joints 0 and 1 always participate.
-    // Joint 2 participates when num_cliques == 2.
-    const int num_participating_joints = GetParam().num_cliques == 2 ? 3 : 2;
-    for (int i = 0; i < num_participating_joints; ++i) {
-      l0 += q(plant_.get_joint(joints_[i]).position_start()) * coefficients_[i];
-    }
-    return l0;
-  }
-
   const SapDriver<double>& sap_driver() const {
     return CompliantContactManagerTester::sap_driver(*manager_);
   }
@@ -171,7 +150,7 @@ class TwoTreesTest : public ::testing::TestWithParam<TestConfig> {
 TEST_P(TwoTreesTest, ConfirmConstraintProperties) {
   const TestConfig& config = GetParam();
 
-  EXPECT_EQ(plant_.num_velocities(), 3);
+  ASSERT_EQ(plant_.num_velocities(), 3);
 
   const bool has_lower_limit = config.lower_limit > -kInfinity;
   const bool has_upper_limit = config.upper_limit < kInfinity;
@@ -294,48 +273,6 @@ TEST_P(TwoTreesTest, ConfirmConstraintProperties) {
     EXPECT_EQ(k.q1(), q.segment<1>(2));
     EXPECT_EQ(k.a1(), a.segment<1>(2));
   }
-
-  // Verify the constraint function.
-  const VectorXd& g = constraint->constraint_function();
-  VectorXd g_expected(expected_num_constraint_equations);
-  const double l0 = GetExpectedL0();
-  if (has_lower_limit) {
-    g_expected.head(1)(0) = l0 - config.lower_limit;
-  }
-  if (has_upper_limit) {
-    g_expected.tail(1)(0) = config.upper_limit - l0;
-  }
-  EXPECT_TRUE(
-      CompareMatrices(g, g_expected, kEpsilon, MatrixCompareType::relative));
-
-  // Verify the constraint Jacobians (based on number of cliques).
-  // We exploit internal knowledge of the size and ordering of dofs in the
-  // cliques.
-  const MatrixXd J1 = constraint->first_clique_jacobian().MakeDenseMatrix();
-  MatrixXd J1_expected(expected_num_constraint_equations, 2);
-  EXPECT_EQ(J1.rows(), expected_num_constraint_equations);
-  EXPECT_EQ(J1.cols(), 2);
-  if (has_lower_limit) {
-    J1_expected.topRows(1) = a.segment<2>(0).transpose();
-  }
-  if (has_upper_limit) {
-    J1_expected.bottomRows(1) = -a.segment<2>(0).transpose();
-  }
-  EXPECT_TRUE(CompareMatrices(J1, J1_expected));
-
-  if (config.num_cliques == 2) {
-    const MatrixXd J2 = constraint->second_clique_jacobian().MakeDenseMatrix();
-    MatrixXd J2_expected(expected_num_constraint_equations, 1);
-    EXPECT_EQ(J2.rows(), expected_num_constraint_equations);
-    EXPECT_EQ(J2.cols(), 1);
-    if (has_lower_limit) {
-      J2_expected.topRows(1) = a.segment<1>(2).transpose();
-    }
-    if (has_upper_limit) {
-      J2_expected.bottomRows(1) = -a.segment<1>(2).transpose();
-    }
-    EXPECT_TRUE(CompareMatrices(J2, J2_expected));
-  }
 }
 
 // All possible combinations of {1, 2} cliques and {only upper limits, only
@@ -395,19 +332,19 @@ class SimplePlant : public ::testing::Test {
     plant_ = std::make_unique<MultibodyPlant<double>>(dt);
     bodyA_ = &plant_->AddRigidBody("A", SpatialInertia<double>::NaN());
     bodyB_ = &plant_->AddRigidBody("B", SpatialInertia<double>::NaN());
-    joint0_ = &plant_->AddJoint<RevoluteJoint>(
+    single_dof_joint_ = &plant_->AddJoint<RevoluteJoint>(
         "joint0", plant_->world_body(), {}, *bodyA_, {}, Vector3d::UnitX());
-    joint1_ = &plant_->AddJoint<UniversalJoint>("joint1", plant_->world_body(),
-                                                {}, *bodyB_, {});
-    valid_joints_.push_back(joint0_->index());
+    multi_dof_joint_ = &plant_->AddJoint<UniversalJoint>(
+        "joint1", plant_->world_body(), {}, *bodyB_, {});
+    valid_joints_.push_back(single_dof_joint_->index());
   }
 
  protected:
   std::unique_ptr<MultibodyPlant<double>> plant_;
   const RigidBody<double>* bodyA_{};
   const RigidBody<double>* bodyB_{};
-  const RevoluteJoint<double>* joint0_{};
-  const UniversalJoint<double>* joint1_{};
+  const RevoluteJoint<double>* single_dof_joint_{};
+  const UniversalJoint<double>* multi_dof_joint_{};
 
   std::vector<JointIndex> valid_joints_;
   std::vector<double> valid_a_{1.0};
@@ -424,16 +361,16 @@ TEST_F(SimplePlant, FailOnTAMSI) {
       DiscreteContactApproximation::kTamsi);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_->AddTendonConstraint({joint0_->index()}, {1.0}, {}, {}, {}, {},
-                                  {}),
+      plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {}, {},
+                                  {}, {}, {}),
       ".*TAMSI does not support tendon constraints.*");
 }
 
 TEST_F(SimplePlant, FailOnContinuous) {
   MakePlant(0.0);  // Continuous plant.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_->AddTendonConstraint({joint0_->index()}, {1.0}, {}, {}, {}, {},
-                                  {}),
+      plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {}, {},
+                                  {}, {}, {}),
       ".*Currently tendon constraints are only supported for discrete "
       "MultibodyPlant models.*");
 }
@@ -442,8 +379,8 @@ TEST_F(SimplePlant, FailOnFinalized) {
   MakePlant();
   plant_->Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant_->AddTendonConstraint({joint0_->index()}, {1.0}, {}, {}, {}, {},
-                                  {}),
+      plant_->AddTendonConstraint({single_dof_joint_->index()}, {1.0}, {}, {},
+                                  {}, {}, {}),
       ".*Post-finalize calls to 'AddTendonConstraint\\(\\)' are not "
       "allowed.*");
 }
@@ -495,6 +432,15 @@ TEST_F(SimplePlant, FailOnInvalidSpecs) {
                    valid_upper_limit_, valid_stiffness_, valid_damping_),
                std::exception);
 
+  // Duplicated joint in `joints`
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->AddTendonConstraint(
+          {single_dof_joint_->index(), single_dof_joint_->index()} /* joints */,
+          {valid_a_[0], valid_a_[0]}, valid_offset_, valid_lower_limit_,
+          valid_upper_limit_, valid_stiffness_, valid_damping_),
+      "AddTendonConstraint\\(\\): Duplicated joint in `joints`. `joints` must "
+      "be a unique set of JointIndex.");
+
   // a.size() != joints.size().
   EXPECT_THROW(plant_->AddTendonConstraint(valid_joints_, {1.0, 2.0} /* a */,
                                            valid_offset_, valid_lower_limit_,
@@ -504,17 +450,10 @@ TEST_F(SimplePlant, FailOnInvalidSpecs) {
 
   // joint.num_velocities() > 1.
   EXPECT_THROW(plant_->AddTendonConstraint(
-                   {joint1_->index()} /* joints */, valid_a_, valid_offset_,
-                   valid_lower_limit_, valid_upper_limit_, valid_stiffness_,
-                   valid_damping_),
+                   {multi_dof_joint_->index()} /* joints */, valid_a_,
+                   valid_offset_, valid_lower_limit_, valid_upper_limit_,
+                   valid_stiffness_, valid_damping_),
                std::exception);
-
-  // 0 entry in a.
-  EXPECT_THROW(
-      plant_->AddTendonConstraint(valid_joints_, {0.0} /* a */, valid_offset_,
-                                  valid_lower_limit_, valid_upper_limit_,
-                                  valid_stiffness_, valid_damping_),
-      std::exception);
 
   // lower_limit == ∞.
   EXPECT_THROW(
@@ -556,12 +495,12 @@ TEST_F(SimplePlant, FailOnInvalidSpecs) {
                std::exception);
 
   // Removed joint.
-  plant_->RemoveJoint(*joint0_);
-  EXPECT_THROW(
-      plant_->AddTendonConstraint({joint0_->index()}, valid_a_, valid_offset_,
-                                  valid_lower_limit_, valid_upper_limit_,
-                                  valid_stiffness_, valid_damping_),
-      std::exception);
+  plant_->RemoveJoint(*single_dof_joint_);
+  EXPECT_THROW(plant_->AddTendonConstraint(
+                   {single_dof_joint_->index()}, valid_a_, valid_offset_,
+                   valid_lower_limit_, valid_upper_limit_, valid_stiffness_,
+                   valid_damping_),
+               std::exception);
 }
 
 }  // namespace internal

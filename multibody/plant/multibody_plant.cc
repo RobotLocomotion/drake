@@ -676,12 +676,24 @@ MultibodyConstraintId MultibodyPlant<T>::AddTendonConstraint(
   }
 
   DRAKE_THROW_UNLESS(joints.size() > 0);
+  auto last = std::unique(joints.begin(), joints.end());
+  if (last != joints.end()) {
+    throw std::runtime_error(
+        "AddTendonConstraint(): Duplicated joint in `joints`. `joints` must be "
+        "a unique set of JointIndex.");
+  }
+
   DRAKE_THROW_UNLESS(a.size() == joints.size());
 
   for (int i = 0; i < ssize(joints); ++i) {
     DRAKE_THROW_UNLESS(this->has_joint(joints[i]));
     DRAKE_THROW_UNLESS(this->get_joint(joints[i]).num_velocities() == 1);
-    DRAKE_THROW_UNLESS(a[i] != 0.0);
+    if (a[i] == 0) {
+      drake::log()->warn(fmt::format(
+          "AddTendonConstraint(): Coefficient for joints[{}] (\"{}\") is 0. "
+          "This joint will not participate in this constraint.",
+          i, this->get_joint(joints[i]).name()));
+    }
   }
 
   if (!offset.has_value()) {

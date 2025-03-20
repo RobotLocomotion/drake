@@ -2065,8 +2065,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   ///   lₗ ≤ l(q) ≤ lᵤ
   ///
-  /// where **lₗ** and **lᵤ** are (possibly infinite) lower and upper bounds,
-  /// respectively.
+  /// where **lₗ** and **lᵤ** are lower and upper bounds, respectively. Both
+  /// limits are not strictly required. At most one of **lₗ** or **lᵤ** may be
+  /// infinite (−∞ for **lₗ** and ∞ for **lᵤ**), indicating no lower or upper
+  /// limit, respectively.
   ///
   /// For finite `stiffness` and `damping`, this constraint is modeled by
   /// compliant spring-like forces:
@@ -2093,8 +2095,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// https://mujoco.readthedocs.io/en/stable/XMLreference.html#tendon-fixed
   ///
   /// @param[in] joints Non-empty vector of single-dof joint indices where the
-  /// configuration, qᵢ, of joints[i] corresponds to the non-zero entry a[i].
-  /// @param[in] a Non-empty vector of non-zero coefficients where a[i]
+  /// configuration, qᵢ, of joints[i] corresponds to the entry a[i].
+  /// @param[in] a Non-empty vector of coefficients where a[i]
   /// corresponds to the configuration, qᵢ, of joints[i].
   /// @param[in] offset (optional) Scalar length offset in either [m] or [rad].
   /// If std::nullopt, it is set to 0.
@@ -2109,17 +2111,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// [N⋅m⋅rad/s]. If std::nullopt, it is set to 0 to model a non-dissipative
   /// constraint.
   ///
-  /// @warning Because of a restriction in the SAP solver, the joints in
-  /// `joints` must belong to **at most** two kinematic trees. This violation is
-  /// only detected after the simulation has been started, in which case the
-  /// solver with throw an exception when trying to add the constraint.
+  /// @warning Because of a restriction in the SAP solver, **at most** two
+  /// kinematic trees can be represented by the joints in `joints`. This
+  /// violation is only detected after the simulation has been started, in which
+  /// case the solver will throw an exception when trying to add the constraint.
   ///
   /// @pre `joints.size() > 0`
+  /// @pre `joints` contains no duplicates.
   /// @pre `a.size() == joints.size()`
   /// @pre `index ∈ joints` is a valid (non-removed) index to a joint in this
   /// plant.
   /// @pre `get_joint(index).%num_velocities() == 1` for each index in `joints`.
-  /// @pre Every entry in `a` is non-zero.
   /// @pre `lower_limit < ∞` (if not std::nullopt).
   /// @pre `upper_limit > -∞` (if not std::nullopt).
   /// @pre At least one of `lower_limit` and `upper_limit` are finite.
@@ -2129,10 +2131,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
   /// @throws std::exception if `this` %MultibodyPlant is not a discrete model
-  /// (`is_discrete() == false`)
+  /// (`is_discrete() == false`).
   /// @throws std::exception if `this` %MultibodyPlant's underlying contact
   /// solver is not SAP. (i.e. `get_discrete_contact_solver() !=
-  /// DiscreteContactSolver::kSap`)
+  /// DiscreteContactSolver::kSap`).
   MultibodyConstraintId AddTendonConstraint(std::vector<JointIndex> joints,
                                             std::vector<double> a,
                                             std::optional<double> offset,

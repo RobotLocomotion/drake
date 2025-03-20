@@ -838,7 +838,7 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
     if (!constraint_active_status.at(id)) continue;
 
     // Cap the user provided stiffness at `default_stiffness`.
-    double stiffness = std::min(info.stiffness, default_stiffness);
+    const double stiffness = std::min(info.stiffness, default_stiffness);
 
     typename SapTendonConstraint<T>::Parameters parameters(
         info.lower_limit, info.upper_limit, stiffness, info.damping, kBeta);
@@ -892,7 +892,7 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
       typename SapTendonConstraint<T>::Kinematics kinematics(tree0, q0, a0,
                                                              info.offset);
 
-      // Only add the constraint if it is violated at q(0).
+      // Only add the constraint if it is violated at q_0.
       if ((SapTendonConstraint<T>::CalcConstraintFunction(parameters,
                                                           kinematics)
                .array() < 0)
@@ -934,7 +934,7 @@ void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
 
       typename SapTendonConstraint<T>::Kinematics kinematics(
           tree0, tree1, q0, q1, a0, a1, info.offset);
-      // Only add the constraint if it is violated at q(0).
+      // Only add the constraint if it is violated at q_0.
       if ((SapTendonConstraint<T>::CalcConstraintFunction(parameters,
                                                           kinematics)
                .array() < 0)
