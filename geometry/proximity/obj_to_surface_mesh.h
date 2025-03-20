@@ -36,7 +36,7 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
  the file format.
  @param filename
      A valid file name with absolute path or relative path.
- @param scale
+ @param scale3
      A scale to coordinates.
  @param on_warning
      An optional callback that will receive warning message(s) encountered
