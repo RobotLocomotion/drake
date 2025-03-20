@@ -252,13 +252,35 @@ PYBIND11_MODULE(analysis, m) {
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
         .def(py::init([](const System<T>& system, Context<T>* context) {
+          // Expand the default-context request here, so that it gets a
+          // python-compatible lifetime.
+          if (context == nullptr) {
+            std::unique_ptr<Context<T>> context_ptr =
+                system.CreateDefaultContext();
+            // Python ownership will be created below by
+            // make_shared_ptr_from_py_object.
+            context = context_ptr.release();
+          }
           auto py_context = py::cast(context);
           return Simulator<T>::MakeWithSharedContext(
               system, make_shared_ptr_from_py_object<Context<T>>(py_context));
         }),
             py::arg("system"), py::arg("context") = nullptr,
             // Keep alive, reference: `self` keeps `system` alive.
-            py::keep_alive<1, 2>())
+            py::keep_alive<1, 2>(),
+            []() {
+              std::string new_doc = doc.Simulator.ctor.doc;
+              new_doc += R"""(
+
+(Python only) The Simulator's Context, whether provided as a constructor
+argument or allocated internally, will have a lifetime managed by Python
+reference counting. Note, however, that the simulator logically "owns" the
+context; it will modify the context in most of its methods. Therefore, sharing
+a Context object among Simulators will likely lead to incorrect results.
+)""";
+              return new_doc;
+            }()
+                .c_str())
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc,
             py::arg("params") = InitializeParams{})

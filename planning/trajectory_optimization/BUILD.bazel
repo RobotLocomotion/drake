@@ -205,6 +205,7 @@ drake_cc_googletest(
         "//solvers:ipopt_solver",
         "//solvers:osqp_solver",
         "//solvers:solve",
+        "//solvers/test_utilities:check_gradient_sparsity_pattern",
     ],
 )
 
