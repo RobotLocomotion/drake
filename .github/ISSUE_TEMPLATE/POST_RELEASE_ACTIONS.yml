@@ -1,0 +1,59 @@
+name: Post-Release Actions
+description:
+  Create a tracking issue for Docker image tagging, S3 upload, and Apt
+  repository updates for a new Drake release.
+labels: ["type: release"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Post-Release Actions
+
+        This issue tracks the required post-release actions that need to be completed
+        after the Drake release has been published to GitHub. Please assign this issue
+        to @BetsyMcPhail.
+
+        For detailed instructions, refer to the [Docker / Apt / S3 Release
+        Process](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/dev/README.md).
+  - type: input
+    id: version
+    attributes:
+      label: Release Version
+      description:
+        "Enter the release version number WITHOUT the 'v' prefix (e.g.,
+        1.N.0)"
+      placeholder: "1.N.0"
+    validations:
+      required: true
+  - type: checkboxes
+    id: tasks
+    attributes:
+      label: Post-Release Tasks
+      description:
+        "These two steps must be completed in order. Check each box after
+        completion."
+      options:
+        - label:
+            "Run script to push Docker images and mirror the artifacts to S3:
+            `bazel run //tools/release_engineering/dev:push_release -- [VERSION]`"
+          required: false
+        - label: "Run script for Apt repository updates: `cd
+            tools/release_engineering/dev && ./push_release [VERSION]`"
+          required: false
+  - type: markdown
+    attributes:
+      value: |
+        ## Verification
+
+        After completing the Docker/S3 step, please verify:
+
+        1. S3 contains the `drake-[VERSION]-[...].tar.gz` files for all
+           supported configurations
+        2. DockerHub has `[VERSION]` tags for all supported configurations
+        3. S3 contains the `*.deb` files for all supported configurations
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: "Document any issues encountered or special circumstances"
+      placeholder: "Add any notes about the process here"
