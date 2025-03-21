@@ -3,6 +3,7 @@ from functools import partial
 import textwrap
 import unittest
 import warnings
+import weakref
 
 import numpy as np
 import scipy.sparse
@@ -935,6 +936,26 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(len(prog.generic_costs()), 1)
         self.assertEqual(
             prog.generic_costs()[0].evaluator(), cost_binding.evaluator())
+
+    def test_cost_and_constraint_python_wrapper_lost(self):
+        def make_object_graph():
+            spies = []
+            prog = mp.MathematicalProgram()
+            x = prog.NewContinuousVariables(1, 'x')
+
+            cost = mp.LinearCost([1.0], 0.0)
+            spies.append(weakref.finalize(cost, lambda: None))
+
+            constraint = mp.LinearConstraint(np.array([1.0]), np.array([1]),
+                                             np.array([np.inf]))
+            spies.append(weakref.finalize(constraint, lambda: None))
+
+            cost_binding = prog.AddCost(cost, vars=x)
+            constraint_binding = prog.AddConstraint(constraint, vars=x)
+            return [cost_binding, constraint_binding], spies
+
+        keepers, spies = make_object_graph()
+        self.assertTrue(all(spy.alive for spy in spies))
 
     def get_different_scalar_type(self, T):
         # Gets U such that U != T.
