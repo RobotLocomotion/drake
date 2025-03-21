@@ -228,7 +228,7 @@ TYPED_TEST(SparseGridTest, ApplyGridToParticleKernel) {
   /* The mass is divided equally among the two particles. */
   const T expected_particle_mass = config.mass_density() * total_volume / 2.0;
 
-  const double dx = 0.01;
+  const double dx = 0.1;
   Grid grid(dx);
   grid.Allocate(particle_data.x());
   /* Arbitrary p2p kernel that accumulates particle mass and velocity to the
