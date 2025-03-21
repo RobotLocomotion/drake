@@ -307,9 +307,15 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 &Class::AddPathPositionConstraint),
             py::arg("lb"), py::arg("ub"), py::arg("s"),
             cls_doc.AddPathPositionConstraint.doc_3args)
-        .def("AddPathPositionConstraint",
-            py::overload_cast<const std::shared_ptr<solvers::Constraint>&,
-                double>(&Class::AddPathPositionConstraint),
+        .def(
+            "AddPathPositionConstraint",
+            [](Class* self, solvers::Constraint* constraint, double s) {
+              py::object constraint_py = py::cast(constraint);
+              return self->AddPathPositionConstraint(
+                  make_shared_ptr_from_py_object<solvers::Constraint>(
+                      constraint_py),
+                  s);
+            },
             py::arg("constraint"), py::arg("s"),
             cls_doc.AddPathPositionConstraint.doc_2args)
         .def("AddPathVelocityConstraint", &Class::AddPathVelocityConstraint,
