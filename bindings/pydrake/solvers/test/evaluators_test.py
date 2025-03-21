@@ -1,11 +1,13 @@
 import unittest
 import typing
+import weakref
 
 import numpy as np
 import scipy.sparse
 import copy
 
 import pydrake.solvers as mp
+import pydrake.solvers._testing as mp_testing
 import pydrake.symbolic as sym
 from pydrake.autodiffutils import InitializeAutoDiff
 
@@ -125,6 +127,26 @@ class TestCost(unittest.TestCase):
         cost = mp.ExpressionCost(e=e)
         self.assertTrue(e.EqualTo(cost.expression()))
         self.assertEqual(sym.Variables(cost.vars()), sym.Variables([x, y]))
+
+    def test_cost_python_wrapper_lost(self):
+        # Ensure costs' python wrappers are kept alive when bound. See
+        # issue #20131 for original problem description.
+
+        # Make some objects in a function to let most of them be deleted at
+        # scope exit. We will test if the contents of the first return value
+        # ("keepers") succeed in keeping alive the objects tracked by "spies".
+        def make_object_graph():
+            spies = []
+            x = sym.Variable("x")
+            y = sym.Variable("y")
+            e = np.sin(x) + y
+            cost = mp.ExpressionCost(e=e)
+            binding = mp.Binding[mp.ExpressionCost](cost, cost.vars())
+            spies.append(weakref.finalize(cost, lambda: None))
+            return binding, spies
+
+        keeper, spies = make_object_graph()
+        self.assertTrue(all(spy.alive for spy in spies))
 
     def test_to_latex(self):
         x = sym.Variable("x")
@@ -325,6 +347,58 @@ class TestConstraints(unittest.TestCase):
         ]
         for cls in cls_list:
             mp.Binding[cls]
+
+    def test_binding_cast_python_wrapper_lost(self):
+        # Ensure constraints' python wrappers are kept alive when passed
+        # through the casting constructor. See issue #20131 for original
+        # problem description.
+
+        # Make some objects in a function to let most of them be deleted at
+        # scope exit. We will test if the contents of the first return value
+        # ("keepers") succeed in keeping alive the objects tracked by "spies".
+        def make_object_graph():
+            spies = []
+            x = sym.Variable("x")
+            y = sym.Variable("y")
+            e = np.sin(x) + y
+            constraint = mp.ExpressionConstraint(v=np.array([e]),
+                                                 lb=np.array([1.0]),
+                                                 ub=np.array([2.0]))
+            # Sett up the types to ensure the cast constructor is used.
+            constraint_binding = mp.Binding[mp.ExpressionConstraint](
+                constraint, constraint.vars()
+            )
+            cast_binding = mp_testing.AcceptBindingEvaluatorBase(
+                constraint_binding)
+            spies.append(weakref.finalize(constraint, lambda: None))
+            return cast_binding, spies
+
+        keeper, spies = make_object_graph()
+        self.assertTrue(all(spy.alive for spy in spies))
+
+    def test_binding_constraint_python_wrapper_lost(self):
+        # Ensure constraints' python wrappers are kept alive when bound. See
+        # issue #20131 for original problem description.
+
+        # Make some objects in a function to let most of them be deleted at
+        # scope exit. We will test if the contents of the first return value
+        # ("keepers") succeed in keeping alive the objects tracked by "spies".
+        def make_object_graph():
+            spies = []
+            x = sym.Variable("x")
+            y = sym.Variable("y")
+            e = np.sin(x) + y
+            constraint = mp.ExpressionConstraint(v=np.array([e]),
+                                                 lb=np.array([1.0]),
+                                                 ub=np.array([2.0]))
+            constraint_binding = mp.Binding[mp.ExpressionConstraint](
+                constraint, constraint.vars()
+            )
+            spies.append(weakref.finalize(constraint, lambda: None))
+            return constraint_binding, spies
+
+        keeper, spies = make_object_graph()
+        self.assertTrue(all(spy.alive for spy in spies))
 
     def test_binding_eq(self):
         x = sym.Variable("x")
