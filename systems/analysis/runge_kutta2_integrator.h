@@ -48,10 +48,10 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
   int get_error_estimate_order() const override { return 0; }
 
  private:
-  bool DoStep(const T& h) override;
+  bool DoStepConst(Context<T>* context, const T& h) const override;
 
   // A pre-allocated temporary for use by integration.
-  std::unique_ptr<ContinuousState<T>> derivs0_;
+  mutable std::unique_ptr<ContinuousState<T>> derivs0_;
 };
 
 /**
@@ -67,9 +67,8 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
  * </pre>
  */
 template <class T>
-bool RungeKutta2Integrator<T>::DoStep(const T& h) {
-  Context<T>* const context = IntegratorBase<T>::get_mutable_context();
-
+bool RungeKutta2Integrator<T>::DoStepConst(Context<T>* context,
+                                           const T& h) const {
   // CAUTION: This is performance-sensitive inner loop code that uses dangerous
   // long-lived references into state and cache to avoid unnecessary copying and
   // cache invalidation. Be careful not to insert calls to methods that could

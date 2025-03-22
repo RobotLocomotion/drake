@@ -1083,6 +1083,57 @@ class IntegratorBase {
   }
 
   /**
+   Stepping function for integrators operating outside of Simulator that
+   advances the continuous state of the `context` *using a single step* to
+   `t_target`. This method is designed for integrator users that do not wish to
+   consider publishing or discontinuous, mid-interval updates. One such
+   example application is that of direct transcription for trajectory
+   optimization, for which the integration process should be _consistent_: it
+   should execute the same sequence of arithmetic operations for all values
+   of the nonlinear programming variables. In keeping with the naming
+   semantics of this function, error controlled integration is not supported
+   (though error estimates will be computed for integrators that support that
+   feature), which is a minimal requirement for "consistency".
+   @param context The context to perform integration on.
+   @param t_target The current or future time to integrate to.
+   @throws std::exception If the integrator has not been initialized or
+                          `t_target` is in the past or context is nullptr.
+   @returns `true` if the integrator was able to take a single fixed step to
+            `t_target`.
+   @warning Not thread safe. The integrator holds mutable member variables to
+   avoid allocation inside the integration steps.
+   */
+  [[nodiscard]] bool IntegrateWithSingleFixedStepToTime(
+      Context<T>* context, const T& t_target) const {
+    DRAKE_THROW_UNLESS(context != nullptr);
+    using std::abs;
+    using std::max;
+
+    const T h = t_target - context->get_time();
+    if (scalar_predicate<T>::is_bool && h < 0) {
+      throw std::logic_error(
+          "IntegrateWithSingleFixedStepToTime() called with "
+          "a negative step size.");
+    }
+
+    if (!DoStepConst(context, h)) return false;
+
+    if constexpr (scalar_predicate<T>::is_bool) {
+      // Correct any round-off error that has occurred. Formula below requires
+      // that time be non-negative.
+      DRAKE_DEMAND(context->get_time() >= 0);
+      const double tol =
+          10 * std::numeric_limits<double>::epsilon() *
+          ExtractDoubleOrThrow(max(1.0, max(t_target, context_->get_time())));
+      DRAKE_DEMAND(abs(context->get_time() - t_target) < tol);
+    }
+
+    context->SetTime(t_target);
+
+    return true;
+  }
+
+  /**
    @name Integrator statistics methods
    @{
    These methods allow the caller to manipulate and query integrator
@@ -1180,7 +1231,9 @@ class IntegratorBase {
             caching system to avoid incrementing the count when cached
             evaluations are used).
    */
-  void add_derivative_evaluations(double evals) { num_ode_evals_ += evals; }
+  void add_derivative_evaluations(double evals) const {
+    num_ode_evals_ += evals;
+  }
   // @}
 
   /**
@@ -1318,7 +1371,8 @@ class IntegratorBase {
    Subclasses should call this function rather than calling
    system.EvalTimeDerivatives() directly.
    */
-  const ContinuousState<T>& EvalTimeDerivatives(const Context<T>& context) {
+  const ContinuousState<T>& EvalTimeDerivatives(
+      const Context<T>& context) const {
     return EvalTimeDerivatives(get_system(), context);  // See below.
   }
 
@@ -1330,8 +1384,8 @@ class IntegratorBase {
    function evaluations.
    */
   template <typename U>
-  const ContinuousState<U>& EvalTimeDerivatives(const System<U>& system,
-                                                const Context<U>& context) {
+  const ContinuousState<U>& EvalTimeDerivatives(
+      const System<U>& system, const Context<U>& context) const {
     const CacheEntry& entry = system.get_time_derivatives_cache_entry();
     const CacheEntryValue& value = entry.get_cache_entry_value(context);
     const int64_t serial_number_before = value.serial_number();
@@ -1447,6 +1501,7 @@ class IntegratorBase {
    method is called during the integration process (via
    StepOnceErrorControlledAtMost(), IntegrateNoFurtherThanTime(), and
    IntegrateWithSingleFixedStepToTime()).
+   @param context The context to perform integration on.
    @param h The integration step to take.
    @returns `true` if successful, `false` if the integrator was unable to take
              a single step of size @p h (due to, e.g., an integrator
@@ -1460,7 +1515,25 @@ class IntegratorBase {
             example, by switching to an algorithm not subject to convergence
             failures (e.g., explicit Euler) for very small step sizes.
    */
-  virtual bool DoStep(const T& h) = 0;
+  virtual bool DoStepConst(Context<T>* context, const T& h) const {
+    unused(context);
+    unused(h);
+    throw std::logic_error(
+        "This integrator does not (yet) implement the const DoStep() variant.");
+  }
+
+  /**
+   New implentations should override DoStepConst() instead of this method to
+   support the const variant of IntegrateWithSingleFixedStepToTime(). This
+   method is called during the integration process (via
+   StepOnceErrorControlledAtMost(), IntegrateNoFurtherThanTime(), and
+   IntegrateWithSingleFixedStepToTime()).
+   @param h The integration step to take.
+   @returns `true` if successful, `false` if the integrator was unable to take
+             a single step of size @p h (due to, e.g., an integrator
+             convergence failure).
+   */
+  virtual bool DoStep(const T& h) { return DoStepConst(context_, h); }
 
   // TODO(russt): Allow subclasses to override the interpolation scheme used, as
   // the 'optimal' dense output scheme is only known by the specific integration
@@ -1521,7 +1594,9 @@ class IntegratorBase {
    * to StepOnceFixedSize(). If the integrator does not support error
    * estimation, this function will return nullptr.
    */
-  ContinuousState<T>* get_mutable_error_estimate() { return err_est_.get(); }
+  ContinuousState<T>* get_mutable_error_estimate() const {
+    return err_est_.get();
+  }
 
   // Sets the actual initial step size taken.
   void set_actual_initial_step_size_taken(const T& h) {
@@ -1628,7 +1703,7 @@ class IntegratorBase {
   T smallest_adapted_step_size_taken_{nan()};
   T largest_step_size_taken_{nan()};
   int64_t num_steps_taken_{0};
-  int64_t num_ode_evals_{0};
+  mutable int64_t num_ode_evals_{0};
   int64_t num_shrinkages_from_error_control_{0};
   int64_t num_shrinkages_from_substep_failures_{0};
   int64_t num_substep_failures_{0};
@@ -1639,7 +1714,8 @@ class IntegratorBase {
   // State copy for reversion during error-controlled integration.
   VectorX<T> xc0_save_;
 
-  // The error estimate computed during integration with error control.
+  // The (mutable) error estimate computed during integration with error
+  // control.
   std::unique_ptr<ContinuousState<T>> err_est_;
 
   // The pseudo-inverse of the matrix that converts time derivatives of
