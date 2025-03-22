@@ -5,15 +5,18 @@
 
 set -eu -o pipefail
 
-# Prepare system to install packages, and apply any updates.
-apt-get -y update
-apt-get -y upgrade
+# Enable CRB and EPEL.
+dnf -y install --setopt=install_weak_deps=False \
+    dnf-plugins-core \
+    epel-release
+dnf config-manager --set-enabled crb
+dnf config-manager --set-enabled epel
 
-apt-get -y install lsb-release
+# Ensure base system is up to date.
+dnf -y upgrade
+
+# Get list of required packages
+mapfile -t PACKAGES < <(sed -r -e '/^(#|$)/d' < /image/packages-almalinux)
 
 # Install prerequisites.
-readonly DISTRO=$(lsb_release -sc)
-
-mapfile -t PACKAGES < <(sed -r -e '/^(#|$)/d' < /image/packages-${DISTRO})
-
-apt-get -y install --no-install-recommends ${PACKAGES[@]}
+dnf -y install --setopt=install_weak_deps=False ${PACKAGES[@]}

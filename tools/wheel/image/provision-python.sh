@@ -21,9 +21,8 @@ else
     readonly PYTHON=python${1:-3}
 
     # Set up Python environment and install Python prerequisites.
-    apt-get -y update
-    apt-get -y install --no-install-recommends \
-        ${PYTHON}-dev lib${PYTHON}-dev ${PYTHON}-venv
+    dnf -y install --setopt=install_weak_deps=False \
+        ${PYTHON}-devel
 fi
 
 ${PREFIX}/bin/${PYTHON} -m venv /usr/local

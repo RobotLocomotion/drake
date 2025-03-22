@@ -1,4 +1,4 @@
-ARG PLATFORM=ubuntu:20.04
+ARG PLATFORM=amd64/almalinux:9
 
 # -----------------------------------------------------------------------------
 # Create a base provisioned image.
