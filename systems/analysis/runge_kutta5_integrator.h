@@ -75,6 +75,10 @@ class RungeKutta5Integrator final : public IntegratorBase<T> {
   void DoInitialize() override;
   bool DoStep(const T& h) override;
 
+  std::unique_ptr<IntegratorBase<T>> DoClone() const override {
+    return std::make_unique<RungeKutta5Integrator>(this->get_system());
+  }
+
   // Vector used in error estimate calculations.
   std::unique_ptr<BasicVector<T>> err_est_vec_;
 
