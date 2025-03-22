@@ -35,6 +35,9 @@ class TestEstimators(unittest.TestCase):
         L = mut.SteadyStateKalmanFilter(A=A, C=C, W=W, V=V)
         self.assertEqual(L.shape, (2, 2))
 
+        L = mut.DiscreteTimeSteadyStateKalmanFilter(A=A, C=C, W=W, V=V)
+        self.assertEqual(L.shape, (2, 2))
+
         plant = LinearSystem(A=A, C=C)
         filter = mut.SteadyStateKalmanFilter(system=plant, W=W, V=V)
         self.assertIsInstance(filter, mut.LuenbergerObserver)
