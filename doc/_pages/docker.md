@@ -20,9 +20,11 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
+<div class="note" markdown="1">
 Drake's docker images do not support the Gurobi solver. To use
 Gurobi, you will need to build Drake from source following the instructions
 in [Source Installation](/from_source.html).
+</div>
 
 ## Stable Releases
 
