@@ -4,7 +4,6 @@
 #include <limits>
 #include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -24,6 +23,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_pd_controller_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver.h"
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
+#include "drake/multibody/contact_solvers/sap/sap_tendon_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_weld_constraint.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -54,6 +54,7 @@ using drake::multibody::contact_solvers::internal::SapPdControllerConstraint;
 using drake::multibody::contact_solvers::internal::SapSolver;
 using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
+using drake::multibody::contact_solvers::internal::SapTendonConstraint;
 using drake::multibody::contact_solvers::internal::SapWeldConstraint;
 using drake::systems::DependencyTicket;
 
@@ -811,6 +812,128 @@ void SapDriver<T>::AddFixedConstraints(
 }
 
 template <typename T>
+void SapDriver<T>::AddTendonConstraints(const systems::Context<T>& context,
+                                        SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // "Near-rigid" parameter. See [Castro et al., 2021].
+  constexpr double kBeta = 0.1;
+
+  const std::map<MultibodyConstraintId, bool>& constraint_active_status =
+      manager().GetConstraintActiveStatus(context);
+
+  for (const auto& [id, info] : manager().tendon_constraints_specs()) {
+    // Skip this constraint if it is not active.
+    if (!constraint_active_status.at(id)) continue;
+
+    typename SapTendonConstraint<T>::Parameters parameters(
+        info.lower_limit, info.upper_limit, info.stiffness, info.damping,
+        kBeta);
+
+    // Find the set of trees that the joints of this constraint belong to.
+    TreeIndex tree0, tree1;
+    for (int i = 0; i < ssize(info.joints); ++i) {
+      const Joint<T>& joint = plant().get_joint(info.joints[i]);
+      const TreeIndex tree =
+          tree_topology().velocity_to_tree_index(joint.velocity_start());
+      // Sanity check.
+      DRAKE_DEMAND(tree.is_valid());
+
+      // Update the first two trees that we find along the way.
+      if (!tree0.is_valid()) {
+        tree0 = tree;
+      } else if (!tree1.is_valid() && tree != tree0) {
+        tree1 = tree;
+      }
+
+      // Constraints can have at most 2 participating cliques.
+      // TODO(joemasterjohn): Fail faster by moving this detection to
+      // MultibodyPlant at Finalize() time.
+      if (tree != tree0 && tree != tree1) {
+        throw std::logic_error(
+            "Creating a tendon constraint for a set of joints that belong "
+            "to more than two kinematic trees is not allowed.");
+      }
+    }
+
+    DRAKE_DEMAND(tree0.is_valid());
+
+    // Single clique version.
+    if (!tree1.is_valid()) {
+      const int tree0_nv = tree_topology().num_tree_velocities(tree0);
+      VectorX<T> q0(tree0_nv);
+      VectorX<T> a0(tree0_nv);
+      q0.setZero();
+      a0.setZero();
+
+      for (int i = 0; i < ssize(info.joints); ++i) {
+        const Joint<T>& joint = plant().get_joint(info.joints[i]);
+        const int dof = joint.velocity_start();
+        // DOFs local to their tree.
+        const int tree_dof =
+            dof - tree_topology().tree_velocities_start_in_v(tree0);
+        q0(tree_dof) = joint.GetOnePosition(context);
+        a0(tree_dof) = info.a[i];
+      }
+
+      typename SapTendonConstraint<T>::Kinematics kinematics(tree0, q0, a0,
+                                                             info.offset);
+
+      // Only add the constraint if it is violated at q_0.
+      if ((SapTendonConstraint<T>::CalcConstraintFunction(parameters,
+                                                          kinematics)
+               .array() < 0)
+              .any()) {
+        problem->AddConstraint(std::make_unique<SapTendonConstraint<T>>(
+            std::move(parameters), std::move(kinematics)));
+      }
+
+    } else {
+      // 2 clique version.
+      const int tree_nv0 = tree_topology().num_tree_velocities(tree0);
+      const int tree_nv1 = tree_topology().num_tree_velocities(tree1);
+      VectorX<T> q0(tree_nv0);
+      VectorX<T> q1(tree_nv1);
+      VectorX<T> a0(tree_nv0);
+      VectorX<T> a1(tree_nv1);
+      q0.setZero();
+      q1.setZero();
+      a0.setZero();
+      a1.setZero();
+
+      for (int i = 0; i < ssize(info.joints); ++i) {
+        const Joint<T>& joint = plant().get_joint(info.joints[i]);
+        const TreeIndex tree =
+            tree_topology().velocity_to_tree_index(joint.velocity_start());
+        const int dof = joint.velocity_start();
+        if (tree == tree0) {
+          const int tree_dof =
+              dof - tree_topology().tree_velocities_start_in_v(tree0);
+          q0(tree_dof) = joint.GetOnePosition(context);
+          a0(tree_dof) = info.a[i];
+        } else {
+          const int tree_dof =
+              dof - tree_topology().tree_velocities_start_in_v(tree1);
+          q1(tree_dof) = joint.GetOnePosition(context);
+          a1(tree_dof) = info.a[i];
+        }
+      }
+
+      typename SapTendonConstraint<T>::Kinematics kinematics(
+          tree0, tree1, q0, q1, a0, a1, info.offset);
+      // Only add the constraint if it is violated at q_0.
+      if ((SapTendonConstraint<T>::CalcConstraintFunction(parameters,
+                                                          kinematics)
+               .array() < 0)
+              .any()) {
+        problem->AddConstraint(std::make_unique<SapTendonConstraint<T>>(
+            std::move(parameters), std::move(kinematics)));
+      }
+    }
+  }
+}
+
+template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   std::vector<MatrixX<T>> A;
@@ -844,6 +967,7 @@ void SapDriver<T>::CalcContactProblemCache(
   AddBallConstraints(context, &problem);
   AddWeldConstraints(context, &problem);
   AddFixedConstraints(context, &problem);
+  AddTendonConstraints(context, &problem);
 
   // Make a reduced version of the original contact problem using joint locking
   // data.
