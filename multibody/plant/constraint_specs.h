@@ -35,45 +35,6 @@ struct CouplerConstraintSpec {
   MultibodyConstraintId id;
 };
 
-// Struct to store the specification for a distance constraint. A distance
-// constraint is modeled as a holonomic constraint. Distance constraints can
-// be "soft", and are implemented as a spring force, f:
-//   f = -k⋅(d(q) - d₀) - c⋅ḋ(q),
-// where d₀ is a fixed length, k a stiffness parameter in N/m and c a damping
-// parameter in N⋅s/m. We use d(q) to denote the Euclidean distance between two
-// points P and Q, rigidly affixed to bodies A and B respectively, as a function
-// of the configuration of the model q. This constraint reduces to d(q) = d₀ in
-// the limit to infinite stiffness and it behaves as a linear spring damper for
-// finite values of stiffness and damping.
-//
-// @warning A distance constraint is the wrong modeling choice if the
-// distance needs to go through zero. To constrain two points to be
-// coincident we need a 3-dof ball constraint, the 1-dof distance constraint
-// is singular in this case. Therefore we require the distance parameter to
-// be strictly positive.
-//
-// @pre body_A != body_B, d₀ > 0, k >= 0, c >= 0. @see IsValid().
-struct DistanceConstraintSpec {
-  // Returns `true` iff `this` specification is valid to define a distance
-  // constraint. A distance constraint specification is considered to be valid
-  // iff body_A != body_B, distance > 0, stiffness >= 0 and damping >= 0.
-  bool IsValid() const {
-    return body_A != body_B && distance > 0.0 && stiffness >= 0.0 &&
-           damping >= 0.0;
-  }
-
-  BodyIndex body_A;      // Index of body A.
-  Vector3<double> p_AP;  // Position of point P in body frame A.
-  BodyIndex body_B;      // Index of body B.
-  Vector3<double> p_BQ;  // Position of point Q in body frame B.
-  double distance{0.0};  // Free length d₀.
-  double stiffness{
-      std::numeric_limits<double>::infinity()};  // Constraint stiffness
-                                                 // k in N/m.
-  double damping{0.0};       // Constraint damping c in N⋅s/m.
-  MultibodyConstraintId id;  // Id of this constraint in the plant.
-};
-
 // Struct to store the specification for a ball constraint. A ball
 // constraint is modeled as a holonomic constraint:
 //   p_PQ_W(q) = 0
