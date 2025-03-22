@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import copy
+import gc
 import sys
 from types import SimpleNamespace
 import unittest
 import warnings
+import weakref
 
 import numpy as np
 
@@ -124,6 +126,40 @@ class CustomVectorSystem(VectorSystem):
         self.ValidateContext(context)
         x_n[:] = x + 2*u
         self.has_called.append("discrete")
+
+
+class CustomPortsLifetimeHazardSystem(LeafSystem):
+    # Save returned port references from all Declare*Port APIs to ensure none
+    # of them induce the immortality hazard of #22515.
+    def __init__(self):
+        LeafSystem.__init__(self)
+
+        # Declare some bogus state to allow later port declarations.
+        self.DeclareContinuousState(1)
+        self.DeclareDiscreteState(BasicVector(1))
+        self.DeclareAbstractState(Value[str]())
+
+        # Use all of the entry points that return port references, storing the
+        # results in self.
+        ports = set()
+        ports.add(self.DeclareInputPort(kUseDefaultName,
+                                        PortDataType.kVectorValued, 1))
+        ports.add(self.DeclareAbstractInputPort("Ain", Value[str]()))
+        ports.add(self.DeclareAbstractOutputPort("Aout",
+                                                 lambda: Value(""),
+                                                 lambda: Value("")))
+        ports.add(self.DeclareVectorInputPort("Vin", 2))
+        ports.add(self.DeclareVectorInputPort("Vin.rand", 2, random_type=None))
+        ports.add(self.DeclareVectorOutputPort("Vout.size", 2, lambda: [1, 2]))
+        ports.add(self.DeclareVectorOutputPort("Vout.model", BasicVector(2),
+                                               lambda: [1, 2]))
+        ports.add(self.DeclareStateOutputPort(kUseDefaultName,
+                                              ContinuousStateIndex(0)))
+        ports.add(self.DeclareStateOutputPort(kUseDefaultName,
+                                              DiscreteStateIndex(0)))
+        ports.add(self.DeclareStateOutputPort(kUseDefaultName,
+                                              AbstractStateIndex(0)))
+        self._ports = ports
 
 
 # Wraps `Adder`.
@@ -1092,3 +1128,13 @@ class TestCustom(unittest.TestCase):
         # Value[object].SetFrom() correctly, this would fail the second time.
         check_set_from()
         check_set_from()
+
+    def test_ports_lifetime_hazard(self):
+        # Test variants of the immortality hazard reported in #22515.
+        dut = CustomPortsLifetimeHazardSystem()
+
+        # Show that a system that saves its port references is mortal.
+        spy = weakref.finalize(dut, lambda: None)
+        del dut
+        gc.collect()
+        self.assertFalse(spy.alive)

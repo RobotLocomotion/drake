@@ -2,6 +2,7 @@
 
 import collections
 import copy
+import gc
 import itertools
 import pickle
 import unittest
@@ -138,6 +139,7 @@ from pydrake.systems.framework import (
 )
 from pydrake.systems.scalar_conversion import TemplateSystem
 from pydrake.systems.lcm import LcmPublisherSystem
+from pydrake.systems.test_utilities import framework_test_util
 
 
 def get_index_class(cls, T):
@@ -3331,3 +3333,29 @@ class TestPlant(unittest.TestCase):
         # Ensure we can simulate this system.
         simulator = Simulator_[float](diagram)
         simulator.AdvanceTo(0.01)
+
+    def test_ports_lifetime_hazard(self):
+        plant = MultibodyPlant(1.0e-3)
+        plant.Finalize()
+        world = world_model_instance()
+        ports = [
+            plant.get_actuation_input_port(),
+            plant.get_actuation_input_port(world),
+            plant.get_net_actuation_output_port(),
+            plant.get_net_actuation_output_port(world),
+            plant.get_desired_state_input_port(world),
+            plant.get_applied_generalized_force_input_port(),
+            plant.get_applied_spatial_force_input_port(),
+            plant.get_body_poses_output_port(),
+            plant.get_body_spatial_velocities_output_port(),
+            plant.get_body_spatial_accelerations_output_port(),
+            plant.get_state_output_port(),
+            plant.get_state_output_port(world),
+            plant.get_generalized_acceleration_output_port(),
+            plant.get_generalized_acceleration_output_port(world),
+            plant.get_reaction_forces_output_port(),
+            plant.get_contact_results_output_port(),
+            plant.get_generalized_contact_forces_output_port(world),
+        ]
+        plant = [plant]  # The helper function requires passing plant via list.
+        framework_test_util.check_ports_lifetime_hazard(self, plant, ports)

@@ -1,6 +1,7 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -171,11 +172,17 @@ PYBIND11_MODULE(primitives, m) {
             py::arg("output_port_name") = kUseDefaultName,
             doc.BusCreator.ctor.doc)
         .def("DeclareVectorInputPort", &BusCreator<T>::DeclareVectorInputPort,
-            py::arg("name"), py::arg("size"), py_rvp::reference_internal,
+            py::arg("name"), py::arg("size"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.BusCreator.DeclareVectorInputPort.doc)
         .def("DeclareAbstractInputPort",
             &BusCreator<T>::DeclareAbstractInputPort, py::arg("name"),
-            py::arg("model_value"), py_rvp::reference_internal,
+            py::arg("model_value"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.BusCreator.DeclareAbstractInputPort.doc);
 
     DefineTemplateClassWithDefault<BusSelector<T>, LeafSystem<T>>(
@@ -185,11 +192,17 @@ PYBIND11_MODULE(primitives, m) {
             doc.BusSelector.ctor.doc)
         .def("DeclareVectorOutputPort",
             &BusSelector<T>::DeclareVectorOutputPort, py::arg("name"),
-            py::arg("size"), py_rvp::reference_internal,
+            py::arg("size"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.BusSelector.DeclareVectorOutputPort.doc)
         .def("DeclareAbstractOutputPort",
             &BusSelector<T>::DeclareAbstractOutputPort, py::arg("name"),
-            py::arg("model_value"), py_rvp::reference_internal,
+            py::arg("model_value"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.BusSelector.DeclareAbstractOutputPort.doc);
 
     DefineTemplateClassWithDefault<ConstantValueSource<T>, LeafSystem<T>>(
@@ -467,7 +480,10 @@ PYBIND11_MODULE(primitives, m) {
             py_rvp::reference_internal,
             doc.PortSwitch.get_port_selector_input_port.doc)
         .def("DeclareInputPort", &PortSwitch<T>::DeclareInputPort,
-            py::arg("name"), py_rvp::reference_internal,
+            py::arg("name"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.PortSwitch.DeclareInputPort.doc);
 
     DefineTemplateClassWithDefault<Saturation<T>, LeafSystem<T>>(
@@ -705,24 +721,28 @@ PYBIND11_MODULE(primitives, m) {
         .def(py::init<RandomDistribution, int, int>(), py::arg("distribution"),
             py::arg("input_size"), py::arg("output_size"),
             doc.LinearTransformDensity.ctor.doc)
+        // Port access methods. All returned port references use a ref_cycle
+        // (rather than the implicit keep-alive of reference_internal) to avoid
+        // immortality hazards like #22515.
         .def("get_input_port_w_in",
             &LinearTransformDensity<T>::get_input_port_w_in,
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LinearTransformDensity.get_input_port_w_in.doc)
         .def("get_input_port_A", &LinearTransformDensity<T>::get_input_port_A,
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LinearTransformDensity.get_input_port_A.doc)
         .def("get_input_port_b", &LinearTransformDensity<T>::get_input_port_b,
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LinearTransformDensity.get_input_port_b.doc)
         .def("get_output_port_w_out",
             &LinearTransformDensity<T>::get_output_port_w_out,
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LinearTransformDensity.get_output_port_w_out.doc)
         .def("get_output_port_w_out_density",
             &LinearTransformDensity<T>::get_output_port_w_out_density,
-            py_rvp::reference_internal,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LinearTransformDensity.get_output_port_w_out_density.doc)
+        // Miscellaneous methods.
         .def("get_distribution", &LinearTransformDensity<T>::get_distribution,
             doc.LinearTransformDensity.get_distribution.doc)
         .def("FixConstantA", &LinearTransformDensity<T>::FixConstantA,

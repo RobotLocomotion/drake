@@ -22,6 +22,7 @@ from pydrake.systems.framework import (
 from pydrake.systems.test.test_util import (
     MyVector2,
 )
+from pydrake.systems.test_utilities import framework_test_util
 from pydrake.systems.primitives import (
     Adder, Adder_,
     AddRandomInputs,
@@ -1099,3 +1100,45 @@ class TestGeneral(unittest.TestCase):
         assert_array_close(discrete_system.C(),  Cd)
         assert_array_close(discrete_system.D(),  Dd)
         assert_array_close(discrete_system.y0(), y0d)
+
+    def test_bus_creator_ports_lifetime_hazard(self):
+        dut = BusCreator()
+        ports = [
+            dut.DeclareVectorInputPort(name="a", size=2),
+            dut.DeclareAbstractInputPort(name="b", model_value=Value[str]()),
+        ]
+        dut = [dut]  # The helper function requires passing dut via a list.
+        framework_test_util.check_ports_lifetime_hazard(self, dut, ports)
+
+    def test_bus_selector_ports_lifetime_hazard(self):
+        dut = BusSelector()
+        ports = [
+            dut.DeclareVectorOutputPort(name=kUseDefaultName, size=2),
+            dut.DeclareAbstractOutputPort(name=kUseDefaultName,
+                                          model_value=Value[object]()),
+        ]
+        dut = [dut]  # The helper function requires passing dut via a list.
+        framework_test_util.check_ports_lifetime_hazard(self, dut, ports)
+
+    def test_port_switch_ports_lifetime_hazard(self):
+        dut = PortSwitch(2)
+        ports = [
+            dut.DeclareInputPort(name="in")
+        ]
+        dut = [dut]  # The helper function requires passing dut via a list.
+        framework_test_util.check_ports_lifetime_hazard(self, dut, ports)
+
+    def test_linear_transform_density_ports_lifetime_hazard(self):
+        dut = LinearTransformDensity(
+            distribution=RandomDistribution.kGaussian,
+            input_size=3,
+            output_size=3)
+        ports = [
+            dut.get_input_port_w_in(),
+            dut.get_input_port_A(),
+            dut.get_input_port_b(),
+            dut.get_output_port_w_out(),
+            dut.get_output_port_w_out_density(),
+        ]
+        dut = [dut]  # The helper function requires passing dut via a list.
+        framework_test_util.check_ports_lifetime_hazard(self, dut, ports)
