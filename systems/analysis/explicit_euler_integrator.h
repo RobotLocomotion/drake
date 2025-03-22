@@ -53,6 +53,11 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
 
  private:
   bool DoStep(const T& h) override;
+
+  std::unique_ptr<IntegratorBase<T>> DoClone() const override {
+    return std::make_unique<ExplicitEulerIntegrator>(
+        this->get_system(), this->get_maximum_step_size());
+  }
 };
 
 /**
