@@ -356,6 +356,15 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddAccelerationBounds) {
   EXPECT_THAT(binding[0].to_string(), HasSubstr("acceleration bound"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(),
             trajopt_.num_positions());
+  EXPECT_TRUE(binding[0].evaluator()->gradient_sparsity_pattern().has_value());
+  // Evaluate the gradient for an arbitrary input, make sure it matches with
+  // `gradient_sparsity_pattern`.
+  {
+    const auto x_ad = math::InitializeAutoDiff(Eigen::VectorXd::LinSpaced(
+        binding[0].variables().rows(), 1, binding[0].variables().rows()));
+    solvers::test::CheckGradientSparsityPattern(*binding[0].evaluator(), x_ad,
+                                                /*strict=*/false);
+  }
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
@@ -404,6 +413,15 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddJerkBounds) {
   EXPECT_THAT(binding[0].to_string(), HasSubstr("jerk bound"));
   EXPECT_EQ(trajopt_.prog().generic_constraints().size(),
             trajopt_.num_positions());
+  EXPECT_TRUE(binding[0].evaluator()->gradient_sparsity_pattern().has_value());
+  // Evaluate the gradient for an arbitrary input, make sure it matches with
+  // `gradient_sparsity_pattern`.
+  {
+    const auto x_ad = math::InitializeAutoDiff(Eigen::VectorXd::LinSpaced(
+        binding[0].variables().rows(), 1, binding[0].variables().rows()));
+    solvers::test::CheckGradientSparsityPattern(*binding[0].evaluator(), x_ad,
+                                                /*strict=*/false);
+  }
 
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());

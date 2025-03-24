@@ -190,6 +190,22 @@ class DerivativeConstraint : public Constraint {
         A_{A},
         derivative_order_{derivative_order} {
     DRAKE_DEMAND(derivative_order >= 1);
+    // Since A is often sparse, the constraint gradient should be sparse as
+    // well.
+    std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+    // Constraint always depends on duration.
+    for (int i = 0; i < this->num_outputs(); ++i) {
+      gradient_sparsity_pattern.emplace_back(i, 0);
+    }
+    // Set the sparsity w.r.t control_points.
+    for (int k = 0; k < A_.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A_, k); it; ++it) {
+        if (it.value() != 0) {
+          gradient_sparsity_pattern.emplace_back(it.row(), it.col() + 1);
+        }
+      }
+    }
+    this->SetGradientSparsityPattern(gradient_sparsity_pattern);
   }
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
