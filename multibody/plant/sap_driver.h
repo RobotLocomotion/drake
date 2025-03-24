@@ -213,6 +213,15 @@ class SapDriver {
       const systems::Context<T>& context,
       contact_solvers::internal::SapContactProblem<T>* problem) const;
 
+  // Adds unilateral holonomic constraints to model tendons constraints
+  // specified in the MultibodyPlant.
+  // @pre All joints for each constraint have a valid tree index.
+  // @throws std::exception if more than two kinematic trees are represented by
+  // the joints of any one tendon constraint.
+  void AddTendonConstraints(
+      const systems::Context<T>& context,
+      contact_solvers::internal::SapContactProblem<T>* problem) const;
+
   // This method takes SAP results for a given `problem` and loads forces due to
   // contact only into `contact_results`. `contact_results` is properly resized
   // on output.
