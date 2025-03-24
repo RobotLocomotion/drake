@@ -1,5 +1,6 @@
 #include <memory>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -260,18 +261,17 @@ TEST_P(TwoTreesTest, ConfirmConstraintProperties) {
   const SapTendonConstraint<double>::Kinematics k = constraint->kinematics();
   // q is expected to be partitioned as [q0, q1].
   const VectorXd q = plant_.GetPositions(*context_);
-  const Vector3d a(coefficients_[0], coefficients_[1], coefficients_[2]);
   EXPECT_EQ(k.num_cliques(), config.num_cliques);
   EXPECT_EQ(k.clique0(), 0);
   EXPECT_EQ(k.clique0_nv(), 2);
   EXPECT_EQ(k.q0(), q.segment<2>(0));
-  EXPECT_EQ(k.a0(), a.segment<2>(0));
+  EXPECT_THAT(k.a0(), testing::ElementsAre(coefficients_[0], coefficients_[1]));
   EXPECT_EQ(k.offset(), kOffset_);
   if (config.num_cliques == 2) {
     EXPECT_EQ(k.clique1(), 1);
     EXPECT_EQ(k.clique1_nv(), 1);
     EXPECT_EQ(k.q1(), q.segment<1>(2));
-    EXPECT_EQ(k.a1(), a.segment<1>(2));
+    EXPECT_THAT(k.a1(), testing::ElementsAre(coefficients_[2]));
   }
 }
 
@@ -499,11 +499,12 @@ TEST_F(SimplePlant, FailOnInvalidSpecs) {
                std::exception);
 
   // Removed joint.
+  const JointIndex removed_joint_index = single_dof_joint_->index();
   plant_->RemoveJoint(*single_dof_joint_);
-  EXPECT_THROW(plant_->AddTendonConstraint(
-                   {single_dof_joint_->index()}, valid_a_, valid_offset_,
-                   valid_lower_limit_, valid_upper_limit_, valid_stiffness_,
-                   valid_damping_),
+  EXPECT_THROW(plant_->AddTendonConstraint({removed_joint_index}, valid_a_,
+                                           valid_offset_, valid_lower_limit_,
+                                           valid_upper_limit_, valid_stiffness_,
+                                           valid_damping_),
                std::exception);
 }
 
