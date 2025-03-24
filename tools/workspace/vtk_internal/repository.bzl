@@ -7,6 +7,17 @@ load(
     "setup_github_repository",
 )
 
+def _remove_comments_and_blank_lines(text):
+    result = ""
+    for line in text.splitlines():
+        if "#" in line:
+            line, _ = line.split("#", 1)
+        if line.strip() == "":
+            continue
+        result += line
+        result += "\n"
+    return result
+
 def parse_module(repo_ctx, subdir):
     """Parses and returns a vtk.module file as a dict.
 
@@ -46,7 +57,8 @@ def parse_module(repo_ctx, subdir):
 
     result = dict(subdir = subdir)
     content = repo_ctx.read(subdir + "/vtk.module")
-    lines = content.replace("\n  ", "=").splitlines()
+    clean_content = _remove_comments_and_blank_lines(content)
+    lines = clean_content.replace("\n  ", "=").splitlines()
     for line in lines:
         tokens = line.split("=")
         key, values = tokens[0], tokens[1:]
@@ -192,7 +204,6 @@ def vtk_internal_repository(
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
             ":patches/vtksys_hidden.patch",
-            ":patches/vtkiohdf_newline.patch",
             ":patches/gltf_scenes_vector.patch",
         ],
         settings_bzl = ":settings.bzl",
