@@ -1587,7 +1587,12 @@ class Meshcat::Impl {
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
-      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      const auto scene_tree_element_id =
+        "button_" + uuid_generator_.GenerateRandom();
+      SceneTreeElement& e = scene_tree_root_[scene_tree_element_id];
+      e.object().emplace() = std::move(message);
     });
   }
 
@@ -1681,7 +1686,12 @@ class Meshcat::Impl {
       DRAKE_DEMAND(app_ != nullptr);
       std::stringstream message_stream;
       msgpack::pack(message_stream, data);
-      app_->publish("all", message_stream.str(), uWS::OpCode::BINARY, false);
+      std::string message = message_stream.str();
+      app_->publish("all", message, uWS::OpCode::BINARY, false);
+      const auto scene_tree_element_id =
+        "slider_" + uuid_generator_.GenerateRandom();
+      SceneTreeElement& e = scene_tree_root_[scene_tree_element_id];
+      e.object().emplace() = std::move(message);
     });
     return value;
   }
