@@ -222,13 +222,15 @@ class IrisZoOptions {
    * collisions in the `q` variables. See RationalForwardKinematics for details.
    * @note The user is responsible for ensuring `kin` (and the underlying
    * MultibodyPlant it is built on) is kept alive. If that object is deleted,
-   * then the parametrization can no longer be used. */
+   * then the parametrization can no longer be used.
+   * @note All other parameters are set to their default values. */
   static IrisZoOptions CreateWithRationalKinematicParameterization(
       const multibody::RationalForwardKinematics* kin,
       const Eigen::Ref<const Eigen::VectorXd>& q_star_val);
 
   /** Constructs an instance of IrisZoOptions that handles mimic joints, by
-   * inspecting a MultibodyPlant for coupler constraints. */
+   * inspecting a MultibodyPlant for coupler constraints.
+   * @note All other parameters are set to their default values. */
   static IrisZoOptions CreateWithMimicJointsParameterization(
       const multibody::MultibodyPlant<double>& plant);
 

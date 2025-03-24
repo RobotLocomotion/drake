@@ -98,6 +98,10 @@ using multibody::JointIndex;
 using multibody::MultibodyConstraintId;
 using multibody::internal::CouplerConstraintSpec;
 
+// This method constructs an ordering of the constraints such that they can be
+// traversed in order of "dependence". If constraint 1 determines joint i from
+// joint j, and constraint 2 determines joint j from joint k, then constraint 2
+// must be before constraint 1.
 std::vector<CouplerConstraintSpec> TopologicalSortCouplerConstraints(
     const std::map<multibody::MultibodyConstraintId, CouplerConstraintSpec>&
         coupler_constraints) {
@@ -162,6 +166,8 @@ IrisZoOptions IrisZoOptions::CreateWithMimicJointsParameterization(
   const std::vector<multibody::JointIndex>& joint_indices =
       plant.GetJointIndices();
 
+  // Note that throughout this method, we rely on the fact that coupler
+  // constraints only work with joints that have a single degree of freedom.
   std::map<multibody::JointIndex, int> joint_index_to_position_start;
   for (const auto& joint_index : joint_indices) {
     int position_start = plant.get_joint(joint_index).position_start();
@@ -169,48 +175,71 @@ IrisZoOptions IrisZoOptions::CreateWithMimicJointsParameterization(
   }
 
   // Sort the coupler constraints, and find the independent degrees of freedom.
-  std::set<int> dependent_joint_indices;
+  std::set<int> dependent_position_indices;
   for (const auto& [_, coupler_constraint] : coupler_constraints) {
-    dependent_joint_indices.insert(
+    dependent_position_indices.insert(
         joint_index_to_position_start.at(coupler_constraint.joint0_index));
   }
-  std::set<int> all_joint_indices;
+  std::set<int> all_position_indices;
   for (int i = 0; i < plant.num_positions(); ++i) {
-    all_joint_indices.insert(i);
+    all_position_indices.insert(i);
   }
-  std::vector<int> independent_joint_indices;
-  std::set_difference(all_joint_indices.begin(), all_joint_indices.end(),
-                      dependent_joint_indices.begin(),
-                      dependent_joint_indices.end(),
-                      std::inserter(independent_joint_indices,
-                                    independent_joint_indices.end()));
+  std::vector<int> independent_position_indices;
+  std::set_difference(all_position_indices.begin(), all_position_indices.end(),
+                      dependent_position_indices.begin(),
+                      dependent_position_indices.end(),
+                      std::inserter(independent_position_indices,
+                                    independent_position_indices.end()));
 
+  // The parameterization is an affine map, so we can represent it as y=Ax+b for
+  // matrix A and vector b. The mapping is actually constructed by first mapping
+  // the minimal coordinates to the independent joints, and then filling in the
+  // dependent joints by iterating over the coupler constraints.
+  Eigen::MatrixXd mapping_A =
+      Eigen::MatrixXd::Zero(plant.num_positions(), dimension);
+  Eigen::VectorXd mapping_b = Eigen::VectorXd::Zero(plant.num_positions());
+
+  // First, we fill in the entries for the independent joint indices.
+  for (int input_dimension = 0;
+       input_dimension < ssize(independent_position_indices);
+       ++input_dimension) {
+    int output_dimension = independent_position_indices[input_dimension];
+    mapping_A(output_dimension, input_dimension) = 1.0;
+  }
+
+  // We sort the constraints in order of dependence.
   std::vector<multibody::internal::CouplerConstraintSpec>
       sorted_coupler_constraints =
           TopologicalSortCouplerConstraints(coupler_constraints);
 
-  // Construct the lambda.
-  auto evaluate_parameterization =
-      [independent_joint_indices, sorted_coupler_constraints,
-       joint_index_to_position_start](const Eigen::VectorXd& q_in) {
-        DRAKE_ASSERT(ssize(independent_joint_indices) == q_in.size());
-        const int dimension_out = ssize(independent_joint_indices) +
-                                  ssize(sorted_coupler_constraints);
-        Eigen::VectorXd q_out(dimension_out);
-        for (int i = 0; i < ssize(independent_joint_indices); ++i) {
-          q_out[independent_joint_indices[i]] = q_in[i];
-        }
-        for (int j = 0; j < ssize(sorted_coupler_constraints); ++j) {
-          const auto& coupler_constraint = sorted_coupler_constraints[j];
-          int in_index =
-              joint_index_to_position_start.at(coupler_constraint.joint1_index);
-          int out_index =
-              joint_index_to_position_start.at(coupler_constraint.joint0_index);
-          q_out[out_index] = q_out[in_index] * coupler_constraint.gear_ratio +
-                             coupler_constraint.offset;
-        }
-        return q_out;
-      };
+  // Next, we fill in the entries for the constraints. This is done by
+  // constructing a square matrix C and vector d for each constraint, in order
+  // to apply the coupling. C will be the identity, except the entry for the
+  // dependent joint will be the gear ratio, and d will be a vector of zeros,
+  // except the entry for the dependent joint will be the offset. We then set
+  // A := CA and b := Cb + d.
+  for (const auto& coupler_constraint : sorted_coupler_constraints) {
+    Eigen::MatrixXd mapping_C =
+        Eigen::MatrixXd::Identity(plant.num_positions(), plant.num_positions());
+    Eigen::VectorXd mapping_d = Eigen::VectorXd::Zero(plant.num_positions());
+
+    int input_position_index =
+        joint_index_to_position_start.at(coupler_constraint.joint1_index);
+    int output_position_index =
+        joint_index_to_position_start.at(coupler_constraint.joint0_index);
+
+    mapping_C(output_position_index, input_position_index) =
+        coupler_constraint.gear_ratio;
+    mapping_d(output_position_index) = coupler_constraint.offset;
+
+    mapping_A = mapping_C * mapping_A;
+    mapping_b = mapping_C * mapping_b + mapping_d;
+  }
+
+  auto evaluate_parameterization = [mapping_A,
+                                    mapping_b](const Eigen::VectorXd& q_in) {
+    return mapping_A * q_in + mapping_b;
+  };
 
   IrisZoOptions instance;
   instance.set_parameterization(evaluate_parameterization,
