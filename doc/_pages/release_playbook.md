@@ -184,9 +184,8 @@ the main body of the document:
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
       page actually works.
    2. Click "Publish release"
-   3. Notify `@BetsyMcPhail` by creating a GitHub issue asking her to manually
-      tag docker images and upload the releases to S3. Be sure to provide her
-      with the release tag in the same ping.
+   3. Create a new GitHub issue on the [drake](https://github.com/RobotLocomotion/drake/issues)
+      repository and select the "Post-Release Actions" template. 
    4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
       repository, requesting an update of the `DRAKE_SUGGESTED_VERSION`
       constant.
