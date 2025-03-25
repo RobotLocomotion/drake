@@ -824,6 +824,81 @@ GTEST_TEST(RigidTransform, OperatorMultiplyByMatrix3X) {
   }
 }
 
+// Test special case routines for working with transforms that involve only
+// axial rotations or just translations. These should produce the same answers
+// as the general functions. These functions all have the precondition that
+// the given operands have the expected structure, but they don't necessarily
+// check that precondition so there aren't any error tests here.
+GTEST_TEST(RigidTransform, SpecializedTransformOperators) {
+  using Xform = RigidTransformd;         // For less clutter below.
+  constexpr double kTol = 4 * kEpsilon;  // Allow for differing implementations.
+
+  // Make transforms that are axial rotations only (no translations).
+  const double theta = 0.234;
+  const Xform xX_BC(Xform::MakeAxialRotation<0>(theta));  // about x
+  const Xform yX_BC(Xform::MakeAxialRotation<1>(theta));  // about y
+  const Xform zX_BC(Xform::MakeAxialRotation<2>(theta));  // about z
+
+  // Test MakeAxialRotation().
+  EXPECT_TRUE(xX_BC.IsNearlyEqualTo(
+      Xform(RotationMatrixd::MakeXRotation(theta)), kTol));
+  EXPECT_TRUE(yX_BC.IsNearlyEqualTo(
+      Xform(RotationMatrixd::MakeYRotation(theta)), kTol));
+  EXPECT_TRUE(zX_BC.IsNearlyEqualTo(
+      Xform(RotationMatrixd::MakeZRotation(theta)), kTol));
+
+  // Test ApplyAxialRotation().
+  const Vector3d v_C(1.0, 2.0, 3.0);
+  Vector3d v_B;  // reusable result
+  EXPECT_TRUE(CompareMatrices(Xform::ApplyAxialRotation<0>(xX_BC, v_C),
+                              xX_BC * v_C, kTol));
+  EXPECT_TRUE(CompareMatrices(Xform::ApplyAxialRotation<1>(yX_BC, v_C),
+                              yX_BC * v_C, kTol));
+  EXPECT_TRUE(CompareMatrices(Xform::ApplyAxialRotation<2>(zX_BC, v_C),
+                              zX_BC * v_C, kTol));
+
+  // Test UpdateAxialRotation().
+  Xform X_BC_update = xX_BC;
+  Xform::UpdateAxialRotation<0>(2 * theta, &X_BC_update);
+  EXPECT_TRUE(X_BC_update.IsNearlyEqualTo(
+      Xform::MakeAxialRotation<0>(2 * theta), kTol));
+  X_BC_update = yX_BC;
+  Xform::UpdateAxialRotation<1>(3 * theta, &X_BC_update);
+  EXPECT_TRUE(X_BC_update.IsNearlyEqualTo(
+      Xform::MakeAxialRotation<1>(3 * theta), kTol));
+  X_BC_update = zX_BC;
+  // Use the alternate signature.
+  Xform::UpdateAxialRotation<2>(std::sin(4 * theta), std::cos(4 * theta),
+                                &X_BC_update);
+  EXPECT_TRUE(X_BC_update.IsNearlyEqualTo(
+      Xform::MakeAxialRotation<2>(4 * theta), kTol));
+
+  // Make general, rotation-only, and translation-only transforms.
+  const Xform X_AB(RollPitchYaw(1.0, 2.0, 3.0), Vector3d(1.5, 2.5, 3.5));
+  const Xform rX_BC(RollPitchYaw(0.5, 1.5, -2.5), Vector3d::Zero());
+  const Xform tX_BC(Vector3d(-1.0, 2.0, -3.0));
+  const Xform ytX_BC(Vector3d(0.0, -2.0, 0.0));  // y-axial translation
+  Xform X_AC;                                    // reusable result
+
+  // Test ComposeWithRotation() and ComposeWithTranslation().
+  X_AB.ComposeWithRotation(rX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * rX_BC, kTol));
+
+  X_AB.ComposeWithTranslation(tX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * tX_BC, kTol));
+
+  X_AB.ComposeWithAxialTranslation<1>(ytX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * ytX_BC, kTol));
+
+  // Test ComposeWithAxialRotation().
+  X_AB.ComposeWithAxialRotation<0>(xX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * xX_BC, kTol));
+  X_AB.ComposeWithAxialRotation<1>(yX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * yX_BC, kTol));
+  X_AB.ComposeWithAxialRotation<2>(zX_BC, &X_AC);
+  EXPECT_TRUE(X_AC.IsNearlyEqualTo(X_AB * zX_BC, kTol));
+}
+
 GTEST_TEST(RigidTransform, TestMemoryLayoutOfRigidTransformDouble) {
   // For optimization (e.g., AVX instructions), verify RigidTransform<double>
   // is packed into 12 consecutive doubles, first with a 3x3 rotation matrix
