@@ -3,7 +3,6 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
-#include <string>
 #include <type_traits>
 
 #include <Eigen/Dense>
@@ -16,6 +15,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/hash.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/unused.h"
 #include "drake/math/fast_pose_composition_functions.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/unit_vector.h"
@@ -102,19 +102,11 @@ class RotationMatrix {
   /// R that is built from `theta_lambda` fails IsValid(R).  For example, an
   /// exception is thrown if `lambda` is zero or contains a NaN or infinity.
   explicit RotationMatrix(const Eigen::AngleAxis<T>& theta_lambda) {
-    using std::cos;
-    using std::sin;
-    // TODO(mitiguy) Consider adding an optional second argument if lambda is
-    // known to be normalized apriori or the caller does not want normalization.
     const T& theta = theta_lambda.angle();
-    const Vector3<T>& lambda = theta_lambda.axis();
-    // We won't use AngleAxis<T>::toRotationMatrix because somtimes it is
-    // miscompiled by Clang 15. Instead, we'll follow the derivation here:
-    // https://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToMatrix/index.htm
-    const T norm = lambda.norm();
-    const T x = lambda.x() / norm;
-    const T y = lambda.y() / norm;
-    const T z = lambda.z() / norm;
+    const Vector3<T> unit_lambda = theta_lambda.axis().normalized();
+    const T x = unit_lambda.x();
+    const T y = unit_lambda.y();
+    const T z = unit_lambda.z();
     const T s = sin(theta);
     const T c = cos(theta);
     const T t = 1 - c;     // 1 - cos(θ)
@@ -131,15 +123,15 @@ class RotationMatrix {
     const T txz = tx * z;  // (1 - cos(θ)) x z
     const T tyz = ty * z;  // (1 - cos(θ)) y z
     Matrix3<T> R;
-    R.coeffRef(0, 0) = txx + c;   // (1 - cos(θ)) x² + cos(θ)
-    R.coeffRef(1, 1) = tyy + c;   // (1 - cos(θ)) y² + cos(θ)
-    R.coeffRef(2, 2) = tzz + c;   // (1 - cos(θ)) z² + cos(θ)
-    R.coeffRef(0, 1) = txy - sz;  // (1 - cos(θ)) x y - sin(θ) z
-    R.coeffRef(1, 0) = txy + sz;  // (1 - cos(θ)) x y + sin(θ) z
-    R.coeffRef(0, 2) = txz + sy;  // (1 - cos(θ)) x z + sin(θ) y
-    R.coeffRef(2, 0) = txz - sy;  // (1 - cos(θ)) x z - sin(θ) y
-    R.coeffRef(1, 2) = tyz - sx;  // (1 - cos(θ)) y z - sin(θ) x
-    R.coeffRef(2, 1) = tyz + sx;  // (1 - cos(θ)) y z + sin(θ) x
+    R(0, 0) = txx + c;   // (1 - cos(θ)) x² + cos(θ)
+    R(1, 1) = tyy + c;   // (1 - cos(θ)) y² + cos(θ)
+    R(2, 2) = tzz + c;   // (1 - cos(θ)) z² + cos(θ)
+    R(0, 1) = txy - sz;  // (1 - cos(θ)) x y - sin(θ) z
+    R(1, 0) = txy + sz;  // (1 - cos(θ)) x y + sin(θ) z
+    R(0, 2) = txz + sy;  // (1 - cos(θ)) x z + sin(θ) y
+    R(2, 0) = txz - sy;  // (1 - cos(θ)) x z - sin(θ) y
+    R(1, 2) = tyz - sx;  // (1 - cos(θ)) y z - sin(θ) x
+    R(2, 1) = tyz + sx;  // (1 - cos(θ)) y z + sin(θ) x
     set(R);
   }
 
@@ -316,7 +308,7 @@ class RotationMatrix {
   /// @retval R_AB the rotation matrix with properties as described above.
   static RotationMatrix<T> MakeClosestRotationToIdentityFromUnitZ(
       const Vector3<T>& u_A) {
-    math::internal::ThrowIfNotUnitVector(u_A, __func__);
+    internal::ThrowIfNotUnitVector(u_A, __func__);
     const Vector3<T>& Bz = u_A;
     const Vector3<T> Az = Vector3<T>(0, 0, 1);
     // The rotation axis of the Axis-Angle representation of the resulting
@@ -329,6 +321,173 @@ class RotationMatrix {
     const T angle = atan2(axis_norm, Az.dot(Bz));
     return RotationMatrix<T>(Eigen::AngleAxis<T>(angle, normalized_axis));
   }
+
+  /// @name      (Internal use only) methods for axial rotations
+  /// @anchor axial_rotation_def
+  ///
+  /// (Internal use only) Axial rotations are %RotationMatrix objects for which
+  /// we know that the represented rotation is about one of the basis vectors
+  /// (coordinate axes) x, y, or z. These are essentially 2d rotations and only
+  /// four of the nine elements are "active", by which we mean that they change
+  /// with the rotation angle θ. The other five elements are "inactive", meaning
+  /// that they have known values and never change during a simulation. For best
+  /// performance, the algorithms in this section are permitted to _assume_
+  /// without looking that the inactive elements have their required values.
+  /// However, those elements are still required to have the expected values,
+  /// which are the values they would have in an identity rotation (that is, 1
+  /// on the diagonal and 0 off-diagonal). (Even when T is symbolic::Expression,
+  /// we insist that the inactive elements have the correct numerical values and
+  /// don't require an Environment for evaluation.) This ensures that general
+  /// purpose (non-specialized) code can still use the resulting rotation
+  /// matrices.
+  ///
+  /// With _general_ rotation matrices (nine active elements), re-expressing a
+  /// vector takes 15 floating point operations, composing two rotations
+  /// takes 45, and updating requires writing all nine elements. The methods in
+  /// this section take advantage of the axial structure to reduce the number
+  /// of operations required. To do that, they are templatized by the axis
+  /// number 0, 1, or 2 (+x, +y, or +z axis, resp.). The number of operations
+  /// required is documented with each method.
+  ///
+  /// Notation: we denote axial rotations by preceding the usual "R" with a
+  /// lower case "a" for axial, e.g. aR_BC is a rotation matrix R_BC but for
+  /// which we have foreknowledge of its axial structure. In cases where we
+  /// know the particular axis we'll replace the "a" with "x", "y", or "z".
+  ///
+  /// @warning We depend on the caller's promise that axial rotation matrix
+  /// arguments are indeed axial; for performance reasons we do not verify that
+  /// in Release builds although we may verify in Debug builds.
+  ///
+  /// @note There are no Python bindings for these methods since there is
+  /// nothing to be gained by using them in Python. Use the general equivalent
+  /// %RotationMatrix methods instead.
+  ///@{
+
+  /// (Internal use only) Given an axial rotation about a coordinate axis (x, y,
+  /// or z), uses it to efficiently re-express a vector. This takes only 6
+  /// floating point operations.
+  /// @param[in] aR_BC An axial rotation about the indicated axis.
+  /// @param[in] v_C A vector expressed in frame C to be re-expressed in
+  ///   frame B.
+  /// @retval v_B The input vector re-expressed in frame B.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @pre aR_BC is an @ref axial_rotation_def "axial rotation matrix" about
+  ///   the given `axis`.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static Vector3<T> ApplyAxialRotation(const RotationMatrix<T>& aR_BC,
+                                       const Vector3<T>& v_C) {
+    // See comments for MakeFromXRotation() etc. to see that this is correct.
+    DRAKE_ASSERT_VOID(aR_BC.IsAxialRotationOrThrow<axis>());
+    const Matrix3<T>& M = aR_BC.matrix();
+    constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
+    const T& c = M(y, y);  // cosine
+    const T& s = M(z, y);  // sine
+    Vector3<T> v_B;
+    v_B(x) = v_C(x);  // No effect along the rotation axis.
+    v_B(y) = c * v_C(y) - s * v_C(z);
+    v_B(z) = c * v_C(z) + s * v_C(y);
+    return v_B;
+  }
+
+  /// (Internal use only) Given a new rotation angle θ, updates the axial
+  /// rotation aR_BC to represent the new rotation angle. We expect that aR_BC
+  /// was already such an axial rotation about the given x, y, or z axis. Only
+  /// the 4 active elements are modified; the other 5 remain unchanged.
+  /// (However, execution time is likely to be dominated by the time to
+  /// calculate sine and cosine.)
+  /// @param[in] theta the new rotation angle in radians.
+  /// @param[in,out] aR_BC the axial rotation matrix to be updated.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @see the overloaded signature if you already have sin(θ) & cos(θ).
+  /// @pre aR_BC is an @ref axial_rotation_def "axial rotation matrix" about
+  ///   the given `axis`.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static void UpdateAxialRotation(const T& theta, RotationMatrix<T>* aR_BC) {
+    using std::cos, std::sin;
+    DRAKE_ASSERT(aR_BC != nullptr);
+    UpdateAxialRotation<axis>(sin(theta), cos(theta), &*aR_BC);
+  }
+
+  /// (Internal use only) Given sin(θ) and cos(θ), where θ is a new rotation
+  /// angle, updates the axial rotation aR_BC to represent the new rotation
+  /// angle. We expect that aR_BC was already such a rotation (about the given
+  /// x, y, or z axis) but by some other angle. Only the 4 active elements are
+  /// modified; the other 5 remain unchanged.
+  /// @param[in] sin_theta sin(θ), where θ is the new rotation angle.
+  /// @param[in] cos_theta cos(θ), where θ is the new rotation angle.
+  /// @param[in,out] aR_BC the axial rotation matrix to be updated.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @see the overloaded signature if you just have the angle θ.
+  /// @pre aR_BC is an @ref axial_rotation_def "axial rotation matrix" about
+  ///   the given `axis`.
+  /// @pre `sin_theta` and `cos_theta` are sine and cosine of the same angle.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static void UpdateAxialRotation(const T& sin_theta, const T& cos_theta,
+                                  RotationMatrix<T>* aR_BC) {
+    DRAKE_ASSERT(aR_BC != nullptr);
+    DRAKE_ASSERT_VOID(aR_BC->IsAxialRotationOrThrow<axis>());
+    DRAKE_ASSERT_VOID(SinCosConsistencyOrThrow(sin_theta, cos_theta));
+    Matrix3<T>& M = aR_BC->mutable_matrix();
+    constexpr int y = (axis + 1) % 3, z = (axis + 2) % 3;
+    M(y, y) = M(z, z) = cos_theta;
+    M(z, y) = sin_theta;
+    M(y, z) = -sin_theta;  // only 1 flop
+  }
+
+  /// (Internal use only) With `this` a general rotation R_AB, and given an
+  /// axial rotation aR_BC, efficiently forms R_AC = R_AB * aR_BC. This requires
+  /// only 14 floating point operations.
+  /// @param[in] aR_BC An axial rotation about the indicated axis.
+  /// @param[out] R_AC The result. Must not overlap with aR_BC in memory.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @pre aR_BC is an @ref axial_rotation_def "axial rotation matrix" about
+  ///   the given `axis`.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  void ComposeWithAxialRotation(const RotationMatrix<T>& aR_BC,
+                                RotationMatrix<T>* R_AC) const {
+    // If this is inlined it should be considerably faster than the
+    // (non-inlined) SIMD case.
+    DRAKE_ASSERT(R_AC != nullptr);
+    DRAKE_ASSERT_VOID(aR_BC.IsAxialRotationOrThrow<axis>());
+    const Matrix3<T>& M_BC = aR_BC.matrix();
+    constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
+    const T& c = M_BC(y, y);  // cosine
+    const T& s = M_BC(z, y);  // sine
+    Matrix3<T>& M_AC = R_AC->mutable_matrix();
+    M_AC.col(x) = R_AB_.col(x);  // No effect on the rotation axis.
+    M_AC.col(y) = c * R_AB_.col(y) + s * R_AB_.col(z);
+    M_AC.col(z) = c * R_AB_.col(z) - s * R_AB_.col(y);
+  }
+
+  /// (Internal use only) Throws an exception if `this` %RotationMatrix is not
+  /// an axial rotation about the indicated axis.
+  /// See @ref axial_rotation_def "axial rotation matrix" for the conditions
+  /// that must be satisfied for a rotation matrix to be "axial". In addition,
+  /// for numerical types T we check here that the active elements are
+  /// reasonable: there should be two equal cos(θ) entries, ±sin(θ) entries, and
+  /// sin²+cos²==1. (Numerical tests are done to a fairly loose tolerance of 16ε
+  /// to avoid false negatives.)
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @note This is intended for Debug-mode checks that the other methods in
+  ///   this section are being used properly.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  void IsAxialRotationOrThrow() const;
+  ///@}
 
   /// Creates a %RotationMatrix templatized on a scalar type U from a
   /// %RotationMatrix templatized on scalar type T.  For example,
@@ -740,10 +899,23 @@ class RotationMatrix {
   template <typename U>
   friend class RotationMatrix;
 
+  // Returns the mutable Matrix3 underlying a RotationMatrix.
+  Matrix3<T>& mutable_matrix() { return R_AB_; }
+
   // Declares the allowable tolerance (small multiplier of double-precision
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
   static constexpr double kInternalToleranceForOrthonormality{
       128 * std::numeric_limits<double>::epsilon()};
+
+  // Given values that are allegedly sin(θ) and cos(θ) for some θ, checks that
+  // they satisfy the condition sin²(θ) + cos²(θ) = 1 (within some fairly
+  // relaxed tolerance) and throws an exception if not. Due to this function's
+  // relatively high computational cost, it is intended to be called only
+  // in Debug mode (using DRAKE_ASSERT_VOID()). (It is likely that the
+  // arguments were precomputed to avoid their recalculation in some
+  // performance-critical situation.) This function does nothing if T is
+  // symbolic.
+  static void SinCosConsistencyOrThrow(const T& sin_theta, const T& cos_theta);
 
   // Sets `this` %RotationMatrix `R_AB` from right-handed orthogonal unit
   // vectors `Bx`, `By`, `Bz` so that the columns of `this` are `[Bx, By, Bz]`.

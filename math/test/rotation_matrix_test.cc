@@ -700,6 +700,167 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(R.inverse().IsNearlyEqualTo(R.transpose(), 8 * kEpsilon));
 }
 
+// Test special case routines for working with rotation matrices that involve
+// only axial rotations. These should produce the same answers as the general
+// functions. These functions all have the precondition that the given operands
+// have the expected structure, but they don't necessarily check that
+// precondition so there aren't any error tests here.
+GTEST_TEST(RotationMatrix, AxialRotationOperators) {
+  using Rmat = RotationMatrixd;          // For less clutter below.
+  constexpr double kTol = 4 * kEpsilon;  // Allow for differing implementations.
+
+  // Make axial rotations.
+  const double theta = 0.234;
+  const Rmat xR_BC(Rmat::MakeXRotation(theta));
+  const Rmat yR_BC(Rmat::MakeYRotation(theta));
+  const Rmat zR_BC(Rmat::MakeZRotation(theta));
+
+  // Test ApplyAxialRotation().
+  const Vector3d v_C(1.0, 2.0, 3.0);
+  Vector3d v_B;  // reusable result
+  EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<0>(xR_BC, v_C),
+                              xR_BC * v_C, kTol));
+  EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<1>(yR_BC, v_C),
+                              yR_BC * v_C, kTol));
+  EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<2>(zR_BC, v_C),
+                              zR_BC * v_C, kTol));
+
+  // Test UpdateAxialRotation().
+  Rmat R_BC_update = xR_BC;
+  Rmat::UpdateAxialRotation<0>(2 * theta, &R_BC_update);
+  EXPECT_TRUE(
+      R_BC_update.IsNearlyEqualTo(Rmat::MakeXRotation(2 * theta), kTol));
+  R_BC_update = yR_BC;
+  Rmat::UpdateAxialRotation<1>(3 * theta, &R_BC_update);
+  EXPECT_TRUE(
+      R_BC_update.IsNearlyEqualTo(Rmat::MakeYRotation(3 * theta), kTol));
+  R_BC_update = zR_BC;
+  // Use the alternate signature.
+  Rmat::UpdateAxialRotation<2>(std::sin(4 * theta), std::cos(4 * theta),
+                               &R_BC_update);
+  EXPECT_TRUE(
+      R_BC_update.IsNearlyEqualTo(Rmat::MakeZRotation(4 * theta), kTol));
+
+  // In Debug builds only, verify that the sin/cos signature rejects absurd
+  // values for sine and cosine.
+  if (kDrakeAssertIsArmed) {
+    EXPECT_THROW(Rmat::UpdateAxialRotation<2>(1.5, 2.3, &R_BC_update),
+                 std::exception);
+  }
+
+  // Test ComposeWithAxialRotation().
+  const Rmat R_AB(RollPitchYaw(1.0, 2.0, 3.0));
+  Rmat R_AC;  // reusable result
+  R_AB.ComposeWithAxialRotation<0>(xR_BC, &R_AC);
+  EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * xR_BC, kTol));
+  R_AB.ComposeWithAxialRotation<1>(yR_BC, &R_AC);
+  EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * yR_BC, kTol));
+  R_AB.ComposeWithAxialRotation<2>(zR_BC, &R_AC);
+  EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * zR_BC, kTol));
+}
+
+// The axial rotation operators exist for performance reasons. For some of them
+// we can tell whether they actually take advantage of the axial specialization.
+// Make sure they do. This requires building some invalid rotation matrices
+// which we can only do by cheating a bit since the API doesn't allow that.
+// Also these operators are very defensive in Debug builds so we can only
+// perform these tests in Release.
+GTEST_TEST(RotationMatrix, AxialRotationOptimizations) {
+  if (!kDrakeAssertIsArmed) {
+    using Rmat = RotationMatrixd;  // For less clutter below.
+    constexpr double kTol =
+        4 * kEpsilon;  // Allow for differing implementations.
+
+    // Make a legitimate y-axis axial rotation.
+    const double theta = 0.234;
+    const Rmat yR_BC(Rmat::MakeYRotation(theta));
+
+    // Mangle the inactive terms (see next test below for the structure of a
+    // y-axis axial rotation).
+    Eigen::Matrix3d yR_BC_matrix = yR_BC.matrix();
+    Rmat& yR_BC_mangled = *reinterpret_cast<Rmat*>(yR_BC_matrix.data());
+    yR_BC_matrix(0, 1) = 10;
+    yR_BC_matrix(1, 0) = 11;
+    yR_BC_matrix(1, 1) = 12;
+    yR_BC_matrix(1, 2) = 13;
+    yR_BC_matrix(2, 1) = 14;
+
+    // This is NOT a good axial rotation!
+    EXPECT_THROW(yR_BC_mangled.IsAxialRotationOrThrow<1>(), std::exception);
+
+    // But ... ApplyAxialRotation() should work anyway with this junk in place.
+    const Vector3d v_C(1.0, 2.0, 3.0);
+    Vector3d v_B;
+    EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<1>(yR_BC_mangled, v_C),
+                                yR_BC * v_C, kTol));
+
+    // UpdateAxialRotation() should not touch the junk elements at all.
+    const double new_theta = .567;
+    Rmat::UpdateAxialRotation<1>(new_theta, &yR_BC_mangled);
+    EXPECT_EQ(yR_BC_matrix(0, 1), 10);
+    EXPECT_EQ(yR_BC_matrix(1, 0), 11);
+    EXPECT_EQ(yR_BC_matrix(1, 1), 12);
+    EXPECT_EQ(yR_BC_matrix(1, 2), 13);
+    EXPECT_EQ(yR_BC_matrix(2, 1), 14);
+
+    // ComposeWithAxialRotation() should access only the active elements so
+    // should give the same result either with our mangled matrix or a clean
+    // one.
+    const Rmat R_AB(RollPitchYaw(1.0, 2.0, 3.0));
+    Rmat R_AC;
+    R_AB.ComposeWithAxialRotation<1>(yR_BC_mangled, &R_AC);
+    EXPECT_TRUE(
+        R_AC.IsNearlyEqualTo(R_AB * Rmat::MakeYRotation(new_theta), kTol));
+  }
+}
+
+// In Debug builds, the specialized axial rotation functions perform some
+// elaborate tests to make sure an allegedly axial rotation is really
+// axial. That condition is checked everywhere with the same helper function.
+// We'll test the helper function here. The conditions we need to test are:
+// - the matrix has 1s and 0s in the expected inactive locations
+// - the four active elements are cos(θ), cos(θ), ±sin(θ) in the right places.
+// - sin^2 + cos^2 == 1 (to some tolerance).
+// We'll have to cheat a little to make some of these bad conditions since
+// we don't let them in via the RotationMatrix API.
+//
+// We only need to check one axis (we'll use y) since the code is the same
+// for all three. An axial y rotation looks like this:
+//  ⎡  cos(θ)  0   sin(θ) ⎤
+//  ⎢    0     1     0    ⎥
+//  ⎣ -sin(θ)  0   cos(θ) ⎦
+GTEST_TEST(RotationMatrix, IsAxialRotationOrThrow) {
+  using Rmat = RotationMatrixd;  // For less clutter below.
+
+  // Form a _general_ (non-axial) rotation and make sure it is properly
+  // rejected by IsAxialRotationOrThrow(), which is used in Debug builds to
+  // verify preconditions.
+  const Rmat R_AB(RollPitchYawd(1.0, 2.0, 3.0));
+  // Some inactive element had the wrong value.
+  EXPECT_THROW(R_AB.IsAxialRotationOrThrow<1>(), std::exception);
+
+  // Form a legitimate axial rotation about the y axis. We're going to mangle
+  // it in various ways below to make sure they are all caught.
+  const Rmat aR_BC = Rmat::MakeYRotation(0.5);
+  EXPECT_NO_THROW(aR_BC.IsAxialRotationOrThrow<1>());
+
+  Eigen::Matrix3d badR_BC_matrix = aR_BC.matrix();  // Starts out legit.
+  const Rmat& badR_BC = *reinterpret_cast<const Rmat*>(badR_BC_matrix.data());
+
+  badR_BC_matrix(0, 0) = 0.123;  // One of the cosines is broken.
+  EXPECT_THROW(badR_BC.IsAxialRotationOrThrow<1>(), std::exception);
+
+  badR_BC_matrix = aR_BC.matrix();  // Restore good value.
+  badR_BC_matrix(2, 0) = 0.123;     // One of the sines is broken.
+  EXPECT_THROW(badR_BC.IsAxialRotationOrThrow<1>(), std::exception);
+
+  // Finally we'll make both cosines > 1 so the sin^2+cos^2 test will fail.
+  badR_BC_matrix = aR_BC.matrix();  // Restore good value.
+  badR_BC_matrix(0, 0) = 1.5;       // Cosines are equal but no good.
+  badR_BC_matrix(2, 2) = 1.5;
+  EXPECT_THROW(badR_BC.IsAxialRotationOrThrow<1>(), std::exception);
+}
+
 // Test RotationMatrix cast method from double to AutoDiffXd.
 GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   const RollPitchYaw<double> rpy(0.2, 0.3, 0.4);
