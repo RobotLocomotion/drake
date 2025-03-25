@@ -262,6 +262,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.SetCameraPose(camera_in_world=[3, 4, 5],
                               target_in_world=[1, 1, 1])
         meshcat.AddButton(name="alice", keycode="KeyB")
+        self.assertEqual(meshcat.GetButtonNames(), ["alice"])
         self.assertEqual(meshcat.GetButtonClicks(name="alice"), 0)
         meshcat._InjectWebsocketMessage(message=umsgpack.packb({
             "type": "button",
