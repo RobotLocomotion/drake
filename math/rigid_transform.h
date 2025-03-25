@@ -292,6 +292,159 @@ class RigidTransform {
     set(RotationMatrix<T>(pose.linear()), pose.translation());
   }
 
+  /// (Advanced) Create an axial transform aX_AB consisting of only an axial
+  /// rotation of `theta` radians about x, y, or z and no translation.
+  /// @param[in] theta the rotation angle.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static RigidTransform<T> MakeAxialRotation(const T& theta) {
+    if constexpr (axis == 0)
+      return RigidTransform<T>(RotationMatrix<T>::MakeXRotation(theta));
+    if constexpr (axis == 1)
+      return RigidTransform<T>(RotationMatrix<T>::MakeYRotation(theta));
+    if constexpr (axis == 2)
+      return RigidTransform<T>(RotationMatrix<T>::MakeZRotation(theta));
+  }
+
+  /// (Advanced) We're given an axial transform aX_BC (just an axial
+  /// rotation and no translation). Use that to efficiently re-express a
+  /// given vector.
+  /// @param[in] aX_BC the axial transform to be applied.
+  /// @param[in] v_C the vector to be transformed (just re-expressed here).
+  /// @retval v_B the input vector, now re-expressed in B.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @pre aX_BC.rotation() is _exactly_ a rotation about the given axis and
+  ///   aX_BC.translation() is _exactly_ zero (constant entries are all 0s and
+  ///   1s).
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static Vector3<T> ApplyAxialRotation(const RigidTransform<T>& aX_BC,
+                                       const Vector3<T>& v_C) {
+    DRAKE_ASSERT(aX_BC.translation() == Vector3<T>::Zero());
+    return RotationMatrix<T>::template ApplyAxialRotation<axis>(
+        aX_BC.rotation(), v_C);
+  }
+
+  /// (Advanced) Efficiently update a transform that we know is just an axial
+  /// rotation and no translation, given a new rotation angle θ. Only 4 of the
+  /// 12 entries need to be updated.
+  /// @param[in] theta The rotation angle in radians.
+  /// @param[in,out] aX_BC The previous value of an axial transform about this
+  ///   same `axis`. Updated on output.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @see the other signature if you already have sin(θ) and cos(θ).
+  /// @pre aX_BC.rotation() is _exactly_ a rotation about the given axis and
+  ///   aX_BC.translation() is _exactly_ zero (constant entries are all 0s and
+  ///   1s).
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static void UpdateAxialRotation(const T& theta, RigidTransform<T>* aX_BC) {
+    DRAKE_ASSERT(aX_BC != nullptr);
+    DRAKE_ASSERT(aX_BC->translation() == Vector3<T>::Zero());
+    RotationMatrix<T>::template UpdateAxialRotation<axis>(theta, &aX_BC->R_AB_);
+  }
+
+  /// (Advanced) Alternate signature for when you already have sin(θ) and
+  /// cos(θ).
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @pre arguments must be sine and cosine of the same angle.
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static void UpdateAxialRotation(const T& sin_theta, const T& cos_theta,
+                                  RigidTransform<T>* aX_BC) {
+    DRAKE_ASSERT(aX_BC != nullptr);
+    DRAKE_ASSERT(aX_BC->translation() == Vector3<T>::Zero());
+    RotationMatrix<T>::template UpdateAxialRotation<axis>(sin_theta, cos_theta,
+                                                          &aX_BC->R_AB_);
+  }
+
+  /// (Advanced) With `this` a general transform X_AB, given an axial transform
+  /// aX_BC (known to consist only of an axial rotation and no translation),
+  /// efficiently form X_AC.
+  /// @param[in] aX_BC A transform that is only a rotation about the indicated
+  ///   axis.
+  /// @param[out] X_AC The result. Must not overlap with aX_BC in memory.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @pre aX_BC.rotation() is _exactly_ an axial rotation about the given axis
+  ///   and aX_BC.translation() is _exactly_ zero (constant entries are all 0s
+  ///   and 1s).
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  void ComposeWithAxialRotation(const RigidTransform<T>& aX_BC,
+                                RigidTransform<T>* X_AC) const {
+    DRAKE_ASSERT(X_AC != nullptr);
+    DRAKE_ASSERT(aX_BC.translation() == Vector3<T>::Zero());
+    // 14 flops rather than 63.
+    rotation().template ComposeWithAxialRotation<axis>(aX_BC.rotation(),
+                                                       &X_AC->R_AB_);
+    X_AC->set_translation(p_AoBo_A_);  // unchanged
+  }
+
+  /// (Advanced) Compose `this` general transform X_AB with a given
+  /// axial translation-only transform atX_BC to efficiently calculate
+  /// X_AC = X_AB * atX_BC.
+  /// @param[in] atX_BC the axial translation-only transform.
+  /// @param[out] X_AC preallocated space for the result.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
+  /// @pre The rotation part of atX_BC is exactly identity, and only
+  ///   a single entry in the translation vector is non zero (the one
+  ///   corresponding to `axis`).
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  void ComposeWithAxialTranslation(const RigidTransform<T>& atX_BC,
+                                   RigidTransform<T>* X_AC) const {
+    DRAKE_ASSERT(X_AC != nullptr);
+    DRAKE_ASSERT(atX_BC.rotation().IsExactlyIdentity());
+    const Eigen::Vector3<T>& p_BC = atX_BC.translation();
+    DRAKE_ASSERT(p_BC[(axis + 1) % 3] == 0 && p_BC[(axis + 2) % 3] == 0);
+    X_AC->set_rotation(R_AB_);  // unchanged
+    // 8 flops rather than 63.
+    X_AC->set_translation(p_AoBo_A_ + p_BC[axis] * R_AB_.col(axis));
+  }
+
+  /// (Advanced) Compose `this` general transform X_AB with a given
+  /// rotation-only transform rX_BC to efficiently calculate
+  /// X_AC = X_AB * rX_BC.
+  /// @param[in] rX_BC the rotation-only transform.
+  /// @param[out] X_AC preallocated space for the result.
+  /// @pre The translation part of rX_BC is exactly zero.
+  void ComposeWithRotation(const RigidTransform<T>& rX_BC,
+                           RigidTransform<T>* X_AC) const {
+    DRAKE_ASSERT(X_AC != nullptr);
+    DRAKE_ASSERT(rX_BC.translation() == Vector3<T>::Zero());
+    // 45 flops rather than 63 (nothing to write home about).
+    X_AC->set_rotation(R_AB_ * rX_BC.rotation());
+    X_AC->set_translation(p_AoBo_A_);  // unchanged
+  }
+
+  /// (Advanced) Compose `this` general transform X_AB with a given
+  /// translation-only transform tX_BC to efficiently calculate
+  /// X_AC = X_AB * tX_BC.
+  /// @param[in] tX_BC the translation-only transform.
+  /// @param[out] X_AC preallocated space for the result.
+  /// @pre The rotation part of tX_BC is exactly identity.
+  void ComposeWithTranslation(const RigidTransform<T>& tX_BC,
+                              RigidTransform<T>* X_AC) const {
+    DRAKE_ASSERT(X_AC != nullptr);
+    DRAKE_ASSERT(tX_BC.rotation().IsExactlyIdentity());
+    X_AC->set_rotation(R_AB_);  // unchanged
+    // 18 flops rather than 63.
+    X_AC->set_translation(p_AoBo_A_ + R_AB_ * tX_BC.translation());
+  }
+
   /// Creates a %RigidTransform templatized on a scalar type U from a
   /// %RigidTransform templatized on scalar type T.  For example,
   /// ```
