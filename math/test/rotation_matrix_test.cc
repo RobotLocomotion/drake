@@ -700,6 +700,65 @@ GTEST_TEST(RotationMatrix, ProjectToRotationMatrix) {
   EXPECT_TRUE(R.inverse().IsNearlyEqualTo(R.transpose(), 8 * kEpsilon));
 }
 
+// Test special case routines for working with rotation matrices that involve
+// only axial rotations. These should produce the same answers as the general
+// functions. These functions all have the precondition that the given operands
+// have the expected structure, but they don't necessarily check that
+// precondition so there aren't any error tests here.
+GTEST_TEST(RotationMatrix, SpecializedRotationOperators) {
+  using Rmat = RotationMatrixd;          // For less clutter below.
+  constexpr double kTol = 4 * kEpsilon;  // Allow for differing implementations.
+
+  // Make axial rotations.
+  const double theta = 0.234;
+  const Rmat Rx_BC(Rmat::MakeXRotation(theta));
+  const Rmat Ry_BC(Rmat::MakeYRotation(theta));
+  const Rmat Rz_BC(Rmat::MakeZRotation(theta));
+
+  // Test ApplyAxialRotation().
+  const Vector3d v_C(1.0, 2.0, 3.0);
+  Vector3d v_B;  // reusable result
+  EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<0>(Rx_BC, v_C),
+                              Rx_BC * v_C, kTol));
+  EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<1>(Ry_BC, v_C),
+                              Ry_BC * v_C, kTol));
+  EXPECT_TRUE(CompareMatrices(Rmat::ApplyAxialRotation<2>(Rz_BC, v_C),
+                              Rz_BC * v_C, kTol));
+
+  // Test UpdateAxialRotation().
+  Rmat R_BC_update = Rx_BC;
+  Rmat::UpdateAxialRotation<0>(2 * theta, &R_BC_update);
+  EXPECT_TRUE(
+      R_BC_update.IsNearlyEqualTo(Rmat::MakeXRotation(2 * theta), kTol));
+  R_BC_update = Ry_BC;
+  Rmat::UpdateAxialRotation<1>(3 * theta, &R_BC_update);
+  EXPECT_TRUE(
+      R_BC_update.IsNearlyEqualTo(Rmat::MakeYRotation(3 * theta), kTol));
+  R_BC_update = Rz_BC;
+  Rmat::UpdateAxialRotation<2>(4 * theta, &R_BC_update);
+  EXPECT_TRUE(
+      R_BC_update.IsNearlyEqualTo(Rmat::MakeZRotation(4 * theta), kTol));
+
+  // Sanity check that the alternate signature that takes sine & cosine
+  // produces the same result (the angle signature tested above just calls
+  // this one).
+  R_BC_update = Rz_BC;
+  Rmat::UpdateAxialRotation<2>(std::sin(5 * theta), std::cos(5 * theta),
+                               &R_BC_update);
+  EXPECT_TRUE(
+      R_BC_update.IsNearlyEqualTo(Rmat::MakeZRotation(5 * theta), kTol));
+
+  // Test ComposeWithAxialRotation().
+  const Rmat R_AB(RollPitchYaw(1.0, 2.0, 3.0));
+  Rmat R_AC;  // reusable result
+  R_AB.ComposeWithAxialRotation<0>(Rx_BC, &R_AC);
+  EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * Rx_BC, kTol));
+  R_AB.ComposeWithAxialRotation<1>(Ry_BC, &R_AC);
+  EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * Ry_BC, kTol));
+  R_AB.ComposeWithAxialRotation<2>(Rz_BC, &R_AC);
+  EXPECT_TRUE(R_AC.IsNearlyEqualTo(R_AB * Rz_BC, kTol));
+}
+
 // Test RotationMatrix cast method from double to AutoDiffXd.
 GTEST_TEST(RotationMatrix, CastFromDoubleToAutoDiffXd) {
   const RollPitchYaw<double> rpy(0.2, 0.3, 0.4);
@@ -1449,6 +1508,17 @@ GTEST_TEST(MakeClosestRotationToIdentityFromUnitZTest, ThrowCondition) {
           nonunit_vector),
       "MakeClosestRotationToIdentityFromUnitZ.* The unit_vector argument .* "
       "is not a unit vector.[^]*");
+}
+
+GTEST_TEST(UpdateAxialRotationTest, PerAxisTest) {
+  RotationMatrixd Rx, Ry, Rz;  // identity
+  RotationMatrixd::UpdateAxialRotation<0>(1.0, &Rx);
+  RotationMatrixd::UpdateAxialRotation<1>(1.0, &Ry);
+  // Use the alternate signature.
+  RotationMatrixd::UpdateAxialRotation<2>(std::sin(1.0), std::cos(1.0), &Rz);
+  EXPECT_TRUE(Rx.IsExactlyEqualTo(RotationMatrixd::MakeXRotation(1.0)));
+  EXPECT_TRUE(Ry.IsExactlyEqualTo(RotationMatrixd::MakeYRotation(1.0)));
+  EXPECT_TRUE(Rz.IsExactlyEqualTo(RotationMatrixd::MakeZRotation(1.0)));
 }
 
 }  // namespace
