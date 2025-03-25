@@ -36,16 +36,14 @@ chrpath()
     done
 }
 
-# Helper function to copy the copyright text from an Ubuntu package into the
-# wheel's documentation.
-copy_ubuntu_license()
+# Helper function to copy the imported copyright text into the wheel's
+# documentation.
+copy_license()
 {
     package_name=$1
     mkdir -p ${WHEEL_DIR}/pydrake/doc/${package_name}
-    # TODO(jwnimmer-tri) Is there a simple way to install something slightly
-    # more direct (e.g., LICENSE text itself) instead of the copyright file?
-    cp /usr/share/doc/${package_name}/copyright \
-        ${WHEEL_DIR}/pydrake/doc/${package_name}/copyright
+    cp -t ${WHEEL_DIR}/pydrake/doc/${package_name}/ \
+        /opt/drake-wheel-licenses/${package_name}/copyright
 }
 
 ###############################################################################
@@ -89,7 +87,7 @@ if [[ "$(uname)" == "Linux" ]]; then
     # The drake/tools/wheel/test/tests/libs-test.py must be kept in sync with
     # this list. To maintain that correspondence, the _ALLOWED_LIBS entry seen
     # in that test program is added as comment to the end of each line below.
-    copy_ubuntu_license libgfortran5   # libgfortran, libquadmath, libgomp
+    copy_license gcc  # libgfortran, libgomp, libquadmath
 fi
 
 cp -r -t ${WHEEL_SHARE_DIR}/drake \
