@@ -1,3 +1,4 @@
+import glob
 import platform
 import os
 import subprocess
@@ -34,13 +35,21 @@ def add_library_paths(parameters=None):
         if parameters is not None and completed_process.returncode == 0:
             sdkroot = completed_process.stdout.strip()
             if os.path.exists(sdkroot):
-                parameters.append('-isysroot')
-                parameters.append(sdkroot)
+                parameters += ['-isysroot', sdkroot]
     elif platform.system() == 'Linux':
         # We expect Clang 15 to be installed.
         version = 15
         arch = platform.machine()
-        library_file = f'/usr/lib/{arch}-linux-gnu/libclang-{version}.so'
+        llvm_root = f'/usr/lib64/llvm{version}'
+        if os.path.exists(llvm_root):
+            # Looks like AlmaLinux (or Red Hat, Fedora, etc.).
+            library_file = f'{llvm_root}/lib/libclang.so'
+            cppinclude = glob.glob(f'{llvm_root}/lib/clang/*/include')
+            if len(cppinclude) == 1:
+                parameters += ['-isystem', cppinclude[0]]
+        else:
+            # Hope it's Ubuntu...
+            library_file = f'/usr/lib/{arch}-linux-gnu/libclang-{version}.so'
     if not os.path.exists(library_file):
         raise RuntimeError(f'Library file {library_file} does NOT exist')
     cindex.Config.set_library_file(library_file)
