@@ -19,12 +19,12 @@ any other citations to it (e.g., in PYTHONPATH). -->
 The following table shows the configurations that Drake
 officially supports:
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | End of life ⁽⁴⁾ | C/C++ Compiler ⁽⁵⁾       | Std ⁽⁵⁾|
-|------------------------------------|--------------|------------|-----------------|--------------------------|--------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      | GCC 11                   | C++20  |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      | GCC 13                   | C++20  |
-| macOS Sonoma (14)                  | arm64        | 3.12 ⁽³⁾   | October 2025    | Apple LLVM 16 (Xcode 16) | C++20  |
-| macOS Sequoia (15)                 | arm64        | 3.12 ⁽³⁾   | October 2026    | Apple LLVM 16 (Xcode 16) | C++20  |
+| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | End of life ⁽⁴⁾ |
+|------------------------------------|--------------|------------|-----------------|
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      |
+| macOS Sonoma (14)                  | arm64        | 3.12 ⁽³⁾   | October 2025    |
+| macOS Sequoia (15)                 | arm64        | 3.12 ⁽³⁾   | October 2026    |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -53,8 +53,19 @@ timeline for changing which Python versions are supported.
 ⁽⁴⁾ These end-of-life dates are estimates.
 Refer to [OS Support](/stable.html#os-support) for details.
 
-⁽⁵⁾ Applicable if you are compiling your own C++ code against Drake's C++ code
-and are using Drake's pre-compiled binaries.
+The following table shows the configurations that *must* be used when
+compiling your own C++ code against Drake's C++ code using one of
+Drake's pre-compiled binaries:
+
+| Operating System                   | C/C++ Compiler           | Std   |
+|------------------------------------|--------------------------|-------|
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | GCC 11                   | C++20 |
+| Ubuntu 24.04 LTS (Noble Numbat)    | GCC 13                   | C++20 |
+| macOS Sonoma (14)                  | Apple LLVM 16 (Xcode 16) | C++20 |
+| macOS Sequoia (15)                 | Apple LLVM 16 (Xcode 16) | C++20 |
+
+Any other configuration not listed here will lead to undefined behavior
+(as a violation of the C++ One-Definition Rule).
 
 ## Available Versions
 
