@@ -373,6 +373,8 @@ void DefineMeshcat(py::module m) {
             py::arg("keycode") = "", cls_doc.AddButton.doc)
         .def("GetButtonClicks", &Class::GetButtonClicks, py::arg("name"),
             cls_doc.GetButtonClicks.doc)
+        .def("GetButtonNames", &Class::GetButtonNames,
+            cls_doc.GetButtonNames.doc)
         .def("DeleteButton", &Class::DeleteButton, py::arg("name"),
             py::arg("strict") = true, cls_doc.DeleteButton.doc)
         .def("AddSlider", &Class::AddSlider, py::arg("name"), py::arg("min"),

@@ -1606,6 +1606,18 @@ class Meshcat::Impl {
     return iter->second.num_clicks;
   }
 
+  std::vector<std::string> GetButtonNames() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    std::vector<std::string> names;
+    names.reserve(buttons_.size());
+    for (const auto& [name, _] : buttons_) {
+      names.push_back(name);
+    }
+    return names;
+  }
+
   // This function is public via the PIMPL.
   bool DeleteButton(std::string name, bool strict) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
@@ -2789,6 +2801,10 @@ void Meshcat::AddButton(std::string name, std::string keycode) {
 
 int Meshcat::GetButtonClicks(std::string_view name) const {
   return impl().GetButtonClicks(name);
+}
+
+std::vector<std::string> Meshcat::GetButtonNames() const {
+  return impl().GetButtonNames();
 }
 
 bool Meshcat::DeleteButton(std::string name, bool strict) {
