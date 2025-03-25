@@ -873,6 +873,7 @@ GTEST_TEST(MeshcatTest, Buttons) {
 
   // A new button starts out unclicked.
   meshcat.AddButton("alice");
+  EXPECT_THAT(meshcat.GetButtonNames(), ElementsAre("alice"));
   EXPECT_EQ(meshcat.GetButtonClicks("alice"), 0);
 
   auto click = [&meshcat]() {
@@ -898,6 +899,7 @@ GTEST_TEST(MeshcatTest, Buttons) {
 
   // Removing the button then asking for clicks is an error.
   EXPECT_TRUE(meshcat.DeleteButton("alice"));
+  EXPECT_EQ(meshcat.GetButtonNames().size(), 0);
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.GetButtonClicks("alice"),
                               "Meshcat does not have any button named alice.*");
 
@@ -912,11 +914,13 @@ GTEST_TEST(MeshcatTest, Buttons) {
 
   // Buttons are removed when deleting all controls.
   meshcat.AddButton("bob");
+  EXPECT_THAT(meshcat.GetButtonNames(), ElementsAre("alice", "bob"));
   meshcat.DeleteAddedControls();
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.GetButtonClicks("alice"),
                               "Meshcat does not have any button named alice.*");
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.GetButtonClicks("bob"),
                               "Meshcat does not have any button named bob.*");
+  EXPECT_EQ(meshcat.GetButtonNames().size(), 0);
 
   // Adding a button with the keycode.
   meshcat.AddButton("alice", "KeyT");
