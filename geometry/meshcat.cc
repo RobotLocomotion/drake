@@ -1606,6 +1606,7 @@ class Meshcat::Impl {
     return iter->second.num_clicks;
   }
 
+  // This function is public via the PIMPL.
   std::vector<std::string> GetButtonNames() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
@@ -1752,6 +1753,7 @@ class Meshcat::Impl {
     return iter->second.value;
   }
 
+  // This function is public via the PIMPL.
   std::vector<std::string> GetSliderNames() const {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
