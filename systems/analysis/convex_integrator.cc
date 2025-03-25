@@ -2,7 +2,7 @@
 
 #include "drake/common/timer.h"
 #include "drake/multibody/contact_solvers/newton_with_bisection.h"
-#include "drake/multibody/contact_solvers/sap/sap_dummy_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_external_system_constraint.h"
 #include "drake/multibody/contact_solvers/sap/sap_hunt_crossley_constraint.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/geometry_contact_data.h"
@@ -22,7 +22,7 @@ using multibody::contact_solvers::internal::DoNewtonWithBisectionFallback;
 using multibody::contact_solvers::internal::MakeContactConfiguration;
 using multibody::contact_solvers::internal::MatrixBlock;
 using multibody::contact_solvers::internal::SapConstraintJacobian;
-using multibody::contact_solvers::internal::SapDummyConstraint;
+using multibody::contact_solvers::internal::SapExternalSystemConstraint;
 using multibody::contact_solvers::internal::SapHessianFactorizationType;
 using multibody::contact_solvers::internal::SapHuntCrossleyApproximation;
 using multibody::contact_solvers::internal::SapHuntCrossleyConstraint;
@@ -870,19 +870,24 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // contact constraints (point contact + hydro)
   AddContactConstraints(context, &problem);
 
-  // ensure all DoFs are participating
-  AddDummyConstraints(&problem);
+  // External system constraints
+  AddExternalSystemConstraints(A_tilde, tau0, &problem);
 
   return problem;
 }
 
 template <typename T>
-void ConvexIntegrator<T>::AddDummyConstraints(
+void ConvexIntegrator<T>::AddExternalSystemConstraints(
+    const MatrixX<T>& A_tilde, const VectorX<T>& tau0,
     SapContactProblem<T>* problem) const {
   for (int c = 0; c < problem->num_cliques(); ++c) {
     const int nv = problem->num_velocities(c);
     if (nv > 0) {
-      problem->AddConstraint(std::make_unique<SapDummyConstraint<T>>(c, nv));
+      // TODO: get block of A_tilde corresponding to this clique
+      (void)A_tilde;
+      (void)tau0;
+      problem->AddConstraint(
+          std::make_unique<SapExternalSystemConstraint<T>>(c, nv));
     }
   }
 }

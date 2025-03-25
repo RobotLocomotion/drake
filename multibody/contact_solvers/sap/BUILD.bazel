@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":sap_coupler_constraint",
         ":sap_distance_constraint",
         ":sap_dummy_constraint",
+        ":sap_external_system_constraint",
         ":sap_fixed_constraint",
         ":sap_friction_cone_constraint",
         ":sap_holonomic_constraint",
@@ -243,6 +244,18 @@ drake_cc_library(
 drake_cc_library(
     name = "sap_dummy_constraint",
     hdrs = ["sap_dummy_constraint.h"],
+    deps = [
+        ":sap_constraint",
+        ":sap_constraint_jacobian",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "sap_external_system_constraint",
+    srcs = ["sap_external_system_constraint.cc"],
+    hdrs = ["sap_external_system_constraint.h"],
     deps = [
         ":sap_constraint",
         ":sap_constraint_jacobian",

@@ -174,10 +174,13 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void AddContactConstraints(const Context<T>& context,
                              SapContactProblem<T>* problem);
 
-  // Adds dummy constraints to the SAP problem. These do nothing, but ensure
-  // that all DoFs are participating and the size of the problem won't vary
-  // between time steps.
-  void AddDummyConstraints(SapContactProblem<T>* problem) const;
+  // Adds external system constraints to the SAP problem. This includes
+  // linearizes the external system around the current state in order to treat
+  // arbitrary controllers as implicitly as possible (modulo SAP SPD
+  // requirements).
+  void AddExternalSystemConstraints(const MatrixX<T>& A_tilde,
+                                    const VectorX<T>& tau0,
+                                    SapContactProblem<T>* problem) const;
 
   // Compute signed distances and jacobians. While we store this in a
   // DiscreteContactData struct (basically copying DiscreteUpdateManager), this
