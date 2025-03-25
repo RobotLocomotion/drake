@@ -5,6 +5,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
+#include "drake/math/autodiff.h"
 
 namespace drake {
 namespace multibody {
@@ -14,6 +15,15 @@ namespace internal {
 using multibody::SpatialForce;
 using multibody::contact_solvers::internal::SapConstraint;
 using multibody::contact_solvers::internal::SapConstraintJacobian;
+
+/* Structure to store data for the external system constraint. */
+template <typename T>
+struct SapExternalSystemConstraintData {
+    VectorX<T> v;        // Constraint velocity
+    T cost{};            // Cost ℓ(v)
+    VectorX<T> impulse;  // Impulse γ(v) = −∂ℓ(v)/∂v.
+    MatrixX<T> hessian;  // Hessian G = −∂γ(v)/∂v = ∂²ℓ(v)/∂v².
+};
 
 /**
  * Defines an external system constraint τ = τ₀ − Ãv.
@@ -30,7 +40,8 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
   SapExternalSystemConstraint& operator=(SapExternalSystemConstraint&&) = delete;
   //@}
 
-  SapExternalSystemConstraint(int clique, int nv);
+  SapExternalSystemConstraint(int clique, int nv, const MatrixX<T>& A_tilde,
+                              const VectorX<T>& tau0);
 
  private:
   /* Private copy construction is enabled to use in the implementation of
@@ -43,8 +54,10 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
   }
   std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
     return std::unique_ptr<SapExternalSystemConstraint<double>>(
-        new SapExternalSystemConstraint<double>(this->clique(0),
-                                                this->num_velocities(0)));
+        new SapExternalSystemConstraint<double>(
+            this->clique(0), this->num_velocities(0),
+            math::DiscardGradient(this->A_tilde_),
+            math::DiscardGradient(this->tau0_)));
   }
   
   /* Implementations of SapConstraint NVI functions. */
@@ -68,6 +81,10 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
 
   // Constraint Jacobian for this constraint.
   static SapConstraintJacobian<T> MakeConstraintJacobian(int clique, int nv);
+
+  // Constraint parameters
+  const MatrixX<T> A_tilde_;  // Linearized dynamics matrix
+  const VectorX<T> tau0_;     // Explicit external forces
 
 };
 

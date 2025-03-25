@@ -883,11 +883,18 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
   for (int c = 0; c < problem->num_cliques(); ++c) {
     const int nv = problem->num_velocities(c);
     if (nv > 0) {
-      // TODO: get block of A_tilde corresponding to this clique
-      (void)A_tilde;
-      (void)tau0;
-      problem->AddConstraint(
-          std::make_unique<SapExternalSystemConstraint<T>>(c, nv));
+      const int c_start = problem->velocities_start(c);
+      const MatrixX<T> A_block = A_tilde.block(c_start, c_start, nv, nv);
+      const VectorX<T> tau_block = tau0.segment(c_start, nv);
+
+      fmt::print("Clique {}:\n", c);
+      fmt::print("A_block:\n{}\n", fmt_eigen(A_block));
+      fmt::print("tau_block:\n{}\n", fmt_eigen(tau_block.transpose()));
+      fmt::print("\n");
+      getchar();
+
+      problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
+          c, nv, A_block, tau_block));
     }
   }
 }
