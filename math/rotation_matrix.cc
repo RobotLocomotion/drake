@@ -243,6 +243,27 @@ RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
 }
 
 template <typename T>
+template <int axis>
+  requires(0 <= axis && axis <= 2)
+void RotationMatrix<T>::IsAxialRotationOrThrow() const {
+  constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
+  DRAKE_THROW_UNLESS(R_AB_(x, x) == 1 && R_AB_(x, y) == 0 && R_AB_(x, z) == 0 &&
+                     R_AB_(y, x) == 0 && R_AB_(z, x) == 0);
+  if constexpr (scalar_predicate<T>::is_bool) {  // double or AutoDiffScalar
+    using std::abs;
+    // Make a reasonably tolerant check on sin(θ) and cos(θ) values.
+    const double kTol = 16 * std::numeric_limits<double>::epsilon();
+    // Here is what we expect to find in the significant elements.
+    const double s = ExtractDoubleOrThrow(R_AB_(z, y));   // sine
+    const double ns = ExtractDoubleOrThrow(R_AB_(y, z));  // -sine
+    const double c = ExtractDoubleOrThrow(R_AB_(y, y));   // cosine
+    const double c2 = ExtractDoubleOrThrow(R_AB_(z, z));  // also cosine
+    DRAKE_THROW_UNLESS(abs(c - c2) <= kTol && abs(s + ns) <= kTol);
+    DRAKE_THROW_UNLESS(std::abs(s * s + c * c - 1.0) <= kTol);
+  }
+}
+
+template <typename T>
 Matrix3<T> RotationMatrix<T>::QuaternionToRotationMatrix(
     const Eigen::Quaternion<T>& quaternion, const T& two_over_norm_squared) {
   ThrowIfAllElementsInQuaternionAreZero(quaternion, __func__);
@@ -408,6 +429,26 @@ Eigen::Quaternion<T> RotationMatrix<T>::ToQuaternion(
   DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, 2.0)));
   return q;
 }
+
+template <typename T>
+void RotationMatrix<T>::SinCosConsistencyOrThrow(const T& sin_theta,
+                                                 const T& cos_theta) {
+  if constexpr (scalar_predicate<T>::is_bool) {  // double or AutoDiffScalar
+    using std::abs;
+    // Make a reasonably tolerant check on sin(θ) and cos(θ) values.
+    const double kTol = 16 * std::numeric_limits<double>::epsilon();
+    const double s = ExtractDoubleOrThrow(sin_theta);
+    const double c = ExtractDoubleOrThrow(cos_theta);
+    DRAKE_THROW_UNLESS(std::abs(s * s + c * c - 1.0) <= kTol);
+  } else {  // symbolic
+    unused(sin_theta, cos_theta);
+  }
+}
+
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    (&RotationMatrix<T>::template IsAxialRotationOrThrow<0>,
+     &RotationMatrix<T>::template IsAxialRotationOrThrow<1>,
+     &RotationMatrix<T>::template IsAxialRotationOrThrow<2>));
 
 }  // namespace math
 }  // namespace drake
