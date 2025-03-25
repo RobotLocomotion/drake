@@ -841,11 +841,11 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
     tau0.setZero();
   }
 
-  // linearized dynamics matrix A = M + hD + Ã
+  // linearized dynamics matrix A = M + hD
   plant().CalcMassMatrix(context, &M);
   A_dense = M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
-  A_dense += A_tilde;
+  // A_dense += A_tilde;
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
@@ -856,7 +856,7 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // free-motion velocities v* = A^{-1}(M * v0 - h k0 + h B u0)
   // TODO(vincekurtz): consider using a sparse solve here
   plant().CalcForceElementsContribution(context, &f_ext);
-  f_ext.mutable_generalized_forces() += tau0;
+  //f_ext.mutable_generalized_forces() += tau0;
   k = plant().CalcInverseDynamics(
       context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
   const VectorX<T>& v0 = plant().GetVelocities(context);
@@ -887,11 +887,11 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
       const MatrixX<T> A_block = A_tilde.block(c_start, c_start, nv, nv);
       const VectorX<T> tau_block = tau0.segment(c_start, nv);
 
-      fmt::print("Clique {}:\n", c);
-      fmt::print("A_block:\n{}\n", fmt_eigen(A_block));
-      fmt::print("tau_block:\n{}\n", fmt_eigen(tau_block.transpose()));
-      fmt::print("\n");
-      getchar();
+      // fmt::print("Clique {}:\n", c);
+      // fmt::print("A_block:\n{}\n", fmt_eigen(A_block));
+      // fmt::print("tau_block:\n{}\n", fmt_eigen(tau_block.transpose()));
+      // fmt::print("\n");
+      // getchar();
 
       problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
           c, nv, A_block, tau_block));

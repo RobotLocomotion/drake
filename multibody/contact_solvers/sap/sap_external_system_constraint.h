@@ -19,6 +19,8 @@ using multibody::contact_solvers::internal::SapConstraintJacobian;
 /* Structure to store data for the external system constraint. */
 template <typename T>
 struct SapExternalSystemConstraintData {
+    T time_step{};  // Time step for the simulation
+
     VectorX<T> v;        // Constraint velocity
     T cost{};            // Cost ℓ(v)
     VectorX<T> impulse;  // Impulse γ(v) = −∂ℓ(v)/∂v.
