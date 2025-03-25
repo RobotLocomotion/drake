@@ -237,6 +237,7 @@ can look into the question.
 # Local Development Notes
 
 * [Developing Drake Using Bazel](/bazel.html)
+* [Developing Drake on macOS](/development_on_mac.html)
 
 # Continuous Integration Notes
 
@@ -264,10 +265,6 @@ can look into the question.
 * [Sublime Text Notes](/sublime_text.html)
 * [Unicode Tips & Tricks](/unicode_tips_tricks.html)
 * [Vim/Neovim Notes](/vim.html)
-
-# Operating System Notes
-
-* [Drake Development on macOS](/development_on_mac.html)
 
 # Programming Style Notes
 

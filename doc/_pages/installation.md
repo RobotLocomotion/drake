@@ -16,15 +16,15 @@ CMakeLists.txt and tools/workspace/python/repository.bzl. When any Python
 version changes, also be sure to grep the full body of documentation to find
 any other citations to it (e.g., in PYTHONPATH). -->
 
-The following table shows the configurations, platforms, and compilers that Drake
+The following table shows the configurations that Drake
 officially supports:
 
-| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | End of life ⁽⁴⁾ | C/C++ Compiler ⁽⁵⁾       | Std   |
-|------------------------------------|--------------|------------|-----------------|--------------------------|-------|
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      | GCC 11                   | C++20 |
-| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      | GCC 13                   | C++20 |
-| macOS Sonoma (14)                  | arm64        | 3.12 ⁽³⁾   | October 2025    | Apple LLVM 16 (Xcode 16) | C++20 |
-| macOS Sequoia (15)                 | arm64        | 3.12 ⁽³⁾   | October 2026    | Apple LLVM 16 (Xcode 16) | C++20 |
+| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | End of life ⁽⁴⁾ | C/C++ Compiler ⁽⁵⁾       | Std ⁽⁵⁾|
+|------------------------------------|--------------|------------|-----------------|--------------------------|--------|
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   | March 2026      | GCC 11                   | C++20  |
+| Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12 ⁽³⁾   | March 2028      | GCC 13                   | C++20  |
+| macOS Sonoma (14)                  | arm64        | 3.12 ⁽³⁾   | October 2025    | Apple LLVM 16 (Xcode 16) | C++20  |
+| macOS Sequoia (15)                 | arm64        | 3.12 ⁽³⁾   | October 2026    | Apple LLVM 16 (Xcode 16) | C++20  |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
@@ -77,7 +77,7 @@ The following installation methods are available for Drake's
 pre-compiled binaries.
 Stable and nightly release versions are available for each method.
 
-* [pip](/pip.html) (only supports Python)
+* [Pip](/pip.html) (only supports Python)
 * [APT](/apt.html) (only supports Ubuntu)
 * [Binary (`*.tar.gz`) download](/from_binary.html)
 * [Docker Hub](/docker.html)
@@ -106,7 +106,8 @@ shows how to use Drake via pip.
 * The [`drake_poetry` example](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_poetry)
 shows how to use Drake via poetry.
 
-For further details, refer to the [Python API Documentation](/pydrake/index.html).
+For further details, refer to the
+[Python API Documentation](/pydrake/index.html).
 
 ## C++
 
@@ -119,4 +120,5 @@ shows how to use Drake via APT installation.
 * The [`drake_cmake_installed` example](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed)
 shows how to use Drake via binary (`tar.gz`) installation.
 
-For further details, refer to the [C++ API Documentation](/doxygen_cxx/index.html).
+For further details, refer to the
+[C++ API Documentation](/doxygen_cxx/index.html).

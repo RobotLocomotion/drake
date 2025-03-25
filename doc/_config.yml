@@ -41,7 +41,7 @@ custom:
           url: '/from_binary.html'
         - page: 'Docker Hub'
           url: '/docker.html'
-        - page: 'Source'
+        - page: 'Build From Source'
           url: '/from_source.html'
       - title: 'Gallery'
         url: '/gallery.html'

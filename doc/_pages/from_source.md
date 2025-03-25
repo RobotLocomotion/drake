@@ -32,9 +32,9 @@ notice regressions, so if it doesn't work for you then please file a bug report.
 
 Unofficially, Drake is also likely to be compatible with newer versions of
 Ubuntu or macOS than what are listed, or with Ubuntu running on arm64, or
-with other versions of Python or Java. However, these are not supported so if it
-doesn't work for you then please file a pull request with the fix, not a bug
-report.
+with other versions of Python or Java. However, these are not supported
+so if it doesn't work for you then please file a pull request with the fix,
+not a bug report.
 
 All else being equal, we would recommend developers use Ubuntu 22.04 (Jammy).
 
@@ -96,9 +96,10 @@ Adjusting open-source dependencies:
   user-provided `LAPACK::LAPACK` library instead of building from source.
   * This option is not available on macOS.
   * When `ON`, `WITH_USER_BLAS` must also be `ON`.
-* `WITH_USER_ZLIB` (default `ON`). When `ON`, uses `find_package(ZLIB)` to locate a
-  user-provided `ZLIB::ZLIB` library instead of building from source.
-  * Caveat: on macOS, for now this hardcodes `-lz` instead of calling `find_package`.
+* `WITH_USER_ZLIB` (default `ON`). When `ON`, uses `find_package(ZLIB)` to
+  locate a user-provided `ZLIB::ZLIB` library instead of building from source.
+  * Caveat: on macOS, for now this hardcodes `-lz`
+    instead of calling `find_package`.
 * `WITH_CLARABEL` (default `ON`). When `ON`, enables the `ClarabelSolver`
   in the build.
 * `WITH_CLP` (default `ON`). When `ON`, enables the `ClpSolver` in the build.
@@ -110,25 +111,30 @@ Adjusting open-source dependencies:
 
 Adjusting closed-source (commercial) software dependencies:
 
-* `WITH_GUROBI` (default `OFF`). When `ON`, enables the `GurobiSolver` in the build.
+* `WITH_GUROBI` (default `OFF`).
+  When `ON`, enables the `GurobiSolver` in the build.
   * When enabled, you must download and install Gurobi 10.0 yourself prior to
     running Drake's CMake configure script; Drake does not automatically
     download Gurobi. If Gurobi is not installed to its standard location, you
     must also `export GUROBI_HOME=${...GUROBI_UNZIP_PATH...}/linux64`
     in your terminal so that `find_package(Gurobi)` will be able to find it.
-* `WITH_MOSEK` (default `OFF`). When `ON`, enables the `MosekSolver` in the build.
+* `WITH_MOSEK` (default `OFF`).
+  When `ON`, enables the `MosekSolver` in the build.
   * When enabled, Drake automatically downloads the MOSEK™ software from
     `mosek.com` and installs it as part of the Drake build. The selected
     version is hard-coded in Drake and cannot be configured.
-* `WITH_SNOPT` (default `OFF`). When `ON`, enables the `SnoptSolver` in the build.
+* `WITH_SNOPT` (default `OFF`).
+  When `ON`, enables the `SnoptSolver` in the build.
   * This option is mutally exclusive with `WITH_ROBOTLOCOMOTION_SNOPT`.
-* `SNOPT_PATH` (no default). When `WITH_SNOPT` is `ON`, this must be set to a SNOPT
-  source code archive path (e.g., `/home/user/Downloads/snopt7.4.tar.gz`) with
+* `SNOPT_PATH` (no default). When `WITH_SNOPT` is `ON`,
+  this must be set to a SNOPT source code archive path
+  (e.g., `/home/user/Downloads/snopt7.4.tar.gz`) with
   SNOPT version 7.4 (recommended) or version 7.6.
   * Drake does not support using a SNOPT binary release (i.e., shared library);
     it requires a source archive (i.e., the Fortran code).
-* `WITH_ROBOTLOCOMOTION_SNOPT` (default `OFF`). When `ON`, enables the `SnoptSolver`
-  in the build, using a hard-coded and access-controlled download of SNOPT.
+* `WITH_ROBOTLOCOMOTION_SNOPT` (default `OFF`).
+  When `ON`, enables the `SnoptSolver` in the build,
+  using a hard-coded and access-controlled download of SNOPT.
   * This option is only valid for MIT- or TRI-affiliated Drake developers.
   * This option is mutally exclusive with `WITH_SNOPT`.
 
@@ -144,9 +150,9 @@ version of Drake *on top of* the prior version. This will lead to disaster
 unless the set of installed filenames is exactly the same (because old files
 will be hanging around, e.g., polluting your PYTHONPATH). It is safe if you are
 merely tweaking a source code file and repeatedly installing, without any
-changes to the build system. For any kind of larger change (e.g., upgrading to a
-newer Drake), we strongly advise that you delete the prior tree (within the
-`install` sub-directory) before running `make`.
+changes to the build system. For any kind of larger change
+(e.g., upgrading to a newer Drake), we strongly advise that you delete the
+prior tree (within the `install` sub-directory) before running `make`.
 
 ## Running the Python Bindings after a CMake Install
 
@@ -181,9 +187,11 @@ a Bazel external. For sample projects that show how to import Drake as a Bazel
 external, please see our gallery of
 [external examples](https://github.com/RobotLocomotion/drake-external-examples).
 
-* The [`drake_bazel_external` example](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_external)
+* The
+[`drake_bazel_external` example](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_external)
 shows how to build Drake from source.
-* The [`drake_bazel_download` example](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_download)
+* The
+[`drake_bazel_download` example](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_download)
 shows how to download a precompiled release.
 
 When building Drake from source as a Bazel external, we offer flags for
@@ -194,8 +202,8 @@ If you enable any of proprietary solvers flags, then you must first install
 the solver and set environment variables per the
 [Proprietary Solvers](/bazel.html#proprietary-solvers) instructions.
 
-There is no way to install Drake from Bazel. To install Drake, use CMake (see
-above).
+There is no way to install Drake from Bazel. To install Drake, use CMake
+(see above).
 
 # Making Changes to Drake
 
