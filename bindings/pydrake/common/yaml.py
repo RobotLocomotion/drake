@@ -1,12 +1,12 @@
 import collections.abc
 import copy
 import dataclasses
-import math
 import functools
+import math
+from pathlib import Path
 import types
 import typing
 import warnings
-from pathlib import Path
 
 import numpy as np
 import yaml
