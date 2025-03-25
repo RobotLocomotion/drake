@@ -274,13 +274,12 @@ GTEST_TEST(IntegratorBaseTest, Clone) {
   Eigen::Matrix2d A;
   A << 0.0, 1.0, 0.0, 0.0;
   LinearSystem<double> system(A);
-  auto context = system.CreateDefaultContext();
 
   for (auto& scheme : GetIntegrationSchemes()) {
     // Create an original integrator corresponding to scheme.
     Simulator<double> tmp(system);
     auto& original = ResetIntegratorFromFlags(&tmp, scheme, 0.2);
-    original.reset_context(context.get());
+    original.reset_context(system.CreateDefaultContext());
     original.set_fixed_step_mode(true);
     if (original.supports_error_estimation()) {
       original.set_target_accuracy(1e-10);
@@ -290,8 +289,11 @@ GTEST_TEST(IntegratorBaseTest, Clone) {
     // Clone the integrator.
     auto integrator = original.Clone();
 
+    // The context should be cloned.
+    EXPECT_NE(integrator->get_mutable_context(), nullptr);
+    EXPECT_NE(&integrator->get_context(), &original.get_context());
+
     // Compare configuration parameters.
-    EXPECT_EQ(&integrator->get_context(), &original.get_context());
     EXPECT_EQ(&integrator->get_system(), &original.get_system());
     EXPECT_EQ(integrator->is_initialized(), original.is_initialized());
     EXPECT_EQ(integrator->supports_error_estimation(),
@@ -335,7 +337,7 @@ GTEST_TEST(IntegratorBaseTest, Clone) {
 
     // Cloning an unintialized integration should result in an unintialized
     // integrator.
-    original.reset_context(context.get());
+    original.reset_context(nullptr);
     EXPECT_FALSE(original.Clone()->is_initialized());
   }
 }

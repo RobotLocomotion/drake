@@ -212,7 +212,9 @@ PYBIND11_MODULE(analysis, m) {
           .def("get_mutable_context", &Class::get_mutable_context,
               // Keep alive, transitive: `return` keeps `self` alive.
               py::keep_alive<0, 1>(), cls_doc.get_mutable_context.doc)
-          .def("reset_context", &Class::reset_context, py::arg("context"),
+          .def("reset_context",
+              py::overload_cast<Context<T>*>(&Class::reset_context),
+              py::arg("context"),
               // Keep alive, reference: `context` keeps `self` alive.
               py::keep_alive<2, 1>(), cls_doc.reset_context.doc);
     }
