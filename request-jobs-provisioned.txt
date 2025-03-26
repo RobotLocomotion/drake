@@ -5,11 +5,9 @@
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-debug please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-release please
-@drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-release please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-thread-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-undefined-behavior-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-everything-valgrind-memcheck please
-@drake-jenkins-bot linux-jammy-clang-bazel-experimental-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-leak-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-thread-sanitizer please
 @drake-jenkins-bot linux-jammy-clang-bazel-experimental-undefined-behavior-sanitizer please
