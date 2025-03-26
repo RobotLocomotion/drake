@@ -866,12 +866,11 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // free-motion velocities v* = A^{-1}(M * v0 - h k0 + h τ₀)
   // TODO(vincekurtz): consider using a sparse solve here
   plant().CalcForceElementsContribution(context, &f_ext);
-  // f_ext.mutable_generalized_forces() += tau0;
   k = plant().CalcInverseDynamics(
       context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
   const VectorX<T>& v0 = plant().GetVelocities(context);
-  //v_star = A_dense.ldlt().solve(M * v0 - h * k + h * tau0);
-  v_star = A_dense.ldlt().solve(M * v0 - h * k);
+  v_star = A_dense.ldlt().solve(M * v0 - h * k + h * tau0);
+  // v_star = A_dense.ldlt().solve(M * v0 - h * k);
 
   // problem creation
   // TODO(vincekurtz): consider updating rather than recreating
@@ -898,12 +897,12 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
       const MatrixX<T> A_block = A_tilde.block(c_start, c_start, nv, nv);
       const VectorX<T> tau_block = tau0.segment(c_start, nv);
 
-      problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
-          c, nv, A_block, tau_block));
+      // problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
+      //     c, nv, A_block, tau_block));
 
-      // (void)A_block;
-      // (void)tau_block;
-      // problem->AddConstraint(std::make_unique<SapDummyConstraint<T>>(c, nv));
+      (void)A_block;
+      (void)tau_block;
+      problem->AddConstraint(std::make_unique<SapDummyConstraint<T>>(c, nv));
     }
   }
 }
@@ -1391,9 +1390,9 @@ void ConvexIntegrator<T>::GetGeneralizedForcesFromInputPorts(
 
   // Actuator forces, clipped to effort limits
   const VectorX<T> u = plant()
-                           .AssembleActuationInput(plant_context)
-                           .cwiseMin(effort_limits_)
-                           .cwiseMax(-effort_limits_);
+                           .AssembleActuationInput(plant_context);
+                          //  .cwiseMin(effort_limits_)
+                          //  .cwiseMax(-effort_limits_);
   forces->mutable_generalized_forces() = B * u;
 
   // External generalized forces

@@ -46,6 +46,12 @@ class ConvexIntegratorTester {
                                       VectorXd* u0) {
     integrator->LinearizeExternalSystem(h, K, u0);
   }
+
+  static SapContactProblem<double> MakeSapContactProblem(
+      ConvexIntegrator<double>* integrator, const Context<double>& context,
+      const double h) {
+    return integrator->MakeSapContactProblem(context, h);
+  }
 };
 
 // MJCF model of a simple double pendulum
@@ -305,17 +311,42 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   EXPECT_TRUE(
       CompareMatrices(tau, tau_ref, kTolerance, MatrixCompareType::relative));
 
-  // Simulate for a few seconds
-  const int fps = 32;
-  meshcat->StartRecording(fps);
-  //simulator.AdvanceTo(10.0);
-  simulator.AdvanceTo(h);
-  meshcat->StopRecording();
-  meshcat->PublishRecording();
+  // Compute the gradient of the cost, and check that this matches the momentum
+  // balance conditions, M(v − v*) + h Ã v − h τ₀ = 0.
+  const VectorXd v = v0;
+  MatrixXd M(nv, nv);
+  plant.CalcMassMatrix(plant_context, &M);
+  MultibodyForces<double> f_ext(plant);
+  plant.CalcForceElementsContribution(plant_context, &f_ext);
+  const VectorXd k =
+      plant.CalcInverseDynamics(plant_context, VectorXd::Zero(2), f_ext);
+  const VectorXd v_star = v0 - h * M.ldlt().solve(k);
+  const VectorXd dl_ref = M * (v - v_star) + h * A * v - h * tau;
 
-  std::cout << std::endl;
-  PrintSimulatorStatistics(simulator);
-  std::cout << std::endl;
+  fmt::print("dl_ref = {}\n", fmt_eigen(dl_ref.transpose()));
+
+  SapContactProblem<double> problem =
+      ConvexIntegratorTester::MakeSapContactProblem(&integrator, plant_context,
+                                                    h);
+  SapModel<double> model(&problem);
+  auto model_context = model.MakeContext();
+  Eigen::VectorBlock<VectorXd> v_model =
+      model.GetMutableVelocities(model_context.get());
+  model.velocities_permutation().Apply(v, &v_model);
+  const VectorXd dl = model.EvalCostGradient(*model_context);
+  fmt::print("dl = {}\n", fmt_eigen(dl.transpose()));
+
+  // // Simulate for a few seconds
+  // const int fps = 32;
+  // meshcat->StartRecording(fps);
+  // //simulator.AdvanceTo(10.0);
+  // simulator.AdvanceTo(h);
+  // meshcat->StopRecording();
+  // meshcat->PublishRecording();
+
+  // std::cout << std::endl;
+  // PrintSimulatorStatistics(simulator);
+  // std::cout << std::endl;
 }
 
 }  // namespace systems
