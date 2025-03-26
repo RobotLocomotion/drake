@@ -76,6 +76,12 @@ void ImplicitEulerIntegrator<T>::DoInitialize() {
 }
 
 template <class T>
+std::unique_ptr<ImplicitIntegrator<T>>
+ImplicitEulerIntegrator<T>::DoImplicitIntegratorClone() const {
+  return std::make_unique<ImplicitEulerIntegrator>(this->get_system());
+}
+
+template <class T>
 void ImplicitEulerIntegrator<T>::ComputeAndFactorImplicitEulerIterationMatrix(
     const MatrixX<T>& J, const T& h,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {

@@ -647,6 +647,12 @@ bool VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorStep(const T& h) {
   return true;
 }
 
+template <class T>
+std::unique_ptr<ImplicitIntegrator<T>>
+VelocityImplicitEulerIntegrator<T>::DoImplicitIntegratorClone() const {
+  return std::make_unique<VelocityImplicitEulerIntegrator>(this->get_system());
+}
+
 }  // namespace systems
 }  // namespace drake
 

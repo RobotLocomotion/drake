@@ -389,6 +389,10 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// become "bad". This is an O(n²) operation, where n is the state dimension.
   bool IsBadJacobian(const MatrixX<T>& J) const;
 
+  /// @copydoc IntegratorBase::DoClone()
+  virtual std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
+      const = 0;
+
   // TODO(edrumwri) Document the functions below.
   virtual int64_t do_get_num_newton_raphson_iterations() const = 0;
   virtual int64_t do_get_num_error_estimator_derivative_evaluations() const = 0;
@@ -491,6 +495,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
     return result;
   }
+
+  std::unique_ptr<IntegratorBase<T>> DoClone() const final;
 
   // The scheme to be used for computing the Jacobian matrix during the
   // nonlinear system solve process.

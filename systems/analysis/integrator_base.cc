@@ -466,6 +466,45 @@ typename IntegratorBase<T>::StepResult
 }
 
 template <typename T>
+void IntegratorBase<T>::reset_context(Context<T>* context) {
+  context_ = std::shared_ptr<Context<T>>(
+      /* managed object = */ std::shared_ptr<void>{},
+      /* stored pointer = */ context);
+  initialization_done_ = false;
+}
+
+template <typename T>
+void IntegratorBase<T>::reset_context(std::unique_ptr<Context<T>> context) {
+  context_ = std::move(context);
+  initialization_done_ = false;
+}
+
+template <typename T>
+std::unique_ptr<IntegratorBase<T>> IntegratorBase<T>::Clone() const {
+  auto cloned = this->DoClone();
+  cloned->reset_context(this->context_ ? this->context_->Clone() : nullptr);
+  if (cloned->supports_error_estimation()) {
+    cloned->set_target_accuracy(this->get_target_accuracy());
+  }
+  cloned->set_fixed_step_mode(this->get_fixed_step_mode());
+  cloned->set_maximum_step_size(this->get_maximum_step_size());
+  cloned->set_requested_minimum_step_size(
+      this->get_requested_minimum_step_size());
+  cloned->set_throw_on_minimum_step_size_violation(
+      this->get_throw_on_minimum_step_size_violation());
+  if (this->is_initialized()) {
+    cloned->Initialize();
+  }
+  return cloned;
+}
+
+template <typename T>
+std::unique_ptr<IntegratorBase<T>> IntegratorBase<T>::DoClone() const {
+  throw std::logic_error(
+      "This integrator has not implemented the DoClone() method yet.");
+}
+
+template <typename T>
 void IntegratorBase<T>::ValidateSmallerStepSize(const T& current_step_size,
                                                 const T& new_step_size) const {
   if (new_step_size < get_working_minimum_step_size() &&

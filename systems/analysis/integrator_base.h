@@ -168,7 +168,9 @@ class IntegratorBase {
    */
   explicit IntegratorBase(const System<T>& system,
                           Context<T>* context = nullptr)
-      : system_(system), context_(context) {
+      : system_(system),
+        context_(/* managed object = */ std::shared_ptr<void>{},
+                 /* stored pointer = */ context) {
     initialization_done_ = false;
   }
 
@@ -1194,7 +1196,7 @@ class IntegratorBase {
    Returns a mutable pointer to the internally-maintained Context holding
    the most recent state in the trajectory.
    */
-  Context<T>* get_mutable_context() { return context_; }
+  Context<T>* get_mutable_context() { return context_.get(); }
 
   /**
    Replace the pointer to the internally-maintained Context with a different
@@ -1205,11 +1207,13 @@ class IntegratorBase {
    @param context The pointer to the new context or nullptr to wipe out
                   the current context without replacing it with another.
    */
-  void reset_context(Context<T>* context) {
-    context_ = context;
-    initialization_done_ = false;
-  }
+  void reset_context(Context<T>* context);
 
+  /**
+   * Same as above but allows the integrator to take ownership of the context.
+   * @exclude_from_pydrake_mkdoc{This function is not bound.}
+   */
+  void reset_context(std::unique_ptr<Context<T>> context);
 
   /**
    @name               Methods for dense output computation
@@ -1303,6 +1307,24 @@ class IntegratorBase {
   const T& get_previous_integration_step_size() const {
     return prev_step_size_;
   }
+
+  /**
+   @name               Methods for cloning
+   @anchor cloning
+   @{
+   This function makes a copy of an integrator.
+   */
+
+  /**
+   Returns a copy of this integrator with reset statistics, reinitialized
+   internal integrator states, and a cloned system context.
+   @note Because the internal integrator states (e.g. value of
+   get_ideal_next_step_size()) are reinitialized, integration starting with the
+   new clone won't necessarily produce an exact match against integration using
+   the original integrator started at the point it was cloned.
+   */
+  std::unique_ptr<IntegratorBase<T>> Clone() const;
+  // @}
 
  protected:
   /**
@@ -1428,6 +1450,14 @@ class IntegratorBase {
    Reset() is called. This default method does nothing.
    */
   virtual void DoReset() {}
+
+  /**
+   Derived classes must implement this method to return a copy of themselves
+   as an IntegratorBase instance. The returned object must correctly duplicate
+   all member variables specific to the derived class, while the parent class
+   members are assumed to be handled by the parent class.
+   */
+  virtual std::unique_ptr<IntegratorBase<T>> DoClone() const;
 
   /**
    Returns a mutable pointer to the internally-maintained PiecewisePolynomial
@@ -1587,8 +1617,10 @@ class IntegratorBase {
   // Reference to the system being simulated.
   const System<T>& system_;
 
-  // Pointer to the context.
-  Context<T>* context_{nullptr};  // The trajectory Context.
+  // Pointer to the system context.  Use a shared_ptr for storage, since it
+  // allows expressing both an unowned pointer and an owned one. The context
+  // should not ever be logically shared among integrator instances.
+  std::shared_ptr<Context<T>> context_{nullptr};
 
   // Current dense output.
   std::unique_ptr<trajectories::PiecewisePolynomial<T>> dense_output_{nullptr};

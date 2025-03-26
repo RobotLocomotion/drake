@@ -127,6 +127,12 @@ void RadauIntegrator<T, num_stages>::DoInitialize() {
 }
 
 template <typename T, int num_stages>
+std::unique_ptr<ImplicitIntegrator<T>>
+RadauIntegrator<T, num_stages>::DoImplicitIntegratorClone() const {
+  return std::make_unique<RadauIntegrator>(this->get_system());
+}
+
+template <typename T, int num_stages>
 const VectorX<T>& RadauIntegrator<T, num_stages>::ComputeFofZ(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z) {
   Context<T>* context = this->get_mutable_context();
