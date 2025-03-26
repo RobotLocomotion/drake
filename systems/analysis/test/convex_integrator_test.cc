@@ -321,7 +321,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const VectorXd k =
       plant.CalcInverseDynamics(plant_context, VectorXd::Zero(2), f_ext);
   const VectorXd v_star = v0 - h * M.ldlt().solve(k);
-  const VectorXd dl_ref = M * (v - v_star) + h * A * v - h * tau;
+  const VectorXd dl_ref = M * (v - v_star) + A * v - h * tau;
 
   fmt::print("dl_ref = {}\n", fmt_eigen(dl_ref.transpose()));
 
@@ -334,7 +334,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
       model.GetMutableVelocities(model_context.get());
   model.velocities_permutation().Apply(v, &v_model);
   const VectorXd dl = model.EvalCostGradient(*model_context);
-  fmt::print("dl = {}\n", fmt_eigen(dl.transpose()));
+  fmt::print("dl     = {}\n", fmt_eigen(dl.transpose()));
 
   // // Simulate for a few seconds
   // const int fps = 32;

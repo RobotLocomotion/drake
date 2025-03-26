@@ -42,13 +42,13 @@ void SapExternalSystemConstraint<T>::DoCalcData(
     const Eigen::Ref<const VectorX<T>>& v, AbstractValue* abstract_data) const {
   auto& data =
       abstract_data->get_mutable_value<SapExternalSystemConstraintData<T>>();
+  const T& h = data.time_step;
 
   // TODO(vincekurtz): add effort limits
   data.v = v;
-  data.hessian = data.time_step * A_tilde_;
-  data.impulse = - data.time_step * (A_tilde_ * v - tau0_);
-  data.cost = 
-      data.time_step * (0.5 * v.transpose() * A_tilde_ * v - tau0_.dot(v));
+  data.hessian = A_tilde_;
+  data.impulse = h * tau0_ - A_tilde_ * v;
+  data.cost = 0.5 * v.transpose() * A_tilde_ * v - h * tau0_.dot(v);
 }
 
 template <typename T>
