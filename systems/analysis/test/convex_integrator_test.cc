@@ -308,7 +308,8 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   // Simulate for a few seconds
   const int fps = 32;
   meshcat->StartRecording(fps);
-  simulator.AdvanceTo(10.0);
+  //simulator.AdvanceTo(10.0);
+  simulator.AdvanceTo(h);
   meshcat->StopRecording();
   meshcat->PublishRecording();
 

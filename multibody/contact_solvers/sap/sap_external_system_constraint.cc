@@ -46,9 +46,9 @@ void SapExternalSystemConstraint<T>::DoCalcData(
   // TODO(vincekurtz): add effort limits
   data.v = v;
   data.hessian = data.time_step * A_tilde_;
-  data.impulse = data.time_step * (tau0_ - A_tilde_ * v);
-  data.cost = data.time_step * (0.5 * v.dot(A_tilde_ * v) - tau0_.dot(v));
-
+  data.impulse = - data.time_step * (A_tilde_ * v - tau0_);
+  data.cost = 
+      data.time_step * (0.5 * v.transpose() * A_tilde_ * v - tau0_.dot(v));
 }
 
 template <typename T>
@@ -77,15 +77,13 @@ void SapExternalSystemConstraint<T>::DoCalcCostHessian(
 
 template <typename T>
 void SapExternalSystemConstraint<T>::DoAccumulateGeneralizedImpulses(
-    int c, const Eigen::Ref<const VectorX<T>>& gamma, EigenPtr<VectorX<T>> tau) const {
-  DRAKE_UNREACHABLE();
-  // For this constraint the generalized impulses are simply τ = Jᵀ⋅γ.
+    int c, const Eigen::Ref<const VectorX<T>>& gamma,
+    EigenPtr<VectorX<T>> tau) const {
   if (c == 0) {
-    this->first_clique_jacobian().TransposeAndMultiplyAndAddTo(gamma, tau);
+    *tau += gamma;
   } else {
     DRAKE_UNREACHABLE();
   }
-
 }
 
 template <typename T>
