@@ -188,23 +188,30 @@ def vtk_internal_repository(
         sha256 = "349aa9da6b2be0b21d522695af116219c0fd43fe62902508f21eb59251303185",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            # Drake's conventions for VTK patches are:
+            # - All "patches/upstream/" come first; these are the changes that
+            #   will be upstreamed into VTK itself, so they should be the first
+            #   changes applied to reduce merge conflict churn.
+            # - Patch file names should begin with the name of the module being
+            #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
+            # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/common_core_rm_iostream.patch",
-            ":patches/upstream/scaled_albedo_for_ibl.patch",
+            ":patches/upstream/io_geometry_gltf_default_scene.patch",
+            ":patches/upstream/rendering_opengl2_scaled_albedo_for_ibl.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
-            ":patches/disable_static_destructors.patch",
+            ":patches/common_datamodel_no_pegtl.patch",
+            ":patches/common_executionmodel_disable_static_destructors.patch",
             ":patches/io_image_formats.patch",
-            ":patches/nerf_pegtl.patch",
-            ":patches/preserve_direct_light_specular_reflections.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
+            ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
             ":patches/vtkdoubleconversion_hidden.patch",
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",
             ":patches/vtksys_hidden.patch",
-            ":patches/gltf_scenes_vector.patch",
         ],
         settings_bzl = ":settings.bzl",
         **kwargs):
