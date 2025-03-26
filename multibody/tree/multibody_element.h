@@ -108,7 +108,7 @@ class MultibodyElement {
   /// Returns a constant reference to the parent MultibodyTree that
   /// owns this element.
   const internal::MultibodyTree<T>& get_parent_tree() const {
-    DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
+    HasParentTreeOrThrow();
     return *parent_tree_;
   }
 
