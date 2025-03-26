@@ -91,10 +91,10 @@ const char actuated_pendulum_xml[] = R"""(
 <mujoco model="robot">
   <worldbody>
     <body>
-      <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1" damping="1e-3"/>
+      <joint name="joint1" type="hinge" axis="0 1 0" pos="0 0 0.1"/>
       <geom type="capsule" size="0.01 0.1"/>
       <body>
-        <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1" damping="1e-3"/>
+        <joint name="joint2" type="hinge" axis="0 1 0" pos="0 0 -0.1"/>
         <geom type="capsule" size="0.01 0.1" pos="0 0 -0.2"/>
       </body>
     </body>
@@ -312,7 +312,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
       CompareMatrices(tau, tau_ref, kTolerance, MatrixCompareType::relative));
 
   // Compute the gradient of the cost, and check that this matches the momentum
-  // balance conditions, M(v − v*) + h Ã v − h τ₀ = 0.
+  // balance conditions, M(v − v*) + Ã v − h τ₀ = 0.
   const VectorXd v = v0;
   MatrixXd M(nv, nv);
   plant.CalcMassMatrix(plant_context, &M);
@@ -323,8 +323,6 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const VectorXd v_star = v0 - h * M.ldlt().solve(k);
   const VectorXd dl_ref = M * (v - v_star) + A * v - h * tau;
 
-  fmt::print("dl_ref = {}\n", fmt_eigen(dl_ref.transpose()));
-
   SapContactProblem<double> problem =
       ConvexIntegratorTester::MakeSapContactProblem(&integrator, plant_context,
                                                     h);
@@ -334,19 +332,20 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
       model.GetMutableVelocities(model_context.get());
   model.velocities_permutation().Apply(v, &v_model);
   const VectorXd dl = model.EvalCostGradient(*model_context);
-  fmt::print("dl     = {}\n", fmt_eigen(dl.transpose()));
 
-  // // Simulate for a few seconds
-  // const int fps = 32;
-  // meshcat->StartRecording(fps);
-  // //simulator.AdvanceTo(10.0);
-  // simulator.AdvanceTo(h);
-  // meshcat->StopRecording();
-  // meshcat->PublishRecording();
+  EXPECT_TRUE(
+      CompareMatrices(dl, dl_ref, kTolerance, MatrixCompareType::relative));
 
-  // std::cout << std::endl;
-  // PrintSimulatorStatistics(simulator);
-  // std::cout << std::endl;
+  // Simulate for a few seconds
+  const int fps = 32;
+  meshcat->StartRecording(fps);
+  simulator.AdvanceTo(10.0);
+  meshcat->StopRecording();
+  meshcat->PublishRecording();
+
+  std::cout << std::endl;
+  PrintSimulatorStatistics(simulator);
+  std::cout << std::endl;
 }
 
 }  // namespace systems

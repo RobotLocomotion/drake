@@ -16,9 +16,8 @@ template <typename T>
 SapExternalSystemConstraint<T>::SapExternalSystemConstraint(
     int clique, int nv, const MatrixX<T>& A_tilde, const VectorX<T>& tau0)
     : SapConstraint<T>(MakeConstraintJacobian(clique, nv), {}),
-     A_tilde_{A_tilde}, 
-     tau0_{tau0}
-    {}
+      A_tilde_{A_tilde},
+      tau0_{tau0} {}
 
 template <typename T>
 std::unique_ptr<AbstractValue> SapExternalSystemConstraint<T>::DoMakeData(

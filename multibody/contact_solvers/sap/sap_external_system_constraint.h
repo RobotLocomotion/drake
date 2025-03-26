@@ -4,8 +4,8 @@
 #include <utility>
 
 #include "drake/common/eigen_types.h"
-#include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 #include "drake/math/autodiff.h"
+#include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
 namespace drake {
 namespace multibody {
@@ -19,12 +19,12 @@ using multibody::contact_solvers::internal::SapConstraintJacobian;
 /* Structure to store data for the external system constraint. */
 template <typename T>
 struct SapExternalSystemConstraintData {
-    T time_step{};  // Time step for the simulation
+  T time_step{};  // Time step for the simulation
 
-    VectorX<T> v;        // Constraint velocity
-    T cost{};            // Cost ℓ(v)
-    VectorX<T> impulse;  // Impulse γ(v) = −∂ℓ(v)/∂v.
-    MatrixX<T> hessian;  // Hessian G = −∂γ(v)/∂v = ∂²ℓ(v)/∂v².
+  VectorX<T> v;        // Constraint velocity
+  T cost{};            // Cost ℓ(v)
+  VectorX<T> impulse;  // Impulse γ(v) = −∂ℓ(v)/∂v.
+  MatrixX<T> hessian;  // Hessian G = −∂γ(v)/∂v = ∂²ℓ(v)/∂v².
 };
 
 /**
@@ -37,9 +37,11 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
   Protected copy construction is enabled for sub-classes to use in their
   implementation of DoClone(). */
   //@{
-  SapExternalSystemConstraint& operator=(const SapExternalSystemConstraint&) = delete;
+  SapExternalSystemConstraint& operator=(const SapExternalSystemConstraint&) =
+      delete;
   SapExternalSystemConstraint(SapExternalSystemConstraint&&) = delete;
-  SapExternalSystemConstraint& operator=(SapExternalSystemConstraint&&) = delete;
+  SapExternalSystemConstraint& operator=(SapExternalSystemConstraint&&) =
+      delete;
   //@}
 
   SapExternalSystemConstraint(int clique, int nv, const MatrixX<T>& A_tilde,
@@ -49,7 +51,7 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
   /* Private copy construction is enabled to use in the implementation of
     DoClone(). */
   SapExternalSystemConstraint(const SapExternalSystemConstraint&) = default;
-  
+
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<SapExternalSystemConstraint<T>>(
         new SapExternalSystemConstraint<T>(*this));
@@ -61,7 +63,7 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
             math::DiscardGradient(this->A_tilde_),
             math::DiscardGradient(this->tau0_)));
   }
-  
+
   /* Implementations of SapConstraint NVI functions. */
   std::unique_ptr<AbstractValue> DoMakeData(
       const T& time_step,
@@ -87,7 +89,6 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
   // Constraint parameters
   const MatrixX<T> A_tilde_;  // Linearized dynamics matrix
   const VectorX<T> tau0_;     // Explicit external forces
-
 };
 
 }  // namespace internal

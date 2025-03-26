@@ -266,23 +266,11 @@ SapSolverStatus ConvexIntegrator<double>::SolveWithGuess(
       &problem, sap_parameters_.linear_solver_type);
   auto context = model->MakeContext();
 
-  // All velocities should be participating (enforced via dummy constraints)
-  // DRAKE_DEMAND(model->velocities_permutation().domain_size() ==
-  //              model->velocities_permutation().permuted_domain_size());
-
   // Put the velocities into the model context (copies
   // SapSolver::SetProblemVelocitiesIntoModelContext).
   Eigen::VectorBlock<VectorXd> v_model =
       model->GetMutableVelocities(context.get());
   model->velocities_permutation().Apply(v_guess, &v_model);
-
-  // DEBUG
-  const double ell = model->EvalCost(*context);
-  const VectorXd g = model->EvalCostGradient(*context);
-  // const MatrixX<double> H = model->EvalImpulsesCache(*context)
-  fmt::print("Cost: {}\n", ell);
-  fmt::print("Gradient: {}\n", fmt_eigen(g.transpose()));
-  // fmt::print("Hessian:\n{}\n", fmt_eigen(H));
 
   // Solve the convex optimization problem
   // TODO(vincekurtz): consider flag for Hessian re-use here
@@ -855,7 +843,6 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   plant().CalcMassMatrix(context, &M);
   A_dense = M;
   A_dense.diagonal() += h * plant().EvalJointDampingCache(context);
-  // A_dense += A_tilde;
 
   for (TreeIndex t(0); t < tree_topology().num_trees(); ++t) {
     const int tree_start_in_v = tree_topology().tree_velocities_start_in_v(t);
@@ -863,14 +850,12 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
     A[t] = A_dense.block(tree_start_in_v, tree_start_in_v, tree_nv, tree_nv);
   }
 
-  // free-motion velocities v* = A^{-1}(M * v0 - h k0 + h τ₀)
-  // TODO(vincekurtz): consider using a sparse solve here
+  // free-motion velocities v* = v₀ + h M⁻¹k₀
   plant().CalcForceElementsContribution(context, &f_ext);
   k = plant().CalcInverseDynamics(
       context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
   const VectorX<T>& v0 = plant().GetVelocities(context);
-  // v_star = A_dense.ldlt().solve(M * v0 - h * k + h * tau0);
-  v_star = A_dense.ldlt().solve(M * v0 - h * k);
+  v_star = v0 - h * M.ldlt().solve(k);
 
   // problem creation
   // TODO(vincekurtz): consider updating rather than recreating
@@ -899,10 +884,6 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
 
       problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
           c, nv, A_block, tau_block));
-
-      // (void)A_block;
-      // (void)tau_block;
-      // problem->AddConstraint(std::make_unique<SapDummyConstraint<T>>(c, nv));
     }
   }
 }
@@ -1384,15 +1365,14 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 template <typename T>
 void ConvexIntegrator<T>::GetGeneralizedForcesFromInputPorts(
     const Context<T>& plant_context, const MatrixX<T>& B,
-    MultibodyForces<T>* forces,
-    VectorX<T>* tau) const {
+    MultibodyForces<T>* forces, VectorX<T>* tau) const {
   forces->SetZero();
 
   // Actuator forces, clipped to effort limits
   const VectorX<T> u = plant()
-                           .AssembleActuationInput(plant_context);
-                          //  .cwiseMin(effort_limits_)
-                          //  .cwiseMax(-effort_limits_);
+                           .AssembleActuationInput(plant_context)
+                           .cwiseMin(effort_limits_)
+                           .cwiseMax(-effort_limits_);
   forces->mutable_generalized_forces() = B * u;
 
   // External generalized forces
