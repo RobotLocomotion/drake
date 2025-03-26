@@ -340,6 +340,9 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
 
   bool DoImplicitIntegratorStep(const T& h) final;
 
+  std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
+      const final;
+
   // Steps the system forward by a single step of h using the velocity-implicit
   // Euler method.
   // @param t0 the time at the left end of the integration interval.

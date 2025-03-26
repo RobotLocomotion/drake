@@ -246,6 +246,11 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   return true;
 }
 
+template <class T>
+std::unique_ptr<IntegratorBase<T>> RungeKutta5Integrator<T>::DoClone() const {
+  return std::make_unique<RungeKutta5Integrator>(this->get_system());
+}
+
 }  // namespace systems
 }  // namespace drake
 

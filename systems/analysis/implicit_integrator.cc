@@ -450,6 +450,16 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
   }
 }
 
+template <class T>
+std::unique_ptr<IntegratorBase<T>> ImplicitIntegrator<T>::DoClone() const {
+  auto cloned = DoImplicitIntegratorClone();
+  cloned->set_reuse(this->get_reuse());
+  cloned->set_use_full_newton(this->get_use_full_newton());
+  cloned->set_jacobian_computation_scheme(
+      this->get_jacobian_computation_scheme());
+  return cloned;
+}
+
 }  // namespace systems
 }  // namespace drake
 

@@ -155,7 +155,12 @@ class RadauIntegrator final : public ImplicitIntegrator<T> {
   // @return a (state_dim * num_stages)-dimensional vector.
   const VectorX<T>& ComputeFofZ(
       const T& t0, const T& h, const VectorX<T>& xt0, const VectorX<T>& Z);
+
   void DoInitialize() final;
+
+  std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
+      const final;
+
   void DoResetCachedJacobianRelatedMatrices() final {
       iteration_matrix_radau_ = {};
       iteration_matrix_implicit_trapezoid_ = {};
