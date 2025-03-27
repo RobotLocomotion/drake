@@ -32,6 +32,7 @@ drake_cc_package_library(
         ":radau_integrator",
         ":realtime_rate_calculator",
         ":region_of_attraction",
+        ":rosenbrock2_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":runge_kutta5_integrator",
@@ -272,6 +273,18 @@ drake_cc_library(
     deps = [
         ":implicit_integrator",
         ":runge_kutta2_integrator",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "rosenbrock2_integrator",
+    srcs = ["rosenbrock2_integrator.cc"],
+    hdrs = [
+        "rosenbrock2_integrator.h",
+    ],
+    deps = [
+        ":implicit_integrator",
         "//math:gradient",
     ],
 )
