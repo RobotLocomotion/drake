@@ -67,6 +67,7 @@ geometry::ProximityProperties ParseProximityProperties(
   using geometry::internal::kMaterialGroup;
   using geometry::internal::kRelaxationTime;
   using geometry::internal::kRezHint;
+  using geometry::internal::kSymmetricTriangles;
 
   // Both being true is disallowed -- so assert is_rigid NAND is_compliant.
   DRAKE_DEMAND(!(is_rigid && is_compliant));
@@ -99,6 +100,16 @@ geometry::ProximityProperties ParseProximityProperties(
         properties.AddProperty(kHydroGroup, kElastic, *hydroelastic_modulus);
       }
     }
+  }
+
+  {
+    std::optional<int> symmetric_triangles =
+        read_double("drake:symmetric_triangles");
+    if (!symmetric_triangles) {
+      symmetric_triangles = 0;
+    }
+    properties.AddProperty(
+        kHydroGroup, kSymmetricTriangles, *symmetric_triangles);
   }
 
   {

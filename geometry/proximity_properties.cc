@@ -19,6 +19,8 @@ const char* const kRezHint = "resolution_hint";
 const char* const kComplianceType = "compliance_type";
 const char* const kSlabThickness = "slab_thickness";
 const char* const kMargin = "margin";
+// TODO(dale.mcconachie): This should be an enum, not a double.
+const char* const kSymmetricTriangles = "symmetric_triangles";
 
 namespace {
 

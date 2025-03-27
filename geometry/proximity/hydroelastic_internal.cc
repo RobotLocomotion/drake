@@ -255,6 +255,23 @@ class Validator {
   const char* compliance_{};
 };
 
+// Validator that extracts ints that are 0 or 1.
+class ZeroOneInt : public Validator<int> {
+  public:
+   using Validator<int>::Validator;
+
+  protected:
+   void ValidateValue(const int& value,
+                      const std::string& property) const override {
+     if (value != 0 && value != 1) {
+       throw std::logic_error(
+           fmt::format(
+              "Cannot create {} {}; the {} property must be 0 or 1",
+              compliance(), shape_name(), property));
+     }
+   }
+ };
+
 // Validator that extracts *strictly positive doubles*.
 class PositiveDouble : public Validator<double> {
  public:
@@ -306,9 +323,23 @@ std::optional<RigidGeometry> MakeRigidRepresentation(
 }
 
 std::optional<RigidGeometry> MakeRigidRepresentation(
-    const Box& box, const ProximityProperties&) {
-  auto mesh = make_unique<TriangleSurfaceMesh<double>>(
+    const Box& box, const ProximityProperties& props) {
+  const int symmetric_triangles = ZeroOneInt("Box", "rigid")
+                            .Extract(props, kHydroGroup, kSymmetricTriangles);
+
+  std::unique_ptr<TriangleSurfaceMesh<double>> mesh;
+  if (symmetric_triangles) {
+    log()->warn("Using symmetric triangles!!!!!");
+    mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeBoxSurfaceMeshWithSymmetricTriangles<double>(box));
+  } else {
+    // Use the coarsest mesh for the box. The safety factor 1.1 guarantees the
+    // resolution-hint argument is larger than the box size, so the mesh
+    // will have only 8 vertices and 12 triangles.
+    mesh = make_unique<TriangleSurfaceMesh<double>>(
+      MakeBoxSurfaceMesh<double>(box, 1.1 * box.size().maxCoeff()));
+  }
+
   return RigidGeometry(RigidMesh(std::move(mesh)));
 }
 
@@ -406,6 +437,8 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
 
 std::optional<SoftGeometry> MakeSoftRepresentation(
     const Box& box, const ProximityProperties& props) {
+  const int symmetric_triangles = ZeroOneInt("Box", "soft")
+                            .Extract(props, kHydroGroup, kSymmetricTriangles);
   const double margin = NonNegativeDouble("Box", "soft")
                             .Extract(props, kHydroGroup, kMargin, 0.0);
 
@@ -415,8 +448,15 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   const Box inflated_box(box.size() + Vector3<double>::Constant(2.0 * margin));
 
   // First, create an inflated mesh.
-  auto inflated_mesh = make_unique<VolumeMesh<double>>(
-      MakeBoxVolumeMeshWithMaAndSymmetricTriangles<double>(inflated_box));
+  std::unique_ptr<VolumeMesh<double>> inflated_mesh;
+  if (symmetric_triangles) {
+    log()->info("Using symmetric triangles!!!!!");
+    inflated_mesh = make_unique<VolumeMesh<double>>(
+        MakeBoxVolumeMeshWithMaAndSymmetricTriangles<double>(inflated_box));
+  } else {
+    inflated_mesh = make_unique<VolumeMesh<double>>(
+        MakeBoxVolumeMeshWithMa<double>(inflated_box));
+  }
 
   const double hydroelastic_modulus =
       PositiveDouble("Box", "soft").Extract(props, kHydroGroup, kElastic);
