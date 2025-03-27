@@ -44,7 +44,7 @@ class Rosenbrock2Integrator final : public ImplicitIntegrator<T> {
     static constexpr double gamma = 0.29289321881345254;  // 1 - 1/√2
     static constexpr double m1 = 3.0 / (2.0 * gamma);
     static constexpr double m2 = 1.0 / (2.0 * gamma);
-    static constexpr double c = - 2.0 / gamma;
+    static constexpr double c = -2.0 / gamma;
     static constexpr double a = 1.0 / gamma;
     static constexpr double m_hat1 = 1.0 / gamma;
   } params_;
@@ -96,6 +96,9 @@ class Rosenbrock2Integrator final : public ImplicitIntegrator<T> {
   //          `false` return, the time and continuous state in the context will
   //          be restored to its original value (at t0).
   bool DoImplicitIntegratorStep(const T& h) final;
+
+  // For very small h, we'll fall back to an explicit Euler scheme.
+  bool ExplicitEulerFallbackStep(const T& h);
 
   // The iteration matrix G = [I/(h*γ) - J] and its factorization.
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_;

@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/systems/analysis/test_utilities/explicit_error_controlled_integrator_test.h"
+#include "drake/systems/analysis/test_utilities/generic_integrator_test.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
 #include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
 
@@ -76,6 +79,16 @@ GTEST_TEST(Rosenbrock2IntegratorTest, QuadraticSystem) {
 
   EXPECT_NEAR(x1, x1_ref, 10 * std::numeric_limits<double>::epsilon());
 }
+
+// Generic integrator tests. Note that while the Rosenbrock2 integrator is
+// templated on ImplicitIntegrator, it behaves more like an explicit integrator
+// in the sense that we don't need to worry about convergence and never perform
+// multiple iterations.
+typedef ::testing::Types<Rosenbrock2Integrator<double>> MyTypes;
+INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest,
+                               MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, GenericIntegratorTest, MyTypes);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, PleidesTest, MyTypes);
 
 }  // namespace analysis_test
 }  // namespace systems

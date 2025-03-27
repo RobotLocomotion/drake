@@ -49,10 +49,6 @@ void Rosenbrock2Integrator<T>::DoInitialize() {
   k2_.resize(nx);
   error_est_vec_.resize(nx);
 
-  // TODO(vincekurtz): figure out a better way to either enable or permantently
-  // disable Jacobian reuse
-  this->set_reuse(false);
-
   // Set the working accuracy to a reasonable default
   double working_accuracy = this->get_target_accuracy();
   if (isnan(working_accuracy)) working_accuracy = kDefaultAccuracy;
@@ -70,6 +66,31 @@ void Rosenbrock2Integrator<T>::ComputeAndFactorIterationMatrix(
 }
 
 template <class T>
+bool Rosenbrock2Integrator<T>::ExplicitEulerFallbackStep(const T& h) {
+  Context<T>* context = this->get_mutable_context();
+  const T t0 = context->get_time();
+  x0_ = context->get_continuous_state().CopyToVector();
+
+  // Forward step with x = x₀ + h * f(t₀, x₀)
+  xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
+  x_ = x0_ + h * xdot_;
+
+  // We'll do error estimation with two half-steps
+  error_est_vec_ = x0_ + 0.5 * h * xdot_;
+  context->SetTimeAndContinuousState(t0 + 0.5 * h, error_est_vec_);
+  xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
+  error_est_vec_ += 0.5 * h * xdot_;
+  error_est_vec_ -= x_;
+
+  this->get_mutable_error_estimate()->SetFromVector(error_est_vec_);
+
+  // Set the time and state in the context
+  context->SetTimeAndContinuousState(t0 + h, x_);
+
+  return true;  // Explicit euler always succeeds
+}
+
+template <class T>
 bool Rosenbrock2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
   using std::sqrt;
 
@@ -77,6 +98,14 @@ bool Rosenbrock2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
   Context<T>* context = this->get_mutable_context();
   const T t0 = context->get_time();
   x0_ = context->get_continuous_state().CopyToVector();
+
+  // If the requested step size is less than the minimum step size, we'll take a
+  // single explicit Euler step instead.
+  if (h < this->get_working_minimum_step_size()) {
+    DRAKE_LOGGER_DEBUG(
+        "-- requested step too small, taking explicit Euler step instead");
+    return ExplicitEulerFallbackStep(h);
+  }
 
   // Make sure everything is the correct size
   const int n = x0_.size();
@@ -86,11 +115,11 @@ bool Rosenbrock2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
   k2_.resize(n);
   error_est_vec_.resize(n);
 
-  // Compute and factor the iteration matrix G = [I/(hγ) − J], where
-  // J = ∂/∂x f(t₀, x₀).
-  DRAKE_DEMAND(!this->get_reuse());
+  // Compute and factor the iteration matrix G = [I/(hγ) − J], where J = ∂/∂x
+  // f(t₀, x₀). Here using trial = 3 forces the Jacobian and factorization to be
+  // recomputed.
   if (!this->MaybeFreshenMatrices(
-          t0, x0_, h, 1, ComputeAndFactorIterationMatrix, &iteration_matrix_)) {
+          t0, x0_, h, 3, ComputeAndFactorIterationMatrix, &iteration_matrix_)) {
     // If factorization fails, reject the step so that error control selects a
     // smaller h.
     return false;
@@ -119,8 +148,7 @@ bool Rosenbrock2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
   // Compute the embedded error estimate with x̂ = x₀ + m̂₁ k₁
   // (N.B. m̂₂ = 0 for this integrator)
   error_est_vec_ = x0_ + params_.m_hat1 * k1_ - x_;
-  this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(
-      error_est_vec_);
+  this->get_mutable_error_estimate()->SetFromVector(error_est_vec_);
 
   return true;  // step was successful
 }
