@@ -405,12 +405,29 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // At this point in this test, plant->Finalize() has already been called.
   // Create another frame (which is not part of the plant). Ensure an exception
   // is thrown if there is a query for information about this frame that needs
-  // the associated multibody tree. Herein we try calculating the frame's pose.
+  // the associated multibody tree. Herein we try various public methods.
   multibody::FixedOffsetFrame<double> fixed_offset_frame(
       "bad_frame", plant->world_frame(), RigidTransform<double>{});
   std::unique_ptr<Context<double>> context = plant->CreateDefaultContext();
+
   DRAKE_EXPECT_THROWS_MESSAGE(
       fixed_offset_frame.CalcPoseInWorld(*context),
+      "This multibody element was not added to a MultibodyTree.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      fixed_offset_frame.CalcPose(*context, model_frame),
+      "This multibody element was not added to a MultibodyTree.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      fixed_offset_frame.CalcRotationMatrix(*context, model_frame),
+      "This multibody element was not added to a MultibodyTree.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      fixed_offset_frame.CalcRotationMatrixInWorld(*context),
+      "This multibody element was not added to a MultibodyTree.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      fixed_offset_frame.CalcRotationMatrixInWorld(*context),
       "This multibody element was not added to a MultibodyTree.");
 }
 
