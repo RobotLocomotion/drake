@@ -39,6 +39,21 @@ class Rosenbrock2Integrator final : public ImplicitIntegrator<T> {
   int get_error_estimate_order() const final { return 2; }
 
  private:
+  // Integrator parameters adopted from MATLODE, and simplified where possible.
+  static struct Rosenbrock2Parameters {
+    static constexpr double gamma = 1.0 - 1.0 / sqrt(2.0);
+    static constexpr double m1 = 3.0 / (2.0 * gamma);
+    static constexpr double m2 = 1.0 / (2.0 * gamma);
+    static constexpr double c = - 2.0 / gamma;
+    static constexpr double a = 1.0 / gamma;
+  } params_;
+
+  // Compute and factor the iteration matrix G = [I/(h*γ) - J]. The same
+  // iteration matrix is used in both stages.
+  static void ComputeAndFactorIterationMatrix(
+      const MatrixX<T>& J, const T& h,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
   // Rosenbrock integrators take one NR iteration for each stage, at each step.
   int64_t do_get_num_newton_raphson_iterations() const final {
     return 2 * this->get_num_steps_taken();
@@ -80,6 +95,15 @@ class Rosenbrock2Integrator final : public ImplicitIntegrator<T> {
   //          `false` return, the time and continuous state in the context will
   //          be restored to its original value (at t0).
   bool DoImplicitIntegratorStep(const T& h) final;
+
+  // The iteration matrix G = [I/(h*γ) - J] and its factorization.
+  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_;
+
+  // Vector used for error estimation
+  VectorX<T> error_est_vec_;
+
+  // Intermediate variables to avoid heap allocations
+  VectorX<T> x0_, x_, xdot_, k1_, k2_;
 };
 
 }  // namespace systems

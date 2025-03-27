@@ -9,16 +9,7 @@ namespace systems {
 namespace analysis_test {
 
 // Test that the integrator gives the expected result on a simple spring-mass
-// system with stiffness k and mass m:
-//
-//    x''(t) -k/m * x(t).
-//
-// This system has a known solution:
-//
-//    x(t) = c1 cos(ωt) + c2 sin(ωt)
-//    x'(t) = -c1 ω sin(ωt) + c2 ω cos(ωt)
-//
-// where ω = sqrt(k/m), c1 = x(0), c2 = x'(0) / ω.
+// system.
 GTEST_TEST(Rosenbrock2IntegratorTest, SpringMass) {
   const double k = 300.0;  // N/m
   const double m = 2.0;    // kg
@@ -30,7 +21,6 @@ GTEST_TEST(Rosenbrock2IntegratorTest, SpringMass) {
   // Set initial conditions
   const double initial_position = 0.1;
   const double initial_velocity = 2.1;
-  const double omega = std::sqrt(k / m);
 
   spring_mass.set_position(context.get(), initial_position);
   spring_mass.set_velocity(context.get(), initial_velocity);
@@ -45,13 +35,22 @@ GTEST_TEST(Rosenbrock2IntegratorTest, SpringMass) {
   // Integrate the system
   const double t_final = 1.0;
   const double inf = std::numeric_limits<double>::infinity();
-  integrator.IntegrateNoFurtherThanTime(inf, inf, t_final);
+  double t;
+  for (t = 0.0; std::abs(t - t_final) > h; t += h)
+    integrator.IntegrateNoFurtherThanTime(inf, inf, t_final);
 
   fmt::print("final time: {}\n", context->get_time());
-  fmt::print("x(t): {}\n", spring_mass.get_position(*context));
+  fmt::print("q(t): {}\n", spring_mass.get_position(*context));
   fmt::print("v(t): {}\n", spring_mass.get_velocity(*context));
 
-  (void)omega;
+  // Compare with the reference solution
+  double q_ref;
+  double v_ref;
+  spring_mass.GetClosedFormSolution(initial_position, initial_velocity, t_final,
+                                    &q_ref, &v_ref);
+
+  fmt::print("q_ref(t): {}\n", q_ref);
+  fmt::print("v_ref(t): {}\n", v_ref);
 }
 
 }  // namespace analysis_test
