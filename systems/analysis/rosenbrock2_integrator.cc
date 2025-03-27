@@ -40,7 +40,11 @@ void Rosenbrock2Integrator<T>::DoInitialize() {
 
 template <class T>
 bool Rosenbrock2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
-  (void)h;
+  Context<T>* context = this->get_mutable_context();
+
+  // Update the time in the context.
+  context->SetTime(context->get_time() + h);
+
   return true;  // step was successful
 }
 
