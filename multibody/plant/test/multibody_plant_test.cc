@@ -402,17 +402,16 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(pendulum_frame_indices[4], weld_joint.frame_on_parent().index());
   EXPECT_EQ(pendulum_frame_indices[5], weld_joint.frame_on_child().index());
 
-  // After plant->Finalize(), create another frame. Ensure an exception is
-  // thrown if trying to query information (e.g., its pose in world) for
-  // this frame which is not part of the plant.
+  // At this point in this test, plant->Finalize() has already been called.
+  // Create another frame (which is not part of the plant). Ensure an exception
+  // is thrown if there is a query for information about this frame that needs
+  // the associated multibody tree. Herein we try calculating the frame's pose.
   multibody::FixedOffsetFrame<double> fixed_offset_frame(
       "bad_frame", plant->world_frame(), RigidTransform<double>{});
   std::unique_ptr<Context<double>> context = plant->CreateDefaultContext();
   DRAKE_EXPECT_THROWS_MESSAGE(
       fixed_offset_frame.CalcPoseInWorld(*context),
       "This multibody element was not added to a MultibodyTree.");
-  //      "Frame is not associated with its parent tree, possibly due to being "
-  //      "created after the plant method Finalize\\(\\) was called.");
 }
 
 GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
