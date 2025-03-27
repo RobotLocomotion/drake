@@ -364,6 +364,7 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/examples",
+        "//bindings/pydrake/systems/test_utilities:framework_test_util_py",
     ],
 )
 

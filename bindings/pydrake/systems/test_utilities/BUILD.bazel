@@ -1,0 +1,35 @@
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+load(
+    "//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+)
+load(
+    "//tools/skylark:pybind.bzl",
+    "get_pybind_package_info",
+)
+
+package(default_visibility = ["//bindings/pydrake:__subpackages__"])
+
+# This determines how `PYTHONPATH` is configured.
+PACKAGE_INFO = get_pybind_package_info("//bindings")
+
+drake_py_library(
+    name = "module_py",
+    testonly = 1,
+    srcs = ["__init__.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        "//bindings/pydrake/systems:module_py",
+    ],
+)
+
+drake_py_library(
+    name = "framework_test_util_py",
+    testonly = True,
+    srcs = ["framework_test_util.py"],
+    deps = [
+        ":module_py",
+    ],
+)
+
+add_lint_tests_pydrake()
