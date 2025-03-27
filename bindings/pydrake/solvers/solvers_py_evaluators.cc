@@ -63,8 +63,11 @@ auto RegisterBinding(py::handle* scope) {
   py::class_<B> binding_cls(*scope, pyname.c_str());
   AddTemplateClass(*scope, "Binding", binding_cls, GetPyParam<C>());
   binding_cls  // BR
-      .def(
-          py::init<const std::shared_ptr<C>&, const VectorXDecisionVariable&>(),
+      .def(py::init([](C* c, const VectorXDecisionVariable& v) {
+        // Maintain python wrapper to avoid hazards like #20131.
+        py::object c_py = py::cast(c);
+        return Binding(make_shared_ptr_from_py_object<C>(c_py), v);
+      }),
           py::arg("c"), py::arg("v"), cls_doc.ctor.doc)
       .def("evaluator", &B::evaluator, cls_doc.evaluator.doc)
       .def("variables", &B::variables, cls_doc.variables.doc)
@@ -99,7 +102,8 @@ void DefBindingCastConstructor(PyClass* cls) {
         // Define a type-erased downcast to mirror the implicit
         // "downcast-ability" of Binding<> types.
         return std::make_unique<Binding<C>>(
-            binding.attr("evaluator")().cast<std::shared_ptr<C>>(),
+            // Maintain python wrapper to avoid hazards like #20131.
+            make_shared_ptr_from_py_object<C>(binding.attr("evaluator")()),
             binding.attr("variables")().cast<VectorXDecisionVariable>());
       }));
 }
@@ -125,7 +129,7 @@ class StubEvaluatorBase : public EvaluatorBase {
 };
 
 void DefTesting(py::module m) {
-  // To test binding casting.
+  // Test helpers for binding casting.
   py::class_<StubEvaluatorBase, EvaluatorBase,
       std::shared_ptr<StubEvaluatorBase>>(m, "StubEvaluatorBase");
   RegisterBinding<StubEvaluatorBase>(&m)  // BR
@@ -134,10 +138,16 @@ void DefTesting(py::module m) {
             return Binding<StubEvaluatorBase>(
                 std::make_shared<StubEvaluatorBase>(), v);
           });
+  // The Accept* methods use specific c++ argument signatures to invoke all of
+  // the cases of automatic casting supported by
+  // DefBindingCastConstructor. They return their arguments to help with
+  // testing of lifetime issues.
   m  // BR
-      .def("AcceptBindingEvaluatorBase", [](const Binding<EvaluatorBase>&) {})
-      .def("AcceptBindingCost", [](const Binding<Cost>&) {})
-      .def("AcceptBindingConstraint", [](const Binding<Constraint>&) {});
+      .def("AcceptBindingEvaluatorBase",
+          [](const Binding<EvaluatorBase>& arg) { return arg; })
+      .def("AcceptBindingCost", [](const Binding<Cost>& arg) { return arg; })
+      .def("AcceptBindingConstraint",
+          [](const Binding<Constraint>& arg) { return arg; });
 }
 
 void BindEvaluatorsAndBindings(py::module m) {

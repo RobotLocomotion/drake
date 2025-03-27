@@ -20,10 +20,13 @@ void RegisterAddConstraintToAllKnotPoints(
   constexpr auto& doc = pydrake_doc.drake.planning.trajectory_optimization;
   cls->def(
       "AddConstraintToAllKnotPoints",
-      [](MultipleShooting* self, std::shared_ptr<C> constraint,
+      [](MultipleShooting* self, C* constraint,
           const Eigen::Ref<const VectorX<symbolic::Variable>>& vars)
           -> std::vector<solvers::Binding<C>> {
-        return self->AddConstraintToAllKnotPoints<C>(constraint, vars);
+        // Maintain python wrapper to avoid hazards like #20131.
+        py::object constraint_py = py::cast(constraint);
+        return self->AddConstraintToAllKnotPoints<C>(
+            make_shared_ptr_from_py_object<C>(constraint_py), vars);
       },
       py::arg("constraint"), py::arg("vars"),
       doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_shared_ptr);
@@ -307,9 +310,16 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 &Class::AddPathPositionConstraint),
             py::arg("lb"), py::arg("ub"), py::arg("s"),
             cls_doc.AddPathPositionConstraint.doc_3args)
-        .def("AddPathPositionConstraint",
-            py::overload_cast<const std::shared_ptr<solvers::Constraint>&,
-                double>(&Class::AddPathPositionConstraint),
+        .def(
+            "AddPathPositionConstraint",
+            [](Class* self, solvers::Constraint* constraint, double s) {
+              // Maintain python wrapper to avoid hazards like #20131.
+              py::object constraint_py = py::cast(constraint);
+              return self->AddPathPositionConstraint(
+                  make_shared_ptr_from_py_object<solvers::Constraint>(
+                      constraint_py),
+                  s);
+            },
             py::arg("constraint"), py::arg("s"),
             cls_doc.AddPathPositionConstraint.doc_2args)
         .def("AddPathVelocityConstraint", &Class::AddPathVelocityConstraint,
@@ -317,10 +327,13 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             cls_doc.AddPathVelocityConstraint.doc)
         .def(
             "AddVelocityConstraintAtNormalizedTime",
-            [](Class* self,
-                const std::shared_ptr<solvers::Constraint> constraint,
-                double s) {
-              return self->AddVelocityConstraintAtNormalizedTime(constraint, s);
+            [](Class* self, solvers::Constraint* constraint, double s) {
+              // Maintain python wrapper to avoid hazards like #20131.
+              py::object constraint_py = py::cast(constraint);
+              return self->AddVelocityConstraintAtNormalizedTime(
+                  make_shared_ptr_from_py_object<solvers::Constraint>(
+                      constraint_py),
+                  s);
             },
             py::arg("constraint"), py::arg("s"),
             cls_doc.AddVelocityConstraintAtNormalizedTime
