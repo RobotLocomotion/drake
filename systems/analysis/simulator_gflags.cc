@@ -37,6 +37,7 @@ DEFINE_string(simulator_integration_scheme,
               "'implicit_euler', "
               "'radau1', "
               "'radau3', "
+              "'rosenbrock2', "
               "'runge_kutta2', "
               "'runge_kutta3', "
               "'runge_kutta5', "

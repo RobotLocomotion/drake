@@ -14,6 +14,7 @@
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/radau_integrator.h"
+#include "drake/systems/analysis/rosenbrock2_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/runge_kutta5_integrator.h"
@@ -135,6 +136,7 @@ const vector<NamedResetIntegratorFunc<T>>& GetAllNamedResetIntegratorFuncs() {
       MakeResetter<T, ImplicitEulerIntegrator>(),
       MakeResetter<T, Radau1Integrator>(),
       MakeResetter<T, Radau3Integrator>(),
+      MakeResetter<T, Rosenbrock2Integrator>(),
       MakeResetter<T, RungeKutta2Integrator>(),
       MakeResetter<T, RungeKutta3Integrator>(),
       MakeResetter<T, RungeKutta5Integrator>(),

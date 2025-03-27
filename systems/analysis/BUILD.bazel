@@ -88,6 +88,7 @@ drake_cc_library(
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
         ":radau_integrator",
+        ":rosenbrock2_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":runge_kutta5_integrator",
