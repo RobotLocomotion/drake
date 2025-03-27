@@ -41,7 +41,7 @@ class Rosenbrock2Integrator final : public ImplicitIntegrator<T> {
  private:
   // Integrator parameters adopted from MATLODE, and simplified where possible.
   static struct Rosenbrock2Parameters {
-    static constexpr double gamma = 1.0 - 1.0 / sqrt(2.0);
+    static constexpr double gamma = 0.29289321881345254;  // 1 - 1/√2
     static constexpr double m1 = 3.0 / (2.0 * gamma);
     static constexpr double m2 = 1.0 / (2.0 * gamma);
     static constexpr double c = - 2.0 / gamma;
