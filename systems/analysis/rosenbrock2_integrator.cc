@@ -26,6 +26,9 @@ template <class T>
 void Rosenbrock2Integrator<T>::DoInitialize() {
   using std::isnan;
 
+  // Rosenbrock integrators generally perform well at low accuracies
+  const double kDefaultAccuracy = 1e-1;
+
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
     // Verify that maximum step size has been set.
@@ -47,8 +50,13 @@ void Rosenbrock2Integrator<T>::DoInitialize() {
   error_est_vec_.resize(nx);
 
   // TODO(vincekurtz): figure out a better way to either enable or permantently
-  // disable reuse
+  // disable Jacobian reuse
   this->set_reuse(false);
+
+  // Set the working accuracy to a reasonable default
+  double working_accuracy = this->get_target_accuracy();
+  if (isnan(working_accuracy)) working_accuracy = kDefaultAccuracy;
+  this->set_accuracy_in_use(working_accuracy);
 }
 
 template <class T>
@@ -81,8 +89,12 @@ bool Rosenbrock2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
   // Compute and factor the iteration matrix G = [I/(hγ) − J], where
   // J = ∂/∂x f(t₀, x₀).
   DRAKE_DEMAND(!this->get_reuse());
-  this->MaybeFreshenMatrices(t0, x0_, h, 1, ComputeAndFactorIterationMatrix,
-                             &iteration_matrix_);
+  if (!this->MaybeFreshenMatrices(
+          t0, x0_, h, 1, ComputeAndFactorIterationMatrix, &iteration_matrix_)) {
+    // If factorization fails, reject the step so that error control selects a
+    // smaller h.
+    return false;
+  }
 
   // Compute the first intermediate value k₁, where G k₁ = f(t₀, x₀)
   xdot_ = this->EvalTimeDerivatives(*context).CopyToVector();
@@ -106,6 +118,9 @@ bool Rosenbrock2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
 
   // Compute the embedded error estimate with x̂ = x₀ + m̂₁ k₁
   // (N.B. m̂₂ = 0 for this integrator)
+  error_est_vec_ = x0_ + params_.m_hat1 * k1_ - x_;
+  this->get_mutable_error_estimate()->get_mutable_vector().SetFromVector(
+      error_est_vec_);
 
   return true;  // step was successful
 }

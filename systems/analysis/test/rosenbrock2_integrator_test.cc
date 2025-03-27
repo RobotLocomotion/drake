@@ -26,22 +26,19 @@ GTEST_TEST(Rosenbrock2IntegratorTest, SpringMass) {
   spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Set up the integrator
-  const double h = 1e-3;
+  const double h = 1e-1;
+  const double accuracy = 0.01;
   Rosenbrock2Integrator<double> integrator(spring_mass, context.get());
+  integrator.set_target_accuracy(accuracy);
   integrator.set_maximum_step_size(h);
-  integrator.set_fixed_step_mode(true);
+  integrator.set_fixed_step_mode(false);
   integrator.Initialize();
 
   // Integrate the system
   const double t_final = 1.0;
-  const double inf = std::numeric_limits<double>::infinity();
-  double t;
-  for (t = 0.0; std::abs(t - t_final) > h; t += h)
-    integrator.IntegrateNoFurtherThanTime(inf, inf, t_final);
-
-  fmt::print("final time: {}\n", context->get_time());
-  fmt::print("q(t): {}\n", spring_mass.get_position(*context));
-  fmt::print("v(t): {}\n", spring_mass.get_velocity(*context));
+  integrator.IntegrateWithMultipleStepsToTime(t_final);
+  const double q = spring_mass.get_position(*context);
+  const double v = spring_mass.get_velocity(*context);
 
   // Compare with the reference solution
   double q_ref;
@@ -49,8 +46,8 @@ GTEST_TEST(Rosenbrock2IntegratorTest, SpringMass) {
   spring_mass.GetClosedFormSolution(initial_position, initial_velocity, t_final,
                                     &q_ref, &v_ref);
 
-  fmt::print("q_ref(t): {}\n", q_ref);
-  fmt::print("v_ref(t): {}\n", v_ref);
+  EXPECT_NEAR(q, q_ref, accuracy);
+  EXPECT_NEAR(v, v_ref, accuracy);
 }
 
 }  // namespace analysis_test

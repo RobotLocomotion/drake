@@ -46,6 +46,7 @@ class Rosenbrock2Integrator final : public ImplicitIntegrator<T> {
     static constexpr double m2 = 1.0 / (2.0 * gamma);
     static constexpr double c = - 2.0 / gamma;
     static constexpr double a = 1.0 / gamma;
+    static constexpr double m_hat1 = 1.0 / gamma;
   } params_;
 
   // Compute and factor the iteration matrix G = [I/(h*γ) - J]. The same
