@@ -239,3 +239,19 @@ All parameters are optional, so you can ignore the package(s) and/or platform(s)
 that you don't need. (For those left blank, the default workflow will run using
 a more "stable" version of Drake, which is usually either source code from
 `master` or a nightly release depending on the example).
+
+## Local Testing
+
+For CMake, see the
+[drake_cmake_installed](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_cmake_installed#developer-testing)
+example.
+
+For Bazel, see the
+[drake_bazel_external](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_bazel_external)
+example, and note the comments in:
+
+* the [README](https://github.com/RobotLocomotion/drake-external-examples/blob/main/drake_bazel_external#using-a-local-checkout-of-Drake),
+which mentions using
+[`--override-module`](https://bazel.build/reference/command-line-reference#flag--override_module) to consume a local checkout of Drake
+* [`MODULE.bazel`](https://github.com/RobotLocomotion/drake-external-examples/blob/main/drake_bazel_external/MODULE.bazel),
+which can be modified to use a particular revision (commit or release) of Drake
