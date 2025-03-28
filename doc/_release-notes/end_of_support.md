@@ -45,6 +45,10 @@ If you need to use these, you can use an old release of Drake.
 
 # Wheel packages
 
+* Python 3.13 (Wheel)
+  * On Linux, Drake still supports Python 3.13 wheels.
+  * On macOS arm64, Drake still supports Python 3.13 wheels.
+  * On macOS x86_64, there was never support for Python 3.13 wheels.
 * Python 3.12 (Wheel)
   * On Linux, Drake still supports Python 3.12 wheels.
   * On macOS arm64, Drake still supports Python 3.12 wheels.
