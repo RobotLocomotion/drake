@@ -98,7 +98,7 @@ class UrdfParser {
                            std::string* type, std::string* parent_link_name,
                            std::string* child_link_name);
   void ParseScrewJointThreadPitch(XMLElement* node, double* screw_thread_pitch);
-  void ParseCurvilinearJointCurves(XMLElement* node,
+  bool ParseCurvilinearJointCurves(XMLElement* node,
                                    std::vector<double>* breaks,
                                    std::vector<double>* turning_rates);
   void ParseCollisionFilterGroup(XMLElement* node);
@@ -424,17 +424,17 @@ void UrdfParser::ParseScrewJointThreadPitch(XMLElement* node,
   }
 }
 
-void UrdfParser::ParseCurvilinearJointCurves(
+bool UrdfParser::ParseCurvilinearJointCurves(
     XMLElement* node, std::vector<double>* breaks,
     std::vector<double>* turning_rates) {
-  XMLElement* root = node->FirstChildElement("drake:curves");
-  if (!root) {
-    Error(*node, "A curvilinear joint is missing the <drake:curves> list.");
-    return;
-  }
   breaks->clear();
   breaks->push_back(0.0);  // breaks needs to start with a leading 0.0 element
   turning_rates->clear();
+  XMLElement* root = node->FirstChildElement("drake:curves");
+  if (!root) {
+    Error(*node, "A curvilinear joint is missing the <drake:curves> list.");
+    return false;
+  }
   for (XMLElement* curveNode = root->FirstChildElement(); curveNode != NULL;
        curveNode = curveNode->NextSiblingElement()) {
     std::string nodeValue = curveNode->Value();
@@ -445,16 +445,12 @@ void UrdfParser::ParseCurvilinearJointCurves(
         Error(*curveNode,
               "A curvilinear joint contains a <drake:line_segment> that is "
               "missing the 'length' attribute.");
-        breaks->clear();
-        turning_rates->clear();
-        return;
+        return false;
       } else if (length <= 0.0) {
         Error(*curveNode,
               "A curvilinear joint contains a <drake:line_segment> with a zero "
               "or negative 'length' attribute.");
-        breaks->clear();
-        turning_rates->clear();
-        return;
+        return false;
       }
     } else if (nodeValue == "drake:circular_arc") {
       double radius = 0.0;
@@ -462,31 +458,26 @@ void UrdfParser::ParseCurvilinearJointCurves(
         Error(*curveNode,
               "A curvilinear joint contains a <drake:circular_arc> that is "
               "missing the 'radius' attribute.");
-        breaks->clear();
-        turning_rates->clear();
-        return;
+        return false;
       } else if (radius <= 0.0) {
         Error(*curveNode,
               "A curvilinear joint contains a <drake:circular_arc> with a zero "
               "or negative 'radius' attribute.");
-        breaks->clear();
-        turning_rates->clear();
-        return;
+        return false;
       }
       if (!ParseScalarAttribute(curveNode, "angle", &angle)) {
         Error(*curveNode,
               "A curvilinear joint contains a <drake:circular_arc> that is "
               "missing the 'angle' attribute.");
-        breaks->clear();
-        turning_rates->clear();
-        return;
+        return false;
       }
       length = std::abs(angle) * radius;
     } else {
-      Error(*root, "A curvilinear joint contains an invalid curve node.");
-      breaks->clear();
-      turning_rates->clear();
-      return;
+      Error(*root,
+            fmt::format(
+                "A curvilinear joint contains an invalid curve node <{}>.",
+                nodeValue));
+      return false;
     }
 
     breaks->push_back(breaks->back() + length);
@@ -495,10 +486,9 @@ void UrdfParser::ParseCurvilinearJointCurves(
 
   if (breaks->size() == 1) {
     Error(*root, "A curvilinear joint contains an empty curves list.");
-    breaks->clear();
-    turning_rates->clear();
-    return;
+    return false;
   }
+  return true;
 }
 
 const RigidBody<double>* UrdfParser::GetBodyForElement(
@@ -738,7 +728,9 @@ void UrdfParser::ParseJoint(JointEffortLimits* joint_effort_limits,
     }
     std::vector<double> breaks;
     std::vector<double> turning_rates;
-    ParseCurvilinearJointCurves(node, &breaks, &turning_rates);
+    if (!ParseCurvilinearJointCurves(node, &breaks, &turning_rates)) {
+      return;  // Diagnostic will have already been emitted.
+    }
     // Note: Using initial_position = [0, 0, 0], as origin in parent frame
     // already allows user to place start of trajectory.
     PiecewiseConstantCurvatureTrajectory<double> trajectory(

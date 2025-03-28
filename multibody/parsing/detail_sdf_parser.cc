@@ -1271,20 +1271,15 @@ Eigen::Vector3d ParseVector3(const SDFormatDiagnostic& diagnostic,
 
 bool ParseBoolean(const SDFormatDiagnostic& diagnostic,
                   const sdf::ElementPtr node, const char* element_name) {
-  if (!node->HasElement(element_name)) {
-    std::string message =
-        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
-                    element_name);
-    diagnostic.Error(node, message);
-    return false;
-  }
+  // In the only existing call site, presence has already been checked.
+  DRAKE_DEMAND(node->HasElement(element_name));
 
   const std::string value = node->Get<std::string>(element_name);
 
   if (value != "true" && value != "false") {
     std::string message =
         fmt::format("<{}>: boolean node contains non-boolean value '{}'.",
-                    node->GetName(), value);
+                    element_name, value);
     diagnostic.Error(node, message);
     return false;
   }
@@ -1292,14 +1287,15 @@ bool ParseBoolean(const SDFormatDiagnostic& diagnostic,
   return value == "true" ? true : false;
 }
 
-double ParseDouble(const SDFormatDiagnostic& diagnostic,
-                   const sdf::ElementPtr node, const char* element_name) {
+std::optional<double> ParseDouble(const SDFormatDiagnostic& diagnostic,
+                                  const sdf::ElementPtr node,
+                                  const char* element_name) {
   if (!node->HasElement(element_name)) {
     std::string message =
         fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
                     element_name);
     diagnostic.Error(node, message);
-    return 0.0;
+    return {};
   }
 
   const double value = node->Get<double>(element_name);
@@ -1307,13 +1303,14 @@ double ParseDouble(const SDFormatDiagnostic& diagnostic,
   return value;
 }
 
-void ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
+bool ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
                       const sdf::ElementPtr node, std::vector<double>* breaks,
                       std::vector<double>* turning_rates) {
   if (!node->HasElement("drake:curves")) {
     std::string message = fmt::format(
         "<{}>: Unable to find the <drake:curves> child node.", node->GetName());
     diagnostic.Error(node, message);
+    return false;
   }
 
   breaks->clear();
@@ -1324,46 +1321,56 @@ void ParseDrakeCurves(const SDFormatDiagnostic& diagnostic,
            node->GetElement("drake:curves")->GetFirstElement();
        curve_node != NULL; curve_node = curve_node->GetNextElement()) {
     const auto name = curve_node->GetName();
-    double length = 0.0;
-    double angle = 0.0;
+    double length{};
+    double angle{};
     if (name == "drake:line_segment") {
-      length = ParseDouble(diagnostic, curve_node, "drake:length");
+      std::optional<double> maybe_length =
+          ParseDouble(diagnostic, curve_node, "drake:length");
+      if (!maybe_length.has_value()) {
+        return false;
+      }
+      length = *maybe_length;
       if (length <= 0.0) {
         std::string message = fmt::format(
             "<{}>: A drake:line_segment node has a 0 or "
             "negative drake:length.",
             curve_node->GetName());
         diagnostic.Error(node, message);
-        breaks->clear();
-        turning_rates->clear();
-        return;
+        return false;
       }
     } else if (name == "drake:circular_arc") {
-      double radius = ParseDouble(diagnostic, curve_node, "drake:radius");
+      std::optional<double> maybe_radius =
+          ParseDouble(diagnostic, curve_node, "drake:radius");
+      if (!maybe_radius.has_value()) {
+        return false;
+      }
+      double radius = *maybe_radius;
       if (radius <= 0.0) {
         std::string message = fmt::format(
             "<{}>: A drake:circular_arc node has a 0 or "
             "negative drake:radius.",
             curve_node->GetName());
         diagnostic.Error(node, message);
-        breaks->clear();
-        turning_rates->clear();
-        return;
+        return false;
       }
-      angle = ParseDouble(diagnostic, curve_node, "drake:angle");
+      std::optional<double> maybe_angle =
+          ParseDouble(diagnostic, curve_node, "drake:angle");
+      if (!maybe_angle.has_value()) {
+        return false;
+      }
+      angle = *maybe_angle;
       length = std::abs(angle) * radius;
     } else {
-      std::string message =
-          fmt::format("<{}>: drake:curves node contains an invalid child node.",
-                      node->GetName());
+      std::string message = fmt::format(
+          "<{}>: drake:curves node contains an invalid child node <{}>.",
+          node->GetName(), name);
       diagnostic.Error(node, message);
-      breaks->clear();
-      turning_rates->clear();
-      return;
+      return false;
     }
     breaks->push_back(breaks->back() + length);
     turning_rates->push_back(angle / length);
   }
+  return true;
 }
 
 const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
@@ -1526,7 +1533,12 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
       is_periodic = ParseBoolean(diagnostic, node, "drake:is_periodic");
     }
     if (node->HasElement("drake:damping")) {
-      damping = ParseDouble(diagnostic, node, "drake:damping");
+      std::optional<double> maybe_damping =
+          ParseDouble(diagnostic, node, "drake:damping");
+      if (!maybe_damping.has_value()) {
+        return false;
+      }
+      damping = *maybe_damping;
       if (damping < 0) {
         std::string message = "ERROR: <drake:joint> '" + joint_name +
                               "' has negative value for 'damping' attribute: " +
@@ -1538,11 +1550,7 @@ bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
 
     std::vector<double> breaks;
     std::vector<double> turning_rates;
-    ParseDrakeCurves(diagnostic, node, &breaks, &turning_rates);
-    if (breaks.size() == 0 || turning_rates.size() == 0) {
-      std::string message = "ERROR: <drake:joint> '" + joint_name +
-                            "' failed to parse 'drake:curves'.";
-      diagnostic.Error(node, std::move(message));
+    if (!ParseDrakeCurves(diagnostic, node, &breaks, &turning_rates)) {
       return false;
     }
     PiecewiseConstantCurvatureTrajectory<double> trajectory(
