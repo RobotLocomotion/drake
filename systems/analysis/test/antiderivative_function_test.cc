@@ -21,8 +21,7 @@ GTEST_TEST(AntiderivativeFunctionTest, UsingMultipleIntegrators) {
   // The lower integration bound v, for function definition.
   const double kDefaultLowerIntegrationBound = 0.0;
   // The default parameters 𝐤, for function definition.
-  const VectorX<double> kDefaultParameters =
-      VectorX<double>::Constant(2, 1.0);
+  const VectorX<double> kDefaultParameters = VectorX<double>::Constant(2, 1.0);
 
   // Defines an antiderivative function for f(x; 𝐤) = k₁ * x + k₂.
   AntiderivativeFunction<double> antiderivative_function(
@@ -62,9 +61,7 @@ GTEST_TEST(AntiderivativeFunctionTest, UsingMultipleIntegrators) {
 class AntiderivativeFunctionAccuracyTest
     : public ::testing::TestWithParam<double> {
  protected:
-  void SetUp() {
-    integration_accuracy_ = GetParam();
-  }
+  void SetUp() { integration_accuracy_ = GetParam(); }
 
   // Expected accuracy for numerical integral
   // evaluation in the relative tolerance sense.
@@ -75,8 +72,7 @@ class AntiderivativeFunctionAccuracyTest
 // parameterized in its order n.
 TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
   // The order n of the monomial.
-  const VectorX<double> kDefaultParameters =
-      VectorX<double>::Constant(1, 0.0);
+  const VectorX<double> kDefaultParameters = VectorX<double>::Constant(1, 0.0);
 
   const int kLowestOrder = 0;
   const int kHighestOrder = 3;
@@ -98,8 +94,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.MakeDenseEvalFunction(
-            kArgIntervalLBound, kArgIntervalUBound);
+            antiderivative_function.MakeDenseEvalFunction(kArgIntervalLBound,
+                                                          kArgIntervalUBound);
 
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
@@ -107,15 +103,13 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
       // the definite integral, which is (n + 1)⁻¹ uⁿ⁺¹.
       const double solution = std::pow(u, n + 1.) / (n + 1.);
 
-      EXPECT_NEAR(
-          antiderivative_function.Evaluate(kArgIntervalLBound, u),
-          solution, integration_accuracy_)
+      EXPECT_NEAR(antiderivative_function.Evaluate(kArgIntervalLBound, u),
+                  solution, integration_accuracy_)
           << "Failure integrating ∫₀ᵘ xⁿ dx for u = " << u << " and n = " << n
           << " to an accuracy of " << integration_accuracy_;
 
-      EXPECT_NEAR(
-          antiderivative_function_approx->EvaluateScalar(u),
-          solution, integration_accuracy_)
+      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u), solution,
+                  integration_accuracy_)
           << "Failure approximating ∫₀ᵘ xⁿ dx for u = " << u << " and n = " << n
           << " to an accuracy of " << integration_accuracy_
           << " with solver's continuous extension.";
@@ -127,8 +121,7 @@ TEST_P(AntiderivativeFunctionAccuracyTest, NthPowerMonomialTestCase) {
 // parameterized in its factor a.
 TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
   // The factor a in the tangent.
-  const VectorX<double> kDefaultParameters =
-      VectorX<double>::Constant(1, 0.0);
+  const VectorX<double> kDefaultParameters = VectorX<double>::Constant(1, 0.0);
 
   const double kParamIntervalLBound = -4.5;
   const double kParamIntervalUBound = 4.5;
@@ -152,8 +145,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.MakeDenseEvalFunction(
-            kArgIntervalLBound, kArgIntervalUBound);
+            antiderivative_function.MakeDenseEvalFunction(kArgIntervalLBound,
+                                                          kArgIntervalUBound);
 
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
@@ -167,8 +160,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, HyperbolicTangentTestCase) {
           << " u = " << u << " and a = " << a << " to an accuracy of "
           << integration_accuracy_;
 
-      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
-                  solution, integration_accuracy_)
+      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u), solution,
+                  integration_accuracy_)
           << "Failure approximating ∫₀ᵘ tanh(a⋅x) dx for"
           << " u = " << u << " and a = " << a << " to an accuracy of "
           << integration_accuracy_ << " with solver's continuous extension.";
@@ -199,21 +192,22 @@ TEST_P(AntiderivativeFunctionAccuracyTest,
        a += k1stPoleStep) {
     for (double b = k2ndPoleIntervalLBound; b <= k2ndPoleIntervalUBound;
          b += k2ndPoleStep) {
-    AntiderivativeFunction<double> antiderivative_function(
-        [](const double& x, const VectorX<double>& k) -> double {
-          const double a_ = k[0];
-          const double b_ = k[1];
-          return 1. / ((x + a_) * (x + b_));
-        }, Eigen::Vector2d{a, b});
+      AntiderivativeFunction<double> antiderivative_function(
+          [](const double& x, const VectorX<double>& k) -> double {
+            const double a_ = k[0];
+            const double b_ = k[1];
+            return 1. / ((x + a_) * (x + b_));
+          },
+          Eigen::Vector2d{a, b});
 
-    IntegratorBase<double>& inner_integrator =
-        antiderivative_function.get_mutable_integrator();
-    inner_integrator.set_target_accuracy(GetParam());
+      IntegratorBase<double>& inner_integrator =
+          antiderivative_function.get_mutable_integrator();
+      inner_integrator.set_target_accuracy(GetParam());
 
-    const std::unique_ptr<ScalarDenseOutput<double>>
-        antiderivative_function_approx =
-        antiderivative_function.MakeDenseEvalFunction(
-            kArgIntervalLBound, kArgIntervalUBound);
+      const std::unique_ptr<ScalarDenseOutput<double>>
+          antiderivative_function_approx =
+              antiderivative_function.MakeDenseEvalFunction(kArgIntervalLBound,
+                                                            kArgIntervalUBound);
 
       for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
            u += kArgStep) {
@@ -228,8 +222,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest,
             << " u = " << u << ", a = " << a << "and b = " << b
             << " to an accuracy of " << integration_accuracy_;
 
-        EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
-                    solution, integration_accuracy_)
+        EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u), solution,
+                    integration_accuracy_)
             << "Failure approximating ∫₀ᵘ [(x + a)⋅(x + b)]⁻¹ dx for"
             << " u = " << u << ", a = " << a << "and b = " << b
             << " to an accuracy of " << integration_accuracy_
@@ -258,7 +252,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
     AntiderivativeFunction<double> antiderivative_function(
         [](const double& x, const VectorX<double>& k) -> double {
           return x * std::exp(k[0] * x);
-        }, Vector1<double>{n});
+        },
+        Vector1<double>{n});
 
     IntegratorBase<double>& inner_integrator =
         antiderivative_function.get_mutable_integrator();
@@ -266,8 +261,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.MakeDenseEvalFunction(
-            kArgIntervalLBound, kArgIntervalUBound);
+            antiderivative_function.MakeDenseEvalFunction(kArgIntervalLBound,
+                                                          kArgIntervalUBound);
 
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
@@ -276,19 +271,17 @@ TEST_P(AntiderivativeFunctionAccuracyTest, ExponentialFunctionTestCase) {
       const double solution =
           (u / n - 1. / (n * n)) * std::exp(n * u) + 1. / (n * n);
 
-      EXPECT_NEAR(
-          antiderivative_function.Evaluate(kArgIntervalLBound, u),
-          solution, integration_accuracy_)
+      EXPECT_NEAR(antiderivative_function.Evaluate(kArgIntervalLBound, u),
+                  solution, integration_accuracy_)
           << "Failure integrating ∫₀ᵘ x eⁿˣ dx for"
           << " u = " << u << " and n = " << n << " to an accuracy of "
           << integration_accuracy_;
 
-      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
-                  solution, integration_accuracy_)
+      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u), solution,
+                  integration_accuracy_)
           << "Failure approximating ∫₀ᵘ x eⁿˣ dx for"
-          << " u = " << u << " and n = " << n
-          << " to an accuracy of " << integration_accuracy_
-          << " with solver's continuous extension.";
+          << " u = " << u << " and n = " << n << " to an accuracy of "
+          << integration_accuracy_ << " with solver's continuous extension.";
     }
   }
 }
@@ -312,7 +305,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
     AntiderivativeFunction<double> antiderivative_function(
         [](const double& x, const VectorX<double>& k) -> double {
           return x * std::sin(k[0] * x);
-        }, Vector1<double>{a});
+        },
+        Vector1<double>{a});
 
     IntegratorBase<double>& inner_integrator =
         antiderivative_function.get_mutable_integrator();
@@ -320,8 +314,8 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
 
     const std::unique_ptr<ScalarDenseOutput<double>>
         antiderivative_function_approx =
-        antiderivative_function.MakeDenseEvalFunction(
-            kArgIntervalLBound, kArgIntervalUBound);
+            antiderivative_function.MakeDenseEvalFunction(kArgIntervalLBound,
+                                                          kArgIntervalUBound);
 
     for (double u = kArgIntervalLBound; u <= kArgIntervalUBound;
          u += kArgStep) {
@@ -336,11 +330,11 @@ TEST_P(AntiderivativeFunctionAccuracyTest, TrigonometricFunctionTestCase) {
           << " u = " << u << " and a = " << a << " to an accuracy of "
           << integration_accuracy_;
 
-      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u),
-                  solution, integration_accuracy_)
+      EXPECT_NEAR(antiderivative_function_approx->EvaluateScalar(u), solution,
+                  integration_accuracy_)
           << "Failure approximating ∫₀ᵘ x⋅sin(a⋅x) dx for"
           << " u = " << u << " and a = " << a << " to an accuracy of "
-          << integration_accuracy_ << "with solver's continuous extension.";;
+          << integration_accuracy_ << "with solver's continuous extension.";
     }
   }
 }

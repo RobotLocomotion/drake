@@ -29,11 +29,11 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
   // using a generic ODE dx/dt = -x + k₁, that does not
   // model (nor attempts to model) any physical process.
   ScalarInitialValueProblem<double> ivp(
-      [](const double& t, const double& x,
-         const VectorX<double>& k) -> double {
+      [](const double& t, const double& x, const VectorX<double>& k) -> double {
         unused(t);
         return -x + k[0];
-      }, kInitialState, kParameters);
+      },
+      kInitialState, kParameters);
 
   // Testing against closed form solution of above's scalar IVP, which
   // can be written as x(t; [k₁]) = k₁ + (x₀ - k₁) * e^(-(t - t₀)).
@@ -57,11 +57,11 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
   // initial time and state as defaults.
   const Eigen::Vector2d k2{1, 5.0};
   ScalarInitialValueProblem<double> ivp2(
-      [](const double& t, const double& x,
-         const VectorX<double>& k) -> double {
+      [](const double& t, const double& x, const VectorX<double>& k) -> double {
         unused(t);
         return -x + k[0];
-      }, kInitialState, k2);
+      },
+      kInitialState, k2);
   const double t2 = kInitialTime + 0.3;
   // Testing against closed form solution of above's scalar IVP,
   // which can be written as x(t; [k₁]) = k₁ + (x₀ - k₁) * e^(-(t - t₀)).
@@ -73,9 +73,7 @@ GTEST_TEST(ScalarInitialValueProblemTest, UsingMultipleIntegrators) {
 class ScalarInitialValueProblemAccuracyTest
     : public ::testing::TestWithParam<double> {
  protected:
-  void SetUp() {
-    integration_accuracy_ = GetParam();
-  }
+  void SetUp() { integration_accuracy_ = GetParam(); }
 
   // Expected accuracy for numerical integral
   // evaluation in the relative tolerance sense.
@@ -107,20 +105,21 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
   const double Q0 = kInitialStoredCharge;
   const double t0 = kInitialTime;
   const double tf = kTotalTime;
-  for (double Rs = kLowestResistance; Rs <= kHighestResistance ;
+  for (double Rs = kLowestResistance; Rs <= kHighestResistance;
        Rs += kResistanceStep) {
-    for (double Cs = kLowestCapacitance; Cs <= kHighestCapacitance ;
+    for (double Cs = kLowestCapacitance; Cs <= kHighestCapacitance;
          Cs += kCapacitanceStep) {
       const Eigen::Vector2d parameters{Rs, Cs};
 
       // Instantiates the stored charge scalar IVP.
       ScalarInitialValueProblem<double> stored_charge_ivp(
           [](const double& t, const double& q,
-            const VectorX<double>& k) -> double {
+             const VectorX<double>& k) -> double {
             const double Rs_ = k[0];
             const double Cs_ = k[1];
             return (std::sin(t) - q / Cs_) / Rs_;
-          }, kInitialStoredCharge, parameters);
+          },
+          kInitialStoredCharge, parameters);
 
       IntegratorBase<double>& inner_integrator =
           stored_charge_ivp.get_mutable_integrator();
@@ -137,25 +136,24 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, StoredCharge) {
         // Q(t; [Rs, Cs]) = 1/Rs * (τ²/ (1 + τ²) * e^(-t / τ) +
         //                  τ / √(1 + τ²) * sin(t - arctan(τ)))
         // where τ = Rs * Cs for Q(t₀ = 0; [Rs, Cs]) = Q₀ = 0.
-        const double solution = (
-            tau_sq / (1. + tau_sq) * std::exp(-t / tau)
-            + tau / std::sqrt(1. + tau_sq)
-            * std::sin(t - std::atan(tau))) / Rs;
-        EXPECT_NEAR(stored_charge_ivp.Solve(t0, t),
-                    solution, integration_accuracy_)
+        const double solution =
+            (tau_sq / (1. + tau_sq) * std::exp(-t / tau) +
+             tau / std::sqrt(1. + tau_sq) * std::sin(t - std::atan(tau))) /
+            Rs;
+        EXPECT_NEAR(stored_charge_ivp.Solve(t0, t), solution,
+                    integration_accuracy_)
             << "Failure solving dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = "
-            << t0 << "; [Rs, Cs]) = " << Q0 << " for t = " << t << ", Rs = "
-            << Rs << " and Cs = " << Cs << " to an accuracy of "
+            << t0 << "; [Rs, Cs]) = " << Q0 << " for t = " << t
+            << ", Rs = " << Rs << " and Cs = " << Cs << " to an accuracy of "
             << integration_accuracy_;
 
-        EXPECT_NEAR(stored_charge_approx->EvaluateScalar(t),
-                    solution, integration_accuracy_)
+        EXPECT_NEAR(stored_charge_approx->EvaluateScalar(t), solution,
+                    integration_accuracy_)
             << "Failure approximating the solution for"
-            << " dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = "
-            << t0 << "; [Rs, Cs]) = " << Q0 << " for t = " << t
-            << ", Rs = " << Rs << " and Cs = " << Cs
-            << " to an accuracy of " << integration_accuracy_
-            << " with solver's continuous extension.";
+            << " dQ/dt = (sin(t) - Q / Cs) / Rs using Q(t₀ = " << t0
+            << "; [Rs, Cs]) = " << Q0 << " for t = " << t << ", Rs = " << Rs
+            << " and Cs = " << Cs << " to an accuracy of "
+            << integration_accuracy_ << " with solver's continuous extension.";
       }
     }
   }
@@ -203,27 +201,25 @@ TEST_P(ScalarInitialValueProblemAccuracyTest, PopulationGrowth) {
       // solution for the IVP described above, which is
       // N(t; r) = N₀ * e^(r * t).
       const double solution = N0 * std::exp(r * t);
-      EXPECT_NEAR(population_growth_ivp.Solve(t0, t),
-                  solution, integration_accuracy_)
-          << "Failure solving dN/dt = r * N using N(t₀ = "
-          << t0 << "; r) = " << N0 << " for t = " << t
-          << " and r = " << r << " to an accuracy of "
-          << integration_accuracy_;
+      EXPECT_NEAR(population_growth_ivp.Solve(t0, t), solution,
+                  integration_accuracy_)
+          << "Failure solving dN/dt = r * N using N(t₀ = " << t0
+          << "; r) = " << N0 << " for t = " << t << " and r = " << r
+          << " to an accuracy of " << integration_accuracy_;
 
-      EXPECT_NEAR(population_growth_approx->EvaluateScalar(t),
-                  solution, integration_accuracy_)
+      EXPECT_NEAR(population_growth_approx->EvaluateScalar(t), solution,
+                  integration_accuracy_)
           << "Failure approximating the solution for dN/dt = r * N"
-          << " using N(t₀ = " << t0 << "; r) = " << N0 << " for t = "
-          << t << " and r = " << r << " to an accuracy of "
-          << integration_accuracy_ << " with solver's continuous extension.";
+          << " using N(t₀ = " << t0 << "; r) = " << N0 << " for t = " << t
+          << " and r = " << r << " to an accuracy of " << integration_accuracy_
+          << " with solver's continuous extension.";
     }
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    IncreasingAccuracyScalarInitialValueProblemTests,
-    ScalarInitialValueProblemAccuracyTest,
-    ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
+INSTANTIATE_TEST_SUITE_P(IncreasingAccuracyScalarInitialValueProblemTests,
+                         ScalarInitialValueProblemAccuracyTest,
+                         ::testing::Values(1e-1, 1e-2, 1e-3, 1e-4, 1e-5));
 
 }  // namespace
 }  // namespace analysis

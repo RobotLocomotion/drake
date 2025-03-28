@@ -26,9 +26,7 @@ class DummyImplicitIntegrator final : public ImplicitIntegrator<double> {
   using ImplicitIntegrator<double>::IsUpdateZero;
 
   // Returns whether DoResetCachedMatrices() has been called.
-  bool get_has_reset_cached_matrices() {
-    return has_reset_cached_matrices_;
-  }
+  bool get_has_reset_cached_matrices() { return has_reset_cached_matrices_; }
 
  private:
   // There is no stepping so no stats should accumulate.
@@ -124,8 +122,8 @@ GTEST_TEST(ImplicitIntegratorTest, SetComputationSchemeResetsCachedMatrices) {
 
   // The default scheme should be kForwardDifference.
   EXPECT_EQ(dummy_integrator.get_jacobian_computation_scheme(),
-            ImplicitIntegrator<double>
-            ::JacobianComputationScheme::kForwardDifference);
+            ImplicitIntegrator<
+                double>::JacobianComputationScheme::kForwardDifference);
 
   // Verify that DoResetCachedMatrices() has not been called yet.
   EXPECT_FALSE(dummy_integrator.get_has_reset_cached_matrices());
@@ -139,8 +137,7 @@ GTEST_TEST(ImplicitIntegratorTest, SetComputationSchemeResetsCachedMatrices) {
 
   // Verify that the scheme has been properly changed.
   EXPECT_EQ(dummy_integrator.get_jacobian_computation_scheme(),
-            ImplicitIntegrator<double>
-            ::JacobianComputationScheme::kAutomatic);
+            ImplicitIntegrator<double>::JacobianComputationScheme::kAutomatic);
 }
 
 GTEST_TEST(ImplicitIntegratorTest, Clone) {
@@ -172,4 +169,3 @@ GTEST_TEST(ImplicitIntegratorTest, Clone) {
 }  // namespace
 }  // namespace systems
 }  // namespace drake
-
