@@ -218,7 +218,8 @@ class Frame : public MultibodyElement<T> {
   /// the pose for a body frame.
   math::RigidTransform<T> CalcPoseInWorld(
       const systems::Context<T>& context) const {
-    const internal::MultibodyTree<T>& tree = this->GetParentTreeOrThrow();
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
+    const internal::MultibodyTree<T>& tree = this->get_parent_tree();
     return tree.CalcRelativeTransform(context, tree.world_frame(), *this);
   }
 
@@ -227,23 +228,26 @@ class Frame : public MultibodyElement<T> {
   /// @see CalcPoseInWorld().
   math::RigidTransform<T> CalcPose(const systems::Context<T>& context,
                                    const Frame<T>& frame_M) const {
-    return this->GetParentTreeOrThrow().CalcRelativeTransform(context, frame_M,
-                                                              *this);
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
+    return this->get_parent_tree().CalcRelativeTransform(context, frame_M,
+                                                         *this);
   }
 
   /// Calculates and returns the rotation matrix `R_MF` that relates `frame_M`
   /// and `this` frame F as a function of the state stored in `context`.
   math::RotationMatrix<T> CalcRotationMatrix(const systems::Context<T>& context,
                                              const Frame<T>& frame_M) const {
-    return this->GetParentTreeOrThrow().CalcRelativeRotationMatrix(
-        context, frame_M, *this);
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
+    return this->get_parent_tree().CalcRelativeRotationMatrix(context, frame_M,
+                                                              *this);
   }
 
   /// Calculates and returns the rotation matrix `R_WF` that relates the world
   /// frame W and `this` frame F as a function of the state stored in `context`.
   math::RotationMatrix<T> CalcRotationMatrixInWorld(
       const systems::Context<T>& context) const {
-    const internal::MultibodyTree<T>& tree = this->GetParentTreeOrThrow();
+    DRAKE_THROW_UNLESS(this->has_parent_tree());
+    const internal::MultibodyTree<T>& tree = this->get_parent_tree();
     return tree.CalcRelativeRotationMatrix(context, tree.world_frame(), *this);
   }
 

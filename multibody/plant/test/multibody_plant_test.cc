@@ -406,29 +406,25 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   // Create another frame (which is not part of the plant). Ensure an exception
   // is thrown if there is a query for information about this frame that needs
   // the associated multibody tree. Herein we try various public methods.
-  multibody::FixedOffsetFrame<double> fixed_offset_frame(
+  multibody::FixedOffsetFrame<double> frame_not_in_multibody_tree(
       "bad_frame", plant->world_frame(), RigidTransform<double>{});
   std::unique_ptr<Context<double>> context = plant->CreateDefaultContext();
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      fixed_offset_frame.CalcPoseInWorld(*context),
-      "This multibody element was not added to a MultibodyTree.");
+      frame_not_in_multibody_tree.CalcPoseInWorld(*context),
+      ".*has_parent_tree.*failed.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      fixed_offset_frame.CalcPose(*context, model_frame),
-      "This multibody element was not added to a MultibodyTree.");
+      frame_not_in_multibody_tree.CalcPose(*context, model_frame),
+      ".*has_parent_tree.*failed.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      fixed_offset_frame.CalcRotationMatrix(*context, model_frame),
-      "This multibody element was not added to a MultibodyTree.");
+      frame_not_in_multibody_tree.CalcRotationMatrix(*context, model_frame),
+      ".*has_parent_tree.*failed.*");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      fixed_offset_frame.CalcRotationMatrixInWorld(*context),
-      "This multibody element was not added to a MultibodyTree.");
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      fixed_offset_frame.CalcRotationMatrixInWorld(*context),
-      "This multibody element was not added to a MultibodyTree.");
+      frame_not_in_multibody_tree.CalcRotationMatrixInWorld(*context),
+      ".*has_parent_tree.*failed.*");
 }
 
 GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
