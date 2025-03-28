@@ -172,9 +172,9 @@ struct Impl {
     using Base::DoClone;
   };
 
-  class PyTrajectory : public py::wrapper<TrajectoryPublic> {
+  class PyTrajectory : public TrajectoryPublic {
    public:
-    using Base = py::wrapper<TrajectoryPublic>;
+    using Base = TrajectoryPublic;
     using Base::Base;
 
     void WarnDeprecatedOverride(std::string_view func_name) const {
