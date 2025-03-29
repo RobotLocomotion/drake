@@ -60,9 +60,9 @@ void SuctionCupController::CalcMaxForceDensity(
     BasicVector<double>* max_force_density) const {
   const double time = context.get_time();
   if (time >= start_suction_time_ && time <= release_suction_time_) {
-    // An arbitrary value that's reasonable for picking up the deformable torus
-    // in the example with density comparable to water.
-    (*max_force_density)[0] = 2.0e5;
+    /* An arbitrary value that's reasonable for picking up the deformable torus
+     in the example with density comparable to water. */
+    (*max_force_density)[0] = 2.0e8;
   } else {
     (*max_force_density)[0] = 0.0;
   }
