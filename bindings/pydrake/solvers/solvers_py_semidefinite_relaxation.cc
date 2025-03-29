@@ -1,4 +1,3 @@
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/solvers/solvers_py.h"
@@ -39,11 +38,6 @@ void DefineSolversSemidefiniteRelaxation(py::module m) {
               .format(self.add_implied_linear_equality_constraints,
                   self.add_implied_linear_constraints);
         });
-    options.def_readwrite("preserve_convex_quadratic_constraints",
-        &SemidefiniteRelaxationOptions::preserve_convex_quadratic_constraints,
-        cls_doc.preserve_convex_quadratic_constraints.doc);
-    DeprecateAttribute(options, "preserve_convex_quadratic_constraints",
-        cls_doc.preserve_convex_quadratic_constraints.doc);
   }
 
   m.def("MakeSemidefiniteRelaxation",

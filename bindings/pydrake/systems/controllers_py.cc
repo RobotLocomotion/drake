@@ -1,4 +1,3 @@
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -169,15 +168,6 @@ PYBIND11_MODULE(controllers, m) {
             py_rvp::reference_internal, cls_doc.get_output_port_actuation.doc)
         .def("get_multibody_plant", &Class::get_multibody_plant,
             py_rvp::reference_internal, cls_doc.get_multibody_plant.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("get_output_port_generalized_force",
-        WrapDeprecated(cls_doc.get_output_port_generalized_force.doc_deprecated,
-            &Class::get_output_port_generalized_force),
-        py_rvp::reference_internal,
-        cls_doc.get_output_port_generalized_force.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   {
