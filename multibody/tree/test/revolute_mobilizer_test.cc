@@ -30,6 +30,8 @@ constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 class RevoluteMobilizerTest : public MobilizerTester {
  public:
   void SetUp() override {
+    // The axis is not one of the coordinate axes, so we'll expect to get
+    // new F & M frames that rotate around their common z axis.
     mobilizer_ = &AddJointAndFinalize<RevoluteJoint, RevoluteMobilizer>(
         std::make_unique<RevoluteJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame(),
@@ -52,8 +54,8 @@ TEST_F(RevoluteMobilizerTest, CanRotateOrTranslate) {
 
 // Verify that RevoluteMobilizer normalizes its axis on construction.
 TEST_F(RevoluteMobilizerTest, AxisIsNormalizedAtConstruction) {
-  EXPECT_TRUE(CompareMatrices(mobilizer_->revolute_axis(), axis_F_.normalized(),
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_EQ(mobilizer_->revolute_axis().norm(), 1.0);
+  EXPECT_EQ(mobilizer_->revolute_axis(), Vector3d(0, 0, 1));
 }
 
 // Verifies method to mutate and access the context.
@@ -140,8 +142,8 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
   const RigidTransformd X_FM(
       mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
-  const RigidTransformd X_FM_expected(
-      RotationMatrixd(AngleAxisd(angle, axis_F_.normalized())));
+  const RigidTransformd X_FM_expected(RotationMatrixd(
+      AngleAxisd(angle, mobilizer_->revolute_axis().normalized())));
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no translations at all.
@@ -158,7 +160,7 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
                                                      Vector1d(angular_rate));
 
   const SpatialVelocity<double> V_FM_expected(
-      axis_F_.normalized() * angular_rate, Vector3d::Zero());
+      mobilizer_->revolute_axis() * angular_rate, Vector3d::Zero());
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no translations at all.
@@ -173,7 +175,7 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
           *context_, Vector1d(angular_acceleration));
 
   const SpatialAcceleration<double> A_FM_expected(
-      axis_F_.normalized() * angular_acceleration, Vector3d::Zero());
+      mobilizer_->revolute_axis() * angular_acceleration, Vector3d::Zero());
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no translations at all.
@@ -189,7 +191,7 @@ TEST_F(RevoluteMobilizerTest, ProjectSpatialForce) {
   mobilizer_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
   // Only the torque along axis_F does work.
-  const double tau_expected = torque_Mo_F.dot(axis_F_.normalized());
+  const double tau_expected = torque_Mo_F.dot(mobilizer_->revolute_axis());
   EXPECT_NEAR(tau(0), tau_expected, kTolerance);
 }
 

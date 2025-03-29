@@ -9,7 +9,6 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer_impl.h"
-#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -61,6 +60,9 @@ namespace internal {
 //
 //   H_FM₆ₓ₆ = I₆ₓ₆     Hdot_FM₆ₓ₆ = 0₆ₓ₆
 //
+//   H_FM_M = R_MF ⋅ H_FM_F = [ R_MF   0  ]
+//                            [   0  R_MF ]
+//
 // @tparam_default_scalar
 template <typename T>
 class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
@@ -84,8 +86,8 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
 
   ~RpyFloatingMobilizer() final;
 
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+      const BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
   bool has_quaternion_dofs() const final { return false; }
@@ -234,6 +236,12 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
                                    Vector3<T>(q[3], q[4], q[5]));
   }
 
+  /* There's nothing to optimize for the X_FM update. */
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
+  }
+
   // Computes the across-mobilizer velocity V_FM(q, v) of the outboard frame M
   // measured and expressed in frame F as a function of the input generalized
   // velocity v, packed as documented in get_generalized_velocities(). (That's
@@ -243,6 +251,18 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
     return SpatialVelocity<T>(V_FM);  // w_FM, v_FM
   }
 
+  // The generalized velocities v are in F so we have to re-express.
+  // TODO(sherm1) Consider switching coordinates to M, or make another joint.
+  SpatialVelocity<T> calc_V_FM_M(const math::RigidTransform<T>& X_FM,
+                                 const T* q, const T* v) const {
+    DRAKE_ASSERT(q != nullptr && v != nullptr);
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const Eigen::Map<const VVector<T>> v_vector(v);
+    const SpatialVelocity<T> V_FM_F(v_vector);
+    const SpatialVelocity<T> V_FM_M = R_FM.inverse() * V_FM_F;  // 30 flops
+    return V_FM_M;  // w_FM_M, v_FM_M
+  }
+
   // We chose the generalized velocities for this mobilizer so that H=I, Hdot=0.
   // Therefore A_FM = H⋅vdot + Hdot⋅v = vdot.
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
@@ -250,11 +270,32 @@ class RpyFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
     return SpatialAcceleration<T>(A_FM);
   }
 
+  // Sadly, reporting this in M is much more difficult because our generalized
+  // velocities are in F. We'll just calculate in F and then re-express.
+  SpatialAcceleration<T> calc_A_FM_M(const math::RigidTransform<T>& X_FM,
+                                     const T* q, const T*,
+                                     const T* vdot) const {
+    DRAKE_ASSERT(q != nullptr && vdot != nullptr);
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const SpatialAcceleration<T> A_FM_F = calc_A_FM(nullptr, nullptr, vdot);
+    const SpatialAcceleration<T> A_FM_M = R_FM.inverse() * A_FM_F;  // 30 flops
+    return A_FM_M;
+  }
+
   // Returns tau = H_FMᵀ⋅F. H is identity for this mobilizer.
   void calc_tau(const T*, const SpatialForce<T>& F_BMo_F, T* tau) const {
     DRAKE_ASSERT(tau != nullptr);
     Eigen::Map<VVector<T>> tau_as_vector(tau);
     tau_as_vector = F_BMo_F.get_coeffs();
+  }
+
+  // Returns tau = H_FM_Mᵀ⋅F_M. See class comments.
+  void calc_tau_from_M(const math::RigidTransform<T>& X_FM, const T* q,
+                       const SpatialForce<T>& F_BMo_M, T* tau) const {
+    DRAKE_ASSERT(q != nullptr && tau != nullptr);
+    const math::RotationMatrix<T>& R_FM = X_FM.rotation();
+    const SpatialForce<T> F_BMo_F = R_FM * F_BMo_M;  // 30 flops
+    calc_tau(nullptr, F_BMo_F, &*tau);
   }
 
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
