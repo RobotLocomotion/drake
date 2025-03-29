@@ -28,9 +28,9 @@ namespace {
 
 // pybind11 trampoline class to permit overriding virtual functions in
 // Python.
-class PySerializerInterface : public py::wrapper<SerializerInterface> {
+class PySerializerInterface : public SerializerInterface {
  public:
-  using Base = py::wrapper<SerializerInterface>;
+  using Base = SerializerInterface;
 
   PySerializerInterface() : Base() {}
 
