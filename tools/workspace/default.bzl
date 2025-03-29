@@ -13,7 +13,7 @@ load("//tools/workspace/clarabel_cpp_internal:repository.bzl", "clarabel_cpp_int
 load("//tools/workspace/clp_internal:repository.bzl", "clp_internal_repository")  # noqa
 load("//tools/workspace/coinutils_internal:repository.bzl", "coinutils_internal_repository")  # noqa
 load("//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
-load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository", "common_robotics_utilities_repository")  # noqa
+load("//tools/workspace/common_robotics_utilities_internal:repository.bzl", "common_robotics_utilities_internal_repository")  # noqa
 load("//tools/workspace/commons_io:repository.bzl", "commons_io_repository")
 load("//tools/workspace/crate_universe:repository.bzl", "crate_universe_repositories")  # noqa
 load("//tools/workspace/csdp_internal:repository.bzl", "csdp_internal_repository")  # noqa
@@ -105,7 +105,7 @@ load("//tools/workspace/typing_extensions_internal:repository.bzl", "typing_exte
 load("//tools/workspace/uritemplate_py_internal:repository.bzl", "uritemplate_py_internal_repository")  # noqa
 load("//tools/workspace/usockets_internal:repository.bzl", "usockets_internal_repository")  # noqa
 load("//tools/workspace/uwebsockets_internal:repository.bzl", "uwebsockets_internal_repository")  # noqa
-load("//tools/workspace/voxelized_geometry_tools_internal:repository.bzl", "voxelized_geometry_tools_internal_repository", "voxelized_geometry_tools_repository")  # noqa
+load("//tools/workspace/voxelized_geometry_tools_internal:repository.bzl", "voxelized_geometry_tools_internal_repository")  # noqa
 load("//tools/workspace/vtk_internal:repository.bzl", "vtk_internal_repository")  # noqa
 load("//tools/workspace/x11:repository.bzl", "x11_repository")
 load("//tools/workspace/xmlrunner_py:repository.bzl", "xmlrunner_py_repository")  # noqa
@@ -162,8 +162,6 @@ def add_default_repositories(
         coinutils_internal_repository(name = "coinutils_internal", mirrors = mirrors)  # noqa
     if "com_jidesoft_jide_oss" not in excludes:
         com_jidesoft_jide_oss_repository(name = "com_jidesoft_jide_oss", mirrors = mirrors, _is_drake_self_call = True)  # noqa
-    if "common_robotics_utilities" not in excludes:
-        common_robotics_utilities_repository(name = "common_robotics_utilities", mirrors = mirrors)  # noqa
     if "common_robotics_utilities_internal" not in excludes:
         common_robotics_utilities_internal_repository(name = "common_robotics_utilities_internal", mirrors = mirrors)  # noqa
     if "commons_io" not in excludes:
@@ -367,8 +365,6 @@ def add_default_repositories(
         usockets_internal_repository(name = "usockets_internal", mirrors = mirrors)  # noqa
     if "uwebsockets_internal" not in excludes:
         uwebsockets_internal_repository(name = "uwebsockets_internal", mirrors = mirrors)  # noqa
-    if "voxelized_geometry_tools" not in excludes:
-        voxelized_geometry_tools_repository(name = "voxelized_geometry_tools", mirrors = mirrors)  # noqa
     if "voxelized_geometry_tools_internal" not in excludes:
         voxelized_geometry_tools_internal_repository(name = "voxelized_geometry_tools_internal", mirrors = mirrors)  # noqa
     if "vtk_internal" not in excludes:

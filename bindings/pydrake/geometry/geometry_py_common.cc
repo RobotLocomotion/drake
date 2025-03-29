@@ -544,13 +544,6 @@ void DefineShapes(py::module m) {
     // Note: Convex.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    convex_cls.def("filename",
-        WrapDeprecated(doc.Convex.filename.doc_deprecated, &Convex::filename),
-        doc.Convex.filename.doc_deprecated);
-#pragma GCC diagnostic pop
-
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc_2args)
@@ -621,13 +614,6 @@ void DefineShapes(py::module m) {
             }));
     // Note: Mesh.__repr__ is redefined in _geometry_extra.py;
     // Shape::to_string() does not properly condition strings for python.
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    mesh_cls.def("filename",
-        WrapDeprecated(doc.Mesh.filename.doc_deprecated, &Mesh::filename),
-        doc.Mesh.filename.doc_deprecated);
-#pragma GCC diagnostic pop
 
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
