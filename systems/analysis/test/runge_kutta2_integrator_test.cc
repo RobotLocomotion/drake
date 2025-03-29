@@ -15,7 +15,7 @@ GTEST_TEST(IntegratorTest, MiscAPI) {
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);
 
   // Setup integration step.
-  const double h  = 1e-3;
+  const double h = 1e-3;
 
   // Create the integrator.
   RungeKutta2Integrator<double> integrator(spring_mass, h);
@@ -44,7 +44,7 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   auto context = spring_mass.CreateDefaultContext();
 
   // Setup integration step.
-  const double h  = 1e-3;
+  const double h = 1e-3;
 
   // Create the integrator
   RungeKutta2Integrator<double> integrator(spring_mass, h, context.get());
@@ -59,8 +59,7 @@ GTEST_TEST(IntegratorTest, ErrorEst) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double h = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
-  RungeKutta2Integrator<double> integrator(
-      spring_mass, h, context.get());
+  RungeKutta2Integrator<double> integrator(spring_mass, h, context.get());
 
   EXPECT_EQ(integrator.get_error_estimate_order(), 0);
   EXPECT_EQ(integrator.supports_error_estimation(), false);
@@ -87,7 +86,7 @@ void CheckStatsValidity(RungeKutta2Integrator<double>* integrator) {
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double spring_k = 300.0;  // N/m
-  const double mass = 2.0;      // kg
+  const double mass = 2.0;        // kg
 
   // Create the spring-mass system
   SpringMassSystem<double> spring_mass(spring_k, mass, 0.);
@@ -96,7 +95,7 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   auto context = spring_mass.CreateDefaultContext();
 
   // Create the integrator.
-  const double h = 1.0/1024;
+  const double h = 1.0 / 1024;
   RungeKutta2Integrator<double> integrator(spring_mass, h, context.get());
 
   // Setup the initial position and initial velocity.
@@ -104,10 +103,8 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double initial_velocity = 0.01;
 
   // Set initial conditions using integrator's internal Context.
-  spring_mass.set_position(integrator.get_mutable_context(),
-                           initial_position);
-  spring_mass.set_velocity(integrator.get_mutable_context(),
-                           initial_velocity);
+  spring_mass.set_position(integrator.get_mutable_context(), initial_position);
+  spring_mass.set_velocity(integrator.get_mutable_context(), initial_velocity);
 
   // Take all the defaults.
   integrator.Initialize();
@@ -126,9 +123,8 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Get the closed form solution.
   double x_final_true, unused_v_final_true;
-  spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
-                                    t_final, &x_final_true,
-                                    &unused_v_final_true);
+  spring_mass.GetClosedFormSolution(initial_position, initial_velocity, t_final,
+                                    &x_final_true, &unused_v_final_true);
 
   // Check the solution.
   const double xtol = 5e-3;
@@ -141,8 +137,8 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
   // Verify that the built dense output is valid.
   for (double t = 0; t <= t_final; t += h / 2.) {
     double x_true, unused_v_true;
-    spring_mass.GetClosedFormSolution(initial_position, initial_velocity,
-                                      t, &x_true, &unused_v_true);
+    spring_mass.GetClosedFormSolution(initial_position, initial_velocity, t,
+                                      &x_true, &unused_v_true);
     const VectorX<double> x = dense_output->value(t);
     EXPECT_NEAR(x_true, x(0), xtol);
   }
@@ -158,9 +154,8 @@ class Quadratic : public LeafSystem<double> {
   Quadratic() { this->DeclareContinuousState(1); }
 
  private:
-  void DoCalcTimeDerivatives(
-    const Context<double>& context,
-    ContinuousState<double>* deriv) const override {
+  void DoCalcTimeDerivatives(const Context<double>& context,
+                             ContinuousState<double>* deriv) const override {
     const double t = context.get_time();
     (*deriv)[0] = 8 * t + 4;
   }
@@ -183,17 +178,16 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
 
   const double t_final = 1.0;
 
-  RungeKutta2Integrator<double> rk2(
-      quadratic, t_final, quadratic_context.get());
+  RungeKutta2Integrator<double> rk2(quadratic, t_final,
+                                    quadratic_context.get());
   rk2.set_maximum_step_size(t_final);
   rk2.set_fixed_step_mode(true);
   rk2.Initialize();
   ASSERT_TRUE(rk2.IntegrateWithSingleFixedStepToTime(t_final));
 
   const double expected_result = t_final * (4 * t_final + 4) + C;
-  EXPECT_NEAR(
-      quadratic_context->get_continuous_state_vector()[0], expected_result,
-      10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(quadratic_context->get_continuous_state_vector()[0],
+              expected_result, 10 * std::numeric_limits<double>::epsilon());
 }
 
 GTEST_TEST(IntegratorTest, Symbolic) {
@@ -207,8 +201,8 @@ GTEST_TEST(IntegratorTest, Symbolic) {
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
   // Create the integrator.
-  RungeKutta2Integrator<Expression> integrator(
-      spring_mass, max_h, context.get());
+  RungeKutta2Integrator<Expression> integrator(spring_mass, max_h,
+                                               context.get());
   integrator.Initialize();
 
   const Variable q("q");

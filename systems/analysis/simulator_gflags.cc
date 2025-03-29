@@ -66,9 +66,8 @@ template <typename T>
 IntegratorBase<T>& ResetIntegratorFromGflags(Simulator<T>* simulator) {
   DRAKE_THROW_UNLESS(simulator != nullptr);
   IntegratorBase<T>& integrator =
-      ResetIntegratorFromFlags(
-          simulator, FLAGS_simulator_integration_scheme,
-          T(FLAGS_simulator_max_time_step));
+      ResetIntegratorFromFlags(simulator, FLAGS_simulator_integration_scheme,
+                               T(FLAGS_simulator_max_time_step));
   // For integrators that support error control, turn on or off error control
   // based on the simulator_use_error_control flag.
   if (integrator.supports_error_estimation()) {
@@ -93,23 +92,19 @@ std::unique_ptr<Simulator<T>> MakeSimulatorFromGflags(
     const System<T>& system, std::unique_ptr<Context<T>> context) {
   auto simulator = std::make_unique<Simulator<T>>(system, std::move(context));
 
-  const SimulatorConfig config {
-    FLAGS_simulator_integration_scheme,
-    FLAGS_simulator_max_time_step,
-    FLAGS_simulator_accuracy,
-    FLAGS_simulator_use_error_control,
-    FLAGS_simulator_target_realtime_rate,
-    FLAGS_simulator_publish_every_time_step
-  };
+  const SimulatorConfig config{FLAGS_simulator_integration_scheme,
+                               FLAGS_simulator_max_time_step,
+                               FLAGS_simulator_accuracy,
+                               FLAGS_simulator_use_error_control,
+                               FLAGS_simulator_target_realtime_rate,
+                               FLAGS_simulator_publish_every_time_step};
   ApplySimulatorConfig(config, simulator.get());
 
   return simulator;
 }
 
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
-      &ResetIntegratorFromGflags<T>,
-      &MakeSimulatorFromGflags<T>
-));
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+    (&ResetIntegratorFromGflags<T>, &MakeSimulatorFromGflags<T>));
 
 }  // namespace internal
 }  // namespace systems

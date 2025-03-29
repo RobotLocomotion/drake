@@ -21,7 +21,8 @@ namespace analysis_test {
 
 typedef ::testing::Types<BogackiShampine3Integrator<double>> Types;
 // NOLINTNEXTLINE(whitespace/line_length)
-INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest, Types);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest,
+                               Types);
 INSTANTIATE_TYPED_TEST_SUITE_P(My, PleidesTest, Types);
 INSTANTIATE_TYPED_TEST_SUITE_P(My, GenericIntegratorTest, Types);
 
@@ -48,8 +49,8 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, CubicTest) {
   // Check for near-exact 3rd-order results. The measure of accuracy is a
   // tolerance that scales with expected answer at t_final.
   const double expected_answer = cubic.Evaluate(t_final);
-  const double allowable_3rd_order_error = expected_answer *
-      std::numeric_limits<double>::epsilon();
+  const double allowable_3rd_order_error =
+      expected_answer * std::numeric_limits<double>::epsilon();
   const double actual_answer = cubic_context->get_continuous_state_vector()[0];
   EXPECT_NEAR(actual_answer, expected_answer, allowable_3rd_order_error);
 
@@ -100,8 +101,7 @@ GTEST_TEST(BS3IntegratorErrorEstimatorTest, QuadraticTest) {
   // Big-Oh term.
   ASSERT_EQ(bs3.get_error_estimate_order(), 3);
 
-  const double err_est =
-      bs3.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est = bs3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.

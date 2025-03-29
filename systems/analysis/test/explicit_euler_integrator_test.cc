@@ -52,12 +52,12 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
 
   integrator.get_mutable_context()->SetTime(3.);
   EXPECT_EQ(integrator.get_context().get_time(), 3.);
-  EXPECT_EQ(context->get_time(), 3.);\
+  EXPECT_EQ(context->get_time(), 3.);
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
   const double t_final = context->get_time() + h;
-  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(
-      t_final, t_final, t_final), std::logic_error);
+  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(t_final, t_final, t_final),
+               std::logic_error);
 }
 
 /// Checks that the integrator can catch invalid h's.
@@ -67,19 +67,18 @@ GTEST_TEST(IntegratorTest, InvalidDts) {
   const double h = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
 
-  ExplicitEulerIntegrator<double> integrator(
-      spring_mass, h, context.get());
+  ExplicitEulerIntegrator<double> integrator(spring_mass, h, context.get());
   integrator.Initialize();
 
   const double t_final = context->get_time() + h;
   DRAKE_EXPECT_NO_THROW(
       integrator.IntegrateNoFurtherThanTime(t_final, t_final, t_final));
-  EXPECT_THROW(integrator.
-      IntegrateNoFurtherThanTime(t_final, -1, t_final), std::logic_error);
-  EXPECT_THROW(integrator.
-      IntegrateNoFurtherThanTime(-1, t_final, t_final), std::logic_error);
-  EXPECT_THROW(integrator.
-      IntegrateNoFurtherThanTime(t_final, t_final, -1), std::logic_error);
+  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(t_final, -1, t_final),
+               std::logic_error);
+  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(-1, t_final, t_final),
+               std::logic_error);
+  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(t_final, t_final, -1),
+               std::logic_error);
 }
 
 /// Verifies error estimation is unsupported.
@@ -89,8 +88,7 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   const double h = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
 
-  ExplicitEulerIntegrator<double> integrator(
-      spring_mass, h, context.get());
+  ExplicitEulerIntegrator<double> integrator(spring_mass, h, context.get());
 
   EXPECT_EQ(integrator.get_error_estimate_order(), 0);
   EXPECT_EQ(integrator.supports_error_estimation(), false);
@@ -103,7 +101,7 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
 // magnitude step sizes.
 GTEST_TEST(IntegratorTest, MagDisparity) {
   const double spring_k = 300.0;  // N/m
-  const double mass = 2.0;      // kg
+  const double mass = 2.0;        // kg
 
   // Create the spring-mass system.
   SpringMassSystem<double> spring_mass(spring_k, mass, 0.);
@@ -125,8 +123,8 @@ GTEST_TEST(IntegratorTest, MagDisparity) {
   integrator.Initialize();
 
   // Take a fixed integration step.
-  ASSERT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(
-      context->get_time() + h));
+  ASSERT_TRUE(
+      integrator.IntegrateWithSingleFixedStepToTime(context->get_time() + h));
 }
 
 // Try a purely continuous system with no sampling.
@@ -137,7 +135,7 @@ GTEST_TEST(IntegratorTest, MagDisparity) {
 // for t = 0, x(0) = c1, x'(0) = c2*omega
 GTEST_TEST(IntegratorTest, SpringMassStep) {
   const double spring_k = 300.0;  // N/m
-  const double mass = 2.0;      // kg
+  const double mass = 2.0;        // kg
 
   // Create the spring-mass system.
   SpringMassSystem<double> spring_mass(spring_k, mass, 0.);
@@ -204,8 +202,7 @@ GTEST_TEST(IntegratorTest, StepSize) {
   context->SetTime(0.0);
   double t = 0.0;
   // Create the integrator.
-  ExplicitEulerIntegrator<double> integrator(
-      spring_mass, max_h, context.get());
+  ExplicitEulerIntegrator<double> integrator(spring_mass, max_h, context.get());
   integrator.Initialize();
 
   // The step ends on the next publish time.
@@ -215,8 +212,8 @@ GTEST_TEST(IntegratorTest, StepSize) {
     const double update_dt = 0.007;
     const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateNoFurtherThanTime(
-            publish_time, update_time, infinity);
+        integrator.IntegrateNoFurtherThanTime(publish_time, update_time,
+                                              infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedPublishTime, result);
     EXPECT_EQ(publish_dt, context->get_time());
     t = context->get_time();
@@ -229,8 +226,8 @@ GTEST_TEST(IntegratorTest, StepSize) {
     const double update_dt = 0.0011;
     const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateNoFurtherThanTime(
-            publish_time, update_time, infinity);
+        integrator.IntegrateNoFurtherThanTime(publish_time, update_time,
+                                              infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
     EXPECT_EQ(t + update_dt, context->get_time());
     t = context->get_time();
@@ -244,8 +241,8 @@ GTEST_TEST(IntegratorTest, StepSize) {
     const double update_dt = 0.19;
     const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateNoFurtherThanTime(
-            publish_time, update_time, infinity);
+        integrator.IntegrateNoFurtherThanTime(publish_time, update_time,
+                                              infinity);
     EXPECT_EQ(IntegratorBase<double>::kTimeHasAdvanced, result);
     EXPECT_EQ(t + max_h, context->get_time());
     t = context->get_time();
@@ -262,8 +259,8 @@ GTEST_TEST(IntegratorTest, StepSize) {
     const double update_dt = 0.01001;
     const double update_time = context->get_time() + update_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateNoFurtherThanTime(
-            publish_time, update_time, infinity);
+        integrator.IntegrateNoFurtherThanTime(publish_time, update_time,
+                                              infinity);
     EXPECT_EQ(IntegratorBase<double>::kReachedUpdateTime, result);
     EXPECT_EQ(t + update_dt, context->get_time());
     t = context->get_time();
@@ -287,8 +284,8 @@ GTEST_TEST(IntegratorTest, StepSize) {
     const double boundary_dt = 0.0009;
     const double boundary_time = context->get_time() + boundary_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateNoFurtherThanTime(
-            publish_time, update_time, boundary_time);
+        integrator.IntegrateNoFurtherThanTime(publish_time, update_time,
+                                              boundary_time);
     EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
     EXPECT_EQ(t + boundary_dt, context->get_time());
     t = context->get_time();
@@ -307,8 +304,8 @@ GTEST_TEST(IntegratorTest, StepSize) {
     const double boundary_dt = 0.01;
     const double boundary_time = context->get_time() + boundary_dt;
     typename IntegratorBase<double>::StepResult result =
-        integrator.IntegrateNoFurtherThanTime(
-            publish_time, update_time, boundary_time);
+        integrator.IntegrateNoFurtherThanTime(publish_time, update_time,
+                                              boundary_time);
     EXPECT_EQ(IntegratorBase<double>::kReachedBoundaryTime, result);
     EXPECT_EQ(t + boundary_dt, context->get_time());
   }
@@ -325,8 +322,8 @@ GTEST_TEST(IntegratorTest, Symbolic) {
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
   // Create the integrator.
-  ExplicitEulerIntegrator<Expression> integrator(
-      spring_mass, max_h, context.get());
+  ExplicitEulerIntegrator<Expression> integrator(spring_mass, max_h,
+                                                 context.get());
   integrator.Initialize();
 
   const Variable q("q");
@@ -336,9 +333,10 @@ GTEST_TEST(IntegratorTest, Symbolic) {
   context->SetContinuousState(Vector3<Expression>(q, v, work));
   EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(h));
 
-  EXPECT_TRUE(context->get_continuous_state_vector()[0].EqualTo(q + h*v));
-  EXPECT_TRUE(context->get_continuous_state_vector()[1].EqualTo(v - h*q));
-  EXPECT_TRUE(context->get_continuous_state_vector()[2].EqualTo(work - h*q*v));
+  EXPECT_TRUE(context->get_continuous_state_vector()[0].EqualTo(q + h * v));
+  EXPECT_TRUE(context->get_continuous_state_vector()[1].EqualTo(v - h * q));
+  EXPECT_TRUE(
+      context->get_continuous_state_vector()[2].EqualTo(work - h * q * v));
 }
 
 }  // namespace

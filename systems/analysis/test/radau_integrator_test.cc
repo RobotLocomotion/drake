@@ -42,7 +42,7 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   VectorX<double> state =
       context->get_continuous_state().get_vector().CopyToVector();
   EXPECT_NEAR(state[0], cubic.Evaluate(h),
-      std::numeric_limits<double>::epsilon());
+              std::numeric_limits<double>::epsilon());
 
   // Reset the state.
   context = cubic.CreateDefaultContext();
@@ -61,7 +61,7 @@ GTEST_TEST(RadauIntegratorTest, CubicSystem) {
   // Verify the integrator failed to produce the solution.
   state = context->get_continuous_state().get_vector().CopyToVector();
   EXPECT_GT(std::abs(state[0] - cubic.Evaluate(h)),
-      1e9 * std::numeric_limits<double>::epsilon());
+            1e9 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests accuracy for integrating the quadratic system (with the state at time t
@@ -108,8 +108,7 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   // different.
   ASSERT_EQ(radau.get_error_estimate_order(), 3);
 
-  const double err_est =
-      radau.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est = radau.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C0, t_final, or polynomial coefficients.
@@ -118,8 +117,7 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   // Verify the solution too.
   EXPECT_NEAR(
       quadratic_context->get_continuous_state().get_vector().CopyToVector()[0],
-      quadratic.Evaluate(t_final),
-      std::numeric_limits<double>::epsilon());
+      quadratic.Evaluate(t_final), std::numeric_limits<double>::epsilon());
 
   // Repeat this test, but using a final time that is below the working minimum
   // step size (thereby triggering the implicit integrator's alternate, explicit
@@ -127,10 +125,10 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   // for the quadratic system.
   radau.get_mutable_context()->SetTime(0);
   const double working_min = radau.get_working_minimum_step_size();
-  QuadraticScalarSystem scaled_quadratic(4.0/working_min);
+  QuadraticScalarSystem scaled_quadratic(4.0 / working_min);
   auto scaled_quadratic_context = scaled_quadratic.CreateDefaultContext();
-  RadauIntegrator<double> scaled_radau(
-      scaled_quadratic, scaled_quadratic_context.get());
+  RadauIntegrator<double> scaled_radau(scaled_quadratic,
+                                       scaled_quadratic_context.get());
   const double updated_t_final = working_min / 2;
   scaled_radau.set_maximum_step_size(updated_t_final);
   scaled_radau.set_fixed_step_mode(true);
@@ -149,11 +147,11 @@ GTEST_TEST(RadauIntegratorTest, QuadraticTest) {
   EXPECT_NEAR(updated_err_est, 0.0, 2 * std::numeric_limits<double>::epsilon());
 
   // Verify the solution too.
-  EXPECT_NEAR(
-      scaled_quadratic_context->get_continuous_state().get_vector().
-          CopyToVector()[0],
-      scaled_quadratic.Evaluate(updated_t_final),
-      10 * std::numeric_limits<double>::epsilon());
+  EXPECT_NEAR(scaled_quadratic_context->get_continuous_state()
+                  .get_vector()
+                  .CopyToVector()[0],
+              scaled_quadratic.Evaluate(updated_t_final),
+              10 * std::numeric_limits<double>::epsilon());
 }
 
 // Tests that Radau1 can successfully integrate the linear system (with the
@@ -218,7 +216,7 @@ GTEST_TEST(RadauIntegratorTest, Radau1MatchesImplicitEuler) {
   auto context_ie = spring_damper.CreateDefaultContext();
 
   // Construct the two integrators.
-  const int num_stages = 1;    // Yields implicit Euler.
+  const int num_stages = 1;  // Yields implicit Euler.
   RadauIntegrator<double, num_stages> radau1(spring_damper,
                                              context_radau1.get());
   ImplicitEulerIntegrator<double> ie(spring_damper, context_ie.get());
@@ -324,4 +322,3 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, ImplicitIntegratorTest, MyTypes);
 }  // namespace analysis_test
 }  // namespace systems
 }  // namespace drake
-

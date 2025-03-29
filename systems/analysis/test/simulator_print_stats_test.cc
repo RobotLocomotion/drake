@@ -7,7 +7,7 @@
 namespace drake {
 namespace systems {
 template <typename T>
-class SimulatorPrintStatsTest : public::testing::Test {};
+class SimulatorPrintStatsTest : public ::testing::Test {};
 
 using MyTypes = ::testing::Types<double, AutoDiffXd>;
 TYPED_TEST_SUITE(SimulatorPrintStatsTest, MyTypes);

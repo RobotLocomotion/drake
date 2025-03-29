@@ -21,7 +21,8 @@ namespace analysis_test {
 
 typedef ::testing::Types<RungeKutta3Integrator<double>> Types;
 // NOLINTNEXTLINE(whitespace/line_length)
-INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest, Types);
+INSTANTIATE_TYPED_TEST_SUITE_P(My, ExplicitErrorControlledIntegratorTest,
+                               Types);
 INSTANTIATE_TYPED_TEST_SUITE_P(My, PleidesTest, Types);
 INSTANTIATE_TYPED_TEST_SUITE_P(My, GenericIntegratorTest, Types);
 
@@ -48,8 +49,8 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   // Check for near-exact 3rd-order results. The measure of accuracy is a
   // tolerance that scales with expected answer at t_final.
   const double expected_answer = t_final * (t_final * (t_final + 1) + 12) + C;
-  const double allowable_3rd_order_error = expected_answer *
-      std::numeric_limits<double>::epsilon();
+  const double allowable_3rd_order_error =
+      expected_answer * std::numeric_limits<double>::epsilon();
   const double actual_answer = cubic_context->get_continuous_state_vector()[0];
   EXPECT_NEAR(actual_answer, expected_answer, allowable_3rd_order_error);
 
@@ -60,14 +61,13 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, CubicTest) {
   // by a factor of 2³ = 8. We verify this.
 
   // First obtain the error estimate using a single step of h.
-  const double err_est_h =
-      rk3.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est_h = rk3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Now obtain the error estimate using two half steps of h/2.
   cubic_context->SetTime(0.0);
   cubic_context->get_mutable_continuous_state_vector()[0] = C;
   rk3.Initialize();
-  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final/2));
+  ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final / 2));
   ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final));
   const double err_est_2h_2 =
       rk3.get_error_estimate()->get_vector().GetAtIndex(0);
@@ -98,8 +98,7 @@ GTEST_TEST(RK3IntegratorErrorEstimatorTest, QuadraticTest) {
   rk3.Initialize();
   ASSERT_TRUE(rk3.IntegrateWithSingleFixedStepToTime(t_final));
 
-  const double err_est =
-      rk3.get_error_estimate()->get_vector().GetAtIndex(0);
+  const double err_est = rk3.get_error_estimate()->get_vector().GetAtIndex(0);
 
   // Note the very tight tolerance used, which will likely not hold for
   // arbitrary values of C, t_final, or polynomial coefficients.

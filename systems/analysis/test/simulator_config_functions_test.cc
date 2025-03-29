@@ -81,12 +81,13 @@ TYPED_TEST(SimulatorConfigFunctionsTest, CongruenceTest) {
 
 TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   using T = TypeParam;
-  const std::string bespoke_str = "integration_scheme: runge_kutta5\n"
-                                  "max_step_size: 0.003\n"
-                                  "accuracy: 0.03\n"
-                                  "use_error_control: true\n"
-                                  "target_realtime_rate: 3.0\n"
-                                  "publish_every_time_step: true\n";
+  const std::string bespoke_str =
+      "integration_scheme: runge_kutta5\n"
+      "max_step_size: 0.003\n"
+      "accuracy: 0.03\n"
+      "use_error_control: true\n"
+      "target_realtime_rate: 3.0\n"
+      "publish_every_time_step: true\n";
 
   // Ensure that the string and the struct have the same fields.
   const auto bespoke = LoadYamlString<SimulatorConfig>(bespoke_str);

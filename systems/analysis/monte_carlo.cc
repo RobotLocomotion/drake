@@ -74,8 +74,7 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
   // Keep track of how many simulations have been dispatched already.
   int simulations_dispatched = 0;
 
-  while (active_operations.size() > 0 ||
-         simulations_dispatched < num_samples) {
+  while (active_operations.size() > 0 || simulations_dispatched < num_samples) {
     // Check for completed operations.
     for (auto operation = active_operations.begin();
          operation != active_operations.end();) {
@@ -93,8 +92,8 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
     }
 
     // Dispatch new operations.
-    while (static_cast<int>(active_operations.size()) < num_threads
-           && simulations_dispatched < num_samples) {
+    while (static_cast<int>(active_operations.size()) < num_threads &&
+           simulations_dispatched < num_samples) {
       // Create the simulation result using the current generator state.
       simulation_results.at(simulations_dispatched) =
           RandomSimulationResult(*generator);
@@ -104,9 +103,9 @@ std::vector<RandomSimulationResult> MonteCarloSimulationParallel(
       const auto& system = simulator->get_system();
       system.SetRandomContext(&simulator->get_mutable_context(), generator);
 
-      auto perform_simulation =
-          [simulator = std::move(simulator), &simulation_results, &output,
-           final_time, sample_num = simulations_dispatched] () {
+      auto perform_simulation = [simulator = std::move(simulator),
+                                 &simulation_results, &output, final_time,
+                                 sample_num = simulations_dispatched]() {
         simulator->AdvanceTo(final_time);
         simulation_results.at(sample_num).output =
             output(simulator->get_system(), simulator->get_context());
@@ -146,12 +145,11 @@ std::vector<RandomSimulationResult> MonteCarloSimulation(
   // num_threads=1 case, dispatch to the serial implementation in these cases.
   const int num_threads = parallelism.num_threads();
   if (num_threads > 1) {
-    return MonteCarloSimulationParallel(
-        make_simulator, output, final_time, num_samples, generator,
-        num_threads);
+    return MonteCarloSimulationParallel(make_simulator, output, final_time,
+                                        num_samples, generator, num_threads);
   } else {
-    return MonteCarloSimulationSerial(
-        make_simulator, output, final_time, num_samples, generator);
+    return MonteCarloSimulationSerial(make_simulator, output, final_time,
+                                      num_samples, generator);
   }
 }
 

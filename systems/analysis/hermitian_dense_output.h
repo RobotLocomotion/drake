@@ -29,8 +29,7 @@ std::vector<double> ExtractDoublesOrThrow(const std::vector<S>& input_vector) {
   std::vector<double> output_vector{};
   output_vector.reserve(input_vector.size());
   std::transform(input_vector.begin(), input_vector.end(),
-                 std::back_inserter(output_vector),
-                 [] (const S& value) {
+                 std::back_inserter(output_vector), [](const S& value) {
                    return ExtractDoubleOrThrow(value);
                  });
   return output_vector;
@@ -42,13 +41,13 @@ std::vector<double> ExtractDoublesOrThrow(const std::vector<S>& input_vector) {
 /// @see ExtractDoublesOrThrow(const MatrixX<T>&)
 /// @tparam S A valid Eigen scalar type.
 template <typename S>
-std::vector<MatrixX<double>>
-ExtractDoublesOrThrow(const std::vector<MatrixX<S>>& input_vector) {
+std::vector<MatrixX<double>> ExtractDoublesOrThrow(
+    const std::vector<MatrixX<S>>& input_vector) {
   std::vector<MatrixX<double>> output_vector{};
   output_vector.reserve(input_vector.size());
   std::transform(input_vector.begin(), input_vector.end(),
                  std::back_inserter(output_vector),
-                 [] (const MatrixX<S>& value) {
+                 [](const MatrixX<S>& value) {
                    return ExtractDoubleOrThrow(value);
                  });
   return output_vector;
@@ -166,9 +165,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     const T& end_time() const { return times_.back(); }
 
     /// Returns the step state 𝐱 size (i.e. dimension).
-    int size() const {
-      return states_.back().rows();
-    }
+    int size() const { return states_.back().rows(); }
 
     /// Returns step times {t₀, ..., tᵢ₋₁, tᵢ}.
     const std::vector<T>& get_times() const { return times_; }
@@ -187,34 +184,35 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     // and with current step content.
     //
     // @see Extend(const T&, MatrixX<T>, MatrixX<T>)
-    void ValidateStepExtendTripletOrThrow(
-        const T& time, const MatrixX<T>& state,
-        const MatrixX<T>& state_derivative) {
+    void ValidateStepExtendTripletOrThrow(const T& time,
+                                          const MatrixX<T>& state,
+                                          const MatrixX<T>& state_derivative) {
       if (state.cols() != 1) {
-        throw std::runtime_error("Provided state for step is "
-                                 "not a column matrix.");
+        throw std::runtime_error(
+            "Provided state for step is not a column matrix.");
       }
       if (state_derivative.cols() != 1) {
-        throw std::runtime_error("Provided state derivative for "
-                                 " step is not a column matrix.");
+        throw std::runtime_error(
+            "Provided state derivative for step is not a column matrix.");
       }
       if (!times_.empty()) {
         if (time < times_.front()) {
-          throw std::runtime_error("Step cannot be extended"
-                                   " backwards in time.");
+          throw std::runtime_error(
+              "Step cannot be extended backwards in time.");
         }
         if (time <= times_.back()) {
-          throw std::runtime_error("Step already extends up"
-                                   " to the given time.");
+          throw std::runtime_error(
+              "Step already extends up to the given time.");
         }
       }
       if (!states_.empty() && states_.back().rows() != state.rows()) {
-          throw std::runtime_error("Provided state dimensions do not "
-                                   "match that of the states in the step.");
+        throw std::runtime_error(
+            "Provided state dimensions do not match that of the states in the "
+            "step.");
       }
       if (state.rows() != state_derivative.rows()) {
-        throw std::runtime_error("Provided state and state derivative "
-                                 "dimensions do not match.");
+        throw std::runtime_error(
+            "Provided state and state derivative dimensions do not match.");
       }
     }
     // Step times, ordered in increasing order.
@@ -231,8 +229,7 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   /// Initialize the DenseOutput with an existing trajectory.
   explicit HermitianDenseOutput(
       const trajectories::PiecewisePolynomial<T>& trajectory)
-      : start_time_(trajectory.start_time()),
-        end_time_(trajectory.end_time()) {
+      : start_time_(trajectory.start_time()), end_time_(trajectory.end_time()) {
     if constexpr (std::is_same_v<T, double>) {
       continuous_trajectory_ = trajectory;
       return;
@@ -245,13 +242,11 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
       const typename PiecewisePolynomial<T>::PolynomialMatrix& poly =
           trajectory.getPolynomialMatrix(i);
       MatrixX<Polynomiald> polyd = poly.unaryExpr([](const Polynomial<T>& p) {
-        return Polynomiald(
-            ExtractDoubleOrThrow(p.GetCoefficients()));
+        return Polynomiald(ExtractDoubleOrThrow(p.GetCoefficients()));
       });
-      continuous_trajectory_.ConcatenateInTime(
-          PiecewisePolynomial<double>({polyd},
-                                      {ExtractDoubleOrThrow(breaks[i]),
-                                       ExtractDoubleOrThrow(breaks[i + 1])}));
+      continuous_trajectory_.ConcatenateInTime(PiecewisePolynomial<double>(
+          {polyd}, {ExtractDoubleOrThrow(breaks[i]),
+                    ExtractDoubleOrThrow(breaks[i + 1])}));
     }
   }
 
@@ -305,17 +300,12 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   }
 
   T DoEvaluateNth(const T& t, const int n) const override {
-    return continuous_trajectory_.scalarValue(
-        ExtractDoubleOrThrow(t), n, 0);
+    return continuous_trajectory_.scalarValue(ExtractDoubleOrThrow(t), n, 0);
   }
 
-  bool do_is_empty() const override {
-    return continuous_trajectory_.empty();
-  }
+  bool do_is_empty() const override { return continuous_trajectory_.empty(); }
 
-  int do_size() const override {
-    return continuous_trajectory_.rows();
-  }
+  int do_size() const override { return continuous_trajectory_.rows(); }
 
   const T& do_end_time() const override { return end_time_; }
 
@@ -327,9 +317,9 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
   // @see Update(const IntegrationStep&)
   void ValidateStepCanBeConsolidatedOrThrow(const IntegrationStep& step) {
     if (step.start_time() == step.end_time()) {
-      throw std::runtime_error("Provided step has zero length "
-                               "i.e. start time and end time "
-                               "are equal.");
+      throw std::runtime_error(
+          "Provided step has zero length i.e. start time and end time are "
+          "equal.");
     }
     if (!raw_steps_.empty()) {
       EnsureOutputConsistencyOrThrow(step, raw_steps_.back());
@@ -354,8 +344,9 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
     using std::max;
 
     if (prev_step.size() != next_step.size()) {
-      throw std::runtime_error("Provided step dimensions and previous"
-                               " step dimensions do not match.");
+      throw std::runtime_error(
+          "Provided step dimensions and previous step dimensions do not "
+          "match.");
     }
     // Maximum time misalignment between previous step and next step that
     // can still be disregarded as a discontinuity in time.
@@ -365,8 +356,8 @@ class HermitianDenseOutput final : public StepwiseDenseOutput<T> {
         max(abs(prev_end_time), T{1.}) * std::numeric_limits<T>::epsilon();
     const T time_misalignment = abs(prev_end_time - next_start_time);
     if (time_misalignment > allowed_time_misalignment) {
-      throw std::runtime_error("Provided step start time and"
-                               " previous step end time differ.");
+      throw std::runtime_error(
+          "Provided step start time and previous step end time differ.");
     }
     // We can't sanity check the state values when using symbolic expressions.
     if constexpr (scalar_predicate<T>::is_bool) {

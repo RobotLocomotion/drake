@@ -119,8 +119,7 @@ class SimulatorStatus {
 
  private:
   void SetResult(double return_time, ReturnReason reason,
-                 const SystemBase* system,
-                 std::string message) {
+                 const SystemBase* system, std::string message) {
     DRAKE_DEMAND(return_time <= boundary_time_);
     return_time_ = return_time;
     reason_ = reason;

@@ -32,16 +32,17 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
   fmt::print("Number of time steps taken (simulator stats) = {:d}\n",
              simulator.get_num_steps_taken());
   fmt::print("Simulator publishes every time step: {}\n",
-      simulator.get_publish_every_time_step());
+             simulator.get_publish_every_time_step());
   fmt::print("Number of publishes = {:d}\n", simulator.get_num_publishes());
   fmt::print("Number of discrete updates = {:d}\n",
-      simulator.get_num_discrete_updates());
+             simulator.get_num_discrete_updates());
   fmt::print("Number of \"unrestricted\" updates = {:d}\n",
-      simulator.get_num_unrestricted_updates());
+             simulator.get_num_unrestricted_updates());
 
   if (integrator.get_num_steps_taken() == 0) {
-    fmt::print("\nNote: the following integrator took zero steps. The "
-               "simulator exclusively used the discrete solver.\n");
+    fmt::print(
+        "\nNote: the following integrator took zero steps. The "
+        "simulator exclusively used the discrete solver.\n");
   }
   fmt::print(
       "\nStats for integrator {} with {}:\n", integrator_scheme_name,
@@ -62,7 +63,7 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
                integrator.get_num_step_shrinkages_from_error_control());
   }
   fmt::print("Number of derivative evaluations = {:d}\n",
-      integrator.get_num_derivative_evaluations());
+             integrator.get_num_derivative_evaluations());
 
   // These two statistics can only be nonzero with implicit integrators, but
   // because they're available in IntegratorBase, we print them for all
@@ -106,9 +107,8 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
           "Number of Derivative Evaluations = {:d}, {:d}, {:d}\n",
           implicit_integrator->get_num_derivative_evaluations() -
               implicit_integrator
-              ->get_num_error_estimator_derivative_evaluations(),
-          implicit_integrator
-              ->get_num_error_estimator_derivative_evaluations(),
+                  ->get_num_error_estimator_derivative_evaluations(),
+          implicit_integrator->get_num_error_estimator_derivative_evaluations(),
           implicit_integrator->get_num_derivative_evaluations());
       fmt::print(
           "Number of Jacobian Computations = {:d}, {:d}, {:d}\n",
@@ -122,7 +122,7 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
           "\n",
           implicit_integrator->get_num_derivative_evaluations_for_jacobian() -
               implicit_integrator
-              ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
+                  ->get_num_error_estimator_derivative_evaluations_for_jacobian(),  // NOLINT(*)
           implicit_integrator
               ->get_num_error_estimator_derivative_evaluations_for_jacobian(),
           implicit_integrator->get_num_derivative_evaluations_for_jacobian());
@@ -137,7 +137,7 @@ void PrintSimulatorStatistics(const Simulator<T>& simulator) {
       fmt::print("Number of Newton-Raphson Iterations = {:d}, {:d}, {:d}\n",
                  implicit_integrator->get_num_newton_raphson_iterations() -
                      implicit_integrator
-                     ->get_num_error_estimator_newton_raphson_iterations(),
+                         ->get_num_error_estimator_newton_raphson_iterations(),
                  implicit_integrator
                      ->get_num_error_estimator_newton_raphson_iterations(),
                  implicit_integrator->get_num_newton_raphson_iterations());

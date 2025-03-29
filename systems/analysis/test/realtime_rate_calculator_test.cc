@@ -39,7 +39,7 @@ GTEST_TEST(RealtimeRateCalculatorTest, Calculation) {
   ManualTimer& timer = *timer_ptr;
   calculator.InjectMockTimer(std::move(timer_ptr));
 
-  struct Sample{
+  struct Sample {
     // Called t_s, below.
     double sim_time{};
     // Called t_w, below.

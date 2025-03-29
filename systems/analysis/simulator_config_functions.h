@@ -32,10 +32,9 @@ system associated with `simulator` according to the given arguments.
 
 @ingroup simulator_configuration */
 template <typename T>
-IntegratorBase<T>& ResetIntegratorFromFlags(
-    Simulator<T>* simulator,
-    const std::string& scheme,
-    const T& max_step_size);
+IntegratorBase<T>& ResetIntegratorFromFlags(Simulator<T>* simulator,
+                                            const std::string& scheme,
+                                            const T& max_step_size);
 
 /** Returns the allowed string values for the `scheme` parameter in
 ResetIntegratorFromFlags() and SimulatorConfig::integration_scheme.
