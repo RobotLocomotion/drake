@@ -152,6 +152,10 @@ class MultibodyElement {
       internal::MultibodyTreeSystem<T>* tree_system,
       const AbstractValue& model_value);
 
+ protected:
+  /// Returns true if this multibody element has a parent tree, otherwise false.
+  bool has_parent_tree() const { return parent_tree_ != nullptr; }
+
  private:
   // MultibodyTree<T> is a natural friend of MultibodyElement objects and
   // therefore it can set the owning parent tree and unique index in that tree.
@@ -170,8 +174,6 @@ class MultibodyElement {
   void set_model_instance(ModelInstanceIndex model_instance) {
     model_instance_ = model_instance;
   }
-
-  bool has_parent_tree() const { return parent_tree_ != nullptr; }
 
   // Checks whether this MultibodyElement has been registered into
   // a MultibodyTree and throws an exception if not.
