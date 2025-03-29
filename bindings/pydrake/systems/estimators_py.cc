@@ -55,6 +55,11 @@ PYBIND11_MODULE(estimators, m) {
         py::arg("A"), py::arg("C"), py::arg("W"), py::arg("V"),
         doc.SteadyStateKalmanFilter.doc_ACWV);
 
+    m.def("DiscreteTimeSteadyStateKalmanFilter",
+        &DiscreteTimeSteadyStateKalmanFilter, py::arg("A"), py::arg("C"),
+        py::arg("W"), py::arg("V"),
+        doc.DiscreteTimeSteadyStateKalmanFilter.doc);
+
     m.def(
         "SteadyStateKalmanFilter",
         [](const LinearSystem<double>& system,
