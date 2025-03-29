@@ -909,6 +909,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     return geometries_for_deformable_contact_;
   }
 
+  const TriangleSurfaceMesh<double>* mesh_distance_boundary(
+      GeometryId g_id) const {
+    const auto iter = mesh_sdf_data_.find(g_id);
+    if (iter == mesh_sdf_data_.end()) {
+      return nullptr;
+    }
+    return &iter->second.tri_mesh();
+  }
+
   bool IsFclConvexType(GeometryId id) const {
     auto iter = dynamic_objects_.find(id);
     if (iter == dynamic_objects_.end()) {
@@ -1117,7 +1126,7 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     } else if (mesh.extension() == ".obj") {
       mesh_sdf_data_.emplace(data.id,
                              MeshDistanceBoundary(ReadObjToTriangleSurfaceMesh(
-                                 mesh.source(), mesh.scale())));
+                                 mesh.source(), mesh.scale3())));
     }
     // Meshes are unsupported if we cannot compute a MeshDistanceBoundary.
     // point_distance::Callback() skips every Mesh that doesn't have an entry
@@ -1456,6 +1465,12 @@ template <typename T>
 const deformable::Geometries&
 ProximityEngine<T>::deformable_contact_geometries() const {
   return impl_->deformable_contact_geometries();
+}
+
+template <typename T>
+const TriangleSurfaceMesh<double>* ProximityEngine<T>::mesh_distance_boundary(
+    GeometryId g_id) const {
+  return impl_->mesh_distance_boundary(g_id);
 }
 
 template <typename T>

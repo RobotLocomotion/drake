@@ -299,22 +299,10 @@ std::unique_ptr<geometry::Shape> ParseMesh(const TinyXml2Diagnostic& diagnostic,
     return {};
   }
 
-  double scale = 1.0;
+  Vector3d scale(1, 1, 1);
   // Obtains the scale of the mesh if it exists.
   if (shape_node->Attribute("scale") != nullptr) {
-    Vector3d scale_vector;
-    ParseThreeVectorAttribute(shape_node, "scale", &scale_vector);
-    // geometry::Mesh only supports isotropic scaling and therefore we
-    // enforce it.
-    if (!(scale_vector(0) == scale_vector(1) &&
-          scale_vector(0) == scale_vector(2))) {
-      diagnostic.Error(*shape_node,
-                       "Drake meshes only support isotropic"
-                       " scaling. Therefore all three scaling factors must be"
-                       " exactly equal.");
-      return {};
-    }
-    scale = scale_vector(0);
+    ParseThreeVectorAttribute(shape_node, "scale", &scale);
   }
 
   // Rely on geometry::Shape to validate physical parameters.

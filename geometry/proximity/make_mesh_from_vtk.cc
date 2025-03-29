@@ -21,21 +21,20 @@ VolumeMesh<T> MakeVolumeMeshFromVtk(const Mesh& mesh) {
         mesh.extension(), mesh.source().description()));
   }
 
-  const double scale = mesh.scale();
+  const Eigen::Vector3d scale = mesh.scale3();
 
-  VolumeMesh<double> read_mesh =
-      ReadVtkToVolumeMesh(mesh.source(), Eigen::Vector3d::Constant(scale));
+  VolumeMesh<double> read_mesh = ReadVtkToVolumeMesh(mesh.source(), scale);
 
   for (int e = 0; e < read_mesh.num_elements(); ++e) {
     if (read_mesh.CalcTetrahedronVolume(e) <= 0.) {
       throw std::runtime_error(fmt::format(
-          "MakeVolumeMeshFromVtk('{}', {}): "
+          "MakeVolumeMeshFromVtk('{}') with scale [{}]: "
           "The {}-th tetrahedron (index start at 0) with "
           "vertices {}, {}, {}, {} has non-positive volume, "
           "so you might want to switch two consecutive vertices.",
-          mesh.source().description(), scale, e, read_mesh.element(e).vertex(0),
-          read_mesh.element(e).vertex(1), read_mesh.element(e).vertex(2),
-          read_mesh.element(e).vertex(3)));
+          mesh.source().description(), fmt_eigen(scale.transpose()), e,
+          read_mesh.element(e).vertex(0), read_mesh.element(e).vertex(1),
+          read_mesh.element(e).vertex(2), read_mesh.element(e).vertex(3)));
     }
   }
 
