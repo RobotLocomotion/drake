@@ -395,6 +395,13 @@ struct SetObjectData {
   MSGPACK_DEFINE_MAP(type, path, object);
 };
 
+struct SetObjectFromThreeJsCodeData {
+  std::string type{"set_object_from_code"};
+  std::string path;
+  std::string code;
+  MSGPACK_DEFINE_MAP(type, path, code);
+};
+
 template <typename CameraData>
 struct LumpedCameraData {
   CameraData object;
