@@ -108,7 +108,7 @@ std::vector<std::pair<Vector3<int>, GridData<T>>>
 MockSparseGrid<T>::GetGridData() const {
   std::vector<std::pair<Vector3<int>, GridData<T>>> result;
   for (const auto& [node, data] : grid_data_) {
-    result.emplace_back(node, data);
+    if (data.m > 0.0) result.emplace_back(node, data);
   }
   return result;
 }
@@ -125,6 +125,14 @@ MassAndMomentum<T> MockSparseGrid<T>::ComputeTotalMassAndMomentum() const {
     }
   }
   return result;
+}
+
+template <typename T>
+void MockSparseGrid<T>::IterateGrid(
+    const std::function<void(GridData<T>*)>& func) {
+  for (auto& [_, data] : grid_data_) {
+    func(&data);
+  }
 }
 
 }  // namespace internal

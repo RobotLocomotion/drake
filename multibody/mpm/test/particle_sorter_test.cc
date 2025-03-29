@@ -213,6 +213,10 @@ TYPED_TEST(ParticleSorterTypedTest, Iterate) {
     node_data.v = Vector3<T>(-1.0, -1.0, -1.0);
     return node_data;
   });
+  /* Set all particle velocity to (10, 0, 0). */
+  for (int i = 0; i < particle_data.num_particles(); ++i) {
+    particle_data.mutable_v()[i] = Vector3<T>(10.0, 0.0, 0.0);
+  }
 
   /* Now we test writing to grid flag. The arbitrary kernel writes the particle
    velocity to all grid nodes in the particles' support. It sets grid mass
