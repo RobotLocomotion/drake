@@ -145,8 +145,8 @@ class DenseOutput {
   // @throws std::exception if output is empty i.e. is_empty() equals false.
   void ThrowIfOutputIsEmpty(const char* func_name) const {
     if (is_empty()) {
-      throw std::logic_error(fmt::format(
-          "{}(): Dense output is empty.", func_name));
+      throw std::logic_error(
+          fmt::format("{}(): Dense output is empty.", func_name));
     }
   }
 
@@ -157,9 +157,9 @@ class DenseOutput {
   //                        output dimension i.e. @p n ∉ [0, size()).
   void ThrowIfNthElementIsInvalid(const char* func_name, int n) const {
     if (n < 0 || this->do_size() <= n) {
-      throw std::runtime_error(fmt::format(
-          "{}(): Index {} out of dense output [0, {}) range.",
-          func_name, n, this->do_size()));
+      throw std::runtime_error(
+          fmt::format("{}(): Index {} out of dense output [0, {}) range.",
+                      func_name, n, this->do_size()));
     }
   }
 
@@ -171,8 +171,8 @@ class DenseOutput {
   void ThrowIfTimeIsInvalid(const char* func_name, const T& t) const {
     if (t < this->do_start_time() || t > this->do_end_time()) {
       throw std::runtime_error(fmt::format(
-          "{}(): Time {} out of dense output [{}, {}] domain.",
-          func_name, t, this->do_start_time(), this->do_end_time()));
+          "{}(): Time {} out of dense output [{}, {}] domain.", func_name, t,
+          this->do_start_time(), this->do_end_time()));
     }
   }
 };

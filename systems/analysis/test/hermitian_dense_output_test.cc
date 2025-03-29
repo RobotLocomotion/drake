@@ -22,57 +22,53 @@ class HermitianDenseOutputTest : public ::testing::Test {
   const double kFinalTime{1.0};
   const double kTimeStep{0.1};
   const MatrixX<double> kInitialState{
-    (MatrixX<double>(3, 1) << 0., 0., 0.).finished()};
+      (MatrixX<double>(3, 1) << 0., 0., 0.).finished()};
   const MatrixX<double> kMidState{
-    (MatrixX<double>(3, 1) << 0.5, 5., 50.).finished()};
+      (MatrixX<double>(3, 1) << 0.5, 5., 50.).finished()};
   const MatrixX<double> kFinalState{
-    (MatrixX<double>(3, 1) << 1., 10., 100.).finished()};
+      (MatrixX<double>(3, 1) << 1., 10., 100.).finished()};
   const MatrixX<double> kFinalStateWithFewerDimensions{
-    (MatrixX<double>(2, 1) << 1., 10.).finished()};
+      (MatrixX<double>(2, 1) << 1., 10.).finished()};
   const MatrixX<double> kFinalStateWithMoreDimensions{
-    (MatrixX<double>(4, 1) << 1., 10., 100., 1000.).finished()};
+      (MatrixX<double>(4, 1) << 1., 10., 100., 1000.).finished()};
   const MatrixX<double> kFinalStateNotAVector{
-    (MatrixX<double>(2, 2) << 1., 10., 100., 1000.).finished()};
+      (MatrixX<double>(2, 2) << 1., 10., 100., 1000.).finished()};
   const MatrixX<double> kInitialStateDerivative{
-    (MatrixX<double>(3, 1) << 0., 1., 0.).finished()};
+      (MatrixX<double>(3, 1) << 0., 1., 0.).finished()};
   const MatrixX<double> kMidStateDerivative{
-    (MatrixX<double>(3, 1) << 0.5, 0.5, 0.5).finished()};
+      (MatrixX<double>(3, 1) << 0.5, 0.5, 0.5).finished()};
   const MatrixX<double> kFinalStateDerivative{
-    (MatrixX<double>(3, 1) << 1., 0., 1.).finished()};
+      (MatrixX<double>(3, 1) << 1., 0., 1.).finished()};
   const MatrixX<double> kFinalStateDerivativeWithFewerDimensions{
-    (MatrixX<double>(2, 1) << 1., 0.).finished()};
+      (MatrixX<double>(2, 1) << 1., 0.).finished()};
   const MatrixX<double> kFinalStateDerivativeWithMoreDimensions{
-    (MatrixX<double>(4, 1) << 1., 0., 1., 0.).finished()};
+      (MatrixX<double>(4, 1) << 1., 0., 1., 0.).finished()};
   const MatrixX<double> kFinalStateDerivativeNotAVector{
-    (MatrixX<double>(2, 2) << 0., 1., 0., 1.).finished()};
+      (MatrixX<double>(2, 2) << 0., 1., 0., 1.).finished()};
   const int kValidElementIndex{0};
   const int kInvalidElementIndex{10};
 
-  const std::string kEmptyOutputErrorMessage{
-    ".*[Dd]ense output.*empty.*"};
-  const std::string kZeroLengthStepErrorMessage{
-    ".*step has zero length.*"};
-  const std::string kCannotRollbackErrorMessage{
-    "No updates to rollback."};
+  const std::string kEmptyOutputErrorMessage{".*[Dd]ense output.*empty.*"};
+  const std::string kZeroLengthStepErrorMessage{".*step has zero length.*"};
+  const std::string kCannotRollbackErrorMessage{"No updates to rollback."};
   const std::string kCannotConsolidateErrorMessage{
-    "No updates to consolidate."};
+      "No updates to consolidate."};
   const std::string kInvalidElementIndexErrorMessage{
-    ".*out of.*dense output.*range.*"};
+      ".*out of.*dense output.*range.*"};
   const std::string kInvalidTimeErrorMessage{
-    ".*[Tt]ime.*out of.*dense output.*domain.*"};
+      ".*[Tt]ime.*out of.*dense output.*domain.*"};
   const std::string kTimeMismatchErrorMessage{
-    ".*start time.*end time.*differ.*"};
+      ".*start time.*end time.*differ.*"};
   const std::string kStateMismatchErrorMessage{
-    ".*start state.*end state.*differ.*"};
+      ".*start state.*end state.*differ.*"};
   const std::string kStateDerivativeMismatchErrorMessage{
-    ".*start state derivative.*end state derivative.*differ.*"};
+      ".*start state derivative.*end state derivative.*differ.*"};
   const std::string kStepBackwardsErrorMessage{
-    ".*cannot be extended backwards.*"};
+      ".*cannot be extended backwards.*"};
   const std::string kDimensionMismatchErrorMessage{
-    ".*dimensions do not match.*"};
+      ".*dimensions do not match.*"};
   const std::string kNotAVectorErrorMessage{".*not a column matrix.*"};
 };
-
 
 // HermitianDenseOutput types to test.
 typedef ::testing::Types<double, AutoDiffXd> OutputTypes;
@@ -86,61 +82,59 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   // Verifies that the dense output is empty and API behavior
   // is consistent with that fact.
   ASSERT_TRUE(dense_output.is_empty());
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Evaluate(this->kInitialTime),
+                              this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Evaluate(this->kInitialTime),
-      this->kEmptyOutputErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.EvaluateNth(
-      this->kInitialTime, this->kValidElementIndex),
+      dense_output.EvaluateNth(this->kInitialTime, this->kValidElementIndex),
       this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.start_time(),
-                             this->kEmptyOutputErrorMessage);
+                              this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.end_time(),
-                             this->kEmptyOutputErrorMessage);
+                              this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.size(),
-                             this->kEmptyOutputErrorMessage);
+                              this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Rollback(),
-                             this->kCannotRollbackErrorMessage);
+                              this->kCannotRollbackErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Consolidate(),
-                             this->kCannotConsolidateErrorMessage);
+                              this->kCannotConsolidateErrorMessage);
 
   // Verifies that trying to update the dense output with
   // a zero length step fails.
   typename HermitianDenseOutput<TypeParam>::IntegrationStep first_step(
       this->kInitialTime, this->kInitialState, this->kInitialStateDerivative);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Update(first_step),
-                             this->kZeroLengthStepErrorMessage);
+                              this->kZeroLengthStepErrorMessage);
 
   // Verifies that trying to update the dense output with
   // a valid step succeeds.
-  first_step.Extend(this->kMidTime, this->kMidState,
-                    this->kMidStateDerivative);
+  first_step.Extend(this->kMidTime, this->kMidState, this->kMidStateDerivative);
   dense_output.Update(first_step);
 
   // Verifies that an update does not imply a consolidation and thus
   // the dense output remains empty.
   ASSERT_TRUE(dense_output.is_empty());
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Evaluate(this->kMidTime),
-                             this->kEmptyOutputErrorMessage);
+                              this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.EvaluateNth(this->kMidTime, this->kValidElementIndex),
       this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.start_time(),
-                             this->kEmptyOutputErrorMessage);
+                              this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.end_time(),
-                             this->kEmptyOutputErrorMessage);
+                              this->kEmptyOutputErrorMessage);
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.size(),
-                             this->kEmptyOutputErrorMessage);
+                              this->kEmptyOutputErrorMessage);
 
   // Consolidates all previous updates.
   dense_output.Consolidate();
 
   // Verifies that it is not possible to roll back updates after consolidation.
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Rollback(),
-                             this->kCannotRollbackErrorMessage);
+                              this->kCannotRollbackErrorMessage);
 
   // Verifies that it is not possible to consolidate again.
   DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Consolidate(),
-                             this->kCannotConsolidateErrorMessage);
+                              this->kCannotConsolidateErrorMessage);
 
   // Verifies that the dense output is not empty and that it
   // reflects the data provided on updates.
@@ -149,8 +143,8 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   EXPECT_EQ(dense_output.end_time(), first_step.end_time());
   EXPECT_EQ(dense_output.size(), first_step.size());
   DRAKE_EXPECT_NO_THROW(dense_output.Evaluate(this->kMidTime));
-  DRAKE_EXPECT_NO_THROW(dense_output.EvaluateNth(
-      this->kMidTime, this->kValidElementIndex));
+  DRAKE_EXPECT_NO_THROW(
+      dense_output.EvaluateNth(this->kMidTime, this->kValidElementIndex));
 
   // Verifies that invalid evaluation arguments generate errors.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -159,37 +153,33 @@ TYPED_TEST(HermitianDenseOutputTest, OutputConsistency) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       dense_output.EvaluateNth(this->kInvalidTime, this->kValidElementIndex),
       this->kInvalidTimeErrorMessage);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Evaluate(this->kInvalidTime),
-      this->kInvalidTimeErrorMessage);
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Evaluate(this->kInvalidTime),
+                              this->kInvalidTimeErrorMessage);
 
   // Verifies that step updates that would disrupt the output continuity
   // fail.
   typename HermitianDenseOutput<TypeParam>::IntegrationStep second_step(
-      (this->kFinalTime + this->kMidTime) / 2.,
-      this->kMidState, this->kMidStateDerivative);
+      (this->kFinalTime + this->kMidTime) / 2., this->kMidState,
+      this->kMidStateDerivative);
   second_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Update(second_step),
-      this->kTimeMismatchErrorMessage);
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Update(second_step),
+                              this->kTimeMismatchErrorMessage);
 
   typename HermitianDenseOutput<TypeParam>::IntegrationStep third_step(
       this->kMidTime, this->kMidState * 2., this->kMidStateDerivative);
   third_step.Extend(this->kFinalTime, this->kFinalState,
-                     this->kFinalStateDerivative);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Update(third_step),
-      this->kStateMismatchErrorMessage);
+                    this->kFinalStateDerivative);
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Update(third_step),
+                              this->kStateMismatchErrorMessage);
 
   typename HermitianDenseOutput<TypeParam>::IntegrationStep fourth_step(
       this->kMidTime, this->kMidState, this->kMidStateDerivative * 2.);
   fourth_step.Extend(this->kFinalTime, this->kFinalState,
                      this->kFinalStateDerivative);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dense_output.Update(fourth_step),
-      this->kStateDerivativeMismatchErrorMessage);
+  DRAKE_EXPECT_THROWS_MESSAGE(dense_output.Update(fourth_step),
+                              this->kStateDerivativeMismatchErrorMessage);
 }
 
 // Checks that HermitianDenseOutput::Step consistency is ensured.
@@ -208,10 +198,9 @@ TYPED_TEST(HermitianDenseOutputTest, StepsConsistency) {
                               this->kInitialStateDerivative));
 
   // Verifies that any attempt to break step consistency fails.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      step.Extend(this->kInvalidTime, this->kFinalState,
-                  this->kFinalStateDerivative),
-      this->kStepBackwardsErrorMessage);
+  DRAKE_EXPECT_THROWS_MESSAGE(step.Extend(this->kInvalidTime, this->kFinalState,
+                                          this->kFinalStateDerivative),
+                              this->kStepBackwardsErrorMessage);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       step.Extend(this->kFinalTime, this->kFinalStateWithFewerDimensions,
@@ -295,13 +284,13 @@ TYPED_TEST(HermitianDenseOutputTest, CorrectConstruction) {
 TYPED_TEST(HermitianDenseOutputTest, CorrectEvaluation) {
   // Creates an Hermite cubic spline with times, states and state
   // derivatives.
-  const std::vector<double> spline_times{
-    this->kInitialTime, this->kMidTime, this->kFinalTime};
+  const std::vector<double> spline_times{this->kInitialTime, this->kMidTime,
+                                         this->kFinalTime};
   const std::vector<MatrixX<double>> spline_states{
-          this->kInitialState, this->kMidState, this->kFinalState};
+      this->kInitialState, this->kMidState, this->kFinalState};
   const std::vector<MatrixX<double>> spline_state_derivatives{
-          this->kInitialStateDerivative, this->kMidStateDerivative,
-          this->kFinalStateDerivative};
+      this->kInitialStateDerivative, this->kMidStateDerivative,
+      this->kFinalStateDerivative};
   const trajectories::PiecewisePolynomial<double> hermite_spline =
       trajectories::PiecewisePolynomial<double>::CubicHermite(
           spline_times, spline_states, spline_state_derivatives);
@@ -323,14 +312,14 @@ TYPED_TEST(HermitianDenseOutputTest, CorrectEvaluation) {
   // Verifies that dense output and Hermite spline match.
   const double kAccuracy{1e-12};
   EXPECT_FALSE(dense_output.is_empty());
-  for (TypeParam t = this->kInitialTime;
-       t <= this->kFinalTime; t += this->kTimeStep) {
+  for (TypeParam t = this->kInitialTime; t <= this->kFinalTime;
+       t += this->kTimeStep) {
     const MatrixX<double> matrix_value =
         hermite_spline.value(ExtractDoubleOrThrow(t));
     const VectorX<TypeParam> vector_value =
         matrix_value.col(0).template cast<TypeParam>();
-    EXPECT_TRUE(CompareMatrices(dense_output.Evaluate(t),
-                                vector_value, kAccuracy));
+    EXPECT_TRUE(
+        CompareMatrices(dense_output.Evaluate(t), vector_value, kAccuracy));
   }
 }
 

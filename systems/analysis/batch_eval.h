@@ -46,8 +46,7 @@ only if an input port is provided.
 */
 template <typename T>
 MatrixX<T> BatchEvalUniquePeriodicDiscreteUpdate(
-    const System<T>& system,
-    const Context<T>& context,
+    const System<T>& system, const Context<T>& context,
     const Eigen::Ref<const RowVectorX<T>>& times,
     const Eigen::Ref<const MatrixX<T>>& states,
     const Eigen::Ref<const MatrixX<T>>& inputs, int num_time_steps = 1,
@@ -87,8 +86,7 @@ only if an input port is provided.
 */
 template <typename T>
 MatrixX<T> BatchEvalTimeDerivatives(
-    const System<T>& system,
-    const Context<T>& context,
+    const System<T>& system, const Context<T>& context,
     const Eigen::Ref<const RowVectorX<T>>& times,
     const Eigen::Ref<const MatrixX<T>>& states,
     const Eigen::Ref<const MatrixX<T>>& inputs,
