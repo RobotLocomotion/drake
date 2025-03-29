@@ -27,6 +27,14 @@ Refer to [Installation via Pip](/pip.html#stable-releases) for how to install
 Drake's releases using pip, or the general [Installation](/installation.html)
 instructions for alternative options.
 
+For examples of using Drake from Python, please see our gallery of
+[external examples](https://github.com/RobotLocomotion/drake-external-examples).
+
+* The [`drake_pip` example](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_pip)
+shows how to use Drake via pip.
+* The [`drake_poetry` example](https://github.com/RobotLocomotion/drake-external-examples/tree/main/drake_poetry)
+shows how to use Drake via poetry.
+
 # Using the Python Bindings
 
 ## Check Installation

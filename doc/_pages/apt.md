@@ -21,23 +21,25 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
+<div class="note" markdown="1">
 Drake's apt packages do not support the Gurobi solver. To use
 Gurobi, you will need to build Drake from source following the instructions
 in [Source Installation](/from_source.html).
-
-## Stable Releases
-
-To add the Drake APT repository to your machine and install the `drake-dev` package,
-please do the following in order:
+</div>
 
 If you are using a [minimal](https://wiki.ubuntu.com/Minimal) cloud or
-container image, you may need to install the following packages:
+container image, you may need to install the following packages before continuing:
 
 ```bash
 sudo apt-get update
 sudo apt-get install --no-install-recommends \
   ca-certificates gnupg lsb-release wget
 ```
+
+## Stable Releases
+
+To add the Drake APT repository to your machine and install the `drake-dev` package,
+please do the following in order.
 
 Download a copy of the Drake GPG signing key and add it to an APT trusted keychain:
 
@@ -63,10 +65,10 @@ sudo apt-get install --no-install-recommends drake-dev
 Most content installs to `/opt/drake`, so setting the following environment
 variables may be useful:
 
-  ```bash
-  export PATH="/opt/drake/bin${PATH:+:${PATH}}"
-  export PYTHONPATH="/opt/drake/lib/python$(python3 -c 'import sys; print("{0}.{1}".format(*sys.version_info))')/site-packages${PYTHONPATH:+:${PYTHONPATH}}"
-  ```
+```bash
+export PATH="/opt/drake/bin${PATH:+:${PATH}}"
+export PYTHONPATH="/opt/drake/lib/python$(python3 -c 'import sys; print("{0}.{1}".format(*sys.version_info))')/site-packages${PYTHONPATH:+:${PYTHONPATH}}"
+```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
@@ -78,18 +80,17 @@ Ubuntu 24.04 (Noble) are available to download at:
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-noble.deb)
 
-Older packages for specific dates are available by replacing ``latest`` with an
-8-digit date, e.g., ``20220721`` for July 21st, 2022.
+Older packages for specific dates are available by replacing ``latest``
+with date YYYYMMDD preceded with ``0.0.``. For example,
 
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-jammy.deb)
-* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20220721-1_amd64-noble.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-jammy.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-jammy.deb)
+* [https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb](https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_0.0.20250301-1_amd64-noble.deb)
 
 Nightly packages are retained for 56 days from their date of creation.
 
-For installing a nightly apt package, download the archive and install it
-directly:
+To install a nightly apt package, download the archive and install it directly:
 
-  ```bash
-  wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb
-  sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-jammy.deb
-  ```
+```bash
+wget https://drake-packages.csail.mit.edu/drake/nightly/drake-dev_latest-1_amd64-jammy.deb
+sudo apt-get install --no-install-recommends ./drake-dev_latest-1_amd64-jammy.deb
+```

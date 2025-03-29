@@ -1,5 +1,5 @@
 ---
-title: Installation via Pip
+title: Installation via Pip (Python)
 ---
 
 # Pip Packages
@@ -21,24 +21,23 @@ Drake binary releases incorporate a pre-compiled version of
 [Mathematical Program toolbox](https://drake.mit.edu/doxygen_cxx/group__solvers.html).
 Thanks to Philip E. Gill and Elizabeth Wong for their kind support.
 
-Drake's pip packages do not support the Gurobi solver. To use
+<div class="note" markdown="1">
+Please note the following compatibility requirements for using Drake via Python:
+* Drake's pip packages do not support the Gurobi solver. To use
 Gurobi, you will need to build Drake from source following the instructions
 in [Source Installation](/from_source.html).
-
-## Stable Releases
-
-<div class="note" markdown="1">
-Drake is not tested regularly with Anaconda, so if you are using Anaconda you
+* Drake is not tested regularly with Anaconda, so if you are using Anaconda you
 may experience compatibility hiccups; when asking for help, be sure to mention
 that Conda is involved.
+* For macOS, ensure that you're using Homebrew Python (not Apple's system Python).
 </div>
 
 We recommend installing drake into a
 [virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
-directory.  In the example below, we will name that directory ``env``, but you
+directory.  In the examples below, we will name that directory ``env``, but you
 can choose any name.
 
-For macOS, ensure that you're using Homebrew Python (not Apple's system Python).
+## Stable Releases
 
 Create a virtual environment, install Drake, and activate the environment:
 
@@ -46,7 +45,7 @@ Create a virtual environment, install Drake, and activate the environment:
 python3 -m venv env
 env/bin/pip install drake
 source env/bin/activate
-````
+```
 
 Refer to [Quickstart](/installation.html#quickstart) for next steps.
 
