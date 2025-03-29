@@ -834,6 +834,9 @@ filegroup(
         "test/octahedron.obj",
         "test/quad_cube.mtl",
         "test/quad_cube.obj",
+        "test/rotated_cube.mtl",
+        "test/rotated_cube_squished.obj",
+        "test/rotated_cube_unit_scale.obj",
         "test/two_cube_objects.obj",
     ],
 )

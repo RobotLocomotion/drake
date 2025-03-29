@@ -255,6 +255,7 @@ drake_cc_googletest_linux_only(
     name = "internal_render_engine_gl_test",
     data = [
         "//examples/scene_graph:models",
+        "//geometry:test_obj_files",
         "//geometry/render:test_models",
     ] + glob(["test/*.png"]),
     display = True,
