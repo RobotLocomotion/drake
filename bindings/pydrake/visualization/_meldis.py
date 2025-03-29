@@ -450,18 +450,17 @@ class _ViewerApplet:
             (a, b, c) = geom.float_data
             shape = Ellipsoid(a=a, b=b, c=c)
         elif geom.type == lcmt_viewer_geometry_data.MESH and geom.string_data:
-            (scale_x, scale_y, scale_z) = geom.float_data
-            assert scale_x == scale_y and scale_y == scale_z
+            scale3 = geom.float_data
             if geom.string_data[0] == "{":
                 mesh_source = _make_mesh_source_from_json(geom.string_data)
                 if mesh_source is None:
                     # Warning has already been emitted by _make_mesh_source...
                     return (None, None, None)
-                shape = Mesh(source=mesh_source, scale=scale_x)
+                shape = Mesh(source=mesh_source, scale3=scale3)
             else:
                 # A mesh to be loaded from a file.
                 filename = geom.string_data
-                shape = Mesh(filename=filename, scale=scale_x)
+                shape = Mesh(filename=filename, scale3=scale3)
         elif geom.type == lcmt_viewer_geometry_data.MESH:
             assert not geom.string_data
             shape = self._make_triangle_mesh(geom.float_data)
