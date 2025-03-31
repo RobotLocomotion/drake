@@ -786,6 +786,64 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
   }
 }
 
+// Confirm that non-uniform scale is correctly applied. We'll create
+// two renderings: one with a reference mesh and one with the mesh pre-scaled
+// (applying the inverse scale to the Shape). The two images should end up
+// identical.
+TEST_F(RenderEngineVtkTest, NonUniformScaleTest) {
+  RenderEngineVtk ref_engine;
+  RenderEngineVtk scale_engine;
+
+  const auto convex_id = GeometryId::get_new_id();
+  const auto mesh_id = GeometryId::get_new_id();
+  PerceptionProperties material;
+  material.AddProperty("label", "id", RenderLabel::kDontCare);
+
+  const fs::path unit_obj =
+      FindResourceOrThrow("drake/geometry/test/rotated_cube_unit_scale.obj");
+  const fs::path scale_obj =
+      FindResourceOrThrow("drake/geometry/test/rotated_cube_squished.obj");
+
+  const Vector3d unit_scale(1, 1, 1);
+  ref_engine.RegisterVisual(mesh_id, Mesh(unit_obj, unit_scale), material,
+                            RigidTransformd(Vector3d(-1.5, 0, 0)),
+                            /* needs_update =*/false);
+  ref_engine.RegisterVisual(convex_id, Convex(unit_obj, unit_scale), material,
+                            RigidTransformd(Vector3d(1.5, 0, 0)),
+                            /* needs_update =*/false);
+
+  // This should be the scale factor documented in rotated_cube_squished.obj
+  const Vector3d stretch(2, 4, 8);
+  scale_engine.RegisterVisual(mesh_id, Mesh(scale_obj, stretch), material,
+                              RigidTransformd(Vector3d(-1.5, 0, 0)),
+                              /* needs_update =*/false);
+  scale_engine.RegisterVisual(convex_id, Convex(scale_obj, stretch), material,
+                              RigidTransformd(Vector3d(1.5, 0, 0)),
+                              /* needs_update =*/false);
+
+  // The camera is above the Wz = 0 plane, looking generally down and in the
+  // +Wy direction.
+  const RigidTransformd X_WC(RotationMatrixd::MakeXRotation(-3.2 * M_PI / 4),
+                             Vector3d(0, -3, 4.4));
+  ref_engine.UpdateViewpoint(X_WC);
+  scale_engine.UpdateViewpoint(X_WC);
+
+  const ColorRenderCamera camera(depth_camera_.core(), FLAGS_show_window);
+  const int w = camera.core().intrinsics().width();
+  const int h = camera.core().intrinsics().height();
+  ImageRgba8U ref_color(w, h);
+  ImageRgba8U scale_color(w, h);
+  EXPECT_NO_THROW(ref_engine.RenderColorImage(camera, &ref_color));
+  EXPECT_NO_THROW(scale_engine.RenderColorImage(camera, &scale_color));
+
+  const std::source_location& caller = std::source_location::current();
+  const std::string stem = fmt::format("line_{:0>4}", caller.line());
+  SaveTestOutputImage(ref_color, fmt::format("{0}_ref_color.png", stem));
+  SaveTestOutputImage(scale_color, fmt::format("{0}_scale_color.png", stem));
+
+  EXPECT_EQ(ref_color, scale_color);
+}
+
 // Repeats various mesh-based tests, but this time the meshes are loaded from
 // memory. We render the scene twice: once with the on-disk mesh and once with
 // the in-memory mesh to confirm they are rendered the same.

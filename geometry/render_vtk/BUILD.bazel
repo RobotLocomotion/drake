@@ -164,6 +164,7 @@ drake_cc_googletest(
         ":test/whole_image_default_label.png",
         "//examples/scene_graph:models",
         "//geometry:environment_maps",
+        "//geometry:test_obj_files",
         "//geometry/render:test_models",
     ],
     tags = vtk_test_tags(),
