@@ -2,6 +2,12 @@
 
 namespace drake {
 namespace systems {
+
+#ifndef DRAKE_DOXYGEN_CXX
+template <typename T>
+class Simulator;
+#endif
+
 namespace internal {
 
 /* Offers a pydrake-specific private interface to the simulator.

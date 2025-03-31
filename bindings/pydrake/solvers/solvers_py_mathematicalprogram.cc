@@ -227,9 +227,9 @@ void SetSolverOptionBySolverType(MathematicalProgram* self,
 }
 
 // pybind11 trampoline class to permit overriding virtual functions in Python.
-class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
+class PySolverInterface : public solvers::SolverInterface {
  public:
-  using Base = py::wrapper<solvers::SolverInterface>;
+  using Base = solvers::SolverInterface;
 
   PySolverInterface() : Base() {}
 
@@ -640,9 +640,12 @@ void BindMathematicalProgram(py::module m) {
           py::arg("e"), doc.MathematicalProgram.AddCost.doc_1args_e)
       .def(
           "AddCost",
-          [](MathematicalProgram* self, const std::shared_ptr<Cost>& obj,
+          [](MathematicalProgram* self, Cost* obj,
               const Eigen::Ref<const VectorXDecisionVariable>& vars) {
-            return self->AddCost(obj, vars);
+            // Maintain python wrapper to avoid hazards like #20131.
+            py::object obj_py = py::cast(obj);
+            return self->AddCost(
+                make_shared_ptr_from_py_object<Cost>(obj_py), vars);
           },
           py::arg("obj"), py::arg("vars"),
           doc.MathematicalProgram.AddCost.doc_2args_obj_vars)
@@ -781,11 +784,16 @@ void BindMathematicalProgram(py::module m) {
           static_cast<Binding<Constraint> (MathematicalProgram::*)(
               const Formula&)>(&MathematicalProgram::AddConstraint),
           doc.MathematicalProgram.AddConstraint.doc_1args_f)
-      .def("AddConstraint",
-          static_cast<Binding<Constraint> (MathematicalProgram::*)(
-              std::shared_ptr<Constraint>,
-              const Eigen::Ref<const VectorXDecisionVariable>& vars)>(
-              &MathematicalProgram::AddConstraint),
+      .def(
+          "AddConstraint",
+          [](MathematicalProgram* self, Constraint* constraint,
+              const Eigen::Ref<const VectorXDecisionVariable>& vars) {
+            // Maintain python wrapper to avoid hazards like #20131.
+            py::object constraint_py = py::cast(constraint);
+            return self->AddConstraint(
+                make_shared_ptr_from_py_object<Constraint>(constraint_py),
+                vars);
+          },
           py::arg("constraint"), py::arg("vars"),
           doc.MathematicalProgram.AddConstraint.doc_2args_con_vars)
       .def(

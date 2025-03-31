@@ -31,41 +31,33 @@ class ScalarViewDenseOutput : public ScalarDenseOutput<T> {
   /// @throws std::exception if given @p n does not refer to a valid
   ///                        base output dimension
   ///                        i.e. @p n ∉ [0, `base_output`->size()).
-  explicit ScalarViewDenseOutput(
-      std::unique_ptr<DenseOutput<T>> base_output, int n)
+  explicit ScalarViewDenseOutput(std::unique_ptr<DenseOutput<T>> base_output,
+                                 int n)
       : base_output_(std::move(base_output)), n_(n) {
     if (base_output_ == nullptr) {
       throw std::runtime_error("Base dense output to view is null.");
     }
     if (n < 0 || base_output_->size() <= n) {
-      throw std::runtime_error(fmt::format(
-          "Index {} out of base dense output [0, {}) range.",
-          n, base_output_->size()));
+      throw std::runtime_error(
+          fmt::format("Index {} out of base dense output [0, {}) range.", n,
+                      base_output_->size()));
     }
   }
 
   /// Returns the base dense output upon which the
   /// view operates.
-  const DenseOutput<T>* get_base_output() const {
-    return base_output_.get();
-  }
+  const DenseOutput<T>* get_base_output() const { return base_output_.get(); }
 
  protected:
   T DoEvaluateScalar(const T& t) const override {
     return base_output_->EvaluateNth(t, n_);
   }
 
-  bool do_is_empty() const override {
-    return base_output_->is_empty();
-  }
+  bool do_is_empty() const override { return base_output_->is_empty(); }
 
-  const T& do_start_time() const override {
-    return base_output_->start_time();
-  }
+  const T& do_start_time() const override { return base_output_->start_time(); }
 
-  const T& do_end_time() const override {
-    return base_output_->end_time();
-  }
+  const T& do_end_time() const override { return base_output_->end_time(); }
 
   // The base (vector) dense output being wrapped.
   const std::unique_ptr<DenseOutput<T>> base_output_;

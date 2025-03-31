@@ -13,8 +13,8 @@ namespace systems {
 namespace analysis {
 namespace {
 
-using symbolic::Variable;
 using symbolic::Expression;
+using symbolic::Variable;
 
 /// Cubic Polynomial System:
 ///   ẋ = -x + x³

@@ -1,6 +1,7 @@
 import math
 import unittest
 import warnings
+import weakref
 
 import numpy as np
 
@@ -176,6 +177,37 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertEqual(dircol.prog(), dircol2.prog())
         self.assertEqual(prog.num_vars(), num_vars + num_initial_vars)
 
+    def test_all_knot_points_constraint_python_wrapper_lost(self):
+        # Ensure constraints' python wrappers are kept alive when added to a
+        # multiple shooting instance via AddConstraintToAllKnotPoints(). See
+        # issue #20131 for original problem description.
+
+        # Make some objects in a function to let most of them be deleted at
+        # scope exit. We will test if the contents of the first return value
+        # ("keepers") succeed in keeping alive the objects tracked by "spies".
+        def make_object_graph():
+            spies = []
+            plant = PendulumPlant()
+            context = plant.CreateDefaultContext()
+
+            num_time_samples = 21
+            dircol = DirectCollocation(
+                plant,
+                context,
+                num_time_samples=num_time_samples,
+                minimum_time_step=0.2,
+                maximum_time_step=0.5,
+                input_port_index=InputPortSelection.kUseFirstInputIfItExists,
+                assume_non_continuous_states_are_fixed=False)
+
+            con = mp.LinearConstraint([1], [0], [1])
+            dircol.AddConstraintToAllKnotPoints(con, vars=dircol.input())
+            spies.append(weakref.finalize(con, lambda: None))
+            return dircol, spies
+
+        keeper, spies = make_object_graph()
+        self.assertTrue(all(spy.alive for spy in spies))
+
     def test_direct_transcription(self):
         # Integrator.
         plant = LinearSystem(
@@ -221,6 +253,36 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dirtran = DirectTranscription(
             plant, context, num_time_samples=21,
             fixed_time_step=DirectTranscription.TimeStep(0.1))
+
+    def test_kinematic_traj_opt_constraint_python_wrapper_lost(self):
+        # Ensure constraints' python wrappers are kept alive when added
+        # to a k.t.o. instance. See issue #20131 for original problem
+        # description.
+
+        # Make some objects in a function to let most of them be deleted at
+        # scope exit. We will test if the contents of the first return value
+        # ("keepers") succeed in keeping alive the objects tracked by "spies".
+        def make_object_graph():
+            spies = []
+            trajopt = KinematicTrajectoryOptimization(num_positions=2,
+                                                      num_control_points=10,
+                                                      spline_order=3,
+                                                      duration=2.0)
+
+            b2 = np.zeros((2, 1))
+            con = mp.LinearConstraint(np.eye(2), lb=b2, ub=b2)
+            trajopt.AddPathPositionConstraint(con, 0)
+            spies.append(weakref.finalize(con, lambda: None))
+
+            b4 = np.zeros((4, 1))
+            con = mp.LinearConstraint(np.eye(4), lb=b4, ub=b4)
+            trajopt.AddVelocityConstraintAtNormalizedTime(con, 0)
+            spies.append(weakref.finalize(con, lambda: None))
+
+            return trajopt, spies
+
+        keeper, spies = make_object_graph()
+        self.assertTrue(all(spy.alive for spy in spies))
 
     def test_kinematic_trajectory_optimization(self):
         trajopt = KinematicTrajectoryOptimization(num_positions=2,

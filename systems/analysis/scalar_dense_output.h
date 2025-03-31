@@ -41,9 +41,7 @@ class ScalarDenseOutput : public DenseOutput<T> {
     return VectorX<T>::Constant(1, this->DoEvaluateScalar(t));
   }
 
-  int do_size() const override {
-    return 1;
-  }
+  int do_size() const override { return 1; }
 
   // @see EvaluateScalar(const T&)
   virtual T DoEvaluateScalar(const T& t) const = 0;

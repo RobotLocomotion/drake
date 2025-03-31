@@ -6,6 +6,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -69,9 +70,9 @@ class SystemBasePublic : public SystemBase {
 // Provides a templated 'namespace'.
 template <typename T>
 struct Impl {
-  class PySystem : public py::wrapper<System<T>> {
+  class PySystem : public System<T> {
    public:
-    using Base = py::wrapper<System<T>>;
+    using Base = System<T>;
     using Base::Base;
     // Expose protected methods for binding.
     using Base::DeclareInputPort;
@@ -126,9 +127,9 @@ struct Impl {
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
   template <typename LeafSystemBase = LeafSystemPublic>
-  class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
+  class PyLeafSystemBase : public LeafSystemBase {
    public:
-    using Base = py::wrapper<LeafSystemBase>;
+    using Base = LeafSystemBase;
     using Base::Base;
 
     // Trampoline virtual methods.
@@ -195,9 +196,9 @@ struct Impl {
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
   template <typename DiagramBase = DiagramPublic>
-  class PyDiagramBase : public py::wrapper<DiagramBase> {
+  class PyDiagramBase : public DiagramBase {
    public:
-    using Base = py::wrapper<DiagramBase>;
+    using Base = DiagramBase;
     using Base::Base;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
@@ -226,9 +227,9 @@ struct Impl {
     using Base::DoCalcVectorTimeDerivatives;
   };
 
-  class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
+  class PyVectorSystem : public VectorSystemPublic {
    public:
-    using Base = py::wrapper<VectorSystemPublic>;
+    using Base = VectorSystemPublic;
     using Base::Base;
 
     void DoCalcVectorOutput(const Context<T>& context,
@@ -277,7 +278,7 @@ struct Impl {
     }
   };
 
-  class PySystemVisitor : public py::wrapper<SystemVisitor<T>> {
+  class PySystemVisitor : public SystemVisitor<T> {
    public:
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {
@@ -468,35 +469,39 @@ Note: The above is for the C++ documentation. For Python, use
             py::arg("root_context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
-        // Utility methods.
+        // Port access methods. All returned port references use a ref_cycle
+        // (rather than the implicit keep-alive of reference_internal) to avoid
+        // immortality hazards like #22515.
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&, int, bool>(
                 &System<T>::get_input_port),
-            py_rvp::reference_internal, py::arg("port_index"),
-            py::arg("warn_deprecated") = true,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_index"), py::arg("warn_deprecated") = true,
             doc.System.get_input_port.doc_2args)
         .def("get_input_port",
             overload_cast_explicit<const InputPort<T>&>(
                 &System<T>::get_input_port),
-            py_rvp::reference_internal, doc.System.get_input_port.doc_0args)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            doc.System.get_input_port.doc_0args)
         .def("GetInputPort", &System<T>::GetInputPort,
-            py_rvp::reference_internal, py::arg("port_name"),
-            doc.System.GetInputPort.doc)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_name"), doc.System.GetInputPort.doc)
         .def("HasInputPort", &System<T>::HasInputPort, py::arg("port_name"),
             doc.System.HasInputPort.doc)
         .def("get_output_port",
             overload_cast_explicit<const OutputPort<T>&, int, bool>(
                 &System<T>::get_output_port),
-            py_rvp::reference_internal, py::arg("port_index"),
-            py::arg("warn_deprecated") = true,
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_index"), py::arg("warn_deprecated") = true,
             doc.System.get_output_port.doc_2args)
         .def("get_output_port",
             overload_cast_explicit<const OutputPort<T>&>(
                 &System<T>::get_output_port),
-            py_rvp::reference_internal, doc.System.get_output_port.doc_0args)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            doc.System.get_output_port.doc_0args)
         .def("GetOutputPort", &System<T>::GetOutputPort,
-            py_rvp::reference_internal, py::arg("port_name"),
-            doc.System.GetOutputPort.doc)
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_name"), doc.System.GetOutputPort.doc)
         .def("HasOutputPort", &System<T>::HasOutputPort, py::arg("port_name"),
             doc.System.HasOutputPort.doc)
         // Witness functions.
@@ -517,8 +522,11 @@ Note: The above is for the C++ documentation. For Python, use
             overload_cast_explicit<InputPort<T>&,
                 std::variant<std::string, UseDefaultName>, PortDataType, int,
                 std::optional<RandomDistribution>>(&PySystem::DeclareInputPort),
-            py_rvp::reference_internal, py::arg("name"), py::arg("type"),
-            py::arg("size"), py::arg("random_type") = std::nullopt,
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("type"), py::arg("size"),
+            py::arg("random_type") = std::nullopt,
             doc.System.DeclareInputPort.doc)
         // Not part of System; SystemBase method promoted in bindings.
         .def(
@@ -610,8 +618,10 @@ Note: The above is for the C++ documentation. For Python, use
                 const AbstractValue& model_value) -> const InputPort<T>& {
               return self->DeclareAbstractInputPort(name, model_value);
             },
-            py_rvp::reference_internal, py::arg("name"), py::arg("model_value"),
-            doc.LeafSystem.DeclareAbstractInputPort.doc)
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("model_value"), doc.LeafSystem.DeclareAbstractInputPort.doc)
         .def("DeclareAbstractParameter",
             &PyLeafSystem::DeclareAbstractParameter, py::arg("model_value"),
             doc.LeafSystem.DeclareAbstractParameter.doc)
@@ -628,8 +638,10 @@ Note: The above is for the C++ documentation. For Python, use
                   MakeCppCompatibleCalcCallback(std::move(calc)),
                   prerequisites_of_calc);
             },
-            py_rvp::reference_internal, py::arg("name"), py::arg("alloc"),
-            py::arg("calc"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("alloc"), py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareAbstractOutputPort
@@ -643,7 +655,9 @@ Note: The above is for the C++ documentation. For Python, use
               return self->DeclareVectorInputPort(
                   name, model_vector, random_type);
             },
-            py_rvp::reference_internal, py::arg("name"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
             py::arg("model_vector"), py::arg("random_type") = std::nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args_model_vector)
         .def(
@@ -653,8 +667,10 @@ Note: The above is for the C++ documentation. For Python, use
                 -> InputPort<T>& {
               return self->DeclareVectorInputPort(name, size, random_type);
             },
-            py_rvp::reference_internal, py::arg("name"), py::arg("size"),
-            py::arg("random_type") = std::nullopt,
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("size"), py::arg("random_type") = std::nullopt,
             doc.LeafSystem.DeclareVectorInputPort.doc_3args_size)
         .def("DeclareVectorOutputPort",
             WrapCallbacks(
@@ -664,8 +680,10 @@ Note: The above is for the C++ documentation. For Python, use
                     -> const OutputPort<T>& {
                   return self->DeclareVectorOutputPort(name, arg1, arg2, arg3);
                 }),
-            py_rvp::reference_internal, py::arg("name"), py::arg("model_value"),
-            py::arg("calc"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("model_value"), py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareVectorOutputPort.doc_4args_model_vector)
@@ -678,8 +696,10 @@ Note: The above is for the C++ documentation. For Python, use
                   return self->DeclareVectorOutputPort(
                       name, size, calc, prerequisites_of_calc);
                 }),
-            py_rvp::reference_internal, py::arg("name"), py::arg("size"),
-            py::arg("calc"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference, py::arg("name"),
+            py::arg("size"), py::arg("calc"),
             py::arg("prerequisites_of_calc") =
                 std::set<DependencyTicket>{SystemBase::all_sources_ticket()},
             doc.LeafSystem.DeclareVectorOutputPort.doc_4args_size)
@@ -687,17 +707,26 @@ Note: The above is for the C++ documentation. For Python, use
             py::overload_cast<std::variant<std::string, UseDefaultName>,
                 ContinuousStateIndex>(
                 &LeafSystemPublic::DeclareStateOutputPort),
-            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            py::arg("name"), py::arg("state_index"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LeafSystem.DeclareStateOutputPort.doc_continuous)
         .def("DeclareStateOutputPort",
             py::overload_cast<std::variant<std::string, UseDefaultName>,
                 DiscreteStateIndex>(&LeafSystemPublic::DeclareStateOutputPort),
-            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            py::arg("name"), py::arg("state_index"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LeafSystem.DeclareStateOutputPort.doc_discrete)
         .def("DeclareStateOutputPort",
             py::overload_cast<std::variant<std::string, UseDefaultName>,
                 AbstractStateIndex>(&LeafSystemPublic::DeclareStateOutputPort),
-            py::arg("name"), py::arg("state_index"), py_rvp::reference_internal,
+            py::arg("name"), py::arg("state_index"),
+            // Use a ref_cycle (rather than the implicit keep-alive of
+            // reference_internal) to avoid immortality hazards like #22515.
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
             doc.LeafSystem.DeclareStateOutputPort.doc_abstract)
         // TODO(russt): Implement the std::function variant of
         // LeafSystem::Declare*Event sugar methods if they are ever needed,

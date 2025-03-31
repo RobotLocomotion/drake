@@ -338,6 +338,4 @@ class TestMemoryLeaks(unittest.TestCase):
         self.do_test(dut=_dut_full_example, count=1)
 
     def test_mypyleafsystem(self):
-        # TODO(#22515): Fix this family of leaks.
-        self.do_test(dut=_dut_mypyleafsystem, count=1, leaks_allowed=1,
-                     leaks_required=1)
+        self.do_test(dut=_dut_mypyleafsystem, count=1)
