@@ -24,8 +24,8 @@ namespace {
 
 namespace fs = std::filesystem;
 
-using nlohmann::json;
 using math::RigidTransformd;
+using nlohmann::json;
 
 GTEST_TEST(MeshcatInternalTest, GetMeshcatStaticResource) {
   // This matches the list of URLs in the API doc.
@@ -218,6 +218,7 @@ GTEST_TEST(TransformGeometryNameTest, SampledResults) {
   const RigidTransformd I = RigidTransformd::Identity();
 
   // Test pairs: (registered geometry name, expected transformed name).
+  // clang-format off
   std::vector<std::pair<std::string, std::string>> test_names{
       {"unchanged", "unchanged"},
       {"::prefixed", "/prefixed"},
@@ -227,6 +228,7 @@ GTEST_TEST(TransformGeometryNameTest, SampledResults) {
       {"empty::::slash", "empty//slash"},
       {"suffixed::", "suffixed/"},
       {"final_trio:::", "final_trio/:"}};
+  // clang-format on
   for (const auto& [name, transformed] : test_names) {
     const GeometryId id = scene_graph.RegisterAnchoredGeometry(
         s_id, std::make_unique<GeometryInstance>(I, Sphere(1.0), name));

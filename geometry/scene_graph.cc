@@ -83,7 +83,6 @@ class GeometryStateValue final : public Value<GeometryState<T>> {
 
 }  // namespace
 
-
 /* Hub: Helps minimize the work needed to allocate multiple identical contexts.
 
  Scene graph's "model" contains whatever geometry and properties were specified
@@ -196,8 +195,7 @@ SceneGraph<T>::SceneGraph()
 }
 
 template <typename T>
-SceneGraph<T>::SceneGraph(const SceneGraphConfig& config)
-    : SceneGraph() {
+SceneGraph<T>::SceneGraph(const SceneGraphConfig& config) : SceneGraph() {
   config.ValidateOrThrow();
   hub_.mutable_config() = config;
 }
@@ -207,12 +205,10 @@ int64_t SceneGraph<T>::scalar_conversion_count_{0};
 
 template <typename T>
 template <typename U>
-SceneGraph<T>::SceneGraph(const SceneGraph<U>& other)
-    : SceneGraph() {
+SceneGraph<T>::SceneGraph(const SceneGraph<U>& other) : SceneGraph() {
   ++scalar_conversion_count_;
   hub_.mutable_config() = other.hub_.config();
-  hub_.mutable_model() =
-      GeometryState<T>(other.hub_.model());
+  hub_.mutable_model() = GeometryState<T>(other.hub_.model());
 
   // We need to guarantee that the same source ids map to the same port indices.
   // We'll do this by processing the source ids in monotonically increasing
@@ -290,8 +286,7 @@ FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
 template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
                                      const GeometryFrame& frame) {
-  return hub_.mutable_model().RegisterFrame(
-      source_id, parent_id, frame);
+  return hub_.mutable_model().RegisterFrame(source_id, parent_id, frame);
 }
 
 template <typename T>
@@ -303,8 +298,8 @@ template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, FrameId frame_id,
     std::unique_ptr<GeometryInstance> geometry) {
-  return hub_.mutable_model().RegisterGeometry(
-      source_id, frame_id, std::move(geometry));
+  return hub_.mutable_model().RegisterGeometry(source_id, frame_id,
+                                               std::move(geometry));
 }
 
 template <typename T>
@@ -326,8 +321,8 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
-  return hub_.mutable_model().RegisterAnchoredGeometry(
-      source_id, std::move(geometry));
+  return hub_.mutable_model().RegisterAnchoredGeometry(source_id,
+                                                       std::move(geometry));
 }
 
 template <typename T>
@@ -398,8 +393,7 @@ void SceneGraph<T>::AddRenderer(Context<T>* context, std::string name,
 template <typename T>
 void SceneGraph<T>::AddRenderer(
     std::string name, std::unique_ptr<render::RenderEngine> renderer) {
-  return hub_.mutable_model().AddRenderer(
-      std::move(name), std::move(renderer));
+  return hub_.mutable_model().AddRenderer(std::move(name), std::move(renderer));
 }
 
 template <typename T>
@@ -436,8 +430,7 @@ bool SceneGraph<T>::HasRenderer(const Context<T>& context,
 
 template <typename T>
 std::string SceneGraph<T>::GetRendererTypeName(const std::string& name) const {
-  const render::RenderEngine* engine =
-      hub_.model().GetRenderEngineByName(name);
+  const render::RenderEngine* engine = hub_.model().GetRenderEngineByName(name);
   if (engine == nullptr) {
     return {};
   }
@@ -484,8 +477,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                ProximityProperties properties,
                                RoleAssign assign) {
-  hub_.mutable_model().AssignRole(
-      source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(source_id, geometry_id, std::move(properties),
+                                  assign);
 }
 
 template <typename T>
@@ -504,8 +497,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                PerceptionProperties properties,
                                RoleAssign assign) {
-  hub_.mutable_model().AssignRole(
-      source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(source_id, geometry_id, std::move(properties),
+                                  assign);
 }
 
 template <typename T>
@@ -521,8 +514,8 @@ template <typename T>
 void SceneGraph<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
                                IllustrationProperties properties,
                                RoleAssign assign) {
-  hub_.mutable_model().AssignRole(
-      source_id, geometry_id, std::move(properties), assign);
+  hub_.mutable_model().AssignRole(source_id, geometry_id, std::move(properties),
+                                  assign);
 }
 
 template <typename T>
@@ -556,8 +549,7 @@ int SceneGraph<T>::RemoveRole(Context<T>* context, SourceId source_id,
 template <typename T>
 int SceneGraph<T>::RemoveRole(SourceId source_id, GeometryId geometry_id,
                               Role role) {
-  return hub_.mutable_model().RemoveRole(
-      source_id, geometry_id, role);
+  return hub_.mutable_model().RemoveRole(source_id, geometry_id, role);
 }
 
 template <typename T>
@@ -601,15 +593,14 @@ void SceneGraph<T>::MakeSourcePorts(SourceId source_id) {
   // Create and store the input ports for this source id.
   SourcePorts& source_ports = input_source_ids_[source_id];
   source_ports.pose_port =
-      this->DeclareAbstractInputPort(
-          hub_.model().GetName(source_id) + "_pose",
-          Value<FramePoseVector<T>>())
-      .get_index();
+      this->DeclareAbstractInputPort(hub_.model().GetName(source_id) + "_pose",
+                                     Value<FramePoseVector<T>>())
+          .get_index();
   source_ports.configuration_port =
       this->DeclareAbstractInputPort(
-          hub_.model().GetName(source_id) + "_configuration",
-          Value<GeometryConfigurationVector<T>>())
-      .get_index();
+              hub_.model().GetName(source_id) + "_configuration",
+              Value<GeometryConfigurationVector<T>>())
+          .get_index();
 }
 
 template <typename T>
