@@ -1468,14 +1468,15 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   P = -Dv;
   Q = -Dq * N;
 
-  // We'll do SPD projection on P and Q rather than Ã to ensure that non-convex
-  // components of the external system dynamics are treated explicitly.
-  // Otherwise these components would be ingored entirely, resulting in wrong
-  // dynamics.
+  // We'll do SPD projection on P here to ensure that non-convex components of
+  // the external system dynamics are treated explicitly. Otherwise these
+  // components would be ingored entirely, resulting in wrong dynamics.
   ProjectSPD(&P);
-  ProjectSPD(&Q);
 
+  // Compute K and make sure it's symmetric positive definite.
   (*K) = P + h * Q;
+  ProjectSPD(K);
+
   (*tau0) = g0 + P * v0;
 }
 
