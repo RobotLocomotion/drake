@@ -38,6 +38,11 @@ drake_jupyter_py_binary(
 drake_jupyter_py_binary(
     name = "hydroelastic_contact_basics",
     add_test_rule = 1,
+    test_tags = [
+        # TODO(#22589) This started failing randomly in CI for unknown reasons.
+        # We should root cause the problem and then re-enable this test.
+        "manual",
+    ],
     test_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
