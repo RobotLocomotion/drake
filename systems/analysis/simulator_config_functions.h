@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -7,6 +8,7 @@
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/analysis/simulator_config.h"
+#include "drake/systems/framework/system.h"
 
 namespace drake {
 namespace systems {
@@ -70,6 +72,23 @@ the integrator's scalar type's extra information such as gradients.
 template <typename T>
 SimulatorConfig ExtractSimulatorConfig(
     const drake::systems::Simulator<T>& simulator);
+
+/** Create an integrator according to the given arguments.
+
+@param system A reference to the system to be integrated; the integrator will
+  maintain a reference to the system in perpetuity, so the integrator must not
+  outlive the system.
+@param integrator_config Configuration to be used. Only values relevant to the
+  integrator (integration_scheme, use_error_control, accuracy, max_step_size)
+  are applied.
+@throw std::exception if the integration scheme does not support the scalar type
+  T, or if the integration scheme does not match any of GetIntegrationSchemes().
+@tparam_default_scalar
+
+@ingroup simulator_configuration */
+template <typename T>
+std::unique_ptr<IntegratorBase<T>> CreateIntegratorFromConfig(
+    const System<T>& system, const SimulatorConfig& integrator_config);
 
 }  // namespace systems
 }  // namespace drake
