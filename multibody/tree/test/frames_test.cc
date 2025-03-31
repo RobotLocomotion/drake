@@ -168,7 +168,7 @@ TEST_F(FrameTests, IsBodyFrameMethod) {
 // there is a query for information about this frame that needs the associated
 // multibody tree. Check that exceptions are thrown for common public methods.
 TEST_F(FrameTests, IsFrameMethodCalledWithNoMultibodyTree) {
-  multibody::FixedOffsetFrame<double> frame_not_in_multibody_tree(
+  FixedOffsetFrame<double> frame_not_in_multibody_tree(
       "bad_frame", *frameB_, math::RigidTransform<double>{});
 
   DRAKE_EXPECT_THROWS_MESSAGE(
