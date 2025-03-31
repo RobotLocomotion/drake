@@ -128,11 +128,5 @@ def read_repository_metadata(repositories=None):
         # Downloads are associated with individual "crate__..." repositories.
         "downloads": {},
     }
-    result["rust_toolchain"] = {
-        "repository_rule_type": "scripted",
-        "upgrade_script": "upgrade.py",
-        # Downloads are associated with individual "rust_..." repositories.
-        "downloads": {},
-    }
 
     return result
