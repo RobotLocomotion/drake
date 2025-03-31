@@ -533,11 +533,19 @@ class TestGeometryCore(unittest.TestCase):
             mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
             mut.Mesh(filename="arbitrary/path", scale=1.0),
+            mut.Mesh(filename="arbitrary/path", scale3=[1.0, 2.0, 3.0]),
             mut.Mesh(mesh_data=mut.InMemoryMesh(
                 mesh_file=MemoryFile("# ", ".obj", "junk")), scale=1.0),
+            mut.Mesh(mesh_data=mut.InMemoryMesh(
+                mesh_file=MemoryFile("# ", ".obj", "junk")),
+                scale3=[1.0, 2.0, 3.0]),
             mut.Convex(filename="arbitrary/path", scale=1.0),
+            mut.Convex(filename="arbitrary/path", scale3=[1.0, 2.0, 3.0]),
             mut.Convex(mesh_data=mut.InMemoryMesh(
                 mesh_file=MemoryFile("# ", ".obj", "junk")), scale=1.0),
+            mut.Convex(mesh_data=mut.InMemoryMesh(
+                mesh_file=MemoryFile("# ", ".obj", "junk")),
+                scale3=[1.0, 2.0, 3.0]),
             mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
         ]
         for shape in shapes:
@@ -592,13 +600,24 @@ class TestGeometryCore(unittest.TestCase):
         # Note: Convex has generally been rolled in with Mesh because of their
         # common APIs (below). This test covers the Convex-only constructor
         # from point cloud (which gets converted to an in-memory .obj).
+
+        # Throw away Convex; we just want to make sure the scalar-valued
+        # `scale` parameter is bound.
         convex = mut.Convex(points=np.array(((0, 0, 0),
                                              (1, 0, 0),
                                              (0, 1, 0),
                                              (0, 0, 1))).T,
-                            label="test_label", scale=2.0)
+                            label="test_label", scale=2)
+
+        # For the test, we'll test the non-uniform scale API; the two are
+        # otherwise equivalent.
+        convex = mut.Convex(points=np.array(((0, 0, 0),
+                                             (1, 0, 0),
+                                             (0, 1, 0),
+                                             (0, 0, 1))).T,
+                            label="test_label", scale3=[1, 2, 3])
         self.assertEqual(".obj", convex.extension())
-        self.assertEqual(convex.scale(), 2.0)
+        np.testing.assert_array_equal(convex.scale3(), [1, 2, 3])
         self.assertTrue(convex.source().is_in_memory())
         convex_file = convex.source().in_memory().mesh_file
         self.assertTrue(convex_file.filename_hint(), "test_label")
@@ -639,6 +658,7 @@ class TestGeometryCore(unittest.TestCase):
             assert_shape_api(dut_mesh)
             self.assertEqual(".ext", dut_mesh.extension())
             self.assertEqual(dut_mesh.scale(), 1.5)
+            np.testing.assert_array_equal(dut_mesh.scale3(), [1.5, 1.5, 1.5])
             self.assertIsInstance(dut_mesh.source(), mut.MeshSource)
             with self.assertRaisesRegex(RuntimeError,
                                         "MakeConvexHull only applies to"):
@@ -664,16 +684,30 @@ class TestGeometryCore(unittest.TestCase):
         assert_pickle(self, cone, repr)
 
     def test_mesh_pickle_compatibility(self):
-        """Changing the underlying storage for Mesh/Convex changed their pickle
-        functions. This confirms that pickled byte string of the previous
-        implementation works in the new code."""
-        # Check that data pickled as Mesh in Drake v1.33.0 can be unpickled in
-        # newer versions. The data should produce a Mesh equivalent to the
-        # instantiated mesh.
-        legacy_data = b"\x80\x04\x95@\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c\x04Mesh\x94\x93\x94)\x81\x94\x8c\x11/path/to/file.obj\x94G@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
-        obj = pickle.loads(legacy_data)
-        self.assertIsInstance(obj, mut.Mesh)
-        self.assertTrue(obj.source().is_path())
-        ref_mesh = mut.Mesh(filename="/path/to/file.obj", scale=2)
-        self.assertEqual(obj.source().path(), ref_mesh.source().path())
-        self.assertEqual(obj.scale(), ref_mesh.scale())
+        """Mesh/Convex have changed since their original pickling (underlying
+        representation to MeshSource, scale going from scalar to vector). The
+        pickling functions have changed accordingly, but we want to maintain
+        compatibility with older pickled meshes.
+        In this case, we have example pickled bytestrings from the last Drake
+        release prior to a change. Make sure they still get unpickled.
+        """
+        # Check that data pickled in older versions can be unpickled into the
+        # current version. The data should produce a Mesh/Convex equivalent to
+        # the reference instance.
+        for mesh_type, pickle_str in ((mut.Mesh, b"\x04Mesh"),
+                                      (mut.Convex, b"\x06Convex")):
+            ref_mesh = mesh_type(filename="/path/to/file.obj", scale=2)
+            current_data = pickle.dumps(ref_mesh)
+            v1_33_data = b"\x80\x04\x95@\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c" + pickle_str + b"\x94\x93\x94)\x81\x94\x8c\x11/path/to/file.obj\x94G@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+            v1_39_data = b"\x80\x04\x95\x83\x00\x00\x00\x00\x00\x00\x00\x8c\x10pydrake.geometry\x94\x8c" + pickle_str + b"\x94\x93\x94)\x81\x94h\x00\x8c\nMeshSource\x94\x93\x94)\x81\x94}\x94\x8c\x04path\x94\x8c\x07pathlib\x94\x8c\tPosixPath\x94\x93\x94(\x8c\x01/\x94\x8c\x04path\x94\x8c\x02to\x94\x8c\x08file.obj\x94t\x94R\x94sbG@\x00\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+            for legacy_data in (v1_33_data, v1_39_data):
+                # Confirm legacy pickled data *is* different.
+                self.assertNotEqual(legacy_data, current_data)
+                obj = pickle.loads(legacy_data)
+                self.assertIsInstance(obj, mesh_type)
+                self.assertTrue(obj.source().is_path())
+                self.assertEqual(obj.source().path(), ref_mesh.source().path())
+                np.testing.assert_array_equal(obj.scale3(), ref_mesh.scale3())
+                # Safe to call scale() because old pickling only supported
+                # uniform scale.
+                self.assertEqual(obj.scale(), ref_mesh.scale())

@@ -174,9 +174,9 @@ GTEST_TEST(MonteCarloSimulationTest, BasicTest) {
   RandomGenerator serial_generator(prototype_generator);
   RandomGenerator parallel_generator(prototype_generator);
 
-  const auto serial_results = MonteCarloSimulation(
-      make_simulator, &GetScalarOutput, final_time, num_samples,
-      &serial_generator, Parallelism::None());
+  const auto serial_results =
+      MonteCarloSimulation(make_simulator, &GetScalarOutput, final_time,
+                           num_samples, &serial_generator, Parallelism::None());
   const auto parallel_results = MonteCarloSimulation(
       make_simulator, &GetScalarOutput, final_time, num_samples,
       &parallel_generator, Parallelism::Max());
@@ -259,14 +259,14 @@ GTEST_TEST(MonteCarloSimulationExceptionTest, BasicTest) {
   RandomGenerator serial_generator(prototype_generator);
   RandomGenerator parallel_generator(prototype_generator);
 
-  EXPECT_THROW(MonteCarloSimulation(
-      make_simulator, &GetScalarOutput, final_time, num_samples,
-      &serial_generator, Parallelism::None()),
+  EXPECT_THROW(
+      MonteCarloSimulation(make_simulator, &GetScalarOutput, final_time,
+                           num_samples, &serial_generator, Parallelism::None()),
       std::exception);
-  EXPECT_THROW(MonteCarloSimulation(
-      make_simulator, &GetScalarOutput, final_time, num_samples,
-      &parallel_generator, Parallelism::Max()),
-      std::exception);
+  EXPECT_THROW(MonteCarloSimulation(make_simulator, &GetScalarOutput,
+                                    final_time, num_samples,
+                                    &parallel_generator, Parallelism::Max()),
+               std::exception);
 }
 
 }  // namespace

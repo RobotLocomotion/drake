@@ -24,7 +24,7 @@ namespace internal {
  configured to stop for errors, std::nullopt is returned.
  @pre `diagnostic` has both warning and error handlers defined. */
 std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
-    const MeshSource& source, double scale,
+    const MeshSource& source, const Eigen::Vector3d& scale,
     const drake::internal::DiagnosticPolicy& diagnostic);
 
 }  // namespace internal
@@ -36,19 +36,29 @@ std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
  the file format.
  @param filename
      A valid file name with absolute path or relative path.
- @param scale
-     An optional scale to coordinates.
+ @param scale3
+     A scale to coordinates.
  @param on_warning
      An optional callback that will receive warning message(s) encountered
      while reading the mesh.  When not provided, drake::log() will be used.
  @throws std::exception if there is an error reading the mesh data.
  @return surface mesh */
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
+    const std::filesystem::path& filename, const Eigen::Vector3d& scale3,
+    std::function<void(std::string_view)> on_warning = {});
+
+/** Variant that allows defining uniform scaling from a single scalar value. */
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     const std::filesystem::path& filename, double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});
 
 /** Overload of @ref ReadObjToTriangleSurfaceMesh(const std::filesystem::path&,
  double) with the Wavefront .obj in a Mesh shape specification. */
+TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
+    const MeshSource& mesh_source, const Eigen::Vector3d& scale3,
+    std::function<void(std::string_view)> on_warning = {});
+
+/** Variant that allows defining uniform scaling from a single scalar value. */
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     const MeshSource& mesh_source, double scale = 1.0,
     std::function<void(std::string_view)> on_warning = {});

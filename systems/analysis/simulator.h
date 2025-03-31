@@ -521,9 +521,7 @@ class Simulator {
   /// Return the real time rate target currently in effect. The default is
   /// zero, meaning the %Simulator runs as fast as possible. You can change the
   /// target with set_target_realtime_rate().
-  double get_target_realtime_rate() const {
-    return target_realtime_rate_;
-  }
+  double get_target_realtime_rate() const { return target_realtime_rate_; }
 
   /// Return the rate that simulated time has progressed relative to real time.
   /// A return of 1 means the simulation just matched real
@@ -599,7 +597,7 @@ class Simulator {
   /// updates, sampling operations, event handlers, and constraint projection.
   /// You can also modify this prior to calling Initialize() to set initial
   /// conditions. Do not call this method if there is no Context.
-  Context<T>& get_mutable_context()  {
+  Context<T>& get_mutable_context() {
     DRAKE_ASSERT(context_ != nullptr);
     return *context_;
   }
@@ -669,7 +667,8 @@ class Simulator {
   /// the unrestricted update events return "did nothing". A single dispatcher
   /// call may handle multiple unrestricted update events.
   int64_t get_num_unrestricted_updates() const {
-    return num_unrestricted_updates_; }
+    return num_unrestricted_updates_;
+  }
 
   /// Gets a reference to the integrator used to advance the continuous aspects
   /// of the system.
@@ -722,7 +721,7 @@ class Simulator {
         "Integrator::Integrator(const System&, const T&, Context*); this "
         "constructor is usually associated with fixed-step integrators.");
     integrator_ = std::make_unique<Integrator>(get_system(), max_step_size,
-                                      &get_mutable_context());
+                                               &get_mutable_context());
     initialization_done_ = false;
     return *static_cast<Integrator*>(integrator_.get());
   }
@@ -762,7 +761,8 @@ class Simulator {
   const System<T>& get_system() const { return system_; }
 
  private:
-  template <typename> friend class internal::SimulatorPythonInternal;
+  template <typename>
+  friend class internal::SimulatorPythonInternal;
 
   enum TimeOrWitnessTriggered {
     kNothingTriggered = 0b00,
@@ -772,10 +772,9 @@ class Simulator {
   };
 
   // All constructors delegate to here.
-  Simulator(
-      const System<T>* system,
-      std::unique_ptr<const System<T>> owned_system,
-      std::shared_ptr<Context<T>> context);
+  Simulator(const System<T>* system,
+            std::unique_ptr<const System<T>> owned_system,
+            std::shared_ptr<Context<T>> context);
 
   [[nodiscard]] EventStatus HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);
@@ -790,33 +789,29 @@ class Simulator {
   // In that case, updates the SimulatorStatus to explain what happened and
   // then optionally throws or returns true. Returns false and does nothing
   // if no failure.
-  bool HasEventFailureOrMaybeThrow(
-      const EventStatus& event_status, bool throw_on_failure,
-      SimulatorStatus* simulator_status);
+  bool HasEventFailureOrMaybeThrow(const EventStatus& event_status,
+                                   bool throw_on_failure,
+                                   SimulatorStatus* simulator_status);
 
   TimeOrWitnessTriggered IntegrateContinuousState(
-      const T& next_publish_time,
-      const T& next_update_time,
-      const T& boundary_time,
-      CompositeEventCollection<T>* witnessed_events);
+      const T& next_publish_time, const T& next_update_time,
+      const T& boundary_time, CompositeEventCollection<T>* witnessed_events);
 
   // Private methods related to witness functions.
   void IsolateWitnessTriggers(
       const std::vector<const WitnessFunction<T>*>& witnesses,
-      const VectorX<T>& w0,
-      const T& t0, const VectorX<T>& x0, const T& tf,
+      const VectorX<T>& w0, const T& t0, const VectorX<T>& x0, const T& tf,
       std::vector<const WitnessFunction<T>*>* triggered_witnesses);
   void PopulateEventDataForTriggeredWitness(
       const T& t0, const T& tf, const WitnessFunction<T>* witness,
       Event<T>* event, CompositeEventCollection<T>* events) const;
   static bool DidWitnessTrigger(
-    const std::vector<const WitnessFunction<T>*>& witness_functions,
-    const VectorX<T>& w0,
-    const VectorX<T>& wf,
-    std::vector<const WitnessFunction<T>*>* triggered_witnesses);
+      const std::vector<const WitnessFunction<T>*>& witness_functions,
+      const VectorX<T>& w0, const VectorX<T>& wf,
+      std::vector<const WitnessFunction<T>*>* triggered_witnesses);
   VectorX<T> EvaluateWitnessFunctions(
-    const std::vector<const WitnessFunction<T>*>& witness_functions,
-    const Context<T>& context) const;
+      const std::vector<const WitnessFunction<T>*>& witness_functions,
+      const Context<T>& context) const;
   void RedetermineActiveWitnessFunctionsIfNecessary();
 
   // The steady_clock is immune to system clock changes so increases
@@ -845,7 +840,7 @@ class Simulator {
   // system_ variable instead, which is valid always.
   const std::unique_ptr<const System<T>> owned_system_;
 
-  const System<T>& system_;              // Just a reference; not owned.
+  const System<T>& system_;  // Just a reference; not owned.
 
   // Context ownership is logically unique, but we allow a shared pointer to
   // accommodate custom memory management for python bindings.
@@ -928,8 +923,7 @@ class Simulator {
   // Indicates when a timed or witnessed event needs to be handled on the next
   // call to AdvanceTo().
   TimeOrWitnessTriggered time_or_witness_triggered_{
-      TimeOrWitnessTriggered::kNothingTriggered
-  };
+      TimeOrWitnessTriggered::kNothingTriggered};
 
   // Pre-allocated temporaries for updated discrete states.
   std::unique_ptr<DiscreteValues<T>> discrete_updates_;
@@ -969,8 +963,8 @@ namespace internal {
 //        use gcc's -ffast-math option).
 template <class T>
 T GetPreviousNormalizedValue(const T& value) {
-  using std::nexttoward;
   using std::abs;
+  using std::nexttoward;
 
   // There are three distinct cases to be handled:
   //     -∞        -10⁻³⁰⁸  0      10⁻³⁰⁸      ∞
@@ -987,17 +981,18 @@ T GetPreviousNormalizedValue(const T& value) {
 
   // Treat zero (b) and DBL_MIN (c) specially, since nexttoward(value, -inf)
   // returns denormalized numbers for these two values.
-  if (value_mod == 0.0)
+  if (value_mod == 0.0) {
     return -std::numeric_limits<double>::min();
-  if (value_mod == min_normalized)
+  }
+  if (value_mod == min_normalized) {
     return 0.0;
+  }
 
   // Case (a) uses nexttoward(.).
   const long double inf = std::numeric_limits<long double>::infinity();
   const double prev_value = nexttoward(value, -inf);
-  DRAKE_DEMAND(
-      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_NORMAL ||
-      std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_ZERO);
+  DRAKE_DEMAND(std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_NORMAL ||
+               std::fpclassify(ExtractDoubleOrThrow(prev_value)) == FP_ZERO);
   return prev_value;
 }
 }  // namespace internal

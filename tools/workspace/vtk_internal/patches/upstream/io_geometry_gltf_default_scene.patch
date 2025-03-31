@@ -1,19 +1,29 @@
-Avoid crashing on glTFs with no scenes
+[vtk] Ensure that there is atleast one scene in the GLTF scenes vector
 
-This should be upstreamed to VTK.
+Irrespective of whether there is a "scenes" property in the document.
 
 --- IO/Geometry/vtkGLTFDocumentLoaderInternals.cxx
 +++ IO/Geometry/vtkGLTFDocumentLoaderInternals.cxx
-@@ -1480,6 +1480,12 @@ bool vtkGLTFDocumentLoaderInternals::LoadModelMetaData(
-     }
-   }
- 
-+  // In case the file had no scenes, add an empty one so that downwind code
-+  // doesn't need to check that its DefaultScene index is valid.
-+  if (this->Self->GetInternalModel()->Scenes.empty()) {
+@@ -1470,15 +1470,15 @@ bool vtkGLTFDocumentLoaderInternals::LoadModelMetaData(
+
+   // Load default scene
+   this->Self->GetInternalModel()->DefaultScene = 0;
++  int nbScenes = static_cast<int>(this->Self->GetInternalModel()->Scenes.size());
++  if (nbScenes < 1)
++  {
++    // In case the file had no scenes, add an empty scene so that downstream code doesn't need to
++    // check that its default scene index is valid
 +    this->Self->GetInternalModel()->Scenes.resize(1);
 +  }
-+
-   // Load skins
-   this->Self->GetInternalModel()->Skins.reserve(root["skins"].size());
-   for (const auto& glTFSkin : root["skins"])
+   if (!vtkGLTFUtils::GetIntValue(root, "scene", this->Self->GetInternalModel()->DefaultScene))
+   {
+-    int nbScenes = static_cast<int>(this->Self->GetInternalModel()->Scenes.size());
+-    if (nbScenes < 1)
+-    {
+-      // In case the file had no scenes, add an empty scene so that downstream code doesn't need to
+-      // check that its default scene index is valid
+-      this->Self->GetInternalModel()->Scenes.resize(1);
+-    }
+     if (this->Self->GetInternalModel()->DefaultScene < 0 ||
+       this->Self->GetInternalModel()->DefaultScene >= nbScenes)
+     {

@@ -93,13 +93,12 @@ class InverseDynamicsController final
    *  - Vector kp, ki and kd do not all have the same size equal to the number
    *    of generalized positions.
    */
-  InverseDynamicsController(
-      const multibody::MultibodyPlant<T>& plant,
-      const VectorX<double>& kp,
-      const VectorX<double>& ki,
-      const VectorX<double>& kd,
-      bool has_reference_acceleration,
-      const Context<T>* plant_context = nullptr);
+  InverseDynamicsController(const multibody::MultibodyPlant<T>& plant,
+                            const VectorX<double>& kp,
+                            const VectorX<double>& ki,
+                            const VectorX<double>& kd,
+                            bool has_reference_acceleration,
+                            const Context<T>* plant_context = nullptr);
 
   /**
    * Constructs an inverse dynamics controller and takes the ownership of the
@@ -174,8 +173,7 @@ class InverseDynamicsController final
  private:
   void SetUp(std::unique_ptr<multibody::MultibodyPlant<T>> owned_plant,
              const VectorX<double>& kp, const VectorX<double>& ki,
-             const VectorX<double>& kd,
-             const Context<T>* plant_context);
+             const VectorX<double>& kd, const Context<T>* plant_context);
 
   const multibody::MultibodyPlant<T>* multibody_plant_for_control_{nullptr};
   PidController<T>* pid_{nullptr};

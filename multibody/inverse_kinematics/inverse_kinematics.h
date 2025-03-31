@@ -62,7 +62,7 @@ class InverseKinematics {
    * systems::DiagramBuilder<double> builder;
    * auto items = AddMultibodyPlantSceneGraph(&builder, 0.0);
    * // 2. Add collision geometries to the plant
-   * Parser(&(items.plant)).AddModels("model.sdf");
+   * Parser(&builder).AddModels("model.sdf");
    * // 3. Construct the diagram
    * auto diagram = builder.Build();
    * // 4. Create diagram context.

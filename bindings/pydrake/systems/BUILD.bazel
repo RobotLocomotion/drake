@@ -194,6 +194,7 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         ":framework_py",
+        ":lcm_py",
         ":module_py",
         "//bindings/pydrake/geometry",
     ],
@@ -363,6 +364,7 @@ drake_py_unittest(
         ":test_util_py",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/examples",
+        "//bindings/pydrake/systems/test_utilities:framework_test_util_py",
     ],
 )
 

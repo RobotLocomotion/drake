@@ -68,6 +68,7 @@ from pydrake.systems.primitives import (
     ZeroOrderHold,
     )
 from pydrake.systems.test.test_util import MyVector2
+from pydrake.systems.test_utilities import framework_test_util
 
 # TODO(eric.cousineau): The scope of this test file and `custom_test.py`
 # is poor. Move these tests into `framework_test` and `analysis_test`, and
@@ -637,14 +638,17 @@ class TestGeneral(unittest.TestCase):
         self.assertTrue(simulator.has_context())
         context_default = simulator.get_mutable_context()
         self.assertIsInstance(context_default, Context)
-        # WARNING: Once we call `simulator.reset_context()`, it will delete the
-        # context it currently owns, which is `context_default` in this case.
-        # BE CAREFUL IN SITUATIONS LIKE THIS!
         context = system.CreateDefaultContext()
         simulator.reset_context(context)
+        # The python bindings cause the context to always use Python reference
+        # counting, so the evicted context referred to by `context_default`
+        # will still be alive.
+        self.assertTrue(context_default.is_stateless())
         self.assertIs(context, simulator.get_mutable_context())
-        # WARNING: This will also invalidate `context`. Be careful!
         simulator.reset_context(None)
+        # Similar to the case above, the evicted context referred to by
+        # `context` is still alive.
+        self.assertTrue(context.is_stateless())
         self.assertFalse(simulator.has_context())
 
     def test_simulator_flags(self):
@@ -1015,3 +1019,32 @@ class TestGeneral(unittest.TestCase):
         system.Accept(v=visitor)
         self.assertEqual(visited_systems, ["adder1", "adder2"])
         self.assertEqual(visited_diagrams, ["diagram"])
+
+    def test_ports_lifetime_hazard(self):
+        # To ensure the test will fail if only one suitable annotation is
+        # missing, we must only test one API per returned port reference
+        # identity at a time.
+        api_kinds = ["default", "index", "name"]
+
+        def make_hazard_system(api_kind):
+            model_value = Value("Hello World")
+            dut = PassThrough(copy.copy(model_value))
+
+            # Try to provoke a lifetime hazard like #22515.
+            ports = []
+            if api_kind == "default":
+                ports.append(dut.get_input_port())
+                ports.append(dut.get_output_port())
+            elif api_kind == "index":
+                ports.append(dut.get_input_port(0))
+                ports.append(dut.get_output_port(0))
+            else:
+                assert api_kind == "name"
+                ports.append(dut.GetInputPort("u"))
+                ports.append(dut.GetOutputPort("y"))
+            return dut, ports
+
+        for api_kind in api_kinds:
+            dut, ports = make_hazard_system(api_kind)
+            dut = [dut]  # The helper function requires passing dut via a list.
+            framework_test_util.check_ports_lifetime_hazard(self, dut, ports)

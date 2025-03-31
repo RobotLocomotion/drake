@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/bit_cast.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -102,11 +103,13 @@ class IndexOrFlag {
  is usually memory-bound. We carefully pack GridData to be a power of 2 to work
  with SPGrid, which automatically packs the data to a power of 2.
 
- @tparam T double or float. */
+ @tparam T double or float or AutoDiffXd. AutoDiffXd is for testing only and
+ isn't subject to the "power of 2" requirement. */
 template <typename T>
 struct GridData {
-  static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>,
-                "T must be float or double.");
+  static_assert(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+                    std::is_same_v<T, AutoDiffXd>,
+                "T must be float or double or AutoDiffXd.");
 
   /* Resets all floating point data to zero and the index to be inactive.*/
   void reset() { *this = {}; }

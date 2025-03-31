@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
@@ -33,8 +34,16 @@ GTEST_TEST(MakeConvexHullMeshTest, ShapeSupport) {
   /* Supported shapes. */
   const std::string mesh_file =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  EXPECT_NO_THROW(MakeConvexHull(Convex(mesh_file)));
-  EXPECT_NO_THROW(MakeConvexHull(Mesh(mesh_file)));
+
+  const Eigen::Vector3d scale(2, 3, 4);
+  auto validate_hull = [&scale](auto&& shape) {
+    SCOPED_TRACE(shape.type_name());
+    PolygonSurfaceMesh<double> hull = MakeConvexHull(shape);
+    const auto& [_, size] = hull.CalcBoundingBox();
+    EXPECT_TRUE(CompareMatrices(size, 2 * scale));
+  };
+  validate_hull(Convex(mesh_file, scale));
+  validate_hull(Mesh(mesh_file, scale));
 }
 
 }  // namespace

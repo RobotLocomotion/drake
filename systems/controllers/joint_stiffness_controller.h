@@ -159,7 +159,8 @@ class JointStiffnessController final : public LeafSystem<T> {
       const Eigen::Ref<const Eigen::VectorXd>& kp,
       const Eigen::Ref<const Eigen::VectorXd>& kd);
 
-  template <typename> friend class JointStiffnessController;
+  template <typename>
+  friend class JointStiffnessController;
 
   // Calculator for the deprecated output port.
   void CalcOutputForce(const Context<T>& context, BasicVector<T>* force) const;

@@ -57,9 +57,8 @@ JointStiffnessController<T>::JointStiffnessController(
           .get_index();
 
   auto& output_port_force = this->DeclareVectorOutputPort(
-          "generalized_force", num_q,
-          &JointStiffnessController<T>::CalcOutputForce,
-          {this->all_input_ports_ticket()});
+      "generalized_force", num_q, &JointStiffnessController<T>::CalcOutputForce,
+      {this->all_input_ports_ticket()});
   output_port_index_force_ = output_port_force.get_index();
   this->DeprecateOutputPort(
       output_port_force,
@@ -72,8 +71,7 @@ JointStiffnessController<T>::JointStiffnessController(
   // Declare cache entry for the multibody plant context.
   plant_context_cache_index_ =
       this->DeclareCacheEntry(
-              "plant_context_cache",
-              *plant_context,
+              "plant_context_cache", *plant_context,
               &JointStiffnessController<T>::SetMultibodyContext,
               {this->input_port_ticket(
                   get_input_port_estimated_state().get_index())})
@@ -114,8 +112,7 @@ JointStiffnessController<T>::~JointStiffnessController() = default;
 
 template <typename T>
 void JointStiffnessController<T>::SetMultibodyContext(
-    const Context<T>& context,
-    Context<T>* plant_context) const {
+    const Context<T>& context, Context<T>* plant_context) const {
   const VectorX<T>& x = get_input_port_estimated_state().Eval(context);
   plant_->SetPositionsAndVelocities(plant_context, x);
 }
@@ -123,9 +120,8 @@ void JointStiffnessController<T>::SetMultibodyContext(
 template <typename T>
 void JointStiffnessController<T>::CalcMultibodyForces(
     const Context<T>& context, MultibodyForces<T>* cache_value) const {
-  const auto& plant_context =
-      this->get_cache_entry(plant_context_cache_index_)
-          .template Eval<Context<T>>(context);
+  const auto& plant_context = this->get_cache_entry(plant_context_cache_index_)
+                                  .template Eval<Context<T>>(context);
   plant_->CalcForceElementsContribution(plant_context, cache_value);
 }
 
@@ -135,9 +131,8 @@ void JointStiffnessController<T>::CalcOutputForce(
     const Context<T>& context, BasicVector<T>* output) const {
   const int num_q = plant_->num_positions();
 
-  const auto& plant_context =
-      this->get_cache_entry(plant_context_cache_index_)
-          .template Eval<Context<T>>(context);
+  const auto& plant_context = this->get_cache_entry(plant_context_cache_index_)
+                                  .template Eval<Context<T>>(context);
 
   // These include gravity.
   const auto& applied_forces =
@@ -175,9 +170,8 @@ void JointStiffnessController<T>::CalcOutputActuation(
     const Context<T>& context, BasicVector<T>* output) const {
   const int num_q = plant_->num_positions();
 
-  const auto& plant_context =
-      this->get_cache_entry(plant_context_cache_index_)
-          .template Eval<Context<T>>(context);
+  const auto& plant_context = this->get_cache_entry(plant_context_cache_index_)
+                                  .template Eval<Context<T>>(context);
 
   // These include gravity.
   const auto& applied_forces =

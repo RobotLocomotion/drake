@@ -53,6 +53,8 @@ class ExplicitEulerIntegrator final : public IntegratorBase<T> {
 
  private:
   bool DoStep(const T& h) override;
+
+  std::unique_ptr<IntegratorBase<T>> DoClone() const override;
 };
 
 /**
@@ -84,7 +86,7 @@ bool ExplicitEulerIntegrator<T>::DoStep(const T& h) {
   // Cache: xcdot0 still references the derivative cache value, which is
   // unchanged, although it is marked out of date.
 
-  xc.PlusEqScaled(h, xcdot0);   // xc(t₀ + h) ← xc(t₀) + h * xcdot₀
+  xc.PlusEqScaled(h, xcdot0);  // xc(t₀ + h) ← xc(t₀) + h * xcdot₀
 
   // This integrator always succeeds at taking the step.
   return true;

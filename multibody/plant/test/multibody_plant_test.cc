@@ -5016,16 +5016,19 @@ GTEST_TEST(MultibodyPlantTests, GetConstraintIds) {
       body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
   MultibodyConstraintId weld_id = plant.AddWeldConstraint(
       body_A, RigidTransformd(), body_B, RigidTransformd());
+  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+      {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
   std::vector<MultibodyConstraintId> ids = plant.GetConstraintIds();
   // The order of the constraints is not guaranteed.
   EXPECT_THAT(ids, testing::UnorderedElementsAre(coupler_id, distance_id,
-                                                 ball_id, weld_id));
+                                                 ball_id, weld_id, tendon_id));
 
   plant.RemoveConstraint(coupler_id);
   plant.RemoveConstraint(ball_id);
   ids = plant.GetConstraintIds();
-  EXPECT_THAT(ids, testing::UnorderedElementsAre(distance_id, weld_id));
+  EXPECT_THAT(ids,
+              testing::UnorderedElementsAre(distance_id, weld_id, tendon_id));
 }
 
 GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
@@ -5051,6 +5054,8 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
       body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
   MultibodyConstraintId weld_id = plant.AddWeldConstraint(
       body_A, RigidTransformd(), body_B, RigidTransformd());
+  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+      {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
   DRAKE_EXPECT_THROWS_MESSAGE(plant.set_discrete_contact_approximation(
                                   DiscreteContactApproximation::kTamsi),
@@ -5065,30 +5070,36 @@ GTEST_TEST(MultibodyPlantTests, ConstraintActiveStatus) {
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
+  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, tendon_id));
 
   // Set all constraints to inactive.
   plant.SetConstraintActiveStatus(context.get(), coupler_id, false);
   plant.SetConstraintActiveStatus(context.get(), distance_id, false);
   plant.SetConstraintActiveStatus(context.get(), ball_id, false);
   plant.SetConstraintActiveStatus(context.get(), weld_id, false);
+  plant.SetConstraintActiveStatus(context.get(), tendon_id, false);
 
   // Verify all constraints are inactive in the context.
   EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, coupler_id));
   EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, distance_id));
   EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, ball_id));
   EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, weld_id));
+  EXPECT_FALSE(plant.GetConstraintActiveStatus(*context, tendon_id));
 
   // Set all constraints to back to active.
   plant.SetConstraintActiveStatus(context.get(), coupler_id, true);
   plant.SetConstraintActiveStatus(context.get(), distance_id, true);
   plant.SetConstraintActiveStatus(context.get(), ball_id, true);
   plant.SetConstraintActiveStatus(context.get(), weld_id, true);
+  plant.SetConstraintActiveStatus(context.get(), tendon_id, true);
 
   // Verify all constraints are active in the context.
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, coupler_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, distance_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, ball_id));
   EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
+  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, weld_id));
+  EXPECT_TRUE(plant.GetConstraintActiveStatus(*context, tendon_id));
 }
 
 GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
@@ -5114,19 +5125,24 @@ GTEST_TEST(MultibodyPlantTests, RemoveConstraint) {
       body_A, Vector3d(-1.0, -2.0, -3.0), body_B, Vector3d(-4.0, -5.0, -6.0));
   MultibodyConstraintId weld_id = plant.AddWeldConstraint(
       body_A, RigidTransformd(), body_B, RigidTransformd());
+  MultibodyConstraintId tendon_id = plant.AddTendonConstraint(
+      {world_A.index()}, {1.0}, {2.0}, {-3.0}, {4.0}, {5.0}, {6.0});
 
   EXPECT_EQ(plant.num_coupler_constraints(), 1);
   EXPECT_EQ(plant.num_distance_constraints(), 1);
   EXPECT_EQ(plant.num_ball_constraints(), 1);
   EXPECT_EQ(plant.num_weld_constraints(), 1);
+  EXPECT_EQ(plant.num_tendon_constraints(), 1);
   plant.RemoveConstraint(coupler_id);
   plant.RemoveConstraint(distance_id);
   plant.RemoveConstraint(ball_id);
   plant.RemoveConstraint(weld_id);
+  plant.RemoveConstraint(tendon_id);
   EXPECT_EQ(plant.num_coupler_constraints(), 0);
   EXPECT_EQ(plant.num_distance_constraints(), 0);
   EXPECT_EQ(plant.num_ball_constraints(), 0);
   EXPECT_EQ(plant.num_weld_constraints(), 0);
+  EXPECT_EQ(plant.num_tendon_constraints(), 0);
 
   DRAKE_EXPECT_THROWS_MESSAGE(plant.RemoveConstraint(coupler_id),
                               ".*does not match any constraint.*");

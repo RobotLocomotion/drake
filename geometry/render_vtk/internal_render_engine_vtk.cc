@@ -247,9 +247,10 @@ void RenderEngineVtk::ImplementGeometry(const Convex& convex, void* user_data) {
   if (!render_mesh.material.has_value()) {
     render_mesh.material = MakeDiffuseMaterial(default_diffuse_);
   }
-  // We don't use convex.scale() because it's already built in to the convex
+  // We don't use convex.scale3() because it's already built in to the convex
   // hull.
-  ImplementRenderMesh(std::move(render_mesh), /* scale =*/1.0, data);
+  const Vector3d kUnitScale(1, 1, 1);
+  ImplementRenderMesh(std::move(render_mesh), kUnitScale, data);
 }
 
 void RenderEngineVtk::ImplementGeometry(const Cylinder& cylinder,
@@ -313,10 +314,11 @@ bool RenderEngineVtk::DoRegisterVisual(GeometryId id, const Shape& shape,
 bool RenderEngineVtk::DoRegisterDeformableVisual(
     GeometryId id, const std::vector<RenderMesh>& render_meshes,
     const PerceptionProperties& properties) {
+  const Vector3d kUnitScale(1, 1, 1);
   RegistrationData data{properties, RigidTransformd::Identity(), id};
   for (const RenderMesh& render_mesh : render_meshes) {
     auto copy = render_mesh;
-    ImplementRenderMesh(std::move(copy), /* scale = */ 1.0, data);
+    ImplementRenderMesh(std::move(copy), kUnitScale, data);
   }
   return true;
 }
@@ -606,7 +608,8 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
   }
 }
 
-void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
+void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,
+                                          const Vector3<double>& scale,
                                           const RegistrationData& data) {
   const RenderMaterial material = mesh.material.has_value()
                                       ? *mesh.material
@@ -615,14 +618,13 @@ void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh, double scale,
   vtkSmartPointer<vtkPolyDataAlgorithm> mesh_source =
       CreateVtkMesh(std::move(mesh));
 
-  if (scale == 1) {
+  if ((scale.array() == 1).all()) {
     ImplementPolyData(mesh_source.GetPointer(), material, data);
     return;
   }
 
   vtkNew<vtkTransform> transform;
-  // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
-  transform->Scale(scale, scale, scale);
+  transform->Scale(scale.x(), scale.y(), scale.z());
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
   transform_filter->SetInputConnection(mesh_source->GetOutputPort());
   transform_filter->SetTransform(transform.GetPointer());
@@ -636,7 +638,7 @@ bool RenderEngineVtk::ImplementObj(const Mesh& mesh,
   std::vector<RenderMesh> meshes = LoadRenderMeshesFromObj(
       mesh.source(), data.properties, default_diffuse_, diagnostic_);
   for (auto& render_mesh : meshes) {
-    ImplementRenderMesh(std::move(render_mesh), mesh.scale(), data);
+    ImplementRenderMesh(std::move(render_mesh), mesh.scale3(), data);
   }
   return true;
 }
@@ -662,7 +664,9 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
     uri_loader->SetMeshSource(&mesh_source);
     vtkSmartPointer<vtkResourceStream> gltf_stream =
         uri_loader->MakeGltfStream();
-    importer->SetInputStream(gltf_stream, uri_loader, /* binary= */ false);
+    importer->SetStream(gltf_stream);
+    importer->SetStreamURILoader(uri_loader);
+    importer->SetStreamIsBinary(false);
   }
   importer->Update();
 
@@ -683,7 +687,7 @@ bool RenderEngineVtk::ImplementGltf(const Mesh& mesh,
   // This includes the rotation from y-up to z-up and the requested scale.
   const RigidTransformd X_GF(RotationMatrixd::MakeXRotation(M_PI / 2));
   vtkSmartPointer<vtkTransform> T_GF_transform =
-      ConvertToVtkTransform(X_GF, mesh.scale());
+      ConvertToVtkTransform(X_GF, mesh.scale3());
   vtkMatrix4x4* T_GF = T_GF_transform->GetMatrix();
 
   // Color.
@@ -964,6 +968,7 @@ void RenderEngineVtk::InitializePipelines() {
     vtkNew<vtkRenderPassCollection> passes;
     vtkNew<vtkShadowMapPass> shadows;
     passes->AddItem(shadows->GetShadowMapBakerPass());
+    shadows->GetShadowMapBakerPass()->SetExponentialConstant(80.0);
     shadows->GetShadowMapBakerPass()->SetResolution(
         parameters_.shadow_map_size);
     // The shadow map pass gets the full render sequence so that we get opaque

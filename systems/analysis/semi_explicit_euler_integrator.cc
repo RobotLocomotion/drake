@@ -6,6 +6,13 @@ namespace systems {
 template <class T>
 SemiExplicitEulerIntegrator<T>::~SemiExplicitEulerIntegrator() = default;
 
+template <class T>
+std::unique_ptr<IntegratorBase<T>> SemiExplicitEulerIntegrator<T>::DoClone()
+    const {
+  return std::make_unique<SemiExplicitEulerIntegrator>(
+      this->get_system(), this->get_maximum_step_size());
+}
+
 }  // namespace systems
 }  // namespace drake
 

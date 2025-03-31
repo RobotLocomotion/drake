@@ -25,7 +25,7 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   virtual ~ImplicitIntegrator();
 
   explicit ImplicitIntegrator(const System<T>& system,
-                                   Context<T>* context = nullptr)
+                              Context<T>* context = nullptr)
       : IntegratorBase<T>(system, context) {}
 
   /** The maximum number of Newton-Raphson iterations to take before the
@@ -143,8 +143,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// that the Jacobian matrix was reformed) since the last call to
   /// ResetStatistics(). This count includes those evaluations necessary
   /// during error estimation processes.
-  int64_t get_num_jacobian_evaluations() const { return
-        num_jacobian_evaluations_;
+  int64_t get_num_jacobian_evaluations() const {
+    return num_jacobian_evaluations_;
   }
 
   /// Gets the number of iterations used in the Newton-Raphson nonlinear systems
@@ -186,8 +186,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// Gets the number of iterations *used in the Newton-Raphson nonlinear
   /// systems of equation solving process for the error estimation process*
   /// since the last call to ResetStatistics().
-  int64_t get_num_error_estimator_newton_raphson_iterations() const { return
-        do_get_num_error_estimator_newton_raphson_iterations();
+  int64_t get_num_error_estimator_newton_raphson_iterations() const {
+    return do_get_num_error_estimator_newton_raphson_iterations();
   }
 
   /// Gets the number of Jacobian matrix computations *used only during
@@ -277,11 +277,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// @pre 1 <= `trial` <= 4.
   /// @post the state in the internal context may or may not be altered on
   ///       return; if altered, it will be set to (t, xt).
-  bool MaybeFreshenMatrices(const T& t, const VectorX<T>& xt, const T& h,
-      int trial,
-      const std::function<void(const MatrixX<T>& J, const T& h,
-          typename ImplicitIntegrator<T>::IterationMatrix*)>&
-      compute_and_factor_iteration_matrix,
+  bool MaybeFreshenMatrices(
+      const T& t, const VectorX<T>& xt, const T& h, int trial,
+      const std::function<
+          void(const MatrixX<T>& J, const T& h,
+               typename ImplicitIntegrator<T>::IterationMatrix*)>&
+          compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
   /// Computes necessary matrices (Jacobian and iteration matrix) for full
@@ -296,10 +297,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   ///             return.
   /// @post the state in the internal context will be set to (t, xt) and this
   ///       will store the updated Jacobian matrix, on return.
-  void FreshenMatricesIfFullNewton(const T& t, const VectorX<T>& xt, const T& h,
-      const std::function<void(const MatrixX<T>& J, const T& h,
-          typename ImplicitIntegrator<T>::IterationMatrix*)>&
-      compute_and_factor_iteration_matrix,
+  void FreshenMatricesIfFullNewton(
+      const T& t, const VectorX<T>& xt, const T& h,
+      const std::function<
+          void(const MatrixX<T>& J, const T& h,
+               typename ImplicitIntegrator<T>::IterationMatrix*)>&
+          compute_and_factor_iteration_matrix,
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
   /// Checks whether a proposed update is effectively zero, indicating that the
@@ -313,15 +316,16 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   ///        a relative tolerance otherwise. For non-positive `eps` (default),
   ///        an appropriate tolerance will be computed.
   /// @return `true` if the update is effectively zero.
-  bool IsUpdateZero(
-      const VectorX<T>& xc, const VectorX<T>& dxc, double eps = -1.0) const {
+  bool IsUpdateZero(const VectorX<T>& xc, const VectorX<T>& dxc,
+                    double eps = -1.0) const {
     using std::abs;
     using std::max;
 
     // Reset the tolerance, if necessary, by backing off slightly from the
     // tightest tolerance (machine epsilon).
-    if (eps <= 0)
+    if (eps <= 0) {
       eps = 10 * std::numeric_limits<double>::epsilon();
+    }
 
     for (int i = 0; i < xc.size(); ++i) {
       // We do not want the presence of a NaN to cause this function to
@@ -332,8 +336,9 @@ class ImplicitIntegrator : public IntegratorBase<T> {
       if (isnan(dxc[i]) || isnan(xc[i])) return false;
 
       const T tol = max(abs(xc[i]), T(1)) * eps;
-      if (abs(dxc[i]) > tol)
+      if (abs(dxc[i]) > tol) {
         return false;
+      }
     }
 
     return true;
@@ -365,15 +370,16 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   ///         otherwise `kNotConverged` if Newton-Raphson should simply
   ///         continue.
   ConvergenceStatus CheckNewtonConvergence(int iteration,
-      const VectorX<T>& xtplus, const VectorX<T>& dx, const T& dx_norm,
-      const T& last_dx_norm) const;
+                                           const VectorX<T>& xtplus,
+                                           const VectorX<T>& dx,
+                                           const T& dx_norm,
+                                           const T& last_dx_norm) const;
 
   /// Resets any statistics particular to a specific implicit integrator. The
   /// default implementation of this function does nothing. If your integrator
   /// collects its own statistics, you should re-implement this method and
   /// reset them there.
   virtual void DoResetImplicitIntegratorStatistics() {}
-
 
   /// @copydoc IntegratorBase::DoReset()
   virtual void DoImplicitIntegratorReset() {}
@@ -389,12 +395,15 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   /// become "bad". This is an O(n²) operation, where n is the state dimension.
   bool IsBadJacobian(const MatrixX<T>& J) const;
 
+  /// @copydoc IntegratorBase::DoClone()
+  virtual std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
+      const = 0;
+
   // TODO(edrumwri) Document the functions below.
   virtual int64_t do_get_num_newton_raphson_iterations() const = 0;
   virtual int64_t do_get_num_error_estimator_derivative_evaluations() const = 0;
   virtual int64_t
-      do_get_num_error_estimator_derivative_evaluations_for_jacobian()
-      const = 0;
+  do_get_num_error_estimator_derivative_evaluations_for_jacobian() const = 0;
   virtual int64_t do_get_num_error_estimator_newton_raphson_iterations()
       const = 0;
   virtual int64_t do_get_num_error_estimator_jacobian_evaluations() const = 0;
@@ -425,7 +434,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // @param[out] J the Jacobian matrix around time and state `(t, xt)`.
   // @post The continuous state will be indeterminate on return.
   void ComputeForwardDiffJacobian(const System<T>& system, const T& t,
-      const VectorX<T>& xt, Context<T>* context, MatrixX<T>* J);
+                                  const VectorX<T>& xt, Context<T>* context,
+                                  MatrixX<T>* J);
 
   // Computes the Jacobian of the ordinary differential equations around time
   // and continuous state `(t, xt)` using a second-order central difference
@@ -438,7 +448,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // @param[out] J the Jacobian matrix around time and state `(t, xt)`.
   // @post The continuous state will be indeterminate on return.
   void ComputeCentralDiffJacobian(const System<T>& system, const T& t,
-      const VectorX<T>& xt, Context<T>* context, MatrixX<T>* J);
+                                  const VectorX<T>& xt, Context<T>* context,
+                                  MatrixX<T>* J);
 
   // Computes the Jacobian of the ordinary differential equations around time
   // and continuous state `(t, xt)` using automatic differentiation.
@@ -450,28 +461,23 @@ class ImplicitIntegrator : public IntegratorBase<T> {
   // @param[out] J the Jacobian matrix around time and state `(t, xt)`.
   // @post The continuous state will be indeterminate on return.
   void ComputeAutoDiffJacobian(const System<T>& system, const T& t,
-      const VectorX<T>& xt, const Context<T>& context, MatrixX<T>* J);
+                               const VectorX<T>& xt, const Context<T>& context,
+                               MatrixX<T>* J);
 
   /// @copydoc IntegratorBase::DoStep()
   virtual bool DoImplicitIntegratorStep(const T& h) = 0;
 
   // Methods for derived classes to increment the factorization and Jacobian
   // evaluation counts.
-  void increment_num_iter_factorizations() {
-    ++num_iter_factorizations_;
-  }
+  void increment_num_iter_factorizations() { ++num_iter_factorizations_; }
 
   void increment_jacobian_computation_derivative_evaluations(int count) {
     num_jacobian_function_evaluations_ += count;
   }
 
-  void increment_jacobian_evaluations() {
-    ++num_jacobian_evaluations_;
-  }
+  void increment_jacobian_evaluations() { ++num_jacobian_evaluations_; }
 
-  void set_jacobian_is_fresh(bool flag) {
-    jacobian_is_fresh_ = flag;
-  }
+  void set_jacobian_is_fresh(bool flag) { jacobian_is_fresh_ = flag; }
 
  private:
   bool DoStep(const T& h) final {
@@ -491,6 +497,8 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 
     return result;
   }
+
+  std::unique_ptr<IntegratorBase<T>> DoClone() const final;
 
   // The scheme to be used for computing the Jacobian matrix during the
   // nonlinear system solve process.
@@ -527,12 +535,12 @@ class ImplicitIntegrator : public IntegratorBase<T> {
 // Note: must be declared inline because it's specialized and located in the
 // header file (to avoid multiple definition errors).
 template <>
-inline void ImplicitIntegrator<AutoDiffXd>::
-    ComputeAutoDiffJacobian(const System<AutoDiffXd>&,
-      const AutoDiffXd&, const VectorX<AutoDiffXd>&,
-      const Context<AutoDiffXd>&, MatrixX<AutoDiffXd>*) {
-        throw std::runtime_error("AutoDiff'd Jacobian not supported from "
-                                     "AutoDiff'd ImplicitIntegrator");
+inline void ImplicitIntegrator<AutoDiffXd>::ComputeAutoDiffJacobian(
+    const System<AutoDiffXd>&, const AutoDiffXd&, const VectorX<AutoDiffXd>&,
+    const Context<AutoDiffXd>&, MatrixX<AutoDiffXd>*) {
+  throw std::runtime_error(
+      "AutoDiff'd Jacobian not supported from "
+      "AutoDiff'd ImplicitIntegrator");
 }
 
 // Factors a dense matrix (the iteration matrix). This
@@ -542,8 +550,9 @@ inline void ImplicitIntegrator<AutoDiffXd>::
 // Note: must be declared inline because it's specialized and located in the
 // header file (to avoid multiple definition errors).
 template <>
-inline void ImplicitIntegrator<AutoDiffXd>::IterationMatrix::
-    SetAndFactorIterationMatrix(const MatrixX<AutoDiffXd>& iteration_matrix) {
+inline void
+ImplicitIntegrator<AutoDiffXd>::IterationMatrix::SetAndFactorIterationMatrix(
+    const MatrixX<AutoDiffXd>& iteration_matrix) {
   QR_.compute(iteration_matrix);
   matrix_factored_ = true;
 }

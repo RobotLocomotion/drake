@@ -32,9 +32,11 @@ void ImplicitIntegrator<T>::DoReset() {
 }
 
 template <class T>
-void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
-    const System<T>& system, const T& t, const VectorX<T>& xt,
-    const Context<T>& context, MatrixX<T>* J) {
+void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(const System<T>& system,
+                                                    const T& t,
+                                                    const VectorX<T>& xt,
+                                                    const Context<T>& context,
+                                                    MatrixX<T>* J) {
   DRAKE_LOGGER_DEBUG("  ImplicitIntegrator Compute Autodiff Jacobian t={}", t);
   // TODO(antequ): Investigate how to refactor this method to use
   // math::jacobian(), if possible.
@@ -51,8 +53,8 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
   //                 Jacobian calculation) as is possible. These operations
   //                 are likely to be expensive.
   const auto adiff_system = system.ToAutoDiffXd();
-  std::unique_ptr<Context<AutoDiffXd>> adiff_context = adiff_system->
-      AllocateContext();
+  std::unique_ptr<Context<AutoDiffXd>> adiff_context =
+      adiff_system->AllocateContext();
   adiff_context->SetTimeStateAndParametersFrom(context);
   adiff_system->FixInputPortsFrom(system, context, adiff_context.get());
   adiff_context->SetTime(t);
@@ -77,9 +79,11 @@ void ImplicitIntegrator<T>::ComputeAutoDiffJacobian(
 }
 
 template <class T>
-void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
-    const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context,
-    MatrixX<T>* J) {
+void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(const System<T>&,
+                                                       const T& t,
+                                                       const VectorX<T>& xt,
+                                                       Context<T>* context,
+                                                       MatrixX<T>* J) {
   using std::abs;
 
   // Set epsilon to the square root of machine precision.
@@ -90,8 +94,7 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
 
   DRAKE_LOGGER_DEBUG(
       "  ImplicitIntegrator Compute Forwarddiff {}-Jacobian t={}", n, t);
-  DRAKE_LOGGER_DEBUG(
-      "  computing from state {}", fmt_eigen(xt.transpose()));
+  DRAKE_LOGGER_DEBUG("  computing from state {}", fmt_eigen(xt.transpose()));
 
   // Initialize the Jacobian.
   J->resize(n, n);
@@ -137,14 +140,16 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
 }
 
 template <class T>
-void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
-    const System<T>&, const T& t, const VectorX<T>& xt, Context<T>* context,
-    MatrixX<T>* J) {
+void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(const System<T>&,
+                                                       const T& t,
+                                                       const VectorX<T>& xt,
+                                                       Context<T>* context,
+                                                       MatrixX<T>* J) {
   using std::abs;
 
   // Cube root of machine precision (indicated by theory) seems a bit coarse.
   // Pick power of eps halfway between 6/12 (i.e., 1/2) and 4/12 (i.e., 1/3).
-  const double eps = std::pow(std::numeric_limits<double>::epsilon(), 5.0/12);
+  const double eps = std::pow(std::numeric_limits<double>::epsilon(), 5.0 / 12);
 
   // Get the number of continuous state variables xt.
   const int n = context->num_continuous_states();
@@ -196,8 +201,8 @@ void ImplicitIntegrator<T>::ComputeCentralDiffJacobian(
 
     // Compute f(x-dx).
     context->SetContinuousState(xt_prime);
-    VectorX<T> fprime_minus = this->EvalTimeDerivatives(
-        *context).CopyToVector();
+    VectorX<T> fprime_minus =
+        this->EvalTimeDerivatives(*context).CopyToVector();
 
     // Set the Jacobian column.
     J->col(i) = (fprime_plus - fprime_minus) / (dxi_plus + dxi_minus);
@@ -222,9 +227,11 @@ VectorX<T> ImplicitIntegrator<T>::IterationMatrix::Solve(
 
 template <typename T>
 typename ImplicitIntegrator<T>::ConvergenceStatus
-ImplicitIntegrator<T>::CheckNewtonConvergence(
-    int iteration, const VectorX<T>& xtplus, const VectorX<T>& dx,
-    const T& dx_norm, const T& last_dx_norm) const {
+ImplicitIntegrator<T>::CheckNewtonConvergence(int iteration,
+                                              const VectorX<T>& xtplus,
+                                              const VectorX<T>& dx,
+                                              const T& dx_norm,
+                                              const T& last_dx_norm) const {
   // The check below looks for convergence by identifying cases where the
   // update to the state results in no change.
   // Note: Since we are performing this check at the end of the iteration,
@@ -249,8 +256,8 @@ ImplicitIntegrator<T>::CheckNewtonConvergence(
     // theta to these alternative values for minimizing convergence failures.
     const T theta = dx_norm / last_dx_norm;
     const T eta = theta / (1 - theta);
-    DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}",
-                iteration, theta, eta);
+    DRAKE_LOGGER_DEBUG("Newton-Raphson loop {} theta: {}, eta: {}", iteration,
+                       theta, eta);
 
     // Look for divergence.
     if (theta > 1) {
@@ -273,7 +280,6 @@ ImplicitIntegrator<T>::CheckNewtonConvergence(
   return ConvergenceStatus::kNotConverged;
 }
 
-
 template <class T>
 bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
   return !J.allFinite();
@@ -281,14 +287,14 @@ bool ImplicitIntegrator<T>::IsBadJacobian(const MatrixX<T>& J) const {
 
 template <class T>
 const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
-    const VectorX<T>& x) {
+                                                      const VectorX<T>& x) {
   // We change the context but will change it back.
   Context<T>* context = this->get_mutable_context();
 
   // Get the current time and state.
   const T t_current = context->get_time();
-  const VectorX<T> x_current = context->get_continuous_state_vector().
-      CopyToVector();
+  const VectorX<T> x_current =
+      context->get_continuous_state_vector().CopyToVector();
 
   // Update the time and state.
   context->SetTimeAndContinuousState(t, x);
@@ -319,8 +325,8 @@ const MatrixX<T>& ImplicitIntegrator<T>::CalcJacobian(const T& t,
 
   // Use the new number of ODE evaluations to determine the number of Jacobian
   // evaluations.
-  num_jacobian_function_evaluations_ += this->get_num_derivative_evaluations()
-      - current_ODE_evals;
+  num_jacobian_function_evaluations_ +=
+      this->get_num_derivative_evaluations() - current_ODE_evals;
 
   // Reset the time and state.
   context->SetTimeAndContinuousState(t_current, x_current);
@@ -336,7 +342,7 @@ template <class T>
 void ImplicitIntegrator<T>::FreshenMatricesIfFullNewton(
     const T& t, const VectorX<T>& xt, const T& h,
     const std::function<void(const MatrixX<T>&, const T&,
-        typename ImplicitIntegrator<T>::IterationMatrix*)>&
+                             typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
   DRAKE_DEMAND(iteration_matrix != nullptr);
@@ -355,7 +361,7 @@ template <class T>
 bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
     const T& t, const VectorX<T>& xt, const T& h, int trial,
     const std::function<void(const MatrixX<T>&, const T&,
-        typename ImplicitIntegrator<T>::IterationMatrix*)>&
+                             typename ImplicitIntegrator<T>::IterationMatrix*)>&
         compute_and_factor_iteration_matrix,
     typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
   // Compute the initial Jacobian and iteration matrices and factor them, if
@@ -429,8 +435,9 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
       // The Jacobian matrix may already be "fresh", meaning that there is
       // nothing more that can be tried (Jacobian and iteration matrix are both
       // fresh), and we need to indicate failure.
-      if (jacobian_is_fresh_)
+      if (jacobian_is_fresh_) {
         return false;
+      }
 
       // Otherwise, we can reform the Jacobian matrix and refactor the
       // iteration matrix.
@@ -448,6 +455,16 @@ bool ImplicitIntegrator<T>::MaybeFreshenMatrices(
         throw std::domain_error("Unexpected trial number.");
     }
   }
+}
+
+template <class T>
+std::unique_ptr<IntegratorBase<T>> ImplicitIntegrator<T>::DoClone() const {
+  auto cloned = DoImplicitIntegratorClone();
+  cloned->set_reuse(this->get_reuse());
+  cloned->set_use_full_newton(this->get_use_full_newton());
+  cloned->set_jacobian_computation_scheme(
+      this->get_jacobian_computation_scheme());
+  return cloned;
 }
 
 }  // namespace systems

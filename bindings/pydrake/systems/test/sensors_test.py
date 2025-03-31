@@ -32,7 +32,7 @@ from pydrake.systems.framework import (
     InputPort,
     OutputPort,
     )
-from pydrake.systems.lcm import LcmBuses, _Serializer_
+from pydrake.systems.lcm import LcmBuses, LcmInterfaceSystem, _Serializer_
 from drake import (
     lcmt_image,
     lcmt_image_array,
@@ -256,6 +256,7 @@ class TestSensors(unittest.TestCase):
         self.assertGreater(len(builder.GetSystems()), system_count)
 
     def test_camera_config_lcm_buses(self):
+        """Calls ApplyCameraConfig using LcmBuses."""
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         system_count = len(builder.GetSystems())
@@ -268,6 +269,16 @@ class TestSensors(unittest.TestCase):
                               lcm_buses=lcm_buses)
 
         # Check that systems were added.
+        self.assertGreater(len(builder.GetSystems()), system_count)
+
+    def test_camera_config_lcm_interface_system(self):
+        """Calls ApplyCameraConfig using LcmInterfaceSystem."""
+        builder = DiagramBuilder()
+        plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
+        lcm = builder.AddSystem(LcmInterfaceSystem(lcm=DrakeLcm()))
+        config = mut.CameraConfig()
+        system_count = len(builder.GetSystems())
+        mut.ApplyCameraConfig(config=config, builder=builder, lcm=lcm)
         self.assertGreater(len(builder.GetSystems()), system_count)
 
     def test_camera_info(self):

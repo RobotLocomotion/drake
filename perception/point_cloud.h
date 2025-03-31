@@ -93,8 +93,7 @@ class PointCloud final {
                       bool skip_initialize = false);
 
   /// Copies another point cloud's fields and data.
-  PointCloud(const PointCloud& other)
-      : PointCloud(other, pc_flags::kInherit) {}
+  PointCloud(const PointCloud& other) : PointCloud(other, pc_flags::kInherit) {}
 
   /// Takes ownership of another point cloud's data.
   PointCloud(PointCloud&& other);
@@ -153,9 +152,7 @@ class PointCloud final {
 
   /// Returns mutable access to an XYZ value.
   /// @pre `has_xyzs()` must be true.
-  Eigen::Ref<Vector3<T>> mutable_xyz(int i) {
-    return mutable_xyzs().col(i);
-  }
+  Eigen::Ref<Vector3<T>> mutable_xyz(int i) { return mutable_xyzs().col(i); }
 
   /// @}
 
@@ -205,9 +202,7 @@ class PointCloud final {
 
   /// Returns mutable access to an RGB color.
   /// @pre `has_rgbs()` must be true.
-  Eigen::Ref<Vector3<C>> mutable_rgb(int i) {
-    return mutable_rgbs().col(i);
-  }
+  Eigen::Ref<Vector3<C>> mutable_rgb(int i) { return mutable_rgbs().col(i); }
 
   /// @}
 
@@ -255,10 +250,9 @@ class PointCloud final {
   ///    parameter.
   /// @param allow_resize
   ///    Permit resizing to the other cloud's size.
-  void SetFrom(
-      const PointCloud& other,
-      pc_flags::Fields fields_in = pc_flags::kInherit,
-      bool allow_resize = true);
+  void SetFrom(const PointCloud& other,
+               pc_flags::Fields fields_in = pc_flags::kInherit,
+               bool allow_resize = true);
 
   // TODO(eric.cousineau): Add indexed version.
 
@@ -314,7 +308,7 @@ class PointCloud final {
   /// @pre lower_xyz <= upper_xyz (elementwise).
   /// @throws std::exception if has_xyzs() != true.
   PointCloud Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
-            const Eigen::Ref<const Vector3<T>>& upper_xyz);
+                  const Eigen::Ref<const Vector3<T>>& upper_xyz);
 
   /// Changes the sign of the normals in `this`, if necessary, so that each
   /// normal points toward the point `P` in the frame `C` in which the xyzs of
@@ -341,8 +335,8 @@ class PointCloud final {
   /// Equivalent to Open3d's voxel_down_sample or PCL's VoxelGrid filter.
   /// @throws std::exception if has_xyzs() is false.
   /// @throws std::exception if voxel_size <= 0.
-  PointCloud VoxelizedDownSample(
-      double voxel_size, Parallelism parallelize = false) const;
+  PointCloud VoxelizedDownSample(double voxel_size,
+                                 Parallelism parallelize = false) const;
 
   /// Estimates the normal vectors in `this` by fitting a plane at each point
   /// in the cloud using up to `num_closest` points within Euclidean distance
@@ -359,8 +353,8 @@ class PointCloud final {
   ///
   /// @pre @p radius > 0 and @p num_closest >= 3.
   /// @throws std::exception if has_xyzs() is false.
-  bool EstimateNormals(
-      double radius, int num_closest, Parallelism parallelize = false);
+  bool EstimateNormals(double radius, int num_closest,
+                       Parallelism parallelize = false);
 
  private:
   void SetDefault(int start, int num);

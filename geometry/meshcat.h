@@ -766,6 +766,9 @@ class Meshcat {
    @throws std::exception if `name` is not a registered button. */
   int GetButtonClicks(std::string_view name) const;
 
+  /** Returns the names of all buttons. */
+  std::vector<std::string> GetButtonNames() const;
+
   /** Removes the button `name` from the GUI.
    @returns true iff the button was removed.
    @throws std::exception if `strict` is true and `name` is not a registered

@@ -552,9 +552,11 @@ std::optional<SoftGeometry> MakeSoftRepresentation(
   // For zero margin, use the pre-computed convex hull for the shape.
   const TriangleSurfaceMesh<double> inflated_surface_mesh =
       MakeTriangleFromPolygonMesh(
-          margin > 0 ? MakeConvexHull(convex_spec.source(), convex_spec.scale(),
-                                      margin)
-                     : convex_spec.GetConvexHull());
+          margin > 0
+              ? MakeConvexHull(convex_spec.source(),
+                               Vector3<double>::Constant(convex_spec.scale()),
+                               margin)
+              : convex_spec.GetConvexHull());
   auto inflated_mesh = make_unique<VolumeMesh<double>>(
       MakeConvexVolumeMesh<double>(inflated_surface_mesh));
 

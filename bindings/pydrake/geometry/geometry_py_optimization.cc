@@ -1117,10 +1117,9 @@ void DefineGraphOfConvexSetsAndRelated(py::module m) {
 
   // Trampoline class to support deriving from ImplicitGraphOfConvexSets in
   // python.
-  class PyImplicitGraphOfConvexSets
-      : public py::wrapper<ImplicitGraphOfConvexSets> {
+  class PyImplicitGraphOfConvexSets : public ImplicitGraphOfConvexSets {
    public:
-    using Base = py::wrapper<ImplicitGraphOfConvexSets>;
+    using Base = ImplicitGraphOfConvexSets;
     using Base::Base;
     using Base::mutable_gcs;
 

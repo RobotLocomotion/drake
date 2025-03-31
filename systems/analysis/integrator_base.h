@@ -168,7 +168,9 @@ class IntegratorBase {
    */
   explicit IntegratorBase(const System<T>& system,
                           Context<T>* context = nullptr)
-      : system_(system), context_(context) {
+      : system_(system),
+        context_(/* managed object = */ std::shared_ptr<void>{},
+                 /* stored pointer = */ context) {
     initialization_done_ = false;
   }
 
@@ -804,7 +806,8 @@ class IntegratorBase {
    @sa get_working_minimum_step_size(T)
    */
   const T& get_requested_minimum_step_size() const {
-    return req_min_step_size_; }
+    return req_min_step_size_;
+  }
 
   /**
    Sets whether the integrator should throw a std::exception
@@ -834,8 +837,8 @@ class IntegratorBase {
    See @ref integrator-minstep "this section" for more detail.
    */
   T get_working_minimum_step_size() const {
-    using std::max;
     using std::abs;
+    using std::max;
     // Tolerance is just a number close to machine epsilon.
     const double tol = 1e-14;
 
@@ -903,16 +906,19 @@ class IntegratorBase {
     // Verify that user settings are reasonable.
     if constexpr (scalar_predicate<T>::is_bool) {
       if (max_step_size_ < req_min_step_size_) {
-        throw std::logic_error("Integrator maximum step size is less than the "
-                               "minimum step size");
+        throw std::logic_error(
+            "Integrator maximum step size is less than the "
+            "minimum step size");
       }
       if (req_initial_step_size_ > max_step_size_) {
-        throw std::logic_error("Requested integrator initial step size is "
-                               "larger than the maximum step size.");
+        throw std::logic_error(
+            "Requested integrator initial step size is "
+            "larger than the maximum step size.");
       }
       if (req_initial_step_size_ < req_min_step_size_) {
-        throw std::logic_error("Requested integrator initial step size is "
-                               "smaller than the minimum step size.");
+        throw std::logic_error(
+            "Requested integrator initial step size is "
+            "smaller than the minimum step size.");
       }
     }
 
@@ -976,8 +982,9 @@ class IntegratorBase {
    - Takes only a single step forward.
    */
   // TODO(edrumwri): Make the stretch size configurable.
-  StepResult IntegrateNoFurtherThanTime(
-    const T& publish_time, const T& update_time, const T& boundary_time);
+  StepResult IntegrateNoFurtherThanTime(const T& publish_time,
+                                        const T& update_time,
+                                        const T& boundary_time);
 
   /**
    Stepping function for integrators operating outside of Simulator that
@@ -1011,8 +1018,8 @@ class IntegratorBase {
     const T inf = std::numeric_limits<double>::infinity();
 
     do {
-      IntegrateNoFurtherThanTime(inf, inf,
-          min(t_final, context.get_time() + get_maximum_step_size()));
+      IntegrateNoFurtherThanTime(
+          inf, inf, min(t_final, context.get_time() + get_maximum_step_size()));
     } while (context.get_time() < t_final);
   }
 
@@ -1051,20 +1058,23 @@ class IntegratorBase {
    - Takes only a single step forward.
    */
   [[nodiscard]] bool IntegrateWithSingleFixedStepToTime(const T& t_target) {
-    using std::max;
     using std::abs;
+    using std::max;
 
     const T h = t_target - context_->get_time();
     if (scalar_predicate<T>::is_bool && h < 0) {
-      throw std::logic_error("IntegrateWithSingleFixedStepToTime() called with "
-                             "a negative step size.");
+      throw std::logic_error(
+          "IntegrateWithSingleFixedStepToTime() called with "
+          "a negative step size.");
     }
     if (!this->get_fixed_step_mode())
-      throw std::logic_error("IntegrateWithSingleFixedStepToTime() requires "
-                             "fixed stepping.");
+      throw std::logic_error(
+          "IntegrateWithSingleFixedStepToTime() requires "
+          "fixed stepping.");
 
-    if (!Step(h))
+    if (!Step(h)) {
       return false;
+    }
 
     UpdateStepStatistics(h);
 
@@ -1072,7 +1082,8 @@ class IntegratorBase {
       // Correct any round-off error that has occurred. Formula below requires
       // that time be non-negative.
       DRAKE_DEMAND(context_->get_time() >= 0);
-      const double tol = 10 * std::numeric_limits<double>::epsilon() *
+      const double tol =
+          10 * std::numeric_limits<double>::epsilon() *
           ExtractDoubleOrThrow(max(1.0, max(t_target, context_->get_time())));
       DRAKE_DEMAND(abs(context_->get_time() - t_target) < tol);
     }
@@ -1112,9 +1123,7 @@ class IntegratorBase {
    reductions was required to permit solving the necessary nonlinear system
    of equations).
    */
-  int64_t get_num_substep_failures() const {
-    return num_substep_failures_;
-  }
+  int64_t get_num_substep_failures() const { return num_substep_failures_; }
 
   /**
    Gets the number of step size shrinkages due to sub-step failures (e.g.,
@@ -1194,7 +1203,7 @@ class IntegratorBase {
    Returns a mutable pointer to the internally-maintained Context holding
    the most recent state in the trajectory.
    */
-  Context<T>* get_mutable_context() { return context_; }
+  Context<T>* get_mutable_context() { return context_.get(); }
 
   /**
    Replace the pointer to the internally-maintained Context with a different
@@ -1205,11 +1214,13 @@ class IntegratorBase {
    @param context The pointer to the new context or nullptr to wipe out
                   the current context without replacing it with another.
    */
-  void reset_context(Context<T>* context) {
-    context_ = context;
-    initialization_done_ = false;
-  }
+  void reset_context(Context<T>* context);
 
+  /**
+   * Same as above but allows the integrator to take ownership of the context.
+   * @exclude_from_pydrake_mkdoc{This function is not bound.}
+   */
+  void reset_context(std::unique_ptr<Context<T>> context);
 
   /**
    @name               Methods for dense output computation
@@ -1243,8 +1254,8 @@ class IntegratorBase {
       throw std::logic_error("Integrator was not initialized.");
     }
     if (get_context().num_continuous_states() == 0) {
-      throw std::logic_error("System has no continuous state,"
-                             " no dense output can be built.");
+      throw std::logic_error(
+          "System has no continuous state, no dense output can be built.");
     }
     if (get_dense_output()) {
       throw std::logic_error("Dense integration has been started already.");
@@ -1304,6 +1315,24 @@ class IntegratorBase {
     return prev_step_size_;
   }
 
+  /**
+   @name               Methods for cloning
+   @anchor cloning
+   @{
+   This function makes a copy of an integrator.
+   */
+
+  /**
+   Returns a copy of this integrator with reset statistics, reinitialized
+   internal integrator states, and a cloned system context.
+   @note Because the internal integrator states (e.g. value of
+   get_ideal_next_step_size()) are reinitialized, integration starting with the
+   new clone won't necessarily produce an exact match against integration using
+   the original integrator started at the point it was cloned.
+   */
+  std::unique_ptr<IntegratorBase<T>> Clone() const;
+  // @}
+
  protected:
   /**
    Resets any statistics particular to a specific integrator. The default
@@ -1335,8 +1364,7 @@ class IntegratorBase {
     const CacheEntry& entry = system.get_time_derivatives_cache_entry();
     const CacheEntryValue& value = entry.get_cache_entry_value(context);
     const int64_t serial_number_before = value.serial_number();
-    const ContinuousState<U>& derivs =
-        system.EvalTimeDerivatives(context);
+    const ContinuousState<U>& derivs = system.EvalTimeDerivatives(context);
     if (value.serial_number() != serial_number_before) {
       ++num_ode_evals_;  // Wasn't already cached.
     }
@@ -1411,10 +1439,9 @@ class IntegratorBase {
         otherwise. The value of the T type will be set to the recommended next
         step size.
    */
-  std::pair<bool, T> CalcAdjustedStepSize(
-      const T& err,
-      const T& attempted_step_size,
-      bool* at_minimum_step_size) const;
+  std::pair<bool, T> CalcAdjustedStepSize(const T& err,
+                                          const T& attempted_step_size,
+                                          bool* at_minimum_step_size) const;
 
   /**
    Derived classes can override this method to perform special
@@ -1428,6 +1455,14 @@ class IntegratorBase {
    Reset() is called. This default method does nothing.
    */
   virtual void DoReset() {}
+
+  /**
+   Derived classes must implement this method to return a copy of themselves
+   as an IntegratorBase instance. The returned object must correctly duplicate
+   all member variables specific to the derived class, while the parent class
+   members are assumed to be handled by the parent class.
+   */
+  virtual std::unique_ptr<IntegratorBase<T>> DoClone() const;
 
   /**
    Returns a mutable pointer to the internally-maintained PiecewisePolynomial
@@ -1537,9 +1572,7 @@ class IntegratorBase {
   }
 
   // Sets the largest-step-size-taken statistic.
-  void set_largest_step_size_taken(const T& h) {
-    largest_step_size_taken_ = h;
-  }
+  void set_largest_step_size_taken(const T& h) { largest_step_size_taken_ = h; }
 
   // Sets the "ideal" next step size (typically done via error control).
   void set_ideal_next_step_size(const T& h) { ideal_next_step_size_ = h; }
@@ -1587,8 +1620,10 @@ class IntegratorBase {
   // Reference to the system being simulated.
   const System<T>& system_;
 
-  // Pointer to the context.
-  Context<T>* context_{nullptr};  // The trajectory Context.
+  // Pointer to the system context.  Use a shared_ptr for storage, since it
+  // allows expressing both an unowned pointer and an owned one. The context
+  // should not ever be logically shared among integrator instances.
+  std::shared_ptr<Context<T>> context_{nullptr};
 
   // Current dense output.
   std::unique_ptr<trajectories::PiecewisePolynomial<T>> dense_output_{nullptr};

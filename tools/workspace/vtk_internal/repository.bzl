@@ -7,6 +7,17 @@ load(
     "setup_github_repository",
 )
 
+def _remove_comments_and_blank_lines(text):
+    result = ""
+    for line in text.splitlines():
+        if "#" in line:
+            line, _ = line.split("#", 1)
+        if line.strip() == "":
+            continue
+        result += line
+        result += "\n"
+    return result
+
 def parse_module(repo_ctx, subdir):
     """Parses and returns a vtk.module file as a dict.
 
@@ -46,7 +57,8 @@ def parse_module(repo_ctx, subdir):
 
     result = dict(subdir = subdir)
     content = repo_ctx.read(subdir + "/vtk.module")
-    lines = content.replace("\n  ", "=").splitlines()
+    clean_content = _remove_comments_and_blank_lines(content)
+    lines = clean_content.replace("\n  ", "=").splitlines()
     for line in lines:
         tokens = line.split("=")
         key, values = tokens[0], tokens[1:]
@@ -172,26 +184,30 @@ def vtk_internal_repository(
         # TODO(jwnimmer-tri) Once there's a tagged release with support for
         # VTK_ABI_NAMESPACE, we should switch to an official version number
         # here. That probably means waiting for the VTK 10 release.
-        commit = "e43b7215c0f57781626c4cd31c95cd1c1b7a3d48",
-        sha256 = "6794ad2d95d36d1b6c83ed31ea18ffc1adef33d1ced94aab1aa04c0f10b5602a",  # noqa
+        commit = "d236d27dde52f1f14eb919adacf0d355af6a440a",
+        sha256 = "349aa9da6b2be0b21d522695af116219c0fd43fe62902508f21eb59251303185",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
+            # Drake's conventions for VTK patches are:
+            # - All "patches/upstream/" come first; these are the changes that
+            #   will be upstreamed into VTK itself, so they should be the first
+            #   changes applied to reduce merge conflict churn.
+            # - Patch file names should begin with the name of the module being
+            #   edited (e.g., patching IO/Image is named io_image_{foo}.patch).
+            # - Use alphabetical order within a directory when listing patches.
             ":patches/upstream/common_core_rm_iostream.patch",
-            ":patches/upstream/fix_illumination_bugs.patch",
-            ":patches/upstream/gltf_selected_load.patch",
             ":patches/upstream/io_geometry_gltf_default_scene.patch",
-            ":patches/upstream/gltf_importer_from_stream.patch",
-            ":patches/upstream/scaled_albedo_for_ibl.patch",
+            ":patches/upstream/rendering_opengl2_scaled_albedo_for_ibl.patch",
             ":patches/upstream/vtkpugixml_global_ctor.patch",
             ":patches/common_core_nobacktrace.patch",
             ":patches/common_core_rm_cin_prompting.patch",
             ":patches/common_core_version.patch",
-            ":patches/disable_static_destructors.patch",
+            ":patches/common_datamodel_no_pegtl.patch",
+            ":patches/common_executionmodel_disable_static_destructors.patch",
             ":patches/io_image_formats.patch",
-            ":patches/nerf_pegtl.patch",
-            ":patches/preserve_direct_light_specular_reflections.patch",
             ":patches/rendering_opengl2_nobacktrace.patch",
             ":patches/rendering_opengl2_no_factory.patch",
+            ":patches/rendering_opengl2_preserve_direct_light_specular_reflections.patch",  # noqa
             ":patches/vtkdoubleconversion_hidden.patch",
             ":patches/vtkfast_float_hidden.patch",
             ":patches/vtkpugixml_hidden.patch",

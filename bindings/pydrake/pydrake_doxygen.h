@@ -595,9 +595,7 @@ should use the drake::pydrake::WrapToMatchInputShape function.
 
 In general, minimize the amount in which users may subclass C++ classes in
 Python. When you do wish to do this, ensure that you use a trampoline class
-in `pybind`, and ensure that the trampoline class inherits from the
-`py::wrapper<>` class specific to our fork of `pybind`. This ensures that no
-slicing happens with the subclassed instances.
+in `pybind`.
 
 @anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel

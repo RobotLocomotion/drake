@@ -33,8 +33,8 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
    * @sa Initialize()
    */
   RungeKutta2Integrator(const System<T>& system, const T& max_step_size,
-                        Context<T>* context = nullptr) :
-      IntegratorBase<T>(system, context) {
+                        Context<T>* context = nullptr)
+      : IntegratorBase<T>(system, context) {
     IntegratorBase<T>::set_maximum_step_size(max_step_size);
     derivs0_ = IntegratorBase<T>::get_system().AllocateTimeDerivatives();
   }
@@ -49,6 +49,8 @@ class RungeKutta2Integrator final : public IntegratorBase<T> {
 
  private:
   bool DoStep(const T& h) override;
+
+  std::unique_ptr<IntegratorBase<T>> DoClone() const override;
 
   // A pre-allocated temporary for use by integration.
   std::unique_ptr<ContinuousState<T>> derivs0_;

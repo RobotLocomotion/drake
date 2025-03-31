@@ -6,6 +6,12 @@ namespace systems {
 template <class T>
 RungeKutta2Integrator<T>::~RungeKutta2Integrator() = default;
 
+template <class T>
+std::unique_ptr<IntegratorBase<T>> RungeKutta2Integrator<T>::DoClone() const {
+  return std::make_unique<RungeKutta2Integrator>(this->get_system(),
+                                                 this->get_maximum_step_size());
+}
+
 }  // namespace systems
 }  // namespace drake
 

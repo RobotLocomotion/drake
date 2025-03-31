@@ -36,8 +36,9 @@ GTEST_TEST(IntegratorTest, ContextAccess) {
   integrator.reset_context(nullptr);
   EXPECT_THROW(integrator.Initialize(), std::logic_error);
   const double target_time = context->get_time() + h;
-  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(
-    target_time, target_time, target_time), std::logic_error);
+  EXPECT_THROW(integrator.IntegrateNoFurtherThanTime(target_time, target_time,
+                                                     target_time),
+               std::logic_error);
 }
 
 // Verifies error estimation is unsupported.
@@ -46,8 +47,7 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
   SpringMassSystem<double> spring_mass(1., 1., 0.);
   const double h = 1e-3;
   auto context = spring_mass.CreateDefaultContext();
-  SemiExplicitEulerIntegrator<double> integrator(
-      spring_mass, h, context.get());
+  SemiExplicitEulerIntegrator<double> integrator(spring_mass, h, context.get());
 
   EXPECT_EQ(integrator.get_error_estimate_order(), 0);
   EXPECT_EQ(integrator.supports_error_estimation(), false);
@@ -61,8 +61,8 @@ GTEST_TEST(IntegratorTest, AccuracyEstAndErrorControl) {
 GTEST_TEST(IntegratorTest, RigidBody) {
   // Instantiate a multibody plant consisting of a single rigid body.
   multibody::MultibodyPlant<double> plant(0.0);
-  const double radius = 0.05;   // m
-  const double mass = 0.1;      // kg
+  const double radius = 0.05;  // m
+  const double mass = 0.1;     // kg
   multibody::SpatialInertia<double> M_BBcm =
       multibody::SpatialInertia<double>::SolidSphereWithMass(mass, radius);
   plant.AddRigidBody("Ball", M_BBcm);
@@ -89,8 +89,8 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   } while (context->get_time() < t_final);
 
   // Get the final state.
-  VectorX<double> x_final_ee = context->get_continuous_state_vector().
-      CopyToVector();
+  VectorX<double> x_final_ee =
+      context->get_continuous_state_vector().CopyToVector();
 
   // Re-integrate with semi-explicit Euler.
   context->SetTime(0.);
@@ -105,10 +105,10 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   } while (context->get_time() < t_final);
 
   // Verify that the final states are "close".
-  VectorX<double> x_final_see = context->get_continuous_state_vector().
-      CopyToVector();
+  VectorX<double> x_final_see =
+      context->get_continuous_state_vector().CopyToVector();
   const double tol = 5e-3;
-  for (int i=0; i< x_final_see.size(); ++i)
+  for (int i = 0; i < x_final_see.size(); ++i)
     EXPECT_NEAR(x_final_ee[i], x_final_see[i], tol);
 }
 
@@ -186,8 +186,8 @@ GTEST_TEST(IntegratorTest, Symbolic) {
   // Create a context.
   auto context = spring_mass.CreateDefaultContext();
   // Create the integrator.
-  SemiExplicitEulerIntegrator<Expression> integrator(
-      spring_mass, max_h, context.get());
+  SemiExplicitEulerIntegrator<Expression> integrator(spring_mass, max_h,
+                                                     context.get());
   integrator.Initialize();
 
   const Variable q("q");
@@ -197,9 +197,11 @@ GTEST_TEST(IntegratorTest, Symbolic) {
   context->SetContinuousState(Vector3<Expression>(q, v, work));
   EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(h));
 
-  EXPECT_TRUE(context->get_continuous_state_vector()[0].EqualTo(q + h*(v-h*q)));
-  EXPECT_TRUE(context->get_continuous_state_vector()[1].EqualTo(v - h*q));
-  EXPECT_TRUE(context->get_continuous_state_vector()[2].EqualTo(work - h*q*v));
+  EXPECT_TRUE(
+      context->get_continuous_state_vector()[0].EqualTo(q + h * (v - h * q)));
+  EXPECT_TRUE(context->get_continuous_state_vector()[1].EqualTo(v - h * q));
+  EXPECT_TRUE(
+      context->get_continuous_state_vector()[2].EqualTo(work - h * q * v));
 }
 
 }  // namespace

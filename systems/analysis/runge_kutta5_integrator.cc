@@ -17,8 +17,8 @@ void RungeKutta5Integrator<T>::DoInitialize() {
   // TODO(drum) Verify the integrator-specific accuracy settings below.
   const double kDefaultAccuracy = 1e-5;
   const double kLoosestAccuracy = 1e-3;
-  const double kMaxStepFraction = 0.1;   // Fraction of max step size for
-                                         // less aggressive first step.
+  const double kMaxStepFraction = 0.1;  // Fraction of max step size for
+                                        // less aggressive first step.
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -58,6 +58,7 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
   // invalidate any of these references before they are used.
 
   // We use Butcher tableau notation with labels for each coefficient:
+  // clang-format off
   /*
    0    (c1) |
    1/5  (c2) |        1/5 (a21)
@@ -70,6 +71,7 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
                    35/384  (b1)             0 (b2)      500/1113 (b3)     125/192 (b4)      −2187/6784 (b5)      11/84 (b6)      0 (b7)  // NOLINT(*)
                5179/57600  (d1)             0 (d2)    7571/16695 (d3)     393/640 (d4)   −92097/339200 (d5)   187/2100 (d6)   1/40 (d7)  // NOLINT(*)
   */
+  // clang-format on
 
   // Save the continuous state at t₀.
   context.get_continuous_state_vector().CopyToPreSizedVector(&save_xc0_);
@@ -244,6 +246,11 @@ bool RungeKutta5Integrator<T>::DoStep(const T& h) {
 
   // RK5 always succeeds in taking its desired step.
   return true;
+}
+
+template <class T>
+std::unique_ptr<IntegratorBase<T>> RungeKutta5Integrator<T>::DoClone() const {
+  return std::make_unique<RungeKutta5Integrator>(this->get_system());
 }
 
 }  // namespace systems

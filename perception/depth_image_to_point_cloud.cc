@@ -6,8 +6,6 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/never_destroyed.h"
 
-using Eigen::Matrix3Xf;
-using Eigen::Vector3d;
 using drake::AbstractValue;
 using drake::Value;
 using drake::math::RigidTransformd;
@@ -18,6 +16,8 @@ using drake::systems::sensors::ImageDepth32F;
 using drake::systems::sensors::ImageRgba8U;
 using drake::systems::sensors::ImageTraits;
 using drake::systems::sensors::PixelType;
+using Eigen::Matrix3Xf;
+using Eigen::Vector3d;
 
 namespace drake {
 namespace perception {
@@ -74,8 +74,8 @@ void DoConvert(const std::optional<pc_flags::BaseFieldT>& exact_base_fields,
   const double cy = camera_info.center_y();
   const double fx_inv = 1.0 / camera_info.focal_x();
   const double fy_inv = 1.0 / camera_info.focal_y();
-  const RigidTransformd X_PC = (camera_pose != nullptr) ?
-      *camera_pose : RigidTransformd::Identity();
+  const RigidTransformd X_PC =
+      (camera_pose != nullptr) ? *camera_pose : RigidTransformd::Identity();
 
   for (int v = 0; v < height; ++v) {
     for (int u = 0; u < width; ++u) {
@@ -86,9 +86,9 @@ void DoConvert(const std::optional<pc_flags::BaseFieldT>& exact_base_fields,
         output_xyz.col(col).array() = std::numeric_limits<float>::infinity();
       } else {
         // N.B. This clause handles both true depths *and* NaNs.
-        const Vector3d xyz = X_PC * Vector3d(scale * z * (u - cx) * fx_inv,
-                                             scale * z * (v - cy) * fy_inv,
-                                             scale * z);
+        const Vector3d xyz =
+            X_PC * Vector3d(scale * z * (u - cx) * fx_inv,
+                            scale * z * (v - cy) * fy_inv, scale * z);
         output_xyz.col(col) = xyz.template cast<float>();
       }
       if (color_image) {

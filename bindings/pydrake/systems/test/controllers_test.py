@@ -402,7 +402,12 @@ class TestControllers(unittest.TestCase):
         B = np.array([[0], [1]])
         Q = np.identity(2)
         R = np.identity(1)
+        N = np.array([[1], [0]])
         (K, S) = DiscreteTimeLinearQuadraticRegulator(A, B, Q, R)
+        self.assertEqual(K.shape, (1, 2))
+        self.assertEqual(S.shape, (2, 2))
+        # Test with N.
+        (K, S) = DiscreteTimeLinearQuadraticRegulator(A, B, Q, R, N)
         self.assertEqual(K.shape, (1, 2))
         self.assertEqual(S.shape, (2, 2))
 

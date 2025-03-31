@@ -1,4 +1,4 @@
-ARG PLATFORM=ubuntu:20.04
+ARG PLATFORM=amd64/almalinux:9
 
 # -----------------------------------------------------------------------------
 # Create a base provisioned image.
@@ -53,5 +53,6 @@ RUN --mount=type=cache,target=/var/cache/bazel \
 ADD image/build-wheel.sh /image/
 ADD image/setup.py /opt/drake-wheel-build/wheel/
 ADD content /opt/drake-wheel-content
+ADD licenses /opt/drake-wheel-licenses
 
 RUN /image/build-wheel.sh
