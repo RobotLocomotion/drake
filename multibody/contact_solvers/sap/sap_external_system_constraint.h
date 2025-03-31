@@ -28,7 +28,7 @@ struct SapExternalSystemConstraintData {
 };
 
 /**
- * Defines an external system constraint τ = τ₀ − Ãv.
+ * Defines an external system constraint τ = -K v + τ₀.
  */
 template <typename T>
 class SapExternalSystemConstraint final : public SapConstraint<T> {
@@ -44,7 +44,7 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
       delete;
   //@}
 
-  SapExternalSystemConstraint(int clique, int nv, const MatrixX<T>& A_tilde,
+  SapExternalSystemConstraint(int clique, int nv, const MatrixX<T>& K,
                               const VectorX<T>& tau0);
 
  private:
@@ -60,7 +60,7 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapExternalSystemConstraint<double>>(
         new SapExternalSystemConstraint<double>(
             this->clique(0), this->num_velocities(0),
-            math::DiscardGradient(this->A_tilde_),
+            math::DiscardGradient(this->K_),
             math::DiscardGradient(this->tau0_)));
   }
 
@@ -87,8 +87,8 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
   static SapConstraintJacobian<T> MakeConstraintJacobian(int clique, int nv);
 
   // Constraint parameters
-  const MatrixX<T> A_tilde_;  // Linearized dynamics matrix
-  const VectorX<T> tau0_;     // Explicit external forces
+  const MatrixX<T> K_;     // Linearized dynamics matrix
+  const VectorX<T> tau0_;  // Explicit external forces
 };
 
 }  // namespace internal

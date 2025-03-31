@@ -178,8 +178,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // linearizes the external system around the current state in order to treat
   // arbitrary controllers as implicitly as possible (modulo SAP SPD
   // requirements).
-  void AddExternalSystemConstraints(const MatrixX<T>& A_tilde,
-                                    const VectorX<T>& tau0,
+  void AddExternalSystemConstraints(const MatrixX<T>& K, const VectorX<T>& tau0,
                                     SapContactProblem<T>* problem) const;
 
   // Compute signed distances and jacobians. While we store this in a
@@ -260,13 +259,12 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // The original nonlinear controller
   //     τ = B u = g(x)
   // is approximated as
-  //     τ = τ₀ − Ãv,
-  // where Ã is symmetric and positive definite, and we use the fact that q = q0
+  //     τ = -Kv + τ₀,
+  // where K is symmetric and positive definite, and we use the fact that q = q0
   // + h N v to write everything in terms of velocities.
   //
   // We do the linearization via finite differences
-  void LinearizeExternalSystem(const T& h, MatrixX<T>* A_tilde,
-                               VectorX<T>* tau0);
+  void LinearizeExternalSystem(const T& h, MatrixX<T>* K, VectorX<T>* tau0);
 
   // Project the given (square) matrix to a nearby symmetric positive
   // (semi)-definite matrix.
@@ -352,8 +350,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     MatrixX<T> M;               // mass matrix
     VectorX<T> k;               // coriolis terms from inverse dynamics
     std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
-    MatrixX<T> A_tilde;  // SPD Hessian correction term, A_tilde = h P + h^2 Q
-    VectorX<T> tau0;     // Explicit external forces, tau0 = B g0 + P v0
+    MatrixX<T> K;     // SPD linearization of external systems, tau = -Kv + tau0
+    VectorX<T> tau0;  // Explicit external forces, tau0 = B g0 + P v0
 
     // Used in LinearizeExternalSystem
     VectorX<T> g0;

@@ -95,7 +95,7 @@ void ConvexIntegrator<T>::DoInitialize() {
   workspace_.M.resize(nv, nv);
   workspace_.B.resize(nv, nu);
   workspace_.tau0.resize(nv);
-  workspace_.A_tilde.resize(nv, nv);
+  workspace_.K.resize(nv, nv);
   workspace_.D.resize(nv, nq + nv);
   workspace_.g0.resize(nv);
   workspace_.N.resize(nq, nv);
@@ -823,19 +823,19 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   VectorX<T>& k = workspace_.k;
   MultibodyForces<T>& f_ext = *workspace_.f_ext;
   VectorX<T>& v_star = workspace_.v_star;
-  MatrixX<T>& A_tilde = workspace_.A_tilde;
+  MatrixX<T>& K = workspace_.K;
   VectorX<T>& tau0 = workspace_.tau0;
 
   // Linearization of external controllers connected to the plant,
-  //     τ = B u(x) + τₑₓₜ(x) + ∑ Jᵀ fₑₓₜ(x) = g(x) ≈ τ₀ − Ã v,
-  // where ̃A is SPD.
+  //     τ = B u(x) + τₑₓₜ(x) + ∑ Jᵀ fₑₓₜ(x) = g(x) ≈ -K v + τ₀,
+  // where -K is SPD.
   if (plant().num_actuators() > 0 ||
       plant().get_applied_generalized_force_input_port().HasValue(context) ||
       plant().get_applied_spatial_force_input_port().HasValue(context)) {
     // Only do the linearization if a controller is connected
-    LinearizeExternalSystem(h, &A_tilde, &tau0);
+    LinearizeExternalSystem(h, &K, &tau0);
   } else {
-    A_tilde.setZero();
+    K.setZero();
     tau0.setZero();
   }
 
@@ -866,24 +866,24 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   AddContactConstraints(context, &problem);
 
   // External system constraints
-  AddExternalSystemConstraints(A_tilde, tau0, &problem);
+  AddExternalSystemConstraints(K, tau0, &problem);
 
   return problem;
 }
 
 template <typename T>
 void ConvexIntegrator<T>::AddExternalSystemConstraints(
-    const MatrixX<T>& A_tilde, const VectorX<T>& tau0,
+    const MatrixX<T>& K, const VectorX<T>& tau0,
     SapContactProblem<T>* problem) const {
   for (int c = 0; c < problem->num_cliques(); ++c) {
     const int nv = problem->num_velocities(c);
     if (nv > 0) {
       const int c_start = problem->velocities_start(c);
-      const MatrixX<T> A_block = A_tilde.block(c_start, c_start, nv, nv);
+      const MatrixX<T> K_block = K.block(c_start, c_start, nv, nv);
       const VectorX<T> tau_block = tau0.segment(c_start, nv);
 
       problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
-          c, nv, A_block, tau_block));
+          c, nv, K_block, tau_block));
     }
   }
 }
@@ -1369,25 +1369,28 @@ void ConvexIntegrator<T>::GetGeneralizedForcesFromInputPorts(
   forces->SetZero();
 
   // Actuator forces, clipped to effort limits
-  const VectorX<T> u = plant()
-                           .AssembleActuationInput(plant_context)
-                           .cwiseMin(effort_limits_)
-                           .cwiseMax(-effort_limits_);
-  forces->mutable_generalized_forces() = B * u;
+  // const VectorX<T> u = plant()
+  //                          .AssembleActuationInput(plant_context)
+  //                          .cwiseMin(effort_limits_)
+  //                          .cwiseMax(-effort_limits_);
+  // forces->mutable_generalized_forces() = B * u;
 
-  // External generalized forces
-  plant().AddAppliedExternalGeneralizedForces(plant_context, forces);
+  // // External generalized forces
+  // plant().AddAppliedExternalGeneralizedForces(plant_context, forces);
 
-  // External spatial forces applied to each body
-  plant().AddAppliedExternalSpatialForces(plant_context, forces);
+  // // External spatial forces applied to each body
+  // plant().AddAppliedExternalSpatialForces(plant_context, forces);
+
+  // Add all forces from input ports, neglecting effort limits
+  plant().AddInForcesFromInputPorts(plant_context, forces);
+  (void)B;
 
   // Add up all the force contributions
   plant().CalcGeneralizedForces(plant_context, *forces, tau);
 }
 
 template <typename T>
-void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
-                                                  MatrixX<T>* A_tilde,
+void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
                                                   VectorX<T>* tau0) {
   using std::abs;
 
@@ -1472,7 +1475,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h,
   ProjectSPD(&P);
   ProjectSPD(&Q);
 
-  (*A_tilde) = h * P + h * h * Q;
+  (*K) = P + h * Q;
   (*tau0) = g0 + P * v0;
 }
 

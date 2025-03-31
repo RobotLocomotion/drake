@@ -300,7 +300,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const VectorXd u0 = plant.get_actuation_input_port().Eval(plant_context) -
                       D.rightCols(2) * plant.GetVelocities(plant_context);
 
-  const MatrixXd A_ref = -h * B * K;
+  const MatrixXd A_ref = -B * K;
   const VectorXd tau_ref = B * u0;
 
   // Confirm that our finite difference linearization is close to the reference
@@ -312,7 +312,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
       CompareMatrices(tau, tau_ref, kTolerance, MatrixCompareType::relative));
 
   // Compute the gradient of the cost, and check that this matches the momentum
-  // balance conditions, M(v − v*) + Ã v − h τ₀ = 0.
+  // balance conditions, M(v − v*) + h A v − h τ₀ = 0.
   const VectorXd v = v0;
   MatrixXd M(nv, nv);
   plant.CalcMassMatrix(plant_context, &M);
@@ -321,7 +321,7 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const VectorXd k =
       plant.CalcInverseDynamics(plant_context, VectorXd::Zero(2), f_ext);
   const VectorXd v_star = v0 - h * M.ldlt().solve(k);
-  const VectorXd dl_ref = M * (v - v_star) + A * v - h * tau;
+  const VectorXd dl_ref = M * (v - v_star) + h * A * v - h * tau;
 
   SapContactProblem<double> problem =
       ConvexIntegratorTester::MakeSapContactProblem(&integrator, plant_context,

@@ -14,9 +14,9 @@ namespace internal {
 
 template <typename T>
 SapExternalSystemConstraint<T>::SapExternalSystemConstraint(
-    int clique, int nv, const MatrixX<T>& A_tilde, const VectorX<T>& tau0)
+    int clique, int nv, const MatrixX<T>& K, const VectorX<T>& tau0)
     : SapConstraint<T>(MakeConstraintJacobian(clique, nv), {}),
-      A_tilde_{A_tilde},
+      K_{K},
       tau0_{tau0} {}
 
 template <typename T>
@@ -45,9 +45,9 @@ void SapExternalSystemConstraint<T>::DoCalcData(
 
   // TODO(vincekurtz): add effort limits
   data.v = v;
-  data.hessian = A_tilde_;
-  data.impulse = h * tau0_ - A_tilde_ * v;
-  data.cost = 0.5 * v.transpose() * A_tilde_ * v - h * tau0_.dot(v);
+  data.hessian = h * K_;
+  data.impulse = h * (-K_ * v + tau0_);
+  data.cost = 0.5 * h * v.transpose() * K_ * v - h * tau0_.dot(v);
 }
 
 template <typename T>
