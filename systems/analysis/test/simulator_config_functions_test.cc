@@ -4,6 +4,7 @@
 
 #include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -108,6 +109,49 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   EXPECT_EQ(readback.use_error_control, bespoke.use_error_control);
   EXPECT_EQ(readback.target_realtime_rate, bespoke.target_realtime_rate);
   EXPECT_EQ(readback.publish_every_time_step, bespoke.publish_every_time_step);
+}
+
+template <typename T>
+class CreateIntegratorFromConfigTest : public ::testing::Test {};
+using DefaultScalars =
+    ::testing::Types<double, AutoDiffXd, symbolic::Expression>;
+TYPED_TEST_SUITE(CreateIntegratorFromConfigTest, DefaultScalars);
+
+TYPED_TEST(CreateIntegratorFromConfigTest, test) {
+  using T = TypeParam;
+  std::initializer_list<std::tuple<std::string, std::string, bool>> suites = {
+      {"explicit_euler", "ExplicitEulerIntegrator", true},
+      {"semi_explicit_euler", "SemiExplicitEulerIntegrator", true},
+      {"runge_kutta2", "RungeKutta2Integrator", true},
+      {"runge_kutta3", "RungeKutta3Integrator", false},
+      {"runge_kutta5", "RungeKutta5Integrator", false},
+      {"implicit_euler", "ImplicitEulerIntegrator", false},
+  };
+
+  for (const auto& [scheme, type_name, support_symbolic] : suites) {
+    ConstantVectorSource<T> system(2);
+    SimulatorConfig config;
+    config.integration_scheme = scheme;
+
+    if (std::is_same_v<T, symbolic::Expression> && !support_symbolic) {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          CreateIntegratorFromConfig(system, config),
+          ".+ does not support scalar type " +
+              NiceTypeName::Get<symbolic::Expression>());
+    } else {
+      auto integrator = CreateIntegratorFromConfig(system, config);
+
+      std::string expected_name =
+          "drake::systems::" + type_name + "<" + NiceTypeName::Get<T>() + ">";
+      EXPECT_EQ(NiceTypeName::Get(*integrator), expected_name);
+
+      EXPECT_EQ(integrator->get_maximum_step_size(), config.max_step_size);
+      if (integrator->supports_error_estimation()) {
+        EXPECT_EQ(integrator->get_fixed_step_mode(), !config.use_error_control);
+        EXPECT_EQ(integrator->get_target_accuracy(), config.accuracy);
+      }
+    }
+  }
 }
 
 }  // namespace
