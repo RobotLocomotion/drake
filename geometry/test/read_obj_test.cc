@@ -45,8 +45,8 @@ GTEST_TEST(ReadObjTest, Triangulate) {
   const Eigen::Vector3d scale(1, 2, 3);
   for (const bool triangulate : {true, false}) {
     const auto [vertices, faces, num_faces] =
-        ReadObj(FindPathOrThrow("drake/geometry/test/quad_cube.obj"),
-                scale, triangulate);
+        ReadObj(FindPathOrThrow("drake/geometry/test/quad_cube.obj"), scale,
+                triangulate);
     EXPECT_EQ(vertices->size(), 8);
     EXPECT_EQ(num_faces, triangulate ? 12 : 6);
   }
@@ -105,8 +105,8 @@ GTEST_TEST(ReadObjTest, TriangulatingNoop) {
   const Eigen::Vector3d scale(1, 1, 1);
   for (const bool triangulate : {true, false}) {
     const auto [vertices, faces, num_faces] =
-        ReadObj(FindPathOrThrow("drake/geometry/test/octahedron.obj"),
-                scale, triangulate);
+        ReadObj(FindPathOrThrow("drake/geometry/test/octahedron.obj"), scale,
+                triangulate);
     EXPECT_EQ(vertices->size(), 6u);
     Eigen::Matrix<double, 6, 3> vertices_expected;
     // clang-format off

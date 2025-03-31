@@ -440,20 +440,20 @@ class MeshcatShapeReifier : public ShapeReifier {
             if (map_file_iter !=
                 mesh_source.in_memory().supporting_files.end()) {
               // Load it.
-              std::visit(
-                  overloaded{
-                      [&maybe_map_path](const fs::path& path) {
-                        // Note: paths to supporting files in an in-memory mesh
-                        // have no "base directory". The path must be
-                        // sufficiently well defined so that it can be read
-                        // directly.
-                        maybe_map_path = path;
-                      },
-                      [&map_data](const MemoryFile& file) {
-                        map_data = std::vector<uint8_t>(file.contents().begin(),
-                                                        file.contents().end());
-                      }},
-                  map_file_iter->second);
+              std::visit(overloaded{[&maybe_map_path](const fs::path& path) {
+                                      // Note: paths to supporting files in an
+                                      // in-memory mesh have no "base
+                                      // directory". The path must be
+                                      // sufficiently well defined so that it
+                                      // can be read directly.
+                                      maybe_map_path = path;
+                                    },
+                                    [&map_data](const MemoryFile& file) {
+                                      map_data = std::vector<uint8_t>(
+                                          file.contents().begin(),
+                                          file.contents().end());
+                                    }},
+                         map_file_iter->second);
             }
           } else {
             DRAKE_DEMAND(mesh_source.is_path());
@@ -1355,8 +1355,8 @@ class Meshcat::Impl {
           "Cannot open '{}' when attempting to set property '{}' on '{}'",
           file_path.string(), property, path));
     }
-    std::shared_ptr<const MemoryFile> asset = file_storage_.Insert(
-        std::move(*content), file_path.string());
+    std::shared_ptr<const MemoryFile> asset =
+        file_storage_.Insert(std::move(*content), file_path.string());
 
     internal::SetPropertyData<std::string> data;
     data.path = FullPath(path);
@@ -1649,8 +1649,8 @@ class Meshcat::Impl {
 
   // This function is public via the PIMPL.
   double AddSlider(std::string name, double min, double max, double step,
-                 double value, std::string decrement_keycode,
-                 std::string increment_keycode) {
+                   double value, std::string decrement_keycode,
+                   std::string increment_keycode) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     internal::SetSliderControl data;
@@ -2804,8 +2804,8 @@ bool Meshcat::DeleteButton(std::string name, bool strict) {
 }
 
 double Meshcat::AddSlider(std::string name, double min, double max, double step,
-                        double value, std::string decrement_keycode,
-                        std::string increment_keycode) {
+                          double value, std::string decrement_keycode,
+                          std::string increment_keycode) {
   return impl().AddSlider(std::move(name), min, max, step, value,
                           std::move(decrement_keycode),
                           std::move(increment_keycode));

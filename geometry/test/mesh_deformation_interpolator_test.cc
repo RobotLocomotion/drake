@@ -86,8 +86,7 @@ GTEST_TEST(VertexSampler, ConstructAndInterpolate) {
 GTEST_TEST(VertexSampler, ConstructorFailures) {
   const VolumeMesh<double> control_mesh = MakeOctahedronVolumeMesh();
   // No vertex selected.
-  EXPECT_THROW(VertexSampler(std::vector<int>{}, control_mesh),
-               std::exception);
+  EXPECT_THROW(VertexSampler(std::vector<int>{}, control_mesh), std::exception);
   // Duplicated vertices.
   EXPECT_THROW(VertexSampler(std::vector<int>{1, 1}, control_mesh),
                std::exception);

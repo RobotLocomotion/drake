@@ -75,8 +75,7 @@ original file has disappeared in the meantime.
 @param[in,out] storage The database where assets should be stored.
 
 @returns The handles for all assets cited by `gltf_contents`. */
-[[nodiscard]] std::vector<std::shared_ptr<const MemoryFile>>
-UnbundleGltfAssets(
+[[nodiscard]] std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
     const MeshSource& mesh_source, std::string* gltf_contents,
     FileStorage* storage);
 

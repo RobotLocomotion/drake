@@ -354,7 +354,6 @@ class Convex final : public Shape {
   /** Returns general scale factors for this mesh. */
   const Vector3<double>& scale3() const { return scale_; }
 
-
   /** Reports the convex hull of the named mesh.
 
    Note: the convex hull is computed on demand on the first invocation. All

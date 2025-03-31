@@ -116,8 +116,7 @@ std::ostream& operator<<(std::ostream& out, const HydroelasticType& type);
  * @pre `properties` is not nullptr.
  */
 void AddContactMaterial(
-    std::optional<double> dissipation,
-    std::optional<double> point_stiffness,
+    std::optional<double> dissipation, std::optional<double> point_stiffness,
     const std::optional<multibody::CoulombFriction<double>>& friction,
     ProximityProperties* properties);
 
