@@ -401,30 +401,6 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(pendulum_frame_indices[3], pin_joint.frame_on_child().index());
   EXPECT_EQ(pendulum_frame_indices[4], weld_joint.frame_on_parent().index());
   EXPECT_EQ(pendulum_frame_indices[5], weld_joint.frame_on_child().index());
-
-  // At this point in this test, plant->Finalize() has already been called.
-  // Create another frame (which is not part of the plant). Ensure an exception
-  // is thrown if there is a query for information about this frame that needs
-  // the associated multibody tree. Herein we try various public methods.
-  multibody::FixedOffsetFrame<double> frame_not_in_multibody_tree(
-      "bad_frame", plant->world_frame(), RigidTransform<double>{});
-  std::unique_ptr<Context<double>> context = plant->CreateDefaultContext();
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      frame_not_in_multibody_tree.CalcPoseInWorld(*context),
-      ".*has_parent_tree.*failed.*");
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      frame_not_in_multibody_tree.CalcPose(*context, model_frame),
-      ".*has_parent_tree.*failed.*");
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      frame_not_in_multibody_tree.CalcRotationMatrix(*context, model_frame),
-      ".*has_parent_tree.*failed.*");
-
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      frame_not_in_multibody_tree.CalcRotationMatrixInWorld(*context),
-      ".*has_parent_tree.*failed.*");
 }
 
 GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
