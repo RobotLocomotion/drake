@@ -47,6 +47,8 @@ class VtkGltfUriLoader final : public vtkURILoader {
   vtkSmartPointer<vtkURI> base_uri_;
 };
 
+// clang-format off
 }  // namespace internal
+// clang-format on
 }  // namespace geometry
 }  // namespace drake

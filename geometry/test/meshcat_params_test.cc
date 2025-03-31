@@ -30,12 +30,15 @@ GTEST_TEST(MeshcatParamsTest, RoundTrip) {
       .host = "some_host",
       .port = 7001,
       .web_url_pattern = "http://{host}:{port}/proxy",
+      // clang-format off
+      // The linter wants { on this line; the formatter moves it to the next.
       .initial_properties = {
           {.path = "a", .property = "p1", .value = some_vector},
           {.path = "b", .property = "p2", .value = some_string},
           {.path = "c", .property = "p3", .value = some_bool},
           {.path = "d", .property = "p4", .value = some_double},
       },
+      // clang-format on
   };
 
   // Make sure we can save & re-load it.

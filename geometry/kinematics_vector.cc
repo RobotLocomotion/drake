@@ -113,7 +113,9 @@ namespace {
 template <typename Derived>
 bool KinematicsIsFinite(const Eigen::MatrixBase<Derived>& m) {
   using std::isfinite;
-  return all_of(m, [](const auto& t) { return isfinite(t); });
+  return all_of(m, [](const auto& t) {
+    return isfinite(t);
+  });
 }
 
 template <typename T>

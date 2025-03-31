@@ -12,6 +12,8 @@ namespace geometry {
 template <typename T>
 class GeometryState;
 
+// Disable formatter to preserve doxygen tables.
+// clang-format off
 /** Class for configuring "collision filters"; collision filters limit the scope
  of various proximity queries.
 
@@ -164,6 +166,7 @@ class GeometryState;
 
  Attempting to change the persistent configuration when there are active
  transient declarations in the history will throw an exception.   */
+// clang-format on
 class CollisionFilterManager {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionFilterManager);
@@ -244,6 +247,5 @@ class CollisionFilterManager {
   internal::CollisionFilter* filter_{};
   internal::CollisionFilter::ExtractIds extract_ids_;
 };
-
 }  // namespace geometry
 }  // namespace drake

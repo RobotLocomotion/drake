@@ -364,11 +364,11 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.mtl"));
   const auto png_file = MemoryFile::Make(FindResourceOrThrow(
       "drake/geometry/render/test/meshes/rainbow_stripes.png"));
-  const Mesh memory_obj(InMemoryMesh{
-      MemoryFile(obj_file.contents(), obj_file.extension(),
-                 "a hint; *not* a path"),
-      {{"rainbow_box.mtl", MemoryFile(mtl_file)},
-       {"rainbow_stripes.png", MemoryFile(png_file)}}});
+  const Mesh memory_obj(
+      InMemoryMesh{MemoryFile(obj_file.contents(), obj_file.extension(),
+                              "a hint; *not* a path"),
+                   {{"rainbow_box.mtl", MemoryFile(mtl_file)},
+                    {"rainbow_stripes.png", MemoryFile(png_file)}}});
   // The "hetero" objs mix up the supporting files so that, in turn, one is
   // in memory, and one is on-disk.
   const Mesh hetero_obj1(InMemoryMesh{
@@ -423,9 +423,10 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
   // loaded but the image is not.
   {
     DRAKE_DEMAND(meshcat.GetPackedObject("obj_path").empty());
-    meshcat.SetObject("obj_path",
-                      Mesh(InMemoryMesh{obj_file, {{"rainbow_box.mtl",
-                                                    MemoryFile(mtl_file)}}}));
+    meshcat.SetObject(
+        "obj_path",
+        Mesh(InMemoryMesh{obj_file,
+                          {{"rainbow_box.mtl", MemoryFile(mtl_file)}}}));
     const std::string packed_obj = meshcat.GetPackedObject("obj_path");
     EXPECT_FALSE(packed_obj.empty());
     EXPECT_THAT(packed_obj, Not(HasSubstr("data:image/png;base64")));
@@ -531,8 +532,7 @@ GTEST_TEST(MeshcatTest, MtlMapAtEOF) {
   std::ofstream eof_mtl_file(eof_mtl_path.string() + ".mtl");
   eof_mtl_file << "map_Kd -s 1 1 1 box.png";
   eof_mtl_file.close();
-  meshcat.SetObject("eof_mtl", Mesh(eof_mtl_path.string()),
-                    Rgba(1, 0.75, 0.5));
+  meshcat.SetObject("eof_mtl", Mesh(eof_mtl_path.string()), Rgba(1, 0.75, 0.5));
 
   const std::string eof_mtl_packed = meshcat.GetPackedObject("eof_mtl");
   EXPECT_THAT(eof_mtl_packed, testing::HasSubstr("_meshfile_object"));
@@ -838,12 +838,15 @@ GTEST_TEST(MeshcatTest, InitialPropeties) {
   const bool some_bool{true};
   const double some_double{22.2};
   const Meshcat meshcat{MeshcatParams{
+      // clang-format off
+      // The linter wants { on this line; the formatter moves it to the next.
       .initial_properties = {
           {.path = "/a", .property = "p1", .value = some_vector},
           {.path = "/b", .property = "p2", .value = some_string},
           {.path = "/c", .property = "p3", .value = some_bool},
           {.path = "/d", .property = "p4", .value = some_double},
       },
+      // clang-format on
   }};
 
   // Check that they all showed up.
@@ -986,7 +989,7 @@ GTEST_TEST(MeshcatTest, Sliders) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.DeleteSlider("slider1"),
       "Meshcat does not have any slider named slider1.*");
-  EXPECT_FALSE(meshcat.DeleteSlider("slider1", /*strict = */false));
+  EXPECT_FALSE(meshcat.DeleteSlider("slider1", /*strict = */ false));
 
   slider_names = meshcat.GetSliderNames();
   EXPECT_EQ(slider_names.size(), 0);

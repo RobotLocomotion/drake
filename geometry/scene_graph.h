@@ -344,7 +344,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
 
   //@}
 
-
   /** @name       Port management
    Access to SceneGraph's input/output ports. This topic includes
    registration of geometry sources because the input ports are mapped to

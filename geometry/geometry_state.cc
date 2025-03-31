@@ -86,9 +86,9 @@ void DrivenMeshData::SetControlMeshPositions(
   }
 }
 
-void DrivenMeshData::SetMeshes(
-    GeometryId id, std::vector<DrivenTriangleMesh> driven_meshes,
-    std::vector<RenderMesh> render_meshes) {
+void DrivenMeshData::SetMeshes(GeometryId id,
+                               std::vector<DrivenTriangleMesh> driven_meshes,
+                               std::vector<RenderMesh> render_meshes) {
   DRAKE_DEMAND(!driven_meshes.empty());
   DRAKE_DEMAND(!render_meshes.empty());
   DRAKE_DEMAND(driven_meshes.size() == render_meshes.size());
@@ -1581,8 +1581,7 @@ void GeometryState<T>::ApplyProximityDefaults(
 
 template <typename T>
 void GeometryState<T>::ApplyProximityDefaults(
-    const DefaultProximityProperties& defaults,
-    GeometryId geometry_id) {
+    const DefaultProximityProperties& defaults, GeometryId geometry_id) {
   // TODO(#20820) Maybe this can be removed later.
   // Leave deformables untouched.
   if (IsDeformableGeometry(geometry_id)) {
@@ -2194,9 +2193,11 @@ using symbolic::Expression;
 template GeometryState<double>::GeometryState(const GeometryState<AutoDiffXd>&);
 template GeometryState<double>::GeometryState(const GeometryState<Expression>&);
 template GeometryState<AutoDiffXd>::GeometryState(const GeometryState<double>&);
-template GeometryState<AutoDiffXd>::GeometryState(const GeometryState<Expression>&);  // NOLINT
+template GeometryState<AutoDiffXd>::GeometryState(
+    const GeometryState<Expression>&);
 template GeometryState<Expression>::GeometryState(const GeometryState<double>&);
-template GeometryState<Expression>::GeometryState(const GeometryState<AutoDiffXd>&);  // NOLINT
+template GeometryState<Expression>::GeometryState(
+    const GeometryState<AutoDiffXd>&);
 
 }  // namespace geometry
 }  // namespace drake

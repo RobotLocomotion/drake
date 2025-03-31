@@ -43,9 +43,8 @@ InMemoryMesh ReadGltfToMemory(const std::filesystem::path& gltf_path) {
   try {
     gltf = json::parse(gltf_file.contents());
   } catch (const json::exception& e) {
-    throw std::runtime_error(
-        fmt::format("Error parsing the glTF file '{}': {}.",
-                    gltf_path.string(), e.what()));
+    throw std::runtime_error(fmt::format(
+        "Error parsing the glTF file '{}': {}.", gltf_path.string(), e.what()));
   }
   AddFilesFromUris(gltf_path, gltf, "buffers", &supporting_files);
   AddFilesFromUris(gltf_path, gltf, "images", &supporting_files);

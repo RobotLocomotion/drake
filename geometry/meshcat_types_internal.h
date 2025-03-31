@@ -23,7 +23,7 @@ namespace internal {
 // This macro not only makes the code shorter, but it also helps avoid spelling
 // mistakes by ensuring that the string name matches the variable name.
 #define PACK_MAP_VAR(packer, var) \
-  packer.pack(#var);           \
+  packer.pack(#var);              \
   packer.pack(var);
 
 // The fields in these structures are chosen to match the serialized names in
@@ -167,8 +167,7 @@ struct MaterialData {
   // This method must be defined, but the implementation is not needed in the
   // current workflows.
   void msgpack_unpack(msgpack::object const&) {
-    throw std::runtime_error(
-        "unpack is not implemented for MaterialData.");
+    throw std::runtime_error("unpack is not implemented for MaterialData.");
   }
 };
 
@@ -571,26 +570,32 @@ MSGPACK_ADD_ENUM(drake::geometry::MeshcatAnimation::LoopMode);
 // We use the msgpack "non-intrusive" approach for packing types exposed in the
 // public interface. https://github.com/msgpack/msgpack-c/wiki/v2_0_cpp_adaptor
 namespace msgpack {
+// TODO(#4843) The macro namespace declaration is confusing clang formatter and
+// causing the contents to become indented (which angers the linter). In this
+// case, the linter is correct.
+// clang-format off
 MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
 namespace adaptor {
 
 template <typename Scalar, int RowsAtCompileTime, int ColsAtCompileTime,
           int Options, int MaxRowsAtCompileTime, int MaxColsAtCompileTime>
-struct pack<Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
-                          MaxRowsAtCompileTime, MaxColsAtCompileTime> > {
+struct pack<
+    Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
+                  MaxRowsAtCompileTime, MaxColsAtCompileTime> > {
   template <typename Stream>
   packer<Stream>& operator()(
       // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack.
       msgpack::packer<Stream>& o,
-      const Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
-                          MaxRowsAtCompileTime, MaxColsAtCompileTime>& mat)
-      const {
+      const Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime,
+                          Options, MaxRowsAtCompileTime,
+                          MaxColsAtCompileTime>& mat) const {
     o.pack_map(4);
     o.pack("itemSize");
     o.pack(mat.rows());
     o.pack("type");
     int8_t ext;
-    // Based on pack_numpy_array method in meshcat-python geometry.py. See also
+    // Based on pack_numpy_array method in meshcat-python geometry.py. See
+    // also
     // https://github.com/msgpack/msgpack/blob/master/spec.md#extension-types
     if (std::is_floating_point_v<Scalar>) {
       o.pack("Float32Array");
@@ -599,13 +604,13 @@ struct pack<Eigen::Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, Options,
       o.pack("Uint8Array");
       ext = 0x12;
     } else if (std::is_same_v<Scalar, uint32_t>) {
-      // TODO(russt): Using std::remove_cv<Scalar> did not work here (it failed
-      // to match).  Need to understand and resolve this.
+      // TODO(russt): Using std::remove_cv<Scalar> did not work here (it
+      // failed to match).  Need to understand and resolve this.
       o.pack("Uint32Array");
       ext = 0x16;
     } else {
       throw std::runtime_error("Unsupported Scalar " +
-                               drake::NiceTypeName::Get(typeid(Scalar)));
+                                drake::NiceTypeName::Get(typeid(Scalar)));
     }
     o.pack("array");
     if (std::is_same_v<std::remove_cv<Scalar>, double>) {
@@ -654,11 +659,11 @@ struct pack<drake::geometry::Meshcat::OrthographicCamera> {
   }
 };
 
-template<>
+template <>
 struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
   template <typename Stream>
   packer<Stream>& operator()(
-  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+      // NOLINTNEXTLINE(runtime/references) cpplint dislikes msgpack choices.
       msgpack::packer<Stream>& o,
       const drake::geometry::Meshcat::PerspectiveCamera& v) const {
     o.pack_map(6);
@@ -680,6 +685,7 @@ struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
 
 }  // namespace adaptor
 }  // namespace MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
+// clang-format on
 }  // namespace msgpack
 
 #endif  // DRAKE_DOXYGEN_CXX
