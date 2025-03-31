@@ -298,9 +298,9 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   const MatrixXd& D = true_linearization->D();
   const MatrixXd K = D.rightCols(2) + h * D.leftCols(2);  // N(q) = I
   const VectorXd u0 = plant.get_actuation_input_port().Eval(plant_context) -
-                          D.rightCols(2) * plant.GetVelocities(plant_context);
+                      D.rightCols(2) * plant.GetVelocities(plant_context);
 
-  const MatrixXd A_ref = - h * B * K;
+  const MatrixXd A_ref = -h * B * K;
   const VectorXd tau_ref = B * u0;
 
   // Confirm that our finite difference linearization is close to the reference
