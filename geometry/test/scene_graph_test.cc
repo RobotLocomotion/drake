@@ -373,8 +373,8 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   auto geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Box>(1.0, 2.0, 3.0), "box");
   geometry_instance->set_proximity_properties(ProximityProperties());
-  auto g_id = scene_graph_.RegisterGeometry(
-      s_id, scene_graph_.world_frame_id(), std::move(geometry_instance));
+  auto g_id = scene_graph_.RegisterGeometry(s_id, scene_graph_.world_frame_id(),
+                                            std::move(geometry_instance));
   // Plain context.
   CreateDefaultContext();
   // No hydroelastic mesh available.
@@ -400,9 +400,9 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Box>(1.0, 3.0, 5.0), "box2");
   geometry_instance->set_proximity_properties(ProximityProperties());
-  g_id = scene_graph_.RegisterGeometry(
-      context_.get(), s_id, scene_graph_.world_frame_id(),
-      std::move(geometry_instance));
+  g_id = scene_graph_.RegisterGeometry(context_.get(), s_id,
+                                       scene_graph_.world_frame_id(),
+                                       std::move(geometry_instance));
   // Volume hydroelastic mesh available.
   EXPECT_EQ(
       query_object().inspector().maybe_get_hydroelastic_mesh(g_id).index(), 2);
@@ -411,9 +411,9 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   // resulting properties have proximity defaults applied.
   geometry_instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Box>(1.0, 1.0, 1.0), "box3");
-  g_id = scene_graph_.RegisterGeometry(
-      context_.get(), s_id, scene_graph_.world_frame_id(),
-      std::move(geometry_instance));
+  g_id = scene_graph_.RegisterGeometry(context_.get(), s_id,
+                                       scene_graph_.world_frame_id(),
+                                       std::move(geometry_instance));
   scene_graph_.AssignRole(context_.get(), s_id, g_id, ProximityProperties());
   // Volume hydroelastic mesh available.
   EXPECT_EQ(
@@ -422,7 +422,7 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   // Replace the role, with a blank set of properties. The resulting properties
   // are not empty, but have the defaults applied.
   ASSERT_TRUE(scene_graph_.get_config(*context_)
-              .default_proximity_properties.resolution_hint.has_value());
+                  .default_proximity_properties.resolution_hint.has_value());
   scene_graph_.AssignRole(context_.get(), s_id, g_id, ProximityProperties(),
                           RoleAssign::kReplace);
   auto* props = query_object().inspector().GetProximityProperties(g_id);
@@ -432,7 +432,7 @@ TEST_F(SceneGraphTest, ApplyConfig) {
   // get removed, because it is set in the context's scene graph config, and
   // those settings get reapplied during AssignRole().
   ASSERT_TRUE(scene_graph_.get_config(*context_)
-              .default_proximity_properties.resolution_hint.has_value());
+                  .default_proximity_properties.resolution_hint.has_value());
   ProximityProperties edit_props(
       *query_object().inspector().GetProximityProperties(g_id));
   edit_props.RemoveProperty(kHydroGroup, kRezHint);

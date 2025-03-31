@@ -346,8 +346,7 @@ Ignore those for now; we'll need to circle back and fix them later.
                "geometries:\n";
   MeshcatAnimation animation;
   std::cout << "- the red sphere should move up and down in z.\n";
-  animation.SetTransform(0, "sphere/scoped_name",
-                         RigidTransformd(sphere_home));
+  animation.SetTransform(0, "sphere/scoped_name", RigidTransformd(sphere_home));
   animation.SetTransform(20, "sphere/scoped_name",
                          RigidTransformd(sphere_home + Vector3d::UnitZ()));
   animation.SetTransform(40, "sphere/scoped_name",

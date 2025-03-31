@@ -15,6 +15,8 @@
 namespace drake {
 namespace geometry {
 
+// Disable formatter to preserve doxygen tables.
+// clang-format off
 /** A %KinematicsVector is a container class used to report kinematics data for
  registered frames and geometries (keyed by unique FrameId/GeometryId values)
  to SceneGraph where the set of keys (FrameId/GeometryId) is usually constant
@@ -90,6 +92,7 @@ namespace geometry {
   FramePoseVector<Scalar>             | KinematicsVector<FrameId,RigidTransform<Scalar>> | double/AutoDiffXd/Expression
   GeometryConfigurationVector<Scalar> | KinematicsVector<GeometryId, VectorX<Scalar>>    | double/AutoDiffXd/Expression
  */
+// clang-format on
 template <class Id, class KinematicsValue>
 class KinematicsVector {
  public:

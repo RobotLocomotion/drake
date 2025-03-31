@@ -81,8 +81,8 @@ std::vector<Eigen::Vector3d> TinyObjToFclVertices(
 // The actual number of faces returned will be equal to:
 // mesh.num_face_vertices.size() which *cannot* be easily inferred from the
 // *size* of the returned vector.
-std::vector<int> TinyObjToFclFaces(
-    const std::vector<tinyobj::shape_t>& shapes, bool reverse_winding) {
+std::vector<int> TinyObjToFclFaces(const std::vector<tinyobj::shape_t>& shapes,
+                                   bool reverse_winding) {
   // Estimate (to an order of magnitude) how much space we need for face data.
   int estimated_face_data_size = 0;
   for (const auto& shape : shapes) {
@@ -176,8 +176,8 @@ ReadObjFile(const std::filesystem::path& filename, const Eigen::Vector3d& scale,
   // TODO(SeanCurtis-TRI): The file contents of this file should be read once
   // and stored in some geometry cache -- only accessed here rather than created
   // anew. For now, we are unnecessarily computing the hash for the contents.
-  return ReadObjContents(MemoryFile::Make(filename),
-                         scale, triangulate, vertices_only, diagnostic);
+  return ReadObjContents(MemoryFile::Make(filename), scale, triangulate,
+                         vertices_only, diagnostic);
 }
 
 }  // namespace
@@ -195,8 +195,8 @@ ReadObj(const MeshSource& mesh_source, const Eigen::Vector3d& scale,
     return {nullptr, nullptr, 0};
   }
   if (mesh_source.is_path()) {
-    return ReadObjFile(mesh_source.path(), scale, triangulate,
-                       vertices_only, diagnostic);
+    return ReadObjFile(mesh_source.path(), scale, triangulate, vertices_only,
+                       diagnostic);
   } else {
     DRAKE_DEMAND(mesh_source.is_in_memory());
     return ReadObjContents(mesh_source.in_memory().mesh_file, scale,

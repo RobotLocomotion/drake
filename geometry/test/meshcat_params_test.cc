@@ -30,12 +30,13 @@ GTEST_TEST(MeshcatParamsTest, RoundTrip) {
       .host = "some_host",
       .port = 7001,
       .web_url_pattern = "http://{host}:{port}/proxy",
-      .initial_properties = {
-          {.path = "a", .property = "p1", .value = some_vector},
-          {.path = "b", .property = "p2", .value = some_string},
-          {.path = "c", .property = "p3", .value = some_bool},
-          {.path = "d", .property = "p4", .value = some_double},
-      },
+      .initial_properties =
+          {
+              {.path = "a", .property = "p1", .value = some_vector},
+              {.path = "b", .property = "p2", .value = some_string},
+              {.path = "c", .property = "p3", .value = some_bool},
+              {.path = "d", .property = "p4", .value = some_double},
+          },
   };
 
   // Make sure we can save & re-load it.

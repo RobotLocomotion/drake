@@ -790,8 +790,8 @@ class Meshcat {
    @throws std::exception if `name` has already been added as any type of
    control (e.g., either button or slider). */
   double AddSlider(std::string name, double min, double max, double step,
-                 double value, std::string decrement_keycode = "",
-                 std::string increment_keycode = "");
+                   double value, std::string decrement_keycode = "",
+                   std::string increment_keycode = "");
 
   /** Sets the current `value` of the slider `name`. `value` will be truncated
    to the slider range and rounded to the nearest increment specified by the
