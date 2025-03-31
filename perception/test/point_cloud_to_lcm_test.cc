@@ -60,15 +60,13 @@ std::vector<lcmt_point_cloud_field> MakeExpectedFields(int num_fields) {
 }
 
 float PackRgb(uint8_t r, uint8_t g, uint8_t b) {
-  return bit_cast<float>(std::array<uint8_t, 4>{ r, g, b, 0 });
+  return bit_cast<float>(std::array<uint8_t, 4>{r, g, b, 0});
 }
 
 class PointCloudToLcmTest : public testing::Test {
  protected:
-  lcmt_point_cloud Convert(
-      const PointCloud& cloud,
-      const double time = 1.0,
-      const std::string& frame_name = "world") {
+  lcmt_point_cloud Convert(const PointCloud& cloud, const double time = 1.0,
+                           const std::string& frame_name = "world") {
     const PointCloudToLcm dut(frame_name);
     auto context = dut.CreateDefaultContext();
     context->SetTime(time);
@@ -81,9 +79,7 @@ class PointCloudToLcmTest : public testing::Test {
   // Checks that all fields of a and b match exactly, except for the filler.
   // We check that any filler used is set to zero, but we don't check how much
   // filler a vs b each use.
-  void CheckEqual(
-      const lcmt_point_cloud& a,
-      const lcmt_point_cloud& b) {
+  void CheckEqual(const lcmt_point_cloud& a, const lcmt_point_cloud& b) {
     EXPECT_EQ(a.utime, b.utime);
     EXPECT_EQ(a.frame_name, b.frame_name);
     EXPECT_EQ(a.width, b.width);
@@ -137,7 +133,7 @@ TEST_F(PointCloudToLcmTest, Empty) {
 TEST_F(PointCloudToLcmTest, XyzOnly) {
   PointCloud cloud(5);
   cloud.mutable_xyz(0) = Vector3f(1.0f, 2.0f, 3.0f);
-  cloud.mutable_xyz(1) = Vector3f(NAN,  0.0f, 0.0f);
+  cloud.mutable_xyz(1) = Vector3f(NAN, 0.0f, 0.0f);
   cloud.mutable_xyz(2) = Vector3f(0.0f, kInf, 0.0f);
   cloud.mutable_xyz(3) = Vector3f(0.0f, 0.0f, kInf);
   cloud.mutable_xyz(4) = Vector3f(4.0f, 5.0f, 6.0f);
@@ -158,8 +154,8 @@ TEST_F(PointCloudToLcmTest, XyzOnly) {
   constexpr int data_size = point_step * num_valid_points;
   expected.data_size = data_size;
   const float data[6] = {
-    1.0f, 2.0f, 3.0f,
-    4.0f, 5.0f, 6.0f,
+      1.0f, 2.0f, 3.0f,  // BR
+      4.0f, 5.0f, 6.0f,
   };
   static_assert(sizeof(data) == data_size);
   expected.data.resize(data_size);
@@ -196,8 +192,8 @@ TEST_F(PointCloudToLcmTest, XyzRgb) {
   constexpr int data_size = point_step * num_valid_points;
   expected.data_size = data_size;
   const float data[8] = {
-    1.0f, 2.0f, 3.0f, PackRgb(0, 127, 255),
-    4.0f, 5.0f, 6.0f, PackRgb(1, 128, 255),
+      1.0f, 2.0f, 3.0f, PackRgb(0, 127, 255),
+      4.0f, 5.0f, 6.0f, PackRgb(1, 128, 255),
   };
   static_assert(sizeof(data) == data_size);
   expected.data.resize(data_size);
@@ -234,8 +230,8 @@ TEST_F(PointCloudToLcmTest, XyzRgbNormal) {
   constexpr int data_size = point_step * num_valid_points;
   expected.data_size = data_size;
   const float data[14] = {
-    1.0f, 2.0f, 3.0f, PackRgb(0, 127, 255), 1.0, 0.0, 0.0,
-    4.0f, 5.0f, 6.0f, PackRgb(1, 128, 255), 0.0, -1.0, 0.0,
+      1.0f, 2.0f, 3.0f, PackRgb(0, 127, 255), 1.0, 0.0,  0.0,
+      4.0f, 5.0f, 6.0f, PackRgb(1, 128, 255), 0.0, -1.0, 0.0,
   };
   static_assert(sizeof(data) == data_size);
   expected.data.resize(data_size);
@@ -259,8 +255,8 @@ TEST_F(PointCloudToLcmTest, StorageReuse) {
   const PointCloudToLcm dut;
   auto context = dut.CreateDefaultContext();
   context->SetTime(1.0);
-  auto& fixed_value = dut.get_input_port().FixValue(
-      context.get(), Value<PointCloud>(cloud));
+  auto& fixed_value =
+      dut.get_input_port().FixValue(context.get(), Value<PointCloud>(cloud));
   dut.get_output_port().Eval<lcmt_point_cloud>(*context);
 
   // Invalidate the output message and then recompute it, without making any
@@ -271,7 +267,6 @@ TEST_F(PointCloudToLcmTest, StorageReuse) {
     dut.get_output_port().Eval<lcmt_point_cloud>(*context);
   }
 }
-
 
 }  // namespace
 }  // namespace perception
