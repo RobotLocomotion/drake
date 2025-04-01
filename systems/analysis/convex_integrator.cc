@@ -883,7 +883,7 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
       const VectorX<T> tau_block = tau0.segment(c_start, nv);
 
       problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
-          c, nv, K_block, tau_block));
+          c, nv, K_block, tau_block, effort_limits_));
     }
   }
 }

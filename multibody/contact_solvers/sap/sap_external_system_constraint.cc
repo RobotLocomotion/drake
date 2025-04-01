@@ -14,10 +14,12 @@ namespace internal {
 
 template <typename T>
 SapExternalSystemConstraint<T>::SapExternalSystemConstraint(
-    int clique, int nv, const MatrixX<T>& K, const VectorX<T>& tau0)
+    int clique, int nv, const MatrixX<T>& K, const VectorX<T>& tau0,
+    const VectorX<T>& effort_limits)
     : SapConstraint<T>(MakeConstraintJacobian(clique, nv), {}),
       K_{K},
-      tau0_{tau0} {}
+      tau0_{tau0},
+      effort_limits_{effort_limits} {}
 
 template <typename T>
 std::unique_ptr<AbstractValue> SapExternalSystemConstraint<T>::DoMakeData(
@@ -43,11 +45,27 @@ void SapExternalSystemConstraint<T>::DoCalcData(
       abstract_data->get_mutable_value<SapExternalSystemConstraintData<T>>();
   const T& h = data.time_step;
 
-  // TODO(vincekurtz): add effort limits
+  // We'll diagonalize K, then use the same method as SapPdControllerConstraint
+  // to enforce effort limits.
+  const VectorX<T> tau_nom = -K_ * v + tau0_;
+  const VectorX<T> D = K_.diagonal();
+
   data.v = v;
-  data.hessian = h * K_;
-  data.impulse = h * (-K_ * v + tau0_);
-  data.cost = 0.5 * h * v.transpose() * K_ * v - h * tau0_.dot(v);
+  data.hessian.setZero();
+  data.impulse.setZero();
+  data.cost = 0.0;
+
+  // TODO(vincekurtz): consider using something like Eigen::unaryExpr or
+  // Eigen::binaryExpr rather than a loop here.
+  for (int i = 0; i < D.size(); ++i) {
+    const T& y = tau_nom(i);
+    const T& common_factor = D(i);
+    const T& e = effort_limits_(i);
+
+    data.cost += h * ClampAntiderivative(y, e) / common_factor;
+    data.impulse(i) = h * Clamp(y, e);
+    data.hessian(i, i) = h * common_factor * ClampDerivative(y, e);
+  }
 }
 
 template <typename T>

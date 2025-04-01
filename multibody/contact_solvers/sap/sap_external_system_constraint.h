@@ -45,7 +45,8 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
   //@}
 
   SapExternalSystemConstraint(int clique, int nv, const MatrixX<T>& K,
-                              const VectorX<T>& tau0);
+                              const VectorX<T>& tau0,
+                              const VectorX<T>& effort_limits);
 
  private:
   /* Private copy construction is enabled to use in the implementation of
@@ -60,8 +61,8 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapExternalSystemConstraint<double>>(
         new SapExternalSystemConstraint<double>(
             this->clique(0), this->num_velocities(0),
-            math::DiscardGradient(this->K_),
-            math::DiscardGradient(this->tau0_)));
+            math::DiscardGradient(this->K_), math::DiscardGradient(this->tau0_),
+            math::DiscardGradient(this->effort_limits_)));
   }
 
   /* Implementations of SapConstraint NVI functions. */
@@ -79,16 +80,38 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
       int c, const Eigen::Ref<const VectorX<T>>& gamma,
       EigenPtr<VectorX<T>> tau) const final;
 
-  // no-ops for this constraint
+  // no-op for this constraint
   void DoAccumulateSpatialImpulses(int, const Eigen::Ref<const VectorX<T>>&,
                                    SpatialForce<T>*) const final {};
 
   // Constraint Jacobian for this constraint.
   static SapConstraintJacobian<T> MakeConstraintJacobian(int clique, int nv);
 
+  // Clamping helper functions from SapPdControllerConstraint
+  static T Clamp(const T& x, const T& e) {
+    using std::clamp;  // max(min(x, e), -e);
+    return clamp(x, -e, e);
+  }
+
+  static T ClampDerivative(const T& x, const T& e) {
+    if (-e <= x && x <= e) return 1.0;
+    return 0.0;
+  }
+
+  static T ClampAntiderivative(const T& x, const T& e) {
+    if (x < -e) {
+      return -e * (x + e / 2);
+    } else if (-e <= x && x <= e) {
+      return x * x / 2;
+    } else {
+      return e * (x - e / 2);
+    }
+  }
+
   // Constraint parameters
-  const MatrixX<T> K_;     // Linearized dynamics matrix
-  const VectorX<T> tau0_;  // Explicit external forces
+  const MatrixX<T> K_;              // Linearized external systems dynamics
+  const VectorX<T> tau0_;           // Explicit external forces
+  const VectorX<T> effort_limits_;  // Effort limits
 };
 
 }  // namespace internal
