@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":make_arm_controller_model",
         ":move_ik_demo_base",
         ":moving_average_filter",
+        ":named_positions_functions",
         ":robot_plan_interpolator",
         ":robot_plan_utils",
         ":zero_force_driver",
@@ -67,6 +68,16 @@ drake_cc_library(
 drake_cc_library(
     name = "apply_driver_configs",
     hdrs = ["apply_driver_configs.h"],
+)
+
+drake_cc_library(
+    name = "named_positions_functions",
+    srcs = ["named_positions_functions.cc"],
+    hdrs = ["named_positions_functions.h"],
+    deps = [
+        "//common:string_container",
+        "//multibody/plant",
+    ],
 )
 
 drake_cc_library(
@@ -161,6 +172,19 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+drake_cc_googletest(
+    name = "named_positions_functions_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:manipulation_station",
+    ],
+    deps = [
+        ":named_positions_functions",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
     ],
 )
 
