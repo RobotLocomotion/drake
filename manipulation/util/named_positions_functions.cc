@@ -1,9 +1,9 @@
-#include "sim/common/set_joint_positions.h"
+#include "drake/manipulation/util/named_positions_functions.h"
 
 #include "drake/common/drake_throw.h"
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
 
 using drake::multibody::Joint;
 using drake::multibody::ModelInstanceIndex;
@@ -33,5 +33,5 @@ void ApplyNamedPositionsAsDefaults(const NamedPositions& input,
   }
 }
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace manipulation
+}  // namespace drake

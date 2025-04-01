@@ -3,10 +3,8 @@
 #include "drake/common/string_map.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-// TODO(#12741) This file should move to Drake.
-
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
 
 /** A map-of-maps {model_instance_name: {joint_name: joint_positions}} that
 describes joint positions. Note that a given joint's positions are always
@@ -24,5 +22,5 @@ void ApplyNamedPositionsAsDefaults(
     const NamedPositions& input,
     drake::multibody::MultibodyPlant<double>* plant);
 
-}  // namespace sim
-}  // namespace anzu
+}  // namespace manipulation
+}  // namespace drake
