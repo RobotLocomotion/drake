@@ -1,4 +1,4 @@
-#include "sim/common/set_joint_positions.h"
+#include "drake/manipulation/util/set_joint_positions.h"
 
 #include <gtest/gtest.h>
 
@@ -13,8 +13,8 @@ using drake::multibody::Parser;
 using drake::multibody::RevoluteJoint;
 using drake::systems::Context;
 
-namespace anzu {
-namespace sim {
+namespace drake {
+namespace manipulation {
 namespace {
 
 GTEST_TEST(ApplyNamedPositionsAsDefaultsTest, Basic) {
@@ -73,5 +73,5 @@ GTEST_TEST(ApplyNamedPositionsAsDefaultsTest, MultiDof) {
 }
 
 }  // namespace
-}  // namespace sim
-}  // namespace anzu
+}  // namespace manipulation
+}  // namespace drake

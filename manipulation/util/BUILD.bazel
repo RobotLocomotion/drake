@@ -19,6 +19,7 @@ drake_cc_package_library(
         ":moving_average_filter",
         ":robot_plan_interpolator",
         ":robot_plan_utils",
+        ":set_joint_positions",
         ":zero_force_driver",
         ":zero_force_driver_functions",
     ],
@@ -67,6 +68,16 @@ drake_cc_library(
 drake_cc_library(
     name = "apply_driver_configs",
     hdrs = ["apply_driver_configs.h"],
+)
+
+drake_cc_library(
+    name = "set_joint_positions",
+    srcs = ["set_joint_positions.cc"],
+    hdrs = ["set_joint_positions.h"],
+    deps = [
+        "//common:string_container",
+        "//multibody/plant",
+    ],
 )
 
 drake_cc_library(
@@ -161,6 +172,19 @@ drake_cc_googletest(
         "//common:essential",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+drake_cc_googletest(
+    name = "set_joint_positions_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+        "@drake_models//:manipulation_station",
+    ],
+    deps = [
+        ":set_joint_positions",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
     ],
 )
 
