@@ -29,12 +29,12 @@ vtkSmartPointer<vtkPlaneSource> CreateSquarePlane(double size) {
 }
 
 vtkSmartPointer<vtkTransform> ConvertToVtkTransform(
-    const math::RigidTransformd& transform, double scale) {
+    const math::RigidTransformd& transform, const Vector3<double>& scale) {
   vtkNew<vtkMatrix4x4> vtk_mat;
   for (int i = 0; i < 3; ++i) {
     const auto& row = transform.rotation().row(i);
     for (int j = 0; j < 3; ++j) {
-      vtk_mat->SetElement(i, j, row(j) * scale);
+      vtk_mat->SetElement(i, j, row(j) * scale(j));
     }
     vtk_mat->SetElement(i, 3, transform.translation()(i));
   }

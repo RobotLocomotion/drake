@@ -10,9 +10,9 @@
 Drake uses [pybind11](http://pybind11.readthedocs.io/en/stable/) for binding
 its C++ API to Python.
 
-At present, a fork of `pybind11` is used which permits bindings matrices with
-`dtype=object`, passing `unique_ptr` objects, and prevents aliasing for Python
-classes derived from `pybind11` classes.
+At present, patches against `pybind11` are used which permit binding matrices
+with `dtype=object`, improve support for Python classes derived from C++ base
+classes, and check for errors that impact generated documentation.
 
 Before delving too deep into this, please first review the user-facing
 documentation about
@@ -95,7 +95,7 @@ your method if it mutates the object in a non-obvious fashion.
 
 ### Python Type Conversions
 
-You can implicit convert between `py::object` and its derived classes (such
+You can implicitly convert between `py::object` and its derived classes (such
 as `py::list`, `py::class_`, etc.), assuming the actual Python types agree.
 You may also implicitly convert from `py::object` (and its derived classes) to
 `py::handle`.
@@ -332,7 +332,7 @@ efficient editor!
 
 @note If you are debugging a certain file and want quicker generation and a
 smaller generated file, you can hack `mkdoc.py` to focus only on your include
-file of chioce. As an example, debugging `mathematical_program.h`:
+file of choice. As an example, debugging `mathematical_program.h`:
 ```{.py}
     ...
     assert len(include_files) > 0  # Existing code.
@@ -402,9 +402,12 @@ dealing with methods / members. The primary relationships:
 - "Keep alive, ownership" implies that a Patient owns the Nurse (or vice
 versa).
 - "Keep alive, reference" implies a Patient that is referred to by the Nurse.
-If there is an indirect / transitive relationship (storing a reference to
-an argument's member or a transfer of ownership, as with
-`DiagramBuilder.Build()`), append `(tr.)` to the relationship.
+
+If there is an indirect / transitive relationship (storing a reference to an
+argument's member or a transfer of ownership, append `(tr.)` to the
+relationship. Note: ownership transfer solutions likely require treatment of
+all the involved objects; see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle" and [issue
+#14387](https://github.com/RobotLocomotion/drake/issues/14387).
 
 Some example comments:
 
@@ -412,6 +415,13 @@ Some example comments:
 // Keep alive, reference: `self` keeps `context` alive.
 // Keep alive, ownership (tr.): `return` keeps `self` alive.
 ```
+
+@warning Keep-alives hold Python references in a way that cannot be found by
+Python garbage collection. Any reference cycle made of keep-alives will make
+all of the objects involved immortal. That is, their memory will be leaked for
+the entire lifetime of the process.  For complicated situations involving
+object structures that are logically cyclic, ownership transfer in C++, etc.,
+see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle".
 
 @anchor PydrakeReturnValuePolicy
 ## Return Value Policy
@@ -432,6 +442,62 @@ of raw pointers / references in the public C++ API (rather than
 static / free functions, we instead explicitly spell out `py_rvp::reference`
 and `py::keep_alive<0, 1>()`.
 
+@warning Use of `py_rvp::reference_internal` can contribute to memory leaks if
+a returned object is stored in memory controlled by the lifetime of the Patient.
+For a full discussion, see @ref PydrakeRefCycle "Using pydrake::internal::ref_cycle".
+
+@anchor PydrakeRefCycle
+## Using pydrake::internal::ref_cycle
+
+For complicated lifetime management situations, `pydrake` itself provides
+`internal::ref_cycle<>()`.  It creates a bidirectional cycle between two
+objects that is garbage collectible. It has two prerequisites:
+
+- include `drake/bindings/pydrake/common/ref_cycle_pybind.h`
+- ensure that both objects have `py::dynamic_attr()` in their class definition
+
+If those prerequisites can be met, then `ref_cycle` is a drop-in replacement
+for `keep_alive` that is guaranteed not to cause permanent memory leaks. Note
+that the cycle will remain alive as long as either object is reachable from a
+live python variable. Once the cycle is not reachable, it will be deleted at
+the next automatic garbage collection, or when `gc.collect()` is invoked
+explicitly.
+
+The `ref_cycle` annotation has been helpful in solving some tricky lifetime
+problems with pydrake bindings. It was one piece of the solution to Diagram
+memory leaks; see [issue
+#14387](https://github.com/RobotLocomotion/drake/issues/14387) for details. In
+the case of Python custom leaf systems, it was used to avoid inadvertent
+self-reference via stored references to port objects. See [issue
+#22515](https://github.com/RobotLocomotion/drake/issues/22515) for details.
+
+A fairly simple example of using `ref_cycle` might look like the code
+below. The code is excerpted from fixes to [issue
+#22515](https://github.com/RobotLocomotion/drake/issues/22515):
+
+```
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
+...
+    auto system_cls =
+        DefineTemplateClassWithDefault<System<T>, SystemBase, PySystem>(m,
+            "System", GetPyParam<T>(), doc.System.doc, std::nullopt,
+            py::dynamic_attr());
+...
+        // Port access methods. All returned port references use a ref_cycle
+        // (rather than the implicit keep-alive of reference_internal) to avoid
+        // immortality hazards like #22515.
+        .def("get_input_port",
+            overload_cast_explicit<const InputPort<T>&, int, bool>(
+                &System<T>::get_input_port),
+            internal::ref_cycle<0, 1>(), py_rvp::reference,
+            py::arg("port_index"), py::arg("warn_deprecated") = true,
+            doc.System.get_input_port.doc_2args)
+```
+
+Notice that in replacing `py_rvp::reference_internal`, we need both the
+`ref_cycle` (to manage lifetimes in lieu of the implicit keep-alive) and
+`py_rvp::reference` (to avoid copying).
+
 @anchor PydrakeOverloads
 ## Function Overloads
 
@@ -451,7 +517,7 @@ C++ has the ability to distinguish `T` and `const T` for both function arguments
 and class methods. However, Python does not have a native mechanism for this. It
 is possible to provide a feature like this in Python (see discussion and
 prototypes in [#7793](https://github.com/RobotLocomotion/drake/issues/7793));
-however, its pros (similarity to C++) have not yet outweighted the cons (awkward
+however, its pros (similarity to C++) have not yet outweighed the cons (awkward
 non-Pythonic types and workflows).
 
 When a function is overloaded only by its `const`-ness, choose to bind the
@@ -563,7 +629,7 @@ py::handle abstract_value_cls =
 
 For objects that may be represented by matrices or vectors (e.g.
 RigidTransform, RotationMatrix), the `*` operator (via `__mul__`) should *not*
-be bound because the `*` operator in NumPy implies elemnt-wise multiplication
+be bound because the `*` operator in NumPy implies element-wise multiplication
 for arrays.
 
 For simplicity, we instead bind the explicitly named `.multiply()` method, and
@@ -595,14 +661,12 @@ should use the drake::pydrake::WrapToMatchInputShape function.
 
 In general, minimize the amount in which users may subclass C++ classes in
 Python. When you do wish to do this, ensure that you use a trampoline class
-in `pybind`, and ensure that the trampoline class inherits from the
-`py::wrapper<>` class specific to our fork of `pybind`. This ensures that no
-slicing happens with the subclassed instances.
+in `pybind`.
 
 @anchor PydrakeBazelDebug
 # Interactive Debugging with Bazel
 
-If you are debugging a unitest, first try running the test with `--trace=user`
+If you are debugging a unit test, first try running the test with `--trace=user`
 to see where the code is failing. This should cover most cases where you need
 to debug C++ bits. Example:
 

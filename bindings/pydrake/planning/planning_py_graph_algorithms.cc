@@ -16,7 +16,7 @@ void DefinePlanningGraphAlgorithms(py::module m) {
   using namespace drake::planning::graph_algorithms;
   constexpr auto& doc = pydrake_doc.drake.planning.graph_algorithms;
   {
-    class PyMaxCliqueSolverBase : public py::wrapper<MaxCliqueSolverBase> {
+    class PyMaxCliqueSolverBase : public MaxCliqueSolverBase {
      public:
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMaxClique is made public to enable
@@ -65,8 +65,7 @@ void DefinePlanningGraphAlgorithms(py::module m) {
         .def(py::init<>(), cls_doc.ctor.doc);
   }
   {
-    class PyMinCliqueCoverSolverBase
-        : public py::wrapper<MinCliqueCoverSolverBase> {
+    class PyMinCliqueCoverSolverBase : public MinCliqueCoverSolverBase {
      public:
       // Trampoline virtual methods.
       // The private virtual method of DoSolveMinCliqueCover is made public to

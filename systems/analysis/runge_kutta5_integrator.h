@@ -10,6 +10,7 @@
 namespace drake {
 namespace systems {
 
+// clang-format off
 /**
  A fifth-order, seven-stage, first-same-as-last (FSAL) Runge Kutta integrator
  with a fourth order error estimate.
@@ -43,6 +44,7 @@ namespace systems {
  @tparam_nonsymbolic_scalar
  @ingroup integrators
  */
+// clang-format on
 template <typename T>
 class RungeKutta5Integrator final : public IntegratorBase<T> {
  public:

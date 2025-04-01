@@ -37,11 +37,10 @@ using systems::sensors::PixelType;
 
 namespace {
 
-class PyRenderEngine : public py::wrapper<RenderEngine> {
+class PyRenderEngine : public RenderEngine {
  public:
   using Base = RenderEngine;
-  using BaseWrapper = py::wrapper<Base>;
-  PyRenderEngine() : BaseWrapper() {}
+  PyRenderEngine() : Base() {}
 
   void UpdateViewpoint(RigidTransformd const& X_WR) override {
     PYBIND11_OVERLOAD_PURE(void, Base, UpdateViewpoint, X_WR);

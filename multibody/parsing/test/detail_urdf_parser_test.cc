@@ -1294,6 +1294,194 @@ TEST_F(UrdfParserTest, AddingGeometriesToWorldLink) {
             1);
 }
 
+TEST_F(UrdfParserTest, CurvilinearJointErrors0) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="a"/>
+  <link name="b"/>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="a"/>
+    <child link="b"/>
+    <drake:initial_tangent xyz="0 0 1"/>
+    <drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+  </drake:joint>
+</robot>
+)""";
+  AddModelFromUrdfString(test_urdf, "urdf");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*missing.*drake:curves.*"));
+}
+
+TEST_F(UrdfParserTest, CurvilinearJointErrors1) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="a"/>
+  <link name="b"/>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="a"/>
+    <child link="b"/>
+    <drake:initial_tangent xyz="0 0 1"/>
+    <drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+    <drake:curves>
+      <drake:line_segment/>
+    </drake:curves>
+  </drake:joint>
+</robot>
+)""";
+  AddModelFromUrdfString(test_urdf, "urdf");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*missing.*length.*attribute.*"));
+}
+
+TEST_F(UrdfParserTest, CurvilinearJointErrors2) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="a"/>
+  <link name="b"/>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="a"/>
+    <child link="b"/>
+    <drake:initial_tangent xyz="0 0 1"/>
+    <drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+    <drake:curves>
+      <drake:line_segment length="-22"/>
+    </drake:curves>
+  </drake:joint>
+</robot>
+)""";
+  AddModelFromUrdfString(test_urdf, "urdf");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*negative.*length.*"));
+}
+
+TEST_F(UrdfParserTest, CurvilinearJointErrors3) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="a"/>
+  <link name="b"/>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="a"/>
+    <child link="b"/>
+    <drake:initial_tangent xyz="0 0 1"/>
+    <drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+    <drake:curves>
+      <drake:circular_arc radQQQius="2.0" angle="1.57079632679489661923"/>
+    </drake:curves>
+  </drake:joint>
+</robot>
+)""";
+  AddModelFromUrdfString(test_urdf, "urdf");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*missing.*radius.*attribute.*"));
+}
+
+TEST_F(UrdfParserTest, CurvilinearJointErrors4) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="a"/>
+  <link name="b"/>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="a"/>
+    <child link="b"/>
+    <drake:initial_tangent xyz="0 0 1"/>
+    <drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+    <drake:curves>
+      <drake:circular_arc radius="-2.0" angle="1.57079632679489661923"/>
+    </drake:curves>
+  </drake:joint>
+</robot>
+)""";
+  AddModelFromUrdfString(test_urdf, "urdf");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*negative.*radius.*attribute.*"));
+}
+
+TEST_F(UrdfParserTest, CurvilinearJointErrors5) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="a"/>
+  <link name="b"/>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="a"/>
+    <child link="b"/>
+    <drake:initial_tangent xyz="0 0 1"/>
+    <drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+    <drake:curves>
+      <drake:circular_arc radius="2.0" anQQQgle="1.57079632679489661923"/>
+    </drake:curves>
+  </drake:joint>
+</robot>
+)""";
+  AddModelFromUrdfString(test_urdf, "urdf");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*missing.*angle.*attribute.*"));
+}
+
+TEST_F(UrdfParserTest, CurvilinearJointErrors6) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="a"/>
+  <link name="b"/>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="a"/>
+    <child link="b"/>
+    <drake:initial_tangent xyz="0 0 1"/>
+    <drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+    <drake:curves>
+      <drake:circQQQular_arc radius="2.0" angle="1.57079632679489661923"/>
+    </drake:curves>
+  </drake:joint>
+</robot>
+)""";
+  AddModelFromUrdfString(test_urdf, "urdf");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*invalid.*circQQQular_arc.*"));
+}
+
+TEST_F(UrdfParserTest, CurvilinearJointErrors7) {
+  const std::string test_urdf = R"""(
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="joint_parsing_test">
+  <link name="a"/>
+  <link name="b"/>
+  <drake:joint name="curvilinear_periodic" type="curvilinear">
+    <origin xyz="3 2 1" rpy="0 0 0"/>
+    <parent link="a"/>
+    <child link="b"/>
+    <drake:initial_tangent xyz="0 0 1"/>
+    <drake:plane_normal xyz="1 0 0"/>
+    <drake:is_periodic value="true"/>
+    <dynamics damping="0.1"/>
+    <drake:curves>
+    </drake:curves>
+  </drake:joint>
+</robot>
+)""";
+  AddModelFromUrdfString(test_urdf, "urdf");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*empty.*curves.*"));
+}
+
 // Reports if the frame with the given id has a geometry with the given role
 // whose name is the same as what ShapeType{}.type_name() would produce.
 template <typename ShapeType>

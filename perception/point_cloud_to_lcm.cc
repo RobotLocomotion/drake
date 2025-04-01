@@ -49,10 +49,9 @@ void Calc(double time, const std::string& frame_name, const PointCloud& cloud,
   const bool has_xyzs = cloud.has_xyzs();
   const bool has_rgbs = cloud.has_rgbs();
   const bool has_normals = cloud.has_normals();
-  const int num_fields =
-      (has_xyzs ? 3 : 0) +
-      (has_rgbs ? 1 : 0) +
-      (has_normals ? 3 : 0);
+  const int num_fields = (has_xyzs ? 3 : 0)    //
+                         + (has_rgbs ? 1 : 0)  //
+                         + (has_normals ? 3 : 0);
   message->num_fields = num_fields;
   message->fields.resize(num_fields);
   {
@@ -62,9 +61,18 @@ void Calc(double time, const std::string& frame_name, const PointCloud& cloud,
       for (int i = 0; i < 3; ++i) {
         auto& field = message->fields[current_field];
         switch (i) {
-          case 0: { field.name = "x"; break; }
-          case 1: { field.name = "y"; break; }
-          case 2: { field.name = "z"; break; }
+          case 0: {
+            field.name = "x";
+            break;
+          }
+          case 1: {
+            field.name = "y";
+            break;
+          }
+          case 2: {
+            field.name = "z";
+            break;
+          }
         }
         field.byte_offset = current_offset;
         field.datatype = lcmt_point_cloud_field::FLOAT32;
@@ -86,9 +94,18 @@ void Calc(double time, const std::string& frame_name, const PointCloud& cloud,
       for (int i = 0; i < 3; ++i) {
         auto& field = message->fields[current_field];
         switch (i) {
-          case 0: { field.name = "normal_x"; break; }
-          case 1: { field.name = "normal_y"; break; }
-          case 2: { field.name = "normal_z"; break; }
+          case 0: {
+            field.name = "normal_x";
+            break;
+          }
+          case 1: {
+            field.name = "normal_y";
+            break;
+          }
+          case 2: {
+            field.name = "normal_z";
+            break;
+          }
         }
         field.byte_offset = current_offset;
         field.datatype = lcmt_point_cloud_field::FLOAT32;
@@ -119,14 +136,13 @@ void Calc(double time, const std::string& frame_name, const PointCloud& cloud,
   const Matrix3X<float> empty_float;
   const Matrix3X<uint8_t> empty_uint8;
   const Eigen::Ref<const Matrix3X<float>> xyzs =
-      has_xyzs ? cloud.xyzs() :
-      Eigen::Ref<const Matrix3X<float>>(empty_float);
+      has_xyzs ? cloud.xyzs() : Eigen::Ref<const Matrix3X<float>>(empty_float);
   const Eigen::Ref<const Matrix3X<uint8_t>> rgbs =
-      has_rgbs ? cloud.rgbs() :
-      Eigen::Ref<const Matrix3X<uint8_t>>(empty_uint8);
+      has_rgbs ? cloud.rgbs()
+               : Eigen::Ref<const Matrix3X<uint8_t>>(empty_uint8);
   const Eigen::Ref<const Matrix3X<float>> normals =
-      has_normals ? cloud.normals() :
-      Eigen::Ref<const Matrix3X<float>>(empty_float);
+      has_normals ? cloud.normals()
+                  : Eigen::Ref<const Matrix3X<float>>(empty_float);
 
   // Resize our message storage large enough to hold all points, assuming they
   // will all be finite.  If some were non-finite, we'll shrink it down later.
@@ -144,23 +160,33 @@ void Calc(double time, const std::string& frame_name, const PointCloud& cloud,
       if (!(std::isfinite(x) && std::isfinite(y) && std::isfinite(z))) {
         continue;
       }
-      std::memcpy(cursor, &x, 4); cursor += 4;
-      std::memcpy(cursor, &y, 4); cursor += 4;
-      std::memcpy(cursor, &z, 4); cursor += 4;
+      std::memcpy(cursor, &x, 4);
+      cursor += 4;
+      std::memcpy(cursor, &y, 4);
+      cursor += 4;
+      std::memcpy(cursor, &z, 4);
+      cursor += 4;
     }
     if (has_rgbs) {
-      *cursor = rgbs(0, i); ++cursor;
-      *cursor = rgbs(1, i); ++cursor;
-      *cursor = rgbs(2, i); ++cursor;
-      *cursor = 0;          ++cursor;  // padding
+      *cursor = rgbs(0, i);
+      ++cursor;
+      *cursor = rgbs(1, i);
+      ++cursor;
+      *cursor = rgbs(2, i);
+      ++cursor;
+      *cursor = 0;  // padding
+      ++cursor;
     }
     if (has_normals) {
       const float nx = normals(0, i);
       const float ny = normals(1, i);
       const float nz = normals(2, i);
-      std::memcpy(cursor, &nx, 4); cursor += 4;
-      std::memcpy(cursor, &ny, 4); cursor += 4;
-      std::memcpy(cursor, &nz, 4); cursor += 4;
+      std::memcpy(cursor, &nx, 4);
+      cursor += 4;
+      std::memcpy(cursor, &ny, 4);
+      cursor += 4;
+      std::memcpy(cursor, &nz, 4);
+      cursor += 4;
     }
     ++num_finite_points;
   }
@@ -181,7 +207,9 @@ PointCloudToLcm::PointCloudToLcm(std::string frame_name)
   DeclareAbstractInputPort("point_cloud", Value<PointCloud>());
   DeclareAbstractOutputPort(
       "lcmt_point_cloud",
-      []() { return AbstractValue::Make<lcmt_point_cloud>(); },
+      []() {
+        return AbstractValue::Make<lcmt_point_cloud>();
+      },
       [this](const systems::Context<double>& context, AbstractValue* value) {
         auto& cloud = this->get_input_port().template Eval<PointCloud>(context);
         auto& message = value->get_mutable_value<lcmt_point_cloud>();

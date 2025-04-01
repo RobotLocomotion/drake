@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -161,6 +162,31 @@ TEST_F(FrameTests, IsBodyFrameMethod) {
   EXPECT_TRUE(frame_W.is_body_frame());
   const Frame<double>& bodyB_frame = bodyB_->body_frame();
   EXPECT_TRUE(bodyB_frame.is_body_frame());
+}
+
+// Create a frame which is not part of a plant. Ensure an exception is thrown if
+// there is a query for information about this frame that needs the associated
+// multibody tree. Check that exceptions are thrown for common public methods.
+TEST_F(FrameTests, IsFrameMethodCalledWithNoMultibodyTree) {
+  FixedOffsetFrame<double> frame_not_in_multibody_tree(
+      "bad_frame", *frameB_, math::RigidTransform<double>{});
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      frame_not_in_multibody_tree.CalcPoseInWorld(*context_),
+      ".*has_parent_tree.*failed.*");
+
+  const Frame<double>& frame_W = tree().world_frame();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      frame_not_in_multibody_tree.CalcPose(*context_, frame_W),
+      ".*has_parent_tree.*failed.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      frame_not_in_multibody_tree.CalcRotationMatrixInWorld(*context_),
+      ".*has_parent_tree.*failed.*");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      frame_not_in_multibody_tree.CalcRotationMatrix(*context_, frame_W),
+      ".*has_parent_tree.*failed.*");
 }
 
 // Verifies the BodyFrame methods to compute poses in different frames.
