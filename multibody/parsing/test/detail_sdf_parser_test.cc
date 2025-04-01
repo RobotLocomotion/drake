@@ -2013,6 +2013,137 @@ TEST_F(SdfParserTest, RevoluteSpringParsingTest) {
   }
 }
 
+TEST_F(SdfParserTest, CurvilinearJointErrors0) {
+  ParseTestString(R"""(
+<model name='test'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint name="curvilinear_joint" type="curvilinear">
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+    <drake:is_periodic>TRUE</drake:is_periodic>
+    <drake:curves>
+      <drake:line_segment>
+        <drake:length>1.0</drake:length>
+      </drake:line_segment>
+    </drake:curves>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:is_periodic.*non-boolean.*"));
+}
+
+TEST_F(SdfParserTest, CurvilinearJointErrors1) {
+  ParseTestString(R"""(
+<model name='test'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint name="curvilinear_joint" type="curvilinear">
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+</drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:curves.*child.*"));
+}
+
+TEST_F(SdfParserTest, CurvilinearJointErrors2) {
+  ParseTestString(R"""(
+<model name='test'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint name="curvilinear_joint" type="curvilinear">
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+    <drake:curves>
+      <drake:line_segment>
+      </drake:line_segment>
+    </drake:curves>
+</drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:length.*child.*"));
+}
+
+TEST_F(SdfParserTest, CurvilinearJointErrors3) {
+  ParseTestString(R"""(
+<model name='test'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint name="curvilinear_joint_aperiodic" type="curvilinear">
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+    <drake:curves>
+      <drake:line_segment>
+      </drake:line_segment>
+    </drake:curves>
+</drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*drake:length.*child.*"));
+}
+
+TEST_F(SdfParserTest, CurvilinearJointErrors4) {
+  ParseTestString(R"""(
+<model name='test'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint name="curvilinear_joint" type="curvilinear">
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+    <drake:damping>-1</drake:damping>
+    <drake:curves>
+      <drake:line_segment>
+        <drake:length>1.0</drake:length>
+      </drake:line_segment>
+    </drake:curves>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*negative.*damping.*"));
+}
+
+TEST_F(SdfParserTest, CurvilinearJointErrors5) {
+  ParseTestString(R"""(
+<model name='test'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint name="curvilinear_joint" type="curvilinear">
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+    <drake:curves>
+      <drake:circular_arc>
+        <drake:radius>-2.0</drake:radius>
+        <drake:angle>1.57</drake:angle>
+      </drake:circular_arc>
+    </drake:curves>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*negative.*radius.*"));
+}
+
+TEST_F(SdfParserTest, CurvilinearJointErrors6) {
+  ParseTestString(R"""(
+<model name='test'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint name="curvilinear_joint" type="curvilinear">
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+    <drake:curves>
+      <drake:circular_arc>
+        <drake:radius>2.0</drake:radius>
+        <drake:angle>1.57</drake:angle>
+      </drake:circular_arc>
+      <drake:cirQQQcular_arc/>
+    </drake:curves>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*invalid.*cirQQQcular_arc.*"));
+}
+
 TEST_F(SdfParserTest, TestSupportedFrames1) {
   AddSceneGraph();
   // Test `//link/pose[@relative_to]`.
