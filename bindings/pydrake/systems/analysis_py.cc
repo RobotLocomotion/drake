@@ -245,24 +245,22 @@ PYBIND11_MODULE(analysis, m) {
           py::arg("affine_system"), py::arg("time_period"),
           doc.DiscreteTimeApproximation.doc_2args_constAffineSystem_double);
 
-      if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-        m.def(
-            "DiscreteTimeApproximation",
-            [](const System<T>& system, double time_period,
-                const SimulatorConfig& integrator_config) {
-              return DiscreteTimeApproximation(
-                  // The lifetime of `system` is managed by the keep_alive
-                  // below, not the C++ shared_ptr.
-                  make_unowned_shared_ptr_from_raw(&system), time_period,
-                  integrator_config);
-            },
-            py::arg("system"), py::arg("time_period"),
-            py::arg("integrator_config") = SimulatorConfig(),
-            // Keep alive, reference: `result` keeps `system` alive.
-            py::keep_alive<0, 1>(),
-            doc.DiscreteTimeApproximation
-                .doc_3args_constSystem_double_SimulatorConfig);
-      }
+      m.def(
+          "DiscreteTimeApproximation",
+          [](const System<T>& system, double time_period,
+              const SimulatorConfig& integrator_config) {
+            return DiscreteTimeApproximation(
+                // The lifetime of `system` is managed by the keep_alive
+                // below, not the C++ shared_ptr.
+                make_unowned_shared_ptr_from_raw(&system), time_period,
+                integrator_config);
+          },
+          py::arg("system"), py::arg("time_period"),
+          py::arg("integrator_config") = SimulatorConfig(),
+          // Keep alive, reference: `result` keeps `system` alive.
+          py::keep_alive<0, 1>(),
+          doc.DiscreteTimeApproximation
+              .doc_3args_constSystem_double_SimulatorConfig);
     }
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
