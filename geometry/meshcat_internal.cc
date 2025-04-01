@@ -82,7 +82,7 @@ std::string UuidGenerator::GenerateRandom() {
 namespace {
 
 // The result of loading a URI: the URI's contents (maybe) and a description.
-struct UriLoadResult{
+struct UriLoadResult {
   // The contents of a requested Uri. May be null if the URI could not be
   // successfully read.
   std::optional<std::string> contents;
@@ -185,16 +185,17 @@ std::vector<std::shared_ptr<const MemoryFile>> UnbundleGltfAssets(
 
       const auto file_source_iter = memory_mesh.supporting_files.find(uri);
       if (file_source_iter != memory_mesh.supporting_files.end()) {
-        contents = std::visit<std::optional<std::string>>(overloaded{
-          [](const fs::path& path) {
-            // Either uri is absolute or meaningful w.r.t. cwd, otherwise, we'll
-            // respond appropriately to an otherwise unavailable uri.
-            return ReadFile(path);
-          },
-          [](const MemoryFile& file) {
-            return file.contents();
-          }},
-          file_source_iter->second);
+        contents = std::visit<std::optional<std::string>>(
+            overloaded{[](const fs::path& path) {
+                         // Either uri is absolute or meaningful w.r.t. cwd,
+                         // otherwise, we'll respond appropriately to an
+                         // otherwise unavailable uri.
+                         return ReadFile(path);
+                       },
+                       [](const MemoryFile& file) {
+                         return file.contents();
+                       }},
+            file_source_iter->second);
       }
 
       return {std::move(contents), description};

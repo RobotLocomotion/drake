@@ -41,6 +41,8 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
 
 }  // namespace internal
 
+// Disable formatter to preserve doxygen tables.
+// clang-format off
 /** A system that publishes LCM messages representing the current state of a
  SceneGraph instance (whose QueryObject-valued output port is connected to this
  system's input port).
@@ -143,6 +145,7 @@ std::string MakeLcmChannelNameForRole(const std::string& channel,
  lcm::DrakeLcmInterface instance. Attempts to scalar convert the system
  otherwise will throw an exception.
 */
+// clang-format on
 template <typename T>
 class DrakeVisualizer final : public systems::LeafSystem<T> {
  public:

@@ -888,8 +888,7 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   // the source (we don't have to worry about *how* InMemoryMesh is written as
   // a string). We do need to make sure they have the [2, 3, 4] scale factor
   // as hard-coded here.
-  static constexpr const char* mem_fmt =
-      "{}(mesh_data={}, scale=[2 3 4])";
+  static constexpr const char* mem_fmt = "{}(mesh_data={}, scale=[2 3 4])";
 
   const Box box(1.5, 2.5, 3.5);
   const Capsule capsule(1.25, 2.5);
