@@ -168,6 +168,20 @@ TYPED_TEST(IntegratorConfigFunctionsTest, CreateIntegratorFromConfigTest) {
   }
 }
 
+TYPED_TEST(IntegratorConfigFunctionsTest,
+           IsScalarTypeSupportedByIntegratorTest) {
+  using T = TypeParam;
+  for (const auto& [scheme, type_name, support_symbolic] : this->suites_) {
+    if constexpr (std::is_same_v<T, symbolic::Expression>) {
+      EXPECT_EQ(IsScalarTypeSupportedByIntegrator<T>(scheme), support_symbolic);
+    } else {
+      EXPECT_TRUE(IsScalarTypeSupportedByIntegrator<T>(scheme));
+    }
+  }
+  DRAKE_EXPECT_THROWS_MESSAGE(IsScalarTypeSupportedByIntegrator<T>("abc"),
+                              "Unknown integration scheme.*");
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
