@@ -277,13 +277,25 @@ std::unique_ptr<IntegratorBase<T>> CreateIntegratorFromConfig(
       fmt::format("Unknown integration scheme: {}", config.integration_scheme));
 }
 
+template <typename T>
+bool IsScalarTypeSupportedByIntegrator(std::string_view integration_scheme) {
+  const auto& name_func_pairs = GetAllNamedConfigureIntegratorFuncs<T>();
+  for (const auto& [one_name, one_func] : name_func_pairs) {
+    if (integration_scheme == one_name) {
+      return one_func != nullptr;
+    }
+  }
+  throw std::runtime_error(
+      fmt::format("Unknown integration scheme: {}", integration_scheme));
+}
+
 // We can't support T=symbolic::Expression because Simulator doesn't support it.
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
     (&ResetIntegratorFromFlags<T>, &ApplySimulatorConfig<T>,
      &ExtractSimulatorConfig<T>));
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&CreateIntegratorFromConfig<T>));
+    (&CreateIntegratorFromConfig<T>, &IsScalarTypeSupportedByIntegrator<T>));
 
 }  // namespace systems
 }  // namespace drake
