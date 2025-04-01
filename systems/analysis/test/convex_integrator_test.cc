@@ -100,8 +100,8 @@ const char actuated_pendulum_xml[] = R"""(
     </body>
   </worldbody>
   <actuator>
-    <motor joint="joint1"/>
-    <motor joint="joint2"/>
+    <motor joint="joint1" ctrlrange="-2 2"/>
+    <motor joint="joint2" ctrlrange="-2 2"/>
   </actuator>
 </mujoco>
 )""";
@@ -380,26 +380,45 @@ GTEST_TEST(ConvexIntegratorTest, EffortLimits) {
   Context<double>& plant_context =
       diagram->GetMutableSubsystemContext(plant, diagram_context.get());
 
+  // Get the actuator effort limits
+  VectorXd effort_limits(2);
+  for (JointActuatorIndex a : plant.GetJointActuatorIndices()) {
+    const JointActuator<double>& actuator = plant.get_joint_actuator(a);
+    const int i = actuator.input_start();
+    const int n = actuator.num_inputs();
+    effort_limits.segment(i, n) =
+        VectorXd::Constant(n, actuator.effort_limit());
+  }
+
   // Set up the integrator
   ConvexIntegrator<double> integrator(*diagram, diagram_context.get());
-  integrator.set_maximum_step_size(0.01);
-  integrator.set_target_accuracy(0.1);
+  integrator.set_maximum_step_size(0.1);
+  integrator.set_fixed_step_mode(true);
   integrator.Initialize();
 
-  // Simulate for a second
-  integrator.IntegrateWithMultipleStepsToTime(0.1);
+  const VectorXd q0 = plant.GetPositions(plant_context);
+  const VectorXd v0 = plant.GetVelocities(plant_context);
 
-  // Query the actuation forces applied
-  const VectorXd q = plant.GetPositions(plant_context);
-  const VectorXd v = plant.GetVelocities(plant_context);
+  // Compute some dynamics terms
+  MatrixXd M(2, 2);
+  VectorXd k(2);
+  MultibodyForces<double> f_ext(plant);
+  plant.CalcMassMatrix(plant_context, &M);
+  plant.CalcForceElementsContribution(plant_context, &f_ext);
+  k = plant.CalcInverseDynamics(plant_context, VectorXd::Zero(2), f_ext);
+
+  // Simulate for a step
+  const double h = 0.01;
+  EXPECT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(h));
+
+  // Compare requested and applied actuator forces
   const VectorXd u_req = plant.get_actuation_input_port().Eval(plant_context);
-  const VectorXd u_app = plant.get_net_actuation_output_port().Eval(plant_context);
-
-  fmt::print("q = {}\n", fmt_eigen(q.transpose()));
-  fmt::print("v = {}\n", fmt_eigen(v.transpose()));
   fmt::print("u_req = {}\n", fmt_eigen(u_req.transpose()));
-  fmt::print("u_app = {}\n", fmt_eigen(u_app.transpose()));
 
+  // TODO(vincekurtz): report this in plant.get_net_actuation_output_port()
+  const VectorXd v = plant.GetVelocities(plant_context);
+  const VectorXd u_app = M * (v - v0) / h + k;
+  fmt::print("u_app = {}\n", fmt_eigen(u_app.transpose()));
 }
 
 }  // namespace systems
