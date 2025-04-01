@@ -26,8 +26,8 @@ DEFINE_bool(simulator_publish_every_time_step,
 
 // === Integrator's parameters ===
 
-// N.B. The list here must be kept in sync with GetSupportedIntegrators() in
-// simulator_config_functions.cc.
+// N.B. The list here must be kept in sync with
+// GetAllNamedConfigureIntegratorFuncs() in simulator_config_functions.cc.
 DEFINE_string(simulator_integration_scheme,
               drake::systems::SimulatorConfig{}.integration_scheme,
               "[Integrator flag] Integration scheme to be used. Available "
