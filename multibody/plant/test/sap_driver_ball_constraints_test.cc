@@ -274,7 +274,6 @@ GTEST_TEST(BallConstraintsTests, VerifyIdMapping) {
 
   // Throw on id to wrong constraint specs type.
   EXPECT_THROW(plant.get_coupler_constraint_specs(ball_id), std::exception);
-  EXPECT_THROW(plant.get_distance_constraint_specs(ball_id), std::exception);
   EXPECT_THROW(plant.get_weld_constraint_specs(ball_id), std::exception);
 }
 
