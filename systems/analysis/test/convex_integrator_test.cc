@@ -348,5 +348,59 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
   std::cout << std::endl;
 }
 
+// Test implicit joint effort limits
+GTEST_TEST(ConvexIntegratorTest, EffortLimits) {
+  // Set up the a system model with effort limits
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  Parser(&plant, &scene_graph)
+      .AddModelsFromString(actuated_pendulum_xml, "xml");
+  plant.Finalize();
+
+  // Connect a high-gain PD controller
+  VectorXd Kp(2), Kd(2), Ki(2);
+  Kp << 1e3, 1e3;
+  Kd << 0.1, 0.1;
+  Ki << 0.0, 0.0;
+  auto ctrl = builder.AddSystem<PidController>(Kp, Ki, Kd);
+
+  VectorXd x_nom(4);
+  x_nom << M_PI_2, M_PI_2, 0.0, 0.0;
+  auto target_state = builder.AddSystem<ConstantVectorSource<double>>(x_nom);
+
+  builder.Connect(target_state->get_output_port(),
+                  ctrl->get_input_port_desired_state());
+  builder.Connect(plant.get_state_output_port(),
+                  ctrl->get_input_port_estimated_state());
+  builder.Connect(ctrl->get_output_port(), plant.get_actuation_input_port());
+
+  // Compile the system diagram
+  auto diagram = builder.Build();
+  auto diagram_context = diagram->CreateDefaultContext();
+  Context<double>& plant_context =
+      diagram->GetMutableSubsystemContext(plant, diagram_context.get());
+
+  // Set up the integrator
+  ConvexIntegrator<double> integrator(*diagram, diagram_context.get());
+  integrator.set_maximum_step_size(0.01);
+  integrator.set_target_accuracy(0.1);
+  integrator.Initialize();
+
+  // Simulate for a second
+  integrator.IntegrateWithMultipleStepsToTime(0.1);
+
+  // Query the actuation forces applied
+  const VectorXd q = plant.GetPositions(plant_context);
+  const VectorXd v = plant.GetVelocities(plant_context);
+  const VectorXd u_req = plant.get_actuation_input_port().Eval(plant_context);
+  const VectorXd u_app = plant.get_net_actuation_output_port().Eval(plant_context);
+
+  fmt::print("q = {}\n", fmt_eigen(q.transpose()));
+  fmt::print("v = {}\n", fmt_eigen(v.transpose()));
+  fmt::print("u_req = {}\n", fmt_eigen(u_req.transpose()));
+  fmt::print("u_app = {}\n", fmt_eigen(u_app.transpose()));
+
+}
+
 }  // namespace systems
 }  // namespace drake
