@@ -356,7 +356,10 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "frames_test",
-    deps = [":tree"],
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_throws_message",
+    ],
 )
 
 drake_cc_googletest(
