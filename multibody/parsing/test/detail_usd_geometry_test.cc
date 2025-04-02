@@ -372,7 +372,6 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
       pxr::VtArray<int>{3, 3, 3, 3, 3, 3, 3, 3};
   pxr::VtArray<int> face_vertex_indices = pxr::VtArray<int>{
       1, 0, 4, 2, 1, 4, 3, 2, 4, 0, 3, 4, 0, 1, 5, 1, 2, 5, 2, 3, 5, 3, 0, 5};
-  const double scale_factor = 129.2;
 
   pxr::UsdAttribute points_attribute = mesh.CreatePointsAttr();
   pxr::UsdAttribute face_counts_attribute = mesh.CreateFaceVertexCountsAttr();
@@ -383,14 +382,15 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   pxr::UsdGeomXformOp scale_op =
       mesh.AddScaleOp(pxr::UsdGeomXformOp::PrecisionDouble);
 
-  scale_op.Set(pxr::GfVec3d(scale_factor, scale_factor, scale_factor));
+  // Note: non-uniform scale.
+  scale_op.Set(pxr::GfVec3d(1, 2, 3));
   std::unique_ptr<geometry::Shape> shape = internal::CreateGeometryMesh(
       "octahedron.obj", mesh.GetPrim(), meters_per_unit_, diagnostic_policy_);
   ASSERT_TRUE(shape != nullptr);
   geometry::Mesh& shape_mesh = dynamic_cast<geometry::Mesh&>(*shape);
-  EXPECT_EQ(shape_mesh.scale(), scale_factor);
+  EXPECT_EQ(shape_mesh.scale3(), Eigen::Vector3d(1, 2, 3));
 
-  // Check whether Drake can sucessfully parse that file by computing the
+  // Check whether Drake can successfully parse that file by computing the
   // convex hull of the octahedron mesh.
   const geometry::PolygonSurfaceMesh<double>& convex_hull =
       shape_mesh.GetConvexHull();
@@ -441,15 +441,6 @@ TEST_F(UsdGeometryTest, MeshParsingTest) {
   EXPECT_THAT(TakeError(),
               ::testing::MatchesRegex(".*Failed to read the 'faceVertexCounts' "
                                       "attribute of the Prim at.*"));
-
-  // Case: The UsdGeomMesh Prim has invalid (non-isotropic) scaling.
-  scale_op.Set(pxr::GfVec3d(1.0, 2.0, 1.0));
-  shape = internal::CreateGeometryMesh("invalid_scaling.obj", mesh.GetPrim(),
-                                       meters_per_unit_, diagnostic_policy_);
-  EXPECT_TRUE(shape == nullptr);
-  EXPECT_THAT(TakeError(),
-              ::testing::MatchesRegex(
-                  ".*The scaling of the mesh at .* is not isotropic.*"));
 }
 
 TEST_F(UsdGeometryTest, GetRigidTransformTest) {
