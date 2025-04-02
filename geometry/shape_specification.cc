@@ -426,18 +426,20 @@ double CalcVolume(const Shape& shape) {
 // The NVI function definitions are enough boilerplate to merit a macro to
 // implement them, and we might as well toss in the dtor for good measure.
 
-#define DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(ShapeType)                \
-  ShapeType::~ShapeType() = default;                                      \
-  void ShapeType::DoReify(ShapeReifier* shape_reifier, void* user_data)   \
-      const {                                                             \
-    shape_reifier->ImplementGeometry(*this, user_data);                   \
-  }                                                                       \
-  std::unique_ptr<Shape> ShapeType::DoClone() const {                     \
-    return std::unique_ptr<ShapeType>(new ShapeType(*this));              \
-  }                                                                       \
-  std::string_view ShapeType::do_type_name() const { return #ShapeType; } \
-  Shape::VariantShapeConstPtr ShapeType::get_variant_this() const {       \
-    return this;                                                          \
+#define DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(ShapeType)              \
+  ShapeType::~ShapeType() = default;                                    \
+  void ShapeType::DoReify(ShapeReifier* shape_reifier, void* user_data) \
+      const {                                                           \
+    shape_reifier->ImplementGeometry(*this, user_data);                 \
+  }                                                                     \
+  std::unique_ptr<Shape> ShapeType::DoClone() const {                   \
+    return std::unique_ptr<ShapeType>(new ShapeType(*this));            \
+  }                                                                     \
+  std::string_view ShapeType::do_type_name() const {                    \
+    return #ShapeType;                                                  \
+  }                                                                     \
+  Shape::VariantShapeConstPtr ShapeType::get_variant_this() const {     \
+    return this;                                                        \
   }
 
 DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(Box)

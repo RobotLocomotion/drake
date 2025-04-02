@@ -3243,6 +3243,12 @@ TEST_F(MultibodyPlantRemodeling, MakeActuationMatrix) {
   DoRemoval(true /* remove actuator */, false /* do not remove joint */);
   FinalizeAndBuild();
 
+  // We didn't remove any bodies, all indexes from 0 to num_bodies() should be
+  // present.
+  for (BodyIndex b(0); b < plant_->num_bodies(); ++b) {
+    EXPECT_TRUE(plant_->has_body(b));
+  }
+
   // Actuator with index 1 has been removed.
   // clang-format off
   const Eigen::MatrixXd B_expected =

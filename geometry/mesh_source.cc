@@ -20,8 +20,7 @@ MeshSource::MeshSource(std::filesystem::path path)
     : source_(std::move(path)), extension_(GetExtensionLower(this->path())) {}
 
 MeshSource::MeshSource(InMemoryMesh&& mesh)
-    : source_(std::move(mesh)),
-      extension_(in_memory().mesh_file.extension()) {}
+    : source_(std::move(mesh)), extension_(in_memory().mesh_file.extension()) {}
 
 MeshSource::~MeshSource() = default;
 

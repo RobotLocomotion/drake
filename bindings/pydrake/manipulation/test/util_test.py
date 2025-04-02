@@ -10,7 +10,8 @@ from pydrake.multibody.parsing import (
     Parser,
     ProcessModelDirectives,
 )
-from pydrake.manipulation import ApplyDriverConfigs
+from pydrake.manipulation import (
+    ApplyDriverConfigs, ApplyNamedPositionsAsDefaults)
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.lcm import LcmBuses
@@ -64,3 +65,18 @@ class TestUtil(unittest.TestCase):
             lcm_buses=lcm_buses,
             builder=builder)
         self.assertEqual(len(builder.GetSystems()), 3)
+
+    def test_apply_named_positions(self):
+        plant = MultibodyPlant(0.01)
+        parser = Parser(plant)
+        parser.AddModels(
+            url="package://drake/multibody/benchmarks/acrobot/acrobot.sdf")
+        plant.Finalize()
+
+        # Set one initial joint position by name.
+        new_position = [0.2]
+        joints = {"ShoulderJoint": new_position}
+        input = {"acrobot": joints}
+        ApplyNamedPositionsAsDefaults(input=input, plant=plant)
+        joint = plant.GetJointByName("ShoulderJoint")
+        self.assertEqual(joint.default_positions(), new_position)

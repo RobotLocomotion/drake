@@ -229,8 +229,7 @@ void MeshcatVisualizer<T>::SetObjects(
 
       // Proximity role favors convex hulls if available.
       if (const PolygonSurfaceMesh<double>* hull = nullptr;
-          (!geometry_already_set) &&
-          (params_.role == Role::kProximity) &&
+          (!geometry_already_set) && (params_.role == Role::kProximity) &&
           (hull = inspector.GetConvexHull(geom_id))) {
         // Convert polygonal surface mesh to triangle surface mesh.
         const TriangleSurfaceMesh<double> tri_hull =

@@ -22,11 +22,11 @@ enum Condition {
 // Check the value (if present) of `name`d `property` for `condition`. If the
 // value is present and the condition is not met, throw an exception with a
 // nice message.
-void ThrowUnlessAbsentOr(
-    std::string_view name,
-    std::optional<double> property,
-    Condition condition) {
-  if (!property.has_value()) { return; }
+void ThrowUnlessAbsentOr(std::string_view name, std::optional<double> property,
+                         Condition condition) {
+  if (!property.has_value()) {
+    return;
+  }
   double value = *property;
   std::string_view condition_name;
   bool should_throw{false};
