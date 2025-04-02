@@ -548,15 +548,19 @@ class MeshcatShapeReifier : public ShapeReifier {
       lumped.object.emplace<internal::MeshData>();
     }
 
-    // Set the scale.
-    const double scale = mesh.scale();
+    // Set the scale. Note that if this were a general transform including a
+    // rotation we would have to _multiply_ the diagonal by the scale factors.
+    // In meshcat, rotation is applied to a different node, so we can safely
+    // treat the lumped_object's matrix as if it contained an identity rotation
+    // and safely directly _set_ the scale factors on the diagonal.
+    const Vector3<double>& scale = mesh.scale3();
     std::visit<void>(
         overloaded{[](std::monostate) {},
                    [scale](auto& lumped_object) {
                      Eigen::Map<Eigen::Matrix4d> matrix(lumped_object.matrix);
-                     matrix(0, 0) = scale;
-                     matrix(1, 1) = scale;
-                     matrix(2, 2) = scale;
+                     matrix(0, 0) = scale.x();
+                     matrix(1, 1) = scale.y();
+                     matrix(2, 2) = scale.z();
                    }},
         lumped.object);
   }
