@@ -931,11 +931,27 @@ TEST_F(UrdfGeometryTest, TestBadMesh) {
 
   ParseUrdfGeometryString(fmt::format(base, "filename='/QQQ'"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*/QQQ.*invalid.*"));
+}
 
+TEST_F(UrdfGeometryTest, MeshNonUniformScale) {
+  constexpr const char* base = R"""(
+    <robot name='a'>
+      <link name='b'>
+        <collision>
+          <geometry>
+            <mesh {}/>
+          </geometry>
+        </collision>
+      </link>
+    </robot>)""";
   ParseUrdfGeometryString(fmt::format(base, R"""(
    filename='package://drake/multibody/parsing/test/tri_cube.obj' scale='1 2 3'
    )"""));
-  EXPECT_THAT(TakeError(), MatchesRegex(".*only.*isotropic scaling.*"));
+  ASSERT_EQ(collision_instances_.size(), 1);
+  const geometry::Shape& shape = collision_instances_[0].shape();
+  const auto* mesh = dynamic_cast<const geometry::Mesh*>(&shape);
+  ASSERT_NE(mesh, nullptr);
+  EXPECT_EQ(mesh->scale3(), Eigen::Vector3d(1, 2, 3));
 }
 
 TEST_F(UrdfGeometryTest, TestBadShapeCollision) {

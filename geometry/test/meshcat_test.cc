@@ -345,6 +345,14 @@ GTEST_TEST(MeshcatTest, NumActive) {
   EXPECT_EQ(meshcat.GetNumActiveConnections(), 0);
 }
 
+// Simple utility struct that will allow us to determine the msgpack encoding
+// of an arbitrary 4x4 transform matrix (see e.g., MeshData.matrix or
+// MeshfileObjectData.matrix). The default value is the zero matrix.
+struct JustMatrix {
+  double matrix[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  MSGPACK_DEFINE_MAP(matrix);
+};
+
 // Note: The Mesh shape is special. It can reference on-disk or in-memory data
 // and they all need to be handled. This test runs through the various
 // permutations.
@@ -354,11 +362,13 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
   using testing::HasSubstr;
   using testing::Not;
 
+  // Apply an arbitrary, non-uniform scale so we can detect its inclusion.
+  const Vector3d non_uniform_scale{2, 3, 4};
   // A .obj file with material library and image. The packed message should
   // encode the .obj, the .mtl file, and the image.
   const fs::path obj_path =
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.obj");
-  const Mesh disk_obj(obj_path, 0.25);
+  const Mesh disk_obj(obj_path, non_uniform_scale);
   const auto obj_file = MemoryFile::Make(obj_path);
   const auto mtl_file = MemoryFile::Make(
       FindResourceOrThrow("drake/geometry/render/test/meshes/rainbow_box.mtl"));
@@ -368,17 +378,38 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
       InMemoryMesh{MemoryFile(obj_file.contents(), obj_file.extension(),
                               "a hint; *not* a path"),
                    {{"rainbow_box.mtl", MemoryFile(mtl_file)},
-                    {"rainbow_stripes.png", MemoryFile(png_file)}}});
+                    {"rainbow_stripes.png", MemoryFile(png_file)}}},
+      non_uniform_scale);
   // The "hetero" objs mix up the supporting files so that, in turn, one is
   // in memory, and one is on-disk.
-  const Mesh hetero_obj1(InMemoryMesh{
-      MemoryFile(obj_file.contents(), obj_file.extension(), "hetero1_obj"),
-      {{"rainbow_box.mtl", fs::path(mtl_file.filename_hint())},
-       {"rainbow_stripes.png", MemoryFile(png_file)}}});
-  const Mesh hetero_obj2(InMemoryMesh{
-      MemoryFile(obj_file.contents(), obj_file.extension(), "hetero2_obj"),
-      {{"rainbow_box.mtl", MemoryFile(mtl_file)},
-       {"rainbow_stripes.png", fs::path(png_file.filename_hint())}}});
+  const Mesh hetero_obj1(
+      InMemoryMesh{
+          MemoryFile(obj_file.contents(), obj_file.extension(), "hetero1_obj"),
+          {{"rainbow_box.mtl", fs::path(mtl_file.filename_hint())},
+           {"rainbow_stripes.png", MemoryFile(png_file)}}},
+      non_uniform_scale);
+  const Mesh hetero_obj2(
+      InMemoryMesh{
+          MemoryFile(obj_file.contents(), obj_file.extension(), "hetero2_obj"),
+          {{"rainbow_box.mtl", MemoryFile(mtl_file)},
+           {"rainbow_stripes.png", fs::path(png_file.filename_hint())}}},
+      non_uniform_scale);
+
+  // Get the msgpack encoding of the matrix field (leaving out all prefixes).
+  // We'll match the string with the contents below.
+  const std::string matrix_string = [&non_uniform_scale]() {
+    JustMatrix data;
+    data.matrix[0] = non_uniform_scale.x();
+    data.matrix[5] = non_uniform_scale.y();
+    data.matrix[10] = non_uniform_scale.z();
+    data.matrix[15] = 1;  // Homogeneous matrix.
+    std::stringstream matrix_stream;
+    msgpack::pack(matrix_stream, data);
+    const std::string full_string = matrix_stream.str();
+    return full_string.substr(full_string.find("matrix"));
+  }();
+  DRAKE_DEMAND(!matrix_string.empty());
+
   for (const auto* mesh_ptr :
        {&disk_obj, &memory_obj, &hetero_obj1, &hetero_obj2}) {
     const MeshSource& source = mesh_ptr->source();
@@ -395,6 +426,8 @@ GTEST_TEST(MeshcatTest, SetObjectWithMesh) {
     EXPECT_THAT(packed_obj, testing::HasSubstr("data:image/png;base64"));
     // Evidence that the material library got loaded.
     EXPECT_THAT(packed_obj, testing::HasSubstr("newmtl Rainbow_Stripes"));
+    // Evidence that the non-uniform scale was propagated.
+    EXPECT_THAT(packed_obj, testing::HasSubstr(matrix_string));
     meshcat.Delete("obj_path");
     ASSERT_TRUE(meshcat.GetPackedObject("obj_path").empty());
   }
