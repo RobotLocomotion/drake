@@ -21,14 +21,17 @@ template <typename T>
 struct SapExternalSystemConstraintData {
   T time_step{};  // Time step for the simulation
 
-  VectorX<T> v;        // Constraint velocity
-  T cost{};            // Cost ℓ(v)
-  VectorX<T> impulse;  // Impulse γ(v) = −∂ℓ(v)/∂v.
-  MatrixX<T> hessian;  // Hessian G = −∂γ(v)/∂v = ∂²ℓ(v)/∂v².
+  T v;  // Constraint velocity
+  T cost{};      // Cost ℓ(v)
+  T impulse{};   // Impulse γ(v) = −∂ℓ(v)/∂v.
+  T hessian{};   // Hessian G = −∂γ(v)/∂v = ∂²ℓ(v)/∂v².
 };
 
 /**
- * Defines an external system constraint τ = -K v + τ₀.
+ * Defines an external system constraint τ = clamp(-k v + τ₀, -e, e).
+ * 
+ * This is a slight generalization of SapPdControllerConstraint, and is used for
+ * considering external systems implicitly in the convex integrator.
  */
 template <typename T>
 class SapExternalSystemConstraint final : public SapConstraint<T> {
@@ -44,9 +47,26 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
       delete;
   //@}
 
-  SapExternalSystemConstraint(int clique, int nv, const MatrixX<T>& K,
-                              const VectorX<T>& tau0,
-                              const VectorX<T>& effort_limits);
+  /**
+   *  Struct identifying the clique and DoF in question for this constraint. 
+  */
+ struct Configuration {
+    int clique;      // The clique index.
+    int clique_nv;   // The number of generalized velocities in the clique.
+    int clique_dof;  // The index of the dof in question, in [0, clique_nv]
+  };
+
+  /**
+   * Construct the constraint.
+   * 
+   * @param configuration Indices of the clique and DoF in question.
+   * @param k The stiffness parameter. Should be >0.
+   * @param tau0 The explicit external forces.
+   * @param effort_limits The effort limits.
+   */
+  SapExternalSystemConstraint(Configuration configuration,
+                              const T& k, const T& tau0,
+                              const T& effort_limits);
 
  private:
   /* Private copy construction is enabled to use in the implementation of
@@ -57,13 +77,7 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
     return std::unique_ptr<SapExternalSystemConstraint<T>>(
         new SapExternalSystemConstraint<T>(*this));
   }
-  std::unique_ptr<SapConstraint<double>> DoToDouble() const final {
-    return std::unique_ptr<SapExternalSystemConstraint<double>>(
-        new SapExternalSystemConstraint<double>(
-            this->clique(0), this->num_velocities(0),
-            math::DiscardGradient(this->K_), math::DiscardGradient(this->tau0_),
-            math::DiscardGradient(this->effort_limits_)));
-  }
+  std::unique_ptr<SapConstraint<double>> DoToDouble() const final;
 
   /* Implementations of SapConstraint NVI functions. */
   std::unique_ptr<AbstractValue> DoMakeData(
@@ -85,7 +99,7 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
                                    SpatialForce<T>*) const final {};
 
   // Constraint Jacobian for this constraint.
-  static SapConstraintJacobian<T> MakeConstraintJacobian(int clique, int nv);
+  static SapConstraintJacobian<T> MakeConstraintJacobian(Configuration c);
 
   // Clamping helper functions from SapPdControllerConstraint
   static T Clamp(const T& x, const T& e) {
@@ -108,10 +122,13 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
     }
   }
 
+  // Clique/velocity configuration
+  Configuration configuration_;
+
   // Constraint parameters
-  const MatrixX<T> K_;              // Linearized external systems dynamics
-  const VectorX<T> tau0_;           // Explicit external forces
-  const VectorX<T> effort_limits_;  // Effort limits
+  const T k_;     // Linearized external systems dynamics
+  const T tau0_;  // Explicit external forces
+  const T e_;     // Effort limit
 };
 
 }  // namespace internal

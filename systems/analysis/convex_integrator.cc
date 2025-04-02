@@ -876,14 +876,19 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
     const MatrixX<T>& K, const VectorX<T>& tau0,
     SapContactProblem<T>* problem) const {
   for (int c = 0; c < problem->num_cliques(); ++c) {
-    const int nv = problem->num_velocities(c);
-    if (nv > 0) {
-      const int c_start = problem->velocities_start(c);
-      const MatrixX<T> K_block = K.block(c_start, c_start, nv, nv);
-      const VectorX<T> tau_block = tau0.segment(c_start, nv);
+    const int clique_nv = problem->num_velocities(c);
+    const int clique_start = problem->velocities_start(c);
+
+    for (int i = 0; i < clique_nv; ++i) {
+      const T k = K(clique_start + i, clique_start + i);
+      const T tau = tau0(clique_start + i);
+      const T e = effort_limits_(clique_start + i);  // TODO: get from joint
+
+      typename SapExternalSystemConstraint<T>::Configuration configuration{
+          c, clique_nv, i};
 
       problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
-          c, nv, K_block, tau_block, effort_limits_));
+          configuration, k, tau, e));
     }
   }
 }

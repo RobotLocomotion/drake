@@ -14,58 +14,49 @@ namespace internal {
 
 template <typename T>
 SapExternalSystemConstraint<T>::SapExternalSystemConstraint(
-    int clique, int nv, const MatrixX<T>& K, const VectorX<T>& tau0,
-    const VectorX<T>& effort_limits)
-    : SapConstraint<T>(MakeConstraintJacobian(clique, nv), {}),
-      K_{K},
+    Configuration configuration, const T& k, const T& tau0,
+    const T& effort_limits)
+    : SapConstraint<T>(MakeConstraintJacobian(configuration), {}),
+      configuration_{std::move(configuration)},
+      k_{k},
       tau0_{tau0},
-      effort_limits_{effort_limits} {}
+      e_{effort_limits} {
+  using std::isfinite;
+  using std::isnan;
+
+  DRAKE_DEMAND(isfinite(k_));
+  DRAKE_DEMAND(isfinite(tau0_));
+  DRAKE_DEMAND(!isnan(e_));
+  DRAKE_DEMAND(k_ >= 0.0);
+  DRAKE_DEMAND(e_ >= 0.0);
+}
 
 template <typename T>
 std::unique_ptr<AbstractValue> SapExternalSystemConstraint<T>::DoMakeData(
     const T& dt, const Eigen::Ref<const VectorX<T>>&) const {
-  const int nv = this->num_velocities(0);
-
   // TODO(vincekurtz): add near-rigid regularization like other SAP constraints
 
   SapExternalSystemConstraintData<T> data;
   data.time_step = dt;
-  data.v = VectorX<T>::Zero(nv);
-  data.cost = 0.0;
-  data.impulse = VectorX<T>::Zero(nv);
-  data.hessian = MatrixX<T>::Zero(nv, nv);
-
   return SapConstraint<T>::MoveAndMakeAbstractValue(std::move(data));
 }
 
 template <typename T>
 void SapExternalSystemConstraint<T>::DoCalcData(
-    const Eigen::Ref<const VectorX<T>>& v, AbstractValue* abstract_data) const {
+    const Eigen::Ref<const VectorX<T>>& vc, AbstractValue* abstract_data) const {
   auto& data =
       abstract_data->get_mutable_value<SapExternalSystemConstraintData<T>>();
   const T& h = data.time_step;
+  const T& v = vc[0];
 
-  // We'll diagonalize K, then use the same method as SapPdControllerConstraint
+  // This uses essentially the same method as SapPdControllerConstraint
   // to enforce effort limits.
-  const VectorX<T> tau_nom = -K_ * v + tau0_;
-  const VectorX<T> D = K_.diagonal();
+  const T y = -k_ * v + tau0_;
 
   data.v = v;
-  data.hessian.setZero();
-  data.impulse.setZero();
-  data.cost = 0.0;
-
-  // TODO(vincekurtz): consider using something like Eigen::unaryExpr or
-  // Eigen::binaryExpr rather than a loop here.
-  for (int i = 0; i < D.size(); ++i) {
-    const T& y = tau_nom(i);
-    const T& common_factor = D(i);
-    const T& e = effort_limits_(i);
-
-    data.cost += h * ClampAntiderivative(y, e) / common_factor;
-    data.impulse(i) = h * Clamp(y, e);
-    data.hessian(i, i) = h * common_factor * ClampDerivative(y, e);
-  }
+  data.cost = h * ClampAntiderivative(y, e_) / k_;
+  data.impulse = h * Clamp(y, e_);
+  data.hessian = h * k_ * ClampDerivative(y, e_);
 }
 
 template <typename T>
@@ -81,7 +72,7 @@ void SapExternalSystemConstraint<T>::DoCalcImpulse(
     const AbstractValue& abstract_data, EigenPtr<VectorX<T>> gamma) const {
   const auto& data =
       abstract_data.get_value<SapExternalSystemConstraintData<T>>();
-  *gamma = data.impulse;
+  *gamma = Vector1<T>::Constant(data.impulse);
 }
 
 template <typename T>
@@ -89,25 +80,36 @@ void SapExternalSystemConstraint<T>::DoCalcCostHessian(
     const AbstractValue& abstract_data, MatrixX<T>* G) const {
   const auto& data =
       abstract_data.get_value<SapExternalSystemConstraintData<T>>();
-  *G = data.hessian;
+  (*G)(0, 0) = data.hessian;
 }
 
 template <typename T>
 void SapExternalSystemConstraint<T>::DoAccumulateGeneralizedImpulses(
-    int c, const Eigen::Ref<const VectorX<T>>& gamma,
+    int, const Eigen::Ref<const VectorX<T>>& gamma,
     EigenPtr<VectorX<T>> tau) const {
-  if (c == 0) {
-    *tau += gamma;
-  } else {
-    DRAKE_UNREACHABLE();
-  }
+  (*tau)(configuration_.clique_dof) += gamma(0);
 }
 
 template <typename T>
 SapConstraintJacobian<T> SapExternalSystemConstraint<T>::MakeConstraintJacobian(
-    int clique, int nv) {
-  MatrixX<T> J = MatrixX<T>::Identity(nv, nv);
-  return SapConstraintJacobian<T>(clique, std::move(J));
+    Configuration c) {
+  MatrixX<T> J = RowVectorX<T>::Unit(c.clique_nv, c.clique_dof);
+  return SapConstraintJacobian<T>(c.clique, std::move(J));
+}
+
+template <typename T>
+std::unique_ptr<SapConstraint<double>>
+SapExternalSystemConstraint<T>::DoToDouble() const {
+  const typename SapExternalSystemConstraint<T>::Configuration& c =
+      configuration_;
+  SapExternalSystemConstraint<double>::Configuration c_to_double{
+      c.clique,
+      c.clique_nv,
+      c.clique_dof,
+  };
+  return std::make_unique<SapExternalSystemConstraint<double>>(
+      std::move(c_to_double), ExtractDoubleOrThrow(k_),
+      ExtractDoubleOrThrow(tau0_), ExtractDoubleOrThrow(e_));
 }
 
 }  // namespace internal
