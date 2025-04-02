@@ -48,6 +48,7 @@ class TestRunTwistingMug(unittest.TestCase):
     @unittest.skipIf(
         "--compilation_mode=dbg" in sys.argv,
         "This test is prohibitively slow in Debug builds.")
+    @unittest.skipIf(sys.platform == "darwin", "Not supported on macOS")
     def test_sim_and_control(self):
         # Run both the simulator and controller.
         sim_process = subprocess.Popen([
