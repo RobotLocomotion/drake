@@ -54,6 +54,7 @@ void SapExternalSystemConstraint<T>::DoCalcData(
   const T y = -k_ * v + tau0_;
 
   data.v = v;
+
   data.cost = h * ClampAntiderivative(y, e_) / k_;
   data.impulse = h * Clamp(y, e_);
   data.hessian = h * k_ * ClampDerivative(y, e_);

@@ -178,7 +178,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // linearizes the external system around the current state in order to treat
   // arbitrary controllers as implicitly as possible (modulo SAP SPD
   // requirements).
-  void AddExternalSystemConstraints(const VectorX<T>& K, const VectorX<T>& u0,
+  void AddExternalSystemConstraints(const VectorX<T>& K, const VectorX<T>& tau0,
                                     SapContactProblem<T>* problem) const;
 
   // Compute signed distances and jacobians. While we store this in a
@@ -257,14 +257,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Linearize the external (e.g. controller) system around the current state.
   //
   // The original nonlinear controller
-  //     u = g(x)
+  //     τ = g(x)
   // is approximated as
-  //     u = -Kv + u₀,
+  //     τ = -Kv + τ₀,
   // where K is dianonal and positive definite, and we use the fact that q = q0
   // + h N v to write everything in terms of velocities.
   //
   // We do the linearization via finite differences
-  void LinearizeExternalSystem(const T& h, VectorX<T>* K, VectorX<T>* u0);
+  void LinearizeExternalSystem(const T& h, VectorX<T>* K, VectorX<T>* tau0);
 
   // Project the given (square) matrix to a nearby symmetric positive
   // (semi)-definite matrix.
@@ -347,8 +347,8 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     MatrixX<T> M;               // mass matrix
     VectorX<T> k;               // coriolis terms from inverse dynamics
     std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
-    VectorX<T> K;   // Diagonal linearization of external systems, u = -Kv + u0
-    VectorX<T> u0;  // Explicit external forces, u0 = g0 + P v0
+    VectorX<T> K;  // Diagonal linearization of external systems, τ = -Kv + τ₀
+    VectorX<T> tau0;  // Explicit external forces, τ₀ = g₀ + P v₀
 
     // Used in LinearizeExternalSystem
     VectorX<T> g0;
