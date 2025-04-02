@@ -15,6 +15,7 @@ using Eigen::VectorXd;
 using geometry::PenetrationAsPointPair;
 using multibody::DiscreteContactApproximation;
 using multibody::Frame;
+using multibody::Joint;
 using multibody::JointActuator;
 using multibody::JointActuatorIndex;
 using multibody::RigidBody;
@@ -93,24 +94,13 @@ void ConvexIntegrator<T>::DoInitialize() {
   workspace_.A_dense.resize(nv, nv);
   workspace_.A.assign(tree_topology().num_trees(), MatrixX<T>(nv, nv));
   workspace_.M.resize(nv, nv);
-  workspace_.B.resize(nv, nu);
-  workspace_.tau0.resize(nv);
-  workspace_.K.resize(nv, nv);
+  workspace_.K.resize(nu);
+  workspace_.u0.resize(nv);
   workspace_.D.resize(nv, nq + nv);
-  workspace_.g0.resize(nv);
+  workspace_.g0.resize(nu);
   workspace_.N.resize(nq, nv);
   workspace_.P.resize(nv, nv);
   workspace_.Q.resize(nv, nv);
-
-  // Get effort limits for each joint actuator
-  effort_limits_.resize(plant().num_actuators());
-  for (JointActuatorIndex a : plant().GetJointActuatorIndices()) {
-    const JointActuator<T>& actuator = plant().get_joint_actuator(a);
-    const int i = actuator.input_start();
-    const int n = actuator.num_inputs();
-    effort_limits_.segment(i, n) =
-        VectorX<T>::Constant(n, actuator.effort_limit());
-  }
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -823,20 +813,24 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   VectorX<T>& k = workspace_.k;
   MultibodyForces<T>& f_ext = *workspace_.f_ext;
   VectorX<T>& v_star = workspace_.v_star;
-  MatrixX<T>& K = workspace_.K;
-  VectorX<T>& tau0 = workspace_.tau0;
+  VectorX<T>& K = workspace_.K;
+  VectorX<T>& u0 = workspace_.u0;
+
+  // TODO(vincekurtz): support these other input ports
+  DRAKE_THROW_UNLESS(
+      !plant().get_applied_generalized_force_input_port().HasValue(context));
+  DRAKE_THROW_UNLESS(
+      !plant().get_applied_spatial_force_input_port().HasValue(context));
 
   // Linearization of external controllers connected to the plant,
-  //     τ = B u(x) + τₑₓₜ(x) + ∑ Jᵀ fₑₓₜ(x) = g(x) ≈ -K v + τ₀,
-  // where -K is SPD.
-  if (plant().num_actuators() > 0 ||
-      plant().get_applied_generalized_force_input_port().HasValue(context) ||
-      plant().get_applied_spatial_force_input_port().HasValue(context)) {
+  //     u = g(x) ≈ -K v + u₀,
+  // where K is diagonal.
+  if (plant().num_actuators() > 0) {
     // Only do the linearization if a controller is connected
-    LinearizeExternalSystem(h, &K, &tau0);
+    LinearizeExternalSystem(h, &K, &u0);
   } else {
     K.setZero();
-    tau0.setZero();
+    u0.setZero();
   }
 
   // linearized dynamics matrix A = M + hD
@@ -865,31 +859,37 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // contact constraints (point contact + hydro)
   AddContactConstraints(context, &problem);
 
-  // External system constraints
-  AddExternalSystemConstraints(K, tau0, &problem);
+  // External system constraints u = -K v + u₀
+  AddExternalSystemConstraints(K, u0, &problem);
 
   return problem;
 }
 
 template <typename T>
 void ConvexIntegrator<T>::AddExternalSystemConstraints(
-    const MatrixX<T>& K, const VectorX<T>& tau0,
+    const VectorX<T>& K, const VectorX<T>& u0,
     SapContactProblem<T>* problem) const {
-  for (int c = 0; c < problem->num_cliques(); ++c) {
-    const int clique_nv = problem->num_velocities(c);
-    const int clique_start = problem->velocities_start(c);
 
-    for (int i = 0; i < clique_nv; ++i) {
-      const T k = K(clique_start + i, clique_start + i);
-      const T tau = tau0(clique_start + i);
-      const T e = effort_limits_(clique_start + i);  // TODO: get from joint
+  // Iterative over each joint actuator, and add the corresponding controller
+  // constraint.
+  for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(actuator_index);
+    const Joint<T>& joint = actuator.joint();
 
-      typename SapExternalSystemConstraint<T>::Configuration configuration{
-          c, clique_nv, i};
+    const int dof = joint.velocity_start();
+    const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
+    const int tree_dof = dof - tree_topology().tree_velocities_start_in_v(tree);
+    const int tree_nv = tree_topology().num_tree_velocities(tree);
 
-      problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
-          configuration, k, tau, e));
-    }
+    const T& k = K(actuator.input_start());
+    const T& u = u0(actuator.input_start());
+    const T e = actuator.effort_limit();
+
+    typename SapExternalSystemConstraint<T>::Configuration configuration{
+        tree, tree_nv, tree_dof};
+    problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
+        configuration, k, u, e));
   }
 }
 
@@ -1395,8 +1395,8 @@ void ConvexIntegrator<T>::GetGeneralizedForcesFromInputPorts(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
-                                                  VectorX<T>* tau0) {
+void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* K,
+                                                  VectorX<T>* u0) {
   using std::abs;
 
   // Get some useful sizes
@@ -1410,18 +1410,15 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   // Workspace pre-allocations
   MatrixX<T>& D = workspace_.D;
   VectorX<T>& g0 = workspace_.g0;
-  MatrixX<T>& B = workspace_.B;
   MatrixX<T>& N = workspace_.N;
   MatrixX<T>& P = workspace_.P;
   MatrixX<T>& Q = workspace_.Q;
-  MultibodyForces<T>& forces = *workspace_.f_ext;
 
   // Compute some quantities that depend on the current state, before moving
   // messing with the state with finite differences
   N = plant().MakeVelocityToQDotMap(plant_context);
-  B = plant().MakeActuationMatrix();
   const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
-  GetGeneralizedForcesFromInputPorts(plant_context, B, &forces, &g0);
+  g0 = plant().AssembleActuationInput(plant_context);
 
   // Compute τ = D(x − x₀) + g₀ with finite differences
   Context<T>* mutable_context = this->get_mutable_context();
@@ -1453,7 +1450,7 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
     // Compute the relevant matrix entries. Note that this assumes the state is
     // organized as s = [x; z] where x is the plant state and z is the external
     // system state.
-    GetGeneralizedForcesFromInputPorts(plant_context, B, &forces, &g_prime);
+    g_prime = plant().AssembleActuationInput(plant_context);
     D.col(i) = (g_prime - g0) / dsi;
 
     // Reset s' to s
@@ -1473,16 +1470,11 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, MatrixX<T>* K,
   P = -Dv;
   Q = -Dq * N;
 
-  // We'll do SPD projection on P here to ensure that non-convex components of
-  // the external system dynamics are treated explicitly. Otherwise these
-  // components would be ingored entirely, resulting in wrong dynamics.
-  ProjectSPD(&P);
-
-  // Compute K and make sure it's symmetric positive definite.
-  (*K) = P + h * Q;
-  ProjectSPD(K);
-
-  (*tau0) = g0 + P * v0;
+  // We'll do diagonal projection on both K and u0 to ensure that any non-convex
+  // portion of the dynamics is treated explicitly. Otherwise these components
+  // would be ingored entirely, resulting in wrong dynamics.
+  (*K) = P.diagonal().cwiseMax(0) + h * Q.diagonal().cwiseMax(0);
+  (*u0) = g0 + P.diagonal().cwiseMax(0) * v0;
 }
 
 template <typename T>

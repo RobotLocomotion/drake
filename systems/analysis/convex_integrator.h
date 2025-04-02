@@ -178,7 +178,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // linearizes the external system around the current state in order to treat
   // arbitrary controllers as implicitly as possible (modulo SAP SPD
   // requirements).
-  void AddExternalSystemConstraints(const MatrixX<T>& K, const VectorX<T>& tau0,
+  void AddExternalSystemConstraints(const VectorX<T>& K, const VectorX<T>& u0,
                                     SapContactProblem<T>* problem) const;
 
   // Compute signed distances and jacobians. While we store this in a
@@ -257,14 +257,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // Linearize the external (e.g. controller) system around the current state.
   //
   // The original nonlinear controller
-  //     τ = B u = g(x)
+  //     u = g(x)
   // is approximated as
-  //     τ = -Kv + τ₀,
-  // where K is symmetric and positive definite, and we use the fact that q = q0
+  //     u = -Kv + u₀,
+  // where K is dianonal and positive definite, and we use the fact that q = q0
   // + h N v to write everything in terms of velocities.
   //
   // We do the linearization via finite differences
-  void LinearizeExternalSystem(const T& h, MatrixX<T>* K, VectorX<T>* tau0);
+  void LinearizeExternalSystem(const T& h, VectorX<T>* K, VectorX<T>* u0);
 
   // Project the given (square) matrix to a nearby symmetric positive
   // (semi)-definite matrix.
@@ -303,9 +303,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   HessianFactorization hessian_factorization_;
   std::vector<MatrixX<T>> A_;  // Hack to keep these from going out of scope
   BlockSparseMatrix<T> J_;
-
-  // Stored vector of effort limits for each actuator
-  VectorX<T> effort_limits_;
 
   // Flag for enabling/disabling hessian re-use
   bool use_full_newton_{false};
@@ -350,12 +347,11 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     MatrixX<T> M;               // mass matrix
     VectorX<T> k;               // coriolis terms from inverse dynamics
     std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
-    MatrixX<T> K;     // SPD linearization of external systems, tau = -Kv + tau0
-    VectorX<T> tau0;  // Explicit external forces, tau0 = B g0 + P v0
+    VectorX<T> K;   // Diagonal linearization of external systems, u = -Kv + u0
+    VectorX<T> u0;  // Explicit external forces, u0 = g0 + P v0
 
     // Used in LinearizeExternalSystem
     VectorX<T> g0;
-    MatrixX<T> B;
     MatrixX<T> D;
     MatrixX<T> N;
     MatrixX<T> P;
