@@ -79,6 +79,15 @@ void ConvexIntegrator<T>::DoInitialize() {
   const int nv = plant().num_velocities();
   const int nz = this->get_context().get_continuous_state().num_z();
 
+  const Context<T>& disagram_context = this->get_context();
+  const Context<T>& context = plant().GetMyContextFromRoot(disagram_context);
+
+  // TODO(vincekurtz): support these other input ports
+  DRAKE_THROW_UNLESS(
+      !plant().get_applied_generalized_force_input_port().HasValue(context));
+  DRAKE_THROW_UNLESS(
+      !plant().get_applied_spatial_force_input_port().HasValue(context));
+
   // TODO(vincekurtz): figure out some reasonable accuracy bounds and defaults
   const double kDefaultAccuracy = 1e-1;
 
@@ -815,14 +824,8 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   VectorX<T>& K = workspace_.K;
   VectorX<T>& tau0 = workspace_.tau0;
 
-  // TODO(vincekurtz): support these other input ports
-  DRAKE_THROW_UNLESS(
-      !plant().get_applied_generalized_force_input_port().HasValue(context));
-  DRAKE_THROW_UNLESS(
-      !plant().get_applied_spatial_force_input_port().HasValue(context));
-
   // Linearization of external controllers connected to the plant,
-  //     u = g(x) ≈ -K v + u₀,
+  //     τ = g(x) ≈ -K v + τ₀,
   // where K is diagonal.
   if (plant().num_actuators() > 0) {
     // Only do the linearization if a controller is connected
@@ -868,7 +871,6 @@ template <typename T>
 void ConvexIntegrator<T>::AddExternalSystemConstraints(
     const VectorX<T>& K, const VectorX<T>& tau0,
     SapContactProblem<T>* problem) const {
-
   // Iterative over each joint actuator, and add the corresponding controller
   // constraint.
   for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
@@ -1367,36 +1369,16 @@ void ConvexIntegrator<T>::AppendDiscreteContactPairsForHydroelasticContact(
 }
 
 template <typename T>
-void ConvexIntegrator<T>::GetGeneralizedForcesFromInputPorts(
-    const Context<T>& plant_context, const MatrixX<T>& B,
-    MultibodyForces<T>* forces, VectorX<T>* tau) const {
-  forces->SetZero();
-
-  // Actuator forces, clipped to effort limits
-  // const VectorX<T> u = plant()
-  //                          .AssembleActuationInput(plant_context)
-  //                          .cwiseMin(effort_limits_)
-  //                          .cwiseMax(-effort_limits_);
-  // forces->mutable_generalized_forces() = B * u;
-
-  // // External generalized forces
-  // plant().AddAppliedExternalGeneralizedForces(plant_context, forces);
-
-  // // External spatial forces applied to each body
-  // plant().AddAppliedExternalSpatialForces(plant_context, forces);
-
-  // Add all forces from input ports, neglecting effort limits
-  plant().AddInForcesFromInputPorts(plant_context, forces);
-  (void)B;
-
-  // Add up all the force contributions
-  plant().CalcGeneralizedForces(plant_context, *forces, tau);
-}
-
-template <typename T>
 void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* K,
                                                   VectorX<T>* tau0) {
   using std::abs;
+
+  // TODO(vincekurtz): also consider applied generalized and spatial forces via
+  //    plant().AddAppliedExternalGeneralizedForces(plant_context, forces);
+  //    plant().AddAppliedExternalSpatialForces(plant_context, forces);
+  //    plant().CalcGeneralizedForces(plant_context, *forces, tau);
+  // These other inputs are not effort-limited, so we could use SPD projection
+  // if we wanted.
 
   // Get some useful sizes
   const Context<T>& context = this->get_context();
@@ -1467,6 +1449,9 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* K,
   const Eigen::Ref<MatrixX<T>> Dv = D.rightCols(nv);
 
   // Square matrices that we can project to be symmetric positive definite
+  // For now we'll just use diagonal projection, so that we can support implicit
+  // effort limits and not worry about the external system constraint coupling
+  // multiple cliques.
   P = -Dv;
   Q = -Dq * N;
 

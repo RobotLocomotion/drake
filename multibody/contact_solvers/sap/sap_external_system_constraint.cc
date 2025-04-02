@@ -43,7 +43,8 @@ std::unique_ptr<AbstractValue> SapExternalSystemConstraint<T>::DoMakeData(
 
 template <typename T>
 void SapExternalSystemConstraint<T>::DoCalcData(
-    const Eigen::Ref<const VectorX<T>>& vc, AbstractValue* abstract_data) const {
+    const Eigen::Ref<const VectorX<T>>& vc,
+    AbstractValue* abstract_data) const {
   auto& data =
       abstract_data->get_mutable_value<SapExternalSystemConstraintData<T>>();
   const T& h = data.time_step;

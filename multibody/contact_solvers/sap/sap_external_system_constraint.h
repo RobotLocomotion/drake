@@ -21,15 +21,15 @@ template <typename T>
 struct SapExternalSystemConstraintData {
   T time_step{};  // Time step for the simulation
 
-  T v;  // Constraint velocity
-  T cost{};      // Cost ℓ(v)
-  T impulse{};   // Impulse γ(v) = −∂ℓ(v)/∂v.
-  T hessian{};   // Hessian G = −∂γ(v)/∂v = ∂²ℓ(v)/∂v².
+  T v;          // Constraint velocity
+  T cost{};     // Cost ℓ(v)
+  T impulse{};  // Impulse γ(v) = −∂ℓ(v)/∂v.
+  T hessian{};  // Hessian G = −∂γ(v)/∂v = ∂²ℓ(v)/∂v².
 };
 
 /**
  * Defines an external system constraint τ = clamp(-k v + τ₀, -e, e).
- * 
+ *
  * This is a slight generalization of SapPdControllerConstraint, and is used for
  * considering external systems implicitly in the convex integrator.
  */
@@ -48,9 +48,9 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
   //@}
 
   /**
-   *  Struct identifying the clique and DoF in question for this constraint. 
-  */
- struct Configuration {
+   *  Struct identifying the clique and DoF in question for this constraint.
+   */
+  struct Configuration {
     int clique;      // The clique index.
     int clique_nv;   // The number of generalized velocities in the clique.
     int clique_dof;  // The index of the dof in question, in [0, clique_nv]
@@ -58,15 +58,14 @@ class SapExternalSystemConstraint final : public SapConstraint<T> {
 
   /**
    * Construct the constraint.
-   * 
+   *
    * @param configuration Indices of the clique and DoF in question.
    * @param k The stiffness parameter. Should be >0.
    * @param tau0 The explicit external forces.
    * @param effort_limits The effort limits.
    */
-  SapExternalSystemConstraint(Configuration configuration,
-                              const T& k, const T& tau0,
-                              const T& effort_limits);
+  SapExternalSystemConstraint(Configuration configuration, const T& k,
+                              const T& tau0, const T& effort_limits);
 
  private:
   /* Private copy construction is enabled to use in the implementation of

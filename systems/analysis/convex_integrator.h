@@ -247,13 +247,6 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                       T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
                       VectorX<T>* d2ell_dalpha2_scratch = nullptr) const;
 
-  // Accumulate forces from all external input ports in a single vector,
-  //   τ = B u + τₑₓₜ + ∑ Jᵀ fₑₓₜ
-  void GetGeneralizedForcesFromInputPorts(const Context<T>& plant_context,
-                                          const MatrixX<T>& B,
-                                          MultibodyForces<T>* forces,
-                                          VectorX<T>* tau) const;
-
   // Linearize the external (e.g. controller) system around the current state.
   //
   // The original nonlinear controller
