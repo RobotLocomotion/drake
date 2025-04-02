@@ -10,8 +10,8 @@ def gymnasium_py_repository(
     github_archive(
         name = name,
         repository = "Farama-Foundation/Gymnasium",
-        commit = "v1.1.0",
-        sha256 = "5c67fc365e4b881d3858f22450c6aba60140f697196c4b07b79df5d5c54172ff",  # noqa
+        commit = "v1.1.1",
+        sha256 = "7883c878c1ed5bcc7a5ba621ac859d23be9a26baea9f2a42596dc072143b0619",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
