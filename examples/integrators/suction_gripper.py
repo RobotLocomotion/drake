@@ -41,14 +41,56 @@ class SuctionGripper(LeafSystem):
         body_poses = self.body_poses_input_port.Eval(context)
         query_object = self.query_object_input_port.Eval(context)
 
-        my_force = ExternallyAppliedSpatialForce()
-        my_force.body_index = BodyIndex(2)
-        my_force.p_BoBq_B = np.array([0.0, 0.0, 0.0])
-        my_force.F_Bq_W = SpatialForce(
-            np.array([0.0, 0.0, 0.0]), np.array([0.0, 0.0, 10.0])
-        )
+        # Get the position of the suction cup C in the world frame
+        X_WC = body_poses[self.body_idx]
+        p_WC = X_WC.translation()
 
-        output.set_value([my_force])
+        # Compute distances from all geometries to the suction cup, up to a
+        # maximum distance.
+        max_dist = 0.4
+        distances = query_object.ComputeSignedDistanceToPoint(p_WC, max_dist)
+
+        # Compute a suction force on each geometry within the maximum distance
+        spatial_forces = []
+        for signed_distance in distances:
+            # The body B that this geometry belongs to
+            inspector = query_object.inspector()
+            frame_id = inspector.GetFrameId(signed_distance.id_G)
+            body = self.plant.GetBodyFromFrameId(frame_id)
+
+            if body.index() != self.body_idx:  # Ignore the gripper body
+                # The actual distance (scalar) to the suction cup
+                distance = signed_distance.distance
+
+                # The point P on the geometry closest to the suction cup,
+                # expressed in the geometry frame
+                p_GP = signed_distance.p_GN
+
+                # Pose of the geometry frame in the body frame
+                X_BG = inspector.GetPoseInFrame(signed_distance.id_G)
+
+                # Position of point P, expressed in the body frame
+                p_BP = X_BG @ p_GP
+
+                # Position of point P, expressed in the world frame
+                X_WB = body_poses[body.index()]
+                p_WP = X_WB @ p_BP
+
+                # Force on point P, expressed in the world frame
+                magnitude = 10 * (max_dist - distance)
+                assert magnitude >= 0.0
+                direction = (p_WC - p_WP) / np.linalg.norm(p_WC - p_WP)
+                f_WP_W = magnitude * direction
+
+                # Assemble an associated spatial force
+                spatial_force = ExternallyAppliedSpatialForce()
+                spatial_force.body_index = body.index()
+                spatial_force.p_BoBq_B = p_BP
+                spatial_force.F_Bq_W = SpatialForce(np.zeros(3), f_WP_W)
+
+                spatial_forces.append(spatial_force)
+
+        output.set_value(spatial_forces)
 
 
 # System setup
@@ -121,7 +163,7 @@ diagram = builder.Build()
 context = diagram.CreateDefaultContext()
 
 # Set the initial state
-q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.1])
+q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.3])
 plant_context = plant.GetMyMutableContextFromRoot(context)
 plant.SetPositions(plant_context, box, q0_box)
 
@@ -137,6 +179,3 @@ meshcat.StartRecording()
 simulator.AdvanceTo(1.0)
 meshcat.StopRecording()
 meshcat.PublishRecording()
-
-# print("Waiting for meshcat... press [ENTER] to exit.")
-# input()
