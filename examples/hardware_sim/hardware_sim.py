@@ -27,6 +27,7 @@ from pydrake.common.yaml import yaml_load_typed
 from pydrake.lcm import DrakeLcmParams
 from pydrake.manipulation import (
     ApplyDriverConfigs,
+    ApplyNamedPositionsAsDefaults,
     IiwaDriver,
     SchunkWsgDriver,
     ZeroForceDriver,
@@ -111,6 +112,11 @@ class Scenario:
 
     visualization: VisualizationConfig = VisualizationConfig()
 
+    # Optional initial positions to override or supplement those in the
+    # directives.
+    initial_position: dict[str, dict[str, list[float]]] = dc.field(
+        default_factory=dict)
+
 
 def _load_scenario(*, filename, scenario_name, scenario_text):
     """Implements the command-line handling logic for scenario data.
@@ -143,6 +149,10 @@ def run(*, scenario, graphviz=None):
     added_models = ProcessModelDirectives(
         directives=ModelDirectives(directives=scenario.directives),
         plant=sim_plant)
+
+    # Override or supplement initial positions.
+    ApplyNamedPositionsAsDefaults(input=scenario.initial_position,
+                                  plant=sim_plant)
 
     # Now the plant is complete.
     sim_plant.Finalize()
