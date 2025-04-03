@@ -8,6 +8,49 @@ import numpy as np
 #
 ##
 
+class SuctionGripper(LeafSystem):
+    """A simple suction gripper model."""
+
+    def __init__(self, plant, body_idx):
+        """Construct the suction gripper model.
+
+        Args:
+            plant: A model of the MultibodyPlant which the gripper acts upon.
+            body_idx: The index of the body to which the gripper is attached.
+        """
+        super().__init__()
+        self.set_name("suction_gripper")
+        self.plant = plant
+        self.body_idx = body_idx
+
+        # Input ports take body poses and geometry info
+        self.body_poses_input_port = self.DeclareAbstractInputPort(
+            "body_poses", AbstractValue.Make([RigidTransform()]))
+        self.query_object_input_port = self.DeclareAbstractInputPort(
+            "query_object", AbstractValue.Make(QueryObject()))
+
+        # Output port sends externally applied spatial forces
+        self.DeclareAbstractOutputPort(
+            "force_output",
+            lambda: AbstractValue.Make([ExternallyAppliedSpatialForce()]),
+            self.CalcSpatialForces,
+        )
+
+    def CalcSpatialForces(self, context, output):
+        """Compute the spatial forces applied by the gripper."""
+        body_poses = self.body_poses_input_port.Eval(context)
+        query_object = self.query_object_input_port.Eval(context)
+
+        my_force = ExternallyAppliedSpatialForce()
+        my_force.body_index = BodyIndex(2)
+        my_force.p_BoBq_B = np.array([0.0, 0.0, 0.0])
+        my_force.F_Bq_W = SpatialForce(
+            np.array([0.0, 0.0, 0.0]), np.array([0.0, 0.0, 10.0])
+        )
+
+        output.set_value([my_force])
+
+
 # System setup
 meshcat = StartMeshcat()
 builder = DiagramBuilder()
@@ -53,6 +96,23 @@ plant.RegisterCollisionGeometry(
 
 plant.Finalize()
 
+# Connect the suction gripper model
+suction_model = builder.AddSystem(SuctionGripper(plant, gripper_body.index()))
+
+builder.Connect(
+    suction_model.GetOutputPort("force_output"),
+    plant.get_applied_spatial_force_input_port(),
+)
+builder.Connect(
+    plant.get_body_poses_output_port(),
+    suction_model.body_poses_input_port,
+)
+builder.Connect(
+    scene_graph.get_query_output_port(),
+    suction_model.query_object_input_port,
+)
+
+
 # Connect to meshcat
 AddDefaultVisualization(builder, meshcat)
 
@@ -61,7 +121,7 @@ diagram = builder.Build()
 context = diagram.CreateDefaultContext()
 
 # Set the initial state
-q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1])
+q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.1])
 plant_context = plant.GetMyMutableContextFromRoot(context)
 plant.SetPositions(plant_context, box, q0_box)
 
@@ -78,5 +138,5 @@ simulator.AdvanceTo(1.0)
 meshcat.StopRecording()
 meshcat.PublishRecording()
 
-print("Waiting for meshcat... press [ENTER] to exit.")
-input()
+# print("Waiting for meshcat... press [ENTER] to exit.")
+# input()
