@@ -695,6 +695,28 @@ TEST_F(SceneGraphTest, GetRendererTypeName) {
             NiceTypeName::Get<DummyRenderEngine>());
 }
 
+TEST_F(SceneGraphTest, GetRendererParameterYaml) {
+  const std::string kRendererName1 = "bob";
+  const std::string kRendererName2 = "alice";
+
+  CreateDefaultContext();
+  DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+      kRendererName1, make_unique<DummyRenderEngine>()));
+  DRAKE_EXPECT_NO_THROW(scene_graph_.AddRenderer(
+      context_.get(), kRendererName2, make_unique<DummyRenderEngine>()));
+
+  // If no renderer has the name, the parameter string is empty.
+  EXPECT_EQ(scene_graph_.GetRendererParameterYaml("non-existent"), "");
+  EXPECT_EQ(scene_graph_.GetRendererParameterYaml(*context_, "non-existent"),
+            "");
+
+  // Confirm that the string is *not* empty for valid names. We won't worry
+  // about the string contents; it has been tested elsewhere.
+  EXPECT_FALSE(scene_graph_.GetRendererParameterYaml(kRendererName1).empty());
+  EXPECT_FALSE(
+      scene_graph_.GetRendererParameterYaml(*context_, kRendererName2).empty());
+}
+
 TEST_F(SceneGraphTest, RemoveRenderer) {
   const std::string kRendererName = "bob";
 

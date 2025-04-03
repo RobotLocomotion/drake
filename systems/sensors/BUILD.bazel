@@ -115,6 +115,7 @@ drake_cc_library(
         ":rgbd_sensor_async",
         ":sim_rgbd_sensor",
         "//common:overloaded",
+        "//common/yaml:yaml_io",
         "//geometry/render_gl",
         "//geometry/render_gltf_client",
         "//geometry/render_vtk",
