@@ -174,11 +174,16 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void AddContactConstraints(const Context<T>& context,
                              SapContactProblem<T>* problem);
 
-  // Adds external system constraints to the SAP problem. This includes
-  // linearizes the external system around the current state in order to treat
-  // arbitrary controllers as implicitly as possible (modulo SAP SPD
-  // requirements).
-  void AddExternalSystemConstraints(const VectorX<T>& K, const VectorX<T>& tau0,
+  // Adds external system constraints to the SAP problem. In particular, adds
+  // constraints to the sap problem to produce generalized forces
+  //
+  //    τ = clamp(−Kᵤ v + kᵤ) − Kₑ v + kₑ
+  //
+  // Note that the contribution from the actuator input port (-Kᵤ v + kᵤ) is
+  // clamped to effort limits, while the contribution from external forces
+  // (−Kₑ v + kₑ) is not.
+  void AddExternalSystemConstraints(const VectorX<T>& Ku, const VectorX<T>& ku,
+                                    const VectorX<T>& Ke, const VectorX<T>& ke,
                                     SapContactProblem<T>* problem) const;
 
   // Compute signed distances and jacobians. While we store this in a
@@ -247,17 +252,26 @@ class ConvexIntegrator final : public IntegratorBase<T> {
                       T* dell_dalpha = nullptr, T* d2ell_dalpha2 = nullptr,
                       VectorX<T>* d2ell_dalpha2_scratch = nullptr) const;
 
-  // Linearize the external (e.g. controller) system around the current state.
+  // Compute external forces τ = τₑₓₜ(x) from the plant's spatial and
+  // generalized force input ports.
+  void CalcAppliedExternalForces(const Context<T>& context,
+                                 VectorX<T>* tau);
+
+  // Linearize all the external (controller) systems connected to the plant.
   //
-  // The original nonlinear controller
-  //     τ = g(x)
-  // is approximated as
-  //     τ = -Kv + τ₀,
-  // where K is dianonal and positive definite, and we use the fact that q = q0
-  // + h N v to write everything in terms of velocities.
+  // Torques from externally connected systems are given by
+  //     τ = B u(x) + τₑₓₜ(x),
+  // which we approximate as
+  //     τ ≈ clamp(-Kᵤ v + kᵤ) - Kₑ v + kₑ,
+  // where Kᵤ and Kₑ are symmetric positive definite (and possibly diagonal).
   //
-  // We do the linearization via finite differences
-  void LinearizeExternalSystem(const T& h, VectorX<T>* K, VectorX<T>* tau0);
+  // Note that contributions due to controls u(x) are clamped to effort limits,
+  // while contributions due to external generalized and spatial forces τₑₓₜ(x)
+  // are not.
+  //
+  // We do the linearization via finite differences.
+  void LinearizeExternalSystem(const T& h, VectorX<T>* Ku, VectorX<T>* ku,
+                               VectorX<T>* Ke, VectorX<T>* ke);
 
   // Project the given (square) matrix to a nearby symmetric positive
   // (semi)-definite matrix.
@@ -340,12 +354,17 @@ class ConvexIntegrator final : public IntegratorBase<T> {
     MatrixX<T> M;               // mass matrix
     VectorX<T> k;               // coriolis terms from inverse dynamics
     std::unique_ptr<MultibodyForces<T>> f_ext;  // external forces (gravity)
-    VectorX<T> K;  // Diagonal linearization of external systems, τ = -Kv + τ₀
-    VectorX<T> tau0;  // Explicit external forces, τ₀ = g₀ + P v₀
+    VectorX<T> Ku;  // Diagonal linearization of controller torques,
+    VectorX<T> ku;  // B(u) ≈ −Kᵤ v + kᵤ
+    VectorX<T> Ke;  // Diagonal linearization of external forces,
+    VectorX<T> ke;  // τₑₓₜ(x) ≈ −Kₑ v + kₑ
 
     // Used in LinearizeExternalSystem
+    // TODO(vincekurtz): rethink the notation in LinearizeExternalSystem
     VectorX<T> g0;
     MatrixX<T> D;
+    VectorX<T> ge0;
+    MatrixX<T> De;
     MatrixX<T> N;
     MatrixX<T> P;
     MatrixX<T> Q;
