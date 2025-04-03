@@ -106,7 +106,10 @@ class SuctionGripper(LeafSystem):
 
         output.set_value(spatial_forces)
 
-def run_simulation(mbp_time_step, integrator, accuracy, use_error_control):
+
+def run_simulation(
+    mbp_time_step, integrator, accuracy, use_error_control, max_time_step
+):
     """Run the simulation with the given parameters."""
 
     # System setup
@@ -179,7 +182,6 @@ def run_simulation(mbp_time_step, integrator, accuracy, use_error_control):
         suction_model.query_object_input_port,
     )
 
-
     # Connect to meshcat
     AddDefaultVisualization(builder, meshcat)
 
@@ -199,6 +201,7 @@ def run_simulation(mbp_time_step, integrator, accuracy, use_error_control):
     config.accuracy = accuracy
     config.target_realtime_rate = 0.0
     config.use_error_control = use_error_control
+    config.max_step_size = max_time_step
 
     simulator = Simulator(diagram, context)
     ApplySimulatorConfig(config, simulator)
@@ -219,6 +222,7 @@ def run_simulation(mbp_time_step, integrator, accuracy, use_error_control):
 
     # Print a summary of solver statistics
     PrintSimulatorStatistics(simulator)
+
 
 if __name__ == "__main__":
     # Get command-line arguments
@@ -246,6 +250,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Disables error control.",
     )
+    parser.add_argument(
+        "--max_time_step",
+        type=float,
+        default=0.1,
+        help="The maximum time step to use. default: 0.1",
+    )
     args = parser.parse_args()
 
     # Run the simulation
@@ -254,4 +264,5 @@ if __name__ == "__main__":
         integrator=args.integrator,
         accuracy=args.accuracy,
         use_error_control=not args.no_error_control,
+        max_time_step=args.max_time_step,
     )
