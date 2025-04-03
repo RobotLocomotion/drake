@@ -873,6 +873,7 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
     const VectorX<T>& Ku, const VectorX<T>& ku,
     const VectorX<T>& Ke, const VectorX<T>& ke,
     SapContactProblem<T>* problem) const {
+  using std::max;
   // Iterative over each joint actuator, and add the corresponding controller
   // constraint.
   for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
@@ -898,22 +899,21 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
   // Iterate over each velocity, and add the corresponding external force
   // constraint. TODO(vincekurtz): only do this if at least one of the external
   // force input ports is connected.
+  const T inf = std::numeric_limits<T>::infinity();
+  const T eps = 1e-8;
+
   for (int c = 0; c < problem->num_cliques(); ++c) {
     const int nv = problem->num_velocities(c);
     for (int i = 0; i < nv; ++i) {
       const int c_start = problem->velocities_start(c);
 
-      const T& k = Ke(c_start + i);
+      const T& k = max(Ke(c_start + i), eps);
       const T& u = ke(c_start + i);
-      const T e = std::numeric_limits<T>::infinity();
-
-      fmt::print("c: {}, nv: {}, i: {}, k: {}, u: {}, e: {}\n", c, nv, i, k, u,
-                 e);
 
       typename SapExternalSystemConstraint<T>::Configuration configuration{
           c, nv, i};
       problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
-          configuration, k, u, e));
+          configuration, k, u, inf));
     }
   }
 }
