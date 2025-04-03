@@ -45,6 +45,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_make_render_window.h"
@@ -606,6 +607,10 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     copy_cameras(other.pipelines_.at(p)->renderer.Get(),
                  pipelines_.at(p)->renderer.Get());
   }
+}
+
+std::string RenderEngineVtk::DoGetParameterYaml() const {
+  return yaml::SaveYamlString(parameters_, "RenderEngineVtkParams");
 }
 
 void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,

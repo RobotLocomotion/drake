@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -299,6 +300,10 @@ class RenderEngine {
    use.  */
   RenderLabel default_render_label() const { return default_render_label_; }
 
+  /** Produces a yaml string that can be deserialized into this *particular*
+   RenderEngine's type. */
+  std::string GetParameterYaml() const { return DoGetParameterYaml(); }
+
  protected:
   // Allow derived classes to implement Cloning via copy-construction.
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RenderEngine);
@@ -472,6 +477,10 @@ class RenderEngine {
           intrinsics.height()));
     }
   }
+
+  /** The NVI-function for GetParameterYaml(). Derived classes must implement
+   this in order to support engine comparisons. */
+  virtual std::string DoGetParameterYaml() const;
 
  private:
   friend class RenderEngineTester;

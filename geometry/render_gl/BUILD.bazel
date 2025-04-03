@@ -96,6 +96,7 @@ drake_cc_library_linux_only(
         ":render_engine_gl_params",
         "//common:diagnostic_policy",
         "//common:string_container",
+        "//common/yaml:yaml_io",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/render:render_engine",
         "//geometry/render:render_mesh",
