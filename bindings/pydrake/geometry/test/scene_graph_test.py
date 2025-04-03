@@ -86,6 +86,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(scene_graph.RendererCount(), 1)
         renderer_type_name = scene_graph.GetRendererTypeName(
             name=renderer_name)
+        self.assertTrue(renderer_type_name.endswith("RenderEngineVtk"))
+
+        param_yaml = scene_graph.GetRendererParameterYaml(
+            name=renderer_name)
+        self.assertTrue(param_yaml.startswith("RenderEngineVtkParams:"))
 
         scene_graph.RemoveRenderer(renderer_name)
         self.assertFalse(scene_graph.HasRenderer(renderer_name))
@@ -386,10 +391,14 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(scene_graph.RendererCount(context=context), 1)
         self.assertTrue(
             scene_graph.HasRenderer(context=context, name=renderer_name))
-        scene_graph.RemoveRenderer(context=context, name=renderer_name)
-        self.assertEqual(scene_graph.RendererCount(context=context), 0)
         renderer_type_name = scene_graph.GetRendererTypeName(
             context=context, name=renderer_name)
+        self.assertTrue(renderer_type_name.endswith("RenderEngineVtk"))
+        param_yaml = scene_graph.GetRendererParameterYaml(
+            context=context, name=renderer_name)
+        self.assertTrue(param_yaml.startswith("RenderEngineVtkParams:"))
+        scene_graph.RemoveRenderer(context=context, name=renderer_name)
+        self.assertEqual(scene_graph.RendererCount(context=context), 0)
 
     @numpy_compare.check_all_types
     def test_scene_graph_register_geometry(self, T):

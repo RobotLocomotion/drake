@@ -17,6 +17,7 @@
 #include "drake/common/string_map.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
 
 namespace drake {
@@ -1238,6 +1239,10 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
   // the underlying RenderLabel value). Doing so would allow us to render labels
   // directly and eliminate this additional pass.
   GetLabelImage(label_image_out, render_target);
+}
+
+std::string RenderEngineGl::DoGetParameterYaml() const {
+  return yaml::SaveYamlString(parameters_, "RenderEngineGlParams");
 }
 
 void RenderEngineGl::AddGeometryInstance(int geometry_index, void* user_data,
