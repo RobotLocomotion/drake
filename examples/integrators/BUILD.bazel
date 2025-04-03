@@ -77,6 +77,17 @@ drake_py_binary(
 )
 
 drake_py_binary(
+    name = "suction_gripper",
+    srcs = ["suction_gripper.py"],
+    data = [
+        "@drake_models",
+    ],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_binary(
     name = "high_gain_effort_limits",
     srcs = ["high_gain_effort_limits.py"],
     data = [
