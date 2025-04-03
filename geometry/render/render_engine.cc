@@ -1,5 +1,6 @@
 #include "drake/geometry/render/render_engine.h"
 
+#include <string>
 #include <typeinfo>
 #include <utility>
 
@@ -14,6 +15,7 @@ namespace drake {
 namespace geometry {
 namespace render {
 
+using geometry::internal::RenderMesh;
 using math::RigidTransformd;
 using systems::sensors::CameraInfo;
 using systems::sensors::ImageDepth32F;
@@ -76,7 +78,7 @@ bool RenderEngine::RegisterVisual(GeometryId id,
 }
 
 bool RenderEngine::RegisterDeformableVisual(
-    GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+    GeometryId id, const std::vector<RenderMesh>& render_meshes,
     const PerceptionProperties& properties) {
   DRAKE_THROW_UNLESS(!has_geometry(id));
   DRAKE_THROW_UNLESS(!render_meshes.empty());
@@ -151,9 +153,9 @@ RenderLabel RenderEngine::GetRenderLabelOrThrow(
   return label;
 }
 
-bool RenderEngine::DoRegisterDeformableVisual(
-    GeometryId, const std::vector<internal::RenderMesh>&,
-    const PerceptionProperties&) {
+bool RenderEngine::DoRegisterDeformableVisual(GeometryId,
+                                              const std::vector<RenderMesh>&,
+                                              const PerceptionProperties&) {
   return false;
 }
 
@@ -184,6 +186,14 @@ void RenderEngine::DoRenderLabelImage(const ColorRenderCamera&,
 
 void RenderEngine::SetDefaultLightPosition(const Vector3<double>&) {}
 
+namespace internal {
+
+bool RenderEngineComparator::ParametersMatch(const RenderEngine& engine,
+                                             const AbstractValue& params) {
+  return engine.ParametersMatch(params);
+}
+
+}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

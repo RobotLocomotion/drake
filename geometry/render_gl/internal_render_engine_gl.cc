@@ -10,6 +10,7 @@
 #include <tiny_gltf.h>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/scope_exit.h"
@@ -1238,6 +1239,14 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
   // the underlying RenderLabel value). Doing so would allow us to render labels
   // directly and eliminate this additional pass.
   GetLabelImage(label_image_out, render_target);
+}
+
+bool RenderEngineGl::DoParametersMatch(const AbstractValue& params) const {
+  auto* test_params = params.maybe_get_value<RenderEngineGlParams>();
+  if (test_params == nullptr) {
+    return false;
+  }
+  return *test_params == parameters_;
 }
 
 void RenderEngineGl::AddGeometryInstance(int geometry_index, void* user_data,

@@ -19,6 +19,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
@@ -474,6 +475,15 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   if (get_params().cleanup) {
     CleanupFrame(scene_path, image_path, get_params().verbose);
   }
+}
+
+bool RenderEngineGltfClient::DoParametersMatch(
+    const AbstractValue& params) const {
+  auto* test_params = params.maybe_get_value<RenderEngineGltfClientParams>();
+  if (test_params == nullptr) {
+    return false;
+  }
+  return *test_params == get_params();
 }
 
 void RenderEngineGltfClient::ExportScene(const std::string& export_path,

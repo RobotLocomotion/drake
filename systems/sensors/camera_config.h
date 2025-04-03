@@ -265,29 +265,19 @@ struct CameraConfig {
 
    It is possible for multiple cameras to reference the same `renderer_name`
    but configure the renderer differently. This would be a configuration error.
-   The following rules will help prevent problematic configurations:
 
-     - Multiple cameras can reference the same value for `renderer_name`.
-     - If multiple cameras reference the same value for `renderer_name`, only
-       the *first* can use the engine parameters to specify it. Attempting to
-       do so with a later camera will produce an error.
-       - The later cameras can use engine class _name_.
-       - If a later camera names a *different* engine class, that will result
-         in an error.
+   Cameras can use the same `renderer_name` and `renderer_class` values. If the
+   `renderer_class` implies the same renderer properties, they will use the same
+   renderer. Errors arise when:
 
-   In YAML, it can be a bit trickier. Depending on how a collection of cameras
-   is articulated, the concept of "first" may be unclear. In
-   `examples/hardware_sim/scenario.h` the collection is a map. So, the camera
-   configurations are not necessarily processed in the order they appear in the
-   YAML file. Instead, the processing order depends on the mnemonic camera key.
-   So, be aware, if you use a similar mapping, you may have to massage the key
-   names to achieve the requisite processing order. Alternatively, a vector of
-   %CameraConfig in your own scenario file, would guarantee that processing
-   order is the same as file order.
+     - Two renderers use the same name but different engine types.
+     - Two renderers use the same name and same engine types, but the engines
+       have been configured differently.
 
-   We intend to relax these restrictions in time, allowing equivalent, redundant
-   specifications of a render engine (and throwing only on inconsistent
-   specifications).
+   In YAML, if multiple cameras are intended to use the same render engine,
+   one camera can define the render engine, and the other cameras can use the
+   <<: merge operator to copy the camera's values, simply changing the unique
+   values for that camera.
 
    Passing the empty string is equivalent to saying, "I don't care". If a render
    engine with that name has already been configured, the camera will use it

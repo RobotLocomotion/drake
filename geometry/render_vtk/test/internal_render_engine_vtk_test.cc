@@ -24,6 +24,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -718,6 +719,19 @@ class RenderEngineVtkTest : public ::testing::Test {
 
   unique_ptr<RenderEngineVtk> renderer_;
 };
+
+TEST_F(RenderEngineVtkTest, ParameterMatching) {
+  RenderEngineVtkParams params1{.lights = {LightParameter{.type = "spot"}}};
+  RenderEngineVtkParams params1_copy = params1;
+  RenderEngineVtkParams params2;
+
+  RenderEngineVtk engine(params1);
+  using Comparator = geometry::render::internal::RenderEngineComparator;
+
+  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1)));
+  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1_copy)));
+  EXPECT_FALSE(Comparator::ParametersMatch(engine, Value(params2)));
+}
 
 // Tests an empty image -- confirms that it clears to the "empty" color -- no
 // use of "inlier" or "outlier" pixel locations.

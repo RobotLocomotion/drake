@@ -66,6 +66,16 @@ GTEST_TEST(RenderEngineGltfClientParams, Serialization) {
   EXPECT_EQ(dut.cleanup, original.cleanup);
 }
 
+// This is intended to confirm that dut can be operator=='d.
+GTEST_TEST(RenderEngineGlParams, EqualsSmokeTest) {
+  RenderEngineGltfClientParams params1{.render_endpoint = "version1"};
+  RenderEngineGltfClientParams params1_copy = params1;
+  RenderEngineGltfClientParams params2{.render_endpoint = "different"};
+
+  EXPECT_TRUE(params1 == params1_copy);
+  EXPECT_FALSE(params1 == params2);
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

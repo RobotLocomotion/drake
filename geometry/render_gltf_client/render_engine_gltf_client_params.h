@@ -22,6 +22,8 @@ struct RenderEngineGltfClientParams {
     a->Visit(DRAKE_NVP(cleanup));
   }
 
+  bool operator==(const RenderEngineGltfClientParams&) const;
+
   /** The base url of the server communicate with.
    See GetUrl() for details. */
   std::string base_url{"http://127.0.0.1:8000"};
