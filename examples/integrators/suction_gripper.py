@@ -241,6 +241,11 @@ if __name__ == "__main__":
         default=0.1,
         help="The accuracy to use. default: 0.1",
     )
+    parser.add_argument(
+        "--no_error_control",
+        action="store_true",
+        help="Disables error control.",
+    )
     args = parser.parse_args()
 
     # Run the simulation
@@ -248,5 +253,5 @@ if __name__ == "__main__":
         mbp_time_step=args.mbp_time_step,
         integrator=args.integrator,
         accuracy=args.accuracy,
-        use_error_control=True,
+        use_error_control=not args.no_error_control,
     )

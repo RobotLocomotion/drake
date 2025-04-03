@@ -79,15 +79,6 @@ void ConvexIntegrator<T>::DoInitialize() {
   const int nv = plant().num_velocities();
   const int nz = this->get_context().get_continuous_state().num_z();
 
-  const Context<T>& disagram_context = this->get_context();
-  const Context<T>& context = plant().GetMyContextFromRoot(disagram_context);
-
-  // TODO(vincekurtz): support these other input ports
-  DRAKE_THROW_UNLESS(
-      !plant().get_applied_generalized_force_input_port().HasValue(context));
-  DRAKE_THROW_UNLESS(
-      !plant().get_applied_spatial_force_input_port().HasValue(context));
-
   // TODO(vincekurtz): figure out some reasonable accuracy bounds and defaults
   const double kDefaultAccuracy = 1e-1;
 
@@ -827,7 +818,9 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // Linearization of external controllers connected to the plant,
   //     τ = g(x) ≈ -K v + τ₀,
   // where K is diagonal.
-  if (plant().num_actuators() > 0) {
+  if (plant().num_actuators() > 0 ||
+      plant().get_applied_generalized_force_input_port().HasValue(context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(context)) {
     // Only do the linearization if a controller is connected
     LinearizeExternalSystem(h, &K, &tau0);
   } else {
@@ -851,7 +844,7 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   k = plant().CalcInverseDynamics(
       context, VectorX<T>::Zero(plant().num_velocities()), f_ext);
   const VectorX<T>& v0 = plant().GetVelocities(context);
-  v_star = v0 - h * M.ldlt().solve(k);
+  v_star = v0 - h * M.ldlt().solve(k - tau0); // TODO: put tau0 in constraints
 
   // problem creation
   // TODO(vincekurtz): consider updating rather than recreating
@@ -1394,13 +1387,17 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* K,
   MatrixX<T>& N = workspace_.N;
   MatrixX<T>& P = workspace_.P;
   MatrixX<T>& Q = workspace_.Q;
+  MultibodyForces<T>& forces = *workspace_.f_ext;
 
   // Compute some quantities that depend on the current state, before moving
   // messing with the state with finite differences
   N = plant().MakeVelocityToQDotMap(plant_context);
   const MatrixX<T> B = plant().MakeActuationMatrix();
   const VectorX<T> v0 = state.get_generalized_velocity().CopyToVector();
-  g0 = B * plant().AssembleActuationInput(plant_context);
+  //g0 = B * plant().AssembleActuationInput(plant_context);
+  forces.SetZero();
+  plant().AddAppliedExternalSpatialForces(plant_context, &forces);
+  plant().CalcGeneralizedForces(plant_context, forces, &g0);
 
   // Compute τ = D(x − x₀) + g₀ with finite differences
   Context<T>* mutable_context = this->get_mutable_context();
@@ -1432,7 +1429,10 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* K,
     // Compute the relevant matrix entries. Note that this assumes the state is
     // organized as s = [x; z] where x is the plant state and z is the external
     // system state.
-    g_prime = B * plant().AssembleActuationInput(plant_context);
+    // g_prime = B * plant().AssembleActuationInput(plant_context);
+    forces.SetZero();
+    plant().AddAppliedExternalSpatialForces(plant_context, &forces);
+    plant().CalcGeneralizedForces(plant_context, forces, &g_prime);
     D.col(i) = (g_prime - g0) / dsi;
 
     // Reset s' to s
@@ -1460,6 +1460,15 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* K,
   // components would be ingored entirely, resulting in wrong dynamics.
   (*K) = P.diagonal().cwiseMax(0) + h * Q.diagonal().cwiseMax(0);
   (*tau0) = g0 + P.diagonal().cwiseMax(0).asDiagonal() * v0;
+
+  // Add contribution from external ports
+  forces.SetZero();
+  plant().AddAppliedExternalGeneralizedForces(plant_context, &forces);
+  plant().AddAppliedExternalSpatialForces(plant_context, &forces);
+  VectorX<T> tau_ext = VectorX<T>::Zero(nv);
+  plant().CalcGeneralizedForces(plant_context, forces, &tau_ext);
+
+  (*tau0) += tau_ext;
 }
 
 template <typename T>
