@@ -80,6 +80,7 @@ drake_cc_library(
         ":internal_render_engine_vtk_base",
         ":internal_vtk_util",
         "//common",
+        "//common/yaml:yaml_io",
         "//geometry:vtk_gltf_uri_loader",
         "//geometry/proximity:polygon_to_triangle_mesh",
         "//geometry/render:render_engine",
