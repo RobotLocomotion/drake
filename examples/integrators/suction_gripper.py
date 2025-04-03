@@ -9,19 +9,29 @@ import numpy as np
 ##
 
 class SuctionGripper(LeafSystem):
-    """A simple suction gripper model."""
+    """A super simple suction gripper model.
 
-    def __init__(self, plant, body_idx):
+    This model pulls all geometries within a certain distance towards the
+    gripper. The magnitude of the pulling force interpolates linearly from zero
+    at the boundary to a user-defined maximum value.
+    """
+
+    def __init__(self, plant, body_idx, force_radius, max_force):
         """Construct the suction gripper model.
 
         Args:
             plant: A model of the MultibodyPlant which the gripper acts upon.
             body_idx: The index of the body to which the gripper is attached.
+            force_radius: The maximum distance from the gripper at which the
+                suction force is applied.
+            max_force: The maximum suction force.
         """
         super().__init__()
         self.set_name("suction_gripper")
         self.plant = plant
         self.body_idx = body_idx
+        self.force_radius = force_radius
+        self.max_force = max_force
 
         # Input ports take body poses and geometry info
         self.body_poses_input_port = self.DeclareAbstractInputPort(
@@ -45,10 +55,11 @@ class SuctionGripper(LeafSystem):
         X_WC = body_poses[self.body_idx]
         p_WC = X_WC.translation()
 
-        # Compute distances from all geometries to the suction cup, up to a
-        # maximum distance.
-        max_dist = 0.4
-        distances = query_object.ComputeSignedDistanceToPoint(p_WC, max_dist)
+        # Compute distances from all geometries that are within
+        # self.force_radius of the suction cup
+        distances = query_object.ComputeSignedDistanceToPoint(
+            p_WC, self.force_radius
+        )
 
         # Compute a suction force on each geometry within the maximum distance
         spatial_forces = []
@@ -77,7 +88,8 @@ class SuctionGripper(LeafSystem):
                 p_WP = X_WB @ p_BP
 
                 # Force on point P, expressed in the world frame
-                magnitude = 10 * (max_dist - distance)
+                scale = self.max_force / self.force_radius
+                magnitude = scale * (self.force_radius - distance)
                 assert magnitude >= 0.0
                 direction = (p_WC - p_WP) / np.linalg.norm(p_WC - p_WP)
                 f_WP_W = magnitude * direction
@@ -139,7 +151,14 @@ plant.RegisterCollisionGeometry(
 plant.Finalize()
 
 # Connect the suction gripper model
-suction_model = builder.AddSystem(SuctionGripper(plant, gripper_body.index()))
+suction_model = builder.AddSystem(
+    SuctionGripper(
+        plant,
+        gripper_body.index(),
+        force_radius=0.2,
+        max_force=5.0,
+    )
+)
 
 builder.Connect(
     suction_model.GetOutputPort("force_output"),
@@ -163,7 +182,7 @@ diagram = builder.Build()
 context = diagram.CreateDefaultContext()
 
 # Set the initial state
-q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.3])
+q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.43])
 plant_context = plant.GetMyMutableContextFromRoot(context)
 plant.SetPositions(plant_context, box, q0_box)
 
