@@ -898,8 +898,24 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
   // Iterate over each velocity, and add the corresponding external force
   // constraint. TODO(vincekurtz): only do this if at least one of the external
   // force input ports is connected.
-  (void)Ke;
-  (void)ke;
+  for (int c = 0; c < problem->num_cliques(); ++c) {
+    const int nv = problem->num_velocities(c);
+    for (int i = 0; i < nv; ++i) {
+      const int c_start = problem->velocities_start(c);
+
+      const T& k = Ke(c_start + i);
+      const T& u = ke(c_start + i);
+      const T e = std::numeric_limits<T>::infinity();
+
+      fmt::print("c: {}, nv: {}, i: {}, k: {}, u: {}, e: {}\n", c, nv, i, k, u,
+                 e);
+
+      typename SapExternalSystemConstraint<T>::Configuration configuration{
+          c, nv, i};
+      problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
+          configuration, k, u, e));
+    }
+  }
 }
 
 template <typename T>
@@ -1492,11 +1508,10 @@ void ConvexIntegrator<T>::LinearizeExternalSystem(const T& h, VectorX<T>* Ku,
   (*Ke) = P_e.diagonal().cwiseMax(0) + h * Q_e.diagonal().cwiseMax(0);
   (*ke) = ge0 + P_e.diagonal().cwiseMax(0).asDiagonal() * v0;
 
-  fmt::print("Qe =\n{}\n", fmt_eigen(Q_e));
-  fmt::print("Ke = {}\n", fmt_eigen((*Ke).transpose()));
-  fmt::print("ke = {}\n", fmt_eigen((*ke).transpose()));
-
-  getchar();
+  // fmt::print("Qe =\n{}\n", fmt_eigen(Q_e));
+  // fmt::print("Ke = {}\n", fmt_eigen((*Ke).transpose()));
+  // fmt::print("ke = {}\n", fmt_eigen((*ke).transpose()));
+  // getchar();
 }
 
 template <typename T>
