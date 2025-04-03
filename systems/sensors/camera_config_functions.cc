@@ -13,6 +13,7 @@
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/geometry/render/render_camera.h"
+#include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render_gl/factory.h"
 #include "drake/geometry/render_gltf_client/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
@@ -116,18 +117,14 @@ void MakeEngineByClassName(const std::string& class_name,
 void ValidateEngineAndMaybeAdd(const CameraConfig& config,
                                SceneGraph<double>* scene_graph) {
   DRAKE_DEMAND(scene_graph != nullptr);
-
-  // Querying for the type_name of the named renderer will simultaneously tell
-  // if a render engine already exists (non-empty value) *and* give us a string
-  // to match against config.renderer_class.
-  const std::string type_name =
-      scene_graph->GetRendererTypeName(config.renderer_name);
-
-  // Non-empty type name says that it already exists.
-  bool already_exists = !type_name.empty();
-
+  const geometry::render::RenderEngine* engine =
+      scene_graph->GetRenderer(config.renderer_name);
+  bool already_exists = engine != nullptr;
   if (already_exists) {
-    std::visit<void>(
+    const std::string type_name = NiceTypeName::Get(*engine);
+    // It already exists. Do we have a collision?
+    using Comparator = geometry::render::internal::RenderEngineComparator;
+    bool matches = std::visit<bool>(
         overloaded{
             [&type_name, &config](const std::string& class_name) {
               if (!class_name.empty() &&
@@ -138,19 +135,23 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
                     "used with a different type: {}.",
                     config.renderer_name, class_name, type_name));
               }
+              return true;
             },
-            [&config](auto&&) {
-              throw std::logic_error(fmt::format(
-                  "Invalid camera configuration; requested renderer_name "
-                  " = '{}' with renderer parameters, but the named renderer "
-                  "already exists. Only the first instance of the named "
-                  "renderer can use parameters.",
-                  config.renderer_name));
+            [engine](auto&& params) {
+              return Comparator::ParametersMatch(*engine, Value(params));
             }},
         config.renderer_class);
+    if (!matches) {
+      throw std::logic_error(fmt::format(
+          "Invalid camera configuration; requested renderer_name = '{}' with "
+          "renderer parameters, but the named renderer already exists and "
+          "doesn't match the given parameters",
+          config.renderer_name));
+    }
+    // Either it exists and we've matched or we've thrown. Either way, no need
+    // to add.
+    return;
   }
-
-  if (already_exists) return;
 
   std::visit<void>(
       overloaded{

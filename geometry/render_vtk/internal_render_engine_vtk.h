@@ -210,6 +210,8 @@ class DRAKE_NO_EXPORT RenderEngineVtk : public render::RenderEngine,
       const render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
+  bool DoParametersMatch(const AbstractValue& params) const override;
+
   // Helper function for mapping a RenderMesh instance into the appropriate VTK
   // polydata.
   void ImplementRenderMesh(geometry::internal::RenderMesh&& mesh,

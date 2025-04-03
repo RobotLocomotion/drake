@@ -10,6 +10,8 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
+#include "drake/common/value.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_camera.h"
@@ -24,6 +26,12 @@
 namespace drake {
 namespace geometry {
 namespace render {
+namespace internal {
+
+// Forward declare for friendship.
+class RenderEngineComparator;
+
+}  // namespace internal
 
 /** The engine for performing rasterization operations on geometry. This
  includes rgb images and depth images. The coordinate system of
@@ -172,7 +180,8 @@ class RenderEngine {
    @returns True if the %RenderEngine implementation accepted the geometry for
             registration. */
   bool RegisterDeformableVisual(
-      GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+      GeometryId id,
+      const std::vector<geometry::internal::RenderMesh>& render_meshes,
       const PerceptionProperties& properties);
 
   //@}
@@ -325,7 +334,8 @@ class RenderEngine {
 
    @experimental */
   virtual bool DoRegisterDeformableVisual(
-      GeometryId id, const std::vector<internal::RenderMesh>& render_meshes,
+      GeometryId id,
+      const std::vector<geometry::internal::RenderMesh>& render_meshes,
       const PerceptionProperties& properties);
 
   /** The NVI-function for updating the pose of a rigid render geometry
@@ -473,8 +483,26 @@ class RenderEngine {
     }
   }
 
+  /** The NVI-function for ParametersMatch(). Derived classes must implement
+   this in order to support parameter matching. */
+  virtual bool DoParametersMatch(const AbstractValue& params) const {
+    unused(params);
+    return false;
+  }
+
  private:
   friend class RenderEngineTester;
+  // Used to compare sets of engine parameters.
+  friend class internal::RenderEngineComparator;
+
+  /** Reports `true` if this engine's parameters are _known_ to match the
+   parameters stored in the given `AbstractValue`.
+
+   If a derived class doesn't implement `DoParametersMatch()`, then matching
+   can't be determined and false is returned. */
+  bool ParametersMatch(const AbstractValue& params) const {
+    return DoParametersMatch(params);
+  }
 
   // The following collections represent a disjoint partition of all registered
   // geometry ids (i.e., the id for a registered visual must appear in one and
@@ -499,6 +527,24 @@ class RenderEngine {
   // RenderLabel default constructor.
   RenderLabel default_render_label_{};
 };
+
+namespace internal {
+
+// A class with access to RenderEngine private members in order to be able to
+// compare the engine parameters between two RenderEngines (of possibly
+// disparate types).
+class RenderEngineComparator {
+ public:
+  RenderEngineComparator() = delete;
+
+  /* Reports `true` if the parameters used by `engine` match the given `params`.
+
+   This makes use of the RenderEngine::ParametersMatch() private method. */
+  static bool ParametersMatch(const RenderEngine& engine,
+                              const AbstractValue& params);
+};
+
+}  // namespace internal
 
 }  // namespace render
 }  // namespace geometry

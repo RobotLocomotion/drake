@@ -21,6 +21,8 @@ struct RenderEngineGlParams {
     a->Visit(DRAKE_NVP(lights));
   }
 
+  bool operator==(const RenderEngineGlParams&) const;
+
   /** Default diffuse color to apply to a geometry when none is otherwise
    specified in the (phong, diffuse) property.  */
   Rgba default_diffuse{0.9, 0.7, 0.2, 1.0};

@@ -43,6 +43,7 @@
 
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/text_logging.h"
 #include "drake/geometry/proximity/polygon_to_triangle_mesh.h"
@@ -606,6 +607,14 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
     copy_cameras(other.pipelines_.at(p)->renderer.Get(),
                  pipelines_.at(p)->renderer.Get());
   }
+}
+
+bool RenderEngineVtk::DoParametersMatch(const AbstractValue& params) const {
+  auto* test_params = params.maybe_get_value<RenderEngineVtkParams>();
+  if (test_params == nullptr) {
+    return false;
+  }
+  return *test_params == parameters_;
 }
 
 void RenderEngineVtk::ImplementRenderMesh(RenderMesh&& mesh,

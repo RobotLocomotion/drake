@@ -18,6 +18,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -615,6 +616,19 @@ class RenderEngineGlTest : public ::testing::Test {
 
   fs::path temp_dir_;
 };
+
+TEST_F(RenderEngineGlTest, ParameterMatching) {
+  RenderEngineGlParams params1{.lights = {LightParameter{.type = "spot"}}};
+  RenderEngineGlParams params1_copy = params1;
+  RenderEngineGlParams params2;
+
+  RenderEngineGl engine(params1);
+  using Comparator = geometry::render::internal::RenderEngineComparator;
+
+  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1)));
+  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1_copy)));
+  EXPECT_FALSE(Comparator::ParametersMatch(engine, Value(params2)));
+}
 
 // Tests an empty image -- confirms that it clears to the "empty" color -- no
 // use of "inlier" or "outlier" pixel locations.

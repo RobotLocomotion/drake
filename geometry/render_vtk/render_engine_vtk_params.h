@@ -24,6 +24,8 @@ struct NullTexture {
    Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive*) {}
+
+  bool operator==(const NullTexture&) const;
 };
 
 struct EquirectangularMap {
@@ -33,6 +35,8 @@ struct EquirectangularMap {
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(path));
   }
+
+  bool operator==(const EquirectangularMap&) const;
 
   // TODO(SeanCurtis-TRI): It would be nice if this supported package. To that
   // end proper URIs including file:// or even data://, I suppose.
@@ -48,6 +52,8 @@ struct EnvironmentMap {
     a->Visit(DRAKE_NVP(skybox));
     a->Visit(DRAKE_NVP(texture));
   }
+
+  bool operator==(const EnvironmentMap&) const;
 
   /** If true, the environment map will be rendered in a sky box. If false, it
    won't be visible in the background, but it will illuminate objects. */
@@ -83,6 +89,8 @@ struct GltfExtension {
     a->Visit(DRAKE_NVP(warn_unimplemented));
   }
 
+  bool operator==(const GltfExtension&) const;
+
   /** Whether to log a warning when this extension is used (i.e., is listed in
    `extensionsUsed`) but isn't implemented by the render engine. By default,
    all unimplemented extensions will log a warning, but users can configure
@@ -107,6 +115,8 @@ struct RenderEngineVtkParams {
     a->Visit(DRAKE_NVP(gltf_extensions));
     a->Visit(DRAKE_NVP(backend));
   }
+
+  bool operator==(const RenderEngineVtkParams&) const;
 
   /** The (optional) rgba color to apply to the (phong, diffuse) property when
     none is otherwise specified. Note: currently the alpha channel is unused

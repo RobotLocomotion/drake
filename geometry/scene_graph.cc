@@ -451,6 +451,19 @@ std::string SceneGraph<T>::GetRendererTypeName(const Context<T>& context,
 }
 
 template <typename T>
+const render::RenderEngine* SceneGraph<T>::GetRenderer(
+    const std::string& name) const {
+  return hub_.model().GetRenderEngineByName(name);
+}
+
+template <typename T>
+const render::RenderEngine* SceneGraph<T>::GetRenderer(
+    const Context<T>& context, const std::string& name) const {
+  const auto& g_state = geometry_state(context);
+  return g_state.GetRenderEngineByName(name);
+}
+
+template <typename T>
 int SceneGraph<T>::RendererCount() const {
   return hub_.model().RendererCount();
 }

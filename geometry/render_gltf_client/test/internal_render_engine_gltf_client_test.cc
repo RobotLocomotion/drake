@@ -101,6 +101,19 @@ class RenderEngineGltfClientTest : public ::testing::Test {
   const DepthRenderCamera depth_camera_;
 };
 
+TEST_F(RenderEngineGltfClientTest, ParameterMatching) {
+  RenderEngineGltfClientParams params1{.verbose = true};
+  RenderEngineGltfClientParams params1_copy = params1;
+  RenderEngineGltfClientParams params2{.verbose = false};
+
+  RenderEngineGltfClient engine(params1);
+  using Comparator = geometry::render::internal::RenderEngineComparator;
+
+  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1)));
+  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1_copy)));
+  EXPECT_FALSE(Comparator::ParametersMatch(engine, Value(params2)));
+}
+
 TEST_F(RenderEngineGltfClientTest, Constructor) {
   // Reference values of default parameters; we'll use this to make sure that
   // the client is default initialized with default parameters.

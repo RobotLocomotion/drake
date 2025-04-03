@@ -775,6 +775,10 @@ class SceneGraph final : public systems::LeafSystem<T> {
   std::string GetRendererTypeName(const systems::Context<T>& context,
                                   const std::string& name) const;
 
+  const render::RenderEngine* GetRenderer(const std::string& name) const;
+  const render::RenderEngine* GetRenderer(const systems::Context<T>& context,
+                                          const std::string& name) const;
+
   /** Reports the number of renderers registered to this %SceneGraph.  */
   int RendererCount() const;
 
