@@ -452,9 +452,11 @@ drake_cc_library(
     implementation_deps = [
         ":volume_to_surface_mesh",
         "//common:essential",
+        "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
         "//solvers:mathematical_program",
         "//solvers:mathematical_program_result",
+        "//solvers:osqp_solver",
     ],
 )
 
