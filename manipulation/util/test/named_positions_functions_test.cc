@@ -41,7 +41,7 @@ GTEST_TEST(ApplyNamedPositionsAsDefaultsTest, Basic) {
   // about the resulting message.
   input["acrobot"]["ShoulderJoint"] = Eigen::Vector3d::Zero();
   DRAKE_EXPECT_THROWS_MESSAGE(ApplyNamedPositionsAsDefaults(input, &plant),
-                              ".*ApplyNamedPositionsAsDefaults.*positions.*"
+                              ".*set_default_positions.*positions.*"
                               "input.*3.*not.*acrobot::ShoulderJoint.*1.*");
 }
 
@@ -68,7 +68,7 @@ GTEST_TEST(ApplyNamedPositionsAsDefaultsTest, MultiDof) {
   // about the resulting message.
   input["cylinder"]["ball"] = Eigen::Vector4d::Zero();
   DRAKE_EXPECT_THROWS_MESSAGE(ApplyNamedPositionsAsDefaults(input, &plant),
-                              ".*ApplyNamedPositionsAsDefaults.*positions.*"
+                              ".*set_default_positions.*positions.*"
                               "input.*4.*not.*cylinder::ball.*3.*");
 }
 
