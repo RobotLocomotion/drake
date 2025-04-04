@@ -9,7 +9,7 @@
 // This file should only ever be included from `*.cc` implementation files,
 // and we always want its code to be private to that file, so we'll use an
 // anonymous namespace in a header file, for simplicity.
-namespace {  // NOLINT(build/namespaces)
+namespace {  // NOLINT(build/namespaces_headers)
 
 /* LateBoundFunction is a small wrapper class around a C-style raw function
 pointer. (It doesn't support std::function objects.)
