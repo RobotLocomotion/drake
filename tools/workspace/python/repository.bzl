@@ -209,7 +209,7 @@ python_repository = repository_rule(
         "macos_interpreter_path": attr.string(
             # The version listed here should match what's listed in both the
             # root CMakeLists.txt and doc/_pages/installation.md.
-            default = "{homebrew_prefix}/bin/python3.12",
+            default = "{homebrew_prefix}/bin/python3.13",
         ),
         "requirements_flavor": attr.string(
             default = "test",

@@ -23,6 +23,7 @@ _files_to_remove = []
 python_targets = (
     PythonTarget(3, 11),
     PythonTarget(3, 12),
+    PythonTarget(3, 13),
 )
 
 

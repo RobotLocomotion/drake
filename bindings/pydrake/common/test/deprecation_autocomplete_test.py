@@ -70,11 +70,18 @@ class TestDeprecation(unittest.TestCase):
             "sub_module",
             "value",
         ]
-        # Python 3.11 adds a default implementation of __getstate__(), see:
-        # https://docs.python.org/3/library/pickle.html#object.__getstate__
-        # It does not exist in python <=3.10.
+        # The following version-specific default implementations are added:
+        # * Python 3.11: __getstate__(), see
+        #   https://docs.python.org/3/library/pickle.html#object.__getstate__
+        # * Python 3.13: __firstlineno__ and __static_attributes__, see
+        #   https://docs.python.org/3/reference/datamodel.html#type.__firstlineno__
+        #   https://docs.python.org/3/reference/datamodel.html#type.__static_attributes__
+        # These do not exist in versions of Python before what is listed.
         if sys.version_info[0:2] >= (3, 11):
             suffixes_expected.append("__getstate__(")
+        if sys.version_info[0:2] >= (3, 13):
+            suffixes_expected.append("__firstlineno__")
+            suffixes_expected.append("__static_attributes__")
         suffixes_expected += [
             "__ge__(",
             "__eq__(",
