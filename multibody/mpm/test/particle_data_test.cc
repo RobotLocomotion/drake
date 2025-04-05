@@ -187,6 +187,46 @@ TYPED_TEST(ParticleDataTest, ComputePK1StressDerivatives) {
   }
 }
 
+TYPED_TEST(ParticleDataTest, ComputeTotalMassAndMomentum) {
+  using T = TypeParam;
+  const Vector3d x0(1.0, 2.0, 3.0);
+  const Vector3d x1 = -x0;
+  const std::vector<Vector3d> positions = {x0, x1};
+  const double total_volume = 1.0;
+
+  fem::DeformableBodyConfig<double> config;
+  const double kRho = 1.2;
+  config.set_mass_density(kRho);
+  this->dut_.AddParticles(positions, total_volume, config);
+
+  /* Set arbitrary but equal v for particle 0 and 1. */
+  const Vector3<T> v(0.12, 0.34, 0.56);
+  this->dut_.mutable_v()[0] = v;
+  this->dut_.mutable_v()[1] = v;
+  /* Set arbitrary but opposite C for particle 0 and 1. */
+  Matrix3<T> C;
+  C << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85;
+  this->dut_.mutable_C()[0] = C;
+  this->dut_.mutable_C()[1] = -C;
+  /* Arbitrary dx. */
+  const T dx = 0.123;
+
+  const MassAndMomentum<T> result = ComputeTotalMassAndMomentum(this->dut_, dx);
+  if constexpr (std::is_same_v<T, AutoDiffXd>) {
+    EXPECT_NEAR(ExtractDoubleOrThrow(result.mass), kRho * total_volume,
+                std::numeric_limits<double>::epsilon());
+  } else {
+    EXPECT_NEAR(result.mass, kRho * total_volume,
+                std::numeric_limits<T>::epsilon());
+  }
+  EXPECT_TRUE(
+      CompareMatrices(result.linear_momentum, total_volume * kRho * v, 1e-14));
+  /* With the choice of v and C, the angular momentum contribution of the two
+   particles should cancel out. */
+  EXPECT_TRUE(
+      CompareMatrices(result.angular_momentum, Vector3<T>::Zero(), 1e-14));
+}
+
 /* Creates an array of arbitrary autodiff deformation gradients. */
 Matrix3<AutoDiffXd> MakeDeformationGradientsWithDerivatives() {
   /* Create an arbitrary AutoDiffXd deformation. */
