@@ -26,10 +26,12 @@ struct lcmt_panda_status
   // franka::RobotState.ddq_d
   double joint_acceleration_desired[num_joints];
   // franka::RobotState.tau_J
+  // This is correct w.r.t. the conventions outlined in manipulation/README.
   double joint_torque[num_joints];
   // franka::RobotState.tau_J_d
   double joint_torque_desired[num_joints];
   // franka::RobotState.tau_ext_hat_filtered
+  // This is *negative* w.r.t. the conventions outlined in manipulation/README.
   double joint_torque_external[num_joints];
 
   double control_command_success_rate;
