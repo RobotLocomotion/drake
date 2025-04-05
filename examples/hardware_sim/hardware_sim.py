@@ -22,11 +22,14 @@ import dataclasses as dc
 import math
 import typing
 
+import numpy as np
+
 from pydrake.common import RandomGenerator
 from pydrake.common.yaml import yaml_load_typed
 from pydrake.lcm import DrakeLcmParams
 from pydrake.manipulation import (
     ApplyDriverConfigs,
+    ApplyNamedPositionsAsDefaults,
     IiwaDriver,
     SchunkWsgDriver,
     ZeroForceDriver,
@@ -111,6 +114,15 @@ class Scenario:
 
     visualization: VisualizationConfig = VisualizationConfig()
 
+    # A map-of-maps {model_instance_name: {joint_name: np.ndarray}} that
+    # defines the initial state of some joints in the scene. Joints not
+    # mentioned will remain in their configurations as applied by the model
+    # directives.
+    initial_position: dict[
+        str,  # model_instance_name ->
+        dict[str, np.ndarray],  # joint_name -> positions
+    ] = dc.field(default_factory=dict)
+
 
 def _load_scenario(*, filename, scenario_name, scenario_text):
     """Implements the command-line handling logic for scenario data.
@@ -143,6 +155,10 @@ def run(*, scenario, graphviz=None):
     added_models = ProcessModelDirectives(
         directives=ModelDirectives(directives=scenario.directives),
         plant=sim_plant)
+
+    # Override or supplement initial positions.
+    ApplyNamedPositionsAsDefaults(input=scenario.initial_position,
+                                  plant=sim_plant)
 
     # Now the plant is complete.
     sim_plant.Finalize()

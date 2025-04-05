@@ -37,9 +37,6 @@ Demo:
   - add_model:
       name: wsg
       file: package://drake_models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
-      default_joint_positions:
-        left_finger_sliding_joint: [-0.02]
-        right_finger_sliding_joint: [0.02]
   - add_frame:
       name: wsg_on_iiwa
       X_PF:
@@ -75,3 +72,10 @@ Demo:
       lcm_bus: driver_traffic
     wsg: !SchunkWsgDriver
       lcm_bus: driver_traffic
+  initial_position:
+    # Set an initial position for the gripper. This can also be spelled using
+    # default_joint_positions in the add_model directive, but sometimes that is
+    # awkward (e.g., if the gripper was in a separate add_directives sub-file).
+    wsg:
+      left_finger_sliding_joint: [-0.02]
+      right_finger_sliding_joint: [0.02]

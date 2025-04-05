@@ -23,6 +23,7 @@ Drake maintainers should keep this file in sync with hardware_sim.py. */
 #include "drake/manipulation/kuka_iiwa/iiwa_driver_functions.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 #include "drake/manipulation/util/apply_driver_configs.h"
+#include "drake/manipulation/util/named_positions_functions.h"
 #include "drake/manipulation/util/zero_force_driver_functions.h"
 #include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -98,6 +99,10 @@ void Simulation::Setup() {
   // Add model directives.
   std::vector<ModelInstanceInfo> added_models;
   ProcessModelDirectives({scenario_.directives}, &sim_plant, &added_models);
+
+  // Override or supplement initial positions.
+  manipulation::ApplyNamedPositionsAsDefaults(scenario_.initial_position,
+                                              &sim_plant);
 
   // Now the plant is complete.
   sim_plant.Finalize();
