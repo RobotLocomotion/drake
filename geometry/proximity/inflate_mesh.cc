@@ -7,8 +7,10 @@
 #include <vector>
 
 #include "drake/geometry/proximity/volume_to_surface_mesh.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/mathematical_program.h"
+#include "drake/solvers/osqp_solver.h"
 
 namespace drake {
 namespace geometry {
@@ -16,6 +18,12 @@ namespace internal {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using solvers::ClarabelSolver;
+using solvers::CommonSolverOption;
+using solvers::MakeFirstAvailableSolver;
+using solvers::OsqpSolver;
+using solvers::SolverInterface;
+using solvers::SolverOptions;
 
 namespace {
 
@@ -100,24 +108,30 @@ std::vector<std::vector<int>> PartitionIncidentFaces(
  only depends on the face normals and `margin` value. */
 Vector3d CalculateDisplacement(const TriangleSurfaceMesh<double>& mesh_surface,
                                const std::vector<int>& face_group,
-                               double margin) {
+                               double margin, const SolverInterface& solver) {
   if (face_group.size() == 1) {
     /* A single face has a trivial solution. */
     return margin * mesh_surface.face_normal(face_group[0]);
   } else {
     std::unique_ptr<solvers::MathematicalProgram> prog =
         MakeVertexProgram(mesh_surface, face_group);
-    solvers::ClarabelSolver solver;
-    const solvers::MathematicalProgramResult result = solver.Solve(*prog);
+    std::optional<SolverOptions> solver_options;
+    solver_options.emplace();
+    solver_options->SetOption(CommonSolverOption::kMaxThreads, 1);
+    solvers::MathematicalProgramResult result;
+    solver.Solve(*prog, /* initial_guess = */ std::nullopt, solver_options,
+                 &result);
     if (!result.is_success()) {
       /* At this point, it isn't clear what circumstances would cause failure.
        Most likely an extremely degenerate case (e.g., a flat tetrahedron with
        two anti-parallel faces on the surface). As such, it's difficult to
        know if there's a more helpful message that could be given. */
-      const solvers::ClarabelSolver::Details& details =
-          result.get_solver_details<solvers::ClarabelSolver>();
+      const std::string status =
+          result.get_solver_id() == ClarabelSolver::id()
+              ? result.get_solver_details<ClarabelSolver>().status
+              : fmt::to_string(result.get_solution_result());
       throw std::logic_error(
-          fmt::format("Program fails with status: {}.", details.status));
+          fmt::format("Program fails with status: {}.", status));
     }
 
     return margin * result.get_x_val();
@@ -158,6 +172,7 @@ void ProcessUnfeasibleVertex(const VolumeMesh<double>& mesh,
                              double margin, int surface_vertex,
                              const std::vector<int>& incident_faces,
                              const std::vector<TetFace>& tri_to_tet,
+                             const SolverInterface& solver,
                              std::vector<Vector3d>* u,
                              std::vector<Vector3d>* vertices,
                              std::vector<VolumeElement>* tetrahedra,
@@ -185,7 +200,7 @@ void ProcessUnfeasibleVertex(const VolumeMesh<double>& mesh,
    will require copying the original vertex. However, we only need to make N-1
    copies; the first group will use the original vertex. */
   (*u)[surface_vertex] =
-      CalculateDisplacement(mesh_surface, face_groups[0], margin);
+      CalculateDisplacement(mesh_surface, face_groups[0], margin, solver);
 
   /* Intentional copy -- we'll be pushing to `vertices` and don't want to risk
    an invalidated reference. */
@@ -198,7 +213,8 @@ void ProcessUnfeasibleVertex(const VolumeMesh<double>& mesh,
     surface_to_volume_vertices->push_back(dupe_volume_index);
     split_vertex_to_original->emplace(dupe_volume_index, volume_vertex);
     vertices->push_back(p);
-    u->push_back(CalculateDisplacement(mesh_surface, face_group, margin));
+    u->push_back(
+        CalculateDisplacement(mesh_surface, face_group, margin, solver));
 
     /* Update volume elements to point to the newly added duplicate. */
     const int tet_index = tri_to_tet[face_group[0]].tet_index;
@@ -240,6 +256,11 @@ VolumeMesh<double> MakeInflatedMesh(
   std::vector<VolumeElement> tetrahedra = mesh.tetrahedra();
   std::vector<Vector3d> u(num_surface_vertices, Vector3d::Zero());
 
+  // Choose a solver to solver the MakeVertexProgram QPs. Clarabel is more
+  // accurate, but might not be available (e.g., if Rust is disabled).
+  auto solver =
+      MakeFirstAvailableSolver({ClarabelSolver::id(), OsqpSolver::id()});
+
   /* Process each surface vertex separately. In the case where a vertex is
    infeasible, we will end up appending new vertices to `vertices`. It is
    essential that this for loop limit itself to the *original* vertices. */
@@ -248,15 +269,19 @@ VolumeMesh<double> MakeInflatedMesh(
 
     std::unique_ptr<solvers::MathematicalProgram> prog =
         MakeVertexProgram(mesh_surface, faces);
-    solvers::ClarabelSolver solver;
-    const solvers::MathematicalProgramResult result = solver.Solve(*prog);
-
+    std::optional<SolverOptions> solver_options;
+    solver_options.emplace();
+    solver_options->SetOption(CommonSolverOption::kMaxThreads, 1);
+    solvers::MathematicalProgramResult result;
+    solver->Solve(*prog, /* initial_guess = */ std::nullopt, solver_options,
+                  &result);
     if (result.is_success()) {
       u[s] = margin * result.get_x_val();
     } else {
-      ProcessUnfeasibleVertex(
-          mesh, mesh_surface, margin, s, faces, tri_to_tet, &u, &vertices,
-          &tetrahedra, &surface_to_volume_vertices, split_vertex_to_original);
+      ProcessUnfeasibleVertex(mesh, mesh_surface, margin, s, faces, tri_to_tet,
+                              *solver, &u, &vertices, &tetrahedra,
+                              &surface_to_volume_vertices,
+                              split_vertex_to_original);
     }
   }
 
