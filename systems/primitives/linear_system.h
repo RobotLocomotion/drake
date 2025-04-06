@@ -285,33 +285,23 @@ bool IsStabilizable(const LinearSystem<double>& sys,
 bool IsDetectable(const LinearSystem<double>& sys,
                   std::optional<double> threshold = std::nullopt);
 
-/// Converts a continuous-time linear system to a discrete-time linear system
-/// using the zero-order hold (ZOH) method.
-///
-/// @param system The continuous-time LinearSystem.
-/// @param time_period The sampling time period.
-/// @returns A discrete-time LinearSystem.
-/// @throws if the @p system is not continuous or @p time_period <= 0.
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
-/// @pydrake_mkdoc_identifier{linearsystem}
+#ifndef DRAKE_DOXYGEN_CXX
+// The declaration in drake/systems/primitives/linear_system.h is deprecated
+// and will be removed on or after 2025-08-01. Insted, use the declaration in
+// drake/systems/analysis/discrete_time_approximation.h.
 template <typename T>
 std::unique_ptr<LinearSystem<T>> DiscreteTimeApproximation(
     const LinearSystem<T>& system, double time_period);
+#endif
 
-/// Converts a continuous-time affine system to a discrete-time affine system
-/// using the zero-order hold (ZOH) method.
-///
-/// @param system The continuous-time AffineSystem.
-/// @param time_period The sampling time period.
-/// @returns A discrete-time AffineSystem.
-/// @throws if the @p system is not continuous or @p time_period <= 0.
-/// @tparam_default_scalar
-/// @ingroup primitive_systems
-/// @pydrake_mkdoc_identifier{affinesystem}
+#ifndef DRAKE_DOXYGEN_CXX
+// The declaration in drake/systems/primitives/linear_system.h is deprecated
+// and will be removed on or after 2025-08-01. Insted, use the declaration in
+// drake/systems/analysis/discrete_time_approximation.h.
 template <typename T>
 std::unique_ptr<AffineSystem<T>> DiscreteTimeApproximation(
     const AffineSystem<T>& system, double time_period);
+#endif
 
 }  // namespace systems
 }  // namespace drake

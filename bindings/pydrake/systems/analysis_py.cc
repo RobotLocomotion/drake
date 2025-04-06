@@ -7,6 +7,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/scope_exit.h"
 #include "drake/systems/analysis/batch_eval.h"
+#include "drake/systems/analysis/discrete_time_approximation.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/analysis/monte_carlo.h"
 #include "drake/systems/analysis/region_of_attraction.h"
@@ -43,8 +44,23 @@ PYBIND11_MODULE(analysis, m) {
   m.doc() = "Bindings for the analysis portion of the Systems framework.";
 
   py::module::import("pydrake.systems.framework");
+  py::module::import("pydrake.systems.primitives");
   py::module::import("pydrake.solvers");
   py::module::import("pydrake.trajectories");
+
+  {
+    constexpr auto& doc = pydrake_doc.drake.systems;
+    m.def("DiscreteTimeApproximation",
+        overload_cast_explicit<std::unique_ptr<LinearSystem<double>>,
+            const LinearSystem<double>&, double>(&DiscreteTimeApproximation),
+        py::arg("linear_system"), py::arg("time_period"),
+        doc.DiscreteTimeApproximation.doc_2args_constLinearSystem_double);
+    m.def("DiscreteTimeApproximation",
+        overload_cast_explicit<std::unique_ptr<AffineSystem<double>>,
+            const AffineSystem<double>&, double>(&DiscreteTimeApproximation),
+        py::arg("affine_system"), py::arg("time_period"),
+        doc.DiscreteTimeApproximation.doc_2args_constAffineSystem_double);
+  }
 
   {
     using Class = SimulatorConfig;
