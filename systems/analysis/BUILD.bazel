@@ -127,6 +127,8 @@ drake_cc_library(
     srcs = ["discrete_time_approximation.cc"],
     hdrs = ["discrete_time_approximation.h"],
     deps = [
+        ":simulator_config_functions",
+        "//systems/framework",
         "//systems/primitives:affine_system",
         "//systems/primitives:linear_system",
     ],
@@ -603,8 +605,19 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "discrete_time_approximation_test",
+    data = [
+        "//examples/multibody/cart_pole:models",
+    ],
     deps = [
         ":discrete_time_approximation",
+        ":simulator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/controllers:linear_quadratic_regulator",
+        "//systems/primitives",
     ],
 )
 
