@@ -1014,6 +1014,7 @@ drake_cc_variant_library(
         ":mathematical_program",
     ],
     implementation_deps_enabled = [
+        "//common:scope_exit",
         "//math:eigen_sparse_triplet",
         "@osqp_internal//:osqp",
     ],
