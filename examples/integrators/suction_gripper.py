@@ -122,25 +122,92 @@ def run_simulation(
     )
     parser = Parser(plant)
 
-    # The gripper itself is just a sphere floating in space (for now)
-    radius = 0.02
-    color = np.array([0.8, 0.5, 0.5, 1.0])
-    pos = np.array([0.0, 0.0, 0.5])
-    gripper_body = plant.AddRigidBody(
-        "gripper", SpatialInertia.SolidSphereWithDensity(1000, radius)
+    # # The gripper itself is just a sphere floating in space (for now)
+    # radius = 0.02
+    # color = np.array([0.8, 0.5, 0.5, 1.0])
+    # pos = np.array([0.0, 0.0, 0.5])
+    # gripper_body = plant.AddRigidBody(
+    #     "gripper", SpatialInertia.SolidSphereWithDensity(1000, radius)
+    # )
+    # plant.RegisterVisualGeometry(
+    #     gripper_body, RigidTransform(), Sphere(radius), "gripper", color
+    # )
+    # plant.RegisterCollisionGeometry(
+    #     gripper_body,
+    #     RigidTransform(),
+    #     Sphere(radius),
+    #     "gripper",
+    #     CoulombFriction(1.0, 1.0),
+    # )
+    # plant.WeldFrames(
+    #     plant.world_frame(), gripper_body.body_frame(), RigidTransform(pos)
+    # )
+
+    # A fancy gripper with a bellows model
+    base_length, base_width, base_height = 0.2, 0.1, 0.02
+    gripper_base = plant.AddRigidBody(
+        "gripper_base",
+        SpatialInertia.SolidBoxWithDensity(
+            1000, base_length, base_width, base_height
+        ),
     )
     plant.RegisterVisualGeometry(
-        gripper_body, RigidTransform(), Sphere(radius), "gripper", color
+        gripper_base,
+        RigidTransform(),
+        Box(base_length, base_width, base_height),
+        "gripper_base",
+        np.array([0.5, 0.5, 0.5, 1.0]),
     )
     plant.RegisterCollisionGeometry(
-        gripper_body,
+        gripper_base,
         RigidTransform(),
-        Sphere(radius),
-        "gripper",
+        Box(base_length, base_width, base_height),
+        "gripper_base",
         CoulombFriction(1.0, 1.0),
     )
     plant.WeldFrames(
-        plant.world_frame(), gripper_body.body_frame(), RigidTransform(pos)
+        plant.world_frame(),
+        gripper_base.body_frame(),
+        RigidTransform([0.0, 0.0, 0.5]),
+    )
+
+    bellows_radius = 0.01
+    bellows_height = 0.015
+    bellows_translation = -0.03
+    bellows = plant.AddRigidBody(
+        "bellows",
+        SpatialInertia.SolidCylinderWithDensity(
+            100, bellows_radius, bellows_height, np.array([0.0, 0.0, 1.0])
+        ),
+    )
+    plant.RegisterVisualGeometry(
+        bellows,
+        RigidTransform(),
+        Cylinder(bellows_radius, bellows_height),
+        "bellows",
+        np.array([0.1, 0.1, 0.1, 1.0]),
+    )
+    plant.RegisterCollisionGeometry(
+        bellows,
+        RigidTransform(),
+        Cylinder(bellows_radius, bellows_height),
+        "bellows",
+        CoulombFriction(1.0, 1.0),
+    )
+    bellows_joint = plant.AddJoint(
+        PrismaticJoint(
+            "bellows_joint",
+            gripper_base.body_frame(),
+            bellows.body_frame(),
+            [0.0, 0.0, 1.0],
+            damping=1e1,
+        )
+    )
+    bellows_joint.set_default_translation(bellows_translation)
+    plant.AddForceElement(
+        PrismaticSpring(
+            bellows_joint, nominal_position=bellows_translation, stiffness=1e2
+        )
     )
 
     # Manipuland(s)
@@ -163,7 +230,7 @@ def run_simulation(
     suction_model = builder.AddSystem(
         SuctionGripper(
             plant,
-            gripper_body.index(),
+            bellows.index(),
             force_radius=0.2,
             max_force=5.0,
         )
@@ -190,7 +257,7 @@ def run_simulation(
     context = diagram.CreateDefaultContext()
 
     # Set the initial state
-    q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.43])
+    q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.00, 0.4])
     plant_context = plant.GetMyMutableContextFromRoot(context)
     plant.SetPositions(plant_context, box, q0_box)
 
