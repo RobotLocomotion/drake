@@ -114,7 +114,7 @@ def add_gripper_mbp_elements(plant, scene_graph):
     SuctionGripper leaf system.
     """
     # Basic parameters
-    base_length, base_width, base_height = 0.2, 0.1, 0.02
+    base_length, base_width, base_height = 0.1, 0.08, 0.02
     bellows_radius = 0.01
     bellows_height = 0.015
     bellows_offset = -0.02
@@ -149,8 +149,8 @@ def add_gripper_mbp_elements(plant, scene_graph):
     )
 
     # Add little suction cup models across the gripper base
-    xpos = np.linspace(-base_length / 2 + 0.02, base_length / 2 - 0.02, 5)
-    ypos = np.linspace(-base_width / 2 + 0.02, base_width / 2 - 0.02, 3)
+    xpos = np.linspace(-base_length / 2 + 0.02, base_length / 2 - 0.02, 3)
+    ypos = np.linspace(-base_width / 2 + 0.02, base_width / 2 - 0.02, 2)
 
     collision_filter_set = GeometrySet(gripper_base_geom_id)
     pressure_sources = []
