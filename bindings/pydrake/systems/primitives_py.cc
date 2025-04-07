@@ -1,5 +1,6 @@
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -881,17 +882,27 @@ PYBIND11_MODULE(primitives, m) {
   m.def("IsDetectable", &IsDetectable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsDetectable.doc);
 
-  m.def("DiscreteTimeApproximation",
-      overload_cast_explicit<std::unique_ptr<LinearSystem<double>>,
-          const LinearSystem<double>&, double>(&DiscreteTimeApproximation),
-      py::arg("system"), py::arg("time_period"),
-      doc.DiscreteTimeApproximation.doc_linearsystem);
+  {
+    constexpr char kDocDeprecation[] =
+        "The DiscreteTimeApproximation function defined in the "
+        "pydrake.systems.primitives module is deprecated and will be removed "
+        "on or after 2025-08-01. Instead, import the function from the "
+        "pydrake.systems.analysis module.";
 
-  m.def("DiscreteTimeApproximation",
-      overload_cast_explicit<std::unique_ptr<AffineSystem<double>>,
-          const AffineSystem<double>&, double>(&DiscreteTimeApproximation),
-      py::arg("system"), py::arg("time_period"),
-      doc.DiscreteTimeApproximation.doc_affinesystem);
+    m.def("DiscreteTimeApproximation",
+        WrapDeprecated(kDocDeprecation,
+            overload_cast_explicit<std::unique_ptr<LinearSystem<double>>,
+                const LinearSystem<double>&, double>(
+                &DiscreteTimeApproximation)),
+        py::arg("system"), py::arg("time_period"), kDocDeprecation);
+
+    m.def("DiscreteTimeApproximation",
+        WrapDeprecated(kDocDeprecation,
+            overload_cast_explicit<std::unique_ptr<AffineSystem<double>>,
+                const AffineSystem<double>&, double>(
+                &DiscreteTimeApproximation)),
+        py::arg("system"), py::arg("time_period"), kDocDeprecation);
+  }
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake
