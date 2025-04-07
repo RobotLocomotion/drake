@@ -10,14 +10,17 @@ namespace geometry {
 namespace internal {
 namespace {
 
+using multibody::contact_solvers::internal::PartialPermutation;
+using multibody::contact_solvers::internal::VertexPartialPermutation;
+
 const GeometryId kIdA = GeometryId::get_new_id();
 const GeometryId kIdB = GeometryId::get_new_id();
 
 GTEST_TEST(ContactParticipation, NoVertexIsParticipating) {
   constexpr int kNumVertices = 3;
   ContactParticipation dut(kNumVertices);
-  multibody::contact_solvers::internal::PartialPermutation permutation =
-      dut.CalcVertexPermutation();
+  PartialPermutation permutation = dut.CalcPartialPermutation().vertex();
+  permutation.ExtendToFullPermutation();
   EXPECT_EQ(permutation.domain_size(), kNumVertices);
   // The expected permutation is the identity.
   std::vector<int> kExpectedPermutation = {0, 1, 2};
@@ -46,13 +49,17 @@ GTEST_TEST(ContactParticipation, SomeVerticesAreParticipating) {
       0, 1, 2, 12, 13, 14, 3, 4, 5, 6, 7, 8, 15, 16, 17, 9, 10, 11};
   const std::vector<int> kExpectedDofPartialPermutation{
       0, 1, 2, -1, -1, -1, 3, 4, 5, 6, 7, 8, -1, -1, -1, 9, 10, 11};
-  EXPECT_EQ(dut.CalcVertexPermutation().permutation(),
-            kExpectedVertexPermutation);
-  EXPECT_EQ(dut.CalcVertexPartialPermutation().permutation(),
-            kExpectedVertexPartialPermutation);
-  EXPECT_EQ(dut.CalcDofPermutation().permutation(), kExpectedDofPermutation);
-  EXPECT_EQ(dut.CalcDofPartialPermutation().permutation(),
-            kExpectedDofPartialPermutation);
+  const VertexPartialPermutation partial_permutation =
+      dut.CalcPartialPermutation();
+  PartialPermutation vertex = partial_permutation.vertex();
+  PartialPermutation dof = partial_permutation.dof();
+  EXPECT_EQ(vertex.permutation(), kExpectedVertexPartialPermutation);
+  EXPECT_EQ(dof.permutation(), kExpectedDofPartialPermutation);
+
+  vertex.ExtendToFullPermutation();
+  dof.ExtendToFullPermutation();
+  EXPECT_EQ(vertex.permutation(), kExpectedVertexPermutation);
+  EXPECT_EQ(dof.permutation(), kExpectedDofPermutation);
 }
 
 /* Tests the constructor constructs an empty DeformableContactSurface. */
@@ -229,33 +236,37 @@ GTEST_TEST(DeformableContact, AddDeformableDeformableContactSurface) {
 
   // Verify that contact participation is as expected.
   EXPECT_EQ(dut.contact_participation(kIdA).num_vertices_in_contact(), 4);
-  EXPECT_EQ(
-      dut.contact_participation(kIdA).CalcVertexPermutation().permutation(),
-      // Permutation table for contact_vertex_indexes_A = {{0, 3, 2, 5}}
-      //   |   Original       |   Permuted       |   Participating   |
-      //   |   vertex index   |   vertex index   |   in contact      |
-      //   | :--------------: | :--------------: | :---------------: |
-      //   |        0         |        0         |       yes         |
-      //   |        1         |        4         |       no          |
-      //   |        2         |        1         |       yes         |
-      //   |        3         |        2         |       yes         |
-      //   |        4         |        5         |       no          |
-      //   |        5         |        3         |       yes         |
-      std::vector<int>({0, 4, 1, 2, 5, 3}));
+  PartialPermutation full_permutation =
+      dut.contact_participation(kIdA).CalcPartialPermutation().vertex();
+  full_permutation.ExtendToFullPermutation();
+  EXPECT_EQ(full_permutation.permutation(),
+            // Permutation table for contact_vertex_indexes_A = {{0, 3, 2, 5}}
+            //   |   Original       |   Permuted       |   Participating   |
+            //   |   vertex index   |   vertex index   |   in contact      |
+            //   | :--------------: | :--------------: | :---------------: |
+            //   |        0         |        0         |       yes         |
+            //   |        1         |        4         |       no          |
+            //   |        2         |        1         |       yes         |
+            //   |        3         |        2         |       yes         |
+            //   |        4         |        5         |       no          |
+            //   |        5         |        3         |       yes         |
+            std::vector<int>({0, 4, 1, 2, 5, 3}));
   EXPECT_EQ(dut.contact_participation(kIdB).num_vertices_in_contact(), 4);
-  EXPECT_EQ(
-      dut.contact_participation(kIdB).CalcVertexPermutation().permutation(),
-      // Permutation table for contact_vertex_indexes_B = {{1, 4, 3, 0}}
-      //   |   Original       |   Permuted       |   Participating   |
-      //   |   vertex index   |   vertex index   |   in contact      |
-      //   | :--------------: | :--------------: | :---------------: |
-      //   |        0         |        0         |       yes         |
-      //   |        1         |        1         |       yes         |
-      //   |        2         |        4         |       no          |
-      //   |        3         |        2         |       yes         |
-      //   |        4         |        3         |       yes         |
-      //   |        5         |        5         |       no          |
-      std::vector<int>({0, 1, 4, 2, 3, 5}));
+  full_permutation =
+      dut.contact_participation(kIdB).CalcPartialPermutation().vertex();
+  full_permutation.ExtendToFullPermutation();
+  EXPECT_EQ(full_permutation.permutation(),
+            // Permutation table for contact_vertex_indexes_B = {{1, 4, 3, 0}}
+            //   |   Original       |   Permuted       |   Participating   |
+            //   |   vertex index   |   vertex index   |   in contact      |
+            //   | :--------------: | :--------------: | :---------------: |
+            //   |        0         |        0         |       yes         |
+            //   |        1         |        1         |       yes         |
+            //   |        2         |        4         |       no          |
+            //   |        3         |        2         |       yes         |
+            //   |        4         |        3         |       yes         |
+            //   |        5         |        5         |       no          |
+            std::vector<int>({0, 1, 4, 2, 3, 5}));
 }
 
 }  // namespace

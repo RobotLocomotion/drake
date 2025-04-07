@@ -577,13 +577,9 @@ TEST_F(DeformableDriverContactTest, CalcNextFemStateWithContact) {
       VectorXd::Zero(num_nonparticipating_dofs);
   VectorXd permuted_tau(num_dofs);
   permuted_tau << participating_tau, non_participating_tau;
-  const DeformableContact<double>& contact_data =
-      EvalDeformableContact(plant_context);
-  const GeometryId geometry_id = model_->GetGeometryId(body_id0_);
-  const ContactParticipation& participation =
-      contact_data.contact_participation(geometry_id);
-  const PartialPermutation& full_dof_permutation =
-      participation.CalcDofPermutation();
+  PartialPermutation full_dof_permutation =
+      EvalDofPermutation(plant_context, DeformableBodyIndex(0));
+  full_dof_permutation.ExtendToFullPermutation();
   VectorXd tau(num_dofs);
   full_dof_permutation.ApplyInverse(permuted_tau, &tau);
   /* The convergence criterion for the SAP solver is

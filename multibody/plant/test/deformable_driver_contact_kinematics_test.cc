@@ -461,6 +461,9 @@ class DeformableDriverContactKinematicsTest
         driver_->EvalConstraintParticipation(
             plant_->GetMyContextFromRoot(*context_), body_index);
     EXPECT_EQ(participation.num_vertices_in_contact(), 6);
+    PartialPermutation full_permutation =
+        participation.CalcPartialPermutation().vertex();
+    full_permutation.ExtendToFullPermutation();
     /*
      |   Original       |   Permuted       |   Participating   |
      |   vertex index   |   vertex index   |   in contact      |
@@ -473,7 +476,7 @@ class DeformableDriverContactKinematicsTest
      |        5         |        6         |       no          |
      |        6         |        5         |       yes         |
     */
-    EXPECT_THAT(participation.CalcVertexPermutation().permutation(),
+    EXPECT_THAT(full_permutation.permutation(),
                 testing::ElementsAre(0, 1, 2, 3, 4, 6, 5));
     if (deformable_body_id2_.is_valid()) {
       /* Verifies that all vertices on the top side of the deformable
@@ -485,6 +488,9 @@ class DeformableDriverContactKinematicsTest
           driver_->EvalConstraintParticipation(
               plant_->GetMyContextFromRoot(*context_), body_index2);
       EXPECT_EQ(participation.num_vertices_in_contact(), 6);
+      PartialPermutation full_permutation2 =
+          participation2.CalcPartialPermutation().vertex();
+      full_permutation2.ExtendToFullPermutation();
       /*
        |   Original       |   Permuted       |   Participating   |
        |   vertex index   |   vertex index   |   in contact      |
@@ -497,7 +503,7 @@ class DeformableDriverContactKinematicsTest
        |        5         |        5         |       yes         |
        |        6         |        6         |       no          |
       */
-      EXPECT_THAT(participation2.CalcVertexPermutation().permutation(),
+      EXPECT_THAT(full_permutation2.permutation(),
                   testing::ElementsAre(0, 1, 2, 3, 4, 5, 6));
     }
   }

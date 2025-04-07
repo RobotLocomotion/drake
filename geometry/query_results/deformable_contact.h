@@ -57,54 +57,26 @@ class ContactParticipation {
         `num_vertices` supplied in the constructor. */
   void Participate(const std::unordered_set<int>& vertices);
 
-  /* Returns the permutation p such that p(i) gives the permuted vertex
-   index for vertex i. The vertex indexes are permuted in a way
-   characterized by the following properties:
-      1. The permuted index of any vertex participating in contact is smaller
-         than the permuted index of any vertex not participating in contact.
-      2. If vertices with original indexes i and j (with i < j) are both
-         participating in contact or both not participating in contact, then
-         the permuted indexes satisfy p(i) < p(j).
+  /* Returns the vertex partial permutation. The vertex partial permutation p is
+   such that p(i) gives the permuted vertex index for vertex i, if vertex i is
+   participating in contact. If both vertex i and vertex j are participating in
+   contact, and i < j, then p(i) < p(j).
 
    In the example shown in the class doc, v1, v2, and v5 are participating in
-   contact and thus have new indexes 0, 1 and 2. v0, v3, and v4 are not
-   participating in contact and have new indexes 3, 4, and 5.
-
-   Hence, the permuted vector would be {3, 0, 1, 4, 5, 2}, which means the
-   permutation from the original vertex index to the permuted vertex index
-   follows this table.
+   contact and thus have new indexes 0, 1 and 2.
 
    |   Original       |   Permuted       |   Participating   |
    |   vertex index   |   vertex index   |   in contact      |
    | :--------------: | :--------------: | :---------------: |
-   |        0         |        3         |       no          |
+   |        0         |       N/A        |       no          |
    |        1         |        0         |       yes         |
    |        2         |        1         |       yes         |
-   |        3         |        4         |       no          |
-   |        4         |        5         |       no          |
+   |        3         |       N/A        |       no          |
+   |        4         |       N/A        |       no          |
    |        5         |        2         |       yes         |
-
-   If no contact exists, returns the identity permutation. */
-  multibody::contact_solvers::internal::PartialPermutation
-  CalcVertexPermutation() const;
-
-  /* Returns the partial permutation which is the restriction of the return
-   value of `CalcVertexPermutation` to the set of participating vertices. */
-  multibody::contact_solvers::internal::PartialPermutation
-  CalcVertexPartialPermutation() const;
-
-  /* Suppose p is the full vertex permutation, the returned permutation q is
-   defined such that q(3*i+d) = 3*p(i)+d for all i in [0, num_vertices) where
-   num_vertices is the number of vertices in the deformable mesh (which is
-   always no less than num_vertices_in_contact), and d = 0, 1, 2. */
-  multibody::contact_solvers::internal::PartialPermutation CalcDofPermutation()
-      const;
-
-  /* Returns the partial permutation which is the restriction of the return
-   value of `CalcDofPermutation` to the set of dofs that belong to vertices
-   participating in contact. */
-  multibody::contact_solvers::internal::PartialPermutation
-  CalcDofPartialPermutation() const;
+  */
+  multibody::contact_solvers::internal::VertexPartialPermutation
+  CalcPartialPermutation() const;
 
   /* Returns the number of vertices of the deformable body that participate in
    contact. */
