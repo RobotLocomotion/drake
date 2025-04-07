@@ -6,6 +6,7 @@ import math
 from math import inf, nan
 import os
 from pathlib import Path
+import sys
 from textwrap import dedent
 import typing
 import unittest
@@ -196,6 +197,9 @@ class BigMapStruct:
                 inner_struct=InnerStruct(inner_value=2.0))))
 
 
+# TODO(tyler.yankee/jwnimmer-tri): See #22863.
+@unittest.skipIf(sys.platform == "darwin",
+                 "Not supported on macOS for Python 3.13.")
 class TestYamlTypedRead(unittest.TestCase,
                         metaclass=ValueParameterizedTest):
     """Detailed tests for the typed yaml_load function(s).
