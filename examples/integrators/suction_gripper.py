@@ -158,7 +158,7 @@ def run_simulation(
         "gripper_base",
         np.array([0.5, 0.5, 0.5, 1.0]),
     )
-    plant.RegisterCollisionGeometry(
+    gripper_base_geom_id = plant.RegisterCollisionGeometry(
         gripper_base,
         RigidTransform(),
         Box(base_length, base_width, base_height),
@@ -187,7 +187,7 @@ def run_simulation(
         "bellows",
         np.array([0.1, 0.1, 0.1, 1.0]),
     )
-    plant.RegisterCollisionGeometry(
+    bellows_geom_id = plant.RegisterCollisionGeometry(
         bellows,
         RigidTransform(),
         Cylinder(bellows_radius, bellows_height),
@@ -200,13 +200,13 @@ def run_simulation(
             gripper_base.body_frame(),
             bellows.body_frame(),
             [0.0, 0.0, 1.0],
-            damping=1e1,
+            damping=0.1,
         )
     )
     bellows_joint.set_default_translation(bellows_translation)
     plant.AddForceElement(
         PrismaticSpring(
-            bellows_joint, nominal_position=bellows_translation, stiffness=1e2
+            bellows_joint, nominal_position=bellows_translation, stiffness=1.0
         )
     )
 
@@ -225,6 +225,14 @@ def run_simulation(
     )
 
     plant.Finalize()
+
+    # Enable collisions between the bellows and the gripper base, even though
+    # these are directly connected by a joint.
+    scene_graph.collision_filter_manager().Apply(
+        CollisionFilterDeclaration().AllowWithin(
+            GeometrySet([gripper_base_geom_id, bellows_geom_id])
+        )
+    )
 
     # Connect the suction gripper model
     suction_model = builder.AddSystem(
