@@ -286,7 +286,7 @@ def run_simulation(
                 plant,
                 suction_cup.index(),
                 force_radius=0.03,
-                max_force=5.0,
+                max_force=100.0,
             )
         )
         builder.Connect(
@@ -321,7 +321,7 @@ def run_simulation(
     context = diagram.CreateDefaultContext()
 
     # Set the initial state
-    q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43])
+    q0_box = np.array([1.0, 0.0, 0.01, 0.1, 0.0, 0.0, 0.43])
     plant_context = plant.GetMyMutableContextFromRoot(context)
     plant.SetPositions(plant_context, box, q0_box)
 
