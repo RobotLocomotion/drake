@@ -15,6 +15,7 @@
 #include "drake/lcm/drake_lcm_params.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_driver.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver.h"
+#include "drake/manipulation/util/named_positions_functions.h"
 #include "drake/manipulation/util/zero_force_driver.h"
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
@@ -42,6 +43,7 @@ struct Scenario {
     a->Visit(DRAKE_NVP(model_drivers));
     a->Visit(DRAKE_NVP(cameras));
     a->Visit(DRAKE_NVP(visualization));
+    a->Visit(DRAKE_NVP(initial_position));
   }
 
   /* Random seed for any random elements in the scenario.
@@ -88,6 +90,10 @@ struct Scenario {
   std::map<std::string, systems::sensors::CameraConfig> cameras;
 
   visualization::VisualizationConfig visualization;
+
+  /* Optional initial positions to override or supplement those in the
+  directives. */
+  manipulation::NamedPositions initial_position;
 };
 
 /* Returns a C++ representation of the given YAML scenario.
