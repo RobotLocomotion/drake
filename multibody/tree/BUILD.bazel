@@ -692,6 +692,7 @@ drake_cc_googletest(
     deps = [
         ":tree",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
