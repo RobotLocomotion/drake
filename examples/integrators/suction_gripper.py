@@ -285,8 +285,8 @@ def run_simulation(
             SuctionGripper(
                 plant,
                 suction_cup.index(),
-                force_radius=0.03,
-                max_force=100.0,
+                force_radius=0.04,
+                max_force=50.0,
             )
         )
         builder.Connect(
@@ -321,7 +321,7 @@ def run_simulation(
     context = diagram.CreateDefaultContext()
 
     # Set the initial state
-    q0_box = np.array([1.0, 0.0, 0.01, 0.1, 0.0, 0.0, 0.43])
+    q0_box = np.array([1.0, 0.0, 0.01, 0.1, 0.0, 0.0, 0.42])
     plant_context = plant.GetMyMutableContextFromRoot(context)
     plant.SetPositions(plant_context, box, q0_box)
 
@@ -336,13 +336,13 @@ def run_simulation(
 
     simulator = Simulator(diagram, context)
     ApplySimulatorConfig(config, simulator)
+    meshcat.StartRecording()
     simulator.Initialize()
 
     print("Waiting for meshcat... press [ENTER] to continue.")
     input()
 
     # Simulate
-    meshcat.StartRecording()
     st = time.time()
     simulator.AdvanceTo(1.0)
     wall_time = time.time() - st
