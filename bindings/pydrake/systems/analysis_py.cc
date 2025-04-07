@@ -49,20 +49,6 @@ PYBIND11_MODULE(analysis, m) {
   py::module::import("pydrake.trajectories");
 
   {
-    constexpr auto& doc = pydrake_doc.drake.systems;
-    m.def("DiscreteTimeApproximation",
-        overload_cast_explicit<std::unique_ptr<LinearSystem<double>>,
-            const LinearSystem<double>&, double>(&DiscreteTimeApproximation),
-        py::arg("linear_system"), py::arg("time_period"),
-        doc.DiscreteTimeApproximation.doc_2args_constLinearSystem_double);
-    m.def("DiscreteTimeApproximation",
-        overload_cast_explicit<std::unique_ptr<AffineSystem<double>>,
-            const AffineSystem<double>&, double>(&DiscreteTimeApproximation),
-        py::arg("affine_system"), py::arg("time_period"),
-        doc.DiscreteTimeApproximation.doc_2args_constAffineSystem_double);
-  }
-
-  {
     using Class = SimulatorConfig;
     constexpr auto& cls_doc = pydrake_doc.drake.systems.SimulatorConfig;
     py::class_<Class> cls(m, "SimulatorConfig", cls_doc.doc);
@@ -245,6 +231,39 @@ PYBIND11_MODULE(analysis, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 4>(), doc.RungeKutta2Integrator.ctor.doc);
+
+    {
+      m.def("DiscreteTimeApproximation",
+          overload_cast_explicit<std::unique_ptr<LinearSystem<T>>,
+              const LinearSystem<T>&, double>(&DiscreteTimeApproximation),
+          py::arg("linear_system"), py::arg("time_period"),
+          doc.DiscreteTimeApproximation.doc_2args_constLinearSystem_double);
+
+      m.def("DiscreteTimeApproximation",
+          overload_cast_explicit<std::unique_ptr<AffineSystem<T>>,
+              const AffineSystem<T>&, double>(&DiscreteTimeApproximation),
+          py::arg("affine_system"), py::arg("time_period"),
+          doc.DiscreteTimeApproximation.doc_2args_constAffineSystem_double);
+
+      if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+        m.def(
+            "DiscreteTimeApproximation",
+            [](const System<T>& system, double time_period,
+                const SimulatorConfig& integrator_config) {
+              return DiscreteTimeApproximation(
+                  // The lifetime of `system` is managed by the keep_alive
+                  // below, not the C++ shared_ptr.
+                  make_unowned_shared_ptr_from_raw(&system), time_period,
+                  integrator_config);
+            },
+            py::arg("system"), py::arg("time_period"),
+            py::arg("integrator_config") = SimulatorConfig(),
+            // Keep alive, reference: `result` keeps `system` alive.
+            py::keep_alive<0, 1>(),
+            doc.DiscreteTimeApproximation
+                .doc_3args_constSystem_double_SimulatorConfig);
+      }
+    }
   };
   type_visit(bind_scalar_types, CommonScalarPack{});
 
