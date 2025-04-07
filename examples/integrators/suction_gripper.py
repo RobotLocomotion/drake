@@ -29,7 +29,6 @@ class SuctionGripper(LeafSystem):
             max_force: The maximum suction force.
         """
         super().__init__()
-        self.set_name("suction_gripper")
         self.plant = plant
         self.body_idx = body_idx
         self.force_radius = force_radius
@@ -71,7 +70,8 @@ class SuctionGripper(LeafSystem):
             frame_id = inspector.GetFrameId(signed_distance.id_G)
             body = self.plant.GetBodyFromFrameId(frame_id)
 
-            if body.index() != self.body_idx:  # Ignore the gripper body
+            # Skip parts of the gripper itself
+            if body.name() != "gripper_base" and body.name()[:7] != "bellows":
                 # The actual distance (scalar) to the suction cup
                 distance = signed_distance.distance
 
@@ -106,45 +106,22 @@ class SuctionGripper(LeafSystem):
 
         output.set_value(spatial_forces)
 
+def add_gripper_mbp_elements(plant, scene_graph):
+    """Adds a model of a suction gripper to the given MultibodyPlant.
 
-def run_simulation(
-    mbp_time_step, integrator, accuracy, use_error_control, max_time_step
-):
-    """Run the simulation with the given parameters."""
-
-    # System setup
-    meshcat = StartMeshcat()
-    builder = DiagramBuilder()
-
-    # Set up the plant model
-    plant, scene_graph = AddMultibodyPlantSceneGraph(
-        builder, time_step=mbp_time_step
-    )
-    parser = Parser(plant)
-
-    # # The gripper itself is just a sphere floating in space (for now)
-    # radius = 0.02
-    # color = np.array([0.8, 0.5, 0.5, 1.0])
-    # pos = np.array([0.0, 0.0, 0.5])
-    # gripper_body = plant.AddRigidBody(
-    #     "gripper", SpatialInertia.SolidSphereWithDensity(1000, radius)
-    # )
-    # plant.RegisterVisualGeometry(
-    #     gripper_body, RigidTransform(), Sphere(radius), "gripper", color
-    # )
-    # plant.RegisterCollisionGeometry(
-    #     gripper_body,
-    #     RigidTransform(),
-    #     Sphere(radius),
-    #     "gripper",
-    #     CoulombFriction(1.0, 1.0),
-    # )
-    # plant.WeldFrames(
-    #     plant.world_frame(), gripper_body.body_frame(), RigidTransform(pos)
-    # )
-
-    # A fancy gripper with a bellows model
+    This adds collision and visual geometries, as well as springs to model the
+    bellows. Does not add the actual suction forces, which are provided by the
+    SuctionGripper leaf system.
+    """
+    # Basic parameters
     base_length, base_width, base_height = 0.2, 0.1, 0.02
+    bellows_radius = 0.01
+    bellows_height = 0.015
+    bellows_offset = -0.03
+    bellows_stiffness = 1.0
+    bellows_damping = 0.1
+
+    # The gripper base is a simple box
     gripper_base = plant.AddRigidBody(
         "gripper_base",
         SpatialInertia.SolidBoxWithDensity(
@@ -171,44 +148,110 @@ def run_simulation(
         RigidTransform([0.0, 0.0, 0.5]),
     )
 
-    bellows_radius = 0.01
-    bellows_height = 0.015
-    bellows_translation = -0.03
-    bellows = plant.AddRigidBody(
-        "bellows",
-        SpatialInertia.SolidCylinderWithDensity(
-            100, bellows_radius, bellows_height, np.array([0.0, 0.0, 1.0])
-        ),
+    # Add little suction cup models across the gripper base
+    xpos = np.linspace(-base_length / 2 + 0.01, base_length / 2 - 0.01, 5)
+    ypos = np.linspace(-base_width / 2 + 0.01, base_width / 2 - 0.01, 3)
+
+    collision_filter_set = GeometrySet(gripper_base_geom_id)
+    pressure_sources = []
+    i = 0
+    for x in xpos:
+        for y in ypos:
+            pos = np.array([x, y, -base_height / 2])
+
+            # Add a small body on the gripper base to model the pressure source
+            pressure_source = plant.AddRigidBody(
+                f"pressure_source_{i}",
+                SpatialInertia.SolidSphereWithDensity(
+                    1000, 0.002
+                ),
+            )
+            plant.RegisterVisualGeometry(
+                pressure_source,
+                RigidTransform(),
+                Sphere(0.002),
+                f"pressure_source_{i}",
+                np.array([0.8, 0.2, 0.2, 0.5]),
+            )
+            plant.WeldFrames(
+                gripper_base.body_frame(),
+                pressure_source.body_frame(),
+                RigidTransform(pos),
+            )
+            pressure_sources.append(pressure_source)
+    
+            # The bellows are lightweight cylinders
+            bellows = plant.AddRigidBody(
+                f"bellows_{i}",
+                SpatialInertia.SolidCylinderWithDensity(
+                    100, bellows_radius, bellows_height, np.array([0.0, 0.0, 1.0])
+                ),
+            )
+            plant.RegisterVisualGeometry(
+                bellows,
+                RigidTransform(),
+                Cylinder(bellows_radius, bellows_height),
+                f"bellows_{i}",
+                np.array([0.1, 0.1, 0.1, 1.0]),
+            )
+            bellows_geom_id = plant.RegisterCollisionGeometry(
+                bellows,
+                RigidTransform(),
+                Cylinder(bellows_radius, bellows_height),
+                f"bellows_{i}",
+                CoulombFriction(1.0, 1.0),
+            )
+
+            # The bellows are attached to the pressure source with a
+            # spring-damper
+            bellows_joint = plant.AddJoint(
+                PrismaticJoint(
+                    f"bellows_joint_{i}",
+                    pressure_source.body_frame(),
+                    bellows.body_frame(),
+                    [0.0, 0.0, 1.0],
+                    damping=bellows_damping,
+                )
+            )
+            bellows_joint.set_default_translation(bellows_offset)
+            plant.AddForceElement(
+                PrismaticSpring(
+                    bellows_joint,
+                    nominal_position=bellows_offset,
+                    stiffness=bellows_stiffness,
+                )
+            )
+
+            # Add the bellows to the collision filter set
+            collision_filter_set.Add(bellows_geom_id)
+
+            i += 1
+
+    # Enable collisions between the bellows and the gripper base, even though
+    # these are directly connected by a joint.
+    collision_filter = CollisionFilterDeclaration().AllowWithin(
+        collision_filter_set
     )
-    plant.RegisterVisualGeometry(
-        bellows,
-        RigidTransform(),
-        Cylinder(bellows_radius, bellows_height),
-        "bellows",
-        np.array([0.1, 0.1, 0.1, 1.0]),
+
+    return pressure_sources, collision_filter
+
+def run_simulation(
+    mbp_time_step, integrator, accuracy, use_error_control, max_time_step
+):
+    """Run the simulation with the given parameters."""
+
+    # System setup
+    meshcat = StartMeshcat()
+    builder = DiagramBuilder()
+
+    # Set up the plant model
+    plant, scene_graph = AddMultibodyPlantSceneGraph(
+        builder, time_step=mbp_time_step
     )
-    bellows_geom_id = plant.RegisterCollisionGeometry(
-        bellows,
-        RigidTransform(),
-        Cylinder(bellows_radius, bellows_height),
-        "bellows",
-        CoulombFriction(1.0, 1.0),
-    )
-    bellows_joint = plant.AddJoint(
-        PrismaticJoint(
-            "bellows_joint",
-            gripper_base.body_frame(),
-            bellows.body_frame(),
-            [0.0, 0.0, 1.0],
-            damping=0.1,
-        )
-    )
-    bellows_joint.set_default_translation(bellows_translation)
-    plant.AddForceElement(
-        PrismaticSpring(
-            bellows_joint, nominal_position=bellows_translation, stiffness=1.0
-        )
-    )
+    parser = Parser(plant)
+
+    # Gripper geometries
+    pressure_sources, gripper_collision_filter = add_gripper_mbp_elements(plant, scene_graph)
 
     # Manipuland(s)
     box = parser.AddModelsFromUrl(
@@ -226,35 +269,40 @@ def run_simulation(
 
     plant.Finalize()
 
-    # Enable collisions between the bellows and the gripper base, even though
-    # these are directly connected by a joint.
-    scene_graph.collision_filter_manager().Apply(
-        CollisionFilterDeclaration().AllowWithin(
-            GeometrySet([gripper_base_geom_id, bellows_geom_id])
-        )
+    # Allow collisions between bellows and grippper base    
+    scene_graph.collision_filter_manager().Apply(gripper_collision_filter)
+
+    # Connect a suction gripper model for each suction cup in the gripper
+    force_multiplexer = builder.AddSystem(
+        ExternallyAppliedSpatialForceMultiplexer(len(pressure_sources))
     )
 
-    # Connect the suction gripper model
-    suction_model = builder.AddSystem(
-        SuctionGripper(
-            plant,
-            bellows.index(),
-            force_radius=0.2,
-            max_force=5.0,
+    for i, suction_cup in enumerate(pressure_sources):
+        suction_model = builder.AddSystem(
+            SuctionGripper(
+                plant,
+                suction_cup.index(),
+                force_radius=0.2,
+                max_force=5.0,
+            )
         )
-    )
+        builder.Connect(
+            suction_model.GetOutputPort("force_output"),
+            force_multiplexer.get_input_port(i),
+        )
 
+        builder.Connect(
+            plant.get_body_poses_output_port(),
+            suction_model.body_poses_input_port,
+        )
+        builder.Connect(
+            scene_graph.get_query_output_port(),
+            suction_model.query_object_input_port,
+        )
+        
     builder.Connect(
-        suction_model.GetOutputPort("force_output"),
+        force_multiplexer.get_output_port(),
         plant.get_applied_spatial_force_input_port(),
-    )
-    builder.Connect(
-        plant.get_body_poses_output_port(),
-        suction_model.body_poses_input_port,
-    )
-    builder.Connect(
-        scene_graph.get_query_output_port(),
-        suction_model.query_object_input_port,
     )
 
     # Connect to meshcat
