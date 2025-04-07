@@ -272,7 +272,7 @@ def run_simulation(
 
     plant.Finalize()
 
-    # Allow collisions between bellows and grippper base    
+    # Allow collisions between bellows and grippper base
     scene_graph.collision_filter_manager().Apply(gripper_collision_filter)
 
     # Connect a suction gripper model for each suction cup in the gripper
@@ -302,11 +302,16 @@ def run_simulation(
             scene_graph.get_query_output_port(),
             suction_model.query_object_input_port,
         )
-        
+
     builder.Connect(
         force_multiplexer.get_output_port(),
         plant.get_applied_spatial_force_input_port(),
     )
+
+    # Use hydroelastic contact
+    sg_config = SceneGraphConfig()
+    sg_config.default_proximity_properties.compliance_type = "compliant"
+    scene_graph.set_config(sg_config)
 
     # Connect to meshcat
     AddDefaultVisualization(builder, meshcat)
