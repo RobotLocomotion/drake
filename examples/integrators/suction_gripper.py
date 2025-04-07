@@ -117,9 +117,9 @@ def add_gripper_mbp_elements(plant, scene_graph):
     base_length, base_width, base_height = 0.2, 0.1, 0.02
     bellows_radius = 0.01
     bellows_height = 0.015
-    bellows_offset = -0.03
+    bellows_offset = -0.02
     bellows_stiffness = 1.0
-    bellows_damping = 0.1
+    bellows_damping = 1.0
 
     # The gripper base is a simple box
     gripper_base = plant.AddRigidBody(
@@ -149,8 +149,8 @@ def add_gripper_mbp_elements(plant, scene_graph):
     )
 
     # Add little suction cup models across the gripper base
-    xpos = np.linspace(-base_length / 2 + 0.01, base_length / 2 - 0.01, 5)
-    ypos = np.linspace(-base_width / 2 + 0.01, base_width / 2 - 0.01, 3)
+    xpos = np.linspace(-base_length / 2 + 0.02, base_length / 2 - 0.02, 5)
+    ypos = np.linspace(-base_width / 2 + 0.02, base_width / 2 - 0.02, 3)
 
     collision_filter_set = GeometrySet(gripper_base_geom_id)
     pressure_sources = []
@@ -179,12 +179,15 @@ def add_gripper_mbp_elements(plant, scene_graph):
                 RigidTransform(pos),
             )
             pressure_sources.append(pressure_source)
-    
+
             # The bellows are lightweight cylinders
             bellows = plant.AddRigidBody(
                 f"bellows_{i}",
                 SpatialInertia.SolidCylinderWithDensity(
-                    100, bellows_radius, bellows_height, np.array([0.0, 0.0, 1.0])
+                    10,
+                    bellows_radius,
+                    bellows_height,
+                    np.array([0.0, 0.0, 1.0]),
                 ),
             )
             plant.RegisterVisualGeometry(
@@ -282,7 +285,7 @@ def run_simulation(
             SuctionGripper(
                 plant,
                 suction_cup.index(),
-                force_radius=0.2,
+                force_radius=0.03,
                 max_force=5.0,
             )
         )
@@ -313,7 +316,7 @@ def run_simulation(
     context = diagram.CreateDefaultContext()
 
     # Set the initial state
-    q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.00, 0.4])
+    q0_box = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.43])
     plant_context = plant.GetMyMutableContextFromRoot(context)
     plant.SetPositions(plant_context, box, q0_box)
 
