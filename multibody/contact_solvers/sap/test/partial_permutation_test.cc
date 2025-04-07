@@ -144,6 +144,32 @@ GTEST_TEST(PartialPermutation, MissingIndex) {
                               "the maximum specified permuted index is 4.");
 }
 
+GTEST_TEST(PartialPermutation, ExtendToFullPermutation) {
+  const std::vector<int> permutation = {0, -1, 2, 1};
+  PartialPermutation p(permutation);
+  p.ExtendToFullPermutation();
+  EXPECT_EQ(p.domain_size(), 4);
+  EXPECT_EQ(p.permuted_domain_size(), 4);
+  EXPECT_EQ(p.permutation(), (PartialPermutation({0, 3, 2, 1})).permutation());
+}
+
+GTEST_TEST(VertexPartialPermutation, Constructor) {
+  const std::vector<int> permutation = {0, -1, 2, 1};
+  const VertexPartialPermutation p(permutation);
+
+  const PartialPermutation& vertex = p.vertex();
+  const PartialPermutation& dof = p.dof();
+  const std::vector<int> expected_dof_permutation = {0, 1, 2, -1, -1, -1,
+                                                     6, 7, 8, 3,  4,  5};
+
+  EXPECT_EQ(vertex.domain_size(), 4);
+  EXPECT_EQ(vertex.permuted_domain_size(), 3);
+  EXPECT_EQ(vertex.permutation(), permutation);
+  EXPECT_EQ(dof.domain_size(), 12);
+  EXPECT_EQ(dof.permuted_domain_size(), 9);
+  EXPECT_EQ(dof.permutation(), expected_dof_permutation);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace contact_solvers
