@@ -123,11 +123,13 @@ TEST_F(AddDeformableDeformableContactSurfaceTest, HaveContact) {
   // because all vertices participate in contact.
   {
     EXPECT_EQ(deformable_contact_W_.contact_participation(id0_)
-                  .CalcVertexPartialPermutation()
+                  .CalcPartialPermutation()
+                  .vertex()
                   .permutation(),
               std::vector<int>({0, 1, 2, 3}));
     EXPECT_EQ(deformable_contact_W_.contact_participation(id1_)
-                  .CalcVertexPartialPermutation()
+                  .CalcPartialPermutation()
+                  .vertex()
                   .permutation(),
               std::vector<int>({0, 1, 2, 3}));
   }

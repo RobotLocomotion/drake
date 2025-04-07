@@ -8,22 +8,7 @@ namespace drake {
 namespace geometry {
 namespace internal {
 
-using multibody::contact_solvers::internal::PartialPermutation;
-
-namespace {
-
-// TODO(xuchenhan-tri): Consider moving this function to a header file for full
-// unit testing.
-/* Extends a partial permutation to a full permutation.
- @pre permutation != nullptr. */
-void ExtendToFullPermutation(PartialPermutation* permutation) {
-  for (int i = 0; i < static_cast<int>(permutation->domain_size()); ++i) {
-    /* The call to permutation.push() only conditionally adds i. */
-    permutation->push(i);
-  }
-}
-
-}  // namespace
+using multibody::contact_solvers::internal::VertexPartialPermutation;
 
 ContactParticipation::ContactParticipation(int num_vertices)
     : participation_(num_vertices, false) {}
@@ -41,14 +26,7 @@ void ContactParticipation::Participate(
   }
 }
 
-PartialPermutation ContactParticipation::CalcVertexPermutation() const {
-  /* Build the partial permutation. */
-  PartialPermutation permutation = CalcVertexPartialPermutation();
-  ExtendToFullPermutation(&permutation);
-  return permutation;
-}
-
-PartialPermutation ContactParticipation::CalcVertexPartialPermutation() const {
+VertexPartialPermutation ContactParticipation::CalcPartialPermutation() const {
   int permuted_vertex_index = 0;
   std::vector<int> permuted_vertex_indexes(participation_.size(), -1);
   for (int v = 0; v < static_cast<int>(participation_.size()); ++v) {
@@ -56,28 +34,7 @@ PartialPermutation ContactParticipation::CalcVertexPartialPermutation() const {
       permuted_vertex_indexes[v] = permuted_vertex_index++;
     }
   }
-  return PartialPermutation(std::move(permuted_vertex_indexes));
-}
-
-PartialPermutation ContactParticipation::CalcDofPermutation() const {
-  PartialPermutation permutation = CalcDofPartialPermutation();
-  ExtendToFullPermutation(&permutation);
-  return permutation;
-}
-
-PartialPermutation ContactParticipation::CalcDofPartialPermutation() const {
-  /* Build the partial permutation. */
-  int permuted_vertex_index = 0;
-  std::vector<int> permuted_dof_indexes(3 * participation_.size(), -1);
-  for (int v = 0; v < static_cast<int>(participation_.size()); ++v) {
-    if (participation_[v]) {
-      permuted_dof_indexes[3 * v] = 3 * permuted_vertex_index;
-      permuted_dof_indexes[3 * v + 1] = 3 * permuted_vertex_index + 1;
-      permuted_dof_indexes[3 * v + 2] = 3 * permuted_vertex_index + 2;
-      ++permuted_vertex_index;
-    }
-  }
-  return PartialPermutation(std::move(permuted_dof_indexes));
+  return VertexPartialPermutation(std::move(permuted_vertex_indexes));
 }
 
 template <typename T>

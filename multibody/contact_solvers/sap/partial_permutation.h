@@ -156,6 +156,10 @@ class PartialPermutation {
   // Returns permutation as a std::vector, see constructor for details.
   const std::vector<int>& permutation() const { return permutation_; }
 
+  // Extends this partial permutation to a full permutation. No-op if this
+  // partial permutation is already a full permutation.
+  void ExtendToFullPermutation();
+
  private:
   // Vector of size n, domain size, such that for i ∈ [0,n) ip = permutation_[i]
   // either maps to an element in [0,m), with no repetition, or it maps to a
@@ -164,6 +168,39 @@ class PartialPermutation {
   // Vector of size m, permuted domain size, such that for ip in [0,m)
   // inverse_permutation_[ip] maps to elements in [0,n).
   std::vector<int> inverse_permutation_;
+};
+
+// Partial permutations for vertices in 3D.
+//
+// When dealing with meshes and particles in contact, we often need to permute
+// vertices in 3D. The partial permutation on the vertices induces partial
+// permutation of the degrees of freedom (dofs) of the vertices, and these
+// permutations are often used in tandem.
+//
+// VertexPartialPermutation is a convenience class that encapsulates both the
+// vertex and dof permutations. It is used in the context of contact problems
+// where we need to permute the vertices and their associated degrees of freedom
+// (dofs) in a consistent manner.
+class VertexPartialPermutation {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VertexPartialPermutation);
+
+  // Constructs an empty permutation.
+  VertexPartialPermutation();
+
+  // Constructs a VertexPartialPermutation based on the given vector of
+  // permutation of vertex indices.
+  // @pre `vertex_permutation` is a valid input for the PartialPermutation
+  // constructor.
+  explicit VertexPartialPermutation(std::vector<int> vertex_permutation);
+
+  const PartialPermutation& vertex() const { return vertex_permutation_; }
+
+  const PartialPermutation& dof() const { return dof_permutation_; }
+
+ private:
+  PartialPermutation vertex_permutation_;
+  PartialPermutation dof_permutation_;
 };
 
 }  // namespace internal
