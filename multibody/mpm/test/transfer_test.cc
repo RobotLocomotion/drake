@@ -29,14 +29,22 @@ void ConvertMomentumToVelocity(Grid* grid) {
  tau_volume are set to zero. */
 void AddParticle(ParticleData<double>* particles, Vector3d x0,
                  bool nonzero_F_and_C_and_stress = true) {
-  particles->AddParticles({x0}, 1.0, fem::DeformableBodyConfig<double>());
+  particles->AddParticles({x0}, 0.001, fem::DeformableBodyConfig<double>());
   particles->mutable_v().back() = Vector3d(0.1, 0.2, 0.3);
   if (nonzero_F_and_C_and_stress) {
+    // clang-format off
     const Matrix3d F =
-        (Matrix3d() << 1.0, 0.1, 0.2, 0.3, 1.0, 0.4, 0.5, 0.6, 1.0).finished();
+        (Matrix3d() << 1.0, 0.1, 0.2,
+                       0.3, 1.0, 0.4,
+                       0.5, 0.6, 1.0).finished();
+    // clang-format on
     particles->mutable_F().back() = F;
+    // clang-format off
     const Matrix3d C =
-        (Matrix3d() << 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8).finished();
+        (Matrix3d() << 0.0, 0.1, 0.2,
+                       0.3, 0.4, 0.5,
+                       0.6, 0.7, 0.8).finished();
+    // clang-format on
     particles->mutable_C().back() = C;
     particles->mutable_tau_volume().back() = 1.23 * (C + C.transpose());
   }
@@ -52,15 +60,10 @@ void CheckGridData(
    coordinates. */
   auto compare = [](const std::pair<Vector3<int>, GridData<double>>& a,
                     const std::pair<Vector3<int>, GridData<double>>& b) {
-    const auto key_a = a.first;
-    const auto key_b = b.first;
-    if (key_a[0] != key_b[0]) {
-      return key_a[0] < key_b[0];
-    }
-    if (key_a[1] != key_b[1]) {
-      return key_a[1] < key_b[1];
-    }
-    return key_a[2] < key_b[2];
+    std::array<int, 3> key_a = {a.first[0], a.first[1], a.first[2]};
+    std::array<int, 3> key_b = {b.first[0], b.first[1], b.first[2]};
+    return std::lexicographical_compare(key_a.begin(), key_a.end(),
+                                        key_b.begin(), key_b.end());
   };
   std::sort(expected_data.begin(), expected_data.end(), compare);
   std::sort(computed_data.begin(), computed_data.end(), compare);
@@ -80,59 +83,70 @@ void CheckGridData(
 void CheckMomentumConservation(const MassAndMomentum<double>& grid,
                                const MassAndMomentum<double>& particle,
                                const MassAndMomentum<double>& expected) {
-  const double kTol = 1e-12;
+  const double kTol = 4.0 * std::numeric_limits<double>::epsilon();
   EXPECT_DOUBLE_EQ(particle.mass, expected.mass);
   EXPECT_DOUBLE_EQ(grid.mass, expected.mass);
   EXPECT_TRUE(CompareMatrices(particle.linear_momentum,
-                              expected.linear_momentum, kTol));
-  EXPECT_TRUE(
-      CompareMatrices(grid.linear_momentum, expected.linear_momentum, kTol));
+                              expected.linear_momentum, kTol,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(grid.linear_momentum, expected.linear_momentum,
+                              kTol, MatrixCompareType::relative));
   EXPECT_TRUE(CompareMatrices(particle.angular_momentum,
-                              expected.angular_momentum, kTol));
-  EXPECT_TRUE(
-      CompareMatrices(grid.angular_momentum, expected.angular_momentum, kTol));
+                              expected.angular_momentum, kTol,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(grid.angular_momentum, expected.angular_momentum,
+                              kTol, MatrixCompareType::relative));
 }
 
 /* Verify that the result of grid to particle transfer matches with analytical
  results with a single particle. */
 GTEST_TEST(TransferTest, GridToParticle) {
-  SparseGrid<double> grid(0.1);
+  const double dx = 0.1;
+  SparseGrid<double> grid(dx);
   ParticleData<double> particle_data;
   const Vector3d x0 = Vector3d(0.11, 0.11, 0.09);
   AddParticle(&particle_data, x0);
+  grid.Allocate(particle_data.x());
   const Matrix3d& F0 = particle_data.F()[0];
 
   const double dt = 0.0123;
-  Transfer transfer(dt, &grid, &particle_data);
-  const Vector3d vel = Vector3d(1.2, 2.3, 3.4);
+  Transfer transfer(dt, dx);
+  const Vector3d vel = Vector3d(0.012, 0.023, 0.034);
   auto constant_velocity_field = [&](const Vector3i&) {
     return GridData<double>{.v = vel, .m = 1.0};
   };
   grid.SetGridData(constant_velocity_field);
-  transfer.GridToParticle();
+  transfer.GridToParticle(grid, &particle_data);
 
-  EXPECT_TRUE(CompareMatrices(particle_data.v()[0], vel, 1e-14));
-  EXPECT_TRUE(CompareMatrices(particle_data.x()[0], x0 + vel * dt, 1e-14));
-  EXPECT_TRUE(CompareMatrices(particle_data.C()[0], Matrix3d::Zero(), 1e-12));
-  EXPECT_TRUE(CompareMatrices(particle_data.F()[0], F0, 1e-12));
+  const double kTol = 4.0 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(particle_data.v()[0], vel, kTol,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(particle_data.x()[0], x0 + vel * dt, kTol,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(particle_data.C()[0], Matrix3d::Zero(), kTol,
+                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(particle_data.F()[0], F0, kTol,
+                              MatrixCompareType::relative));
 }
 
 GTEST_TEST(TransferTest, ParticleToGrid) {
-  SparseGrid<double> grid(0.1);
+  const double dx = 0.1;
+  SparseGrid<double> grid(dx);
   ParticleData<double> particle_data;
   const Vector3d x0 = Vector3d(0.01, 0.02, 0.03);
   AddParticle(&particle_data, x0, /* nonzero_F_and_C_and_stress */ false);
+  grid.Allocate(particle_data.x());
   const double m0 = particle_data.m()[0];
   const Vector3d v0 = particle_data.v()[0];
 
   const double dt = 0.0123;
-  Transfer transfer(dt, &grid, &particle_data);
-  transfer.ParticleToGrid();
+  Transfer transfer(dt, dx);
+  transfer.ParticleToGrid(particle_data, &grid);
   /* Convert momentum to velocity on the grid data after P2G. */
   ConvertMomentumToVelocity(&grid);
 
   std::vector<std::pair<Vector3<int>, GridData<double>>> expected_data;
-  const BsplineWeights<double> bspline(x0, grid.dx());
+  const BsplineWeights<double> bspline(x0, dx);
   for (int i = -1; i <= 1; ++i) {
     for (int j = -1; j <= 1; ++j) {
       for (int k = -1; k <= 1; ++k) {
@@ -153,16 +167,16 @@ GTEST_TEST(TransferTest, ParticleToGrid) {
       .mass = m0,
       .linear_momentum = m0 * v0,
       .angular_momentum = m0 * x0.cross(v0)};
-  CheckMomentumConservation(
-      grid.ComputeTotalMassAndMomentum(),
-      ComputeTotalMassAndMomentum(particle_data, grid.dx()),
-      expected_mass_and_momentum);
+  CheckMomentumConservation(grid.ComputeTotalMassAndMomentum(),
+                            particle_data.ComputeTotalMassAndMomentum(dx),
+                            expected_mass_and_momentum);
 }
 
 /* Verifies that both P2G and G2P conserves mass and momentum with more than one
  particle and more than one active block in the sparse grid. */
 GTEST_TEST(TransferTest, MomentumConservation) {
-  SparseGrid<double> grid(0.2);
+  double dx = 0.2;
+  SparseGrid<double> grid(dx);
   ParticleData<double> particle_data;
   /* Sample 3 particles with 2 in the same cell and the other in a separate
    page. */
@@ -172,22 +186,23 @@ GTEST_TEST(TransferTest, MomentumConservation) {
   AddParticle(&particle_data, x0);
   AddParticle(&particle_data, x1);
   AddParticle(&particle_data, x2);
+  grid.Allocate(particle_data.x());
 
   const MassAndMomentum<double> expected =
-      ComputeTotalMassAndMomentum(particle_data, grid.dx());
+      particle_data.ComputeTotalMassAndMomentum(dx);
 
   const double dt = 0.01;
-  Transfer transfer(dt, &grid, &particle_data);
-  transfer.ParticleToGrid();
+  Transfer transfer(dt, dx);
+  transfer.ParticleToGrid(particle_data, &grid);
   ConvertMomentumToVelocity(&grid);
-  CheckMomentumConservation(
-      grid.ComputeTotalMassAndMomentum(),
-      ComputeTotalMassAndMomentum(particle_data, grid.dx()), expected);
+  CheckMomentumConservation(grid.ComputeTotalMassAndMomentum(),
+                            particle_data.ComputeTotalMassAndMomentum(dx),
+                            expected);
 
-  transfer.GridToParticle();
-  CheckMomentumConservation(
-      grid.ComputeTotalMassAndMomentum(),
-      ComputeTotalMassAndMomentum(particle_data, grid.dx()), expected);
+  transfer.GridToParticle(grid, &particle_data);
+  CheckMomentumConservation(grid.ComputeTotalMassAndMomentum(),
+                            particle_data.ComputeTotalMassAndMomentum(dx),
+                            expected);
 }
 
 }  // namespace

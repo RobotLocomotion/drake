@@ -37,32 +37,25 @@ class Transfer {
   using T = typename Grid::Scalar;
 
   /* Constructs a Transfer object for particle-to-grid and grid-to-particle
-   transfer between `grid` and `particles`. The constructor prepares the grid
-   for transfer by allocating memory for grid data.
-   `grid` and `particle_data` must outlive the Transfer object.
-   @pre grid and particles are not null and dt > 0. */
-  Transfer(T dt, Grid* grid, ParticleData<T>* particle_data);
-
-  const Grid& grid() const { return *grid_; }
-
-  const ParticleData<T>& particle_data() const { return *particle_data_; }
+   transfers.
+   @pre dt > 0 and dx > 0. */
+  Transfer(T dt, double dx);
 
   /* The Particle to grid transfer (P2G). After the call to P2G, the grid stores
    the mass and momentum transfered from the particles using APIC.
    @note The `v` attribute of the grid data at the end of the operation stores
    the momentum, not velocity, of the grid node. */
-  void ParticleToGrid();
+  void ParticleToGrid(const ParticleData<T>& particle, Grid* grid);
 
   /* Grid to particle transfer (G2P). After the call to G2P, the particles store
    the mass and momentum transfered from the grid using APIC.
    @pre the grid stores mass and velocity (not momentum). Hence, the velocity
    from the grid needs to be processed after P2G and before G2P. */
-  void GridToParticle();
+  void GridToParticle(const Grid& grid, ParticleData<T>* particle);
 
  private:
   T dt_{};
-  Grid* grid_{nullptr};
-  ParticleData<T>* particle_data_{nullptr};
+  double dx_{};
   /* The D inverse matrix in computing the affine matrix. See page 42 in the MPM
    course notes referenced in the class documentation. */
   T D_inverse_{};
