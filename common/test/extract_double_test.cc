@@ -18,6 +18,14 @@ GTEST_TEST(ExtractDoubleTest, BasicTest) {
   // A const double works.
   const double y = 2.0;
   EXPECT_EQ(ExtractDoubleOrThrow(y), 2.0);
+
+  // A float works.
+  float xf = 1.0;
+  EXPECT_EQ(ExtractDoubleOrThrow(xf), 1.0);
+
+  // A const float works.
+  const float yf = 2.0;
+  EXPECT_EQ(ExtractDoubleOrThrow(yf), 2.0);
 }
 
 GTEST_TEST(ExtractDoubleTest, MatrixTest) {

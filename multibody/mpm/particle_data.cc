@@ -170,18 +170,16 @@ void ParticleData<T>::AddParticles(
 }
 
 template <typename T>
-MassAndMomentum<T> ComputeTotalMassAndMomentum(
-    const ParticleData<T>& particle_data, const T& dx) {
+MassAndMomentum<T> ParticleData<T>::ComputeTotalMassAndMomentum(
+    const T& dx) const {
   MassAndMomentum<T> result;
   const T D = dx * dx * 0.25;
-  for (int i = 0; i < particle_data.num_particles(); ++i) {
-    result.mass += particle_data.m()[i];
-    result.linear_momentum += particle_data.m()[i] * particle_data.v()[i];
-    const Matrix3<T> B = particle_data.C()[i] * D;  // C = B * D^{-1}
+  for (int i = 0; i < num_particles(); ++i) {
+    result.mass += m_[i];
+    result.linear_momentum += m_[i] * v_[i];
+    const Matrix3<T> B = C_[i] * D;  // C = B * D^{-1}
     result.angular_momentum +=
-        particle_data.m()[i] *
-        (particle_data.x()[i].cross(particle_data.v()[i]) +
-         ContractWithLeviCivita<T>(B.transpose()));
+        m_[i] * (x_[i].cross(v_[i]) + ContractWithLeviCivita<T>(B.transpose()));
   }
   return result;
 }
@@ -194,14 +192,3 @@ MassAndMomentum<T> ComputeTotalMassAndMomentum(
 template class drake::multibody::mpm::internal::ParticleData<float>;
 template class drake::multibody::mpm::internal::ParticleData<double>;
 template class drake::multibody::mpm::internal::ParticleData<drake::AutoDiffXd>;
-template drake::multibody::mpm::internal::MassAndMomentum<float>
-drake::multibody::mpm::internal::ComputeTotalMassAndMomentum(
-    const drake::multibody::mpm::internal::ParticleData<float>&, const float&);
-template drake::multibody::mpm::internal::MassAndMomentum<double>
-drake::multibody::mpm::internal::ComputeTotalMassAndMomentum(
-    const drake::multibody::mpm::internal::ParticleData<double>&,
-    const double&);
-template drake::multibody::mpm::internal::MassAndMomentum<drake::AutoDiffXd>
-drake::multibody::mpm::internal::ComputeTotalMassAndMomentum(
-    const drake::multibody::mpm::internal::ParticleData<drake::AutoDiffXd>&,
-    const drake::AutoDiffXd&);

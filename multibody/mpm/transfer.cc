@@ -9,18 +9,16 @@ namespace mpm {
 namespace internal {
 
 template <typename Grid>
-Transfer<Grid>::Transfer(T dt, Grid* grid, ParticleData<T>* particle_data)
-    : dt_(dt), grid_(grid), particle_data_(particle_data) {
+Transfer<Grid>::Transfer(T dt, double dx) : dt_(dt), dx_(dx) {
   DRAKE_DEMAND(dt > 0);
-  DRAKE_DEMAND(grid != nullptr);
-  DRAKE_DEMAND(particle_data != nullptr);
-  grid_->Allocate(particle_data_->x());
-  D_inverse_ = 4.0 / (grid_->dx() * grid_->dx());
+  DRAKE_DEMAND(dx > 0);
+  D_inverse_ = 4.0 / (dx_ * dx_);
   D_inverse_dt_ = D_inverse_ * dt_;
 }
 
 template <typename Grid>
-void Transfer<Grid>::ParticleToGrid() {
+void Transfer<Grid>::ParticleToGrid(const ParticleData<T>& particle,
+                                    Grid* grid) {
   /* U == T when Grid == SparseGrid<T>.
      U == double when Grid == MockSparseGrid<T>. */
   using U = typename Grid::NodeScalarType;
@@ -36,7 +34,7 @@ void Transfer<Grid>::ParticleToGrid() {
     const Matrix3<T>& tau_volume = particle_data.tau_volume()[p_index];
     const bool participating = particle_data.in_constraint()[p_index];
     const BsplineWeights<U> bspline =
-        MakeBsplineWeights(x, static_cast<U>(grid_->dx()));
+        MakeBsplineWeights(x, static_cast<U>(dx_));
     for (int a = 0; a < 3; ++a) {
       for (int b = 0; b < 3; ++b) {
         for (int c = 0; c < 3; ++c) {
@@ -82,11 +80,12 @@ void Transfer<Grid>::ParticleToGrid() {
       }
     }
   };
-  grid_->ApplyParticleToGridKernel(*particle_data_, std::move(p2g_kernel));
+  grid->ApplyParticleToGridKernel(particle, p2g_kernel);
 }
 
 template <typename Grid>
-void Transfer<Grid>::GridToParticle() {
+void Transfer<Grid>::GridToParticle(const Grid& grid,
+                                    ParticleData<T>* particle) {
   /* U == T when Grid == SparseGrid<T>.
      U == double when Grid == MockSparseGrid<T>. */
   using U = typename Grid::NodeScalarType;
@@ -97,7 +96,7 @@ void Transfer<Grid>::GridToParticle() {
                            ParticleData<T>* particle_data) {
     Vector3<T>& x = particle_data->mutable_x()[p_index];
     const BsplineWeights<U> bspline =
-        MakeBsplineWeights(x, static_cast<U>(grid_->dx()));
+        MakeBsplineWeights(x, static_cast<U>(dx_));
     Vector3<T>& v = particle_data->mutable_v()[p_index];
     Matrix3<T>& C = particle_data->mutable_C()[p_index];
     /* Clear old particle data to prepare for accumulation. */
@@ -121,7 +120,7 @@ void Transfer<Grid>::GridToParticle() {
     C *= D_inverse_;
     F += C * dt_ * F;
   };
-  grid_->ApplyGridToParticleKernel(particle_data_, std::move(g2p_kernel));
+  grid.ApplyGridToParticleKernel(particle, g2p_kernel);
 }
 
 }  // namespace internal
