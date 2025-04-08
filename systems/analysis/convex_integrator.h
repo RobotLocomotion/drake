@@ -174,16 +174,17 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   void AddContactConstraints(const Context<T>& context,
                              SapContactProblem<T>* problem);
 
-  // Adds external system constraints to the SAP problem. In particular, adds
-  // constraints to the sap problem to produce generalized forces
+  // Add external system constraints to the SAP problem. In particular, these
+  // constraints produce generalized forces
   //
   //    τ = clamp(−Kᵤ v + kᵤ) − Kₑ v + kₑ
   //
   // Note that the contribution from the actuator input port (-Kᵤ v + kᵤ) is
   // clamped to effort limits, while the contribution from external forces
   // (−Kₑ v + kₑ) is not.
-  void AddExternalSystemConstraints(const VectorX<T>& Ku, const VectorX<T>& ku,
-                                    const VectorX<T>& Ke, const VectorX<T>& ke,
+  void AddActuationConstraints(const VectorX<T>& Ku, const VectorX<T>& ku,
+                               SapContactProblem<T>* problem) const;
+  void AddExternalSystemConstraints(const VectorX<T>& Ke, const VectorX<T>& ke,
                                     SapContactProblem<T>* problem) const;
 
   // Compute signed distances and jacobians. While we store this in a

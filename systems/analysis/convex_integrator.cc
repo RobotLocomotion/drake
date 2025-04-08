@@ -862,18 +862,24 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
   // contact constraints (point contact + hydro)
   AddContactConstraints(context, &problem);
 
-  // External system constraints τ = clamp(-Kᵤ v + kᵤ) - Kₑ v + kₑ
-  AddExternalSystemConstraints(Ku, ku, Ke, ke, &problem);
+  // External actuator constraints, τ = clamp(-Kᵤ v + kᵤ, -e, e)
+  if (plant().num_actuators() > 0) {
+    AddActuationConstraints(Ku, ku, &problem);
+  }
+
+  // Constraints for implicit treatment of other MbP ports, τ = - Kₑ v + kₑ
+  if (plant().get_applied_generalized_force_input_port().HasValue(context) ||
+      plant().get_applied_spatial_force_input_port().HasValue(context)) {
+    AddExternalSystemConstraints(Ke, ke, &problem);
+  }
 
   return problem;
 }
 
 template <typename T>
-void ConvexIntegrator<T>::AddExternalSystemConstraints(
-    const VectorX<T>& Ku, const VectorX<T>& ku,
-    const VectorX<T>& Ke, const VectorX<T>& ke,
-    SapContactProblem<T>* problem) const {
-  using std::max;
+void ConvexIntegrator<T>::AddActuationConstraints(
+  const VectorX<T>& Ku, const VectorX<T>& ku,
+  SapContactProblem<T>* problem) const {
   // Iterative over each joint actuator, and add the corresponding controller
   // constraint.
   for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
@@ -895,12 +901,17 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
     problem->AddConstraint(std::make_unique<SapExternalSystemConstraint<T>>(
         configuration, k, u, e));
   }
+}
 
-  // Iterate over each velocity, and add the corresponding external force
-  // constraint. TODO(vincekurtz): only do this if at least one of the external
-  // force input ports is connected.
+template <typename T>
+void ConvexIntegrator<T>::AddExternalSystemConstraints(
+    const VectorX<T>& Ke, const VectorX<T>& ke,
+    SapContactProblem<T>* problem) const {
+  // Effort limits are infinite for the spatial and generalized input ports
   const T inf = std::numeric_limits<T>::infinity();
 
+  // Iterate over each velocity, and add the corresponding external force
+  // constraint. 
   for (int c = 0; c < problem->num_cliques(); ++c) {
     const int nv = problem->num_velocities(c);
     for (int i = 0; i < nv; ++i) {
