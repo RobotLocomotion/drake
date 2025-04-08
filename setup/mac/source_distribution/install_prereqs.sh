@@ -10,7 +10,7 @@ set -euxo pipefail
 while [ "${1:-}" != "" ]; do
   case "$1" in
     --developer)
-      with_test_only=1
+      with_developer=1
       ;;
     --without-test-only)
       # Ignored for backwards compatibility.
@@ -33,3 +33,7 @@ if ! command -v brew &>/dev/null; then
 fi
 
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
+
+if [[ "${with_developer}" -eq 1 ]]; then
+  brew bundle --file="${BASH_SOURCE%/*}/Brewfile-developer"
+fi
