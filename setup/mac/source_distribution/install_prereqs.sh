@@ -33,3 +33,7 @@ if ! command -v brew &>/dev/null; then
 fi
 
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
+
+if [[ "${with_test_only:-0}" -eq 1 ]]; then
+  brew bundle --file="${BASH_SOURCE%/*}/developer/Brewfile"
+fi
