@@ -900,14 +900,13 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
   // constraint. TODO(vincekurtz): only do this if at least one of the external
   // force input ports is connected.
   const T inf = std::numeric_limits<T>::infinity();
-  const T eps = 1e-8;
 
   for (int c = 0; c < problem->num_cliques(); ++c) {
     const int nv = problem->num_velocities(c);
     for (int i = 0; i < nv; ++i) {
       const int c_start = problem->velocities_start(c);
 
-      const T& k = max(Ke(c_start + i), eps);
+      const T& k = Ke(c_start + i);
       const T& u = ke(c_start + i);
 
       typename SapExternalSystemConstraint<T>::Configuration configuration{

@@ -45,20 +45,23 @@ template <typename T>
 void SapExternalSystemConstraint<T>::DoCalcData(
     const Eigen::Ref<const VectorX<T>>& vc,
     AbstractValue* abstract_data) const {
+  using std::max;
+  const T eps = std::numeric_limits<T>::epsilon();
+
   auto& data =
       abstract_data->get_mutable_value<SapExternalSystemConstraintData<T>>();
   const T& h = data.time_step;
   const T& v = vc[0];
+  const T k = max(k_, eps);  // stiffness must be positive, if small
 
   // This uses essentially the same method as SapPdControllerConstraint
   // to enforce effort limits.
-  const T y = -k_ * v + tau0_;
+  const T y = -k * v + tau0_;
 
   data.v = v;
-
-  data.cost = h * ClampAntiderivative(y, e_) / k_;
+  data.cost = h * ClampAntiderivative(y, e_) / k;
   data.impulse = h * Clamp(y, e_);
-  data.hessian = h * k_ * ClampDerivative(y, e_);
+  data.hessian = h * k * ClampDerivative(y, e_);
 }
 
 template <typename T>
