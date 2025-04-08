@@ -39,7 +39,6 @@ def _symlink_headers(*, drake_workspace, temp_dir, modules):
         "setup",        # There is no C++ code here.
         "third_party",  # Only document first-party Drake code.
         "tools",        # There is no C++ code here.
-        "tutorials",    # There is no C++ code here.
     ]
     default_modules = [
         f"drake.{x}" for x in os.listdir(drake_workspace)
