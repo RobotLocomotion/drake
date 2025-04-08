@@ -79,6 +79,7 @@ from pydrake.multibody.plant import (
     ContactResults_,
     ContactResultsToLcmSystem,
     CoulombFriction_,
+    DeformableContactInfo_,
     DeformableModel,
     DiscreteContactApproximation,
     DiscreteContactSolver,
@@ -115,6 +116,7 @@ from pydrake.geometry import (
     Meshcat,
     Role,
     PenetrationAsPointPair_,
+    PolygonSurfaceMesh_,
     ProximityProperties,
     SceneGraphConfig,
     SignedDistancePair_,
@@ -3340,6 +3342,28 @@ class TestPlant(unittest.TestCase):
         body = plant.GetUniqueFreeBaseBodyOrThrow(model_instance)
         self.assertEqual(body.index(), added_body.index())
 
+    @numpy_compare.check_all_types
+    def test_deformable_contact_info(self, T):
+        if T == Expression:
+            return
+
+        vertices = [np.array([0, 0, 0]), np.array([1, 0, 0]),
+                    np.array([1, 1, 0]), np.array([0, 1, 0])]
+        face_data = [3, 0, 1, 2, 3, 2, 3, 0]
+        contact_mesh = PolygonSurfaceMesh_[T](face_data, vertices)
+        id_A = GeometryId.get_new_id()
+        id_B = GeometryId.get_new_id()
+        F_Ac_W = SpatialForce_[T](np.array([1, 2, 3]), np.array([4, 5, 6]))
+        dut = DeformableContactInfo_[T](id_A, id_B, contact_mesh, F_Ac_W)
+
+        self.assertEqual(dut.id_A(), id_A)
+        self.assertEqual(dut.id_B(), id_B)
+        self.assertTrue(dut.contact_mesh().Equal(contact_mesh))
+        numpy_compare.assert_equal(dut.F_Ac_W().translational(),
+                                   F_Ac_W.translational())
+        numpy_compare.assert_equal(dut.F_Ac_W().rotational(),
+                                   F_Ac_W.rotational())
+
     def test_deformable_model(self):
         builder = DiagramBuilder_[float]()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
@@ -3389,3 +3413,13 @@ class TestPlant(unittest.TestCase):
         # Ensure we can simulate this system.
         simulator = Simulator_[float](diagram)
         simulator.AdvanceTo(0.01)
+        plant_context = plant.GetMyContextFromRoot(simulator.get_context())
+        contact_results = (
+            plant.get_contact_results_output_port().Eval(plant_context))
+
+        # There is no deformable contact, but we can still try the API.
+        self.assertEqual(contact_results.num_deformable_contacts(), 0)
+        # Complains about index out of range.
+        with self.assertRaisesRegex(SystemExit,
+                                    '.*i < num_deformable_contacts().*'):
+            contact_results.deformable_contact_info(0)
