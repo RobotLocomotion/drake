@@ -878,8 +878,8 @@ SapContactProblem<T> ConvexIntegrator<T>::MakeSapContactProblem(
 
 template <typename T>
 void ConvexIntegrator<T>::AddActuationConstraints(
-  const VectorX<T>& Ku, const VectorX<T>& ku,
-  SapContactProblem<T>* problem) const {
+    const VectorX<T>& Ku, const VectorX<T>& ku,
+    SapContactProblem<T>* problem) const {
   // Iterative over each joint actuator, and add the corresponding controller
   // constraint.
   for (JointActuatorIndex actuator_index : plant().GetJointActuatorIndices()) {
@@ -911,7 +911,7 @@ void ConvexIntegrator<T>::AddExternalSystemConstraints(
   const T inf = std::numeric_limits<T>::infinity();
 
   // Iterate over each velocity, and add the corresponding external force
-  // constraint. 
+  // constraint.
   for (int c = 0; c < problem->num_cliques(); ++c) {
     const int nv = problem->num_velocities(c);
     for (int i = 0; i < nv; ++i) {

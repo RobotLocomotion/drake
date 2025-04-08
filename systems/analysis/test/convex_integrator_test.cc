@@ -42,9 +42,10 @@ class ConvexIntegratorTester {
   ConvexIntegratorTester() = delete;
 
   static void LinearizeExternalSystem(ConvexIntegrator<double>* integrator,
-                                      const double h, VectorXd* K,
-                                      VectorXd* u0) {
-    integrator->LinearizeExternalSystem(h, K, u0);
+                                      const double h, VectorXd* Ku,
+                                      VectorXd* ku, VectorXd* Ke,
+                                      VectorXd* ke) {
+    integrator->LinearizeExternalSystem(h, Ku, ku, Ke, ke);
   }
 
   static SapContactProblem<double> MakeSapContactProblem(
@@ -283,9 +284,11 @@ GTEST_TEST(ConvexIntegratorTest, ActuatedPendulum) {
 
   // Linearize the non-plant system dynamics around the current state
   const int nv = plant.num_velocities();
-  VectorXd A_vec(nv, nv);
+  VectorXd A_vec(nv);
   VectorXd tau(nv);
-  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &A_vec, &tau);
+  VectorXd Ke(nv), ke(nv);  // unusued, for linearizing other input ports
+  ConvexIntegratorTester::LinearizeExternalSystem(&integrator, h, &A_vec, &tau,
+                                                  &Ke, &ke);
   const MatrixXd A = A_vec.asDiagonal();
 
   // Reference linearization via autodiff

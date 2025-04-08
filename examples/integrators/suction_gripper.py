@@ -10,6 +10,7 @@ import numpy as np
 #
 ##
 
+
 class SuctionGripper(LeafSystem):
     """A super simple suction gripper model.
 
@@ -105,6 +106,7 @@ class SuctionGripper(LeafSystem):
                 spatial_forces.append(spatial_force)
 
         output.set_value(spatial_forces)
+
 
 def add_gripper_mbp_elements(plant, scene_graph):
     """Adds a model of a suction gripper to the given MultibodyPlant.
@@ -238,6 +240,7 @@ def add_gripper_mbp_elements(plant, scene_graph):
 
     return pressure_sources, collision_filter
 
+
 def run_simulation(
     mbp_time_step, integrator, accuracy, use_error_control, max_time_step
 ):
@@ -254,7 +257,9 @@ def run_simulation(
     parser = Parser(plant)
 
     # Gripper geometries
-    pressure_sources, gripper_collision_filter = add_gripper_mbp_elements(plant, scene_graph)
+    pressure_sources, gripper_collision_filter = add_gripper_mbp_elements(
+        plant, scene_graph
+    )
 
     # Manipuland(s)
     box = parser.AddModelsFromUrl(

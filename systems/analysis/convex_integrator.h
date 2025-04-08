@@ -255,8 +255,7 @@ class ConvexIntegrator final : public IntegratorBase<T> {
 
   // Compute external forces τ = τₑₓₜ(x) from the plant's spatial and
   // generalized force input ports.
-  void CalcAppliedExternalForces(const Context<T>& context,
-                                 VectorX<T>* tau);
+  void CalcAppliedExternalForces(const Context<T>& context, VectorX<T>* tau);
 
   // Linearize all the external (controller) systems connected to the plant.
   //
