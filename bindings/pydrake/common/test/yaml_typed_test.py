@@ -3,7 +3,7 @@ import copy
 import dataclasses as dc
 import functools
 import math
-from math import inf, nan
+from math import inf, isnan, nan
 import os
 from pathlib import Path
 import sys
@@ -30,10 +30,30 @@ from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 #  drake/common/yaml/test/example_structs.h
 # and should be roughly kept in sync with the definitions in that file.
 
+def _float_eq(x, y):
+    """Returns true iff x and y are the same `float` value, treating NaNs as
+    the same."""
+    if x is None or y is None:
+        return x == y
+    assert type(x) is float, repr(x)
+    assert type(y) is float, repr(y)
+    if isnan(x) and isnan(y):
+        return True
+    return float.__eq__(x, y)
+
+
+def _float_wrapper_eq(a, b):
+    """Returns true iff a and b are the same class and the `.value` fields have
+    an identical `float` value (treating NaNs as identical)."""
+    if a.__class__ is not b.__class__:
+        return False
+    return _float_eq(a.value, b.value)
+
 
 @dc.dataclass
 class FloatStruct:
     value: float = nan
+    __eq__ = _float_wrapper_eq
 
 
 @dc.dataclass
@@ -87,6 +107,11 @@ class MapStruct:
 class InnerStruct:
     inner_value: float = nan
 
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            return False
+        return _float_eq(self.inner_value, other.inner_value)
+
 
 @dc.dataclass
 class OptionalByteStruct:
@@ -96,23 +121,27 @@ class OptionalByteStruct:
 @dc.dataclass
 class OptionalStruct:
     value: float | None = nan
+    __eq__ = _float_wrapper_eq
 
 
 @dc.dataclass
 class OptionalStructNoDefault:
     value: float | None = None
+    __eq__ = _float_wrapper_eq
 
 
 @dc.dataclass
 class LegacyOptionalStruct:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
     value: typing.Optional[float] = nan
+    __eq__ = _float_wrapper_eq
 
 
 @dc.dataclass
 class LegacyOptionalStructNoDefault:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
     value: typing.Optional[float] = None
+    __eq__ = _float_wrapper_eq
 
 
 @dc.dataclass
@@ -167,6 +196,14 @@ class OuterStruct:
     inner_struct: InnerStruct = dc.field(
         default_factory=lambda: InnerStruct())
 
+    def __eq__(self, other):
+        if self.__class__ is not other.__class__:
+            return False
+        return all([
+            _float_eq(self.outer_value, other.outer_value),
+            self.inner_struct == other.inner_struct,
+        ])
+
 
 @dc.dataclass
 class OuterStructOpposite:
@@ -197,9 +234,6 @@ class BigMapStruct:
                 inner_struct=InnerStruct(inner_value=2.0))))
 
 
-# TODO(tyler.yankee/jwnimmer-tri): See #22863.
-@unittest.skipIf(sys.platform == "darwin",
-                 "Not supported on macOS for Python 3.13.")
 class TestYamlTypedRead(unittest.TestCase,
                         metaclass=ValueParameterizedTest):
     """Detailed tests for the typed yaml_load function(s).
