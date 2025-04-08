@@ -284,6 +284,32 @@ TYPED_TEST(SparseGridTest, ApplyGridToParticleKernel) {
   grid.ApplyGridToParticleKernel(&particle_data, g2p_kernel);
 }
 
+TYPED_TEST(SparseGridTest, IterateGrid) {
+  using Grid = TypeParam;
+  using T = typename Grid::Scalar;
+
+  const double dx = 0.01;
+  Grid grid(dx);
+  const Vector3<T> q_WP(0.001, 0.001, 0.001);
+  std::vector<Vector3<T>> q_WPs = {q_WP};
+  grid.Allocate(q_WPs);
+
+  /* Set grid data so that all nodes have mass 1.0 and velocity (1, 2, 3). */
+  auto set_grid_data = [](GridData<T>* data) {
+    data->m = 1.0;
+    data->v = Vector3<T>(1.0, 2.0, 3.0);
+  };
+  grid.IterateGrid(set_grid_data);
+
+  /* Confirm the data is set as expected. */
+  const std::vector<std::pair<Vector3<int>, GridData<T>>> grid_data =
+      grid.GetGridData();
+  for (const auto& [_, data] : grid_data) {
+    EXPECT_EQ(data.v, Vector3<T>(1, 2, 3));
+    EXPECT_EQ(data.m, 1.0);
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace mpm

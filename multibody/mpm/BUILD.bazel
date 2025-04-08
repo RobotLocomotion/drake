@@ -85,6 +85,7 @@ drake_cc_library(
         "particle_data.h",
     ],
     deps = [
+        ":mass_and_momentum",
         "//common:essential",
         "//common:parallelism",
         "//multibody/fem",
@@ -158,6 +159,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library_linux_only(
+    name = "transfer",
+    srcs = [
+        "transfer.cc",
+    ],
+    hdrs = [
+        "transfer.h",
+    ],
+    deps = [
+        ":mock_sparse_grid",
+        ":particle_data",
+        ":sparse_grid",
+    ],
+)
+
 drake_cc_googletest(
     name = "bspline_weights_test",
     deps = [
@@ -207,6 +223,16 @@ drake_cc_googletest_linux_only(
     deps = [
         ":spgrid",
         "//common/test_utilities:limit_malloc",
+    ],
+)
+
+drake_cc_googletest_linux_only(
+    name = "transfer_test",
+    deps = [
+        ":particle_data",
+        ":sparse_grid",
+        ":transfer",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

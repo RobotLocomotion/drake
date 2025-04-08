@@ -94,6 +94,8 @@ class MockSparseGrid {
     particle_sorter_.Iterate(this, &particle_data, kernel);
   }
 
+  void IterateGrid(const std::function<void(GridData<T>*)>& func);
+
  private:
   double dx_{};
   /* Used only for offset conversion and sorting particles, but not for storing
