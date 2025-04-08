@@ -155,6 +155,14 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // this->context.
   bool DoStep(const T& h) override;
 
+  // Do the main integration step, using two half-sized steps for error
+  // estimation. This requires a total of 3 SAP solves.
+  bool DoStepWithHalfStepErrorEstimate(const T& h);
+
+  // Do the main integration step using a 2nd-order L-stable SDIRK scheme. This
+  // requires a total of 2 SAP solves, and includes an embedded error estimate.
+  bool DoStepWithSDIRK(const T& h);
+
   // Solve the SAP problem to compute x_{t+h} at a given step size. This will be
   // called multiple times for each DoStep to compute the error estimate.
   //

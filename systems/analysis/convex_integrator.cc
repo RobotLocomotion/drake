@@ -140,6 +140,11 @@ void ConvexIntegrator<T>::DoInitialize() {
 
 template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
+  return DoStepWithHalfStepErrorEstimate(h);
+}
+
+template <typename T>
+bool ConvexIntegrator<T>::DoStepWithHalfStepErrorEstimate(const T& h) {
   // Get references to the overall diagram context and the plant context
   const Context<T>& diagram_context = this->get_context();
   const Context<T>& plant_context =
