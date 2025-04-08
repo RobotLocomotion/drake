@@ -24,11 +24,11 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/read_gltf_to_memory.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
@@ -721,16 +721,18 @@ class RenderEngineVtkTest : public ::testing::Test {
 };
 
 TEST_F(RenderEngineVtkTest, ParameterMatching) {
-  RenderEngineVtkParams params1{.lights = {LightParameter{.type = "spot"}}};
-  RenderEngineVtkParams params1_copy = params1;
-  RenderEngineVtkParams params2;
+  auto make_yaml = [](const RenderEngineVtkParams& params) {
+    return yaml::SaveYamlString(params, "RenderEngineVtkParams");
+  };
+  const RenderEngineVtkParams params1{
+      .lights = {LightParameter{.type = "spot"}}};
+  const RenderEngineVtkParams params2;
 
-  RenderEngineVtk engine(params1);
-  using Comparator = geometry::render::internal::RenderEngineComparator;
+  const RenderEngineVtk engine(params1);
+  const std::string from_engine = engine.MakeParametersYaml();
 
-  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1)));
-  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1_copy)));
-  EXPECT_FALSE(Comparator::ParametersMatch(engine, Value(params2)));
+  EXPECT_EQ(from_engine, make_yaml(params1));
+  EXPECT_NE(from_engine, make_yaml(params2));
 }
 
 // Tests an empty image -- confirms that it clears to the "empty" color -- no

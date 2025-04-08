@@ -4,8 +4,6 @@ namespace drake {
 namespace geometry {
 namespace render {
 
-bool LightParameter::operator==(const LightParameter&) const = default;
-
 std::ostream& operator<<(std::ostream& out, const LightType& t) {
   switch (t) {
     case LightType::kPoint:

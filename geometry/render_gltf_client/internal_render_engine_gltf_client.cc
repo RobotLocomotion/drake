@@ -19,10 +19,10 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
 #include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace geometry {
@@ -477,13 +477,8 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   }
 }
 
-bool RenderEngineGltfClient::DoParametersMatch(
-    const AbstractValue& params) const {
-  auto* test_params = params.maybe_get_value<RenderEngineGltfClientParams>();
-  if (test_params == nullptr) {
-    return false;
-  }
-  return *test_params == get_params();
+std::string RenderEngineGltfClient::DoMakeParametersYaml() const {
+  return yaml::SaveYamlString(get_params(), "RenderEngineGltfClientParams");
 }
 
 void RenderEngineGltfClient::ExportScene(const std::string& export_path,

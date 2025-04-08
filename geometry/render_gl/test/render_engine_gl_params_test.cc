@@ -23,16 +23,6 @@ GTEST_TEST(RenderEngineGlParams, Serialization) {
   EXPECT_EQ(dut.lights.at(0).type, "point");
 }
 
-// This is intended to confirm that dut can be operator=='d.
-GTEST_TEST(RenderEngineGlParams, EqualsSmokeTest) {
-  RenderEngineGlParams params1{.lights = {{.type = "spot"}}};
-  RenderEngineGlParams params1_copy = params1;
-  RenderEngineGlParams params2{.lights = {{.type = "point"}}};
-
-  EXPECT_TRUE(params1 == params1_copy);
-  EXPECT_FALSE(params1 == params2);
-}
-
 }  // namespace
 }  // namespace geometry
 }  // namespace drake

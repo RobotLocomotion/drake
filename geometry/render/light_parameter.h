@@ -64,8 +64,6 @@ struct LightParameter {
     a->Visit(DRAKE_NVP(cone_angle));
   }
 
-  bool operator==(const LightParameter&) const;
-
   /** The light type is either `"point"`, `"spot"`, or `"directional"`. */
   std::string type{"directional"};
 

@@ -12,6 +12,7 @@
 #include "drake/common/never_destroyed.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/overloaded.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render_gl/factory.h"
@@ -117,13 +118,17 @@ void MakeEngineByClassName(const std::string& class_name,
 void ValidateEngineAndMaybeAdd(const CameraConfig& config,
                                SceneGraph<double>* scene_graph) {
   DRAKE_DEMAND(scene_graph != nullptr);
-  const geometry::render::RenderEngine* engine =
-      scene_graph->GetRenderer(config.renderer_name);
-  bool already_exists = engine != nullptr;
+
+  // Querying for the type_name of the named renderer will simultaneously tell
+  // if a render engine already exists (non-empty value) *and* give us a string
+  // to match against config.renderer_class.
+  const std::string type_name =
+      scene_graph->GetRendererTypeName(config.renderer_name);
+
+  // Non-empty type name says that it already exists.
+  const bool already_exists = !type_name.empty();
   if (already_exists) {
-    const std::string type_name = NiceTypeName::Get(*engine);
     // It already exists. Do we have a collision?
-    using Comparator = geometry::render::internal::RenderEngineComparator;
     bool matches = std::visit<bool>(
         overloaded{
             [&type_name, &config](const std::string& class_name) {
@@ -137,8 +142,13 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
               }
               return true;
             },
-            [engine](auto&& params) {
-              return Comparator::ParametersMatch(*engine, Value(params));
+            [scene_graph, &config](auto&& params) {
+              const std::string test_yaml = yaml::SaveYamlString(
+                  params,
+                  NiceTypeName::RemoveNamespaces(NiceTypeName::Get(params)));
+              const std::string existing_yaml =
+                  scene_graph->GetRendererParameterYaml(config.renderer_name);
+              return test_yaml == existing_yaml;
             }},
         config.renderer_class);
     if (!matches) {

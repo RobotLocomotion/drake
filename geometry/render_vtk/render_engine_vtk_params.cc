@@ -4,14 +4,6 @@
 
 namespace drake {
 namespace geometry {
-
-bool NullTexture::operator==(const NullTexture&) const = default;
-bool EquirectangularMap::operator==(const EquirectangularMap&) const = default;
-bool EnvironmentMap::operator==(const EnvironmentMap&) const = default;
-bool GltfExtension::operator==(const GltfExtension&) const = default;
-bool RenderEngineVtkParams::operator==(const RenderEngineVtkParams&) const =
-    default;
-
 namespace render_vtk {
 namespace internal {
 

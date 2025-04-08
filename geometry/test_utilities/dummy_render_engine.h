@@ -245,6 +245,11 @@ class DummyRenderEngine : public render::RenderEngine, private ShapeReifier {
     label_camera_ = camera;
   }
 
+  /* Implementation of RenderEngine::DoMakeParametersYaml().  */
+  std::string DoMakeParametersYaml() const override {
+    return "DummyRenderEngineParams:";
+  }
+
  private:
   // If true, the engine will accept all geometries.
   bool force_accept_{};

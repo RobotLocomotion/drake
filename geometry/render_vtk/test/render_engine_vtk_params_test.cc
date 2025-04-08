@@ -119,16 +119,6 @@ GTEST_TEST(RenderEngineVtkParams, Backend) {
                               ".*backend.*foobar.*");
 }
 
-// This is intended to confirm that dut can be operator=='d.
-GTEST_TEST(RenderEngineVtkParams, EqualsSmokeTest) {
-  RenderEngineVtkParams params1{.exposure = 20};
-  RenderEngineVtkParams params1_match{.exposure = 20};
-  RenderEngineVtkParams params2{.exposure = 10};
-
-  EXPECT_TRUE(params1 == params1_match);
-  EXPECT_FALSE(params1 == params2);
-}
-
 }  // namespace
 }  // namespace internal
 }  // namespace render_vtk

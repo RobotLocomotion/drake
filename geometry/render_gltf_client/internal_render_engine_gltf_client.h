@@ -85,7 +85,8 @@ class DRAKE_NO_EXPORT RenderEngineGltfClient
       const render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
-  bool DoParametersMatch(const AbstractValue& params) const override;
+  // @see RenderEngine::DoMakeParametersYaml().
+  std::string DoMakeParametersYaml() const override;
 
   /* Exports the `RenderEngineVtk::pipelines_[image_type]` VTK scene to a
    glTF file given `export_path`. */

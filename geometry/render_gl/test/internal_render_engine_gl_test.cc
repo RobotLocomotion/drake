@@ -18,10 +18,10 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/read_gltf_to_memory.h"
@@ -618,16 +618,18 @@ class RenderEngineGlTest : public ::testing::Test {
 };
 
 TEST_F(RenderEngineGlTest, ParameterMatching) {
-  RenderEngineGlParams params1{.lights = {LightParameter{.type = "spot"}}};
-  RenderEngineGlParams params1_copy = params1;
-  RenderEngineGlParams params2;
+  auto make_yaml = [](const RenderEngineGlParams& params) {
+    return yaml::SaveYamlString(params, "RenderEngineGlParams");
+  };
+  const RenderEngineGlParams params1{
+      .lights = {LightParameter{.type = "spot"}}};
+  const RenderEngineGlParams params2;
 
-  RenderEngineGl engine(params1);
-  using Comparator = geometry::render::internal::RenderEngineComparator;
+  const RenderEngineGl engine(params1);
+  const std::string from_engine = engine.MakeParametersYaml();
 
-  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1)));
-  EXPECT_TRUE(Comparator::ParametersMatch(engine, Value(params1_copy)));
-  EXPECT_FALSE(Comparator::ParametersMatch(engine, Value(params2)));
+  EXPECT_EQ(from_engine, make_yaml(params1));
+  EXPECT_NE(from_engine, make_yaml(params2));
 }
 
 // Tests an empty image -- confirms that it clears to the "empty" color -- no

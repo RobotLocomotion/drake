@@ -53,16 +53,6 @@ GTEST_TEST(LightParameterTest, Serialization) {
   EXPECT_EQ(light.cone_angle, dut.cone_angle);
 }
 
-// This is intended to confirm that dut can be operator=='d.
-GTEST_TEST(LightParamterTest, EqualsSmokeTest) {
-  LightParameter params1{.type = "spot"};
-  LightParameter params1_match{.type = "spot"};
-  LightParameter params2{.type = "point"};
-
-  EXPECT_TRUE(params1 == params1_match);
-  EXPECT_FALSE(params1 == params2);
-}
-
 }  // namespace
 }  // namespace render
 }  // namespace geometry

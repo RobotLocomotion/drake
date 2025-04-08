@@ -5,9 +5,6 @@
 namespace drake {
 namespace geometry {
 
-bool RenderEngineGltfClientParams::operator==(
-    const RenderEngineGltfClientParams&) const = default;
-
 std::string RenderEngineGltfClientParams::GetUrl() const {
   std::string url = base_url;
   std::string endpoint = render_endpoint;

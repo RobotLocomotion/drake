@@ -186,14 +186,6 @@ void RenderEngine::DoRenderLabelImage(const ColorRenderCamera&,
 
 void RenderEngine::SetDefaultLightPosition(const Vector3<double>&) {}
 
-namespace internal {
-
-bool RenderEngineComparator::ParametersMatch(const RenderEngine& engine,
-                                             const AbstractValue& params) {
-  return engine.ParametersMatch(params);
-}
-
-}  // namespace internal
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

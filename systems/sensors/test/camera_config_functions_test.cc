@@ -338,7 +338,6 @@ TEST_F(CameraConfigFunctionsTest, RendererNameReuse) {
 
     // Changing the parameters at all but keeping the same name angers the gods.
     const auto mutated_parameters = mutator(parameters);
-    DRAKE_DEMAND(!(mutated_parameters == parameters));
     CameraConfig mutated_config = config;
     mutated_config.renderer_class = mutated_parameters;
     DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(mutated_config, &builder_),

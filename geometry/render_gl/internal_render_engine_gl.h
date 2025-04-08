@@ -193,7 +193,8 @@ class RenderEngineGl final : public render::RenderEngine, private ShapeReifier {
       const render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const final;
 
-  bool DoParametersMatch(const AbstractValue& params) const override;
+  // @see RenderEngine::DoMakeParametersYaml().
+  std::string DoMakeParametersYaml() const override;
 
   // Copy constructor used for cloning.
   // Do *not* call this copy constructor directly. The resulting RenderEngineGl

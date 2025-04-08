@@ -17,6 +17,26 @@
 #include "drake/systems/sensors/camera_info.h"
 
 namespace drake {
+namespace geometry {
+
+// Some quick and dirty comparison operators so we can use gtest matchers with
+// the render engine parameter types.
+bool operator==(const RenderEngineVtkParams& p1,
+                const RenderEngineVtkParams& p2) {
+  return yaml::SaveYamlString(p1) == yaml::SaveYamlString(p2);
+}
+
+bool operator==(const RenderEngineGlParams& p1,
+                const RenderEngineGlParams& p2) {
+  return yaml::SaveYamlString(p1) == yaml::SaveYamlString(p2);
+}
+
+bool operator==(const RenderEngineGltfClientParams& p1,
+                const RenderEngineGltfClientParams& p2) {
+  return yaml::SaveYamlString(p1) == yaml::SaveYamlString(p2);
+}
+
+}  // namespace geometry
 namespace systems {
 namespace sensors {
 namespace {
