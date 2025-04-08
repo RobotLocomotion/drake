@@ -1,11 +1,14 @@
-import pydrake.systems.estimators as mut
-
 import unittest
-
+import copy
 import numpy as np
 
 from pydrake.examples import PendulumPlant
 from pydrake.systems.primitives import LinearSystem
+from pydrake.systems.estimators import (
+    DiscreteTimeSteadyStateKalmanFilter,
+    LuenbergerObserver,
+    SteadyStateKalmanFilter,
+)
 
 
 class TestEstimators(unittest.TestCase):
@@ -14,7 +17,7 @@ class TestEstimators(unittest.TestCase):
         plant = PendulumPlant()
         context = plant.CreateDefaultContext()
         L = np.eye(2)
-        observer = mut.LuenbergerObserver(
+        observer = LuenbergerObserver(
             observed_system=plant,
             observed_system_context=context,
             observer_gain=L)
@@ -27,21 +30,28 @@ class TestEstimators(unittest.TestCase):
         np.testing.assert_array_equal(L, observer.observer_gain())
         np.testing.assert_array_equal(L, observer.L())
 
+        observer.Clone()
+        copy.copy(observer)
+        copy.deepcopy(observer)
+
     def test_steady_state_kalman_filter(self):
         A = np.array([[0., 1.], [-10., -0.1]])
         C = np.eye(2)
         W = np.eye(2)
         V = np.eye(2)
-        L = mut.SteadyStateKalmanFilter(A=A, C=C, W=W, V=V)
+        L = SteadyStateKalmanFilter(A=A, C=C, W=W, V=V)
+        self.assertEqual(L.shape, (2, 2))
+
+        L = DiscreteTimeSteadyStateKalmanFilter(A=A, C=C, W=W, V=V)
         self.assertEqual(L.shape, (2, 2))
 
         plant = LinearSystem(A=A, C=C)
-        filter = mut.SteadyStateKalmanFilter(system=plant, W=W, V=V)
-        self.assertIsInstance(filter, mut.LuenbergerObserver)
+        filter = SteadyStateKalmanFilter(system=plant, W=W, V=V)
+        self.assertIsInstance(filter, LuenbergerObserver)
 
         plant = PendulumPlant()
         context = plant.CreateDefaultContext()
         plant.get_input_port().FixValue(context, [0.])
-        filter = mut.SteadyStateKalmanFilter(
+        filter = SteadyStateKalmanFilter(
             system=plant, context=context, W=W, V=V)
-        self.assertIsInstance(filter, mut.LuenbergerObserver)
+        self.assertIsInstance(filter, LuenbergerObserver)

@@ -185,11 +185,27 @@ class DerivativeConstraint : public Constraint {
  public:
   DerivativeConstraint(const SparseMatrix<double>& A, int derivative_order,
                        double lb, double ub)
-      : Constraint(A.rows(), A.cols() + 1, VectorXd::Constant(A.rows(), lb),
+      : Constraint(A.rows(), 1 + A.cols(), VectorXd::Constant(A.rows(), lb),
                    VectorXd::Constant(A.rows(), ub)),
         A_{A},
         derivative_order_{derivative_order} {
     DRAKE_DEMAND(derivative_order >= 1);
+    // Since A is often sparse, the constraint gradient should be sparse as
+    // well.
+    std::vector<std::pair<int, int>> gradient_sparsity_pattern;
+    // Constraint always depends on duration.
+    for (int i = 0; i < this->num_outputs(); ++i) {
+      gradient_sparsity_pattern.emplace_back(i, 0);
+    }
+    // Set the sparsity w.r.t control_points.
+    for (int k = 0; k < A_.outerSize(); ++k) {
+      for (Eigen::SparseMatrix<double>::InnerIterator it(A_, k); it; ++it) {
+        if (it.value() != 0) {
+          gradient_sparsity_pattern.emplace_back(it.row(), 1 + it.col());
+        }
+      }
+    }
+    this->SetGradientSparsityPattern(gradient_sparsity_pattern);
   }
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,

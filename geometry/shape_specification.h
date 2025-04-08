@@ -6,7 +6,6 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/geometry/mesh_source.h"
@@ -327,16 +326,6 @@ class Convex final : public Shape {
    usage, exclusively use the convex hull returned by GetConvexHull(). */
   const MeshSource& source() const { return source_; }
 
-  /** Returns the filename passed to the constructor.
-   @throws std::exception if `this` %Convex was constructed using in-memory file
-                          contents.
-   @see source().is_path(). */
-  DRAKE_DEPRECATED(
-      "2025-04-01",
-      "Convex shapes can be defined from a file path or in memory data. Use "
-      "Convex::source() to determine if a filename is available.")
-  std::string filename() const;
-
   /** Returns the extension of the underlying input mesh -- all lower case and
    including the dot. If `this` is constructed from a file path, the extension
    is extracted from the path. I.e., /foo/bar/mesh.obj and /foo/bar/mesh.OBJ
@@ -353,7 +342,6 @@ class Convex final : public Shape {
 
   /** Returns general scale factors for this mesh. */
   const Vector3<double>& scale3() const { return scale_; }
-
 
   /** Reports the convex hull of the named mesh.
 
@@ -593,16 +581,6 @@ class Mesh final : public Shape {
 
   /** Returns the source for this specification's mesh data. */
   const MeshSource& source() const { return source_; }
-
-  /** Returns the filename passed to the constructor.
-   @throws std::exception if `this` %Mesh was constructed using in-memory file
-                          contents.
-   @see source().is_path(). */
-  DRAKE_DEPRECATED(
-      "2025-04-01",
-      "Meshes can be defined from a file path or in memory data. Use "
-      "Mesh::source() to determine if a filename is available.")
-  std::string filename() const;
 
   /** Returns the extension of the mesh type -- all lower case and including
    the dot. If `this` is constructed from a file path, the extension is

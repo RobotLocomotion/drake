@@ -19,6 +19,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
+#include "drake/geometry/proximity/mesh_distance_boundary.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/autodiff.h"
@@ -62,14 +63,13 @@ class ProximityEngineTester {
   }
 
   template <typename T>
-  static HydroelasticType hydroelastic_type(
-      GeometryId id, const ProximityEngine<T>& engine) {
+  static HydroelasticType hydroelastic_type(GeometryId id,
+                                            const ProximityEngine<T>& engine) {
     return engine.hydroelastic_geometries().hydroelastic_type(id);
   }
 
   template <typename T>
-  static bool IsFclConvexType(const ProximityEngine<T>& engine,
-                              GeometryId id) {
+  static bool IsFclConvexType(const ProximityEngine<T>& engine, GeometryId id) {
     return engine.IsFclConvexType(id);
   }
 
@@ -88,6 +88,12 @@ class ProximityEngineTester {
   static const internal::deformable::Geometries&
   get_deformable_contact_geometries(const ProximityEngine<T>& engine) {
     return engine.deformable_contact_geometries();
+  }
+
+  template <typename T>
+  static const TriangleSurfaceMesh<double>* get_mesh_distance_boundary(
+      const ProximityEngine<T>& engine, GeometryId id) {
+    return engine.mesh_distance_boundary(id);
   }
 };
 
@@ -230,9 +236,8 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
 
   // Case: rigid mesh.
   {
-    Mesh mesh{
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
-        1.0 /* scale */};
+    Mesh mesh(
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"));
     const GeometryId mesh_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(mesh, {}, mesh_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
@@ -241,9 +246,8 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
 
   // Case: compliant mesh.
   {
-    Mesh mesh{
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"),
-        1.0 /* scale */};
+    Mesh mesh(
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
     const GeometryId mesh_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(mesh, {}, mesh_id, soft_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
@@ -252,9 +256,8 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
 
   // Case: rigid mesh vtk.
   {
-    Mesh mesh{
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"),
-        1.0 /* scale */};
+    Mesh mesh(
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
     const GeometryId mesh_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(mesh, {}, mesh_id, rigid_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
@@ -263,9 +266,8 @@ GTEST_TEST(ProximityEngineTests, ProcessHydroelasticProperties) {
 
   // Case: compliant convex vtk.
   {
-    Convex convex{
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"),
-        1.0};
+    Convex convex(
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
     const GeometryId convex_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(convex, {}, convex_id, soft_properties);
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
@@ -431,7 +433,7 @@ GTEST_TEST(ProximityEngineTests, MarginAfterPropertyUpdate) {
   // geometry since we have no re-meshing.
   const double kRadius = 0.5;
   const double kResHint = kRadius / 5;
-  const double kE = 1e8;  // Elastic modulus.
+  const double kE = 1e8;            // Elastic modulus.
   const double kMarginValue = 0.1;  // Large margin value for clarity.
   const double kDistance = 2 * (kRadius + kMarginValue) - 0.5 * kMarginValue;
 
@@ -478,7 +480,7 @@ GTEST_TEST(ProximityEngineTetsts, MarginAfterEngineClone) {
   // geometry since we have no re-meshing.
   const double kRadius = 0.5;
   const double kResHint = kRadius / 5;
-  const double kE = 1e8;  // Elastic modulus.
+  const double kE = 1e8;            // Elastic modulus.
   const double kMarginValue = 0.1;  // Large margin value for clarity.
   const double kDistance = 2 * (kRadius + kMarginValue) - 0.5 * kMarginValue;
 
@@ -513,9 +515,8 @@ GTEST_TEST(ProximityEngineTests, ProcessVtkMeshUndefHydro) {
 
   // Case: mesh vtk, no hydro type annotation.
   {
-    Mesh mesh{
-        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"),
-        1.0 /* scale */};
+    Mesh mesh(
+        drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.vtk"));
     const GeometryId mesh_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(mesh, {}, mesh_id, ProximityProperties());
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(mesh_id, engine),
@@ -529,14 +530,37 @@ GTEST_TEST(ProximityEngineTests, ProcessVtkConvexUndefHydro) {
 
   // Case: convex vtk, no hydro type annotation.
   {
-    Convex convex{
-        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"),
-        1.0 /* scale */};
+    Convex convex(
+        drake::FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"));
     const GeometryId convex_id = GeometryId::get_new_id();
     engine.AddDynamicGeometry(convex, {}, convex_id, ProximityProperties());
     EXPECT_EQ(ProximityEngineTester::hydroelastic_type(convex_id, engine),
               HydroelasticType::kUndefined);
   }
+}
+
+// TODO(SeanCurtis-TRI): Confirm that SDF data gets computed for Mesh(vtk) and
+// all Convex().
+
+// Tests that the signed distance field (SDF) data computed for an obj correctly
+// accounts for its scale factor.
+GTEST_TEST(ProximityEngineTest, ProcessMeshSdfDataForObj) {
+  ProximityEngine<double> engine;
+
+  const GeometryId g_id = GeometryId::get_new_id();
+  const Vector3d scale(2, 3, 4);
+  const Mesh mesh(FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
+                  scale);
+  engine.AddAnchoredGeometry(mesh, {}, g_id);
+
+  const TriangleSurfaceMesh<double>* boundary_mesh =
+      ProximityEngineTester::get_mesh_distance_boundary(engine, g_id);
+
+  ASSERT_NE(boundary_mesh, nullptr);
+  // The cube is 2x2x2. The bounding box of the boundary mesh should be that,
+  // scaled by the given scale factors.
+  const auto& [_, size] = boundary_mesh->CalcBoundingBox();
+  EXPECT_TRUE(CompareMatrices(size, 2 * scale));
 }
 
 // Adds a single shape to the given engine with the indicated anchored/dynamic
@@ -595,9 +619,8 @@ GTEST_TEST(ProximityEngineTest, ComputeContactSurfacesAutodiffSupport) {
   using enum HydroelasticType;
   const bool anchored{true};
   const Sphere sphere{0.2};
-  const Mesh mesh{
-      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"),
-      1.0 /* scale */};
+  const Mesh mesh(
+      drake::FindResourceOrThrow("drake/geometry/test/non_convex_mesh.obj"));
 
   // Case: Compliant sphere and rigid mesh with AutoDiffXd -- confirm the
   // contact surface has derivatives.
@@ -909,18 +932,19 @@ GTEST_TEST(ProximityEngineTests, FailedParsing) {
     const std::filesystem::path file = temp_dir / "empty.obj";
     std::ofstream f(file.string());
     f.close();
-    Convex convex{file.string(), 1.0};
+    Convex convex(file.string());
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
         ".*cannot be used on a mesh with fewer than three vertices.*");
   }
 
   // The file does not have OBJ contents.
-  { const std::filesystem::path file = temp_dir / "not_really_an_obj.obj";
+  {
+    const std::filesystem::path file = temp_dir / "not_really_an_obj.obj";
     std::ofstream f(file.string());
     f << "I'm not a valid obj\n";
     f.close();
-    Convex convex{file.string(), 1.0};
+    Convex convex(file.string());
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.AddDynamicGeometry(convex, {}, GeometryId::get_new_id()),
         ".*cannot be used on a mesh with fewer than three vertices.*");
@@ -957,8 +981,8 @@ GTEST_TEST(ProximityEngineTests, CopySemantics) {
   HalfSpace half_space{};
   ref_engine.AddDynamicGeometry(half_space, pose, GeometryId::get_new_id());
 
-  Convex convex{drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
-                1.0};
+  Convex convex{
+      drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj")};
   ref_engine.AddDynamicGeometry(convex, pose, GeometryId::get_new_id());
 
   ProximityEngine<double> copy_construct(ref_engine);
@@ -1059,7 +1083,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistanceClosestPointsMaxDistance) {
   engine.AddDynamicGeometry(sphere, {}, id_A);
   engine.AddDynamicGeometry(sphere, {}, id_B);
 
-  const double kMaxDistance = 1.0;
+  const double kMaxDistance = 1;
   const double kEps = 2 * std::numeric_limits<double>::epsilon();
   const double kCenterDistance = kMaxDistance + radius + radius;
 
@@ -1101,7 +1125,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   engine.AddDynamicGeometry(sphere, {}, id_A);
   engine.AddDynamicGeometry(sphere, {}, id_B);
 
-  const double kDistance = 1.0;
+  const double kDistance = 1;
   const double kCenterDistance = kDistance + radius + radius;
   // Displace B the desired distance in an arbitrary direction.
   const Vector3d p_WB = Vector3d(2, 3, 4).normalized() * kCenterDistance;
@@ -1126,7 +1150,8 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs),
         fmt::format("The geometry given by id {} does not reference .+ used in "
-                    "a signed distance query", bad_id));
+                    "a signed distance query",
+                    bad_id));
   }
 
   // Case: the second id is invalid.
@@ -1134,15 +1159,15 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs),
         fmt::format("The geometry given by id {} does not reference .+ used in "
-                    "a signed distance query", bad_id));
+                    "a signed distance query",
+                    bad_id));
   }
 
   // Case: the distance is evaluated even though the pair is filtered.
   {
     // I know the GeometrySet only has id_A and id_B, so I'll construct the
     // extracted set by hand.
-    auto extract_ids = [id_A, id_B](const GeometrySet&,
-                                    CollisionFilterScope) {
+    auto extract_ids = [id_A, id_B](const GeometrySet&, CollisionFilterScope) {
       return std::unordered_set<GeometryId>{id_A, id_B};
     };
     engine.collision_filter().Apply(
@@ -1238,15 +1263,15 @@ GTEST_TEST(SignedDistanceToPointBroadphaseTest, MultipleThreshold) {
   ProximityEngine<double> engine;
   unordered_map<GeometryId, RigidTransformd> X_WGs;
   const double radius = 0.1;
-  const Vector3d center1(1., 1., 1.);
-  const Vector3d center2(-1, -1, -1.);
+  const Vector3d center1(1, 1, 1);
+  const Vector3d center2(-1, -1, -1);
   for (const Vector3d& p_WG : {center1, center2}) {
     const RigidTransformd X_WG(Translation3d{p_WG});
     const GeometryId id = GeometryId::get_new_id();
     X_WGs[id] = X_WG;
     engine.AddAnchoredGeometry(Sphere(radius), X_WG, id);
   }
-  const Vector3d p_WQ(3., 3., 3.);
+  const Vector3d p_WQ(3, 3, 3);
   // This small threshold allows no sphere.
   double threshold = 0.001;
   auto results = engine.ComputeSignedDistanceToPoint(p_WQ, X_WGs, threshold);
@@ -1373,25 +1398,25 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataSphere(
   std::vector<SignedDistanceToPointTestData> test_data{
       // p_GQ = (2,3,6) is outside G at the positive distance 6.3 = 7 - 0.7.
       SignedDistanceToPointTestData::Make(
-          sphere, X_WG, X_WG * Vector3d{2.0, 3.0, 6.0}, Vector3d(0.2, 0.3, 0.6),
-          6.3, X_WG.rotation() * Vector3d(2.0, 3.0, 6.0) / 7.0),
+          sphere, X_WG, X_WG * Vector3d{2, 3, 6}, Vector3d(0.2, 0.3, 0.6), 6.3,
+          X_WG.rotation() * Vector3d(2, 3, 6) / 7),
       // p_GQ = (0.1,0.15,0.3) is inside G at the negative distance -0.35.
       SignedDistanceToPointTestData::Make(
           sphere, X_WG, X_WG * Vector3d{0.1, 0.15, 0.3},
           Vector3d(0.2, 0.3, 0.6), -0.35,
-          X_WG.rotation() * Vector3d(2.0, 3.0, 6.0) / 7.0),
+          X_WG.rotation() * Vector3d(2, 3, 6) / 7),
       // Reports an arbitrary gradient vector (as defined in the
       // QueryObject::ComputeSignedDistanceToPoint() documentation) at the
       // center of the sphere.
       SignedDistanceToPointTestData::Make(
-          sphere, X_WG, X_WG * Vector3d{0.0, 0.0, 0.0}, Vector3d(0.7, 0., 0.),
-          -0.7, X_WG.rotation() * Vector3d(1.0, 0.0, 0.0))};
+          sphere, X_WG, X_WG * Vector3d{0, 0, 0}, Vector3d(0.7, 0, 0), -0.7,
+          X_WG.rotation() * Vector3d(1, 0, 0))};
   return test_data;
 }
 
 std::vector<SignedDistanceToPointTestData> GenDistTestTransformSphere() {
-  const RigidTransformd X_WG(RollPitchYawd(M_PI / 6., M_PI / 3., M_PI_2),
-                             Vector3d{10., 11., 12.});
+  const RigidTransformd X_WG(RollPitchYawd(M_PI / 6, M_PI / 3, M_PI_2),
+                             Vector3d{10, 11, 12});
   return GenDistanceTestDataSphere(X_WG);
 }
 
@@ -1420,7 +1445,7 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
     const Vector3d p_WQ = data.p_WQ + data.expected_result.grad_W;
     const GeometryId& id = data.expected_result.id_G;
     const Vector3d& p_GN = data.expected_result.p_GN;
-    const double distance = 1.;
+    const double distance = 1;
     const Vector3d& grad_W = data.expected_result.grad_W;
     test_data.emplace_back(
         shape, X_WG, p_WQ,
@@ -1430,8 +1455,8 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataOutsideBox(
 }
 
 std::vector<SignedDistanceToPointTestData> GenDistTestTransformOutsideBox() {
-  RigidTransformd X_WG(RollPitchYawd(M_PI / 3., M_PI / 6., M_PI_2),
-                       Vector3d{10., 11., 12.});
+  RigidTransformd X_WG(RollPitchYawd(M_PI / 3, M_PI / 6, M_PI_2),
+                       Vector3d{10, 11, 12});
   return GenDistanceTestDataOutsideBox(X_WG);
 }
 
@@ -1462,15 +1487,15 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformOutsideBox() {
 // the vector s.
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
     const RigidTransformd& X_WG) {
-  auto box = make_shared<Box>(20., 30., 10.);
-  const Vector3d h_G = box->size() / 2.;
-  const double distance = 0.;
+  auto box = make_shared<Box>(20.0, 30.0, 10.0);
+  const Vector3d h_G = box->size() / 2;
+  const double distance = 0;
   std::vector<SignedDistanceToPointTestData> test_data;
-  for (const double sx : {-1., 0., 1.}) {
-    for (const double sy : {-1., 0., 1.}) {
-      for (const double sz : {-1., 0., 1.}) {
+  for (const double sx : {-1, 0, 1}) {
+    for (const double sy : {-1, 0, 1}) {
+      for (const double sz : {-1, 0, 1}) {
         // Skip the origin.
-        if (sx == 0. && sy == 0. && sz == 0.) continue;
+        if (sx == 0 && sy == 0 && sz == 0) continue;
         const Vector3d s_G(sx, sy, sz);
         const Vector3d p_GQ = s_G.cwiseProduct(h_G);
         const Vector3d p_WQ = X_WG * p_GQ;
@@ -1492,8 +1517,8 @@ std::vector<SignedDistanceToPointTestData> GenDistanceTestDataBoxBoundary(
 }
 
 std::vector<SignedDistanceToPointTestData> GenDistTestTransformBoxBoundary() {
-  RigidTransformd X_WG(RollPitchYawd(M_PI / 3., M_PI / 6., M_PI_2),
-                       Vector3d{10., 11., 12.});
+  RigidTransformd X_WG(RollPitchYawd(M_PI / 3, M_PI / 6, M_PI_2),
+                       Vector3d{10, 11, 12});
   return GenDistanceTestDataBoxBoundary(X_WG);
 }
 
@@ -1521,13 +1546,13 @@ std::vector<SignedDistanceToPointTestData> GenDistTestTransformBoxBoundary() {
 std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxUnique(
     const RigidTransformd& X_WG = RigidTransformd::Identity()) {
   // Create a box [-10,10]x[-15,15]x[-5,5],
-  auto box = make_shared<Box>(20., 30., 10.);
-  const Vector3d h_G = box->size() / 2.;
-  const double d = h_G.minCoeff() / 2.;
+  auto box = make_shared<Box>(20.0, 30.0, 10.0);
+  const Vector3d h_G = box->size() / 2;
+  const double d = h_G.minCoeff() / 2;
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const Vector3d unit_vector :
        {Vector3d::UnitX(), Vector3d::UnitY(), Vector3d::UnitZ()}) {
-    for (const double sign : {-1., 1.}) {
+    for (const double sign : {-1, 1}) {
       // Unit face normal vector.
       const Vector3d s_G = sign * unit_vector;
       // Center of a face.
@@ -1543,8 +1568,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxUnique(
       const Vector3d& grad_G = s_G;
       const Vector3d grad_W = R_WG * grad_G;
       test_data.emplace_back(
-          box, X_WG, p_WQ,
-          SignedDistanceToPoint<double>(id, p_GN, -d, grad_W));
+          box, X_WG, p_WQ, SignedDistanceToPoint<double>(id, p_GN, -d, grad_W));
     }
   }
   return test_data;
@@ -1554,8 +1578,8 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxUnique(
 // a box B only when Q has a unique nearest point on the boundary ∂B.
 std::vector<SignedDistanceToPointTestData>
 GenDistTestTransformInsideBoxUnique() {
-  RigidTransformd X_WG(RollPitchYawd(M_PI / 3., M_PI / 6., M_PI_2),
-                       Vector3d{10., 11., 12.});
+  RigidTransformd X_WG(RollPitchYawd(M_PI / 3, M_PI / 6, M_PI_2),
+                       Vector3d{10, 11, 12});
   return GenDistTestDataInsideBoxUnique(X_WG);
 }
 
@@ -1566,47 +1590,47 @@ GenDistTestTransformInsideBoxUnique() {
 std::vector<SignedDistanceToPointTestData> GenDistTestDataInsideBoxNonUnique() {
   // We set up a 20x10x10 box [-10,10]x[-5,5]x[-5,5].  Having the same depth
   // and height allows Q to have five nearest faces in the last case below.
-  auto box = make_shared<Box>(20., 10., 10.);
+  auto box = make_shared<Box>(20.0, 10.0, 10.0);
   const RigidTransformd& X_WG = RigidTransformd::Identity();
   std::vector<SignedDistanceToPointTestData> test_data{
       // Q is nearest to the face [-10,10]x[-5,5]x{5}.
-      SignedDistanceToPointTestData::Make(
-          box, X_WG, X_WG * Vector3d{6., 1., 2.}, Vector3d(6., 1., 5.), -3.,
-          X_WG.rotation() * Vector3d(0., 0., 1.)),
+      SignedDistanceToPointTestData::Make(box, X_WG, X_WG * Vector3d{6, 1, 2},
+                                          Vector3d(6, 1, 5), -3.0,
+                                          X_WG.rotation() * Vector3d(0, 0, 1)),
       // Q is nearest to two faces {10}x[-5,5]x[-5,5] and [-10,10]x[-5,5]x{5}.
-      SignedDistanceToPointTestData::Make(
-          box, X_WG, X_WG * Vector3d{6., 0., 1.}, Vector3d(10., 0., 1.), -4.,
-          X_WG.rotation() * Vector3d(1., 0., 0.)),
+      SignedDistanceToPointTestData::Make(box, X_WG, X_WG * Vector3d{6, 0, 1},
+                                          Vector3d(10, 0, 1), -4.0,
+                                          X_WG.rotation() * Vector3d(1, 0, 0)),
       // Q is nearest to three faces {10}x[-5,5]x[-5,5], [-10,10]x{5}x[-5,5],
       // and [-10,10]x[-5,5]x{5}.
-      SignedDistanceToPointTestData::Make(
-          box, X_WG, X_WG * Vector3d{6., 1., 1.}, Vector3d(10., 1., 1.), -4.,
-          X_WG.rotation() * Vector3d(1., 0., 0.)),
+      SignedDistanceToPointTestData::Make(box, X_WG, X_WG * Vector3d{6, 1, 1},
+                                          Vector3d(10, 1, 1), -4.0,
+                                          X_WG.rotation() * Vector3d(1, 0, 0)),
       // Q at the center of the box is nearest to four faces
       // [-10,10]x{5}x[-5,5], [-10,10]x{-5}x[-5,5], [-10,10]x[5,-5]x{5},
       // and [-10,10]x[5,-5]x{-5}.
-      SignedDistanceToPointTestData::Make(
-          box, X_WG, X_WG * Vector3d{0., 0., 0.}, Vector3d(0., 5., 0.), -5.,
-          X_WG.rotation() * Vector3d(0., 1., 0.)),
+      SignedDistanceToPointTestData::Make(box, X_WG, X_WG * Vector3d{0, 0, 0},
+                                          Vector3d(0, 5, 0), -5.0,
+                                          X_WG.rotation() * Vector3d(0, 1, 0)),
       // Q is nearest to five faces {10}x[-5,5]x[-5,5], [-10,10]x{5}x[-5,5],
       // [-10,10]x{-5}x[-5,5], [-10,10]x[5,-5]x{5}, and [-10,10]x[5,-5]x{-5}.
-      SignedDistanceToPointTestData::Make(
-          box, X_WG, X_WG * Vector3d{5., 0., 0.}, Vector3d(10., 0., 0.), -5.,
-          X_WG.rotation() * Vector3d(1., 0., 0.))};
+      SignedDistanceToPointTestData::Make(box, X_WG, X_WG * Vector3d{5, 0, 0},
+                                          Vector3d(10, 0, 0), -5.0,
+                                          X_WG.rotation() * Vector3d(1, 0, 0))};
   return test_data;
 }
 
 std::vector<SignedDistanceToPointTestData> GenDistanceTestDataTranslateBox() {
   // We set up a 20x10x30 box G centered at the origin [-10,10]x[-5,5]x[-15,15].
-  auto box = make_shared<Box>(20., 10., 30.);
+  auto box = make_shared<Box>(20.0, 10.0, 30.0);
   std::vector<SignedDistanceToPointTestData> test_data{
       // We translate G by (10,20,30) to [0,20]x[15,25]x[15,45] in World frame.
       // The position of the query point p_WQ(23,20,30) is closest to G at
       // (20,20,30) in World frame, which is p_GN=(10,0,0) in G's frame.
       // The gradient vector is expressed in both frames as (1,0,0).
       SignedDistanceToPointTestData::Make(
-          box, Translation3d(10., 20., 30.), Vector3d{23., 20., 30.},
-          Vector3d(10., 0., 0.), 3., Vector3d(1., 0., 0.))};
+          box, Translation3d(10, 20, 30), Vector3d{23, 20, 30},
+          Vector3d(10, 0, 0), 3.0, Vector3d(1, 0, 0))};
   return test_data;
 }
 
@@ -1645,7 +1669,7 @@ GenDistTestDataCylinderBoundaryCircle(
   const RotationMatrixd& R_WG = X_WG.rotation();
   auto cylinder = make_shared<Cylinder>(3.0, 5.0);
   const double radius = cylinder->radius();
-  const double half_length = cylinder->length() / 2.0;
+  const double half_length = cylinder->length() / 2;
   // We want the test to cover all the combinations of positive, negative,
   // and zero values of both x and y coordinates on the two boundary circles
   // of the cylinder. Furthermore, each (x,y) has |x| ≠ |y| to avoid
@@ -1655,15 +1679,15 @@ GenDistTestDataCylinderBoundaryCircle(
   const int kNumVectors = 12;
   // unit vectors in x-y plane of G's frame.
   std::vector<Vector3d> all_xy_vectors;
-  const Vector3d kXVector(1., 0., 0.);
+  const Vector3d kXVector(1, 0, 0);
   for (int c = 0; c < kNumVectors; ++c) {
     all_xy_vectors.push_back(
-        RotationMatrixd(RollPitchYawd(0., 0., 2.0 * M_PI * c / kNumVectors))
-        * kXVector);
+        RotationMatrixd(RollPitchYawd(0, 0, 2 * M_PI * c / kNumVectors)) *
+        kXVector);
   }
-  const double distance = 0.0;  // Q on ∂G has distance zero.
+  const double distance = 0;  // Q on ∂G has distance zero.
   std::vector<SignedDistanceToPointTestData> test_data;
-  for (const auto& z_vector : {Vector3d(0., 0., 1.), Vector3d(0., 0., -1.)}) {
+  for (const auto& z_vector : {Vector3d(0, 0, 1), Vector3d(0, 0, -1)}) {
     for (const auto& xy_vector : all_xy_vectors) {
       const GeometryId id = GeometryId::get_new_id();
       // xy_vector and z_vector are unit vectors in x-y plane and z-axis of G.
@@ -1676,9 +1700,9 @@ GenDistTestDataCylinderBoundaryCircle(
       // undefined.
       const Vector3d grad_G = (xy_vector + z_vector).normalized();
       const Vector3d grad_W = R_WG * grad_G;
-      test_data.emplace_back(cylinder, X_WG, p_WQ,
-                             SignedDistanceToPoint<double>(
-                                 id, p_GN, distance, grad_W));
+      test_data.emplace_back(
+          cylinder, X_WG, p_WQ,
+          SignedDistanceToPoint<double>(id, p_GN, distance, grad_W));
     }
   }
   return test_data;
@@ -1692,7 +1716,7 @@ GenDistTestDataCylinderBoundarySurface(
   const RotationMatrixd& R_WG = X_WG.rotation();
   auto cylinder = make_shared<Cylinder>(3.0, 5.0);
   const double radius = cylinder->radius();
-  const double half_length = cylinder->length() / 2.0;
+  const double half_length = cylinder->length() / 2;
   // We want the test to cover all the combinations of positive, negative,
   // and zero values of both x and y coordinates on some circles on the
   // barrel or on the caps. Furthermore, each (x,y) has |x| ≠ |y| to avoid
@@ -1702,11 +1726,11 @@ GenDistTestDataCylinderBoundarySurface(
   const int kNumVectors = 12;
   // unit vectors in x-y plane of G's frame.
   std::vector<Vector3d> all_xy_vectors;
-  const Vector3d kXVector(1., 0., 0.);
+  const Vector3d kXVector(1, 0, 0);
   for (int c = 0; c < kNumVectors; ++c) {
     all_xy_vectors.push_back(
-        RotationMatrixd(RollPitchYawd(0., 0., 2.0 * M_PI * c / kNumVectors))
-        * kXVector);
+        RotationMatrixd(RollPitchYawd(0, 0, 2 * M_PI * c / kNumVectors)) *
+        kXVector);
   }
   struct LocalTestData {
     LocalTestData(const Vector3d& p_GQ_in, const Vector3d& grad_G_in)
@@ -1719,7 +1743,7 @@ GenDistTestDataCylinderBoundarySurface(
   std::vector<LocalTestData> test_data_barrel;
   std::vector<LocalTestData> test_data_caps;
   std::vector<LocalTestData> test_data_cap_centers;
-  for (const auto& z_vector : {Vector3d(0., 0., 1.), Vector3d(0., 0., -1.)}) {
+  for (const auto& z_vector : {Vector3d(0, 0, 1), Vector3d(0, 0, -1)}) {
     // Q at the centers of the top and bottom caps.
     {
       // z_vector is a unit vector.
@@ -1760,7 +1784,7 @@ GenDistTestDataCylinderBoundarySurface(
                   &test_data](const LocalTestData& local) {
     const Vector3d p_WQ = X_WG * local.p_GQ;
     // Q on ∂G has distance zero.
-    const double distance = 0.0;
+    const double distance = 0;
     // Q is its own nearest point on ∂G.
     const Vector3d p_GN = local.p_GQ;
     const Vector3d grad_W = R_WG * local.grad_G;
@@ -1809,7 +1833,7 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataOutsideCylinder(
     const Vector3d p_WQ = data.p_WQ + data.expected_result.grad_W;
     const GeometryId& id = data.expected_result.id_G;
     const Vector3d& p_GN = data.expected_result.p_GN;
-    const double distance = 1.;
+    const double distance = 1;
     const Vector3d& grad_W = data.expected_result.grad_W;
     test_data.emplace_back(
         shape, X_WG, p_WQ,
@@ -1860,12 +1884,12 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderCenter(
   const double radius = long_cylinder->radius();
   const GeometryId id = GeometryId::get_new_id();
   // The query point Q is at the center of the cylinder.
-  const Vector3d p_GQ(0., 0., 0.);
+  const Vector3d p_GQ(0, 0, 0);
   const Vector3d p_WQ = X_WG * p_GQ;
   const double distance = -radius;
   // The nearest point N is on the x's axis of G's frame by convention.
-  const Vector3d p_GN = radius * Vector3d(1., 0., 0.);
-  const Vector3d grad_G = Vector3d(1., 0., 0.);
+  const Vector3d p_GN = radius * Vector3d(1, 0, 0);
+  const Vector3d grad_G = Vector3d(1, 0, 0);
   const Vector3d grad_W = R_WG * grad_G;
   std::vector<SignedDistanceToPointTestData> test_data;
   test_data.emplace_back(
@@ -1877,8 +1901,8 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderCenter(
 // Generates test data for a query point Q on the boundary, inside, and
 // outside a cylinder with a rigid transform.
 std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderTransform() {
-  RigidTransformd X_WG(RollPitchYawd(M_PI / 3., M_PI / 6., M_PI_2),
-                       Vector3d{10., 11., 12.});
+  RigidTransformd X_WG(RollPitchYawd(M_PI / 3, M_PI / 6, M_PI_2),
+                       Vector3d{10, 11, 12});
   std::vector<SignedDistanceToPointTestData> test_data;
   for (const auto& record : GenDistTestDataCylinderBoundary(X_WG))
     test_data.emplace_back(record);
@@ -1895,8 +1919,8 @@ std::vector<SignedDistanceToPointTestData> GenDistTestDataCylinderTransform() {
 std::vector<SignedDistanceToPointTestData> GenDistTestDataHalfSpace() {
   std::vector<SignedDistanceToPointTestData> test_data;
 
-  const RigidTransformd X_WG1(RollPitchYawd(M_PI / 3., M_PI / 6., M_PI_2),
-                              Vector3d{10., 11., 12.});
+  const RigidTransformd X_WG1(RollPitchYawd(M_PI / 3, M_PI / 6, M_PI_2),
+                              Vector3d{10, 11, 12});
   auto hs = make_shared<HalfSpace>();
   const GeometryId id = GeometryId::get_new_id();
 
@@ -1957,12 +1981,12 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPoint) {
   EXPECT_EQ(results[0].id_G, data.expected_result.id_G);
   EXPECT_TRUE(
       CompareMatrices(results[0].p_GN, data.expected_result.p_GN, kTolerance))
-            << "Incorrect nearest point.";
+      << "Incorrect nearest point.";
   EXPECT_NEAR(results[0].distance, data.expected_result.distance, kTolerance)
-            << "Incorrect signed distance.";
+      << "Incorrect signed distance.";
   EXPECT_TRUE(CompareMatrices(results[0].grad_W, data.expected_result.grad_W,
                               kTolerance))
-            << "Incorrect gradient vector.";
+      << "Incorrect gradient vector.";
 }
 
 TEST_P(SignedDistanceToPointTest, SingleQueryPointWithThreshold) {
@@ -2008,51 +2032,46 @@ TEST_P(SignedDistanceToPointTest, SingleQueryPointSymbolic) {
 // TEST_P(SignedDistanceToPointTest, SingleQueryPoint).
 // Sphere
 INSTANTIATE_TEST_SUITE_P(Sphere, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistanceTestDataSphere()));
+                         testing::ValuesIn(GenDistanceTestDataSphere()));
 
 INSTANTIATE_TEST_SUITE_P(TransformSphere, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistTestTransformSphere()));
+                         testing::ValuesIn(GenDistTestTransformSphere()));
 
 // Box
 INSTANTIATE_TEST_SUITE_P(OutsideBox, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistanceTestDataOutsideBox()));
+                         testing::ValuesIn(GenDistanceTestDataOutsideBox()));
 INSTANTIATE_TEST_SUITE_P(BoxBoundary, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistanceTestDataBoxBoundary()));
+                         testing::ValuesIn(GenDistanceTestDataBoxBoundary()));
 INSTANTIATE_TEST_SUITE_P(InsideBoxUnique, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistTestDataInsideBoxUnique()));
-INSTANTIATE_TEST_SUITE_P(InsideBoxNonUnique, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistTestDataInsideBoxNonUnique()));
+                         testing::ValuesIn(GenDistTestDataInsideBoxUnique()));
+INSTANTIATE_TEST_SUITE_P(
+    InsideBoxNonUnique, SignedDistanceToPointTest,
+    testing::ValuesIn(GenDistTestDataInsideBoxNonUnique()));
 INSTANTIATE_TEST_SUITE_P(TranslateBox, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistanceTestDataTranslateBox()));
+                         testing::ValuesIn(GenDistanceTestDataTranslateBox()));
 INSTANTIATE_TEST_SUITE_P(TransformOutsideBox, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistTestTransformOutsideBox()));
+                         testing::ValuesIn(GenDistTestTransformOutsideBox()));
 INSTANTIATE_TEST_SUITE_P(TransformBoxBoundary, SignedDistanceToPointTest,
-                        testing::ValuesIn(GenDistTestTransformBoxBoundary()));
+                         testing::ValuesIn(GenDistTestTransformBoxBoundary()));
 INSTANTIATE_TEST_SUITE_P(
     TransformInsideBoxUnique, SignedDistanceToPointTest,
     testing::ValuesIn(GenDistTestTransformInsideBoxUnique()));
 
 // Cylinder
-INSTANTIATE_TEST_SUITE_P(
-    CylinderBoundary, SignedDistanceToPointTest,
-    testing::ValuesIn(GenDistTestDataCylinderBoundary()));
-INSTANTIATE_TEST_SUITE_P(
-    OutsideCylinder, SignedDistanceToPointTest,
-    testing::ValuesIn(GenDistTestDataOutsideCylinder()));
-INSTANTIATE_TEST_SUITE_P(
-    InsideCylinder, SignedDistanceToPointTest,
-    testing::ValuesIn(GenDistTestDataInsideCylinder()));
-INSTANTIATE_TEST_SUITE_P(
-    CenterCylinder, SignedDistanceToPointTest,
-    testing::ValuesIn(GenDistTestDataCylinderCenter()));
-INSTANTIATE_TEST_SUITE_P(
-    CylinderTransform, SignedDistanceToPointTest,
-    testing::ValuesIn(GenDistTestDataCylinderTransform()));
+INSTANTIATE_TEST_SUITE_P(CylinderBoundary, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestDataCylinderBoundary()));
+INSTANTIATE_TEST_SUITE_P(OutsideCylinder, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestDataOutsideCylinder()));
+INSTANTIATE_TEST_SUITE_P(InsideCylinder, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestDataInsideCylinder()));
+INSTANTIATE_TEST_SUITE_P(CenterCylinder, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestDataCylinderCenter()));
+INSTANTIATE_TEST_SUITE_P(CylinderTransform, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestDataCylinderTransform()));
 
 // Half space
-INSTANTIATE_TEST_SUITE_P(
-    Halfspace, SignedDistanceToPointTest,
-    testing::ValuesIn(GenDistTestDataHalfSpace()));
+INSTANTIATE_TEST_SUITE_P(Halfspace, SignedDistanceToPointTest,
+                         testing::ValuesIn(GenDistTestDataHalfSpace()));
 
 // Penetration tests -- testing data flow; not testing the value of the query.
 
@@ -2132,7 +2151,7 @@ unordered_map<GeometryId, RigidTransformd> MakeCollidingRing(double radius,
   in *order* (let's call them A, B, C, D) as we walk around the ring, then we'll
   have contact pairs (A, B), (B, C), (C, D), (D, A)
   */
-  DRAKE_DEMAND(radius > 0.0);
+  DRAKE_DEMAND(radius > 0);
   DRAKE_DEMAND(N > 0);
   unordered_map<GeometryId, RigidTransformd> poses;
   const double span = 2 * M_PI / N;
@@ -2484,7 +2503,7 @@ class SimplePenetrationTest : public ::testing::Test {
     }
     EXPECT_LT(distance.id_A, distance.id_B);
     CompareSignedDistancePair(distance, expected_distance,
-        std::numeric_limits<double>::epsilon());
+                              std::numeric_limits<double>::epsilon());
   }
 
   // The two spheres collides, but are ignored due to the setting in the
@@ -2536,7 +2555,7 @@ class SimplePenetrationTest : public ::testing::Test {
     expected_distance.p_BCb = origin_is_A ? p_CCc : p_OCo;
 
     CompareSignedDistancePair(distance, expected_distance,
-        std::numeric_limits<double>::epsilon());
+                              std::numeric_limits<double>::epsilon());
   }
 
   ProximityEngine<double> engine_;
@@ -2827,8 +2846,7 @@ class SignedDistancePairTestData {
       shared_ptr<const Shape> a, shared_ptr<const Shape> b,
       const RigidTransformd& X_WA, const RigidTransformd& X_WB,
       const Vector3d& p_ACa_A, const Vector3d& p_BCb_B, double distance,
-      const Vector3d& nhat_BA_W = Vector3d::Zero(),
-      double tolerance = 0) {
+      const Vector3d& nhat_BA_W = Vector3d::Zero(), double tolerance = 0) {
     return {a,
             b,
             X_WA,
@@ -2914,18 +2932,17 @@ std::vector<SignedDistancePairTestData> GenDistancePairTestSphereSphere(
     Vector3d p_ABo;
     double pair_distance;
   };
-  const std::vector<Configuration> configurations {
-      // Non-overlapping
-      {Vector3d(4., 0., 0.), 1.},
-      // B kisses A.
-      {Vector3d(3., 0., 0.), 0.},
-      // B overlaps A.
-      {Vector3d(2.5, 0., 0.), -0.5},
-      // B covers A.
-      {Vector3d(1, 0., 0.), -2.}};
-  const Vector3d p_ACa_A(radius_A, 0., 0.);
+  const std::vector<Configuration> configurations{// Non-overlapping
+                                                  {Vector3d(4, 0, 0), 1},
+                                                  // B kisses A.
+                                                  {Vector3d(3, 0, 0), 0},
+                                                  // B overlaps A.
+                                                  {Vector3d(2.5, 0, 0), -0.5},
+                                                  // B covers A.
+                                                  {Vector3d(1, 0, 0), -2}};
+  const Vector3d p_ACa_A(radius_A, 0, 0);
   // Position from Bo to Cb expressed in A's frame.
-  const Vector3d p_BCb_A(-radius_B, 0., 0.);
+  const Vector3d p_BCb_A(-radius_B, 0, 0);
   const Vector3d p_BCb_B = R_BA * p_BCb_A;
   std::vector<SignedDistancePairTestData> test_data;
   for (const auto& config : configurations) {
@@ -2940,17 +2957,17 @@ std::vector<SignedDistancePairTestData> GenDistancePairTestSphereSphere(
 
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereTransform() {
   return GenDistancePairTestSphereSphere(
-      RigidTransformd(RollPitchYawd(5. * M_PI / 8., M_PI / 6., M_PI / 12.),
-                      Vector3d(1., 2., 3.)),
-      RotationMatrixd(RollPitchYawd(M_PI / 4., 5. * M_PI / 6., M_PI / 3)));
+      RigidTransformd(RollPitchYawd(5 * M_PI / 8, M_PI / 6, M_PI / 12),
+                      Vector3d(1, 2, 3)),
+      RotationMatrixd(RollPitchYawd(M_PI / 4, 5 * M_PI / 6, M_PI / 3)));
 }
 
 // Gimbal lock of the orientation of the sphere at pitch = pi/2.
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereSphereGimbalLock() {
   return GenDistancePairTestSphereSphere(
-    RigidTransformd::Identity(),
-    RotationMatrixd(RollPitchYawd(M_PI / 6., M_PI_2, M_PI / 6.)));
+      RigidTransformd::Identity(),
+      RotationMatrixd(RollPitchYawd(M_PI / 6, M_PI_2, M_PI / 6)));
 }
 
 // Two spheres with more general position. Here, we describe the configuration
@@ -2995,11 +3012,11 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereNonAligned(
     const RigidTransformd& X_WA = RigidTransformd::Identity(),
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(2.25);
-  auto sphere_B = make_shared<const Sphere>(9.);
+  auto sphere_B = make_shared<const Sphere>(9.0);
   const double radius_A = sphere_A->radius();
   // Set up Ca and Bo in A's frame.
-  const Vector3d p_ACa(0.25, 1., 2.);
-  const Vector3d p_ABo(1., 4., 8.);
+  const Vector3d p_ACa(0.25, 1, 2);
+  const Vector3d p_ABo(1, 4, 8);
   // Set up X_AB and X_BA from the position of B's center p_ABo in A's frame,
   // the given R_WB, and the given X_WA.
   const RotationMatrixd& R_WA = X_WA.rotation();
@@ -3010,7 +3027,7 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereNonAligned(
   // Set up X_WB
   const RigidTransformd X_WB = X_WA * X_AB;
   // Set up Cb = Ao.
-  const Vector3d p_AAo(0., 0., 0.);
+  const Vector3d p_AAo(0, 0, 0);
   const Vector3d p_ACb = p_AAo;
   const Vector3d p_BCb = X_BA * p_ACb;
 
@@ -3023,9 +3040,9 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereNonAligned(
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereSphereNonAlignedTransform() {
   return GenDistPairTestSphereSphereNonAligned(
-      RigidTransformd(RollPitchYawd(3. * M_PI / 8., 5 * M_PI / 6., M_PI / 12.),
-                      Vector3d(1., 2., 3.)),
-      RotationMatrixd(RollPitchYawd(M_PI, 5.*M_PI/6., 7*M_PI/12.)));
+      RigidTransformd(RollPitchYawd(3 * M_PI / 8, 5 * M_PI / 6, M_PI / 12),
+                      Vector3d(1, 2, 3)),
+      RotationMatrixd(RollPitchYawd(M_PI, 5 * M_PI / 6, 7 * M_PI / 12)));
 }
 
 // Sphere-box data for testing ComputeSignedDistancePairwiseClosestPoints.
@@ -3033,7 +3050,7 @@ GenDistPairTestSphereSphereNonAlignedTransform() {
 // 1. outside the box,
 // 2. touching the box,
 // 3. slightly overlap the box,
-// 4, half inside half outside the box,
+// 4. half inside half outside the box,
 // 5. more than half inside the box,
 // 6. completely inside and osculating the box, and
 // 7. deeply inside the box.
@@ -3047,30 +3064,30 @@ GenDistPairTestSphereSphereNonAlignedTransform() {
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereBox(
     const RotationMatrixd& R_WA = RotationMatrixd::Identity(),
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
-  auto sphere_A = make_shared<const Sphere>(2.);
-  auto box_B = make_shared<const Box>(16., 12., 8.);
+  auto sphere_A = make_shared<const Sphere>(2.0);
+  auto box_B = make_shared<const Box>(16.0, 12.0, 8.0);
   const double radius = sphere_A->radius();
-  const double half_x = box_B->size()(0) / 2.;
+  const double half_x = box_B->size()(0) / 2;
   struct Configuration {
     Vector3d p_BAo;
     double pair_distance;
   };
   const std::vector<Configuration> configurations{
       // The sphere is outside the box.
-      {Vector3d(14., 0., 0.), 4.},
+      {Vector3d(14, 0, 0), 4.0},
       // The sphere touches the box.
-      {Vector3d(10., 0., 0.), 0.},
+      {Vector3d(10, 0, 0), 0.0},
       // The sphere slightly overlaps the box.
-      {Vector3d(9., 0., 0.), -1.},
+      {Vector3d(9, 0, 0), -1.0},
       // The sphere is half inside and half outside the box.
-      {Vector3d(8., 0., 0.), -2.},
+      {Vector3d(8, 0, 0), -2.0},
       // More than half of the sphere is inside the box.
-      {Vector3d(7., 0., 0.), -3.},
+      {Vector3d(7, 0, 0), -3.0},
       // The sphere is completely inside and osculating the box.
-      {Vector3d(6., 0., 0.), -4.},
+      {Vector3d(6, 0, 0), -4.0},
       // The sphere is deeply inside the box.
-      {Vector3d(5., 0., 0.), -5.}};
-  const Vector3d p_BCb(half_x, 0., 0.);
+      {Vector3d(5, 0, 0), -5.0}};
+  const Vector3d p_BCb(half_x, 0, 0);
   std::vector<SignedDistancePairTestData> test_data;
   for (auto config : configurations) {
     // Set up the pose of A from the translation vector in the configuration
@@ -3092,16 +3109,15 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereBox(
 
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereBoxTransform() {
   return GenDistPairTestSphereBox(
-      RotationMatrixd(RollPitchYawd(M_PI / 8., M_PI / 6., 2. * M_PI / 3)),
-      RigidTransformd(RollPitchYawd(3. * M_PI / 8., 5 * M_PI / 6., M_PI / 12.),
-                      Vector3d(1., 2., 3.)));
+      RotationMatrixd(RollPitchYawd(M_PI / 8, M_PI / 6, 2 * M_PI / 3)),
+      RigidTransformd(RollPitchYawd(3 * M_PI / 8, 5 * M_PI / 6, M_PI / 12),
+                      Vector3d(1, 2, 3)));
 }
 
 // Gimbal lock of the orientation of the sphere at pitch = pi/2.
-std::vector<SignedDistancePairTestData>
-GenDistPairTestSphereBoxGimbalLock() {
+std::vector<SignedDistancePairTestData> GenDistPairTestSphereBoxGimbalLock() {
   return GenDistPairTestSphereBox(
-      RotationMatrixd(RollPitchYawd(M_PI / 8., M_PI_2, M_PI / 8)),
+      RotationMatrixd(RollPitchYawd(M_PI / 8, M_PI_2, M_PI / 8)),
       RigidTransformd::Identity());
 }
 
@@ -3148,17 +3164,17 @@ std::vector<SignedDistancePairTestData> GenDistPairTestBoxSphereTransform() {
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereBoxBoundary(
     const RotationMatrixd& R_WA = RotationMatrixd::Identity(),
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
-  auto sphere_A = make_shared<const Sphere>(2.);
-  auto box_B = make_shared<const Box>(16., 12., 8.);
+  auto sphere_A = make_shared<const Sphere>(2.0);
+  auto box_B = make_shared<const Box>(16.0, 12.0, 8.0);
   const double radius_A = sphere_A->radius();
-  const Vector3d half_B = box_B->size() / 2.;
+  const Vector3d half_B = box_B->size() / 2;
   std::vector<SignedDistancePairTestData> test_data;
   // We use sign_x, sign_y, and sign_z to parameterize the positions on the
   // boundary of the box.
-  for (const double sign_x : {-1., 0., 1.}) {
-    for (const double sign_y : {-1., 0., 1.}) {
-      for (const double sign_z : {-1., 0., 1.}) {
-        if (sign_x == 0. && sign_y == 0. && sign_z == 0.) continue;
+  for (const double sign_x : {-1, 0, 1}) {
+    for (const double sign_y : {-1, 0, 1}) {
+      for (const double sign_z : {-1, 0, 1}) {
+        if (sign_x == 0 && sign_y == 0 && sign_z == 0) continue;
         const Vector3d sign_B(sign_x, sign_y, sign_z);
         // A's center is on ∂B.
         const Vector3d p_BAo = sign_B.array() * half_B.array();
@@ -3186,9 +3202,9 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereBoxBoundary(
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereBoxBoundaryTransform() {
   return GenDistPairTestSphereBoxBoundary(
-      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6., M_PI / 3.)),
-      RigidTransformd(RollPitchYawd(3. * M_PI / 8., 5 * M_PI / 6., M_PI / 12.),
-                      Vector3d(1., 2., 3.)));
+      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6, M_PI / 3)),
+      RigidTransformd(RollPitchYawd(3 * M_PI / 8, 5 * M_PI / 6, M_PI / 12),
+                      Vector3d(1, 2, 3)));
 }
 
 // Sphere-capsule data for testing ComputeSignedDistancePairwiseClosestPoints.
@@ -3211,16 +3227,15 @@ GenDistPairTestSphereBoxBoundaryTransform() {
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereCapsule(
     const RotationMatrixd& R_WA = RotationMatrixd::Identity(),
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
-  auto sphere_A = make_shared<const Sphere>(2.);
-  auto capsule_B = make_shared<const Capsule>(6., 16.);
+  auto sphere_A = make_shared<const Sphere>(2.0);
+  auto capsule_B = make_shared<const Capsule>(6.0, 16.0);
   const double radius_A = sphere_A->radius();
-  const double half_length =
-      capsule_B->length() / 2. + capsule_B->radius();
+  const double half_length = capsule_B->length() / 2 + capsule_B->radius();
   const std::vector<double> pair_distances{
       // The sphere is outside the capsule.
-      radius_A * 2.,
+      radius_A * 2,
       // The sphere touches the capsule.
-      0.,
+      0.0,
       // The sphere slightly overlaps the capsule.
       -radius_A * 0.5,
       // The sphere is half inside and half outside the capsule.
@@ -3234,11 +3249,11 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCapsule(
       // than radius).
       -radius_A * 2.5};
   // Witness point Cb on B.
-  const Vector3d p_BCb(0., 0., half_length);
+  const Vector3d p_BCb(0, 0, half_length);
   std::vector<SignedDistancePairTestData> test_data;
   for (const auto& pair_distance : pair_distances) {
     const Vector3d p_BAo =
-        Vector3d(0., 0., pair_distance + half_length + radius_A);
+        Vector3d(0, 0, pair_distance + half_length + radius_A);
     // Set up the pose of A from the translation vector in the configuration
     // and the given rotation parameter R_WA.
     const Vector3d p_WAo = X_WB * p_BAo;
@@ -3259,9 +3274,9 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCapsule(
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereCapsuleTransform() {
   return GenDistPairTestSphereCapsule(
-      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6., M_PI / 3.)),
-      RigidTransformd(RollPitchYawd(3. * M_PI / 8., 5 * M_PI / 6., M_PI / 12.),
-                      Vector3d(1., 2., 3.)));
+      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6, M_PI / 3)),
+      RigidTransformd(RollPitchYawd(3 * M_PI / 8, 5 * M_PI / 6, M_PI / 12),
+                      Vector3d(1, 2, 3)));
 }
 
 // Sphere-cylinder data for testing ComputeSignedDistancePairwiseClosestPoints.
@@ -3284,31 +3299,31 @@ GenDistPairTestSphereCapsuleTransform() {
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinder(
     const RotationMatrixd& R_WA = RotationMatrixd::Identity(),
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
-  auto sphere_A = make_shared<const Sphere>(2.);
-  auto cylinder_B = make_shared<const Cylinder>(12., 16.);
+  auto sphere_A = make_shared<const Sphere>(2.0);
+  auto cylinder_B = make_shared<const Cylinder>(12.0, 16.0);
   const double radius_A = sphere_A->radius();
-  const double half_length = cylinder_B->length() / 2.;
+  const double half_length = cylinder_B->length() / 2;
   struct Configuration {
     Vector3d p_BAo;
     double pair_distance;
   };
-  const std::vector<Configuration> configurations {
-    // The sphere is outside the cylinder.
-    {Vector3d(0., 0., 14.), 4.},
-    // The sphere touches the cylinder.
-    {Vector3d(0., 0., 10.), 0.},
-    // The sphere slightly overlaps the cylinder.
-    {Vector3d(0., 0., 9.), -1.},
-    // The sphere is half inside and half outside the cylinder.
-    {Vector3d(0., 0., 8.), -2.},
-    // More than half of the sphere is inside the cylinder.
-    {Vector3d(0., 0., 7.), -3.},
-    // The sphere is completely inside and osculating the cylinder.
-    {Vector3d(0., 0., 6.), -4.},
-    // The sphere is deeply inside the cylinder.
-    {Vector3d(0., 0., 5.), -5.}};
+  const std::vector<Configuration> configurations{
+      // The sphere is outside the cylinder.
+      {Vector3d(0, 0, 14), 4.0},
+      // The sphere touches the cylinder.
+      {Vector3d(0, 0, 10), 0.0},
+      // The sphere slightly overlaps the cylinder.
+      {Vector3d(0, 0, 9), -1.0},
+      // The sphere is half inside and half outside the cylinder.
+      {Vector3d(0, 0, 8), -2.0},
+      // More than half of the sphere is inside the cylinder.
+      {Vector3d(0, 0, 7), -3.0},
+      // The sphere is completely inside and osculating the cylinder.
+      {Vector3d(0, 0, 6), -4.0},
+      // The sphere is deeply inside the cylinder.
+      {Vector3d(0, 0, 5), -5.0}};
   // Witness point Cb on B.
-  const Vector3d p_BCb(0., 0., half_length);
+  const Vector3d p_BCb(0, 0, half_length);
   std::vector<SignedDistancePairTestData> test_data;
   for (const auto& config : configurations) {
     // Set up the pose of A from the translation vector in the configuration
@@ -3331,9 +3346,9 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinder(
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereCylinderTransform() {
   return GenDistPairTestSphereCylinder(
-      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6., M_PI / 3.)),
-      RigidTransformd(RollPitchYawd(3. * M_PI / 8., 5 * M_PI / 6., M_PI / 12.),
-                      Vector3d(1., 2., 3.)));
+      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6, M_PI / 3)),
+      RigidTransformd(RollPitchYawd(3 * M_PI / 8, 5 * M_PI / 6, M_PI / 12),
+                      Vector3d(1, 2, 3)));
 }
 
 // Generate test data for a sphere A and cylinder B with center Ao on its
@@ -3381,30 +3396,31 @@ GenDistPairTestSphereCylinderTransform() {
 std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinderBoundary(
     const RotationMatrixd& R_WA = RotationMatrixd::Identity(),
     const RigidTransformd& X_WB = RigidTransformd::Identity()) {
-  auto sphere_A = make_shared<const Sphere>(4.);
-  auto cylinder_B = make_shared<const Cylinder>(8., 16.);
+  auto sphere_A = make_shared<const Sphere>(4.0);
+  auto cylinder_B = make_shared<const Cylinder>(8.0, 16.0);
   const double r_A = sphere_A->radius();
   const double r_B = cylinder_B->radius();
-  const double h = cylinder_B->length() / 2.;
+  const double h = cylinder_B->length() / 2;
   std::vector<SignedDistancePairTestData> test_data;
-  for (const double i : {-2., -1., 0., 1., 2.}) {
-    for (const double j : {-2., -1., 0., 1., 2.}) {
-      for (const double k : {-2., -1., 0., 1., 2.}) {
+  for (const double i : {-2, -1, 0, 1, 2}) {
+    for (const double j : {-2, -1, 0, 1, 2}) {
+      for (const double k : {-2, -1, 0, 1, 2}) {
         // (u,v,w) in the standard cube [-1,1]^3
-        const double u = i / 2.;
-        const double v = j / 2.;
-        const double w = k / 2.;
+        const double u = i / 2;
+        const double v = j / 2;
+        const double w = k / 2;
         const double abs_u = std::abs(u);
         const double abs_v = std::abs(v);
         const double abs_w = std::abs(w);
         // Skip interior points.
-        if (abs_u != 1. && abs_v != 1. && abs_w != 1.)
+        if (abs_u != 1 && abs_v != 1 && abs_w != 1) {
           continue;
+        }
         // Map from s(u,v) in square to d(f,g) in the unit disk.
         const Vector2d s(u, v);
-        const Vector2d d = (u == 0. && v == 0.) ? Vector2d(0., 0.)
-                               : (abs_u >= abs_v) ? abs_u * s.normalized()
-                                                  : abs_v * s.normalized();
+        const Vector2d d = (u == 0 && v == 0) ? Vector2d(0, 0)
+                           : (abs_u >= abs_v) ? abs_u * s.normalized()
+                                              : abs_v * s.normalized();
         // Map from d(f,g) in the unit disk together with w in [-1,1] to
         // (x,y,z) in the cylinder.
         const Vector2d xy = r_B * d;
@@ -3424,14 +3440,14 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinderBoundary(
         // Compute the witness point Ca on the sphere A in three cases.  The
         // expression is in B's frame.
         const Vector3d p_AoCa_B =
-            ((abs_u == 1. || abs_v == 1.) && abs_w == 1.)
-                   // Ao is on the circular edges.
+            ((abs_u == 1 || abs_v == 1) && abs_w == 1)
+                // Ao is on the circular edges.
                 ? -r_A * Vector3d(d(0), d(1), w).normalized()
-                : (abs_u == 1. || abs_v == 1.)
-                        // Ao is on the barrel.
+                : (abs_u == 1 || abs_v == 1)
+                      // Ao is on the barrel.
                       ? -r_A * Vector3d(d(0), d(1), 0)
-                        // Ao is on the top or bottom caps.
-                      : -r_A * Vector3d(0., 0., w);
+                      // Ao is on the top or bottom caps.
+                      : -r_A * Vector3d(0, 0, w);
         const Vector3d p_ACa = R_AB * p_AoCa_B;
         // We implicltly create new id's for each test case in the invocation of
         // Make to help distinguish them.
@@ -3446,13 +3462,12 @@ std::vector<SignedDistancePairTestData> GenDistPairTestSphereCylinderBoundary(
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereCylinderBoundaryTransform() {
   return GenDistPairTestSphereCylinderBoundary(
-      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6., M_PI / 3.)),
-      RigidTransformd(RollPitchYawd(3. * M_PI / 8., 5 * M_PI / 6., M_PI / 12.),
-                      Vector3d(1., 2., 3.)));
+      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6, M_PI / 3)),
+      RigidTransformd(RollPitchYawd(3 * M_PI / 8, 5 * M_PI / 6, M_PI / 12),
+                      Vector3d(1, 2, 3)));
 }
 
-std::vector<SignedDistancePairTestData>
-GenDistPairTestHalfspaceSphere() {
+std::vector<SignedDistancePairTestData> GenDistPairTestHalfspaceSphere() {
   const double distance = 0.25;
   const double radius = 1.75;
   std::vector<SignedDistancePairTestData> test_data;
@@ -3460,8 +3475,8 @@ GenDistPairTestHalfspaceSphere() {
   const GeometryId sphere_id = GeometryId::get_new_id();
   auto half_space = make_shared<const HalfSpace>();
   const GeometryId half_space_id = GeometryId::get_new_id();
-  const RigidTransformd X_WG1(RollPitchYawd(M_PI / 3., M_PI / 6., M_PI_2),
-                              Vector3d{10., 11., 12.});
+  const RigidTransformd X_WG1(RollPitchYawd(M_PI / 3, M_PI / 6, M_PI_2),
+                              Vector3d{10, 11, 12});
   const RotationMatrixd R_WS;
 
   for (const auto& X_WH : {RigidTransformd(), X_WG1}) {
@@ -3548,18 +3563,18 @@ TEST_P(SignedDistancePairTest, SinglePair) {
   const double tolerance = data.tolerance_ ? data.tolerance_ : kTolerance;
 
   EXPECT_NEAR(result.distance, data.expected_result_.distance, tolerance)
-            << "Incorrect signed distance";
+      << "Incorrect signed distance";
 
   const bool a_then_b = (result.id_A == data.expected_result_.id_A) &&
                         (result.id_B == data.expected_result_.id_B);
   const bool b_then_a = (result.id_B == data.expected_result_.id_A) &&
                         (result.id_A == data.expected_result_.id_B);
   ASSERT_NE(a_then_b, b_then_a);
-  const Vector3d& p_ACa = a_then_b? result.p_ACa : result.p_BCb;
-  const Vector3d& p_BCb = a_then_b? result.p_BCb : result.p_ACa;
+  const Vector3d& p_ACa = a_then_b ? result.p_ACa : result.p_BCb;
+  const Vector3d& p_BCb = a_then_b ? result.p_BCb : result.p_ACa;
 
   EXPECT_TRUE(CompareMatrices(p_ACa, data.expected_result_.p_ACa, tolerance))
-    << "Incorrect witness point.";
+      << "Incorrect witness point.";
   EXPECT_TRUE(CompareMatrices(p_BCb, data.expected_result_.p_BCb, tolerance))
       << "Incorrect witness point.";
 
@@ -3568,58 +3583,68 @@ TEST_P(SignedDistancePairTest, SinglePair) {
   const Vector3d p_WCb = data.X_WB_ * p_BCb;
   const RigidTransformd X_AW = data.X_WA_.inverse();
   const Vector3d p_ACb = X_AW * p_WCb;
-  const double distance_between_witnesses = (p_ACa-p_ACb).norm();
+  const double distance_between_witnesses = (p_ACa - p_ACb).norm();
   EXPECT_NEAR(distance_between_witnesses, std::abs(result.distance), tolerance)
       << "Distance between witness points do not equal the signed distance.";
 }
 
 INSTANTIATE_TEST_SUITE_P(SphereSphere, SignedDistancePairTest,
-    testing::ValuesIn(GenDistancePairTestSphereSphere()));
-INSTANTIATE_TEST_SUITE_P(SphereSphereTransform, SignedDistancePairTest,
+                         testing::ValuesIn(GenDistancePairTestSphereSphere()));
+INSTANTIATE_TEST_SUITE_P(
+    SphereSphereTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereTransform()));
-INSTANTIATE_TEST_SUITE_P(SphereSphereGimbalLock, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereSphereGimbalLock, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereGimbalLock()));
 
-INSTANTIATE_TEST_SUITE_P(SphereSphreNonAligned, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereSphreNonAligned, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereNonAligned()));
-INSTANTIATE_TEST_SUITE_P(SphereSphreNonAlignedTransform, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereSphreNonAlignedTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereSphereNonAlignedTransform()));
 
 INSTANTIATE_TEST_SUITE_P(SphereBox, SignedDistancePairTest,
-    testing::ValuesIn(GenDistPairTestSphereBox()));
-INSTANTIATE_TEST_SUITE_P(SphereBoxTransform, SignedDistancePairTest,
+                         testing::ValuesIn(GenDistPairTestSphereBox()));
+INSTANTIATE_TEST_SUITE_P(
+    SphereBoxTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxTransform()));
-INSTANTIATE_TEST_SUITE_P(SphereBoxGimbalLock, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereBoxGimbalLock, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxGimbalLock()));
 
 INSTANTIATE_TEST_SUITE_P(BoxSphere, SignedDistancePairTest,
-    testing::ValuesIn(GenDistPairTestBoxSphere()));
-INSTANTIATE_TEST_SUITE_P(BoxSphereTransform, SignedDistancePairTest,
+                         testing::ValuesIn(GenDistPairTestBoxSphere()));
+INSTANTIATE_TEST_SUITE_P(
+    BoxSphereTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestBoxSphereTransform()));
 
 INSTANTIATE_TEST_SUITE_P(SphereBoxBoundary, SignedDistancePairTest,
-    testing::ValuesIn(GenDistPairTestSphereBoxBoundary()));
-INSTANTIATE_TEST_SUITE_P(SphereBoxBoundaryTransform, SignedDistancePairTest,
+                         testing::ValuesIn(GenDistPairTestSphereBoxBoundary()));
+INSTANTIATE_TEST_SUITE_P(
+    SphereBoxBoundaryTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereBoxBoundaryTransform()));
 
 INSTANTIATE_TEST_SUITE_P(SphereCapsule, SignedDistancePairTest,
-    testing::ValuesIn(GenDistPairTestSphereCapsule()));
-INSTANTIATE_TEST_SUITE_P(SphereCapsuleTransform, SignedDistancePairTest,
+                         testing::ValuesIn(GenDistPairTestSphereCapsule()));
+INSTANTIATE_TEST_SUITE_P(
+    SphereCapsuleTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCapsuleTransform()));
 
 INSTANTIATE_TEST_SUITE_P(SphereCylinder, SignedDistancePairTest,
-    testing::ValuesIn(GenDistPairTestSphereCylinder()));
-INSTANTIATE_TEST_SUITE_P(SphereCylinderTransform, SignedDistancePairTest,
+                         testing::ValuesIn(GenDistPairTestSphereCylinder()));
+INSTANTIATE_TEST_SUITE_P(
+    SphereCylinderTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderTransform()));
-INSTANTIATE_TEST_SUITE_P(SphereCylinderBoundary, SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereCylinderBoundary, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderBoundary()));
-INSTANTIATE_TEST_SUITE_P(SphereCylinderBoundaryTransform,
-    SignedDistancePairTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereCylinderBoundaryTransform, SignedDistancePairTest,
     testing::ValuesIn(GenDistPairTestSphereCylinderBoundaryTransform()));
 
-INSTANTIATE_TEST_SUITE_P(HalfspaceSphere,
-                        SignedDistancePairTest,
-                        testing::ValuesIn(GenDistPairTestHalfspaceSphere()));
+INSTANTIATE_TEST_SUITE_P(HalfspaceSphere, SignedDistancePairTest,
+                         testing::ValuesIn(GenDistPairTestHalfspaceSphere()));
 
 // This tests that signed distance queries against a halfspace throw an
 // intelligible exception rather than a segfault.
@@ -3661,15 +3686,15 @@ TEST_P(SignedDistancePairConcentricTest, DistanceInvariance) {
   const auto& result = results[0];
 
   EXPECT_NEAR(result.distance, data.expected_result_.distance, kTolerance)
-    << "Incorrect signed distance";
+      << "Incorrect signed distance";
 
-  const bool a_then_b = (result.id_A == data.expected_result_.id_A)&&
-      (result.id_B == data.expected_result_.id_B);
-  const bool b_then_a = (result.id_B == data.expected_result_.id_A)&&
-      (result.id_A == data.expected_result_.id_B);
+  const bool a_then_b = (result.id_A == data.expected_result_.id_A) &&
+                        (result.id_B == data.expected_result_.id_B);
+  const bool b_then_a = (result.id_B == data.expected_result_.id_A) &&
+                        (result.id_A == data.expected_result_.id_B);
   ASSERT_TRUE(a_then_b ^ b_then_a);
-  const Vector3d& p_ACa = a_then_b? result.p_ACa : result.p_BCb;
-  const Vector3d& p_BCb = a_then_b? result.p_BCb : result.p_ACa;
+  const Vector3d& p_ACa = a_then_b ? result.p_ACa : result.p_BCb;
+  const Vector3d& p_BCb = a_then_b ? result.p_BCb : result.p_ACa;
 
   // Check the invariance that the distance between the two witness points
   // equal the signed distance.
@@ -3678,7 +3703,7 @@ TEST_P(SignedDistancePairConcentricTest, DistanceInvariance) {
   const Vector3d p_ACb = X_AW * p_WCb;
   const double distance_between_witnesses = (p_ACa - p_ACb).norm();
   EXPECT_NEAR(distance_between_witnesses, -result.distance, kTolerance)
-    << "Incorrect distance between witness points.";
+      << "Incorrect distance between witness points.";
 }
 
 // Generates one record of test data for two spheres whose centers are at the
@@ -3687,10 +3712,8 @@ TEST_P(SignedDistancePairConcentricTest, DistanceInvariance) {
 // @param radius_B specifies the radius of the second sphere B.
 // @param X_WA specifies the pose of A in world.
 // @param R_WB specifies the orientation of B in world.
-SignedDistancePairTestData
-GenDistPairTestTwoSpheresConcentricBasic(
-    const double radius_A = 1.0,
-    const double radius_B = 1.0,
+SignedDistancePairTestData GenDistPairTestTwoSpheresConcentricBasic(
+    const double radius_A = 1, const double radius_B = 1,
     const RigidTransformd& X_WA = RigidTransformd::Identity(),
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
   auto sphere_A = make_shared<const Sphere>(radius_A);
@@ -3702,7 +3725,7 @@ GenDistPairTestTwoSpheresConcentricBasic(
   // Since the two spheres are concentric, we arbitrarily pick the witness
   // point Cb at (radius_B,0,0) in B's frame and calculate the corresponding
   // witness point Ca in A's frame, but the TEST_P will ignore them.
-  const Vector3d p_BCb(radius_B, 0.0, 0.0);
+  const Vector3d p_BCb(radius_B, 0, 0);
   const Vector3d p_ACb = X_AB * p_BCb;
   const Vector3d p_ACa = -(radius_A / radius_B) * p_ACb;
 
@@ -3714,8 +3737,7 @@ GenDistPairTestTwoSpheresConcentricBasic(
 // point with varying radii.
 // @param X_WA specifies the pose of A in world.
 // @param R_WB specifies the orientation of B in world.
-std::vector<SignedDistancePairTestData>
-GenDistPairTestSphereSphereConcentric(
+std::vector<SignedDistancePairTestData> GenDistPairTestSphereSphereConcentric(
     const RigidTransformd& X_WA = RigidTransformd::Identity(),
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
   std::vector<SignedDistancePairTestData> test_data{
@@ -3739,30 +3761,28 @@ GenDistPairTestSphereSphereConcentric(
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereSphereConcentricTransform() {
   return GenDistPairTestSphereSphereConcentric(
-    RigidTransformd(RollPitchYawd(M_PI_4, M_PI_2, M_PI),
-                    Vector3d(1., 2., 3.)),
-    RotationMatrixd(RollPitchYawd(M_PI, M_PI/6., M_PI)));
+      RigidTransformd(RollPitchYawd(M_PI_4, M_PI_2, M_PI), Vector3d(1, 2, 3)),
+      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6, M_PI)));
 }
 
 // Gimbal lock of the orientation of the sphere at pitch = pi/2.
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereSphereConcentricGimbalLock() {
   return GenDistPairTestSphereSphereConcentric(
-    RigidTransformd::Identity(),
-    RotationMatrixd(RollPitchYawd(M_PI, M_PI_2, M_PI)));
+      RigidTransformd::Identity(),
+      RotationMatrixd(RollPitchYawd(M_PI, M_PI_2, M_PI)));
 }
 
 // Generates test data for a sphere and a box with the same centers.
 // @param X_WA specifies the pose of the sphere A in world.
 // @param R_WB specifies the orientation of the box B in world.
-std::vector<SignedDistancePairTestData>
-GenDistPairTestSphereBoxConcentric(
+std::vector<SignedDistancePairTestData> GenDistPairTestSphereBoxConcentric(
     const RigidTransformd& X_WA = RigidTransformd::Identity(),
     const RotationMatrixd& R_WB = RotationMatrixd::Identity()) {
-  auto sphere_A = make_shared<const Sphere>(2.);
-  auto box_B = make_shared<const Box>(4., 8., 16.);
+  auto sphere_A = make_shared<const Sphere>(2.0);
+  auto box_B = make_shared<const Box>(4.0, 8.0, 16.0);
   const double radius_A = sphere_A->radius();
-  const Vector3d half_B = box_B->size() / 2.;
+  const Vector3d half_B = box_B->size() / 2;
   const RigidTransformd X_WB(R_WB, X_WA.translation());
   const RigidTransformd X_AW = X_WA.inverse();
   const RigidTransformd X_AB = X_AW * X_WB;
@@ -3770,7 +3790,7 @@ GenDistPairTestSphereBoxConcentric(
   // Since A and B are concentric, we arbitrarily pick the witness point Cb
   // at (half_B.x, 0, 0) in B's frame and calculate the corresponding witness
   // point Ca in A's frame, but the TEST_P will ignore them.
-  const Vector3d p_BCb(half_B(0), 0., 0.);
+  const Vector3d p_BCb(half_B(0), 0, 0);
   const Vector3d p_ACb = X_AB * p_BCb;
   const Vector3d p_ACa = -(radius_A / half_B(0)) * p_ACb;
 
@@ -3783,26 +3803,25 @@ GenDistPairTestSphereBoxConcentric(
 std::vector<SignedDistancePairTestData>
 GenDistPairTestSphereBoxConcentricTransform() {
   return GenDistPairTestSphereBoxConcentric(
-      RigidTransformd(RollPitchYawd(M_PI_4, M_PI_2, M_PI),
-                      Vector3d(1., 2., 3.)),
-      RotationMatrixd(RollPitchYawd(M_PI, M_PI/6., M_PI)));
+      RigidTransformd(RollPitchYawd(M_PI_4, M_PI_2, M_PI), Vector3d(1, 2, 3)),
+      RotationMatrixd(RollPitchYawd(M_PI, M_PI / 6, M_PI)));
 }
 
-INSTANTIATE_TEST_SUITE_P(SphereSphereConcentric,
-    SignedDistancePairConcentricTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereSphereConcentric, SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentric()));
-INSTANTIATE_TEST_SUITE_P(SphereSphereConcentricTransform,
-    SignedDistancePairConcentricTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereSphereConcentricTransform, SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentricTransform()));
-INSTANTIATE_TEST_SUITE_P(SphereSphereConcentricGimbalLock,
-    SignedDistancePairConcentricTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereSphereConcentricGimbalLock, SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereSphereConcentricGimbalLock()));
 
-INSTANTIATE_TEST_SUITE_P(SphereBoxConcentric,
-    SignedDistancePairConcentricTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereBoxConcentric, SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentric()));
-INSTANTIATE_TEST_SUITE_P(SphereBoxConcentricTransform,
-    SignedDistancePairConcentricTest,
+INSTANTIATE_TEST_SUITE_P(
+    SphereBoxConcentricTransform, SignedDistancePairConcentricTest,
     testing::ValuesIn(GenDistPairTestSphereBoxConcentricTransform()));
 
 // Given a sphere S and box B. The box's height and depth are large (much larger
@@ -3876,10 +3895,10 @@ struct SpherePunchData {
 GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
   ProximityEngine<double> engine;
   const double radius = 0.5;
-  const double w = radius;        // Box width smaller than diameter.
+  const double w = radius;  // Box width smaller than diameter.
   const double half_w = w / 2;
-  const double h = 10 * radius;   // Box height much larger than sphere.
-  const double d = 10 * radius;   // Box depth much larger than sphere.
+  const double h = 10 * radius;  // Box height much larger than sphere.
+  const double d = 10 * radius;  // Box depth much larger than sphere.
   const double eps = std::numeric_limits<double>::epsilon();
   const GeometryId box_id = GeometryId::get_new_id();
   engine.AddDynamicGeometry(Box{w, h, d}, {}, box_id);
@@ -3894,15 +3913,15 @@ GTEST_TEST(ProximityEngineCollisionTest, SpherePunchThroughBox) {
       // In non-penetration, contact_normal and depth values don't matter; they
       // are not tested.
       {"non-penetration",
-       {radius + half_w + 0.1, 0, 0}, 0, {0, 0, 0}, -1.},
+       {radius + half_w + 0.1, 0.0, 0.0}, 0, {0.0, 0.0, 0.0}, -1.0},
       {"shallow penetration -- sphere center outside of box",
-       {radius + 0.75 * half_w, 0, 0}, 1, {-1, 0, 0}, 0.25 * half_w},
+       {radius + 0.75 * half_w, 0.0, 0.0}, 1, {-1.0, 0.0, 0.0}, 0.25 * half_w},
       {"deep penetration -- sphere contacts opposite side of the box",
-       {radius - half_w, 0, 0}, 1, {-1, 0, 0}, w},
+       {radius - half_w, 0.0, 0.0}, 1, {-1.0, 0.0, 0.0}, w},
       {"sphere's origin is just to the right of the box center",
-       {eps, 0, 0}, 1, {-1, 0, 0}, radius + half_w - eps},
+       {eps, 0.0, 0.0}, 1, {-1.0, 0.0, 0.0}, radius + half_w - eps},
       {"sphere's center has crossed the box's origin - flipped normal",
-       {-eps, 0, 0}, 1, {1, 0, 0}, radius + half_w - eps}};
+       {-eps, 0.0, 0.0}, 1, {1.0, 0.0, 0.0}, radius + half_w - eps}};
   // clang-format on
   for (const auto& test : test_data) {
     poses[sphere_id].set_translation(test.sphere_pose);
@@ -4098,8 +4117,8 @@ class BoxPenetrationTest : public ::testing::Test {
     std::vector<PenetrationAsPointPair<double>> results =
         engine_.ComputePointPairPenetration(poses);
 
-    ASSERT_EQ(results.size(), 1u) << "Against tangent "
-                                  << shape_name(shape_type);
+    ASSERT_EQ(results.size(), 1u)
+        << "Against tangent " << shape_name(shape_type);
 
     const PenetrationAsPointPair<double>& contact = results[0];
     Vector3d normal;
@@ -4141,8 +4160,8 @@ class BoxPenetrationTest : public ::testing::Test {
     // Compute the pose of the colliding box.
     // a. Orient the box so that the corner p_BoC_B = (-0.5, -0.5, -0.5) lies in
     //    the most -z extent. With only rotation, p_BoC_B != p_WC.
-    const math::RotationMatrixd R_WB(AngleAxisd(std::atan(M_SQRT2),
-                                     Vector3d(M_SQRT1_2, -M_SQRT1_2, 0)));
+    const math::RotationMatrixd R_WB(
+        AngleAxisd(std::atan(M_SQRT2), Vector3d(M_SQRT1_2, -M_SQRT1_2, 0)));
 
     // b. Translate it so that the rotated corner p_BoC_W lies at
     //    (0, 0, -d).
@@ -4260,8 +4279,8 @@ class BoxPenetrationTest : public ::testing::Test {
   const Cylinder tangent_cylinder_{kRadius, kLength};
   // We scale the convex shape by 5.0 to match the tangent_box_ of size 10.0.
   // The file "quad_cube.obj" contains the cube of size 2.0.
-  const Convex tangent_convex_{drake::FindResourceOrThrow(
-      "drake/geometry/test/quad_cube.obj"), 5.0};
+  const Convex tangent_convex_{
+      drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"), 5.0};
   const Capsule tangent_capsule_{kRadius, kLength};
 
   const Vector3d p_WC_{0, 0, -kDepth};
@@ -4270,8 +4289,8 @@ class BoxPenetrationTest : public ::testing::Test {
 
 // See documentation. All geometry constants must be >= kDepth * 100.
 const double BoxPenetrationTest::kDepth = 1e-3;
-const double BoxPenetrationTest::kRadius = 1.0;
-const double BoxPenetrationTest::kLength = 10.0;
+const double BoxPenetrationTest::kRadius = 1;
+const double BoxPenetrationTest::kLength = 10;
 
 TEST_F(BoxPenetrationTest, TangentPlane1) {
   TestCollision1(TangentPlane, 1e-12);
@@ -4281,9 +4300,13 @@ TEST_F(BoxPenetrationTest, TangentPlane2) {
   TestCollision2(TangentPlane, 1e-12);
 }
 
-TEST_F(BoxPenetrationTest, TangentBox1) { TestCollision1(TangentBox, 1e-12); }
+TEST_F(BoxPenetrationTest, TangentBox1) {
+  TestCollision1(TangentBox, 1e-12);
+}
 
-TEST_F(BoxPenetrationTest, TangentBox2) { TestCollision2(TangentBox, 1e-12); }
+TEST_F(BoxPenetrationTest, TangentBox2) {
+  TestCollision2(TangentBox, 1e-12);
+}
 
 TEST_F(BoxPenetrationTest, TangentSphere1) {
   // TODO(SeanCurtis-TRI): There are underlying fcl issues that prevent the
@@ -4430,7 +4453,7 @@ GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffAnchored) {
   // Given a sphere with radius 0.7, centered on p_WSo, the point p_SQ = (2,3,6)
   // is outside G at the positive distance 6.3.
   const double expected_distance = 6.3;
-  const Vector3d p_SQ_W{2.0, 3.0, 6.0};
+  const Vector3d p_SQ_W{2, 3, 6};
   const Vector3d p_WS_W{0.5, 1.25, -2};
   const Vector3d p_WQ{p_SQ_W + p_WS_W};
   Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
@@ -4490,7 +4513,7 @@ GTEST_TEST(ProximityEngineTests, ComputePointSignedDistanceAutoDiffDynamic) {
   // Given a sphere with radius 0.7, centered on p_WSo, the point p_SQ = (2,3,6)
   // is outside G at the positive distance 6.3.
   const double expected_distance = 6.3;
-  const Vector3d p_SQ{2.0, 3.0, 6.0};
+  const Vector3d p_SQ{2, 3, 6};
   const Vector3d p_WS{0.5, 1.25, -2};
   const Vector3d p_WQ{p_SQ + p_WS};
   Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
@@ -4538,8 +4561,8 @@ GTEST_TEST(ProximityEngineTests, ComputePairwiseSignedDistanceAutoDiff) {
 
   // Two spheres with radius 0.7 whose centers are 7 m apart. The literal
   // values just keep it from being trivial zero-able.
-  const double expected_distance = 7.0 - radius - radius;
-  const Vector3d p_SQ{2.0, 3.0, 6.0};
+  const double expected_distance = 7 - radius - radius;
+  const Vector3d p_SQ{2, 3, 6};
   const Vector3d p_WS{0.5, 1.25, -2};
   const Vector3d p_WQ{p_SQ + p_WS};
   Vector3<AutoDiffXd> p_WQ_ad = math::InitializeAutoDiff(p_WQ);
@@ -4552,8 +4575,7 @@ GTEST_TEST(ProximityEngineTests, ComputePairwiseSignedDistanceAutoDiff) {
 
   const GeometryId id2 = GeometryId::get_new_id();
   engine.AddDynamicGeometry(Sphere(radius), {}, id2);
-  const auto X_WS2_ad =
-      RigidTransformd(p_WS).cast<AutoDiffXd>();
+  const auto X_WS2_ad = RigidTransformd(p_WS).cast<AutoDiffXd>();
 
   const unordered_map<GeometryId, RigidTransform<AutoDiffXd>> X_WGs{
       {id1, X_WS1_ad}, {id2, X_WS2_ad}};
@@ -4624,7 +4646,7 @@ GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
 // Test fixture for deformable contact.
 class ProximityEngineDeformableContactTest : public testing::Test {
  protected:
-  static constexpr double kSphereRadius = 1.0;
+  static constexpr double kSphereRadius = 1;
 
   ProximityEngineDeformableContactTest() {
     const internal::deformable::Geometries& geometries =
@@ -4764,13 +4786,12 @@ TEST_F(ProximityEngineDeformableContactTest, AddSupportedRigidGeometries) {
   }
   {
     Convex convex(
-        drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"), 1.0);
+        drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
     TestRigidRegistrationAndRemoval(convex, valid_props, true);
     TestRigidRegistrationAndRemoval(convex, empty_props, false);
   }
   {
-    Mesh mesh(drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"),
-              1.0);
+    Mesh mesh(drake::FindResourceOrThrow("drake/geometry/test/quad_cube.obj"));
     TestRigidRegistrationAndRemoval(mesh, valid_props, true);
     TestRigidRegistrationAndRemoval(mesh, empty_props, false);
   }
@@ -4978,8 +4999,7 @@ TEST_F(ProximityEngineDeformableContactTest, ComputeDeformableContact) {
 
   // Shift the rigid geometry by the same offset and they are again in
   // contact.
-  std::unordered_map<GeometryId, RigidTransformd>
-      geometry_id_to_world_poses;
+  std::unordered_map<GeometryId, RigidTransformd> geometry_id_to_world_poses;
   geometry_id_to_world_poses.insert({rigid_id, RigidTransformd(offset_W)});
   engine_.UpdateWorldPoses(geometry_id_to_world_poses);
   engine_.ComputeDeformableContact(&contact_data);
@@ -5012,15 +5032,15 @@ GTEST_TEST(ProximityEngineTests, NeedsConvexHull) {
 
   // Rigid shapes that *do* require convex hulls.
   EXPECT_TRUE(engine.NeedsConvexHull(InternalGeometry(
-      s_id, make_unique<Mesh>("unimportant", 1.0), f_id, g_id, "n", {})));
+      s_id, make_unique<Mesh>("unimportant"), f_id, g_id, "n", {})));
   EXPECT_TRUE(engine.NeedsConvexHull(InternalGeometry(
-      s_id, make_unique<Convex>("unimportant", 1.0), f_id, g_id, "n", {})));
+      s_id, make_unique<Convex>("unimportant"), f_id, g_id, "n", {})));
 
   // Being deformable would eliminate the need for a convex hull.
   EXPECT_FALSE(engine.NeedsConvexHull(InternalGeometry(
       s_id,
       make_unique<Mesh>(
-          FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk"), 1),
+          FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk")),
       f_id, g_id, "n", {}, 1.0)));
 }
 
@@ -5081,17 +5101,17 @@ GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
   // exercised in all cases.
   {
     ProximityEngine<double> engine;
-    const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid,
-                                      sphere, !anchored, kUndefined);
+    const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid, sphere,
+                                      !anchored, kUndefined);
 
-      // We test only a single "underrepresented" configuration (rigid,
-      // undefined) because we rely on the tests on MaybeCalcContactSurface() to
-      // have explored all the ways that the kUnsupported calculation result is
-      // returned. This configuration is representative of that set.
-      DRAKE_EXPECT_THROWS_MESSAGE(
-          engine.ComputeContactSurfaces(kTriangle, X_WGs),
-          "Requested a contact surface between a pair of geometries without "
-          "hydroelastic representation .+ rigid .+ undefined .+");
+    // We test only a single "underrepresented" configuration (rigid,
+    // undefined) because we rely on the tests on MaybeCalcContactSurface() to
+    // have explored all the ways that the kUnsupported calculation result is
+    // returned. This configuration is representative of that set.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        engine.ComputeContactSurfaces(kTriangle, X_WGs),
+        "Requested a contact surface between a pair of geometries without "
+        "hydroelastic representation .+ rigid .+ undefined .+");
   }
 
   // Confirms that if the intersecting pair is rigid-rigid, an exception is
@@ -5099,15 +5119,15 @@ GTEST_TEST(ProximityEngineTest, ThrowForStrictRejectedContacts) {
   // body of the calculator gets exercised in all cases.
   {
     ProximityEngine<double> engine;
-    const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid,
-                                      sphere, !anchored, kRigid);
+    const auto X_WGs = PopulateEngine(&engine, sphere, anchored, kRigid, sphere,
+                                      !anchored, kRigid);
 
     // We test only a single "same-compliance" configuration (rigid, rigid)
     // because we rely on the tests on MaybeMakeContactSurface() to have
     // explored all the ways that the calculation result is returned. This
     // configuration is representative of that set.
     DRAKE_EXPECT_THROWS_MESSAGE(
-          engine.ComputeContactSurfaces(kTriangle, X_WGs),
+        engine.ComputeContactSurfaces(kTriangle, X_WGs),
         "Requested contact between two rigid objects .+");
   }
 

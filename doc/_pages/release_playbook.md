@@ -108,7 +108,7 @@ the main body of the document:
    3. Open the latest builds from the following builds:
       1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-cmake-nightly-packaging/>
       2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-noble-unprovisioned-gcc-cmake-nightly-packaging/>
-      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-sonoma-unprovisioned-clang-cmake-nightly-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-sonoma-clang-cmake-nightly-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-0.0.20``), and find the date.  It will be ``YYYYMMDD``
@@ -127,7 +127,7 @@ the main body of the document:
       - [macOS arm Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-unprovisioned-clang-wheel-staging-release/)
       - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-cmake-staging-packaging/)
       - [Noble Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-noble-unprovisioned-gcc-cmake-staging-packaging/)
-      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-unprovisioned-clang-cmake-staging-packaging/)
+      - [macOS arm Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-sonoma-clang-cmake-staging-packaging/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
@@ -169,12 +169,12 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **33** release files from
+      them." and then choose for upload the **36** release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 9: 3 `.tar.gz` + 6 checksums
       - 6: 2 `.deb` + 4 checksums
       - 12: 4 linux `.whl` + 8 checksums
-      - 6: 2 macOS arm `.whl` + 4 checksums
+      - 9: 3 macOS arm `.whl` + 6 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on
@@ -184,9 +184,8 @@ the main body of the document:
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
       page actually works.
    2. Click "Publish release"
-   3. Notify `@BetsyMcPhail` by creating a GitHub issue asking her to manually
-      tag docker images and upload the releases to S3. Be sure to provide her
-      with the release tag in the same ping.
+   3. Create a new GitHub issue on the [drake](https://github.com/RobotLocomotion/drake/issues/new/choose)
+      repository and select the "Post-Release Actions" template.
    4. Create a GitHub issue on the [drake-ros](https://github.com/RobotLocomotion/drake-ros/issues)
       repository, requesting an update of the `DRAKE_SUGGESTED_VERSION`
       constant.

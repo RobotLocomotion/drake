@@ -23,7 +23,7 @@ namespace internal {
 // This macro not only makes the code shorter, but it also helps avoid spelling
 // mistakes by ensuring that the string name matches the variable name.
 #define PACK_MAP_VAR(packer, var) \
-  packer.pack(#var);           \
+  packer.pack(#var);              \
   packer.pack(var);
 
 // The fields in these structures are chosen to match the serialized names in
@@ -167,8 +167,7 @@ struct MaterialData {
   // This method must be defined, but the implementation is not needed in the
   // current workflows.
   void msgpack_unpack(msgpack::object const&) {
-    throw std::runtime_error(
-        "unpack is not implemented for MaterialData.");
+    throw std::runtime_error("unpack is not implemented for MaterialData.");
   }
 };
 
@@ -654,11 +653,11 @@ struct pack<drake::geometry::Meshcat::OrthographicCamera> {
   }
 };
 
-template<>
+template <>
 struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
   template <typename Stream>
   packer<Stream>& operator()(
-  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+      // NOLINTNEXTLINE(runtime/references) cpplint dislikes msgpack choices.
       msgpack::packer<Stream>& o,
       const drake::geometry::Meshcat::PerspectiveCamera& v) const {
     o.pack_map(6);
@@ -679,7 +678,7 @@ struct pack<drake::geometry::Meshcat::PerspectiveCamera> {
 };
 
 }  // namespace adaptor
-}  // namespace MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
+}  // MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS)
 }  // namespace msgpack
 
 #endif  // DRAKE_DOXYGEN_CXX

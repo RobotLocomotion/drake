@@ -57,8 +57,8 @@ void EvaluateConvexHullInParallel(const Mesh& mesh) {
 GTEST_TEST(ShapeSpecificationThreadTest, Obj) {
   // We want to use a heavyweight mesh file to extend the time to compute the
   // convex hull.
-  const Mesh mesh(FindRunfile(
-      "drake_models/dishes/assets/plate_8in_col.obj").abspath);
+  const Mesh mesh(
+      FindRunfile("drake_models/dishes/assets/plate_8in_col.obj").abspath);
 
   EvaluateConvexHullInParallel(mesh);
 }

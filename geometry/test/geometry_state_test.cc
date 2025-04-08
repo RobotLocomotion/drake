@@ -193,9 +193,7 @@ class GeometryStateTester {
     return *state_->geometry_engine_;
   }
 
-  int RendererCount() const {
-    return state_->RendererCount();
-  }
+  int RendererCount() const { return state_->RendererCount(); }
 
   const GeometryVersion& geometry_version() const {
     return state_->geometry_version_;
@@ -407,9 +405,12 @@ void ShapeMatcher<Mesh>::TestShapeParameters(const Mesh& test) {
     error() << "\nExpected description " << expected_.source().description()
             << ", received description " << test.source().description();
   }
-  if (test.scale() != expected_.scale()) {
-    error() << "\nExpected mesh scale " << expected_.scale()
-            << ", received mesh scale " << test.scale();
+  // Looking for *exact* match.
+  if (test.scale3() != expected_.scale3()) {
+    error() << "\nExpected mesh scale "
+            << fmt::to_string(fmt_eigen(expected_.scale3().transpose()))
+            << ", received mesh scale "
+            << fmt::to_string(fmt_eigen(test.scale3().transpose()));
   }
 }
 
@@ -420,9 +421,12 @@ void ShapeMatcher<Convex>::TestShapeParameters(const Convex& test) {
     error() << "\nExpected description " << expected_.source().description()
             << ", received description " << test.source().description();
   }
-  if (test.scale() != expected_.scale()) {
-    error() << "\nExpected convex scale " << expected_.scale()
-            << ", received convex scale " << test.scale();
+  // Looking for *exact* match.
+  if (test.scale3() != expected_.scale3()) {
+    error() << "\nExpected convex scale "
+            << fmt::to_string(fmt_eigen(expected_.scale3().transpose()))
+            << ", received convex scale "
+            << fmt::to_string(fmt_eigen(test.scale3().transpose()));
   }
 }
 
@@ -1390,8 +1394,7 @@ TEST_F(GeometryStateTest, GetGeometryIds) {
 // Tests the GetNum*Geometry*Methods.
 TEST_F(GeometryStateTest, GetNumGeometryTests) {
   SetUpWithRigidAndDeformableGeometries(Assign::kProximity);
-  EXPECT_EQ(total_geometry_count(),
-            geometry_state_.get_num_geometries());
+  EXPECT_EQ(total_geometry_count(), geometry_state_.get_num_geometries());
   EXPECT_EQ(total_geometry_count(),
             geometry_state_.NumGeometriesWithRole(Role::kProximity));
   EXPECT_EQ(0, geometry_state_.NumGeometriesWithRole(Role::kPerception));
@@ -4293,15 +4296,16 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   SourceId new_source = VerifyVersionUnchanged(
       &GeometryState<double>::RegisterNewSource, "my_new_source");
   // Registering a new frame does not modify the versions.
-  FrameId new_frame_0 =
-      VerifyVersionUnchanged(static_cast<FrameId(GeometryState<double>::*)(
-                                 SourceId, const GeometryFrame&)>(
-                                 &GeometryState<double>::RegisterFrame),
-                             new_source, GeometryFrame("new_f0"));
-  VerifyVersionUnchanged(static_cast<FrameId(GeometryState<double>::*)(
-                             SourceId, FrameId, const GeometryFrame&)>(
-                             &GeometryState<double>::RegisterFrame),
-                         new_source, new_frame_0, GeometryFrame("new_f1"));
+  FrameId new_frame_0 = VerifyVersionUnchanged(
+      static_cast<FrameId (GeometryState<double>::*)(  // NOLINT
+          SourceId, const GeometryFrame&)>(
+          &GeometryState<double>::RegisterFrame),
+      new_source, GeometryFrame("new_f0"));
+  VerifyVersionUnchanged(
+      static_cast<FrameId (GeometryState<double>::*)(  // NOLINT
+          SourceId, FrameId, const GeometryFrame&)>(
+          &GeometryState<double>::RegisterFrame),
+      new_source, new_frame_0, GeometryFrame("new_f1"));
 
   // Registering geometries with no roles assigned does not change the versions.
   VerifyVersionUnchanged(
@@ -4317,14 +4321,14 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
   // proximity version, but not the other versions.
   VerifyRoleVersionModified(
       Role::kProximity,
-      static_cast<void(GeometryState<double>::*)(
+      static_cast<void (GeometryState<double>::*)(  // NOLINT
           SourceId, GeometryId, ProximityProperties, RoleAssign)>(
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[0], ProximityProperties(), RoleAssign::kNew);
 
   VerifyRoleVersionModified(
       Role::kProximity,
-      static_cast<void(GeometryState<double>::*)(
+      static_cast<void (GeometryState<double>::*)(  // NOLINT
           SourceId, GeometryId, ProximityProperties, RoleAssign)>(
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[0], ProximityProperties(), RoleAssign::kReplace);
@@ -4342,7 +4346,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
                                       set<string>{kDummyRenderName});
     VerifyRoleVersionModified(
         Role::kPerception,
-        static_cast<void(GeometryState<double>::*)(
+        static_cast<void (GeometryState<double>::*)(  // NOLINT
             SourceId, GeometryId, PerceptionProperties, RoleAssign)>(
             &GeometryState<double>::AssignRole),
         source_id_, geometries_[1], perception_properties, RoleAssign::kNew);
@@ -4355,7 +4359,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
     perception_properties.AddProperty("renderer", "accepting",
                                       set<string>{"junk"});
     VerifyVersionUnchanged(
-        static_cast<void(GeometryState<double>::*)(
+        static_cast<void (GeometryState<double>::*)(  // NOLINT
             SourceId, GeometryId, PerceptionProperties, RoleAssign)>(
             &GeometryState<double>::AssignRole),
         source_id_, geometries_[2], perception_properties, RoleAssign::kNew);
@@ -4368,7 +4372,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
                                       Vector4<double>{0.8, 0.8, 0.8, 1.0});
   VerifyRoleVersionModified(
       Role::kIllustration,
-      static_cast<void(GeometryState<double>::*)(
+      static_cast<void (GeometryState<double>::*)(  // NOLINT
           SourceId, GeometryId, IllustrationProperties, RoleAssign)>(
           &GeometryState<double>::AssignRole),
       source_id_, geometries_[3], illustration_properties, RoleAssign::kNew);
@@ -4416,7 +4420,7 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
 
   // Removing a geometry without any perception role from a renderer does not
   // modify any version.
-  VerifyVersionUnchanged(static_cast<int(GeometryState<double>::*)(
+  VerifyVersionUnchanged(static_cast<int (GeometryState<double>::*)(  // NOLINT
                              const std::string&, SourceId, GeometryId)>(
                              &GeometryState<double>::RemoveFromRenderer),
                          kDummyRenderName, source_id_, geometries_[1]);
@@ -4430,11 +4434,12 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
 
   // Removing a geometry with perception role from a renderer does modify
   // the perception version.
-  VerifyRoleVersionModified(Role::kPerception,
-                            static_cast<int(GeometryState<double>::*)(
-                                const std::string&, SourceId, GeometryId)>(
-                                &GeometryState<double>::RemoveFromRenderer),
-                            kDummyRenderName, source_id_, geometries_[1]);
+  VerifyRoleVersionModified(
+      Role::kPerception,
+      static_cast<int (GeometryState<double>::*)(  // NOLINT
+          const std::string&, SourceId, GeometryId)>(
+          &GeometryState<double>::RemoveFromRenderer),
+      kDummyRenderName, source_id_, geometries_[1]);
 
   // Assign proximity role to the first three geometries to test versions on
   // proximity filters.
@@ -4529,8 +4534,7 @@ class ApplyProximityDefaultsTests : public testing::Test {
   std::unique_ptr<ProximityProperties> MakeFullProperties() {
     // Fill the properties with identifiably stupid values.
     auto props = std::make_unique<ProximityProperties>();
-    props->AddProperty(kHydroGroup, kComplianceType,
-                       HydroelasticType::kRigid);
+    props->AddProperty(kHydroGroup, kComplianceType, HydroelasticType::kRigid);
     props->AddProperty(kHydroGroup, kElastic, 123.0);
     props->AddProperty(kHydroGroup, kRezHint, 456.0);
     props->AddProperty(kHydroGroup, kSlabThickness, 789.0);
@@ -4553,15 +4557,15 @@ class ApplyProximityDefaultsTests : public testing::Test {
                                             std::move(instance));
   }
 
-  DefaultProximityProperties empty_defaults_{
-    "undefined", {}, {}, {}, {}, {}, {}, {}, {}, {}};
+  DefaultProximityProperties empty_defaults_{"undefined", {}, {}, {}, {},
+                                             {},          {}, {}, {}, {}};
   // Use stupid values distinct from those in MakeFullProperties().
-  DefaultProximityProperties full_defaults_{
-    "compliant", 0.1, 0.2, 0.3, 0.4, 0.4, 0.5, 0.6, 0.7, 0.8};
+  DefaultProximityProperties full_defaults_{"compliant", 0.1, 0.2, 0.3, 0.4,
+                                            0.4,         0.5, 0.6, 0.7, 0.8};
   GeometryState<double> geometry_state_;
   SourceId source_id_{geometry_state_.RegisterNewSource("test")};
   FrameId frame_id_{
-    geometry_state_.RegisterFrame(source_id_, GeometryFrame("frame"))};
+      geometry_state_.RegisterFrame(source_id_, GeometryFrame("frame"))};
 };
 
 TEST_F(ApplyProximityDefaultsTests, TrivialApplyProximityDefaults) {
@@ -4584,9 +4588,8 @@ TEST_F(ApplyProximityDefaultsTests, EmptyPropsEmptyDefaults) {
   geometry_state_.ApplyProximityDefaults(empty_defaults_, geometry_id);
   auto* props = geometry_state_.GetProximityProperties(geometry_id);
   ASSERT_NE(props, nullptr);
-  EXPECT_EQ(
-      props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-      HydroelasticType::kUndefined);
+  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+            HydroelasticType::kUndefined);
   EXPECT_FALSE(props->HasProperty(kHydroGroup, kElastic));
   EXPECT_FALSE(props->HasProperty(kHydroGroup, kRezHint));
   EXPECT_FALSE(props->HasProperty(kHydroGroup, kSlabThickness));
@@ -4604,9 +4607,9 @@ TEST_F(ApplyProximityDefaultsTests, EmptyPropsFullDefaults) {
   geometry_state_.ApplyProximityDefaults(full_defaults_, geometry_id);
   auto* props = geometry_state_.GetProximityProperties(geometry_id);
   ASSERT_NE(props, nullptr);
-  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-            internal::GetHydroelasticTypeFromString(
-                full_defaults_.compliance_type));
+  EXPECT_EQ(
+      props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+      internal::GetHydroelasticTypeFromString(full_defaults_.compliance_type));
   EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kElastic),
             *full_defaults_.hydroelastic_modulus);
   EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kRezHint),
@@ -4634,9 +4637,9 @@ TEST_F(ApplyProximityDefaultsTests, FullPropsFullDefaults) {
   geometry_state_.ApplyProximityDefaults(full_defaults_, geometry_id);
   auto* props = geometry_state_.GetProximityProperties(geometry_id);
   ASSERT_NE(props, nullptr);
-  EXPECT_EQ(props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
-            full_props->GetProperty<HydroelasticType>(kHydroGroup,
-                                                      kComplianceType));
+  EXPECT_EQ(
+      props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType),
+      full_props->GetProperty<HydroelasticType>(kHydroGroup, kComplianceType));
   EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kElastic),
             full_props->GetProperty<double>(kHydroGroup, kElastic));
   EXPECT_EQ(props->GetProperty<double>(kHydroGroup, kRezHint),

@@ -984,6 +984,7 @@ GTEST_TEST(LinearSystemBespokeTest, NonSymbolicFeedthrough) {
   EXPECT_FALSE(dut2.HasAnyDirectFeedthrough());
 }
 
+// On 2025-08-01 upon completion of deprecation move, delete this test case.
 GTEST_TEST(DiscreteTimeApproximation, test) {
   Eigen::Matrix<double, 2, 2> A;
   Eigen::Matrix<double, 2, 1> B;

@@ -7,6 +7,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import Value
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.framework import (
@@ -1083,16 +1084,20 @@ class TestGeneral(unittest.TestCase):
             np.squeeze(x), np.squeeze(y), atol=1e-10)
 
         continuous_system = LinearSystem(A, B, C, D)
-        discrete_system = DiscreteTimeApproximation(
-            system=continuous_system, time_period=h)
+        with catch_drake_warnings(expected_count=1):
+            discrete_system = DiscreteTimeApproximation(
+                system=continuous_system, time_period=h)
+        self.assertEqual(type(discrete_system), LinearSystem)
         assert_array_close(discrete_system.A(), Ad)
         assert_array_close(discrete_system.B(), Bd)
         assert_array_close(discrete_system.C(), Cd)
         assert_array_close(discrete_system.D(), Dd)
 
         continuous_system = AffineSystem(A, B, f0, C, D, y0)
-        discrete_system = DiscreteTimeApproximation(
-            system=continuous_system, time_period=h)
+        with catch_drake_warnings(expected_count=1):
+            discrete_system = DiscreteTimeApproximation(
+                system=continuous_system, time_period=h)
+        self.assertEqual(type(discrete_system), AffineSystem)
         assert_array_close(discrete_system.A(),  Ad)
         assert_array_close(discrete_system.B(),  Bd)
         assert_array_close(discrete_system.f0(), f0d)

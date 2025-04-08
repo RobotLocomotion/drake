@@ -116,7 +116,7 @@ rust_library(
     version = "1.0.109",
     deps = [
         "@crate__proc-macro2-1.0.94//:proc_macro2",
-        "@crate__quote-1.0.39//:quote",
+        "@crate__quote-1.0.40//:quote",
         "@crate__syn-1.0.109//:build_script_build",
         "@crate__unicode-ident-1.0.18//:unicode_ident",
     ],

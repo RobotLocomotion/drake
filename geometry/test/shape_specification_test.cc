@@ -547,20 +547,12 @@ GTEST_TEST(ShapeTest, ConvexConstructor) {
          {ScaleVariant{}, ScaleVariant{kScale}, ScaleVariant{kScale3}}) {
       const auto convex = std::visit<Convex>(
           overloaded{
-              [&scale, &kFileName](const std::filesystem::path& path) {
+              [&scale](const std::filesystem::path& path) {
                 Convex c = MakeConvex(scale, path);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                EXPECT_EQ(c.filename(), kFileName);
-#pragma GCC diagnostic pop
                 return c;
               },
               [&scale](const InMemoryMesh& memory_mesh) {
                 Convex c = MakeConvex(scale, memory_mesh);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                EXPECT_THROW(c.filename(), std::exception);
-#pragma GCC diagnostic pop
                 return c;
               },
               [&scale](const MeshSource& source) {
@@ -621,20 +613,12 @@ GTEST_TEST(ShapeTest, MeshConstructor) {
     for (const auto& scale :
          {ScaleVariant{}, ScaleVariant{kScale}, ScaleVariant{kScale3}}) {
       const auto mesh = std::visit<Mesh>(
-          overloaded{[&scale, &kFileName](const std::filesystem::path& path) {
+          overloaded{[&scale](const std::filesystem::path& path) {
                        Mesh m = MakeMesh(path, scale);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                       EXPECT_EQ(m.filename(), kFileName);
-#pragma GCC diagnostic pop
                        return m;
                      },
                      [&scale](const InMemoryMesh& memory_mesh) {
                        Mesh m = MakeMesh(memory_mesh, scale);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-                       EXPECT_THROW(m.filename(), std::exception);
-#pragma GCC diagnostic pop
                        return m;
                      },
                      [&scale](const MeshSource& source) {
@@ -904,8 +888,7 @@ GTEST_TEST(ShapeTest, TypeNameAndToString) {
   // the source (we don't have to worry about *how* InMemoryMesh is written as
   // a string). We do need to make sure they have the [2, 3, 4] scale factor
   // as hard-coded here.
-  static constexpr const char* mem_fmt =
-      "{}(mesh_data={}, scale=[2 3 4])";
+  static constexpr const char* mem_fmt = "{}(mesh_data={}, scale=[2 3 4])";
 
   const Box box(1.5, 2.5, 3.5);
   const Capsule capsule(1.25, 2.5);

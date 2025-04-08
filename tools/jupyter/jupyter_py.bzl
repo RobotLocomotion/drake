@@ -32,6 +32,7 @@ def drake_jupyter_py_binary(
         # TODO(eric.cousineau): Reset default flaky value to False once #12536
         # is resolved.
         test_flaky = True,
+        test_tags = [],
         **kwargs):
     """Creates a target to run a Jupyter notebook.
 
@@ -77,14 +78,13 @@ def drake_jupyter_py_binary(
     )
     if add_test_rule:
         target = ":{}".format(name)
-        test_tags = jupyter_tags
         drake_py_test(
             name = "{}_test".format(name),
             args = ["--test"],
             main = main,
             srcs = [main],
             deps = [target],
-            tags = test_tags,
+            tags = jupyter_tags + test_tags,
             timeout = test_timeout,
             flaky = test_flaky,
             # Permit `unittest` given that NumPy uses it.

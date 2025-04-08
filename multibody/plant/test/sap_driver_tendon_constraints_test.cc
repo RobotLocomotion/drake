@@ -188,7 +188,6 @@ TEST_P(TwoTreesTest, ConfirmConstraintProperties) {
   // Throw on id to wrong constraint specs type.
   EXPECT_THROW(plant_.get_ball_constraint_specs(id_), std::exception);
   EXPECT_THROW(plant_.get_coupler_constraint_specs(id_), std::exception);
-  EXPECT_THROW(plant_.get_distance_constraint_specs(id_), std::exception);
   EXPECT_THROW(plant_.get_weld_constraint_specs(id_), std::exception);
 
   // The tendon constraint is only added to the problem if it is violated in the

@@ -20,7 +20,19 @@ bool Joint<T>::can_translate() const {
 
 template <typename T>
 void Joint<T>::set_default_positions(const VectorX<double>& default_positions) {
-  DRAKE_THROW_UNLESS(default_positions.size() == num_positions());
+  if (default_positions.size() != num_positions()) {
+    std::string model_instance_name;
+    if (this->has_parent_tree()) {
+      model_instance_name =
+          this->get_parent_tree().GetModelInstanceName(this->model_instance()) +
+          "::";
+    }
+    throw std::runtime_error(fmt::format(
+        "{}: The number of positions in the input ({}) does not match the "
+        "number of positions of the joint '{}{}' ({}).",
+        __func__, default_positions.size(), model_instance_name, name(),
+        num_positions()));
+  }
   default_positions_ = default_positions;
   do_set_default_positions(default_positions);
 }

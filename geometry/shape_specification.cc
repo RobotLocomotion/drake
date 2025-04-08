@@ -167,17 +167,6 @@ Convex::Convex(const Eigen::Matrix3X<double>& points, const std::string& label,
                                                   ".obj", label)},
              scale3) {}
 
-std::string Convex::filename() const {
-  if (source_.is_path()) {
-    return source_.path().string();
-  }
-  throw std::runtime_error(
-      fmt::format("Convex::filename() cannot be called when constructed on "
-                  "in-memory mesh data: '{}'. Call Convex::source().path() "
-                  "instead.",
-                  source_.in_memory().mesh_file.filename_hint()));
-}
-
 double Convex::scale() const {
   if ((scale_.array() != scale_[0]).any()) {
     throw std::runtime_error(
@@ -287,17 +276,6 @@ Mesh::Mesh(MeshSource source, const Vector3<double>& scale3)
   // Note: We don't validate extensions because there's a possibility that a
   // mesh of unsupported type is used, but only processed by client code.
   ThrowForBadScale(scale_, "Mesh");
-}
-
-std::string Mesh::filename() const {
-  if (source_.is_path()) {
-    return source_.path().string();
-  }
-  throw std::runtime_error(
-      fmt::format("Mesh::filename() cannot be called when constructed on "
-                  "in-memory mesh data: '{}'. Call Mesh::source().path() "
-                  "instead.",
-                  source_.in_memory().mesh_file.filename_hint()));
 }
 
 double Mesh::scale() const {
@@ -448,18 +426,20 @@ double CalcVolume(const Shape& shape) {
 // The NVI function definitions are enough boilerplate to merit a macro to
 // implement them, and we might as well toss in the dtor for good measure.
 
-#define DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(ShapeType)                \
-  ShapeType::~ShapeType() = default;                                      \
-  void ShapeType::DoReify(ShapeReifier* shape_reifier, void* user_data)   \
-      const {                                                             \
-    shape_reifier->ImplementGeometry(*this, user_data);                   \
-  }                                                                       \
-  std::unique_ptr<Shape> ShapeType::DoClone() const {                     \
-    return std::unique_ptr<ShapeType>(new ShapeType(*this));              \
-  }                                                                       \
-  std::string_view ShapeType::do_type_name() const { return #ShapeType; } \
-  Shape::VariantShapeConstPtr ShapeType::get_variant_this() const {       \
-    return this;                                                          \
+#define DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(ShapeType)              \
+  ShapeType::~ShapeType() = default;                                    \
+  void ShapeType::DoReify(ShapeReifier* shape_reifier, void* user_data) \
+      const {                                                           \
+    shape_reifier->ImplementGeometry(*this, user_data);                 \
+  }                                                                     \
+  std::unique_ptr<Shape> ShapeType::DoClone() const {                   \
+    return std::unique_ptr<ShapeType>(new ShapeType(*this));            \
+  }                                                                     \
+  std::string_view ShapeType::do_type_name() const {                    \
+    return #ShapeType;                                                  \
+  }                                                                     \
+  Shape::VariantShapeConstPtr ShapeType::get_variant_this() const {     \
+    return this;                                                        \
   }
 
 DRAKE_DEFINE_SHAPE_SUBCLASS_BOILERPLATE(Box)

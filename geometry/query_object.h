@@ -212,6 +212,8 @@ class QueryObject {
    geometry is penetrating.     */
   //@{
 
+  // Disable formatter to preserve doxygen tables.
+  // clang-format off
   /** Computes the penetrations across all pairs of geometries in the world
    with the penetrations characterized by pairs of points (see
    PenetrationAsPointPair), providing some measure of the penetration "depth" of
@@ -300,8 +302,11 @@ class QueryObject {
             *not* computationally efficient or particularly accurate.
    @throws std::exception if a Shape-Shape pair is in collision and indicated as
            `throws` in the support table above.  */
+  // clang-format on
   std::vector<PenetrationAsPointPair<T>> ComputePointPairPenetration() const;
 
+  // Disable formatter to preserve doxygen tables.
+  // clang-format off
   /** Reports pairwise intersections and characterizes each non-empty
    intersection as a ContactSurface for hydroelastic contact model. The
    computation is subject to collision filtering.
@@ -379,6 +384,7 @@ class QueryObject {
             contact surfaces. The ordering of the results is guaranteed to be
             consistent -- for fixed geometry poses, the results will remain
             the same.  */
+  // clang-format on
   template <typename T1 = T>
   typename std::enable_if_t<scalar_predicate<T1>::is_bool,
                             std::vector<ContactSurface<T>>>
@@ -482,6 +488,9 @@ class QueryObject {
   // TODO(DamrongGuoy): Refactor documentation of
   // ComputeSignedDistancePairwiseClosestPoints(). Move the common sections
   // into Signed Distance Queries.
+
+  // Disable formatter to preserve doxygen tables.
+  // clang-format off
   /**
    Computes the signed distance together with the nearest points across all
    pairs of geometries in the world. Reports both the separating geometries
@@ -663,6 +672,7 @@ class QueryObject {
    @throws std::exception as indicated in the table above.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */
+  // clang-format on
   std::vector<SignedDistancePair<T>> ComputeSignedDistancePairwiseClosestPoints(
       const double max_distance =
           std::numeric_limits<double>::infinity()) const;
@@ -696,6 +706,9 @@ class QueryObject {
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
   // Distance Queries. Update documentation as we add more functionality.
+
+  // Disable formatter to preserve doxygen tables.
+  // clang-format off
   /**
    Computes the signed distances and gradients to a query point from each
    geometry in the scene.
@@ -819,6 +832,7 @@ class QueryObject {
 
    @throws std::exception if there are meshes with extremely sharp features
    where the calculation of feature normals become unstable. */
+  // clang-format on
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(
       const Vector3<T>& p_WQ,
       const double threshold = std::numeric_limits<double>::infinity()) const;

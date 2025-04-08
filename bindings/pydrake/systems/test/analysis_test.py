@@ -8,6 +8,7 @@ from pydrake.math import isnan
 from pydrake.symbolic import Variable, Expression
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.systems.primitives import (
+    AffineSystem_,
     ConstantVectorSource,
     ConstantVectorSource_,
     FirstOrderLowPassFilter_,
@@ -20,6 +21,7 @@ from pydrake.systems.analysis import (
     ApplySimulatorConfig,
     BatchEvalUniquePeriodicDiscreteUpdate,
     BatchEvalTimeDerivatives,
+    DiscreteTimeApproximation,
     ExtractSimulatorConfig,
     InitializeParams,
     IntegratorBase_,
@@ -38,6 +40,45 @@ from pydrake.trajectories import PiecewisePolynomial, PiecewisePolynomial_
 
 
 class TestAnalysis(unittest.TestCase):
+    def test_discrete_time_approximation(self):
+        A = np.array([[0, 1], [0, 0]])
+        B = np.array([0, 1])
+        f0 = np.array([2, 1])
+        C = np.array([[1, 0]])
+        D = np.array([0])
+        y0 = np.array([0])
+
+        h = 0.031415926
+        Ad = np.array([[1, h], [0, 1]])
+        Bd = np.array([0.5*h**2, h])
+        f0d = np.array([2*h+0.5*h**2, h])
+        Cd = C
+        Dd = D
+        y0d = y0
+
+        def assert_array_close(x, y): np.testing.assert_allclose(
+            np.squeeze(x), np.squeeze(y), atol=1e-10)
+
+        continuous_system = LinearSystem_[float](A, B, C, D)
+        discrete_system = DiscreteTimeApproximation(
+            linear_system=continuous_system, time_period=h)
+        self.assertEqual(type(discrete_system), LinearSystem_[float])
+        assert_array_close(discrete_system.A(), Ad)
+        assert_array_close(discrete_system.B(), Bd)
+        assert_array_close(discrete_system.C(), Cd)
+        assert_array_close(discrete_system.D(), Dd)
+
+        continuous_system = AffineSystem_[float](A, B, f0, C, D, y0)
+        discrete_system = DiscreteTimeApproximation(
+            affine_system=continuous_system, time_period=h)
+        self.assertEqual(type(discrete_system), AffineSystem_[float])
+        assert_array_close(discrete_system.A(),  Ad)
+        assert_array_close(discrete_system.B(),  Bd)
+        assert_array_close(discrete_system.f0(), f0d)
+        assert_array_close(discrete_system.C(),  Cd)
+        assert_array_close(discrete_system.D(),  Dd)
+        assert_array_close(discrete_system.y0(), y0d)
+
     def test_region_of_attraction(self):
         x = Variable("x")
         sys = SymbolicVectorSystem(state=[x], dynamics=[-x+x**3])

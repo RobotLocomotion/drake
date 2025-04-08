@@ -69,7 +69,6 @@ GTEST_TEST(SemidefiniteRelaxationOptions, DefaultOptionsTest) {
   SemidefiniteRelaxationOptions options{};
   EXPECT_TRUE(options.add_implied_linear_equality_constraints);
   EXPECT_TRUE(options.add_implied_linear_constraints);
-  EXPECT_FALSE(options.preserve_convex_quadratic_constraints);
 }
 
 GTEST_TEST(SemidefiniteRelaxationOptions, SetWeakestTest) {
@@ -276,62 +275,8 @@ TEST_F(MakeSemidefiniteRelaxationTest, LinearizeQuadraticCostsAndConstraints) {
   EXPECT_EQ(relaxation->quadratic_costs().size(), 0);
   EXPECT_EQ(relaxation->linear_costs().size(),
             prog_.linear_costs().size() + prog_.quadratic_costs().size());
-
-  // All the quadratic constraints are linearized.
-  EXPECT_EQ(relaxation->quadratic_constraints().size(), 0);
-  EXPECT_EQ(
-      relaxation->linear_constraints().size(),
-      prog_.linear_constraints().size() + prog_.quadratic_constraints().size());
-
-  // One extra constraint from "one" equals 1, one from the semidefinite
-  // constraint.
-  EXPECT_EQ(relaxation->GetAllConstraints().size(),
-            prog_.GetAllConstraints().size() + 1 + 1);
-}
-
-TEST_F(MakeSemidefiniteRelaxationTest,
-       LinearizeQuadraticCostsAndConstraintsPreserveFalse) {
-  SemidefiniteRelaxationOptions options{};
-  // Don't add any implied constraints.
-  options.set_to_weakest();
-  options.preserve_convex_quadratic_constraints = false;
-  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
-
-  // The semidefinite program is initialized.
-  EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-
-  // All the quadratic costs are linearized.
-  EXPECT_EQ(relaxation->quadratic_costs().size(), 0);
-  EXPECT_EQ(relaxation->linear_costs().size(),
-            prog_.linear_costs().size() + prog_.quadratic_costs().size());
   // We should have the same total number of costs.
   EXPECT_EQ(relaxation->GetAllCosts().size(),
-            prog_.linear_costs().size() + prog_.quadratic_costs().size());
-
-  // All the quadratic constraints are linearized
-  EXPECT_EQ(relaxation->quadratic_constraints().size(), 0);
-  EXPECT_EQ(
-      relaxation->linear_constraints().size(),
-      prog_.linear_constraints().size() + prog_.quadratic_constraints().size());
-
-  // One extra constraint from "one" equals 1 and the semidefinite constraint.
-  EXPECT_EQ(relaxation->GetAllConstraints().size(),
-            prog_.GetAllConstraints().size() + 1 + 1);
-}
-TEST_F(MakeSemidefiniteRelaxationTest,
-       LinearizeQuadraticCostsAndConstraintsPreserveTrue) {
-  SemidefiniteRelaxationOptions options{};
-  options.set_to_weakest();
-
-  options.preserve_convex_quadratic_constraints = true;
-  auto relaxation = MakeSemidefiniteRelaxation(prog_, options);
-
-  // The semidefinite program is initialized.
-  EXPECT_EQ(relaxation->positive_semidefinite_constraints().size(), 1);
-
-  // All the quadratic costs are linearized.
-  EXPECT_EQ(relaxation->quadratic_costs().size(), 0);
-  EXPECT_EQ(relaxation->linear_costs().size(),
             prog_.linear_costs().size() + prog_.quadratic_costs().size());
 
   // All the quadratic constraints are linearized.

@@ -683,8 +683,8 @@ GTEST_TEST(MeshcatVisualizerTest, RealtimeRate) {
   plant.Finalize();
   MeshcatParams meshcat_params{.realtime_rate_period = 0.125 /*seconds*/};
   auto meshcat = std::make_shared<Meshcat>(meshcat_params);
-  auto& visualizer = MeshcatVisualizer<double>::AddToBuilder(
-      &builder, scene_graph, meshcat);
+  auto& visualizer =
+      MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat);
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
   auto& vis_context = visualizer.GetMyContextFromRoot(*context);

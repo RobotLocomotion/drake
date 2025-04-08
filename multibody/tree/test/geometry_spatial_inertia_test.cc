@@ -217,9 +217,13 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
   const std::string valid_vtk_path =
       FindResourceOrThrow("drake/geometry/test/one_tetrahedron.vtk");
   const MeshType unit_scale_obj(valid_obj_path, 1.0);
-  const MeshType double_scale_obj(valid_obj_path, 2.0);
+  // By creating a non-uniform scale, we're increasing the volume by a factor
+  // of sx * sy * sz.
+  const Vector3d scale3(2, 3, 4);
+  const double increase_factor = scale3.prod();
+  const MeshType double_scale_obj(valid_obj_path, scale3);
   const MeshType unit_scale_vtk(valid_vtk_path, 1.0);
-  const MeshType double_scale_vtk(valid_vtk_path, 2.0);
+  const MeshType double_scale_vtk(valid_vtk_path, scale3);
   const MeshType nonexistent("nonexistent.stl", 1.0);
 
   {
@@ -249,7 +253,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
     const SpatialInertia<double> M_SScm_S_obj_large =
         CalcSpatialInertia(double_scale_obj, kDensity);
     EXPECT_DOUBLE_EQ(M_SScm_S_obj_large.get_mass(),
-                     M_SScm_S_obj_small.get_mass() * 8);
+                     M_SScm_S_obj_small.get_mass() * increase_factor);
   }
 
   {
@@ -259,7 +263,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
     const SpatialInertia<double> M_SScm_S_vtk_large =
         CalcSpatialInertia(double_scale_vtk, kDensity);
     EXPECT_DOUBLE_EQ(M_SScm_S_vtk_large.get_mass(),
-                     M_SScm_S_vtk_small.get_mass() * 8);
+                     M_SScm_S_vtk_small.get_mass() * increase_factor);
   }
 
   {

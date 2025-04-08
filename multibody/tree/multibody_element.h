@@ -107,6 +107,7 @@ class MultibodyElement {
 
   /// Returns a constant reference to the parent MultibodyTree that
   /// owns this element.
+  /// @throws std::exception in debug builds if has_parent_tree() is false.
   const internal::MultibodyTree<T>& get_parent_tree() const {
     DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
     return *parent_tree_;
@@ -114,6 +115,7 @@ class MultibodyElement {
 
   /// Returns a constant reference to the parent MultibodyTreeSystem that
   /// owns the parent MultibodyTree that owns this element.
+  /// @throws std::exception in debug builds if has_parent_tree() is false.
   const internal::MultibodyTreeSystem<T>& GetParentTreeSystem() const {
     DRAKE_ASSERT_VOID(HasParentTreeOrThrow());
     return get_parent_tree().tree_system();
@@ -152,6 +154,9 @@ class MultibodyElement {
       internal::MultibodyTreeSystem<T>* tree_system,
       const AbstractValue& model_value);
 
+  /// Returns true if this multibody element has a parent tree, otherwise false.
+  bool has_parent_tree() const { return parent_tree_ != nullptr; }
+
  private:
   // MultibodyTree<T> is a natural friend of MultibodyElement objects and
   // therefore it can set the owning parent tree and unique index in that tree.
@@ -170,8 +175,6 @@ class MultibodyElement {
   void set_model_instance(ModelInstanceIndex model_instance) {
     model_instance_ = model_instance;
   }
-
-  bool has_parent_tree() const { return parent_tree_ != nullptr; }
 
   // Checks whether this MultibodyElement has been registered into
   // a MultibodyTree and throws an exception if not.

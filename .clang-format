@@ -18,6 +18,10 @@ AllowShortFunctionsOnASingleLine: Inline
 # Compress lambdas onto a single line iff they are empty.
 AllowShortLambdasOnASingleLine: Empty
 
+# Formatting gets confused unless we tell it about macro purposes.
+AttributeMacros: [DRAKE_NO_EXPORT]
+NamespaceMacros: [MSGPACK_API_VERSION_NAMESPACE]
+
 # Specify the #include statement order.  This implements the order mandated by
 # the Google C++ Style Guide: related header, C headers, C++ headers, library
 # headers, and finally the project headers.

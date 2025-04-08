@@ -22,6 +22,7 @@ drake_cc_package_library(
         ":bogacki_shampine3_integrator",
         ":convex_integrator",
         ":dense_output",
+        ":discrete_time_approximation",
         ":explicit_euler_integrator",
         ":hermitian_dense_output",
         ":implicit_euler_integrator",
@@ -134,6 +135,16 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "discrete_time_approximation",
+    srcs = ["discrete_time_approximation.cc"],
+    hdrs = ["discrete_time_approximation.h"],
+    deps = [
+        "//systems/primitives:affine_system",
+        "//systems/primitives:linear_system",
     ],
 )
 
@@ -487,6 +498,7 @@ drake_cc_googletest(
         ":simulator_config_functions",
         "//common:nice_type_name",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
         "//common/yaml",
         "//systems/framework:leaf_system",
         "//systems/primitives:constant_vector_source",
@@ -620,6 +632,13 @@ drake_cc_googletest(
         "//systems/analysis/test_utilities",
         "//systems/framework:diagram",
         "//visualization:visualization_config_functions",
+    ],
+)
+
+drake_cc_googletest(
+    name = "discrete_time_approximation_test",
+    deps = [
+        ":discrete_time_approximation",
     ],
 )
 

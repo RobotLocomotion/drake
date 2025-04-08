@@ -78,6 +78,7 @@ drake_py_unittest(
     name = "util_test",
     data = [
         "//manipulation/util:test_directives",
+        "//multibody/benchmarks/acrobot:models",
     ],
     deps = [
         ":manipulation",

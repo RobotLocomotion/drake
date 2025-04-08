@@ -2,6 +2,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/manipulation/manipulation_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/manipulation/util/named_positions_functions.h"
 #include "drake/manipulation/util/zero_force_driver.h"
 #include "drake/manipulation/util/zero_force_driver_functions.h"
 
@@ -30,6 +31,10 @@ void DefineManipulationUtil(py::module m) {
         py::arg("model_instance_name"), py::arg("sim_plant"),
         py::arg("models_from_directives"), py::arg("lcms"), py::arg("builder"),
         doc.ApplyDriverConfig.doc);
+
+    m.def("ApplyNamedPositionsAsDefaults", &ApplyNamedPositionsAsDefaults,
+        py::arg("input"), py::arg("plant"),
+        doc.ApplyNamedPositionsAsDefaults.doc);
   }
 }
 

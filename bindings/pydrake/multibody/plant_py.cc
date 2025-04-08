@@ -103,6 +103,28 @@ void DoScalarDependentDefinitions(py::module m, T) {
     AddValueInstantiation<Class>(m);
   }
 
+  // DeformableContactInfo
+  {
+    using Class = DeformableContactInfo<T>;
+    constexpr auto& cls_doc = doc.DeformableContactInfo;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "DeformableContactInfo", param, cls_doc.doc);
+    if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+      cls  // BR
+          .def(py::init<geometry::GeometryId, geometry::GeometryId,
+                   geometry::PolygonSurfaceMesh<T>, SpatialForce<T>>(),
+              py::arg("id_A"), py::arg("id_B"), py::arg("contact_mesh_W"),
+              py::arg("F_Ac_W"), cls_doc.ctor.doc)
+          .def("id_A", &Class::id_A, cls_doc.id_A.doc)
+          .def("id_B", &Class::id_B, cls_doc.id_B.doc)
+          .def("contact_mesh", &Class::contact_mesh, py_rvp::reference_internal,
+              cls_doc.contact_mesh.doc)
+          .def("F_Ac_W", &Class::F_Ac_W, cls_doc.F_Ac_W.doc);
+    }
+    DefCopyAndDeepCopy(&cls);
+    AddValueInstantiation<Class>(m);
+  }
+
   // ContactResults
   {
     using Class = ContactResults<T>;
@@ -119,6 +141,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.num_hydroelastic_contacts.doc)
         .def("hydroelastic_contact_info", &Class::hydroelastic_contact_info,
             py::arg("i"), cls_doc.hydroelastic_contact_info.doc)
+        .def("num_deformable_contacts", &Class::num_deformable_contacts,
+            cls_doc.num_deformable_contacts.doc)
+        .def("deformable_contact_info", &Class::deformable_contact_info,
+            py::arg("i"), py_rvp::reference_internal,
+            cls_doc.deformable_contact_info.doc)
         .def("plant", &Class::plant, py_rvp::reference, cls_doc.plant.doc)
         .def("SelectHydroelastic", &Class::SelectHydroelastic,
             py::arg("selector"), cls_doc.SelectHydroelastic.doc);
@@ -293,6 +320,23 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("stiffness") = std::numeric_limits<double>::infinity(),
             py::arg("damping") = 0.0, py_rvp::reference_internal,
             cls_doc.AddDistanceConstraint.doc)
+        .def("GetDefaultDistanceConstraintParams",
+            &Class::GetDefaultDistanceConstraintParams,
+            cls_doc.GetDefaultDistanceConstraintParams.doc)
+        .def("GetDistanceConstraintParams",
+            overload_cast_explicit<const std::map<MultibodyConstraintId,
+                                       DistanceConstraintParams>&,
+                const Context<T>&>(&Class::GetDistanceConstraintParams),
+            py::arg("context"), cls_doc.GetDistanceConstraintParams.doc_1args)
+        .def("GetDistanceConstraintParams",
+            overload_cast_explicit<const DistanceConstraintParams&,
+                const Context<T>&, MultibodyConstraintId>(
+                &Class::GetDistanceConstraintParams),
+            py::arg("context"), py::arg("id"),
+            cls_doc.GetDistanceConstraintParams.doc_2args)
+        .def("SetDistanceConstraintParams", &Class::SetDistanceConstraintParams,
+            py::arg("context"), py::arg("id"), py::arg("params"),
+            cls_doc.SetDistanceConstraintParams.doc)
         .def("AddBallConstraint", &Class::AddBallConstraint, py::arg("body_A"),
             py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ") = std::nullopt,
             py_rvp::reference_internal, cls_doc.AddBallConstraint.doc)
@@ -1604,6 +1648,27 @@ PYBIND11_MODULE(plant, m) {
             "thrust_ratio", &Class::thrust_ratio, cls_doc.thrust_ratio.doc)
         .def_readwrite(
             "moment_ratio", &Class::moment_ratio, cls_doc.moment_ratio.doc);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = DistanceConstraintParams;
+    constexpr auto& cls_doc = doc.DistanceConstraintParams;
+    py::class_<Class> cls(m, "DistanceConstraintParams", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<BodyIndex, Vector3<double>&, BodyIndex, Vector3<double>&,
+                 double, double, double>(),
+            py::arg("bodyA"), py::arg("p_AP"), py::arg("bodyB"),
+            py::arg("p_BQ"), py::arg("distance"), py::arg("stiffness"),
+            py::arg("damping"), cls_doc.ctor.doc_7args)
+        .def("bodyA", &Class::bodyA, cls_doc.bodyA.doc)
+        .def("bodyB", &Class::bodyB, cls_doc.bodyB.doc)
+        .def("p_AP", &Class::p_AP, cls_doc.p_AP.doc)
+        .def("p_BQ", &Class::p_BQ, cls_doc.p_BQ.doc)
+        .def("distance", &Class::distance, cls_doc.distance.doc)
+        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc)
+        .def("damping", &Class::damping, cls_doc.damping.doc);
     DefCopyAndDeepCopy(&cls);
   }
 
