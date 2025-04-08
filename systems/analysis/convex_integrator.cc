@@ -266,7 +266,10 @@ bool ConvexIntegrator<T>::DoStepWithSDIRK(const T& h) {
   x.SetFromVector(x0 + h * a21 * f1);
   mutable_context.SetTimeAndNoteContinuousStateChange(t0 + c2 * h);
 
-  v_guess = x.get_generalized_velocity().CopyToVector();
+  const VectorX<T> v0 = v_guess;
+  const VectorX<T> v1 = x.get_generalized_velocity().CopyToVector();
+  const VectorX<T> acc = (v1 - v0) / (h * a11);
+  v_guess = v1 + h * (1.0 - a11) * acc;
   CalcNextContinuousState(h * a22, v_guess, &x2);
   const VectorX<T> f2 = (x2.CopyToVector() - x.CopyToVector()) / (h * a22);
 
@@ -411,6 +414,17 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
     sap_stats_.momentum_residual.push_back(momentum_residual);
     sap_stats_.momentum_scale.push_back(momentum_scale);
 
+    // The theta convergence criterion is only relevant *after* a step has been
+    // taken. This is different from the (tighter) SAP convergence thresholds,
+    // which are checked before the step is taken.
+    // N.B. This check is for iteration k-1. Putting it here ensures that the
+    // number of Hessian factorizations never exceeds the number of Newton
+    // iterations.
+    if (theta_criterion_reached) {
+      converged = true;
+      break;
+    }
+
     if (k > 1) {
       // Alternative optimality criterion based on the method of [Hairer, 1996],
       // Equation IV.8.10. This indicates whether or not the *next* step will
@@ -519,14 +533,6 @@ SapSolverStatus ConvexIntegrator<T>::SolveWithGuessImpl(
         ell_decrement < sap_parameters_.cost_abs_tolerance +
                             sap_parameters_.cost_rel_tolerance * ell_scale &&
         alpha > 0.5;
-
-    // The theta convergence criterion is only relevant *after* a step has been
-    // taken. This is different from the (tighter) SAP convergence thresholds,
-    // which are checked before the step is taken.
-    if (theta_criterion_reached) {
-      converged = true;
-      break;
-    }
   }
 
   if (!converged) return SapSolverStatus::kFailure;
