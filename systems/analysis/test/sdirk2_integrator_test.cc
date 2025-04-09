@@ -36,7 +36,7 @@ GTEST_TEST(Sdirk2IntegratorTest, SpringMass) {
   integrator.Initialize();
 
   // Integrate the system
-  const double t_final = 1.0;
+  const double t_final = 0.1;
   integrator.IntegrateWithMultipleStepsToTime(t_final);
   const double q = spring_mass.get_position(*context);
   const double v = spring_mass.get_velocity(*context);

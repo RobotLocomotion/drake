@@ -29,7 +29,7 @@ void Sdirk2Integrator<T>::DoResetImplicitIntegratorStatistics() {
 
 template <class T>
 void Sdirk2Integrator<T>::DoResetCachedJacobianRelatedMatrices() {
- iteration_matrix_ = {};
+  iteration_matrix_ = {};
 }
 
 template <class T>
@@ -63,8 +63,128 @@ void Sdirk2Integrator<T>::DoInitialize() {
 }
 
 template <class T>
+void Sdirk2Integrator<T>::ComputeAndFactorIterationMatrix(
+    const MatrixX<T>& J, const T& h,
+    typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix) {
+  const int n = J.rows();
+  iteration_matrix->SetAndFactorIterationMatrix(-gamma_ * h * J +
+                                                MatrixX<T>::Identity(n, n));
+}
+
+template <class T>
+bool Sdirk2Integrator<T>::NewtonSolve(const T& t, const T& h,
+                                      const VectorX<T>& x0, VectorX<T>* k_ptr,
+                                      int trial) {
+  // Verify that we have a valid trial number
+  DRAKE_DEMAND(trial >= 1 && trial <= 4);
+
+  // Dereference k for convenience
+  DRAKE_DEMAND(k_ptr != nullptr);
+  VectorX<T>& k = *k_ptr;
+
+  // Set time and state to (t, x₀ + γ h k)
+  Context<T>* context = this->get_mutable_context();
+  k.setZero();  // TODO(vincekurtz): consider using a better initial guess
+  x_ = x0 + gamma_ * h * k;
+  context->SetTimeAndContinuousState(t, x_);
+
+  // Initialize the previous state update norm for convergence tests
+  T last_dk_norm = std::numeric_limits<double>::infinity();
+
+  // Update the iteration matrix A = [I - γ h J] according to the level of
+  // detail requested by the `trial` parameter. If full Newton is enabled, this
+  // will be computed at the beginning of the loop instead.
+  if (!this->get_use_full_newton() &&
+      !this->MaybeFreshenMatrices(t, x_, h, trial,
+                                  ComputeAndFactorIterationMatrix,
+                                  &iteration_matrix_)) {
+    return false;  // early exit if factorization fails
+  }
+
+  // Do the Newton-Raphson iterations
+  for (int i = 0; i < this->max_newton_raphson_iterations(); ++i) {
+    num_nr_iterations_++;  // log number of newton iterations
+
+    // Compute A = [I - γ h J]
+    this->FreshenMatricesIfFullNewton(t, x_, h,
+                                      ComputeAndFactorIterationMatrix,
+                                      &iteration_matrix_);
+    
+    // Evaluate g(k) = k - f(t, x₀ + γ h k)
+    VectorX<T> g = k - this->EvalTimeDerivatives(*context).CopyToVector();
+
+    // Compute the update using A * dk = -g
+    VectorX<T> dk = iteration_matrix_.Solve(-g);
+    k += dk;
+
+    // Compute the norm of the update
+    // TODO: use this->CalcStateChangeNorm instead
+    T dk_norm = dk.norm();
+
+    // Check for convergence
+    typename ImplicitIntegrator<T>::ConvergenceStatus status =
+        this->CheckNewtonConvergence(i, k, dk, dk_norm, last_dk_norm);
+    // If it converged, we're done.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged) {
+      return true;
+    }
+    // If it diverged, we have to abort and try again with a higher trial value.
+    if (status == ImplicitIntegrator<T>::ConvergenceStatus::kDiverged) {
+      break;
+    }
+    // Otherwise, continue to the next Newton-Raphson iteration.
+    DRAKE_DEMAND(status ==
+                 ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
+
+    // Update the state to prepare the next iteration
+    x_ = x0 + gamma_ * h * k;
+    context->SetTimeAndContinuousState(t, x_);
+  }
+  
+  // If Jacobian and iteration matrix factorizations are not reused, there is
+  // nothing else we can try. The solve has failed and we'll need error control
+  // to reduce h.
+  if (!this->get_reuse()) {
+    return false;
+  }
+ 
+  // Try again with a higher trial number. This will be more aggressive about
+  // recomputing Jacobians and matrix factorizations.
+  return NewtonSolve(t, h, x0, k_ptr, trial + 1);
+}
+
+template <class T>
 bool Sdirk2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
-  (void)h;
+  Context<T>* context = this->get_mutable_context();
+  const T t0 = context->get_time();
+  const VectorX<T> x0 = context->get_continuous_state().CopyToVector();
+
+  // First stage: solve for k₁ = f(t₀ + γh, x₀ + γhk₁)
+  if (!NewtonSolve(t0 + gamma_ * h, h, x0, &k1_)) {
+    // Early exit and reset the state if the Newton-Raphson process fails
+    DRAKE_LOGGER_DEBUG("SDIRK2: k1 solve failed");
+    context->SetTimeAndContinuousState(t0, x0);
+    return false; 
+  }
+
+  fmt::print("k1 = {}\n", fmt_eigen(k1_.transpose()));
+
+  // Second stage: solve for k₂ = f(t₀ + h, x₀ + (1-γ)hk₁ + γhk₂)
+  const VectorX<T> x1 = x0 + (1 - gamma_) * h * k1_;
+  if (!NewtonSolve(t0 + h, h, x1, &k2_)) {
+    // Early exit and reset the state if the Newton-Raphson process fails
+    DRAKE_LOGGER_DEBUG("SDIRK2: k2 solve failed");
+    context->SetTimeAndContinuousState(t0, x0);
+    return false; 
+  }
+  
+  fmt::print("k2 = {}\n", fmt_eigen(k2_.transpose()));
+
+  // Set the new state: x = x₀ + (1-γ)hk₁ + γhk₂
+  context->SetTimeAndContinuousState(t0 + h, x1 + gamma_ * h * k2_);
+
+  // Set the error estimate using the lower-order embedded method: 
+  // x̂ = x₀ + (1-α)hk₁ + αhk₂
   return true;
 }
 
