@@ -27,6 +27,11 @@ GTEST_TEST(DeformableContactInfo, ConstructAndAccess) {
   EXPECT_EQ(dut.F_Ac_W().rotational(), F_Ac_W.rotational());
 }
 
+GTEST_TEST(DeformableContactInfo, EmptyForExpression) {
+  DeformableContactInfo<symbolic::Expression> dut;
+  EXPECT_EQ(sizeof(dut), 1);
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

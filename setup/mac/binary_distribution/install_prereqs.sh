@@ -61,8 +61,8 @@ fi
 
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile"
 
-if ! command -v pip3.12 &>/dev/null; then
-  echo 'ERROR: pip3.12 is NOT installed. The post-install step for the python@3.12 formula may have failed.' >&2
+if ! command -v pip3.13 &>/dev/null; then
+  echo 'ERROR: pip3.13 is NOT installed. The post-install step for the python@3.13 formula may have failed.' >&2
   exit 2
 fi
 
@@ -70,7 +70,7 @@ if [[ "${with_python_dependencies}" -eq 1 ]]; then
   readonly setup="${BASH_SOURCE%/*}"
   readonly venv_pdm="${setup}"
   readonly venv_drake="$(cd "${setup}/../../.." && pwd)"
-  python3.12 -m venv "${venv_pdm}"
+  python3.13 -m venv "${venv_pdm}"
   "${venv_pdm}/bin/pip3" install -U -r "${setup}/requirements.txt"
   "${venv_pdm}/bin/python3" -m venv "${venv_drake}"
   "${venv_pdm}/bin/pdm" use -p "${setup}" -f "${venv_drake}"

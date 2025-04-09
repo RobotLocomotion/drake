@@ -6,6 +6,7 @@ import math
 from math import inf, nan
 import os
 from pathlib import Path
+import sys
 from textwrap import dedent
 import typing
 import unittest
@@ -29,35 +30,45 @@ from pydrake.common.yaml import yaml_dump_typed, yaml_load_typed
 #  drake/common/yaml/test/example_structs.h
 # and should be roughly kept in sync with the definitions in that file.
 
+def _dataclass_eq(a, b):
+    # Work around https://github.com/python/cpython/issues/128294.
+    return dc.astuple(a) == dc.astuple(b)
+
 
 @dc.dataclass
 class FloatStruct:
     value: float = nan
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class IntStruct:
     value: int = -1
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class BoolStruct:
     value: bool = False
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class StringStruct:
     value: str = "nominal_string"
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class BytesStruct:
     value: bytes = b"\x00\x01\x02"
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class PathStruct:
     value: Path = "/path/to/nowhere"
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
@@ -68,50 +79,59 @@ class AllScalarsStruct:
     some_int: int = 11
     some_path: Path = "/path/to/nowhere"
     some_str: str = "nominal_string"
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class ListStruct:
     value: typing.List[float] = dc.field(
         default_factory=lambda: list((nan,)))
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class MapStruct:
     value: typing.Dict[str, float] = dc.field(
         default_factory=lambda: dict(nominal_float=nan))
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class InnerStruct:
     inner_value: float = nan
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class OptionalByteStruct:
     value: bytes | None = b"\x02\x03\x04"
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class OptionalStruct:
     value: float | None = nan
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class OptionalStructNoDefault:
     value: float | None = None
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class LegacyOptionalStruct:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
     value: typing.Optional[float] = nan
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class LegacyOptionalStructNoDefault:
     # Here we write out typing.Optional (dispreferred), instead of `| None`.
     value: typing.Optional[float] = None
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
@@ -120,12 +140,14 @@ class NumpyStruct:
     # constrain the shape and/or dtype.
     value: np.ndarray = dc.field(
         default_factory=lambda: np.array([nan]))
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class RejectGetattrNumpyStruct:
     value: np.ndarray = dc.field(
         default_factory=lambda: np.array([nan]))
+    __eq__ = _dataclass_eq
 
     def __getattribute__(self, name):
         if name == "value":
@@ -142,22 +164,26 @@ class RejectGetattrNumpyStruct:
 @dc.dataclass
 class VariantStruct:
     value: typing.Union[str, float, FloatStruct, NumpyStruct] = nan
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class NullableVariantStruct:
     value: typing.Union[None, FloatStruct, StringStruct] = None
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class PrimitiveVariantStruct:
     value: typing.Union[typing.List[float], bool, int, float, str, bytes] = nan
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class ListVariantStruct:
     value: typing.List[typing.Union[str, float, FloatStruct, NumpyStruct]] = (
         dc.field(default_factory=lambda: list([nan])))
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
@@ -165,6 +191,7 @@ class OuterStruct:
     outer_value: float = nan
     inner_struct: InnerStruct = dc.field(
         default_factory=lambda: InnerStruct())
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
@@ -173,11 +200,12 @@ class OuterStructOpposite:
     inner_struct: InnerStruct = dc.field(
         default_factory=lambda: InnerStruct())
     outer_value: float = nan
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
 class Blank:
-    pass
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
@@ -185,6 +213,7 @@ class OuterWithBlankInner:
     outer_value: float = nan
     inner_struct: Blank = dc.field(
         default_factory=lambda: Blank())
+    __eq__ = _dataclass_eq
 
 
 @dc.dataclass
@@ -194,6 +223,7 @@ class BigMapStruct:
             foo=OuterStruct(
                 outer_value=1.0,
                 inner_struct=InnerStruct(inner_value=2.0))))
+    __eq__ = _dataclass_eq
 
 
 class TestYamlTypedRead(unittest.TestCase,

@@ -142,6 +142,7 @@ drake_pybind_library(
     name = "estimators_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_srcs = ["estimators_py.cc"],

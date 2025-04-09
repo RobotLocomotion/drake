@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/extract_double.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -185,6 +186,41 @@ TYPED_TEST(ParticleDataTest, ComputePK1StressDerivatives) {
       EXPECT_GT(test_matrix.dot(dPdF_matrix * test_matrix), 0.0);
     }
   }
+}
+
+TYPED_TEST(ParticleDataTest, ComputeTotalMassAndMomentum) {
+  using T = TypeParam;
+  const Vector3d x0(1.0, 2.0, 3.0);
+  const Vector3d x1 = -x0;
+  const std::vector<Vector3d> positions = {x0, x1};
+  const double total_volume = 1.0;
+
+  fem::DeformableBodyConfig<double> config;
+  const double kRho = 1.25;
+  config.set_mass_density(kRho);
+  this->dut_.AddParticles(positions, total_volume, config);
+
+  /* Set arbitrary but equal v for particle 0 and 1. */
+  const Vector3<T> v(0.12, 0.34, 0.56);
+  this->dut_.mutable_v()[0] = v;
+  this->dut_.mutable_v()[1] = v;
+  /* Set arbitrary but opposite C for particle 0 and 1. */
+  Matrix3<T> C;
+  C << 0.18, 0.63, 0.54, 0.13, 0.92, 0.17, 0.03, 0.86, 0.85;
+  this->dut_.mutable_C()[0] = C;
+  this->dut_.mutable_C()[1] = -C;
+  /* Arbitrary dx. */
+  const T dx = 0.123;
+
+  const MassAndMomentum<T> result = this->dut_.ComputeTotalMassAndMomentum(dx);
+  EXPECT_NEAR(ExtractDoubleOrThrow(result.mass), kRho * total_volume,
+              4.0 * std::numeric_limits<double>::epsilon());
+  EXPECT_TRUE(CompareMatrices(result.linear_momentum, total_volume * kRho * v,
+                              4.0 * std::numeric_limits<T>::epsilon()));
+  /* With the choice of v and C, the angular momentum contribution of the two
+   particles should cancel out. */
+  EXPECT_TRUE(CompareMatrices(result.angular_momentum, Vector3<T>::Zero(),
+                              4.0 * std::numeric_limits<T>::epsilon()));
 }
 
 /* Creates an array of arbitrary autodiff deformation gradients. */

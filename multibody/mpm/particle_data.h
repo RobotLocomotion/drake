@@ -9,6 +9,7 @@
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/linear_constitutive_model.h"
 #include "drake/multibody/fem/linear_corotated_model.h"
+#include "drake/multibody/mpm/mass_and_momentum.h"
 
 namespace drake {
 namespace multibody {
@@ -176,6 +177,22 @@ class ParticleData {
                     double total_volume,
                     const fem::DeformableBodyConfig<double>& config);
 
+  /* Computes the total mass and linear/angular momentum of the given particle
+   data as defined in [Jiang et al. 2017]. Note that the angular momentum is a
+   function of the background grid dx and the affine velocity field C.
+
+   [Jiang et al. 2017] Jiang, C., Schroeder, C., & Teran, J. (2017). An angular
+   momentum conserving affine-particle-in-cell method. Journal of Computational
+   Physics, 338, 137-164.
+
+   @note The angular momentum is computed assuming quadratic B-spline
+   interpolation.
+   @param[in] particle_data  The particle data.
+   @param[in] dx             The background grid dx [meters] of the particles.
+  */
+  MassAndMomentum<T> ComputeTotalMassAndMomentum(const T& dx) const;
+
+ private:
   /* Per particle state and data. All of the following fields have the same
    size and ordering. */
   /* State */

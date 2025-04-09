@@ -102,9 +102,8 @@ class SparseGrid {
   void SetGridData(
       const std::function<GridData<T>(const Vector3<int>&)>& callback);
 
-  /* Returns grid data from all non-inactive grid nodes (see
-   GridData::is_inactive) as a pair of world space coordinate and grid data of
-   the node.
+  /* Returns grid data from all grid nodes with positive mass as a pair of world
+   space coordinate and grid data of the node.
    @note Testing only. */
   std::vector<std::pair<Vector3<int>, GridData<T>>> GetGridData() const;
 
@@ -187,6 +186,12 @@ class SparseGrid {
                                const ParticleData<T>&, Pad<GridData<T>>*)>&
           kernel) {
     particle_sorter_.Iterate(this, &particle_data, kernel);
+  }
+
+  /* Iterates over all grid nodes in the grid and applies the given function
+   `func` to each grid node. */
+  void IterateGrid(const std::function<void(GridData<T>*)>& func) {
+    spgrid_.IterateGrid(func);
   }
 
  private:

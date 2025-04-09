@@ -67,6 +67,11 @@ void VerifyInvariants(const VolumeMesh<double>& mesh,
 
   // Verify that vertices produced a displacement of at least "margin" in the
   // direction of each adjacent face.
+  // N.B. Not all solvers guarantee strict feasibility. Therefore we verify
+  // feasibility using a numerical slop. We write this as:
+  //   u⋅n̂ ≥ δ⋅(1−εᵣ)
+  // with εᵣ a dimensionless relative slop.
+  const double kRelativeSlop = 8 * std::numeric_limits<double>::epsilon();
   for (int f = 0; f < mesh_surface.num_triangles(); ++f) {
     const Vector3d& n = mesh_surface.face_normal(f);
     // Face `f` corresponds to the `k`-th local face of element `e` in both the
@@ -79,7 +84,7 @@ void VerifyInvariants(const VolumeMesh<double>& mesh,
       const Vector3d& p_inflated =
           inflated_mesh.vertex(inflated_mesh.element(e).vertex((k + i) % 4));
       const Vector3d u = p_inflated - p;
-      ASSERT_GE(u.dot(n), margin);
+      ASSERT_GE(u.dot(n), margin * (1.0 - kRelativeSlop));
     }
   }
 }
