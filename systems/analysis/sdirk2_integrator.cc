@@ -55,9 +55,12 @@ void Sdirk2Integrator<T>::DoInitialize() {
 
   // Allocate intermediate variables
   const int nx = this->get_system().num_continuous_states();
+  x0_.resize(nx);
   x_.resize(nx);
   k1_.resize(nx);
   k2_.resize(nx);
+  g_.resize(nx);
+  dk_.resize(nx);
   err_est_vec_.resize(nx);
 
   // Set the working accuracy to a reasonable default
@@ -114,19 +117,19 @@ bool Sdirk2Integrator<T>::NewtonSolve(const T& t, const T& h,
                                       &iteration_matrix_);
 
     // Evaluate g(k) = k - f(t, x₀ + γ h k)
-    VectorX<T> g = k - this->EvalTimeDerivatives(*context).CopyToVector();
+    g_ = k - this->EvalTimeDerivatives(*context).CopyToVector();
 
     // Compute the update using A * dk = -g
-    VectorX<T> dk = iteration_matrix_.Solve(-g);
-    k += dk;
+    dk_ = iteration_matrix_.Solve(-g_);
+    k += dk_;
 
     // Compute the norm of the update
-    dx_state_->get_mutable_vector().SetFromVector(dk);
+    dx_state_->get_mutable_vector().SetFromVector(dk_);
     T dk_norm = this->CalcStateChangeNorm(*dx_state_);
 
     // Check for convergence
     typename ImplicitIntegrator<T>::ConvergenceStatus status =
-        this->CheckNewtonConvergence(i, k, dk, dk_norm, last_dk_norm);
+        this->CheckNewtonConvergence(i, k, dk_, dk_norm, last_dk_norm);
     // If it converged, we're done.
     if (status == ImplicitIntegrator<T>::ConvergenceStatus::kConverged) {
       return true;
@@ -160,31 +163,31 @@ template <class T>
 bool Sdirk2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
   Context<T>* context = this->get_mutable_context();
   const T t0 = context->get_time();
-  const VectorX<T> x0 = context->get_continuous_state().CopyToVector();
+  x0_ = context->get_continuous_state().CopyToVector();
 
   // First stage: solve for k₁ = f(t₀ + γh, x₀ + γhk₁)
-  if (!NewtonSolve(t0 + gamma_ * h, h, x0, &k1_)) {
+  if (!NewtonSolve(t0 + gamma_ * h, h, x0_, &k1_)) {
     // Early exit and reset the state if the Newton-Raphson process fails
     DRAKE_LOGGER_DEBUG("SDIRK2: k1 solve failed");
-    context->SetTimeAndContinuousState(t0, x0);
+    context->SetTimeAndContinuousState(t0, x0_);
     return false;
   }
 
   // Second stage: solve for k₂ = f(t₀ + h, x₀ + (1-γ)hk₁ + γhk₂)
-  const VectorX<T> x1 = x0 + (1 - gamma_) * h * k1_;
-  if (!NewtonSolve(t0 + h, h, x1, &k2_)) {
+  x1_ = x0_ + (1 - gamma_) * h * k1_;
+  if (!NewtonSolve(t0 + h, h, x1_, &k2_)) {
     // Early exit and reset the state if the Newton-Raphson process fails
     DRAKE_LOGGER_DEBUG("SDIRK2: k2 solve failed");
-    context->SetTimeAndContinuousState(t0, x0);
+    context->SetTimeAndContinuousState(t0, x0_);
     return false;
   }
 
   // Set the new state: x = x₀ + (1-γ)hk₁ + γhk₂
-  context->SetTimeAndContinuousState(t0 + h, x1 + gamma_ * h * k2_);
+  context->SetTimeAndContinuousState(t0 + h, x1_ + gamma_ * h * k2_);
 
   // Set the error estimate using the lower-order embedd
   // x̂ = x₀ + (1-α)hk₁ + αhk₂
-  err_est_vec_ = x0 + (1 - alpha_) * h * k1_ + alpha_ * h * k2_;
+  err_est_vec_ = x0_ + (1 - alpha_) * h * k1_ + alpha_ * h * k2_;
   err_est_vec_ -= context->get_continuous_state().CopyToVector();
 
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
