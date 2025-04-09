@@ -87,6 +87,9 @@ void DefineSceneGraphInspector(py::module m, T) {
             py::arg("role") = std::nullopt, cls_doc.GetGeometryIds.doc)
         .def("NumGeometriesWithRole", &Class::NumGeometriesWithRole,
             py::arg("role"), cls_doc.NumGeometriesWithRole.doc)
+        .def("NumDeformableGeometriesWithRole",
+            &Class::NumDeformableGeometriesWithRole, py::arg("role"),
+            cls_doc.NumGeometriesWithRole.doc)
         .def("NumDynamicGeometries", &Class::NumDynamicGeometries,
             cls_doc.NumDynamicGeometries.doc)
         .def("NumAnchoredGeometries", &Class::NumAnchoredGeometries,
@@ -156,6 +159,9 @@ void DefineSceneGraphInspector(py::module m, T) {
         .def("GetPoseInFrame", &Class::GetPoseInFrame,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPoseInFrame.doc)
+        .def("GetReferenceMesh", &Class::GetReferenceMesh,
+            py_rvp::reference_internal, py::arg("geometry_id"),
+            cls_doc.GetReferenceMesh.doc)
         .def("maybe_get_hydroelastic_mesh", &Class::maybe_get_hydroelastic_mesh,
             py::arg("geometry_id"), py_rvp::reference_internal,
             cls_doc.maybe_get_hydroelastic_mesh.doc)
@@ -170,6 +176,16 @@ void DefineSceneGraphInspector(py::module m, T) {
         .def("GetPerceptionProperties", &Class::GetPerceptionProperties,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPerceptionProperties.doc)
+        .def("GetDrivenRenderMeshes", &Class::GetDrivenRenderMeshes,
+            py_rvp::reference_internal, py::arg("geometry_id"), py::arg("role"),
+            cls_doc.GetDrivenRenderMeshes.doc)
+        .def("IsDeformableGeometry", &Class::IsDeformableGeometry,
+            py::arg("geometry_id"), cls_doc.IsDeformableGeometry.doc)
+        .def("GetAllDeformableGeometryIds", &Class::GetAllDeformableGeometryIds,
+             cls_doc.GetAllDeformableGeometryIds.doc)
+        .def("GetConvexHull", &Class::GetConvexHull,
+            py_rvp::reference_internal, py::arg("geometry_id"),
+            cls_doc.GetConvexHull.doc)
         .def("CollisionFiltered", &Class::CollisionFiltered,
             py::arg("geometry_id1"), py::arg("geometry_id2"),
             cls_doc.CollisionFiltered.doc)
