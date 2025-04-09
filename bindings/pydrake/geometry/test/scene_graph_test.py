@@ -41,7 +41,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         global_geometry = scene_graph.RegisterGeometry(
             source_id=global_source, frame_id=global_frame,
             geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
-                                          shape=mut.Sphere(1.),
+                                          shape=mut.Sphere(0.1),
                                           name="sphere1"))
         # We'll explicitly give sphere_2 a rigid hydroelastic representation.
         sphere_2 = scene_graph.RegisterGeometry(
@@ -66,6 +66,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
         mut.AddCompliantHydroelasticProperties(
             resolution_hint=1, hydroelastic_modulus=1e8, properties=props)
         scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_3,
+                               properties=props)
+        # We'll make sphere_4 deformable.
+        sphere_4 = scene_graph.RegisterDeformableGeometry(
+            source_id=global_source, frame_id=scene_graph.world_frame_id(),
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(0.1),
+                                          name="sphere4"), resolution_hint=1)
+        props = mut.ProximityProperties()
+        scene_graph.AssignRole(source_id=global_source, geometry_id=sphere_4,
                                properties=props)
 
         self.assertIsInstance(
@@ -106,13 +115,13 @@ class TestGeometrySceneGraph(unittest.TestCase):
                         in inspector.GetAllFrameIds())
         self.assertTrue(global_frame in inspector.GetAllFrameIds())
         self.assertIsInstance(inspector.world_frame_id(), mut.FrameId)
-        self.assertEqual(inspector.num_geometries(), 3)
+        self.assertEqual(inspector.num_geometries(), 4)
         self.assertEqual(
             len(inspector.GetAllGeometryIds()),
-            3)
+            4)
         self.assertEqual(
             len(inspector.GetAllGeometryIds(role=mut.Role.kProximity)),
-            2)
+            3)
 
         # Test both GeometrySet API as well as SceneGraphInspector's
         # GeometrySet API.
@@ -188,10 +197,14 @@ class TestGeometrySceneGraph(unittest.TestCase):
             ids = inspector.GetGeometryIds(geometry_set)
             self.assertEqual(len(ids), 1)
 
-        # Only the first sphere has no proximity properties. The latter two
-        # have hydroelastic properties (rigid and compliant, respectively).
+        # Only the first sphere has no proximity properties. The others have
+        # hydroelastic properties (rigid and compliant, respectively), or are
+        # deformable with a proximity role.
         self.assertEqual(
             inspector.NumGeometriesWithRole(role=mut.Role.kUnassigned), 1)
+        self.assertEqual(
+            inspector.NumDeformableGeometriesWithRole(
+                role=mut.Role.kProximity), 1)
         self.assertIsNone(
             inspector.maybe_get_hydroelastic_mesh(
                 geometry_id=global_geometry))
@@ -201,10 +214,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertIsInstance(
             inspector.maybe_get_hydroelastic_mesh(
                 geometry_id=sphere_3), mut.VolumeMesh)
-        self.assertEqual(inspector.NumDynamicGeometries(), 2)
+        self.assertEqual(inspector.NumDynamicGeometries(), 3)
         self.assertEqual(inspector.NumAnchoredGeometries(), 1)
-        # Sphere 2 and 3 have proximity roles; the pair is a candidate.
-        self.assertEqual(len(inspector.GetCollisionCandidates()), 1)
+        # Sphere 2, 3, and 4 have proximity roles; each possible pair is a
+        # candidate.
+        self.assertEqual(len(inspector.GetCollisionCandidates()), 3)
         self.assertTrue(inspector.SourceIsRegistered(source_id=global_source))
         # TODO(SeanCurtis-TRI) Remove this call at the same time as deprecating
         # the subsequent deprecation tests; it is only here to show that the
@@ -251,6 +265,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertIsInstance(
             inspector.GetPoseInFrame(geometry_id=global_geometry),
             RigidTransform_[float])
+        self.assertIsInstance(
+            inspector.GetReferenceMesh(geometry_id=sphere_4), mut.VolumeMesh)
+        self.assertTrue(inspector.IsDeformableGeometry(geometry_id=sphere_4))
+        self.assertEqual(inspector.GetAllDeformableGeometryIds(), [sphere_4])
+        self.assertIsNone(inspector.GetConvexHull(geometry_id=sphere_3))
         self.assertIsInstance(inspector.geometry_version(),
                               mut.GeometryVersion)
 
@@ -423,6 +442,17 @@ class TestGeometrySceneGraph(unittest.TestCase):
             geometry=new_geometry)
         self.assertEqual(model_inspector.num_geometries(), 1)
         self.assertEqual(context_inspector.num_geometries(), 1)
+
+        # Register a deformable geometry in the context.
+        deformable = scene_graph.RegisterDeformableGeometry(
+            context=context, source_id=global_source,
+            frame_id=scene_graph.world_frame_id(),
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(0.1),
+                                          name="deformable_sphere"),
+            resolution_hint=1)
+        self.assertEqual(model_inspector.GetAllDeformableGeometryIds(), [])
+        self.assertTrue(context_inspector.IsDeformableGeometry(deformable))
 
     @numpy_compare.check_all_types
     def test_scene_graph_change_shape(self, T):
