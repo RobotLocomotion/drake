@@ -209,7 +209,6 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
     std::vector<systems::CacheIndex> fem_solvers;
     std::vector<systems::CacheIndex> next_fem_states;
     std::vector<systems::CacheIndex> constraint_participations;
-    std::vector<systems::CacheIndex> dof_permutations;
     std::unordered_map<geometry::GeometryId, systems::CacheIndex>
         vertex_permutations;
     systems::CacheIndex participating_velocity_mux;
@@ -330,27 +329,23 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context, DeformableBodyIndex index,
       geometry::internal::ContactParticipation* constraint_participation) const;
 
-  /* Computes the partial permutation that maps degrees of freedom of the
-   deformable body with the given `index` to degrees of freedom that belong to
-   vertices of the body that participate in contact.
-   @pre result != nullptr. */
-  void CalcDofPermutation(
-      const systems::Context<T>& context, DeformableBodyIndex index,
-      contact_solvers::internal::PartialPermutation* result) const;
-
-  /* Eval version of CalcDofPermutation(). */
+  /* Evaluates the partial permutation that maps dof indices of the
+   deformable geometry with the given `id` to their corresponding values in the
+   constraint problem. */
   const contact_solvers::internal::PartialPermutation& EvalDofPermutation(
       const systems::Context<T>& context, DeformableBodyIndex index) const;
 
-  /* Computes the partial permutation that maps vertices of the
-   deformable geometry with the given `id` to vertices that belong to
-   vertices of the geometry that participate in contact.
+  /* Computes the partial permutation that maps vertex/dof indices of the
+   deformable geometry with the given `id` to their corresponding values in the
+   constraint problem.
    @pre result != nullptr. */
-  void CalcVertexPermutation(
+  void CalcPermutation(
       const systems::Context<T>& context, geometry::GeometryId id,
-      contact_solvers::internal::PartialPermutation* result) const;
+      contact_solvers::internal::VertexPartialPermutation* result) const;
 
-  /* Eval version of CalcVertexPermutation(). */
+  /* Evaluates the partial permutation that maps vertex indices of the
+   deformable geometry with the given `id` to their corresponding values in the
+   constraint problem. */
   const contact_solvers::internal::PartialPermutation& EvalVertexPermutation(
       const systems::Context<T>& context, geometry::GeometryId id) const;
 

@@ -92,6 +92,29 @@ bool PartialPermutation::participates(int i) const {
   return permutation_[i] >= 0;
 }
 
+void PartialPermutation::ExtendToFullPermutation() {
+  for (int i = 0; i < domain_size(); ++i) {
+    push(i);
+  }
+}
+
+VertexPartialPermutation::VertexPartialPermutation() = default;
+
+VertexPartialPermutation::VertexPartialPermutation(
+    std::vector<int> vertex_permutation) {
+  std::vector<int> dof_permutation(3 * vertex_permutation.size(), -1);
+  for (int i = 0; i < ssize(vertex_permutation); ++i) {
+    if (vertex_permutation[i] < 0) {
+      continue;
+    }
+    dof_permutation[3 * i] = 3 * vertex_permutation[i];
+    dof_permutation[3 * i + 1] = 3 * vertex_permutation[i] + 1;
+    dof_permutation[3 * i + 2] = 3 * vertex_permutation[i] + 2;
+  }
+  vertex_permutation_ = PartialPermutation(std::move(vertex_permutation));
+  dof_permutation_ = PartialPermutation(std::move(dof_permutation));
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
