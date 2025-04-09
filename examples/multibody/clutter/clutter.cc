@@ -85,11 +85,13 @@ DEFINE_bool(add_box_corners, false,
             "Adds collision points at the corners of each box.");
 
 // Scenario parameters.
+DEFINE_int32(num_piles, 4, "Number of piles (1-4).");
 DEFINE_int32(objects_per_pile, 5, "Number of objects per pile.");
 DEFINE_double(dz, 0.15, "Initial distance between objects in the pile.");
 DEFINE_double(scale_factor, 1.0, "Multiplicative factor to generate the pile.");
 DEFINE_bool(add_sink_walls, true, "Adds wall of a sink model.");
 DEFINE_bool(enable_boxes, false, "Make some of the objects boxes.");
+DEFINE_bool(random_offsets, true, "Use slight random offsets in initial positions.");
 
 // Visualization.
 DEFINE_bool(visualize, true, "Whether to visualize (true) or not (false).");
@@ -445,6 +447,7 @@ void SetObjectsIntoAPile(const MultibodyPlant<double>& plant,
 
   const int seed = 41;
   std::mt19937 generator(seed);
+  std::uniform_real_distribution<double> distribution(-1e-3, 1e-3);
 
   int num_objects = FLAGS_objects_per_pile;
 
@@ -456,11 +459,18 @@ void SetObjectsIntoAPile(const MultibodyPlant<double>& plant,
       double e = FLAGS_scale_factor > 0 ? i - 1 : num_objects - i;
       double scale = std::pow(std::abs(FLAGS_scale_factor), e);
 
-      const RotationMatrixd R_WB =
-          math::UniformlyRandomRotationMatrix<double>(&generator);
-      const Vector3d p_WB = offset + Vector3d(1.0e-3 * i, 0.0, z);
+      if (FLAGS_random_offsets) {
+        const RotationMatrixd R_WB =
+            math::UniformlyRandomRotationMatrix<double>(&generator);
+        const double x = distribution(generator);
+        const double y = distribution(generator);
+        const Vector3d p_WB = offset + Vector3d(x, y, z);
+        plant.SetFreeBodyPose(plant_context, body, RigidTransformd(R_WB, p_WB));
+      } else {
+        const Vector3d p_WB = offset + Vector3d(0.0, 0.0, z);
+        plant.SetFreeBodyPose(plant_context, body, RigidTransformd(p_WB));
+      }
 
-      plant.SetFreeBodyPose(plant_context, body, RigidTransformd(R_WB, p_WB));
       z += delta_z * scale;
       ++i;
     }
@@ -483,11 +493,12 @@ int do_main() {
 
   AddSink(&plant);
 
-  // AddSphere("sphere", radius, mass, friction, orange, &plant);
-  auto pile1 = AddObjects(FLAGS_scale_factor, &plant);
-  auto pile2 = AddObjects(FLAGS_scale_factor, &plant);
-  auto pile3 = AddObjects(FLAGS_scale_factor, &plant);
-  auto pile4 = AddObjects(FLAGS_scale_factor, &plant);
+  // Add objects to the scene.
+  DRAKE_DEMAND(FLAGS_num_piles > 0 && FLAGS_num_piles <= 4);
+  std::vector<std::vector<BodyIndex>> piles;
+  for (int i = 0; i < FLAGS_num_piles; ++i) {
+    piles.push_back(AddObjects(FLAGS_scale_factor, &plant));
+  }
 
   // Only box-sphere and sphere-sphere are allowed.
   if (!FLAGS_enable_box_box_collision) {
@@ -536,16 +547,14 @@ int do_main() {
   // such that X_WB is an identity transform and B's spatial velocity is zero.
   plant.SetDefaultContext(&plant_context);
 
-  SetObjectsIntoAPile(plant, Vector3d(length / 4, width / 4, 0), pile1,
-                      &plant_context);
+  // Set the initial position of the objects.
+  for (int i = 0; i < FLAGS_num_piles; ++i) {
+    const double x = (i % 2 == 0) ? -length / 4 : length / 4;
+    const double y = (i / 2 == 0) ? -width / 4 : width / 4;
 
-  SetObjectsIntoAPile(plant, Vector3d(-length / 4, width / 4, 0), pile2,
-                      &plant_context);
-
-  SetObjectsIntoAPile(plant, Vector3d(-length / 4, -width / 4, 0), pile3,
-                      &plant_context);
-  SetObjectsIntoAPile(plant, Vector3d(length / 4, -width / 4, 0), pile4,
-                      &plant_context);
+    SetObjectsIntoAPile(plant, Vector3d(x, y, 0.0), piles[i],
+                       &plant_context);
+  }
 
   auto simulator =
       MakeSimulatorFromGflags(*diagram, std::move(diagram_context));
@@ -628,7 +637,8 @@ int do_main() {
   simulator->set_publish_every_time_step(true);
   simulator->Initialize();
   if (FLAGS_visualize) {
-    std::cout << "Press any key to continue ...\n";
+    // Wait for meshcat to load
+    std::cout << "Press [ENTER] to continue ...\n";
     getchar();
   }
 
@@ -647,6 +657,12 @@ int do_main() {
   meshcat->PublishRecording();
 
   PrintSimulatorStatistics(*simulator);
+
+  if (FLAGS_visualize) {
+    // Wait for meshcat to finish rendering.
+    std::cout << "Press [ENTER] to quit ...\n";
+    getchar();
+  }
 
   return 0;
 }
