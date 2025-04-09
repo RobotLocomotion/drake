@@ -86,7 +86,25 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
   void DoResetCachedJacobianRelatedMatrices() final;
 
   void DoResetImplicitIntegratorStatistics() final;
- 
+
+  // The main step function.
+  // @returns `true` if successful; on `true`, the time and continuous state
+  //          will be advanced in the context (e.g., from t0 to t0 + h). On a
+  //          `false` return, the time and continuous state in the context will
+  //          be restored to its original value (at t0).
+  bool DoImplicitIntegratorStep(const T& h) final;
+
+  // Use Newton-Raphson to solve k = f(t, x₀ + γ h k). 
+  //
+  // This function will recursively call itself with escalating `trial` values,
+  // with higher values corresponding to more computationally expensive (but
+  // more likely to succeed) methods.
+  //
+  // Returns true if the Newton-Raphson process converged. Returning false
+  // indicates convergence failure and will trigger a reduction in h.
+  bool NewtonSolve(const T& t, const T& h, const VectorX<T>& x0,
+                   VectorX<T>* k, int trial = 1);
+
   // Compute and factor the iteration matrix A = [I - γhJ] for the Newton steps.
   // Note that the the "S" in SDIRK means that the iteration matrix has the same
   // structure across all stages.
@@ -99,6 +117,9 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
 
   // Intermediate variables to avoid heap allocations
   VectorX<T> x_, k1_, k2_;
+ 
+  // Tracks the number of Newton-Raphson iterations
+  int64_t num_nr_iterations_{0};
 
   // Constants defined in the Butcher tableau
   const double gamma_ = 1.0 + std::sqrt(2.0) / 2.0;
