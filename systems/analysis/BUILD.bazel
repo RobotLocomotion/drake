@@ -631,6 +631,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "sdirk2_integrator_test",
+    deps = [
+        ":sdirk2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "convex_integrator_test",
     deps = [
         ":convex_integrator",
