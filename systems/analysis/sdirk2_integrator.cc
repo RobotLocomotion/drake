@@ -184,6 +184,7 @@ bool Sdirk2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
   // x̂ = x₀ + (1-α)hk₁ + αhk₂
   err_est_vec_ = x0 + (1 - alpha_) * h * k1_ + alpha_ * h * k2_;
   err_est_vec_ -= context->get_continuous_state().CopyToVector();
+
   this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
 
   return true;  // step was successful

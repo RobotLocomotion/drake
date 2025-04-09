@@ -27,16 +27,16 @@ GTEST_TEST(Sdirk2IntegratorTest, SpringMass) {
   spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Set up the integrator
-  const double h = 1e-3;
-  const double accuracy = 0.001;
+  const double h = 1e-2;
+  const double accuracy = 0.01;
   Sdirk2Integrator<double> integrator(spring_mass, context.get());
   integrator.set_target_accuracy(accuracy);
   integrator.set_maximum_step_size(h);
-  integrator.set_fixed_step_mode(true);
+  integrator.set_fixed_step_mode(false);
   integrator.Initialize();
 
   // Integrate the system
-  const double t_final = 0.1;
+  const double t_final = 0.2;
   integrator.IntegrateWithMultipleStepsToTime(t_final);
   const double q = spring_mass.get_position(*context);
   const double v = spring_mass.get_velocity(*context);
@@ -47,10 +47,8 @@ GTEST_TEST(Sdirk2IntegratorTest, SpringMass) {
   spring_mass.GetClosedFormSolution(initial_position, initial_velocity, t_final,
                                     &q_ref, &v_ref);
 
-  fmt::print("q     = {}, v     = {}\n", q, v);
-  fmt::print("q_ref = {}, v_ref = {}\n", q_ref, v_ref);
-  // EXPECT_NEAR(q, q_ref, accuracy);
-  // EXPECT_NEAR(v, v_ref, accuracy);
+  EXPECT_NEAR(q, q_ref, accuracy);
+  EXPECT_NEAR(v, v_ref, accuracy);
 }
 
 }  // namespace analysis_test
