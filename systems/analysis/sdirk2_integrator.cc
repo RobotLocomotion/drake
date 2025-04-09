@@ -33,7 +33,34 @@ void Sdirk2Integrator<T>::DoResetCachedJacobianRelatedMatrices() {
 }
 
 template <class T>
-void Sdirk2Integrator<T>::DoInitialize() {}
+void Sdirk2Integrator<T>::DoInitialize() {
+  using std::isnan;
+
+  // Set default accuracy
+  const double kDefaultAccuracy = 1e-1;
+
+  // Set an artificial step size target, if not set already.
+  if (isnan(this->get_initial_step_size_target())) {
+    // Verify that maximum step size has been set.
+    if (isnan(this->get_maximum_step_size()))
+      throw std::logic_error(
+          "Neither initial step size target nor maximum "
+          "step size has been set!");
+
+    this->request_initial_step_size_target(this->get_maximum_step_size());
+  }
+
+  // Allocate intermediate variables
+  const int nx = this->get_system().num_continuous_states();
+  x_.resize(nx);
+  k1_.resize(nx);
+  k2_.resize(nx);
+
+  // Set the working accuracy to a reasonable default
+  double working_accuracy = this->get_target_accuracy();
+  if (isnan(working_accuracy)) working_accuracy = kDefaultAccuracy;
+  this->set_accuracy_in_use(working_accuracy);
+}
 
 template <class T>
 bool Sdirk2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
