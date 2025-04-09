@@ -55,6 +55,7 @@ void Sdirk2Integrator<T>::DoInitialize() {
   x_.resize(nx);
   k1_.resize(nx);
   k2_.resize(nx);
+  err_est_vec_.resize(nx);
 
   // Set the working accuracy to a reasonable default
   double working_accuracy = this->get_target_accuracy();
@@ -167,8 +168,6 @@ bool Sdirk2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
     return false; 
   }
 
-  fmt::print("k1 = {}\n", fmt_eigen(k1_.transpose()));
-
   // Second stage: solve for k₂ = f(t₀ + h, x₀ + (1-γ)hk₁ + γhk₂)
   const VectorX<T> x1 = x0 + (1 - gamma_) * h * k1_;
   if (!NewtonSolve(t0 + h, h, x1, &k2_)) {
@@ -177,15 +176,17 @@ bool Sdirk2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
     context->SetTimeAndContinuousState(t0, x0);
     return false; 
   }
-  
-  fmt::print("k2 = {}\n", fmt_eigen(k2_.transpose()));
 
   // Set the new state: x = x₀ + (1-γ)hk₁ + γhk₂
   context->SetTimeAndContinuousState(t0 + h, x1 + gamma_ * h * k2_);
 
   // Set the error estimate using the lower-order embedded method: 
   // x̂ = x₀ + (1-α)hk₁ + αhk₂
-  return true;
+  err_est_vec_ = x0 + (1 - alpha_) * h * k1_ + alpha_ * h * k2_;
+  err_est_vec_ -= context->get_continuous_state().CopyToVector();
+  this->get_mutable_error_estimate()->SetFromVector(err_est_vec_);
+
+  return true;  // step was successful
 }
 
 }  // namespace systems

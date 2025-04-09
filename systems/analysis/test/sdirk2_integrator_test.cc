@@ -27,8 +27,8 @@ GTEST_TEST(Sdirk2IntegratorTest, SpringMass) {
   spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Set up the integrator
-  const double h = 1e-1;
-  const double accuracy = 0.01;
+  const double h = 1e-3;
+  const double accuracy = 0.001;
   Sdirk2Integrator<double> integrator(spring_mass, context.get());
   integrator.set_target_accuracy(accuracy);
   integrator.set_maximum_step_size(h);

@@ -117,12 +117,15 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
 
   // Intermediate variables to avoid heap allocations
   VectorX<T> x_, k1_, k2_;
+
+  // Storage for the error estimate x - x̂
+  VectorX<T> err_est_vec_;
  
   // Tracks the number of Newton-Raphson iterations
   int64_t num_nr_iterations_{0};
 
   // Constants defined in the Butcher tableau
-  static constexpr double gamma_ = 1.0 + std::sqrt(2.0) / 2.0;
+  static constexpr double gamma_ = 1.0 - std::sqrt(2.0) / 2.0;
   static constexpr double alpha_ = 2.0 - 5.0 * std::sqrt(2.0) / 4.0;
 };
 
