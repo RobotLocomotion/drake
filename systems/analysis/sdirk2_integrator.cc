@@ -40,7 +40,7 @@ void Sdirk2Integrator<T>::DoInitialize() {
   dx_state_ = this->get_system().AllocateTimeDerivatives();
 
   // Set default accuracy
-  const double kDefaultAccuracy = 1e-1;
+  const double kDefaultAccuracy = 1e-4;
 
   // Set an artificial step size target, if not set already.
   if (isnan(this->get_initial_step_size_target())) {
@@ -141,6 +141,8 @@ bool Sdirk2Integrator<T>::NewtonSolve(const T& t, const T& h,
     // Otherwise, continue to the next Newton-Raphson iteration.
     DRAKE_DEMAND(status ==
                  ImplicitIntegrator<T>::ConvergenceStatus::kNotConverged);
+
+    last_dk_norm = dk_norm;
 
     // Update the state to prepare the next iteration
     x_ = x0 + gamma_ * h * k;
