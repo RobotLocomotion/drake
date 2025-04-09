@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/systems/analysis/test_utilities/my_spring_mass_system.h"
+#include "drake/systems/analysis/test_utilities/quadratic_scalar_system.h"
 
 namespace drake {
 namespace systems {
@@ -49,6 +50,32 @@ GTEST_TEST(Sdirk2IntegratorTest, SpringMass) {
 
   EXPECT_NEAR(q, q_ref, accuracy);
   EXPECT_NEAR(v, v_ref, accuracy);
+}
+
+// Tests accuracy by integrating a quadratic system with a known solution,
+// x(t) = 7t² + 7t + x₀, over t ∈ [0, 1]. SDIRK2 is second
+// order, and uses the Taylor Series expansion
+//   x(t+h) ≈ x(t) + hx'(t) + ½h²x''(t) + O(h³).
+// This indicates that approximation error should be zero if x'''(t) = 0, which
+// is the case for this quadratic system.
+GTEST_TEST(Sdirk2IntegratorTest, QuadraticSystem) {
+  QuadraticScalarSystem quadratic(7);
+  auto context = quadratic.CreateDefaultContext();
+
+  const double x0 = quadratic.Evaluate(0);
+  const double t_final = 1.0;
+  context->get_mutable_continuous_state_vector()[0] = x0;
+
+  Sdirk2Integrator<double> integrator(quadratic, context.get());
+  integrator.set_maximum_step_size(t_final);
+  integrator.set_fixed_step_mode(true);
+  integrator.Initialize();
+  ASSERT_TRUE(integrator.IntegrateWithSingleFixedStepToTime(t_final));
+
+  const double x1_ref = quadratic.Evaluate(t_final);
+  const double x1 = context->get_continuous_state_vector()[0];
+
+  EXPECT_NEAR(x1, x1_ref, 10 * std::numeric_limits<double>::epsilon());
 }
 
 }  // namespace analysis_test
