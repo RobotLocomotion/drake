@@ -114,9 +114,13 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
 
   // The iteration matrix A = [I - γhJ] for the Newton steps.
   typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_;
+  
 
   // Intermediate variables to avoid heap allocations
   VectorX<T> x_, k1_, k2_;
+  
+  // The continuous state update vector used during Newton-Raphson.
+  std::unique_ptr<ContinuousState<T>> dx_state_;
 
   // Storage for the error estimate x - x̂
   VectorX<T> err_est_vec_;

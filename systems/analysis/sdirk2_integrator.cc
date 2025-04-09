@@ -35,6 +35,9 @@ void Sdirk2Integrator<T>::DoResetCachedJacobianRelatedMatrices() {
 template <class T>
 void Sdirk2Integrator<T>::DoInitialize() {
   using std::isnan;
+  
+  // Allocate storage for changes to state variables during Newton-Raphson.
+  dx_state_ = this->get_system().AllocateTimeDerivatives();
 
   // Set default accuracy
   const double kDefaultAccuracy = 1e-1;
@@ -118,8 +121,8 @@ bool Sdirk2Integrator<T>::NewtonSolve(const T& t, const T& h,
     k += dk;
 
     // Compute the norm of the update
-    // TODO(vincekurtz): use this->CalcStateChangeNorm instead
-    T dk_norm = dk.norm();
+    dx_state_->get_mutable_vector().SetFromVector(dk);
+    T dk_norm = this->CalcStateChangeNorm(*dx_state_);
 
     // Check for convergence
     typename ImplicitIntegrator<T>::ConvergenceStatus status =
