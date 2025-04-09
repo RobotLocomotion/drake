@@ -1,0 +1,109 @@
+#pragma once
+
+#include <memory>
+
+#include "drake/common/default_scalars.h"
+#include "drake/common/drake_copyable.h"
+#include "drake/systems/analysis/implicit_integrator.h"
+
+namespace drake {
+namespace systems {
+
+/**
+ A two-stage, second-order, stiffly accurate, L-stable, Singly Diagonally
+ Implicit Runge Kutta (SDIRK) integrator with embedded error estimation.
+
+ The Butcher tableau for this integrator is given by
+ <pre>
+  γ  | γ
+  1  | (1-γ)        γ
+ -----------------------------------------------------------------------------
+       (1-γ)        γ
+       (1-α)        α
+ </pre>
+ where γ = 1 + √2/2 and α = 2 - 5√2 / 4. The final row provides an embedded
+ first-order accurate solution for error control.
+
+ This method is described in [Kennedy, 2016], with error estimation coefficients
+ from Table 4 of [Blom, 2016].
+
+ - [Kennedy, 2016] C. Kennedy and M. Carpenter. "Diagonally implicit Runge-Kutta
+   methods for ordinary differential equations. A review." Sec. 4.1.2, 2016
+ - [Blom, 2016] D. Blom et al. "A comparison of Rosenbrock and ESDIRK methods
+   combined with iterative solvers for unsteady compressible flows." Advances in
+   Computational Mathematics 42 (2016): 1401-1426.
+
+ @tparam_nonsymbolic_scalar
+ @ingroup integrators
+ */
+template <class T>
+class Sdirk2Integrator final : public ImplicitIntegrator<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Sdirk2Integrator);
+
+  ~Sdirk2Integrator() override;
+
+  explicit Sdirk2Integrator(const System<T>& system,
+                                   Context<T>* context = nullptr)
+      : ImplicitIntegrator<T>(system, context) {}
+
+  bool supports_error_estimation() const final { return true; }
+
+  int get_error_estimate_order() const final { return 2; }
+
+ private:
+  // Implicit integrator statistics
+  int64_t do_get_num_newton_raphson_iterations() const final {
+    return num_nr_iterations_;
+  }
+
+  // The embedded error estimate means that no extra computations are devoted to
+  // the error estimate.
+  int64_t do_get_num_error_estimator_derivative_evaluations() const final {
+    return 0;
+  }
+  int64_t do_get_num_error_estimator_derivative_evaluations_for_jacobian()
+      const final {
+    return 0;
+  }
+  int64_t do_get_num_error_estimator_newton_raphson_iterations() const final {
+    return 0;
+  }
+  int64_t do_get_num_error_estimator_jacobian_evaluations() const final {
+    return 0;
+  }
+  int64_t do_get_num_error_estimator_iteration_matrix_factorizations()
+      const final {
+    return 0;
+  }
+ 
+  // Implicit integrator virtual function implementations
+  void DoInitialize() final;
+  
+  std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
+      const final;
+  
+  void DoResetCachedJacobianRelatedMatrices() final;
+
+  void DoResetImplicitIntegratorStatistics() final;
+ 
+  // Compute and factor the iteration matrix A = [I - γhJ] for the Newton steps.
+  // Note that the the "S" in SDIRK means that the iteration matrix has the same
+  // structure across all stages.
+  static void ComputeAndFactorIterationMatrix(
+      const MatrixX<T>& J, const T& h,
+      typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
+
+  // The iteration matrix A = [I - γhJ] for the Newton steps.
+  typename ImplicitIntegraor<T>::IterationMatrix iteration_matrix_;
+
+  // Intermediate variables to avoid heap allocations
+  VectorX<T> x_, k1_, k2_;
+
+  // Constants defined in the Butcher tableau
+  const double gamma_ = 1.0 + std::sqrt(2.0) / 2.0;
+  const double alpha_ = 2.0 - 5.0 * std::sqrt(2.0) / 4.0;
+}
+
+}  // namespace systems
+}  // namespace drake
