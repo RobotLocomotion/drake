@@ -13,7 +13,9 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/clarabel_solver.h"
+#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -30,6 +32,8 @@ using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::VPolytope;
 using math::RigidTransform;
 using solvers::MathematicalProgram;
+using solvers::MathematicalProgramResult;
+using solvers::SolverInterface;
 
 IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
     const multibody::RationalForwardKinematics* kin,
@@ -124,7 +128,8 @@ Eigen::VectorXd ComputeFaceTangentToDistCvxh(
     cvxh_vpoly.AddPointInSetConstraints(&prog, x);
     Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(dim, dim);
     prog.AddQuadraticErrorCost(identity, point, x);
-    auto result = solver.Solve(prog);
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
     DRAKE_THROW_UNLESS(result.is_success());
     a_face = point - result.GetSolution(x);
     return a_face;
@@ -354,8 +359,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
   // Preallocate the solver as we will be solving a lot of QPs in the loop,
   // specifically in ComputeFaceTangentToDistCvxh.
-  std::unique_ptr<SolverInterface> solver = MakeFirstAvailableSolver(
-      {solvers::MosekSolver::id(), solvers::ClarabelSolver::id()});
+  std::unique_ptr<SolverInterface> solver = solvers::MakeFirstAvailableSolver(
+      {solvers::GurobiSolver::id(), solvers::ClarabelSolver::id(),
+       solvers::MosekSolver::id(), solvers::OsqpSolver::id()});
   while (true) {
     log()->info("IrisZo outer iteration {}", iteration);
 
