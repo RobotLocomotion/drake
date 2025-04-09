@@ -21,6 +21,7 @@
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/runge_kutta5_integrator.h"
+#include "drake/systems/analysis/sdirk2_integrator.h"
 #include "drake/systems/analysis/semi_explicit_euler_integrator.h"
 #include "drake/systems/analysis/velocity_implicit_euler_integrator.h"
 #include "drake/systems/framework/leaf_system.h"
@@ -171,6 +172,7 @@ GetAllNamedConfigureIntegratorFuncs() {
           MakeConfigurator<T, RungeKutta2Integrator>(),
           MakeConfigurator<T, RungeKutta3Integrator>(),
           MakeConfigurator<T, RungeKutta5Integrator>(),
+          MakeConfigurator<T, Sdirk2Integrator>(),
           MakeConfigurator<T, SemiExplicitEulerIntegrator>(),
           MakeConfigurator<T, VelocityImplicitEulerIntegrator>(),
       }};

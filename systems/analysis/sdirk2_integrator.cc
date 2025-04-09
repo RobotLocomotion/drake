@@ -107,10 +107,9 @@ bool Sdirk2Integrator<T>::NewtonSolve(const T& t, const T& h,
     num_nr_iterations_++;  // log number of newton iterations
 
     // Compute A = [I - γ h J]
-    this->FreshenMatricesIfFullNewton(t, x_, h,
-                                      ComputeAndFactorIterationMatrix,
+    this->FreshenMatricesIfFullNewton(t, x_, h, ComputeAndFactorIterationMatrix,
                                       &iteration_matrix_);
-    
+
     // Evaluate g(k) = k - f(t, x₀ + γ h k)
     VectorX<T> g = k - this->EvalTimeDerivatives(*context).CopyToVector();
 
@@ -119,7 +118,7 @@ bool Sdirk2Integrator<T>::NewtonSolve(const T& t, const T& h,
     k += dk;
 
     // Compute the norm of the update
-    // TODO: use this->CalcStateChangeNorm instead
+    // TODO(vincekurtz): use this->CalcStateChangeNorm instead
     T dk_norm = dk.norm();
 
     // Check for convergence
@@ -141,14 +140,14 @@ bool Sdirk2Integrator<T>::NewtonSolve(const T& t, const T& h,
     x_ = x0 + gamma_ * h * k;
     context->SetTimeAndContinuousState(t, x_);
   }
-  
+
   // If Jacobian and iteration matrix factorizations are not reused, there is
   // nothing else we can try. The solve has failed and we'll need error control
   // to reduce h.
   if (!this->get_reuse()) {
     return false;
   }
- 
+
   // Try again with a higher trial number. This will be more aggressive about
   // recomputing Jacobians and matrix factorizations.
   return NewtonSolve(t, h, x0, k_ptr, trial + 1);
@@ -165,7 +164,7 @@ bool Sdirk2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
     // Early exit and reset the state if the Newton-Raphson process fails
     DRAKE_LOGGER_DEBUG("SDIRK2: k1 solve failed");
     context->SetTimeAndContinuousState(t0, x0);
-    return false; 
+    return false;
   }
 
   // Second stage: solve for k₂ = f(t₀ + h, x₀ + (1-γ)hk₁ + γhk₂)
@@ -174,13 +173,13 @@ bool Sdirk2Integrator<T>::DoImplicitIntegratorStep(const T& h) {
     // Early exit and reset the state if the Newton-Raphson process fails
     DRAKE_LOGGER_DEBUG("SDIRK2: k2 solve failed");
     context->SetTimeAndContinuousState(t0, x0);
-    return false; 
+    return false;
   }
 
   // Set the new state: x = x₀ + (1-γ)hk₁ + γhk₂
   context->SetTimeAndContinuousState(t0 + h, x1 + gamma_ * h * k2_);
 
-  // Set the error estimate using the lower-order embedded method: 
+  // Set the error estimate using the lower-order embedd
   // x̂ = x₀ + (1-α)hk₁ + αhk₂
   err_est_vec_ = x0 + (1 - alpha_) * h * k1_ + alpha_ * h * k2_;
   err_est_vec_ -= context->get_continuous_state().CopyToVector();

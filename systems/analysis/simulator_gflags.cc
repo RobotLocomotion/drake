@@ -41,6 +41,7 @@ DEFINE_string(simulator_integration_scheme,
               "'runge_kutta2', "
               "'runge_kutta3', "
               "'runge_kutta5', "
+              "'sdirk2', "
               "'semi_explicit_euler', "
               "'velocity_implicit_euler'");
 

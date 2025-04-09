@@ -44,7 +44,7 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
   ~Sdirk2Integrator() override;
 
   explicit Sdirk2Integrator(const System<T>& system,
-                                   Context<T>* context = nullptr)
+                            Context<T>* context = nullptr)
       : ImplicitIntegrator<T>(system, context) {}
 
   bool supports_error_estimation() const final { return true; }
@@ -76,13 +76,13 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
       const final {
     return 0;
   }
- 
+
   // Implicit integrator virtual function implementations
   void DoInitialize() final;
-  
+
   std::unique_ptr<ImplicitIntegrator<T>> DoImplicitIntegratorClone()
       const final;
-  
+
   void DoResetCachedJacobianRelatedMatrices() final;
 
   void DoResetImplicitIntegratorStatistics() final;
@@ -94,7 +94,7 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
   //          be restored to its original value (at t0).
   bool DoImplicitIntegratorStep(const T& h) final;
 
-  // Use Newton-Raphson to solve k = f(t, x₀ + γ h k). 
+  // Use Newton-Raphson to solve k = f(t, x₀ + γ h k).
   //
   // This function will recursively call itself with escalating `trial` values,
   // with higher values corresponding to more computationally expensive (but
@@ -102,8 +102,8 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
   //
   // Returns true if the Newton-Raphson process converged. Returning false
   // indicates convergence failure and will trigger a reduction in h.
-  bool NewtonSolve(const T& t, const T& h, const VectorX<T>& x0,
-                   VectorX<T>* k, int trial = 1);
+  bool NewtonSolve(const T& t, const T& h, const VectorX<T>& x0, VectorX<T>* k,
+                   int trial = 1);
 
   // Compute and factor the iteration matrix A = [I - γhJ] for the Newton steps.
   // Note that the the "S" in SDIRK means that the iteration matrix has the same
@@ -120,7 +120,7 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
 
   // Storage for the error estimate x - x̂
   VectorX<T> err_est_vec_;
- 
+
   // Tracks the number of Newton-Raphson iterations
   int64_t num_nr_iterations_{0};
 
