@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":scalar_dense_output",
         ":scalar_initial_value_problem",
         ":scalar_view_dense_output",
+        ":sdirk2_integrator",
         ":semi_explicit_euler_integrator",
         ":simulator",
         ":simulator_config",
@@ -348,6 +349,17 @@ drake_cc_library(
         ":bogacki_shampine3_integrator",
         ":implicit_integrator",
         ":runge_kutta2_integrator",
+    ],
+)
+
+drake_cc_library(
+    name = "sdirk2_integrator",
+    srcs = ["sdirk2_integrator.cc"],
+    hdrs = [
+        "sdirk2_integrator.h",
+    ],
+    deps = [
+        ":implicit_integrator",
     ],
 )
 

@@ -113,7 +113,7 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
       typename ImplicitIntegrator<T>::IterationMatrix* iteration_matrix);
 
   // The iteration matrix A = [I - γhJ] for the Newton steps.
-  typename ImplicitIntegraor<T>::IterationMatrix iteration_matrix_;
+  typename ImplicitIntegrator<T>::IterationMatrix iteration_matrix_;
 
   // Intermediate variables to avoid heap allocations
   VectorX<T> x_, k1_, k2_;
@@ -124,7 +124,7 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
   // Constants defined in the Butcher tableau
   const double gamma_ = 1.0 + std::sqrt(2.0) / 2.0;
   const double alpha_ = 2.0 - 5.0 * std::sqrt(2.0) / 4.0;
-}
+};
 
 }  // namespace systems
 }  // namespace drake
