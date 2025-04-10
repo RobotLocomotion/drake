@@ -163,14 +163,13 @@ Note that CDash pages may take a minute to populate.
 In addition, check the [automatically generated documentation repo](https://github.com/RobotLocomotion/RobotLocomotion.github.io/commits/master)
 to confirm that the latest commit has a green circle, not a red x.
 
-## Monitor the Cache Servers
+## Monitor the Cache Server
 
-Check once per week that caching is still enabled, there are currently two cache
-servers that need to be confirmed.  Open each of the following jobs and search
-for ``REMOTE_CACHE_KEY`` and confirm it has a value:
+Check once per week that caching is still enabled for Linux builds (there are
+currently no cache servers in use for macOS). Open the following job and
+search for ``REMOTE_CACHE_KEY`` and confirm it has a value:
 
 - [https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/linux-noble-clang-bazel-continuous-release/lastBuild/consoleFull)
-- [https://drake-jenkins.csail.mit.edu/job/mac-arm-sonoma-clang-bazel-continuous-release/lastBuild/consoleFull](https://drake-jenkins.csail.mit.edu/job/mac-arm-sonoma-clang-bazel-continuous-release/lastBuild/consoleFull)
 
 Message indicating a problem:
 
@@ -182,7 +181,7 @@ Message indicating success:
 
 The exact key hash is not important, it's just important that it's non-empty.
 
-If there is an issue with either cache server, post the details on the
+If there is an issue with the cache server, post the details on the
 [#buildcop](https://drakedevelopers.slack.com/messages/buildcop/details/)
 channel on Slack, ensuring that `@betsymcphail` is mentioned in the message.
 
@@ -312,7 +311,7 @@ eventually and the build should run, once Jenkins gets a node booted up.
 ## Infrastructure Collapse
 
 Occasionally, some piece of CI infrastructure completely stops working. For
-instance, GitHub, AWS, or MacStadium could have an outage, or our Jenkins server
+instance, GitHub or AWS could have an outage, or our Jenkins server
 could crash or become wedged.  During infrastructure collapses, lots of builds
 will turn red and stay red.
 
