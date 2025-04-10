@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/mpm/grid_data.h"
 #include "drake/multibody/mpm/mass_and_momentum.h"
 #include "drake/multibody/mpm/particle_data.h"
@@ -193,6 +194,20 @@ class SparseGrid {
   void IterateGrid(const std::function<void(GridData<T>*)>& func) {
     spgrid_.IterateGrid(func);
   }
+
+  /* Iterates over all grid nodes in the grid and applies the given function
+   `func` to each grid node. */
+  void IterateConstGrid(
+      const std::function<void(const GridData<T>&)>& func) const {
+    spgrid_.IterateConstGrid(func);
+  }
+
+  /* Sets the indices of all active nodes in the grid and returns a
+   VertexPartialPermutation that maps the grid indices/dofs to the permuted grid
+   indices/dofs. With the permuted grid indices, grid nodes/dofs participating
+   in constraints come before nodes those don't participate in any constraint.
+  */
+  contact_solvers::internal::VertexPartialPermutation SetNodeIndices();
 
  private:
   /* Grid spacing (in meters). */

@@ -12,6 +12,8 @@ namespace mpm {
 namespace internal {
 namespace {
 
+using Eigen::Vector3i;
+
 template <typename Grid>
 class SparseGridTest : public ::testing::Test {};
 
@@ -122,7 +124,7 @@ TYPED_TEST(SparseGridTest, PadData) {
   /* Base node is (2, 3, 0). */
   const Vector3<T> q_WP(0.021, 0.031, -0.001);
   const Vector3<double> q_WP_double(0.021, 0.031, -0.001);
-  const Vector3<int> base_node = ComputeBaseNode<double>(q_WP_double / dx);
+  const Vector3i base_node = ComputeBaseNode<double>(q_WP_double / dx);
   const uint64_t base_node_offset = grid.spgrid().CoordinateToOffset(base_node);
   std::vector<Vector3<T>> q_WPs = {q_WP};
   grid.Allocate(q_WPs);
@@ -249,7 +251,7 @@ TYPED_TEST(SparseGridTest, ApplyGridToParticleKernel) {
   };
 
   grid.ApplyParticleToGridKernel(particle_data, p2g_kernel);
-  const std::vector<std::pair<Vector3<int>, GridData<T>>> grid_data =
+  const std::vector<std::pair<Vector3i, GridData<T>>> grid_data =
       grid.GetGridData();
   for (const auto& [_, data] : grid_data) {
     /* If the grid node is in the support of the particle, then the velocity
@@ -284,6 +286,7 @@ TYPED_TEST(SparseGridTest, ApplyGridToParticleKernel) {
   grid.ApplyGridToParticleKernel(&particle_data, g2p_kernel);
 }
 
+/* Tests both IterateGrid and IterateConstGrid. */
 TYPED_TEST(SparseGridTest, IterateGrid) {
   using Grid = TypeParam;
   using T = typename Grid::Scalar;
@@ -302,12 +305,102 @@ TYPED_TEST(SparseGridTest, IterateGrid) {
   grid.IterateGrid(set_grid_data);
 
   /* Confirm the data is set as expected. */
-  const std::vector<std::pair<Vector3<int>, GridData<T>>> grid_data =
+  const std::vector<std::pair<Vector3i, GridData<T>>> grid_data =
       grid.GetGridData();
+  T expected_total_mass = 0.0;
   for (const auto& [_, data] : grid_data) {
     EXPECT_EQ(data.v, Vector3<T>(1, 2, 3));
     EXPECT_EQ(data.m, 1.0);
+    expected_total_mass += data.m;
   }
+
+  T total_mass = 0.0;
+  auto count_total_mass = [&total_mass](const GridData<T>& data) {
+    total_mass += data.m;
+  };
+  grid.IterateConstGrid(count_total_mass);
+  EXPECT_EQ(total_mass, expected_total_mass);
+}
+
+TYPED_TEST(SparseGridTest, SetNodeIndices) {
+  using Grid = TypeParam;
+  using T = typename Grid::Scalar;
+  using U = typename Grid::NodeScalarType;
+
+  const double dx = 0.01;
+  Grid grid(dx);
+  const Vector3<double> q_WP0(0.001, 0.001, 0.001);
+  const Vector3<double> q_WP1(0.011, 0.001, 0.001);
+  std::vector<Vector3<double>> q_WPs = {q_WP0, q_WP1};
+  ParticleData<T> particle_data;
+  particle_data.AddParticles(q_WPs, 1.0, fem::DeformableBodyConfig<double>());
+  /* The first particle is not in constraint while the second is. */
+  particle_data.mutable_in_constraint() = {0, 1};
+
+  grid.Allocate(particle_data.x());
+  /* Give positive mass to all grid nodes affected by particles, but only set
+   the flag for grid nodes affected by particles that are in constraint. */
+  auto splat_flag = [](int p_index, const Pad<Vector3<U>>&,
+                       const ParticleData<T>& particle,
+                       Pad<GridData<T>>* grid_data) {
+    const int in_constraint = particle.in_constraint()[p_index];
+    for (int a = 0; a < 3; ++a) {
+      for (int b = 0; b < 3; ++b) {
+        for (int c = 0; c < 3; ++c) {
+          (*grid_data)[a][b][c].m = 1.0;
+          if (in_constraint) {
+            (*grid_data)[a][b][c].index_or_flag.set_flag();
+          }
+        }
+      }
+    }
+  };
+  grid.ApplyParticleToGridKernel(particle_data, splat_flag);
+  const contact_solvers::internal::VertexPartialPermutation
+      partial_permutation = grid.SetNodeIndices();
+  contact_solvers::internal::PartialPermutation vertex_permutation =
+      partial_permutation.vertex();
+
+  struct Vector3iLess {
+    bool operator()(const Eigen::Vector3i& a, const Eigen::Vector3i& b) const {
+      return std::lexicographical_compare(a.data(), a.data() + 3, b.data(),
+                                          b.data() + 3);
+    }
+  };
+
+  std::set<Eigen::Vector3i, Vector3iLess> participating_nodes;
+  std::set<Eigen::Vector3i, Vector3iLess> nonparticipating_nodes;
+  for (int a = 0; a <= 2; ++a) {
+    for (int b = -1; b <= 1; ++b) {
+      for (int c = -1; c <= 1; ++c) {
+        participating_nodes.insert(Vector3i{a, b, c});
+      }
+    }
+  }
+  for (int b = -1; b <= 1; ++b) {
+    for (int c = -1; c <= 1; ++c) {
+      nonparticipating_nodes.insert(Vector3i{-1, b, c});
+    }
+  }
+  ASSERT_EQ(participating_nodes.size(), 27);
+  ASSERT_EQ(nonparticipating_nodes.size(), 9);
+  const std::vector<std::pair<Vector3i, GridData<T>>> grid_data =
+      grid.GetGridData();
+  int num_participating_nodes = 0;
+  int num_nonparticipating_nodes = 0;
+  for (const auto& [node, data] : grid_data) {
+    if (participating_nodes.contains(node)) {
+      ++num_participating_nodes;
+      ASSERT_TRUE(data.index_or_flag.is_index());
+      EXPECT_TRUE(vertex_permutation.participates(data.index_or_flag.index()));
+    } else if (nonparticipating_nodes.contains(node)) {
+      ++num_nonparticipating_nodes;
+      ASSERT_TRUE(data.index_or_flag.is_index());
+      EXPECT_FALSE(vertex_permutation.participates(data.index_or_flag.index()));
+    }
+  }
+  EXPECT_EQ(num_participating_nodes, participating_nodes.size());
+  EXPECT_EQ(num_nonparticipating_nodes, nonparticipating_nodes.size());
 }
 
 }  // namespace

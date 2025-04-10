@@ -62,7 +62,7 @@ class ParticleData {
   /* Const accessors for state-dependent data. */
   const std::vector<int>& in_constraint() const { return in_constraint_; }
   const std::vector<DeformationGradientDataVariant<T>>&
-  deformation_gradient_data() {
+  deformation_gradient_data() const {
     return deformation_gradient_data_;
   }
   const std::vector<Matrix3<T>>& tau_volume() const { return tau_volume_; }
