@@ -34,6 +34,7 @@ drake_cc_package_library(
         ":radau_integrator",
         ":realtime_rate_calculator",
         ":region_of_attraction",
+        ":rosenbrock2_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":runge_kutta5_integrator",
@@ -91,6 +92,7 @@ drake_cc_library(
         ":explicit_euler_integrator",
         ":implicit_euler_integrator",
         ":radau_integrator",
+        ":rosenbrock2_integrator",
         ":runge_kutta2_integrator",
         ":runge_kutta3_integrator",
         ":runge_kutta5_integrator",
@@ -301,6 +303,18 @@ drake_cc_library(
     deps = [
         ":implicit_integrator",
         ":runge_kutta2_integrator",
+        "//math:gradient",
+    ],
+)
+
+drake_cc_library(
+    name = "rosenbrock2_integrator",
+    srcs = ["rosenbrock2_integrator.cc"],
+    hdrs = [
+        "rosenbrock2_integrator.h",
+    ],
+    deps = [
+        ":implicit_integrator",
         "//math:gradient",
     ],
 )
@@ -670,6 +684,15 @@ drake_cc_googletest(
     deps = [
         ":explicit_euler_integrator",
         "//common/test_utilities:expect_no_throw",
+        "//systems/analysis/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rosenbrock2_integrator_test",
+    deps = [
+        ":rosenbrock2_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
         "//systems/analysis/test_utilities",
     ],
 )

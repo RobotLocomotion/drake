@@ -18,6 +18,7 @@
 #include "drake/systems/analysis/explicit_euler_integrator.h"
 #include "drake/systems/analysis/implicit_euler_integrator.h"
 #include "drake/systems/analysis/radau_integrator.h"
+#include "drake/systems/analysis/rosenbrock2_integrator.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/runge_kutta5_integrator.h"
@@ -169,6 +170,7 @@ GetAllNamedConfigureIntegratorFuncs() {
           MakeConfigurator<T, ImplicitEulerIntegrator>(),
           MakeConfigurator<T, Radau1Integrator>(),
           MakeConfigurator<T, Radau3Integrator>(),
+          MakeConfigurator<T, Rosenbrock2Integrator>(),
           MakeConfigurator<T, RungeKutta2Integrator>(),
           MakeConfigurator<T, RungeKutta3Integrator>(),
           MakeConfigurator<T, RungeKutta5Integrator>(),

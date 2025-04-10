@@ -153,11 +153,12 @@ GTEST_TEST(IntegratorTest, SpringMassStep) {
 
   // Setup the initial position and initial velocity.
   const double initial_position = 0.1;
-  const double initial_velocity = 0.01;
+  const double initial_velocity = 2.1;
   const double omega = std::sqrt(spring_k / mass);
 
   // Set initial condition.
   spring_mass.set_position(context.get(), initial_position);
+  spring_mass.set_velocity(context.get(), initial_velocity);
 
   // Take all the defaults.
   integrator.Initialize();
