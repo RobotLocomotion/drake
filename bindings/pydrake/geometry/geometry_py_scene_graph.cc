@@ -87,12 +87,17 @@ void DefineSceneGraphInspector(py::module m, T) {
             py::arg("role") = std::nullopt, cls_doc.GetGeometryIds.doc)
         .def("NumGeometriesWithRole", &Class::NumGeometriesWithRole,
             py::arg("role"), cls_doc.NumGeometriesWithRole.doc)
+        .def("NumDeformableGeometriesWithRole",
+            &Class::NumDeformableGeometriesWithRole, py::arg("role"),
+            cls_doc.NumGeometriesWithRole.doc)
         .def("NumDynamicGeometries", &Class::NumDynamicGeometries,
             cls_doc.NumDynamicGeometries.doc)
         .def("NumAnchoredGeometries", &Class::NumAnchoredGeometries,
             cls_doc.NumAnchoredGeometries.doc)
         .def("GetCollisionCandidates", &Class::GetCollisionCandidates,
             cls_doc.GetCollisionCandidates.doc)
+        .def("geometry_version", &Class::geometry_version,
+            py_rvp::reference_internal, cls_doc.geometry_version.doc)
         // Sources and source-related data.
         .def("SourceIsRegistered", &Class::SourceIsRegistered,
             py::arg("source_id"), cls_doc.SourceIsRegistered.doc)
@@ -170,13 +175,20 @@ void DefineSceneGraphInspector(py::module m, T) {
         .def("GetPerceptionProperties", &Class::GetPerceptionProperties,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPerceptionProperties.doc)
+        .def("GetReferenceMesh", &Class::GetReferenceMesh,
+            py_rvp::reference_internal, py::arg("geometry_id"),
+            cls_doc.GetReferenceMesh.doc)
+        .def("IsDeformableGeometry", &Class::IsDeformableGeometry,
+            py::arg("geometry_id"), cls_doc.IsDeformableGeometry.doc)
+        .def("GetAllDeformableGeometryIds", &Class::GetAllDeformableGeometryIds,
+            cls_doc.GetAllDeformableGeometryIds.doc)
+        .def("GetConvexHull", &Class::GetConvexHull, py_rvp::reference_internal,
+            py::arg("geometry_id"), cls_doc.GetConvexHull.doc)
         .def("CollisionFiltered", &Class::CollisionFiltered,
             py::arg("geometry_id1"), py::arg("geometry_id2"),
             cls_doc.CollisionFiltered.doc)
         .def("CloneGeometryInstance", &Class::CloneGeometryInstance,
-            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc)
-        .def("geometry_version", &Class::geometry_version,
-            py_rvp::reference_internal, cls_doc.geometry_version.doc);
+            py::arg("geometry_id"), cls_doc.CloneGeometryInstance.doc);
   }
 }
 
@@ -263,6 +275,31 @@ void DefineSceneGraph(py::module m, T) {
             },
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def(
+            "RegisterDeformableGeometry",
+            [](Class& self, SourceId source_id, FrameId frame_id,
+                const GeometryInstance& geometry, double resolution_hint) {
+              // Ditto the comment on RegisterGeometry, above.
+              return self.RegisterDeformableGeometry(source_id, frame_id,
+                  std::make_unique<GeometryInstance>(geometry),
+                  resolution_hint);
+            },
+            py::arg("source_id"), py::arg("frame_id"), py::arg("geometry"),
+            py::arg("resolution_hint"),
+            cls_doc.RegisterDeformableGeometry.doc_4args)
+        .def(
+            "RegisterDeformableGeometry",
+            [](Class& self, systems::Context<T>* context, SourceId source_id,
+                FrameId frame_id, const GeometryInstance& geometry,
+                double resolution_hint) {
+              // Ditto the comment on RegisterGeometry, above.
+              return self.RegisterDeformableGeometry(context, source_id,
+                  frame_id, std::make_unique<GeometryInstance>(geometry),
+                  resolution_hint);
+            },
+            py::arg("context"), py::arg("source_id"), py::arg("frame_id"),
+            py::arg("geometry"), py::arg("resolution_hint"),
+            cls_doc.RegisterDeformableGeometry.doc_5args)
         .def("RenameGeometry", &Class::RenameGeometry, py::arg("geometry_id"),
             py::arg("name"), cls_doc.RenameGeometry.doc)
         .def("ChangeShape",
@@ -338,6 +375,15 @@ void DefineSceneGraph(py::module m, T) {
                 const std::string&>(&Class::GetRendererTypeName),
             py::arg("context"), py::arg("name"),
             cls_doc.GetRendererTypeName.doc_2args)
+        .def("GetRendererParameterYaml",
+            overload_cast_explicit<std::string, const std::string&>(
+                &Class::GetRendererParameterYaml),
+            py::arg("name"), cls_doc.GetRendererParameterYaml.doc_1args)
+        .def("GetRendererParameterYaml",
+            overload_cast_explicit<std::string, const systems::Context<T>&,
+                const std::string&>(&Class::GetRendererParameterYaml),
+            py::arg("context"), py::arg("name"),
+            cls_doc.GetRendererParameterYaml.doc_2args)
         // - Begin: AssignRole Overloads.
         // - - Proximity.
         .def(

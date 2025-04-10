@@ -164,22 +164,24 @@ TEST_F(CameraConfigFunctionsTest, InvalidParentBaseFrame) {
                               ".*invalid_frame.*");
 }
 
-/* Confirms that renderer_name is handled correctly.
-  - If a render engine is named that hasn't been previously created, a new
-    engine is added and the sensor is assigned to it.
-  - If a previously existing engine is named, no new engine is created and
-    the existing engine is shared.
-    - The error case where the same name is used with a different class is
-      dealt with in RendererNameReuse.
-  - The provided renderer_name and config.name is piped into the sensor.
-  This is independent of image type, so, we'll use rgb. */
+/* Confirms that renderer_name is handled correctly. Specifically, it examines
+ the configuration of the scene graph and diagram when a camera has successfully
+ been added with a *unique* RenderEngine.
+
+ For a non-unique RenderEngine (i.e., when CameraConfig::renderer_name names a
+ previously existing engine), see RendererNameReuse.
+
+ We'll test this on a single type of RenderEngine. */
 TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
   ASSERT_EQ(scene_graph_->RendererCount(), 0);
 
-  CameraConfig config;
+  // This will instantiate a RenderEngineVtk.
+  CameraConfig config{.renderer_name = "test_name"};
   ApplyCameraConfig(config, &builder_);
+  // An engine has been added.
   ASSERT_EQ(scene_graph_->RendererCount(), 1);
 
+  // An RgbdSensor has been added, with renderer_name set correctly.
   const auto& sensor1 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
       "rgbd_sensor_preview_camera");
   EXPECT_EQ(sensor1.default_color_render_camera().core().renderer_name(),
@@ -187,30 +189,12 @@ TEST_F(CameraConfigFunctionsTest, RendererClassBasic) {
   EXPECT_EQ(sensor1.default_depth_render_camera().core().renderer_name(),
             config.renderer_name);
 
-  // Now add second camera which uses the same name.
-  size_t previous_system_count = builder_.GetSystems().size();
-  config.name = config.name + "_the_other_one";
-  EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
-
-  // No new render engine added.
-  ASSERT_EQ(scene_graph_->RendererCount(), 1);
-  // New RgbdSensor added.
-  EXPECT_GT(builder_.GetSystems().size(), previous_system_count);
-  previous_system_count = builder_.GetSystems().size();
-  const auto& sensor2 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
-      "rgbd_sensor_preview_camera_the_other_one");
-  EXPECT_EQ(sensor2.default_color_render_camera().core().renderer_name(),
-            config.renderer_name);
-  EXPECT_EQ(sensor2.default_depth_render_camera().core().renderer_name(),
-            config.renderer_name);
-
-  // Third camera uses a unique name creates a unique render engine.
+  // Another camera with unique renderer name simply gets added.
   config.name = "just_for_test";
   config.renderer_name = "just_for_test";
   EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
   ASSERT_EQ(scene_graph_->RendererCount(), 2);
   // New RgbdSensor added.
-  EXPECT_GT(builder_.GetSystems().size(), previous_system_count);
   const auto& sensor3 = builder_.GetDowncastSubsystemByName<RgbdSensor>(
       "rgbd_sensor_just_for_test");
   EXPECT_EQ(sensor3.default_color_render_camera().core().renderer_name(),
@@ -285,47 +269,84 @@ TEST_F(CameraConfigFunctionsTest, RendererClassVariant) {
   }
 }
 
-/* Confirms the logic for when a renderer name is successfully used several
- times.
+/* Confirms the logic for when a renderer name is reused across CameraConfig
+ instances. The behavior depends on the configuration of the pre-existing
+ render engine and the `renderer_class` value of the new configuration.
 
-  - If a name is reused and the class is specified via parameters, the
-    parameterized spec must come first.
- */
+  - renderer_class is empty (the default value).
+    - The camera uses the existing engine with the given name.
+  - renderer_class simply names the same *type* of RenderEngine.
+    - The camera uses the existing engine with the given name.
+  - renderer_class provides parameters that match the existing engine's.
+    - The camera uses the existing engine with the given name.
+  - renderer_class provides the name of a *different* type of RenderEngine.
+    - Throws.
+  - renderer_class provides parameters for the same type, but with different
+    values.
+    - Throws.
+
+ When it doesn't throw, it should instantiate appropriate systems in the
+ diagram builder. */
 TEST_F(CameraConfigFunctionsTest, RendererNameReuse) {
-  int renderer_count = 0;
+  auto perform_test = [this](const auto& parameters, const auto& mutator,
+                             const std::string& renderer_class_name) {
+    int renderer_count = scene_graph_->RendererCount();
+    int system_count = ssize(builder_.GetSystems());
 
-  auto perform_test = [this, &renderer_count](const auto& parameters,
-                                              const std::string& name) {
-    CameraConfig config{.renderer_name = name + "_renderer",
-                        .renderer_class = parameters,
-                        .name = name + "_initial_params_succeeds"};
+    CameraConfig config{
+        .renderer_name = renderer_class_name + "_renderer",
+        .renderer_class = parameters,
+        .name = renderer_class_name + "_initial_params_succeeds"};
     ApplyCameraConfig(config, &builder_);
     EXPECT_EQ(scene_graph_->RendererCount(), ++renderer_count);
     EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
-                testing::EndsWith(name));
+                testing::EndsWith(renderer_class_name));
+    EXPECT_GT(ssize(builder_.GetSystems()), system_count);
+    system_count = ssize(builder_.GetSystems());
 
-    // Another camera config using parameters should throw.
-    config.name = name + "_second_params_throws";
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ApplyCameraConfig(config, &builder_),
-        ".*Only the first instance of the named renderer can use parameters.");
-
-    // However, camera config using the same class name is happy.
-    config.name = name + "_class_name_succeeds";
-    config.renderer_class = name;
+    // Camera config shares renderer name but has unspecified renderer_class;
+    // it shares renderer with previous engine.
+    config.name = renderer_class_name + "_shared_name_default_class";
+    config.renderer_class = {};
     EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
     EXPECT_EQ(scene_graph_->RendererCount(), renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith(renderer_class_name));
+    EXPECT_GT(ssize(builder_.GetSystems()), system_count);
+    system_count = ssize(builder_.GetSystems());
 
-    // Using an empty class name means "don't care", so is also happy.
-    config.name = name + "_emtpy_class_name_succeeds";
-    config.renderer_class = "";
+    // Camera config shares renderer name and has identical renderer_class
+    // parameters; it shares renderer with previous engine.
+    config.name = renderer_class_name + "_second_params_succeeds";
     EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
     EXPECT_EQ(scene_graph_->RendererCount(), renderer_count);
+    EXPECT_THAT(scene_graph_->GetRendererTypeName(config.renderer_name),
+                testing::EndsWith(renderer_class_name));
+    EXPECT_GT(ssize(builder_.GetSystems()), system_count);
+    system_count = ssize(builder_.GetSystems());
+
+    // Camera config shares renderer name and simply names the same renderer
+    // class to the same type; it shares the previous engine.
+    config.name = renderer_class_name + "_class_name_succeeds";
+    config.renderer_class = renderer_class_name;
+    EXPECT_NO_THROW(ApplyCameraConfig(config, &builder_));
+    EXPECT_EQ(scene_graph_->RendererCount(), renderer_count);
+    EXPECT_GT(ssize(builder_.GetSystems()), system_count);
+    system_count = ssize(builder_.GetSystems());
+
+    // Changing the parameters at all but keeping the same name angers the gods.
+    const auto mutated_parameters = mutator(parameters);
+    CameraConfig mutated_config = config;
+    mutated_config.renderer_class = mutated_parameters;
+    DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(mutated_config, &builder_),
+                                ".*named renderer already exists and doesn't "
+                                "match the given parameters*.");
 
     // Camera config using the name of a different class is angry.
-    config.name = name + "_wrong_class_name_throws";
-    config.renderer_class = name == "RenderEngineVtk" ? "RenderEngineGltfClient"
-                                                      : "RenderEngineVtk";
+    config.name = renderer_class_name + "_wrong_class_name_throws";
+    config.renderer_class = renderer_class_name == "RenderEngineVtk"
+                                ? "RenderEngineGltfClient"
+                                : "RenderEngineVtk";
     DRAKE_EXPECT_THROWS_MESSAGE(
         ApplyCameraConfig(config, &builder_),
         ".*The name is already used with a different type.*.");
@@ -333,17 +354,40 @@ TEST_F(CameraConfigFunctionsTest, RendererNameReuse) {
 
   {
     SCOPED_TRACE("Vtk");
-    perform_test(RenderEngineVtkParams(), "RenderEngineVtk");
+
+    perform_test(
+        RenderEngineVtkParams(),
+        [](const RenderEngineVtkParams& params) {
+          RenderEngineVtkParams new_params(params);
+          new_params.shadow_map_size += 1;
+          return new_params;
+        },
+        "RenderEngineVtk");
   }
 
   {
     SCOPED_TRACE("GltfClient");
-    perform_test(RenderEngineGltfClientParams(), "RenderEngineGltfClient");
+    perform_test(
+        RenderEngineGltfClientParams(),
+        [](const RenderEngineGltfClientParams& params) {
+          RenderEngineGltfClientParams new_params(params);
+          new_params.verbose = !new_params.verbose;
+          return new_params;
+        },
+        "RenderEngineGltfClient");
   }
 
   if (geometry::kHasRenderEngineGl) {
     SCOPED_TRACE("Gl");
-    perform_test(RenderEngineGlParams(), "RenderEngineGl");
+    perform_test(
+        RenderEngineGlParams(),
+        [](const RenderEngineGlParams& params) {
+          RenderEngineGlParams new_params(params);
+          new_params.default_diffuse =
+              new_params.default_diffuse.scale_rgb(0.5);
+          return new_params;
+        },
+        "RenderEngineGl");
   }
 }
 
@@ -622,27 +666,24 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
   ApplyCameraConfig(vtk_config, &builder_);
   EXPECT_EQ(current_renderer_count, scene_graph_->RendererCount());
 
-  // Using an existing name but the wrong render engine type throws.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ApplyCameraConfig(
-          CameraConfig{.renderer_name = default_config.renderer_name,
-                       .renderer_class = "RenderEngineGl"},
-          &builder_),
-      ".*The name is already used with a different type.+");
-
-  // Now explicitly request a new RenderEngineGl -- whether it throws depends
-  // on whether GL is available.
-  const CameraConfig gl_config{.renderer_name = "gl_renderer",
-                               .renderer_class = "RenderEngineGl"};
+  // The implementation now always attempts to instantiate the configured
+  // render engine (possibly throwing it out if it's unneeded). In this case,
+  // we'll fail with an "already used" error if RenderEngineGl is available and
+  // "not supported" if it isn't.
   if (geometry::kHasRenderEngineGl) {
-    ASSERT_FALSE(scene_graph_->HasRenderer(gl_config.renderer_name));
-    ApplyCameraConfig(gl_config, &builder_);
-    ASSERT_EQ(NiceTypeName::RemoveNamespaces(
-                  scene_graph_->GetRendererTypeName(gl_config.renderer_name)),
-              "RenderEngineGl");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ApplyCameraConfig(
+            CameraConfig{.renderer_name = default_config.renderer_name,
+                         .renderer_class = "RenderEngineGl"},
+            &builder_),
+        ".*The name is already used with a different type.+");
   } else {
-    DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(gl_config, &builder_),
-                                ".*'RenderEngineGl' is not supported.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        ApplyCameraConfig(
+            CameraConfig{.renderer_name = default_config.renderer_name,
+                         .renderer_class = "RenderEngineGl"},
+            &builder_),
+        ".*'RenderEngineGl' is not supported.*");
   }
 }
 

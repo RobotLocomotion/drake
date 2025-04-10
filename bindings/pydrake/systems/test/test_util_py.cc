@@ -134,6 +134,30 @@ class MyVector2 : public BasicVector<T> {
     return new MyVector2(this->get_value());
   }
 };
+
+// DummySystemA is an interface class, and DummySystemB provides its
+// implementation. MakeDummySystem() is a factory function for DummySystemA. In
+// the pybind11 bindings below, we only bind the interface class (DummySystemA)
+// and the factory function, not the concrete implementation (DummySystemB).
+// This setup is intentional for testing a specific bug, as exercised in
+// general_test.py -> test_system_builder_add_system().
+class DummySystemA : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySystemA);
+  DummySystemA() = default;
+  virtual ~DummySystemA() = 0;
+};
+DummySystemA::~DummySystemA() = default;
+class DummySystemB : public DummySystemA {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySystemB);
+  DummySystemB() = default;
+  ~DummySystemB() override = default;
+};
+std::unique_ptr<DummySystemA> MakeDummySystem() {
+  return std::make_unique<DummySystemB>();
+}
+
 }  // namespace
 
 PYBIND11_MODULE(test_util, m) {
@@ -225,6 +249,10 @@ PYBIND11_MODULE(test_util, m) {
       });
 
   DeclareBuilderLifeSupportTestHelpers(m);
+
+  // We only bind the interface class (DummySystemA) and the factory function.
+  py::class_<DummySystemA, LeafSystem<double>>(m, "DummySystemA");
+  m.def("MakeDummySystem", &MakeDummySystem);
 }
 
 }  // namespace pydrake

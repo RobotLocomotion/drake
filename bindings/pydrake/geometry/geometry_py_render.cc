@@ -109,6 +109,10 @@ class PyRenderEngine : public RenderEngine {
         void, Base, DoRenderLabelImage, camera, label_image_out);
   }
 
+  std::string DoGetParameterYaml() const override {
+    PYBIND11_OVERLOAD(std::string, Base, DoGetParameterYaml);
+  }
+
   void SetDefaultLightPosition(Vector3d const& X_DL) override {
     PYBIND11_OVERLOAD(void, Base, SetDefaultLightPosition, X_DL);
   }
@@ -316,6 +320,10 @@ void DoScalarIndependentDefinitions(py::module m) {
             static_cast<RenderLabel (Class::*)() const>(
                 &Class::default_render_label),
             cls_doc.default_render_label.doc)
+        .def("GetParameterYaml",
+            static_cast<std::string (Class::*)() const>(
+                &Class::GetParameterYaml),
+            cls_doc.GetParameterYaml.doc)
         // N.B. We're binding against the trampoline class PyRenderEngine,
         // rather than the direct class RenderEngine, solely for protected
         // helper methods and non-pure virtual functions because we want them

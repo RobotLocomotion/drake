@@ -35,6 +35,7 @@ using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::multibody::contact_solvers::internal::SapConstraintJacobian;
 using drake::multibody::contact_solvers::internal::SchurComplement;
+using drake::multibody::contact_solvers::internal::VertexPartialPermutation;
 using drake::multibody::fem::FemModel;
 using drake::multibody::fem::FemState;
 using drake::multibody::fem::internal::DirichletBoundaryCondition;
@@ -114,21 +115,6 @@ void DeformableDriver<T>::DeclareCacheEntries(
     constraint_participation_tickets.emplace(
         constraint_participation_cache_entry.ticket());
 
-    /* Permutation for participating dofs for each body. */
-    const auto& dof_permutation_cache_entry = manager->DeclareCacheEntry(
-        fmt::format("partial permutation for dofs of body {} based on "
-                    "participation in contact",
-                    i),
-        systems::ValueProducer(
-            std::function<void(const Context<T>&, PartialPermutation*)>{
-                [this, i](const Context<T>& context,
-                          PartialPermutation* result) {
-                  this->CalcDofPermutation(context, i, result);
-                }}),
-        {constraint_participation_cache_entry.ticket()});
-    cache_indexes_.dof_permutations.emplace_back(
-        dof_permutation_cache_entry.cache_index());
-
     /* Permutation for participating vertices for each body. */
     const GeometryId g_id =
         deformable_model_->GetGeometryId(deformable_model_->GetBodyId(i));
@@ -137,10 +123,10 @@ void DeformableDriver<T>::DeclareCacheEntries(
                     "participation in contact",
                     i),
         systems::ValueProducer(
-            std::function<void(const Context<T>&, PartialPermutation*)>{
+            std::function<void(const Context<T>&, VertexPartialPermutation*)>{
                 [this, g_id](const Context<T>& context,
-                             PartialPermutation* result) {
-                  this->CalcVertexPermutation(context, g_id, result);
+                             VertexPartialPermutation* result) {
+                  this->CalcPermutation(context, g_id, result);
                 }}),
         {constraint_participation_cache_entry.ticket()});
     cache_indexes_.vertex_permutations.emplace(
@@ -974,8 +960,9 @@ void DeformableDriver<T>::CalcNextFemState(const systems::Context<T>& context,
     /* Concatenate the participating and non-participating velocities and
      then apply the inverse permutation to put the dofs in their original
      order. */
-    const PartialPermutation& full_velocity_permutation =
-        participation.CalcDofPermutation();
+    PartialPermutation full_velocity_permutation =
+        EvalDofPermutation(context, index);
+    full_velocity_permutation.ExtendToFullPermutation();
     const int num_dofs = full_velocity_permutation.domain_size();
     VectorX<T> permuted_dv(num_dofs);
     permuted_dv << body_participating_dv, body_nonparticipating_dv;
@@ -1064,29 +1051,24 @@ const ContactParticipation& DeformableDriver<T>::EvalConstraintParticipation(
 }
 
 template <typename T>
-void DeformableDriver<T>::CalcDofPermutation(const Context<T>& context,
-                                             DeformableBodyIndex index,
-                                             PartialPermutation* result) const {
-  *result =
-      EvalConstraintParticipation(context, index).CalcDofPartialPermutation();
-}
-
-template <typename T>
 const PartialPermutation& DeformableDriver<T>::EvalDofPermutation(
     const Context<T>& context, DeformableBodyIndex index) const {
+  const DeformableBodyId body_id = deformable_model_->GetBodyId(index);
+  const GeometryId geometry_id = deformable_model_->GetGeometryId(body_id);
   return manager_->plant()
-      .get_cache_entry(cache_indexes_.dof_permutations.at(index))
-      .template Eval<PartialPermutation>(context);
+      .get_cache_entry(cache_indexes_.vertex_permutations.at(geometry_id))
+      .template Eval<VertexPartialPermutation>(context)
+      .dof();
 }
 
 template <typename T>
-void DeformableDriver<T>::CalcVertexPermutation(
+void DeformableDriver<T>::CalcPermutation(
     const Context<T>& context, GeometryId id,
-    PartialPermutation* result) const {
+    VertexPartialPermutation* result) const {
   const DeformableBodyIndex index =
       deformable_model_->GetBodyIndex(deformable_model_->GetBodyId(id));
-  *result = EvalConstraintParticipation(context, index)
-                .CalcVertexPartialPermutation();
+  *result =
+      EvalConstraintParticipation(context, index).CalcPartialPermutation();
 }
 
 template <typename T>
@@ -1094,7 +1076,8 @@ const PartialPermutation& DeformableDriver<T>::EvalVertexPermutation(
     const Context<T>& context, GeometryId id) const {
   return manager_->plant()
       .get_cache_entry(cache_indexes_.vertex_permutations.at(id))
-      .template Eval<PartialPermutation>(context);
+      .template Eval<VertexPartialPermutation>(context)
+      .vertex();
 }
 
 template <typename T>

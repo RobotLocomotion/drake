@@ -298,6 +298,9 @@ class TestGeometryRender(unittest.TestCase):
                 self.label_count += 1
                 self.label_camera = camera
 
+            def DoGetParameterYaml(self):
+                return "PyDummyRenderEngine: {}"
+
         engine = DummyRenderEngine()
         self.assertIsInstance(engine, mut.RenderEngine)
         self.assertIsInstance(engine.Clone(), DummyRenderEngine)
@@ -342,6 +345,9 @@ class TestGeometryRender(unittest.TestCase):
         image = sensor.label_image_output_port().Eval(sensor_context)
         self.assertIsInstance(image, ImageLabel16I)
         self.assertEqual(current_engine.label_count, 1)
+
+        param_yaml = engine.GetParameterYaml()
+        self.assertEqual(param_yaml, "PyDummyRenderEngine: {}")
 
         # TODO(eric, duy): Test more properties.
 

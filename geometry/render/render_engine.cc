@@ -184,6 +184,10 @@ void RenderEngine::DoRenderLabelImage(const ColorRenderCamera&,
 
 void RenderEngine::SetDefaultLightPosition(const Vector3<double>&) {}
 
+std::string RenderEngine::DoGetParameterYaml() const {
+  return "UnknownRenderEngine: {}";
+}
+
 }  // namespace render
 }  // namespace geometry
 }  // namespace drake

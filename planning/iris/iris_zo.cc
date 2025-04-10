@@ -13,7 +13,9 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/clarabel_solver.h"
+#include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/mosek_solver.h"
+#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -30,6 +32,8 @@ using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::VPolytope;
 using math::RigidTransform;
 using solvers::MathematicalProgram;
+using solvers::MathematicalProgramResult;
+using solvers::SolverInterface;
 
 IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
     const multibody::RationalForwardKinematics* kin,
@@ -105,9 +109,9 @@ index_t argsort(values_t const& values) {
   return index;
 }
 
-Eigen::VectorXd compute_face_tangent_to_dist_cvxh(
+Eigen::VectorXd ComputeFaceTangentToDistCvxh(
     const Hyperellipsoid& E, const Eigen::Ref<const Eigen::VectorXd>& point,
-    const VPolytope& cvxh_vpoly) {
+    const VPolytope& cvxh_vpoly, const SolverInterface& solver) {
   Eigen::VectorXd a_face = E.A().transpose() * E.A() * (point - E.center());
   double b_face = a_face.transpose() * point;
 
@@ -120,13 +124,12 @@ Eigen::VectorXd compute_face_tangent_to_dist_cvxh(
   } else {
     MathematicalProgram prog;
     int dim = cvxh_vpoly.ambient_dimension();
-    std::vector<solvers::SolverId> preferred_solvers{
-        solvers::MosekSolver::id(), solvers::ClarabelSolver::id()};
     auto x = prog.NewContinuousVariables(dim);
     cvxh_vpoly.AddPointInSetConstraints(&prog, x);
     Eigen::MatrixXd identity = Eigen::MatrixXd::Identity(dim, dim);
     prog.AddQuadraticErrorCost(identity, point, x);
-    auto result = solvers::Solve(prog);
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
     DRAKE_THROW_UNLESS(result.is_success());
     a_face = point - result.GetSolution(x);
     return a_face;
@@ -354,6 +357,11 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       P.A().rows() + kNumFacesToPreAllocate, parameterized_dimension);
   Eigen::VectorXd b(P.A().rows() + kNumFacesToPreAllocate);
 
+  // Preallocate the solver as we will be solving a lot of QPs in the loop,
+  // specifically in ComputeFaceTangentToDistCvxh.
+  std::unique_ptr<SolverInterface> solver = solvers::MakeFirstAvailableSolver(
+      {solvers::GurobiSolver::id(), solvers::ClarabelSolver::id(),
+       solvers::MosekSolver::id(), solvers::OsqpSolver::id()});
   while (true) {
     log()->info("IrisZo outer iteration {}", iteration);
 
@@ -548,8 +556,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
         if (!particle_is_redundant[i]) {
           Eigen::VectorXd a_face;
           if (options.containment_points.has_value()) {
-            a_face = compute_face_tangent_to_dist_cvxh(
-                current_ellipsoid, nearest_particle, cvxh_vpoly);
+            a_face = ComputeFaceTangentToDistCvxh(
+                current_ellipsoid, nearest_particle, cvxh_vpoly, *solver);
           } else {
             a_face = ATA * (nearest_particle - current_ellipsoid_center);
           }
