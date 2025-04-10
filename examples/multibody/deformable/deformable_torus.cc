@@ -90,18 +90,18 @@ ModelInstanceIndex AddSuctionGripper(
                                      Vector4d(0.9, 0.1, 0.1, 0.8));
   plant->RegisterVisualGeometry(body, RigidTransformd::Identity(), capsule,
                                 "cup_visual", cup_illustration_props);
-  /* Add a visual hint for the center of the suction force source. */
-  const Sphere sphere{0.0075};
+  /* Add a visual hint for the support of the suction force source. */
+  const Sphere sphere{0.01};
   IllustrationProperties source_illustration_props;
   source_illustration_props.AddProperty("phong", "diffuse",
                                         Vector4d(0.1, 0.9, 0.1, 0.8));
-  plant->RegisterVisualGeometry(body, RigidTransformd(Vector3d(0, 0, -0.07)),
+  plant->RegisterVisualGeometry(body, RigidTransformd(Vector3d(0, 0, -0.065)),
                                 sphere, "source_visual",
                                 source_illustration_props);
   plant->RegisterCollisionGeometry(body, RigidTransformd::Identity(), capsule,
                                    "cup_collision", proximity_props);
   /* Adds an actuated joint between the suction cup body and the world. */
-  const RigidTransformd X_WF(Vector3d(0.04, 0, -0.05));
+  const RigidTransformd X_WF(Vector3d(0.05, 0, -0.05));
   const auto& prismatic_joint = plant->AddJoint<PrismaticJoint>(
       "translate_z_joint", plant->world_body(), X_WF, body, std::nullopt,
       Vector3d::UnitZ());
@@ -188,6 +188,9 @@ int do_main() {
   deformable_config.set_poissons_ratio(FLAGS_nu);
   deformable_config.set_mass_density(FLAGS_density);
   deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
+  /* Subdivide the element for suction force integration; otherwise, the mesh is
+   too coarse for the support of the suction force field (1cm radius). */
+  deformable_config.set_element_subdivision(2);
 
   /* Load the geometry and scale it down to 65% (to showcase the scaling
    capability and to make the torus suitable for grasping by the gripper). */
@@ -206,7 +209,7 @@ int do_main() {
   const PointSourceForceField* suction_force_ptr{nullptr};
   if (use_suction) {
     auto suction_force = std::make_unique<PointSourceForceField>(
-        plant, plant.GetBodyByName("cup_body"), Vector3d(0, 0, -0.07), 0.1);
+        plant, plant.GetBodyByName("cup_body"), Vector3d(0, 0, -0.065), 0.01);
     suction_force_ptr = suction_force.get();
     deformable_model.AddExternalForce(std::move(suction_force));
   }
