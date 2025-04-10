@@ -11,6 +11,7 @@
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/vpolytope.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/clarabel_solver.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -93,6 +94,162 @@ void IrisZoOptions::SetParameterizationFromExpression(
   set_parameterization(evaluate_expression,
                        /* parameterization_is_threadsafe */ true,
                        /* parameterization_dimension */ dimension);
+}
+
+namespace {
+
+using multibody::JointIndex;
+using multibody::MultibodyConstraintId;
+using multibody::internal::CouplerConstraintSpec;
+
+// This method constructs an ordering of the constraints such that they can be
+// traversed in order of "dependence". If constraint 1 determines joint i from
+// joint j, and constraint 2 determines joint j from joint k, then constraint 2
+// must be before constraint 1.
+std::vector<CouplerConstraintSpec> TopologicalSortCouplerConstraints(
+    const std::map<multibody::MultibodyConstraintId, CouplerConstraintSpec>&
+        coupler_constraints) {
+  if (coupler_constraints.empty()) {
+    // If there are no constraints (i.e.  is empty), we return an empty vector.
+    return {};
+  }
+
+  std::map<JointIndex, JointIndex> next_map;             // joint1 -> joint0
+  std::map<JointIndex, CouplerConstraintSpec> node_map;  // joint0 -> constraint
+  std::map<JointIndex, bool>
+      has_predecessor;  // Tracks if a joint has an incoming connection
+
+  // Step 1: Populate maps.
+  for (const auto& [_, constraint] : coupler_constraints) {
+    next_map[constraint.joint1_index] = constraint.joint0_index;
+    node_map[constraint.joint0_index] = constraint;
+    has_predecessor[constraint.joint0_index] = true;
+    has_predecessor[constraint.joint1_index] =
+        has_predecessor[constraint.joint1_index];  // Ensure it exists
+  }
+
+  // Step 2: Find the start node (a joint that is never a joint0_index).
+  JointIndex start_joint;
+  bool found_start_joint = false;
+  for (const auto& [_, constraint] : coupler_constraints) {
+    if (!has_predecessor[constraint.joint1_index]) {
+      start_joint = constraint.joint1_index;
+      found_start_joint = true;
+      break;
+    }
+  }
+
+  // It should be impossible to not find a start joint, as this implies every
+  // joint has a predecessor, which is not allowed with coupler constraints.
+  DRAKE_ASSERT(found_start_joint);
+
+  // Step 3: Follow the chain to construct the sorted order.
+  std::vector<CouplerConstraintSpec> sorted_constraints;
+  while (next_map.find(start_joint) != next_map.end()) {
+    JointIndex next = next_map[start_joint];
+    sorted_constraints.push_back(node_map[next]);
+    start_joint = next;
+  }
+
+  return sorted_constraints;
+}
+
+}  // namespace
+
+IrisZoOptions IrisZoOptions::CreateWithMimicJointsParameterization(
+    const multibody::MultibodyPlant<double>& plant) {
+  if (plant.time_step() == 0.0) {
+    drake::log()->warn(
+        "The provided MultibodyPlant is continuous-time, so it does not "
+        "support constraints. Thus, the coupling between mimic joints cannot "
+        "be parsed.");
+  }
+  const int dimension = plant.num_positions() - plant.num_coupler_constraints();
+  DRAKE_DEMAND(dimension > 0);
+  const auto& coupler_constraints = plant.get_coupler_constraint_specs();
+  const std::vector<multibody::JointIndex>& joint_indices =
+      plant.GetJointIndices();
+
+  // Note that throughout this method, we rely on the fact that coupler
+  // constraints only work with joints that have a single degree of freedom.
+  std::map<multibody::JointIndex, int> joint_index_to_position_start;
+  for (const auto& joint_index : joint_indices) {
+    int position_start = plant.get_joint(joint_index).position_start();
+    joint_index_to_position_start.insert({joint_index, position_start});
+  }
+
+  // Sort the coupler constraints, and find the independent degrees of freedom.
+  std::set<int> dependent_position_indices;
+  for (const auto& [_, coupler_constraint] : coupler_constraints) {
+    dependent_position_indices.insert(
+        joint_index_to_position_start.at(coupler_constraint.joint0_index));
+  }
+  std::set<int> all_position_indices;
+  for (int i = 0; i < plant.num_positions(); ++i) {
+    all_position_indices.insert(i);
+  }
+  std::vector<int> independent_position_indices;
+  std::set_difference(all_position_indices.begin(), all_position_indices.end(),
+                      dependent_position_indices.begin(),
+                      dependent_position_indices.end(),
+                      std::inserter(independent_position_indices,
+                                    independent_position_indices.end()));
+
+  // The parameterization is an affine map, so we can represent it as y=Ax+b for
+  // matrix A and vector b. The mapping is actually constructed by first mapping
+  // the minimal coordinates to the independent joints, and then filling in the
+  // dependent joints by iterating over the coupler constraints.
+  Eigen::MatrixXd mapping_A =
+      Eigen::MatrixXd::Zero(plant.num_positions(), dimension);
+  Eigen::VectorXd mapping_b = Eigen::VectorXd::Zero(plant.num_positions());
+
+  // First, we fill in the entries for the independent joint indices.
+  for (int input_dimension = 0;
+       input_dimension < ssize(independent_position_indices);
+       ++input_dimension) {
+    int output_dimension = independent_position_indices[input_dimension];
+    mapping_A(output_dimension, input_dimension) = 1.0;
+  }
+
+  // We sort the constraints in order of dependence.
+  std::vector<multibody::internal::CouplerConstraintSpec>
+      sorted_coupler_constraints =
+          TopologicalSortCouplerConstraints(coupler_constraints);
+
+  // Next, we fill in the entries for the constraints. This is done by
+  // constructing a square matrix C and vector d for each constraint, in order
+  // to apply the coupling. C will be the identity, except the entry for the
+  // dependent joint will be the gear ratio, and d will be a vector of zeros,
+  // except the entry for the dependent joint will be the offset. We then set
+  // A := CA and b := Cb + d.
+  for (const auto& coupler_constraint : sorted_coupler_constraints) {
+    Eigen::MatrixXd mapping_C =
+        Eigen::MatrixXd::Identity(plant.num_positions(), plant.num_positions());
+    Eigen::VectorXd mapping_d = Eigen::VectorXd::Zero(plant.num_positions());
+
+    int input_position_index =
+        joint_index_to_position_start.at(coupler_constraint.joint1_index);
+    int output_position_index =
+        joint_index_to_position_start.at(coupler_constraint.joint0_index);
+
+    mapping_C(output_position_index, input_position_index) =
+        coupler_constraint.gear_ratio;
+    mapping_d(output_position_index) = coupler_constraint.offset;
+
+    mapping_A = mapping_C * mapping_A;
+    mapping_b = mapping_C * mapping_b + mapping_d;
+  }
+
+  auto evaluate_parameterization = [mapping_A,
+                                    mapping_b](const Eigen::VectorXd& q_in) {
+    return mapping_A * q_in + mapping_b;
+  };
+
+  IrisZoOptions instance;
+  instance.set_parameterization(evaluate_parameterization,
+                                /* parameterization_is_threadsafe */ true,
+                                /* parameterization_dimension */ dimension);
+  return instance;
 }
 
 namespace {
