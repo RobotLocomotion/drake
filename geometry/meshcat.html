@@ -158,7 +158,13 @@
         connection.onmessage = (msg) => handle_message(msg);
         connection.onopen = (evt) => {
           if (!accepting_connections) location.reload();
-          accepting_connections = false
+          accepting_connections = false;
+          // Immediately trigger the callback so that connection is sufficient
+          // to register a pose (otherwise, it doesn't happen until *something*
+          // else happens to trigger a render). Invoking the render callback is
+          // always safe because even if `tracked_camera` isn't enabled, the
+          // Viewer has a non-null no-op callback set.
+          viewer.render_callback();
         };
         connection.onclose = function(evt) {
           status_dom.style.display = "block";
