@@ -128,8 +128,8 @@ class Sdirk2Integrator final : public ImplicitIntegrator<T> {
   int64_t num_nr_iterations_{0};
 
   // Constants defined in the Butcher tableau
-  static constexpr double gamma_ = 1.0 - std::sqrt(2.0) / 2.0;
-  static constexpr double alpha_ = 2.0 - 5.0 * std::sqrt(2.0) / 4.0;
+  static constexpr double gamma_ = 0.29289321881345247559915563789515096;
+  static constexpr double alpha_ = 0.23223304703363118899788909473787740;
 };
 
 }  // namespace systems
