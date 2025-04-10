@@ -551,6 +551,17 @@ class Frame : public MultibodyElement<T> {
       const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
     return frame_body_poses.get_X_FB(body_pose_index_in_cache_);
   }
+
+  /// (Internal use only) Given an already up-to-date frame body pose cache,
+  /// returns whether X_BF (and thus X_FB) is exactly identity. This is
+  /// precomputed in the cache so is very fast to check.
+  /// @note Be sure you have called MultibodyTreeSystem::EvalFrameBodyPoses()
+  ///       since the last parameter change; we can't check here.
+  /// @see get_X_BF()
+  bool is_X_BF_identity(
+      const internal::FrameBodyPoseCache<T>& frame_body_poses) const {
+    return frame_body_poses.is_X_BF_identity(body_pose_index_in_cache_);
+  }
   //@}
 
  protected:
