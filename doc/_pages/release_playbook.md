@@ -40,6 +40,8 @@ push_release, etc.) are supported only on Ubuntu (not macOS).
    (Instructions can be found atop its source code: [``relnotes.py``](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py))
     1. On the first run, use ``--action=create`` to bootstrap the file.
        * The output is draft release notes in ``doc/_release-notes/v1.N.0.md``.
+       * The version numbers in ``doc/_pages/from_binary.md`` should also have
+         been automatically upgraded.
     2. On the subsequent runs, use ``--action=update`` to refresh the file.
        * Try to avoid updating the release notes to refer to changes newer than
        the likely release, i.e., if you run ``--update`` on the morning you're
@@ -143,8 +145,6 @@ the main body of the document:
    1. There is a dummy date 2099-12-31 nearby that should likewise be changed.
    2. Make sure that the nightly build git sha from the prior steps matches the
       ``newest_commit`` whose changes are enumerated in the notes.
-   3. Update the github links within ``doc/_pages/from_binary.md`` to reflect
-      the upcoming v1.N.0.
 4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
 5. Wait for the wheel builds to complete, and then download release artifacts:
    1. Use the
