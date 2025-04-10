@@ -51,8 +51,10 @@ drake_cc_library(
         "//planning:collision_checker",
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
+        "//solvers:gurobi_solver",
         "//solvers:mathematical_program",
         "//solvers:mosek_solver",
+        "//solvers:osqp_solver",
         "//solvers:solve",
     ],
     implementation_deps = [
