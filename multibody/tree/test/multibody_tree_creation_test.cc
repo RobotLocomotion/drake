@@ -58,7 +58,6 @@ using std::set;
 using std::unique_ptr;
 
 // Tests the basic MultibodyTree API to add bodies and joints.
-// Tests we cannot create graph loops.
 GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
   auto model = std::make_unique<MultibodyTree<double>>();
 
@@ -140,7 +139,7 @@ GTEST_TEST(MultibodyTree, BasicAPIToAddBodiesAndJoints) {
 }
 
 // Tests the basic MultibodyTree API to add bodies and joints.
-// Tests we cannot create graph loops. See previous test for notes.
+// Tests we cannot currently create graph loops. See previous test for notes.
 GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   auto model = std::make_unique<MultibodyTree<double>>();
   const RigidBody<double>& world_body = model->world_body();
@@ -155,7 +154,7 @@ GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
   EXPECT_EQ(model->num_bodies(), 3);
   EXPECT_EQ(model->num_joints(), 2);
 
-  // Attempts to create a loop. Verify we gen an exception at Finalize().
+  // Attempts to create a loop. Verify we get an exception at Finalize().
   model->AddJoint<RevoluteJoint>("joint2", pendulum, {}, pendulum2, {},
                                  Vector3d::UnitZ());
 
@@ -164,8 +163,9 @@ GTEST_TEST(MultibodyTree, TopologicalLoopDisallowed) {
 
   // Topology is invalid before MultibodyTree::Finalize(), and after fail.
   EXPECT_FALSE(model->topology_is_valid());
-  DRAKE_EXPECT_THROWS_MESSAGE(model->Finalize(),
-                              ".*kinematic loop using joints.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model->Finalize(),
+      "The bodies and joints of this system form one or more loops.*");
   EXPECT_FALSE(model->topology_is_valid());
 }
 

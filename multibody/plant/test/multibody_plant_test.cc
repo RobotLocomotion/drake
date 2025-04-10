@@ -1,6 +1,5 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
-#include <functional>
 #include <limits>
 #include <memory>
 #include <regex>
@@ -8,6 +7,7 @@
 #include <tuple>
 #include <utility>
 
+#include "multibody/tree/universal_joint.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -16,7 +16,6 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/limit_malloc.h"
-#include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/query_object.h"
@@ -43,12 +42,12 @@
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/universal_joint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/continuous_state.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/primitives/pass_through.h"
 
 namespace drake {
 
@@ -1979,6 +1978,64 @@ GTEST_TEST(MultibodyPlantTest, ReversedWeldJoint) {
       kTolerance));
 }
 
+GTEST_TEST(MultibodyPlantTest, ReversedRevoluteJoint) {
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+
+  // We need a plant to start with but we aren't using anything that depends
+  // on this one specifically.
+  const std::string sdf_url =
+      "package://drake/multibody/plant/test/split_pendulum.sdf";
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelsFromUrl(sdf_url);
+
+  // Add a normal body which we'll use as the child of a revolute joint.
+  const RigidBody<double>& body = plant.AddRigidBody(
+      "body", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const RevoluteJoint<double>& revolute = plant.AddJoint<RevoluteJoint>(
+      "revolute", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
+
+  // Add a body with parent=reverse_body, child=world. This is only allowed
+  // for Weld and Revolute joints currently.
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  const RevoluteJoint<double>& reverse_revolute =
+      plant.AddJoint<RevoluteJoint>("reverse_revolute", reverse_body, {},
+                                    plant.world_body(), {}, Vector3d(1, 1, 1));
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+
+  for (int i = 0; i < 3; ++i) {
+    const double third = 1 / std::sqrt(3.0);
+    EXPECT_NEAR(revolute.revolute_axis()[i], third, kTolerance);
+    EXPECT_NEAR(reverse_revolute.revolute_axis()[i], third, kTolerance);
+  }
+
+  // The forward and reverse joints should produce the same motion, but the
+  // meaning of the generalized coordinate q (angle) is reversed.
+  revolute.set_angle(&*context, 0.125);
+  EXPECT_EQ(revolute.get_angle(*context), 0.125);
+  reverse_revolute.set_angle(&*context, -0.125);
+  EXPECT_EQ(reverse_revolute.get_angle(*context), -0.125);
+
+  const RigidTransformd pose = body.EvalPoseInWorld(*context);
+  const RigidTransformd rpose = reverse_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rpose.GetAsMatrix34(), pose.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Now check the velocities.
+  revolute.set_angular_rate(&*context, 1.5);
+  EXPECT_EQ(revolute.get_angular_rate(*context), 1.5);
+  reverse_revolute.set_angular_rate(&*context, -1.5);
+  EXPECT_EQ(reverse_revolute.get_angular_rate(*context), -1.5);
+  const SpatialVelocity<double>& velocity =
+      body.EvalSpatialVelocityInWorld(*context);
+  const SpatialVelocity<double>& rvelocity =
+      reverse_body.EvalSpatialVelocityInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rvelocity.get_coeffs(), velocity.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
 GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
   // We need a plant to start with but we aren't using anything that depends
   // on this one specifically.
@@ -1988,17 +2045,45 @@ GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
   Parser(&plant).AddModelsFromUrl(sdf_url);
 
   // Add a body with parent=reverse_body, child=world. This is only allowed
-  // for Weld joints currently.
+  // for Weld and Revolute joints currently.
   const RigidBody<double>& reverse_body =
       plant.AddRigidBody("reverse_body", default_model_instance(),
                          SpatialInertia<double>::MakeUnitary());
-  plant.AddJoint<RevoluteJoint>("reverse_revolute", reverse_body, {},
-                                plant.world_body(), {}, Vector3d(1, 0, 0));
+  plant.AddJoint<UniversalJoint>("reverse_universal", reverse_body, {},
+                                 plant.world_body(), {});
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant.Finalize(),
-      ".*Finalize.*parent/child ordering.*revolute joint reverse_revolute"
+      ".*Finalize.*parent/child ordering.*universal joint reverse_universal"
       ".*reversed.*");
+}
+
+// Currently we don't support automatic modeling of systems where the links
+// and joints form topological loops. Make sure we reject those for now.
+GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
+  // We need a plant to start with but we aren't using anything that depends
+  // on this one specifically.
+  const std::string sdf_url =
+      "package://drake/multibody/plant/test/split_pendulum.sdf";
+  MultibodyPlant<double> plant(0.0);
+  Parser(&plant).AddModelsFromUrl(sdf_url);
+
+  // Create a loop with two bodies:
+  //   World->body1->body2<-World
+  const RigidBody<double>& body1 = plant.AddRigidBody(
+      "body1", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const RigidBody<double>& body2 = plant.AddRigidBody(
+      "body2", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  plant.AddJoint<RevoluteJoint>("joint1", plant.world_body(), {}, body1, {},
+                                Vector3d(0, 0, 1));
+  plant.AddJoint<RevoluteJoint>("joint2", body1, {}, body2, {},
+                                Vector3d(0, 0, 1));
+  plant.AddJoint<RevoluteJoint>("joint3", plant.world_body(), {}, body2, {},
+                                Vector3d(0, 0, 1));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.Finalize(),
+      "The bodies and joints of this system form one or more loops.*");
 }
 
 // Position kinematics attempts to optimize for cases when X_PF or X_MB are

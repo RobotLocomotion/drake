@@ -751,6 +751,11 @@ template <typename T>
 void MultibodyTree<T>::CreateJointImplementations() {
   DRAKE_DEMAND(!topology_is_valid());
 
+  // These are the Joint type names for the joints that are currently
+  // reversible.
+  // TODO(sherm1) Add more.
+  const std::set<std::string> reversible{"weld", "revolute"};
+
   // Mobods are in depth-first order, starting with World.
   for (const auto& mobod : forest().mobods()) {
     if (mobod.is_world()) {
@@ -769,14 +774,13 @@ void MultibodyTree<T>::CreateJointImplementations() {
         forest().joints(mobod.joint_ordinal()).index();
     Joint<T>& joint = joints_.get_mutable_element(joint_index);
 
-    // Currently we allow a reversed mobilizer only for Weld joints.
-    // TODO(sherm1) Remove this restriction.
-    if (mobod.is_reversed() && !mobod.is_weld()) {
+    // We allow reversed mobilizers only for a subset of joint types.
+    if (mobod.is_reversed() && !reversible.contains(joint.type_name())) {
       throw std::runtime_error(fmt::format(
           "MultibodyPlant::Finalize(): parent/child ordering for "
           "{} joint {} in model instance {} would have to be reversed "
           "to make a tree-structured model for this system. "
-          "Currently Drake does not support that except for Weld "
+          "Currently Drake does not support that except for Weld and Revolute "
           "joints. Reverse the ordering in your joint definition so "
           "that all parent/child directions form a tree structure.",
           joint.type_name(), joint.name(),
@@ -970,6 +974,13 @@ void MultibodyTree<T>::Finalize() {
   }
 
   // TODO(sherm1) Add shadow links and loop constraints.
+  if (!graph.loop_constraints().empty()) {
+    throw std::runtime_error(fmt::format(
+        "The bodies and joints of this system form one or "
+        "more loops in the system graph. Drake currently does not "
+        "support automatic modeling of such systems. Break the loop(s) "
+        "in the input and add constraints to close the loops."));
+  }
 
   CreateJointImplementations();
   FinalizeTopology();
