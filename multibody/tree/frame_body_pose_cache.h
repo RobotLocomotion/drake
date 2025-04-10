@@ -6,6 +6,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -41,23 +43,37 @@ class FrameBodyPoseCache {
   }
 
   const math::RigidTransform<T>& get_X_BF(int body_pose_index) const {
+    // This method must be very fast in Release.
     DRAKE_ASSERT(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
     return X_BF_pool_[body_pose_index];
   }
 
   const math::RigidTransform<T>& get_X_FB(int body_pose_index) const {
+    // This method must be very fast in Release.
     DRAKE_ASSERT(0 <= body_pose_index && body_pose_index < ssize(X_FB_pool_));
     return X_FB_pool_[body_pose_index];
   }
 
-  void set_X_BF(int body_pose_index, const math::RigidTransform<T>& X_BF) {
-    DRAKE_ASSERT(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
+  // Returns true if F is definitely coincident with B, in which case you can
+  // safely ignore X_BF in computations. Currently catches every actual
+  // RigidBodyFrame but will return false for other frames even if they are
+  // (currently) coincident with B.
+  // TODO(sherm1) Make a more comprehensive implementation if warranted.
+  bool is_X_BF_identity(int body_pose_index) const {
+    return body_pose_index == 0;
+  }
+
+  void Set_X_BF(int body_pose_index, const math::RigidTransform<T>& X_BF) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
     X_BF_pool_[body_pose_index] = X_BF;
     X_FB_pool_[body_pose_index] = X_BF.inverse();
   }
 
  private:
-  // Size is set on construction.
+  // Sizes are set on construction.
+
+  // These are indexed by Frame::get_body_pose_index_in_cache().
   std::vector<math::RigidTransform<T>> X_BF_pool_;
   std::vector<math::RigidTransform<T>> X_FB_pool_;
 };

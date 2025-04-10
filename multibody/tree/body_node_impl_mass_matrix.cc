@@ -23,7 +23,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-template <typename T, template <typename> class ConcreteMobilizer>
+template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
     const PositionKinematicsCache<T>& pc,
     const std::vector<SpatialInertia<T>>& Mc_B_W_cache,
@@ -111,7 +111,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixContribution_TipToBase(
 // size of the outer-loop body node R's mobilizer, kNv is the size of the
 // current body B's ConcreteMobilizer encountered on R's inboard sweep.
 #define DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(Rnv)                             \
-  template <typename T, template <typename> class ConcreteMobilizer>           \
+  template <typename T, class ConcreteMobilizer>                               \
   void                                                                         \
       BodyNodeImpl<T, ConcreteMobilizer>::CalcMassMatrixOffDiagonalBlock##Rnv( \
           int R_start_in_v, const std::vector<Vector6<T>>& H_PB_W_cache,       \
@@ -139,17 +139,19 @@ DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6)
 #undef DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK
 
 // Macro used to explicitly instantiate implementations for every mobilizer.
-#define EXPLICITLY_INSTANTIATE_IMPLS(T)                        \
-  template class BodyNodeImpl<T, CurvilinearMobilizer>;        \
-  template class BodyNodeImpl<T, PlanarMobilizer>;             \
-  template class BodyNodeImpl<T, PrismaticMobilizer>;          \
-  template class BodyNodeImpl<T, QuaternionFloatingMobilizer>; \
-  template class BodyNodeImpl<T, RevoluteMobilizer>;           \
-  template class BodyNodeImpl<T, RpyBallMobilizer>;            \
-  template class BodyNodeImpl<T, RpyFloatingMobilizer>;        \
-  template class BodyNodeImpl<T, ScrewMobilizer>;              \
-  template class BodyNodeImpl<T, UniversalMobilizer>;          \
-  template class BodyNodeImpl<T, WeldMobilizer>
+#define EXPLICITLY_INSTANTIATE_IMPLS(T)                           \
+  template class BodyNodeImpl<T, CurvilinearMobilizer<T>>;        \
+  template class BodyNodeImpl<T, PlanarMobilizer<T>>;             \
+  template class BodyNodeImpl<T, PrismaticMobilizer<T>>;          \
+  template class BodyNodeImpl<T, QuaternionFloatingMobilizer<T>>; \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 0>>;   \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 1>>;   \
+  template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 2>>;   \
+  template class BodyNodeImpl<T, RpyBallMobilizer<T>>;            \
+  template class BodyNodeImpl<T, RpyFloatingMobilizer<T>>;        \
+  template class BodyNodeImpl<T, ScrewMobilizer<T>>;              \
+  template class BodyNodeImpl<T, UniversalMobilizer<T>>;          \
+  template class BodyNodeImpl<T, WeldMobilizer<T>>
 
 // Explicitly instantiates on the supported scalar types.
 // These should be kept in sync with the list in default_scalars.h.
