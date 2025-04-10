@@ -375,6 +375,15 @@ void DefineSceneGraph(py::module m, T) {
                 const std::string&>(&Class::GetRendererTypeName),
             py::arg("context"), py::arg("name"),
             cls_doc.GetRendererTypeName.doc_2args)
+        .def("GetRendererParameterYaml",
+            overload_cast_explicit<std::string, const std::string&>(
+                &Class::GetRendererParameterYaml),
+            py::arg("name"), cls_doc.GetRendererParameterYaml.doc_1args)
+        .def("GetRendererParameterYaml",
+            overload_cast_explicit<std::string, const systems::Context<T>&,
+                const std::string&>(&Class::GetRendererParameterYaml),
+            py::arg("context"), py::arg("name"),
+            cls_doc.GetRendererParameterYaml.doc_2args)
         // - Begin: AssignRole Overloads.
         // - - Proximity.
         .def(
