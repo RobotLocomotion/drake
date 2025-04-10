@@ -68,18 +68,6 @@ def _assert_isdir(path, name):
         die(f'{name} \'{path}\' is not a valid directory')
 
 
-def _provision(python_targets):
-    """
-    Prepares wheel build environment.
-    """
-    packages_path = os.path.join(resource_root, 'image', 'packages-macos')
-    command = ['brew', 'bundle', f'--file={packages_path}']
-    subprocess.check_call(command)
-
-    for t in python_targets:
-        subprocess.check_call(['brew', 'install', f'python@{t.version}'])
-
-
 def _test_wheel(wheel, python_target, env):
     """
     Runs the test script on `wheel`.
@@ -127,8 +115,6 @@ def build(options):
 
     # Set up build environment.
     os.makedirs(build_root, exist_ok=True)
-    if options.provision:
-        _provision(targets_to_build)
 
     # Sanitize the build/test environment.
     environment = os.environ.copy()
@@ -203,10 +189,6 @@ def add_build_arguments(parser):
         '-k', '--keep-build', action='store_true',
         help='do not delete build/test trees on success '
              '(tree(s) are always retained on failure)')
-    parser.add_argument(
-        '--no-provision', dest='provision', action='store_false',
-        help='skip host provisioning '
-             '(requires already-povisioned host)')
 
 
 def add_selection_arguments(parser):
