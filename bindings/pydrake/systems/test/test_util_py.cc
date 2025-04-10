@@ -134,6 +134,29 @@ class MyVector2 : public BasicVector<T> {
     return new MyVector2(this->get_value());
   }
 };
+
+// DummySystemA is an interface class.
+class DummySystemA : public LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySystemA);
+  DummySystemA() = default;
+  virtual ~DummySystemA() = 0;
+};
+DummySystemA::~DummySystemA() = default;
+
+// DummySystemB implements DummySystemA.
+class DummySystemB : public DummySystemA {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DummySystemB);
+  DummySystemB() = default;
+  ~DummySystemB() override = default;
+};
+
+// Factory function for making implementations of the interface class.
+std::unique_ptr<DummySystemA> MakeDummySystem() {
+  return std::make_unique<DummySystemB>();
+}
+
 }  // namespace
 
 PYBIND11_MODULE(test_util, m) {
@@ -225,6 +248,10 @@ PYBIND11_MODULE(test_util, m) {
       });
 
   DeclareBuilderLifeSupportTestHelpers(m);
+
+  // We only bind the interface class DummySystemA and the factory function.
+  py::class_<DummySystemA, LeafSystem<double>>(m, "DummySystemA");
+  m.def("MakeDummySystem", &MakeDummySystem);
 }
 
 }  // namespace pydrake
