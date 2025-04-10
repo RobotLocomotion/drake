@@ -23,9 +23,9 @@ x, y, or z. To fully specify this mobilizer we need an inboard ("fixed") frame
 F, an outboard ("mobilized") frame M and the coordinate axis about which frame M
 rotates with respect to F (templatized as 0, 1, or 2). The axis vector can be
 considered axis_F (expressed in frame F) or axis_M (expressed in frame M) since
-the measure numbers are identical in either frame. It is up to the Revolute
-Joint to choose F and M frames properly to implement the user's specification of
-parent frame Jp, child frame Jc, and a general rotation axis.
+the coordinates (measure numbers) are identical in either frame. It is up to the
+RevoluteJoint to choose F and M frames properly to implement the user's
+specification of parent frame Jp, child frame Jc, and a general rotation axis.
 
 The restriction to rotating about a coordinate axis means that the transform
 X_FM has special structure (it is an "axial rotation transform" arX_FM) that

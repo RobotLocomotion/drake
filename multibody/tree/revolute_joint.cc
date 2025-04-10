@@ -98,25 +98,24 @@ std::unique_ptr<Joint<T>> RevoluteJoint<T>::DoShallowClone() const {
 }
 
 /* For a revolute joint, we are given Jp on parent P, Jc on child C, and a
-rotation unit vector a⃗ whose measure numbers are identical in Jp and Jc. At q=0,
-Jp and Jc are coincident, and their origins Jpo and Jco remain coincident
-forever, and the rotation vector a⃗ remains unchanged forever. Jc rotates with
-respect to Jp by an angle q radians about the rotation vector a⃗, following the
-right hand rule.
+rotation unit vector â whose coordinates (measure numbers) are identical in Jp
+and Jc. At q=0, Jp and Jc are coincident. At all times, origins Jpo and Jco
+remain coincident and vector â has constant and equal coordinates when expressed
+in these frames. Jc rotates with respect to Jp by an angle q radians about the
+rotation vector â, following the right hand rule.
 
 We need to implement this joint with one of three available revolute mobilizers.
 Every mobilizer has an inboard frame F, and an outboard frame M. The available
-revolute mobilizers rotate about one of the coordinate axes x, y, or z. If a⃗
+revolute mobilizers rotate about one of the coordinate axes x, y, or z. If â
 happens already to be a coordinate axis of Jp (and Jc), we are golden and can
 use Jp and Jc as F and M. Otherwise we are going to have to create new frames
-F and M such that one of their coordinate axes is aligned with a⃗.
+F and M such that one of their coordinate axes is aligned with â.
 
-To create new frames, we use our beautiful MakeFromOneVector() function to
-create a RotationMatrix R_JpF (R_JcM) such that F(M)'s z axis is aligned with a⃗
-(or -a⃗ if the mobilizer is reversed from the joint). That rotation matrix is
-what we need to create FixedOffsetFrame F from Jp (or Jc if reversed) and M
-from Jc (or Jp if reversed). Then we use the z-axial revolute mobilizer to
-implement the joint. */
+To create new frames, we use the MakeFromOneVector() function to create a
+RotationMatrix R_JpF (R_JcM) such that F(M)'s z axis is aligned with â (or -â if
+the mobilizer is reversed from the joint). That rotation matrix is what we need
+to create FixedOffsetFrame F from Jp (or Jc if reversed) and M from Jc (or Jp if
+reversed). Then we use the z-axial revolute mobilizer to implement the joint. */
 template <typename T>
 std::unique_ptr<internal::Mobilizer<T>> RevoluteJoint<T>::MakeMobilizerForJoint(
     const internal::SpanningForest::Mobod& mobod,
@@ -154,9 +153,8 @@ std::unique_ptr<internal::Mobilizer<T>> RevoluteJoint<T>::MakeMobilizerForJoint(
   const Frame<T>* F{};
   const Frame<T>* M{};
   if (!which_axis) {
-    // Bad news, not a coordinate axis. J here is either Jp or Jc.
     which_axis = 2;  // Arbitrarily using the z axis mobilizer.
-    const math::RotationMatrixd R_JinF =  // also R_JoutM
+    const math::RotationMatrixd R_JinF =  // Also R_JoutM, since Jp=Jc at q=0.
         math::RotationMatrixd::MakeFromOneUnitVector(axis, *which_axis);
     F = &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
         new_frame_name(Jin, "F"), Jin, math::RigidTransformd(R_JinF),

@@ -467,9 +467,11 @@ class RotationMatrix {
   /// only 18 floating point operations.
   /// @param[in] aR_BC An axial rotation about the indicated axis.
   /// @param[out] R_AC The result, which will be a general rotation matrix.
+  ///   Must not overlap with `this` in memory.
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @pre aR_BC is an @ref axial_rotation_def "axial rotation matrix" about
   ///   the given `axis`.
+  /// @pre R_AC does not overlap with `this` in memory.
   template <int axis>
 #ifndef DRAKE_DOXYGEN_CXX
     requires(0 <= axis && axis <= 2)
@@ -494,10 +496,12 @@ class RotationMatrix {
   /// axial rotation aR_AB, efficiently forms R_AC = aR_AB * R_BC. This requires
   /// only 18 floating point operations.
   /// @param[in] aR_AB An axial rotation about the indicated axis.
-  /// @param[out] R_AC The result, which will be a general rotation matrix.
+  /// @param[out] R_AC The result, which will be a general rotation matrix. Must
+  ///   not overlap with `this` in memory.
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @pre aR_AB is an @ref axial_rotation_def "axial rotation matrix" about
   ///   the given `axis`.
+  /// @pre R_AC does not overlap with `this` in memory.
   template <int axis>
 #ifndef DRAKE_DOXYGEN_CXX
     requires(0 <= axis && axis <= 2)

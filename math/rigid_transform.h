@@ -433,9 +433,10 @@ class RigidTransform {
   /// `X_AC = X_AB * arX_BC`. This requires only 18 floating point operations.
   /// @param[in] arX_BC An axial rotation transform about the indicated `axis`.
   /// @param[out] X_AC Preallocated space for the result, which will be a
-  ///   general transform. Must not overlap with arX_BC in memory.
+  ///   general transform. Must not overlap with `this` in memory.
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @pre arX_BC is an @ref special_xform_def "Axial rotation transform"
+  /// @pre X_AC does not overlap with `this` in memory.
   template <int axis>
 #ifndef DRAKE_DOXYGEN_CXX
     requires(0 <= axis && axis <= 2)
@@ -454,9 +455,10 @@ class RigidTransform {
   /// `X_AC = arX_AB * X_BC`. This requires only 24 floating point operations.
   /// @param[in] arX_BC An axial rotation transform about the indicated `axis`.
   /// @param[out] X_AC Preallocated space for the result, which will be a
-  ///   general transform. Must not overlap with arX_BC in memory.
+  ///   general transform. Must not overlap with arX_BC or `this` in memory.
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @pre arX_BC is an @ref special_xform_def "Axial rotation transform"
+  /// @pre X_AC does not overlap with arX_AB or `this` in memory.
   template <int axis>
 #ifndef DRAKE_DOXYGEN_CXX
     requires(0 <= axis && axis <= 2)
