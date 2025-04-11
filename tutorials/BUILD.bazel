@@ -25,6 +25,7 @@ drake_jupyter_py_binary(
     data = [
         "@drake_models//:tutorials",
     ],
+    test_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
