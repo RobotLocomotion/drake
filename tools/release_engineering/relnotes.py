@@ -41,7 +41,6 @@ import argparse
 from collections import Counter
 import logging
 import os.path
-from pathlib import Path
 import re
 import sys
 import time
@@ -189,7 +188,7 @@ def _update(args, notes_filename, gh, drake, target_commit):
     """The --update action."""
 
     # Read in the existing content.
-    with notes_filename.open(encoding="utf-8") as f:
+    with open(notes_filename, "r") as f:
         lines = f.readlines()
 
     # Scrape the last commit from the document.  The line looks like this:
@@ -297,31 +296,25 @@ def _update(args, notes_filename, gh, drake, target_commit):
     lines[begin + 1:end] = pr_links
 
     # Rewrite the notes file.
-    temp_notes = notes_filename.with_suffix(".md~")
-    with open(temp_notes, "w") as f:
+    with open(notes_filename + "~", "w") as f:
         for one_line in lines:
             f.write(one_line)
-    os.replace(temp_notes, notes_filename)
+    os.replace(notes_filename + "~", notes_filename)
 
 
 def _create(args, notes_dir, notes_filename, gh, drake):
     """The --create action."""
 
-    if notes_filename.exists():
+    if os.path.exists(notes_filename):
         raise RuntimeError(f"{notes_filename} already exists")
-
-    # Update the version numbers in from_binary.md.
-    from_binary_path = notes_dir / "../_pages/from_binary.md"
-    old_text = from_binary_path.read_text(encoding="utf-8")
-    new_text = old_text.replace(args.prior_version, args.version)
-    from_binary_path.write_text(new_text, encoding="utf-8")
 
     # Find the commit sha for the prior_version release.
     prior_sha = next(drake.commits(sha=args.prior_version)).sha
     logging.debug(f"Prior release {args.prior_version} was {prior_sha}")
 
     # Fill in the notes template.
-    template = (notes_dir / "template.txt").read_text(encoding="utf-8")
+    with open(f"{notes_dir}/template.txt", "r") as f:
+        template = f.read()
     content = template.format(
         version=args.version[1:],
         prior_version=args.prior_version[1:],
@@ -334,7 +327,8 @@ def _create(args, notes_dir, notes_filename, gh, drake):
     content = content[content.index("\n") + 1:]
 
     # Write the notes skeleton to disk.
-    notes_filename.write_text(content, encoding="utf-8")
+    with open(notes_filename, "w") as f:
+        f.write(content)
 
 
 def main():
@@ -376,10 +370,10 @@ def main():
     # Find the file to operate on.
     me = os.path.realpath(sys.argv[0])
     workspace = os.path.dirname(os.path.dirname(os.path.dirname(me)))
-    notes_dir = Path(f"{workspace}/doc/_release-notes")
-    if not notes_dir.is_dir():
+    notes_dir = f"{workspace}/doc/_release-notes"
+    if not os.path.isdir(notes_dir):
         parser.error("Could not find release_notes directory")
-    notes_filename = notes_dir / f"{args.version}.md"
+    notes_filename = f"{notes_dir}/{args.version}.md"
 
     # Authenticate to GitHub.
     with open(os.path.expanduser(args.token_file), "r") as f:
