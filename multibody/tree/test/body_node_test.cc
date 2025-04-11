@@ -73,6 +73,12 @@ class DummyBodyNode : public BodyNode<double> {
     DRAKE_UNREACHABLE();
   }
 
+  void CalcPositionKinematicsCacheInM_BaseToTip(
+      const FrameBodyPoseCache<T>&, const T*,
+      PositionKinematicsCacheInM<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
       const FrameBodyPoseCache<T>&, const T*, const PositionKinematicsCache<T>&,
       std::vector<Vector6<T>>*) const final {
@@ -83,6 +89,12 @@ class DummyBodyNode : public BodyNode<double> {
       const T*, const PositionKinematicsCache<T>&,
       const std::vector<Vector6<T>>&, const T*,
       VelocityKinematicsCache<T>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcVelocityKinematicsCacheInM_BaseToTip(
+      const T*, const PositionKinematicsCacheInM<T>&, const T*,
+      VelocityKinematicsCacheInM<T>*) const final {
     DRAKE_UNREACHABLE();
   }
 
@@ -115,6 +127,13 @@ class DummyBodyNode : public BodyNode<double> {
     DRAKE_UNREACHABLE();
   }
 
+  void CalcSpatialAccelerationInM_BaseToTip(
+      const T*, const PositionKinematicsCacheInM<T>&, const T*,
+      const VelocityKinematicsCacheInM<T>&, const T*,
+      std::vector<SpatialAcceleration<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
   void CalcInverseDynamics_TipToBase(const FrameBodyPoseCache<T>&, const T*,
                                      const PositionKinematicsCache<T>&,
                                      const std::vector<SpatialInertia<T>>&,
@@ -124,6 +143,16 @@ class DummyBodyNode : public BodyNode<double> {
                                      const Eigen::Ref<const VectorX<T>>&,
                                      std::vector<SpatialForce<T>>*,
                                      EigenPtr<VectorX<T>>) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcInverseDynamicsInM_TipToBase(
+      const FrameBodyPoseCache<T>&, const T*,
+      const PositionKinematicsCacheInM<T>&,
+      const VelocityKinematicsCacheInM<T>&,
+      const std::vector<SpatialAcceleration<T>>&,
+      const std::vector<SpatialForce<T>>&, const Eigen::Ref<const VectorX<T>>&,
+      std::vector<SpatialForce<T>>*, EigenPtr<VectorX<T>>) const final {
     DRAKE_UNREACHABLE();
   }
 
@@ -191,9 +220,8 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
   const SpanningForest::Mobod dummy_mobod(MobodIndex(0), LinkOrdinal(0));
   {
     // Rotation only.
-    const RevoluteMobilizer<double> mobilizer(dummy_mobod, parent.body_frame(),
-                                              child.body_frame(),
-                                              Vector3d{0, 0, 1});
+    const RevoluteMobilizerAxial<double, 2> mobilizer(
+        dummy_mobod, parent.body_frame(), child.body_frame());
     const DummyBodyNode body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),
@@ -251,8 +279,8 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
   const DummyBody world("world", world_index());
   const DummyBody body("child", BodyIndex(1));
   const SpanningForest::Mobod dummy_mobod(MobodIndex(0), LinkOrdinal(0));
-  const RevoluteMobilizer<double> mobilizer(
-      dummy_mobod, world.body_frame(), body.body_frame(), Vector3d{0, 0, 1});
+  const RevoluteMobilizerAxial<double, 2> mobilizer(
+      dummy_mobod, world.body_frame(), body.body_frame());
   const DummyBodyNode world_node(nullptr, &world, nullptr);
   const DummyBodyNode body_node(&world_node, &body, &mobilizer);
 
