@@ -71,9 +71,8 @@ class FrameBodyPoseCache {
   void Set_X_BF(int body_pose_index, const math::RigidTransform<T>& X_BF) {
     // This method is only called when parameters change.
     DRAKE_DEMAND(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
-  // Returns true for body frames.
-  bool is_X_BF_identity(int body_pose_index) const {
-    return body_pose_index == 0;
+    X_BF_pool_[body_pose_index] = X_BF;
+    X_FB_pool_[body_pose_index] = X_BF.inverse();
   }
 
   const math::RigidTransform<T>& get_X_MbF(FrameIndex index) const {

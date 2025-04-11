@@ -122,9 +122,9 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcPositionKinematicsCache_BaseToTip(
 // Calculate and save X_FM, X_MpM, X_WM
 template <typename T, class ConcreteMobilizer>
 void BodyNodeImpl<T, ConcreteMobilizer>::
-CalcPositionKinematicsCacheInM_BaseToTip(
-    const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
-    PositionKinematicsCacheInM<T>* pcm) const {
+    CalcPositionKinematicsCacheInM_BaseToTip(
+        const FrameBodyPoseCache<T>& frame_body_pose_cache, const T* positions,
+        PositionKinematicsCacheInM<T>* pcm) const {
   DRAKE_ASSERT(pcm != nullptr);
   const MobodIndex index = mobod_index();
   DRAKE_ASSERT(index != world_mobod_index());
@@ -755,7 +755,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcInverseDynamicsInM_TipToBase(
   // F_BMo_M is an output and will be the total force on B.
   SpatialForce<T>& F_BMo_M = (*F_BMo_M_array)[index];
   F_BMo_M = M_BMo_M * A_WM_M             // 45 flops
-      + Fbias_BMo_M - Fapp_BMo_M;  // 12 flops
+            + Fbias_BMo_M - Fapp_BMo_M;  // 12 flops
 
   // Next, account for forces applied to B through its outboard joints, treated
   // as though they were locked. Since we're going tip to base we already have
