@@ -169,12 +169,12 @@ the main body of the document:
       appropriate edits as follows:
       * The version number
    5. Click the box labeled "Attach binaries by dropping them here or selecting
-      them." and then choose for upload the **36** release files from
+      them." and then choose for upload the **33** release files from
       ``/tmp/drake-release/v1.N.0/...``:
       - 9: 3 `.tar.gz` + 6 checksums
       - 6: 2 `.deb` + 4 checksums
       - 12: 4 linux `.whl` + 8 checksums
-      - 9: 3 macOS arm `.whl` + 6 checksums
+      - 6: 2 macOS arm `.whl` + 4 checksums
       * Note that on Jammy with `snap` provided Firefox, drag-and-drop from
         Nautilus will fail, and drop all of your release page inputs typed so
         far. Use the Firefox-provided selection dialog instead, by clicking on

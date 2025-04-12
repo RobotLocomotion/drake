@@ -21,7 +21,6 @@ _files_to_remove = []
 # default, all targets are built, but the user may down-select from this set.
 # On macOS (unlike Linux), this is just the set of Python versions targeted.
 python_targets = (
-    PythonTarget(3, 11),
     PythonTarget(3, 12),
     PythonTarget(3, 13),
 )

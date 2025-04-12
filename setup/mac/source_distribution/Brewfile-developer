@@ -8,15 +8,11 @@ brew 'coreutils'
 # Python(s) for building wheels.  These should be kept in sync with
 # `python_targets` in `tools/wheel/wheel_builder/macos.py`.
 #
-# TODO(@aiden2244): As of writing, we still support 3.11, however, Drake 1.40
-# is slated to be the last version that supports 3.11, and also the last
-# release that does not use AWS. Since the builder is still responsible for
-# installing the requisite Python, this is okay. For AWS, however, we intend
-# to remove macOS provisioning from the builder, at which point this will
-# become the only "source of truth". Meanwhile, we are updating this file in
-# order to provide the expected needs for the AWS provisioned images (which we
-# don't expect to ever build 3.11 wheels). After 1.40 is released, we should
-# a) drop Python 3.11, b) remove macOS provisioning from the wheel builder,
-# and c) remove this TODO, in that order.
+# TODO(@aiden2244): Drake 1.40 was the last release that used MacStadium for
+# wheels builds instead of AWS. For AWS, we intend to remove macOS provisioning
+# from the builder, at which point this will become the only "source of truth".
+# Meanwhile, we are updating this file in order to provide the expected needs
+# for the AWS provisioned images. Soon we should a) remove macOS provisioning
+# from the wheel builder, and b) remove this TODO, in that order.
 brew 'python@3.12'
 brew 'python@3.13'
