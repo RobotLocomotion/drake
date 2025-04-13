@@ -13,16 +13,43 @@ Utilities for arithmetic on AutoDiffScalar. */
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/common/autodiff.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 
 namespace drake {
 namespace math {
 
-/** Extracts the `value()` portion from a matrix of AutoDiffScalar entries.
+/** Extracts the `value()` portion from an AutoDiffScalar matrix into a
+pre-existing matrix (resizing if necessary).
+
+@param[in] auto_diff_matrix An object whose Eigen type represents a matrix of
+  AutoDiffScalar entries.
+@param[out] value An Eigen::Matrix resized if necessary to the same size as
+  the input matrix, and copies only the value portion of each entry, without
+  the derivatives.
+@tparam Derived An Eigen type representing a matrix with AutoDiffScalar
+  entries. The type will be inferred from the type of the `auto_diff_matrix`
+  parameter at the call site.
+@pre `value != nullptr`.
+@exclude_from_pydrake_mkdoc{This overload is not bound.} */
+template <typename Derived>
+void ExtractValue(
+    const Eigen::MatrixBase<Derived>& auto_diff_matrix,
+    MatrixLikewise<typename Derived::Scalar::Scalar, Derived>* value) {
+  DRAKE_THROW_UNLESS(value != nullptr);
+  value->resize(auto_diff_matrix.rows(), auto_diff_matrix.cols());
+  for (int i = 0; i < auto_diff_matrix.rows(); ++i) {
+    for (int j = 0; j < auto_diff_matrix.cols(); ++j) {
+      (*value)(i, j) = auto_diff_matrix(i, j).value();
+    }
+  }
+}
+
+/** Returns the `value()` portion from a matrix of AutoDiffScalar entries.
 (Each entry contains a value and some derivatives.)
 
-@param auto_diff_matrix An object whose Eigen type represents a matrix of
+@param[in] auto_diff_matrix An object whose Eigen type represents a matrix of
     AutoDiffScalar entries.
 @retval value An Eigen::Matrix of the same dimensions as the input
     matrix, but containing only the value portion of each entry, without the
@@ -46,11 +73,7 @@ MatrixLikewise<typename Derived::Scalar::Scalar, Derived> ExtractValue(
     const Eigen::MatrixBase<Derived>& auto_diff_matrix) {
   MatrixLikewise<typename Derived::Scalar::Scalar, Derived> value(
       auto_diff_matrix.rows(), auto_diff_matrix.cols());
-  for (int i = 0; i < auto_diff_matrix.rows(); ++i) {
-    for (int j = 0; j < auto_diff_matrix.cols(); ++j) {
-      value(i, j) = auto_diff_matrix(i, j).value();
-    }
-  }
+  ExtractValue(auto_diff_matrix, &value);
   return value;
 }
 
@@ -180,7 +203,7 @@ AutoDiffMatrixType<Derived, nq> InitializeAutoDiff(
   return auto_diff_matrix;
 }
 
-/* Given a series of Eigen matrices, creates a tuple of corresponding
+/** Given a series of Eigen matrices, creates a tuple of corresponding
 AutoDiff matrices with values equal to the input matrices and properly
 initialized derivative vectors.
 
