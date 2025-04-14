@@ -140,8 +140,8 @@ void ConvexIntegrator<T>::DoInitialize() {
 
 template <typename T>
 bool ConvexIntegrator<T>::DoStep(const T& h) {
-  // return DoStepWithHalfStepErrorEstimate(h);
-  return DoStepWithSDIRK(h);
+  return DoStepWithHalfStepErrorEstimate(h);
+  // return DoStepWithSDIRK(h);
 }
 
 template <typename T>
