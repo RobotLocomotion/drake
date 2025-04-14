@@ -30,10 +30,10 @@ void SolverState<T, Grid>::Reset(const MpmModel<T, Grid>& model) {
     }
   });
   F_ = particle_data.F();
-  scratch_ = particle_data.deformation_gradient_data();
+  deformation_gradient_data_ = particle_data.deformation_gradient_data();
   tau_volume_ = particle_data.tau_volume();
   volume_scaled_stress_derivatives_.resize(F_.size());
-  particle_data.ComputePK1StressDerivatives(F_, &scratch_,
+  particle_data.ComputePK1StressDerivatives(F_, &deformation_gradient_data_,
                                             &volume_scaled_stress_derivatives_);
 
   index_permutation_ = grid_->SetNodeIndices();
@@ -90,8 +90,11 @@ void SolverState<T, Grid>::UpdateState(const VectorX<T>& ddv,
   grid_->ApplyGridToParticleKernel(&mutable_particle_data, update_F_kernel);
 
   /* Then update stress and stress derivatives. */
-  particle_data.ComputeKirchhoffStress(F_, &scratch_, &tau_volume_);
-  particle_data.ComputePK1StressDerivatives(F_, &scratch_,
+  elastic_energy_ =
+      particle_data.ComputeTotalEnergy(F_, &deformation_gradient_data_);
+  particle_data.ComputeKirchhoffStress(F_, &deformation_gradient_data_,
+                                       &tau_volume_);
+  particle_data.ComputePK1StressDerivatives(F_, &deformation_gradient_data_,
                                             &volume_scaled_stress_derivatives_);
 }
 
