@@ -90,6 +90,7 @@ void SolverState<T, Grid>::UpdateState(const VectorX<T>& ddv,
   grid_->ApplyGridToParticleKernel(&mutable_particle_data, update_F_kernel);
 
   /* Then update stress and stress derivatives. */
+  elastic_energy_ = particle_data.ComputeTotalEnergy(F_, &scratch_);
   particle_data.ComputeKirchhoffStress(F_, &scratch_, &tau_volume_);
   particle_data.ComputePK1StressDerivatives(F_, &scratch_,
                                             &volume_scaled_stress_derivatives_);

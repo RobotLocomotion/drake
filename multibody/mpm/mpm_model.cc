@@ -13,8 +13,7 @@ MpmModel<T, Grid>::MpmModel(T dt, double dx, ParticleData<T> particle_data)
     : dt_(dt),
       dx_(dx),
       particle_data_(std::move(particle_data)),
-      D_inverse_(4.0 / (dx_ * dx_)),
-      scratch_(particle_data_.deformation_gradient_data()) {
+      D_inverse_(4.0 / (dx_ * dx_)) {
   DRAKE_DEMAND(dt > 0);
   DRAKE_DEMAND(dx > 0);
 }
@@ -25,8 +24,7 @@ T MpmModel<T, Grid>::CalcCost(const SolverState<T, Grid>& solver_state) const {
   const int num_dofs = solver_state.num_dofs();
   const VectorX<T>& dv = solver_state.dv();
   /* Potential energy from the particles. */
-  T total_energy =
-      particle_data_.ComputeTotalEnergy(solver_state.F(), &scratch_);
+  T total_energy = solver_state.elastic_energy();
   /* The 1/2*dv*M*dv term. */
   solver_state.grid().IterateConstGrid([&](const GridData<T>& node) {
     if (node.m > 0.0) {
@@ -65,14 +63,14 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
   using U = typename Grid::NodeScalarType;
   using PadNodeType = typename Grid::PadNodeType;
   using PadDataType = typename Grid::PadDataType;
-  /* Splat temporary (negative) impulses to the grid data scratch and collect
-   them into the result. */
+  /* Splat temporary impulses to the grid data scratch and collect them into the
+   result. */
   auto splat_force_kernel = [&](int p_index, const PadNodeType& grid_x,
                                 const ParticleData<T>& particle_data,
                                 PadDataType* grid_data) {
-    const Vector3<T>& x = particle_data.x()[p_index];
+    const Vector3<T>& xp = particle_data.x()[p_index];
     const BsplineWeights<U> bspline =
-        MakeBsplineWeights(x, static_cast<U>(dx_));
+        MakeBsplineWeights(xp, static_cast<U>(dx_));
     for (int a = 0; a < 3; ++a) {
       for (int b = 0; b < 3; ++b) {
         for (int c = 0; c < 3; ++c) {
@@ -91,7 +89,7 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
            terms reveals that - fᵢdt is given by the equation in the code
            below. */
           (*grid_data)[a][b][c].v +=
-              tau_volume * (xi - x) * D_inverse_ * dt_ * w_ip;
+              tau_volume * (xi - xp) * D_inverse_ * dt_ * w_ip;
         }
       }
     }

@@ -15,7 +15,7 @@ namespace multibody {
 namespace mpm {
 namespace internal {
 
-/* The SolverState class works closely with ModelModel and stores the state of
+/* The SolverState class works closely with MpmModel and stores the state of
  the MPM system during the optimization process (see MpmModel). It holds the
  grid velocity change, `dv`, and other quantities that depend on `dv`
  optimization process. */
@@ -32,14 +32,14 @@ class SolverState {
    step. */
   explicit SolverState(const MpmModel<T, Grid>& model);
 
-  /* Resets the SolverState to be compatible with the given MpmModel.
+  /* Resets the SolverState to be compatible with the given MpmModel. Makes this
    @pre  model.dx() == grid().dx().
    @post `this` SolverState is as if it was just constructed with the given
    MpmModel. */
   void Reset(const MpmModel<T, Grid>& model);
 
-  /* Returns the number of degrees of freedom (DoFs) in the system), which is
-   the 3 times the number of supported grid nodes. */
+  /* Returns the number of degrees of freedom (DoFs) in the optimization
+   problem, which is the 3 times the number of supported grid nodes. */
   int num_dofs() const {
     DRAKE_ASSERT(is_valid_);
     return dv_.size();
@@ -71,6 +71,11 @@ class SolverState {
     return F_;
   }
 
+  T elastic_energy() const {
+    DRAKE_ASSERT(is_valid_);
+    return elastic_energy_;
+  }
+
   const std::vector<Matrix3<T>>& tau_volume() const {
     DRAKE_ASSERT(is_valid_);
     return tau_volume_;
@@ -95,6 +100,7 @@ class SolverState {
   contact_solvers::internal::VertexPartialPermutation index_permutation_;
   std::vector<Matrix3<T>> F_;
   std::vector<DeformationGradientDataVariant<T>> scratch_;
+  T elastic_energy_{};
   std::vector<Matrix3<T>> tau_volume_;
   std::vector<math::internal::FourthOrderTensor<T>>
       volume_scaled_stress_derivatives_;

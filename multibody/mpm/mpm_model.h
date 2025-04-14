@@ -41,24 +41,23 @@ class SolverState;
  work with dv = v - vⁿ because it's slightly more convenient.
 
  MpmModel stores the particle data evaluated at time step tⁿ (e.g Fₚⁿ) and those
- that are constant (e.g. volₚ). The state that changes during the optimization
- process, such as dv, Fₚ(v; Fₚⁿ), and stress [dΨ/dFₚ(Fₚ(v; Fₚⁿ))] are stored in
- SolverState. MpmModel provides functions to compute the cost,
- gradient(residual), and Hessian of the objective function by evaluating them at
- a given solver state. Once the solver state that minimizes the objective has
- been found, the state can be used to update the MpmModel (see
+ that are constant during the optimization process (e.g. volₚ). The state that
+ changes during the optimization process, such as dv, Fₚ(v; Fₚⁿ), and stress
+ [dΨ/dFₚ(Fₚ(v; Fₚⁿ))] are stored in SolverState. MpmModel provides functions to
+ compute the cost, gradient(residual), and Hessian of the objective function by
+ evaluating them at a given solver state. Once the solver state that minimizes
+ the objective has been found, the state can be used to update the MpmModel (see
  SolverState::UpdateModel). */
 template <typename T, typename Grid = SparseGrid<T>>
 class MpmModel {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpmModel);
 
-  /* Creates a MpmModel derived from the given particles.
+  /* Creates a MpmModel given the current state of particles.
    @param[in] dt         The time step used in this MpmModel (in seconds).
    @param[in] dx         The grid spacing (in meters).
    @param[in] particles  The particle data.
-   @pre dt > 0 and dx > 0.
-   @pre particles and grid are non-null. */
+   @pre dt > 0 and dx > 0. */
   MpmModel(T dt, double dx, ParticleData<T> particles);
 
   T dt() const { return dt_; }
@@ -83,7 +82,6 @@ class MpmModel {
   double dx_{};
   ParticleData<T> particle_data_{};
   T D_inverse_{};
-  mutable std::vector<DeformationGradientDataVariant<T>> scratch_;
 };
 
 }  // namespace internal
