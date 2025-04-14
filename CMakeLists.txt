@@ -1,7 +1,12 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-cmake_minimum_required(VERSION 3.18)
+# Update this version in accordance with the minimum officially supported
+# version documented in https://drake.mit.edu/from_source.html.
+# When this changes, tools/install/libdrake/drake-config.cmake.in should be
+# should be changed accordingly so that downstream users are synced with
+# Drake's source itself.
+cmake_minimum_required(VERSION 3.22)
 
 project(drake
   DESCRIPTION "Model-based design and verification for robotics"
