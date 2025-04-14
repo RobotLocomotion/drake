@@ -56,7 +56,8 @@ If you need to use these, you can use an old release of Drake.
     [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 * Python 3.11 (Wheel)
   * On Linux, Drake still supports Python 3.11 wheels.
-  * On macOS arm64, Drake still supports Python 3.11 wheels.
+  * On macOS arm64, the last version with support for Python 3.11 wheels was
+    [v1.40.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.40.0).
   * On macOS x86_64, the last version with support for Python 3.11 wheels was
     [v1.34.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.34.0).
 * Python 3.10 (Wheel)
