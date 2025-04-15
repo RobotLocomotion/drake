@@ -10,6 +10,7 @@ import subprocess
 
 from .common import create_snopt_tgz, die, gripe, wheel_name
 from .common import build_root, resource_root, wheel_root, wheelhouse
+from .common import install_root
 from .common import test_root, find_tests
 
 from .macos_types import PythonTarget
@@ -116,7 +117,8 @@ def build(options):
             'resulted in an empty set of wheels)')
 
     # Set up build environment.
-    os.makedirs(build_root, exist_ok=True)
+    delete_known_build_directories()
+    os.makedirs(build_root)
 
     # Sanitize the build/test environment.
     environment = os.environ.copy()
@@ -177,10 +179,7 @@ def build(options):
         os.unlink(wheel_root)
 
     if not options.keep_build:
-        shutil.rmtree('/opt/drake-dist')
-        shutil.rmtree(build_root)
-        if options.test:
-            shutil.rmtree(test_root)
+        delete_known_build_directories()
 
 
 def add_build_arguments(parser):
@@ -210,3 +209,24 @@ def fixup_options(options):
     (Converts comma-separated strings to sets.)
     """
     options.python_versions = set(options.python_versions.split(','))
+
+
+def delete_known_build_directories():
+    """
+    Removes the /opt/drake-* directories and the /opt/drake symlink.
+    """
+    known_build_directories = [
+        install_root,
+        build_root,
+        test_root,
+    ]
+
+    for target in known_build_directories:
+        if os.path.isdir(target):
+            shutil.rmtree(target)
+
+    # /opt/drake SHOULD be a symlink to install_root.
+    if os.path.isdir('/opt/drake'):
+        die('Error: /opt/drake exists and is not a symlink')
+    if os.path.islink('/opt/drake'):
+        os.unlink('/opt/drake')
