@@ -19,6 +19,9 @@ build_root = '/opt/drake-wheel-build'
 # Location where testing of the wheel will take place.
 test_root = '/opt/drake-wheel-test'
 
+# Location of the Drake installation used to build the wheel.
+drake_install_root = '/opt/drake-dist'
+
 # Location where the wheel will be produced.
 wheel_root = os.path.join(build_root, 'wheel')
 wheelhouse = os.path.join(wheel_root, 'wheelhouse')
@@ -216,6 +219,7 @@ def do_main(args, platform):
 
     # Parse arguments.
     options = parser.parse_args(args)
+    print(f'DEBUG: options = {options}')
     if platform is not None:
         platform.fixup_options(options)
 
