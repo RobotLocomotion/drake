@@ -1,3 +1,4 @@
+from genericpath import isdir
 # This file contains macOS-specific logic used to build the PyPI wheels. See
 # build-wheels for the user interface.
 
@@ -10,6 +11,7 @@ import subprocess
 
 from .common import create_snopt_tgz, die, gripe, wheel_name
 from .common import build_root, resource_root, wheel_root, wheelhouse
+from .common import drake_install_root
 from .common import test_root, find_tests
 
 from .macos_types import PythonTarget
@@ -116,6 +118,7 @@ def build(options):
             'resulted in an empty set of wheels)')
 
     # Set up build environment.
+    delete_known_build_directories()
     os.makedirs(build_root, exist_ok=True)
 
     # Sanitize the build/test environment.
@@ -210,3 +213,24 @@ def fixup_options(options):
     (Converts comma-separated strings to sets.)
     """
     options.python_versions = set(options.python_versions.split(','))
+
+
+def delete_known_build_directories():
+    """
+    Removes the /opt/drake-* directories and the /opt/drake symlink
+    """
+    known_build_directories = [
+        drake_install_root,
+        build_root,
+        test_root,
+    ]
+
+    for target in known_build_directories:
+        if os.path.isdir(target):
+            shutil.rmtree(target)
+
+    # /opt/drake SHOULD be a symlink to drake_install_root.
+    if os.path.isdir('/opt/drake'):
+        die('Error: /opt/drake is a directory (should be a symlink)')
+    if os.path.islink('/opt/drake'):
+        os.unlink('/opt/drake')
