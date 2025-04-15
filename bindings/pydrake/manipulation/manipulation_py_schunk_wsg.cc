@@ -9,6 +9,7 @@
 #include "drake/manipulation/schunk_wsg/schunk_wsg_driver_functions.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_lcm.h"
 #include "drake/manipulation/schunk_wsg/schunk_wsg_position_controller.h"
+#include "drake/manipulation/schunk_wsg/schunk_wsg_trajectory_generator.h"
 
 namespace drake {
 namespace pydrake {
@@ -106,6 +107,27 @@ void DefineManipulationSchunkWsg(py::module m) {
             py_rvp::reference_internal, cls_doc.get_state_input_port.doc)
         .def("get_force_input_port", &Class::get_force_input_port,
             py_rvp::reference_internal, cls_doc.get_force_input_port.doc);
+  }
+
+  {
+    using Class = manipulation::schunk_wsg::SchunkWsgTrajectoryGenerator;
+    constexpr auto& cls_doc = doc.SchunkWsgTrajectoryGenerator;
+    py::class_<Class, LeafSystem<double>>(
+        m, "SchunkWsgTrajectoryGenerator", cls_doc.doc)
+        .def(py::init<int, int, bool>(), py::arg("input_size"),
+            py::arg("position_index"), py::arg("use_force_limit") = true,
+            cls_doc.ctor.doc)
+        .def("get_desired_position_input_port",
+            &Class::get_desired_position_input_port, py_rvp::reference_internal,
+            cls_doc.get_desired_position_input_port.doc)
+        .def("get_force_limit_input_port", &Class::get_force_limit_input_port,
+            py_rvp::reference_internal, cls_doc.get_force_limit_input_port.doc)
+        .def("get_state_input_port", &Class::get_state_input_port,
+            py_rvp::reference_internal, cls_doc.get_state_input_port.doc)
+        .def("get_target_output_port", &Class::get_target_output_port,
+            py_rvp::reference_internal, cls_doc.get_target_output_port.doc)
+        .def("get_max_force_output_port", &Class::get_max_force_output_port,
+            py_rvp::reference_internal, cls_doc.get_max_force_output_port.doc);
   }
 
   {
