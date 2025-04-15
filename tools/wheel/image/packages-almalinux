@@ -13,6 +13,7 @@ make
 pkgconf-pkg-config
 
 # Other general tools.
+diffutils
 file
 patch
 patchelf
