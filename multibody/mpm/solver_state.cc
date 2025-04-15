@@ -57,9 +57,8 @@ void SolverState<T, Grid>::UpdateState(const VectorX<T>& ddv,
   using PadDataType = typename Grid::PadDataType;
   auto update_F_kernel = [this, dt](int p_index, const PadNodeType& grid_x,
                                     const PadDataType& grid_data,
-                                    ParticleData<T>* particle_data) {
-    const ParticleData<T>& const_particle_data = *particle_data;
-    const Vector3<T>& x = const_particle_data.x()[p_index];
+                                    const ParticleData<T>& particle_data) {
+    const Vector3<T>& x = particle_data.x()[p_index];
     Matrix3<T> C = Matrix3<T>::Zero();
     const BsplineWeights<U> bspline =
         MakeBsplineWeights(x, static_cast<U>(grid_->dx()));
@@ -78,16 +77,11 @@ void SolverState<T, Grid>::UpdateState(const VectorX<T>& ddv,
       }
     }
     C *= transfer_.D_inverse();
-    const Matrix3<T>& F0 = const_particle_data.F()[p_index];
+    const Matrix3<T>& F0 = particle_data.F()[p_index];
     F_[p_index] = F0 + C * dt * F0;
   };
   const auto& particle_data = model.particle_data();
-  /* We const cast the particle data to satisfy the signature of G2P, but we
-   don't actually modify the content of the particle data as seen in the
-   kernel above; instead, we only make use of the side-effect of the transfer.
-  */
-  auto& mutable_particle_data = const_cast<ParticleData<T>&>(particle_data);
-  grid_->ApplyGridToParticleKernel(&mutable_particle_data, update_F_kernel);
+  grid_->IterateParticleAndGrid(particle_data, update_F_kernel);
 
   /* Then update stress and stress derivatives. */
   elastic_energy_ =

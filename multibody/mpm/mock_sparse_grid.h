@@ -95,6 +95,14 @@ class MockSparseGrid {
     particle_sorter_.Iterate(this, &particle_data, kernel);
   }
 
+  void IterateParticleAndGrid(
+      const ParticleData<T>& particle_data,
+      const std::function<void(int, const Pad<Vector3<double>>&,
+                               const Pad<GridData<T>>&,
+                               const ParticleData<T>&)>& kernel) const {
+    particle_sorter_.Iterate(this, &particle_data, kernel);
+  }
+
   void IterateGrid(const std::function<void(GridData<T>*)>& func);
 
   void IterateConstGrid(

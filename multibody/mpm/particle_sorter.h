@@ -65,6 +65,13 @@ template <typename Grid, typename ParticleData>
 using P2GKernelType = std::function<void(
     int, const PadNodeType<Grid>&, const ParticleData&, PadDataType<Grid>*)>;
 
+/* Callback type used by ParticleSorter::Iterate for operations that don't
+modify either the particles or the grid. */
+template <typename Grid, typename ParticleData>
+using TraverseKernelType =
+    std::function<void(int, const PadNodeType<Grid>&, const PadDataType<Grid>&,
+                       const ParticleData&)>;
+
 /* ParticleSorter sorts MPM particle data based on their positions within the
  grid.
 
@@ -235,17 +242,26 @@ class ParticleSorter {
     using PadNodeType = typename Grid::PadNodeType;
     using PadDataType = typename Grid::PadDataType;
 
-    constexpr bool is_g2p = std::is_const_v<Grid>;
-    constexpr bool is_p2g = std::is_const_v<ParticleData>;
-    static_assert(is_g2p ^ is_p2g);
+    constexpr bool const_grid = std::is_const_v<Grid>;
+    constexpr bool const_particle = std::is_const_v<ParticleData>;
+
+    constexpr bool is_g2p = const_grid && !const_particle;
+    constexpr bool is_p2g = const_particle && !const_grid;
+    constexpr bool is_traverse = const_grid && const_particle;
+    static_assert(is_g2p || is_p2g || is_traverse);
     if constexpr (is_g2p) {
       static_assert(std::is_same_v<Func, G2PKernelType<Grid, ParticleData>>,
                     "The provided function does not match the expected "
                     "signature for grid-to-particle operations.");
-    } else {
+    } else if constexpr (is_p2g) {
       static_assert(std::is_same_v<Func, P2GKernelType<Grid, ParticleData>>,
                     "The provided function does not match the expected "
                     "signature for particle-to-grid operations.");
+    } else {
+      static_assert(
+          std::is_same_v<Func, TraverseKernelType<Grid, ParticleData>>,
+          "The provided function does not match the expected "
+          "signature for traverse operations.");
     }
 
     /* Temporary variables for pad nodes and pad data. */
@@ -275,8 +291,11 @@ class ParticleSorter {
         /* Apply the provided function to the current particle. */
         if constexpr (is_g2p) {
           func(data_index, grid_nodes, grid_data, particle_data_ptr);
-        } else {
+        } else if constexpr (is_p2g) {
           func(data_index, grid_nodes, *particle_data_ptr, &grid_data);
+        } else {
+          static_assert(is_traverse);
+          func(data_index, grid_nodes, grid_data, *particle_data_ptr);
         }
 
         /* Determine if the next particle requires new pad data. */
