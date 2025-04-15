@@ -1,4 +1,5 @@
 default-jdk
+diffutils
 file
 gfortran
 libclang-15-dev
