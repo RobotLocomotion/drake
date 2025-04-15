@@ -634,7 +634,7 @@ int do_main() {
     return systems::EventStatus::Succeeded();
   });
 
-  simulator->set_publish_every_time_step(true);
+  simulator->set_publish_every_time_step(false);
   simulator->Initialize();
   if (FLAGS_visualize) {
     // Wait for meshcat to load
