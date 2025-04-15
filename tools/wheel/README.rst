@@ -14,10 +14,13 @@ environment setup required. However, it is recommended to run the script on the
 most recent version of Ubuntu LTS that is supported by Drake.
 
 On macOS, Drake's dependencies must be installed already (i.e. by preparing an
-environment as one would to build Drake normally). There are a small number of
-additional dependencies that will be installed by the builder, so the builder
-must be able to run ``brew``. The builder must also be able to write to
-``/opt``, as this is where the build is performed.
+environment as one would to build Drake normally).
+
+There are a small number of dependencies for the the builder scripts to work
+that Drake itself does not require. In order to install these additional
+packages, run the ``setup/install_prereqs`` script with the ``--developer``
+flag. The builder must also be able to write to ``/opt``, as this is where the
+build is performed.
 
 The script takes a single, required positional argument, which is used to
 specify the version with which the wheels should be tagged. The version number
@@ -137,7 +140,9 @@ located at ``/opt/drake``. Since multiple builds may be present, a temporary
 symlink is created at this path to the actual, Python-version-specific
 installation while building the wheel. Therefore, this path must be available.
 
-After performing wheel-specific provisioning using ``brew``, the builder
-invokes ``macos/build-wheel.sh``, optionally (and if the build succeeded)
-followed by ``macos/test-wheel.sh``. These scripts approximately replicate what
-would happen in Docker, and heavily reuse the same lower level scripts.
+Starting from a provisioned wheel building environment (installed via
+``setup/install_prereqs --developer``), the builder invokes
+``macos/build-wheel.sh``, optionally (and if the build succeeded) followed by
+``macos/provision-test-python.sh``, ``test/install-wheel.sh``, and
+``test/test-wheel.sh``, in that order. These scripts approximately replicate
+what would happen in Docker, and heavily reuse the same lower level scripts.
