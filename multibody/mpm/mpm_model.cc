@@ -43,22 +43,9 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
                                      VectorX<T>* result) const {
   DRAKE_ASSERT(result != nullptr);
   result->resize(solver_state.num_dofs());
+  result->setZero();
   constexpr int kDim = 3;
-  /* We borrow the grid velocity memory to temporarily store the forces. We will
-   restore the grid velocity before leaving this function. */
-  auto& grid = const_cast<Grid&>(solver_state.grid());
-  /* Back up grid velocity and reset grid data to zero to prepare accumulation
-   of force. */
-  VectorX<T> backup_v = VectorX<T>::Zero(solver_state.num_dofs());
-  grid.IterateGrid([&](GridData<T>* node) {
-    if (node->m > 0.0) {
-      DRAKE_ASSERT(node->index_or_flag.is_index());
-      const int index = node->index_or_flag.index();
-      DRAKE_ASSERT(index >= 0 && index < backup_v.size() / 3);
-      backup_v.template segment<kDim>(index * kDim) = node->v;
-      node->v.setZero();
-    }
-  });
+  const Grid& grid = solver_state.grid();
 
   using U = typename Grid::NodeScalarType;
   using PadNodeType = typename Grid::PadNodeType;
@@ -66,8 +53,8 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
   /* Splat temporary impulses to the grid data scratch and collect them into the
    result. */
   auto splat_force_kernel = [&](int p_index, const PadNodeType& grid_x,
-                                const ParticleData<T>& particle_data,
-                                PadDataType* grid_data) {
+                                const PadDataType& grid_data,
+                                const ParticleData<T>& particle_data) {
     const Vector3<T>& xp = particle_data.x()[p_index];
     const BsplineWeights<U> bspline =
         MakeBsplineWeights(xp, static_cast<U>(dx_));
@@ -88,24 +75,24 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
            we group Vₚ * Pₚ * Fₚⁿᵀ into a single term `tau_v0`. Rearranging
            terms reveals that - fᵢdt is given by the equation in the code
            below. */
-          (*grid_data)[a][b][c].v +=
+          const int grid_index = grid_data[a][b][c].index_or_flag.index();
+          result->template segment<kDim>(kDim * grid_index) +=
               tau_volume * (xi - xp) * D_inverse_ * dt_ * w_ip;
         }
       }
     }
   };
-  grid.ApplyParticleToGridKernel(particle_data_, std::move(splat_force_kernel));
+  grid.IterateParticleAndGrid(particle_data_, splat_force_kernel);
   /* Collect from the scratch data, add in the M * dv term, and clear the
    scratch data. */
   const VectorX<T>& dv = solver_state.dv();
-  grid.IterateGrid([&](GridData<T>* node) {
-    if (node->m > 0.0) {
-      DRAKE_ASSERT(node->index_or_flag.is_index());
-      const int index = node->index_or_flag.index();
+  grid.IterateConstGrid([&](const GridData<T>& node) {
+    if (node.m > 0.0) {
+      DRAKE_ASSERT(node.index_or_flag.is_index());
+      const int index = node.index_or_flag.index();
       DRAKE_ASSERT(index >= 0 && index < result->size() / 3);
-      result->template segment<kDim>(index * kDim) =
-          node->m * dv.template segment<kDim>(index * kDim) + node->v;
-      node->v = backup_v.template segment<kDim>(index * kDim);
+      result->template segment<kDim>(index * kDim) +=
+          node.m * dv.template segment<kDim>(index * kDim);
     }
   });
 }
