@@ -210,7 +210,8 @@ TYPED_TEST(SparseGridTest, ComputeTotalMassAndMomentum) {
                               4.0 * std::numeric_limits<T>::epsilon()));
 }
 
-TYPED_TEST(SparseGridTest, ApplyGridToParticleKernel) {
+/* This tests both ApplyGridToParticleKernel and ApplyParticleToGridKernel. */
+TYPED_TEST(SparseGridTest, ApplyTransferKernel) {
   using Grid = TypeParam;
   using T = typename Grid::Scalar;
   using PadNodeType = typename Grid::PadNodeType;
@@ -284,6 +285,54 @@ TYPED_TEST(SparseGridTest, ApplyGridToParticleKernel) {
     vp /= 27.0;
   };
   grid.ApplyGridToParticleKernel(&particle_data, g2p_kernel);
+}
+
+TYPED_TEST(SparseGridTest, IterateParticleAndGrid) {
+  using Grid = TypeParam;
+  using T = typename Grid::Scalar;
+  using NodeType = typename Grid::NodeType;  // Vector3d or Vector3f
+  using PadNodeType = typename Grid::PadNodeType;
+  using PadDataType = typename Grid::PadDataType;
+
+  const double dx = 0.01;
+  Grid grid(dx);
+  const Vector3<double> q_WP0(0.001, 0.001, 0.001);
+  const Vector3<double> q_WP1(0.002, 0.001, 0.001);
+  const Vector3<double> q_WP2(0.052, 0.001, 0.001);
+  std::vector<Vector3<double>> q_WPs = {q_WP0, q_WP1, q_WP2};
+  ParticleData<T> particle_data;
+  particle_data.AddParticles(q_WPs, 1.0, fem::DeformableBodyConfig<double>());
+  grid.Allocate(particle_data.x());
+
+  struct Vector3Less {
+    bool operator()(const NodeType& a, const NodeType& b) const {
+      if (a.x() != b.x()) return a.x() < b.x();
+      if (a.y() != b.y()) return a.y() < b.y();
+      return a.z() < b.z();
+    }
+  };
+  std::set<NodeType, Vector3Less> grid_nodes;
+  std::set<int> particles;
+
+  /* Tests that IterateParticleAndGrid loops over all particles and grid nodes
+   as expected. */
+  auto collect_particle_and_grid_nodes =
+      [&](int p_index, const PadNodeType& grid_x, const PadDataType&,
+          const ParticleData<T>&) {
+        particles.insert(p_index);
+        for (int i = 0; i < 3; ++i) {
+          for (int j = 0; j < 3; ++j) {
+            for (int k = 0; k < 3; ++k) {
+              grid_nodes.insert(grid_x[i][j][k]);
+            }
+          }
+        }
+      };
+  grid.IterateParticleAndGrid(particle_data, collect_particle_and_grid_nodes);
+  EXPECT_EQ(particles.size(), 3);
+  /* There are two non-overlapping active pads, and each pad has 27 unique grid
+   nodes */
+  EXPECT_EQ(grid_nodes.size(), 2 * 27);
 }
 
 /* Tests both IterateGrid and IterateGrid. */

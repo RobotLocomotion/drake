@@ -181,18 +181,22 @@ TYPED_TEST(MpmModelTest, CalcResidual) {
   multibody::fem::DeformableBodyConfig<double> config;
   config.set_youngs_modulus(1.0);
   config.set_poissons_ratio(0.1);
-  config.set_mass_density(1.0);
-
-  particle_data.AddParticles({x0}, 1.0, config);
+  const double kRho = 1.2;
+  config.set_mass_density(kRho);
+  const double kVol = 2.3;
+  particle_data.AddParticles({x0}, kVol, config);
   const T dt = 0.02;
   constexpr T kTol = 4.0 * std::numeric_limits<T>::epsilon();
+  /* The mass of the only particle. */
+  ASSERT_EQ(particle_data.m().size(), 1);
+  const double particle_mass = particle_data.m()[0];
 
   MpmModel<T> model(dt, dx, particle_data);
   SolverState<T> state(model);
   const int num_dofs = model.num_dofs();
 
-  /* We set b to be an arbitrary value with an arbitrary size to test that the
-   function does not crash. */
+  /* We set residual be an arbitrary value with an arbitrary size to test that
+   the function does not crash. */
   VectorX<T> residual = VectorX<T>::LinSpaced(42, 0, 1);
   model.CalcResidual(state, &residual);
   EXPECT_TRUE(CompareMatrices(residual, VectorX<T>::Zero(num_dofs)));
@@ -205,8 +209,7 @@ TYPED_TEST(MpmModelTest, CalcResidual) {
   EXPECT_TRUE(CompareMatrices(state.dv(), ddv));
   model.CalcResidual(state, &residual);
   /* Get the Bspline weights between the only particle and the pad it
-   * supports.
-   */
+   supports. */
   const BsplineWeights<T> weights(particle_data.x()[0], static_cast<T>(dx));
   for (int a = 0; a < 3; ++a) {
     for (int b = 0; b < 3; ++b) {
@@ -217,7 +220,8 @@ TYPED_TEST(MpmModelTest, CalcResidual) {
         const int node_index = a * 9 + b * 3 + c;
         EXPECT_TRUE(CompareMatrices(
             residual.template segment<3>(node_index * 3),
-            weight * ddv.template segment<3>(node_index * 3), kTol));
+            weight * particle_mass * ddv.template segment<3>(node_index * 3),
+            kTol));
       }
     }
   }
@@ -246,11 +250,13 @@ TYPED_TEST(MpmModelTest, CalcResidual) {
         if (a == 1 && b == 1 && c == 1) {
           EXPECT_TRUE(CompareMatrices(
               residual.template segment<3>(node_index * 3),
-              weight * ddv.template segment<3>(node_index * 3), kTol));
+              weight * particle_mass * ddv.template segment<3>(node_index * 3),
+              kTol));
         } else {
           EXPECT_FALSE(CompareMatrices(
               residual.template segment<3>(node_index * 3),
-              weight * ddv.template segment<3>(node_index * 3), 1e-4));
+              weight * particle_mass * ddv.template segment<3>(node_index * 3),
+              1e-4));
         }
       }
     }
