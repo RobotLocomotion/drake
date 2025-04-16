@@ -153,6 +153,46 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    model. */
   systems::DiscreteStateIndex GetDiscreteStateIndex(DeformableBodyId id) const;
 
+  /** Sets the vertex positions of the deformable body with the given `id` in
+   the provided `context`.
+
+   @param[in, out] context The context associated with the MultibodyPlant that
+                           owns this %DeformableModel.
+   @param[in] id The identifier of the deformable body whose positions are being
+                 set.
+   @param[in] q A 3×N matrix of vertex positions.
+
+   @throws std::exception if any of the following conditions are met:
+     1. `context` is nullptr.
+     2. `context` does not belong to the MultibodyPlant associated with this
+        %DeformableModel.
+     3. No body with the given `id` is registered.
+     4. The number of columns of `q` does not match the number of vertices of
+        the body.
+     5. `q` contains non-finite values.
+     6. `Finalize()` has been called on the MultibodyPlant that owns this
+        deformable model. */
+  void SetPositions(systems::Context<T>* context, DeformableBodyId id,
+                    const Eigen::Ref<const Matrix3X<T>>& q) const;
+
+  /** Returns the matrix of vertex positions for the deformable body with the
+   given `id` in the provided `context`.
+
+   @param[in] context The context associated with the MultibodyPlant that owns
+                      this %DeformableModel.
+   @param[in] id The identifier of the deformable body whose positions are being
+                 queried.
+   @retval q A 3×N matrix containing the positions of all vertices of the body.
+
+   @throws std::exception if any of the following conditions are met:
+     1. `context` does not belong to the MultibodyPlant associated with this
+        %DeformableModel.
+     2. No body with the given `id` is registered.
+     3. `Finalize()` has been called on the MultibodyPlant that owns this
+        deformable model. */
+  Matrix3X<T> GetPositions(const systems::Context<T>& context,
+                           DeformableBodyId id) const;
+
   /** Registers an external force density field that applies external force to
    all deformable bodies.
    @throws std::exception if `this` %DeformableModel is not of scalar type

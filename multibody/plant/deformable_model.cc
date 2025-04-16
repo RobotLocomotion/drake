@@ -193,6 +193,40 @@ systems::DiscreteStateIndex DeformableModel<T>::GetDiscreteStateIndex(
 }
 
 template <typename T>
+void DeformableModel<T>::SetPositions(
+    systems::Context<T>* context, DeformableBodyId id,
+    const Eigen::Ref<const Matrix3X<T>>& q) const {
+  DRAKE_THROW_UNLESS(context != nullptr);
+  this->plant().ValidateContext(*context);
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  ThrowUnlessRegistered(__func__, id);
+  const int num_nodes = fem_models_.at(id)->num_nodes();
+  DRAKE_THROW_UNLESS(q.cols() == num_nodes);
+  auto all_finite = [](const Matrix3X<T>& positions) {
+    return (positions.array().isFinite().all());
+  };
+  DRAKE_THROW_UNLESS(all_finite(q));
+
+  context->get_mutable_discrete_state(GetDiscreteStateIndex(id))
+      .get_mutable_value()
+      .head(num_nodes * 3) = Eigen::Map<const VectorX<T>>(q.data(), q.size());
+}
+
+template <typename T>
+Matrix3X<T> DeformableModel<T>::GetPositions(const systems::Context<T>& context,
+                                             DeformableBodyId id) const {
+  this->plant().ValidateContext(context);
+  this->ThrowIfSystemResourcesNotDeclared(__func__);
+  ThrowUnlessRegistered(__func__, id);
+
+  const int num_nodes = fem_models_.at(id)->num_nodes();
+  const VectorX<T>& q = context.get_discrete_state(GetDiscreteStateIndex(id))
+                            .get_value()
+                            .head(num_nodes * 3);
+  return Eigen::Map<const Matrix3X<T>>(q.data(), 3, num_nodes);
+}
+
+template <typename T>
 void DeformableModel<T>::AddExternalForce(
     std::unique_ptr<ForceDensityField<T>> force_density) {
   this->ThrowIfSystemResourcesDeclared(__func__);
