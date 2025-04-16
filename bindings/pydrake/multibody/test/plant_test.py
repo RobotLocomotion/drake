@@ -3417,6 +3417,13 @@ class TestPlant(unittest.TestCase):
         contact_results = (
             plant.get_contact_results_output_port().Eval(plant_context))
 
+        q0 = dut.GetReferencePositions(body_id).reshape((3, -1))
+        q1 = dut.GetPositions(context=plant_context, id=body_id)
+        numpy_compare.assert_float_not_equal(q0, q1)
+        dut.SetPositions(context=plant_context, id=body_id, q=q0)
+        q2 = dut.GetPositions(context=plant_context, id=body_id)
+        numpy_compare.assert_float_equal(q0, q2)
+
         # There is no deformable contact, but we can still try the API.
         self.assertEqual(contact_results.num_deformable_contacts(), 0)
         # Complains about index out of range.
