@@ -153,6 +153,9 @@ def build(options):
 
     # Build the wheel(s).
     for python_target in targets_to_build:
+        if os.path.islink(wheel_root):
+            os.unlink(wheel_root)
+
         wheel_versioned_root = os.path.join(
             build_root, f'python{python_target.version}', 'wheel')
         os.symlink(wheel_versioned_root, wheel_root)
