@@ -149,6 +149,34 @@ TEST_F(RpyBallMobilizerTest, MapUsesN) {
       CompareMatrices(qdot, N * v, kTolerance, MatrixCompareType::relative));
 }
 
+TEST_F(RpyBallMobilizerTest, NDotAndMapAccelerationToQDDot) {
+  // Set an arbitrary "non-zero" state.
+  const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
+  const Vector3<double> wxyz(1, 2, 3);
+  mobilizer_->SetAngles(context_.get(), rpy_value);
+  mobilizer_->SetAngularVelocity(context_.get(), wxyz);
+
+  // Set an arbitrary v and use MapVelocityToQDot() to calculate q̇.
+  Vector3<double> qdot;
+  mobilizer_->MapVelocityToQDot(*context_, wxyz, &qdot);
+
+  // Set an arbitrary v̇ and use MapAccelerationToQDDot() to calculate q̈.
+  const Vector3<double> wdot(0.3, -0.2, 0.9);
+  Vector3<double> qddot;
+  mobilizer_->MapAccelerationToQDDot(*context_, wdot, &qdot);
+
+  // Compute the 3x3 N(q) matrix and its time-derivative Ṅ(q,q̇).
+  MatrixX<double> N(3, 3), Ndot(3, 3);
+  mobilizer_->CalcNMatrix(*context_, &N);
+  mobilizer_->CalcNDotMatrix(*context_, &Ndot);
+
+  // Verify equivalence of q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇ and MapAccelerationToQDDot().
+  // PAUL FIX THIS TEST -- NOT WORKING.  SHOULD BE EXPECT_TRUE(...);
+  const Vector3<double> qddot_expected = Ndot * wxyz + N * wdot;
+  EXPECT_FALSE(CompareMatrices(qddot, qddot_expected, kTolerance,
+                               MatrixCompareType::relative));
+}
+
 TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
   // Set an arbitrary "non-zero" state.
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);

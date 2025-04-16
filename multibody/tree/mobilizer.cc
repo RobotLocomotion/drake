@@ -24,8 +24,7 @@ void Mobilizer<T>::MapAccelerationToQDDot(const systems::Context<T>&,
   // TODO(Mitiguy) remove this function when Mobilizer::MapAccelerationToQDDot()
   //  is changed to a pure virtual function that requires override.
   const std::string error_message = fmt::format(
-      "The function {}() has not been implemented for this "
-      "mobilizer.",
+      "The function {}() has not been implemented for this mobilizer.",
       __func__);
   throw std::logic_error(error_message);
 }
@@ -37,8 +36,18 @@ void Mobilizer<T>::MapQDDotToAcceleration(const systems::Context<T>&,
   // TODO(Mitiguy) remove this function when Mobilizer::MapAccelerationToQDDot()
   //  is changed to a pure virtual function that requires override.
   const std::string error_message = fmt::format(
-      "The function {}() has not been implemented for this "
-      "mobilizer.",
+      "The function {}() has not been implemented for this mobilizer.",
+      __func__);
+  throw std::logic_error(error_message);
+}
+
+template <typename T>
+void Mobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>&,
+                                    EigenPtr<MatrixX<T>>) const {
+  // TODO(Mitiguy) remove this function when Mobilizer::CalcNDotMatrix()
+  //  is changed to a pure virtual function that requires override.
+  const std::string error_message = fmt::format(
+      "The function {}() has not been implemented for this mobilizer.",
       __func__);
   throw std::logic_error(error_message);
 }
