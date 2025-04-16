@@ -43,11 +43,11 @@ TYPED_TEST(MpmModelTest, Constructor) {
   EXPECT_EQ(model.dt(), dt);
   EXPECT_EQ(model.dx(), dx);
   EXPECT_EQ(model.num_particles(), 1);
-  EXPECT_EQ(state.num_dofs(), 27 * 3);
-  EXPECT_EQ(state.grid().dx(), dx);
+  EXPECT_EQ(model.num_dofs(), 27 * 3);
+  EXPECT_EQ(model.grid().dx(), dx);
   EXPECT_TRUE(CompareMatrices(state.dv(), VectorX<T>::Zero(27 * 3)));
   const contact_solvers::internal::PartialPermutation& vertex_permutation =
-      state.index_permutation().vertex();
+      model.index_permutation().vertex();
   EXPECT_EQ(vertex_permutation.domain_size(), 27);
   EXPECT_EQ(vertex_permutation.permuted_domain_size(), 0);
   EXPECT_EQ(state.F().size(), 1);
@@ -75,8 +75,8 @@ TYPED_TEST(MpmModelTest, UpdateModelAndReset) {
   SolverState<T> state(model);
 
   /* Give the grid a uniform velocity field of (1, 0, 0). */
-  VectorX<T> ddv = VectorX<T>::Zero(state.num_dofs());
-  for (int i = 0; i < state.num_dofs(); ++i) {
+  VectorX<T> ddv = VectorX<T>::Zero(model.num_dofs());
+  for (int i = 0; i < model.num_dofs(); ++i) {
     if (i % 3 == 0) {
       ddv[i] = 1.0;
     }
@@ -85,7 +85,7 @@ TYPED_TEST(MpmModelTest, UpdateModelAndReset) {
   EXPECT_EQ(state.dv(), ddv);
   /* Write the change in the state back to the model. Now the particle should be
    moved to (0.02, 0.01, 0.01), with no deformation. */
-  state.UpdateModel(&model);
+  model.Update(state);
   constexpr T kTol = 4.0 * std::numeric_limits<T>::epsilon();
   EXPECT_TRUE(CompareMatrices(model.particle_data().x()[0],
                               Vector3<T>(0.02, 0.01, 0.01), kTol));
@@ -109,7 +109,7 @@ TYPED_TEST(MpmModelTest, UpdateModelAndReset) {
     }
   }
   const std::vector<std::pair<Vector3i, GridData<T>>> grid_data =
-      state.grid().GetGridData();
+      model.grid().GetGridData();
   EXPECT_EQ(grid_data.size(), expected_active_nodes.size());
   for (const auto& [node, node_data] : grid_data) {
     EXPECT_TRUE(expected_active_nodes.contains(node));
@@ -141,7 +141,7 @@ TYPED_TEST(MpmModelTest, CalcCost) {
 
   /* A single particle activates 27 grid ndoes. */
   constexpr int num_dofs = 27 * 3;
-  ASSERT_EQ(state.num_dofs(), num_dofs);
+  ASSERT_EQ(model.num_dofs(), num_dofs);
   /* Arbitrary velocity field. */
   VectorX<T> ddv = VectorX<T>::LinSpaced(num_dofs, 0.0, 1.0);
   state.UpdateState(ddv, model);
@@ -154,7 +154,7 @@ TYPED_TEST(MpmModelTest, CalcCost) {
 
   double kinetic_energy = 0.0;
   const std::vector<std::pair<Vector3i, GridData<T>>> grid_data =
-      state.grid().GetGridData();
+      model.grid().GetGridData();
   for (const auto& [node, node_data] : grid_data) {
     const int a = node[0];
     const int b = node[1];
@@ -189,7 +189,7 @@ TYPED_TEST(MpmModelTest, CalcResidual) {
 
   MpmModel<T> model(dt, dx, particle_data);
   SolverState<T> state(model);
-  const int num_dofs = state.num_dofs();
+  const int num_dofs = model.num_dofs();
 
   /* We set b to be an arbitrary value with an arbitrary size to test that the
    function does not crash. */
@@ -274,7 +274,7 @@ GTEST_TEST(MpmModelTest, ResidualIsDerivativeOfEnergy) {
   MpmModel<AutoDiffXd, MockSparseGrid<AutoDiffXd>> model(dt, dx, particle_data);
   SolverState<AutoDiffXd, MockSparseGrid<AutoDiffXd>> state(model);
 
-  const int num_dofs = state.num_dofs();
+  const int num_dofs = model.num_dofs();
   ASSERT_EQ(num_dofs, 27 * 3);
 
   VectorX<double> ddv = VectorX<double>::LinSpaced(num_dofs, 0.0, 1.0);

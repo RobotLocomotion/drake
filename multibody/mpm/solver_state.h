@@ -2,13 +2,10 @@
 
 #include <vector>
 
-#include "drake/common/copyable_unique_ptr.h"
 #include "drake/math/fourth_order_tensor.h"
-#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/mpm/mpm_model.h"
 #include "drake/multibody/mpm/particle_data.h"
 #include "drake/multibody/mpm/sparse_grid.h"
-#include "drake/multibody/mpm/transfer.h"
 
 namespace drake {
 namespace multibody {
@@ -16,8 +13,9 @@ namespace mpm {
 namespace internal {
 
 /* The SolverState class works closely with MpmModel and stores the state of
- the MPM system during the optimization process (see MpmModel). It holds the
- grid velocity change, dv, and other quantities that depend on dv. */
+ the MPM system during the optimization process (see MpmModel). It maintains
+ the grid velocity update, dv—which serves as the independent variable during
+ optimization—along with other quantities that are functions of dv. */
 template <typename T, typename Grid = SparseGrid<T>>
 class SolverState {
  public:
@@ -34,52 +32,23 @@ class SolverState {
   /* Resets the SolverState to be compatible with the given MpmModel. Makes this
    @pre  model.dx() == grid().dx().
    @post `this` SolverState is as if it was just constructed with the given
-   MpmModel. In particular, the SolverState becomes "valid". See UpdateModel().
-  */
+   MpmModel. */
   void Reset(const MpmModel<T, Grid>& model);
 
   /* Returns the number of degrees of freedom (DoFs) in the optimization
    problem, which is the 3 times the number of supported grid nodes. */
-  int num_dofs() const {
-    DRAKE_ASSERT(is_valid_);
-    return dv_.size();
-  }
+  int num_dofs() const { return dv_.size(); }
 
-  /* Returns the MPM grid used in the optimization process. */
-  const Grid& grid() const {
-    DRAKE_ASSERT(is_valid_);
-    return *grid_;
-  }
+  /* Returns the change in the grid velocity dv = v - vⁿ, ordered using grid
+   node indices. This is the independent variable in the optimization process.
+  */
+  const VectorX<T>& dv() const { return dv_; }
 
-  /* Returns the change in the grid velocity dv = v - vn, ordered using grid
-   node indices. */
-  const VectorX<T>& dv() const {
-    DRAKE_ASSERT(is_valid_);
-    return dv_;
-  }
+  const std::vector<Matrix3<T>>& F() const { return F_; }
 
-  /* Returns the partial permutation that maps participating vertices/dofs to
-   their indices in the SAP contact problem. */
-  const contact_solvers::internal::VertexPartialPermutation& index_permutation()
-      const {
-    DRAKE_ASSERT(is_valid_);
-    return index_permutation_;
-  }
+  T elastic_energy() const { return elastic_energy_; }
 
-  const std::vector<Matrix3<T>>& F() const {
-    DRAKE_ASSERT(is_valid_);
-    return F_;
-  }
-
-  T elastic_energy() const {
-    DRAKE_ASSERT(is_valid_);
-    return elastic_energy_;
-  }
-
-  const std::vector<Matrix3<T>>& tau_volume() const {
-    DRAKE_ASSERT(is_valid_);
-    return tau_volume_;
-  }
+  const std::vector<Matrix3<T>>& tau_volume() const { return tau_volume_; }
 
   /* Given the change in `dv`, `ddv`, and the MpmModel associated with `this`
    SolverState, updates the internal state of `this` SolverState.
@@ -88,26 +57,15 @@ class SolverState {
    from the given `model`. */
   void UpdateState(const VectorX<T>& ddv, const MpmModel<T, Grid>& model);
 
-  /* Uses `this` SolverState to update the given MpmModel to the next time
-   step's state. Calls to this function invalidates the SolverState; the
-   SolverState needs to be reset before being used again (see Reset()). */
-  void UpdateModel(MpmModel<T, Grid>* model);
-
  private:
-  Transfer<Grid> transfer_;
-  copyable_unique_ptr<Grid> grid_;
+  T D_inverse_{};
   VectorX<T> dv_;
-  contact_solvers::internal::VertexPartialPermutation index_permutation_;
   std::vector<Matrix3<T>> F_;
   T elastic_energy_{};
   std::vector<DeformationGradientDataVariant<T>> deformation_gradient_data_;
   std::vector<Matrix3<T>> tau_volume_;
   std::vector<math::internal::FourthOrderTensor<T>>
       volume_scaled_stress_derivatives_;
-  /* The SolverState is valid after construction or a reset and is invalidated
-   after UpdateModel. Calling Reset() validates the SolverState again. See
-   UpdateModel() and Reset(). */
-  bool is_valid_{false};
 };
 
 }  // namespace internal

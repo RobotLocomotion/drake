@@ -13,9 +13,14 @@ MpmModel<T, Grid>::MpmModel(T dt, double dx, ParticleData<T> particle_data)
     : dt_(dt),
       dx_(dx),
       particle_data_(std::move(particle_data)),
-      D_inverse_(4.0 / (dx_ * dx_)) {
+      grid_(std::make_unique<Grid>(dx)),
+      transfer_(dt, dx) {
   DRAKE_DEMAND(dt > 0);
   DRAKE_DEMAND(dx > 0);
+  grid_->Allocate(particle_data_.x());
+  transfer_.ParticleToGrid(particle_data_, grid_.get_mutable());
+  ConvertGridMomentumToVelocity();
+  index_permutation_ = grid_->SetNodeIndices();
 }
 
 template <typename T, typename Grid>
@@ -26,7 +31,7 @@ T MpmModel<T, Grid>::CalcCost(const SolverState<T, Grid>& solver_state) const {
   /* Potential energy from the particles. */
   T total_energy = solver_state.elastic_energy();
   /* The 1/2*dv*M*dv term. */
-  solver_state.grid().IterateGrid([&](const GridData<T>& node) {
+  grid().IterateGrid([&](const GridData<T>& node) {
     if (node.m > 0.0) {
       DRAKE_ASSERT(node.index_or_flag.is_index());
       const int index = node.index_or_flag.index();
@@ -45,7 +50,6 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
   result->resize(solver_state.num_dofs());
   result->setZero();
   constexpr int kDim = 3;
-  const Grid& grid = solver_state.grid();
 
   using U = typename Grid::NodeScalarType;
   using PadNodeType = typename Grid::PadNodeType;
@@ -77,16 +81,16 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
            below. */
           const int grid_index = grid_data[a][b][c].index_or_flag.index();
           result->template segment<kDim>(kDim * grid_index) +=
-              tau_volume * (xi - xp) * D_inverse_ * dt_ * w_ip;
+              tau_volume * (xi - xp) * transfer_.D_inverse() * dt_ * w_ip;
         }
       }
     }
   };
-  grid.IterateParticleAndGrid(particle_data_, splat_force_kernel);
+  grid().IterateParticleAndGrid(particle_data_, splat_force_kernel);
   /* Collect from the scratch data, add in the M * dv term, and clear the
    scratch data. */
   const VectorX<T>& dv = solver_state.dv();
-  grid.IterateGrid([&](const GridData<T>& node) {
+  grid().IterateGrid([&](const GridData<T>& node) {
     if (node.m > 0.0) {
       DRAKE_ASSERT(node.index_or_flag.is_index());
       const int index = node.index_or_flag.index();
@@ -95,6 +99,37 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
           node.m * dv.template segment<kDim>(index * kDim);
     }
   });
+}
+
+template <typename T, typename Grid>
+void MpmModel<T, Grid>::Update(const SolverState<T, Grid>& solver_state) {
+  const int kDim = 3;
+  const VectorX<T>& dv = solver_state.dv();
+  auto update_grid_velocity = [&](GridData<T>* node) {
+    if (node->m > 0.0) {
+      DRAKE_ASSERT(node->index_or_flag.is_index());
+      node->v += dv.template segment<kDim>(kDim * node->index_or_flag.index());
+    }
+  };
+  grid_->IterateGrid(update_grid_velocity);
+  transfer_.GridToParticle(grid(), &particle_data_);
+  particle_data_.ComputeKirchhoffStress(
+      particle_data_.F(), &particle_data_.mutable_deformation_gradient_data(),
+      &particle_data_.mutable_tau_volume());
+  grid_->Allocate(particle_data_.x());
+  transfer_.ParticleToGrid(particle_data_, grid_.get_mutable());
+  ConvertGridMomentumToVelocity();
+  index_permutation_ = grid_->SetNodeIndices();
+}
+
+template <typename T, typename Grid>
+void MpmModel<T, Grid>::ConvertGridMomentumToVelocity() {
+  auto convert_momentum_to_velocity = [&](GridData<T>* node) {
+    if (node->m > 0.0) {
+      node->v /= node->m;
+    }
+  };
+  grid_->IterateGrid(convert_momentum_to_velocity);
 }
 
 }  // namespace internal

@@ -2,8 +2,11 @@
 
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/mpm/particle_data.h"
 #include "drake/multibody/mpm/sparse_grid.h"
+#include "drake/multibody/mpm/transfer.h"
 
 namespace drake {
 namespace multibody {
@@ -51,7 +54,7 @@ class SolverState;
 template <typename T, typename Grid = SparseGrid<T>>
 class MpmModel {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MpmModel);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MpmModel);
 
   /* Creates a MpmModel given the current state of particles.
    @param[in] dt         The time step used in this MpmModel (in seconds).
@@ -75,13 +78,31 @@ class MpmModel {
                     VectorX<T>* result) const;
 
   const ParticleData<T>& particle_data() const { return particle_data_; }
-  ParticleData<T>& mutable_particle_data() { return particle_data_; }
+
+  const Grid& grid() const { return *grid_; }
+
+  const contact_solvers::internal::VertexPartialPermutation& index_permutation()
+      const {
+    return index_permutation_;
+  }
+
+  /* Number of DoFs in the MPM grid. */
+  int num_dofs() const { return index_permutation_.dof().domain_size(); }
+
+  /* Updates this MpmModel based on the converged solver state. */
+  void Update(const SolverState<T, Grid>& solver_state);
 
  private:
+  /* Iterates over the grid and turn the grid momentum data into grid velocity.
+   @pre the grid stores momentum (not velocity). */
+  void ConvertGridMomentumToVelocity();
+
   T dt_{};
   double dx_{};
   ParticleData<T> particle_data_{};
-  T D_inverse_{};
+  copyable_unique_ptr<Grid> grid_{};
+  Transfer<Grid> transfer_;
+  contact_solvers::internal::VertexPartialPermutation index_permutation_;
 };
 
 }  // namespace internal
