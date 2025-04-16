@@ -91,7 +91,8 @@ DEFINE_double(dz, 0.15, "Initial distance between objects in the pile.");
 DEFINE_double(scale_factor, 1.0, "Multiplicative factor to generate the pile.");
 DEFINE_bool(add_sink_walls, true, "Adds wall of a sink model.");
 DEFINE_bool(enable_boxes, false, "Make some of the objects boxes.");
-DEFINE_bool(random_offsets, true, "Use slight random offsets in initial positions.");
+DEFINE_bool(random_offsets, true,
+            "Use slight random offsets in initial positions.");
 
 // Visualization.
 DEFINE_bool(visualize, true, "Whether to visualize (true) or not (false).");
@@ -552,8 +553,7 @@ int do_main() {
     const double x = (i % 2 == 0) ? -length / 4 : length / 4;
     const double y = (i / 2 == 0) ? -width / 4 : width / 4;
 
-    SetObjectsIntoAPile(plant, Vector3d(x, y, 0.0), piles[i],
-                       &plant_context);
+    SetObjectsIntoAPile(plant, Vector3d(x, y, 0.0), piles[i], &plant_context);
   }
 
   auto simulator =
@@ -634,7 +634,7 @@ int do_main() {
     return systems::EventStatus::Succeeded();
   });
 
-  simulator->set_publish_every_time_step(true);
+  simulator->set_publish_every_time_step(false);
   simulator->Initialize();
   if (FLAGS_visualize) {
     // Wait for meshcat to load

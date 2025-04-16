@@ -163,6 +163,10 @@ class ConvexIntegrator final : public IntegratorBase<T> {
   // requires a total of 2 SAP solves, and includes an embedded error estimate.
   bool DoStepWithSDIRK(const T& h);
 
+  // Do the main integration step, using the implicit trapezoid rule for error
+  // estimation. This requires a total of 2 SAP solves.
+  bool DoStepWithImplicitTrapezoidErrorEstimate(const T& h);
+
   // Solve the SAP problem to compute x_{t+h} at a given step size. This will be
   // called multiple times for each DoStep to compute the error estimate.
   //
