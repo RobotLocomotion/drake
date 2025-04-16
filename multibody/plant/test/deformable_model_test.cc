@@ -630,6 +630,77 @@ TEST_F(DeformableModelTest, EnableDisable) {
   }
 }
 
+TEST_F(DeformableModelTest, GetAndSetPositions) {
+  auto model_id = RegisterSphere(0.5);
+
+  plant_->Finalize();
+  const int num_dofs = deformable_model_ptr_->GetFemModel(model_id).num_dofs();
+  auto diagram = builder_.Build();
+
+  auto context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(context.get());
+
+  /* Get the intial positions q0. */
+  systems::DiscreteStateIndex state_index =
+      deformable_model_ptr_->GetDiscreteStateIndex(model_id);
+  VectorX<double> initial_discrete_state =
+      plant_context.get_discrete_state(state_index).get_value();
+  const VectorX<double> q0 = initial_discrete_state.head(num_dofs);
+  const Matrix3X<double> q0_matrix =
+      Eigen::Map<const Matrix3X<double>>(q0.data(), 3, num_dofs / 3);
+
+  EXPECT_EQ(plant_->deformable_model().GetPositions(plant_context, model_id),
+            q0_matrix);
+  const Matrix3X<double> q1_matrix = 2.0 * q0_matrix;
+  plant_->deformable_model().SetPositions(&plant_context, model_id, q1_matrix);
+  EXPECT_EQ(plant_->deformable_model().GetPositions(plant_context, model_id),
+            q1_matrix);
+}
+
+/* Test the many throw conditions of GetPositions and SetPositions. */
+TEST_F(DeformableModelTest, GetAndSetPositionsThrowConditions) {
+  auto model_id = RegisterSphere(0.5);
+  plant_->Finalize();
+  auto diagram = builder_.Build();
+  auto context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(context.get());
+  const int num_dofs = deformable_model_ptr_->GetFemModel(model_id).num_dofs();
+
+  /* Wrong context. */
+  EXPECT_THROW(deformable_model_ptr_->GetPositions(*context, model_id),
+               std::exception);
+  EXPECT_THROW(
+      deformable_model_ptr_->SetPositions(
+          context.get(), model_id, Matrix3X<double>::Zero(3, num_dofs / 3)),
+      std::exception);
+
+  /* Wrong id. */
+  DeformableBodyId fake_id = DeformableBodyId::get_new_id();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->GetPositions(plant_context, fake_id),
+      fmt::format(".*No.*id.*{}.*registered.*", fake_id));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->SetPositions(
+          &plant_context, fake_id, Matrix3X<double>::Zero(3, num_dofs / 3)),
+      fmt::format(".*No.*id.*{}.*registered.*", fake_id));
+
+  /* Wrong size. */
+  EXPECT_THROW(
+      deformable_model_ptr_->SetPositions(
+          &plant_context, model_id, Matrix3X<double>::Zero(3, num_dofs / 2)),
+      std::exception);
+
+  /* Non-finite values. */
+  EXPECT_THROW(
+      deformable_model_ptr_->SetPositions(
+          &plant_context, model_id,
+          Matrix3X<double>::Constant(3, num_dofs / 3,
+                                     std::numeric_limits<double>::infinity())),
+      std::exception);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
