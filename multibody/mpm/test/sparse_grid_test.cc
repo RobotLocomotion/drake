@@ -46,7 +46,7 @@ TYPED_TEST(SparseGridTest, Allocate) {
   auto count_active_nodes = [&num_active_nodes](uint64_t, const GridData<U>&) {
     ++num_active_nodes;
   };
-  grid.spgrid().IterateConstGridWithOffset(count_active_nodes);
+  grid.spgrid().IterateGridWithOffset(count_active_nodes);
 
   const int block_size = std::is_same_v<U, double> ? 64 : 128;
   /* We allocate the block B that contains the particle and the one ring of
@@ -286,7 +286,7 @@ TYPED_TEST(SparseGridTest, ApplyGridToParticleKernel) {
   grid.ApplyGridToParticleKernel(&particle_data, g2p_kernel);
 }
 
-/* Tests both IterateGrid and IterateConstGrid. */
+/* Tests both IterateGrid and IterateGrid. */
 TYPED_TEST(SparseGridTest, IterateGrid) {
   using Grid = TypeParam;
   using T = typename Grid::Scalar;
@@ -318,7 +318,7 @@ TYPED_TEST(SparseGridTest, IterateGrid) {
   auto count_total_mass = [&total_mass](const GridData<T>& data) {
     total_mass += data.m;
   };
-  grid.IterateConstGrid(count_total_mass);
+  grid.IterateGrid(count_total_mass);
   EXPECT_EQ(total_mass, expected_total_mass);
 }
 

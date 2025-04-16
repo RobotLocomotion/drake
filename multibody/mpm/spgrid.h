@@ -267,8 +267,7 @@ class SpGrid {
 
   /* Iterates over all grid nodes in the grid and applies the given function
    `func` to each grid node. */
-  void IterateConstGrid(
-      const std::function<void(const GridData&)>& func) const {
+  void IterateGrid(const std::function<void(const GridData&)>& func) const {
     const uint64_t data_size = 1 << kDataBits;
     ConstArray grid_data = allocator_.Get_Array();
     auto [block_offsets, num_blocks] = blocks_.Get_Blocks();
@@ -313,7 +312,7 @@ class SpGrid {
 
   /* Iterates over all grid nodes in the grid and applies the given function
    `func` to each grid node's offset and data. */
-  void IterateConstGridWithOffset(
+  void IterateGridWithOffset(
       const std::function<void(Offset, const GridData&)>& func) const {
     const uint64_t data_size = 1 << kDataBits;
     ConstArray grid_data = allocator_.Get_Array();

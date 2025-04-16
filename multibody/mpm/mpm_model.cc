@@ -26,7 +26,7 @@ T MpmModel<T, Grid>::CalcCost(const SolverState<T, Grid>& solver_state) const {
   /* Potential energy from the particles. */
   T total_energy = solver_state.elastic_energy();
   /* The 1/2*dv*M*dv term. */
-  solver_state.grid().IterateConstGrid([&](const GridData<T>& node) {
+  solver_state.grid().IterateGrid([&](const GridData<T>& node) {
     if (node.m > 0.0) {
       DRAKE_ASSERT(node.index_or_flag.is_index());
       const int index = node.index_or_flag.index();
@@ -86,7 +86,7 @@ void MpmModel<T, Grid>::CalcResidual(const SolverState<T, Grid>& solver_state,
   /* Collect from the scratch data, add in the M * dv term, and clear the
    scratch data. */
   const VectorX<T>& dv = solver_state.dv();
-  grid.IterateConstGrid([&](const GridData<T>& node) {
+  grid.IterateGrid([&](const GridData<T>& node) {
     if (node.m > 0.0) {
       DRAKE_ASSERT(node.index_or_flag.is_index());
       const int index = node.index_or_flag.index();

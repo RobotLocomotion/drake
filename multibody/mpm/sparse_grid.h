@@ -228,9 +228,8 @@ class SparseGrid {
 
   /* Iterates over all grid nodes in the grid and applies the given function
    `func` to each grid node. */
-  void IterateConstGrid(
-      const std::function<void(const GridData<T>&)>& func) const {
-    spgrid_.IterateConstGrid(func);
+  void IterateGrid(const std::function<void(const GridData<T>&)>& func) const {
+    spgrid_.IterateGrid(func);
   }
 
   /* Sets the indices of all active nodes in the grid and returns a

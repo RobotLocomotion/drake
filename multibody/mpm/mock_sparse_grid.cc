@@ -136,7 +136,7 @@ void MockSparseGrid<T>::IterateGrid(
 }
 
 template <typename T>
-void MockSparseGrid<T>::IterateConstGrid(
+void MockSparseGrid<T>::IterateGrid(
     const std::function<void(const GridData<T>&)>& func) const {
   for (const auto& [_, data] : grid_data_) {
     func(data);

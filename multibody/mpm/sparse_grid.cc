@@ -54,7 +54,7 @@ template <typename T>
 std::vector<std::pair<Vector3<int>, GridData<T>>> SparseGrid<T>::GetGridData()
     const {
   std::vector<std::pair<Vector3<int>, GridData<T>>> result;
-  spgrid_.IterateConstGridWithOffset(
+  spgrid_.IterateGridWithOffset(
       [&](uint64_t offset, const GridData<T>& node_data) {
         if (node_data.m > 0.0) {
           const Vector3<int> coordinate = spgrid_.OffsetToCoordinate(offset);
@@ -67,7 +67,7 @@ std::vector<std::pair<Vector3<int>, GridData<T>>> SparseGrid<T>::GetGridData()
 template <typename T>
 MassAndMomentum<T> SparseGrid<T>::ComputeTotalMassAndMomentum() const {
   MassAndMomentum<T> result;
-  spgrid_.IterateConstGridWithOffset(
+  spgrid_.IterateGridWithOffset(
       [&](uint64_t offset, const GridData<T>& node_data) {
         if (node_data.m > 0.0) {
           const Vector3<T>& xi =

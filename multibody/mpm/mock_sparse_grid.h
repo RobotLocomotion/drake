@@ -105,8 +105,7 @@ class MockSparseGrid {
 
   void IterateGrid(const std::function<void(GridData<T>*)>& func);
 
-  void IterateConstGrid(
-      const std::function<void(const GridData<T>&)>& func) const;
+  void IterateGrid(const std::function<void(const GridData<T>&)>& func) const;
 
   contact_solvers::internal::VertexPartialPermutation SetNodeIndices();
 
