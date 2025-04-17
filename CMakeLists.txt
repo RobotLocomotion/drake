@@ -6,7 +6,7 @@
 # setup/install_prereqs across all platforms.
 # When this changes, drake-external-examples/drake_cmake_external/CMakeLists.txt
 # should be changed accordingly so that downstream users are synced with
-# Drake's source itself.
+# Drake itself.
 cmake_minimum_required(VERSION 3.22)
 
 project(drake
