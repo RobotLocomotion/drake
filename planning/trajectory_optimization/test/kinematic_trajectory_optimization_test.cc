@@ -447,6 +447,7 @@ GTEST_TEST(KinematicTrajectoryOptimizationMultibodyTest,
   EXPECT_EQ(bindings[0].evaluator()->num_constraints(), 1);
   EXPECT_EQ(bindings[0].evaluator()->lower_bound(), tau_lb);
   EXPECT_EQ(bindings[0].evaluator()->upper_bound(), tau_ub);
+  CheckBindingGradientSparsityPattern(bindings[0], /*strict=*/true);
 
   // Use a small traj opt to compute the (normalized) control points.
   auto MakeNormalizedTrajectory = [&](double duration, double q0, double v0,
