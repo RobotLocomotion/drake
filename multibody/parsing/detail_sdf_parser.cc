@@ -987,7 +987,8 @@ bool ParseMimicTag(const SDFormatDiagnostic& diagnostic,
   }
 
   if (errors.empty()) {
-    const std::set<std::string> supported_root_elements{"model", "world"};
+    const std::set<std::string> supported_root_elements{
+        "model", "world", "drake:deformable_model"};
 
     CheckSupportedElements(diagnostic, root->Element(),
                            supported_root_elements);
@@ -2309,6 +2310,173 @@ sdf::Model* get_only_model(sdf::Root* root) {
   return world0->ModelByIndex(0);
 }
 
+// Helper to read a <pose> tag (if present) without resolving frames; returns
+// identity when absent. Works for any element, including custom drake tags.
+math::RigidTransformd PoseFromElementSimple(const sdf::ElementPtr& e) {
+  if (!e || !e->HasElement("pose")) return math::RigidTransformd::Identity();
+  const gz::math::Pose3d p = e->Get<gz::math::Pose3d>("pose");
+  return math::RigidTransformd(
+      math::RotationMatrixd(Eigen::Quaterniond(p.Rot().W(), p.Rot().X(),
+                                               p.Rot().Y(), p.Rot().Z())),
+      Eigen::Vector3d(p.Pos().X(), p.Pos().Y(), p.Pos().Z()));
+}
+
+// Helper that loads `<drake:deformable_properties>` into a config.
+// param[in] src The SDF element to load, which must be a
+//               <drake:deformable_properties> tag.
+// param[in, out] cfg On input, it's a default config. On output, it's
+//                    the config with the properties loaded from src.
+
+void LoadDeformableConfig(const sdf::ElementPtr& src,
+                          fem::DeformableBodyConfig<double>* cfg,
+                          const SDFormatDiagnostic& diagnostic) {
+  if (!src) {
+    return;
+  }
+  if (src->HasElement("drake:youngs_modulus"))
+    cfg->set_youngs_modulus(src->Get<double>("drake:youngs_modulus"));
+  if (src->HasElement("drake:poissons_ratio"))
+    cfg->set_poissons_ratio(src->Get<double>("drake:poissons_ratio"));
+  if (src->HasElement("drake:mass_damping"))
+    cfg->set_mass_damping_coefficient(src->Get<double>("drake:mass_damping"));
+  if (src->HasElement("drake:stiffness_damping"))
+    cfg->set_stiffness_damping_coefficient(
+        src->Get<double>("drake:stiffness_damping"));
+  if (src->HasElement("drake:mass_density"))
+    cfg->set_mass_density(src->Get<double>("drake:mass_density"));
+  if (src->HasElement("drake:material_model")) {
+    const std::string mm = src->Get<std::string>("drake:material_model");
+    if (mm == "linear_corotated")
+      cfg->set_material_model(fem::MaterialModel::kLinearCorotated);
+    else if (mm == "corotated")
+      cfg->set_material_model(fem::MaterialModel::kCorotated);
+    else if (mm == "linear")
+      cfg->set_material_model(fem::MaterialModel::kLinear);
+    else
+      diagnostic.Error(src,
+                       fmt::format("Invalid material_model value {}.", mm));
+  }
+}
+
+// Parse one <link> into a deformable body.
+std::optional<DeformableBodyId> ParseDeformableLink(
+    const sdf::Link& link, const math::RigidTransformd& X_WM,
+    const ParsingWorkspace& ws, const std::string& root_dir,
+    const SDFormatDiagnostic& diag) {
+  const sdf::ElementPtr link_element = link.Element();
+  if (ws.plant->is_finalized()) {
+    diag.Error(link_element,
+               "Cannot add a deformable link to a finalized plant.");
+    return std::nullopt;
+  }
+  if (!ws.plant->geometry_source_is_registered()) {
+    diag.Error(link_element,
+               "Cannot add a deformable link to a plant without a registered "
+               "geometry source.");
+    return std::nullopt;
+  }
+
+  // Supported child tags inside <link>.
+  CheckSupportedElements(
+      diag, link_element,
+      {"pose", "collision", "visual", "drake:deformable_properties"});
+
+  // A name attribute is **required**.
+  // TODO(xuchenhan-tri): Support an empty name attribute.
+  const std::string& link_name = link.Name();
+  if (link_name.empty()) {
+    diag.Error(link_element,
+               "Each <link> must have a non‑empty 'name' attribute.");
+    return std::nullopt;
+  }
+
+  // Config
+  fem::DeformableBodyConfig<double> cfg;
+  LoadDeformableConfig(link_element->GetElement("drake:deformable_properties"),
+                       &cfg, diag);
+
+  ResolveFilename resolve_filename =
+      [&ws, &root_dir, &link](const SDFormatDiagnostic& inner_diagnostic,
+                              std::string uri) {
+        const ResolveUriResult resolved =
+            ResolveUri(inner_diagnostic.MakePolicyForNode(*link.Element()), uri,
+                       ws.package_map, root_dir);
+        return resolved.GetStringPathIfExists();
+      };
+
+  // Collision (exactly one).
+  if (link.CollisionCount() != 1) {
+    diag.Error(
+        link_element,
+        "Each deformable <link> must have exactly one <collision> element.");
+    return std::nullopt;
+  }
+
+  const sdf::Collision& sdf_collision = *link.CollisionByIndex(0);
+  const sdf::Geometry& collision_geometry = *sdf_collision.Geom();
+  sdf::ElementPtr collision_geometry_element = collision_geometry.Element();
+
+  const std::set<std::string> supported_geometry_elements{"mesh"};
+  CheckSupportedElements(diag, collision_geometry_element,
+                         supported_geometry_elements);
+
+  auto shape =
+      MakeShapeFromSdfGeometry(diag, collision_geometry, resolve_filename);
+  if (!shape) return std::nullopt;
+
+  // Pose
+  const RigidTransformd X_ML = ResolveRigidTransform(diag, link.SemanticPose());
+  const RigidTransformd X_WL = X_WM * X_ML;
+
+  // Now create the geometry instance.
+  auto geometry_instance =
+      std::make_unique<GeometryInstance>(X_WL, std::move(shape), link_name);
+
+  // Parse proximity properties from <drake:proximity_properties> if they are
+  // legally specified. Otherwise, add a default proximity property.
+  if (auto proximity_props =
+          MakeProximityForDeformableCollision(diag, sdf_collision)) {
+    geometry_instance->set_proximity_properties(*proximity_props);
+  } else {
+    geometry::ProximityProperties default_proximity_props;
+    default_proximity_props.AddProperty("material", "coulomb_friction",
+                                        default_friction());
+    geometry_instance->set_proximity_properties(default_proximity_props);
+  }
+
+  // Optional embedded‑mesh perception – allow **at most one** <visual>.
+  // TODO(xuchenhan-tri): Support multiple <visual> elements.
+  if (link.VisualCount() > 1) {
+    diag.Error(link_element,
+               "A deformable <link> may have at most one <visual> element.");
+    return std::nullopt;
+  }
+
+  if (link.VisualCount() == 1) {
+    const sdf::Visual& sdf_visual = *link.VisualByIndex(0);
+    const sdf::Geometry& visual_geometry = *sdf_visual.Geom();
+    sdf::ElementPtr visual_geometry_element = visual_geometry.Element();
+    CheckSupportedElements(diag, visual_geometry_element,
+                           supported_geometry_elements);
+    if (visual_geometry_element->HasElement("mesh")) {
+      const std::string uri =
+          visual_geometry_element->GetElement("mesh")->Get<std::string>("uri");
+      geometry::PerceptionProperties perception_props;
+      perception_props.AddProperty("deformable", "embedded_mesh", uri);
+      geometry_instance->set_perception_properties(perception_props);
+    }
+  }
+
+  DeformableModel<double>& deformable_model =
+      ws.plant->mutable_deformable_model();
+  // Right now resolution hint is not used because we only parse meshes. When we
+  // support primitive geometries, the resolution hint needs to be meaningfully
+  // parsed.
+  const double dummy_resolution_hint = 1.0;
+  return deformable_model.RegisterDeformableBody(std::move(geometry_instance),
+                                                 cfg, dummy_resolution_hint);
+}
+
 }  // namespace
 
 std::optional<ModelInstanceIndex> AddModelFromSdf(
@@ -2377,7 +2545,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   if (diagnostic.PropagateErrors(errors)) {
     return {};
   }
-
   const auto model_index_end =
       static_cast<ModelInstanceIndex>(workspace.plant->num_model_instances());
 
@@ -2395,6 +2562,17 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     std::string message = fmt::format(
         "File must have exactly one <model> or exactly one <world>, but"
         " instead has {} models and {} worlds",
+        model_count, world_count);
+    diagnostic.Error(root.Element(), std::move(message));
+    return {};
+  }
+  const sdf::ElementPtr deformable_model_element =
+      root.Element()->GetElement("drake:deformable_model");
+  if (deformable_model_element) {
+    std::string message = fmt::format(
+        "File must have no <model> and no <world> element when "
+        "<drake:deformable_model> is present, but it instead has {} models and "
+        "{} worlds",
         model_count, world_count);
     diagnostic.Error(root.Element(), std::move(message));
     return {};
@@ -2500,6 +2678,57 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   return model_instances;
 }
 
+std::vector<DeformableBodyId> AddDeformableModelsFromSdf(
+    const DataSource& data_source, const std::optional<std::string>&,
+    const ParsingWorkspace& workspace) {
+  DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
+
+  sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
+
+  sdf::Root root;
+
+  SDFormatDiagnostic diagnostic(&workspace.diagnostic, &data_source);
+
+  sdf::Errors errors = LoadSdf(diagnostic, &root, data_source, parser_config);
+  if (diagnostic.PropagateErrors(errors)) {
+    return {};
+  }
+
+  const sdf::ElementPtr deformable_model_element =
+      root.Element()->GetElement("drake:deformable_model");
+  if (!deformable_model_element ||
+      deformable_model_element->GetNextElement("drake:deformable_model")) {
+    diagnostic.Error(
+        root.Element(),
+        "Exactly one <drake:deformable_model> element is required.");
+  }
+  // TODO(xuchenhan-tri): Check that no <model> tag or <world> tag is present.
+
+  // Allowed immediate children.
+  CheckSupportedElements(diagnostic, deformable_model_element,
+                         {"pose", "link"});
+
+  const math::RigidTransformd X_WM =
+      PoseFromElementSimple(deformable_model_element);
+
+  std::vector<DeformableBodyId> result;
+  for (sdf::ElementPtr link_element =
+           deformable_model_element->GetElement("link");
+       link_element; link_element = link_element->GetNextElement("link")) {
+    sdf::Link sdf_link;
+    sdf::Errors errs = sdf_link.Load(link_element, parser_config);
+    if (diagnostic.PropagateErrors(errors)) {
+      return {};
+    }
+    if (auto id = ParseDeformableLink(sdf_link, X_WM, workspace,
+                                      data_source.GetRootDir(), diagnostic)) {
+      result.push_back(*id);
+    }
+  }
+
+  return result;
+}
+
 SdfParserWrapper::SdfParserWrapper() {}
 
 SdfParserWrapper::~SdfParserWrapper() {}
@@ -2516,6 +2745,13 @@ std::vector<ModelInstanceIndex> SdfParserWrapper::AddAllModels(
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
   return AddModelsFromSdf(data_source, parent_model_name, workspace);
+}
+
+std::vector<DeformableBodyId> SdfParserWrapper::AddAllDeformableModels(
+    const DataSource& data_source,
+    const std::optional<std::string>& parent_model_name,
+    const ParsingWorkspace& workspace) {
+  return AddDeformableModelsFromSdf(data_source, parent_model_name, workspace);
 }
 
 }  // namespace internal

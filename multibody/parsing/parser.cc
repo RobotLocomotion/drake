@@ -146,6 +146,40 @@ std::vector<ModelInstanceIndex> Parser::AddModelsFromString(
   return result;
 }
 
+std::vector<DeformableBodyId> Parser::AddDeformableModels(
+    const std::filesystem::path& file_name) {
+  const std::string filename_string{file_name.string()};
+  DataSource data_source(DataSource::kFilename, &filename_string);
+  ParserInterface& parser = SelectParser(diagnostic_policy_, file_name);
+  auto composite = internal::CompositeParse::MakeCompositeParse(this);
+  auto result = parser.AddAllDeformableModels(data_source, model_name_prefix_,
+                                              composite->workspace());
+  composite->Finish();
+  return result;
+}
+
+std::vector<DeformableBodyId> Parser::AddDeformableModelsFromUrl(
+    const std::string& url) {
+  const internal::ResolveUriResult resolved =
+      internal::ResolveUri(diagnostic_policy_, url, package_map_, {});
+  if (!resolved.exists) {
+    return {};
+  }
+  return AddDeformableModels(resolved.full_path);
+}
+
+std::vector<DeformableBodyId> Parser::AddDeformableModelsFromString(
+    const std::string& file_contents, const std::string& file_type) {
+  DataSource data_source(DataSource::kContents, &file_contents);
+  const std::string pseudo_name(data_source.GetStem() + "." + file_type);
+  ParserInterface& parser = SelectParser(diagnostic_policy_, pseudo_name);
+  auto composite = internal::CompositeParse::MakeCompositeParse(this);
+  auto result = parser.AddAllDeformableModels(data_source, model_name_prefix_,
+                                              composite->workspace());
+  composite->Finish();
+  return result;
+}
+
 void Parser::ResolveCollisionFilterGroupsFromCompositeParse(
     internal::CollisionFilterGroupResolver* resolver) {
   DRAKE_DEMAND(resolver != nullptr);

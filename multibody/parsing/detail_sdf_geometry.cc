@@ -695,6 +695,33 @@ std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
   return CoulombFriction<double>(*static_friction, *dynamic_friction);
 }
 
+std::optional<geometry::ProximityProperties>
+MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
+                                    const sdf::Collision& collision) {
+  // Allowed child tags of <collision> for our mini‑parser.
+  sdf::ElementPtr collision_element = collision.Element();
+  CheckSupportedElements(diagnostic, collision_element,
+                         {"geometry", "drake:proximity_properties"});
+
+  const sdf::ElementPtr drake_element =
+      collision_element->FindElement("drake:proximity_properties");
+  if (!drake_element) return std::nullopt;  // no properties specified.
+
+  CheckSupportedElements(diagnostic, drake_element, {"drake:mu_dynamic"});
+
+  if (!drake_element->HasElement("drake:mu_dynamic")) return std::nullopt;
+
+  double mu = drake_element->Get<double>("drake:mu_dynamic");
+  if (mu < 0) {
+    diagnostic.Error(drake_element, "drake:mu_dynamic must be non‑negative");
+    return std::nullopt;
+  }
+  geometry::ProximityProperties props;
+  props.AddProperty("material", "coulomb_friction",
+                    CoulombFriction<double>(mu, mu));
+  return props;
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

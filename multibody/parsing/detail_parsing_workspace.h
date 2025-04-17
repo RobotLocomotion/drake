@@ -7,6 +7,7 @@
 #include "drake/common/diagnostic_policy.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/parsing/detail_collision_filter_group_resolver.h"
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/package_map.h"
@@ -95,6 +96,28 @@ class ParserInterface {
       const DataSource& data_source,
       const std::optional<std::string>& parent_model_name,
       const ParsingWorkspace& workspace) = 0;
+
+  // Parses all deformable models from the input file specified by @p
+  // data_source and adds them to @p plant. New model instances will be added to
+  // @p plant.
+  //
+  // @param data_source
+  //   The model data to be parsed.
+  // @param parent_model_name Optional name of parent model. If set, the model
+  //   names of all parsed models will be prefixed with the parent_model_name,
+  //   using the SDFormat scope delimiter "::". The prefixed name will used as
+  //   the name given to the newly created instances of these models.
+  // @param workspace
+  //   The ParsingWorkspace.
+  // @returns The deformable body ids for the newly added deformable models, or
+  //          an empty vector if no deformable bodies were added.
+  virtual std::vector<DeformableBodyId> AddAllDeformableModels(
+      const DataSource& data_source,
+      const std::optional<std::string>& parent_model_name,
+      const ParsingWorkspace& workspace) {
+    unused(data_source, parent_model_name, workspace);
+    return {};
+  }
 };
 
 // The function type of a parser-selector. This abstraction helps avoid
