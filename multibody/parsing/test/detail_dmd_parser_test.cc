@@ -14,6 +14,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 namespace drake {
@@ -23,6 +24,7 @@ namespace {
 
 using drake::internal::DiagnosticPolicy;
 using Eigen::Vector3d;
+using geometry::SceneGraph;
 using math::RigidTransformd;
 using parsing::ModelDirectives;
 using parsing::ModelInstanceInfo;
@@ -61,10 +63,13 @@ class DmdParserTest : public test::DiagnosticPolicyTestBase {
     return result;
   }
 
+  void AddSceneGraph() { plant_.RegisterAsSourceForSceneGraph(&scene_graph_); }
+
  protected:
   ParsingOptions options_;
   PackageMap package_map_;
   MultibodyPlant<double> plant_{0.01};
+  SceneGraph<double> scene_graph_;
 };
 
 /* Make an SDFormat file containing a "ball" body (with an attached frame) and
@@ -103,6 +108,30 @@ std::filesystem::path MakeSphereSdf(const Vector3d& p_BF) {
   )""",
                    fmt::arg("x", p_BF.x()), fmt::arg("y", p_BF.y()),
                    fmt::arg("z", p_BF.z()));
+  return sdf_path;
+}
+
+/* Make an SDFormat file containing a deformable body */
+std::filesystem::path MakeDeformableSdf() {
+  std::filesystem::path dir = temp_directory();
+  std::filesystem::path sdf_path = dir / "deformable.sdf";
+  std::ofstream f(sdf_path);
+  DRAKE_DEMAND(f.is_open());
+  f << R"""(
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties></drake:deformable_properties>
+    </link>
+  </model>
+</sdf>
+  )""";
   return sdf_path;
 }
 
@@ -397,6 +426,77 @@ directives:
   EXPECT_THAT(TakeError(),
               testing::MatchesRegex(
                   ".*two_bodies.*default_free_body_pose.*2.*bodies.*"));
+}
+
+/* Test adding a rigid body and a deformable body into the same scene. */
+TEST_F(DmdParserTest, AddDeformableModel) {
+  AddSceneGraph();
+  const std::string sphere_sdf =
+      "file://" + MakeSphereSdf(Vector3d::Zero()).string();
+  const std::string deformable_sdf = "file://" + MakeDeformableSdf().string();
+  const ModelDirectives directives = LoadYamlString<ModelDirectives>(
+      fmt::format(
+          R"""(
+directives:
+- add_model:
+    name: rigid
+    file: {sphere_sdf}
+- add_model:
+    name: deformable
+    file: {deformable_sdf}
+)""",
+          fmt::arg("sphere_sdf", sphere_sdf),
+          fmt::arg("deformable_sdf", deformable_sdf)),
+      {}, ModelDirectives());
+
+  ParseModelDirectives(directives);
+  plant_.Finalize();
+  // Two added rigid bodies plus the world body.
+  EXPECT_EQ(plant_.num_bodies(), 3);
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+}
+
+/* default_free_body_pose should not be used to pose a deformable body. */
+TEST_F(DmdParserTest, FreeBodyPoseDeformable) {
+  AddSceneGraph();
+  const std::string deformable_sdf = "file://" + MakeDeformableSdf().string();
+  const ModelDirectives directives = LoadYamlString<ModelDirectives>(
+      fmt::format(
+          R"""(
+directives:
+- add_model:
+    name: deformable
+    file: {deformable_sdf}
+    default_free_body_pose:
+        ball:
+            base_frame: world
+            translation: [1, 2, 3]
+)""",
+          fmt::arg("deformable_sdf", deformable_sdf)),
+      {}, ModelDirectives());
+  /* There's no "body frame" for a deformable body. */
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseModelDirectives(directives),
+                              ".*no Frame named.*ball.*");
+}
+
+/* default_joint_positions should not be used to pose a deformable body. */
+TEST_F(DmdParserTest, DefaultJointPositions) {
+  AddSceneGraph();
+  const std::string deformable_sdf = "file://" + MakeDeformableSdf().string();
+  const ModelDirectives directives = LoadYamlString<ModelDirectives>(
+      fmt::format(
+          R"""(
+directives:
+- add_model:
+    name: deformable
+    file: {deformable_sdf}
+    default_joint_positions:
+      wrong: [0.0]
+)""",
+          fmt::arg("deformable_sdf", deformable_sdf)),
+      {}, ModelDirectives());
+  /* Deformables aren't associated with any joint */
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseModelDirectives(directives), ".*no Joint.*");
 }
 
 }  // namespace

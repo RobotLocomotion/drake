@@ -30,6 +30,7 @@ filegroup(
         "test/**/*.urdf",
         "test/**/*.usd",
         "test/**/*.usda",
+        "test/**/*.vtk",
         "test/**/*.xml",
         "test/**/*.zip",
         "test/**/COLCON_IGNORE",
@@ -597,6 +598,7 @@ drake_cc_googletest(
     name = "detail_dmd_parser_test",
     data = [
         ":process_model_directives_test_models",
+        ":test_models",
     ],
     deps = [
         ":detail_dmd_parser",

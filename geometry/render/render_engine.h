@@ -204,6 +204,10 @@ class RenderEngine {
     }
   }
 
+  // TODO(xuchenhan-tri): It may be dangerous the silently ignore the geometry
+  // that is not registered. The data may be coming from the wrong source (e.g.
+  // the wrong SceneGraph). But currently, render engine doesn't have a way to
+  // check that.
   /** Updates the configurations of all meshes associated with the given
    deformable geometry (see RegisterDeformableVisual()). The number of elements
    in the supplied vertex position vector `q_WGs` and the vertex normal vector
@@ -212,6 +216,8 @@ class RenderEngine {
    normals must be ordered the same way as the vertices specified in the render
    mesh at registration when reshaped to be an Nx3 matrix with N being the
    number of vertices in the mesh.
+
+   No-op if no geometry with the given `id` is registered with this engine.
 
    @experimental
    @param id       The unique identifier of a deformable geometry registered
@@ -222,8 +228,6 @@ class RenderEngine {
    @param nhats_W  The vertex normals of all meshes associated with the given
                    deformable geometry (measured and expressed in the world
                    frame).
-   @throws std::exception if no geometry with the given `id` is registered as
-           deformable geometry in this `RenderEngine`.
    @throws std::exception if the sizes of `q_WGs` or `nhats_W` are incompatible
            with the number of degrees of freedom of the meshes registered with
            the deformable geometry. */

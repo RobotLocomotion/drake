@@ -70,6 +70,17 @@ std::optional<T> GetChildElementValue(
   return value_pair.first;
 }
 
+std::optional<double> ReadDoubleFromSdfElement(
+    const SDFormatDiagnostic& diagnostic,
+    const sdf::ElementConstPtr& parent_element,
+    const char* child_element_name) {
+  if (parent_element->FindElement(child_element_name) != nullptr) {
+    return GetChildElementValue<double>(diagnostic, parent_element,
+                                        child_element_name);
+  }
+  return std::nullopt;
+}
+
 }  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
@@ -582,14 +593,8 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
     CheckSupportedElements(diagnostic, drake_element,
                            supported_proximity_elements);
 
-    auto read_double = [drake_element, &diagnostic](
-                           const char* element_name) -> std::optional<double> {
-      std::optional<double> result;
-      if (drake_element->FindElement(element_name) != nullptr) {
-        result = GetChildElementValue<double>(diagnostic, drake_element,
-                                              element_name);
-      }
-      return result;
+    auto read_double = [&diagnostic, &drake_element](const char* element_name) {
+      return ReadDoubleFromSdfElement(diagnostic, drake_element, element_name);
     };
 
     const bool is_rigid = drake_element->HasElement("drake:rigid_hydroelastic");
@@ -693,6 +698,67 @@ std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
   if (!dynamic_friction.has_value()) return std::nullopt;
 
   return CoulombFriction<double>(*static_friction, *dynamic_friction);
+}
+
+std::optional<geometry::ProximityProperties>
+MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
+                                    const sdf::Collision& collision) {
+  // Allowed child tags of <collision> for our mini‑parser.
+  sdf::ElementPtr collision_element = collision.Element();
+  CheckSupportedElements(diagnostic, collision_element,
+                         {"geometry", "drake:proximity_properties"});
+
+  const sdf::ElementPtr drake_element =
+      collision_element->FindElement("drake:proximity_properties");
+  if (!drake_element) return std::nullopt;  // no properties specified.
+
+  CheckSupportedElements(diagnostic, drake_element,
+                         {"drake:mu_dynamic", "drake:hunt_crossley_dissipation",
+                          "drake:relaxation_time"});
+
+  geometry::ProximityProperties props;
+
+  auto read_double = [&diagnostic, &drake_element](const char* element_name) {
+    return ReadDoubleFromSdfElement(diagnostic, drake_element, element_name);
+  };
+
+  const std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
+  if (mu_dynamic.has_value()) {
+    if (*mu_dynamic < 0) {
+      diagnostic.Error(drake_element, "drake:mu_dynamic must be non‑negative");
+      return std::nullopt;
+    } else {
+      props.AddProperty("material", "coulomb_friction",
+                        CoulombFriction<double>(*mu_dynamic, *mu_dynamic));
+    }
+  } else {
+    // If no value is specified, we use the default value.
+    props.AddProperty("material", "coulomb_friction", default_friction());
+  }
+
+  const std::optional<double> hunt_crossley_dissipation =
+      read_double("drake:hunt_crossley_dissipation");
+  if (hunt_crossley_dissipation.has_value()) {
+    if (*hunt_crossley_dissipation < 0) {
+      diagnostic.Error(drake_element,
+                       "drake:hunt_crossley_dissipation must be non‑negative");
+      return std::nullopt;
+    }
+    props.AddProperty("material", "hunt_crossley_dissipation",
+                      *hunt_crossley_dissipation);
+  }
+
+  const std::optional<double> relaxation_time =
+      read_double("drake:relaxation_time");
+  if (relaxation_time.has_value()) {
+    if (*relaxation_time < 0) {
+      diagnostic.Error(drake_element,
+                       "drake:relaxation_time must be non‑negative");
+      return std::nullopt;
+    }
+    props.AddProperty("material", "relaxation_time", *relaxation_time);
+  }
+  return props;
 }
 
 }  // namespace internal

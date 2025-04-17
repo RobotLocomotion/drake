@@ -24,14 +24,6 @@ DEFINE_double(simulation_time, 12.0, "Desired duration of the simulation [s].");
 DEFINE_double(realtime_rate, 1.0, "Desired real time rate.");
 DEFINE_double(time_step, 1e-2,
               "Discrete time step for the system [s]. Must be positive.");
-DEFINE_double(E, 3e4, "Young's modulus of the deformable body [Pa].");
-DEFINE_double(nu, 0.4, "Poisson's ratio of the deformable body, unitless.");
-DEFINE_double(density, 1e3,
-              "Mass density of the deformable body [kg/m³]. We observe that "
-              "density above 2400 kg/m³ makes the torus too heavy to be picked "
-              "up by the suction gripper.");
-DEFINE_double(beta, 0.01,
-              "Stiffness damping coefficient for the deformable body [1/s].");
 DEFINE_string(gripper, "parallel",
               "Type of gripper used to pick up the deformable torus. Options "
               "are: 'parallel' and 'suction'.");
@@ -39,10 +31,6 @@ DEFINE_string(contact_approximation, "lagged",
               "Type of convex contact approximation. See "
               "multibody::DiscreteContactApproximation for details. Options "
               "are: 'sap', 'lagged', and 'similar'.");
-DEFINE_double(
-    contact_damping, 10.0,
-    "Hunt and Crossley damping for the deformable body, only used when "
-    "'contact_approximation' is set to 'lagged' or 'similar' [s/m].");
 
 using drake::examples::deformable::ParallelGripperController;
 using drake::examples::deformable::PointSourceForceField;
@@ -169,24 +157,10 @@ int do_main() {
                   : AddParallelGripper(&plant);
 
   /* Set up a deformable torus. */
-  DeformableBodyConfig<double> deformable_config;
-  deformable_config.set_youngs_modulus(FLAGS_E);
-  deformable_config.set_poissons_ratio(FLAGS_nu);
-  deformable_config.set_mass_density(FLAGS_density);
-  deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
-
-  /* Load the geometry and scale it down to 65% (to showcase the scaling
-   capability and to make the torus suitable for grasping by the gripper). */
-  const double scale = 0.65;
-  /* Minor diameter of the torus inferred from the vtk file. */
-  const double kL = 0.09 * scale;
-  /* Set the initial pose of the torus such that its bottom face is touching the
-   ground. */
-  const RigidTransformd X_WB(Vector3<double>(0.0, 0.0, kL / 2.0));
-  DeformableModel<double>& deformable_model = plant.mutable_deformable_model();
-
-  RegisterDeformableTorus(&deformable_model, "deformable_torus", X_WB,
-                          deformable_config, scale, FLAGS_contact_damping);
+  Parser parser(&plant);
+  parser.AddModelsFromUrl(
+      "package://drake/examples/multibody/deformable/models/"
+      "deformable_torus.sdf");
 
   /* Add an external suction force if using a suction gripper. */
   const PointSourceForceField* suction_force_ptr{nullptr};
@@ -194,7 +168,7 @@ int do_main() {
     auto suction_force = std::make_unique<PointSourceForceField>(
         plant, plant.GetBodyByName("cup_body"), Vector3d(0, 0, -0.07), 0.1);
     suction_force_ptr = suction_force.get();
-    deformable_model.AddExternalForce(std::move(suction_force));
+    plant.mutable_deformable_model().AddExternalForce(std::move(suction_force));
   }
 
   /* All rigid and deformable models have been added. Finalize the plant. */
@@ -224,8 +198,8 @@ int do_main() {
   } else {
     /* Set the width between the fingers for open and closed states as well as
      the height to which the gripper lifts the deformable torus. */
-    const double kOpenWidth = kL * 1.5;
-    const double kClosedWidth = kL * 0.4;
+    const double kOpenWidth = 0.088;
+    const double kClosedWidth = 0.023;
     const double kLiftedHeight = 0.18;
     const auto& control = *builder.AddSystem<ParallelGripperController>(
         kOpenWidth, kClosedWidth, kLiftedHeight);
