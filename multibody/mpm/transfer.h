@@ -43,8 +43,8 @@ class Transfer {
 
   /* The Particle to grid transfer (P2G). After the call to P2G, the grid stores
    the mass and momentum transfered from the particles using APIC. In the
-   process, also mark the grid nodes that are in support of any particle in
-   constraint with the "participating" flag.
+   process, also mark the grid nodes that are in support of any particle that is
+   participating in a constraint with the "participating" flag.
    @note The `v` attribute of the grid data at the end of the operation stores
    the momentum, not velocity, of the grid node. */
   void ParticleToGrid(const ParticleData<T>& particle, Grid* grid);

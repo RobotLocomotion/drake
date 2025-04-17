@@ -383,7 +383,8 @@ TYPED_TEST(SparseGridTest, SetNodeIndices) {
   std::vector<Vector3<double>> q_WPs = {q_WP0, q_WP1};
   ParticleData<T> particle_data;
   particle_data.AddParticles(q_WPs, 1.0, fem::DeformableBodyConfig<double>());
-  /* The first particle is not in constraint while the second is. */
+  /* The first particle is not participating in a constraint while the second
+   is. */
   particle_data.mutable_in_constraint() = {0, 1};
 
   grid.Allocate(particle_data.x());

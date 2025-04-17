@@ -18,10 +18,10 @@ class SolverState;
 
 /* MpmModel provides information about an implicit (backward Euler) MPM system.
  Given particle states, it models the objective function as a function of the
- grid velocity change, `dv`. It works in conjunction with a Solver that
- minimizes the objective function by solving non-linear system of equations and
- a SolverState that holds the state that changes during the optimization
- process.
+ grid velocity change, `dv`. It works in conjunction with a solver and
+ SolverState. The solver minimizes the objective function by solving a
+ non-linear system of equations, changing the SolverState during the
+ optimization process.
 
  Specifically, the cost function is given by
 
@@ -56,7 +56,7 @@ class MpmModel {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MpmModel);
 
-  /* Creates a MpmModel given the current state of particles.
+  /* Creates an MpmModel given the current state of particles.
    @param[in] dt         The time step used in this MpmModel (in seconds).
    @param[in] dx         The grid spacing (in meters).
    @param[in] particles  The particle data.
@@ -70,10 +70,10 @@ class MpmModel {
   int num_particles() const { return particle_data_.num_particles(); }
 
   /* Computes the energy at the given solver state using the formula
-   E(v) = ½ (v − vⁿ)ᵀ M (v − vⁿ) + ∑ₚ Ψ(Fₚ(v)) ⋅ volₚ. */
+   E(v) = ½ (v − vⁿ)ᵀ M (v − vⁿ) + ∑ₚ Ψ(Fₚ(v; Fₚⁿ)) ⋅ volₚ. */
   T CalcCost(const SolverState<T, Grid>& solver_state) const;
 
-  /* Computes the residual vector b = Mdv - f(v)dt. */
+  /* Computes the residual vector b = M(v - vⁿ) - f(v; Fₚⁿ)dt. */
   void CalcResidual(const SolverState<T, Grid>& solver_state,
                     VectorX<T>* result) const;
 

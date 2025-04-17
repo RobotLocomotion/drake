@@ -238,7 +238,7 @@ class SparseGrid {
    in constraints come before nodes those don't participate in any constraint.
    Nodes are marked as "participating" during P2G in Transfer::ParticleToGrid().
    A node is marked as participating whenever it is in the support of a particle
-   particpating in a constraint. Refer to Transfer::ParticleToGrid() for
+   participating in a constraint. Refer to Transfer::ParticleToGrid() for
    details. */
   contact_solvers::internal::VertexPartialPermutation SetNodeIndices();
 

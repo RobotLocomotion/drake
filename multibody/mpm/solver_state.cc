@@ -47,12 +47,13 @@ void SolverState<T, Grid>::UpdateState(const VectorX<T>& ddv,
     for (int a = 0; a < 3; ++a) {
       for (int b = 0; b < 3; ++b) {
         for (int c = 0; c < 3; ++c) {
-          if (grid_data[a][b][c].m == 0.0) continue;
-          DRAKE_ASSERT(grid_data[a][b][c].index_or_flag.is_index());
-          const int grid_index = grid_data[a][b][c].index_or_flag.index();
-          const Vector3<T>& vi = grid_data[a][b][c].v +
-                                 dv_.template segment<kDim>(kDim * grid_index);
+          const GridData<T>& data_i = grid_data[a][b][c];
+          if (data_i.m == 0.0) continue;
           const Vector3<U>& xi = grid_x[a][b][c];
+          DRAKE_ASSERT(data_i.index_or_flag.is_index());
+          const int grid_index = data_i.index_or_flag.index();
+          const Vector3<T>& vi =
+              data_i.v + dv_.template segment<kDim>(kDim * grid_index);
           const U w = bspline.weight(a, b, c);
           C += (w * vi) * (xi - x).transpose();
         }

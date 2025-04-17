@@ -253,6 +253,8 @@ TYPED_TEST(MpmModelTest, CalcResidual) {
               weight * particle_mass * ddv.template segment<3>(node_index * 3),
               kTol));
         } else {
+          /* Even if we allow a lot of slop, these things aren't even nearly the
+           same. */
           EXPECT_FALSE(CompareMatrices(
               residual.template segment<3>(node_index * 3),
               weight * particle_mass * ddv.template segment<3>(node_index * 3),

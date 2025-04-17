@@ -29,8 +29,7 @@ class SolverState {
    step. */
   explicit SolverState(const MpmModel<T, Grid>& model);
 
-  /* Resets the SolverState to be compatible with the given MpmModel. Makes this
-   @pre  model.dx() == grid().dx().
+  /* Resets the SolverState to be compatible with the given MpmModel.
    @post `this` SolverState is as if it was just constructed with the given
    MpmModel. */
   void Reset(const MpmModel<T, Grid>& model);
