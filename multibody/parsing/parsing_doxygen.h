@@ -12,7 +12,8 @@ The result of the parse is an in-memory model realized within
 drake::multibody::MultibodyPlant and (optionally)
 drake::geometry::SceneGraph. Note that parses that do not use a `SceneGraph`
 will effectively ignore geometric model elements, especially `//visual` and
-`//collision` elements.
+`//collision` elements. For deformable models, lack of a `SceneGraph` will
+result in a parse failure.
 
 In the reference sections below, when discussing XML formats, the relevant
 usage paths for various tags are indicated using
@@ -268,6 +269,14 @@ Here is the full list of custom elements:
 - @ref tag_drake_rotor_inertia
 - @ref tag_drake_screw_thread_pitch
 - @ref tag_drake_visual
+- @ref tag_drake_deformable_model
+- @ref tag_drake_deformable_properties
+- @ref tag_drake_youngs_modulus
+- @ref tag_drake_poissons_ratio
+- @ref tag_drake_mass_damping
+- @ref tag_drake_stiffness_damping
+- @ref tag_drake_mass_density
+- @ref tag_drake_material_model
 
 @subsection tag_drake_acceleration drake:acceleration
 
@@ -1221,5 +1230,80 @@ emit a warning as it would for doing the same to a `<visual>` tag.
 
 @see @ref tag_drake_perception_properties
 @see @ref tag_drake_illustration_properties
+
+@subsection tag_drake_deformable_model drake:deformable_model
+
+- **SDFormat path:** `//drake:deformable_model`  
+- **URDF path:** *not available*  
+
+@par Syntax
+```xml
+<drake:deformable_model>
+  <pose> x y z r p y </pose>   <!-- optional world‑frame pose -->
+
+  <link name="..."> … </link>  <!-- one deformable body per link -->
+  <link name="..."> … </link>
+  …
+</drake:deformable_model>
+```
+
+@par Semantics
+A `<drake:deformable_model>` declares a **purely deformable model** (no rigid
+bodies).  The `Parser` recognizes exactly **one** such element per file via
+Parser::AddDeformableModelsFromSdf() (@experimental):
+
+| Rule | Description |
+|------|-------------|
+| Mutual exclusivity | A file must contain *either* one `<model>` (or `<world>) *or* one `<drake:deformable_model>`, never both. |
+| Pose | An optional `<pose>` sets `X_WM`, applied to every child `<link>`. |
+| Links | Each child `<link>` is converted into a single deformable body; see @ref deformable_link_requirements. |
+| No rigid features | Tags for inertias, joints, etc. are illegal and provoke errors. |
+
+@see deformable_link_requirements, Parser::AddDeformableModelsFromSdf()
+
+@subsection tag_drake_deformable_properties drake:deformable_properties
+
+- **SDFormat path:** `//drake:deformable_model/link/drake:deformable_properties`  
+- **URDF path:** *not available*  
+
+This optional element overrides material parameters for the enclosing
+link‑as‑deformable‑body.  All child elements are *optional*; unspecified fields
+fall back to the defaults of drake::multibody::fem::DeformableBodyConfig.
+
+| Child element | Units | Valid range / values |
+|---------------|-------|----------------------|
+| `drake:youngs_modulus`      | Pa (N/m²) | `> 0` |
+| `drake:poissons_ratio`      | –         | `(-1, 0.5)` |
+| `drake:mass_damping`        | 1/s       | `≥ 0` |
+| `drake:stiffness_damping`   | s         | `≥ 0` |
+| `drake:mass_density`        | kg/m³     | `> 0` |
+| `drake:material_model`      | enum      | `linear_corotated` *(default)*, `corotated`, `linear` |
+
+@subsubsection tag_drake_youngs_modulus       drake:youngs_modulus
+@subsubsection tag_drake_poissons_ratio       drake:poissons_ratio
+@subsubsection tag_drake_mass_damping         drake:mass_damping
+@subsubsection tag_drake_stiffness_damping    drake:stiffness_damping
+@subsubsection tag_drake_mass_density         drake:mass_density
+@subsubsection tag_drake_material_model       drake:material_model
+
+All of the above are simple leaf elements whose textual contents follow the
+units and ranges listed in the table and populate the corresponding fields in
+DeformableBodyConfig.
+
+@anchor deformable_link_requirements
+@subsection deformable_link_requirements Deformable `<link>` requirements
+
+Within a `<drake:deformable_model>` each `<link>` is interpreted **solely** as
+geometry for a deformable body and must obey:
+
+| Requirement | Details |
+|-------------|---------|
+| **Exactly one `<collision>`** | Multiple collisions are forbidden. |
+| **Geometry restriction** | The `<collision>/<geometry>` must be a single `<mesh>`; primitive shapes are not yet supported. |
+| **At most one `<visual>`** | A lone `<visual>` may supply an embedded‑mesh texture. More than one is an error. |
+| **Limited proximity properties** | Inside `<collision>`, the only Drake proximity tag recognized is `<drake:mu_dynamic>`. |
+| **Optional per‑link material** | A `<drake:deformable_properties>` block may appear to override defaults. |
+
+Violating any rule triggers a *parsing error*.
 
 */

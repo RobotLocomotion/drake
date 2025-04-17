@@ -248,6 +248,13 @@ MakeProximityPropertiesForCollision(const SDFormatDiagnostic& diagnostic,
 std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
     const SDFormatDiagnostic& diagnostic, const sdf::Collision& sdf_collision);
 
+// Returns proximity properties from <collision>. Supports only
+// <drake:proximity_properties>/<drake:mu_dynamic>. Returns nullopt if
+// nothing specified or on error.
+std::optional<geometry::ProximityProperties>
+MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
+                                    const sdf::Collision& collision);
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
