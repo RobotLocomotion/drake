@@ -1,9 +1,10 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
-# Update this version in accordance with the minimum officially supported
-# version documented in https://drake.mit.edu/from_source.html.
-# When this changes, tools/install/libdrake/drake-config.cmake.in should be
+# The minimum required CMake version should match the minimum listed in
+# doc/_pages/from_source.md, which is also the minimum installed by
+# setup/install_prereqs across all platforms.
+# When this changes, drake-external-examples/drake_cmake_external/CMakeLists.txt
 # should be changed accordingly so that downstream users are synced with
 # Drake's source itself.
 cmake_minimum_required(VERSION 3.22)
