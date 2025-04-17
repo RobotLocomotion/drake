@@ -1,5 +1,6 @@
 import errno
 import os
+import re
 import signal
 import stat
 import subprocess
@@ -37,6 +38,26 @@ def install():
             _make_read_only(os.path.join(root, d))
         for f in files:
             _make_read_only(os.path.join(root, f))
+
+
+def get_installed_cmake_version():
+    """Returns Drake's installed CMake policy minimum version.
+
+    That is, x.y...z.w from cmake_policy(VERSION x.y...z.w) in
+    <install_dir>/lib/cmake/drake/drake-config.cmake, which is used
+    by CMake Drake consumers and thus should be tested against
+    the same policy.
+    """
+    install_dir = get_install_dir()
+    config_cmake_path = os.path.join(install_dir,
+        "lib", "cmake", "drake", "drake-config.cmake"
+    )
+    with open(config_cmake_path, 'r') as config_cmake_file:
+        config_cmake = config_cmake_file.read()
+    cmake_policy_pattern = r'cmake_policy\(VERSION\s+(.*?)\)'
+    cmake_policy_version = re.search(cmake_policy_pattern,
+        config_cmake).group(1)
+    return cmake_policy_version
 
 
 def get_install_dir():
