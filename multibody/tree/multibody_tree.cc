@@ -1436,8 +1436,8 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     //  the whole computation is done only when parameters change. But if
     //  there is a performance issue, consider doing this in topological
     //  order (or memoizing) so we don't have to recalculate.
-    frame_body_poses->set_X_BF(body_pose_index_in_cache,
-                               frame->CalcPoseInBodyFrame(context));
+    frame_body_poses->SetX_BF(body_pose_index_in_cache,
+                              frame->CalcPoseInBodyFrame(context));
   }
 }
 
