@@ -6,6 +6,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -50,14 +52,21 @@ class FrameBodyPoseCache {
     return X_FB_pool_[body_pose_index];
   }
 
+  // Returns true for body frames.
+  bool is_X_BF_identity(int body_pose_index) const {
+    return body_pose_index == 0;
+  }
+
   void set_X_BF(int body_pose_index, const math::RigidTransform<T>& X_BF) {
-    DRAKE_ASSERT(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
+    DRAKE_DEMAND(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
     X_BF_pool_[body_pose_index] = X_BF;
     X_FB_pool_[body_pose_index] = X_BF.inverse();
   }
 
  private:
-  // Size is set on construction.
+  // Sizes are set on construction.
+
+  // These are indexed by Frame::get_body_pose_index_in_cache().
   std::vector<math::RigidTransform<T>> X_BF_pool_;
   std::vector<math::RigidTransform<T>> X_FB_pool_;
 };

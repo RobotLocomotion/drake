@@ -11,55 +11,6 @@ template <typename T>
 BodyNode<T>::~BodyNode() = default;
 
 template <typename T>
-void BodyNode<T>::CalcAcrossMobilizerBodyPoses_BaseToTip(
-    const FrameBodyPoseCache<T>& frame_body_pose_cache,
-    PositionKinematicsCache<T>* pc) const {
-  // RigidBody for this node.
-  const RigidBody<T>& body_B = body();
-
-  // RigidBody for this node's parent, or the parent body P.
-  const RigidBody<T>& body_P = parent_body();
-
-  // Inboard/Outboard frames of this node's mobilizer.
-  const Frame<T>& frame_F = inboard_frame();
-  DRAKE_ASSERT(frame_F.body().index() == body_P.index());
-  const Frame<T>& frame_M = outboard_frame();
-  DRAKE_ASSERT(frame_M.body().index() == body_B.index());
-
-  // Input (const):
-  // - X_PF
-  // - X_MB
-  // - X_FM(q_B)
-  // - X_WP(q(W:P)), where q(W:P) includes all positions in the kinematics
-  //                 path from parent body P to the world W.
-  const math::RigidTransform<T>& X_MB =
-      frame_M.get_X_FB(frame_body_pose_cache);  // F==M
-  const math::RigidTransform<T>& X_PF =
-      frame_F.get_X_BF(frame_body_pose_cache);  // B==P
-  const math::RigidTransform<T>& X_FM = pc->get_X_FM(mobod_index());
-  const math::RigidTransform<T>& X_WP = pc->get_X_WB(inboard_mobod_index());
-
-  // Output (updating a cache entry):
-  // - X_PB(q_B)
-  // - X_WB(q(W:P), q_B)
-  math::RigidTransform<T>& X_PB = pc->get_mutable_X_PB(mobod_index());
-  math::RigidTransform<T>& X_WB = pc->get_mutable_X_WB(mobod_index());
-  Vector3<T>& p_PoBo_W = pc->get_mutable_p_PoBo_W(mobod_index());
-
-  // TODO(amcastro-tri): Consider logic for the common case B = M.
-  //  In that case X_FB = X_FM as suggested by setting X_MB = Identity.
-  const math::RigidTransform<T> X_FB = X_FM * X_MB;
-
-  X_PB = X_PF * X_FB;
-  X_WB = X_WP * X_PB;
-
-  // Compute shift vector p_PoBo_W from the parent origin to the body origin.
-  const Vector3<T>& p_PoBo_P = X_PB.translation();
-  const math::RotationMatrix<T>& R_WP = X_WP.rotation();
-  p_PoBo_W = R_WP * p_PoBo_P;
-}
-
-template <typename T>
 void BodyNode<T>::CalcCompositeBodyInertia_TipToBase(
     const PositionKinematicsCache<T>& pc,
     const std::vector<SpatialInertia<T>>& M_B_W_all,
