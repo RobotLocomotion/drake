@@ -643,6 +643,8 @@ drake_cc_googletest(
         ":meshcat_websocket_client",
         "//geometry/render:test_models",
     ],
+    # Network settings cause this test to occasionally fail in macOS CI.
+    flaky = True,
     tags = [
         "cpu:2",
     ],
