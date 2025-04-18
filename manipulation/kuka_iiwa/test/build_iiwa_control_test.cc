@@ -82,6 +82,8 @@ TEST_F(BuildIiwaControlTest, BuildIiwaControl) {
   BuildIiwaControl(*sim_plant_, iiwa7_info_.model_instance, *controller_plant_,
                    &lcm_, &builder_);
   const auto diagram = builder_.Build();
+  EXPECT_TRUE(diagram->HasSubsystemNamed(
+      fmt::format("IiwaDriver({})", iiwa7_info_.model_name)));
   systems::Simulator<double> simulator(*diagram);
 
   lcm::Subscriber<lcmt_iiwa_status> sub{&lcm_, "IIWA_STATUS"};
@@ -118,8 +120,9 @@ TEST_F(BuildIiwaControlTest, PositionOnly) {
   IiwaControlPorts control_ports{};
   control_ports = BuildSimplifiedIiwaControl(
       *sim_plant_, iiwa7_info_.model_instance, *controller_plant_, &builder_,
-      0.01, {}, IiwaControlMode::kPositionOnly);
+      0.01, {}, IiwaControlMode::kPositionOnly, "sim_driver");
   const auto diagram = builder_.Build();
+  EXPECT_TRUE(diagram->HasSubsystemNamed("sim_driver"));
 
   // Expect position as input.
   ASSERT_NE(control_ports.commanded_positions, nullptr);

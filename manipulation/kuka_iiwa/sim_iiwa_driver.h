@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -65,6 +66,9 @@ class SimIiwaDriver : public systems::Diagram<T> {
   state and generalized contact forces output ports in `plant` corresponding to
   the iiwa model.
 
+  If present, `system_name` overrides the `SimmIiiwaDriver` system name. By
+  default, the system name will be "IiwaDriver($MODEL_INSTANCE_NAME)".
+
   Returns the newly-added `SimIiwaDriver` System.
 
   Note: The Diagram will maintain an internal reference to
@@ -77,7 +81,8 @@ class SimIiwaDriver : public systems::Diagram<T> {
       const multibody::MultibodyPlant<double>& controller_plant,
       double ext_joint_filter_tau,
       const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-      IiwaControlMode control_mode);
+      IiwaControlMode control_mode,
+      const std::optional<std::string>& system_name = std::nullopt);
 };
 
 }  // namespace kuka_iiwa

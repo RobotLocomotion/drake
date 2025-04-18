@@ -181,6 +181,7 @@ void DefineManipulationKukaIiwa(py::module m) {
             py::arg("plant"), py::arg("iiwa_instance"),
             py::arg("controller_plant"), py::arg("ext_joint_filter_tau"),
             py::arg("desired_iiwa_kp_gains"), py::arg("control_mode"),
+            py::arg("system_name") = std::nullopt,
             // Using builder_life_support_stash makes the
             // builder temporarily immortal (uncollectible self cycle). This
             // will be resolved by the Build() step. See BuilderLifeSupport

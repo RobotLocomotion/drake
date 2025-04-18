@@ -91,7 +91,9 @@ struct IiwaControlPorts {
 
 /// A simplified Iiwa controller builder to construct an
 /// InverseDynamicsController without adding LCM I/O systems.
-/// @sa BuildIiwaControl()
+/// @sa BuildIiwaControl(), IiwaDriver
+/// @param system_name if present, overrides the default name for the sim
+/// driver system.
 IiwaControlPorts BuildSimplifiedIiwaControl(
     const multibody::MultibodyPlant<double>& plant,
     const multibody::ModelInstanceIndex iiwa_instance,
@@ -99,7 +101,8 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     systems::DiagramBuilder<double>* builder,
     double ext_joint_filter_tau = 0.01,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains = std::nullopt,
-    IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque);
+    IiwaControlMode control_mode = IiwaControlMode::kPositionAndTorque,
+    const std::optional<std::string>& system_name = std::nullopt);
 
 }  // namespace kuka_iiwa
 }  // namespace manipulation

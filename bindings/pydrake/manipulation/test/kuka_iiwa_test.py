@@ -187,6 +187,7 @@ class TestKukaIiwa(unittest.TestCase):
             ext_joint_filter_tau=0.1,
             desired_iiwa_kp_gains=np.full(7, 100.0),
             control_mode=mut.IiwaControlMode.kPositionAndTorque,
+            system_name=None
         )
         self.assertGreater(dut1.num_input_ports(), 0)
         self.assertGreater(dut1.num_output_ports(), 0)

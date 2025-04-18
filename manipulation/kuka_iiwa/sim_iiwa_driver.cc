@@ -168,9 +168,15 @@ const System<double>& SimIiwaDriver<T>::AddToBuilder(
     const ModelInstanceIndex iiwa_instance,
     const MultibodyPlant<double>& controller_plant, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-    IiwaControlMode control_mode) {
-  const std::string name =
-      fmt::format("IiwaDriver({})", plant.GetModelInstanceName(iiwa_instance));
+    IiwaControlMode control_mode,
+    const std::optional<std::string>& system_name) {
+  const std::string name = [&]() {
+    if (system_name.has_value()) {
+      return *system_name;
+    }
+    return fmt::format("IiwaDriver({})",
+                       plant.GetModelInstanceName(iiwa_instance));
+  }();
   auto system = builder->AddNamedSystem<SimIiwaDriver<double>>(
       name, control_mode, &controller_plant, ext_joint_filter_tau,
       desired_iiwa_kp_gains);

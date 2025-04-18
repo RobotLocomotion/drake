@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -30,6 +31,14 @@ struct IiwaDriver {
   - "torque_only" */
   std::string control_mode{"position_and_torque"};
 
+  /** For (exclusive) workaround use with `MakeArmControllerModel`. */
+  std::optional<std::string> arm_child_frame_name;
+  std::optional<std::string> gripper_parent_frame_name;
+
+  /** Optionally, override the sim driver system name. By default, the system
+  name will be "IiwaDriver($MODEL_INSTANCE_NAME)". */
+  std::optional<std::string> system_name;
+
   std::string lcm_bus{"default"};
 
   template <typename Archive>
@@ -37,6 +46,9 @@ struct IiwaDriver {
     a->Visit(DRAKE_NVP(hand_model_name));
     a->Visit(DRAKE_NVP(ext_joint_filter_tau));
     a->Visit(DRAKE_NVP(control_mode));
+    a->Visit(DRAKE_NVP(arm_child_frame_name));
+    a->Visit(DRAKE_NVP(gripper_parent_frame_name));
+    a->Visit(DRAKE_NVP(system_name));
     a->Visit(DRAKE_NVP(lcm_bus));
   }
 };

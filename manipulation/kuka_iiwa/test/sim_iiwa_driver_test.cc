@@ -95,13 +95,16 @@ TEST_F(SimIiwaDriverTest, AddToBuilder) {
   for (const auto& mode :
        {IiwaControlMode::kPositionOnly, IiwaControlMode::kTorqueOnly,
         IiwaControlMode::kPositionAndTorque}) {
-    SCOPED_TRACE(fmt::format("mode = {}", static_cast<int>(mode)));
+    const std::string mode_string =
+        fmt::format("mode = {}", static_cast<int>(mode));
+    SCOPED_TRACE(mode_string);
     systems::DiagramBuilder<double> builder;
     auto* sim_plant = builder.AddSystem(System<double>::Clone(*sim_plant_));
     const System<double>* const dut = &SimIiwaDriver<double>::AddToBuilder(
         &builder, *sim_plant, iiwa_instance_, *controller_plant_,
-        ext_joint_filter_tau_, desired_iiwa_kp_gains_, mode);
+        ext_joint_filter_tau_, desired_iiwa_kp_gains_, mode, mode_string);
 
+    EXPECT_EQ(dut->get_name(), mode_string);
     TestSimIiwaDriverPorts(mode, *dut);
   }
 }

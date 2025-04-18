@@ -116,14 +116,15 @@ IiwaControlPorts BuildSimplifiedIiwaControl(
     const MultibodyPlant<double>& controller_plant,
     DiagramBuilder<double>* builder, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
-    IiwaControlMode control_mode) {
+    IiwaControlMode control_mode,
+    const std::optional<std::string>& system_name) {
   const int num_positions = controller_plant.num_positions();
   DRAKE_THROW_UNLESS(num_positions == 7);
 
   // Add the sim driver to the builder.
   const System<double>* const system = &SimIiwaDriver<double>::AddToBuilder(
       builder, plant, iiwa_instance, controller_plant, ext_joint_filter_tau,
-      desired_iiwa_kp_gains, control_mode);
+      desired_iiwa_kp_gains, control_mode, system_name);
 
   // Return the necessary port pointers.
   IiwaControlPorts result;
