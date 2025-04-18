@@ -1206,20 +1206,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("set_stiction_tolerance", &Class::set_stiction_tolerance,
             py::arg("v_stiction") = 0.001, cls_doc.set_stiction_tolerance.doc)
         .def(
-            "GetPositions",
-            [](const MultibodyPlant<T>* self, const Context<T>& context)
-                -> VectorX<T> { return self->GetPositions(context); },
-            py_rvp::reference, py::arg("context"),
-            cls_doc.GetPositions.doc_1args)
-        .def(
-            "GetPositions",
-            [](const MultibodyPlant<T>* self, const Context<T>& context,
-                ModelInstanceIndex model_instance) -> VectorX<T> {
-              return self->GetPositions(context, model_instance);
-            },
-            py_rvp::reference, py::arg("context"), py::arg("model_instance"),
-            cls_doc.GetPositions.doc_2args)
-        .def(
             "SetPositions",
             [](const MultibodyPlant<T>* self, Context<T>* context,
                 const Eigen::Ref<const VectorX<T>>& q) {
@@ -1263,20 +1249,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("model_instance"), py::arg("q_instance"),
             cls_doc.SetDefaultPositions.doc_2args)
-        .def(
-            "GetVelocities",
-            [](const MultibodyPlant<T>* self, const Context<T>& context)
-                -> VectorX<T> { return self->GetVelocities(context); },
-            py_rvp::reference, py::arg("context"),
-            cls_doc.GetVelocities.doc_1args)
-        .def(
-            "GetVelocities",
-            [](const MultibodyPlant<T>* self, const Context<T>& context,
-                ModelInstanceIndex model_instance) -> VectorX<T> {
-              return self->GetVelocities(context, model_instance);
-            },
-            py_rvp::reference, py::arg("context"), py::arg("model_instance"),
-            cls_doc.GetVelocities.doc_2args)
         .def(
             "SetVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
@@ -1758,6 +1730,10 @@ PYBIND11_MODULE(plant, m) {
             py::arg("shape"), py::arg("X_BG"), cls_doc.AddFixedConstraint.doc)
         .def("GetDiscreteStateIndex", &Class::GetDiscreteStateIndex,
             py::arg("id"), cls_doc.GetDiscreteStateIndex.doc)
+        .def("SetPositions", &Class::SetPositions, py::arg("context"),
+            py::arg("id"), py::arg("q"), cls_doc.SetPositions.doc)
+        .def("GetPositions", &Class::GetPositions, py::arg("context"),
+            py::arg("id"), cls_doc.GetPositions.doc)
         .def("GetReferencePositions", &Class::GetReferencePositions,
             py::arg("id"), py_rvp::reference_internal,
             cls_doc.GetReferencePositions.doc)
