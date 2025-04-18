@@ -347,13 +347,62 @@ struct MeshfileObjectData {
   MSGPACK_DEFINE_MAP(uuid, type, format, data, mtl_library, resources, matrix);
 };
 
+struct InstancedMeshData {
+  std::string uuid;
+  std::string type{"InstancedMesh"};
+  std::string geometry;
+  std::string material;
+  // The count of instances
+  int count{0};
+  // Matrix data for all instances stored as a contiguous array.
+  // Each instance has a 16-element transform matrix.
+  Eigen::Matrix<float, 16, Eigen::Dynamic> instanceMatrix;
+  // Optional per-instance colors stored as RGB values (3 doubles per instance)
+  std::optional<Eigen::Matrix<float, 3, Eigen::Dynamic>> instanceColor;
+
+  // TODO (Sid): This is a dummy matrix because InstancedMesh is a member of
+  // LumpedObject's monostate. Remove this eventually.
+  double matrix[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+
+  template <typename Packer>
+  // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
+  void msgpack_pack(Packer& o) const {
+    DRAKE_ASSERT(instanceMatrix.cols() == count);
+
+    int size = 6;  // uuid, type, geometry, material, count, instanceMatrix
+    if (instanceColor && instanceColor->cols() > 0) {
+      DRAKE_ASSERT(instanceColor->cols() == count);
+      ++size;
+    }  // instanceColor
+
+    o.pack_map(size);
+    PACK_MAP_VAR(o, uuid);
+    PACK_MAP_VAR(o, type);
+    PACK_MAP_VAR(o, geometry);
+    PACK_MAP_VAR(o, material);
+    PACK_MAP_VAR(o, count);
+    PACK_MAP_VAR(o, instanceMatrix);
+
+    if (instanceColor && instanceColor->cols() > 0) {
+      o.pack("instanceColor");
+      o.pack(*instanceColor);
+    }
+  }
+
+  // This method must be defined, but the implementation is not needed in the
+  // current workflows.
+  void msgpack_unpack(msgpack::object const&) {
+    throw std::runtime_error("unpack is not implemented for InstancedMeshData.");
+  }
+};
+
 struct LumpedObjectData {
   ObjectData metadata{};
   // We deviate from the msgpack names (geometries, materials) here since we
   // currently only support zero or one geometry/material.
   std::unique_ptr<GeometryData> geometry;
   std::unique_ptr<MaterialData> material;
-  std::variant<std::monostate, MeshData, MeshfileObjectData> object;
+  std::variant<std::monostate, MeshData, MeshfileObjectData, InstancedMeshData> object;
 
   template <typename Packer>
   // NOLINTNEXTLINE(runtime/references) cpplint disapproves of msgpack choices.
@@ -376,8 +425,10 @@ struct LumpedObjectData {
     o.pack("object");
     if (std::holds_alternative<MeshData>(object)) {
       o.pack(std::get<MeshData>(object));
-    } else {
+    } else if (std::holds_alternative<MeshfileObjectData>(object)) {
       o.pack(std::get<MeshfileObjectData>(object));
+    } else {
+      o.pack(std::get<InstancedMeshData>(object));
     }
   }
   // This method must be defined, but the implementation is not needed in the
