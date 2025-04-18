@@ -11,15 +11,13 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-RevoluteMobilizer<T>::~RevoluteMobilizer() = default;
+RevoluteMobilizer<T>::RevoluteMobilizer(const SpanningForest::Mobod& mobod,
+                                        const Frame<T>& inboard_frame_F,
+                                        const Frame<T>& outboard_frame_M)
+    : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
 
 template <typename T>
-std::unique_ptr<internal::BodyNode<T>> RevoluteMobilizer<T>::CreateBodyNode(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
-    const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<internal::BodyNodeImpl<T, RevoluteMobilizer>>(
-      parent_node, body, mobilizer);
-}
+RevoluteMobilizer<T>::~RevoluteMobilizer() = default;
 
 template <typename T>
 std::string RevoluteMobilizer<T>::position_suffix(
@@ -73,35 +71,45 @@ const RevoluteMobilizer<T>& RevoluteMobilizer<T>::SetAngularRate(
   return *this;
 }
 
-template <typename T>
-math::RigidTransform<T> RevoluteMobilizer<T>::CalcAcrossMobilizerTransform(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+RevoluteMobilizerAxial<T, axis>::~RevoluteMobilizerAxial() = default;
+
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+math::RigidTransform<T>
+RevoluteMobilizerAxial<T, axis>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
+  DRAKE_ASSERT(q.size() == this->kNq);
   return calc_X_FM(q.data());
 }
 
-template <typename T>
-SpatialVelocity<T> RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+SpatialVelocity<T>
+RevoluteMobilizerAxial<T, axis>::CalcAcrossMobilizerSpatialVelocity(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == kNv);
+  DRAKE_ASSERT(v.size() == this->kNv);
   return calc_V_FM(nullptr, v.data());
 }
 
-template <typename T>
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
 SpatialAcceleration<T>
-RevoluteMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
+RevoluteMobilizerAxial<T, axis>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
-  DRAKE_ASSERT(vdot.size() == kNv);
+  DRAKE_ASSERT(vdot.size() == this->kNv);
   return calc_A_FM(nullptr, nullptr, vdot.data());
 }
 
-template <typename T>
-void RevoluteMobilizer<T>::ProjectSpatialForce(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+void RevoluteMobilizerAxial<T, axis>::ProjectSpatialForce(
     const systems::Context<T>&, const SpatialForce<T>& F_BMo_F,
     Eigen::Ref<VectorX<T>> tau) const {
-  DRAKE_ASSERT(tau.size() == kNv);
+  DRAKE_ASSERT(tau.size() == this->kNv);
   calc_tau(nullptr, F_BMo_F, tau.data());
 }
 
@@ -157,37 +165,52 @@ void RevoluteMobilizer<T>::MapQDDotToAcceleration(
   *vdot = qddot;
 }
 
-template <typename T>
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
-RevoluteMobilizer<T>::TemplatedDoCloneToScalar(
+RevoluteMobilizerAxial<T, axis>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
       tree_clone.get_variant(this->inboard_frame());
   const Frame<ToScalar>& outboard_frame_clone =
       tree_clone.get_variant(this->outboard_frame());
-  return std::make_unique<RevoluteMobilizer<ToScalar>>(
+  return std::make_unique<RevoluteMobilizerAxial<ToScalar, axis>>(
       tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
-      outboard_frame_clone, this->revolute_axis());
+      outboard_frame_clone);
 }
 
-template <typename T>
-std::unique_ptr<Mobilizer<double>> RevoluteMobilizer<T>::DoCloneToScalar(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+std::unique_ptr<Mobilizer<double>>
+RevoluteMobilizerAxial<T, axis>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>> RevoluteMobilizer<T>::DoCloneToScalar(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+std::unique_ptr<Mobilizer<AutoDiffXd>>
+RevoluteMobilizerAxial<T, axis>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-template <typename T>
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
 std::unique_ptr<Mobilizer<symbolic::Expression>>
-RevoluteMobilizer<T>::DoCloneToScalar(
+RevoluteMobilizerAxial<T, axis>::DoCloneToScalar(
     const MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+std::unique_ptr<BodyNode<T>> RevoluteMobilizerAxial<T, axis>::CreateBodyNode(
+    const BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<BodyNodeImpl<T, RevoluteMobilizerAxial>>(
+      parent_node, body, mobilizer);
 }
 
 }  // namespace internal
@@ -196,3 +219,17 @@ RevoluteMobilizer<T>::DoCloneToScalar(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::RevoluteMobilizer);
+
+#define DRAKE_DEFINE_REVOLUTE_MOBILIZER(axis)                                 \
+  template class ::drake::multibody::internal::RevoluteMobilizerAxial<double, \
+                                                                      axis>;  \
+  template class ::drake::multibody::internal::RevoluteMobilizerAxial<        \
+      ::drake::AutoDiffXd, axis>;                                             \
+  template class ::drake::multibody::internal::RevoluteMobilizerAxial<        \
+      ::drake::symbolic::Expression, axis>
+
+DRAKE_DEFINE_REVOLUTE_MOBILIZER(0);
+DRAKE_DEFINE_REVOLUTE_MOBILIZER(1);
+DRAKE_DEFINE_REVOLUTE_MOBILIZER(2);
+
+#undef DRAKE_DEFINE_REVOLUTE_MOBILIZER
