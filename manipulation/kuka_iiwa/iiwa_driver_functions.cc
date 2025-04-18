@@ -32,7 +32,11 @@ void ApplyDriverConfig(
         "IiwaDriver could not find arm model directive '{}' to actuate",
         arm_name));
   }
-  const ModelInstanceInfo& arm_model = models_from_directives.at(arm_name);
+  ModelInstanceInfo arm_model = models_from_directives.at(arm_name);
+  // Substitute frame names if they are provided in `driver_config`.
+  if (driver_config.arm_child_frame_name.has_value()) {
+    arm_model.child_frame_name = driver_config.arm_child_frame_name.value();
+  }
   std::optional<ModelInstanceInfo> hand_model;
   if (!hand_name.empty()) {
     if (!models_from_directives.contains(hand_name)) {
@@ -41,6 +45,10 @@ void ApplyDriverConfig(
           hand_name));
     }
     hand_model = models_from_directives.at(hand_name);
+    if (driver_config.gripper_parent_frame_name.has_value()) {
+      hand_model->parent_frame_name =
+          driver_config.gripper_parent_frame_name.value();
+    }
   }
   DrakeLcmInterface* lcm =
       lcms.Find("Driver for " + arm_name, driver_config.lcm_bus);

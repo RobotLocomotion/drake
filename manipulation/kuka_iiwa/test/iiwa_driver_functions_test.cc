@@ -117,7 +117,7 @@ GTEST_TEST(IiwaDriverFunctionsTest, ApplyDriverConfigNoLcm) {
       "plant",
       "scene_graph",
       // From ApplyDriverConfig.
-      "IiwaDriver(iiwa7)",
+      "iiwa7",
       // TODO(jwnimmer-tri) Ideally this SharedPtrSystem would live within the
       // SimIiwaDriver, but for the moment it's a sibling instead of a child.
       "iiwa7_controller_plant",
