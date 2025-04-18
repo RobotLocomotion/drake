@@ -24,8 +24,8 @@ officially supports when building from source:
 |------------------------------------|--------------|------------|-------|-------|------------------------------|------------|
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 8.1   | 3.22  | GCC 11 (default) or Clang 15 | OpenJDK 11 |
 | Ubuntu 24.04 LTS (Noble Numbat)    | x86_64       | 3.12       | 8.1   | 3.28  | GCC 13 (default) or Clang 15 | OpenJDK 21 |
-| macOS Sonoma (14)                  | arm64        | 3.13       | 8.1   | 3.31  | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
-| macOS Sequoia (15)                 | arm64        | 3.13       | 8.1   | 3.31  | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
+| macOS Sonoma (14)                  | arm64        | 3.13       | 8.1   | 4.0   | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
+| macOS Sequoia (15)                 | arm64        | 3.13       | 8.1   | 4.0   | Apple LLVM 16 (Xcode 16)     | OpenJDK 23 |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
