@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/mpm/grid_data.h"
 #include "drake/multibody/mpm/mass_and_momentum.h"
 #include "drake/multibody/mpm/particle_data.h"
@@ -94,7 +95,19 @@ class MockSparseGrid {
     particle_sorter_.Iterate(this, &particle_data, kernel);
   }
 
+  void IterateParticleAndGrid(
+      const ParticleData<T>& particle_data,
+      const std::function<void(int, const Pad<Vector3<double>>&,
+                               const Pad<GridData<T>>&,
+                               const ParticleData<T>&)>& kernel) const {
+    particle_sorter_.Iterate(this, &particle_data, kernel);
+  }
+
   void IterateGrid(const std::function<void(GridData<T>*)>& func);
+
+  void IterateGrid(const std::function<void(const GridData<T>&)>& func) const;
+
+  contact_solvers::internal::VertexPartialPermutation SetNodeIndices();
 
  private:
   double dx_{};

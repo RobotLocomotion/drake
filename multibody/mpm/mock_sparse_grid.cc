@@ -135,6 +135,35 @@ void MockSparseGrid<T>::IterateGrid(
   }
 }
 
+template <typename T>
+void MockSparseGrid<T>::IterateGrid(
+    const std::function<void(const GridData<T>&)>& func) const {
+  for (const auto& [_, data] : grid_data_) {
+    func(data);
+  }
+}
+
+template <typename T>
+contact_solvers::internal::VertexPartialPermutation
+MockSparseGrid<T>::SetNodeIndices() {
+  std::vector<int> participating_nodes;
+  int node_index = 0;
+  int participating_node_index = 0;
+  auto index_grid = [&](GridData<T>* data) {
+    if (data->m > 0.0) {
+      if (data->index_or_flag.is_flag()) {
+        participating_nodes.push_back(participating_node_index++);
+      } else {
+        participating_nodes.push_back(-1);
+      }
+      data->index_or_flag.set_index(node_index++);
+    }
+  };
+  IterateGrid(index_grid);
+  return contact_solvers::internal::VertexPartialPermutation(
+      std::move(participating_nodes));
+}
+
 }  // namespace internal
 }  // namespace mpm
 }  // namespace multibody

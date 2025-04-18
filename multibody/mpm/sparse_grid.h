@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/mpm/grid_data.h"
 #include "drake/multibody/mpm/mass_and_momentum.h"
 #include "drake/multibody/mpm/particle_data.h"
@@ -151,6 +152,37 @@ class SparseGrid {
     particle_sorter_.Iterate(this, particle_data, kernel);
   }
 
+  /* Iterates over all particles and the grid nodes supported by them, applying
+   the given kernel.
+
+   This method traverses every particle in the provided ParticleData instance.
+   For each particle, it:
+     - Retrieves the pad of grid nodes and grid data that the particle supports.
+     - Invokes the provided kernel function with:
+       - The index of the current particle.
+       - A const reference to the positions of the pad of grid nodes supported
+         by the particle.
+       - A const reference to the pad of grid data.
+       - A const reference to the particle data.
+   Note that this kernel should only read the particle data with the given
+   particle index, and it should not assume an ordering of how the particles are
+   iterated.
+
+   @param[in] particle_data  Pointer to the particle data to iterate over. It
+                             provides the particle position to locate the
+                             relevant grid pad as well as the current particle
+                             state to be used in the kernel.
+   @param[in] kernel         The grid-to-particle kernel to apply.
+   @pre The grid's Allocate() method must have been called with the positions
+   contained in the given particle_data. */
+  void IterateParticleAndGrid(
+      const ParticleData<T>& particle_data,
+      const std::function<void(int, const Pad<Vector3<T>>&,
+                               const Pad<GridData<T>>&,
+                               const ParticleData<T>&)>& kernel) const {
+    particle_sorter_.Iterate(this, &particle_data, kernel);
+  }
+
   /* Iterates over all particles and the grid nodes supported by them,
    applying the given kernel, and writes back the updated grid data.
 
@@ -193,6 +225,22 @@ class SparseGrid {
   void IterateGrid(const std::function<void(GridData<T>*)>& func) {
     spgrid_.IterateGrid(func);
   }
+
+  /* Iterates over all grid nodes in the grid and applies the given function
+   `func` to each grid node. */
+  void IterateGrid(const std::function<void(const GridData<T>&)>& func) const {
+    spgrid_.IterateGrid(func);
+  }
+
+  /* Sets the indices of all active nodes in the grid and returns a
+   VertexPartialPermutation that maps the grid indices/dofs to the permuted grid
+   indices/dofs. With the permuted grid indices, grid nodes/dofs participating
+   in constraints come before nodes those don't participate in any constraint.
+   Nodes are marked as "participating" during P2G in Transfer::ParticleToGrid().
+   A node is marked as participating whenever it is in the support of a particle
+   participating in a constraint. Refer to Transfer::ParticleToGrid() for
+   details. */
+  contact_solvers::internal::VertexPartialPermutation SetNodeIndices();
 
  private:
   /* Grid spacing (in meters). */

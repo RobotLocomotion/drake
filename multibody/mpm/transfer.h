@@ -31,7 +31,7 @@ namespace internal {
 template <typename Grid = SparseGrid<double>>
 class Transfer {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Transfer);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Transfer);
 
   /* The scalar type for the grid and particle data. */
   using T = typename Grid::Scalar;
@@ -42,7 +42,9 @@ class Transfer {
   Transfer(T dt, double dx);
 
   /* The Particle to grid transfer (P2G). After the call to P2G, the grid stores
-   the mass and momentum transfered from the particles using APIC.
+   the mass and momentum transfered from the particles using APIC. In the
+   process, also mark the grid nodes that are in support of any particle that is
+   participating in a constraint with the "participating" flag.
    @note The `v` attribute of the grid data at the end of the operation stores
    the momentum, not velocity, of the grid node. */
   void ParticleToGrid(const ParticleData<T>& particle, Grid* grid);
@@ -52,6 +54,8 @@ class Transfer {
    @pre the grid stores mass and velocity (not momentum). Hence, the velocity
    from the grid needs to be processed after P2G and before G2P. */
   void GridToParticle(const Grid& grid, ParticleData<T>* particle);
+
+  T D_inverse() const { return D_inverse_; }
 
  private:
   T dt_{};
