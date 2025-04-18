@@ -128,6 +128,7 @@ drake_cc_library(
     hdrs = ["discrete_time_approximation.h"],
     deps = [
         ":simulator_config_functions",
+        "//common:nice_type_name",
         "//systems/framework",
         "//systems/primitives:affine_system",
         "//systems/primitives:linear_system",
@@ -611,6 +612,7 @@ drake_cc_googletest(
     deps = [
         ":discrete_time_approximation",
         ":simulator",
+        "//common:nice_type_name",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",

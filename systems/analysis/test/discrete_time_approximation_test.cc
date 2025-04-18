@@ -1,8 +1,10 @@
 #include "drake/systems/analysis/discrete_time_approximation.h"
 
+#include <fmt/format.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -190,13 +192,15 @@ GTEST_TEST(DiscreteTimeApproxTest, DiscreteUpdateShouldNotChangeTimeState) {
 template <typename T>
 class DiscreteTimeApproxScalarConversionTest : public ::testing::Test {};
 
-using NonsymbolicScalars = ::testing::Types<double, AutoDiffXd>;
-TYPED_TEST_SUITE(DiscreteTimeApproxScalarConversionTest, NonsymbolicScalars);
+using DefaultScalars =
+    ::testing::Types<double, AutoDiffXd, symbolic::Expression>;
+TYPED_TEST_SUITE(DiscreteTimeApproxScalarConversionTest, DefaultScalars);
 
 TYPED_TEST(DiscreteTimeApproxScalarConversionTest, Convertible) {
   using T = TypeParam;
   Integrator<T> dummy_sys(1);
-  auto sys = DiscreteTimeApproximation(dummy_sys, 0.1);
+  SimulatorConfig config{.integration_scheme = "explicit_euler"};
+  auto sys = DiscreteTimeApproximation(dummy_sys, 0.1, config);
 
   if constexpr (std::is_same_v<T, double>) {
     DRAKE_EXPECT_NO_THROW(sys->ToAutoDiffXd());
@@ -206,22 +210,37 @@ TYPED_TEST(DiscreteTimeApproxScalarConversionTest, Convertible) {
   DRAKE_EXPECT_NO_THROW(sys->Clone());
 }
 
-TYPED_TEST(DiscreteTimeApproxScalarConversionTest, NotConvertible) {
+template <typename U>
+std::string ConversionErrorMessageRegex(bool is_integrator_fault = false) {
+  if (!is_integrator_fault) {
+    return fmt::format(
+        ".+ does not support scalar conversion to type {} \\(because .+ does "
+        "not support scalar conversion to type {}\\)",
+        NiceTypeName::Get<U>(), NiceTypeName::Get<U>());
+  } else {
+    return fmt::format(
+        ".+ does not support scalar conversion to type {} \\(because the "
+        "integration scheme .+ does not support scalar type {}\\)",
+        NiceTypeName::Get<U>(), NiceTypeName::Get<U>());
+  }
+}
+
+TYPED_TEST(DiscreteTimeApproxScalarConversionTest,
+           ContinuousTimeSystemNotConvertible) {
   using T = TypeParam;
   OutputTimeStateSystem<T> dummy_sys;
-  auto sys = DiscreteTimeApproximation(dummy_sys, 0.1);
+  SimulatorConfig config{.integration_scheme = "explicit_euler"};
+  auto sys = DiscreteTimeApproximation(dummy_sys, 0.1, config);
 
   if constexpr (std::is_same_v<T, double>) {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        sys->ToAutoDiffXd(),
-        ".+ does not support scalar conversion to type drake::AutoDiffXd");
+    DRAKE_EXPECT_THROWS_MESSAGE(sys->ToAutoDiffXd(),
+                                ConversionErrorMessageRegex<AutoDiffXd>());
 
     auto converted = sys->ToAutoDiffXdMaybe();  // Should not throw.
     EXPECT_EQ(converted, nullptr);
   } else {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        sys->template ToScalarType<double>(),
-        ".+ does not support scalar conversion to type double");
+    DRAKE_EXPECT_THROWS_MESSAGE(sys->template ToScalarType<double>(),
+                                ConversionErrorMessageRegex<double>());
 
     auto converted =
         sys->template ToScalarTypeMaybe<double>();  // Should not throw.
@@ -229,6 +248,29 @@ TYPED_TEST(DiscreteTimeApproxScalarConversionTest, NotConvertible) {
   }
 
   DRAKE_EXPECT_THROWS_MESSAGE(sys->Clone(), ".+ does not support Cloning");
+}
+
+TYPED_TEST(DiscreteTimeApproxScalarConversionTest, IntegratorNotConvertible) {
+  using T = TypeParam;
+  Integrator<T> dummy_sys(1);
+  SimulatorConfig config{.integration_scheme = "runge_kutta5"};
+
+  if constexpr (!std::is_same_v<T, symbolic::Expression>) {
+    auto sys = DiscreteTimeApproximation(dummy_sys, 0.1, config);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        sys->ToSymbolic(),
+        ConversionErrorMessageRegex<symbolic::Expression>(true));
+
+    auto converted = sys->ToSymbolicMaybe();  // Should not throw.
+    EXPECT_EQ(converted, nullptr);
+
+    DRAKE_EXPECT_NO_THROW(sys->Clone());
+  } else {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        DiscreteTimeApproximation(dummy_sys, 0.1, config),
+        "Integration scheme .+ does not support scalar type " +
+            NiceTypeName::Get<symbolic::Expression>());
+  }
 }
 
 template <typename T>

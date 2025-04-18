@@ -78,10 +78,10 @@ class TestAnalysis(unittest.TestCase):
         numpy_compare.assert_equal(discrete_system.D(),  Dd)
         numpy_compare.assert_equal(discrete_system.y0(), y0d)
 
-    @numpy_compare.check_nonsymbolic_types
+    @numpy_compare.check_all_types
     def test_discrete_time_approximation_system(self, T):
         size = 5
-        config = SimulatorConfig()
+        config = SimulatorConfig(integration_scheme="explicit_euler")
         continuous_system = Integrator_[T](size)
         discrete_system = DiscreteTimeApproximation(
             system=continuous_system,
