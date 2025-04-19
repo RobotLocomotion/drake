@@ -135,6 +135,32 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
     return result;
   }
 
+  std::vector<DeformableBodyId> AddDeformableModelsFromSdfFile(
+      const std::string& file_name,
+      const std::optional<std::string>& parent_model_name = {}) {
+    const DataSource data_source{DataSource::kFilename, &file_name};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
+                       &plant_,  &resolver,    TestingSelect};
+    auto result = AddDeformableModelsFromSdf(data_source, parent_model_name, w);
+    last_parsed_groups_ = ConvertInstancedNamesToStrings(
+        resolver.Resolve(diagnostic_policy_), plant_);
+    return result;
+  }
+
+  std::vector<DeformableBodyId> AddDeformableModelsFromSdfString(
+      const std::string& file_contents,
+      const std::optional<std::string>& parent_model_name = {}) {
+    const DataSource data_source{DataSource::kContents, &file_contents};
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
+                       &plant_,  &resolver,    TestingSelect};
+    auto result = AddDeformableModelsFromSdf(data_source, parent_model_name, w);
+    last_parsed_groups_ = ConvertInstancedNamesToStrings(
+        resolver.Resolve(diagnostic_policy_), plant_);
+    return result;
+  }
+
   void ParseTestString(
       const std::string& inner,
       const std::optional<std::string>& sdf_version = {},
@@ -145,6 +171,18 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
                                       sdf_version.value_or("1.6") + "'>" +
                                       inner + "\n</sdf>\n";
     AddModelsFromSdfString(file_contents, parent_model_name);
+  }
+
+  void ParseDeformableTestString(
+      const std::string& inner,
+      const std::optional<std::string>& sdf_version = {},
+      const std::optional<std::string>& parent_model_name = {}) {
+    SCOPED_TRACE(inner);
+    FlushDiagnostics();
+    const std::string file_contents = "<sdf version='" +
+                                      sdf_version.value_or("1.6") + "'>" +
+                                      inner + "\n</sdf>\n";
+    AddDeformableModelsFromSdfString(file_contents, parent_model_name);
   }
 
   void VerifyCollisionFilters(const std::vector<GeometryId>& ids,
@@ -4206,6 +4244,32 @@ TEST_F(SdfParserTest, VisualRoleConfiguration) {
   //    "SemanticPose has invalid pointer to PoseRelativeToGraph."
   // If those errors were emitted, this test would fail on completion.
   EXPECT_THAT(NumErrors(), 0);
+}
+
+// -------------------------------------------------------------------------
+// Happy‑path: a minimal deformable model containing a single link with a mesh
+// collision element should parse and create exactly one deformable body.
+// -------------------------------------------------------------------------
+TEST_F(SdfParserTest, ParsesMinimalDeformableModel) {
+  AddSceneGraph();
+  const std::string mesh_uri =
+      "package://drake/multibody/parsing/test/single_tet.vtk";
+  const std::string sdf = R"(
+  <drake:deformable_model name='deformable_body'
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>)" + mesh_uri +
+                          R"(</uri></mesh>
+        </geometry>
+      </collision>
+    </link>
+  </drake:deformable_model>)";
+
+  EXPECT_NO_THROW(ParseDeformableTestString(sdf));
+  plant_.Finalize();
+
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
 }
 
 }  // namespace
