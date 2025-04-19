@@ -1306,7 +1306,8 @@ as a single deformable body and must obey:
   `<visual>` is provided, its `<geometry>` must be a `<mesh>` that references
   an `.obj` file; no other geometry types are accepted.
 - **Limited proximity properties**: inside `<collision>`, the only Drake
-  proximity tag that is recognized is `<drake:mu_dynamic>`.
+  proximity tag recognized are `<drake:mu_dynamic>`, `<drake:hunt_crossley_dissipation>`,
+  and `drake:relaxation_time>`. All other tags are now allowed.
 - **Optional per‑link material**: a `<drake:deformable_properties>` block may
   appear to override default material properties.
 - **No collision filtering**: `<drake:collision_filter_group>` is not yet supported

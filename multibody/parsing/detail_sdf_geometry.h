@@ -249,8 +249,12 @@ std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
     const SDFormatDiagnostic& diagnostic, const sdf::Collision& sdf_collision);
 
 // Returns proximity properties from <collision>. Supports only
-// <drake:proximity_properties>/<drake:mu_dynamic>. Returns nullopt if
-// nothing specified or on error.
+// the following children elements of <drake:proximity_properties>:
+//  - <drake:mu_dynamic>
+//  - <drake:hunt_crossley_dissipation>
+//  - <drake:relaxation_time>.
+//
+// Returns nullopt if nothing specified or on error.
 std::optional<geometry::ProximityProperties>
 MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
                                     const sdf::Collision& collision);

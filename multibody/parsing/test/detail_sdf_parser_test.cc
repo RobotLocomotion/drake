@@ -173,7 +173,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
     AddModelsFromSdfString(file_contents, parent_model_name);
   }
 
-  void ParseDeformableTestString(
+  std::vector<DeformableBodyId> ParseDeformableTestString(
       const std::string& inner,
       const std::optional<std::string>& sdf_version = {},
       const std::optional<std::string>& parent_model_name = {}) {
@@ -182,7 +182,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
     const std::string file_contents = "<sdf version='" +
                                       sdf_version.value_or("1.6") + "'>" +
                                       inner + "\n</sdf>\n";
-    AddDeformableModelsFromSdfString(file_contents, parent_model_name);
+    return AddDeformableModelsFromSdfString(file_contents, parent_model_name);
   }
 
   void VerifyCollisionFilters(const std::vector<GeometryId>& ids,
@@ -4278,6 +4278,11 @@ TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
         <geometry>
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
+        <drake:proximity_properties>
+          <drake:mu_dynamic>0.5</drake:mu_dynamic>
+          <drake:hunt_crossley_dissipation>0.6</drake:hunt_crossley_dissipation>
+          <drake:relaxation_time>0.7</drake:relaxation_time>
+        </drake:proximity_properties>
       </collision>
       <visual name='visual'>
         <geometry>
@@ -4295,10 +4300,27 @@ TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
     </link>
   </drake:deformable_model>)";
 
-  ParseDeformableTestString(sdf);
+  const std::vector<DeformableBodyId> body_ids = ParseDeformableTestString(sdf);
   EXPECT_THAT(NumErrors(), 0);
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  const DeformableBodyId body_id = body_ids[0];
+  auto geometry_id = plant_.deformable_model().GetGeometryId(body_id);
+  const geometry::ProximityProperties* props =
+      scene_graph_.model_inspector().GetProximityProperties(geometry_id);
+  ASSERT_NE(props, nullptr);
+  EXPECT_EQ(
+      props
+          ->GetProperty<CoulombFriction<double>>(
+              geometry::internal::kMaterialGroup, geometry::internal::kFriction)
+          .dynamic_friction(),
+      0.5);
+  EXPECT_EQ(props->GetProperty<double>(geometry::internal::kMaterialGroup,
+                                       geometry::internal::kHcDissipation),
+            0.6);
+  EXPECT_EQ(props->GetProperty<double>(geometry::internal::kMaterialGroup,
+                                       geometry::internal::kRelaxationTime),
+            0.7);
 }
 
 TEST_F(SdfParserTest, MultipleDeformableBodies) {

@@ -2334,6 +2334,16 @@ void LoadDeformableConfig(const sdf::Link& link,
   }
   const sdf::ElementPtr src =
       link.Element()->GetElement("drake:deformable_properties");
+  // clang-format off
+    const std::set<std::string> supported_proximity_elements{
+        "drake:youngs_modulus",
+        "drake:poissons_ratio",
+        "drake:mass_damping",
+        "drake:stiffness_damping",
+        "drake:mass_density",
+        "drake:material_model"};
+  // clang-format on
+  CheckSupportedElements(diagnostic, src, supported_proximity_elements);
   if (src->HasElement("drake:youngs_modulus")) {
     cfg->set_youngs_modulus(src->Get<double>("drake:youngs_modulus"));
   }
