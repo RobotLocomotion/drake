@@ -57,37 +57,6 @@ void RegisterRigidGround(MultibodyPlant<double>* plant) {
                                 "ground_visual", std::move(illustration_props));
 }
 
-DeformableBodyId RegisterDeformableTorus(
-    DeformableModel<double>* model, const std::string& model_name,
-    const RigidTransformd& X_WB,
-    const DeformableBodyConfig<double>& deformable_config, double scale,
-    double contact_damping) {
-  /* Load the torus mesh and apply scaling. */
-  const std::string torus_vtk = FindResourceOrThrow(
-      "drake/examples/multibody/deformable/models/torus.vtk");
-  auto torus_mesh = std::make_unique<Mesh>(torus_vtk, scale);
-  auto torus_instance = std::make_unique<GeometryInstance>(
-      X_WB, std::move(torus_mesh), model_name);
-
-  /* Minimally required proximity properties for deformable bodies: A valid
-   Coulomb friction coefficient. */
-  ProximityProperties deformable_proximity_props;
-  const CoulombFriction<double> surface_friction(1.15, 1.15);
-  AddContactMaterial(contact_damping, {}, surface_friction,
-                     &deformable_proximity_props);
-  torus_instance->set_proximity_properties(deformable_proximity_props);
-
-  /* Registration of all deformable geometries ostensibly requires a resolution
-   hint parameter that dictates how the shape is tessellated. In the case of a
-   `Mesh` shape, the resolution hint is unused because the shape is already
-   tessellated. */
-  // TODO(xuchenhan-tri): Though unused, we still asserts the resolution hint is
-  // positive. Remove the requirement of a resolution hint for meshed shapes.
-  const double unused_resolution_hint = 1.0;
-  return model->RegisterDeformableBody(
-      std::move(torus_instance), deformable_config, unused_resolution_hint);
-}
-
 }  // namespace deformable
 }  // namespace examples
 }  // namespace drake
