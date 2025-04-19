@@ -30,6 +30,7 @@ filegroup(
         "test/**/*.urdf",
         "test/**/*.usd",
         "test/**/*.usda",
+        "test/**/*.vtk",
         "test/**/*.xml",
         "test/**/*.zip",
         "test/**/COLCON_IGNORE",

@@ -4246,30 +4246,160 @@ TEST_F(SdfParserTest, VisualRoleConfiguration) {
   EXPECT_THAT(NumErrors(), 0);
 }
 
-// -------------------------------------------------------------------------
 // Happy‑path: a minimal deformable model containing a single link with a mesh
 // collision element should parse and create exactly one deformable body.
-// -------------------------------------------------------------------------
-TEST_F(SdfParserTest, ParsesMinimalDeformableModel) {
+TEST_F(SdfParserTest, ParseMinimalDeformableModel) {
   AddSceneGraph();
-  const std::string mesh_uri =
-      "package://drake/multibody/parsing/test/single_tet.vtk";
   const std::string sdf = R"(
-  <drake:deformable_model name='deformable_body'
+  <drake:deformable_model name='deformable'>
     <link name='body'>
       <collision name='collision'>
         <geometry>
-          <mesh><uri>)" + mesh_uri +
-                          R"(</uri></mesh>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
     </link>
   </drake:deformable_model>)";
 
-  EXPECT_NO_THROW(ParseDeformableTestString(sdf));
+  ParseDeformableTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
   plant_.Finalize();
-
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+}
+
+// Happy‑path: a full-fledged deformable model containing a single link with a
+// mesh collision element should parse and create exactly one deformable body.
+TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <drake:deformable_model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <visual name='visual'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/tri_cube.obj</uri></mesh>
+        </geometry>
+      </visual>
+      <drake:deformable_properties>
+        <drake:young_modulus>100.0</drake:young_modulus>
+        <drake:poissons_ratio>0.3</drake:poissons_ratio>
+        <drake:mass_damping>0.01</drake:mass_damping>
+        <drake:stiffness_damping>0.01</drake:stiffness_damping>
+        <drake:mass_density>800.0</drake:mass_density>
+        <drake:material_model>corotated</drake:material_model>
+      </drake:deformable_properties>
+    </link>
+  </drake:deformable_model>)";
+
+  ParseDeformableTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+}
+
+TEST_F(SdfParserTest, MultipleDeformableBodies) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <drake:deformable_model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+    </link>
+    <link name='body2'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+    </link>
+  </drake:deformable_model>)";
+
+  ParseDeformableTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 2);
+}
+
+// Mixing <model> and <drake:deformable_model> at the top level is an error.
+TEST_F(SdfParserTest, MixingModelAndDeformableModel) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='rigid'>
+    <link name='base'/>
+  </model>
+  <drake:deformable_model name='deformable'>
+  </drake:deformable_model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*model.*mutually exclusive.*deformable_mode.*"));
+}
+
+// Mixing <model> and <drake:deformable_model> at the top level is an error.
+TEST_F(SdfParserTest, MixingModelAndDeformableModel2) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='rigid'>
+    <link name='base'/>
+  </model>
+  <drake:deformable_model name='deformable'>
+  </drake:deformable_model>)";
+  ParseDeformableTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*model.*mutually exclusive.*deformable_mode.*"));
+}
+
+// No <drake:deformable_model> at the top level is always fine.
+TEST_F(SdfParserTest, NoDeformableModel) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='rigid'>
+    <link name='base'/>
+  </model>)";
+  ParseDeformableTestString(sdf);
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+}
+
+// More than one <drake:deformable_model> is an error.
+TEST_F(SdfParserTest, DuplicateDeformableModel) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <drake:deformable_model name='deformable1'>
+  </drake:deformable_model>
+  <drake:deformable_model name='deformable2'>
+  </drake:deformable_model>
+  )";
+  ParseDeformableTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*At most one <drake:deformable_model>.*"));
+}
+
+// Parsing deformable model requires a SceneGraph.
+TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
+  const std::string sdf = R"(
+  <drake:deformable_model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+    </link>
+  </drake:deformable_model>)";
+  ParseDeformableTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*deformable.*without.*geometry source.*"));
 }
 
 }  // namespace
