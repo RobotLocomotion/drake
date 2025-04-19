@@ -1,0 +1,14 @@
+# vtk DataFile Version 3.0
+Single‑tet test mesh
+ASCII
+DATASET UNSTRUCTURED_GRID
+POINTS 4 float
+0 0 0
+1 0 0
+0 1 0
+0 0 1
+CELLS 1 5
+4  0 1 2 3
+CELL_TYPES 1
+10             # 10 = VTK_TETRA
+
