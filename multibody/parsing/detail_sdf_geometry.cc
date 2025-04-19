@@ -707,18 +707,57 @@ MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
       collision_element->FindElement("drake:proximity_properties");
   if (!drake_element) return std::nullopt;  // no properties specified.
 
-  CheckSupportedElements(diagnostic, drake_element, {"drake:mu_dynamic"});
+  CheckSupportedElements(diagnostic, drake_element,
+                         {"drake:mu_dynamic", "drake:hunt_crossley_dissipation",
+                          "drake:relaxation_time"});
 
-  if (!drake_element->HasElement("drake:mu_dynamic")) return std::nullopt;
-
-  double mu = drake_element->Get<double>("drake:mu_dynamic");
-  if (mu < 0) {
-    diagnostic.Error(drake_element, "drake:mu_dynamic must be non‑negative");
-    return std::nullopt;
-  }
   geometry::ProximityProperties props;
-  props.AddProperty("material", "coulomb_friction",
-                    CoulombFriction<double>(mu, mu));
+  auto read_double = [drake_element, &diagnostic](
+                         const char* element_name) -> std::optional<double> {
+    std::optional<double> result;
+    if (drake_element->FindElement(element_name) != nullptr) {
+      result =
+          GetChildElementValue<double>(diagnostic, drake_element, element_name);
+    }
+    return result;
+  };
+
+  const std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
+  if (mu_dynamic.has_value()) {
+    if (*mu_dynamic < 0) {
+      diagnostic.Error(drake_element, "drake:mu_dynamic must be non‑negative");
+      return std::nullopt;
+    } else {
+      props.AddProperty("material", "coulomb_friction",
+                        CoulombFriction<double>(*mu_dynamic, *mu_dynamic));
+    }
+  } else {
+    // If no value is specified, we use the default value.
+    props.AddProperty("material", "coulomb_friction", default_friction());
+  }
+
+  const std::optional<double> hunt_crossley_dissipation =
+      read_double("drake:hunt_crossley_dissipation");
+  if (hunt_crossley_dissipation.has_value()) {
+    if (*hunt_crossley_dissipation < 0) {
+      diagnostic.Error(drake_element,
+                       "drake:hunt_crossley_dissipation must be non‑negative");
+      return std::nullopt;
+    }
+    props.AddProperty("material", "hunt_crossley_dissipation",
+                      *hunt_crossley_dissipation);
+  }
+
+  const std::optional<double> relaxation_time =
+      read_double("drake:relaxation_time");
+  if (relaxation_time.has_value()) {
+    if (*relaxation_time < 0) {
+      diagnostic.Error(drake_element,
+                       "drake:relaxation_time must be non‑negative");
+      return std::nullopt;
+    }
+    props.AddProperty("material", "relaxation_time", *relaxation_time);
+  }
   return props;
 }
 
