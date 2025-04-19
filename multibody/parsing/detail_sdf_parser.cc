@@ -2322,39 +2322,46 @@ math::RigidTransformd PoseFromElementSimple(const sdf::ElementPtr& e) {
 }
 
 // Helper that loads `<drake:deformable_properties>` into a config.
-// param[in] src The SDF element to load, which must be a
-//               <drake:deformable_properties> tag.
+// param[in] link The SDF link to load the property for.
 // param[in, out] cfg On input, it's a default config. On output, it's
 //                    the config with the properties loaded from src.
-
-void LoadDeformableConfig(const sdf::ElementPtr& src,
+// TODO(xuchenhan-tri): Handle illegal values in the config.
+void LoadDeformableConfig(const sdf::Link& link,
                           fem::DeformableBodyConfig<double>* cfg,
                           const SDFormatDiagnostic& diagnostic) {
-  if (!src) {
+  if (!link.Element()->HasElement("drake:deformable_properties")) {
     return;
   }
-  if (src->HasElement("drake:youngs_modulus"))
+  const sdf::ElementPtr src =
+      link.Element()->GetElement("drake:deformable_properties");
+  if (src->HasElement("drake:youngs_modulus")) {
     cfg->set_youngs_modulus(src->Get<double>("drake:youngs_modulus"));
-  if (src->HasElement("drake:poissons_ratio"))
+  }
+  if (src->HasElement("drake:poissons_ratio")) {
     cfg->set_poissons_ratio(src->Get<double>("drake:poissons_ratio"));
-  if (src->HasElement("drake:mass_damping"))
+  }
+  if (src->HasElement("drake:mass_damping")) {
     cfg->set_mass_damping_coefficient(src->Get<double>("drake:mass_damping"));
-  if (src->HasElement("drake:stiffness_damping"))
+  }
+  if (src->HasElement("drake:stiffness_damping")) {
     cfg->set_stiffness_damping_coefficient(
         src->Get<double>("drake:stiffness_damping"));
-  if (src->HasElement("drake:mass_density"))
+  }
+  if (src->HasElement("drake:mass_density")) {
     cfg->set_mass_density(src->Get<double>("drake:mass_density"));
+  }
   if (src->HasElement("drake:material_model")) {
     const std::string mm = src->Get<std::string>("drake:material_model");
-    if (mm == "linear_corotated")
+    if (mm == "linear_corotated") {
       cfg->set_material_model(fem::MaterialModel::kLinearCorotated);
-    else if (mm == "corotated")
+    } else if (mm == "corotated") {
       cfg->set_material_model(fem::MaterialModel::kCorotated);
-    else if (mm == "linear")
+    } else if (mm == "linear") {
       cfg->set_material_model(fem::MaterialModel::kLinear);
-    else
-      diagnostic.Error(src,
-                       fmt::format("Invalid material_model value {}.", mm));
+    } else {
+      diagnostic.Error(
+          src, fmt::format("Invalid <drake:material_model> value {}.", mm));
+    }
   }
 }
 
@@ -2392,8 +2399,7 @@ std::optional<DeformableBodyId> ParseDeformableLink(
 
   // Config
   fem::DeformableBodyConfig<double> cfg;
-  LoadDeformableConfig(link_element->GetElement("drake:deformable_properties"),
-                       &cfg, diag);
+  LoadDeformableConfig(link, &cfg, diag);
 
   ResolveFilename resolve_filename =
       [&ws, &root_dir, &link](const SDFormatDiagnostic& inner_diagnostic,
@@ -2425,7 +2431,7 @@ std::optional<DeformableBodyId> ParseDeformableLink(
   if (!shape) return std::nullopt;
 
   // Pose
-  const RigidTransformd X_ML = ResolveRigidTransform(diag, link.SemanticPose());
+  const RigidTransformd X_ML = PoseFromElementSimple(link_element);
   const RigidTransformd X_WL = X_WM * X_ML;
 
   // Now create the geometry instance.
@@ -2461,8 +2467,9 @@ std::optional<DeformableBodyId> ParseDeformableLink(
     if (visual_geometry_element->HasElement("mesh")) {
       const std::string uri =
           visual_geometry_element->GetElement("mesh")->Get<std::string>("uri");
+      const std::string file_name = resolve_filename(diag, uri);
       geometry::PerceptionProperties perception_props;
-      perception_props.AddProperty("deformable", "embedded_mesh", uri);
+      perception_props.AddProperty("deformable", "embedded_mesh", file_name);
       geometry_instance->set_perception_properties(perception_props);
     }
   }
@@ -2566,14 +2573,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     diagnostic.Error(root.Element(), std::move(message));
     return {};
   }
-  const sdf::ElementPtr deformable_model_element =
-      root.Element()->GetElement("drake:deformable_model");
-  if (deformable_model_element) {
+  if (root.Element()->HasElement("drake:deformable_model")) {
     std::string message = fmt::format(
-        "File must have no <model> and no <world> element when "
-        "<drake:deformable_model> is present, but it instead has {} models and "
-        "{} worlds",
-        model_count, world_count);
+        "The <model> (or <world>) element is mutually exclusive with the"
+        "<drake:deformable_model> element.");
     diagnostic.Error(root.Element(), std::move(message));
     return {};
   }
@@ -2694,15 +2697,32 @@ std::vector<DeformableBodyId> AddDeformableModelsFromSdf(
     return {};
   }
 
+  if (!root.Element()->HasElement("drake:deformable_model")) {
+    return {};
+  }
   const sdf::ElementPtr deformable_model_element =
       root.Element()->GetElement("drake:deformable_model");
-  if (!deformable_model_element ||
-      deformable_model_element->GetNextElement("drake:deformable_model")) {
+  if (deformable_model_element->GetNextElement("drake:deformable_model")) {
     diagnostic.Error(
         root.Element(),
-        "Exactly one <drake:deformable_model> element is required.");
+        "At most one <drake:deformable_model> element can be specified.");
+    return {};
   }
-  // TODO(xuchenhan-tri): Check that no <model> tag or <world> tag is present.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  const uint64_t model_count = root.Model() != nullptr ? 1 : 0;
+#pragma GCC diagnostic pop
+  const uint64_t world_count = root.WorldCount();
+  if (model_count + world_count != 0) {
+    std::string message = fmt::format(
+        "The <model> (or <world>) element is mutually exclusive with the"
+        "<drake:deformable_model> element.");
+    diagnostic.Error(root.Element(), std::move(message));
+    return {};
+  }
+  if (!deformable_model_element->HasElement("link")) {
+    return {};
+  }
 
   // Allowed immediate children.
   CheckSupportedElements(diagnostic, deformable_model_element,
