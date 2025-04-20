@@ -152,31 +152,9 @@ int do_main() {
       RigidTransformd(Vector3d(0.0, 0.03, -0.1)));
 
   /* Add in a deformable manipuland. */
-  DeformableBodyConfig<double> teddy_config;
-  teddy_config.set_youngs_modulus(5e4);                  // [Pa]
-  teddy_config.set_poissons_ratio(0.45);                 // unitless
-  teddy_config.set_mass_density(1000);                   // [kg/m³]
-  teddy_config.set_stiffness_damping_coefficient(0.05);  // [1/s]
-  const std::string teddy_vtk = FindResourceOrThrow(
-      "drake/examples/multibody/deformable/models/teddy.vtk");
-  auto teddy_mesh = std::make_unique<Mesh>(teddy_vtk, /* scale */ 0.15);
-  auto teddy_instance = std::make_unique<GeometryInstance>(
-      RigidTransformd(math::RollPitchYawd(M_PI / 2.0, 0, -M_PI / 2.0),
-                      Vector3d(-0.17, 0, 0)),
-      std::move(teddy_mesh), "teddy");
-
-  ProximityProperties deformable_proximity_props;
-  AddContactMaterial({}, {}, CoulombFriction<double>(0.9, 0.9),
-                     &deformable_proximity_props);
-  teddy_instance->set_proximity_properties(deformable_proximity_props);
-  /* Give the teddy bear a brown color for illustration to better distinguish it
-   from the bubble gripper in the visualizer. */
-  IllustrationProperties teddy_illustration_props;
-  teddy_illustration_props.AddProperty("phong", "diffuse",
-                                       Rgba(0.82, 0.71, 0.55, 1.0));
-  teddy_instance->set_illustration_properties(teddy_illustration_props);
-  deformable_model.RegisterDeformableBody(std::move(teddy_instance),
-                                          teddy_config, 1.0);
+  parser.AddDeformableModelsFromUrl(
+      "package://drake/examples/multibody/deformable/models/"
+      "deformable_teddy.sdf");
 
   /* All rigid and deformable models have been added. Finalize the plant. */
   plant.Finalize();

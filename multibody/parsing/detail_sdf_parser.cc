@@ -2432,9 +2432,9 @@ std::optional<DeformableBodyId> ParseDeformableLink(
   const sdf::Geometry& collision_geometry = *sdf_collision.Geom();
   sdf::ElementPtr collision_geometry_element = collision_geometry.Element();
 
-  const std::set<std::string> supported_geometry_elements{"mesh"};
+  const std::set<std::string> supported_collision_geometry_elements{"mesh"};
   CheckSupportedElements(diag, collision_geometry_element,
-                         supported_geometry_elements);
+                         supported_collision_geometry_elements);
 
   auto shape =
       MakeShapeFromSdfGeometry(diag, collision_geometry, resolve_filename);
@@ -2470,18 +2470,39 @@ std::optional<DeformableBodyId> ParseDeformableLink(
 
   if (link.VisualCount() == 1) {
     const sdf::Visual& sdf_visual = *link.VisualByIndex(0);
-    const sdf::Geometry& visual_geometry = *sdf_visual.Geom();
-    sdf::ElementPtr visual_geometry_element = visual_geometry.Element();
-    CheckSupportedElements(diag, visual_geometry_element,
-                           supported_geometry_elements);
-    if (visual_geometry_element->HasElement("mesh")) {
-      const std::string uri =
-          visual_geometry_element->GetElement("mesh")->Get<std::string>("uri");
-      const std::string file_name = resolve_filename(diag, uri);
-      geometry::PerceptionProperties perception_props;
-      perception_props.AddProperty("deformable", "embedded_mesh", file_name);
-      geometry_instance->set_perception_properties(perception_props);
+    // Supported child tags inside <visual>.
+    CheckSupportedElements(
+        diag, sdf_visual.Element(),
+        {"geometry", "material", "drake:perception_properties",
+         "drake:illustration_properties", "drake:accepting_renderer"});
+    VisualProperties visual_props =
+        MakeVisualPropertiesFromSdfVisual(diag, sdf_visual, resolve_filename);
+    if (visual_props.illustration.has_value()) {
+      geometry_instance->set_illustration_properties(
+          *visual_props.illustration);
     }
+    geometry::PerceptionProperties perception_props;
+    if (visual_props.perception.has_value()) {
+      perception_props = *visual_props.perception;
+    }
+    // Override the visual geometry if a mesh is specified. Otherwise, fall back
+    // to the default visual geometry (the surface of the collision mesh).
+    if (sdf_visual.Element()->HasElement("geometry")) {
+      const sdf::Geometry& visual_geometry = *sdf_visual.Geom();
+      sdf::ElementPtr visual_geometry_element = visual_geometry.Element();
+      const std::set<std::string> supported_visual_geometry_elements{"mesh",
+                                                                     "empty"};
+      CheckSupportedElements(diag, visual_geometry_element,
+                             supported_visual_geometry_elements);
+      if (visual_geometry_element->HasElement("mesh")) {
+        const std::string uri =
+            visual_geometry_element->GetElement("mesh")->Get<std::string>(
+                "uri");
+        const std::string file_name = resolve_filename(diag, uri);
+        perception_props.AddProperty("deformable", "embedded_mesh", file_name);
+      }
+    }
+    geometry_instance->set_perception_properties(perception_props);
   }
 
   DeformableModel<double>& deformable_model =
