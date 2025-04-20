@@ -1302,8 +1302,13 @@ as a single deformable body and must obey:
   `<mesh>` whose URI points to a `.vtk` file; primitive shapes are not yet
   supported.  
 - **At most one `<visual>` element**: a single `<visual>` may be present to
-  supply an embedded‑mesh texture (by providing the mesh to be rendered as a
-  `<mesh>` geometry with an obj file). More than one `<visual>` is an error.
+  provide a visual representation of the deformable body. The `<visual>` must
+  contain a single `<geometry>` element, which must contain a single `<mesh>`
+  element or a single `</empty>` element. If a `<mesh>` element is supplied,
+  the URI of the mesh must point to a `.obj` file, and the (potentially textured)
+  surface described by the `.obj` file is used for rendering. If an empty element
+  is prescribed, the surface of the collision mesh is used for rendering and
+  visualization. More than one `<visual>` is an error.
 - **No geometry pose**: `<collision>` and `<visual>` must not contain a `<pose>`
   element. The pose of the mesh is determined by the enclosing `<link>`.
 - **Limited proximity properties**: inside `<collision>`, the only Drake
