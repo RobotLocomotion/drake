@@ -107,11 +107,14 @@ and ``new_release.py``). Again, it is expected that a given prerequisite will
 only appear in one of these lists.
 
 When updating prerequisites with these scripts, the normal experimental CI will
-most likely fail. To test new prerequisites, you should first request
-unprovisioned experimental builds, e.g.:
+most likely fail. To test new prerequisites on Linux, you should first request an
+unprovisioned experimental build, e.g.:
 
 * ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-release please``
-* ``@drake-jenkins-bot mac-arm-sonoma-unprovisioned-clang-bazel-experimental-release please``
+
+Testing changes to the source distribution prerequisites for macOS is a work
+in progress as there are no longer unprovisioned builds.
+Contact `@BetsyMcPhail` for guidance on testing these changes.
 
 After this has passed, go through normal review. Once normal review is done,
 add `@BetsyMcPhail` for review and request that the provisioned instances be
@@ -126,7 +129,7 @@ or [debian package](/apt.html), comment on an open pull request using one or
 more of these commands:
 
 * ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-packaging please``
-* ``@drake-jenkins-bot mac-arm-sonoma-unprovisioned-clang-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-sonoma-clang-bazel-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Packaging](https://drake-jenkins.csail.mit.edu/view/Packaging/)
@@ -150,7 +153,7 @@ To schedule an "experimental" build of a [wheel package](/pip.html),
 comment on an open pull request using one or more of these commands:
 
 * ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-wheel-experimental-release please``
-* ``@drake-jenkins-bot mac-arm-sonoma-unprovisioned-clang-wheel-experimental-release please``
+* ``@drake-jenkins-bot mac-arm-sonoma-clang-wheel-experimental-release please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
 to schedule a build of one of the [Wheel](https://drake-jenkins.csail.mit.edu/view/Wheel/)
