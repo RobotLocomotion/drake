@@ -9,13 +9,13 @@ import install_test_helper
 
 class DrakePythonDirInstallTest(unittest.TestCase):
     def test_drake_python_dir(self):
-        cmake_version = install_test_helper.get_installed_cmake_version()
         cmake_source_dir = install_test_helper.create_temporary_dir(
             "pydir_src")
+
         cmake_prefix_path = install_test_helper.get_install_dir()
 
         cmake_content = """
-            cmake_minimum_required(VERSION {cmake_version})
+            cmake_minimum_required(VERSION 3.9...4.0)
             project(drake_python_dir_install_test)
             set(CMAKE_PREFIX_PATH {cmake_prefix_path})
             find_package(drake CONFIG REQUIRED)
@@ -51,7 +51,6 @@ class DrakePythonDirInstallTest(unittest.TestCase):
               message(STATUS "Import of pydrake works as expected")
             endif()
         """.format(
-            cmake_version=cmake_version,
             cmake_prefix_path=cmake_prefix_path, python_exe=sys.executable,
             py_major=sys.version_info.major, py_minor=sys.version_info.minor)
 

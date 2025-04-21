@@ -8,7 +8,6 @@ import install_test_helper
 
 class FindPackageDrakeInstallTest(unittest.TestCase):
     def test_find_package_drake(self):
-        cmake_version = install_test_helper.get_installed_cmake_version()
         cmake_source_dir = install_test_helper.create_temporary_dir("src")
 
         cc_content_drake = """
@@ -27,13 +26,13 @@ class FindPackageDrakeInstallTest(unittest.TestCase):
         cmake_prefix_path = install_test_helper.get_install_dir()
 
         cmake_content = """
-            cmake_minimum_required(VERSION {cmake_version})
+            cmake_minimum_required(VERSION 3.9...4.0)
             project(find_package_drake_install_test)
             set(CMAKE_PREFIX_PATH {cmake_prefix_path})
             find_package(drake CONFIG REQUIRED)
             add_executable(main_drake main_drake.cc)
             target_link_libraries(main_drake drake::drake)
-        """.format(cmake_version=cmake_version, cmake_prefix_path=cmake_prefix_path)
+        """.format(cmake_prefix_path=cmake_prefix_path)
 
         cmake_filename = os.path.join(cmake_source_dir, "CMakeLists.txt")
 
