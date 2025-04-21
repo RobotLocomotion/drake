@@ -4290,7 +4290,7 @@ TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
         </geometry>
       </visual>
       <drake:deformable_properties>
-        <drake:young_modulus>100.0</drake:young_modulus>
+        <drake:youngs_modulus>100.0</drake:youngs_modulus>
         <drake:poissons_ratio>0.3</drake:poissons_ratio>
         <drake:mass_damping>0.01</drake:mass_damping>
         <drake:stiffness_damping>0.01</drake:stiffness_damping>

@@ -2712,6 +2712,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   return model_instances;
 }
 
+// TODO(xuchenhan-tri): prefix the name with parent model name.
 std::vector<DeformableBodyId> AddDeformableModelsFromSdf(
     const DataSource& data_source, const std::optional<std::string>&,
     const ParsingWorkspace& workspace) {
