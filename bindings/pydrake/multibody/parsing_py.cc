@@ -151,6 +151,29 @@ PYBIND11_MODULE(parsing, m) {
         .def("AddModels", &Class::AddModelsFromString, py::kw_only(),
             py::arg("file_contents"), py::arg("file_type"),
             cls_doc.AddModelsFromString.doc)
+        .def(
+            "AddDeformableModels",
+            // Pybind11 won't implicitly convert strings to
+            // std::filesystem::path, but C++ will. Use a lambda to avoid wider
+            // disruptions in python bindings.
+            [](Parser& self, const std::string& file_name) {
+              return self.AddDeformableModels(file_name);
+            },
+            py::arg("file_name"), cls_doc.AddDeformableModels.doc)
+        .def("AddDeformableModelsFromUrl", &Class::AddDeformableModelsFromUrl,
+            py::arg("url"), cls_doc.AddDeformableModelsFromUrl.doc)
+        .def("AddDeformableModelsFromString",
+            &Class::AddDeformableModelsFromString, py::arg("file_contents"),
+            py::arg("file_type"), cls_doc.AddModelsFromString.doc)
+        // Overload AddDeformableModels(url=) for some sugar.
+        .def("AddDeformableModels", &Class::AddDeformableModelsFromUrl,
+            py::kw_only(), py::arg("url"),
+            cls_doc.AddDeformableModelsFromUrl.doc)
+        // Overload AddDeformableModels(file_contents=, file_type=) for some
+        // sugar.
+        .def("AddDeformableModels", &Class::AddDeformableModelsFromString,
+            py::kw_only(), py::arg("file_contents"), py::arg("file_type"),
+            cls_doc.AddDeformableModelsFromString.doc)
         .def("SetStrictParsing", &Class::SetStrictParsing,
             cls_doc.SetStrictParsing.doc)
         .def("SetAutoRenaming", &Class::SetAutoRenaming, py::arg("value"),
@@ -176,6 +199,16 @@ PYBIND11_MODULE(parsing, m) {
     using Class = parsing::AddModel;
     constexpr auto& cls_doc = doc.parsing.AddModel;
     py::class_<Class> cls(m, "AddModel", cls_doc.doc);
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  {
+    using Class = parsing::AddDeformableModel;
+    constexpr auto& cls_doc = doc.parsing.AddDeformableModel;
+    py::class_<Class> cls(m, "AddDeformableModel", cls_doc.doc);
     cls.def(ParamInit<Class>());
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
