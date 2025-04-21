@@ -50,6 +50,14 @@ bool AddModel::IsValid() const {
   return true;
 }
 
+bool AddDeformableModel::IsValid() const {
+  if (file.empty()) {
+    drake::log()->error("add_model: `file` must be non-empty");
+    return false;
+  }
+  return true;
+}
+
 bool AddModelInstance::IsValid() const {
   if (name.empty()) {
     drake::log()->error("add_model_instance: `name` must be non-empty");
@@ -96,10 +104,11 @@ bool AddDirectives::IsValid() const {
 }
 
 bool ModelDirective::IsValid() const {
-  const bool unique = (add_model.has_value() + add_model_instance.has_value() +
-                       add_frame.has_value() + add_weld.has_value() +
-                       add_collision_filter_group.has_value() +
-                       add_directives.has_value()) == 1;
+  const bool unique =
+      (add_model.has_value() + add_deformable_model.has_value() +
+       add_model_instance.has_value() + add_frame.has_value() +
+       add_weld.has_value() + add_collision_filter_group.has_value() +
+       add_directives.has_value()) == 1;
   if (!unique) {
     drake::log()->error(
         "directive: Specify one of `add_model`, `add_model_instance`, "
@@ -107,6 +116,8 @@ bool ModelDirective::IsValid() const {
     return false;
   } else if (add_model) {
     return add_model->IsValid();
+  } else if (add_deformable_model) {
+    return add_deformable_model->IsValid();
   } else if (add_model_instance) {
     return add_model_instance->IsValid();
   } else if (add_frame) {

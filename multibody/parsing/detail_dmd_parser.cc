@@ -167,14 +167,37 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       info.model_name = name;
       info.model_path = file;
       if (added_models) added_models->push_back(info);
-
+    } else if (directive.add_deformable_model) {
+      ModelInstanceInfo info;
+      auto& model = *directive.add_deformable_model;
+      const std::string name =
+          ScopedName::Join(model_namespace, model.name).to_string();
+      drake::log()->debug("  add_model: {}\n    {}", name, model.file);
+      const ResolveUriResult resolved =
+          ResolveUri(diagnostic, model.file, package_map, {});
+      if (!resolved.exists) {
+        // ResolveUri already emitted an error message.
+        continue;
+      }
+      const std::string file = resolved.full_path.string();
+      std::vector<DeformableBodyId> body_ids =
+          parser_selector(diagnostic, file)
+              .AddAllDeformableModels({DataSource::kFilename, &file}, name,
+                                      workspace);
+      if (body_ids.empty()) {
+        // Error should have already been emitted.
+        continue;
+      }
+      info.deformable_body_ids = body_ids;
+      info.model_name = name;
+      info.model_path = file;
+      added_models->push_back(info);
     } else if (directive.add_model_instance) {
       auto& instance = *directive.add_model_instance;
       const std::string name =
           MakeModelName(instance.name, model_namespace, workspace);
       drake::log()->debug("  add_model_instance: {}", name);
       plant->AddModelInstance(name);
-
     } else if (directive.add_frame) {
       auto& frame = *directive.add_frame;
       drake::log()->debug("  add_frame: {}", frame.name);
@@ -204,7 +227,6 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
                            added.name())
               .to_string();
       drake::log()->debug("    resolved_name: {}", resolved_name);
-
     } else if (directive.add_weld) {
       math::RigidTransform<double> X_PC{};
       if (directive.add_weld->X_PC) {
@@ -213,7 +235,6 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       AddWeld(get_scoped_frame(directive.add_weld->parent),
               get_scoped_frame(directive.add_weld->child), X_PC, plant,
               added_models);
-
     } else if (directive.add_collision_filter_group) {
       // If there's no geometry registered, there's nothing to be done with
       // collision filtering.  Trying to proceed will just trigger an error
@@ -243,7 +264,6 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
         collision_resolver->AddPair(diagnostic, group.name, ignored_group,
                                     model_instance);
       }
-
     } else {
       // Recurse.
       auto& sub = *directive.add_directives;

@@ -440,6 +440,7 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//math:geometric_transform",
+        "//multibody/plant:deformable_ids",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )
@@ -598,6 +599,7 @@ drake_cc_googletest(
     name = "detail_dmd_parser_test",
     data = [
         ":process_model_directives_test_models",
+        ":test_models",
     ],
     deps = [
         ":detail_dmd_parser",
