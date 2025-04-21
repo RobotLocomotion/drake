@@ -417,7 +417,16 @@ if(WITH_USER_SPDLOG)
   endif()
   find_package(spdlog CONFIG REQUIRED)
   symlink_external_repository_includes(spdlog spdlog::spdlog)
-  symlink_external_repository_libs(spdlog spdlog::spdlog ON)
+  # Modern versions of spdlog (i.e. >= 1.11.0) specify a minor version in the
+  # SONAME spelling, while older versions only use the major version.
+  # We support that logic here to provide compatibility with both.
+  # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
+  set(SPDLOG_USE_SO_MINOR_VERSION ON)
+  if(${spdlog_VERSION_MAJOR} LESS 1 OR
+     (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
+     set(SPDLOG_USE_SO_MINOR_VERSION OFF)
+  endif()
+  symlink_external_repository_libs(spdlog spdlog::spdlog ${SPDLOG_USE_SO_MINOR_VERSION})
   override_module(spdlog)
 endif()
 
