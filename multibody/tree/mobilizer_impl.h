@@ -49,14 +49,12 @@ careful when interpreting them as Eigen vectors for computation purposes.
   // Compose X_AM = X_AF ⋅ X_FM, optimized for the known structure of X_FM.
   // For example, a revolute mobilizer has only 4 significant entries in X_FM
   // out of 12, and a prismatic along Z has only 1.
-  void post_multiply_by_X_FM(const RigidTransform<T>& X_AF,
-                             const RigidTransform<T>& X_FM,
-                             RigidTransform<T>* X_AM) const;
+  RigidTransform<T> post_multiply_by_X_FM(const RigidTransform<T>& X_AF,
+                                          const RigidTransform<T>& X_FM) const;
 
   // Compose X_FB = X_FM ⋅ X_MB, optimized for the known structure of X_FM.
-  void pre_multiply_by_X_FM(const RigidTransform<T>& X_FM,
-                            const RigidTransform<T>& X_MB,
-                            RigidTransform<T>* X_FB) const;
+  RigidTransform<T> pre_multiply_by_X_FM(const RigidTransform<T>& X_FM,
+                                         const RigidTransform<T>& X_MB) const;
 
   // Returns V_FM_F = H_FM_F(q)⋅v.
   SpatialVelocity<T> calc_V_FM(const T* q,

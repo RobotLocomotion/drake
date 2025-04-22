@@ -139,10 +139,10 @@ TEST_F(RevoluteMobilizerTest, RandomState) {
 }
 
 TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
   const double angle = 1.5;
   mobilizer_->SetAngle(context_.get(), angle);
-  const RigidTransformd X_FM(
-      mobilizer_->CalcAcrossMobilizerTransform(*context_));
+  RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
   const RigidTransformd X_FM_expected(RotationMatrixd(
       AngleAxisd(angle, mobilizer_->revolute_axis().normalized())));
@@ -153,6 +153,26 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
                               X_FM_expected.GetAsMatrix34(), kTolerance,
                               MatrixCompareType::relative));
+
+  // Now check the fast inline methods. Since we used a general axis above,
+  // this should have been modeled with a z-axial mobilizer.
+  auto mobilizer_z =
+      dynamic_cast<const RevoluteMobilizerAxial<double, 2>*>(mobilizer_);
+  ASSERT_NE(mobilizer_z, nullptr);
+  RigidTransformd fast_X_FM = mobilizer_z->calc_X_FM(&angle);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const double new_angle = 2.0;
+  mobilizer_->SetAngle(context_.get(), new_angle);
+  X_FM = mobilizer_->CalcAcrossMobilizerTransform(*context_);
+  mobilizer_z->update_X_FM(&new_angle, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  const RigidTransformd X_AF(math::RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
+  const RigidTransformd X_MB = X_AF;  // arbitrary
+  const RigidTransformd X_AM = mobilizer_z->post_multiply_by_X_FM(X_AF, X_FM);
+  const RigidTransformd X_FB = mobilizer_z->pre_multiply_by_X_FM(X_FM, X_MB);
+  EXPECT_TRUE(X_AM.IsNearlyEqualTo(X_AF * X_FM, kTol));
+  EXPECT_TRUE(X_FB.IsNearlyEqualTo(X_FM * X_MB, kTol));
 }
 
 TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
