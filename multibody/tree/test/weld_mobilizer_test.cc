@@ -52,7 +52,6 @@ TEST_F(WeldMobilizerTest, ZeroSizedState) {
 }
 
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
-  const double kTol = 4 * std::numeric_limits<double>::epsilon();
   const math::RigidTransformd X_FM(
       weld_body_to_world_->CalcAcrossMobilizerTransform(*context_));
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(), X_WB_.GetAsMatrix34(),
@@ -65,14 +64,7 @@ TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
   weld_body_to_world_->update_X_FM(&q_dummy, &fast_X_FM);
   EXPECT_TRUE(fast_X_FM.IsExactlyIdentity());
 
-  const RigidTransformd X_AF(math::RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
-  const RigidTransformd X_MB = X_AF;  // arbitrary
-  const RigidTransformd X_AM =
-      weld_body_to_world_->post_multiply_by_X_FM(X_AF, X_FM);
-  const RigidTransformd X_FB =
-      weld_body_to_world_->pre_multiply_by_X_FM(X_FM, X_MB);
-  EXPECT_TRUE(X_AM.IsNearlyEqualTo(X_AF * X_FM, kTol));
-  EXPECT_TRUE(X_FB.IsNearlyEqualTo(X_FM * X_MB, kTol));
+  TestPrePostMultiplyByX_FM(X_FM, *weld_body_to_world_);
 }
 
 TEST_F(WeldMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {

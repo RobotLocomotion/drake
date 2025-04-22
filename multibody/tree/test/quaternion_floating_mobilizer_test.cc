@@ -85,6 +85,37 @@ TEST_F(QuaternionFloatingMobilizerTest, ZeroState) {
   EXPECT_TRUE(X_WB.IsExactlyIdentity());
 }
 
+TEST_F(QuaternionFloatingMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
+  // Set an arbitrary "non-zero" state.
+  const Quaterniond quaternion(
+      RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
+  const Vector3d translation(1.0, 2.0, 3.0);
+  mobilizer_->SetQuaternion(context_.get(), quaternion);
+  mobilizer_->SetTranslation(context_.get(), translation);
+  const double* q =
+      &context_
+           ->get_continuous_state_vector()[mobilizer_->position_start_in_q()];
+  RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
+
+  const RigidTransformd X_FM_expected(quaternion, translation);
+  EXPECT_TRUE(X_FM.IsNearlyEqualTo(X_FM_expected, kTol));
+
+  // Now check the fast inline methods.
+  RigidTransformd fast_X_FM = mobilizer_->calc_X_FM(q);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const Quaterniond new_quaternion(
+      RollPitchYawd(M_PI / 4, -M_PI / 4, M_PI / 7).ToQuaternion());
+  const Vector3d new_translation(1.5, 2.5, 3.5);
+  mobilizer_->SetQuaternion(context_.get(), new_quaternion);
+  mobilizer_->SetTranslation(context_.get(), new_translation);
+  X_FM = mobilizer_->CalcAcrossMobilizerTransform(*context_);
+  mobilizer_->update_X_FM(q, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
+}
+
 // Our documentation guarantees that this joint will represent a
 // (quaternion, translation) pair exactly. Make sure it does.
 TEST_F(QuaternionFloatingMobilizerTest, SetGetPosePair) {

@@ -205,12 +205,7 @@ TEST_F(PlanarMobilizerTest, CalcAcrossMobilizerTransform) {
   mobilizer_->update_X_FM(new_q, &fast_X_FM);
   EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
 
-  const RigidTransformd X_AF(math::RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
-  const RigidTransformd X_MB = X_AF;  // arbitrary
-  const RigidTransformd X_AM = mobilizer_->post_multiply_by_X_FM(X_AF, X_FM);
-  const RigidTransformd X_FB = mobilizer_->pre_multiply_by_X_FM(X_FM, X_MB);
-  EXPECT_TRUE(X_AM.IsNearlyEqualTo(X_AF * X_FM, kTol));
-  EXPECT_TRUE(X_FB.IsNearlyEqualTo(X_FM * X_MB, kTol));
+  TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
 }
 
 TEST_F(PlanarMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
