@@ -346,7 +346,7 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
     ASSERT_TRUE(geometries.is_deformable(deformable_id));
     const DeformableGeometry& geometry =
         GeometriesTester::get_deformable_geometry(geometries, deformable_id);
-    EXPECT_TRUE(geometry.deformable_mesh().mesh().Equal(input_mesh));
+    EXPECT_TRUE(geometry.deformable_volume().mesh().Equal(input_mesh));
   }
   /* Update the vertex positions to some arbitrary value. */
   const VectorXd q = VectorXd::LinSpaced(3 * num_vertices, 0.0, 1.0);
@@ -356,7 +356,7 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
   {
     const DeformableGeometry& geometry =
         GeometriesTester::get_deformable_geometry(geometries, deformable_id);
-    const VolumeMesh<double>& mesh = geometry.deformable_mesh().mesh();
+    const VolumeMesh<double>& mesh = geometry.deformable_volume().mesh();
     for (int i = 0; i < num_vertices; ++i) {
       const Vector3d& q_MV = mesh.vertex(i);
       const Vector3d& reference_q_MV = input_mesh.vertex(i);
@@ -365,7 +365,7 @@ GTEST_TEST(GeometriesTest, UpdateDeformableVertexPositions) {
       EXPECT_NE(q_MV, reference_q_MV);
     }
     const TriangleSurfaceMesh<double>& surface_mesh =
-        geometry.deformable_surface_mesh().mesh();
+        geometry.deformable_surface().mesh();
     for (int i = 0; i < num_surface_vertices; ++i) {
       const Vector3d& q_MV = surface_mesh.vertex(i);
       const Vector3d& reference_q_MV = input_surface_mesh.vertex(i);
@@ -446,7 +446,7 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   DeformableContact<double> expected_contact_data;
   expected_contact_data.RegisterDeformableGeometry(deformable_id, num_vertices);
   AddDeformableRigidContactSurface(
-      pressure_field, deformable_geometry.deformable_surface_mesh(),
+      pressure_field, deformable_geometry.deformable_surface(),
       deformable_geometry.surface_index_to_volume_index(), deformable_id,
       rigid_id, rigid_geometry.mesh().mesh(), rigid_geometry.mesh().bvh(), X_RD,
       &expected_contact_data);
@@ -534,15 +534,15 @@ TEST_F(DeformableDeformableContactTest, OneContactPair) {
       GeometriesTester::get_deformable_geometry(geometries_, deformable1_id_);
   expected.RegisterDeformableGeometry(
       deformable0_id_,
-      deformable0_geometry.deformable_mesh().mesh().num_vertices());
+      deformable0_geometry.deformable_volume().mesh().num_vertices());
   expected.RegisterDeformableGeometry(
       deformable1_id_,
-      deformable1_geometry.deformable_mesh().mesh().num_vertices());
+      deformable1_geometry.deformable_volume().mesh().num_vertices());
   AddDeformableDeformableContactSurface(
       deformable1_geometry.CalcSignedDistanceField(),
-      deformable1_geometry.deformable_mesh(), deformable1_id_,
+      deformable1_geometry.deformable_volume(), deformable1_id_,
       deformable0_geometry.CalcSignedDistanceField(),
-      deformable0_geometry.deformable_mesh(), deformable0_id_, &expected);
+      deformable0_geometry.deformable_volume(), deformable0_id_, &expected);
   ASSERT_EQ(expected.contact_surfaces().size(), 1);
 
   ASSERT_TRUE(contact_data.contact_surfaces().at(0).id_A() == deformable0_id_ &&

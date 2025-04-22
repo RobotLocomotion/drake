@@ -169,14 +169,14 @@ void RemoveNearlyDuplicateVertices(std::vector<Vector3<T>>* polygon) {
   DRAKE_ASSERT(polygon->size() != 2 || !near((*polygon)[0], (*polygon)[1]));
 }
 
-template <typename MeshBuilder, typename BvType, typename BvType2>
-SurfaceVolumeIntersector<MeshBuilder, BvType,
-                         BvType2>::~SurfaceVolumeIntersector() = default;
+template <typename MeshBuilder, typename TetBvType, typename TriBvType>
+SurfaceVolumeIntersector<MeshBuilder, TetBvType,
+                         TriBvType>::~SurfaceVolumeIntersector() = default;
 
-template <typename MeshBuilder, typename BvType, typename BvType2>
+template <typename MeshBuilder, typename TetBvType, typename TriBvType>
 const std::vector<Vector3<
-    typename SurfaceVolumeIntersector<MeshBuilder, BvType, BvType2>::T>>&
-SurfaceVolumeIntersector<MeshBuilder, BvType, BvType2>::
+    typename SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::T>>&
+SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
     ClipTriangleByTetrahedron(int element, const VolumeMesh<double>& volume_M,
                               int face,
                               const TriangleSurfaceMesh<double>& surface_N,
@@ -263,8 +263,8 @@ SurfaceVolumeIntersector<MeshBuilder, BvType, BvType2>::
   return *polygon_M;
 }
 
-template <typename MeshBuilder, typename BvType, typename BvType2>
-bool SurfaceVolumeIntersector<MeshBuilder, BvType, BvType2>::
+template <typename MeshBuilder, typename TetBvType, typename TriBvType>
+bool SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
     IsFaceNormalAlongPressureGradient(
         const VolumeMeshFieldLinear<double, double>& volume_field_M,
         const TriangleSurfaceMesh<double>& surface_N,
@@ -287,13 +287,13 @@ bool SurfaceVolumeIntersector<MeshBuilder, BvType, BvType2>::
                                        tri_index, X_MN.rotation());
 }
 
-template <typename MeshBuilder, typename BvType, typename BvType2>
-void SurfaceVolumeIntersector<MeshBuilder, BvType, BvType2>::
+template <typename MeshBuilder, typename TetBvType, typename TriBvType>
+void SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
     SampleVolumeFieldOnSurface(
         const VolumeMeshFieldLinear<double, double>& volume_field_M,
-        const Bvh<BvType, VolumeMesh<double>>& bvh_M,
+        const Bvh<TetBvType, VolumeMesh<double>>& bvh_M,
         const TriangleSurfaceMesh<double>& surface_N,
-        const Bvh<BvType2, TriangleSurfaceMesh<double>>& bvh_N,
+        const Bvh<TriBvType, TriangleSurfaceMesh<double>>& bvh_N,
         const math::RigidTransform<T>& X_MN,
         const bool filter_face_normal_along_field_gradient) {
   // Builds the intersection mesh represented in M's frame.
@@ -318,14 +318,15 @@ void SurfaceVolumeIntersector<MeshBuilder, BvType, BvType2>::
   std::tie(mesh_M_, field_M_) = builder_M.MakeMeshAndField();
 }
 
-template <typename MeshBuilder, typename BvType, typename BvType2>
-void SurfaceVolumeIntersector<MeshBuilder, BvType, BvType2>::CalcContactPolygon(
-    const VolumeMeshFieldLinear<double, double>& volume_field_M,
-    const TriangleSurfaceMesh<double>& surface_N,
-    const math::RigidTransform<T>& X_MN,
-    const math::RigidTransform<double>& X_MN_d, MeshBuilder* builder_M,
-    const bool filter_face_normal_along_field_gradient, const int tet_index,
-    const int tri_index) {
+template <typename MeshBuilder, typename TetBvType, typename TriBvType>
+void SurfaceVolumeIntersector<MeshBuilder, TetBvType, TriBvType>::
+    CalcContactPolygon(
+        const VolumeMeshFieldLinear<double, double>& volume_field_M,
+        const TriangleSurfaceMesh<double>& surface_N,
+        const math::RigidTransform<T>& X_MN,
+        const math::RigidTransform<double>& X_MN_d, MeshBuilder* builder_M,
+        const bool filter_face_normal_along_field_gradient, const int tet_index,
+        const int tri_index) {
   const VolumeMesh<double>& vol_mesh_M = volume_field_M.mesh();
 
   if (filter_face_normal_along_field_gradient) {

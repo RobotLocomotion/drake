@@ -63,7 +63,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
 
   // Verify that the two BVHs have indeed collided.
   bool bvhs_collide = false;
-  deformable_W.deformable_surface_mesh().bvh().Collide(
+  deformable_W.deformable_surface().bvh().Collide(
       rigid_bvh_R, X_WR, [&bvhs_collide](int, int) {
         bvhs_collide = true;
         return BvttCallbackResult::Terminate;
@@ -72,9 +72,9 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
 
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(
-      deformable_id, deformable_W.deformable_mesh().mesh().num_vertices());
+      deformable_id, deformable_W.deformable_volume().mesh().num_vertices());
   AddDeformableRigidContactSurface(
-      pressure_field_R, deformable_W.deformable_surface_mesh(),
+      pressure_field_R, deformable_W.deformable_surface(),
       deformable_W.surface_index_to_volume_index(), deformable_id, rigid_id,
       rigid_mesh_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
 
@@ -117,7 +117,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(deformable_id, 4);
   AddDeformableRigidContactSurface(
-      pressure_field, deformable_W.deformable_surface_mesh(),
+      pressure_field, deformable_W.deformable_surface(),
       deformable_W.surface_index_to_volume_index(), deformable_id, rigid_id,
       rigid_mesh_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
   constexpr int kExpectedNumContactPoints = 1;
@@ -196,11 +196,11 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
                           \|/|____________|                                 */
 
   /* Compute the first set of contact data. */
-  const VolumeMesh<double> mesh_W = deformable_W.deformable_mesh().mesh();
+  const VolumeMesh<double> mesh_W = deformable_W.deformable_volume().mesh();
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(deformable_id, mesh_W.num_vertices());
   AddDeformableRigidContactSurface(
-      pressure_field_R, deformable_W.deformable_surface_mesh(),
+      pressure_field_R, deformable_W.deformable_surface(),
       deformable_W.surface_index_to_volume_index(), deformable_id, rigid_id,
       rigid_mesh_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
@@ -218,7 +218,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
     q_WD.segment<3>(3 * v) = arbitrary_transform * mesh_W.vertex(v);
   }
   const TriangleSurfaceMesh<double> surface_mesh_W =
-      deformable_W.deformable_surface_mesh().mesh();
+      deformable_W.deformable_surface().mesh();
   VectorX<double> q_surface_WD(3 * surface_mesh_W.num_vertices());
   for (int v = 0; v < surface_mesh_W.num_vertices(); ++v) {
     q_surface_WD.segment<3>(3 * v) =
@@ -232,7 +232,7 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
   contact_data2.RegisterDeformableGeometry(deformable_id,
                                            mesh_W.num_vertices());
   AddDeformableRigidContactSurface(
-      pressure_field_R, deformable_W.deformable_surface_mesh(),
+      pressure_field_R, deformable_W.deformable_surface(),
       deformable_W.surface_index_to_volume_index(), deformable_id, rigid_id,
       rigid_mesh_R, rigid_bvh_R, X_WR.inverse(), &contact_data2);
   ASSERT_EQ(contact_data2.contact_surfaces().size(), 1);

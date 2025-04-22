@@ -70,16 +70,16 @@ class Geometries final : public ShapeReifier {
 
   /* Examines the given shape and properties, adding a rigid geometry
    representation if
-
    1. `props` specifies the resolution hint for the mesh representation of the
-      rigid geometry.
+      rigid geometry and a valid hydroelastic modulus.
    2. The `shape` type is supported for rigid representation for deformable
       contact. The set of supported geometries is the set of all supported hydro
       compliant geometries minus half space. We use the same implementation that
       the hydro-compliant reifier is using for supported shapes.
 
-   This function is a no-op if the resolution_hint property is not specified and
-   logs a one-time warning if the shape is not supported for deformable contact.
+   This function is a no-op if the resolution_hint or the hydroelastic modulus
+   property is not specified and logs a one-time warning if the shape is not
+   supported for deformable contact.
 
    @param shape         The shape to possibly represent.
    @param id            The unique identifier for the geometry.
@@ -99,8 +99,8 @@ class Geometries final : public ShapeReifier {
   void UpdateRigidWorldPose(GeometryId id,
                             const math::RigidTransform<double>& X_WG);
 
-  /* Adds a deformable geometry whose contact mesh representation is given by
-   `mesh`.
+  /* Adds a deformable geometry whose contact mesh representations are given by
+   `mesh` and `surface_mesh`.
 
    @param id             The unique identifier for the geometry.
    @param mesh           The volume mesh representation of the deformable
@@ -116,16 +116,16 @@ class Geometries final : public ShapeReifier {
                              std::vector<int> surface_index_to_volume_index);
 
   /* If a deformable geometry with `id` exists, updates the vertex positions
-   of the geometry (in the world frame) to `q_WG`. */
+   of the volume mesh (in the world frame) to `q_WV` and the vertex positions
+   of the surface mesh (in the world frame) to `q_WS`. */
   void UpdateDeformableVertexPositions(
-      GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG,
+      GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WV,
       const Eigen::Ref<const VectorX<double>>& q_WS);
 
   /* For each registered deformable geometry, computes the contact data of it
    with respect to all registered rigid geometries and all other deformable
    geometries. Assumes the vertex positions and poses of all registered
-   deformable and rigid geometries are up to date.
-  */
+   deformable and rigid geometries are up to date. */
   DeformableContact<double> ComputeDeformableContact(
       const CollisionFilter& collision_filter) const;
 

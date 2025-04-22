@@ -1,6 +1,5 @@
 #include "drake/geometry/proximity/deformable_mesh_intersection.h"
 
-#include <iostream>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -67,8 +66,8 @@ class DeformableSurfaceVolumeIntersector
     std::vector<int> polygon(num_vertices_after - num_vertices_before);
     std::iota(polygon.begin(), polygon.end(), num_vertices_before);
 
-    // TODO(xuchenhan-tri): We enforce that the normal points outward of the
-    // rigid mesh. Consider whether we should flip this convention.
+    // We enforce that the normal points outward of the rigid mesh and into the
+    // deformable mesh.
     const Vector3<double> n_R =
         X_RD_d.rotation() * (-surface_D.face_normal(tri_index));
     const Vector3<double> p_RC =
@@ -91,7 +90,7 @@ class DeformableSurfaceVolumeIntersector
 
 void AddDeformableRigidContactSurface(
     const VolumeMeshFieldLinear<double, double>& pressure_field_R,
-    const DeformableSurfaceMeshWithBvh<double>& deformable_mesh,
+    const DeformableSurfaceMeshWithBvh<double>& deformable_mesh_D,
     const std::vector<int>& surface_index_to_volume_index,
     const GeometryId deformable_id, const GeometryId rigid_id,
     const VolumeMesh<double>&, const Bvh<Obb, VolumeMesh<double>>& rigid_bvh_R,
@@ -100,35 +99,35 @@ void AddDeformableRigidContactSurface(
   DRAKE_DEMAND(deformable_contact != nullptr);
   DeformableSurfaceVolumeIntersector intersect;
   intersect.SampleVolumeFieldOnSurface(
-      pressure_field_R, rigid_bvh_R, deformable_mesh.mesh(),
-      deformable_mesh.bvh(), X_RD,
-      true /* don't filter face normal along field gradient */);
+      pressure_field_R, rigid_bvh_R, deformable_mesh_D.mesh(),
+      deformable_mesh_D.bvh(), X_RD,
+      true /* Filter face normal along field gradient */);
 
   if (intersect.has_intersection()) {
     std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_R =
         intersect.release_mesh();
-    const PolygonSurfaceMeshFieldLinear<double, double>& pressure_field =
-        intersect.mutable_field();
+    const PolygonSurfaceMeshFieldLinear<double, double>&
+        surface_pressure_field_R = intersect.mutable_field();
     const int num_faces = contact_mesh_R->num_faces();
-    /* Compute the penetration distance at the centroid of each contact polygon
-     using the signed distance field. */
-    std::vector<double> pressure(num_faces);
+    /* Compute the pressure values at the centroid of each contact polygon. */
+    std::vector<double> pressures(num_faces);
     for (int i = 0; i < num_faces; ++i) {
       const Vector3<double>& contact_points_R =
           contact_mesh_R->element_centroid(i);
-      /* `signed_distance_field` has a gradient, therefore `EvaluateCartesian()`
-       should be cheap. */
-      pressure[i] = pressure_field.EvaluateCartesian(i, contact_points_R);
+      /* `surface_pressure_field_R` has a gradient, therefore
+       `EvaluateCartesian()` should be cheap. */
+      pressures[i] =
+          surface_pressure_field_R.EvaluateCartesian(i, contact_points_R);
     }
 
     // Transform the contact mesh from the rigid frame R to the deformable frame
     // (which is aligned with the world frame).
-    const math::RigidTransform<double> X_DR = X_RD.inverse();
-    contact_mesh_R->TransformVertices(X_DR);
+    const math::RigidTransform<double> X_WR = X_RD.inverse();
+    contact_mesh_R->TransformVertices(X_WR);
     std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_W =
         std::move(contact_mesh_R);
 
-    const TriangleSurfaceMesh<double>& mesh = deformable_mesh.mesh();
+    const TriangleSurfaceMesh<double>& mesh = deformable_mesh_D.mesh();
     // Each contact polygon generates one "participating triangle". Hence
     // `participating_triangles` contains duplicated entries when a triangle
     // covers multiple contact polygons.
@@ -136,7 +135,11 @@ void AddDeformableRigidContactSurface(
         intersect.mutable_triangle_index_of_polygons();
     DRAKE_DEMAND(static_cast<int>(participating_triangles.size()) == num_faces);
 
+    // The set of all indices of the tet vertices of the deformable body that
+    // are participating in contact.
     std::unordered_set<int> participating_vertices;
+    // contact_vertex_indexes[i] stores the _tet_ indices of the i-th triangle
+    // in contact.
     std::vector<Vector3<int>> contact_vertex_indexes;
     // Each contact point generates 3 participating vertices. We overestimate by
     // ignoring duplications caused by the possibility of one triangle
@@ -159,12 +162,12 @@ void AddDeformableRigidContactSurface(
       contact_vertex_indexes.push_back(triangle_vertex_indices);
     }
     for (int e = 0; e < num_faces; ++e) {
-      pressure_gradient_W[e] = X_DR * pressure_gradient_R[e];
+      pressure_gradient_W[e] = X_WR * pressure_gradient_R[e];
     }
 
     deformable_contact->AddDeformableRigidContactSurface(
         deformable_id, rigid_id, participating_vertices,
-        std::move(*contact_mesh_W), std::move(pressure),
+        std::move(*contact_mesh_W), std::move(pressures),
         std::move(pressure_gradient_W), std::move(contact_vertex_indexes),
         std::move(intersect.mutable_barycentric_centroids()));
   }

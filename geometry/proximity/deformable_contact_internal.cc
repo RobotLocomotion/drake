@@ -34,14 +34,9 @@ void Geometries::MaybeAddRigidGeometry(
   // and deformable contact. Consider reorganizing the proximity properties to
   // make this sharing more explicit. We should also avoid having two copies of
   // the same rigid geometry for both hydro and deformable contact.
-  if (props.HasProperty(kHydroGroup, kRezHint)) {
+  if (props.HasProperty(kHydroGroup, kRezHint) &&
+      props.HasProperty(kHydroGroup, kElastic)) {
     ReifyData data{id, props};
-    // TODO(xuchenhan-tri): The default value for hydroelastic modulus should be
-    // configurable and set elsewhere.
-    const double E =
-        data.properties.GetPropertyOrDefault(kHydroGroup, kElastic, 1e6);
-    data.properties.UpdateProperty(kHydroGroup, kElastic, E);
-    DRAKE_DEMAND(data.properties.HasProperty(kHydroGroup, kElastic));
     shape.Reify(this, &data);
     UpdateRigidWorldPose(id, X_WG);
   }
@@ -61,20 +56,20 @@ void Geometries::UpdateRigidWorldPose(
 }
 
 void Geometries::AddDeformableGeometry(
-    GeometryId id, VolumeMesh<double> mesh,
+    GeometryId id, VolumeMesh<double> volume_mesh,
     TriangleSurfaceMesh<double> surface_mesh,
     std::vector<int> surface_index_to_volume_index) {
   deformable_geometries_.insert(
-      {id, DeformableGeometry(std::move(mesh), std::move(surface_mesh),
+      {id, DeformableGeometry(std::move(volume_mesh), std::move(surface_mesh),
                               std::move(surface_index_to_volume_index))});
   FlushPendingRigidGeometry();
 }
 
 void Geometries::UpdateDeformableVertexPositions(
-    GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG,
+    GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WV,
     const Eigen::Ref<const VectorX<double>>& q_WS) {
   if (is_deformable(id)) {
-    deformable_geometries_.at(id).UpdateVertexPositions(q_WG, q_WS);
+    deformable_geometries_.at(id).UpdateVertexPositions(q_WV, q_WS);
   }
 }
 
@@ -100,7 +95,7 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
         &deformable_geometry.CalcSignedDistanceField();
     result.RegisterDeformableGeometry(
         deformable_id,
-        deformable_geometry.deformable_mesh().mesh().num_vertices());
+        deformable_geometry.deformable_volume().mesh().num_vertices());
   }
 
   // Add deformable-rigid contacts.
@@ -118,7 +113,7 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
         // Deformable geometry is in the world frame.
         const auto X_RD = X_WR.inverse();
         AddDeformableRigidContactSurface(
-            pressure_field_R, deformable_geometry.deformable_surface_mesh(),
+            pressure_field_R, deformable_geometry.deformable_surface(),
             deformable_geometry.surface_index_to_volume_index(), deformable_id,
             rigid_id, rigid_volume_mesh, rigid_bvh, X_RD, &result);
       }
@@ -148,15 +143,15 @@ DeformableContact<double> Geometries::ComputeDeformableContact(
         if (deformable1_id < deformable0_id) {
           AddDeformableDeformableContactSurface(
               *signed_distance_fields.at(deformable0_id),
-              it0->second.deformable_mesh(), deformable0_id,
+              it0->second.deformable_volume(), deformable0_id,
               *signed_distance_fields.at(deformable1_id),
-              it1->second.deformable_mesh(), deformable1_id, &result);
+              it1->second.deformable_volume(), deformable1_id, &result);
         } else {
           AddDeformableDeformableContactSurface(
               *signed_distance_fields.at(deformable1_id),
-              it1->second.deformable_mesh(), deformable1_id,
+              it1->second.deformable_volume(), deformable1_id,
               *signed_distance_fields.at(deformable0_id),
-              it0->second.deformable_mesh(), deformable0_id, &result);
+              it0->second.deformable_volume(), deformable0_id, &result);
         }
       }
     }
