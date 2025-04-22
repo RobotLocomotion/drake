@@ -151,3 +151,19 @@ if [[ "${codename}" == "jammy" ]]; then
     fi
   fi
 fi
+
+# On Noble, Drake doesn't install anything related to GCC 14, but if the user
+# has chosen to install some GCC 14 libraries but has failed to install all of
+# them correctly as a group, Drake's documentation header file parser will fail
+# with a libclang-related complaint. Therefore, we'll help the user clean up
+# their mess, to avoid apparent Drake build errors.
+if [[ "${codename}" == "noble" ]]; then
+  status=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgcc-14-dev 2>/dev/null || true)
+  if [[ "${status}" == "ii " ]]; then
+    status_stdcxx=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libstdc++-14-dev 2>/dev/null || true)
+    status_fortran=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgfortran-14-dev 2>/dev/null || true)
+    if [[ "${status_stdcxx}" != "ii " || "${status_fortran}" != "ii " ]]; then
+      apt-get install ${maybe_yes} --no-install-recommends libgcc-14-dev libstdc++-14-dev libgfortran-14-dev
+    fi
+  fi
+fi
