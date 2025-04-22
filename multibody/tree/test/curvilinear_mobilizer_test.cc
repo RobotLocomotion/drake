@@ -101,24 +101,27 @@ TEST_F(CurvilinearMobilizerTest, ZeroState) {
 }
 
 TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
   const double wrapped_distance = 0.5 * M_PI / k_;
   const double distance = wrapped_distance + trajectory_.end_time();
 
   mobilizer_->SetDistance(context_.get(), distance);
-  const RigidTransformd X_FM(
-      mobilizer_->CalcAcrossMobilizerTransform(*context_));
+  RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
   // Expect the mobilizer pose to be the trajectory pose, modulo curve length.
   const RigidTransformd X_FM_expected = trajectory_.CalcPose(wrapped_distance);
-  EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
-                              X_FM_expected.GetAsMatrix34(), kEpsilon,
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(X_FM.IsNearlyEqualTo(X_FM_expected, kTol));
 
-  // The low-level function should give the same result.
-  const RigidTransformd X_FM_inline = mobilizer_->calc_X_FM(&distance);
-  EXPECT_TRUE(CompareMatrices(X_FM_inline.GetAsMatrix34(),
-                              X_FM_expected.GetAsMatrix34(), kEpsilon,
-                              MatrixCompareType::relative));
+  // Now check the fast inline methods.
+  RigidTransformd fast_X_FM = mobilizer_->calc_X_FM(&distance);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const double new_distance = 1.5 * distance;
+  mobilizer_->SetDistance(context_.get(), new_distance);
+  X_FM = mobilizer_->CalcAcrossMobilizerTransform(*context_);
+  mobilizer_->update_X_FM(&new_distance, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
 }
 
 TEST_F(CurvilinearMobilizerTest, CalcAcrossMobilizerSpatialVelocity) {

@@ -62,6 +62,31 @@ TEST_F(RpyBallMobilizerTest, StateAccess) {
                               kTolerance, MatrixCompareType::relative));
 }
 
+TEST_F(RpyBallMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
+  const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
+  mobilizer_->SetAngles(context_.get(), rpy_value);
+  const double* q =
+      &context_
+           ->get_continuous_state_vector()[mobilizer_->position_start_in_q()];
+  RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
+
+  const RigidTransformd X_FM_expected(RollPitchYawd(rpy_value),
+                                      Vector3d::Zero());
+  EXPECT_TRUE(X_FM.IsNearlyEqualTo(X_FM_expected, kTol));
+
+  // Now check the fast inline methods.
+  RigidTransformd fast_X_FM = mobilizer_->calc_X_FM(q);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const Vector3d new_rpy_value(M_PI / 4, -M_PI / 4, M_PI / 7);
+  mobilizer_->SetAngles(context_.get(), new_rpy_value);
+  X_FM = mobilizer_->CalcAcrossMobilizerTransform(*context_);
+  mobilizer_->update_X_FM(q, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
+}
+
 TEST_F(RpyBallMobilizerTest, ZeroState) {
   // Set an arbitrary "non-zero" state.
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
