@@ -118,8 +118,8 @@ class ProximityEngine {
    @param surface_mesh_W
                   The surface mesh representation of the deformable geometry
                   represented in the world frame. This is the surface of the
-                  volume mesh mesh_W.
-   @surface_index_to_volume_index
+                  volume mesh `mesh_W`.
+   @param surface_index_to_volume_index
                   A mapping from the index of a vertex in the surface mesh to
                   the index of the corresponding vertex in the volume mesh.
    @param id      The id of the geometry in SceneGraph to which this mesh
@@ -206,8 +206,13 @@ class ProximityEngine {
                  world frame `W`. If a deformable geometry with the given `id`
                  is registered in the engine (and hasn't been removed), its
                  vertex position is updated to the value in the given map.
+   @param driven_meshes
+                 The mapping from GeometryId `id` to driven triangle meshes for
+                 proximity roles.
    @pre if a deformable geometry with the given `id` is registered, its number
-   of dofs matches the size of the value in the corresponding q_WG. */
+   of dofs matches the size of the value in the corresponding q_WG.
+   @pre if a deformable geometry with the given `id` is registered with a
+   proximity role, driven_mesh.at(id) has size 1. */
   void UpdateDeformableVertexPositions(
       const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
       const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&

@@ -935,6 +935,7 @@ drake_cc_googletest(
         ":test_vtk_files",
     ],
     deps = [
+        ":geometry_state",
         ":proximity_engine",
         ":shape_specification",
         "//common/test_utilities:eigen_matrix_compare",

@@ -407,7 +407,7 @@ class SceneGraphInspector {
                            acquired.
    @throws std::exception  if `geometry_id` does not map to a registered
                            deformable geometry with the given `role` or if
-                           `role` is Role::kUnassigned.
+                           `role` is undefined.
    @experimental */
   const std::vector<internal::RenderMesh>& GetDrivenRenderMeshes(
       GeometryId geometry_id, Role role) const;

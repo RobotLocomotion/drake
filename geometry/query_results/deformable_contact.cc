@@ -1,6 +1,5 @@
 #include "drake/geometry/query_results/deformable_contact.h"
 
-#include <iostream>
 #include <utility>
 
 #include "drake/common/ssize.h"

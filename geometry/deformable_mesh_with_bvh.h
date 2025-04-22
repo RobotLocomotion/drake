@@ -112,7 +112,8 @@ class DeformableMeshWithBvh {
 template <typename T>
 using DeformableVolumeMeshWithBvh = DeformableMeshWithBvh<VolumeMesh<T>>;
 template <typename T>
-using DeformableSurfaceMeshWithBvh = DeformableMeshWithBvh<TriangleSurfaceMesh<T>>;
+using DeformableSurfaceMeshWithBvh =
+    DeformableMeshWithBvh<TriangleSurfaceMesh<T>>;
 
 }  // namespace internal
 }  // namespace geometry

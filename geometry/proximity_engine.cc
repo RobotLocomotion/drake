@@ -430,7 +430,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       // properties for anything we simply return.
       // TODO(xuchenhan-tri): This is not exactly true. The deformable
       // geometries do depend on the proximity properties for the friction
-      // coefficients.
+      // coefficients. We should add a mechanism to update the properties of
+      // deformable geometries.
       return;
     }
     // TODO(SeanCurtis-TRI): Precondition this with a test -- currently,
@@ -530,6 +531,10 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
           driven_meshes) {
     for (const auto& [id, q_WG] : q_WGs) {
+      if (!driven_meshes.contains(id)) {
+        continue;  // No driven meshes for this id because there's no proximity
+                   // role for this geometry.
+      }
       DRAKE_DEMAND(driven_meshes.at(id).size() == 1);
       const DrivenTriangleMesh& driven_mesh = driven_meshes.at(id)[0];
       geometries_for_deformable_contact_.UpdateDeformableVertexPositions(
