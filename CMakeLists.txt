@@ -325,9 +325,9 @@ endfunction()
 # Symlinks the C++ libraries for TARGET as workspace/NAME/lib/*, e.g.
 #  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/libfmt.so.6.1.2
 #  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/libfmt.so.6.1.2
-# If SO_MINOR_VERSION is ON, the last line above uses .so.x.y instead, i.e.
+# If USE_SO_MINOR_VERSION is ON, the last line above uses .so.x.y instead, i.e.
 #  workspace/fmt/lib/libfmt.so.6.1 -> ../build/install/lib/libfmt.so.6.1.2
-function(symlink_external_repository_libs NAME TARGET SO_MINOR_VERSION)
+function(symlink_external_repository_libs NAME TARGET USE_SO_MINOR_VERSION)
   set(workspace "${CMAKE_CURRENT_BINARY_DIR}/external/workspace")
   file(MAKE_DIRECTORY "${workspace}/${NAME}/lib")
   # Link the full library name (i.e., libfmt.so.6.1.2 in the case of shared).
@@ -339,7 +339,7 @@ function(symlink_external_repository_libs NAME TARGET SO_MINOR_VERSION)
   file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${basename}" SYMBOLIC)
   # Link the SONAME spelling in case of shared libraries.
   # If the basename does not match this pattern, this part is all a no-op.
-  if(SO_MINOR_VERSION)
+  if(USE_SO_MINOR_VERSION)
     string(REGEX REPLACE "(\\.so\\.[0-9]+\\.[0-9]+)\\.[0-9]+$" "\\1"
       other_basename "${basename}")
     string(REGEX REPLACE "(\\.[0-9]+\\.[0-9]+)\\.[0-9]+\\.dylib$" "\\1.dylib"
