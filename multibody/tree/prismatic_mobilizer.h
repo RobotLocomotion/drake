@@ -67,8 +67,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
 
   ~PrismaticMobilizer() final;
 
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+      const BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
 
   // Overloads to define the suffix names for the position and velocity
@@ -125,6 +125,13 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
   // along this mobilizer's axis (see translation_axis().)
   math::RigidTransform<T> calc_X_FM(const T* q) const {
     return math::RigidTransform<T>(q[0] * translation_axis());
+  }
+
+  /* We're not yet attempting to optimize the X_FM update. */
+  // TODO(sherm1) Optimize this.
+  void update_X_FM(const T* q, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(q != nullptr && X_FM != nullptr);
+    *X_FM = calc_X_FM(q);
   }
 
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame

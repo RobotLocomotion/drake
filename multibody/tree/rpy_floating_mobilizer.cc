@@ -20,10 +20,10 @@ template <typename T>
 RpyFloatingMobilizer<T>::~RpyFloatingMobilizer() = default;
 
 template <typename T>
-std::unique_ptr<internal::BodyNode<T>> RpyFloatingMobilizer<T>::CreateBodyNode(
-    const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+std::unique_ptr<BodyNode<T>> RpyFloatingMobilizer<T>::CreateBodyNode(
+    const BodyNode<T>* parent_node, const RigidBody<T>* body,
     const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<internal::BodyNodeImpl<T, RpyFloatingMobilizer>>(
+  return std::make_unique<BodyNodeImpl<T, RpyFloatingMobilizer>>(
       parent_node, body, mobilizer);
 }
 

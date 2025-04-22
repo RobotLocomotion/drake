@@ -18,6 +18,7 @@ namespace {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+using math::RigidTransformd;
 using std::make_unique;
 using std::unique_ptr;
 using systems::Context;
@@ -88,10 +89,10 @@ TEST_F(PrismaticMobilizerTest, ZeroState) {
 }
 
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
+  const double kTol = 4 * std::numeric_limits<double>::epsilon();
   const double translation = 1.5;
   slider_->SetTranslation(context_.get(), translation);
-  const math::RigidTransformd X_FM(
-      slider_->CalcAcrossMobilizerTransform(*context_));
+  math::RigidTransformd X_FM(slider_->CalcAcrossMobilizerTransform(*context_));
 
   const math::RigidTransformd X_FM_expected(
       Vector3d(axis_F_.normalized() * translation));
@@ -102,6 +103,22 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
   EXPECT_TRUE(CompareMatrices(X_FM.GetAsMatrix34(),
                               X_FM_expected.GetAsMatrix34(), kTolerance,
                               MatrixCompareType::relative));
+
+  // Now check the fast inline methods.
+  RigidTransformd fast_X_FM = slider_->calc_X_FM(&translation);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+  const double new_translation = 3;
+  slider_->SetTranslation(context_.get(), new_translation);
+  X_FM = slider_->CalcAcrossMobilizerTransform(*context_);
+  slider_->update_X_FM(&new_translation, &fast_X_FM);
+  EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
+
+  const RigidTransformd X_AF(math::RollPitchYawd(1, 2, 3), Vector3d(4, 5, 6));
+  const RigidTransformd X_MB = X_AF;  // arbitrary
+  const RigidTransformd X_AM = slider_->post_multiply_by_X_FM(X_AF, X_FM);
+  const RigidTransformd X_FB = slider_->pre_multiply_by_X_FM(X_FM, X_MB);
+  EXPECT_TRUE(X_AM.IsNearlyEqualTo(X_AF * X_FM, kTol));
+  EXPECT_TRUE(X_FB.IsNearlyEqualTo(X_FM * X_MB, kTol));
 }
 
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {

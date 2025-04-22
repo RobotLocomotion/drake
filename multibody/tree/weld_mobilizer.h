@@ -43,19 +43,36 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   ~WeldMobilizer() final;
 
-  std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node, const RigidBody<T>* body,
+  std::unique_ptr<BodyNode<T>> CreateBodyNode(
+      const BodyNode<T>* parent_node, const RigidBody<T>* body,
       const Mobilizer<T>* mobilizer) const final;
-
-  // TODO(sherm1) Replace this method with operators like
-  //  compose_with_X_FM(X_WF) and apply_X_FM(v) so that we can take advantage
-  //  of the mobilizer's knowledge of its kinematic structure (part of
-  //  performance epic #18442).
 
   // Computes the across-mobilizer transform `X_FM`, which for this mobilizer
   // is always the identity transform since F==M by construction.
   math::RigidTransform<T> calc_X_FM(const T*) const {
     return math::RigidTransform<T>();
+  }
+
+  /* We should do exactly nothing to update X_FM since it remains identity
+  forever. */
+  void update_X_FM(const T*, math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(X_FM != nullptr);
+    DRAKE_ASSERT(X_FM->IsExactlyIdentity());
+    // Do nothing.
+  }
+
+  /* Since X_FM is identity, X_AF * X_FM is just X_AF. */
+  math::RigidTransform<T> post_multiply_by_X_FM(
+      const math::RigidTransform<T>& X_AF,
+      const math::RigidTransform<T>&) const {
+    return X_AF;
+  }
+
+  /* Since X_FM is identity, X_FM * X_MB is just X_MB. */
+  math::RigidTransform<T> pre_multiply_by_X_FM(
+      const math::RigidTransform<T>&,
+      const math::RigidTransform<T>& X_MB) const {
+    return X_MB;
   }
 
   // Computes the across-mobilizer velocity V_FM which for this mobilizer is

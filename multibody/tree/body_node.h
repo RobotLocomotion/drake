@@ -598,23 +598,6 @@ class BodyNode : public MultibodyElement<T> {
       const VelocityKinematicsCache<T>& vc,
       std::vector<SpatialAcceleration<T>>* Ab_WB_array) const = 0;
 
-  // Helper method to be called within a base-to-tip recursion that computes
-  // into the PositionKinematicsCache:
-  // - X_PB(q_B)
-  // - X_WB(q(W:P), q_B)
-  // - p_PoBo_W(q_B)
-  // where q_B is the generalized coordinates associated with this node's
-  // mobilizer. q(W:P) denotes all generalized positions in the kinematics path
-  // between the world and the parent body P. It assumes we are in a base-to-tip
-  // recursion and therefore `X_WP` has already been updated.
-  //
-  // This function doesn't depend on the particular Mobilizer type so we
-  // implement once here in the base class rather than in the templatized
-  // derived class.
-  void CalcAcrossMobilizerBodyPoses_BaseToTip(
-      const FrameBodyPoseCache<T>& frame_body_pose_cache,
-      PositionKinematicsCache<T>* pc) const;
-
   // This method is used by MultibodyTree within a tip-to-base loop to compute
   // the composite body inertia of each body in the system.
   //
