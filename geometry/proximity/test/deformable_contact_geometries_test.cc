@@ -114,28 +114,28 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
   {
     DeformableGeometry copy(dummy_mesh, dummy_surface_mesh,
                             dummy_surface_vertices);
-    EXPECT_FALSE(
-        copy.deformable_mesh().mesh().Equal(original.deformable_mesh().mesh()));
-    EXPECT_FALSE(copy.deformable_surface_mesh().mesh().Equal(
-        original.deformable_surface_mesh().mesh()));
+    EXPECT_FALSE(copy.deformable_volume().mesh().Equal(
+        original.deformable_volume().mesh()));
+    EXPECT_FALSE(copy.deformable_surface().mesh().Equal(
+        original.deformable_surface().mesh()));
     copy = original;
 
     // Test for uniqueness.
-    EXPECT_NE(&original.deformable_mesh(), &copy.deformable_mesh());
-    EXPECT_NE(&original.deformable_mesh().mesh(),
-              &copy.deformable_mesh().mesh());
-    EXPECT_NE(&copy.deformable_mesh().bvh(), &original.deformable_mesh().bvh());
-    EXPECT_NE(&original.deformable_surface_mesh(),
-              &copy.deformable_surface_mesh());
+    EXPECT_NE(&original.deformable_volume(), &copy.deformable_volume());
+    EXPECT_NE(&original.deformable_volume().mesh(),
+              &copy.deformable_volume().mesh());
+    EXPECT_NE(&copy.deformable_volume().bvh(),
+              &original.deformable_volume().bvh());
+    EXPECT_NE(&original.deformable_surface(), &copy.deformable_surface());
 
-    EXPECT_TRUE(
-        copy.deformable_mesh().mesh().Equal(original.deformable_mesh().mesh()));
-    EXPECT_TRUE(
-        copy.deformable_mesh().bvh().Equal(original.deformable_mesh().bvh()));
-    EXPECT_TRUE(copy.deformable_surface_mesh().mesh().Equal(
-        original.deformable_surface_mesh().mesh()));
-    EXPECT_TRUE(copy.deformable_surface_mesh().bvh().Equal(
-        original.deformable_surface_mesh().bvh()));
+    EXPECT_TRUE(copy.deformable_volume().mesh().Equal(
+        original.deformable_volume().mesh()));
+    EXPECT_TRUE(copy.deformable_volume().bvh().Equal(
+        original.deformable_volume().bvh()));
+    EXPECT_TRUE(copy.deformable_surface().mesh().Equal(
+        original.deformable_surface().mesh()));
+    EXPECT_TRUE(copy.deformable_surface().bvh().Equal(
+        original.deformable_surface().bvh()));
 
     const VolumeMeshFieldLinear<double, double>& copy_sdf =
         copy.CalcSignedDistanceField();
@@ -149,21 +149,21 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
     DeformableGeometry copy(original);
 
     // Test for uniqueness.
-    EXPECT_NE(&original.deformable_mesh(), &copy.deformable_mesh());
-    EXPECT_NE(&original.deformable_mesh().mesh(),
-              &copy.deformable_mesh().mesh());
-    EXPECT_NE(&copy.deformable_mesh().bvh(), &original.deformable_mesh().bvh());
-    EXPECT_NE(&original.deformable_surface_mesh(),
-              &copy.deformable_surface_mesh());
+    EXPECT_NE(&original.deformable_volume(), &copy.deformable_volume());
+    EXPECT_NE(&original.deformable_volume().mesh(),
+              &copy.deformable_volume().mesh());
+    EXPECT_NE(&copy.deformable_volume().bvh(),
+              &original.deformable_volume().bvh());
+    EXPECT_NE(&original.deformable_surface(), &copy.deformable_surface());
 
-    EXPECT_TRUE(
-        copy.deformable_mesh().mesh().Equal(original.deformable_mesh().mesh()));
-    EXPECT_TRUE(
-        copy.deformable_mesh().bvh().Equal(original.deformable_mesh().bvh()));
-    EXPECT_TRUE(copy.deformable_surface_mesh().mesh().Equal(
-        original.deformable_surface_mesh().mesh()));
-    EXPECT_TRUE(copy.deformable_surface_mesh().bvh().Equal(
-        original.deformable_surface_mesh().bvh()));
+    EXPECT_TRUE(copy.deformable_volume().mesh().Equal(
+        original.deformable_volume().mesh()));
+    EXPECT_TRUE(copy.deformable_volume().bvh().Equal(
+        original.deformable_volume().bvh()));
+    EXPECT_TRUE(copy.deformable_surface().mesh().Equal(
+        original.deformable_surface().mesh()));
+    EXPECT_TRUE(copy.deformable_surface().bvh().Equal(
+        original.deformable_surface().bvh()));
 
     const VolumeMeshFieldLinear<double, double>& copy_sdf =
         copy.CalcSignedDistanceField();
@@ -183,21 +183,21 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
     // Grab raw pointers so we can determine that their ownership changes due to
     // move semantics.
     const DeformableVolumeMeshWithBvh<double>* const mesh_ptr =
-        &start.deformable_mesh();
+        &start.deformable_volume();
     const DeformableSurfaceMeshWithBvh<double>* const surface_mesh_ptr =
-        &start.deformable_surface_mesh();
+        &start.deformable_surface();
 
     // Test move constructor.
     DeformableGeometry move_constructed(std::move(start));
-    EXPECT_EQ(&move_constructed.deformable_mesh(), mesh_ptr);
-    EXPECT_EQ(&move_constructed.deformable_surface_mesh(), surface_mesh_ptr);
+    EXPECT_EQ(&move_constructed.deformable_volume(), mesh_ptr);
+    EXPECT_EQ(&move_constructed.deformable_surface(), surface_mesh_ptr);
 
     // Test move-assignment operator.
     DeformableGeometry move_assigned(dummy_mesh, dummy_surface_mesh,
                                      dummy_surface_vertices);
     move_assigned = std::move(move_constructed);
-    EXPECT_EQ(&move_assigned.deformable_mesh(), mesh_ptr);
-    EXPECT_EQ(&move_assigned.deformable_surface_mesh(), surface_mesh_ptr);
+    EXPECT_EQ(&move_assigned.deformable_volume(), mesh_ptr);
+    EXPECT_EQ(&move_assigned.deformable_surface(), surface_mesh_ptr);
   }
 }
 
@@ -218,9 +218,9 @@ GTEST_TEST(DeformableGeometryTest, UpdateVertexPositions) {
       VectorXd::LinSpaced(3 * num_surface_vertices, 0.0, 1.0);
   deformable_geometry.UpdateVertexPositions(q, q_surface);
   const VolumeMesh<double>& deformed_mesh =
-      deformable_geometry.deformable_mesh().mesh();
+      deformable_geometry.deformable_volume().mesh();
   const TriangleSurfaceMesh<double>& deformed_surface_mesh =
-      deformable_geometry.deformable_surface_mesh().mesh();
+      deformable_geometry.deformable_surface().mesh();
   for (int i = 0; i < num_vertices; ++i) {
     const Vector3d& q_MV = deformed_mesh.vertex(i);
     const Vector3d& expected_q_MV = q.segment<3>(3 * i);

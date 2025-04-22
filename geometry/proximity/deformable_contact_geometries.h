@@ -21,10 +21,11 @@ namespace deformable {
 
 // TODO(xuchenhan-tri): Consider supporting AutoDiffXd.
 /* Definition of a deformable geometry for contact evaluations. To be
- considered as deformable, a geometry must be associated with both:
+ considered as deformable, a geometry must be associated with:
    - a deformable volume mesh,
-   - an approximate signed distance field in the interior of the mesh, and
-   - a surface mesh that's the surface of the volume mesh above. */
+   - an approximate signed distance field in the interior of the volume mesh,
+     and
+   - the surface triangle mesh of the volume mesh. */
 class DeformableGeometry {
  public:
   DeformableGeometry(const DeformableGeometry& other);
@@ -33,44 +34,56 @@ class DeformableGeometry {
   DeformableGeometry& operator=(DeformableGeometry&&) = default;
 
   /* Constructs a deformable geometry from the given meshes. Also computes an
-   approximate signed distance field for the mesh. */
-  explicit DeformableGeometry(VolumeMesh<double> mesh,
-                              TriangleSurfaceMesh<double> surface_mesh,
-                              std::vector<int> surface_index_to_volume_index);
+   approximate signed distance field for the mesh.
+   @param[in] volume_mesh  The volume mesh representation of the geometry.
+   @param[in] surface_mesh The surface of `volume_mesh`.
+   @param[in] surface_index_to_volume_index
+   Mapping from surface index to volume index. The iᵗʰ entry is the index of
+   the volume mesh vertex that corresponds to the iᵗʰ surface vertex. */
+  DeformableGeometry(VolumeMesh<double> volume_mesh,
+                     TriangleSurfaceMesh<double> surface_mesh,
+                     std::vector<int> surface_index_to_volume_index);
 
   // TODO(xuchenhan-tri): Consider adding another constructor that takes in both
   // a mesh and a precomputed (approximated) sign distance field.
 
   /* Returns the volume mesh representation of the deformable geometry at
    current configuration. */
-  const DeformableVolumeMeshWithBvh<double>& deformable_mesh() const {
-    return *deformable_mesh_;
+  const DeformableVolumeMeshWithBvh<double>& deformable_volume() const {
+    return *deformable_volume_;
   }
 
   /* Returns the surface mesh representation of the deformable geometry at
    current configuration. */
-  const DeformableSurfaceMeshWithBvh<double>& deformable_surface_mesh() const {
-    return *deformable_surface_mesh_;
+  const DeformableSurfaceMeshWithBvh<double>& deformable_surface() const {
+    return *deformable_surface_;
   }
 
+  /* Returns the mapping from surface index to volume index. The iᵗʰ entry is
+   the index of the volume mesh vertex that corresponds to the iᵗʰ surface
+   vertex. */
   const std::vector<int>& surface_index_to_volume_index() const {
     return surface_index_to_volume_index_;
   }
 
-  /* Updates the vertex positions of the underlying deformable mesh.
-  @param q  A vector of 3N values (where this mesh has N vertices). The iᵗʰ
-            vertex gets values <q(3i), q(3i + 1), q(3i + 2)>. Each vertex is
-            assumed to be measured and expressed in the mesh's frame M.
-  @pre q.size() == 3 * deformable_mesh().num_vertices().
-  @pre q_surface.size() == 3 * surface_mesh().num_vertices(). */
+  /* Updates the vertex positions of the deformable geometry.
+  @param q_volume  A vector of 3N values (where the volume mesh has N vertices).
+                   The iᵗʰ vertex in the volume mesh gets values
+                   <q(3i), q(3i + 1), q(3i + 2)>. Each vertex is assumed to be
+                   measured and expressed in the mesh's frame M.
+  @param q_surface Similar to `q_volume`, but provides the vertex positions of
+                   the surface mesh.
+  @pre q_volume.size() == 3 * deformable_volume().mesh().num_vertices().
+  @pre q_surface.size() == 3 * deformable_surface().mesh(). num_vertices(). */
   void UpdateVertexPositions(
-      const Eigen::Ref<const VectorX<double>>& q,
+      const Eigen::Ref<const VectorX<double>>& q_volume,
       const Eigen::Ref<const VectorX<double>>& q_surface) {
-    DRAKE_DEMAND(q.size() == 3 * deformable_mesh().mesh().num_vertices());
+    DRAKE_DEMAND(q_volume.size() ==
+                 3 * deformable_volume().mesh().num_vertices());
     DRAKE_DEMAND(q_surface.size() ==
-                 3 * deformable_surface_mesh().mesh().num_vertices());
-    deformable_mesh_->UpdateVertexPositions(q);
-    deformable_surface_mesh_->UpdateVertexPositions(q_surface);
+                 3 * deformable_surface().mesh().num_vertices());
+    deformable_volume_->UpdateVertexPositions(q_volume);
+    deformable_surface_->UpdateVertexPositions(q_surface);
   }
 
   /* Returns the approximate signed distance field (sdf) for the deformable
@@ -85,9 +98,8 @@ class DeformableGeometry {
   const VolumeMeshFieldLinear<double, double>& CalcSignedDistanceField() const;
 
  private:
-  std::unique_ptr<DeformableVolumeMeshWithBvh<double>> deformable_mesh_;
-  std::unique_ptr<DeformableSurfaceMeshWithBvh<double>>
-      deformable_surface_mesh_;
+  std::unique_ptr<DeformableVolumeMeshWithBvh<double>> deformable_volume_;
+  std::unique_ptr<DeformableSurfaceMeshWithBvh<double>> deformable_surface_;
   std::vector<int> surface_index_to_volume_index_;
   /* Note: we don't provide an accessor to `signed_distance_field_` as it may be
    invalidated by calls to `UpdateVertexPositions()`. Instead, we provide
@@ -147,9 +159,8 @@ std::optional<RigidGeometry> MakeMeshRepresentation(
       std::make_unique<VolumeMesh<double>>(compliant_hydro_geometry->mesh());
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> field =
       compliant_hydro_geometry->pressure_field().CloneAndSetMesh(mesh.get());
-  auto soft_mesh = std::make_unique<internal::hydroelastic::SoftMesh>(
-      std::move(mesh), std::move(field));
-  return RigidGeometry(std::move(soft_mesh));
+  return RigidGeometry(std::make_unique<internal::hydroelastic::SoftMesh>(
+      std::move(mesh), std::move(field)));
 }
 
 }  // namespace deformable
