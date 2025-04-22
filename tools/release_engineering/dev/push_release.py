@@ -343,9 +343,6 @@ def _push_tar(state: _State):
 
     dest_name = f'drake-{version}-src.tar.gz'
 
-    # TODO(mwoehlke-kitware):
-    # Eventually, the source tarball should be a discrete asset of the GitHub
-    # release, including hash files.
     state.push_archive(_AWS_BUCKET, 'drake/release', dest_name)
 
 
