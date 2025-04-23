@@ -281,6 +281,7 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
    blocks. */
   std::vector<typename Block3x3SparseMatrix<T>::Triplet> triplets;
   triplets.reserve(4);
+  bool is_deformable_rigid = !surface.is_B_deformable();
   for (int i = 0; i < surface.num_contact_points(); ++i) {
     /* The contact Jacobian (w.r.t. v) of the velocity of the point affixed to
      the geometry that coincides with the contact point C in the world frame,
@@ -290,11 +291,19 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
     Block3x3SparseMatrix<T> scaled_Jv_v_WGc_C(
         /* block rows */ 1,
         /* block columns */ participation.num_vertices_in_contact());
-    const Vector4<int>& participating_vertices =
-        is_A ? surface.contact_vertex_indexes_A()[i]
-             : surface.contact_vertex_indexes_B()[i];
-    const Vector4<T>& b = is_A ? surface.barycentric_coordinates_A()[i]
-                               : surface.barycentric_coordinates_B()[i];
+    Vector4<int> participating_vertices = Vector4<int>::Constant(-1);
+    Vector4<T> b = Vector4<T>::Zero();  // barycentric coordinates
+    if (is_deformable_rigid) {
+      DRAKE_DEMAND(is_A);
+      participating_vertices.head<3>() =
+          surface.tri_contact_vertex_indexes_A()[i];
+      b.template head<3>() = surface.tri_barycentric_coordinates_A()[i];
+    } else {
+      participating_vertices = is_A ? surface.tet_contact_vertex_indexes_A()[i]
+                                    : surface.contact_vertex_indexes_B()[i];
+      b = is_A ? surface.tet_barycentric_coordinates_A()[i]
+               : surface.barycentric_coordinates_B()[i];
+    }
     Vector3<T> v_WGc = Vector3<T>::Zero();
     triplets.clear();
     for (int v = 0; v < 4; ++v) {
@@ -490,19 +499,17 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
       const T Ae = surface.contact_mesh_W().area(i);
       const T deformable_k = Ae * 1e8;
-      if (surface.is_B_deformable()) {
-        DRAKE_DEMAND(ssize(surface.pressure_gradient_W()) ==
-                     surface.num_contact_points());
-      }
       T g = surface.is_B_deformable()
-                      ? NAN
-                      : -surface.pressure_gradient_W()[i].dot(nhat_BA_W);
+                ? T(std::numeric_limits<double>::infinity())
+                : -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
       if (g < 1e-14 || Ae < 1e-14) {
         continue;
       }
       const T rigid_k = Ae * g;
       const T k = surface.is_B_deformable() ? deformable_k : rigid_k;
 
+      // TODO(xuchenhan-tri): Use the real H&C dissipation for rigid vs.
+      //  deformable.
       /* While in Drake we provide constraints to model Hunt & Crossley or
       linear Kelvin–Voigt dissipation, for deformable objects all we want is to
       enforce the non-penetration constraint. We do this using the high
@@ -510,7 +517,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       cannot be resolved at such high stiffness values, dissipation should be
       irrelevant. Therefore we use zero Hunt & Crossley dissipation and the
       "near rigid regime" time scale for the linear dissipation. */
-      const T d = 40.0;
+      const T d = 0.0;
 
       /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
        contact approximation. See multibody::DiscreteContactApproximation for
@@ -522,15 +529,19 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 
-      const T& p0 = surface.signed_distances()[i];
-      const T fn0 = surface.is_B_deformable() ? -k * p0 : Ae * p0;
-      const T phi0 = surface.is_B_deformable() ? p0 : -p0 / g;
-      /* The normal (scalar) component of the contact velocity in the contact
-       frame. */
+      /* Normal contact force. */
+      const T fn0 = surface.is_B_deformable()
+                        ? -k * surface.signed_distances()[i]
+                        : Ae * surface.pressures()[i];
+      /* Penetration distance. */
+      const T phi0 = surface.is_B_deformable() ? surface.signed_distances()[i]
+                                               : -surface.pressures()[i] / g;
       /* Contact solver assumes the normal points from A to B whereas the
        surface's normal points from B to A. */
       const Vector3<T> nhat_AB_W = -surface.nhats_W()[i];
       const math::RotationMatrix<T>& R_WC = surface.R_WCs()[i];
+      /* The normal (scalar) component of the contact velocity in the contact
+       frame. */
       const T v_AcBc_Cz = nhat_AB_W.dot(v_WBc - v_WAc);
       DiscreteContactPair<T> contact_pair{
           .jacobian = std::move(jacobian_blocks),

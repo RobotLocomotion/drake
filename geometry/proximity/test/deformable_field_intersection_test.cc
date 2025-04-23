@@ -152,10 +152,10 @@ TEST_F(AddDeformableDeformableContactSurfaceTest, HaveContact) {
     EXPECT_EQ(
         contact_surface.signed_distances().at(0),
         sdf1_W.EvaluateCartesian(0, contact_surface.contact_points_W().at(0)));
-    EXPECT_EQ(contact_surface.barycentric_coordinates_A().at(0),
+    EXPECT_EQ(contact_surface.tet_barycentric_coordinates_A().at(0),
               deform0_W_.mesh().CalcBarycentric(
                   contact_surface.contact_points_W().at(0), 0));
-    EXPECT_EQ(contact_surface.contact_vertex_indexes_A().at(0),
+    EXPECT_EQ(contact_surface.tet_contact_vertex_indexes_A().at(0),
               Vector4<int>(0, 1, 2, 3));
     EXPECT_EQ(contact_surface.barycentric_coordinates_B().at(0),
               deform1_W_.mesh().CalcBarycentric(

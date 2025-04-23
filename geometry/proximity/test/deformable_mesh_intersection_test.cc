@@ -127,33 +127,30 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
       contact_data.contact_surfaces()[0];
 
   ASSERT_EQ(contact_surface.num_contact_points(), kExpectedNumContactPoints);
-  // The approximated signed distance function is zero because all vertices of
-  // the tet mesh are on the boundary.
-  ASSERT_EQ(contact_surface.signed_distances().size(),
-            kExpectedNumContactPoints);
-  const double signed_distance_at_contact_point =
-      contact_surface.signed_distances()[0];
-  EXPECT_NEAR(signed_distance_at_contact_point, dummy_pressure,
-              std::numeric_limits<double>::epsilon());
+  // The pressure value is equal to the dummy value because the interpolation is
+  // constant.
+  ASSERT_EQ(contact_surface.pressures().size(), kExpectedNumContactPoints);
+  const double pressure = contact_surface.pressures()[0];
+  EXPECT_NEAR(pressure, dummy_pressure, std::numeric_limits<double>::epsilon());
   // The centroid of the contact triangle in the world frame is (1/3, 1/3, 0).
   const Vector3<double> contact_point_W = contact_surface.contact_points_W()[0];
   constexpr double kTol = 1e-14;
   EXPECT_TRUE(CompareMatrices(
       contact_point_W, Vector3<double>(1.0 / 3.0, 1.0 / 3.0, 0.0), kTol));
-  // The indexes of  vertices incident to the bottom face of the triangle
+  // The indexes of vertices incident to the bottom face of the triangle
   // containing the only contact point.
-  const Vector4<int> vertex_indexes =
-      contact_surface.contact_vertex_indexes_A()[0];
-  const Vector4<int> expected_vertex_indexes{2, 1, 0, -1};
+  const Vector3<int> vertex_indexes =
+      contact_surface.tri_contact_vertex_indexes_A()[0];
+  const Vector3<int> expected_vertex_indexes{2, 1, 0};
   EXPECT_EQ(vertex_indexes, expected_vertex_indexes);
   // The centroid is (1/3, 1/3, 0), and the vertex positions are (1, 0, 0),
   // (0, 1, 0), (0, 0, 0), (0, 0, 1). The the barycentric weights is (1/3, 1/3,
-  // 1/3, 0).
-  ASSERT_EQ(contact_surface.barycentric_coordinates_A().size(),
+  // 1/3).
+  ASSERT_EQ(contact_surface.tri_barycentric_coordinates_A().size(),
             kExpectedNumContactPoints);
-  EXPECT_TRUE(CompareMatrices(contact_surface.barycentric_coordinates_A()[0],
-                              Vector4<double>(1.0 / 3, 1.0 / 3, 1.0 / 3, 0.0),
-                              kTol));
+  EXPECT_TRUE(
+      CompareMatrices(contact_surface.tri_barycentric_coordinates_A()[0],
+                      Vector3<double>(1.0 / 3, 1.0 / 3, 1.0 / 3), kTol));
 
   // Only one face is participating in contact and there are 3 vertices
   // incident to a triangle face.
@@ -245,9 +242,9 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
    all zero -- some meaningful values do exist. */
   const auto has_positive_value =
       [](const DeformableContactSurface<double>& surface) {
-        const std::vector<double>& sdf = surface.signed_distances();
+        const std::vector<double>& pressures = surface.pressures();
         bool nonzero_exists = false;
-        for (const double d : sdf) {
+        for (const double d : pressures) {
           EXPECT_GE(d, 0.0);
           if (d > 0.0) {
             nonzero_exists = true;
@@ -256,10 +253,10 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
         EXPECT_TRUE(nonzero_exists);
       };
   has_positive_value(contact_surface);
-  const std::vector<double>& sdf = contact_surface.signed_distances();
-  const std::vector<double>& sdf2 = contact_surface2.signed_distances();
+  const std::vector<double>& pressures = contact_surface.pressures();
+  const std::vector<double>& pressures2 = contact_surface2.pressures();
   for (int i = 0; i < contact_surface.num_contact_points(); ++i) {
-    EXPECT_DOUBLE_EQ(sdf[i], sdf2[i]);
+    EXPECT_DOUBLE_EQ(pressures[i], pressures2[i]);
   }
 }
 
