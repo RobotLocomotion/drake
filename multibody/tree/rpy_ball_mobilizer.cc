@@ -38,7 +38,7 @@ void CalcNPlusMatrixTimes(const T& sp, const T& cp, const T& sy, const T& cy,
 }
 
 // @param[in] sp, cp, sy, cy are sin(pitch), cos(pitch), sin(yaw), cos(yaw).
-// @param[in] v vector to be pre-multiplied by  of N(q)⋅v. Typically, v is
+// @param[in] v vector to be pre-multiplied by  of N(q)⋅v, where v is
 // v or v̇ (this mobilizer's generalized velocities or their time-derivatives).
 // @param[in] qdot vector to store the result of N(q)⋅v. Typically, qdot
 // is q̇ or q̈ (1ˢᵗ or 2ⁿᵈ derivatives of this mobilizer's generalized positions).
@@ -48,10 +48,10 @@ void CalcNPlusMatrixTimes(const T& sp, const T& cp, const T& sy, const T& cy,
 // @returns false if solution has (or nearly has) a divide-by-zero error,
 // otherwise returns true.
 template <typename T>
-[[nodiscard]] bool CalcNMatrixTimes(const T& sp, const T& cp, const T& sy,
-                                    const T& cy,
-                                    const Eigen::Ref<const VectorX<T>>& v,
-                                    EigenPtr<MatrixX<T>> qdot) {
+[[nodiscard]] bool CalcNMatrixTimesQDot(const T& sp, const T& cp, const T& sy,
+                                        const T& cy,
+                                        const Eigen::Ref<const VectorX<T>>& v,
+                                        EigenPtr<MatrixX<T>> qdot) {
   // Test to see if solution will be singular or nearly singular.
   using std::abs;
   if (abs(cp) < 1.0e-3) return false;  // Avoid divide-by-zero error.
@@ -205,32 +205,21 @@ void RpyBallMobilizer<T>::ThrowIfCosPitchNearZero(const T& pitch,
 }
 
 template <typename T>
-void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
+void RpyBallMobilizer<T>::DoCalcNMatrix(const T& cp, const T& sp, const T& sy,
+                                        const T& cy,
                                         EigenPtr<MatrixX<T>> N) const {
-  using std::abs;
-  using std::cos;
-  using std::sin;
-
-  // The linear map E_F(q) allows computing v from q̇ as:
-  // w_FM = E_F(q) * q̇; q̇ = [ṙ, ṗ, ẏ]ᵀ
+  // The matrix N(q) relates q̇ to v as q̇ = N(q) * v; where q̇ = [ṙ, ṗ, ẏ]ᵀ and
+  // v = w_FM_F = [wx, wy, wz]ᵀ is the mobilizer M frame's angular velocity in
+  // the mobilizer F frame, expressed in the F frame.
   //
-  // Here, following a convention used by many dynamicists, we are calling the
-  // angles q0, q1, q2 as roll (r), pitch (p) and yaw (y), respectively.
+  // Using a common naming convention, the angles q0, q1, q2 are called
+  // roll (r), pitch (p), yaw (y), respectively.
   //
-  // The linear map from v to q̇ is given by the inverse of E_F(q):
-  //          [          cos(y) / cos(p),          sin(y) / cos(p), 0]
-  // Einv_F = [                  -sin(y),                   cos(y), 0]
-  //          [ sin(p) * cos(y) / cos(p), sin(p) * sin(y) / cos(p), 1]
+  //        [          cos(y) / cos(p),           sin(y) / cos(p),  0]
+  // N(q) = [                  -sin(y),                    cos(y),  0]
+  //        [ sin(p) * cos(y) / cos(p),  sin(p) * sin(y) / cos(p),  1]
   //
-  // such that q̇ = Einv_F(q) * w_FM; q̇ = [ṙ, ṗ, ẏ]ᵀ
   // See developer notes in MapVelocityToQdot() for further details.
-
-  const Vector3<T> angles = get_angles(context);
-  const T cp = cos(angles[1]);
-  const T sp = sin(angles[1]);
-  const T sy = sin(angles[2]);
-  const T cy = cos(angles[2]);
-  ThrowIfCosPitchNearZero(angles[1], cp);  // Avoid cos(pitch) ≈ 0 singularity.
   const T cpi = 1.0 / cp;
   const T cy_x_cpi = cy * cpi;
   const T sy_x_cpi = sy * cpi;
@@ -243,6 +232,20 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
 
   // ẏ = sin(p) * ṙ + w2
   N->row(2) << cy_x_cpi * sp, sy_x_cpi * sp, 1.0;
+}
+
+template <typename T>
+void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
+                                        EigenPtr<MatrixX<T>> N) const {
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  const T sp = sin(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+  ThrowIfCosPitchNearZero(angles[1], cp);  // Avoid cos(pitch) ≈ 0 singularity.
+  DoCalcNMatrix(cp, sp, sy, cy, N);
 }
 
 template <typename T>
@@ -384,17 +387,8 @@ void RpyBallMobilizer<T>::MapVelocityToQDot(
   const T cp = cos(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  const bool is_ok = CalcNMatrixTimes<T>(sp, cp, sy, cy, v, qdot);
-  if (is_ok == false) {
-    throw std::runtime_error(fmt::format(
-        "The RpyBallMobilizer (implementing a BallRpyJoint) between "
-        "body {} and body {} has reached a singularity. This occurs when the "
-        "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-        "configuration, we have pitch = {}. Drake does not yet support a "
-        "comparable joint using quaternions, but the feature request is "
-        "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
-        this->inboard_body().name(), this->outboard_body().name(), angles[1]));
-  }
+  const bool is_ok = CalcNMatrixTimesQDot<T>(sp, cp, sy, cy, v, qdot);
+  if (!is_ok) ThrowIfCosPitchNearZero(angles[1], cp);
 }
 
 template <typename T>
@@ -429,32 +423,30 @@ void RpyBallMobilizer<T>::MapAccelerationToQDDot(
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
-  const T sp = sin(angles[1]);
   const T cp = cos(angles[1]);
+  const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
   const T cy = cos(angles[2]);
-  const bool is_ok = CalcNMatrixTimes<T>(sp, cp, sy, cy, vdot, qddot);
-  if (is_ok == false) {
-    throw std::runtime_error(fmt::format(
-        "The RpyBallMobilizer (implementing a BallRpyJoint) between "
-        "body {} and body {} has reached a singularity. This occurs when the "
-        "pitch angle takes values near π/2 + kπ, ∀ k ∈ ℤ. At the current "
-        "configuration, we have pitch = {}. Drake does not yet support a "
-        "comparable joint using quaternions, but the feature request is "
-        "tracked in https://github.com/RobotLocomotion/drake/issues/12404.",
-        this->inboard_body().name(), this->outboard_body().name(), angles[1]));
-  }
+
+  // Compute N matrix multipled by vdot and store results in qddot.
+  ThrowIfCosPitchNearZero(angles[1], cp);  // Avoid cos(pitch) ≈ 0 singularity
+  Matrix3<T> N(3, 3);
+  DoCalcNMatrix(cp, sp, sy, cy, &N);
 
   const Vector3<T> v = get_angular_velocity(context);
+  Vector3<T> qdot;
+  const bool is_ok = CalcNMatrixTimesQDot<T>(sp, cp, sy, cy, v, &qdot);
+  if (!is_ok) ThrowIfCosPitchNearZero(angles[1], cp);
+
+  const T& rdot = qdot[0];
+  const T& pdot = qdot[1];
+  const T& ydot = qdot[2];
+  const T rdot_pdot = rdot * pdot;
+  const T sp_rdot_pdot = sp * rdot_pdot;
   const T& wx = v[0];
   const T& wy = v[1];
-  const T& wz = v[2];
-  // const T rdot = (wx*cy + wy*sy) / cp;
-  const T pdot = wy * cy - wx * sy;
-  const T ydot = wz + sp / cp * (wx * cy + wy * sy);
-  const T pdot_ydot = pdot * ydot;
-  Vector3<T> alfExtra(-wy * ydot - sp * cy * pdot_ydot,
-                      wx * ydot - sp * sy * pdot_ydot, -cp * pdot_ydot);
+  const Vector3<T> alfExtra(-wy * ydot - cy * sp_rdot_pdot,
+                            wx * ydot - sy * sp_rdot_pdot, -cp * rdot_pdot);
   *qddot -= alfExtra;  // PAUL CHECK and FIX THIS.
 }
 

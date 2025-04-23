@@ -775,12 +775,12 @@ class Mobilizer : public MultibodyElement<T> {
   virtual void DoCalcNplusMatrix(const systems::Context<T>& context,
                                  EigenPtr<MatrixX<T>> Nplus) const = 0;
 
-  // NVI to CalcNplusMatrix(). Implementations can safely assume that Ndot is
+  // NVI to CalcNDotMatrix(). Implementations can safely assume that Ndot is
   // not the nullptr and that Ndot has the proper size.
   // TODO(Mitiguy) change this function to a pure virtual function when it has
   //  been overridden in all subclasses.
   virtual void DoCalcNDotMatrix(const systems::Context<T>& context,
-                                 EigenPtr<MatrixX<T>> Ndot) const;
+                                EigenPtr<MatrixX<T>> Ndot) const;
 
   // @name Methods to make a clone templated on different scalar types.
   //
