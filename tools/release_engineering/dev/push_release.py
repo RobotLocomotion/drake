@@ -180,7 +180,7 @@ class _State:
                 return digest
 
     def _write_hashfile(self, name: str, algorithm: str,
-                    local_path: str, hashfile_path: str):
+                        local_path: str, hashfile_path: str):
         self._begin(f'computing {algorithm} for', name)
 
         digest = self._compute_hash(local_path, algorithm)
@@ -235,7 +235,8 @@ class _State:
             hashfile_path = os.path.join(self._scratch.name, hashfile_name)
             remote_path = f'{path}/{hashfile_name}'
 
-            digest = self._write_hashfile(name, algorithm, local_path, hashfile_path)
+            digest = self._write_hashfile(name, algorithm,
+                                          local_path, hashfile_path)
 
             if self.options.dry_run:
                 print(f'{name!r} {algorithm}: {digest.hexdigest()}')
@@ -245,10 +246,11 @@ class _State:
                             f's3://{bucket}/{remote_path}')
                 self._s3.upload_file(hashfile_path, bucket, remote_path)
                 self._done()
-    
+
     def push_archive_github(self, name: str, archive_format: str = 'tarball'):
         """
-        Pushes the release source archive to GitHub, along with computed hashes.
+        Pushes the release source archive to GitHub,
+        along with computed hashes.
 
         If --dry-run was given, rather than actually pushing files to GitHub,
         prints what would be done.
@@ -269,7 +271,8 @@ class _State:
             hashfile_name = f'{name}.{algorithm}'
             hashfile_path = os.path.join(self._scratch.name, hashfile_name)
 
-            digest = self._write_hashfile(name, algorithm, local_path, hashfile_path)
+            digest = self._write_hashfile(name, algorithm,
+                                          local_path, hashfile_path)
 
             if self.options.dry_run:
                 print(f'{name!r} {algorithm}: {digest.hexdigest()}')
@@ -278,7 +281,8 @@ class _State:
                 self._begin('pushing', hashfile_name, self.release.html_url)
                 mime_type = mimetypes.guess_type(hashfile_path)
                 assert mime_type is not None
-                self.release.upload_asset(mime_type, hashfile_name, hashfile_path)
+                self.release.upload_asset(mime_type,
+                                          hashfile_name, hashfile_path)
                 self._done()
 
     def push_docker_tag(self, old_tag_name: str, new_tag_name: str,
@@ -380,7 +384,8 @@ def _list_docker_tags(repository=_DOCKER_REPOSITORY_NAME):
 
 def _push_tar_s3(state: _State):
     """
-    Downloads binary and source .tar artifacts and pushes them to S3 with checksums.
+    Downloads binary and source .tar artifacts and
+    pushes them to S3 with checksums.
     """
     version = state.options.source_version
 
@@ -393,7 +398,7 @@ def _push_tar_s3(state: _State):
 
 def _push_tar_github(state: _State):
     """
-    Downloads source .tar artifact and pushes to GitHub with checksums.
+    Downloads source .tar artifact and pushes it to GitHub with checksums.
     """
     version = state.options.source_version
     dest_name = f'drake-{version}-src.tar.gz'
