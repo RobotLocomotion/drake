@@ -151,9 +151,9 @@ TEST_F(RpyBallMobilizerTest, MapUsesN) {
 
 TEST_F(RpyBallMobilizerTest, NDotAndMapAccelerationToQDDot) {
   // Set an arbitrary "non-zero" state.
-  const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
-  const Vector3<double> wxyz(1, 2, 3);
-  mobilizer_->SetAngles(context_.get(), rpy_value);
+  const Vector3<double> rpy(M_PI / 3, -M_PI / 4, M_PI / 5);
+  const Vector3<double> wxyz(5.4, -9.8, 3.2);
+  mobilizer_->SetAngles(context_.get(), rpy);
   mobilizer_->SetAngularVelocity(context_.get(), wxyz);
 
   // Set an arbitrary v and use MapVelocityToQDot() to calculate q̇.
@@ -163,7 +163,7 @@ TEST_F(RpyBallMobilizerTest, NDotAndMapAccelerationToQDDot) {
   // Set an arbitrary v̇ and use MapAccelerationToQDDot() to calculate q̈.
   const Vector3<double> wdot(0.3, -0.2, 0.9);
   Vector3<double> qddot;
-  mobilizer_->MapAccelerationToQDDot(*context_, wdot, &qdot);
+  mobilizer_->MapAccelerationToQDDot(*context_, wdot, &qddot);
 
   // Compute the 3x3 N(q) matrix and its time-derivative Ṅ(q,q̇).
   MatrixX<double> N(3, 3), Ndot(3, 3);

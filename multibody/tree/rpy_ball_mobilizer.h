@@ -300,9 +300,21 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                               EigenPtr<VectorX<T>> qddot) const final;
 
  protected:
+  // Calculates the N(q) matrix that relates q̇ = N(q)⋅v.
+  // Due to a singularity in N(q) that is inherent with roll, pitch (p), yaw
+  // angles, an exception is thrown if cos(p) ≈ 0.
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
+  // Calculates the N(q) matrix that relates q̇ = N(q)⋅v.
+  // @pre Calling function is responsible for testing whether N(q) is singular
+  // due to cos(p) ≈ 0 (inherent to roll (r), pitch (p), yaw (y) angles).
+  // @param[in] cp = cos(p), sp = sin(p), sy = sin(y), cy = cos(y).
+  void DoCalcNMatrix(const T& cp, const T& sp, const T& sy, const T& cy,
+                     EigenPtr<MatrixX<T>> N) const;
+
+  // Calculates the N⁺(q) matrix that relates v = N⁺(q)⋅q̇. There is no
+  // singularity in N⁺(q) and calculating N⁺(q) is more efficient than N(q).
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
