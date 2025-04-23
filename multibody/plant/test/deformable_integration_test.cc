@@ -234,7 +234,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
    the i-th vertex *after* the permutation by looking at the i+1-th vertex
    position *before* the permutation.  */
   ASSERT_EQ(contact_solver_results.v_next.size(), 3 * (num_vertices - 1));
-  for (int i = 0; i < num_vertices; ++i) {
+  for (int i = 0; i < num_vertices - 1; ++i) {
     const Vector3d& p_WV = vertex_positions.segment<3>(3 * (i + 1));
     const Vector3d p_VC_W = p_WC - p_WV;
     F_Ac_W_expected +=
