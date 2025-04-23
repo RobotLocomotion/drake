@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/deformable_driver.h"
 
 #include <array>
+#include <iostream>
 #include <limits>
 #include <map>
 #include <memory>
@@ -503,6 +504,13 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
                 ? T(std::numeric_limits<double>::infinity())
                 : -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
       if (g < 1e-14 || Ae < 1e-14) {
+        std::cout << "n = " << nhat_BA_W.x() << " " << nhat_BA_W.y() << " "
+                  << nhat_BA_W.z() << std::endl;
+        std::cout << "pressure_gradient = "
+                  << surface.pressure_gradients_W()[i].x() << " "
+                  << surface.pressure_gradients_W()[i].y() << " "
+                  << surface.pressure_gradients_W()[i].z() << std::endl;
+        std::cout << "g = " << g << std::endl;
         continue;
       }
       const T rigid_k = Ae * g;

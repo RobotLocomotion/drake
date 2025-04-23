@@ -48,10 +48,12 @@ class DeformableCollisionFilterTest : public ::testing::Test {
     ProximityProperties proximity_prop;
     geometry::AddContactMaterial({}, {}, CoulombFriction{0.4, 0.4},
                                  &proximity_prop);
-    /* A resolution hint property is required for rigid body to collide with
-     deformable bodies. */
+    /* A resolution hint property and a hydroelastic modulus are required for
+     rigid body to collide with deformable bodies. */
     proximity_prop.AddProperty(geometry::internal::kHydroGroup,
                                geometry::internal::kRezHint, 1.0);
+    proximity_prop.AddProperty(geometry::internal::kHydroGroup,
+                               geometry::internal::kElastic, 1e6);
     const SpatialInertia<double> M_Bcm =
         SpatialInertia<double>::SolidCubeWithMass(1.0, 1.0);
     const RigidBody<double>& welded_body =
@@ -61,13 +63,14 @@ class DeformableCollisionFilterTest : public ::testing::Test {
                                 RigidTransformd::Identity());
     const Box box(1, 1, 1);
     welded_geometry_id_ = plant_->RegisterCollisionGeometry(
-        welded_body, RigidTransformd::Identity(), box, "welded",
+        welded_body, RigidTransformd(Vector3d(-0.75, 0, 0)), box, "welded",
         proximity_prop);
 
     const RigidBody<double>& free_body =
         plant_->AddRigidBody("free body", M_Bcm);
     free_geometry_id_ = plant_->RegisterCollisionGeometry(
-        free_body, RigidTransformd::Identity(), box, "free", proximity_prop);
+        free_body, RigidTransformd(Vector3d(0.75, 0, 0)), box, "free",
+        proximity_prop);
 
     /* ExcludeCollisionGeometriesWithCollisionFilterGroupPair() is invoked
      during parsing, but it still must adhere to MultibodyPlant's promise to
@@ -114,7 +117,7 @@ class DeformableCollisionFilterTest : public ::testing::Test {
   DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
                                                 std::string name) {
     auto geometry = std::make_unique<GeometryInstance>(
-        RigidTransformd(), std::make_unique<Sphere>(2.0), std::move(name));
+        RigidTransformd(), std::make_unique<Sphere>(1.0), std::move(name));
     ProximityProperties props;
     geometry::AddContactMaterial({}, {}, CoulombFriction<double>(0.3, 0.3),
                                  &props);
