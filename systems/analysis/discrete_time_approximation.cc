@@ -2,9 +2,13 @@
 
 #include <functional>
 #include <memory>
+#include <sstream>
+#include <string>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
+#include "drake/common/nice_type_name.h"
 #include "drake/systems/analysis/simulator_config_functions.h"
 #include "drake/systems/framework/leaf_system.h"
 
@@ -39,6 +43,11 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
 
     this->get_mutable_system_scalar_converter().RemoveUnlessAlsoSupportedBy(
         continuous_system_->get_system_scalar_converter());
+    if (!IsScalarTypeSupportedByIntegrator<symbolic::Expression>(
+            integrator_config_.integration_scheme)) {
+      this->get_mutable_system_scalar_converter()
+          .template Remove<symbolic::Expression, T>();
+    }
 
     this->Initialize();
   }
@@ -150,17 +159,14 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
           continuous_context->get_abstract_parameter(k));
     }
 
-    // Create an integrator based on the integrator config.
-    Simulator<T> simulator(*continuous_system_);
-    ApplySimulatorConfig(integrator_config_, &simulator);
-    IntegratorBase<T>& integrator = simulator.get_mutable_integrator();
-    integrator.Initialize();
-
-    // Store the mutable integrator in a cache.
+    // Create an integrator based on the integrator config and store the mutable
+    // integrator in a cache.
+    std::unique_ptr<IntegratorBase<T>> integrator = CreateIntegratorFromConfig(
+        continuous_system_.get(), integrator_config_);
+    integrator->reset_context(std::move(continuous_context));
+    integrator->Initialize();
     integrator_cache_entry_ = &this->DeclareCacheEntry(
-        "integrator", ValueProducer(integrator, &ValueProducer::NoopCalc),
-        // The integrator is cloned into an AbstractValue, no need no worry
-        // about simulator getting out-of-scope and destroyed.
+        "integrator", ValueProducer(*integrator, &ValueProducer::NoopCalc),
         {SystemBase::nothing_ticket()});
 
     // These dummy-valued cache entries update the continuous system context.
@@ -271,6 +277,40 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
         std::forward<Func>(lambda)));
   }
 
+  std::string GetUnsupportedScalarConversionMessage(
+      const std::type_info& source_type,
+      const std::type_info& destination_type) const override {
+    // Start with the default message for this system.
+    std::stringstream result;
+    result << LeafSystem<T>::GetUnsupportedScalarConversionMessage(
+        source_type, destination_type);
+
+    // Append extra details.
+    std::vector<std::string> causes;
+    if (!continuous_system_->get_system_scalar_converter().IsConvertible(
+            destination_type, source_type)) {
+      causes.push_back(fmt::format(
+          "the continuous-time system of type {} does not support "
+          "scalar conversion to type {}",
+          // continuous_system_ contains source_type in its template type.
+          NiceTypeName::Get(*continuous_system_),
+          NiceTypeName::Get(destination_type)));
+    }
+    if (destination_type == typeid(symbolic::Expression) &&
+        !IsScalarTypeSupportedByIntegrator<symbolic::Expression>(
+            integrator_config_.integration_scheme)) {
+      causes.push_back(fmt::format(
+          "the integration scheme '{}' does not support scalar type {}",
+          integrator_config_.integration_scheme,
+          NiceTypeName::Get<symbolic::Expression>()));
+    }
+    if (!causes.empty()) {
+      result << fmt::format(" (because {})", fmt::join(causes, " and "));
+    }
+
+    return std::move(result).str();
+  }
+
   const std::shared_ptr<const System<T>> continuous_system_;
   const double time_period_;
   const SimulatorConfig integrator_config_;
@@ -285,11 +325,6 @@ class DiscreteTimeSystem final : public LeafSystem<T> {
 };
 
 }  // namespace
-
-namespace scalar_conversion {
-template <>
-struct Traits<DiscreteTimeSystem> : public NonSymbolicTraits {};
-}  // namespace scalar_conversion
 
 template <typename T>
 std::unique_ptr<System<T>> DiscreteTimeApproximation(
@@ -310,10 +345,7 @@ std::unique_ptr<System<T>> DiscreteTimeApproximation(
       time_period, integrator_config);
 }
 
-// Using Simulator<T> in the implementation limits support to only nonsymbolic
-// scalars.
-// TODO(wei-chen): Support all scalars.
-DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS((
+DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     static_cast<std::unique_ptr<System<T>> (*)(std::shared_ptr<const System<T>>,
                                                double, const SimulatorConfig&)>(
         &DiscreteTimeApproximation<T>),
