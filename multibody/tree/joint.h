@@ -928,6 +928,24 @@ class Joint : public MultibodyElement<T> {
   virtual std::unique_ptr<Joint<T>> DoShallowClone() const;
   /// @}
 
+  /// This utility generates a unique name for an offset frame of the form
+  /// jointname_parentframename_suffix. This is intended for creating F and M
+  /// mobilizer frames that are offset from joint frames Jp and Jc.
+  /// The name is guaranteed to be unique within this Joint's model instance.
+  /// If necessary, leading underscores are prepended until uniqueness is
+  /// achieved. Be sure to create the new frame in the _Joint's_ model instance
+  /// to avoid name clashes.
+  std::string MakeUniqueOffsetFrameName(const Frame<T>& parent_frame,
+                                        const std::string& suffix) const {
+    const internal::MultibodyTree<T>& tree = this->get_parent_tree();
+    std::string new_name =
+        fmt::format("{}_{}_{}", this->name(), parent_frame.name(), suffix);
+    while (tree.HasFrameNamed(new_name, this->model_instance())) {
+      new_name = "_" + new_name;
+    }
+    return new_name;
+  }
+
   /// Utility for concrete joint implementations to use to select the
   /// inboard/outboard frames for a tree in the spanning forest, given
   /// whether they should be reversed from the parent/child frames that are

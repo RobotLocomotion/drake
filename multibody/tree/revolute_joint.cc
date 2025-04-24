@@ -30,8 +30,7 @@ RevoluteJoint<T>::RevoluteJoint(const std::string& name,
   const double kEpsilon = std::numeric_limits<double>::epsilon();
   if (axis.isZero(kEpsilon)) {
     throw std::logic_error(
-        "Revolute joint axis vector must have nonzero "
-        "length.");
+        "Revolute joint axis vector must have nonzero length.");
   }
   if (damping < 0) {
     throw std::logic_error("Revolute joint damping must be nonnegative.");
@@ -100,7 +99,7 @@ std::unique_ptr<Joint<T>> RevoluteJoint<T>::DoShallowClone() const {
 /* For a revolute joint, we are given Jp on parent P, Jc on child C, and a
 rotation unit vector â whose components are identical in Jp and Jc. At q=0, Jp
 and Jc are coincident. At all times, origins Jpo and Jco remain coincident and
-vector â has constant and equal coordinates when expressed in these frames. Jc
+vector â has constant and equal components when expressed in these frames. Jc
 rotates with respect to Jp by an angle q radians about the rotation vector â,
 following the right hand rule.
 
@@ -140,18 +139,6 @@ std::unique_ptr<internal::Mobilizer<T>> RevoluteJoint<T>::MakeMobilizerForJoint(
     return {};
   }();
 
-  // Use this lambda to create unique frame names if we need any. Added frames
-  // go into the _joint_'s model instance.
-  auto new_frame_name = [this, tree](const Frame<T>& frame,
-                                     std::string suffix) -> std::string {
-    std::string new_name =
-        fmt::format("{}_{}_{}", this->name(), frame.name(), suffix);
-    while (tree->HasFrameNamed(new_name, this->model_instance())) {
-      new_name = "_" + new_name;
-    }
-    return new_name;
-  };
-
   const Frame<T>* F{};
   const Frame<T>* M{};
   if (!which_axis) {
@@ -159,11 +146,11 @@ std::unique_ptr<internal::Mobilizer<T>> RevoluteJoint<T>::MakeMobilizerForJoint(
     const math::RotationMatrixd R_JinF =  // Also R_JoutM, since Jp=Jc at q=0.
         math::RotationMatrixd::MakeFromOneUnitVector(axis, *which_axis);
     F = &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
-        new_frame_name(Jin, "F"), Jin, math::RigidTransformd(R_JinF),
-        this->model_instance()));
+        this->MakeUniqueOffsetFrameName(Jin, "F"), Jin,
+        math::RigidTransformd(R_JinF), this->model_instance()));
     M = &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
-        new_frame_name(Jout, "M"), Jout, math::RigidTransformd(R_JinF),
-        this->model_instance()));
+        this->MakeUniqueOffsetFrameName(Jout, "M"), Jout,
+        math::RigidTransformd(R_JinF), this->model_instance()));
   } else {
     F = &Jin;
     M = &Jout;
@@ -189,6 +176,7 @@ std::unique_ptr<internal::Mobilizer<T>> RevoluteJoint<T>::MakeMobilizerForJoint(
       break;
   }
 
+  DRAKE_DEMAND(revolute_mobilizer != nullptr);
   revolute_mobilizer->set_default_position(this->default_positions());
   return revolute_mobilizer;
 }
