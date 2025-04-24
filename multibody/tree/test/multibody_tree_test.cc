@@ -1330,6 +1330,38 @@ TEST_F(WeldMobilizerTest, PositionKinematics) {
   EXPECT_TRUE(body_poses[body2_->index()].IsNearlyEqualTo(X_WB2_, kTolerance));
 }
 
+// Verify proper operation of the Joint internal use only method for generating
+// unique frame names.
+GTEST_TEST(JointTest, UniqueFrameName) {
+  // Spatial inertia for each body. The actual value is not important for
+  // these tests since they are all kinematic.
+  const auto M_B = SpatialInertia<double>::Zero();
+
+  // Create an empty model.
+  auto model = std::make_unique<MultibodyTree<double>>();
+
+  const RigidBody<double>& body1 = model->AddRigidBody("body1", M_B);
+  const RigidBody<double>& body2 = model->AddRigidBody("body2", M_B);
+
+  const auto& frame1 = model->AddFrame<FixedOffsetFrame>(
+      "frame1", body1, RigidTransform<double>());
+  const auto& frame2 = model->AddFrame<FixedOffsetFrame>(
+      "frame2", body2, RigidTransform<double>());
+
+  const Joint<double>& joint0 =
+      model->AddJoint(std::make_unique<WeldJoint<double>>(
+          "joint0", frame1, frame2, RigidTransform<double>()));
+
+  EXPECT_EQ(joint0.MakeUniqueOffsetFrameName(frame1, "foo"),
+            "joint0_frame1_foo");
+
+  // Verify that disambiguation works in case of a name collision.
+  model->AddFrame<FixedOffsetFrame>("joint0_frame2_foo", body2,
+                                    RigidTransform<double>());
+  EXPECT_EQ(joint0.MakeUniqueOffsetFrameName(frame2, "foo"),
+            "_joint0_frame2_foo");
+}
+
 }  // namespace
 }  // namespace multibody_model
 }  // namespace internal

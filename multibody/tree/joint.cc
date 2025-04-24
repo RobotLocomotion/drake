@@ -116,6 +116,18 @@ std::unique_ptr<Joint<T>> Joint<T>::DoShallowClone() const {
 }
 
 template <typename T>
+std::string Joint<T>::MakeUniqueOffsetFrameName(
+    const Frame<T>& parent_frame, const std::string& suffix) const {
+  const internal::MultibodyTree<T>& tree = this->get_parent_tree();
+  std::string new_name =
+      fmt::format("{}_{}_{}", this->name(), parent_frame.name(), suffix);
+  while (tree.HasFrameNamed(new_name, this->model_instance())) {
+    new_name = "_" + new_name;
+  }
+  return new_name;
+}
+
+template <typename T>
 void Joint<T>::SetSpatialVelocityImpl(systems::Context<T>* context,
                                       const SpatialVelocity<T>& V_FM,
                                       const char* func) const {

@@ -142,7 +142,9 @@ DEFINE_MASS_MATRIX_OFF_DIAGONAL_BLOCK(6)
 #define EXPLICITLY_INSTANTIATE_IMPLS(T)                           \
   template class BodyNodeImpl<T, CurvilinearMobilizer<T>>;        \
   template class BodyNodeImpl<T, PlanarMobilizer<T>>;             \
-  template class BodyNodeImpl<T, PrismaticMobilizer<T>>;          \
+  template class BodyNodeImpl<T, PrismaticMobilizerAxial<T, 0>>;  \
+  template class BodyNodeImpl<T, PrismaticMobilizerAxial<T, 1>>;  \
+  template class BodyNodeImpl<T, PrismaticMobilizerAxial<T, 2>>;  \
   template class BodyNodeImpl<T, QuaternionFloatingMobilizer<T>>; \
   template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 0>>;   \
   template class BodyNodeImpl<T, RevoluteMobilizerAxial<T, 1>>;   \
