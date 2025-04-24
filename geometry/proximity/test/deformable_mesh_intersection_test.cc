@@ -73,10 +73,10 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, NoContact) {
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(
       deformable_id, deformable_W.deformable_volume().mesh().num_vertices());
-  AddDeformableRigidContactSurface(
-      pressure_field_R, deformable_W.deformable_surface(),
-      deformable_W.surface_index_to_volume_index(), deformable_id, rigid_id,
-      rigid_mesh_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
+  AddDeformableRigidContactSurface(deformable_W.deformable_surface(),
+                                   deformable_W.surface_index_to_volume_index(),
+                                   deformable_id, rigid_id, pressure_field_R,
+                                   rigid_bvh_R, X_WR.inverse(), &contact_data);
 
   // Zero contact points and no vertices in contact are good enough indication
   // that the contact data is empty.
@@ -116,10 +116,10 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnePolygon) {
 
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(deformable_id, 4);
-  AddDeformableRigidContactSurface(
-      pressure_field, deformable_W.deformable_surface(),
-      deformable_W.surface_index_to_volume_index(), deformable_id, rigid_id,
-      rigid_mesh_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
+  AddDeformableRigidContactSurface(deformable_W.deformable_surface(),
+                                   deformable_W.surface_index_to_volume_index(),
+                                   deformable_id, rigid_id, pressure_field,
+                                   rigid_bvh_R, X_WR.inverse(), &contact_data);
   constexpr int kExpectedNumContactPoints = 1;
 
   ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
@@ -196,10 +196,10 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
   const VolumeMesh<double> mesh_W = deformable_W.deformable_volume().mesh();
   DeformableContact<double> contact_data;
   contact_data.RegisterDeformableGeometry(deformable_id, mesh_W.num_vertices());
-  AddDeformableRigidContactSurface(
-      pressure_field_R, deformable_W.deformable_surface(),
-      deformable_W.surface_index_to_volume_index(), deformable_id, rigid_id,
-      rigid_mesh_R, rigid_bvh_R, X_WR.inverse(), &contact_data);
+  AddDeformableRigidContactSurface(deformable_W.deformable_surface(),
+                                   deformable_W.surface_index_to_volume_index(),
+                                   deformable_id, rigid_id, pressure_field_R,
+                                   rigid_bvh_R, X_WR.inverse(), &contact_data);
   ASSERT_EQ(contact_data.contact_surfaces().size(), 1);
   const DeformableContactSurface<double>& contact_surface =
       contact_data.contact_surfaces()[0];
@@ -228,10 +228,10 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
   DeformableContact<double> contact_data2;
   contact_data2.RegisterDeformableGeometry(deformable_id,
                                            mesh_W.num_vertices());
-  AddDeformableRigidContactSurface(
-      pressure_field_R, deformable_W.deformable_surface(),
-      deformable_W.surface_index_to_volume_index(), deformable_id, rigid_id,
-      rigid_mesh_R, rigid_bvh_R, X_WR.inverse(), &contact_data2);
+  AddDeformableRigidContactSurface(deformable_W.deformable_surface(),
+                                   deformable_W.surface_index_to_volume_index(),
+                                   deformable_id, rigid_id, pressure_field_R,
+                                   rigid_bvh_R, X_WR.inverse(), &contact_data2);
   ASSERT_EQ(contact_data2.contact_surfaces().size(), 1);
   const DeformableContactSurface<double>& contact_surface2 =
       contact_data2.contact_surfaces()[0];

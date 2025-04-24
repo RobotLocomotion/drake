@@ -428,10 +428,6 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     if (IsRegisteredAsDeformable(id)) {
       // Since deformable geometries currently don't depend on proximity
       // properties for anything we simply return.
-      // TODO(xuchenhan-tri): This is not exactly true. The deformable
-      // geometries do depend on the proximity properties for the friction
-      // coefficients. We should add a mechanism to update the properties of
-      // deformable geometries.
       return;
     }
     // TODO(SeanCurtis-TRI): Precondition this with a test -- currently,

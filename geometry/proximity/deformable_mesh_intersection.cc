@@ -63,20 +63,17 @@ class DeformableSurfaceVolumeIntersector
     //  the builder. Here we assume internal knowledge how the function
     //  SurfaceVolumeIntersector::CalcContactPolygon works, i.e., the list of
     //  new vertices form the new polygon in that order.
-    std::vector<int> polygon(num_vertices_after - num_vertices_before);
+    std::vector<int> polygon(num_new_vertices);
     std::iota(polygon.begin(), polygon.end(), num_vertices_before);
 
-    // We enforce that the normal points outward of the rigid mesh and into the
-    // deformable mesh.
+    // We enforce that the normal points into the deformable mesh.
     const Vector3<double> n_R =
         X_RD_d.rotation() * (-surface_D.face_normal(tri_index));
     const Vector3<double> p_RC =
         CalcPolygonCentroid(polygon, n_R, builder_R->vertices());
     const auto X_DR_d = X_RD_d.inverse();
     // Recall that D frame is the W frame.
-    const Vector3<double> p_WR_W = X_DR_d.translation();
-    const Vector3<double> p_RC_W = X_DR_d.rotation() * p_RC;
-    const Vector3<double> p_WC_W = p_WR_W + p_RC_W;
+    const Vector3<double> p_WC_W = X_DR_d * p_RC;
     const Vector3<double> barycentric_centroid =
         surface_D.CalcBarycentric(p_WC_W, tri_index);
     barycentric_centroids_.push_back(barycentric_centroid);
@@ -89,11 +86,11 @@ class DeformableSurfaceVolumeIntersector
 };
 
 void AddDeformableRigidContactSurface(
-    const VolumeMeshFieldLinear<double, double>& pressure_field_R,
     const DeformableSurfaceMeshWithBvh<double>& deformable_mesh_D,
     const std::vector<int>& surface_index_to_volume_index,
     const GeometryId deformable_id, const GeometryId rigid_id,
-    const VolumeMesh<double>&, const Bvh<Obb, VolumeMesh<double>>& rigid_bvh_R,
+    const VolumeMeshFieldLinear<double, double>& pressure_field_R,
+    const Bvh<Obb, VolumeMesh<double>>& rigid_bvh_R,
     const math::RigidTransform<double>& X_RD,
     DeformableContact<double>* deformable_contact) {
   DRAKE_DEMAND(deformable_contact != nullptr);

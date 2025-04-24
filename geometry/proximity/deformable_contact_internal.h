@@ -63,19 +63,24 @@ class Geometries final : public ShapeReifier {
   void RemoveGeometry(GeometryId id);
 
   // TODO(xuchenhan-tri): Currently we rely on the resolution_hint property to
-  // determine whether a rigid geometry participates in deformable contact. This
-  // is very much an ad-hoc measure to quickly enable deformable contact of some
-  // sort. In the future, we need to decouple the ability of a rigid geometry to
-  // participate in *deformable contact* from its *hydroelastic* properties.
+  // determine whether a non-deformable geometry participates in deformable
+  // contact. This is very much an ad-hoc measure to quickly enable deformable
+  // contact of some sort. In the future, we need to decouple the ability of a
+  // non-deformable geometry to participate in *deformable contact* from its
+  // *hydroelastic* properties.
+  // TODO(xuchenhan-tri): A resolution hint isn't really necessary for convex
+  // and mesh shapes to instantiate a non-deformable representation. We
+  // shouldn't unnecessarily require it.
 
-  /* Examines the given shape and properties, adding a rigid geometry
-   representation if
+  /* Examines the given shape that has been declared as non-deformable and add a
+   deformable::RigidGeometry if
    1. `props` specifies the resolution hint for the mesh representation of the
-      rigid geometry and a valid hydroelastic modulus.
-   2. The `shape` type is supported for rigid representation for deformable
-      contact. The set of supported geometries is the set of all supported hydro
-      compliant geometries minus half space. We use the same implementation that
-      the hydro-compliant reifier is using for supported shapes.
+      geometry and a valid hydroelastic modulus.
+   2. The `shape` type is supported for non-deformable representation for
+      deformable contact. The set of supported geometries is the set of all
+      supported hydroelsatic compliant geometries minus half space. We use the
+      same implementation that the compliant hydroelastic reifier is using for
+      supported shapes.
 
    This function is a no-op if the resolution_hint or the hydroelastic modulus
    property is not specified and logs a one-time warning if the shape is not
@@ -84,7 +89,7 @@ class Geometries final : public ShapeReifier {
    @param shape         The shape to possibly represent.
    @param id            The unique identifier for the geometry.
    @param properties    The proximity properties that specifies the properties
-                        of the rigid representation.
+                        of the non-deformable representation.
    @param X_WG          The pose of the geometry in the world frame.
    @throws std::exception if resolution hint <= 0 for the following shapes: Box,
            Sphere, Cylinder, Capsule, and Ellipsoid. Note that Mesh and Convex

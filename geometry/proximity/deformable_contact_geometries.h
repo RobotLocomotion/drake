@@ -35,11 +35,12 @@ class DeformableGeometry {
 
   /* Constructs a deformable geometry from the given meshes. Also computes an
    approximate signed distance field for the mesh.
-   @param[in] volume_mesh  The volume mesh representation of the geometry.
-   @param[in] surface_mesh The surface of `volume_mesh`.
+   @param[in] volume_mesh   The volume mesh representation of the geometry.
+   @param[in] surface_mesh  The surface of `volume_mesh`.
    @param[in] surface_index_to_volume_index
-   Mapping from surface index to volume index. The iᵗʰ entry is the index of
-   the volume mesh vertex that corresponds to the iᵗʰ surface vertex. */
+                            Mapping from surface index to volume index. The iᵗʰ
+                            entry is the index of the volume mesh vertex that
+                            corresponds to the iᵗʰ surface vertex. */
   DeformableGeometry(VolumeMesh<double> volume_mesh,
                      TriangleSurfaceMesh<double> surface_mesh,
                      std::vector<int> surface_index_to_volume_index);
@@ -108,10 +109,12 @@ class DeformableGeometry {
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> signed_distance_field_;
 };
 
-/* Defines a rigid geometry -- a compliant hydroelastic mesh repurposed to
- compute deformable vs. rigid contact, along with local data to keep track of
- the pose of the mesh. We need to locally store the pose of the mesh because
- right now we aren't relying on FCL's broadphase. */
+// TODO(xuchenhan-tri): Rename this class to NonDeformableGeometry. The name
+//  "rigid" is too overloaded.
+/* Defines a non-deformable geometry -- a compliant hydroelastic mesh repurposed
+ to compute deformable vs. non-deofrmable contact, along with local data to keep
+ track of the pose of the mesh. We need to locally store the pose of the mesh
+ because right now we aren't relying on FCL's broadphase. */
 class RigidGeometry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry);
@@ -148,6 +151,7 @@ std::optional<RigidGeometry> MakeMeshRepresentation(
     const Shape& shape, const ProximityProperties& props) {
   std::optional<internal::hydroelastic::SoftGeometry> compliant_hydro_geometry =
       internal::hydroelastic::MakeSoftRepresentation(shape, props);
+  // TODO(xuchenhan-tri): Support half space.
   if (!compliant_hydro_geometry || compliant_hydro_geometry->is_half_space()) {
     return {};
   }

@@ -213,7 +213,7 @@ class DeformableContactSurface {
   }
 
   /* Returns the pressure values at all contact points if `this` is a
-   deformable-righd contact surface.
+   deformable-rigid contact surface.
    @pre is_B_deformable() is false. */
   const std::vector<T>& pressures() const {
     DRAKE_THROW_UNLESS(!is_B_deformable());
@@ -221,7 +221,7 @@ class DeformableContactSurface {
   }
 
   /* Returns the pressure gradients (in the world frame) at all contact points
-   if `this` is a deformable-righd contact surface.
+   if `this` is a deformable-rigid contact surface.
    @pre is_B_deformable() is false. */
   const std::vector<Vector3<T>>& pressure_gradients_W() const {
     DRAKE_THROW_UNLESS(!is_B_deformable());
@@ -235,10 +235,10 @@ class DeformableContactSurface {
     return contact_points_W_;
   }
 
-  /* If `this` is a deformable-rigid contact surface, returns the triangle
-   barycentric coordinates of each contact point in its containing in the
-   deformable geometry A's mesh. The ordering of barycentric coordinates is the
-   same as that in `pressures()`.
+  /* If `this` is a deformable-rigid contact surface, returns the
+   barycentric coordinates of each contact point within the triangle in
+   deformable geometry A's mesh that contains the contact point. The ordering of
+   barycentric coordinates is the same as that in `pressures()`.
    @pre is_B_deformable() is false. */
   const std::vector<Vector3<T>>& tri_barycentric_coordinates_A() const {
     DRAKE_THROW_UNLESS(!is_B_deformable());
@@ -246,9 +246,9 @@ class DeformableContactSurface {
   }
 
   /* If `this` is a deformable-rigid contact surface, Returns the volume mesh
-   indexes of the 3 vertices forming the triangle containing the contact points
-   in the deformable geometry A's mesh. The ordering of contact vertex indexes
-   is the same as that in `pressures()`.
+   indexes of the 3 vertices forming the triangle (in arbitrary order)
+   containing the contact points in the deformable geometry A's mesh. The
+   ordering of contact vertex indexes is the same as that in `pressures()`.
    @pre is_B_deformable() is false  */
   const std::vector<Vector3<int>>& tri_contact_vertex_indexes_A() const {
     DRAKE_THROW_UNLESS(!is_B_deformable());
@@ -256,9 +256,9 @@ class DeformableContactSurface {
   }
 
   /* If `this` is a deformable-deformable contact surface, returns the
-   tetrahedral barycentric coordinates of each contact point in its containing
-   in the deformable geometry A's mesh. The ordering of barycentric coordinates
-   is the same as that in `signed_distances()`.
+   barycentric coordinates of each contact point within the tetrahedron in the
+   deformable geometry A's mesh that contains the contact point. The ordering of
+   barycentric coordinates is the same as that in `signed_distances()`.
    @pre is_B_deformable() is true. */
   const std::vector<Vector4<T>>& tet_barycentric_coordinates_A() const {
     DRAKE_THROW_UNLESS(is_B_deformable());
@@ -266,9 +266,10 @@ class DeformableContactSurface {
   }
 
   /* If `this` is a deformable-deformable contact surface, Returns the volume
-   mesh indexes of the 4 vertices forming the tetrahedron containing the contact
-   points in the deformable geometry A's mesh. The ordering of contact vertex
-   indexes is the same as that in `signed_distances()`.
+   mesh indexes of the 4 vertices forming the tetrahedron (in arbitrary order)
+   containing the contact points in the deformable geometry A's mesh. The
+   ordering of contact vertex indexes is the same as that in
+   `signed_distances()`.
    @pre is_B_deformable() is true.  */
   const std::vector<Vector4<int>>& tet_contact_vertex_indexes_A() const {
     DRAKE_THROW_UNLESS(is_B_deformable());
@@ -286,9 +287,10 @@ class DeformableContactSurface {
   }
 
   /* If `this` is a deformable-deformable contact surface, Returns the volume
-   mesh indexes of the 4 vertices forming the tetrahedron containing the contact
-   points in the deformable geometry B's mesh. The ordering of contact vertex
-   indexes is the same as that in `signed_distances()`.
+   mesh indexes of the 4 vertices forming the tetrahedron (in arbitrary order)
+   containing the contact points in the deformable geometry B's mesh. The
+   ordering of contact vertex indexes is the same as that in
+   `signed_distances()`.
    @pre is_B_deformable() is true.  */
   const std::vector<Vector4<int>>& contact_vertex_indexes_B() const {
     DRAKE_THROW_UNLESS(is_B_deformable());

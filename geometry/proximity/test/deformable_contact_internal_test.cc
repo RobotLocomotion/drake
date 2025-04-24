@@ -446,9 +446,9 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   DeformableContact<double> expected_contact_data;
   expected_contact_data.RegisterDeformableGeometry(deformable_id, num_vertices);
   AddDeformableRigidContactSurface(
-      pressure_field, deformable_geometry.deformable_surface(),
+      deformable_geometry.deformable_surface(),
       deformable_geometry.surface_index_to_volume_index(), deformable_id,
-      rigid_id, rigid_geometry.mesh().mesh(), rigid_geometry.mesh().bvh(), X_RD,
+      rigid_id, pressure_field, rigid_geometry.mesh().bvh(), X_RD,
       &expected_contact_data);
 
   /* Verify that the contact data is the same as expected by checking a subset

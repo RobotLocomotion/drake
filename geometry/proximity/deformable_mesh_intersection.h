@@ -14,9 +14,17 @@ namespace geometry {
 namespace internal {
 
 /* Computes the contact surface between a deformable geometry and a rigid
- geometry and appends it to existing data.
- @param[in] pressure_field_R
-     The pressure field in the rigid geometry's frame R.
+ geometry and appends it to existing data. The resulting contact surface is the
+ surface of the deformable geometry clipped by the volume mesh of the rigid
+ geometry. This choice of contact surface representation (as opposed to clipping
+ the rigid geometry's surface by the deformable geometry's volume mesh) is made
+ because
+ 1. it reduces the number of contact points and the number of participating
+    verices;
+ 2. it prevents contact constraints that only involve internal deformable
+    vertices, and
+ 3. it alleviates the "sticking" artifact that we observe in practice.
+
  @param[in] deformable_mesh_D
      The deformable geometry's surface mesh expressed in the deformable
      geometry's frame D. We assume that triangles are oriented outward.
@@ -27,9 +35,8 @@ namespace internal {
      Id of the deformable geometry.
  @param[in] rigid_id
      Id of the rigid geometry.
- @param[in] rigid_mesh_R
-     The rigid geometry is represented as a volume mesh, whose vertices are
-     measusured and expressed in frame R.
+ @param[in] pressure_field_R
+     The pressure field in the rigid geometry's frame R.
  @param[in] rigid_bvh_R
      A bounding volume hierarchy built on the geometry contained in
      rigid_mesh_R.
@@ -39,11 +46,10 @@ namespace internal {
      The deformable contact data to be appended to.
  @pre deformable_contact != nullptr. */
 void AddDeformableRigidContactSurface(
-    const VolumeMeshFieldLinear<double, double>& pressure_field_R,
     const DeformableSurfaceMeshWithBvh<double>& deformable_mesh_D,
     const std::vector<int>& surface_index_to_volume_index,
     GeometryId deformable_id, GeometryId rigid_id,
-    const VolumeMesh<double>& rigid_mesh_R,
+    const VolumeMeshFieldLinear<double, double>& pressure_field_R,
     const Bvh<Obb, VolumeMesh<double>>& rigid_bvh_R,
     const math::RigidTransform<double>& X_RD,
     DeformableContact<double>* deformable_contact);
