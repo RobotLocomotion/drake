@@ -329,9 +329,11 @@ function(symlink_external_repository_includes NAME TARGET)
 endfunction()
 
 # Symlinks the C++ libraries for TARGET as workspace/NAME/lib/*, e.g.
-#  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/fmt/libfmt.so.6.1.2
-#  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/fmt/libfmt.so.6.1.2
-function(symlink_external_repository_libs NAME TARGET)
+#  workspace/fmt/lib/libfmt.so.6.1.2 -> .../build/install/lib/libfmt.so.6.1.2
+#  workspace/fmt/lib/libfmt.so.6 -> .../build/install/lib/libfmt.so.6.1.2
+# If USE_SO_MINOR_VERSION is ON, the last line above uses .so.x.y instead, i.e.
+#  workspace/fmt/lib/libfmt.so.6.1 -> ../build/install/lib/libfmt.so.6.1.2
+function(symlink_external_repository_libs NAME TARGET USE_SO_MINOR_VERSION)
   set(workspace "${CMAKE_CURRENT_BINARY_DIR}/external/workspace")
   file(MAKE_DIRECTORY "${workspace}/${NAME}/lib")
   # Link the full library name (i.e., libfmt.so.6.1.2 in the case of shared).
@@ -343,10 +345,17 @@ function(symlink_external_repository_libs NAME TARGET)
   file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${basename}" SYMBOLIC)
   # Link the SONAME spelling in case of shared libraries.
   # If the basename does not match this pattern, this part is all a no-op.
-  string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
+  if(USE_SO_MINOR_VERSION)
+    string(REGEX REPLACE "(\\.so\\.[0-9]+\\.[0-9]+)\\.[0-9]+$" "\\1"
       other_basename "${basename}")
-  string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
+    string(REGEX REPLACE "(\\.[0-9]+\\.[0-9]+)\\.[0-9]+\\.dylib$" "\\1.dylib"
       other_basename "${other_basename}")
+  else()
+    string(REGEX REPLACE "(\\.so\\.[0-9]+)\\.[0-9]+\\.[0-9]+$" "\\1"
+      other_basename "${basename}")
+    string(REGEX REPLACE "(\\.[0-9]+)\\.[0-9]+\\.[0-9]+\\.dylib$" "\\1.dylib"
+      other_basename "${other_basename}")
+  endif()
   file(CREATE_LINK "${location}" "${workspace}/${NAME}/lib/${other_basename}" SYMBOLIC)
 endfunction()
 
@@ -400,7 +409,7 @@ option(WITH_USER_FMT "Use user-provided fmt" ${DEFAULT_WITH_USER_LIBS})
 if(WITH_USER_FMT)
   find_package(fmt CONFIG REQUIRED)
   symlink_external_repository_includes(fmt fmt::fmt)
-  symlink_external_repository_libs(fmt fmt::fmt)
+  symlink_external_repository_libs(fmt fmt::fmt OFF)
   override_module(fmt)
 endif()
 
@@ -414,7 +423,16 @@ if(WITH_USER_SPDLOG)
   endif()
   find_package(spdlog CONFIG REQUIRED)
   symlink_external_repository_includes(spdlog spdlog::spdlog)
-  symlink_external_repository_libs(spdlog spdlog::spdlog)
+  # Modern versions of spdlog (i.e. >= 1.11.0) specify a minor version in the
+  # SONAME spelling, while older versions only use the major version.
+  # We support that logic here to provide compatibility with both.
+  # See https://github.com/gabime/spdlog/releases/tag/v1.11.0 for details.
+  set(SPDLOG_USE_SO_MINOR_VERSION ON)
+  if(${spdlog_VERSION_MAJOR} LESS 1 OR
+     (${spdlog_VERSION_MAJOR} EQUAL 1 AND ${spdlog_VERSION_MINOR} LESS 11))
+     set(SPDLOG_USE_SO_MINOR_VERSION OFF)
+  endif()
+  symlink_external_repository_libs(spdlog spdlog::spdlog ${SPDLOG_USE_SO_MINOR_VERSION})
   override_module(spdlog)
 endif()
 
@@ -476,7 +494,7 @@ else()
   if(WITH_USER_ZLIB)
     find_package(ZLIB REQUIRED)
     symlink_external_repository_includes(zlib ZLIB::ZLIB)
-    symlink_external_repository_libs(zlib ZLIB::ZLIB)
+    symlink_external_repository_libs(zlib ZLIB::ZLIB OFF)
     override_module(zlib)
   endif()
 endif()
