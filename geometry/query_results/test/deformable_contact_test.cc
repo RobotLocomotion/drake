@@ -66,13 +66,17 @@ GTEST_TEST(ContactParticipation, SomeVerticesAreParticipating) {
  DeformableContactSurface. */
 GTEST_TEST(DeformableContactSurface, EmptySurface) {
   /* Deformable rigid surface constructor. */
-  DeformableContactSurface<double> dut(kIdA, kIdB, {}, {}, {}, {}, {});
+  DeformableContactSurface<double> dut(
+      kIdA, kIdB, {}, std::vector<double>{}, std::vector<Vector3<double>>{},
+      std::vector<bool>{}, std::vector<Vector3<int>>{},
+      std::vector<Vector3<double>>{});
   EXPECT_EQ(dut.id_A(), kIdA);
   EXPECT_EQ(dut.id_B(), kIdB);
   EXPECT_EQ(dut.num_contact_points(), 0);
   EXPECT_EQ(dut.contact_points_W().size(), 0);
   EXPECT_EQ(dut.pressures().size(), 0);
   EXPECT_EQ(dut.pressure_gradients_W().size(), 0);
+  EXPECT_EQ(dut.is_element_inverted().size(), 0);
   EXPECT_EQ(dut.tri_barycentric_coordinates_A().size(), 0);
   EXPECT_EQ(dut.tri_contact_vertex_indexes_A().size(), 0);
   EXPECT_EQ(dut.nhats_W().size(), 0);
@@ -83,7 +87,10 @@ GTEST_TEST(DeformableContactSurface, EmptySurface) {
 /* Tests the constructor constructs an empty (deformable vs. deformable)
  DeformableContactSurface. */
 GTEST_TEST(DeformableContactSurface, EmptySurface2) {
-  DeformableContactSurface<double> dut(kIdA, kIdB, {}, {}, {}, {}, {}, {});
+  DeformableContactSurface<double> dut(
+      kIdA, kIdB, {}, std::vector<double>{}, std::vector<Vector4<int>>{},
+      std::vector<Vector4<double>>{}, std::vector<Vector4<int>>{},
+      std::vector<Vector4<double>>{});
   EXPECT_EQ(dut.id_A(), kIdA);
   EXPECT_EQ(dut.id_B(), kIdB);
   EXPECT_EQ(dut.num_contact_points(), 0);
@@ -169,12 +176,13 @@ GTEST_TEST(DeformableContact, AddDeformableRigidContactSurface) {
   const std::vector<double> pressures = {0.25};
   const std::vector<Vector3<double>> pressure_gradients = {
       Vector3<double>(0.25, 0.26, 0.27)};
+  const std::vector<bool> is_element_inverted = {false};
   const std::vector<Vector3<int>> contact_vertex_indexes = {{0, 3, 2}};
   const std::vector<Vector3<double>> barycentric_centroids = {{0.2, 0.3, 0.5}};
 
   dut.AddDeformableRigidContactSurface(
       kIdA, kIdB, {0, 3, 2}, contact_mesh_W, pressures, pressure_gradients,
-      contact_vertex_indexes, barycentric_centroids);
+      is_element_inverted, contact_vertex_indexes, barycentric_centroids);
   /* Verify that the contact surface is as expected. */
   const std::vector<DeformableContactSurface<double>>& surfaces =
       dut.contact_surfaces();
@@ -185,6 +193,8 @@ GTEST_TEST(DeformableContact, AddDeformableRigidContactSurface) {
   EXPECT_EQ(s.num_contact_points(), 1);
   EXPECT_EQ(s.contact_points_W(), contact_points_W);
   EXPECT_EQ(s.pressures(), pressures);
+  EXPECT_EQ(s.pressure_gradients_W(), pressure_gradients);
+  EXPECT_EQ(s.is_element_inverted(), is_element_inverted);
   EXPECT_EQ(s.tri_contact_vertex_indexes_A(), contact_vertex_indexes);
   EXPECT_EQ(s.tri_barycentric_coordinates_A(), barycentric_centroids);
   EXPECT_FALSE(s.is_B_deformable());

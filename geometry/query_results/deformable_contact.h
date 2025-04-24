@@ -122,22 +122,27 @@ class DeformableContactSurface {
       the i-th pressure corresponds to the i-th element in the contact mesh.
    @param[in] pressure_gradients_W
       The pressure gradient at the contact points expressed in the world frame,
-      with the same index semantics as pressure.
+      with the same index semantics as `pressures`.
+   @param[in] is_element_inverted
+      A vector of booleans indicating whether the i-th contact point belongs to
+      a deformable tetrahedron with inverted volume. The index semantics is the
+      same as `pressures`.
    @param[in] contact_vertex_indexes_A
       Vector of three vertex indexes of the triangle in the surface mesh of
       geometry A containing each contact point with the same index semantics as
-      `pressure`.
+      `pressures`.
    @param[in] barycentric_coordinates_A
       Barycentric coordinates of centroids of contact polygons with respect to
       their containing triangle in mesh A with the same index semantics as
-      `pressure`.
-   @pre contact_mesh_W.num_faces() == pressure.size().
+      `pressures`.
+   @pre contact_mesh_W.num_faces() == pressures.size().
    @pre contact_mesh_W.num_faces() == contact_vertex_indexes_A.size().
    @pre contact_mesh_W.num_faces() == barycentric_coordinates_A.size(). */
   DeformableContactSurface(GeometryId id_A, GeometryId id_B,
                            PolygonSurfaceMesh<T> contact_mesh_W,
                            std::vector<T> pressures,
                            std::vector<Vector3<T>> pressure_gradients_W,
+                           std::vector<bool> is_element_inverted,
                            std::vector<Vector3<int>> contact_vertex_indexes_A,
                            std::vector<Vector3<T>> barycentric_coordinates_A);
 
@@ -218,6 +223,14 @@ class DeformableContactSurface {
   const std::vector<T>& pressures() const {
     DRAKE_THROW_UNLESS(!is_B_deformable());
     return *pressures_;
+  }
+
+  /* Returns the vector of boolean values indicating whether the i-th contact
+   point belongs to an inverted deformable tetrahedron.
+   @pre is_B_deformable() is false. */
+  const std::vector<bool>& is_element_inverted() const {
+    DRAKE_THROW_UNLESS(!is_B_deformable());
+    return *is_element_inverted_;
   }
 
   /* Returns the pressure gradients (in the world frame) at all contact points
@@ -321,6 +334,7 @@ class DeformableContactSurface {
   std::optional<std::vector<T>> pressures_;
   std::optional<std::vector<T>> signed_distances_;
   std::optional<std::vector<Vector3<T>>> pressure_gradients_W_;
+  std::optional<std::vector<bool>> is_element_inverted_;
   std::variant<std::vector<Vector3<int>>, std::vector<Vector4<int>>>
       contact_vertex_indexes_A_;
   std::variant<std::vector<Vector3<T>>, std::vector<Vector4<T>>>
@@ -381,6 +395,10 @@ class DeformableContact {
   @param[in] pressure_gradients_W
      Hydroelastic pressure gradients of the rigid body sampled on
      `contact_mesh_W`, expressed in the world frame.
+  @param[in] is_element_inverted
+     A vector of booleans indicating whether the i-th contact point belongs to
+     a deformable tetrahedron with inverted volume. The index semantics is the
+     same as pressure.
   @param[in] contact_vertex_indexes
      Vector of three vertex indexes of the triangle in contact. Note that the
      indexes are the indexes into the volume mesh's vertices. The ordering of
@@ -398,10 +416,9 @@ class DeformableContact {
   void AddDeformableRigidContactSurface(
       GeometryId deformable_id, GeometryId rigid_id,
       const std::unordered_set<int>& participating_vertices,
-      // TODO(xuchenhan-tri): The sign of the has been flipped from changing
-      // from sign-distance to pressure. Confirm the implications.
       PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> pressures,
       std::vector<Vector3<T>> pressure_gradients_W,
+      std::vector<bool> is_element_inverted,
       std::vector<Vector3<int>> contact_vertex_indexes,
       std::vector<Vector3<T>> barycentric_coordinates);
 

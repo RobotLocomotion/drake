@@ -4692,9 +4692,12 @@ class ProximityEngineDeformableContactTest : public testing::Test {
   // proximity engine and stores the driven mesh data in the testing class.
   void AddDeformableGeometry(const VolumeMesh<double>& mesh, GeometryId id) {
     std::vector<int> surface_vertices;
+    std::vector<int> surface_tri_to_volume_tet;
     TriangleSurfaceMesh<double> surface_mesh =
-        ConvertVolumeToSurfaceMeshWithBoundaryVertices(mesh, &surface_vertices);
-    engine_.AddDeformableGeometry(mesh, surface_mesh, surface_vertices, id);
+        ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+            mesh, &surface_vertices, &surface_tri_to_volume_tet);
+    engine_.AddDeformableGeometry(mesh, surface_mesh, surface_vertices,
+                                  surface_tri_to_volume_tet, id);
 
     VertexSampler vertex_sampler(std::move(surface_vertices), mesh);
     std::vector<DrivenTriangleMesh> driven_meshes;
