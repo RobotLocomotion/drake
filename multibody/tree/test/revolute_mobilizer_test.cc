@@ -35,7 +35,7 @@ class RevoluteMobilizerTest : public MobilizerTester {
     mobilizer_ = &AddJointAndFinalize<RevoluteJoint, RevoluteMobilizer>(
         std::make_unique<RevoluteJoint<double>>(
             "joint0", tree().world_body().body_frame(), body_->body_frame(),
-            axis_F_));
+            axis_Jp_));
     // Mobilizers are always ephemeral (i.e. not added by user).
     EXPECT_TRUE(mobilizer_->is_ephemeral());
     mutable_mobilizer_ = const_cast<RevoluteMobilizer<double>*>(mobilizer_);
@@ -44,7 +44,7 @@ class RevoluteMobilizerTest : public MobilizerTester {
  protected:
   const RevoluteMobilizer<double>* mobilizer_{nullptr};
   RevoluteMobilizer<double>* mutable_mobilizer_{nullptr};
-  const Vector3d axis_F_{1.0, 2.0, 3.0};
+  const Vector3d axis_Jp_{1.0, 2.0, 3.0};  // also axis_Jc
 };
 
 TEST_F(RevoluteMobilizerTest, CanRotateOrTranslate) {
@@ -144,8 +144,8 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
   mobilizer_->SetAngle(context_.get(), angle);
   RigidTransformd X_FM(mobilizer_->CalcAcrossMobilizerTransform(*context_));
 
-  const RigidTransformd X_FM_expected(RotationMatrixd(
-      AngleAxisd(angle, mobilizer_->revolute_axis().normalized())));
+  const RigidTransformd X_FM_expected(
+      RotationMatrixd(AngleAxisd(angle, mobilizer_->revolute_axis())));
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no translations at all.
