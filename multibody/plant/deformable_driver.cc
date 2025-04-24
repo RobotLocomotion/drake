@@ -412,6 +412,9 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        ++surface_index) {
     const DeformableContactSurface<T>& surface =
         contact_surfaces[surface_index];
+    /* Geometry A is always deformable, so this is deformable vs. deformable
+       contact iff geometry B is deformable. */
+    const bool is_deformable_vs_deformable = surface.is_B_deformable();
     /* Skip this surface if either body in contact is a disabled deformable
      body. */
     const DeformableBodyId body_id_A =
@@ -465,6 +468,17 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
     std::vector<typename DiscreteContactPair<T>::JacobianTreeBlock>
         jacobian_blocks;
     for (int i = 0; i < surface.num_contact_points(); ++i) {
+      if (!is_deformable_vs_deformable && surface.is_element_inverted()[i]) {
+        /* For deformable rigid contact, we don't register a contact point for
+        deformable surface elements that belong to an inverted tetrahdron.
+        Registering such contact points can cause persistent inversion artifacts
+        that are impossible to recover. By not registering a contact point, we
+        admit transient artifacts (objects suddenly break contact), but in
+        practice, we find that's better than persistent, irrecoverable
+        inversion. */
+        continue;
+      }
+
       jacobian_blocks.clear();
       const Vector3<T>& v_WAc = contact_data_A.v_WGc[i];
       jacobian_blocks.push_back(std::move(contact_data_A.jacobian[i]));
@@ -499,18 +513,16 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        density of water, a reasonably small penetration. */
       const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
       const T Ae = surface.contact_mesh_W().area(i);
-      /* Geometry A is always deformable, so this is deformable vs. deformable
-       contact iff geometry B is deformable. */
-      const bool is_deformable_vs_deformable = surface.is_B_deformable();
+
       /* One dimensional pressure gradient (in Pa/m), only used in deformable
        vs. rigid contact, following the notation in [Masterjohn, 2022].
        [Masterjohn, 2022] Velocity Level Approximation of Pressure Field
        Contact Patches. */
       std::optional<T> g;
-      /* Filter out negative directional pressure derivatives (separating
-       contact) and tiny contact polygons (to avoid numerical issues). */
       if (!is_deformable_vs_deformable) {
-        /* Unlike [Masterjohn, 2022], the pressure gradient is positive in the
+        /* Filter out negative directional pressure derivatives (separating
+         contact) and tiny contact polygons (to avoid numerical issues).
+         Unlike [Masterjohn, 2022], the pressure gradient is positive in the
          direction "into" the rigid body. Therefore, we need a negative sign. */
         g = -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
         if (g.value() < 1e-14 || Ae < 1e-14) {

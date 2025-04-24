@@ -79,11 +79,13 @@ VolumeMesh<double> MakeVolumeMesh() {
 void AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh,
                            Geometries* geometries) {
   std::vector<int> surface_vertices;
+  std::vector<int> surface_tri_to_volume_tet;
   TriangleSurfaceMesh<double> surface_mesh =
-      ConvertVolumeToSurfaceMeshWithBoundaryVertices(mesh, &surface_vertices);
-  geometries->AddDeformableGeometry(id, std::move(mesh),
-                                    std::move(surface_mesh),
-                                    std::move(surface_vertices));
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+          mesh, &surface_vertices, &surface_tri_to_volume_tet);
+  geometries->AddDeformableGeometry(
+      id, std::move(mesh), std::move(surface_mesh), std::move(surface_vertices),
+      std::move(surface_tri_to_volume_tet));
 }
 
 /* Makes a ProximityProperties with a resolution hint property in the hydro
@@ -447,8 +449,10 @@ GTEST_TEST(GeometriesTest, ComputeDeformableContact_DeformableRigid) {
   expected_contact_data.RegisterDeformableGeometry(deformable_id, num_vertices);
   AddDeformableRigidContactSurface(
       deformable_geometry.deformable_surface(),
-      deformable_geometry.surface_index_to_volume_index(), deformable_id,
-      rigid_id, pressure_field, rigid_geometry.mesh().bvh(), X_RD,
+      deformable_geometry.deformable_volume(),
+      deformable_geometry.surface_index_to_volume_index(),
+      deformable_geometry.surface_tri_to_volume_tet(), deformable_id, rigid_id,
+      pressure_field, rigid_geometry.mesh().bvh(), X_RD,
       &expected_contact_data);
 
   /* Verify that the contact data is the same as expected by checking a subset

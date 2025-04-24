@@ -355,10 +355,12 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   void AddDeformableGeometry(const VolumeMesh<double>& mesh_W,
                              TriangleSurfaceMesh<double> surface_mesh_W,
                              std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet,
                              GeometryId id) {
     geometries_for_deformable_contact_.AddDeformableGeometry(
         id, mesh_W, std::move(surface_mesh_W),
-        std::move(surface_index_to_volume_index));
+        std::move(surface_index_to_volume_index),
+        std::move(surface_tri_to_volume_tet));
     // Currently, even though no collision filtering is done for deformable
     // geometries, the collision filter still needs to be aware of the existence
     // of deformable geometries. This is because collision filters implicitly
@@ -1307,9 +1309,11 @@ void ProximityEngine<T>::AddAnchoredGeometry(const Shape& shape,
 template <typename T>
 void ProximityEngine<T>::AddDeformableGeometry(
     const VolumeMesh<double>& mesh, TriangleSurfaceMesh<double> surface_mesh,
-    std::vector<int> surface_index_to_volume_index, GeometryId id) {
+    std::vector<int> surface_index_to_volume_index,
+    std::vector<int> surface_tri_to_volume_tet, GeometryId id) {
   impl_->AddDeformableGeometry(mesh, std::move(surface_mesh),
-                               std::move(surface_index_to_volume_index), id);
+                               std::move(surface_index_to_volume_index),
+                               std::move(surface_tri_to_volume_tet), id);
 }
 
 template <typename T>

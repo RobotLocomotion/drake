@@ -41,6 +41,7 @@ template <typename T>
 DeformableContactSurface<T>::DeformableContactSurface(
     GeometryId id_A, GeometryId id_B, PolygonSurfaceMesh<T> contact_mesh_W,
     std::vector<T> pressures, std::vector<Vector3<T>> pressure_gradients_W,
+    std::vector<bool> is_element_inverted,
     std::vector<Vector3<int>> contact_vertex_indexes_A,
     std::vector<Vector3<T>> barycentric_coordinates_A)
     : id_A_(id_A),
@@ -48,6 +49,7 @@ DeformableContactSurface<T>::DeformableContactSurface(
       contact_mesh_W_(std::move(contact_mesh_W)),
       pressures_(std::move(pressures)),
       pressure_gradients_W_(std::move(pressure_gradients_W)),
+      is_element_inverted_(std::move(is_element_inverted)),
       contact_vertex_indexes_A_(std::move(contact_vertex_indexes_A)),
       barycentric_coordinates_A_(std::move(barycentric_coordinates_A)) {
   const int num_contact_points = contact_mesh_W_.num_faces();
@@ -119,6 +121,7 @@ void DeformableContact<T>::AddDeformableRigidContactSurface(
     const std::unordered_set<int>& participating_vertices,
     PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> pressures,
     std::vector<Vector3<T>> pressure_gradients_W,
+    std::vector<bool> is_element_inverted,
     std::vector<Vector3<int>> contact_vertex_indexes,
     std::vector<Vector3<T>> barycentric_coordinates) {
   const auto iter = contact_participations_.find(deformable_id);
@@ -134,8 +137,8 @@ void DeformableContact<T>::AddDeformableRigidContactSurface(
   iter->second.Participate(participating_vertices);
   contact_surfaces_.emplace_back(
       deformable_id, rigid_id, std::move(contact_mesh_W), std::move(pressures),
-      std::move(pressure_gradients_W), std::move(contact_vertex_indexes),
-      std::move(barycentric_coordinates));
+      std::move(pressure_gradients_W), std::move(is_element_inverted),
+      std::move(contact_vertex_indexes), std::move(barycentric_coordinates));
 }
 
 template <typename T>
