@@ -149,10 +149,6 @@ drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     timeout = "moderate",
     args = select({
-        # Most tests do not render correctly on macOS CI. Instead of trying to
-        # select the few that randomly happen to pass, we'll skip everything.
-        # TODO(#19424) Re-enable the tests.
-        ":osx": ["--gtest_filter=-*"],
         "//conditions:default": [],
     }),
     data = [
