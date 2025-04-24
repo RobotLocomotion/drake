@@ -36,6 +36,9 @@ namespace internal {
  @param[in] surface_index_to_volume_index
      A mapping from the deformable surface mesh's vertex index to the deformable
      volume mesh's vertex index.
+ @param[in] surface_tri_to_volume_tet
+     A mapping from the deformable surface mesh's triangle index to the
+     deformable volume mesh's tetrahedron index.
  @param[in] deformable_id
      Id of the deformable geometry.
  @param[in] rigid_id
@@ -52,8 +55,10 @@ namespace internal {
  @pre deformable_contact != nullptr. */
 void AddDeformableRigidContactSurface(
     const DeformableSurfaceMeshWithBvh<double>& deformable_mesh_D,
+    const DeformableVolumeMeshWithBvh<double>& deformable_volume_mesh,
     const std::vector<int>& surface_index_to_volume_index,
-    GeometryId deformable_id, GeometryId rigid_id,
+    const std::vector<int>& surface_tri_to_volume_tet, GeometryId deformable_id,
+    GeometryId rigid_id,
     const VolumeMeshFieldLinear<double, double>& pressure_field_R,
     const Bvh<Obb, VolumeMesh<double>>& rigid_bvh_R,
     const math::RigidTransform<double>& X_RD,

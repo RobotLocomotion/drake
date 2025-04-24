@@ -72,6 +72,14 @@ TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
     std::vector<int>* boundary_vertices_out = nullptr,
     std::vector<TetFace>* tri_to_tet_face_map = nullptr);
 
+/* Overload that returns the boundary vertices as well as the tet indices of the
+ surface triangles. Note that `tri_to_tet_map` contains the same information as
+ `tri_to_tet_face_map`, just with the face information dropped. */
+template <class T>
+TriangleSurfaceMesh<T> ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+    const VolumeMesh<T>& volume, std::vector<int>* boundary_vertices_out,
+    std::vector<int>* tri_to_tet_map);
+
 }  // namespace internal
 
 /** Converts a tetrahedral volume mesh to a triangulated surface mesh of the

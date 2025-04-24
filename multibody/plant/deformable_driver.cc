@@ -507,13 +507,22 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        [Masterjohn, 2022] Velocity Level Approximation of Pressure Field
        Contact Patches. */
       std::optional<T> g;
-      /* Filter out negative directional pressure derivatives (separating
-       contact) and tiny contact polygons (to avoid numerical issues). */
       if (!is_deformable_vs_deformable) {
-        /* Unlike [Masterjohn, 2022], the pressure gradient is positive in the
+        /* Filter out negative directional pressure derivatives (separating
+         contact) and tiny contact polygons (to avoid numerical issues).
+         Unlike [Masterjohn, 2022], the pressure gradient is positive in the
          direction "into" the rigid body. Therefore, we need a negative sign. */
         g = -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
         if (g.value() < 1e-14 || Ae < 1e-14) {
+          continue;
+        }
+        /* We don't register a contact point for deformable surface elements
+         that belong to an inverted tetrahdron. Registering such contact
+         points can cause persistent inversion artifacts that are impossible
+         to recover. By not registering a contact point, we admit transient
+         artifact (objects suddenly breaks contact), but in practice, we find
+         that's better than persistent, irrecoverable inversion. */
+        if (surface.is_element_inverted()[i]) {
           continue;
         }
       }

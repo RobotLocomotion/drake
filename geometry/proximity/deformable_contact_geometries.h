@@ -43,7 +43,8 @@ class DeformableGeometry {
                             corresponds to the iᵗʰ surface vertex. */
   DeformableGeometry(VolumeMesh<double> volume_mesh,
                      TriangleSurfaceMesh<double> surface_mesh,
-                     std::vector<int> surface_index_to_volume_index);
+                     std::vector<int> surface_index_to_volume_index,
+                     std::vector<int> surface_tri_to_volume_tet);
 
   // TODO(xuchenhan-tri): Consider adding another constructor that takes in both
   // a mesh and a precomputed (approximated) sign distance field.
@@ -65,6 +66,13 @@ class DeformableGeometry {
    vertex. */
   const std::vector<int>& surface_index_to_volume_index() const {
     return surface_index_to_volume_index_;
+  }
+
+  /* Returns the mapping from surface triangle to volume tetrahehdron. The iᵗʰ
+   entry is the index of the volume mesh tetrahedron that corresponds to the iᵗʰ
+   surface triangle. */
+  const std::vector<int>& surface_tri_to_volume_tet() const {
+    return surface_tri_to_volume_tet_;
   }
 
   /* Updates the vertex positions of the deformable geometry.
@@ -102,6 +110,7 @@ class DeformableGeometry {
   std::unique_ptr<DeformableVolumeMeshWithBvh<double>> deformable_volume_;
   std::unique_ptr<DeformableSurfaceMeshWithBvh<double>> deformable_surface_;
   std::vector<int> surface_index_to_volume_index_;
+  std::vector<int> surface_tri_to_volume_tet_;
   /* Note: we don't provide an accessor to `signed_distance_field_` as it may be
    invalidated by calls to `UpdateVertexPositions()`. Instead, we provide
    `CalcSignedDistanceField()` that guarantees to return the up-to-date mesh

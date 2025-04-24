@@ -1226,11 +1226,14 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
         DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
         const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
         std::vector<int> surface_vertices;
+        std::vector<int> surface_tri_to_volume_tet;
         TriangleSurfaceMesh<double> surface_mesh =
-            ConvertVolumeToSurfaceMeshWithBoundaryVertices(reference_mesh,
-                                                           &surface_vertices);
-        geometry_engine_->AddDeformableGeometry(reference_mesh, surface_mesh,
-                                                surface_vertices, geometry_id);
+            ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+                reference_mesh, &surface_vertices, &surface_tri_to_volume_tet);
+
+        geometry_engine_->AddDeformableGeometry(
+            reference_mesh, surface_mesh, surface_vertices,
+            surface_tri_to_volume_tet, geometry_id);
         VertexSampler vertex_sampler(std::move(surface_vertices),
                                      reference_mesh);
         std::vector<DrivenTriangleMesh> driven_meshes;
@@ -1952,11 +1955,13 @@ void GeometryState<T>::AddToProximityEngineUnchecked(
     DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
     const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
     std::vector<int> surface_vertices;
+    std::vector<int> surface_tri_to_volume_tet;
     TriangleSurfaceMesh<double> surface_mesh =
-        ConvertVolumeToSurfaceMeshWithBoundaryVertices(reference_mesh,
-                                                       &surface_vertices);
-    geometry_engine_->AddDeformableGeometry(reference_mesh, surface_mesh,
-                                            surface_vertices, geometry_id);
+        ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+            reference_mesh, &surface_vertices, &surface_tri_to_volume_tet);
+    geometry_engine_->AddDeformableGeometry(
+        reference_mesh, surface_mesh, surface_vertices,
+        surface_tri_to_volume_tet, geometry_id);
     VertexSampler vertex_sampler(std::move(surface_vertices), reference_mesh);
     std::vector<DrivenTriangleMesh> driven_meshes;
     driven_meshes.emplace_back(vertex_sampler, surface_mesh);

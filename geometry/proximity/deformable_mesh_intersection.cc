@@ -87,7 +87,9 @@ class DeformableSurfaceVolumeIntersector
 
 void AddDeformableRigidContactSurface(
     const DeformableSurfaceMeshWithBvh<double>& deformable_mesh_D,
+    const DeformableVolumeMeshWithBvh<double>& deformable_volume_mesh,
     const std::vector<int>& surface_index_to_volume_index,
+    const std::vector<int>& surface_tri_to_volume_tet,
     const GeometryId deformable_id, const GeometryId rigid_id,
     const VolumeMeshFieldLinear<double, double>& pressure_field_R,
     const Bvh<Obb, VolumeMesh<double>>& rigid_bvh_R,
@@ -125,11 +127,21 @@ void AddDeformableRigidContactSurface(
         std::move(contact_mesh_R);
 
     const TriangleSurfaceMesh<double>& mesh = deformable_mesh_D.mesh();
+    const VolumeMesh<double>& volume_mesh = deformable_volume_mesh.mesh();
     // Each contact polygon generates one "participating triangle". Hence
     // `participating_triangles` contains duplicated entries when a triangle
     // covers multiple contact polygons.
     const std::vector<int>& participating_triangles =
         intersect.mutable_triangle_index_of_polygons();
+
+    std::vector<bool> is_element_inverted(num_faces, false);
+    for (int i = 0; i < num_faces; ++i) {
+      const int e = participating_triangles[i];
+      const int tet_index = surface_tri_to_volume_tet[e];
+      if (volume_mesh.CalcTetrahedronVolume(tet_index) < 0) {
+        is_element_inverted[i] = true;
+      }
+    }
     DRAKE_DEMAND(static_cast<int>(participating_triangles.size()) == num_faces);
 
     // The set of all indices of the tet vertices of the deformable body that
@@ -164,7 +176,8 @@ void AddDeformableRigidContactSurface(
     deformable_contact->AddDeformableRigidContactSurface(
         deformable_id, rigid_id, participating_tri_vertices,
         std::move(*contact_mesh_W), std::move(pressures),
-        std::move(pressure_gradient_W), std::move(contact_tet_vertex_indices),
+        std::move(pressure_gradient_W), std::move(is_element_inverted),
+        std::move(contact_tet_vertex_indices),
         std::move(intersect.mutable_barycentric_centroids()));
   }
 }

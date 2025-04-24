@@ -118,7 +118,8 @@ class Geometries final : public ShapeReifier {
    @pre There is no previous representation associated with id. */
   void AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh,
                              TriangleSurfaceMesh<double> surface_mesh,
-                             std::vector<int> surface_index_to_volume_index);
+                             std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet);
 
   /* If a deformable geometry with `id` exists, updates the vertex positions
    of the volume mesh (in the world frame) to `q_WV` and the vertex positions

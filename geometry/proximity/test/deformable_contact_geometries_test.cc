@@ -56,11 +56,13 @@ GTEST_TEST(DeformableGeometryTest, Constructor) {
   const int kCenterVertexIndex = 0;
 
   std::vector<int> surface_vertices;
+  std::vector<int> surface_tri_to_volume_tet;
   TriangleSurfaceMesh<double> surface_mesh_W =
-      ConvertVolumeToSurfaceMeshWithBoundaryVertices(mesh_W, &surface_vertices);
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+          mesh_W, &surface_vertices, &surface_tri_to_volume_tet);
   const int num_surface_vertices = surface_mesh_W.num_vertices();
-  DeformableGeometry deformable_geometry(mesh_W, surface_mesh_W,
-                                         surface_vertices);
+  DeformableGeometry deformable_geometry(
+      mesh_W, surface_mesh_W, surface_vertices, surface_tri_to_volume_tet);
 
   auto verify_sdf = [num_vertices](const DeformableGeometry& geometry) {
     const VolumeMeshFieldLinear<double, double>& sdf =
@@ -95,10 +97,12 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
   const double kRezHint = 0.5;
   VolumeMesh<double> mesh = MakeBoxVolumeMesh<double>(box, kRezHint);
   std::vector<int> surface_vertices;
+  std::vector<int> surface_tri_to_volume_tet;
   TriangleSurfaceMesh<double> surface_mesh =
-      ConvertVolumeToSurfaceMeshWithBoundaryVertices(mesh, &surface_vertices);
-
-  DeformableGeometry original(mesh, surface_mesh, surface_vertices);
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+          mesh, &surface_vertices, &surface_tri_to_volume_tet);
+  DeformableGeometry original(mesh, surface_mesh, surface_vertices,
+                              surface_tri_to_volume_tet);
 
   std::vector<Vector3d> dummy_vertices = {Vector3d(0, 0, 0), Vector3d(1, 0, 0),
                                           Vector3d(0, 1, 0), Vector3d(0, 0, 1)};
@@ -109,11 +113,13 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
   TriangleSurfaceMesh dummy_surface_mesh(std::move(dummy_triangles),
                                          std::move(dummy_vertices));
   std::vector<int> dummy_surface_vertices = {0, 1, 2};
+  std::vector<int> dummy_surface_tri_to_volume_tet = {0, 1, 2, 3};
 
   // Test copy-assignment operator.
   {
     DeformableGeometry copy(dummy_mesh, dummy_surface_mesh,
-                            dummy_surface_vertices);
+                            dummy_surface_vertices,
+                            dummy_surface_tri_to_volume_tet);
     EXPECT_FALSE(copy.deformable_volume().mesh().Equal(
         original.deformable_volume().mesh()));
     EXPECT_FALSE(copy.deformable_surface().mesh().Equal(
@@ -194,7 +200,8 @@ GTEST_TEST(DeformableGeometryTest, TestCopyAndMoveSemantics) {
 
     // Test move-assignment operator.
     DeformableGeometry move_assigned(dummy_mesh, dummy_surface_mesh,
-                                     dummy_surface_vertices);
+                                     dummy_surface_vertices,
+                                     dummy_surface_tri_to_volume_tet);
     move_assigned = std::move(move_constructed);
     EXPECT_EQ(&move_assigned.deformable_volume(), mesh_ptr);
     EXPECT_EQ(&move_assigned.deformable_surface(), surface_mesh_ptr);
@@ -207,12 +214,14 @@ GTEST_TEST(DeformableGeometryTest, UpdateVertexPositions) {
       sphere, 0.5, TessellationStrategy::kDenseInteriorVertices);
   const int num_vertices = mesh.num_vertices();
   std::vector<int> surface_vertices;
+  std::vector<int> surface_tri_to_volume_tet;
   TriangleSurfaceMesh<double> surface_mesh =
-      ConvertVolumeToSurfaceMeshWithBoundaryVertices(mesh, &surface_vertices);
+      ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+          mesh, &surface_vertices, &surface_tri_to_volume_tet);
   const int num_surface_vertices = surface_mesh.num_vertices();
-
   DeformableGeometry deformable_geometry(
-      std::move(mesh), std::move(surface_mesh), std::move(surface_vertices));
+      std::move(mesh), std::move(surface_mesh), std::move(surface_vertices),
+      std::move(surface_tri_to_volume_tet));
   const VectorXd q = VectorXd::LinSpaced(3 * num_vertices, 0.0, 1.0);
   const VectorXd q_surface =
       VectorXd::LinSpaced(3 * num_surface_vertices, 0.0, 1.0);
