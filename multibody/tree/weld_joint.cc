@@ -81,23 +81,6 @@ std::unique_ptr<internal::Mobilizer<T>> WeldJoint<T>::MakeMobilizerForJoint(
   const Frame<T>& Jc = this->frame_on_child();
   const bool X_JpJc_is_identity = X_JpJc_.IsExactlyIdentity();
 
-  // Create a unique frame name for F based on the joint name (unique within its
-  // model instance) and the name of the parent or child frame (not necessarily
-  // unique). Name collisions are unlikely, but can occur if someone creates a
-  // frame with this name (likely because they copied frames from some other
-  // plant without checking is_ephemeral()). In that odd case we prepend
-  // underscores until the name is unique (as for ephemeral joint names). New
-  // frames go in the joint's model instance.
-  // TODO(sherm1) Generalize name collision resolution for ephemeral elements
-  //  when we have more instances.
-  auto F_frame_name = [this, tree](const Frame<T>& frame) -> std::string {
-    std::string F_name = fmt::format("{}_{}_F", this->name(), frame.name());
-    while (tree->HasFrameNamed(F_name, this->model_instance())) {
-      F_name = "_" + F_name;
-    }
-    return F_name;
-  };
-
   const Frame<T>* F{};
   const Frame<T>* M{};
   if (mobod.is_reversed()) {
@@ -105,14 +88,15 @@ std::unique_ptr<internal::Mobilizer<T>> WeldJoint<T>::MakeMobilizerForJoint(
     F = X_JpJc_is_identity
             ? &Jc
             : &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
-                  F_frame_name(Jc), Jc, X_JpJc_.inverse(),
-                  this->model_instance()));
+                  this->MakeUniqueOffsetFrameName(Jc, "F"), Jc,
+                  X_JpJc_.inverse(), this->model_instance()));
   } else {
     M = &Jc;  // The normal case: outboard==child, inboard==parent.
     F = X_JpJc_is_identity
             ? &Jp
             : &tree->AddEphemeralFrame(std::make_unique<FixedOffsetFrame<T>>(
-                  F_frame_name(Jp), Jp, X_JpJc_, this->model_instance()));
+                  this->MakeUniqueOffsetFrameName(Jp, "F"), Jp, X_JpJc_,
+                  this->model_instance()));
   }
 
   auto weld_mobilizer =

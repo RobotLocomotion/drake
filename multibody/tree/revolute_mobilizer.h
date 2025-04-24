@@ -21,12 +21,12 @@ around an axis that is constant when measured in either of the frames, while the
 frame origins remain coincident. The axis must be one of the coordinate axes
 x, y, or z. To fully specify this mobilizer we need an inboard ("fixed") frame
 F, an outboard ("mobilized") frame M and the coordinate axis about which frame M
-rotates with respect to F (templatized as 0, 1, or 2). The axis vector can be
-considered axis_F (expressed in frame F) or axis_M (expressed in frame M) since
-the components are identical in either frame.
+rotates with respect to F (see RevoluteMobilizerAxial below). The axis vector
+can be considered axis_F (expressed in frame F) or axis_M (expressed in frame M)
+since the components are identical in either frame.
 
 The restriction to rotating about a coordinate axis means that the transform
-X_FM has special structure that can be exploited for speed(it is an "axial
+X_FM has special structure that can be exploited for speed (it is an "axial
 rotation transform" arX_FM; search for the Doxygen tag "special_xform_def" in
 drake/math/rigid_transform.h for a definition). Velocity and acceleration
 quantities are simplified also. In robotics, the revolute joint is very common
@@ -36,7 +36,7 @@ The single generalized coordinate q introduced by this mobilizer corresponds to
 the rotation angle in radians of frame M with respect to frame F about the
 rotation axis. When q = 0, frames F and M are coincident. The rotation angle is
 defined to be positive according to the right-hand-rule with the thumb aligned
-in the direction of the axis.
+in the direction of the rotation axis.
 
 Notice that the components of the rotation axis as expressed in either frame F
 or M are constant. That is, axis_F and axis_M remain identical and unchanged
@@ -75,11 +75,11 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   bool can_rotate() const final { return true; }
   bool can_translate() const final { return false; }
 
-  // @retval axis_FM The rotation axis as a unit vector expressed in the inboard
-  // frame F and the outboard frame M. This will be one of the coordinate axes,
+  // @retval axis The rotation axis as a unit vector expressed identically in
+  // both the F and M frames. This will be one of the coordinate axes,
   // which will have been constructed to be aligned with the user's specified
   // rotation axis for the RevoluteJoint this is implementing.
-  const Vector3<double>& revolute_axis() const { return axis_FM(); }
+  const Vector3<double>& revolute_axis() const { return axis_; }
 
   // Gets the rotation angle q of `this` mobilizer from `context`. See class
   // documentation for sign convention.
@@ -116,7 +116,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   // @returns a constant reference to `this` mobilizer.
   const RevoluteMobilizer<T>& SetAngularRate(systems::Context<T>* context,
                                              const T& theta_dot) const;
-  bool is_velocity_equal_to_qdot() const override { return true; }
+  bool is_velocity_equal_to_qdot() const final { return true; }
 
   // Maps v to qdot, which for this mobilizer is q̇ = v.
   void MapVelocityToQDot(const systems::Context<T>& context,
@@ -146,10 +146,8 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
                     const Frame<T>& inboard_frame_F,
                     const Frame<T>& outboard_frame_M);
 
-  // @pre axis_FM is a unit vector.
-  void set_axis_FM(const Vector3<double>& axis_FM) { axis_FM_ = axis_FM; }
-
-  const Vector3<double>& axis_FM() const { return axis_FM_; }
+  // @pre axis is a unit vector.
+  void set_axis(const Vector3<double>& axis) { axis_ = axis; }
 
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
@@ -160,7 +158,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
  private:
   // Joint axis expressed identically in frames F and M. This must be one of
   // the coordinate axes 100, 010, or 001.
-  Vector3<double> axis_FM_;
+  Vector3<double> axis_;
 };
 
 // Revolute mobilizer with rotation axis aligned with one of the F and M frame
@@ -171,15 +169,13 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizerAxial);
 
-  using RevoluteMobilizer<T>::axis_FM;
-
   RevoluteMobilizerAxial(const SpanningForest::Mobod& mobod,
                          const Frame<T>& inboard_frame_F,
                          const Frame<T>& outboard_frame_M)
       : RevoluteMobilizer<T>(mobod, inboard_frame_F, outboard_frame_M) {
-    Vector3<double> rotation_axis = Vector3<double>::Zero();
-    rotation_axis[axis] = 1;
-    this->set_axis_FM(rotation_axis);
+    Vector3<double> the_axis = Vector3<double>::Zero();
+    the_axis[axis] = 1;
+    this->set_axis(the_axis);
   }
 
   ~RevoluteMobilizerAxial() final;
@@ -250,22 +246,27 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
     return X_FB;
   }
 
-  // TODO(sherm1) Velocity & acceleration APIs should be reworked to perform
-  //  only simplified updates.
-
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
   // frame M measured and expressed in frame F as a function of the input
   // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
-    return SpatialVelocity<T>(v[0] * axis_FM(),  // axis_F, 3 flops
-                              Vector3<T>::Zero());
+    DRAKE_ASSERT(v != nullptr);
+    constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
+    Eigen::Vector3<T> w_FM;
+    w_FM[x] = v[0];
+    w_FM[y] = w_FM[z] = 0;
+    return SpatialVelocity<T>(w_FM, Vector3<T>::Zero());
   }
 
   // Here H_F₆ₓ₁=[axis_F, 0₃]ᵀ so Hdot_F = 0 and
   // A_FM_F = H_F⋅vdot + Hdot_F⋅v = [axis_F⋅vdot, 0₃]ᵀ
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
-    return SpatialAcceleration<T>(vdot[0] * axis_FM(),  // axis_F, 3 flops
-                                  Vector3<T>::Zero());
+    DRAKE_ASSERT(vdot != nullptr);
+    constexpr int x = axis, y = (axis + 1) % 3, z = (axis + 2) % 3;
+    Eigen::Vector3<T> alpha_FM;
+    alpha_FM[x] = vdot[0];
+    alpha_FM[y] = alpha_FM[z] = 0;
+    return SpatialAcceleration<T>(alpha_FM, Vector3<T>::Zero());
   }
 
   // Returns tau = H_FM_Fᵀ⋅F_F, where H_FM_Fᵀ = [axis_Fᵀ 0₃ᵀ].
