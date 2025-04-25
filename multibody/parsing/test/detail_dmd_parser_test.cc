@@ -120,15 +120,16 @@ std::filesystem::path MakeDeformableSdf() {
   f << R"""(
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <drake:deformable_model name='deformable'>
+  <model name='deformable'>
     <link name='body'>
       <collision name='collision'>
         <geometry>
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
+      <drake:deformable_properties></drake:deformable_properties>
     </link>
-  </drake:deformable_model>
+  </model>
 </sdf>
   )""";
   return sdf_path;
@@ -440,7 +441,7 @@ directives:
 - add_model:
     name: rigid
     file: {sphere_sdf}
-- add_deformable_model:
+- add_model:
     name: deformable
     file: {deformable_sdf}
 )""",
