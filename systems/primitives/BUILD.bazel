@@ -740,6 +740,7 @@ drake_cc_googletest(
     name = "saturation_test",
     deps = [
         ":saturation",
+        "//systems/framework/test_utilities",
     ],
 )
 
