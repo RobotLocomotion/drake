@@ -13,7 +13,7 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 
-ModelDirectives LoadModelDirectives(const std::string& filename);
+ModelDirectives LoadModelDirectives(const std::filesystem::path& filename);
 
 ModelDirectives LoadModelDirectivesFromString(
     const std::string& model_directives);
