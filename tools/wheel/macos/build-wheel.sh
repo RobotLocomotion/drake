@@ -30,11 +30,11 @@ readonly python_executable="$python_prefix/bin/$python"
 # Clean up from old builds.
 # -----------------------------------------------------------------------------
 
-rm -rf "/opt/drake-wheel-build/$python"
-rm -rf "/opt/drake-dist/$python"
+rm -rf "${HOME}/.cache/drake-wheel-build/$python"
+rm -rf "${HOME}/.cache/drake-dist/$python"
 
-if [ -e "/opt/drake" ]; then
-    echo "Unable to proceed: /opt/drake exists" \
+if [ -e "${HOME}/.cache/drake" ]; then
+    echo "Unable to proceed: ${HOME}/.cache/drake exists" \
          "(left over from a failed build?)" >&2
     exit 1
 fi
@@ -43,7 +43,7 @@ fi
 # Build and "install" Drake.
 # -----------------------------------------------------------------------------
 
-readonly build_root="/opt/drake-wheel-build/$python/drake-build"
+readonly build_root="${HOME}/.cache/drake-wheel-build/$python/drake-build"
 
 mkdir -p "$build_root"
 cd "$build_root"
@@ -71,7 +71,7 @@ cmake "$git_root" \
     -DWITH_USER_LAPACK=OFF \
     -DWITH_USER_ZLIB=OFF \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
-    -DCMAKE_INSTALL_PREFIX="/opt/drake-dist/$python" \
+    -DCMAKE_INSTALL_PREFIX="${HOME}/.cache/drake-dist/$python" \
     -DPython_EXECUTABLE="$python_executable"
 make install
 
@@ -91,9 +91,9 @@ find "$build_root" -type d -print0 | xargs -0 chmod u+w
 # "Install" additional tools to build the wheel.
 # -----------------------------------------------------------------------------
 
-ln -nsf "$git_root" "/opt/drake-wheel-build/drake"
+ln -nsf "$git_root" "${HOME}/.cache/drake-wheel-build/drake"
 
-readonly venv_drake="/opt/drake-wheel-build/drake/venv"
+readonly venv_drake="${HOME}/.cache/drake-wheel-build/drake/venv"
 
 ln -s \
     "$build_root/bazel-bin/external/drake+/tools/wheel/strip_rpath" \
@@ -107,17 +107,17 @@ ln -s \
 # Build the Drake wheel.
 # -----------------------------------------------------------------------------
 
-mkdir -p "/opt/drake-wheel-build/$python/wheel"
+mkdir -p "${HOME}/.cache/drake-wheel-build/$python/wheel"
 
-ln -s "/opt/drake-dist/$python" \
-      "/opt/drake"
+ln -s "${HOME}/.cache/drake-dist/$python" \
+      "${HOME}/.cache/drake"
 
 cp \
     "$resource_root/image/setup.py" \
-    "/opt/drake-wheel-build/wheel/setup.py"
+    "${HOME}/.cache/drake-wheel-build/wheel/setup.py"
 
 export DRAKE_VERSION="$1"
 
 "$resource_root/image/build-wheel.sh"
 
-rm "/opt/drake"
+rm "${HOME}/.cache/drake"

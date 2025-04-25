@@ -19,6 +19,6 @@ fi
 
 cd "$(dirname "${BASH_SOURCE}")"
 
-. /opt/drake-wheel-test/python/bin/activate
+. ${HOME}/.cache/drake-wheel-test/python/bin/activate
 
 exec "$@"

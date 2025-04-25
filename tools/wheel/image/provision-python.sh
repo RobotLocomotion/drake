@@ -11,7 +11,7 @@ set -eu -o pipefail
 # (needed to download the sources). Otherwise, the version should be a valid
 # suffix of 'python'. Unspecified is treated as '3'.
 if [[ "${1%:*}" == "build" ]]; then
-    readonly PREFIX=/opt/drake-python
+    readonly PREFIX=${HOME}/.cache/drake-python
     readonly PYTHON=python$(echo ${1#*:} | cut -d. -f1-2)
 
     cd "$(dirname "${BASH_SOURCE}")"
