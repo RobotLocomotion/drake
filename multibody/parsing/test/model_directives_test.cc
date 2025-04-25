@@ -28,9 +28,6 @@ directives:
       body2:
         translation: [-1, -2, -3]
         rotation: !Rpy { deg: [-5, -6, -7] }
-- add_deformable_model:
-    name: new_deformable_model
-    file: deformable.sdf
 - add_weld:
     parent: parent_frame
     child: child_frame

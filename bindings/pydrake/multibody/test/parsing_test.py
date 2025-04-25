@@ -5,7 +5,6 @@ from pydrake.multibody.parsing import (
     AddDirectives,
     AddFrame,
     AddModel,
-    AddDeformableModel,
     AddModelInstance,
     AddWeld,
     CollisionFilterGroups,
@@ -35,7 +34,6 @@ from pydrake.multibody.tree import (
 )
 from pydrake.multibody.plant import (
     AddMultibodyPlantSceneGraph,
-    DeformableBodyId,
     MultibodyPlant,
     MultibodyPlant_,
 )
@@ -125,8 +123,6 @@ class TestParsing(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         urdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.urdf")
-        deformable_sdf_file = FindResourceOrThrow(
-            "drake/multibody/parsing/test/deformable.sdf")
         for dut, file_name in (
                 (Parser.AddModels, sdf_file),
                 (Parser.AddModels, urdf_file),
@@ -136,13 +132,6 @@ class TestParsing(unittest.TestCase):
             result = dut(parser, file_name=file_name)
             self.assertIsInstance(result, list)
             self.assertIsInstance(result[0], ModelInstanceIndex)
-        plant = MultibodyPlant(time_step=0.01)
-        scene_graph = SceneGraph()
-        plant.RegisterAsSourceForSceneGraph(scene_graph)
-        parser = Parser(plant=plant)
-        result = parser.AddDeformableModels(deformable_sdf_file)
-        self.assertIsInstance(result, list)
-        self.assertIsInstance(result[0], DeformableBodyId)
 
     def test_parser_string(self):
         """Checks parsing from a string (not file_name)."""
@@ -164,30 +153,6 @@ class TestParsing(unittest.TestCase):
             file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(results[0], ModelInstanceIndex)
 
-    def test_parser_deformable_string(self):
-        """Checks parsing from a string (not file_name)."""
-        sdf_file = FindResourceOrThrow(
-            "drake/multibody/parsing/test/deformable.sdf")
-        with open(sdf_file, "r") as f:
-            sdf_contents = f.read()
-
-        plant = MultibodyPlant(time_step=0.01)
-        scene_graph = SceneGraph()
-        plant.RegisterAsSourceForSceneGraph(scene_graph)
-        parser = Parser(plant=plant)
-        results = parser.AddDeformableModelsFromString(
-            file_contents=sdf_contents, file_type="sdf")
-        self.assertIsInstance(results[0], DeformableBodyId)
-
-        # Check the related AddModel overload.
-        plant = MultibodyPlant(time_step=0.01)
-        scene_graph = SceneGraph()
-        plant.RegisterAsSourceForSceneGraph(scene_graph)
-        parser = Parser(plant=plant)
-        results = parser.AddDeformableModels(
-            file_contents=sdf_contents, file_type="sdf")
-        self.assertIsInstance(results[0], DeformableBodyId)
-
     def test_parser_url(self):
         """Tests for AddModelsFromUrl as well as its related AddModel overload.
         """
@@ -200,23 +165,6 @@ class TestParsing(unittest.TestCase):
         plant = MultibodyPlant(time_step=0.01)
         results = Parser(plant).AddModels(url=sdf_url)
         self.assertIsInstance(results[0], ModelInstanceIndex)
-
-    def test_parser_deformable_url(self):
-        """Tests for AddDeformableModelsFromUrl as well as its related AddModel
-        overload."""
-        sdf_url = "package://drake/multibody/parsing/test/deformable.sdf"
-
-        plant = MultibodyPlant(time_step=0.01)
-        scene_graph = SceneGraph()
-        plant.RegisterAsSourceForSceneGraph(scene_graph)
-        results = Parser(plant).AddDeformableModelsFromUrl(url=sdf_url)
-        self.assertIsInstance(results[0], DeformableBodyId)
-
-        plant = MultibodyPlant(time_step=0.01)
-        scene_graph = SceneGraph()
-        plant.RegisterAsSourceForSceneGraph(scene_graph)
-        results = Parser(plant).AddDeformableModels(url=sdf_url)
-        self.assertIsInstance(results[0], DeformableBodyId)
 
     def test_parser_prefix_constructors(self):
         model = "<robot name='r'><link name='a'/></robot>"
@@ -379,13 +327,6 @@ directives:
     def test_add_model_struct(self):
         """Checks the bindings of the AddModel helper struct."""
         dut = AddModel(file="package://foo/bar.sdf")
-        self.assertIn("bar.sdf", repr(dut))
-        copy.copy(dut)
-        copy.deepcopy(dut)
-
-    def test_add_deformable_model_struct(self):
-        """Checks the bindings of the AddDeformableModel helper struct."""
-        dut = AddDeformableModel(file="package://foo/bar.sdf")
         self.assertIn("bar.sdf", repr(dut))
         copy.copy(dut)
         copy.deepcopy(dut)

@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/identifier.h"
+#include "drake/common/string_unordered_map.h"
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/plant/constraint_specs.h"
@@ -84,11 +85,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    model instance. */
   DeformableBodyId RegisterDeformableBody(
       std::unique_ptr<geometry::GeometryInstance> geometry_instance,
-      const fem::DeformableBodyConfig<T>& config, double resolution_hint) {
-    return RegisterDeformableBody(std::move(geometry_instance),
-                                  default_model_instance(), config,
-                                  resolution_hint);
-  }
+      const fem::DeformableBodyConfig<T>& config, double resolution_hint);
 
   // TODO(xuchenhan-tri): Consider pulling PosedHalfSpace out of internal
   // namespace and use it here.
@@ -255,6 +252,12 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    deformable bodies. */
   DeformableBodyId GetBodyId(DeformableBodyIndex index) const;
 
+  // TODO(xuchenhan-tri): Consider whether we should allow duplicateed names
+  // across different model instances.
+  /** Returns the DeformableBodyId of the body with the given name.
+   @throws std::exception if there's no body with the given name. */
+  DeformableBodyId GetBodyIdByName(const std::string& name) const;
+
   /** Returns the DeforambleIds of the bodies that belong to the given model
    instance. Returns the empty vector if no deformable bodies are registered
    with the given model instance. */
@@ -398,6 +401,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
+  string_unordered_map<DeformableBodyId> name_to_body_id_;
   std::unordered_map<ModelInstanceIndex, std::vector<DeformableBodyId>>
       model_instance_to_body_ids_;
   /* The collection all external forces. */

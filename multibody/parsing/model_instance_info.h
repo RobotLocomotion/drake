@@ -1,10 +1,8 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/plant/deformable_ids.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -28,8 +26,6 @@ struct ModelInstanceInfo {
   std::string child_frame_name;
   drake::math::RigidTransformd X_PC;
   drake::multibody::ModelInstanceIndex model_instance;
-  /// All added deformable bodies' id. Mutually exclusive with `model_instance`.
-  std::vector<DeformableBodyId> deformable_body_ids;
 };
 
 }  // namespace parsing
