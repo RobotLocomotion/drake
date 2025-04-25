@@ -440,7 +440,6 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//math:geometric_transform",
-        "//multibody/plant:deformable_ids",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )

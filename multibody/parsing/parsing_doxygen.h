@@ -1236,24 +1236,18 @@ emit a warning as it would for doing the same to a `<visual>` tag.
 - URDF path: n/a
 - Syntax: Nested elements; see below.
 
-@code{xml}
-<drake:deformable_model>
-  <pose> x y z r p y </pose>   <!-- optional world‑frame pose -->
+@subsubsection tag_drake_deormable_properties Semantics
 
-  <link name="..."> ... </link>  <!-- one deformable body per link -->
-  <link name="..."> ... </link>
-  ... 
-</drake:deformable_model>
-@endcode
-
-@subsubsection tag_drake_deformable_properties Semantics
 If present, this element defines the link element as a deformable body in Drake.
-Such link elements are not treated as rigid bodies, and the standard tags for
-inertias, joints, etc. are illegal and provoke errors. The only other tags that
-are allowed are under such "deformable" links are `<pose>, `<collision>`, and
-`<visual>`. The `<collision>` and `<visual>` tags are _not_ interpreted exactly
- the same way as the standard `<collision>` and `<visual>` tags. We explain the
-differences in the sections below.
+Such link elements are not treated as rigid bodies, and the standard tags such as
+inertia are illegal and provoke errors. The only other tags that
+are allowed are under such "deformable" links are `<pose>`, `<collision>`, and
+`<visual>`. Attaching frames, joints, and other elements to deformable links is
+not allowed. The `<pose>` tag is interpreted as the pose of the deformable geometry
+used for dynamics and collision in its reference configration. The `<collision>`
+and `<visual>` tags are *not* interpreted exactly the same way as the standard
+`<collision>` and `<visual>` tags either. We explain the differences in the
+@ref tag_deformable_link_requirements section below.
 
 The following nested elements may be present under `<drake:deformable_properties>`:
 - `drake:youngs_modulus`
@@ -1270,43 +1264,91 @@ see @ref tag_drake_youngs_modulus
 @ref tag_drake_mass_density
 @ref tag_drake_material_model
 
-@see deformable_link_requirements, Parser::AddDeformableModelsFromSdf()
+@subsection tag_drake_youngs_modulus drake:youngs_modulus
 
-@subsection tag_drake_deformable_properties drake:deformable_properties
+- SDFormat path: `//model/link/drake:deformable_properties/drake:youngs_modulus`
+- URDF path: n/a
+- Syntax: Positive floating point value.
 
-- SDFormat path: `//drake:deformable_model/link/drake:deformable_properties`  
-- URDF path: n/a
+@subsubsection tag_drake_youngs_modulus_semantics Semantics
 
-This optional element overrides material parameters for the enclosing
-link‑as‑deformable‑body.  All child elements are *optional*; unspecified fields
-fall back to the defaults of drake::multibody::fem::DeformableBodyConfig.
+If present, this element provides a value (with unit `Pa(N/m²)`) for the Young's
+modulus for the deformable body. If unspecified, the default value is set to
+`1.0e8` Pa (N/m²).
 
+@subsection tag_drake_poissons_ratio drake:poissons_ratio
 
-All of the above are simple leaf elements whose textual contents follow the
-units and ranges listed in the table and populate the corresponding fields in
-DeformableBodyConfig.
+- SDFormat path: `//model/link/drake:deformable_properties/drake:poissons_ratio`
+- URDF path: n/a
+- Syntax: Floating point value in (-1, 0.5), non-inclusive.
 
-| Element | Units | Valid range / values |
-|---------|-------|----------------------|
-| `drake:youngs_modulus`      | Pa (N/m²) | `> 0` |
-| `drake:poissons_ratio`      | –         | `(-1, 0.5)` |
-| `drake:mass_damping`        | 1/s       | `≥ 0` |
-| `drake:stiffness_damping`   | s         | `≥ 0` |
-| `drake:mass_density`        | kg/m³     | `> 0` |
-| `drake:material_model`      | enum      | `linear_corotated` (default), `corotated`, `linear` |
+@subsubsection tag_drake_poissons_ratio_semantics Semantics
 
+If present, this element provides a value (unitless) for the Poisson's ratio for
+for the deformable body. If unspecified, the default value is set to `0.49`.
 
-@anchor deformable_link_requirements
-@subsection deformable_link_requirements Deformable `<link>` requirements
+@subsection tag_drake_mass_damping drake:mass_damping
 
-Within a `<drake:deformable_model>` each `<link>` is interpreted **solely** as
-as a single deformable body and must obey:
+- SDFormat path: `//model/link/drake:deformable_properties/drake:mass_damping`
+- URDF path: n/a
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_mass_damping_semantics Semantics
+
+If present, this element provides a value (with unit `1/s`) for the mass damping
+coefficient in Rayleigh damping for the deformable body. If unspecified, the
+default value is set to `0.0`.
+
+@subsection tag_drake_stiffness_damping drake:stiffness_damping
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:stiffness_damping`
+- URDF path: n/a
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_stiffness_damping_semantics Semantics
+
+If present, this element provides a value (with unit `s`) for the stiffness
+damping coefficient in Rayleigh damping for the deformable body. If unspecified,
+the default value is set to `0.0`.
+
+@subsection tag_drake_mass_density drake:mass_density
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:mass_density`
+- URDF path: n/a
+- Syntax: Positive floating point value.
+
+@subsubsection tag_drake_mass_density_semantics Semantics
+
+If present, this element provides a value (with unit `kg/m³`) for the mass
+density of the deformable body. If unspecified, the default value is set to
+`1500.0` kg/m³.
+
+@subsection tag_drake_material_model drake:material_model
+- SDFormat path: `//model/link/drake:deformable_properties/drake:material_model`
+- URDF path: n/a
+- Syntax: String.
+
+@subsubsection tag_drake_material_model_semantics Semantics
+
+If present, this element provides the material model of the deformable body.
+The valid values are `linear_corotated` (default), `corotated`, and `linear`.
+
+@subsection tag_deformable_link_requirements Deformable link requirements
+
+Within a `<link>` interpreted as a deformable body (i.e. one that has the
+`<drake:deformable_properties>` elementt), there are several requirements that
+must be satisfied:
 
 - **Exactly one `<collision>` element**: The `<collision>` tag must be present,
-  but more than one `<collision>` tag is forbidden.  
+  but more than one `<collision>` tag is forbidden.
 - **Geometry restriction**: the `<collision>/<geometry>` must contain a single
-  `<mesh>` whose URI points to a `.vtk` file; primitive shapes are not yet
-  supported.  
+  `<mesh>` whose URI points to a `.vtk` file that specifies a tetrahedral mesh;
+  primitive shapes are not yet supported.  The geometry is used for both
+  collision and dynamics.
+- **Limited proximity properties**: inside `<collision>`, the only Drake
+  proximity tag recognized are `<drake:mu_dynamic>`,
+  `<drake:hunt_crossley_dissipation>`, and `drake:relaxation_time>`.
+  All other tags are now allowed.
 - **At most one `<visual>` element**: a single `<visual>` may be present to
   provide a visual representation of the deformable body. The `<visual>` must
   contain a single `<geometry>` element, which must contain a single `<mesh>`
@@ -1315,13 +1357,6 @@ as a single deformable body and must obey:
   surface described by the `.obj` file is used for rendering. If an empty element
   is prescribed, the surface of the collision mesh is used for rendering and
   visualization. More than one `<visual>` is an error.
-- **Limited proximity properties**: inside `<collision>`, the only Drake
-  proximity tag recognized are `<drake:mu_dynamic>`, `<drake:hunt_crossley_dissipation>`,
-  and `drake:relaxation_time>`. All other tags are now allowed.
-- **Optional per‑link material**: a `<drake:deformable_properties>` block may
-  appear to override default material properties.
-- **No collision filtering**: `<drake:collision_filter_group>` is not yet supported
-  for deformable links.
 
 Violating any of these rules results in a *parsing error*.
 

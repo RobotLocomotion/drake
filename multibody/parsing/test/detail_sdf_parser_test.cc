@@ -4357,6 +4357,127 @@ TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
               MatchesRegex(".*deformable.*without.*geometry source.*"));
 }
 
+TEST_F(SdfParserTest, IllegalYoungsModulus) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties>
+        <drake:youngs_modulus>0.0</drake:youngs_modulus>
+      </drake:deformable_properties>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Young's modulus.*"));
+}
+
+TEST_F(SdfParserTest, IllegalPoissonsRatio) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties>
+        <drake:poissons_ratio>1.5</drake:poissons_ratio>
+      </drake:deformable_properties>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Poisson's ratio.*"));
+}
+
+TEST_F(SdfParserTest, IllegalMassDamping) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties>
+        <drake:mass_damping>-1.0</drake:mass_damping>
+      </drake:deformable_properties>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Mass damping.*"));
+}
+
+TEST_F(SdfParserTest, IllegalStiffnessDamping) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties>
+        <drake:stiffness_damping>-1.0</drake:stiffness_damping>
+      </drake:deformable_properties>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Stiffness damping.*"));
+}
+
+TEST_F(SdfParserTest, IllegalMassDensity) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties>
+        <drake:mass_density>-1.0</drake:mass_density>
+      </drake:deformable_properties>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Mass density.*"));
+}
+
+TEST_F(SdfParserTest, IllegalMaterialModel) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties>
+        <drake:material_model>not_a_material_model</drake:material_model>
+      </drake:deformable_properties>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*material_model.*not_a_material_model.*"));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
