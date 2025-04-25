@@ -39,7 +39,15 @@ void SetAppOptions(const std::string& default_linear_solver,
     }
   };
   const auto set_int_option = [&app](const std::string& name, int value) {
-    const bool success = app->Options()->SetIntegerValue(name, value);
+    bool success{false};
+    success = app->Options()->SetIntegerValue(name, value);
+    if (!success) {
+      // Some options might be set with integer values by the user, but IPOPT
+      // actually uses double values, promote these values from int to double
+      // and try setting the options again.
+      success =
+          app->Options()->SetNumericValue(name, static_cast<double>(value));
+    }
     if (!success) {
       throw std::logic_error(
           fmt::format("Error setting IPOPT integer option {}={}", name, value));
