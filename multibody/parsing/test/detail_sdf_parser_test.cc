@@ -54,6 +54,7 @@ using drake::trajectories::PiecewiseConstantCurvatureTrajectory;
 using drake::trajectories::Trajectory;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using geometry::GeometryId;
 using geometry::GeometryInstance;
 using geometry::SceneGraph;
@@ -4476,6 +4477,40 @@ TEST_F(SdfParserTest, IllegalMaterialModel) {
   EXPECT_THAT(NumErrors(), 1);
   EXPECT_THAT(TakeError(),
               MatchesRegex(".*material_model.*not_a_material_model.*"));
+}
+
+TEST_F(SdfParserTest, ComposedPoseForDeformable) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <pose>3 0 0 0 0 0</pose>
+    <link name='body'>
+      <pose>4 0 0 0 0 0</pose>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties></drake:deformable_properties>
+    </link>
+  </model>)";
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 0);
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  const DeformableBodyId body_id =
+      plant_.deformable_model().GetBodyIdByName("body");
+  const VectorXd q_WB =
+      plant_.deformable_model().GetReferencePositions(body_id);
+  VectorXd q_WB_expected(12);
+  // clang-format off
+  q_WB_expected << -3, -10, -10,
+                    17, 0,  0,
+                    7,  10, 0,
+                    7,  0,  10;
+  // clang-format on
+  EXPECT_TRUE(CompareMatrices(q_WB, q_WB_expected,
+                              4.0 * std::numeric_limits<double>::epsilon()));
 }
 
 }  // namespace
