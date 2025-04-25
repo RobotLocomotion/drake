@@ -277,12 +277,10 @@ void RpyBallMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>& context,
 template <typename T>
 void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
                                            EigenPtr<MatrixX<T>> Ndot) const {
-  // Computes the 3x3 matrix Ṅ(q,q̇) that helps relate q̈ (2ⁿᵈ time derivative
-  // of the generalized positions) to v̇ (1ˢᵗ time derivative of generalized
-  // velocities) according to q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇, where q = [r, p, y]ᵀ
-  // contains the roll (r), pitch (p) and yaw (y) angles and v = [wx, wy, wz]ᵀ
-  // represents W_FM_F (the angular velocity of the mobilizer's M frame measured
-  // in its F frame, expressed in the F frame).
+  // Computes the 3x3 matrix Ṅ(q,q̇) that helps relate q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇,
+  // where q = [r, p, y]ᵀ contains the roll (r), pitch (p) and yaw (y) angles
+  // and v = [wx, wy, wz]ᵀ represents W_FM_F (the angular velocity of the
+  // mobilizer's M frame measured in its F frame, expressed in the F frame).
   //
   // The 3x3 matrix N(q) relates q̇ to v as q̇ = N(q)⋅v, where
   //
@@ -290,7 +288,6 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   // N(q) = [                  -sin(y),                    cos(y),  0]
   //        [ sin(p) * cos(y) / cos(p),  sin(p) * sin(y) / cos(p),  1]
   //
-  using std::abs;
   using std::cos;
   using std::sin;
   const Vector3<T> angles = get_angles(context);
@@ -323,6 +320,50 @@ void RpyBallMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>& context,
   Ndot->coeffRef(2, 0) = cy * cpiSqr_pdot - sy * sp_cpi_ydot;
   Ndot->coeffRef(2, 1) = sy * cpiSqr_pdot + cy * sp_cpi_ydot;
   Ndot->coeffRef(2, 2) = 0;
+}
+
+template <typename T>
+void RpyBallMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>& context, EigenPtr<MatrixX<T>> NplusDot) const {
+  // Computes the matrix `Ṅ⁺(q,q̇)` that helps relate v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈,
+  // where q = [r, p, y]ᵀ contains the roll (r), pitch (p) and yaw (y) angles
+  // and v = [wx, wy, wz]ᵀ represents W_FM_F (the angular velocity of the
+  // mobilizer's M frame measured in its F frame, expressed in the F frame).
+  //
+  // The 3x3 matrix N⁺(q) relates v to q̇ as v = N⁺(q)⋅q̇, where
+  //
+  //         [ cos(y) * cos(p),  -sin(y),  0]
+  // N⁺(q) = [ sin(y) * cos(p),   cos(y),  0]
+  //         [         -sin(p),        0,  1]
+  //
+  using std::cos;
+  using std::sin;
+  const Vector3<T> angles = get_angles(context);
+  const T cp = cos(angles[1]);
+  const T sp = sin(angles[1]);
+  const T sy = sin(angles[2]);
+  const T cy = cos(angles[2]);
+
+  // Calculate time-derivative of roll, pitch, and yaw angles.
+  const Vector3<T> v = get_angular_velocity(context);
+  Vector3<T> qdot;
+  MapVelocityToQDot(context, v, &qdot);
+  const T& pdot = qdot(1);
+  const T& ydot = qdot(2);
+
+  const T sp_pdot = sp * pdot;
+  const T cy_ydot = cy * ydot;
+  const T sy_ydot = sy * ydot;
+
+  NplusDot->coeffRef(0, 0) = -sy_ydot * cp - cy * sp_pdot;
+  NplusDot->coeffRef(0, 1) = -cy_ydot;
+  NplusDot->coeffRef(0, 2) = 0;
+  NplusDot->coeffRef(1, 0) = cy_ydot * cp - sy * sp_pdot;
+  NplusDot->coeffRef(1, 1) = -sy * ydot;
+  NplusDot->coeffRef(1, 2) = 0;
+  NplusDot->coeffRef(2, 0) = -cp * pdot;
+  NplusDot->coeffRef(2, 1) = 0;
+  NplusDot->coeffRef(2, 2) = 0;
 }
 
 template <typename T>
