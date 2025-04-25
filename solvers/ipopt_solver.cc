@@ -39,7 +39,20 @@ void SetAppOptions(const std::string& default_linear_solver,
     }
   };
   const auto set_int_option = [&app](const std::string& name, int value) {
-    const bool success = app->Options()->SetIntegerValue(name, value);
+    bool success{false};
+    // Sometimes the option needs a double value, but the user sets the option
+    // with an integer value. We will check the value type based on the
+    // registered option name, and promote the value if necessary.
+    auto reg_option = app->RegOptions()->GetOption(name);
+    if (Ipopt::IsValid(reg_option)) {
+      const auto option_type = reg_option->Type();
+      if (option_type == Ipopt::RegisteredOptionType::OT_Number) {
+        success =
+            app->Options()->SetNumericValue(name, static_cast<double>(value));
+      } else if (option_type == Ipopt::RegisteredOptionType::OT_Integer) {
+        success = app->Options()->SetIntegerValue(name, value);
+      }
+    }
     if (!success) {
       throw std::logic_error(
           fmt::format("Error setting IPOPT integer option {}={}", name, value));
@@ -63,12 +76,13 @@ void SetAppOptions(const std::string& default_linear_solver,
 
   set_string_option("hessian_approximation", "limited-memory");
 
-  // Any user-supplied options handled below will overwrite the above defaults.
+  // Any user-supplied options handled below will overwrite the above
+  // defaults.
   options->Respell([](const auto& common, auto* respelled) {
-    // Note: 0 <= print_level <= 12, with higher numbers more verbose; 4 is very
-    // useful for debugging. Otherwise, we default to printing nothing. The user
-    // can always select an arbitrary print level, by setting the ipopt-specific
-    // option name directly.
+    // Note: 0 <= print_level <= 12, with higher numbers more verbose; 4 is
+    // very useful for debugging. Otherwise, we default to printing nothing.
+    // The user can always select an arbitrary print level, by setting the
+    // ipopt-specific option name directly.
     const int verbose = 4;
     respelled->emplace("print_level", common.print_to_console ? verbose : 0);
     if (!common.print_file_name.empty()) {
