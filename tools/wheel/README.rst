@@ -19,7 +19,7 @@ environment as one would to build Drake normally).
 There are a small number of dependencies for the the builder scripts to work
 that Drake itself does not require. In order to install these additional
 packages, run the ``setup/install_prereqs`` script with the ``--developer``
-flag. The builder must also be able to write to ``/opt``, as this is where the
+flag. The builder must also be able to write to ``${HOME}``, as this is where the
 build is performed.
 
 The script takes a single, required positional argument, which is used to
@@ -68,7 +68,7 @@ debugging purposes and should not be needed in ordinary use.
     system. (The Docker cache and tagged images may still be altered.)
 
     On macOS, if ``--keep-build`` is used, the wheel will still be accessible
-    via its build location in ``//opt/drake-wheel-build/wheel/wheelhouse``.
+    via its build location in ``/${HOME}/.cache/drake-wheel-build/wheel/wheelhouse``.
 
     This option automatically implies ``--no-test``.
 
@@ -92,7 +92,7 @@ debugging purposes and should not be needed in ordinary use.
 
 ``-k``, ``--keep-containers`` (macOS only)
     Do not delete the various build trees and artifacts, which can be found in
-    various subdirectories under ``/opt``.
+    various subdirectories under ``${HOME}``.
 
 Implementation Details
 ----------------------
@@ -126,17 +126,17 @@ was successfully installed.
 On macOS, wheels must be built on the host system. The following directories
 are used:
 
-- ``/opt/drake-wheel-build``:
+- ``${HOME}/.cache/drake-wheel-build``:
   Contains most intermediate artifacts.
 
-- ``/opt/drake-dist``:
+- ``${HOME}/.cache/drake-dist``:
   Contains the Drake installation used to build the wheel.
 
-- ``/opt/drake-wheel-test``:
+- ``${HOME}/.cache/drake-wheel-test``:
   Contains a Python virtual environment used to test the wheel.
 
 In addition, the wheel creation script requires that the Drake installation is
-located at ``/opt/drake``. Since multiple builds may be present, a temporary
+located at ``${HOME}/.cache/drake``. Since multiple builds may be present, a temporary
 symlink is created at this path to the actual, Python-version-specific
 installation while building the wheel. Therefore, this path must be available.
 

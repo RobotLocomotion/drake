@@ -13,11 +13,17 @@ import subprocess
 import sys
 import tarfile
 
+# Resolve the home directory path.
+home_path = os.getenv('HOME')
+
 # Location where most of the build will take place.
-build_root = '/opt/drake-wheel-build'
+build_root = f'{home_path}/.cache/drake-wheel-build'
 
 # Location where testing of the wheel will take place.
-test_root = '/opt/drake-wheel-test'
+test_root = f'{home_path}/.cache/drake-wheel-test'
+
+# Location where the distribution of drake used for install lives.
+dist_root = f'{home_path}/.cache/drake-dist'
 
 # Location where the wheel will be produced.
 wheel_root = os.path.join(build_root, 'wheel')
