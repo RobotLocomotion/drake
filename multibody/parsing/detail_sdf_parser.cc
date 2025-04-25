@@ -1070,7 +1070,6 @@ void DrakifyModel(const SDFormatDiagnostic& diagnostic,
   }
 }
 
-// TODO(xuchenhan-tri): Handle illegal values in the config.
 // Helper that loads `<drake:deformable_properties>` into a config.
 // param[in] link      The SDF link to load the property for.
 // param[in, out] cfg  On input, it's a default config. On output, it's
@@ -1093,21 +1092,46 @@ void LoadDeformableConfig(const sdf::Link& link,
         "drake:material_model"};
   // clang-format on
   CheckSupportedElements(diagnostic, src, supported_proximity_elements);
+
   if (src->HasElement("drake:youngs_modulus")) {
-    cfg->set_youngs_modulus(src->Get<double>("drake:youngs_modulus"));
+    const double val = src->Get<double>("drake:youngs_modulus");
+    if (!(val > 0)) {
+      diagnostic.Error(src, "Young's modulus must be positive.");
+      return;
+    }
+    cfg->set_youngs_modulus(val);
   }
   if (src->HasElement("drake:poissons_ratio")) {
-    cfg->set_poissons_ratio(src->Get<double>("drake:poissons_ratio"));
+    const double val = src->Get<double>("drake:poissons_ratio");
+    if (!(val > -1 && val < 0.5)) {
+      diagnostic.Error(src, "Poisson's ratio must be in the range (-1, 0.5).");
+      return;
+    }
+    cfg->set_poissons_ratio(val);
   }
   if (src->HasElement("drake:mass_damping")) {
-    cfg->set_mass_damping_coefficient(src->Get<double>("drake:mass_damping"));
+    const double val = src->Get<double>("drake:mass_damping");
+    if (!(val >= 0)) {
+      diagnostic.Error(src, "Mass damping must be non-negative.");
+      return;
+    }
+    cfg->set_mass_damping_coefficient(val);
   }
   if (src->HasElement("drake:stiffness_damping")) {
-    cfg->set_stiffness_damping_coefficient(
-        src->Get<double>("drake:stiffness_damping"));
+    const double val = src->Get<double>("drake:stiffness_damping");
+    if (!(val >= 0)) {
+      diagnostic.Error(src, "Stiffness damping must be non-negative.");
+      return;
+    }
+    cfg->set_stiffness_damping_coefficient(val);
   }
   if (src->HasElement("drake:mass_density")) {
-    cfg->set_mass_density(src->Get<double>("drake:mass_density"));
+    const double val = src->Get<double>("drake:mass_density");
+    if (!(val > 0)) {
+      diagnostic.Error(src, "Mass density must be positive.");
+      return;
+    }
+    cfg->set_mass_density(val);
   }
   if (src->HasElement("drake:material_model")) {
     const std::string mm = src->Get<std::string>("drake:material_model");
@@ -1119,7 +1143,9 @@ void LoadDeformableConfig(const sdf::Link& link,
       cfg->set_material_model(fem::MaterialModel::kLinear);
     } else {
       diagnostic.Error(
-          src, fmt::format("Invalid <drake:material_model> value {}.", mm));
+          src, fmt::format("Invalid <drake:material_model> value {}. Must be "
+                           "'linear', 'linear_corotated', or 'corotated'.",
+                           mm));
     }
   }
 }
