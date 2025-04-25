@@ -39,7 +39,18 @@ void SetAppOptions(const std::string& default_linear_solver,
     }
   };
   const auto set_int_option = [&app](const std::string& name, int value) {
-    const bool success = app->Options()->SetIntegerValue(name, value);
+    bool success{false};
+    // Some options might be set with integer values by the user, but IPOPT
+    // actually uses double values, promote these values from int to double.
+    // The list of names whose value should be promoted is not exhaustive.
+    // Please add option names here if later you find that users might
+    // mistakenly set the option values to integers.
+    if (name == "max_wall_time" || name == "max_cpu_time" ||
+        name == "print_frequency_time" || name == "obj_scaling_factor") {
+      success =
+          app->Options()->SetNumericValue(name, static_cast<double>(value));
+    }
+    success = app->Options()->SetIntegerValue(name, value);
     if (!success) {
       throw std::logic_error(
           fmt::format("Error setting IPOPT integer option {}={}", name, value));
