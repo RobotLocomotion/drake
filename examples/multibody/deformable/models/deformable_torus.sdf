@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf xmlns:drake="http://drake.mit.edu" version="1.8">
-  <drake:deformable_model name='deformable'>
+  <model name='deformable'>
     <link name='torus'>
       <pose>0 0 0.02925 0 0 0</pose>
       <collision name='collision'>
@@ -22,5 +22,5 @@
         <drake:mass_density>1000.0</drake:mass_density>
       </drake:deformable_properties>
     </link>
-  </drake:deformable_model>
+  </model>
 </sdf>

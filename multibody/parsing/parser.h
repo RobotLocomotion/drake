@@ -268,13 +268,6 @@ class Parser final {
   std::vector<ModelInstanceIndex> AddModelsFromString(
       const std::string& file_contents, const std::string& file_type);
 
-  std::vector<DeformableBodyId> AddDeformableModels(
-      const std::filesystem::path& file_name);
-  std::vector<DeformableBodyId> AddDeformableModelsFromUrl(
-      const std::string& url);
-  std::vector<DeformableBodyId> AddDeformableModelsFromString(
-      const std::string& file_contents, const std::string& file_type);
-
  private:
   friend class internal::CompositeParse;
 

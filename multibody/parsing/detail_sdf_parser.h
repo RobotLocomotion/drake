@@ -73,11 +73,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace);
 
-/// @experimental
-std::vector<DeformableBodyId> AddDeformableModelsFromSdf(
-    const DataSource& data_source, const std::optional<std::string>& model_name,
-    const ParsingWorkspace& workspace);
-
 class SdfParserWrapper final : public ParserInterface {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SdfParserWrapper);
@@ -89,11 +84,6 @@ class SdfParserWrapper final : public ParserInterface {
       const ParsingWorkspace& workspace) final;
 
   std::vector<ModelInstanceIndex> AddAllModels(
-      const DataSource& data_source,
-      const std::optional<std::string>& parent_model_name,
-      const ParsingWorkspace& workspace) final;
-
-  std::vector<DeformableBodyId> AddAllDeformableModels(
       const DataSource& data_source,
       const std::optional<std::string>& parent_model_name,
       const ParsingWorkspace& workspace) final;

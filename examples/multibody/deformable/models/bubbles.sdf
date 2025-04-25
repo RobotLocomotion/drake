@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf xmlns:drake="http://drake.mit.edu" version="1.8">
-  <drake:deformable_model name='bubble'>
+  <model name='bubble'>
     <link name='left'>
       <pose>-0.185 -0.09 0.06 1.5707 3.1416 0</pose>
       <collision name='collision'>
@@ -55,5 +55,5 @@
         <drake:mass_density>10.0</drake:mass_density>
       </drake:deformable_properties>
     </link>
-  </drake:deformable_model>
+  </model>
 </sdf>
