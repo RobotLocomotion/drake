@@ -167,31 +167,6 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       info.model_name = name;
       info.model_path = file;
       if (added_models) added_models->push_back(info);
-    } else if (directive.add_deformable_model) {
-      ModelInstanceInfo info;
-      auto& model = *directive.add_deformable_model;
-      const std::string name =
-          ScopedName::Join(model_namespace, model.name).to_string();
-      drake::log()->debug("  add_model: {}\n    {}", name, model.file);
-      const ResolveUriResult resolved =
-          ResolveUri(diagnostic, model.file, package_map, {});
-      if (!resolved.exists) {
-        // ResolveUri already emitted an error message.
-        continue;
-      }
-      const std::string file = resolved.full_path.string();
-      std::vector<DeformableBodyId> body_ids =
-          parser_selector(diagnostic, file)
-              .AddAllDeformableModels({DataSource::kFilename, &file}, name,
-                                      workspace);
-      if (body_ids.empty()) {
-        // Error should have already been emitted.
-        continue;
-      }
-      info.deformable_body_ids = body_ids;
-      info.model_name = name;
-      info.model_path = file;
-      added_models->push_back(info);
     } else if (directive.add_model_instance) {
       auto& instance = *directive.add_model_instance;
       const std::string name =

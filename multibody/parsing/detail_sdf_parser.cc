@@ -1,6 +1,7 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <limits>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <optional>
@@ -1070,6 +1071,209 @@ void DrakifyModel(const SDFormatDiagnostic& diagnostic,
   }
 }
 
+// TODO(xuchenhan-tri): Handle illegal values in the config.
+// Helper that loads `<drake:deformable_properties>` into a config.
+// param[in] link      The SDF link to load the property for.
+// param[in, out] cfg  On input, it's a default config. On output, it's
+//                     the config with the properties loaded from src.
+void LoadDeformableConfig(const sdf::Link& link,
+                          fem::DeformableBodyConfig<double>* cfg,
+                          const SDFormatDiagnostic& diagnostic) {
+  if (!link.Element()->HasElement("drake:deformable_properties")) {
+    return;
+  }
+  const sdf::ElementPtr src =
+      link.Element()->GetElement("drake:deformable_properties");
+  // clang-format off
+    const std::set<std::string> supported_proximity_elements{
+        "drake:youngs_modulus",
+        "drake:poissons_ratio",
+        "drake:mass_damping",
+        "drake:stiffness_damping",
+        "drake:mass_density",
+        "drake:material_model"};
+  // clang-format on
+  CheckSupportedElements(diagnostic, src, supported_proximity_elements);
+  if (src->HasElement("drake:youngs_modulus")) {
+    cfg->set_youngs_modulus(src->Get<double>("drake:youngs_modulus"));
+  }
+  if (src->HasElement("drake:poissons_ratio")) {
+    cfg->set_poissons_ratio(src->Get<double>("drake:poissons_ratio"));
+  }
+  if (src->HasElement("drake:mass_damping")) {
+    cfg->set_mass_damping_coefficient(src->Get<double>("drake:mass_damping"));
+  }
+  if (src->HasElement("drake:stiffness_damping")) {
+    cfg->set_stiffness_damping_coefficient(
+        src->Get<double>("drake:stiffness_damping"));
+  }
+  if (src->HasElement("drake:mass_density")) {
+    cfg->set_mass_density(src->Get<double>("drake:mass_density"));
+  }
+  if (src->HasElement("drake:material_model")) {
+    const std::string mm = src->Get<std::string>("drake:material_model");
+    if (mm == "linear_corotated") {
+      cfg->set_material_model(fem::MaterialModel::kLinearCorotated);
+    } else if (mm == "corotated") {
+      cfg->set_material_model(fem::MaterialModel::kCorotated);
+    } else if (mm == "linear") {
+      cfg->set_material_model(fem::MaterialModel::kLinear);
+    } else {
+      diagnostic.Error(
+          src, fmt::format("Invalid <drake:material_model> value {}.", mm));
+    }
+  }
+}
+
+
+bool IsDeformableLink(const sdf::Link& link) {
+  return link.Element()->HasElement("drake:deformable_properties");
+}
+
+// Parse one <link> into a deformable body.
+void ParseDeformableLink(const SDFormatDiagnostic& diag,
+                         const ModelInstanceIndex model_instance,
+                         const sdf::Link& link,
+                         const math::RigidTransformd& X_WM,
+                         MultibodyPlant<double>* plant,
+                         const PackageMap& package_map,
+                         const std::string& root_dir) {
+  const sdf::ElementPtr link_element = link.Element();
+  if (plant->is_finalized()) {
+    diag.Error(link_element,
+               "Cannot add a deformable link to a finalized plant.");
+    return;
+  }
+  if (!plant->geometry_source_is_registered()) {
+    diag.Error(link_element,
+               "Cannot add a deformable link to a plant without a registered "
+               "geometry source.");
+    return;
+  }
+
+  // Supported child tags inside <link>.
+  CheckSupportedElements(
+      diag, link_element,
+      {"pose", "collision", "visual", "drake:deformable_properties"});
+
+  // A name attribute is **required**.
+  // TODO(xuchenhan-tri): Support an empty name attribute.
+  const std::string& link_name = link.Name();
+  if (link_name.empty()) {
+    diag.Error(link_element,
+               "Each <link> must have a non‑empty 'name' attribute.");
+    return;
+  }
+
+  // Config
+  fem::DeformableBodyConfig<double> cfg;
+  LoadDeformableConfig(link, &cfg, diag);
+
+  ResolveFilename resolve_filename =
+      [&package_map, &root_dir, &link](
+          const SDFormatDiagnostic& inner_diagnostic, std::string uri) {
+        const ResolveUriResult resolved =
+            ResolveUri(inner_diagnostic.MakePolicyForNode(*link.Element()), uri,
+                       package_map, root_dir);
+        return resolved.GetStringPathIfExists();
+      };
+
+  // Collision (exactly one).
+  if (link.CollisionCount() != 1) {
+    diag.Error(
+        link_element,
+        "Each deformable <link> must have exactly one <collision> element.");
+    return;
+  }
+
+  const sdf::Collision& sdf_collision = *link.CollisionByIndex(0);
+  const sdf::Geometry& collision_geometry = *sdf_collision.Geom();
+  sdf::ElementPtr collision_geometry_element = collision_geometry.Element();
+
+  const std::set<std::string> supported_collision_geometry_elements{"mesh"};
+  CheckSupportedElements(diag, collision_geometry_element,
+                         supported_collision_geometry_elements);
+
+  auto shape =
+      MakeShapeFromSdfGeometry(diag, collision_geometry, resolve_filename);
+  // Error already reported in MakeShapeFromSdfGeometry.
+  if (!shape) return;
+
+  // Pose
+  const RigidTransformd X_ML = ResolveRigidTransform(diag, link.SemanticPose());
+  const RigidTransformd X_WL = X_WM * X_ML;
+
+  // Now create the geometry instance.
+  auto geometry_instance =
+      std::make_unique<GeometryInstance>(X_WL, std::move(shape), link_name);
+
+  // Parse proximity properties from <drake:proximity_properties> if they are
+  // legally specified. Otherwise, add a default proximity property.
+  if (auto proximity_props =
+          MakeProximityForDeformableCollision(diag, sdf_collision)) {
+    geometry_instance->set_proximity_properties(*proximity_props);
+  } else {
+    geometry::ProximityProperties default_proximity_props;
+    default_proximity_props.AddProperty("material", "coulomb_friction",
+                                        default_friction());
+    geometry_instance->set_proximity_properties(default_proximity_props);
+  }
+
+  // Optional embedded‑mesh perception – allow **at most one** <visual>.
+  // TODO(xuchenhan-tri): Support multiple <visual> elements.
+  if (link.VisualCount() > 1) {
+    diag.Error(link_element,
+               "A deformable <link> may have at most one <visual> element.");
+    return;
+  }
+
+  if (link.VisualCount() == 1) {
+    const sdf::Visual& sdf_visual = *link.VisualByIndex(0);
+    // Supported child tags inside <visual>.
+    CheckSupportedElements(
+        diag, sdf_visual.Element(),
+        {"geometry", "material", "drake:perception_properties",
+         "drake:illustration_properties", "drake:accepting_renderer"});
+    VisualProperties visual_props =
+        MakeVisualPropertiesFromSdfVisual(diag, sdf_visual, resolve_filename);
+    if (visual_props.illustration.has_value()) {
+      geometry_instance->set_illustration_properties(
+          *visual_props.illustration);
+    }
+    geometry::PerceptionProperties perception_props;
+    if (visual_props.perception.has_value()) {
+      perception_props = *visual_props.perception;
+    }
+    // Override the visual geometry if a mesh is specified. Otherwise, fall back
+    // to the default visual geometry (the surface of the collision mesh).
+    if (sdf_visual.Element()->HasElement("geometry")) {
+      const sdf::Geometry& visual_geometry = *sdf_visual.Geom();
+      sdf::ElementPtr visual_geometry_element = visual_geometry.Element();
+      const std::set<std::string> supported_visual_geometry_elements{"mesh",
+                                                                     "empty"};
+      CheckSupportedElements(diag, visual_geometry_element,
+                             supported_visual_geometry_elements);
+      if (visual_geometry_element->HasElement("mesh")) {
+        const std::string uri =
+            visual_geometry_element->GetElement("mesh")->Get<std::string>(
+                "uri");
+        const std::string file_name = resolve_filename(diag, uri);
+        perception_props.AddProperty("deformable", "embedded_mesh", file_name);
+      }
+    }
+    geometry_instance->set_perception_properties(perception_props);
+  }
+
+  DeformableModel<double>& deformable_model =
+      plant->mutable_deformable_model();
+  // Right now resolution hint is not used because we only parse meshes. When we
+  // support primitive geometries, the resolution hint needs to be meaningfully
+  // parsed.
+  const double dummy_resolution_hint = 1.0;
+  deformable_model.RegisterDeformableBody(
+      std::move(geometry_instance), model_instance, cfg, dummy_resolution_hint);
+}
+
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
@@ -1086,103 +1290,117 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
   // Add all the links
   for (uint64_t link_index = 0; link_index < model.LinkCount(); ++link_index) {
     const sdf::Link& link = *model.LinkByIndex(link_index);
-    sdf::ElementPtr link_element = link.Element();
+    if (IsDeformableLink(link)) {
+      ParseDeformableLink(diagnostic, model_instance, link, X_WM, plant,
+                          package_map, root_dir);
+    } else {
+      sdf::ElementPtr link_element = link.Element();
 
-    CheckSupportedElements(diagnostic, link_element, supported_link_elements);
-    CheckSupportedElementValue(diagnostic, link_element, "kinematic", "false");
-    CheckSupportedElementValue(diagnostic, link_element, "gravity", "true");
+      CheckSupportedElements(diagnostic, link_element, supported_link_elements);
+      CheckSupportedElementValue(diagnostic, link_element, "kinematic",
+                                 "false");
+      CheckSupportedElementValue(diagnostic, link_element, "gravity", "true");
 
-    // Get the link's inertia relative to the Bcm frame.
-    // sdf::Link::Inertial() provides a representation for the SpatialInertia
-    // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
-    // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
-    // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
-    // necessarily aligned with B.
-    const gz::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
+      // Get the link's inertia relative to the Bcm frame.
+      // sdf::Link::Inertial() provides a representation for the SpatialInertia
+      // M_Bcm_Bi of body B, about its center of mass Bcm, and expressed in an
+      // inertial frame Bi as defined in <inertial> <pose></pose> </inertial>.
+      // Per SDF specification, Bi's origin is at the COM Bcm, but Bi is not
+      // necessarily aligned with B.
+      const gz::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
 
-    const SpatialInertia<double> M_BBo_B =
-        ExtractSpatialInertiaAboutBoExpressedInB(diagnostic, link_element,
-                                                 Inertial_Bcm_Bi);
+      const SpatialInertia<double> M_BBo_B =
+          ExtractSpatialInertiaAboutBoExpressedInB(diagnostic, link_element,
+                                                   Inertial_Bcm_Bi);
 
-    // Add a rigid body to model each link.
-    const RigidBody<double>& body =
-        plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
+      // Add a rigid body to model each link.
+      const RigidBody<double>& body =
+          plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
-    // Register information.
-    const RigidTransformd X_ML =
-        ResolveRigidTransform(diagnostic, link.SemanticPose());
-    const RigidTransformd X_WL = X_WM * X_ML;
-    link_infos.push_back(LinkInfo{&body, X_WL});
+      // Register information.
+      const RigidTransformd X_ML =
+          ResolveRigidTransform(diagnostic, link.SemanticPose());
+      const RigidTransformd X_WL = X_WM * X_ML;
+      link_infos.push_back(LinkInfo{&body, X_WL});
 
-    // Set the initial pose of the free body (only use if the body is indeed
-    // floating).
-    plant->SetDefaultFreeBodyPose(body, X_WL);
+      // Set the initial pose of the free body (only use if the body is indeed
+      // floating).
+      plant->SetDefaultFreeBodyPose(body, X_WL);
 
-    const std::set<std::string> supported_geometry_elements{
-        "box",       "capsule", "cylinder", "drake:capsule", "drake:ellipsoid",
-        "ellipsoid", "empty",   "mesh",     "plane",         "sphere"};
+      const std::set<std::string> supported_geometry_elements{"box",
+                                                              "capsule",
+                                                              "cylinder",
+                                                              "drake:capsule",
+                                                              "drake:ellipsoid",
+                                                              "ellipsoid",
+                                                              "empty",
+                                                              "mesh",
+                                                              "plane",
+                                                              "sphere"};
 
-    if (plant->geometry_source_is_registered()) {
-      ResolveFilename resolve_filename =
-          [&package_map, &root_dir, &link_element](
-              const SDFormatDiagnostic& inner_diagnostic, std::string uri) {
-            const ResolveUriResult resolved =
-                ResolveUri(inner_diagnostic.MakePolicyForNode(*link_element),
-                           uri, package_map, root_dir);
-            return resolved.GetStringPathIfExists();
-          };
+      if (plant->geometry_source_is_registered()) {
+        ResolveFilename resolve_filename =
+            [&package_map, &root_dir, &link_element](
+                const SDFormatDiagnostic& inner_diagnostic, std::string uri) {
+              const ResolveUriResult resolved =
+                  ResolveUri(inner_diagnostic.MakePolicyForNode(*link_element),
+                             uri, package_map, root_dir);
+              return resolved.GetStringPathIfExists();
+            };
 
-      for (uint64_t visual_index = 0; visual_index < link.VisualCount();
-           ++visual_index) {
-        const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
-        const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
+        for (uint64_t visual_index = 0; visual_index < link.VisualCount();
+             ++visual_index) {
+          const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
+          const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
 
-        sdf::ElementPtr geometry_element = sdf_geometry.Element();
-        CheckSupportedElements(diagnostic, geometry_element,
-                               supported_geometry_elements);
+          sdf::ElementPtr geometry_element = sdf_geometry.Element();
+          CheckSupportedElements(diagnostic, geometry_element,
+                                 supported_geometry_elements);
 
-        const RigidTransformd X_LG =
-            ResolveRigidTransform(diagnostic, sdf_visual.SemanticPose());
-        unique_ptr<GeometryInstance> geometry_instance =
-            MakeGeometryInstanceFromSdfVisual(diagnostic, sdf_visual,
-                                              resolve_filename, X_LG);
-        // No instance may simply mean there was a visual we should skip and we
-        // move on to the next. If there is a _real_ problem, we assume an error
-        // was reported to diagnostic (and it responds appropriately).
-        if (geometry_instance == nullptr) continue;
-
-        // If we have a geometry instance, it has at least one set of visual
-        // properties.
-        DRAKE_DEMAND(geometry_instance->illustration_properties() != nullptr ||
-                     geometry_instance->perception_properties() != nullptr);
-
-        plant->RegisterVisualGeometry(body, std::move(geometry_instance));
-      }
-
-      for (uint64_t collision_index = 0;
-           collision_index < link.CollisionCount(); ++collision_index) {
-        const sdf::Collision& sdf_collision =
-            *link.CollisionByIndex(collision_index);
-        const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
-
-        sdf::ElementPtr geometry_element = sdf_geometry.Element();
-        CheckSupportedElements(diagnostic, geometry_element,
-                               supported_geometry_elements);
-
-        std::optional<std::unique_ptr<geometry::Shape>> shape =
-            MakeShapeFromSdfGeometry(diagnostic, sdf_geometry,
-                                     resolve_filename);
-        if (!shape.has_value()) return std::nullopt;
-        if (*shape != nullptr) {
           const RigidTransformd X_LG =
-              ResolveRigidTransform(diagnostic, sdf_collision.SemanticPose());
-          const RigidTransformd X_LC =
-              MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG);
-          std::optional<geometry::ProximityProperties> props =
-              MakeProximityPropertiesForCollision(diagnostic, sdf_collision);
-          if (!props.has_value()) return std::nullopt;
-          plant->RegisterCollisionGeometry(
-              body, X_LC, **shape, sdf_collision.Name(), std::move(*props));
+              ResolveRigidTransform(diagnostic, sdf_visual.SemanticPose());
+          unique_ptr<GeometryInstance> geometry_instance =
+              MakeGeometryInstanceFromSdfVisual(diagnostic, sdf_visual,
+                                                resolve_filename, X_LG);
+          // No instance may simply mean there was a visual we should skip and
+          // we move on to the next. If there is a _real_ problem, we assume an
+          // error was reported to diagnostic (and it responds appropriately).
+          if (geometry_instance == nullptr) continue;
+
+          // If we have a geometry instance, it has at least one set of visual
+          // properties.
+          DRAKE_DEMAND(geometry_instance->illustration_properties() !=
+                           nullptr ||
+                       geometry_instance->perception_properties() != nullptr);
+
+          plant->RegisterVisualGeometry(body, std::move(geometry_instance));
+        }
+
+        for (uint64_t collision_index = 0;
+             collision_index < link.CollisionCount(); ++collision_index) {
+          const sdf::Collision& sdf_collision =
+              *link.CollisionByIndex(collision_index);
+          const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+
+          sdf::ElementPtr geometry_element = sdf_geometry.Element();
+          CheckSupportedElements(diagnostic, geometry_element,
+                                 supported_geometry_elements);
+
+          std::optional<std::unique_ptr<geometry::Shape>> shape =
+              MakeShapeFromSdfGeometry(diagnostic, sdf_geometry,
+                                       resolve_filename);
+          if (!shape.has_value()) return std::nullopt;
+          if (*shape != nullptr) {
+            const RigidTransformd X_LG =
+                ResolveRigidTransform(diagnostic, sdf_collision.SemanticPose());
+            const RigidTransformd X_LC =
+                MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG);
+            std::optional<geometry::ProximityProperties> props =
+                MakeProximityPropertiesForCollision(diagnostic, sdf_collision);
+            if (!props.has_value()) return std::nullopt;
+            plant->RegisterCollisionGeometry(
+                body, X_LC, **shape, sdf_collision.Name(), std::move(*props));
+          }
         }
       }
     }
@@ -1884,7 +2102,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const auto [canonical_link, canonical_link_name] =
         model.CanonicalLinkAndRelativeName();
 
-    if (canonical_link != nullptr) {
+    if (canonical_link != nullptr && !IsDeformableLink(*canonical_link)) {
       const auto [parent_model_instance, local_name] =
           GetResolvedModelInstanceAndLocalName(canonical_link_name,
                                                model_instance, *plant);
@@ -2310,211 +2528,6 @@ sdf::Model* get_only_model(sdf::Root* root) {
   return world0->ModelByIndex(0);
 }
 
-// Helper to read a <pose> tag (if present) without resolving frames; returns
-// identity when absent. Works for any element, including custom drake tags.
-math::RigidTransformd PoseFromElementSimple(const sdf::ElementPtr& e) {
-  if (!e || !e->HasElement("pose")) return math::RigidTransformd::Identity();
-  const gz::math::Pose3d p = e->Get<gz::math::Pose3d>("pose");
-  return math::RigidTransformd(
-      math::RotationMatrixd(Eigen::Quaterniond(p.Rot().W(), p.Rot().X(),
-                                               p.Rot().Y(), p.Rot().Z())),
-      Eigen::Vector3d(p.Pos().X(), p.Pos().Y(), p.Pos().Z()));
-}
-
-// Helper that loads `<drake:deformable_properties>` into a config.
-// param[in] link The SDF link to load the property for.
-// param[in, out] cfg On input, it's a default config. On output, it's
-//                    the config with the properties loaded from src.
-// TODO(xuchenhan-tri): Handle illegal values in the config.
-void LoadDeformableConfig(const sdf::Link& link,
-                          fem::DeformableBodyConfig<double>* cfg,
-                          const SDFormatDiagnostic& diagnostic) {
-  if (!link.Element()->HasElement("drake:deformable_properties")) {
-    return;
-  }
-  const sdf::ElementPtr src =
-      link.Element()->GetElement("drake:deformable_properties");
-  // clang-format off
-    const std::set<std::string> supported_proximity_elements{
-        "drake:youngs_modulus",
-        "drake:poissons_ratio",
-        "drake:mass_damping",
-        "drake:stiffness_damping",
-        "drake:mass_density",
-        "drake:material_model"};
-  // clang-format on
-  CheckSupportedElements(diagnostic, src, supported_proximity_elements);
-  if (src->HasElement("drake:youngs_modulus")) {
-    cfg->set_youngs_modulus(src->Get<double>("drake:youngs_modulus"));
-  }
-  if (src->HasElement("drake:poissons_ratio")) {
-    cfg->set_poissons_ratio(src->Get<double>("drake:poissons_ratio"));
-  }
-  if (src->HasElement("drake:mass_damping")) {
-    cfg->set_mass_damping_coefficient(src->Get<double>("drake:mass_damping"));
-  }
-  if (src->HasElement("drake:stiffness_damping")) {
-    cfg->set_stiffness_damping_coefficient(
-        src->Get<double>("drake:stiffness_damping"));
-  }
-  if (src->HasElement("drake:mass_density")) {
-    cfg->set_mass_density(src->Get<double>("drake:mass_density"));
-  }
-  if (src->HasElement("drake:material_model")) {
-    const std::string mm = src->Get<std::string>("drake:material_model");
-    if (mm == "linear_corotated") {
-      cfg->set_material_model(fem::MaterialModel::kLinearCorotated);
-    } else if (mm == "corotated") {
-      cfg->set_material_model(fem::MaterialModel::kCorotated);
-    } else if (mm == "linear") {
-      cfg->set_material_model(fem::MaterialModel::kLinear);
-    } else {
-      diagnostic.Error(
-          src, fmt::format("Invalid <drake:material_model> value {}.", mm));
-    }
-  }
-}
-
-// Parse one <link> into a deformable body.
-std::optional<DeformableBodyId> ParseDeformableLink(
-    const sdf::Link& link, const math::RigidTransformd& X_WM,
-    const ParsingWorkspace& ws, const std::string& root_dir,
-    const SDFormatDiagnostic& diag) {
-  const sdf::ElementPtr link_element = link.Element();
-  if (ws.plant->is_finalized()) {
-    diag.Error(link_element,
-               "Cannot add a deformable link to a finalized plant.");
-    return std::nullopt;
-  }
-  if (!ws.plant->geometry_source_is_registered()) {
-    diag.Error(link_element,
-               "Cannot add a deformable link to a plant without a registered "
-               "geometry source.");
-    return std::nullopt;
-  }
-
-  // Supported child tags inside <link>.
-  CheckSupportedElements(
-      diag, link_element,
-      {"pose", "collision", "visual", "drake:deformable_properties"});
-
-  // A name attribute is **required**.
-  // TODO(xuchenhan-tri): Support an empty name attribute.
-  const std::string& link_name = link.Name();
-  if (link_name.empty()) {
-    diag.Error(link_element,
-               "Each <link> must have a non‑empty 'name' attribute.");
-    return std::nullopt;
-  }
-
-  // Config
-  fem::DeformableBodyConfig<double> cfg;
-  LoadDeformableConfig(link, &cfg, diag);
-
-  ResolveFilename resolve_filename =
-      [&ws, &root_dir, &link](const SDFormatDiagnostic& inner_diagnostic,
-                              std::string uri) {
-        const ResolveUriResult resolved =
-            ResolveUri(inner_diagnostic.MakePolicyForNode(*link.Element()), uri,
-                       ws.package_map, root_dir);
-        return resolved.GetStringPathIfExists();
-      };
-
-  // Collision (exactly one).
-  if (link.CollisionCount() != 1) {
-    diag.Error(
-        link_element,
-        "Each deformable <link> must have exactly one <collision> element.");
-    return std::nullopt;
-  }
-
-  const sdf::Collision& sdf_collision = *link.CollisionByIndex(0);
-  const sdf::Geometry& collision_geometry = *sdf_collision.Geom();
-  sdf::ElementPtr collision_geometry_element = collision_geometry.Element();
-
-  const std::set<std::string> supported_collision_geometry_elements{"mesh"};
-  CheckSupportedElements(diag, collision_geometry_element,
-                         supported_collision_geometry_elements);
-
-  auto shape =
-      MakeShapeFromSdfGeometry(diag, collision_geometry, resolve_filename);
-  if (!shape) return std::nullopt;
-
-  // Pose
-  const RigidTransformd X_ML = PoseFromElementSimple(link_element);
-  const RigidTransformd X_WL = X_WM * X_ML;
-
-  // Now create the geometry instance.
-  auto geometry_instance =
-      std::make_unique<GeometryInstance>(X_WL, std::move(shape), link_name);
-
-  // Parse proximity properties from <drake:proximity_properties> if they are
-  // legally specified. Otherwise, add a default proximity property.
-  if (auto proximity_props =
-          MakeProximityForDeformableCollision(diag, sdf_collision)) {
-    geometry_instance->set_proximity_properties(*proximity_props);
-  } else {
-    geometry::ProximityProperties default_proximity_props;
-    default_proximity_props.AddProperty("material", "coulomb_friction",
-                                        default_friction());
-    geometry_instance->set_proximity_properties(default_proximity_props);
-  }
-
-  // Optional embedded‑mesh perception – allow **at most one** <visual>.
-  // TODO(xuchenhan-tri): Support multiple <visual> elements.
-  if (link.VisualCount() > 1) {
-    diag.Error(link_element,
-               "A deformable <link> may have at most one <visual> element.");
-    return std::nullopt;
-  }
-
-  if (link.VisualCount() == 1) {
-    const sdf::Visual& sdf_visual = *link.VisualByIndex(0);
-    // Supported child tags inside <visual>.
-    CheckSupportedElements(
-        diag, sdf_visual.Element(),
-        {"geometry", "material", "drake:perception_properties",
-         "drake:illustration_properties", "drake:accepting_renderer"});
-    VisualProperties visual_props =
-        MakeVisualPropertiesFromSdfVisual(diag, sdf_visual, resolve_filename);
-    if (visual_props.illustration.has_value()) {
-      geometry_instance->set_illustration_properties(
-          *visual_props.illustration);
-    }
-    geometry::PerceptionProperties perception_props;
-    if (visual_props.perception.has_value()) {
-      perception_props = *visual_props.perception;
-    }
-    // Override the visual geometry if a mesh is specified. Otherwise, fall back
-    // to the default visual geometry (the surface of the collision mesh).
-    if (sdf_visual.Element()->HasElement("geometry")) {
-      const sdf::Geometry& visual_geometry = *sdf_visual.Geom();
-      sdf::ElementPtr visual_geometry_element = visual_geometry.Element();
-      const std::set<std::string> supported_visual_geometry_elements{"mesh",
-                                                                     "empty"};
-      CheckSupportedElements(diag, visual_geometry_element,
-                             supported_visual_geometry_elements);
-      if (visual_geometry_element->HasElement("mesh")) {
-        const std::string uri =
-            visual_geometry_element->GetElement("mesh")->Get<std::string>(
-                "uri");
-        const std::string file_name = resolve_filename(diag, uri);
-        perception_props.AddProperty("deformable", "embedded_mesh", file_name);
-      }
-    }
-    geometry_instance->set_perception_properties(perception_props);
-  }
-
-  DeformableModel<double>& deformable_model =
-      ws.plant->mutable_deformable_model();
-  // Right now resolution hint is not used because we only parse meshes. When we
-  // support primitive geometries, the resolution hint needs to be meaningfully
-  // parsed.
-  const double dummy_resolution_hint = 1.0;
-  return deformable_model.RegisterDeformableBody(std::move(geometry_instance),
-                                                 cfg, dummy_resolution_hint);
-}
-
 }  // namespace
 
 std::optional<ModelInstanceIndex> AddModelFromSdf(
@@ -2712,75 +2725,6 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
   return model_instances;
 }
 
-// TODO(xuchenhan-tri): prefix the name with parent model name.
-std::vector<DeformableBodyId> AddDeformableModelsFromSdf(
-    const DataSource& data_source, const std::optional<std::string>&,
-    const ParsingWorkspace& workspace) {
-  DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
-
-  sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
-
-  sdf::Root root;
-
-  SDFormatDiagnostic diagnostic(&workspace.diagnostic, &data_source);
-
-  sdf::Errors errors = LoadSdf(diagnostic, &root, data_source, parser_config);
-  if (diagnostic.PropagateErrors(errors)) {
-    return {};
-  }
-
-  if (!root.Element()->HasElement("drake:deformable_model")) {
-    return {};
-  }
-  const sdf::ElementPtr deformable_model_element =
-      root.Element()->GetElement("drake:deformable_model");
-  if (deformable_model_element->GetNextElement("drake:deformable_model")) {
-    diagnostic.Error(
-        root.Element(),
-        "At most one <drake:deformable_model> element can be specified.");
-    return {};
-  }
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  const uint64_t model_count = root.Model() != nullptr ? 1 : 0;
-#pragma GCC diagnostic pop
-  const uint64_t world_count = root.WorldCount();
-  if (model_count + world_count != 0) {
-    std::string message = fmt::format(
-        "The <model> (or <world>) element is mutually exclusive with the"
-        "<drake:deformable_model> element.");
-    diagnostic.Error(root.Element(), std::move(message));
-    return {};
-  }
-  if (!deformable_model_element->HasElement("link")) {
-    return {};
-  }
-
-  // Allowed immediate children.
-  CheckSupportedElements(diagnostic, deformable_model_element,
-                         {"pose", "link"});
-
-  const math::RigidTransformd X_WM =
-      PoseFromElementSimple(deformable_model_element);
-
-  std::vector<DeformableBodyId> result;
-  for (sdf::ElementPtr link_element =
-           deformable_model_element->GetElement("link");
-       link_element; link_element = link_element->GetNextElement("link")) {
-    sdf::Link sdf_link;
-    sdf::Errors errs = sdf_link.Load(link_element, parser_config);
-    if (diagnostic.PropagateErrors(errors)) {
-      return {};
-    }
-    if (auto id = ParseDeformableLink(sdf_link, X_WM, workspace,
-                                      data_source.GetRootDir(), diagnostic)) {
-      result.push_back(*id);
-    }
-  }
-
-  return result;
-}
-
 SdfParserWrapper::SdfParserWrapper() {}
 
 SdfParserWrapper::~SdfParserWrapper() {}
@@ -2797,13 +2741,6 @@ std::vector<ModelInstanceIndex> SdfParserWrapper::AddAllModels(
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
   return AddModelsFromSdf(data_source, parent_model_name, workspace);
-}
-
-std::vector<DeformableBodyId> SdfParserWrapper::AddAllDeformableModels(
-    const DataSource& data_source,
-    const std::optional<std::string>& parent_model_name,
-    const ParsingWorkspace& workspace) {
-  return AddDeformableModelsFromSdf(data_source, parent_model_name, workspace);
 }
 
 }  // namespace internal

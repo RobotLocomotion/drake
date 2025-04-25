@@ -77,7 +77,18 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    owning this deformable model. */
   DeformableBodyId RegisterDeformableBody(
       std::unique_ptr<geometry::GeometryInstance> geometry_instance,
+      ModelInstanceIndex model_instance,
       const fem::DeformableBodyConfig<T>& config, double resolution_hint);
+
+  /** Registers a deformable body in `this` DeformableModel with the default
+   model instance. */
+  DeformableBodyId RegisterDeformableBody(
+      std::unique_ptr<geometry::GeometryInstance> geometry_instance,
+      const fem::DeformableBodyConfig<T>& config, double resolution_hint) {
+    return RegisterDeformableBody(std::move(geometry_instance),
+                                  default_model_instance(), config,
+                                  resolution_hint);
+  }
 
   // TODO(xuchenhan-tri): Consider pulling PosedHalfSpace out of internal
   // namespace and use it here.
@@ -284,6 +295,12 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    deformable bodies. */
   DeformableBodyId GetBodyId(DeformableBodyIndex index) const;
 
+  /** Returns the DeforambleIds of the bodies that belong to the given model
+   instance. Returns the empty vector if no deformable bodies are registered
+   with the given model instance. */
+  std::vector<DeformableBodyId> GetBodyIds(
+      ModelInstanceIndex model_instance) const;
+
   /** (Internal) Returns the DeformableBodyIndex of the body with the given id.
    This function is for internal bookkeeping use only. Most users should use
    DeformableBodyId instead.
@@ -421,6 +438,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
       geometry_id_to_body_id_;
   std::unordered_map<DeformableBodyId, std::unique_ptr<fem::FemModel<T>>>
       fem_models_;
+  std::unordered_map<ModelInstanceIndex, std::vector<DeformableBodyId>>
+      model_instance_to_body_ids_;
   /* The collection all external forces. */
   std::vector<std::unique_ptr<ForceDensityField<T>>> force_densities_;
   /* body_index_to_force_densities_[i] is the collection of pointers to external

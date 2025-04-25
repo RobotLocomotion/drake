@@ -172,7 +172,7 @@ int do_main() {
 
   /* Set up a deformable torus. */
   Parser parser(&plant);
-  parser.AddDeformableModelsFromUrl(
+  parser.AddModelsFromUrl(
       "package://drake/examples/multibody/deformable/models/"
       "deformable_torus.sdf");
 

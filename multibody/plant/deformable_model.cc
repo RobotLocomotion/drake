@@ -36,9 +36,11 @@ DeformableModel<T>::~DeformableModel() = default;
 template <typename T>
 DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     std::unique_ptr<geometry::GeometryInstance> geometry_instance,
+    ModelInstanceIndex model_instance,
     const fem::DeformableBodyConfig<T>& config, double resolution_hint) {
   this->ThrowIfSystemResourcesDeclared(__func__);
   ThrowIfNotDouble(__func__);
+  DRAKE_THROW_UNLESS(model_instance < this->plant().num_model_instances());
   if constexpr (std::is_same_v<T, double>) {
     /* Register the geometry with SceneGraph. */
     SceneGraph<T>& scene_graph = this->mutable_scene_graph();
@@ -83,6 +85,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     geometry_id_to_body_id_.emplace(geometry_id, body_id);
     body_ids_.emplace_back(body_id);
     body_id_to_density_prefinalize_.emplace(body_id, config.mass_density());
+    model_instance_to_body_ids_[model_instance].push_back(body_id);
     return body_id;
   }
   DRAKE_UNREACHABLE();
@@ -291,6 +294,15 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 }
 
 template <typename T>
+std::vector<DeformableBodyId> DeformableModel<T>::GetBodyIds(
+    ModelInstanceIndex model_instance) const {
+  if (model_instance_to_body_ids_.contains(model_instance)) {
+    return model_instance_to_body_ids_.at(model_instance);
+  }
+  return {};
+}
+
+template <typename T>
 DeformableBodyIndex DeformableModel<T>::GetBodyIndex(
     DeformableBodyId id) const {
   this->ThrowIfSystemResourcesNotDeclared(__func__);
@@ -341,6 +353,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     for (const auto& [deformable_id, fem_model] : fem_models_) {
       result->fem_models_.emplace(deformable_id, fem_model->Clone());
     }
+    result->model_instance_to_body_ids_ = model_instance_to_body_ids_;
     for (const auto& force_density : force_densities_) {
       result->force_densities_.emplace_back(force_density->Clone());
     }

@@ -117,11 +117,12 @@ int do_main() {
       "schunk_wsg_50_deformable_bubble.sdf")[0];
 
   /* Add in the bubbles. */
-  const std::vector<DeformableBodyId> bubble_ids =
-      parser.AddDeformableModelsFromUrl(
-          "package://drake/examples/multibody/deformable/models/bubbles.sdf");
+  const auto model_instances = parser.AddModelsFromUrl(
+      "package://drake/examples/multibody/deformable/models/bubbles.sdf");
   // TODO(xuchenhan-tri): Use name to retrieve deformable bodies for more
   // robustness.
+  const std::vector<DeformableBodyId> bubble_ids =
+      plant.deformable_model().GetBodyIds(model_instances[0]);
   const DeformableBodyId left_bubble = bubble_ids[0];
   const DeformableBodyId right_bubble = bubble_ids[1];
   auto& deformable_model = plant.mutable_deformable_model();
@@ -152,7 +153,7 @@ int do_main() {
       RigidTransformd(Vector3d(0.0, 0.03, -0.1)));
 
   /* Add in a deformable manipuland. */
-  parser.AddDeformableModelsFromUrl(
+  parser.AddModelsFromUrl(
       "package://drake/examples/multibody/deformable/models/"
       "deformable_teddy.sdf");
 
