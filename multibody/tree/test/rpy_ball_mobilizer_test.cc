@@ -173,8 +173,8 @@ TEST_F(RpyBallMobilizerTest, NDotAndMapAccelerationToQDDot) {
   // Verify equivalence of q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇ and MapAccelerationToQDDot().
   // PAUL FIX THIS TEST -- NOT WORKING.  SHOULD BE EXPECT_TRUE(...);
   const Vector3<double> qddot_expected = Ndot * wxyz + N * wdot;
-  EXPECT_FALSE(CompareMatrices(qddot, qddot_expected, kTolerance,
-                               MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(qddot, qddot_expected, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
@@ -183,7 +183,7 @@ TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
   mobilizer_->SetAngles(context_.get(), rpy_value);
 
   // Set arbitrary qdot and call MapQDotToVelocity().
-  const Vector3<double> qdot = (Vector3<double>() << 1, 2, 3).finished();
+  const Vector3<double> qdot(1, 2, 3);
   Vector3<double> v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
 
@@ -195,14 +195,19 @@ TEST_F(RpyBallMobilizerTest, MapUsesNplus) {
   EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
                               MatrixCompareType::relative));
 
+  // Set this mobilizer's angular velocity to be consistent with v.
+  mobilizer_->SetAngularVelocity(context_.get(), v);
+
   // Ensure MapQDDotToAcceleration() works properly.
   const Vector3<double> qddot(1.2, 2.3, 3.4);  // Set arbitrary values.
   Vector3<double> vdot;
-  mobilizer_->MapQDDotToAcceleration(*context_, qdot, &v);
+  mobilizer_->MapQDDotToAcceleration(*context_, qddot, &vdot);
 
-  // Calculate vdot another way.
-  // TODO(Mitiguy) Finish -- as of now this is a dumb test.
-  Vector3<double> vdot_expected = Nplus * qddot;  // NOT TRUE YET.
+  // Calculate vdot another way as v̇ = N̈⁺(q,q̇)⋅q̇ +  N⁺(q)⋅q̈.
+  // TODO(Mitiguy) Finish -- as of now, this test is not working.
+  MatrixX<double> NplusDot(3, 3);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+  const Vector3<double> vdot_expected = NplusDot * qdot + Nplus * qddot;
   EXPECT_FALSE(CompareMatrices(vdot, vdot_expected, kTolerance,
                                MatrixCompareType::relative));
 }

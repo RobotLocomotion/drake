@@ -324,6 +324,12 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
   void DoCalcNDotMatrix(const systems::Context<T>& context,
                         EigenPtr<MatrixX<T>> Ndot) const final;
 
+  // Calculates the time derivative of the N⁺ matrix that relates v = N⁺(q)⋅q̇.
+  // There is no singularity in N⁺(q) or its time-derivative Ṅ⁺(q,q̇) and
+  // calculating Ṅ⁺ is more efficient than calculating Ṅ.
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
+
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 

@@ -599,12 +599,12 @@ class Mobilizer : public MultibodyElement<T> {
     DoCalcNplusMatrix(context, Nplus);
   }
 
-  // Computes the kinematic matrix `Ṅ(q,q̇)` that helps relate q̈ (2ⁿᵈ time
-  // derivative of the generalized positions) to v̇ (1ˢᵗ time derivative of
-  // generalized velocities) according to `q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇`, where N(q)
-  // can be calculated by CalcNMatrix().
+  // Computes the matrix `Ṅ(q,q̇)` that helps relate q̈ (2ⁿᵈ time derivative of
+  // the generalized positions) to v̇ (1ˢᵗ time derivative of generalized
+  // velocities) according to `q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇`, where N(q) can be
+  // calculated by CalcNMatrix().
   // @param[in] context stores generalized positions q and velocities v.
-  // @param[out] Ndot The kinematic matrix Ṅ(q,q̇). On input Ndot must have size
+  // @param[out] Ndot The matrix Ṅ(q,q̇). On input Ndot must have size
   //   `nq x nv` where nq is the number of generalized positions and
   //   nv is the number of generalized velocities for this mobilizer.
   // @see MapAccelerationToQDDot().
@@ -614,6 +614,23 @@ class Mobilizer : public MultibodyElement<T> {
     DRAKE_DEMAND(Ndot->rows() == num_positions());
     DRAKE_DEMAND(Ndot->cols() == num_velocities());
     DoCalcNDotMatrix(context, Ndot);
+  }
+
+  // Computes the matrix `Ṅ⁺(q,q̇)` that helps relate v̇ (1ˢᵗ time derivative of
+  // generalized velocities) to q̈ (2ⁿᵈ time derivative of the generalized
+  // positions) according to `v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈`, where N⁺(q) can be
+  // calculated by CalcNPlusMatrix().
+  // @param[in] context stores generalized positions q and velocities v.
+  // @param[out] NplusDot The matrix Ṅ(q,q̇). On input NplusDot must have size
+  //   `nq x nv` where nq is the number of generalized positions and
+  //   nv is the number of generalized velocities for this mobilizer.
+  // @see MapQDDotToAcceleration().
+  void CalcNplusDotMatrix(const systems::Context<T>& context,
+                          EigenPtr<MatrixX<T>> NplusDot) const {
+    DRAKE_DEMAND(NplusDot != nullptr);
+    DRAKE_DEMAND(NplusDot->rows() == num_velocities());
+    DRAKE_DEMAND(NplusDot->cols() == num_positions());
+    DoCalcNplusDotMatrix(context, NplusDot);
   }
 
   virtual bool is_velocity_equal_to_qdot() const = 0;
@@ -781,6 +798,13 @@ class Mobilizer : public MultibodyElement<T> {
   //  been overridden in all subclasses.
   virtual void DoCalcNDotMatrix(const systems::Context<T>& context,
                                 EigenPtr<MatrixX<T>> Ndot) const;
+
+  // NVI to CalcNplusDotMatrix(). Implementations can safely assume that
+  // NplusDot is not the nullptr and that NplusDot has the proper size.
+  // TODO(Mitiguy) change this function to a pure virtual function when it has
+  //  been overridden in all subclasses.
+  virtual void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                                    EigenPtr<MatrixX<T>> NplusDot) const;
 
   // @name Methods to make a clone templated on different scalar types.
   //
