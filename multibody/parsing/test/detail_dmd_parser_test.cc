@@ -120,15 +120,16 @@ std::filesystem::path MakeDeformableSdf() {
   f << R"""(
 <?xml version="1.0"?>
 <sdf version="1.7">
-  <drake:deformable_model name='deformable'>
+  <model name='deformable'>
     <link name='body'>
       <collision name='collision'>
         <geometry>
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
+      <drake:deformable_properties></drake:deformable_properties>
     </link>
-  </drake:deformable_model>
+  </model>
 </sdf>
   )""";
   return sdf_path;
@@ -427,7 +428,7 @@ directives:
                   ".*two_bodies.*default_free_body_pose.*2.*bodies.*"));
 }
 
-/* Adding a rigid body and a deformable body into the same scene. */
+/* Test adding a rigid body and a deformable body into the same scene. */
 TEST_F(DmdParserTest, AddDeformableModel) {
   AddSceneGraph();
   const std::string sphere_sdf =
@@ -440,7 +441,7 @@ directives:
 - add_model:
     name: rigid
     file: {sphere_sdf}
-- add_deformable_model:
+- add_model:
     name: deformable
     file: {deformable_sdf}
 )""",
@@ -453,6 +454,28 @@ directives:
   // Two added rigid bodies plus the world body.
   EXPECT_EQ(plant_.num_bodies(), 3);
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+}
+
+/* default_free_body_pose should not be used to pose a deformable body. */
+TEST_F(DmdParserTest, FreeBodyPoseDeformable) {
+  AddSceneGraph();
+  const std::string deformable_sdf = "file://" + MakeDeformableSdf().string();
+  const ModelDirectives directives = LoadYamlString<ModelDirectives>(
+      fmt::format(
+          R"""(
+directives:
+- add_model:
+    name: deformable
+    file: {deformable_sdf}
+    default_free_body_pose:
+        body:
+            base_frame: body
+            translation: [1, 2, 3]
+)""",
+          fmt::arg("deformable_sdf", deformable_sdf)),
+      {}, ModelDirectives());
+  // There's no "body frame" for a deformable body.
+  EXPECT_THROW(ParseModelDirectives(directives), std::exception);
 }
 
 }  // namespace

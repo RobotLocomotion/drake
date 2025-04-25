@@ -105,22 +105,6 @@ struct AddModel {
   std::map<std::string, drake::schema::Transform> default_free_body_pose;
 };
 
-/// Directive to add a deformable model from an SDFormat file to a scene.
-struct AddDeformableModel {
-  bool IsValid() const;
-
-  template <typename Archive>
-  void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(file));
-    a->Visit(DRAKE_NVP(name));
-  }
-
-  /// The `package://` URI of the file to add.
-  std::string file;
-  /// The parent model name of all deformables added.
-  std::string name;
-};
-
 /// Directive to add an empty, named model instance to a scene.
 struct AddModelInstance {
   bool IsValid() const;
@@ -232,7 +216,6 @@ struct ModelDirective {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(add_model));
-    a->Visit(DRAKE_NVP(add_deformable_model));
     a->Visit(DRAKE_NVP(add_model_instance));
     a->Visit(DRAKE_NVP(add_frame));
     a->Visit(DRAKE_NVP(add_weld));
@@ -241,7 +224,6 @@ struct ModelDirective {
   }
 
   std::optional<AddModel> add_model;
-  std::optional<AddDeformableModel> add_deformable_model;
   std::optional<AddModelInstance> add_model_instance;
   std::optional<AddFrame> add_frame;
   std::optional<AddWeld> add_weld;

@@ -269,7 +269,6 @@ Here is the full list of custom elements:
 - @ref tag_drake_rotor_inertia
 - @ref tag_drake_screw_thread_pitch
 - @ref tag_drake_visual
-- @ref tag_drake_deformable_model
 - @ref tag_drake_deformable_properties
 - @ref tag_drake_youngs_modulus
 - @ref tag_drake_poissons_ratio
@@ -1231,11 +1230,12 @@ emit a warning as it would for doing the same to a `<visual>` tag.
 @see @ref tag_drake_perception_properties
 @see @ref tag_drake_illustration_properties
 
-@subsection tag_drake_deformable_model drake:deformable_model
+@subsection tag_drake_deformable_properties drake:deformable_properties
 
-- SDFormat path: `//drake:deformable_model`  
+- SDFormat path: `//model/link/drake:deformable_properties`  
 - URDF path: n/a
-- Syntax
+- Syntax: Nested elements; see below.
+
 @code{xml}
 <drake:deformable_model>
   <pose> x y z r p y </pose>   <!-- optional world‑frame pose -->
@@ -1246,17 +1246,29 @@ emit a warning as it would for doing the same to a `<visual>` tag.
 </drake:deformable_model>
 @endcode
 
-@subsubsection tag_drake_deformable_model Semantics
-A `<drake:deformable_model>` declares a **purely deformable model** (no rigid
-bodies).  The `Parser` recognizes exactly **one** such element per file via
-Parser::AddDeformableModelsFromSdf() (@experimental):
+@subsubsection tag_drake_deformable_properties Semantics
+If present, this element defines the link element as a deformable body in Drake.
+Such link elements are not treated as rigid bodies, and the standard tags for
+inertias, joints, etc. are illegal and provoke errors. The only other tags that
+are allowed are under such "deformable" links are `<pose>, `<collision>`, and
+`<visual>`. The `<collision>` and `<visual>` tags are _not_ interpreted exactly
+ the same way as the standard `<collision>` and `<visual>` tags. We explain the
+differences in the sections below.
 
-| Rule | Description |
-|------|-------------|
-| Mutual exclusivity | A file must contain *either* one `<model>` (or `<world>) *or* one `<drake:deformable_model>`, never both. |
-| Pose | An optional `<pose>` sets `X_WM`, applied to every child `<link>`. |
-| Links | Each child `<link>` is converted into a single deformable body; see @ref deformable_link_requirements. |
-| No rigid features | Tags for inertias, joints, etc. are illegal and provoke errors. |
+The following nested elements may be present under `<drake:deformable_properties>`:
+- `drake:youngs_modulus`
+- `drake:poissons_ratio`
+- `drake:mass_damping`
+- `drake:stiffness_damping`
+- `drake:mass_density`
+- `drake:material_model`
+
+see @ref tag_drake_youngs_modulus
+@ref tag_drake_poissons_ratio
+@ref tag_drake_mass_damping
+@ref tag_drake_stiffness_damping
+@ref tag_drake_mass_density
+@ref tag_drake_material_model
 
 @see deformable_link_requirements, Parser::AddDeformableModelsFromSdf()
 
@@ -1269,12 +1281,6 @@ This optional element overrides material parameters for the enclosing
 link‑as‑deformable‑body.  All child elements are *optional*; unspecified fields
 fall back to the defaults of drake::multibody::fem::DeformableBodyConfig.
 
-@subsubsection tag_drake_youngs_modulus       drake:youngs_modulus
-@subsubsection tag_drake_poissons_ratio       drake:poissons_ratio
-@subsubsection tag_drake_mass_damping         drake:mass_damping
-@subsubsection tag_drake_stiffness_damping    drake:stiffness_damping
-@subsubsection tag_drake_mass_density         drake:mass_density
-@subsubsection tag_drake_material_model       drake:material_model
 
 All of the above are simple leaf elements whose textual contents follow the
 units and ranges listed in the table and populate the corresponding fields in
@@ -1309,8 +1315,6 @@ as a single deformable body and must obey:
   surface described by the `.obj` file is used for rendering. If an empty element
   is prescribed, the surface of the collision mesh is used for rendering and
   visualization. More than one `<visual>` is an error.
-- **No geometry pose**: `<collision>` and `<visual>` must not contain a `<pose>`
-  element. The pose of the mesh is determined by the enclosing `<link>`.
 - **Limited proximity properties**: inside `<collision>`, the only Drake
   proximity tag recognized are `<drake:mu_dynamic>`, `<drake:hunt_crossley_dissipation>`,
   and `drake:relaxation_time>`. All other tags are now allowed.

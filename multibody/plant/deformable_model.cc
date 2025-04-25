@@ -42,6 +42,12 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   ThrowIfNotDouble(__func__);
   DRAKE_THROW_UNLESS(model_instance < this->plant().num_model_instances());
   if constexpr (std::is_same_v<T, double>) {
+    const std::string& name = geometry_instance->name();
+    if (name_to_body_id_.contains(name)) {
+      throw std::logic_error(fmt::format(
+          "A deformable body with the name {} has already been registered.",
+          name));
+    }
     /* Register the geometry with SceneGraph. */
     SceneGraph<T>& scene_graph = this->mutable_scene_graph();
     SourceId source_id = this->plant().get_source_id().value();
@@ -85,10 +91,20 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     geometry_id_to_body_id_.emplace(geometry_id, body_id);
     body_ids_.emplace_back(body_id);
     body_id_to_density_prefinalize_.emplace(body_id, config.mass_density());
+    name_to_body_id_.emplace(name, body_id);
     model_instance_to_body_ids_[model_instance].push_back(body_id);
     return body_id;
   }
   DRAKE_UNREACHABLE();
+}
+
+template <typename T>
+DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
+    std::unique_ptr<geometry::GeometryInstance> geometry_instance,
+    const fem::DeformableBodyConfig<T>& config, double resolution_hint) {
+  return RegisterDeformableBody(std::move(geometry_instance),
+                                default_model_instance(), config,
+                                resolution_hint);
 }
 
 template <typename T>
@@ -294,6 +310,17 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 }
 
 template <typename T>
+DeformableBodyId DeformableModel<T>::GetBodyIdByName(
+    const std::string& name) const {
+  if (!name_to_body_id_.contains(name)) {
+    throw std::runtime_error(fmt::format(
+        "No deformable body with the given name {} has been registered.",
+        name));
+  }
+  return name_to_body_id_.at(name);
+}
+
+template <typename T>
 std::vector<DeformableBodyId> DeformableModel<T>::GetBodyIds(
     ModelInstanceIndex model_instance) const {
   if (model_instance_to_body_ids_.contains(model_instance)) {
@@ -353,6 +380,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     for (const auto& [deformable_id, fem_model] : fem_models_) {
       result->fem_models_.emplace(deformable_id, fem_model->Clone());
     }
+    result->name_to_body_id_ = name_to_body_id_;
     result->model_instance_to_body_ids_ = model_instance_to_body_ids_;
     for (const auto& force_density : force_densities_) {
       result->force_densities_.emplace_back(force_density->Clone());

@@ -1721,7 +1721,22 @@ PYBIND11_MODULE(plant, m) {
                   config, resolution_hint);
             },
             py::arg("geometry_instance"), py::arg("config"),
-            py::arg("resolution_hint"), cls_doc.RegisterDeformableBody.doc)
+            py::arg("resolution_hint"),
+            cls_doc.RegisterDeformableBody.doc_3args)
+        .def(
+            "RegisterDeformableBody",
+            [](Class& self, const geometry::GeometryInstance& geometry_instance,
+                ModelInstanceIndex model_instance,
+                const fem::DeformableBodyConfig<T>& config,
+                double resolution_hint) {
+              return self.RegisterDeformableBody(
+                  std::make_unique<geometry::GeometryInstance>(
+                      geometry_instance),
+                  model_instance, config, resolution_hint);
+            },
+            py::arg("geometry_instance"), py::arg("model_instance"),
+            py::arg("config"), py::arg("resolution_hint"),
+            cls_doc.RegisterDeformableBody.doc_4args)
         .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
             py::arg("id"), py::arg("p_WQ"), py::arg("n_W"),
             cls_doc.SetWallBoundaryCondition.doc)

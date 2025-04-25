@@ -1,7 +1,6 @@
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 
 #include <limits>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <optional>
@@ -1125,7 +1124,6 @@ void LoadDeformableConfig(const sdf::Link& link,
   }
 }
 
-
 bool IsDeformableLink(const sdf::Link& link) {
   return link.Element()->HasElement("drake:deformable_properties");
 }
@@ -1264,8 +1262,7 @@ void ParseDeformableLink(const SDFormatDiagnostic& diag,
     geometry_instance->set_perception_properties(perception_props);
   }
 
-  DeformableModel<double>& deformable_model =
-      plant->mutable_deformable_model();
+  DeformableModel<double>& deformable_model = plant->mutable_deformable_model();
   // Right now resolution hint is not used because we only parse meshes. When we
   // support primitive geometries, the resolution hint needs to be meaningfully
   // parsed.
