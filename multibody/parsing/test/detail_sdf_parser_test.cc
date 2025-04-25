@@ -135,32 +135,6 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
     return result;
   }
 
-  std::vector<DeformableBodyId> AddDeformableModelsFromSdfFile(
-      const std::string& file_name,
-      const std::optional<std::string>& parent_model_name = {}) {
-    const DataSource data_source{DataSource::kFilename, &file_name};
-    internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
-                       &plant_,  &resolver,    TestingSelect};
-    auto result = AddDeformableModelsFromSdf(data_source, parent_model_name, w);
-    last_parsed_groups_ = ConvertInstancedNamesToStrings(
-        resolver.Resolve(diagnostic_policy_), plant_);
-    return result;
-  }
-
-  std::vector<DeformableBodyId> AddDeformableModelsFromSdfString(
-      const std::string& file_contents,
-      const std::optional<std::string>& parent_model_name = {}) {
-    const DataSource data_source{DataSource::kContents, &file_contents};
-    internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{options_, package_map_, diagnostic_policy_, nullptr,
-                       &plant_,  &resolver,    TestingSelect};
-    auto result = AddDeformableModelsFromSdf(data_source, parent_model_name, w);
-    last_parsed_groups_ = ConvertInstancedNamesToStrings(
-        resolver.Resolve(diagnostic_policy_), plant_);
-    return result;
-  }
-
   void ParseTestString(
       const std::string& inner,
       const std::optional<std::string>& sdf_version = {},
@@ -171,18 +145,6 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase {
                                       sdf_version.value_or("1.6") + "'>" +
                                       inner + "\n</sdf>\n";
     AddModelsFromSdfString(file_contents, parent_model_name);
-  }
-
-  std::vector<DeformableBodyId> ParseDeformableTestString(
-      const std::string& inner,
-      const std::optional<std::string>& sdf_version = {},
-      const std::optional<std::string>& parent_model_name = {}) {
-    SCOPED_TRACE(inner);
-    FlushDiagnostics();
-    const std::string file_contents = "<sdf version='" +
-                                      sdf_version.value_or("1.6") + "'>" +
-                                      inner + "\n</sdf>\n";
-    return AddDeformableModelsFromSdfString(file_contents, parent_model_name);
   }
 
   void VerifyCollisionFilters(const std::vector<GeometryId>& ids,
@@ -4251,17 +4213,18 @@ TEST_F(SdfParserTest, VisualRoleConfiguration) {
 TEST_F(SdfParserTest, ParseMinimalDeformableModel) {
   AddSceneGraph();
   const std::string sdf = R"(
-  <drake:deformable_model name='deformable'>
+  <model name='deformable'>
     <link name='body'>
       <collision name='collision'>
         <geometry>
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
+      <drake:deformable_properties></drake:deformable_properties>
     </link>
-  </drake:deformable_model>)";
+  </model>)";
 
-  ParseDeformableTestString(sdf);
+  ParseTestString(sdf);
   EXPECT_THAT(NumErrors(), 0);
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
@@ -4272,7 +4235,7 @@ TEST_F(SdfParserTest, ParseMinimalDeformableModel) {
 TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
   AddSceneGraph();
   const std::string sdf = R"(
-  <drake:deformable_model name='deformable'>
+  <model name='deformable'>
     <link name='body'>
       <collision name='collision'>
         <geometry>
@@ -4298,13 +4261,14 @@ TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
         <drake:material_model>corotated</drake:material_model>
       </drake:deformable_properties>
     </link>
-  </drake:deformable_model>)";
+  </model>)";
 
-  const std::vector<DeformableBodyId> body_ids = ParseDeformableTestString(sdf);
+  ParseTestString(sdf);
   EXPECT_THAT(NumErrors(), 0);
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
-  const DeformableBodyId body_id = body_ids[0];
+  const DeformableBodyId body_id =
+      plant_.deformable_model().GetBodyIdByName("body");
   auto geometry_id = plant_.deformable_model().GetGeometryId(body_id);
   const geometry::ProximityProperties* props =
       scene_graph_.model_inspector().GetProximityProperties(geometry_id);
@@ -4326,13 +4290,14 @@ TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
 TEST_F(SdfParserTest, MultipleDeformableBodies) {
   AddSceneGraph();
   const std::string sdf = R"(
-  <drake:deformable_model name='deformable'>
+  <model name='deformable'>
     <link name='body'>
       <collision name='collision'>
         <geometry>
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
+      <drake:deformable_properties></drake:deformable_properties>
     </link>
     <link name='body2'>
       <collision name='collision'>
@@ -4340,76 +4305,84 @@ TEST_F(SdfParserTest, MultipleDeformableBodies) {
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
+      <drake:deformable_properties></drake:deformable_properties>
     </link>
-  </drake:deformable_model>)";
+  </model>)";
 
-  ParseDeformableTestString(sdf);
+  ParseTestString(sdf);
   EXPECT_THAT(NumErrors(), 0);
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 2);
 }
 
-// Mixing <model> and <drake:deformable_model> at the top level is an error.
+// Specifying both deformable and rigid bodies in the same model is fine.
 TEST_F(SdfParserTest, MixingModelAndDeformableModel) {
   AddSceneGraph();
   const std::string sdf = R"(
-  <model name='rigid'>
-    <link name='base'/>
-  </model>
-  <drake:deformable_model name='deformable'>
-  </drake:deformable_model>)";
+  <model name='mixed'>
+    <link name='deformable'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties></drake:deformable_properties>
+    </link>
+    <link name='rigid'>
+    </link>
+  </model>)";
   ParseTestString(sdf);
-  EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(),
-              MatchesRegex(".*model.*mutually exclusive.*deformable_mode.*"));
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  // World body + the parsed rigid body.
+  EXPECT_EQ(plant_.num_bodies(), 2);
 }
 
-// Mixing <model> and <drake:deformable_model> at the top level is an error.
+// Mixing <model> and <model> at the top level is an error.
 TEST_F(SdfParserTest, MixingModelAndDeformableModel2) {
   AddSceneGraph();
   const std::string sdf = R"(
   <model name='rigid'>
     <link name='base'/>
   </model>
-  <drake:deformable_model name='deformable'>
-  </drake:deformable_model>)";
-  ParseDeformableTestString(sdf);
+  <model name='deformable'>
+  </model>)";
+  ParseTestString(sdf);
   EXPECT_THAT(NumErrors(), 1);
   EXPECT_THAT(TakeError(),
               MatchesRegex(".*model.*mutually exclusive.*deformable_mode.*"));
 }
 
-// No <drake:deformable_model> at the top level is always fine.
+// No <model> at the top level is always fine.
 TEST_F(SdfParserTest, NoDeformableModel) {
   AddSceneGraph();
   const std::string sdf = R"(
   <model name='rigid'>
     <link name='base'/>
   </model>)";
-  ParseDeformableTestString(sdf);
+  ParseTestString(sdf);
   ParseTestString(sdf);
   EXPECT_THAT(NumErrors(), 0);
 }
 
-// More than one <drake:deformable_model> is an error.
+// More than one <model> is an error.
 TEST_F(SdfParserTest, DuplicateDeformableModel) {
   AddSceneGraph();
   const std::string sdf = R"(
-  <drake:deformable_model name='deformable1'>
-  </drake:deformable_model>
-  <drake:deformable_model name='deformable2'>
-  </drake:deformable_model>
+  <model name='deformable1'>
+  </model>
+  <model name='deformable2'>
+  </model>
   )";
-  ParseDeformableTestString(sdf);
+  ParseTestString(sdf);
   EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(),
-              MatchesRegex(".*At most one <drake:deformable_model>.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*At most one <model>.*"));
 }
 
 // Parsing deformable model requires a SceneGraph.
 TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
   const std::string sdf = R"(
-  <drake:deformable_model name='deformable'>
+  <model name='deformable'>
     <link name='body'>
       <collision name='collision'>
         <geometry>
@@ -4417,8 +4390,8 @@ TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
         </geometry>
       </collision>
     </link>
-  </drake:deformable_model>)";
-  ParseDeformableTestString(sdf);
+  </model>)";
+  ParseTestString(sdf);
   EXPECT_THAT(NumErrors(), 1);
   EXPECT_THAT(TakeError(),
               MatchesRegex(".*deformable.*without.*geometry source.*"));
