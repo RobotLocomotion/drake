@@ -296,6 +296,7 @@ drake_cc_library(
     srcs = ["saturation.cc"],
     hdrs = ["saturation.h"],
     deps = [
+        "//math:gradient",
         "//systems/framework",
     ],
 )
@@ -740,6 +741,7 @@ drake_cc_googletest(
     name = "saturation_test",
     deps = [
         ":saturation",
+        "//systems/framework/test_utilities",
     ],
 )
 
