@@ -23,7 +23,7 @@ def rules_java_repository(
         When updating, you must also manually propagate to the new version
         number into the MODULE.bazel file (at the top level of Drake).
         """,
-        commit = "8.6.1",
-        sha256 = "b2519fabcd360529071ade8732f208b3755489ed7668b118f8f90985c0e51324",  # noqa
+        commit = "8.11.0",
+        sha256 = "06e6e30859c5fc49ac1e6e7fdaffc0df110049debbd429686ad65bb5b425f7b5",  # noqa
         mirrors = mirrors,
     )
