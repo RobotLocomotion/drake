@@ -139,10 +139,6 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
            has been registered.
    @throws std::exception unless `body_B` is registered with the same multibody
            plant owning this deformable model.
-   @throws std::exception if shape is not supported by
-           QueryObject::ComputeSignedDistanceToPoint(). Currently, supported
-           shapes include Box, Capsule, Cylinder, Ellipsoid, HalfSpace, and
-           Sphere.
    @throws std::exception if Finalize() has been called on the multibody plant
            owning this deformable model.
    @throws std::exception if `this` %DeformableModel is not of scalar type

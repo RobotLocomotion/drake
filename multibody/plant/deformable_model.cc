@@ -42,7 +42,7 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
   ThrowIfNotDouble(__func__);
   DRAKE_THROW_UNLESS(model_instance < this->plant().num_model_instances());
   if constexpr (std::is_same_v<T, double>) {
-    const std::string& name = geometry_instance->name();
+    const std::string name = geometry_instance->name();
     if (name_to_body_id_.contains(name)) {
       throw std::logic_error(fmt::format(
           "A deformable body with the name {} has already been registered.",

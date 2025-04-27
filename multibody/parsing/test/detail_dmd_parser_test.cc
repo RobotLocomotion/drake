@@ -468,8 +468,8 @@ directives:
     name: deformable
     file: {deformable_sdf}
     default_free_body_pose:
-        body:
-            base_frame: body
+        ball:
+            base_frame: world
             translation: [1, 2, 3]
 )""",
           fmt::arg("deformable_sdf", deformable_sdf)),

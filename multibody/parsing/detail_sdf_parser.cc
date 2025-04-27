@@ -1180,15 +1180,6 @@ void ParseDeformableLink(const SDFormatDiagnostic& diag,
       diag, link_element,
       {"pose", "collision", "visual", "drake:deformable_properties"});
 
-  // A name attribute is **required**.
-  // TODO(xuchenhan-tri): Support an empty name attribute.
-  const std::string& link_name = link.Name();
-  if (link_name.empty()) {
-    diag.Error(link_element,
-               "Each <link> must have a non‑empty 'name' attribute.");
-    return;
-  }
-
   // Config
   fem::DeformableBodyConfig<double> cfg;
   LoadDeformableConfig(link, &cfg, diag);
@@ -1229,7 +1220,7 @@ void ParseDeformableLink(const SDFormatDiagnostic& diag,
 
   // Now create the geometry instance.
   auto geometry_instance =
-      std::make_unique<GeometryInstance>(X_WL, std::move(shape), link_name);
+      std::make_unique<GeometryInstance>(X_WL, std::move(shape), link.Name());
 
   // Parse proximity properties from <drake:proximity_properties> if they are
   // legally specified. Otherwise, add a default proximity property.
