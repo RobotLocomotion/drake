@@ -48,15 +48,17 @@ class DeformableModelTest : public ::testing::Test {
   }
 
   template <typename T>
-  DeformableBodyId RegisterSphere(DeformableModel<T>* model,
-                                  double resolution_hint,
-                                  RigidTransformd X_WS = RigidTransformd()) {
+  DeformableBodyId RegisterSphere(
+      DeformableModel<T>* model, double resolution_hint,
+      RigidTransformd X_WS = RigidTransformd(),
+      ModelInstanceIndex model_instance = default_model_instance()) {
     auto geometry =
         make_unique<GeometryInstance>(X_WS, make_unique<Sphere>(1), "sphere");
     geometry::ProximityProperties deformable_proximity_props;
     geometry->set_proximity_properties(deformable_proximity_props);
     DeformableBodyId body_id = model->RegisterDeformableBody(
-        std::move(geometry), fem::DeformableBodyConfig<T>{}, resolution_hint);
+        std::move(geometry), model_instance, fem::DeformableBodyConfig<T>{},
+        resolution_hint);
     return body_id;
   }
 };
@@ -699,6 +701,37 @@ TEST_F(DeformableModelTest, GetAndSetPositionsThrowConditions) {
           Matrix3X<double>::Constant(3, num_dofs / 3,
                                      std::numeric_limits<double>::infinity())),
       std::exception);
+}
+
+/* Tests getting a deformable body by name. */
+TEST_F(DeformableModelTest, BodyName) {
+  const DeformableBodyId body_id = RegisterSphere(0.5);
+  EXPECT_TRUE(deformable_model_ptr_->HasBodyNamed("sphere"));
+  EXPECT_EQ(deformable_model_ptr_->GetBodyIdByName("sphere"), body_id);
+  EXPECT_FALSE(deformable_model_ptr_->HasBodyNamed("nonexistent_body_name"));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      deformable_model_ptr_->GetBodyIdByName("nonexistent_body_name"),
+      ".*No deformable body.*nonexistent_body_name.*registered.*");
+}
+
+/* Tests registering deformable bodies into a prescribed model instance as well
+ as getting deformable bodies by model instance index. */
+TEST_F(DeformableModelTest, ModelInstance) {
+  const double kRezHint = 0.5;
+  ModelInstanceIndex invalid_model_instance(42);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      RegisterSphere(deformable_model_ptr_, kRezHint, RigidTransformd{},
+                     invalid_model_instance),
+      ".*Invalid model instance.*");
+  const ModelInstanceIndex model_instance =
+      plant_->AddModelInstance("test_instance");
+  const DeformableBodyId body_id = RegisterSphere(
+      deformable_model_ptr_, kRezHint, RigidTransformd{}, model_instance);
+  EXPECT_EQ(deformable_model_ptr_->num_bodies(), 1);
+  const std::vector<DeformableBodyId> bodies_in_model_instance =
+      deformable_model_ptr_->GetBodyIds(model_instance);
+  ASSERT_EQ(bodies_in_model_instance.size(), 1);
+  EXPECT_EQ(bodies_in_model_instance[0], body_id);
 }
 
 }  // namespace

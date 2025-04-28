@@ -3369,7 +3369,8 @@ class TestPlant(unittest.TestCase):
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
         dut = plant.mutable_deformable_model()
         self.assertEqual(dut.num_bodies(), 0)
-        # Add a deformable body to the model.
+        # Add two deformable body to the model with the two overloads of
+        # RegisterDeformableBody.
         deformable_body_config = DeformableBodyConfig_[float]()
         geometry = GeometryInstance(X_PG=RigidTransform(),
                                     shape=Sphere(1.), name="sphere")
@@ -3381,6 +3382,12 @@ class TestPlant(unittest.TestCase):
             geometry_instance=geometry,
             config=deformable_body_config,
             resolution_hint=1.0)
+        dut.RegisterDeformableBody(
+            geometry_instance=geometry,
+            config=deformable_body_config,
+            model_instance=ModelInstanceIndex(42),
+            resolution_hint=1.0)
+        self.assertEqual(dut.num_bodies(), 2)
 
         geometry_id = dut.GetGeometryId(body_id)
         self.assertEqual(dut.GetBodyId(geometry_id), body_id)
@@ -3394,14 +3401,10 @@ class TestPlant(unittest.TestCase):
                                X_BG=RigidTransform())
 
         # Verify that a body has been added to the model.
-        self.assertEqual(dut.num_bodies(), 1)
         self.assertIsInstance(dut.GetReferencePositions(body_id), np.ndarray)
 
         deformable_model = plant.deformable_model()
-        self.assertEqual(deformable_model.num_bodies(), 1)
-        # Turn on SAP and finalize.
-        plant.set_discrete_contact_approximation(
-            DiscreteContactApproximation.kSap)
+        self.assertEqual(deformable_model.num_bodies(), 2)
         plant.Finalize()
 
         self.assertIsInstance(

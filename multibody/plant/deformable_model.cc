@@ -40,7 +40,11 @@ DeformableBodyId DeformableModel<T>::RegisterDeformableBody(
     const fem::DeformableBodyConfig<T>& config, double resolution_hint) {
   this->ThrowIfSystemResourcesDeclared(__func__);
   ThrowIfNotDouble(__func__);
-  DRAKE_THROW_UNLESS(model_instance < this->plant().num_model_instances());
+  if (!(model_instance < this->plant().num_model_instances())) {
+    throw std::logic_error(
+        "Invalid model instance specified. A valid model instance can be "
+        "obtained by calling MultibodyPlant::AddModelInstance().");
+  }
   if constexpr (std::is_same_v<T, double>) {
     const std::string name = geometry_instance->name();
     if (name_to_body_id_.contains(name)) {
@@ -310,9 +314,14 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 }
 
 template <typename T>
+bool DeformableModel<T>::HasBodyNamed(const std::string& name) const {
+  return name_to_body_id_.contains(name);
+}
+
+template <typename T>
 DeformableBodyId DeformableModel<T>::GetBodyIdByName(
     const std::string& name) const {
-  if (!name_to_body_id_.contains(name)) {
+  if (!HasBodyNamed(name)) {
     throw std::runtime_error(fmt::format(
         "No deformable body with the given name {} has been registered.",
         name));

@@ -66,6 +66,8 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    unique identifier for the added geometry.
    @param[in] geometry_instance  The geometry to be registered with the model.
    @param[in] config             The physical properties of deformable body.
+   @param[in] model_instance     The model instance index which this body is
+                                 part of.
    @param[in] resolution_hint    The parameter that guides the level of mesh
                                  refinement of the deformable geometry. It has
                                  length units (in meters) and roughly
@@ -74,6 +76,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    @pre resolution_hint > 0.
    @throws std::exception if `this` %DeformableModel is not of scalar type
    double.
+   @throws std::exception if the model instance does not exist.
    @throws std::exception if Finalize() has been called on the multibody plant
    owning this deformable model. */
   DeformableBodyId RegisterDeformableBody(
@@ -287,6 +290,10 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    or if index is larger than or equal to the total number of registered
    deformable bodies. */
   DeformableBodyId GetBodyId(DeformableBodyIndex index) const;
+
+  /** Returns true if and only if a deformable body with the given `name` has
+   been registered with this model. */
+  bool HasBodyNamed(const std::string& name) const;
 
   // TODO(xuchenhan-tri): Consider whether we should allow duplicateed names
   // across different model instances.
