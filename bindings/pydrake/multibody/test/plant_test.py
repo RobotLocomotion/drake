@@ -134,6 +134,7 @@ from pydrake.systems.analysis import Simulator_
 from pydrake.systems.framework import (
     DiagramBuilder,
     DiagramBuilder_,
+    DiscreteStateIndex,
     System_,
     LeafSystem_,
     InputPort_,
@@ -3373,7 +3374,7 @@ class TestPlant(unittest.TestCase):
         # RegisterDeformableBody.
         deformable_body_config = DeformableBodyConfig_[float]()
         geometry = GeometryInstance(X_PG=RigidTransform(),
-                                    shape=Sphere(1.), name="sphere")
+                                    shape=Sphere(1.0), name="sphere")
         props = ProximityProperties()
         props.AddProperty("material", "coulomb_friction",
                           CoulombFriction_[float](1.0, 1.0))
@@ -3382,10 +3383,14 @@ class TestPlant(unittest.TestCase):
             geometry_instance=geometry,
             config=deformable_body_config,
             resolution_hint=1.0)
+        model_instance = plant.AddModelInstance("deformable_instance")
+        geometry2 = GeometryInstance(X_PG=RigidTransform(),
+                                     shape=Sphere(2.0), name="sphere2")
+        geometry2.set_proximity_properties(props)
         dut.RegisterDeformableBody(
-            geometry_instance=geometry,
+            geometry_instance=geometry2,
             config=deformable_body_config,
-            model_instance=ModelInstanceIndex(42),
+            model_instance=model_instance,
             resolution_hint=1.0)
         self.assertEqual(dut.num_bodies(), 2)
 
@@ -3394,7 +3399,8 @@ class TestPlant(unittest.TestCase):
         dut.SetWallBoundaryCondition(body_id, [1, 1, -1], [0, 0, 1])
 
         spatial_inertia = SpatialInertia_[float].SolidCubeWithDensity(1, 1)
-        rigid_body = plant.AddRigidBody("rigid_body", spatial_inertia)
+        rigid_body = plant.AddRigidBody("rigid_body", model_instance,
+                                        spatial_inertia)
         dut.AddFixedConstraint(body_A_id=body_id,
                                body_B=rigid_body,
                                X_BA=RigidTransform(), shape=Box(1, 1, 1),
@@ -3410,7 +3416,8 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             plant.get_deformable_body_configuration_output_port(),
             OutputPort_[float])
-        self.assertEqual(deformable_model.GetDiscreteStateIndex(body_id), 1)
+        self.assertIsInstance(deformable_model.GetDiscreteStateIndex(body_id),
+                              DiscreteStateIndex)
 
         diagram = builder.Build()
         # Ensure we can simulate this system.
