@@ -11,6 +11,7 @@ import subprocess
 from .common import create_snopt_tgz, die, gripe, wheel_name
 from .common import build_root, resource_root, wheel_root, wheelhouse
 from .common import test_root, find_tests
+from .common import dist_root
 
 from .macos_types import PythonTarget
 
@@ -116,6 +117,7 @@ def build(options):
             'resulted in an empty set of wheels)')
 
     # Set up build environment.
+    os.system('image/provision-build.sh')
     os.makedirs(build_root, exist_ok=True)
 
     # Sanitize the build/test environment.
@@ -180,7 +182,7 @@ def build(options):
         os.unlink(wheel_root)
 
     if not options.keep_build:
-        shutil.rmtree('/opt/drake-dist')
+        shutil.rmtree(dist_root)
         shutil.rmtree(build_root)
         if options.test:
             shutil.rmtree(test_root)

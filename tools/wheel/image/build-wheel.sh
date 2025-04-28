@@ -43,16 +43,16 @@ copy_license()
     package_name=$1
     mkdir -p ${WHEEL_DIR}/pydrake/doc/${package_name}
     cp -t ${WHEEL_DIR}/pydrake/doc/${package_name}/ \
-        /opt/drake-wheel-licenses/${package_name}/copyright
+        /tmp/drake-wheel-licenses/${package_name}/copyright
 }
 
 ###############################################################################
 
 # Activate Drake's virtual environment, which provides some of the tools that
 # we need to build the wheels.
-. /opt/drake-wheel-build/drake/venv/bin/activate
+. /tmp/drake-wheel-build/drake/venv/bin/activate
 
-readonly WHEEL_DIR=/opt/drake-wheel-build/wheel
+readonly WHEEL_DIR=/tmp/drake-wheel-build/wheel
 readonly WHEEL_SHARE_DIR=${WHEEL_DIR}/pydrake/share
 
 # TODO(mwoehlke-kitware) Most of this should move to Bazel.
@@ -62,24 +62,24 @@ mkdir -p ${WHEEL_DIR}/pydrake/share/drake
 cd ${WHEEL_DIR}
 
 cp -r -t ${WHEEL_DIR}/drake \
-    /opt/drake/lib/python*/site-packages/drake/*
+    /tmp/drake/lib/python*/site-packages/drake/*
 
 cp -r -t ${WHEEL_DIR}/pydrake \
-    /opt/drake/share/doc \
-    /opt/drake/lib/python*/site-packages/pydrake/*
+    /tmp/drake/share/doc \
+    /tmp/drake/lib/python*/site-packages/pydrake/*
 
 cp -r -t ${WHEEL_DIR}/pydrake/lib \
-    /opt/drake/lib/libdrake*.so
+    /tmp/drake/lib/libdrake*.so
 
 # MOSEK is "sort of" third party, but is procured as part of Drake's build and
-# ends up in /opt/drake. It should end up in the same place as libdrake.so.
+# ends up in /tmp/drake. It should end up in the same place as libdrake.so.
 cp -r -t ${WHEEL_DIR}/pydrake/lib \
-    /opt/drake/lib/libmosek* \
-    /opt/drake/lib/libtbb*
+    /tmp/drake/lib/libmosek* \
+    /tmp/drake/lib/libtbb*
 
 if [[ "$(uname)" == "Linux" ]]; then
   cp -r -t ${WHEEL_DIR}/pydrake \
-      /opt/drake-wheel-content/*
+      /tmp/drake-wheel-content/*
 fi
 
 # Copy the license files from third party dependencies we vendor.
@@ -91,17 +91,17 @@ if [[ "$(uname)" == "Linux" ]]; then
 fi
 
 cp -r -t ${WHEEL_SHARE_DIR}/drake \
-    /opt/drake/share/drake/.drake-find_resource-sentinel \
-    /opt/drake/share/drake/package.xml \
-    /opt/drake/share/drake/examples \
-    /opt/drake/share/drake/geometry \
-    /opt/drake/share/drake/multibody \
-    /opt/drake/share/drake/tutorials
+    /tmp/drake/share/drake/.drake-find_resource-sentinel \
+    /tmp/drake/share/drake/package.xml \
+    /tmp/drake/share/drake/examples \
+    /tmp/drake/share/drake/geometry \
+    /tmp/drake/share/drake/multibody \
+    /tmp/drake/share/drake/tutorials
 
 if [[ "$(uname)" == "Linux" ]]; then
     mkdir -p ${WHEEL_SHARE_DIR}/drake/setup
     cp -r -t ${WHEEL_SHARE_DIR}/drake/setup \
-        /opt/drake/share/drake/setup/deepnote
+        /tmp/drake/share/drake/setup/deepnote
 fi
 
 if [[ "$(uname)" == "Linux" ]]; then
