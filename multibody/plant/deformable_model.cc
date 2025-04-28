@@ -9,6 +9,7 @@
 #include "drake/multibody/fem/linear_constitutive_model.h"
 #include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/linear_simplex_element.h"
+#include "drake/multibody/fem/neohookean_model.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -392,6 +393,10 @@ DeformableModel<T>::BuildLinearVolumetricModel(
     case MaterialModel::kCorotated:
       BuildLinearVolumetricModelHelper<fem::internal::CorotatedModel>(id, mesh,
                                                                       config);
+      break;
+    case MaterialModel::kNeoHookean:
+      BuildLinearVolumetricModelHelper<fem::internal::NeoHookeanModel>(id, mesh,
+                                                                       config);
       break;
     case MaterialModel::kLinearCorotated:
       BuildLinearVolumetricModelHelper<fem::internal::LinearCorotatedModel>(

@@ -3,45 +3,48 @@
 #include <array>
 
 #include "drake/multibody/fem/constitutive_model.h"
-#include "drake/multibody/fem/linear_corotated_model_data.h"
+#include "drake/multibody/fem/neohookean_model_data.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
 
-/* Traits for LinearCorotatedModel. */
+/* Traits for NeoHookeanModel. */
 template <typename T>
-struct LinearCorotatedModelTraits {
+struct NeoHookeanModelTraits {
   using Scalar = T;
-  using Data = LinearCorotatedModelData<T>;
-  static constexpr bool is_linear = true;
+  using Data = NeoHookeanModelData<T>;
+  static constexpr int is_linear = false;
 };
 
-/* Implements the linear corotated constitutive model as described in
- [Han et al., 2023].
+/* Implements the stable Neo-Hookean hyperelastic constitutive model as
+ described in [Smith et al., 2019]. The implementation references Section 7.3 in
+ the course note [Kim and Eberle, 2020].
  @tparam T The scalar type, can be a double, float, or AutoDiffXd.
 
- [Han et al., 2023] Han, Xuchen, Joseph Masterjohn, and Alejandro Castro. "A
- Convex Formulation of Frictional Contact between Rigid and Deformable Bodies."
- arXiv preprint arXiv:2303.08912 (2023). */
+ [Smith et al., 2019] Smith, Breannan, Fernando De Goes, and Theodore Kim.
+ "Stable Neo-Hookean flesh simulation." ACM Transactions on Graphics (TOG) 37.2
+ (2018): 1-15.
+ [Kim and Eberle, 2020] Kim, Theodore, and David Eberle. "Dynamic deformables:
+ implementation and production practicalities." Acm siggraph 2020 courses. 2020.
+ 1-182. */
 template <typename T>
-class LinearCorotatedModel final
-    : public ConstitutiveModel<LinearCorotatedModel<T>,
-                               LinearCorotatedModelTraits<T>> {
+class NeoHookeanModel final
+    : public ConstitutiveModel<NeoHookeanModel<T>, NeoHookeanModelTraits<T>> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearCorotatedModel);
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(NeoHookeanModel);
 
-  using Traits = LinearCorotatedModelTraits<T>;
+  using Traits = NeoHookeanModelTraits<T>;
   using Data = typename Traits::Data;
 
-  /* Constructs a LinearCorotatedModel constitutive model with the
+  /* Constructs a NeoHookeanModel constitutive model with the
    prescribed Young's modulus and Poisson's ratio.
    @param youngs_modulus  Young's modulus of the model, with units of N/m².
    @param poissons_ratio  Poisson's ratio of the model, unitless.
    @pre youngs_modulus >= 0.
    @pre -1 < poissons_ratio < 0.5. */
-  LinearCorotatedModel(const T& youngs_modulus, const T& poissons_ratio);
+  NeoHookeanModel(const T& youngs_modulus, const T& poissons_ratio);
 
   const T& youngs_modulus() const { return E_; }
 
@@ -58,8 +61,7 @@ class LinearCorotatedModel final
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
-  friend ConstitutiveModel<LinearCorotatedModel<T>,
-                           LinearCorotatedModelTraits<T>>;
+  friend ConstitutiveModel<NeoHookeanModel<T>, NeoHookeanModelTraits<T>>;
 
   /* Shadows ConstitutiveModel::CalcElasticEnergyDensityImpl() as required by
    the CRTP base class. */
@@ -74,14 +76,22 @@ class LinearCorotatedModel final
   void CalcFirstPiolaStressDerivativeImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* dPdF) const;
 
-  /* Shadows ConstitutiveModel::CalcFilteredHessian() in the CRTP base class. */
+  /* Shadows ConstitutiveModel::CalcFilteredHessian() in the base class to
+   provide a more efficient implementation. */
   void CalcFilteredHessianImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* hessian) const;
 
-  T E_;       // Young's modulus, N/m².
-  T nu_;      // Poisson's ratio.
-  T mu_;      // Lamé's second parameter/Shear modulus, N/m².
-  T lambda_;  // Lamé's first parameter, N/m².
+  /* Given the rotation matrices in the SVD of F, computes the "twist" and
+   "flip" eigenvectors (3 of each) and write them into the first 6 columns of
+   the eigenvector matrix Q described in [Kim and Eberle, 2020]. */
+  void BuildTwistAndFlipEigenvectors(const Matrix3<T>& U, const Matrix3<T>& V,
+                                     Eigen::Matrix<T, 9, 9>* Q) const;
+
+  T E_;               // Young's modulus, N/m².
+  T nu_;              // Poisson's ratio.
+  T mu_;              // Lamé's second parameter/Shear modulus, N/m².
+  T lambda_;          // Lamé's first parameter, N/m².
+  T mu_over_lambda_;  // mu/lambda, unitless.
 };
 
 }  // namespace internal

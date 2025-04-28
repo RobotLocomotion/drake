@@ -15,6 +15,9 @@ ConstitutiveModelVariant<T> MakeConstitutiveModel(
     case fem::MaterialModel::kCorotated:
       return fem::internal::CorotatedModel<T>(config.youngs_modulus(),
                                               config.poissons_ratio());
+    case fem::MaterialModel::kNeoHookean:
+      return fem::internal::NeoHookeanModel<T>(config.youngs_modulus(),
+                                               config.poissons_ratio());
     case fem::MaterialModel::kLinearCorotated:
       return fem::internal::LinearCorotatedModel<T>(config.youngs_modulus(),
                                                     config.poissons_ratio());
@@ -31,6 +34,8 @@ DeformationGradientDataVariant<T> MakeDeformationGradientData(
   switch (config.material_model()) {
     case fem::MaterialModel::kCorotated:
       return fem::internal::CorotatedModelData<T>();
+    case fem::MaterialModel::kNeoHookean:
+      return fem::internal::NeoHookeanModelData<T>();
     case fem::MaterialModel::kLinearCorotated:
       return fem::internal::LinearCorotatedModelData<T>();
     case fem::MaterialModel::kLinear:

@@ -64,6 +64,57 @@ GTEST_TEST(MatrixUtilitiesTest, PolarDecompose) {
   EXPECT_TRUE(math::RotationMatrix<double>::IsValid(R, kTol));
 }
 
+GTEST_TEST(MatrixUtilitiesTest, RotationSvd) {
+  /* Lambda to exercise one F ⇒ (U, σ, V) decomposition and check all
+   properties. */
+  const auto check_svd = [&](const Matrix3<double>& F) {
+    Matrix3<double> U, V;
+    Vector3<double> sigma;
+    RotationSvd<double>(F, &U, &V, &sigma);
+
+    /* 1) Reconstruction: F ≈ U S Vᵀ */
+    EXPECT_TRUE(
+        CompareMatrices(F, U * sigma.asDiagonal() * V.transpose(), kTol));
+
+    /* 2) Orthonormality: UᵀU = I, VᵀV = I */
+    EXPECT_TRUE(
+        CompareMatrices(Matrix3<double>::Identity(), U.transpose() * U, kTol));
+    EXPECT_TRUE(
+        CompareMatrices(Matrix3<double>::Identity(), V.transpose() * V, kTol));
+
+    /* 3) Proper rotations: det > 0 */
+    EXPECT_GT(U.determinant(), 0.0);
+    EXPECT_GT(V.determinant(), 0.0);
+
+    /* 4) Singular values sorted and non-negative */
+    EXPECT_GE(sigma(0), sigma(1));
+    EXPECT_GE(sigma(1), sigma(2));
+    EXPECT_GE(sigma(2), 0.0);
+  };
+
+  {
+    check_svd(Matrix3<double>::Identity());
+  }
+
+  /* Pure scaling */
+  {
+    Matrix3<double> F = Matrix3<double>::Zero();
+    F.diagonal() << 3.0, 2.0, 1.0;  // knows S = diag(3,2,1)
+    check_svd(F);
+  }
+
+  /* General rotation–scale–rotation */
+  {
+    math::RotationMatrix<double> R1(math::RollPitchYaw<double>(1, 2, 3));
+    math::RotationMatrix<double> R2(math::RollPitchYaw<double>(4, 5, 6));
+    Matrix3<double> S = Matrix3<double>::Zero();
+    S.diagonal() << 5.0, 4.0, 2.0;
+
+    Matrix3<double> F = R1.matrix() * S * R2.matrix().transpose();
+    check_svd(F);
+  }
+}
+
 GTEST_TEST(MatrixUtilitiesTest, AddScaledRotationalDerivative) {
   const Matrix3<AutoDiffXd> F = MakeAutoDiffMatrix(3, 3);
   Matrix3<AutoDiffXd> R, S;

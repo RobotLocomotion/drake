@@ -341,7 +341,8 @@ class VolumetricElement
   /* Implements FemElement::DoAddScaledStiffnessMatrix().
    @warning This method calculates a first-order approximation of the stiffness
    matrix. In other words, the contribution of the term ∂fᵥ(x, v)/∂x is ignored
-   as it involves complex second derivatives of the elastic force. */
+   as it involves complex second derivatives of the elastic force. It also
+   filters out any negative eigenvalues by clamping them to zero. */
   void DoAddScaledStiffnessMatrix(
       const Data& data, const T& scale,
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> K) const {
@@ -383,7 +384,7 @@ class VolumetricElement
           data.deformation_gradient_data[q], &(data.Psi[q]));
       this->constitutive_model().CalcFirstPiolaStress(
           data.deformation_gradient_data[q], &(data.P[q]));
-      this->constitutive_model().CalcFirstPiolaStressDerivative(
+      this->constitutive_model().CalcFilteredHessian(
           data.deformation_gradient_data[q], &(data.dPdF[q]));
     }
     return data;
