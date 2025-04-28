@@ -31,7 +31,6 @@ _REPOSITORIES_WITH_NO_METADATA = [
     # Host libraries / binaries.
     "gfortran",
     "glib",
-    "glx",
     "gurobi",
     "lapack",
     "libblas",
@@ -40,7 +39,6 @@ _REPOSITORIES_WITH_NO_METADATA = [
     "nasm",
     "net_sf_jchart2d",
     "opencl",
-    "opengl",
     "org_apache_xmlgraphics_commons",
     "x11",
     "zlib",
