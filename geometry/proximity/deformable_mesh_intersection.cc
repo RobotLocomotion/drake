@@ -66,7 +66,6 @@ class DeformableSurfaceVolumeIntersector
     std::vector<int> polygon(num_new_vertices);
     std::iota(polygon.begin(), polygon.end(), num_vertices_before);
 
-    // We enforce that the normal points into the deformable mesh.
     const Vector3<double> n_R =
         X_RD_d.rotation() * (-surface_D.face_normal(tri_index));
     const Vector3<double> p_RC =

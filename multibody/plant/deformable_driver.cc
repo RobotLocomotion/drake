@@ -490,23 +490,47 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        k * ϕ where ϕ is the penetration distance. The contact force balances
        gravity and we have
 
-         kϕ  = CL²ϕ = gρL³,
+         kϕ  = CL²ϕ = GρL³,
 
-       which gives ϕ = gρL / C.
+       which gives ϕ = GρL / C.
        We choose a large C = 1e8 Pa/m so that for ρ = 1000 kg/m³ and
-       g = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
+       G = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
        density of water, a reasonably small penetration. */
       const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
       const T Ae = surface.contact_mesh_W().area(i);
-      const T deformable_k = Ae * 1e8;
-      T g = surface.is_B_deformable()
-                ? T(std::numeric_limits<double>::infinity())
-                : -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
-      if (g < 1e-14 || Ae < 1e-14) {
-        continue;
+      /* Geometry A is always deformable, so this is deformable vs. deformable
+       contact iff geometry B is deformable. */
+      const bool is_deformable_vs_deformable = surface.is_B_deformable();
+      /* One dimensional pressure gradient (in Pa/m), only used in deformable
+       vs. rigid contact. */
+      std::optional<T> g;
+      /* Filter out negative directional pressure derivatives (separating
+       contact) and tiny contact polygons (to avoid numerical issues). */
+      if (!is_deformable_vs_deformable) {
+        /* Unlike [Masterjohn,
+         2022], the pressure gradient is positive in the direction "into" the
+         rigid body. Therefore, we need a negative sign. [Masterjohn, 2022]
+         Velocity Level Approximation of Pressure Field Contact Patches. */
+        g = -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
+        if (g.value() < 1e-14 || Ae < 1e-14) {
+          continue;
+        }
       }
-      const T rigid_k = Ae * g;
-      const T k = surface.is_B_deformable() ? deformable_k : rigid_k;
+
+      const auto [k, phi0, fn0] = [&]() {
+        if (is_deformable_vs_deformable) {
+          const T deformable_k = Ae * 1e8;
+          const T deformable_phi0 = surface.signed_distances()[i];
+          const T deformable_fn0 = -deformable_k * deformable_phi0;
+          return std::make_tuple(deformable_k, deformable_phi0, deformable_fn0);
+        } else {
+          DRAKE_ASSERT(g.has_value());
+          const T rigid_k = Ae * g.value();
+          const T rigid_phi0 = -surface.pressures()[i] / g.value();
+          const T rigid_fn0 = Ae * surface.pressures()[i];
+          return std::make_tuple(rigid_k, rigid_phi0, rigid_fn0);
+        }
+      }();
 
       // TODO(xuchenhan-tri): Use the real H&C dissipation for rigid vs.
       //  deformable.
@@ -529,13 +553,6 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 
-      /* Normal contact force. */
-      const T fn0 = surface.is_B_deformable()
-                        ? -k * surface.signed_distances()[i]
-                        : Ae * surface.pressures()[i];
-      /* Penetration distance. */
-      const T phi0 = surface.is_B_deformable() ? surface.signed_distances()[i]
-                                               : -surface.pressures()[i] / g;
       /* Contact solver assumes the normal points from A to B whereas the
        surface's normal points from B to A. */
       const Vector3<T> nhat_AB_W = -surface.nhats_W()[i];

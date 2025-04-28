@@ -420,7 +420,7 @@ class DeformableDriverContactKinematicsTest
             CompareMatrices(J0 * v_deformable, expected_vc, kTolerance));
         EXPECT_NEAR(contact_pair.vn0, expected_vc(2), kTolerance);
         // Object B is the rigid body (world in this case)
-        EXPECT_EQ(BodyIndex(contact_pair.object_B), BodyIndex(0));
+        EXPECT_EQ(BodyIndex(contact_pair.object_B), world_index());
       }
 
       // Object A is always the deformable body.
@@ -586,8 +586,8 @@ TEST_F(DeformableDriverContactKinematicsTest,
 TEST_F(DeformableDriverContactKinematicsTest, FixedConstraintKinematics) {
   MakeFixedConstraintScene();
   ValidateFixedConstraintKinematics();
-  /* The only vertex participating in the fixed constraint is the bottom vertex
-   (v6).
+  /* The only vertices participating in the fixed constraint are the top and
+   the bottom vertices (v5 and v6).
      |   Original       |   Permuted       |   Participating   |
      |   vertex index   |   vertex index   |   in contact      |
      | :--------------: | :--------------: | :---------------: |

@@ -14,13 +14,15 @@ namespace geometry {
 namespace internal {
 
 /* Computes the contact surface between a deformable geometry and a rigid
- geometry and appends it to existing data. The resulting contact surface is the
- surface of the deformable geometry clipped by the volume mesh of the rigid
- geometry. This choice of contact surface representation (as opposed to clipping
- the rigid geometry's surface by the deformable geometry's volume mesh) is made
- because
- 1. it reduces the number of contact points and the number of participating
-    verices;
+ geometry and appends it to existing data. The resulting contact surface lies on
+ the surface of the deformable geometry (possibly with additional subdivisions
+ due to the intersection with the volume of the rigid geometry). This choice of
+ contact surface representation (as opposed to making the contact surface lie on
+ the surface of the rigid geometry) is made because:
+
+ 1. it often in practice reduces the number of contact points and the number of
+    participating verices (i.e. the vertices incident to the deformable
+    tetrahedra containing at least one contact point).;
  2. it prevents contact constraints that only involve internal deformable
     vertices, and
  3. it alleviates the "sticking" artifact that we observe in practice.

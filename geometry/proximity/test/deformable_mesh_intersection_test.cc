@@ -240,24 +240,10 @@ GTEST_TEST(ComputeContactSurfaceDeformableRigid, OnlyRelativePoseMatters) {
             contact_surface2.num_contact_points());
   /* Verify that pressure values are not all equal simply because they are
    all zero -- some meaningful values do exist. */
-  const auto has_positive_value =
-      [](const DeformableContactSurface<double>& surface) {
-        const std::vector<double>& pressures = surface.pressures();
-        bool nonzero_exists = false;
-        for (const double d : pressures) {
-          EXPECT_GE(d, 0.0);
-          if (d > 0.0) {
-            nonzero_exists = true;
-          }
-        }
-        EXPECT_TRUE(nonzero_exists);
-      };
-  has_positive_value(contact_surface);
-  const std::vector<double>& pressures = contact_surface.pressures();
-  const std::vector<double>& pressures2 = contact_surface2.pressures();
-  for (int i = 0; i < contact_surface.num_contact_points(); ++i) {
-    EXPECT_DOUBLE_EQ(pressures[i], pressures2[i]);
-  }
+  const auto [min_element, max_element] = std::minmax_element(
+      contact_surface.pressures().begin(), contact_surface.pressures().end());
+  EXPECT_GE(*min_element, 0.0);
+  EXPECT_GT(*max_element, 0.0);
 }
 
 }  // namespace
