@@ -62,7 +62,7 @@ HPolyhedron IrisZoFromUrdf(const std::string urdf,
 
 // Reproduced from the IrisInConfigurationSpace unit tests.
 // One prismatic link with joint limits. Iris should return the joint limits.
-TEST_F(JointLimits1D, JointLimits) {
+TEST_F(JointLimits1D, JointLimitsBasic) {
   IrisZoOptions options;
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
@@ -165,128 +165,31 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
 // tip of radius `r` between two (fixed) walls at `w` from the origin.  The
 // true configuration space is - w + r ≤ l₁s₁ + l₂s₁₊₂ ≤ w - r.  These regions
 // are visualized at https://www.desmos.com/calculator/ff0hbnkqhm.
-GTEST_TEST(IrisZoTest, DoublePendulum) {
-  const double l1 = 2.0;
-  const double l2 = 1.0;
-  const double r = .5;
-  const double w = 1.83;
-  const std::string double_pendulum_urdf = fmt::format(
-      R"(
-<robot name="double_pendulum">
-  <link name="fixed">
-    <collision name="right">
-      <origin rpy="0 0 0" xyz="{w_plus_one_half} 0 0"/>
-      <geometry><box size="1 1 10"/></geometry>
-    </collision>
-    <collision name="left">
-      <origin rpy="0 0 0" xyz="-{w_plus_one_half} 0 0"/>
-      <geometry><box size="1 1 10"/></geometry>
-    </collision>
-  </link>
-  <joint name="fixed_link_weld" type="fixed">
-    <parent link="world"/>
-    <child link="fixed"/>
-  </joint>
-  <link name="link1"/>
-  <joint name="joint1" type="revolute">
-    <axis xyz="0 1 0"/>
-    <limit lower="-1.57" upper="1.57"/>
-    <parent link="world"/>
-    <child link="link1"/>
-  </joint>
-  <link name="link2">
-    <collision name="ball">
-      <origin rpy="0 0 0" xyz="0 0 -{l2}"/>
-      <geometry><sphere radius="{r}"/></geometry>
-    </collision>
-  </link>
-  <joint name="joint2" type="revolute">
-    <origin rpy="0 0 0" xyz="0 0 -{l1}"/>
-    <axis xyz="0 1 0"/>
-    <limit lower="-1.57" upper="1.57"/>
-    <parent link="link1"/>
-    <child link="link2"/>
-  </joint>
-</robot>
-)",
-      fmt::arg("w_plus_one_half", w + .5), fmt::arg("l1", l1),
-      fmt::arg("l2", l2), fmt::arg("r", r));
-
-  const Vector2d sample = Vector2d::Zero();
-  std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
-  meshcat->Delete("face_pt");
+TEST_F(DoublePendulum, DoublePendulumBasic) {
   IrisZoOptions options;
   options.verbose = true;
-  options.meshcat = meshcat;
-  Hyperellipsoid starting_ellipsoid =
-      Hyperellipsoid::MakeHypersphere(1e-2, sample);
 
-  HPolyhedron region =
-      IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options);
+  meshcat_->Delete();
+  options.meshcat = meshcat_;
 
-  EXPECT_EQ(region.ambient_dimension(), 2);
-  // Confirm that we've found a substantial region.
-  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
 
-  EXPECT_TRUE(region.PointInSet(Vector2d{.4, 0.0}));
-  EXPECT_FALSE(region.PointInSet(Vector2d{.5, 0.0}));
-  EXPECT_TRUE(region.PointInSet(Vector2d{.3, .3}));
-  EXPECT_FALSE(region.PointInSet(Vector2d{.4, .3}));
-  EXPECT_TRUE(region.PointInSet(Vector2d{-.4, 0.0}));
-  EXPECT_FALSE(region.PointInSet(Vector2d{-.5, 0.0}));
-  EXPECT_TRUE(region.PointInSet(Vector2d{-.3, -.3}));
-  EXPECT_FALSE(region.PointInSet(Vector2d{-.4, -.3}));
+  PlotEnvironmentAndRegion(region);
+}
 
-  {
-    meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
-                             -3.25, 3.25, -3.25, 3.25);
-    meshcat->SetProperty("/Grid", "visible", true);
-    Eigen::RowVectorXd theta2s =
-        Eigen::RowVectorXd::LinSpaced(100, -1.57, 1.57);
-    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta2s.size() + 1);
-    const double c = -w + r;
-    for (int i = 0; i < theta2s.size(); ++i) {
-      const double a = l1 + l2 * std::cos(theta2s[i]),
-                   b = l2 * std::sin(theta2s[i]);
-      // wolfram solve a*sin(q) + b*cos(q) = c for q
-      points(0, i) =
-          2 * std::atan((std::sqrt(a * a + b * b - c * c) + a) / (b + c)) +
-          M_PI;
-      points(1, i) = theta2s[i];
-      points(0, points.cols() - i - 2) =
-          2 * std::atan((std::sqrt(a * a + b * b - c * c) + a) / (b - c)) -
-          M_PI;
-      points(1, points.cols() - i - 2) = theta2s[i];
-    }
-    points.col(points.cols() - 1) = points.col(0);
-    meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
-    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-    points.resize(3, vregion.vertices().cols() + 1);
-    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
-    points.topRightCorner(2, 1) = vregion.vertices().col(0);
-    points.bottomRows<1>().setZero();
-    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
-
-    MaybePauseForUser();
-  }
-
-  // We now test an example of a region grown along a parameterization of the
-  // space. We use the parameterization from rational forward kinematics, so
-  // we must re-create the plant.
-
-  RobotDiagramBuilder<double> builder(0.0);
-  builder.parser().package_map().AddPackageXml(FindResourceOrThrow(
-      "drake/multibody/parsing/test/box_package/package.xml"));
-  builder.parser().AddModelsFromString(double_pendulum_urdf, "urdf");
-  auto* plant_ptr = &(builder.plant());
-  plant_ptr->Finalize();
-
-  multibody::RationalForwardKinematics rational_kinematics(plant_ptr);
-  options = IrisZoOptions::CreateWithRationalKinematicParameterization(
-      &rational_kinematics,
-      /* q_star_val */ Vector2d::Zero());
+// Test growing a region for the double pendulum along a parameterization of the
+// configuration space built from RationalForwardKinematics.
+TEST_F(DoublePendulum, DoublePendulumRationalForwardKinematics) {
+  multibody::RationalForwardKinematics rational_kinematics(plant_ptr_);
+  IrisZoOptions options =
+      IrisZoOptions::CreateWithRationalKinematicParameterization(
+          &rational_kinematics,
+          /* q_star_val */ Vector2d::Zero());
   options.verbose = true;
-  options.meshcat = meshcat;
+
+  meshcat_->Delete();
+  options.meshcat = meshcat_;
 
   // Check that the parameterization was set correctly.
   EXPECT_EQ(options.get_parameterization_is_threadsafe(), true);
@@ -296,14 +199,9 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   EXPECT_NEAR(output[0], 0.0, 1e-15);
   EXPECT_NEAR(output[1], 0.0, 1e-15);
 
-  options.configuration_space_margin = 1e-4;
-  const Vector2d sample2{0.0, 0.0};
-  starting_ellipsoid = Hyperellipsoid::MakeHypersphere(1e-2, sample2);
-  // This domain matches the joint limits under the transformation.
-  HPolyhedron domain =
-      HPolyhedron::MakeBox(Vector2d(-1.0, -1.0), Vector2d(1.0, 1.0));
-  region = IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options,
-                          &domain);
+  HPolyhedron region =
+      IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
+             domain_rational_forward_kinematics_, options);
 
   EXPECT_EQ(region.ambient_dimension(), 2);
   Vector2d region_query_point_1(-0.1, 0.3);
@@ -311,62 +209,8 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   EXPECT_TRUE(region.PointInSet(region_query_point_1));
   EXPECT_TRUE(region.PointInSet(region_query_point_2));
 
-  {
-    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-
-    // Region boundaries appear "curved" in the ambient space, so we use many
-    // points per boundary segment to make a more faithful visualization.
-    int n_points_per_edge = 10;
-    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(
-        3, n_points_per_edge * vregion.vertices().cols() + 1);
-    int next_point_index = 0;
-
-    // Order vertices in counterclockwise order.
-    Vector2d centroid = vregion.vertices().rowwise().mean();
-    Eigen::Matrix2Xd centered = vregion.vertices().colwise() - centroid;
-    VectorXd angles = centered.row(1).array().binaryExpr(
-        centered.row(0).array(), [](double y, double x) {
-          return std::atan2(y, x);
-        });
-    Eigen::VectorXi indices = Eigen::VectorXi::LinSpaced(
-        vregion.vertices().cols(), 0, vregion.vertices().cols() - 1);
-    std::sort(indices.data(), indices.data() + vregion.vertices().cols(),
-              [&angles](int i1, int i2) {
-                return angles(i1) < angles(i2);
-              });
-    Eigen::Matrix2Xd sorted_vertices = vregion.vertices()(Eigen::all, indices);
-
-    for (int i1 = 0; i1 < sorted_vertices.cols(); ++i1) {
-      int i2 = i1 + 1;
-      if (i2 == sorted_vertices.cols()) {
-        i2 = 0;
-      }
-      Vector2d q1 = sorted_vertices.col(i1);
-      Vector2d q2 = sorted_vertices.col(i2);
-      for (int j = 0; j < n_points_per_edge; ++j) {
-        double t =
-            static_cast<double>(j) / static_cast<double>(n_points_per_edge);
-        Vector2d q = t * q2 + (1 - t) * q1;
-        points.col(next_point_index).head(2) =
-            options.get_parameterization()(q);
-        ++next_point_index;
-      }
-    }
-    points.topRightCorner(2, 1) =
-        options.get_parameterization()(sorted_vertices.col(0));
-    points.bottomRows<1>().setZero();
-    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
-
-    meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
-
-    Vector2d ambient_query_point =
-        options.get_parameterization()(region_query_point_1);
-    meshcat->SetTransform(
-        "Test point", math::RigidTransform(Eigen::Vector3d(
-                          ambient_query_point[0], ambient_query_point[1], 0)));
-
-    MaybePauseForUser();
-  }
+  PlotEnvironmentAndRegionRationalForwardKinematics(
+      region, options.get_parameterization(), region_query_point_1);
 
   // Verify that we can get the same behavior by using an Expression
   // parameterization.
@@ -385,8 +229,8 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
   EXPECT_TRUE(options.get_parameterization_is_threadsafe());
   EXPECT_EQ(options.get_parameterization_dimension(), 2);
 
-  region = IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options,
-                          &domain);
+  region = IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
+                  domain_rational_forward_kinematics_, options);
   EXPECT_TRUE(region.PointInSet(region_query_point_1));
   EXPECT_TRUE(region.PointInSet(region_query_point_2));
 
@@ -399,8 +243,8 @@ GTEST_TEST(IrisZoTest, DoublePendulum) {
       /* parameterization_is_threadsafe */ true,
       /* parameterization_dimension */ 2);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisZoFromUrdf(double_pendulum_urdf, starting_ellipsoid, options,
-                     &domain),
+      IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
+             domain_rational_forward_kinematics_, options),
       ".*wrong dimension.*");
 }
 

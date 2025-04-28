@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/planning/collision_checker.h"
@@ -26,9 +27,6 @@ class JointLimits1D : public ::testing::Test {
   geometry::optimization::Hyperellipsoid starting_ellipsoid_;
   geometry::optimization::HPolyhedron domain_;
 
-  std::vector<Vector1d> points_in_;
-  std::vector<Vector1d> points_out_;
-
   inline static const std::string urdf_ = R"(
 <robot name="limits">
   <link name="movable">
@@ -44,6 +42,37 @@ class JointLimits1D : public ::testing::Test {
   </joint>
 </robot>
 )";
+};
+
+class DoublePendulum : public ::testing::Test {
+ protected:
+  DoublePendulum();
+
+  void CheckRegion(const geometry::optimization::HPolyhedron& region);
+  void PlotEnvironmentAndRegion(
+      const geometry::optimization::HPolyhedron& region);
+  void PlotEnvironmentAndRegionRationalForwardKinematics(
+      const geometry::optimization::HPolyhedron& region,
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization,
+      const Eigen::Vector2d& region_query_point);
+
+  std::unique_ptr<CollisionChecker> checker_;
+  multibody::MultibodyPlant<double>* plant_ptr_;
+  std::shared_ptr<geometry::Meshcat> meshcat_;
+
+  geometry::optimization::Hyperellipsoid starting_ellipsoid_;
+  geometry::optimization::HPolyhedron domain_;
+
+  geometry::optimization::Hyperellipsoid
+      starting_ellipsoid_rational_forward_kinematics_;
+  geometry::optimization::HPolyhedron domain_rational_forward_kinematics_;
+
+  inline static const double physical_param_l1_ = 2.0;
+  inline static const double physical_param_l2_ = 1.0;
+  inline static const double physical_param_r_ = .5;
+  inline static const double physical_param_w_ = 1.83;
+  std::string urdf_;
 };
 
 }  // namespace planning
