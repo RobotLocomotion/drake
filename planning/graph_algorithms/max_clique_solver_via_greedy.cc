@@ -84,10 +84,6 @@ VectorX<bool> MaxCliqueSolverViaGreedy::DoSolveMaxClique(
   return is_clique_member;
 }
 
-std::unique_ptr<MaxCliqueSolverBase> MaxCliqueSolverViaGreedy::DoClone() const {
-  return std::make_unique<MaxCliqueSolverViaGreedy>(*this);
-}
-
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake

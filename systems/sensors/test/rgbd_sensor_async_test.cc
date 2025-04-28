@@ -218,27 +218,6 @@ TEST_F(RgbdSensorAsyncTest, ConstructorAndSimpleAccessors) {
   simulator.Initialize();
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(RgbdSensorAsyncTest, DeprecatedMethods) {
-  SceneGraph<double> scene_graph;
-  const FrameId parent_id = SceneGraph<double>::world_frame_id();
-  const RigidTransform<double> X_PB(Eigen::Vector3d(1, 2, 3));
-  const double fps = 4;
-  const double capture_offset = 0.001;
-  const double output_delay = 0.200;
-  const bool render_label_image = true;
-  const RgbdSensorAsync dut(&scene_graph, parent_id, X_PB, fps, capture_offset,
-                            output_delay, color_camera_, depth_camera_,
-                            render_label_image);
-
-  EXPECT_EQ(dut.parent_id(), parent_id);
-  EXPECT_EQ(dut.X_PB().GetAsMatrix34(), X_PB.GetAsMatrix34());
-  EXPECT_TRUE(dut.color_camera().has_value());
-  EXPECT_TRUE(dut.depth_camera().has_value());
-}
-#pragma GCC diagnostic pop
-
 TEST_F(RgbdSensorAsyncTest, Parameters) {
   SceneGraph<double> scene_graph;
   const FrameId parent_id = SceneGraph<double>::world_frame_id();

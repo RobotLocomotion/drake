@@ -11,7 +11,6 @@
 #include <Eigen/SparseCore>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solver_base.h"
 
@@ -74,9 +73,6 @@ class MobyLCPSolver final : public SolverBase {
 
   MobyLCPSolver();
   ~MobyLCPSolver() final;
-
-  DRAKE_DEPRECATED("2025-05-01", "Use drake/common/text_logging.h instead.")
-  void SetLoggingEnabled(bool) {}
 
   /// Calculates the zero tolerance that the solver would compute if the user
   /// does not specify a tolerance.
