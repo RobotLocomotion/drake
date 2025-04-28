@@ -3382,10 +3382,11 @@ class TestPlant(unittest.TestCase):
             geometry_instance=geometry,
             config=deformable_body_config,
             resolution_hint=1.0)
+        model_instance = plant.AddModelInstance("deformable_instance")
         dut.RegisterDeformableBody(
             geometry_instance=geometry,
             config=deformable_body_config,
-            model_instance=ModelInstanceIndex(42),
+            model_instance=model_instance,
             resolution_hint=1.0)
         self.assertEqual(dut.num_bodies(), 2)
 
