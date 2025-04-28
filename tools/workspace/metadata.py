@@ -36,7 +36,6 @@ _REPOSITORIES_WITH_NO_METADATA = [
     "lapack",
     "libblas",
     "liblapack",
-    "mumps_internal",
     "nasm",
     "net_sf_jchart2d",
     "opencl",

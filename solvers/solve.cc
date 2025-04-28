@@ -93,17 +93,6 @@ std::vector<MathematicalProgramResult> SolveInParallel(
             ? *((*solver_ids)[i])
             : ChooseBestSolver(*progs[i]);
 
-    // IPOPT's MUMPS linear solver is not thread-safe. Therefore, if we are
-    // operating in parallel we need to skip this program.
-    // TODO(#21476) Only force serial mode when MUMPS is used (not for SPRAL),
-    // or we can safely remove this guard on 2025-05-01 after MUMPS is purged.
-    if (in_parallel && solver_id == IpoptSolver::id()) {
-      static const logging::Warn log_once(
-          "IpoptSolver cannot currently solve programs in parallel, so will be "
-          "run serially. Consider specifying a different solver, e.g., Nlopt.");
-      return;
-    }
-
     // Find (or create) the specified solver.
     auto solver_iter = solvers[thread_num].find(solver_id);
     if (solver_iter == solvers[thread_num].end()) {

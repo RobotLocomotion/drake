@@ -37,7 +37,6 @@ load("//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")
 load("//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
 load("//tools/workspace/highway_internal:repository.bzl", "highway_internal_repository")  # noqa
-load("//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
@@ -54,7 +53,6 @@ load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menagerie_internal_repository")  # noqa
-load("//tools/workspace/mumps_internal:repository.bzl", "mumps_internal_repository")  # noqa
 load("//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
@@ -211,9 +209,6 @@ def add_default_repositories(
         gymnasium_py_repository(name = "gymnasium_py", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "highway_internal" not in excludes:
         highway_internal_repository(name = "highway_internal", mirrors = mirrors)  # noqa
-    if "ipopt" not in excludes:
-        # Deprecated 2025-05-01.
-        ipopt_repository(name = "ipopt")
     if "ipopt_internal" not in excludes:
         ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)  # noqa
     if "lapack" not in excludes:
@@ -252,10 +247,6 @@ def add_default_repositories(
         msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)  # noqa
     if "mujoco_menagerie_internal" not in excludes:
         mujoco_menagerie_internal_repository(name = "mujoco_menagerie_internal", mirrors = mirrors)  # noqa
-    if "mumps_internal" not in excludes:
-        # Remove on 2025-05-01.
-        # Likewise remove mumps from setup/**.txt files.
-        mumps_internal_repository(name = "mumps_internal")
     if "mypy_extensions_internal" not in excludes:
         mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
     if "mypy_internal" not in excludes:

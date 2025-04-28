@@ -10,10 +10,6 @@ namespace solvers {
 
 IpoptSolver::~IpoptSolver() = default;
 
-void IpoptSolver::SetDefaultLinearSolver(std::string linear_solver) {
-  default_linear_solver_ = std::move(linear_solver);
-}
-
 SolverId IpoptSolver::id() {
   static const never_destroyed<SolverId> singleton{"Ipopt"};
   return singleton.access();
