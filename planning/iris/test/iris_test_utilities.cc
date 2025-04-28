@@ -11,19 +11,27 @@ namespace planning {
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 
-JointLimits1D::JointLimits1D() {
+namespace {
+void SetupFromUrdf(const std::string& urdf,
+                   std::unique_ptr<CollisionChecker>* checker,
+                   multibody::MultibodyPlant<double>** plant_ptr) {
   CollisionCheckerParams params;
   RobotDiagramBuilder<double> builder(0.0);
 
   params.robot_model_instances =
-      builder.parser().AddModelsFromString(urdf_, "urdf");
+      builder.parser().AddModelsFromString(urdf, "urdf");
 
-  plant_ptr_ = &(builder.plant());
-  plant_ptr_->Finalize();
+  *plant_ptr = &(builder.plant());
+  (*plant_ptr)->Finalize();
 
   params.model = builder.Build();
   params.edge_step_size = 0.01;
-  checker_ = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+  *checker = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+}
+}  // namespace
+
+JointLimits1D::JointLimits1D() {
+  SetupFromUrdf(urdf_, &checker_, &plant_ptr_);
 
   Vector1d sample = Vector1d::Zero(1);
   starting_ellipsoid_ = Hyperellipsoid::MakeHypersphere(1e-2, sample);
