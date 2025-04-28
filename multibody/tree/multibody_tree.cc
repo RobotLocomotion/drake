@@ -6,7 +6,6 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 
@@ -22,6 +21,7 @@
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/rpy_floating_joint.h"
 #include "drake/multibody/tree/rpy_floating_mobilizer.h"
@@ -751,6 +751,12 @@ template <typename T>
 void MultibodyTree<T>::CreateJointImplementations() {
   DRAKE_DEMAND(!topology_is_valid());
 
+  // These are the Joint type names for the joints that are currently
+  // reversible.
+  // TODO(sherm1) Add more.
+  const std::set<std::string> reversible{WeldJoint<double>::kTypeName,
+                                         RevoluteJoint<double>::kTypeName};
+
   // Mobods are in depth-first order, starting with World.
   for (const auto& mobod : forest().mobods()) {
     if (mobod.is_world()) {
@@ -769,18 +775,18 @@ void MultibodyTree<T>::CreateJointImplementations() {
         forest().joints(mobod.joint_ordinal()).index();
     Joint<T>& joint = joints_.get_mutable_element(joint_index);
 
-    // Currently we allow a reversed mobilizer only for Weld joints.
-    // TODO(sherm1) Remove this restriction.
-    if (mobod.is_reversed() && !mobod.is_weld()) {
+    // We allow reversed mobilizers only for a subset of joint types.
+    if (mobod.is_reversed() && !reversible.contains(joint.type_name())) {
       throw std::runtime_error(fmt::format(
           "MultibodyPlant::Finalize(): parent/child ordering for "
           "{} joint {} in model instance {} would have to be reversed "
           "to make a tree-structured model for this system. "
-          "Currently Drake does not support that except for Weld "
-          "joints. Reverse the ordering in your joint definition so "
-          "that all parent/child directions form a tree structure.",
+          "Currently Drake does not support reversed {} joints. The joints "
+          "that can be reversed are: {}. Reverse the ordering in your joint "
+          "definition so that its parent body is closer to World in the tree.",
           joint.type_name(), joint.name(),
-          GetModelInstanceName(joint.model_instance())));
+          GetModelInstanceName(joint.model_instance()), joint.type_name(),
+          fmt::join(reversible, ", ")));
     }
 
     std::unique_ptr<Mobilizer<T>> owned_mobilizer = joint.Build(mobod, this);
@@ -970,6 +976,15 @@ void MultibodyTree<T>::Finalize() {
   }
 
   // TODO(sherm1) Add shadow links and loop constraints.
+  if (!graph.loop_constraints().empty()) {
+    throw std::runtime_error(fmt::format(
+        "The bodies and joints of this system form one or "
+        "more loops in the system graph. Drake currently does not "
+        "support automatic modeling of such systems; however, they "
+        "can be modeled with some input changes. See "
+        "https://drake.mit.edu/troubleshooting.html"
+        "#mbp-loops-in-graph for advice on how to model systems with loops."));
+  }
 
   CreateJointImplementations();
   FinalizeTopology();
