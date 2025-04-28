@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/fixed_input_port_value.h"
+#include "drake/systems/framework/test_utilities/scalar_conversion.h"
 
 namespace drake {
 namespace systems {
@@ -17,6 +18,12 @@ void TestInputAndOutput(const Saturation<T>& saturation_system,
                         std::unique_ptr<Context<T>> context,
                         const VectorX<T>& input_vector,
                         const VectorX<T>& expected_output) {
+  // Check scalar conversion.
+  if constexpr (std::is_same_v<T, double>) {
+    EXPECT_TRUE(is_autodiffxd_convertible(saturation_system));
+    EXPECT_TRUE(is_symbolic_convertible(saturation_system));
+  }
+
   // Verifies that Saturation allocates no state variables in the context.
   EXPECT_EQ(context->num_continuous_states(), 0);
 
