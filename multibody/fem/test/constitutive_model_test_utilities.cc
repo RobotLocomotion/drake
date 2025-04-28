@@ -10,6 +10,7 @@
 #include "drake/multibody/fem/linear_constitutive_model.h"
 #include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/matrix_utilities.h"
+#include "drake/multibody/fem/neohookean_model.h"
 
 namespace drake {
 namespace multibody {
@@ -59,7 +60,7 @@ Matrix3<AutoDiffXd> MakeDeformationGradientsWithoutDerivatives() {
 /* Tests the constructors correctly initializes St.Venant-Kichhoff like
 constitutive models and rejects invalid Young's modulus and Poisson's ratio.
 @tparam Model    Must be instantiations of LinearConstitutiveModel,
-LinearCorotatedModel, or CorotatedModel. */
+LinearCorotatedModel, NeoHookeanModel, or CorotatedModel. */
 template <class Model>
 void TestParameters() {
   using T = typename Model::T;
@@ -93,7 +94,7 @@ state.
 @tparam Model    Must be instantiations of LinearConstitutiveModel,
 LinearCorotatedModel, or CorotatedModel. */
 template <class Model>
-void TestUndeformedState() {
+void TestUndeformedState(bool nonzero_rest_state) {
   using T = typename Model::T;
 
   const T kYoungsModulus = 100.0;
@@ -107,9 +108,11 @@ void TestUndeformedState() {
   const T analytic_energy_density{0};
   /* At the undeformed state, the stress should be zero. */
   const Matrix3<T> analytic_stress{Matrix3d::Zero()};
-  T energy_density;
-  model.CalcElasticEnergyDensity(data, &energy_density);
-  EXPECT_EQ(energy_density, analytic_energy_density);
+  if (!nonzero_rest_state) {
+    T energy_density;
+    model.CalcElasticEnergyDensity(data, &energy_density);
+    EXPECT_EQ(energy_density, analytic_energy_density);
+  }
   Matrix3<T> stress;
   model.CalcFirstPiolaStress(data, &stress);
   EXPECT_EQ(stress, analytic_stress);
@@ -180,24 +183,31 @@ void TestdPdFIsDerivativeOfP() {
 
 template void TestParameters<LinearConstitutiveModel<double>>();
 template void TestParameters<LinearConstitutiveModel<AutoDiffXd>>();
-template void TestUndeformedState<LinearConstitutiveModel<double>>();
-template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd>>();
+template void TestUndeformedState<LinearConstitutiveModel<double>>(bool);
+template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd>>(bool);
 template void TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd>>();
 template void TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd>>();
 
 template void TestParameters<CorotatedModel<double>>();
 template void TestParameters<CorotatedModel<AutoDiffXd>>();
-template void TestUndeformedState<CorotatedModel<double>>();
-template void TestUndeformedState<CorotatedModel<AutoDiffXd>>();
+template void TestUndeformedState<CorotatedModel<double>>(bool);
+template void TestUndeformedState<CorotatedModel<AutoDiffXd>>(bool);
 template void TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd>>();
 template void TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd>>();
 
 template void TestParameters<LinearCorotatedModel<double>>();
 template void TestParameters<LinearCorotatedModel<AutoDiffXd>>();
-template void TestUndeformedState<LinearCorotatedModel<double>>();
-template void TestUndeformedState<LinearCorotatedModel<AutoDiffXd>>();
+template void TestUndeformedState<LinearCorotatedModel<double>>(bool);
+template void TestUndeformedState<LinearCorotatedModel<AutoDiffXd>>(bool);
 template void TestPIsDerivativeOfPsi<LinearCorotatedModel<AutoDiffXd>>();
 template void TestdPdFIsDerivativeOfP<LinearCorotatedModel<AutoDiffXd>>();
+
+template void TestParameters<NeoHookeanModel<double>>();
+template void TestParameters<NeoHookeanModel<AutoDiffXd>>();
+template void TestUndeformedState<NeoHookeanModel<double>>(bool);
+template void TestUndeformedState<NeoHookeanModel<AutoDiffXd>>(bool);
+template void TestPIsDerivativeOfPsi<NeoHookeanModel<AutoDiffXd>>();
+template void TestdPdFIsDerivativeOfP<NeoHookeanModel<AutoDiffXd>>();
 
 }  // namespace test
 }  // namespace internal

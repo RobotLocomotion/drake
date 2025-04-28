@@ -26,9 +26,12 @@ void TestParameters();
 
 /* Tests that the energy density and the stress are zero at the undeformed
 state.
+@param  nonzero_rest_state The model is allowed to have none zero energy at the
+                           undeformed state, i.e. the energy minimun value is
+                           not zero.
 @tparam Model    Must be instantiations of a concrete ConstitutiveModel. */
 template <class Model>
-void TestUndeformedState();
+void TestUndeformedState(bool nonzero_rest_state = false);
 
 /* Tests that the energy density and the stress are consistent by verifying
 the stress matches the derivative of energy density produced by automatic

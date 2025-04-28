@@ -39,6 +39,8 @@ drake_cc_package_library(
         ":linear_corotated_model_data",
         ":linear_simplex_element",
         ":matrix_utilities",
+        ":neohookean_model",
+        ":neohookean_model_data",
         ":quadrature",
         ":schur_complement",
         ":simplex_gaussian_quadrature",
@@ -413,6 +415,40 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "neohookean_model",
+    srcs = [
+        "neohookean_model.cc",
+    ],
+    hdrs = [
+        "neohookean_model.h",
+    ],
+    deps = [
+        ":calc_lame_parameters",
+        ":constitutive_model",
+        ":matrix_utilities",
+        ":neohookean_model_data",
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "neohookean_model_data",
+    srcs = [
+        "neohookean_model_data.cc",
+    ],
+    hdrs = [
+        "neohookean_model_data.h",
+    ],
+    deps = [
+        ":deformation_gradient_data",
+        ":matrix_utilities",
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "quadrature",
     srcs = [
         "quadrature.cc",
@@ -533,6 +569,7 @@ drake_cc_library(
         ":linear_constitutive_model",
         ":linear_corotated_model",
         ":matrix_utilities",
+        ":neohookean_model",
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -733,6 +770,23 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "neohookean_model_test",
+    deps = [
+        ":constitutive_model_test_utilities",
+        ":neohookean_model",
+    ],
+)
+
+drake_cc_googletest(
+    name = "neohookean_model_data_test",
+    deps = [
+        ":neohookean_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 
