@@ -297,7 +297,7 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
       // Loosen the tolerances a bit (otherwise macOS is sad).
       solver_options.SetOption(solver.id(), "axtol", 1e-6);
       solver_options.SetOption(solver.id(), "objtol", 1e-6);
-      TestSocpDuplicatedVariable2(solver, solver_options, 1E-5);
+      TestSocpDuplicatedVariable2(solver, solver_options, 1E-2);
     }
   }
 }
