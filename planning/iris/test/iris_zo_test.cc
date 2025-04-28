@@ -16,6 +16,7 @@
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/planning/iris/test/iris_test_utilities.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 #include "drake/solvers/evaluator_base.h"
@@ -43,8 +44,6 @@ HPolyhedron IrisZoFromUrdf(const std::string urdf,
   CollisionCheckerParams params;
   RobotDiagramBuilder<double> builder(0.0);
 
-  builder.parser().package_map().AddPackageXml(FindResourceOrThrow(
-      "drake/multibody/parsing/test/box_package/package.xml"));
   params.robot_model_instances =
       builder.parser().AddModelsFromString(urdf, "urdf");
 
@@ -62,31 +61,17 @@ HPolyhedron IrisZoFromUrdf(const std::string urdf,
 }
 
 // Reproduced from the IrisInConfigurationSpace unit tests.
-// One prismatic link with joint limits.  Iris should return the joint limits.
-GTEST_TEST(IrisZoTest, JointLimits) {
-  const std::string limits_urdf = R"(
-<robot name="limits">
-  <link name="movable">
-    <collision>
-      <geometry><box size="1 1 1"/></geometry>
-    </collision>
-  </link>
-  <joint name="movable" type="prismatic">
-    <axis xyz="1 0 0"/>
-    <limit lower="-2" upper="2"/>
-    <parent link="world"/>
-    <child link="movable"/>
-  </joint>
-</robot>
-)";
+// One prismatic link with joint limits. Iris should return the joint limits.
+TEST_F(JointLimits1D, JointLimits) {
+  IrisZoOptions options;
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+}
 
-  const Vector1d sample = Vector1d::Zero();
-  Hyperellipsoid starting_ellipsoid =
-      Hyperellipsoid::MakeHypersphere(1e-2, sample);
-
-  // In this section of the test, we reconstruct the default identity
-  // parameterization in three different ways, to verify that all three methods
-  // work and produce the same results.
+// In this test, we reconstruct the default identity parameterization in three
+// different ways, to verify that all three methods work and produce the same
+// results.
+TEST_F(JointLimits1D, JointLimitsWithParameterization) {
   std::vector<IrisZoOptions> vector_of_options;
   vector_of_options.emplace_back();
   vector_of_options.back().set_parameterization(
@@ -131,47 +116,46 @@ GTEST_TEST(IrisZoTest, JointLimits) {
     EXPECT_NEAR(output[0], 3.0, 1e-15);
 
     HPolyhedron region =
-        IrisZoFromUrdf(limits_urdf, starting_ellipsoid, options);
+        IrisZo(*checker_, starting_ellipsoid_, domain_, options);
 
-    EXPECT_EQ(region.ambient_dimension(), 1);
-
-    const double kTol = 1e-5;
-    const double qmin = -2.0, qmax = 2.0;
-    EXPECT_TRUE(region.PointInSet(Vector1d{qmin + kTol}));
-    EXPECT_TRUE(region.PointInSet(Vector1d{qmax - kTol}));
-    EXPECT_FALSE(region.PointInSet(Vector1d{qmin - kTol}));
-    EXPECT_FALSE(region.PointInSet(Vector1d{qmax + kTol}));
+    CheckRegion(region);
   }
+}
 
-  // Now we test two cases of an Expression parameterization where an error
-  // should be thrown. The first is when the output dimension doesn't match the
-  // configuration space dimension. (This error doesn't occur until IrisZo is
-  // called.)
+// Now we test two cases of an Expression parameterization where an error should
+// be thrown.
+TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
+  IrisZoOptions options;
+  Eigen::VectorX<symbolic::Variable> variables(1);
+  variables[0] = symbolic::Variable("q");
+
+  // If the output dimension doesn't match the configuration space dimension, an
+  // error will be thrown when IrisZo is called.
   Eigen::VectorX<symbolic::Expression>
       parameterization_expression_wrong_dimension(2);
   parameterization_expression_wrong_dimension[0] =
       symbolic::Expression(variables[0]);
   parameterization_expression_wrong_dimension[1] =
       symbolic::Expression(variables[0]);
-  vector_of_options[0].SetParameterizationFromExpression(
+  options.SetParameterizationFromExpression(
       parameterization_expression_wrong_dimension, variables);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisZoFromUrdf(limits_urdf, starting_ellipsoid, vector_of_options[0]),
+      IrisZo(*checker_, starting_ellipsoid_, domain_, options),
       ".*parameterization returned a point with the wrong dimension.*");
 
-  // The second is when the variables used in the parameterization don't match
-  // the variables given in the second argument.
+  // If the variables used in the parameterization don't match the variables
+  // given in the second argument, an error is thrown immediately.
   symbolic::Variable extra_variable("oops");
   Eigen::VectorX<symbolic::Expression>
       parameterization_expression_extra_variable(1);
   parameterization_expression_extra_variable[0] = variables[0] + extra_variable;
-  EXPECT_THROW(vector_of_options[0].SetParameterizationFromExpression(
+  EXPECT_THROW(options.SetParameterizationFromExpression(
                    parameterization_expression_extra_variable, variables),
                std::exception);
   Eigen::VectorX<symbolic::Expression>
       parameterization_expression_missing_variable(1);
   parameterization_expression_missing_variable[0] = symbolic::Expression(1);
-  EXPECT_THROW(vector_of_options[0].SetParameterizationFromExpression(
+  EXPECT_THROW(options.SetParameterizationFromExpression(
                    parameterization_expression_missing_variable, variables),
                std::exception);
 }
