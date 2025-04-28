@@ -15,14 +15,23 @@
 namespace drake {
 namespace planning {
 
-class JointLimits1D : public ::testing::Test {
+class IrisTestFixture : public ::testing::Test {
+ protected:
+  void SetUpEnvironment(const std::string& urdf);
+
+  virtual void CheckRegion(
+      const geometry::optimization::HPolyhedron& region) = 0;
+
+  std::unique_ptr<CollisionChecker> checker_;
+  multibody::MultibodyPlant<double>* plant_ptr_;
+};
+
+// One prismatic link with joint limits. Iris should return the joint limits.
+class JointLimits1D : public IrisTestFixture {
  protected:
   JointLimits1D();
 
   void CheckRegion(const geometry::optimization::HPolyhedron& region);
-
-  std::unique_ptr<CollisionChecker> checker_;
-  multibody::MultibodyPlant<double>* plant_ptr_;
 
   geometry::optimization::Hyperellipsoid starting_ellipsoid_;
   geometry::optimization::HPolyhedron domain_;
@@ -44,7 +53,11 @@ class JointLimits1D : public ::testing::Test {
 )";
 };
 
-class DoublePendulum : public ::testing::Test {
+// A simple double pendulum with link lengths `l1` and `l2` with a sphere at the
+// tip of radius `r` between two (fixed) walls at `w` from the origin.  The
+// true configuration space is - w + r ≤ l₁s₁ + l₂s₁₊₂ ≤ w - r.  These regions
+// are visualized at https://www.desmos.com/calculator/ff0hbnkqhm.
+class DoublePendulum : public IrisTestFixture {
  protected:
   DoublePendulum();
 
@@ -57,8 +70,6 @@ class DoublePendulum : public ::testing::Test {
           parameterization,
       const Eigen::Vector2d& region_query_point);
 
-  std::unique_ptr<CollisionChecker> checker_;
-  multibody::MultibodyPlant<double>* plant_ptr_;
   std::shared_ptr<geometry::Meshcat> meshcat_;
 
   geometry::optimization::Hyperellipsoid starting_ellipsoid_;

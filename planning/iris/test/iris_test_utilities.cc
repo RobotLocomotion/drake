@@ -23,27 +23,23 @@ using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::VPolytope;
 
-namespace {
-void SetupFromUrdf(const std::string& urdf,
-                   std::unique_ptr<CollisionChecker>* checker,
-                   multibody::MultibodyPlant<double>** plant_ptr) {
+void IrisTestFixture::SetUpEnvironment(const std::string& urdf) {
   CollisionCheckerParams params;
   RobotDiagramBuilder<double> builder(0.0);
 
   params.robot_model_instances =
       builder.parser().AddModelsFromString(urdf, "urdf");
 
-  *plant_ptr = &(builder.plant());
-  (*plant_ptr)->Finalize();
+  plant_ptr_ = &(builder.plant());
+  plant_ptr_->Finalize();
 
   params.model = builder.Build();
   params.edge_step_size = 0.01;
-  *checker = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
+  checker_ = std::make_unique<SceneGraphCollisionChecker>(std::move(params));
 }
-}  // namespace
 
 JointLimits1D::JointLimits1D() {
-  SetupFromUrdf(urdf_, &checker_, &plant_ptr_);
+  SetUpEnvironment(urdf_);
 
   Vector1d sample = Vector1d::Zero(1);
   starting_ellipsoid_ = Hyperellipsoid::MakeHypersphere(1e-2, sample);
@@ -106,7 +102,7 @@ DoublePendulum::DoublePendulum() {
       fmt::arg("l1", physical_param_l1_), fmt::arg("l2", physical_param_l2_),
       fmt::arg("r", physical_param_r_));
 
-  SetupFromUrdf(urdf_, &checker_, &plant_ptr_);
+  SetUpEnvironment(urdf_);
 
   meshcat_ = geometry::GetTestEnvironmentMeshcat();
 

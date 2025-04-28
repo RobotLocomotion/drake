@@ -61,7 +61,6 @@ HPolyhedron IrisZoFromUrdf(const std::string urdf,
 }
 
 // Reproduced from the IrisInConfigurationSpace unit tests.
-// One prismatic link with joint limits. Iris should return the joint limits.
 TEST_F(JointLimits1D, JointLimitsBasic) {
   IrisZoOptions options;
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
@@ -161,10 +160,6 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
 }
 
 // Reproduced from the IrisInConfigurationSpace unit tests.
-// A simple double pendulum with link lengths `l1` and `l2` with a sphere at the
-// tip of radius `r` between two (fixed) walls at `w` from the origin.  The
-// true configuration space is - w + r ≤ l₁s₁ + l₂s₁₊₂ ≤ w - r.  These regions
-// are visualized at https://www.desmos.com/calculator/ff0hbnkqhm.
 TEST_F(DoublePendulum, DoublePendulumBasic) {
   IrisZoOptions options;
   options.verbose = true;
