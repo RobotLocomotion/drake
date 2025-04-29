@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 
@@ -11,6 +12,19 @@ config_setting(
 config_setting(
     name = "osx",
     constraint_values = ["@platforms//os:osx"],
+)
+
+config_setting(
+    name = "debug",
+    values = {"compilation_mode": "dbg"},
+)
+
+selects.config_setting_group(
+    name = "noble_debug",
+    match_all = [
+        "//tools:ubuntu_noble",
+        ":debug",
+    ],
 )
 
 drake_py_binary(
