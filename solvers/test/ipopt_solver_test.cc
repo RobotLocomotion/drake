@@ -480,6 +480,20 @@ TEST_F(QuadraticEqualityConstrainedProgram1, test) {
   }
 }
 
+GTEST_TEST(TestSetSolverOptions, IntToDouble) {
+  // Set a double-valued option with integer value.
+  IpoptSolver solver;
+  if (solver.available()) {
+    MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    prog.AddLinearCost(x(0) + x(1));
+    prog.AddBoundingBoxConstraint(0, 1, x);
+    prog.SetSolverOption(solver.id(), "max_wall_time", 1);
+    auto result = solver.Solve(prog);
+    EXPECT_TRUE(result.is_success());
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
