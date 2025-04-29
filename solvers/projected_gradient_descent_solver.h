@@ -30,23 +30,22 @@ class ProjectedGradientDescentSolver final : public SolverBase {
   ProjectedGradientDescentSolver();
   ~ProjectedGradientDescentSolver() final;
 
-  /**
-   * @returns string key for SolverOptions to set the custom gradient function.
-   */
-  static std::string CustomGradientFunctionOptionName();
+  void SetCustomGradientFunction(
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          custom_gradient_function) {
+    custom_gradient_function_ = custom_gradient_function;
+  }
 
-  /**
-   * @returns string key for SolverOptions to set the custom projection
-   * function.
-   */
-  static std::string CustomProjectionFunctionOptionName();
+  void SetCustomProjectionFunction(
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          custom_projection_function) {
+    custom_projection_function_ = custom_projection_function;
+  }
 
-  /**
-   * @returns string key for SolverOptions to set the solver interface used to
-   * solve the projection program. This options is ignored if a custom
-   * projection function has been specified.
-   */
-  static std::string ProjectionSolverInterfaceOptionName();
+  void SetProjectionSolverInterface(
+      const SolverInterface* projection_solver_interface) {
+    projection_solver_interface_ = projection_solver_interface;
+  }
 
   /**
    * @returns string key for SolverOptions to set the threshold used to
@@ -99,6 +98,12 @@ class ProjectedGradientDescentSolver final : public SolverBase {
   void DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,
                 internal::SpecificOptions*,
                 MathematicalProgramResult*) const final;
+
+  std::optional<std::function<Eigen::VectorXd(const Eigen::VectorXd&)>>
+      custom_gradient_function_;
+  std::optional<std::function<Eigen::VectorXd(const Eigen::VectorXd&)>>
+      custom_projection_function_;
+  const SolverInterface* projection_solver_interface_;
 };
 
 }  // namespace solvers

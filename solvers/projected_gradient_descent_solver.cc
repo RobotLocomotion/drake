@@ -17,12 +17,6 @@ using Eigen::VectorXd;
 using Eigen::VectorXi;
 
 namespace {
-constexpr const char kCustomGradientFunctionOptionsName[] =
-    "CustomGradientFunction";
-constexpr const char kCustomProjectionFunctionOptionsName[] =
-    "CustomProjectionFunction";
-constexpr const char kProjectionSolverInterfaceOptionName[] =
-    "ProjectionSolverInterface";
 constexpr const char kConvergenceTolOptionName[] = "ConvergenceTol";
 constexpr const char kFeasibilityTolOptionName[] = "FeasibilityTol";
 constexpr const char kMaxIterationsOptionName[] = "MaxIterations";
@@ -31,11 +25,6 @@ constexpr const char kBacktrackingTauOptionName[] = "BacktrackingTau";
 constexpr const char kBacktrackingAlpha0OptionName[] = "BacktrackingAlpha0";
 
 struct KnownOptions {
-  std::optional<std::function<VectorXd(const VectorXd&)>>
-      custom_gradient_function{std::nullopt};
-  std::optional<std::function<VectorXd(const VectorXd&)>>
-      custom_projection_function{std::nullopt};
-  SolverInterface* projection_solver_interface{nullptr};
   double convergence_tol{1e-6};
   double feasibility_tol{1e-6};
   int max_iterations{100};
@@ -85,8 +74,10 @@ void ConvertQuadraticErrorCost(const VectorXd& x_desired, const MatrixXd& Q,
 }  // namespace
 
 ProjectedGradientDescentSolver::ProjectedGradientDescentSolver()
-    : SolverBase(id(), &is_available, &is_enabled,
-                 &ProgramAttributesSatisfied) {}
+    : SolverBase(id(), &is_available, &is_enabled, &ProgramAttributesSatisfied),
+      custom_gradient_function_(std::nullopt),
+      custom_projection_function_(std::nullopt),
+      projection_solver_interface_(nullptr) {}
 ProjectedGradientDescentSolver::~ProjectedGradientDescentSolver() = default;
 
 void ProjectedGradientDescentSolver::DoSolve2(
@@ -167,7 +158,7 @@ void ProjectedGradientDescentSolver::DoSolve2(
         return cost;
       };
   std::function<VectorXd(const VectorXd&)> gradient_function =
-      parsed_options.custom_gradient_function.value_or([&](const VectorXd& x) {
+      custom_gradient_function_.value_or([&](const VectorXd& x) {
         // TODO(cohnt): Switch to using
         // MathematicalProgram::EvalBindingsAtInitialGuess?
         AutoDiffVecXd x_ad = math::InitializeAutoDiff(x);
@@ -189,36 +180,35 @@ void ProjectedGradientDescentSolver::DoSolve2(
       });
 
   std::unique_ptr<solvers::SolverInterface> projection_solver_interface;
-  if (!parsed_options.projection_solver_interface) {
+  if (!projection_solver_interface_) {
     const SolverId solver_id = ChooseBestSolver(prog);
     projection_solver_interface = MakeSolver(solver_id);
   }
   std::function<VectorXd(const VectorXd&)> projection_function =
-      parsed_options.custom_projection_function.value_or(
-          [&](const VectorXd& x) {
-            // Update the quadratic error cost.
-            ConvertQuadraticErrorCost(x, projection_cost_Q, &projection_cost_b,
-                                      &projection_cost_c);
-            projection_cost.evaluator()->UpdateCoefficients(
-                projection_cost_Q, projection_cost_b, projection_cost_c);
+      custom_projection_function_.value_or([&](const VectorXd& x) {
+        // Update the quadratic error cost.
+        ConvertQuadraticErrorCost(x, projection_cost_Q, &projection_cost_b,
+                                  &projection_cost_c);
+        projection_cost.evaluator()->UpdateCoefficients(
+            projection_cost_Q, projection_cost_b, projection_cost_c);
 
-            // Solve the program.
-            MathematicalProgramResult projection_result;
-            if (parsed_options.projection_solver_interface) {
-              parsed_options.projection_solver_interface->Solve(
-                  *projection_prog_ptr, x /* initial_guess */,
-                  std::nullopt /* solver_options */, &projection_result);
-            } else {
-              DRAKE_DEMAND(projection_solver_interface != nullptr);
-              projection_solver_interface->Solve(
-                  *projection_prog_ptr, x /* initial_guess */,
-                  std::nullopt /* solver_options */, &projection_result);
-            }
+        // Solve the program.
+        MathematicalProgramResult projection_result;
+        if (projection_solver_interface_) {
+          projection_solver_interface_->Solve(
+              *projection_prog_ptr, x /* initial_guess */,
+              std::nullopt /* solver_options */, &projection_result);
+        } else {
+          DRAKE_DEMAND(projection_solver_interface != nullptr);
+          projection_solver_interface->Solve(
+              *projection_prog_ptr, x /* initial_guess */,
+              std::nullopt /* solver_options */, &projection_result);
+        }
 
-            std::cout << "Projection solution result "
-                      << projection_result.get_solution_result() << std::endl;
-            return projection_result.get_x_val();
-          });
+        std::cout << "Projection solution result "
+                  << projection_result.get_solution_result() << std::endl;
+        return projection_result.get_x_val();
+      });
 
   const double convergence_tol_squared =
       parsed_options.convergence_tol * parsed_options.convergence_tol;
@@ -298,20 +288,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
     std::cout << "Hit Iteration Limit" << std::endl;
     result->set_solution_result(SolutionResult::kIterationLimit);
   }
-}
-
-std::string ProjectedGradientDescentSolver::CustomGradientFunctionOptionName() {
-  return kCustomGradientFunctionOptionsName;
-}
-
-std::string
-ProjectedGradientDescentSolver::CustomProjectionFunctionOptionName() {
-  return kCustomProjectionFunctionOptionsName;
-}
-
-std::string
-ProjectedGradientDescentSolver::ProjectionSolverInterfaceOptionName() {
-  return kProjectionSolverInterfaceOptionName;
 }
 
 std::string ProjectedGradientDescentSolver::ConvergenceTolOptionName() {

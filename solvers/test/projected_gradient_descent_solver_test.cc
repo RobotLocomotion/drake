@@ -22,7 +22,7 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, QP) {
 
   ProjectedGradientDescentSolver solver;
   MathematicalProgramResult result = solver.Solve(prog, {}, {});
-
+  EXPECT_TRUE(result.is_success());
   VectorXd expected_answer = Vector2d(1.0, 1.0);
   auto x_value = result.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-4,
@@ -32,6 +32,7 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, QP) {
   // Add a linear equality constraint.
   prog.AddConstraint(x(0) == 2.0);
   result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
   expected_answer = Vector2d(2.0, 1.0);
   x_value = result.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-4,
@@ -41,6 +42,7 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, QP) {
   // Add a linear inequality constraint.
   prog.AddConstraint(x(1) <= 0.0);
   result = solver.Solve(prog, {}, {});
+  EXPECT_TRUE(result.is_success());
   expected_answer = Vector2d(2.0, 0.0);
   x_value = result.GetSolution(x);
   EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-4,
@@ -62,13 +64,39 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, DifferentInitialGuesses) {
   VectorXd x_value;
 
   result = solver.Solve(prog, Vector1d(-1.0), {});
+  EXPECT_TRUE(result.is_success());
   x_value = result.GetSolution(x);
   EXPECT_NEAR(x_value[0], -2.0, 1e-4);
   EXPECT_NEAR(result.get_optimal_cost(), 9.0, 1e-4);
 
   result = solver.Solve(prog, Vector1d(1.0), {});
+  EXPECT_TRUE(result.is_success());
   x_value = result.GetSolution(x);
   EXPECT_NEAR(x_value[0], 2.0, 1e-4);
+  EXPECT_NEAR(result.get_optimal_cost(), 1.0, 1e-4);
+}
+
+GTEST_TEST(ProjectedGradientDescentSolverTest, CustomProjectionFunction) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddCost(pow(x(0), 2));
+
+  // Note that we don't add any constraints to the program, to ensure the custom
+  // projection function is being used. We restrict 1 <= x <= 3, and minimize
+  // x^2.
+  auto custom_projection_function = [](const Vector1d& y) {
+    return Vector1d(std::max(1.0, std::min(y[0], 3.0)));
+  };
+
+  ProjectedGradientDescentSolver solver;
+  solver.SetCustomProjectionFunction(custom_projection_function);
+
+  // We deliberately give it an infeasible initial guess to make sure the custom
+  // projection function is being called properly.
+  MathematicalProgramResult result = solver.Solve(prog, Vector1d(4.0), {});
+  EXPECT_TRUE(result.is_success());
+  auto x_value = result.GetSolution(x);
+  EXPECT_NEAR(x_value[0], 1.0, 1e-4);
   EXPECT_NEAR(result.get_optimal_cost(), 1.0, 1e-4);
 }
 
