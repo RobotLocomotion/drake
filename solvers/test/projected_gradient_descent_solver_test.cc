@@ -141,6 +141,34 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, ProjectionSolverInterface) {
       ".*EqualityConstrainedQPSolver is unable to solve.*");
 }
 
+GTEST_TEST(ProjectedGradientDescentSolverTest, FeasibilityTolerance) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddCost(pow(x(0), 2));
+  prog.AddConstraint(x(0) <= 0.0);
+
+  // Custom projection function that always returns 1e-3
+  auto custom_projection_function = [](const Vector1d& y) {
+    return Vector1d(1e-3);
+  };
+
+  ProjectedGradientDescentSolver solver;
+  solver.SetCustomProjectionFunction(custom_projection_function);
+
+  SolverOptions options;
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::FeasibilityTolOptionName(),
+                    1e-2);
+
+  // The default feasibility tolerance of 1e-4 will fail. The custom tolerance
+  // of 1e-2 will succeed.
+  MathematicalProgramResult result =
+      solver.Solve(prog, Vector1d(1.0 + 1e-3), {});
+  EXPECT_FALSE(result.is_success());
+  result = solver.Solve(prog, Vector1d(1.0 + 1e-3), options);
+  EXPECT_TRUE(result.is_success());
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
