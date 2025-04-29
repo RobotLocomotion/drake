@@ -132,6 +132,7 @@ install_test(
         ":install",
         _INSTALL_TEST_COMMANDS,
     ],
+    env = {"COMPILATION_MODE": "$(COMPILATION_MODE)"},
     tags = [
         # Running acceptance tests under coverage (kcov) probably burns more CI
         # time and flakiness compared to any upside.
