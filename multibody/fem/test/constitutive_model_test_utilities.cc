@@ -181,10 +181,59 @@ void TestdPdFIsDerivativeOfP() {
   }
 }
 
+template <class Model>
+void TestSpdness() {
+  using T = typename Model::T;
+  const T kYoungsModulus = 100.0;
+  const T kPoissonRatio = 0.25;
+  const Model model(kYoungsModulus, kPoissonRatio);
+  typename Model::Traits::Data data;
+  Matrix3<T> F;
+  // clang-format off
+  F << 0.18, 0.63, 0.54,
+       0.13, 0.92, 0.17,
+       0.03, 0.86, 0.85;
+  // clang-format on
+  const Matrix3<T> F0 = F;
+  data.UpdateData(F, F0);
+  math::internal::FourthOrderTensor<T> unfiltered;
+  math::internal::FourthOrderTensor<T> filtered;
+
+  model.CalcFirstPiolaStressDerivative(data, &unfiltered);
+  model.CalcFilteredHessian(data, &filtered);
+
+  using Matrix9T = Eigen::Matrix<T, 9, 9>;
+  using Vector9d = Eigen::Matrix<double, 9, 1>;
+  // Check that the filtered Hessian is SPD.
+  const Matrix9T filtered_matrix = filtered.data();
+  const Eigen::SelfAdjointEigenSolver<Matrix9T> eigensolver(filtered_matrix);
+  ASSERT_TRUE(eigensolver.info() == Eigen::Success);
+  const Vector9d eigenvalues = math::DiscardGradient(eigensolver.eigenvalues());
+  const Eigen::SelfAdjointEigenSolver<Matrix9T> eigensolver2(unfiltered.data());
+  ASSERT_TRUE(eigensolver2.info() == Eigen::Success);
+  const Vector9d unfiltered_eigenvalues =
+      math::DiscardGradient(eigensolver2.eigenvalues());
+  // For the filtered Hessian, the eigenvalues should either be the same of the
+  // unfiltered hessian and positive or clamped at zero.
+  const double kTol = 1e-12;
+  for (int i = 0; i < 9; ++i) {
+    const double eigenvalue = eigenvalues(i);
+    const double unfiltered_eigenvalue = unfiltered_eigenvalues(i);
+    EXPECT_GE(eigenvalue, -kTol);
+    if (eigenvalue > kTol) {
+      EXPECT_NEAR(eigenvalue, unfiltered_eigenvalue, kTol);
+    } else {
+      EXPECT_NEAR(eigenvalue, 0, kTol);
+    }
+  }
+}
+
 template void TestParameters<LinearConstitutiveModel<double>>();
 template void TestParameters<LinearConstitutiveModel<AutoDiffXd>>();
 template void TestUndeformedState<LinearConstitutiveModel<double>>(bool);
 template void TestUndeformedState<LinearConstitutiveModel<AutoDiffXd>>(bool);
+template void TestSpdness<LinearConstitutiveModel<double>>();
+template void TestSpdness<LinearConstitutiveModel<AutoDiffXd>>();
 template void TestPIsDerivativeOfPsi<LinearConstitutiveModel<AutoDiffXd>>();
 template void TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd>>();
 
@@ -192,6 +241,8 @@ template void TestParameters<CorotatedModel<double>>();
 template void TestParameters<CorotatedModel<AutoDiffXd>>();
 template void TestUndeformedState<CorotatedModel<double>>(bool);
 template void TestUndeformedState<CorotatedModel<AutoDiffXd>>(bool);
+template void TestSpdness<CorotatedModel<double>>();
+template void TestSpdness<CorotatedModel<AutoDiffXd>>();
 template void TestPIsDerivativeOfPsi<CorotatedModel<AutoDiffXd>>();
 template void TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd>>();
 
@@ -199,6 +250,8 @@ template void TestParameters<LinearCorotatedModel<double>>();
 template void TestParameters<LinearCorotatedModel<AutoDiffXd>>();
 template void TestUndeformedState<LinearCorotatedModel<double>>(bool);
 template void TestUndeformedState<LinearCorotatedModel<AutoDiffXd>>(bool);
+template void TestSpdness<LinearCorotatedModel<double>>();
+template void TestSpdness<LinearCorotatedModel<AutoDiffXd>>();
 template void TestPIsDerivativeOfPsi<LinearCorotatedModel<AutoDiffXd>>();
 template void TestdPdFIsDerivativeOfP<LinearCorotatedModel<AutoDiffXd>>();
 
@@ -206,6 +259,8 @@ template void TestParameters<NeoHookeanModel<double>>();
 template void TestParameters<NeoHookeanModel<AutoDiffXd>>();
 template void TestUndeformedState<NeoHookeanModel<double>>(bool);
 template void TestUndeformedState<NeoHookeanModel<AutoDiffXd>>(bool);
+template void TestSpdness<NeoHookeanModel<double>>();
+template void TestSpdness<NeoHookeanModel<AutoDiffXd>>();
 template void TestPIsDerivativeOfPsi<NeoHookeanModel<AutoDiffXd>>();
 template void TestdPdFIsDerivativeOfP<NeoHookeanModel<AutoDiffXd>>();
 

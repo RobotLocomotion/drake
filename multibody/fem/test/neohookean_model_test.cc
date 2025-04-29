@@ -31,6 +31,11 @@ GTEST_TEST(NeoHookeanModelTest, dPdFIsDerivativeOfP) {
   TestdPdFIsDerivativeOfP<NeoHookeanModel<AutoDiffXd>>();
 }
 
+GTEST_TEST(NeoHookeanModelTest, FilteredHessian) {
+  TestSpdness<NeoHookeanModel<double>>();
+  TestSpdness<NeoHookeanModel<AutoDiffXd>>();
+}
+
 }  // namespace test
 }  // namespace internal
 }  // namespace fem

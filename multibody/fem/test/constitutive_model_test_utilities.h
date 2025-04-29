@@ -48,6 +48,13 @@ ConstitutiveModel. */
 template <class Model>
 void TestdPdFIsDerivativeOfP();
 
+/* Tests that the filtered Hessian is dPdF with eigenvalues clamped at 0 from
+below.
+@tparam Model    Must be AutoDiffXd instantiations of a concrete
+ConstitutiveModel. */
+template <class Model>
+void TestSpdness();
+
 }  // namespace test
 }  // namespace internal
 }  // namespace fem
