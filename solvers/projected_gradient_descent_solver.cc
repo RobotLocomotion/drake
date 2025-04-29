@@ -26,6 +26,9 @@ constexpr const char kProjectionSolverInterfaceOptionName[] =
 constexpr const char kConvergenceTolOptionName[] = "ConvergenceTol";
 constexpr const char kFeasibilityTolOptionName[] = "FeasibilityTol";
 constexpr const char kMaxIterationsOptionName[] = "MaxIterations";
+constexpr const char kBacktrackingCOptionName[] = "BacktrackingC";
+constexpr const char kBacktrackingTauOptionName[] = "BacktrackingTau";
+constexpr const char kBacktrackingAlpha0OptionName[] = "BacktrackingAlpha0";
 
 struct KnownOptions {
   std::optional<std::function<VectorXd(const VectorXd&)>>
@@ -36,6 +39,9 @@ struct KnownOptions {
   double convergence_tol{1e-6};
   double feasibility_tol{1e-6};
   int max_iterations{100};
+  double backtracking_c{0.5};
+  double backtracking_tau{0.5};
+  double backtracking_alpha_0{0.1};
 };
 
 void Serialize(internal::SpecificOptions* archive,
@@ -60,6 +66,12 @@ KnownOptions ParseOptions(internal::SpecificOptions* options) {
   }
   if (result.max_iterations < 1) {
     throw std::invalid_argument("MaxIterations must be at least one.");
+  }
+  if (result.backtracking_c >= 1.0 || result.backtracking_c <= 0.0) {
+    throw std::invalid_argument("BacktrackingC must be between 0 and 1.");
+  }
+  if (result.backtracking_tau >= 1.0 || result.backtracking_tau <= 0.0) {
+    throw std::invalid_argument("BacktrackingTau must be between 0 and 1.");
   }
   return result;
 }
@@ -227,9 +239,9 @@ void ProjectedGradientDescentSolver::DoSolve2(
               << descent_direction[1] << "\t" << std::endl;
 
     // Line search (using the Armijo condition).
-    const double tau = 0.5;
-    const double c = 0.5;
-    double alpha = 0.1;
+    const double c = parsed_options.backtracking_c;
+    const double tau = parsed_options.backtracking_tau;
+    double alpha = parsed_options.backtracking_alpha_0;
 
     double m = descent_direction.dot(descent_direction);
     double t = -c * m;
@@ -312,6 +324,18 @@ std::string ProjectedGradientDescentSolver::FeasibilityTolOptionName() {
 
 std::string ProjectedGradientDescentSolver::MaxIterationsOptionName() {
   return kMaxIterationsOptionName;
+}
+
+std::string ProjectedGradientDescentSolver::BacktrackingCOptionName() {
+  return kBacktrackingCOptionName;
+}
+
+std::string ProjectedGradientDescentSolver::BacktrackingTauOptionName() {
+  return kBacktrackingTauOptionName;
+}
+
+std::string ProjectedGradientDescentSolver::BacktrackingAlpha0OptionName() {
+  return kBacktrackingAlpha0OptionName;
 }
 
 SolverId ProjectedGradientDescentSolver::id() {

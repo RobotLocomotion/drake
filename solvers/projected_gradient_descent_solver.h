@@ -50,21 +50,39 @@ class ProjectedGradientDescentSolver final : public SolverBase {
 
   /**
    * @returns string key for SolverOptions to set the threshold used to
-   * determine convergence.
+   * determine convergence. It must be positive.
    */
   static std::string ConvergenceTolOptionName();
 
   /**
    * @returns string key for SolverOptions to set the threshold used to
-   * determine feasibility of the projection step.
+   * determine feasibility of the projection step. It must be positive.
    */
   static std::string FeasibilityTolOptionName();
 
   /**
    * @returns string key for SolverOptions to set the maximum number of
-   * iterations.
+   * iterations. It must be a postive integer.
    */
   static std::string MaxIterationsOptionName();
+
+  /**
+   * @returns string key for SolverOptions to set the value of c to use for the
+   * backtracking line search. Must be between 0 and 1.
+   */
+  static std::string BacktrackingCOptionName();
+
+  /**
+   * @returns string key for SolverOptions to set the value of tau to use for
+   * the backtracking line search. Must be between 0 and 1.
+   */
+  static std::string BacktrackingTauOptionName();
+
+  /**
+   * @returns string key for SolverOptions to set the value of alpha_0 to use
+   * for the backtracking line search. Must be positive.
+   */
+  static std::string BacktrackingAlpha0OptionName();
 
   /// @name Static versions of the instance methods with similar names.
   //@{
