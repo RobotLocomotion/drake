@@ -1,7 +1,5 @@
 #include "drake/solvers/projected_gradient_descent_solver.h"
 
-#include <iostream>
-
 #include <drake/solvers/choose_best_solver.h>
 
 #include "drake/math/autodiff.h"
@@ -205,8 +203,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
               std::nullopt /* solver_options */, &projection_result);
         }
 
-        std::cout << "Projection solution result "
-                  << projection_result.get_solution_result() << std::endl;
         return projection_result.get_x_val();
       });
 
@@ -223,11 +219,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
     // Gradient step.
     VectorXd descent_direction = -gradient_function(x_current);
 
-    std::cout << "x " << x_current[0] << "," << x_current[1] << "\t"
-              << std::endl;
-    std::cout << "descent_direction " << descent_direction[0] << ","
-              << descent_direction[1] << "\t" << std::endl;
-
     // Line search (using the Armijo condition).
     const double c = parsed_options.backtracking_c;
     const double tau = parsed_options.backtracking_tau;
@@ -238,8 +229,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
     double old_cost = cost_function(x_current);
     while (true) {
       double new_cost = cost_function(x_current + alpha * descent_direction);
-      std::cout << "old_cost " << old_cost << "\tnew_cost " << new_cost
-                << "\talpha*t " << alpha * t << std::endl;
       if (old_cost - new_cost >= alpha * t) {
         break;
       } else {
@@ -248,13 +237,8 @@ void ProjectedGradientDescentSolver::DoSolve2(
     }
 
     // Now project back to feasibility.
-    std::cout << "x before projection "
-              << (x_current + alpha * descent_direction)[0] << ","
-              << (x_current + alpha * descent_direction)[1] << std::endl;
     VectorXd projected_value =
         projection_function(x_current + alpha * descent_direction);
-    std::cout << "projected_value " << projected_value[0] << " "
-              << projected_value[1] << std::endl;
     VectorXd step = projected_value - x_current;
     x_current = projected_value;
 
@@ -266,9 +250,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
       break;
     }
 
-    std::cout << "step norm squared " << step.dot(step) << "\t"
-              << "convergence_tol_squared " << convergence_tol_squared
-              << std::endl;
     if (step.dot(step) < convergence_tol_squared) {
       converged = true;
       break;
@@ -279,13 +260,10 @@ void ProjectedGradientDescentSolver::DoSolve2(
   result->set_x_val(x_current);
   result->set_optimal_cost(cost_function(x_current));
   if (converged) {
-    std::cout << "Converged" << std::endl;
     result->set_solution_result(SolutionResult::kSolutionFound);
   } else if (failed) {
-    std::cout << "Failed" << std::endl;
     result->set_solution_result(SolutionResult::kInfeasibleConstraints);
   } else {
-    std::cout << "Hit Iteration Limit" << std::endl;
     result->set_solution_result(SolutionResult::kIterationLimit);
   }
 }
