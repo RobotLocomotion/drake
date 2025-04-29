@@ -1,5 +1,6 @@
 curl
 libstdc++6-10-dbg
+mold
 python3-dateutil
 python3-dbg
 python3-flask
