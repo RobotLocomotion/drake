@@ -1,9 +1,8 @@
 #include "drake/solvers/projected_gradient_descent_solver.h"
 
-#include <drake/solvers/choose_best_solver.h>
-
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
+#include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 
@@ -235,9 +234,11 @@ void ProjectedGradientDescentSolver::DoSolve2(
     double m = descent_direction.dot(descent_direction);
     double t = -c * m;
     double old_cost = cost_function(x_current);
-    while (true) {
+    const int kMaxLineSearchSteps = 100;
+    for (int line_search_steps = 0; line_search_steps < kMaxLineSearchSteps;
+         ++line_search_steps) {
       double new_cost = cost_function(x_current + alpha * descent_direction);
-      if (old_cost - new_cost >= alpha * t) {
+      if (old_cost - new_cost >= -alpha * t) {
         break;
       } else {
         alpha *= tau;
