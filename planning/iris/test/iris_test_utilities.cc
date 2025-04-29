@@ -106,7 +106,7 @@ DoublePendulum::DoublePendulum() {
 
   meshcat_ = geometry::GetTestEnvironmentMeshcat();
 
-  Vector2d sample = Vector2d::Zero(1);
+  Vector2d sample = Vector2d::Zero(2);
   starting_ellipsoid_ = Hyperellipsoid::MakeHypersphere(1e-2, sample);
   domain_ = HPolyhedron::MakeBox(plant_ptr_->GetPositionLowerLimits(),
                                  plant_ptr_->GetPositionUpperLimits());
