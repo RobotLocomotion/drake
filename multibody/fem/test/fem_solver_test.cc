@@ -45,7 +45,7 @@ namespace {
 TYPED_TEST_SUITE_P(FemSolverTest);
 TYPED_TEST_P(FemSolverTest, Tolerance) {
   /* Default values. */
-  EXPECT_EQ(this->solver_.relative_tolerance(), 1e-4);
+  EXPECT_EQ(this->solver_.relative_tolerance(), 1e-2);
   EXPECT_EQ(this->solver_.absolute_tolerance(), 1e-6);
   /* Test Setters. */
   constexpr double kTol = 1e-8;
