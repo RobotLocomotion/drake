@@ -100,6 +100,29 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, CustomProjectionFunction) {
   EXPECT_NEAR(result.get_optimal_cost(), 1.0, 1e-4);
 }
 
+GTEST_TEST(ProjectedGradientDescentSolverTest, CustomGradientFunction) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddCost(pow(x(0), 2));
+  prog.AddConstraint(x(0) >= 1.0);
+  prog.AddConstraint(x(0) <= 3.0);
+
+  auto custom_gradient_function = [](const Vector1d& y) {
+    return 2.0 * y;
+  };
+
+  ProjectedGradientDescentSolver solver;
+  solver.SetCustomGradientFunction(custom_gradient_function);
+
+  // We deliberately give it an infeasible initial guess to make sure the custom
+  // projection function is being called properly.
+  MathematicalProgramResult result = solver.Solve(prog, Vector1d(4.0), {});
+  EXPECT_TRUE(result.is_success());
+  auto x_value = result.GetSolution(x);
+  EXPECT_NEAR(x_value[0], 1.0, 1e-4);
+  EXPECT_NEAR(result.get_optimal_cost(), 1.0, 1e-4);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
