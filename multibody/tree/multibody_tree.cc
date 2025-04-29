@@ -19,6 +19,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/body_node_world.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
+#include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -753,9 +754,9 @@ void MultibodyTree<T>::CreateJointImplementations() {
 
   // These are the Joint type names for the joints that are currently
   // reversible.
-  // TODO(sherm1) Add more.
-  const std::set<std::string> reversible{WeldJoint<double>::kTypeName,
-                                         RevoluteJoint<double>::kTypeName};
+  const std::set<std::string> reversible{PrismaticJoint<double>::kTypeName,
+                                         RevoluteJoint<double>::kTypeName,
+                                         WeldJoint<double>::kTypeName};
 
   // Mobods are in depth-first order, starting with World.
   for (const auto& mobod : forest().mobods()) {
