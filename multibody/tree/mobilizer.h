@@ -604,7 +604,7 @@ class Mobilizer : public MultibodyElement<T> {
   // via q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇, where N(q) is formed by CalcNMatrix().
   // @param[in] context stores generalized positions q and velocities v.
   // @param[out] Ndot The matrix Ṅ(q,q̇). On input Ndot must have size
-  //   `nq x nv` where nq is the number of generalized positions and
+  //   nq x nv where nq is the number of generalized positions and
   //   nv is the number of generalized velocities for this mobilizer.
   void CalcNDotMatrix(const systems::Context<T>& context,
                       EigenPtr<MatrixX<T>> Ndot) const {
@@ -619,8 +619,8 @@ class Mobilizer : public MultibodyElement<T> {
   // via v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈, where N⁺(q) is formed by CalcNPlusMatrix().
   // @param[in] context stores generalized positions q and velocities v.
   // @param[out] NplusDot The matrix Ṅ(q,q̇). On input NplusDot must have size
-  //   `nq x nv` where nq is the number of generalized positions and
-  //   nv is the number of generalized velocities for this mobilizer.
+  //   nv x nq where nv is the number of generalized velocities and
+  //   nq is the number of generalized positions for this mobilizer.
   void CalcNplusDotMatrix(const systems::Context<T>& context,
                           EigenPtr<MatrixX<T>> NplusDot) const {
     DRAKE_DEMAND(NplusDot != nullptr);
