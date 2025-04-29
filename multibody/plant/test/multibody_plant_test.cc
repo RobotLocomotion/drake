@@ -1981,8 +1981,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedRevoluteJoint) {
   const RevoluteJoint<double>& revolute = plant.AddJoint<RevoluteJoint>(
       "revolute", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
 
-  // Add a body with parent=reverse_body, child=world. This is only allowed
-  // for Weld and Revolute joints currently.
+  // Add a body with parent=reverse_body, child=world.
   const RigidBody<double>& reverse_body =
       plant.AddRigidBody("reverse_body", default_model_instance(),
                          SpatialInertia<double>::MakeUnitary());
@@ -2023,6 +2022,57 @@ GTEST_TEST(MultibodyPlantTest, ReversedRevoluteJoint) {
                               kTolerance, MatrixCompareType::relative));
 }
 
+GTEST_TEST(MultibodyPlantTest, ReversedPrismaticJoint) {
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  MultibodyPlant<double> plant(0.0);
+
+  // Add a normal body which we'll use as the child of a prismatic joint.
+  const RigidBody<double>& body = plant.AddRigidBody(
+      "body", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const PrismaticJoint<double>& prismatic = plant.AddJoint<PrismaticJoint>(
+      "prismatic", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
+
+  // Add a body with parent=reverse_body, child=world.
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  const PrismaticJoint<double>& reverse_prismatic =
+      plant.AddJoint<PrismaticJoint>("reverse_prismatic", reverse_body, {},
+                                     plant.world_body(), {}, Vector3d(1, 1, 1));
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+
+  for (int i = 0; i < 3; ++i) {
+    const double third = std::numbers::inv_sqrt3_v<double>;
+    EXPECT_NEAR(prismatic.translation_axis()[i], third, kTolerance);
+    EXPECT_NEAR(reverse_prismatic.translation_axis()[i], third, kTolerance);
+  }
+
+  // The forward and reverse joints should produce the same motion, but the
+  // meaning of the generalized coordinate q (translation) is reversed.
+  prismatic.set_translation(&*context, 0.125);
+  EXPECT_EQ(prismatic.get_translation(*context), 0.125);
+  reverse_prismatic.set_translation(&*context, -0.125);
+  EXPECT_EQ(reverse_prismatic.get_translation(*context), -0.125);
+
+  const RigidTransformd pose = body.EvalPoseInWorld(*context);
+  const RigidTransformd rpose = reverse_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rpose.GetAsMatrix34(), pose.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Now check the velocities.
+  prismatic.set_translation_rate(&*context, 1.5);
+  EXPECT_EQ(prismatic.get_translation_rate(*context), 1.5);
+  reverse_prismatic.set_translation_rate(&*context, -1.5);
+  EXPECT_EQ(reverse_prismatic.get_translation_rate(*context), -1.5);
+  const SpatialVelocity<double>& velocity =
+      body.EvalSpatialVelocityInWorld(*context);
+  const SpatialVelocity<double>& rvelocity =
+      reverse_body.EvalSpatialVelocityInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rvelocity.get_coeffs(), velocity.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
 GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
   MultibodyPlant<double> plant(0.0);
 
@@ -2042,7 +2092,7 @@ GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
       plant.Finalize(),
       ".*Finalize.*parent/child ordering.*universal joint reverse_universal"
       ".*reversed.*does not support.*universal.*can be reversed.*"
-      ".*revolute.*weld.*Reverse.*ordering.*");
+      ".*prismatic.*revolute.*weld.*Reverse.*ordering.*");
 }
 
 // Currently we don't support automatic modeling of systems where the links
