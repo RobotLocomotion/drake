@@ -67,6 +67,10 @@ KnownOptions ParseOptions(internal::SpecificOptions* options) {
   if (result.backtracking_tau >= 1.0 || result.backtracking_tau <= 0.0) {
     throw std::invalid_argument("BacktrackingTau must be between 0 and 1.");
   }
+  if (result.backtracking_alpha_0 <= 0) {
+    throw std::invalid_argument(
+        "BacktrackingAlpha0 should be a non-negative number.");
+  }
   return result;
 }
 

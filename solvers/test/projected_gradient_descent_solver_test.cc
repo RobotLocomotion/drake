@@ -231,6 +231,60 @@ TEST_F(SimpleUnconstrainedQP, MaxIterations) {
                               ".*MaxIterations must be at least one.*");
 }
 
+TEST_F(SimpleUnconstrainedQP, BacktrackingC) {
+  SolverOptions options;
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::BacktrackingCOptionName(),
+                    0.5);
+  EXPECT_NO_THROW(solver_.Solve(prog_, {}, options));
+
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::BacktrackingCOptionName(),
+                    0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver_.Solve(prog_, {}, options),
+                              ".*BacktrackingC must be between 0 and 1.*");
+
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::BacktrackingCOptionName(),
+                    1.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver_.Solve(prog_, {}, options),
+                              ".*BacktrackingC must be between 0 and 1.*");
+}
+
+TEST_F(SimpleUnconstrainedQP, BacktrackingTau) {
+  SolverOptions options;
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::BacktrackingTauOptionName(),
+                    0.5);
+  EXPECT_NO_THROW(solver_.Solve(prog_, {}, options));
+
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::BacktrackingTauOptionName(),
+                    0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver_.Solve(prog_, {}, options),
+                              ".*BacktrackingTau must be between 0 and 1.*");
+
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::BacktrackingTauOptionName(),
+                    1.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver_.Solve(prog_, {}, options),
+                              ".*BacktrackingTau must be between 0 and 1.*");
+}
+
+TEST_F(SimpleUnconstrainedQP, BacktrackingAlpha0) {
+  SolverOptions options;
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::BacktrackingAlpha0OptionName(),
+                    0.5);
+  EXPECT_NO_THROW(solver_.Solve(prog_, {}, options));
+
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::BacktrackingAlpha0OptionName(),
+                    0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver_.Solve(prog_, {}, options),
+                              ".*BacktrackingAlpha0 should be a non-negative number.*");
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
