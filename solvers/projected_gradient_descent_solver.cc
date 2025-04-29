@@ -34,10 +34,18 @@ struct KnownOptions {
 void Serialize(internal::SpecificOptions* archive,
                // NOLINTNEXTLINE(runtime/references) to match Serialize concept.
                KnownOptions& options) {
-  archive->Visit(MakeNameValue(kConvergenceTolOptionName,  // BR
-                               &options.convergence_tol));
-  archive->Visit(MakeNameValue(kMaxIterationsOptionName,  // BR
-                               &options.max_iterations));
+  archive->Visit(
+      MakeNameValue(kConvergenceTolOptionName, &options.convergence_tol));
+  archive->Visit(
+      MakeNameValue(kFeasibilityTolOptionName, &options.feasibility_tol));
+  archive->Visit(
+      MakeNameValue(kMaxIterationsOptionName, &options.max_iterations));
+  archive->Visit(
+      MakeNameValue(kBacktrackingCOptionName, &options.backtracking_c));
+  archive->Visit(
+      MakeNameValue(kBacktrackingTauOptionName, &options.backtracking_tau));
+  archive->Visit(MakeNameValue(kBacktrackingAlpha0OptionName,
+                               &options.backtracking_alpha_0));
 }
 
 KnownOptions ParseOptions(internal::SpecificOptions* options) {
