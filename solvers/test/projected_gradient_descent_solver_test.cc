@@ -176,6 +176,14 @@ TEST_F(SimpleUnconstrainedQP, FeasibilityTol) {
             SolutionResult::kInfeasibleConstraints);
   result = solver_.Solve(prog_, Vector1d(1.0 + 1e-3), options);
   EXPECT_TRUE(result.is_success());
+
+  // Check the error message if an invalid value is used.
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::FeasibilityTolOptionName(),
+                    0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_.Solve(prog_, {}, options),
+      ".*FeasibilityTol should be a non-negative number.*");
 }
 
 TEST_F(SimpleUnconstrainedQP, ConvergenceTol) {
@@ -194,6 +202,14 @@ TEST_F(SimpleUnconstrainedQP, ConvergenceTol) {
   result = solver_.Solve(prog_, Vector1d(1.0), {});
   x_value = result.GetSolution(x_);
   EXPECT_LE(x_value[0], 1e-11);
+
+  // Check the error message if an invalid value is used.
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::ConvergenceTolOptionName(),
+                    0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_.Solve(prog_, {}, options),
+      ".*ConvergenceTol should be a non-negative number.*");
 }
 
 TEST_F(SimpleUnconstrainedQP, MaxIterations) {
@@ -206,6 +222,13 @@ TEST_F(SimpleUnconstrainedQP, MaxIterations) {
       solver_.Solve(prog_, Vector1d(1.0), options);
   EXPECT_FALSE(result.is_success());
   EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+
+  // Check the error message if an invalid value is used.
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::MaxIterationsOptionName(),
+                    0);
+  DRAKE_EXPECT_THROWS_MESSAGE(solver_.Solve(prog_, {}, options),
+                              ".*MaxIterations must be at least one.*");
 }
 
 }  // namespace test
