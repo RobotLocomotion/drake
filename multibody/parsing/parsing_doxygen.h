@@ -1232,7 +1232,7 @@ emit a warning as it would for doing the same to a `<visual>` tag.
 
 @subsection tag_drake_deformable_properties drake:deformable_properties
 
-- SDFormat path: `//model/link/drake:deformable_properties`  
+- SDFormat path: `//model/link/drake:deformable_properties`
 - URDF path: n/a
 - Syntax: Nested elements; see below.
 

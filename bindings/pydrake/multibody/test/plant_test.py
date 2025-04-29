@@ -3370,7 +3370,7 @@ class TestPlant(unittest.TestCase):
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 1.0e-3)
         dut = plant.mutable_deformable_model()
         self.assertEqual(dut.num_bodies(), 0)
-        # Add two deformable body to the model with the two overloads of
+        # Add two deformable bodies to the model with the two overloads of
         # RegisterDeformableBody.
         deformable_body_config = DeformableBodyConfig_[float]()
         geometry = GeometryInstance(X_PG=RigidTransform(),
@@ -3406,7 +3406,7 @@ class TestPlant(unittest.TestCase):
                                X_BA=RigidTransform(), shape=Box(1, 1, 1),
                                X_BG=RigidTransform())
 
-        # Verify that a body has been added to the model.
+        # Verify that both bodies have been added to the model.
         self.assertIsInstance(dut.GetReferencePositions(body_id), np.ndarray)
 
         deformable_model = plant.deformable_model()
