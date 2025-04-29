@@ -779,6 +779,16 @@ class Joint : public MultibodyElement<T> {
     DRAKE_DEMAND(has_mobilizer());
     return *mobilizer_;
   }
+
+  // (Internal use only) This utility generates a unique name for an offset
+  // frame of the form jointname_parentframename_suffix. This is intended for
+  // creating F and M mobilizer frames that are offset from joint frames Jp and
+  // Jc. The name is guaranteed to be unique within this Joint's model instance.
+  // If necessary, leading underscores are prepended until uniqueness is
+  // achieved. Be sure to create the new frame in the _Joint's_ model instance
+  // to avoid name clashes.
+  std::string MakeUniqueOffsetFrameName(const Frame<T>& parent_frame,
+                                        const std::string& suffix) const;
 #endif
   // End of hidden Doxygen section.
 

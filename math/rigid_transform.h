@@ -478,7 +478,8 @@ class RigidTransform {
   /// `X_AC = X_AB * atX_BC`. This requires only 6 floating point operations.
   /// @param[in] atX_BC An axial translation transform about the indicated
   ///   `axis`.
-  /// @param[out] X_AC Preallocated space for the result.
+  /// @param[out] X_AC Preallocated space for the result, which will be a
+  ///   general transform.
   /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z rotation axis.
   /// @pre atX_BC is an @ref special_xform_def "Axial translation transform".
   template <int axis>
@@ -492,6 +493,51 @@ class RigidTransform {
     const Eigen::Vector3<T>& p_BC = atX_BC.translation();
     X_AC->set_rotation(R_AB_);  // unchanged
     X_AC->set_translation(p_AoBo_A_ + p_BC[axis] * R_AB_.col(axis));
+  }
+
+  /// (Internal use only) With `this` a general transform X_BC, and given an
+  /// axial translation transform atX_AB, efficiently calculates
+  /// `X_AC = atX_AB * X_BC`. This requires just 1 floating point operation.
+  /// @param[in] atX_AB An axial translation transform along the indicated
+  ///   `axis`.
+  /// @param[out] X_AC Preallocated space for the result, which will be a
+  ///   general transform.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z translation axis.
+  /// @pre atX_AB is an @ref special_xform_def "Axial translation transform"
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  void PreMultiplyByAxialTranslation(const RigidTransform<T>& atX_AB,
+                                     RigidTransform<T>* X_AC) const {
+    DRAKE_ASSERT(X_AC != nullptr);
+    DRAKE_ASSERT_VOID(atX_AB.IsAxialTranslationOnlyOrThrow<axis>());
+    // Note that R_AB = I.
+    const RigidTransform<T>& X_BC = *this;  // Rename to keep frames straight.
+    X_AC->set_rotation(X_BC.rotation());    // R_AC = R_AB * R_BC = R_BC.
+    X_AC->p_AoBo_A_ = X_BC.translation();   // Initialize to p_BC_B.
+    X_AC->p_AoBo_A_[axis] += atX_AB.translation()[axis];  // The only flop.
+  }
+
+  /// (Internal use only) Given a new `distance`, updates the axial translation
+  /// transform atX_BC to represent the new translation by that amount. We
+  /// expect that atX_BC was already such a transform (about the given x, y, or
+  /// z axis). Only the 1 active element is modified; the other 11 remain
+  /// unchanged. No floating point operations are needed.
+  /// @param[in] distance the component of p_BC along the `axis` direction.
+  /// @param[in,out] atX_BC the axial translation transform matrix to be
+  ///   updated.
+  /// @tparam axis 0, 1, or 2 corresponding to +x, +y, or +z translation axis.
+  /// @pre atX_BC is an @ref special_xform_def "Axial translation transform".
+  template <int axis>
+#ifndef DRAKE_DOXYGEN_CXX
+    requires(0 <= axis && axis <= 2)
+#endif
+  static void UpdateAxialTranslation(const T& distance,
+                                     RigidTransform<T>* atX_BC) {
+    DRAKE_ASSERT(atX_BC != nullptr);
+    DRAKE_ASSERT_VOID(atX_BC->IsAxialTranslationOnlyOrThrow<axis>());
+    atX_BC->p_AoBo_A_[axis] = distance;
   }
 
   /// (Internal use only) Composes `this` general transform X_AB with a given

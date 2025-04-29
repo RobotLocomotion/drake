@@ -16,14 +16,14 @@ namespace multibody {
 
 /// This Joint allows two bodies to rotate relatively to one another around a
 /// common axis.
-/// That is, given a frame F attached to the parent body P and a frame M
-/// attached to the child body B (see the Joint class's documentation),
-/// this Joint allows frames F and M to rotate with respect to each other about
-/// an axis â. The rotation angle's sign is defined such that child body B
-/// rotates about axis â according to the right hand rule, with thumb aligned in
-/// the axis direction.
-/// Axis â is constant and has the same measures in both frames F and M, that
-/// is, `â_F = â_M`.
+/// That is, given a frame Jp attached to the parent body P and a frame Jc
+/// attached to the child body C (see the Joint class's documentation),
+/// this Joint allows frames Jp and Jc to rotate with respect to each other
+/// about an axis â. The rotation angle's sign is defined such that child body
+/// C rotates about axis â according to the right hand rule, with thumb aligned
+/// in the axis direction.
+/// Axis vector â is constant and has the same components in both frames Jp and
+/// Jc, that is, `â_Jp = â_Jc`.
 ///
 /// @tparam_default_scalar
 template <typename T>
@@ -37,8 +37,8 @@ class RevoluteJoint final : public Joint<T> {
   static const char kTypeName[];
 
   /// Constructor to create a revolute joint between two bodies so that
-  /// frame F attached to the parent body P and frame M attached to the child
-  /// body B, rotate relatively to one another about a common axis. See this
+  /// frame Jp attached to the parent body P and frame Jc attached to the child
+  /// body C, rotate relatively to one another about a common axis. See this
   /// class's documentation for further details on the definition of these
   /// frames and rotation angle.
   /// This constructor signature creates a joint with no joint limits, i.e. the
@@ -48,13 +48,12 @@ class RevoluteJoint final : public Joint<T> {
   /// The additional parameters are:
   /// @param[in] axis
   ///   A vector in ℝ³ specifying the axis of revolution for this joint. Given
-  ///   that frame M only rotates with respect to F and their origins are
-  ///   coincident at all times, the measures of `axis` in either frame F or M
-  ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
-  ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
-  ///   equal to one.
-  ///   This vector can have any length, only the direction is used. This method
-  ///   aborts if `axis` is the zero vector.
+  ///   that frame Jc only rotates with respect to Jp and their origins are
+  ///   coincident at all times, the components of `axis` in either frame Jp or
+  ///   Jc are exactly the same, that is, `axis_Jp = axis_Jc`. In other words,
+  ///   `axis_Jp` (or `axis_Jc`) is the eigenvector of `R_JpJc` with eigenvalue
+  ///   equal to one. This vector can have any length, only the direction is
+  ///   used. This method aborts if `axis` is the zero vector.
   /// @param[in] damping
   ///   Viscous damping coefficient, in N⋅m⋅s, used to model losses within the
   ///   joint. The damping torque (in N⋅m) is modeled as `τ = -damping⋅ω`, i.e.
@@ -69,8 +68,8 @@ class RevoluteJoint final : public Joint<T> {
                          std::numeric_limits<double>::infinity(), damping) {}
 
   /// Constructor to create a revolute joint between two bodies so that
-  /// frame F attached to the parent body P and frame M attached to the child
-  /// body B, rotate relatively to one another about a common axis. See this
+  /// frame Jp attached to the parent body P and frame Jc attached to the child
+  /// body C, rotate relatively to one another about a common axis. See this
   /// class's documentation for further details on the definition of these
   /// frames and rotation angle.
   /// The first three arguments to this constructor are those of the Joint class
@@ -78,12 +77,12 @@ class RevoluteJoint final : public Joint<T> {
   /// The additional parameters are:
   /// @param[in] axis
   ///   A vector in ℝ³ specifying the axis of revolution for this joint. Given
-  ///   that frame M only rotates with respect to F and their origins are
-  ///   coincident at all times, the measures of `axis` in either frame F or M
-  ///   are exactly the same, that is, `axis_F = axis_M`. In other words,
-  ///   `axis_F` (or `axis_M`) is the eigenvector of `R_FM` with eigenvalue
-  ///   equal to one.
-  ///   This vector can have any length, only the direction is used.
+  ///   that frame Jc only rotates with respect to Jp and their origins are
+  ///   coincident at all times, the components of `axis` in either frame Jp or
+  ///   Jc are exactly the same, that is, `axis_Jp = axis_Jc`. In other words,
+  ///   `axis_Jp` (or `axis_Jc`) is the eigenvector of `R_JpJc` with eigenvalue
+  ///   equal to one. This vector can have any length, only the direction is
+  ///   used.
   /// @param[in] pos_lower_limit
   ///   Lower position limit, in radians, for the rotation coordinate
   ///   (see get_angle()).
@@ -111,7 +110,7 @@ class RevoluteJoint final : public Joint<T> {
   /// Returns the axis of revolution of `this` joint as a unit vector.
   /// Since the measures of this axis in either frame F or M are the same (see
   /// this class's documentation for frame definitions) then,
-  /// `axis = axis_F = axis_M`.
+  /// `axis = axis_Jp = axis_Jc`.
   const Vector3<double>& revolute_axis() const { return axis_; }
 
   /// Returns `this` joint's default damping constant in N⋅m⋅s.
