@@ -204,6 +204,10 @@ class RenderEngine {
     }
   }
 
+  // TODO(xuchenhan-tri): It may be dangerous the silently ignore the geometry
+  // that is not registered. The data may be coming from the wrong source (e.g.
+  // the wrong SceneGraph). But currently, render engine doesn't have a way to
+  // check that.
   /** Updates the configurations of all meshes associated with the given
    deformable geometry (see RegisterDeformableVisual()). The number of elements
    in the supplied vertex position vector `q_WGs` and the vertex normal vector

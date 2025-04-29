@@ -167,12 +167,14 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       info.model_name = name;
       info.model_path = file;
       if (added_models) added_models->push_back(info);
+
     } else if (directive.add_model_instance) {
       auto& instance = *directive.add_model_instance;
       const std::string name =
           MakeModelName(instance.name, model_namespace, workspace);
       drake::log()->debug("  add_model_instance: {}", name);
       plant->AddModelInstance(name);
+
     } else if (directive.add_frame) {
       auto& frame = *directive.add_frame;
       drake::log()->debug("  add_frame: {}", frame.name);
@@ -202,6 +204,7 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
                            added.name())
               .to_string();
       drake::log()->debug("    resolved_name: {}", resolved_name);
+
     } else if (directive.add_weld) {
       math::RigidTransform<double> X_PC{};
       if (directive.add_weld->X_PC) {
@@ -210,6 +213,7 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
       AddWeld(get_scoped_frame(directive.add_weld->parent),
               get_scoped_frame(directive.add_weld->child), X_PC, plant,
               added_models);
+
     } else if (directive.add_collision_filter_group) {
       // If there's no geometry registered, there's nothing to be done with
       // collision filtering.  Trying to proceed will just trigger an error
@@ -239,6 +243,7 @@ void ParseModelDirectivesImpl(const ModelDirectives& directives,
         collision_resolver->AddPair(diagnostic, group.name, ignored_group,
                                     model_instance);
       }
+
     } else {
       // Recurse.
       auto& sub = *directive.add_directives;

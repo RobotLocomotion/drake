@@ -70,6 +70,17 @@ std::optional<T> GetChildElementValue(
   return value_pair.first;
 }
 
+std::optional<double> ReadDoubleFromSdfElement(
+    const SDFormatDiagnostic& diagnostic,
+    const sdf::ElementConstPtr& parent_element,
+    const char* child_element_name) {
+  if (parent_element->FindElement(child_element_name) != nullptr) {
+    return GetChildElementValue<double>(diagnostic, parent_element,
+                                        child_element_name);
+  }
+  return std::nullopt;
+}
+
 }  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
@@ -582,14 +593,8 @@ std::optional<ProximityProperties> MakeProximityPropertiesForCollision(
     CheckSupportedElements(diagnostic, drake_element,
                            supported_proximity_elements);
 
-    auto read_double = [drake_element, &diagnostic](
-                           const char* element_name) -> std::optional<double> {
-      std::optional<double> result;
-      if (drake_element->FindElement(element_name) != nullptr) {
-        result = GetChildElementValue<double>(diagnostic, drake_element,
-                                              element_name);
-      }
-      return result;
+    auto read_double = [&diagnostic, &drake_element](const char* element_name) {
+      return ReadDoubleFromSdfElement(diagnostic, drake_element, element_name);
     };
 
     const bool is_rigid = drake_element->HasElement("drake:rigid_hydroelastic");
@@ -712,14 +717,9 @@ MakeProximityForDeformableCollision(const SDFormatDiagnostic& diagnostic,
                           "drake:relaxation_time"});
 
   geometry::ProximityProperties props;
-  auto read_double = [drake_element, &diagnostic](
-                         const char* element_name) -> std::optional<double> {
-    std::optional<double> result;
-    if (drake_element->FindElement(element_name) != nullptr) {
-      result =
-          GetChildElementValue<double>(diagnostic, drake_element, element_name);
-    }
-    return result;
+
+  auto read_double = [&diagnostic, &drake_element](const char* element_name) {
+    return ReadDoubleFromSdfElement(diagnostic, drake_element, element_name);
   };
 
   const std::optional<double> mu_dynamic = read_double("drake:mu_dynamic");
