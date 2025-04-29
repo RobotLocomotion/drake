@@ -15,6 +15,17 @@ namespace test {
 using Eigen::Vector2d;
 using Eigen::VectorXd;
 
+class SimpleUnconstrainedQP : public ::testing::Test {
+ protected:
+  SimpleUnconstrainedQP() {
+    x_ = prog_.NewContinuousVariables<1>();
+    prog_.AddCost(pow(x_(0), 2));
+  }
+  Vector1<symbolic::Variable> x_;
+  MathematicalProgram prog_;
+  ProjectedGradientDescentSolver solver_;
+};
+
 GTEST_TEST(ProjectedGradientDescentSolverTest, QP) {
   // First program is unconstrained
   MathematicalProgram prog;
@@ -141,19 +152,15 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, ProjectionSolverInterface) {
       ".*EqualityConstrainedQPSolver is unable to solve.*");
 }
 
-GTEST_TEST(ProjectedGradientDescentSolverTest, FeasibilityTolerance) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<1>();
-  prog.AddCost(pow(x(0), 2));
-  prog.AddConstraint(x(0) <= 0.0);
+TEST_F(SimpleUnconstrainedQP, FeasibilityTol) {
+  prog_.AddConstraint(x_(0) <= 0.0);
 
   // Custom projection function that always returns 1e-3
   auto custom_projection_function = [](const Vector1d& y) {
     return Vector1d(1e-3);
   };
 
-  ProjectedGradientDescentSolver solver;
-  solver.SetCustomProjectionFunction(custom_projection_function);
+  solver_.SetCustomProjectionFunction(custom_projection_function);
 
   SolverOptions options;
   options.SetOption(ProjectedGradientDescentSolver::id(),
@@ -163,32 +170,42 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, FeasibilityTolerance) {
   // The default feasibility tolerance of 1e-4 will fail. The custom tolerance
   // of 1e-2 will succeed.
   MathematicalProgramResult result =
-      solver.Solve(prog, Vector1d(1.0 + 1e-3), {});
+      solver_.Solve(prog_, Vector1d(1.0 + 1e-3), {});
   EXPECT_FALSE(result.is_success());
-  result = solver.Solve(prog, Vector1d(1.0 + 1e-3), options);
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+  result = solver_.Solve(prog_, Vector1d(1.0 + 1e-3), options);
   EXPECT_TRUE(result.is_success());
 }
 
-GTEST_TEST(ProjectedGradientDescentSolverTest, ConvergenceTolerance) {
-  MathematicalProgram prog;
-  auto x = prog.NewContinuousVariables<1>();
-  prog.AddCost(pow(x(0), 2));
-
+TEST_F(SimpleUnconstrainedQP, ConvergenceTol) {
   SolverOptions options;
   options.SetOption(ProjectedGradientDescentSolver::id(),
                     ProjectedGradientDescentSolver::ConvergenceTolOptionName(),
                     1e0);
 
-  ProjectedGradientDescentSolver solver;
-  MathematicalProgramResult result = solver.Solve(prog, Vector1d(1.0), options);
+  MathematicalProgramResult result =
+      solver_.Solve(prog_, Vector1d(1.0), options);
   EXPECT_TRUE(result.is_success());
-  auto x_value = result.GetSolution(x);
+  auto x_value = result.GetSolution(x_);
   EXPECT_GT(x_value[0], 1e-1);
 
   // Default convergence tolerance yields a more accurate solution.
-  result = solver.Solve(prog, Vector1d(1.0), {});
-  x_value = result.GetSolution(x);
+  result = solver_.Solve(prog_, Vector1d(1.0), {});
+  x_value = result.GetSolution(x_);
   EXPECT_LE(x_value[0], 1e-11);
+}
+
+TEST_F(SimpleUnconstrainedQP, MaxIterations) {
+  SolverOptions options;
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::MaxIterationsOptionName(),
+                    1);
+
+  MathematicalProgramResult result =
+      solver_.Solve(prog_, Vector1d(1.0), options);
+  EXPECT_FALSE(result.is_success());
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
 }
 
 }  // namespace test
