@@ -30,18 +30,26 @@ class ProjectedGradientDescentSolver final : public SolverBase {
   ProjectedGradientDescentSolver();
   ~ProjectedGradientDescentSolver() final;
 
+  /** Specify a custom gradient function. Otherwise, this solver will
+   * differentiate through the costs in the MathematicalProgram it's used to
+   * solve. */
   void SetCustomGradientFunction(
       const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
           custom_gradient_function) {
     custom_gradient_function_ = custom_gradient_function;
   }
 
+  /** Specify a custom projection function. Otherwise, this solver will attempt
+   * to solve the L2 projection onto the feasible set of the MathematicalProgram
+   * it's used to solve. */
   void SetCustomProjectionFunction(
       const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
           custom_projection_function) {
     custom_projection_function_ = custom_projection_function;
   }
 
+  /** Specify a solver interface to be used when solving the L2 projection onto
+   * the feasible set of the MathematicalProgram it's being used to solve. */
   void SetProjectionSolverInterface(
       const SolverInterface* projection_solver_interface) {
     projection_solver_interface_ = projection_solver_interface;

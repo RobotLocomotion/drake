@@ -74,6 +74,9 @@ KnownOptions ParseOptions(internal::SpecificOptions* options) {
   return result;
 }
 
+// Given a (square, symmetric) matrix Q, compute b and c such that
+// AddQuadraticErrorCost(Q, x_desired, x) is equivalent to
+// AddQuadraticCost(2*Q, b, c, x).
 void ConvertQuadraticErrorCost(const VectorXd& x_desired, const MatrixXd& Q,
                                VectorXd* b, double* c) {
   *b = -Q * x_desired;
@@ -95,6 +98,7 @@ void ProjectedGradientDescentSolver::DoSolve2(
     MathematicalProgramResult* result) const {
   const KnownOptions parsed_options = ParseOptions(options);
 
+  // Replace any nan values in the initial guess with zero.
   VectorXd x_current = initial_guess;
   for (int i = 0; i < x_current.size(); ++i) {
     if (std::isnan(x_current[i])) {
@@ -134,7 +138,9 @@ void ProjectedGradientDescentSolver::DoSolve2(
   }
 
   // Next, we construct an auxiliary MathematicalProgram, for use in the
-  // projection step.
+  // projection step. We clone prog, remove all costs, and add a quadratic
+  // cost penalizing distance to the initial guess. (We then later update
+  // the coefficients of this cost at each iteration.)
   std::unique_ptr<MathematicalProgram> projection_prog_ptr = prog.Clone();
   for (const auto& cost : costs) {
     projection_prog_ptr->RemoveCost(cost);
@@ -236,13 +242,13 @@ void ProjectedGradientDescentSolver::DoSolve2(
     double alpha = parsed_options.backtracking_alpha_0;
 
     double m = descent_direction.dot(descent_direction);
-    double t = -c * m;
+    double t = c * m;
     double old_cost = cost_function(x_current);
     const int kMaxLineSearchSteps = 100;
     for (int line_search_steps = 0; line_search_steps < kMaxLineSearchSteps;
          ++line_search_steps) {
       double new_cost = cost_function(x_current + alpha * descent_direction);
-      if (old_cost - new_cost >= -alpha * t) {
+      if (old_cost - new_cost >= alpha * t) {
         break;
       } else {
         alpha *= tau;
