@@ -106,10 +106,12 @@ class SurfaceVolumeIntersectorTester;
    surface. It can be TriMeshBuilder<T> or PolyMeshBuilder<T> for T = double
    or AutoDiffXd.
 
- @tparam BvType  The type of bounding volumes for the tetrahedra in the
+ @tparam TetBvType  The type of bounding volumes for the tetrahedra in the
    volume mesh. It can be Obb for hydroelastics or Aabb for deformables.
- */
-template <typename MeshBuilder, typename BvType>
+
+ @tparam TriBvType  The type of bounding volumes for the triangles in the
+   surface mesh. It can be Obb for hydroelastics or Aabb for deformables. */
+template <typename MeshBuilder, typename TetBvType, typename TriBvType = Obb>
 class SurfaceVolumeIntersector {
  public:
   using MeshType = typename MeshBuilder::MeshType;
@@ -160,9 +162,9 @@ class SurfaceVolumeIntersector {
    */
   void SampleVolumeFieldOnSurface(
       const VolumeMeshFieldLinear<double, double>& volume_field_M,
-      const Bvh<BvType, VolumeMesh<double>>& bvh_M,
+      const Bvh<TetBvType, VolumeMesh<double>>& bvh_M,
       const TriangleSurfaceMesh<double>& surface_N,
-      const Bvh<Obb, TriangleSurfaceMesh<double>>& bvh_N,
+      const Bvh<TriBvType, TriangleSurfaceMesh<double>>& bvh_N,
       const math::RigidTransform<T>& X_MN,
       bool filter_face_normal_along_field_gradient = true);
 

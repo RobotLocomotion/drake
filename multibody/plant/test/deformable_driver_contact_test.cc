@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/fem/matrix_utilities.h"
@@ -11,6 +12,7 @@
 
 using drake::geometry::GeometryId;
 using drake::geometry::GeometryInstance;
+using drake::geometry::Mesh;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
 using drake::geometry::internal::ContactParticipation;
@@ -35,12 +37,11 @@ namespace internal {
 
 /* This fixture tests DeformableDriver member functions associated with the
  concept of contact. In particular, it sets up two identical, non-overlapping
- deformable octahedron bodies, each with 8 elements, 7 vertices, and 21 dofs. A
- rigid box is added so that its top face intersects the bottom half of
- one deformable octahedron and its bottom face intersects the top half of the
- other deformable octahedron. As a result, each deformable body has 6
- participating vertices (all vertices except the top/bottom vertex) and 18
- participating dofs. */
+ deformable box bodies, each with 5 elements, 8 vertices, and 24 dofs. A
+ rigid sphere is added so that its top half intersects the bottom half of one
+ deformable box and its bottom half intersects the top half of the other
+ deformable box. As a result, each deformable body has 4 participating vertices
+ (all top/bottom vertices) and 12 participating dofs. */
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.001;
@@ -54,34 +55,22 @@ class DeformableDriverContactTest : public ::testing::Test {
     DeformableModel<double>& deformable_model =
         plant_->mutable_deformable_model();
     /* Move the first deformable up so that the bottom half of it intersects the
-     rigid box. */
-    const RigidTransformd X_WD0(Vector3d(0, 0, 1.25));
-    body_id0_ =
-        RegisterDeformableOctahedron(X_WD0, &deformable_model, "deformable0");
+     rigid sphere. */
+    const RigidTransformd X_WD0(Vector3d(0, 0, 1));
+    body_id0_ = RegisterDeformableBox(X_WD0, &deformable_model, "deformable0");
     /* Move the second deformable down so that the top half of it intersects the
-     rigid box. */
-    const RigidTransformd X_WD1(Vector3d(0, 0, -1.25));
-    body_id1_ =
-        RegisterDeformableOctahedron(X_WD1, &deformable_model, "deformable1");
+     rigid sphere. */
+    const RigidTransformd X_WD1(Vector3d(0, 0, -1));
+    body_id1_ = RegisterDeformableBox(X_WD1, &deformable_model, "deformable1");
     model_ = &plant_->deformable_model();
-    // N.B. Deformables are only supported with the SAP solver.
-    // Thus for testing we choose one arbitrary contact approximation that uses
-    // the SAP solver.
-    plant_->set_discrete_contact_approximation(
-        DiscreteContactApproximation::kSap);
-    /* Register a rigid collision geometry intersecting with the bottom half of
-     the deformable octahedrons. */
-    geometry::ProximityProperties proximity_prop;
-    geometry::AddContactMaterial(kHcDampingRigid, {},
-                                 CoulombFriction<double>(1.0, 1.0),
-                                 &proximity_prop);
-    // TODO(xuchenhan-tri): Modify this when resolution hint is no longer used
-    //  as the trigger for contact with deformable bodies.
-    proximity_prop.AddProperty(geometry::internal::kHydroGroup,
-                               geometry::internal::kRezHint, 1.0);
+    /* Register a rigid collision geometry intersecting with the deformable
+     * boxes. */
+    geometry::ProximityProperties proximity_props;
+    proximity_props.AddProperty(geometry::internal::kHydroGroup,
+                                geometry::internal::kRezHint, 0.5);
     rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
-        plant_->world_body(), RigidTransformd::Identity(),
-        geometry::Box(10, 10, 1), "rigid_collision_geometry", proximity_prop);
+        plant_->world_body(), RigidTransformd::Identity(), Sphere(1.0),
+        "rigid_collision_geometry", proximity_props);
     plant_->Finalize();
 
     auto contact_manager = make_unique<CompliantContactManager<double>>();
@@ -186,27 +175,24 @@ class DeformableDriverContactTest : public ::testing::Test {
   GeometryId rigid_geometry_id_;
 
  private:
-  /* Registers a deformable octahedron with 8 vertices with pose `X_WD` to the
-   given `model`. */
-  DeformableBodyId RegisterDeformableOctahedron(const RigidTransformd& X_WD,
-                                                DeformableModel<double>* model,
-                                                std::string name) {
-    auto geometry = make_unique<GeometryInstance>(
-        X_WD, make_unique<Sphere>(1.0), std::move(name));
+  /* Registers a deformable box with 8 vertices with pose `X_WD` to the given
+   `model`. */
+  DeformableBodyId RegisterDeformableBox(const RigidTransformd& X_WD,
+                                         DeformableModel<double>* model,
+                                         std::string name) {
+    const std::string box =
+        FindResourceOrThrow("drake/multibody/plant/test/box.vtk");
+    auto box_mesh = std::make_unique<Mesh>(box, 1.0);
+    auto box_instance = std::make_unique<GeometryInstance>(
+        X_WD, std::move(box_mesh), std::move(name));
     geometry::ProximityProperties props;
-    geometry::AddContactMaterial(kHcDampingDeformable, {},
-                                 CoulombFriction<double>(1.0, 1.0), &props);
-    props.AddProperty(geometry::internal::kMaterialGroup,
-                      geometry::internal::kRelaxationTime,
-                      kDissipationTimeScale);
-    geometry->set_proximity_properties(std::move(props));
+    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(0.5, 0.5),
+                                 &props);
+    box_instance->set_proximity_properties(std::move(props));
     fem::DeformableBodyConfig<double> body_config;
-    body_config.set_youngs_modulus(1e6);
-    body_config.set_poissons_ratio(0.4);
-    /* Make the resolution hint large enough so that we get an octahedron. */
-    constexpr double kRezHint = 10.0;
+    constexpr double unused_resolution_hint = 1.0;
     DeformableBodyId body_id = model->RegisterDeformableBody(
-        std::move(geometry), body_config, kRezHint);
+        std::move(box_instance), body_config, unused_resolution_hint);
     return body_id;
   }
 };
@@ -223,26 +209,26 @@ TEST_F(DeformableDriverContactTest, EvalDeformableContact) {
   EXPECT_EQ(contact.contact_surfaces()[0].id_B(), rigid_geometry_id_);
   EXPECT_EQ(contact.contact_surfaces()[1].id_B(), rigid_geometry_id_);
 
-  /* All but the top/bottom vertex in each octahedron participate in contact. */
+  /* All top/bottom half of the 8 vertices in each box participate in contact.
+   */
   GeometryId geometry_id0 = model_->GetGeometryId(body_id0_);
   GeometryId geometry_id1 = model_->GetGeometryId(body_id1_);
   EXPECT_EQ(
-      contact.contact_participation(geometry_id0).num_vertices_in_contact(), 6);
+      contact.contact_participation(geometry_id0).num_vertices_in_contact(), 4);
   EXPECT_EQ(
-      contact.contact_participation(geometry_id1).num_vertices_in_contact(), 6);
+      contact.contact_participation(geometry_id1).num_vertices_in_contact(), 4);
 }
 
 TEST_F(DeformableDriverContactTest, EvalDofPermutation) {
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
   const PartialPermutation& result =
-      EvalDofPermutation(plant_context, DeformableBodyIndex(0));
-  /* Here we use our knowledge that Drake's coarsest sphere mesh generation is
-   indexed such that the top vertex is indexed 5. (Vertex 0-4 are on the
-   equator, vertex 5 is the north pole, and vertex 6 is the south pole) */
-  const std::vector<int> expected_permutation = {{0,  1,  2,  3,  4,  5,  6,
-                                                  7,  8,  9,  10, 11, 12, 13,
-                                                  14, -1, -1, -1, 15, 16, 17}};
+      EvalDofPermutation(plant_context, DeformableBodyIndex(1));
+  /* Here we use our knowledge of the box.vtk file. The vertices are indexed
+   such that v0-v3 are the bottom vertices and v4-v7 are the top vertices. */
+  const std::vector<int> expected_permutation = {
+      {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+       0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11}};
   EXPECT_EQ(result.permutation(), expected_permutation);
 }
 
@@ -256,7 +242,7 @@ TEST_F(DeformableDriverContactTest, EvalParticipatingVelocities) {
   SetVelocities(body_id0_, v0);
   SetVelocities(body_id1_, v1);
 
-  const int num_participating_vertices = 6;
+  const int num_participating_vertices = 4;
   const int num_participating_dofs_per_body = num_participating_vertices * 3;
   /* Verify that the participating velocities are multiplexed correctly. */
   VectorXd expected_participating_velocity(2 * num_participating_dofs_per_body);
@@ -296,7 +282,7 @@ TEST_F(DeformableDriverContactTest, EvalParticipatingFreeMotionVelocities) {
   VectorXd participating_v1_star(p1.permuted_domain_size());
   p0.Apply(v0_star, &participating_v0_star);
   p1.Apply(v1_star, &participating_v1_star);
-  const int num_participating_vertices = 6;
+  const int num_participating_vertices = 4;
   const int num_participating_dofs_per_body = num_participating_vertices * 3;
   VectorXd expected_participating_v_star(2 * num_participating_dofs_per_body);
   expected_participating_v_star << participating_v0_star, participating_v1_star;
@@ -307,56 +293,41 @@ TEST_F(DeformableDriverContactTest, EvalParticipatingFreeMotionVelocities) {
 
 TEST_F(DeformableDriverContactTest,
        EvalFreeMotionTangentMatrixSchurComplement) {
-  DeformableBodyIndex body_index(0);
+  DeformableBodyIndex body_index(1);
   const Context<double>& plant_context =
       plant_->GetMyContextFromRoot(*context_);
   const MatrixXd tangent_matrix =
       EvalFreeMotionTangentMatrix(plant_context, body_index);
   /* Schematically the participating block (A), the non-participating block (D),
    and the off-diagonal block (B) look like
-                           _______________________________________
-                           |                       |      |      |
-   Dofs 0-14 (associated   |                       |      |      |
-   with vertices 0-4) are  |                       |      |      |
-   participating.          |                       |      |      |
-                           |                       |      |      |
-                           |           A           |  Bᵀ  |   A  |
-                           |                       |      |      |
-                           |                       |      |      |
-                           |                       |      |      |
-                           |                       |      |      |
-                           |_______________________|______|______|
-   Dofs 15-17 (associated  |                       |      |      |
-   with vertex 5) are not  |           B           |   D  |   B  |
-   participating.          |_______________________|______|______|
-   Dofs 18-20 (associated  |                       |      |      |
-   with vertex 6) are      |           A           |  Bᵀ  |   A  |
-   participating.          |_______________________|______|______|       */
+                                                          _______________
+   Dofs 0-11 (associated with vertex 0-3) are not         |      |      |
+   participating.                                         |   D  |   B  |
+                                                          |______|______|
+   Dofs 12-23 (associated with vertices 4-7) are          |      |      |
+   participating.                                         |  Bᵀ  |   A  |
+                                                          |______|______|     */
   /* Matrix block for participating dofs. */
-  const int num_participating_vertices = 6;
+  const int num_participating_vertices = 4;
   const int num_participating_dofs = num_participating_vertices * 3;
-  MatrixXd A = MatrixXd::Zero(num_participating_dofs, num_participating_dofs);
-  /* Vertices 0, 1, 2, 3, 4, 6 are participating in contact. */
-  A.topLeftCorner(15, 15) = tangent_matrix.topLeftCorner(15, 15);
-  A.topRightCorner(15, 3) = tangent_matrix.topRightCorner(15, 3);
-  A.bottomLeftCorner(3, 15) = tangent_matrix.bottomLeftCorner(3, 15);
-  A.bottomRightCorner(3, 3) = tangent_matrix.bottomRightCorner(3, 3);
+  /* Vertices 4-7 are participating in contact. */
+  const MatrixXd A = tangent_matrix.bottomRightCorner(num_participating_dofs,
+                                                      num_participating_dofs);
   /* Matrix block for non-participating dofs. */
-  const int num_nonparticipating_vertices = 1;
+  const int num_nonparticipating_vertices = 4;
   const int num_nonparticipating_dofs = num_nonparticipating_vertices * 3;
-  MatrixXd D = tangent_matrix.block<3, 3>(15, 15);
+  const MatrixXd D = tangent_matrix.topLeftCorner(num_nonparticipating_dofs,
+                                                  num_nonparticipating_dofs);
   /* Off diagonal block. */
-  MatrixXd B =
-      MatrixXd::Zero(num_nonparticipating_dofs, num_participating_dofs);
-  B.leftCols(15) = tangent_matrix.block<3, 15>(15, 0);
-  B.rightCols(3) = tangent_matrix.block<3, 3>(15, 18);
+  const MatrixXd B = tangent_matrix.topRightCorner(num_nonparticipating_dofs,
+                                                   num_participating_dofs);
   const MatrixXd expected_complement_matrix =
       A - B.transpose() * D.llt().solve(B);
   EXPECT_TRUE(CompareMatrices(
       expected_complement_matrix,
       EvalFreeMotionTangentMatrixSchurComplement(plant_context, body_index)
           .get_D_complement(),
-      1e-10));
+      1e-14, MatrixCompareType::relative));
 }
 
 TEST_F(DeformableDriverContactTest, AppendLinearDynamicsMatrix) {
@@ -457,25 +428,25 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
     /* The contact points are on the z = -0.5 and z = 0.5 planes, the top and
      bottom surfaces of the rigid box. */
     if (pair.id_A == id0) {
-      EXPECT_EQ(pair.p_WC(2), 0.5);
+      EXPECT_DOUBLE_EQ(pair.p_WC(2), 0.5);
       EXPECT_TRUE(CompareMatrices(pair.nhat_BA_W, Eigen::Vector3d(0, 0, 1)));
     } else {
-      EXPECT_EQ(pair.p_WC(2), -0.5);
+      EXPECT_DOUBLE_EQ(pair.p_WC(2), -0.5);
       EXPECT_TRUE(CompareMatrices(pair.nhat_BA_W, Eigen::Vector3d(0, 0, -1)));
     }
     EXPECT_EQ(pair.damping, expected_d);
     /* Verify that the stiffness and the normal contact force are compatible. */
-    EXPECT_EQ(pair.fn0, -pair.stiffness * pair.phi0);
+    EXPECT_DOUBLE_EQ(pair.fn0, -pair.stiffness * pair.phi0);
     /* Verify the sign of the normal contact force. It should be repulsive. */
     EXPECT_GT(pair.fn0, 0.0);
     EXPECT_EQ(pair.dissipation_time_scale, expected_tau);
-    EXPECT_EQ(pair.friction_coefficient, 1.0);
+    EXPECT_EQ(pair.friction_coefficient, 0.5);
     ASSERT_TRUE(pair.surface_index.has_value());
     ASSERT_TRUE(pair.face_index.has_value());
-    /* There are two contact surfaces, one between the rigid box and the 0-th
-     deformable octahedron, and the other between the rigid box and the 1st
-     deformable octahedron. We don't know the order they come into
-     `contact_pairs`, but we do know the surface index is either 0 or 1. */
+    /* There are two contact surfaces, one between the rigid sphere and the 0-th
+     deformable box, and the other between the rigid sphere and the 1st
+     deformable box. We don't know the order they come into `contact_pairs`, but
+     we do know the surface index is either 0 or 1. */
     EXPECT_THAT(pair.surface_index.value(), testing::AnyOf(0, 1));
     if (pair.id_A == id0) {
       face_indices_0.insert(pair.face_index.value());
