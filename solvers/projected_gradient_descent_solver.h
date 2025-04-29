@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "drake/common/drake_copyable.h"
@@ -12,6 +13,12 @@
  * optimization problem in general, but the user can supply a custom projection
  * function. The user can also specify a specific solver interface to be used
  * to solve the projection problem.
+ *
+ * The solver terminates if
+ * - the projection step fails to find a feasible solution,
+ * - the norm of the gradient step is less than a user-specified threshold
+ * (default 1e-4), or
+ * - a maximum number of iterations have been run (default 100).
  */
 namespace drake {
 namespace solvers {
@@ -40,6 +47,24 @@ class ProjectedGradientDescentSolver final : public SolverBase {
    * projection function has been specified.
    */
   static std::string ProjectionSolverInterfaceOptionName();
+
+  /**
+   * @returns string key for SolverOptions to set the threshold used to
+   * determine convergence.
+   */
+  static std::string ConvergenceTolOptionName();
+
+  /**
+   * @returns string key for SolverOptions to set the threshold used to
+   * determine feasibility of the projection step.
+   */
+  static std::string FeasibilityTolOptionName();
+
+  /**
+   * @returns string key for SolverOptions to set the maximum number of
+   * iterations.
+   */
+  static std::string MaxIterationsOptionName();
 
   /// @name Static versions of the instance methods with similar names.
   //@{

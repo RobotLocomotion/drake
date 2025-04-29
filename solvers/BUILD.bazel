@@ -1190,6 +1190,8 @@ drake_cc_library(
     ],
     implementation_deps = [
         ":mathematical_program",
+        ":solve",
+        "//math:gradient",
     ],
 )
 
