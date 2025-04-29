@@ -13,6 +13,9 @@ NeoHookeanModelData<T>::NeoHookeanModelData() {
   Ic_ = 3.0;
   Jm1_ = 0;
   dJdF_ = Matrix3<T>::Identity();
+  U_ = Matrix3<T>::Identity();
+  V_ = Matrix3<T>::Identity();
+  sigma_ = Vector3<T>::Ones();
 }
 
 template <typename T>
@@ -21,6 +24,7 @@ void NeoHookeanModelData<T>::UpdateFromDeformationGradient() {
   Ic_ = F.squaredNorm();
   Jm1_ = F.determinant() - 1.0;
   internal::CalcCofactorMatrix<T>(F, &dJdF_);
+  internal::RotationSvd<T>(F, &U_, &V_, &sigma_);
 }
 
 template class NeoHookeanModelData<float>;

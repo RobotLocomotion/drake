@@ -34,6 +34,16 @@ class NeoHookeanModelData
   /* Returns the JF⁻ᵀ. */
   const Matrix3<T>& dJdF() const { return dJdF_; }
 
+  // TODO(xuchenhan-tri): Test these.
+  /* Returns the U matrix from the SVD of F = USVᵀ. */
+  const Matrix3<T>& U() const { return U_; }
+
+  /* Returns the V matrix from the SVD of F = USVᵀ. */
+  const Matrix3<T>& V() const { return V_; }
+
+  /* Returns the singular values of F from the SVD of F = USVᵀ. */
+  const Vector3<T>& sigma() const { return sigma_; }
+
  private:
   friend DeformationGradientData<NeoHookeanModelData<T>>;
 
@@ -47,6 +57,11 @@ class NeoHookeanModelData
   /* The derivative of J wrt F, which is the the cofactor matrix of F, or JF⁻ᵀ.
    */
   Matrix3<T> dJdF_;
+  /* The SVD of F = USVᵀ where U and V are both rotation matrices and
+   S = diag(σ₁, σ₂, σ₃) is a diagonal matrix with the singular values of F. */
+  Matrix3<T> U_;
+  Matrix3<T> V_;
+  Vector3<T> sigma_;
 };
 
 }  // namespace internal

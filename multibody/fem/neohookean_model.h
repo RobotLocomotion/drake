@@ -72,6 +72,17 @@ class NeoHookeanModel final
   void CalcFirstPiolaStressDerivativeImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* dPdF) const;
 
+  /* Shadows ConstitutiveModel::CalcFilteredHessian() in the base class to
+   provide a more efficient implementation. */
+  void CalcFilteredHessianImpl(
+      const Data& data, math::internal::FourthOrderTensor<T>* hessian) const;
+
+  /* Given the rotation matrices in the SVD of F, computes the "twist" and
+   "flip" eigenvectors (3 of each) and write them into the first 6 columns of
+   the eigenvector matrix Q described in [Smith, 2019]. */
+  void BuildTwistAndFlipEigenvectors(const Matrix3<T>& U, const Matrix3<T>& V,
+                                     Eigen::Matrix<T, 9, 9>* Q) const;
+
   T E_;               // Young's modulus, N/m².
   T nu_;              // Poisson's ratio.
   T mu_;              // Lamé's second parameter/Shear modulus, N/m².

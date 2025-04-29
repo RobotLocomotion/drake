@@ -56,6 +56,121 @@ void NeoHookeanModel<T>::CalcFirstPiolaStressDerivativeImpl(
                                                  &local_dPdF);
 }
 
+template <typename T>
+void NeoHookeanModel<T>::CalcFilteredHessianImpl(
+    const Data& data, math::internal::FourthOrderTensor<T>* hessian) const {
+  using Matrix9T = Eigen::Matrix<T, 9, 9>;
+  using Vector9T = Eigen::Matrix<T, 9, 1>;
+
+  Vector9T eigenvalues;
+  Matrix9T eigenvectors;
+
+  const T& Jm1 = data.Jm1();
+  const T J = Jm1 + 1.0;
+  const Vector3<T>& sigma = data.sigma();
+  const Matrix3<T>& U = data.U();
+  const Matrix3<T>& V = data.V();
+
+  /* Compute the twist and flip eigenvalues. */
+  {
+    /* Twist eigenvalues */
+    eigenvalues.template segment<3>(0) = sigma;
+    /* Flip eigenvalues */
+    eigenvalues.template segment<3>(3) = -sigma;
+    const T scale = lambda_ * data.Jm1() - mu_;
+    eigenvalues.template segment<6>(0) *= scale;
+    eigenvalues.template segment<6>(0).array() += mu_;
+  }
+
+  /* Compute the twist and flip eigenvectors. */
+  BuildTwistAndFlipEigenvectors(U, V, &eigenvectors);
+
+  /* Compute the remaining three eigenvalues and eigenvectors. */
+  {
+    Matrix3<T> A;
+    const T s0s0 = sigma(0) * sigma(0);
+    const T s1s1 = sigma(1) * sigma(1);
+    const T s2s2 = sigma(2) * sigma(2);
+    A(0, 0) = mu_ + lambda_ * s1s1 * s2s2;
+    A(1, 1) = mu_ + lambda_ * s0s0 * s2s2;
+    A(2, 2) = mu_ + lambda_ * s0s0 * s1s1;
+    const T scale = lambda_ * (2.0 * J - 1.0) - mu_;
+    A(0, 1) = scale * sigma(2);
+    A(1, 0) = A(0, 1);
+    A(0, 2) = scale * sigma(1);
+    A(2, 0) = A(0, 2);
+    A(1, 2) = scale * sigma(0);
+    A(2, 1) = A(1, 2);
+
+    const Eigen::SelfAdjointEigenSolver<Matrix3<T>> solver(A);
+    eigenvalues.template segment<3>(6) = solver.eigenvalues();
+
+    Eigen::Map<Matrix3<T>>(eigenvectors.data() + 54).noalias() =
+        U * solver.eigenvectors().col(0).asDiagonal() * V.transpose();
+    Eigen::Map<Matrix3<T>>(eigenvectors.data() + 63).noalias() =
+        U * solver.eigenvectors().col(1).asDiagonal() * V.transpose();
+    Eigen::Map<Matrix3<T>>(eigenvectors.data() + 72).noalias() =
+        U * solver.eigenvectors().col(2).asDiagonal() * V.transpose();
+  }
+
+  const T kTol = 1e-14;
+  /* Clamp the eigenvalues. */
+  for (int i = 0; i < 9; ++i) {
+    if (eigenvalues(i) < kTol) {
+      eigenvalues(i) = kTol;
+    }
+  }
+  hessian->mutable_data().noalias() =
+      eigenvectors * eigenvalues.asDiagonal() * eigenvectors.transpose();
+}
+
+template <typename T>
+void NeoHookeanModel<T>::BuildTwistAndFlipEigenvectors(
+    const Matrix3<T>& U, const Matrix3<T>& V, Eigen::Matrix<T, 9, 9>* Q) const {
+  const T scale = 1.0 / std::sqrt(2.0);
+  const Matrix3<T> sV = scale * V;
+
+  Matrix3<T> A;
+  A << sV(0, 2) * U(0, 1), sV(1, 2) * U(0, 1), sV(2, 2) * U(0, 1),
+      sV(0, 2) * U(1, 1), sV(1, 2) * U(1, 1), sV(2, 2) * U(1, 1),
+      sV(0, 2) * U(2, 1), sV(1, 2) * U(2, 1), sV(2, 2) * U(2, 1);
+
+  Matrix3<T> B;
+  B << sV(0, 1) * U(0, 2), sV(1, 1) * U(0, 2), sV(2, 1) * U(0, 2),
+      sV(0, 1) * U(1, 2), sV(1, 1) * U(1, 2), sV(2, 1) * U(1, 2),
+      sV(0, 1) * U(2, 2), sV(1, 1) * U(2, 2), sV(2, 1) * U(2, 2);
+
+  Matrix3<T> C;
+  C << sV(0, 2) * U(0, 0), sV(1, 2) * U(0, 0), sV(2, 2) * U(0, 0),
+      sV(0, 2) * U(1, 0), sV(1, 2) * U(1, 0), sV(2, 2) * U(1, 0),
+      sV(0, 2) * U(2, 0), sV(1, 2) * U(2, 0), sV(2, 2) * U(2, 0);
+
+  Matrix3<T> D;
+  D << sV(0, 0) * U(0, 2), sV(1, 0) * U(0, 2), sV(2, 0) * U(0, 2),
+      sV(0, 0) * U(1, 2), sV(1, 0) * U(1, 2), sV(2, 0) * U(1, 2),
+      sV(0, 0) * U(2, 2), sV(1, 0) * U(2, 2), sV(2, 0) * U(2, 2);
+
+  Matrix3<T> E;
+  E << sV(0, 1) * U(0, 0), sV(1, 1) * U(0, 0), sV(2, 1) * U(0, 0),
+      sV(0, 1) * U(1, 0), sV(1, 1) * U(1, 0), sV(2, 1) * U(1, 0),
+      sV(0, 1) * U(2, 0), sV(1, 1) * U(2, 0), sV(2, 1) * U(2, 0);
+
+  Matrix3<T> F;
+  F << sV(0, 0) * U(0, 1), sV(1, 0) * U(0, 1), sV(2, 0) * U(0, 1),
+      sV(0, 0) * U(1, 1), sV(1, 0) * U(1, 1), sV(2, 0) * U(1, 1),
+      sV(0, 0) * U(2, 1), sV(1, 0) * U(2, 1), sV(2, 0) * U(2, 1);
+
+  /* Twist eigenvectors */
+  Eigen::Map<Matrix3<T>>(Q->data()) = B - A;
+  Eigen::Map<Matrix3<T>>(Q->data() + 9) = D - C;
+  Eigen::Map<Matrix3<T>>(Q->data() + 18) = F - E;
+
+  /* Flip eigenvectors */
+  Eigen::Map<Matrix3<T>>(Q->data() + 27) = A + B;
+  Eigen::Map<Matrix3<T>>(Q->data() + 36) = C + D;
+  Eigen::Map<Matrix3<T>>(Q->data() + 45) = E + F;
+}
+
 template class NeoHookeanModel<float>;
 template class NeoHookeanModel<double>;
 template class NeoHookeanModel<AutoDiffXd>;
