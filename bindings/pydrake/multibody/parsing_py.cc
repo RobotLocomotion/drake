@@ -130,15 +130,8 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.scene_graph.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
             cls_doc.package_map.doc)
-        .def(
-            "AddModels",
-            // Pybind11 won't implicitly convert strings to
-            // std::filesystem::path, but C++ will. Use a lambda to avoid wider
-            // disruptions in python bindings.
-            [](Parser& self, const std::string& file_name) {
-              return self.AddModels(file_name);
-            },
-            py::arg("file_name"), cls_doc.AddModels.doc)
+        .def("AddModels", &Class::AddModels, py::arg("file_name"),
+            cls_doc.AddModels.doc)
         .def("AddModelsFromUrl", &Class::AddModelsFromUrl, py::arg("url"),
             cls_doc.AddModelsFromUrl.doc)
         .def("AddModelsFromString", &Class::AddModelsFromString,

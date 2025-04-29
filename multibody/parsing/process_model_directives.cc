@@ -191,9 +191,10 @@ std::vector<ModelInstanceInfo> ProcessModelDirectives(
   return added_models;
 }
 
-ModelDirectives LoadModelDirectives(const std::string& filename) {
+ModelDirectives LoadModelDirectives(const std::filesystem::path& filename) {
+  const std::string filename_str = filename.string();
   return multibody::internal::LoadModelDirectives(
-      {DataSource::kFilename, &filename});
+      {DataSource::kFilename, &filename_str});
 }
 
 ModelDirectives LoadModelDirectivesFromString(
