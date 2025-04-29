@@ -169,6 +169,28 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, FeasibilityTolerance) {
   EXPECT_TRUE(result.is_success());
 }
 
+GTEST_TEST(ProjectedGradientDescentSolverTest, ConvergenceTolerance) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddCost(pow(x(0), 2));
+
+  SolverOptions options;
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::ConvergenceTolOptionName(),
+                    1e0);
+
+  ProjectedGradientDescentSolver solver;
+  MathematicalProgramResult result = solver.Solve(prog, Vector1d(1.0), options);
+  EXPECT_TRUE(result.is_success());
+  auto x_value = result.GetSolution(x);
+  EXPECT_GT(x_value[0], 1e-1);
+
+  // Default convergence tolerance yields a more accurate solution.
+  result = solver.Solve(prog, Vector1d(1.0), {});
+  x_value = result.GetSolution(x);
+  EXPECT_LE(x_value[0], 1e-11);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

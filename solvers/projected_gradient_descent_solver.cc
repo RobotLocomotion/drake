@@ -23,9 +23,9 @@ constexpr const char kBacktrackingTauOptionName[] = "BacktrackingTau";
 constexpr const char kBacktrackingAlpha0OptionName[] = "BacktrackingAlpha0";
 
 struct KnownOptions {
-  double convergence_tol{1e-6};
+  double convergence_tol{1e-12};
   double feasibility_tol{1e-6};
-  int max_iterations{100};
+  int max_iterations{1000};
   double backtracking_c{0.5};
   double backtracking_tau{0.5};
   double backtracking_alpha_0{0.1};
