@@ -1189,6 +1189,7 @@ drake_cc_library(
         ":solver_base",
     ],
     implementation_deps = [
+        ":choose_best_solver",
         ":mathematical_program",
         ":solve",
         "//math:gradient",
@@ -2167,6 +2168,9 @@ drake_cc_googletest(
     name = "projected_gradient_descent_solver_test",
     deps = [
         ":projected_gradient_descent_solver",
+        ":solve",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 

@@ -1,5 +1,9 @@
 #include "drake/solvers/projected_gradient_descent_solver.h"
 
+#include <iostream>
+
+#include <drake/solvers/choose_best_solver.h>
+
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/solvers/mathematical_program.h"
@@ -62,7 +66,7 @@ KnownOptions ParseOptions(internal::SpecificOptions* options) {
 
 void ConvertQuadraticErrorCost(const VectorXd& x_desired, const MatrixXd& Q,
                                VectorXd* b, double* c) {
-  *b = -2 * Q * x_desired;
+  *b = -Q * x_desired;
   *c = x_desired.dot(Q * x_desired);
 }
 
@@ -78,6 +82,13 @@ void ProjectedGradientDescentSolver::DoSolve2(
     internal::SpecificOptions* options,
     MathematicalProgramResult* result) const {
   const KnownOptions parsed_options = ParseOptions(options);
+
+  VectorXd x_current = initial_guess;
+  for (int i = 0; i < x_current.size(); ++i) {
+    if (std::isnan(x_current[i])) {
+      x_current[i] = 0.0;
+    }
+  }
 
   // First, we have to build some machinery to quickly find which variables in
   // prog.decision_variables() each Binding<Cost> and Binding<Constraint> need.
@@ -120,8 +131,8 @@ void ProjectedGradientDescentSolver::DoSolve2(
       projection_prog_ptr->num_vars(), projection_prog_ptr->num_vars());
   VectorXd projection_cost_b;
   double projection_cost_c;
-  ConvertQuadraticErrorCost(initial_guess, projection_cost_Q,
-                            &projection_cost_b, &projection_cost_c);
+  ConvertQuadraticErrorCost(x_current, projection_cost_Q, &projection_cost_b,
+                            &projection_cost_c);
   auto projection_cost = projection_prog_ptr->AddQuadraticCost(
       2 * projection_cost_Q, projection_cost_b, projection_cost_c,
       projection_prog_ptr->decision_variables());
@@ -132,10 +143,13 @@ void ProjectedGradientDescentSolver::DoSolve2(
       [&](const VectorXd& x) {
         double cost = 0.0;
         for (int i = 0; i < ssize(costs); ++i) {
-          VectorXd x_relevant = cost_variable_indices[i].unaryExpr(x);
+          VectorXd x_relevant(cost_variable_indices[i].size());
+          for (int j = 0; j < cost_variable_indices[i].size(); ++j) {
+            x_relevant[j] = x[cost_variable_indices[i][j]];
+          }
           VectorXd y_output;
           costs[i].evaluator()->Eval(x_relevant, &y_output);
-          DRAKE_ASSERT(y_output.size() == 1);
+          DRAKE_THROW_UNLESS(y_output.size() == 1);
           cost += y_output[0];
         }
         return cost;
@@ -145,17 +159,28 @@ void ProjectedGradientDescentSolver::DoSolve2(
         // TODO(cohnt): Switch to using
         // MathematicalProgram::EvalBindingsAtInitialGuess?
         AutoDiffVecXd x_ad = math::InitializeAutoDiff(x);
-        AutoDiffVecXd y_ad = math::InitializeAutoDiff(VectorXd::Zero(x.size()));
+        VectorXd gradient = VectorXd::Zero(x.size());
         for (int i = 0; i < ssize(costs); ++i) {
-          AutoDiffVecXd x_relevant = cost_variable_indices[i].unaryExpr(x_ad);
+          AutoDiffVecXd x_relevant(cost_variable_indices[i].size());
+          for (int j = 0; j < cost_variable_indices[i].size(); ++j) {
+            x_relevant[j] = x_ad[cost_variable_indices[i][j]];
+          }
           AutoDiffVecXd y_relevant;
           costs[i].evaluator()->Eval(x_relevant, &y_relevant);
+          VectorXd gradient_part =
+              math::ExtractGradient(y_relevant).row(0).transpose();
           for (int j = 0; j < cost_variable_indices[i].size(); ++j) {
-            y_ad[cost_variable_indices[i][j]] += y_relevant[j];
+            gradient[cost_variable_indices[i][j]] += gradient_part[j];
           }
         }
-        return math::ExtractGradient(y_ad);
+        return gradient;
       });
+
+  std::unique_ptr<solvers::SolverInterface> projection_solver_interface;
+  if (!parsed_options.projection_solver_interface) {
+    const SolverId solver_id = ChooseBestSolver(prog);
+    projection_solver_interface = MakeSolver(solver_id);
+  }
   std::function<VectorXd(const VectorXd&)> projection_function =
       parsed_options.custom_projection_function.value_or(
           [&](const VectorXd& x) {
@@ -172,36 +197,48 @@ void ProjectedGradientDescentSolver::DoSolve2(
                   *projection_prog_ptr, x /* initial_guess */,
                   std::nullopt /* solver_options */, &projection_result);
             } else {
-              projection_result = Solve(*projection_prog_ptr);
+              DRAKE_DEMAND(projection_solver_interface != nullptr);
+              projection_solver_interface->Solve(
+                  *projection_prog_ptr, x /* initial_guess */,
+                  std::nullopt /* solver_options */, &projection_result);
             }
 
+            std::cout << "Projection solution result "
+                      << projection_result.get_solution_result() << std::endl;
             return projection_result.get_x_val();
           });
 
   const double convergence_tol_squared =
       parsed_options.convergence_tol * parsed_options.convergence_tol;
 
-  // Project the initial guess to feasibility.
-  VectorXd x = projection_function(initial_guess);
-
   // Finally, we perform the projected gradient descent loop.
+  // TODO(cohnt): Should we project to feasibility before starting the first
+  // iteration?
   bool converged = false;
   bool failed = false;
   for (int iteration_count = 0; iteration_count < parsed_options.max_iterations;
        ++iteration_count) {
     // Gradient step.
-    VectorXd descent_direction = gradient_function(x);
+    VectorXd descent_direction = -gradient_function(x_current);
+
+    std::cout << "x " << x_current[0] << "," << x_current[1] << "\t"
+              << std::endl;
+    std::cout << "descent_direction " << descent_direction[0] << ","
+              << descent_direction[1] << "\t" << std::endl;
 
     // Line search (using the Armijo condition).
-    const double tau = 0.9;
+    const double tau = 0.5;
     const double c = 0.5;
-    double alpha = 1.0;
+    double alpha = 0.1;
 
     double m = descent_direction.dot(descent_direction);
     double t = -c * m;
+    double old_cost = cost_function(x_current);
     while (true) {
-      double new_cost = cost_function(x + alpha * descent_direction);
-      if (new_cost >= alpha * t) {
+      double new_cost = cost_function(x_current + alpha * descent_direction);
+      std::cout << "old_cost " << old_cost << "\tnew_cost " << new_cost
+                << "\talpha*t " << alpha * t << std::endl;
+      if (old_cost - new_cost >= alpha * t) {
         break;
       } else {
         alpha *= tau;
@@ -209,17 +246,27 @@ void ProjectedGradientDescentSolver::DoSolve2(
     }
 
     // Now project back to feasibility.
-    VectorXd step = projection_function(x + alpha * descent_direction) - x;
-    x += step;
+    std::cout << "x before projection "
+              << (x_current + alpha * descent_direction)[0] << ","
+              << (x_current + alpha * descent_direction)[1] << std::endl;
+    VectorXd projected_value =
+        projection_function(x_current + alpha * descent_direction);
+    std::cout << "projected_value " << projected_value[0] << " "
+              << projected_value[1] << std::endl;
+    VectorXd step = projected_value - x_current;
+    x_current = projected_value;
 
     // Check that the projection step succeeded.
-    if (projection_prog_ptr->CheckSatisfied(
-            projection_prog_ptr->GetAllConstraints(), x,
+    if (!projection_prog_ptr->CheckSatisfied(
+            projection_prog_ptr->GetAllConstraints(), x_current,
             parsed_options.feasibility_tol)) {
       failed = true;
       break;
     }
 
+    std::cout << "step norm squared " << step.dot(step) << "\t"
+              << "convergence_tol_squared " << convergence_tol_squared
+              << std::endl;
     if (step.dot(step) < convergence_tol_squared) {
       converged = true;
       break;
@@ -227,11 +274,16 @@ void ProjectedGradientDescentSolver::DoSolve2(
   }
 
   // Populate results.
+  result->set_x_val(x_current);
+  result->set_optimal_cost(cost_function(x_current));
   if (converged) {
+    std::cout << "Converged" << std::endl;
     result->set_solution_result(SolutionResult::kSolutionFound);
   } else if (failed) {
+    std::cout << "Failed" << std::endl;
     result->set_solution_result(SolutionResult::kInfeasibleConstraints);
   } else {
+    std::cout << "Hit Iteration Limit" << std::endl;
     result->set_solution_result(SolutionResult::kIterationLimit);
   }
 }
@@ -263,7 +315,7 @@ std::string ProjectedGradientDescentSolver::MaxIterationsOptionName() {
 }
 
 SolverId ProjectedGradientDescentSolver::id() {
-  static const never_destroyed<SolverId> singleton{"ProjectedGradientDescent"};
+  static const never_destroyed<SolverId> singleton{"PGD"};
   return singleton.access();
 }
 
