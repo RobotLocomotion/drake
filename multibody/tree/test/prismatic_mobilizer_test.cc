@@ -249,6 +249,16 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
   MatrixX<double> Nplus(1, 1);
   slider_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus(0, 0), 1.0);
+
+  // Ensure Ṅ(q,q̇) = [0].
+  MatrixX<double> NDot(1, 1);
+  slider_->CalcNDotMatrix(*context_, &NDot);
+  EXPECT_EQ(NDot(0, 0), 0.0);
+
+  // Ensure Ṅ⁺(q,q̇) = [0].
+  MatrixX<double> NplusDot(1, 1);
+  slider_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_EQ(NplusDot(0, 0), 0.0);
 }
 
 TEST_F(PrismaticMobilizerTest, MapUsesN) {
