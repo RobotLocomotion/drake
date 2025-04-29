@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
 
@@ -108,7 +109,7 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, CustomGradientFunction) {
   prog.AddConstraint(x(0) <= 3.0);
 
   auto custom_gradient_function = [](const Vector1d& y) {
-    return 2.0 * y;
+    return Vector1d(2.0 * y);
   };
 
   ProjectedGradientDescentSolver solver;
@@ -121,6 +122,23 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, CustomGradientFunction) {
   auto x_value = result.GetSolution(x);
   EXPECT_NEAR(x_value[0], 1.0, 1e-4);
   EXPECT_NEAR(result.get_optimal_cost(), 1.0, 1e-4);
+}
+
+GTEST_TEST(ProjectedGradientDescentSolverTest, ProjectionSolverInterface) {
+  // Verify that ProjectedGradientDescentSolver uses the provided
+  // ProjectionSolverInterface, by providing an invalid one, and catching the
+  // error for an unsupported program type.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<1>();
+  prog.AddConstraint(pow(x(0), 2) >= 1);  // Generic nonlinear constraint.
+
+  ProjectedGradientDescentSolver solver;
+  EqualityConstrainedQPSolver projection_solver;
+  solver.SetProjectionSolverInterface(&projection_solver);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver.Solve(prog, {}, {}),
+      ".*EqualityConstrainedQPSolver is unable to solve.*");
 }
 
 }  // namespace test
