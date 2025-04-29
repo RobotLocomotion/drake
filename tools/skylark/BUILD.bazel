@@ -1,7 +1,13 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_py.bzl", "drake_py_binary", "drake_py_unittest")
 
 package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name="debug",
+    values = {"compilation_mode": "dbg"}
+)
 
 config_setting(
     name = "linux",
@@ -11,6 +17,11 @@ config_setting(
 config_setting(
     name = "osx",
     constraint_values = ["@platforms//os:osx"],
+)
+
+selects.config_setting_group(
+    name = "linux_debug",
+    match_all = [":linux", ":debug"]
 )
 
 drake_py_binary(
