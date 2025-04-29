@@ -116,7 +116,7 @@ void DeformableModel<T>::SetWallBoundaryCondition(DeformableBodyId id,
                               {p_WV, Vector3<T>::Zero(), Vector3<T>::Zero()});
     }
   }
-  fem_model.SetDirichletBoundaryCondition(std::move(bc));
+  fem_model.SetDirichletBoundaryCondition(bc);
 }
 
 template <typename T>

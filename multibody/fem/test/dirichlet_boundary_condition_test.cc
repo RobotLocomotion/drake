@@ -136,6 +136,69 @@ TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
       "An index of the Dirichlet boundary condition is out of range.");
 }
 
+/* Tests merging  */
+TEST_F(DirichletBoundaryConditionTest, Merge) {
+  /* Disjoint BCs. */
+  {
+    DirichletBoundaryCondition<double> another_bc;
+    const Vector3<double> bc_q(10, 20, 30);
+    const Vector3<double> bc_v(40, 50, 60);
+    const Vector3<double> bc_a(70, 80, 90);
+    another_bc.AddBoundaryCondition(FemNodeIndex(1), {bc_q, bc_v, bc_a});
+    bc_.Merge(another_bc);
+    Vector<double, kNumDofs> expected_q, expected_v, expected_a;
+    expected_q << 1, 2, 3, 10, 20, 30;
+    expected_v << 4, 5, 6, 40, 50, 60;
+    expected_a << 7, 8, 9, 70, 80, 90;
+    bc_.ApplyBoundaryConditionToState(fem_state_.get());
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
+  }
+  {
+    /* Overlapping BCs. */
+    DirichletBoundaryCondition<double> yet_another_bc;
+    const Vector3<double> bc_q(100, 200, 300);
+    const Vector3<double> bc_v(400, 500, 600);
+    const Vector3<double> bc_a(700, 800, 900);
+    yet_another_bc.AddBoundaryCondition(FemNodeIndex(0), {bc_q, bc_v, bc_a});
+    bc_.Merge(yet_another_bc);
+    Vector<double, kNumDofs> expected_q, expected_v, expected_a;
+    expected_q << 100, 200, 300, 10, 20, 30;
+    expected_v << 400, 500, 600, 40, 50, 60;
+    expected_a << 700, 800, 900, 70, 80, 90;
+    bc_.ApplyBoundaryConditionToState(fem_state_.get());
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
+  }
+  {
+    /* Empty BC. */
+    DirichletBoundaryCondition<double> empty_bc;
+    bc_.Merge(empty_bc);
+    Vector<double, kNumDofs> expected_q, expected_v, expected_a;
+    expected_q << 100, 200, 300, 10, 20, 30;
+    expected_v << 400, 500, 600, 40, 50, 60;
+    expected_a << 700, 800, 900, 70, 80, 90;
+    bc_.ApplyBoundaryConditionToState(fem_state_.get());
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
+  }
+  {
+    /* Merge with self. */
+    bc_.Merge(bc_);
+    Vector<double, kNumDofs> expected_q, expected_v, expected_a;
+    expected_q << 100, 200, 300, 10, 20, 30;
+    expected_v << 400, 500, 600, 40, 50, 60;
+    expected_a << 700, 800, 900, 70, 80, 90;
+    bc_.ApplyBoundaryConditionToState(fem_state_.get());
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
+    EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
+  }
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace internal
