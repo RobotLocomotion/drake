@@ -7,6 +7,11 @@
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solve.h"
+#include "drake/solvers/test/linear_program_examples.h"
+#include "drake/solvers/test/mathematical_program_test_util.h"
+#include "drake/solvers/test/optimization_examples.h"
+#include "drake/solvers/test/quadratic_program_examples.h"
+#include "drake/solvers/test/second_order_cone_program_examples.h"
 
 namespace drake {
 namespace solvers {
@@ -25,6 +30,10 @@ class SimpleUnconstrainedQP : public ::testing::Test {
   MathematicalProgram prog_;
   ProjectedGradientDescentSolver solver_;
 };
+
+GTEST_TEST(ProjectedGradientDescentSolver, NameTest) {
+  EXPECT_EQ(ProjectedGradientDescentSolver::id().name(), "PGD");
+}
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, QP) {
   // First program is unconstrained
@@ -273,16 +282,42 @@ TEST_F(SimpleUnconstrainedQP, BacktrackingTau) {
 
 TEST_F(SimpleUnconstrainedQP, BacktrackingAlpha0) {
   SolverOptions options;
-  options.SetOption(ProjectedGradientDescentSolver::id(),
-                    ProjectedGradientDescentSolver::BacktrackingAlpha0OptionName(),
-                    0.5);
+  options.SetOption(
+      ProjectedGradientDescentSolver::id(),
+      ProjectedGradientDescentSolver::BacktrackingAlpha0OptionName(), 0.5);
   EXPECT_NO_THROW(solver_.Solve(prog_, {}, options));
 
-  options.SetOption(ProjectedGradientDescentSolver::id(),
-                    ProjectedGradientDescentSolver::BacktrackingAlpha0OptionName(),
-                    0.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(solver_.Solve(prog_, {}, options),
-                              ".*BacktrackingAlpha0 should be a non-negative number.*");
+  options.SetOption(
+      ProjectedGradientDescentSolver::id(),
+      ProjectedGradientDescentSolver::BacktrackingAlpha0OptionName(), 0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      solver_.Solve(prog_, {}, options),
+      ".*BacktrackingAlpha0 should be a non-negative number.*");
+}
+
+TEST_F(InfeasibleLinearProgramTest0, TestProjectedGradientDescentSolver) {
+  prog_->SetInitialGuessForAllVariables(Eigen::Vector2d(1, 2));
+  ProjectedGradientDescentSolver solver;
+  auto result = solver.Solve(*prog_, {}, {});
+  EXPECT_EQ(result.get_solution_result(),
+            SolutionResult::kInfeasibleConstraints);
+}
+
+TEST_F(UnboundedLinearProgramTest0, TestProjectedGradientDescentSolver) {
+  prog_->SetInitialGuessForAllVariables(Eigen::Vector2d::Zero());
+  ProjectedGradientDescentSolver solver;
+  auto result = solver.Solve(*prog_, {}, {});
+  EXPECT_EQ(result.get_solution_result(), SolutionResult::kIterationLimit);
+}
+
+GTEST_TEST(ProjectedGradientDescentSolverTest, TestNonconvexQP) {
+  ProjectedGradientDescentSolver solver;
+  TestNonconvexQP(solver, false);
+}
+
+GTEST_TEST(ProjectedGradientDescentSolverTest, TestL2NormCost) {
+  ProjectedGradientDescentSolver solver;
+  TestL2NormCost(solver, 1e-6);
 }
 
 }  // namespace test
