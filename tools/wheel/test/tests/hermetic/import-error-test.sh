@@ -2,9 +2,9 @@
 
 set -eu -o pipefail
 
-cd "$(mktemp -d)"
+cd "$(mktemp -d -p /tmp/drake-wheel-test)"
 
-root=/opt/drake-wheel-test/python/lib/python*/site-packages/pydrake
+root=/tmp/drake-wheel-test/python/lib/python*/site-packages/pydrake
 
 # Remove libdrake.so so imports will fail.
 # (Note: Because this test tampers with the test environment, it should only be

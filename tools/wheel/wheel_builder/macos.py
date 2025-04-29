@@ -14,9 +14,6 @@ from .common import test_root, find_tests
 
 from .macos_types import PythonTarget
 
-# Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
-_files_to_remove = []
-
 # This is the complete set of defined targets (i.e. potential wheels). By
 # default, all targets are built, but the user may down-select from this set.
 # On macOS (unlike Linux), this is just the set of Python versions targeted.
@@ -27,18 +24,6 @@ python_targets = (
     PythonTarget(3, 12),
     PythonTarget(3, 13),
 )
-
-
-@atexit.register
-def _cleanup():
-    """
-    Removes temporary artifacts on exit.
-    """
-    for f in _files_to_remove:
-        try:
-            os.unlink(f)
-        except FileNotFoundError:
-            gripe(f'Warning: failed to remove \'{f}\'?')
 
 
 def _find_wheel(path, version, python_target):
@@ -115,9 +100,6 @@ def build(options):
         die('Nothing to do! (Python version selection '
             'resulted in an empty set of wheels)')
 
-    # Set up build environment.
-    os.makedirs(build_root, exist_ok=True)
-
     # Sanitize the build/test environment.
     environment = os.environ.copy()
     environment.pop('PYTHONPATH')
@@ -146,9 +128,8 @@ def build(options):
     environment['DRAKE_VERSION'] = options.version
 
     # Create the snopt source archive (and pass along as an environment var).
-    snopt_tgz = os.path.join(resource_root, 'image', 'snopt.tar.gz')
+    snopt_tgz = os.path.join(build_root, 'snopt', 'snopt.tar.gz')
     environment['SNOPT_PATH'] = snopt_tgz
-    _files_to_remove.append(snopt_tgz)
     create_snopt_tgz(snopt_path=options.snopt_path, output=snopt_tgz)
 
     # Build the wheel(s).
@@ -180,7 +161,6 @@ def build(options):
         os.unlink(wheel_root)
 
     if not options.keep_build:
-        shutil.rmtree('/opt/drake-dist')
         shutil.rmtree(build_root)
         if options.test:
             shutil.rmtree(test_root)
