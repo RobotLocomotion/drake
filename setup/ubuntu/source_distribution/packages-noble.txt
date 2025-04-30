@@ -7,7 +7,6 @@ libgl-dev
 libglib2.0-dev
 libglx-dev
 liblapack-dev
-libmumps-seq-dev
 libopengl-dev
 libx11-dev
 nasm

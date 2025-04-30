@@ -1545,23 +1545,6 @@ config_setting(
     constraint_values = ["@platforms//os:osx"],
 )
 
-# Re-run ipopt_solver_test, but with the MUMPS linear solver.
-# Remove on 2025-05-01.
-drake_sh_test(
-    name = "ipopt_solver_mumps_test",
-    srcs = [":ipopt_solver_test"],
-    args = select({
-        ":osx": [
-            # MUMPS only exists on Ubuntu (not macOS).
-            "--gtest_filter=-*",
-        ],
-        "//conditions:default": [
-            "--linear_solver=mumps",
-        ],
-    }),
-    data = [":ipopt_solver_test"],
-)
-
 drake_cc_googletest(
     name = "linear_complementary_problem_test",
     deps = [

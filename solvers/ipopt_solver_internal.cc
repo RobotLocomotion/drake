@@ -764,26 +764,6 @@ void IpoptSolver_NLP::EvaluateConstraints(Index n, const Number* x,
   }
 }
 
-// Remove 2025-05-01.
-std::vector<std::string_view> GetSupportedIpoptLinearSolvers() {
-  std::vector<std::string_view> result;
-  // IPOPT's upstream default linear solver is MA27, but it is not freely
-  // redistributable so Drake cannot use it. In Drake's Ubuntu and macOS build
-  // recipes for IPOPT, one or both of SPRAL or MUMPS linear solvers will be
-  // available. We'll ask IPOPT which of those two linear solver(s) have been
-  // built into Drake.
-  const IpoptLinearSolver solver_mask =
-      IpoptGetAvailableLinearSolvers(/* buildinonly = */ 1);
-  // The first item in the result will be Drake's default linear solver.
-  if (solver_mask & IPOPTLINEARSOLVER_SPRAL) {
-    result.emplace_back("spral");
-  }
-  if (solver_mask & IPOPTLINEARSOLVER_MUMPS) {
-    result.emplace_back("mumps");
-  }
-  return result;
-}
-
 }  // namespace internal
 }  // namespace solvers
 }  // namespace drake

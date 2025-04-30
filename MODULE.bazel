@@ -192,7 +192,6 @@ use_repo(
     "mpmath_py_internal",
     "msgpack_internal",
     "mujoco_menagerie_internal",
-    "mumps_internal",
     "mypy_extensions_internal",
     "mypy_internal",
     "nanoflann_internal",
