@@ -2097,6 +2097,73 @@ GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
       ".*prismatic.*revolute.*weld.*Reverse.*ordering.*");
 }
 
+// This test verifies that these two issues are fixed:
+//  - #9939 (duplicate welds give a bad error message)
+//  - #17429 (can't weld anything but base link)
+//
+// Issue #17429 complained that welding a non-base body to World failed.
+// This is a model of the system shown in that issue:
+//     base -p-> waist -r-> waist1 -r-> waist2 -r-> torso -r-> arm
+//       legend: p=prismatic, r=revolute, parent -> child
+// When "base" is welded to World, the parent->child directions are preserved
+// as inboard->outboard directions in the tree. But if we weld "waist" or
+// "torso" to World then some of the tree's mobilizers have to be reversed from
+// the joints. That should work as of PR #22949 (2025-04-30).
+GTEST_TEST(MultibodyPlantTest, WeldOfNonBaseBody) {
+  auto fill_plant = [](MultibodyPlant<double>* plant) {
+    const auto& base = plant->AddRigidBody("base");
+    const auto& waist = plant->AddRigidBody("waist");
+    const auto& waist1 = plant->AddRigidBody("waist1");
+    const auto& waist2 = plant->AddRigidBody("waist2");
+    const auto& torso = plant->AddRigidBody("torso");
+    const auto& arm = plant->AddRigidBody("arm");
+
+    plant->AddJoint<PrismaticJoint>("prismatic_z", base, {}, waist, {},
+                                    Vector3d(0, 0, 1));
+    plant->AddJoint<RevoluteJoint>("torso_joint1", waist, {}, waist1, {},
+                                   Vector3d(1, 0, 0));
+    plant->AddJoint<RevoluteJoint>("torso_joint2", waist1, {}, waist2, {},
+                                   Vector3d(0, 1, 0));
+    plant->AddJoint<RevoluteJoint>("torso_joint3", waist2, {}, torso, {},
+                                   Vector3d(0, 1, 0));
+    plant->AddJoint<RevoluteJoint>("shoulder", torso, {}, arm, {},
+                                   Vector3d(1, 1, 1));
+  };
+
+  // Issue #17429, first with no welds so the robot is floating.
+  MultibodyPlant<double> floating(0.0);
+  fill_plant(&floating);
+  EXPECT_NO_THROW(floating.Finalize());
+
+  // Issue #17429, the three welded cases mentioned above.
+  for (auto body : {"base", "waist", "torso"}) {
+    MultibodyPlant<double> plant(0.0);
+    fill_plant(&plant);
+    plant.AddJoint<WeldJoint>("body_to_world", plant.world_body(), {},
+                              plant.GetRigidBodyByName(body), {},
+                              RigidTransformd());
+    EXPECT_NO_THROW(plant.Finalize());
+  }
+
+  // Issue #9939, verify that welding the same body twice now produces a
+  // reasonable error message.
+  MultibodyPlant<double> bad_double_weld(0.0);
+  fill_plant(&bad_double_weld);
+  bad_double_weld.AddJoint<WeldJoint>(
+      "base_to_world1", bad_double_weld.world_body(), {},
+      bad_double_weld.GetRigidBodyByName("base"), {}, RigidTransformd());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bad_double_weld.AddJoint<WeldJoint>(
+          "base_to_world2", bad_double_weld.world_body(), {},
+          bad_double_weld.GetRigidBodyByName("base"), {}, RigidTransformd()),
+      "AddJoint.*already.*base_to_world1.*world.*base.*base_to_world2.*"
+      "not allowed.*");
+
+  // The attempt to add the redundant joint should have been ignored.
+  EXPECT_NO_THROW(bad_double_weld.Finalize());
+}
+
 // Currently we don't support automatic modeling of systems where the links
 // and joints form topological loops. Make sure we reject those for now.
 GTEST_TEST(MultibodyPlantTest, UnsupportedTopologicalLoop) {
