@@ -37,7 +37,7 @@ class JointLimits1D : public IrisTestFixture {
   geometry::optimization::Hyperellipsoid starting_ellipsoid_;
   geometry::optimization::HPolyhedron domain_;
 
-  inline static const std::string urdf_ = R"(
+  const std::string urdf_ = R"(
 <robot name="limits">
   <link name="movable">
     <collision>
@@ -121,7 +121,7 @@ class BlockOnGround : public IrisTestFixture {
   geometry::optimization::Hyperellipsoid starting_ellipsoid_;
   geometry::optimization::HPolyhedron domain_;
 
-  inline static const std::string urdf_ = R"(
+  const std::string urdf_ = R"(
 <robot name="block">
   <link name="fixed">
     <collision name="ground">
