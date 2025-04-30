@@ -23,6 +23,9 @@ namespace multibody {
 template <typename T>
 class MultibodyPlant;
 
+// TODO(xuchenhan-tri): DeformableModel needs to be able to query the
+// DeformableBodyConfig for registered bodies.
+
 /** DeformableModel implements the interface in PhysicalModel and provides the
  functionalities to specify deformable bodies. Unlike rigid bodies, the shape of
  deformable bodies can change in a simulation. Each deformable body is modeled

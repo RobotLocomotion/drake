@@ -170,14 +170,18 @@ requirements that must be satisfied:
   proximity tag recognized are `<drake:mu_dynamic>`,
   `<drake:hunt_crossley_dissipation>`, and `drake:relaxation_time>`.
   All other tags are not allowed.
-- **At most one `<visual>` element**: a single `<visual>` may be present to
-  provide a visual representation of the deformable body. The `<visual>` must
-  contain a single `<geometry>` element, which must contain a single `<mesh>`
-  element or a single `</empty>` element. If a `<mesh>` element is supplied,
+- **At most one `<visual>` element**: The default visual representation of the
+  deformable body is the surface of the simulated tetrahedral mesh. However,
+  a single `<visual>` element may be present to provide an alternative visual
+  representation of the deformable body. Currently, the visual geometry is
+  only used for rendering (and the surface of the simulated mesh is *always*
+  used for visualization). Therefore, it's only meaningful to specify a non-empty
+  `<geometry>` element if the `<drake:perception_properties>` element is not
+  disabled; otherwise, the geometry supplied will be ignored with a warning. The
+  `<geometry>` element, if non-empty, must contain a single `<mesh>` element, and
   the URI of the mesh must point to a `.obj` file, and the (potentially textured)
-  surface described by the `.obj` file is used for rendering. If an empty element
-  is prescribed, the surface of the collision mesh is used for rendering and
-  visualization. More than one `<visual>` is an error.
+  surface described by the `.obj` file is used for rendering. More than one
+  `<visual>` is an error.
 
 Violating any of these rules results in a *parsing error*.
 

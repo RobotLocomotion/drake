@@ -21,7 +21,6 @@
         <material>
           <diffuse>0.82 0.71 0.55 1</diffuse>
         </material>
-        <drake:accepting_renderer>nothing</drake:accepting_renderer>
       </visual>
       <drake:deformable_properties>
         <drake:youngs_modulus>5e4</drake:youngs_modulus>

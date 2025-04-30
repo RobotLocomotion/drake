@@ -4221,7 +4221,7 @@ TEST_F(SdfParserTest, ParseMinimalDeformableModel) {
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
-      <drake:deformable_properties></drake:deformable_properties>
+      <drake:deformable_properties/>
     </link>
   </model>)";
 
@@ -4266,6 +4266,7 @@ TEST_F(SdfParserTest, ParseFullFeatureDeformableModel) {
 
   ParseTestString(sdf);
   EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 0);
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
   const DeformableBodyId body_id =
@@ -4298,7 +4299,7 @@ TEST_F(SdfParserTest, MultipleDeformableBodies) {
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
-      <drake:deformable_properties></drake:deformable_properties>
+      <drake:deformable_properties/>
     </link>
     <link name='body2'>
       <collision name='collision'>
@@ -4306,7 +4307,7 @@ TEST_F(SdfParserTest, MultipleDeformableBodies) {
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
-      <drake:deformable_properties></drake:deformable_properties>
+      <drake:deformable_properties/>
     </link>
   </model>)";
 
@@ -4327,7 +4328,7 @@ TEST_F(SdfParserTest, MixingModelAndDeformableModel) {
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
-      <drake:deformable_properties></drake:deformable_properties>
+      <drake:deformable_properties/>
     </link>
     <link name='rigid'>
     </link>
@@ -4350,7 +4351,7 @@ TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
-      <drake:deformable_properties></drake:deformable_properties>
+      <drake:deformable_properties/>
     </link>
   </model>)";
   ParseTestString(sdf);
@@ -4360,125 +4361,56 @@ TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
               MatchesRegex(".*deformable.*without.*geometry source.*"));
 }
 
-TEST_F(SdfParserTest, IllegalYoungsModulus) {
+TEST_F(SdfParserTest, IllegalDeformablePropertiesParsing) {
   AddSceneGraph();
-  const std::string sdf = R"(
-  <model name='deformable'>
-    <link name='body'>
-      <collision name='collision'>
-        <geometry>
-          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
-        </geometry>
-      </collision>
-      <drake:deformable_properties>
-        <drake:youngs_modulus>0.0</drake:youngs_modulus>
-      </drake:deformable_properties>
-    </link>
-  </model>)";
-  ParseTestString(sdf);
-  EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(), MatchesRegex(".*Young's modulus.*"));
-}
 
-TEST_F(SdfParserTest, IllegalPoissonsRatio) {
-  AddSceneGraph();
-  const std::string sdf = R"(
-  <model name='deformable'>
-    <link name='body'>
-      <collision name='collision'>
-        <geometry>
-          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
-        </geometry>
-      </collision>
-      <drake:deformable_properties>
-        <drake:poissons_ratio>1.5</drake:poissons_ratio>
-      </drake:deformable_properties>
-    </link>
-  </model>)";
-  ParseTestString(sdf);
-  EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(), MatchesRegex(".*Poisson's ratio.*"));
-}
+  constexpr const char* sdf_template = R"""(
+<model name='deformable_with_illegal_{suffix}'>
+  <link name='body_{suffix}'>
+    <collision name='collision'>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/single_tet.vtk</uri>
+        </mesh>
+      </geometry>
+    </collision>
+    <drake:deformable_properties>
+      {snippet}
+    </drake:deformable_properties>
+  </link>
+</model>)""";
 
-TEST_F(SdfParserTest, IllegalMassDamping) {
-  AddSceneGraph();
-  const std::string sdf = R"(
-  <model name='deformable'>
-    <link name='body'>
-      <collision name='collision'>
-        <geometry>
-          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
-        </geometry>
-      </collision>
-      <drake:deformable_properties>
-        <drake:mass_damping>-1.0</drake:mass_damping>
-      </drake:deformable_properties>
-    </link>
-  </model>)";
-  ParseTestString(sdf);
-  EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(), MatchesRegex(".*Mass damping.*"));
-}
+  struct TestCase {
+    std::string snippet;  // the single bad-property XML
+    std::string suffix;   // used in the model name
+    std::string regex;    // expected error regex
+  };
 
-TEST_F(SdfParserTest, IllegalStiffnessDamping) {
-  AddSceneGraph();
-  const std::string sdf = R"(
-  <model name='deformable'>
-    <link name='body'>
-      <collision name='collision'>
-        <geometry>
-          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
-        </geometry>
-      </collision>
-      <drake:deformable_properties>
-        <drake:stiffness_damping>-1.0</drake:stiffness_damping>
-      </drake:deformable_properties>
-    </link>
-  </model>)";
-  ParseTestString(sdf);
-  EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(), MatchesRegex(".*Stiffness damping.*"));
-}
+  const std::vector<TestCase> cases = {
+      {"<drake:youngs_modulus>0.0</drake:youngs_modulus>", "youngs_modulus",
+       ".*Young's modulus.*"},
+      {"<drake:poissons_ratio>1.5</drake:poissons_ratio>", "poissons_ratio",
+       ".*Poisson's ratio.*"},
+      {"<drake:mass_damping>-1.0</drake:mass_damping>", "mass_damping",
+       ".*Mass damping.*"},
+      {"<drake:stiffness_damping>-1.0</drake:stiffness_damping>",
+       "stiffness_damping", ".*Stiffness damping.*"},
+      {"<drake:mass_density>-1.0</drake:mass_density>", "mass_density",
+       ".*Mass density.*"},
+      {"<drake:material_model>not_a_material_model</drake:material_model>",
+       "material_model", ".*material_model.*not_a_material_model.*"},
+  };
 
-TEST_F(SdfParserTest, IllegalMassDensity) {
-  AddSceneGraph();
-  const std::string sdf = R"(
-  <model name='deformable'>
-    <link name='body'>
-      <collision name='collision'>
-        <geometry>
-          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
-        </geometry>
-      </collision>
-      <drake:deformable_properties>
-        <drake:mass_density>-1.0</drake:mass_density>
-      </drake:deformable_properties>
-    </link>
-  </model>)";
-  ParseTestString(sdf);
-  EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(), MatchesRegex(".*Mass density.*"));
-}
+  for (auto const& c : cases) {
+    SCOPED_TRACE(c.suffix);
+    const std::string sdf =
+        fmt::format(sdf_template, fmt::arg("snippet", c.snippet),
+                    fmt::arg("suffix", c.suffix));
 
-TEST_F(SdfParserTest, IllegalMaterialModel) {
-  AddSceneGraph();
-  const std::string sdf = R"(
-  <model name='deformable'>
-    <link name='body'>
-      <collision name='collision'>
-        <geometry>
-          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
-        </geometry>
-      </collision>
-      <drake:deformable_properties>
-        <drake:material_model>not_a_material_model</drake:material_model>
-      </drake:deformable_properties>
-    </link>
-  </model>)";
-  ParseTestString(sdf);
-  EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(),
-              MatchesRegex(".*material_model.*not_a_material_model.*"));
+    ParseTestString(sdf);
+    EXPECT_EQ(NumErrors(), 1);
+    EXPECT_THAT(TakeError(), MatchesRegex(c.regex));
+  }
 }
 
 TEST_F(SdfParserTest, ComposedPoseForDeformable) {
@@ -4493,7 +4425,7 @@ TEST_F(SdfParserTest, ComposedPoseForDeformable) {
           <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
         </geometry>
       </collision>
-      <drake:deformable_properties></drake:deformable_properties>
+      <drake:deformable_properties/>
     </link>
   </model>)";
   ParseTestString(sdf);
@@ -4513,6 +4445,33 @@ TEST_F(SdfParserTest, ComposedPoseForDeformable) {
   // clang-format on
   EXPECT_TRUE(CompareMatrices(q_WB, q_WB_expected,
                               4.0 * std::numeric_limits<double>::epsilon()));
+}
+
+/* Specifying a non-empty visual geometry when perception properties are turned
+ off is a warning. */
+TEST_F(SdfParserTest, DisabledPerceptionWithVisualMesh) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <visual name='visual'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/tri_cube.obj</uri></mesh>
+        </geometry>
+        <drake:perception_properties enabled="false"/>
+      </visual>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumWarnings(), 1);
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*non-empty.*geometry.*ignored.*"));
 }
 
 }  // namespace
