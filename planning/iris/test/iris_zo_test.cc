@@ -258,91 +258,9 @@ TEST_F(BlockOnGround, IrisZoTest) {
   PlotEnvironmentAndRegion(region);
 }
 
-struct IdentityConstraint {
-  static size_t numInputs() { return 2; }
-  static size_t numOutputs() { return 2; }
-  template <typename ScalarType>
-  void eval(const Eigen::Ref<const VectorX<ScalarType>>& x,
-            VectorX<ScalarType>* y) const {
-    (*y) = x;
-  }
-};
-
 // Reproduced from the IrisInConfigurationSpace unit tests.
-// A (somewhat contrived) example of a concave configuration-space obstacle
-// (resulting in a convex configuration-space, which we approximate with
-// polytopes):  A simple pendulum of length `l` with a sphere at the tip of
-// radius `r` on a vertical track, plus a ground plane at z=0.  The
-// configuration space is given by the joint limits and z + l*cos(theta) >= r.
-// The region is also visualized at
-// https://www.desmos.com/calculator/flshvay78b. In addition to testing the
-// convex space, this was originally a test for which Ibex found
-// counter-examples that Snopt missed; now Snopt succeeds due to having
-// options.num_collision_infeasible_samples > 1.
-GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
-  const double l = 1.5;
-  const double r = 0.1;
-
-  std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
-  meshcat->Delete("face_pt");
-  meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
-                           -3.25, 3.25, -3.25, 3.25);
-  meshcat->SetProperty("/Grid", "visible", true);
-  Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.5, 1.5);
-  Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
-  for (int i = 0; i < theta1s.size(); ++i) {
-    points(0, i) = r - l * cos(theta1s[i]);
-    points(1, i) = theta1s[i];
-    points(0, points.cols() - i - 1) = 0;
-    points(1, points.cols() - i - 1) = theta1s[i];
-  }
-  meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
-
-  const std::string convex_urdf = fmt::format(
-      R"(
-<robot name="pendulum_on_vertical_track">
-  <link name="fixed">
-    <collision name="ground">
-      <origin rpy="0 0 0" xyz="0 0 -1"/>
-      <geometry><box size="10 10 2"/></geometry>
-    </collision>
-  </link>
-  <joint name="fixed_link_weld" type="fixed">
-    <parent link="world"/>
-    <child link="fixed"/>
-  </joint>
-  <link name="cart">
-  </link>
-  <joint name="track" type="prismatic">
-    <axis xyz="0 0 1"/>
-    <limit lower="-{l}" upper="0"/>
-    <parent link="world"/>
-    <child link="cart"/>
-  </joint>
-  <link name="pendulum">
-    <collision name="ball">
-      <origin rpy="0 0 0" xyz="0 0 {l}"/>
-      <geometry><sphere radius="{r}"/></geometry>
-    </collision>
-  </link>
-  <joint name="pendulum" type="revolute">
-    <axis xyz="0 1 0"/>
-    <limit lower="-1.57" upper="1.57"/>
-    <parent link="cart"/>
-    <child link="pendulum"/>
-  </joint>
-</robot>
-)",
-      fmt::arg("l", l), fmt::arg("r", r));
-
-  const Vector2d sample{-0.5, 0.0};
+TEST_F(ConvexConfigurationSpace, IrisZoTest) {
   IrisZoOptions options;
-
-  // This point should be outside of the configuration space (in collision).
-  // The particular value was found by visual inspection using meshcat.
-  const double z_test = 0, theta_test = -1.55;
-  // Confirm that the pendulum is colliding with the wall with true kinematics:
-  EXPECT_LE(z_test + l * std::cos(theta_test), r);
 
   // Turn on meshcat for addition debugging visualizations.
   // This example is truly adversarial for IRIS. After one iteration, the
@@ -352,170 +270,114 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   // but because the objective is actually pulling the counter-example search
   // away from that corner. Open the meshcat visualization to step through the
   // details!
-  options.meshcat = meshcat;
+  meshcat_->Delete();
+  options.meshcat = meshcat_;
   options.verbose = true;
-  Hyperellipsoid starting_ellipsoid =
-      Hyperellipsoid::MakeHypersphere(1e-2, sample);
-  HPolyhedron region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
-  if (!region.PointInSet(Vector2d{z_test, theta_test})) {
-    log()->info("Our test point is not in the set");
-  }
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+  PlotEnvironmentAndRegion(region);
+}
 
-  EXPECT_EQ(region.ambient_dimension(), 2);
-  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
+// Verify that we throw a reasonable error when the initial point is in
+// collision, and when the initial point violates an additional constraint.
+TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadInitialEllipsoid) {
+  IrisZoOptions options;
+  options.prog_with_additional_constraints = &prog_;
 
-  {
-    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-    points.resize(3, vregion.vertices().cols() + 1);
-    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
-    points.topRightCorner(2, 1) = vregion.vertices().col(0);
-    points.bottomRows<1>().setZero();
-    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
-
-    meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
-    meshcat->SetTransform("Test point", math::RigidTransform(Eigen::Vector3d(
-                                            z_test, theta_test, 0)));
-
-    MaybePauseForUser();
-  }
-
-  // Another version of the test, adding the additional constraint that
-  // x <= -0.3.
-  solvers::MathematicalProgram prog;
-  auto q = prog.NewContinuousVariables(2, "q");
-  Eigen::RowVectorXd a(2);
-  a << 1, 0;
-  double lb = -std::numeric_limits<double>::infinity();
-  double ub = -0.3;
-  prog.AddLinearConstraint(a, lb, ub, q);
-  options.prog_with_additional_constraints = &prog;
-  options.max_iterations = 1;
-  options.max_iterations_separating_planes = 1;
-
-  // Verify that we throw a reasonable error when the initial point is in
-  // collision, and when the initial point violates an additional constraint.
   Hyperellipsoid ellipsoid_in_collision =
       Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-1.0, 1.0));
   Hyperellipsoid ellipsoid_violates_constraint =
       Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-0.1, 0.0));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisZoFromUrdf(convex_urdf, ellipsoid_in_collision, options),
+      IrisZo(*checker_, ellipsoid_in_collision, domain_, options),
       ".*Starting ellipsoid center.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisZoFromUrdf(convex_urdf, ellipsoid_violates_constraint, options),
+      IrisZo(*checker_, ellipsoid_violates_constraint, domain_, options),
       ".*Starting ellipsoid center.*");
+}
 
-  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
+TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, IrisZoTest) {
+  IrisZoOptions options;
+  options.prog_with_additional_constraints = &prog_;
+  options.max_iterations = 1;
+  options.max_iterations_separating_planes = 1;
 
-  // Due to the configuration space margin, this point can never be in the
-  // region.
-  Vector2d query_point_not_in_set(-0.29, 0.0);
-  Vector2d query_point_in_set(-0.31, 0.0);
-  EXPECT_FALSE(region.PointInSet(query_point_not_in_set));
-  EXPECT_TRUE(region.PointInSet(query_point_in_set));
+  meshcat_->Delete();
+  options.meshcat = meshcat_;
 
-  {
-    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-    points.resize(3, vregion.vertices().cols() + 1);
-    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
-    points.topRightCorner(2, 1) = vregion.vertices().col(0);
-    points.bottomRows<1>().setZero();
-    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+  PlotEnvironmentAndRegion(region);
+}
 
-    MaybePauseForUser();
-  }
-
-  // We also verify the code path when one of the additional constraints is not
-  // threadsafe. We construct the constraint (-2, -0.5) <= (x, y) <= (0, 1.5) in
-  // terms of the above struct IdentityConstraint, which is not tagged as
-  // threadsafe.
-  Eigen::VectorXd simple_constraint_lb = Eigen::Vector2d(-2.0, -0.5);
-  Eigen::VectorXd simple_constraint_ub = Eigen::Vector2d(0.0, 1.5);
-  std::shared_ptr<solvers::Constraint> simple_constraint =
-      std::make_shared<solvers::EvaluatorConstraint<
-          solvers::FunctionEvaluator<IdentityConstraint>>>(
-          std::make_shared<solvers::FunctionEvaluator<IdentityConstraint>>(
-              IdentityConstraint{}),
-          simple_constraint_lb, simple_constraint_ub);
-  prog.AddConstraint(simple_constraint, q);
-
+TEST_F(ConvexConfigurationSpaceWithNotThreadsafeConstraint, IrisZoTest) {
+  IrisZoOptions options;
+  options.prog_with_additional_constraints = &prog_;
   options.max_iterations = 3;
   options.max_iterations_separating_planes = 20;
 
-  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options);
-  query_point_not_in_set = Vector2d(-1.0, -0.55);
-  query_point_in_set = Vector2d(-1.0, -0.45);
-  EXPECT_FALSE(region.PointInSet(query_point_not_in_set));
-  EXPECT_TRUE(region.PointInSet(query_point_in_set));
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+}
+
+TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadContainmentPoint) {
+  IrisZoOptions options;
+  options.prog_with_additional_constraints = &prog_;
 
   // If we have a containment point violating this constraint, IrisZo should
   // throw. Three points are needed to ensure the center of the starting
   // ellipsoid is within the convex hull of the points we must contain.
-  Eigen::Matrix2Xd single_containment_point(2, 3);
+  Eigen::Matrix2Xd containment_points(2, 3);
   // clang-format off
-  single_containment_point << -0.2, -0.6, -0.6,
-                               0.0,  0.1, -0.1;
+  containment_points << -0.2, -0.6, -0.6,
+                         0.0,  0.1, -0.1;
   // clang-format on
-  options.containment_points = single_containment_point;
+  options.containment_points = containment_points;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options),
+      IrisZo(*checker_, starting_ellipsoid_, domain_, options),
       ".*containment points violates a constraint.*");
-  options.containment_points = std::nullopt;
+}
 
-  // We now test an example of a region grown along a subspace.
+// If the user specifies a parameterization and a MathematicalProgram containing
+// additional constraints, their dimensions must match.
+TEST_F(ConvexConfigurationSubspace, AdditionalConstraintsDimensionMismatch) {
+  IrisZoOptions options;
+
   options.set_parameterization(
       [](const Vector1d& config) -> Vector2d {
         return Vector2d{config[0], 2 * config[0] + 1};
       },
       /* parameterization_is_threadsafe */ true,
       /* parameterization_dimension */ 1);
-  const Vector1d sample2{-0.5};
-  starting_ellipsoid = Hyperellipsoid::MakeHypersphere(1e-2, sample2);
-  // This domain matches the "x" dimension of C-space, so the region generated
-  // will respect the joint limits.
-  HPolyhedron domain = HPolyhedron::MakeBox(Vector1d(-1.5), Vector1d(0));
+
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  options.prog_with_additional_constraints = &prog;
 
   // Since we have a parameterization, the prog with additional constraints will
   // have the wrong dimension. We expect an error message.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain),
+      IrisZo(*checker_, starting_ellipsoid_, domain_, options),
       ".*num_vars.*parameterized_dimension.*");
+}
 
-  // Reset the parameterization, and now generate the region.
-  options.prog_with_additional_constraints = nullptr;
-  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain);
+TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
+  IrisZoOptions options;
+  options.set_parameterization(
+      [](const Vector1d& config) -> Vector2d {
+        return Vector2d{config[0], 2 * config[0] + 1};
+      },
+      /* parameterization_is_threadsafe */ true,
+      /* parameterization_dimension */ 1);
 
-  EXPECT_EQ(region.ambient_dimension(), 1);
-  Vector1d region_query_point_1(-0.75);
-  Vector1d region_query_point_2(-0.1);
-  EXPECT_TRUE(region.PointInSet(region_query_point_1));
-  EXPECT_TRUE(region.PointInSet(region_query_point_2));
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
 
-  {
-    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-    points.resize(3, vregion.vertices().cols() + 1);
-    for (int i = 0; i < vregion.vertices().cols(); ++i) {
-      Vector2d point =
-          options.get_parameterization()(vregion.vertices().col(i));
-      points.col(i).head(2) = point;
-      if (i == 0) {
-        points.topRightCorner(2, 1) = point;
-      }
-    }
-    points.bottomRows<1>().setZero();
-    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+  meshcat_->Delete();
+  PlotEnvironmentAndRegionSubspace(region, options.get_parameterization());
+}
 
-    meshcat->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
-
-    Vector2d ambient_query_point =
-        options.get_parameterization()(region_query_point_1);
-    meshcat->SetTransform(
-        "Test point", math::RigidTransform(Eigen::Vector3d(
-                          ambient_query_point[0], ambient_query_point[1], 0)));
-
-    MaybePauseForUser();
-  }
-
+TEST_F(ConvexConfigurationSubspace, ExpressionParameterization) {
   // Finally, we test that the parameterization matches what we get when we
   // build it up manually using an Expression.
   Eigen::VectorX<symbolic::Variable> variables(1);
@@ -526,14 +388,16 @@ GTEST_TEST(IrisZoTest, ConvexConfigurationSpace) {
   parameterization_expression[0] = symbolic::Expression(variables[0]);
   parameterization_expression[1] = 2 * symbolic::Expression(variables[0]) + 1;
 
+  IrisZoOptions options;
   options.SetParameterizationFromExpression(parameterization_expression,
                                             variables);
   EXPECT_TRUE(options.get_parameterization_is_threadsafe());
   EXPECT_EQ(options.get_parameterization_dimension(), 1);
-  region = IrisZoFromUrdf(convex_urdf, starting_ellipsoid, options, &domain);
-  EXPECT_TRUE(region.PointInSet(region_query_point_1));
-  EXPECT_TRUE(region.PointInSet(region_query_point_2));
+
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
 }
+
 /* A movable sphere with fixed boxes in all corners.
 ┌───────────────┐
 │┌────┐   ┌────┐│

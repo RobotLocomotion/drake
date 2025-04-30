@@ -289,5 +289,197 @@ void BlockOnGround::PlotEnvironmentAndRegion(const HPolyhedron& region) {
   MaybePauseForUser();
 }
 
+ConvexConfigurationSpace::ConvexConfigurationSpace() {
+  urdf_ = fmt::format(
+      R"(
+<robot name="pendulum_on_vertical_track">
+  <link name="fixed">
+    <collision name="ground">
+      <origin rpy="0 0 0" xyz="0 0 -1"/>
+      <geometry><box size="10 10 2"/></geometry>
+    </collision>
+  </link>
+  <joint name="fixed_link_weld" type="fixed">
+    <parent link="world"/>
+    <child link="fixed"/>
+  </joint>
+  <link name="cart">
+  </link>
+  <joint name="track" type="prismatic">
+    <axis xyz="0 0 1"/>
+    <limit lower="-{l}" upper="0"/>
+    <parent link="world"/>
+    <child link="cart"/>
+  </joint>
+  <link name="pendulum">
+    <collision name="ball">
+      <origin rpy="0 0 0" xyz="0 0 {l}"/>
+      <geometry><sphere radius="{r}"/></geometry>
+    </collision>
+  </link>
+  <joint name="pendulum" type="revolute">
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.57" upper="1.57"/>
+    <parent link="cart"/>
+    <child link="pendulum"/>
+  </joint>
+</robot>
+)",
+      fmt::arg("l", physical_param_l_), fmt::arg("r", physical_param_r_));
+
+  SetUpEnvironment(urdf_);
+
+  meshcat_ = geometry::GetTestEnvironmentMeshcat();
+
+  Vector2d sample{-0.5, 0.0};
+  starting_ellipsoid_ = Hyperellipsoid::MakeHypersphere(1e-2, sample);
+  domain_ = HPolyhedron::MakeBox(plant_ptr_->GetPositionLowerLimits(),
+                                 plant_ptr_->GetPositionUpperLimits());
+}
+
+void ConvexConfigurationSpace::CheckRegion(const HPolyhedron& region) {
+  // Confirm that the pendulum is colliding with the wall with true kinematics:
+  EXPECT_LE(z_test_ + physical_param_l_ * std::cos(theta_test_),
+            physical_param_r_);
+
+  EXPECT_FALSE(region.PointInSet(Vector2d{z_test_, theta_test_}));
+
+  EXPECT_EQ(region.ambient_dimension(), 2);
+  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
+}
+
+void ConvexConfigurationSpace::PlotEnvironment() {
+  meshcat_->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
+                            -3.25, 3.25, -3.25, 3.25);
+  meshcat_->SetProperty("/Grid", "visible", true);
+  Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.5, 1.5);
+  Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
+  for (int i = 0; i < theta1s.size(); ++i) {
+    points(0, i) = physical_param_r_ - physical_param_l_ * cos(theta1s[i]);
+    points(1, i) = theta1s[i];
+    points(0, points.cols() - i - 1) = 0;
+    points(1, points.cols() - i - 1) = theta1s[i];
+  }
+  meshcat_->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
+}
+
+void ConvexConfigurationSpace::PlotRegion(const HPolyhedron& region) {
+  VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+  Eigen::Matrix3Xd points =
+      Eigen::Matrix3Xd::Zero(3, vregion.vertices().cols() + 1);
+  points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+  points.topRightCorner(2, 1) = vregion.vertices().col(0);
+  points.bottomRows<1>().setZero();
+  meshcat_->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+  meshcat_->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
+  meshcat_->SetTransform("Test point", math::RigidTransform(Eigen::Vector3d(
+                                           z_test_, theta_test_, 0)));
+
+  MaybePauseForUser();
+}
+
+void ConvexConfigurationSpace::PlotEnvironmentAndRegion(
+    const HPolyhedron& region) {
+  PlotEnvironment();
+  PlotRegion(region);
+}
+
+ConvexConfigurationSpaceWithThreadsafeConstraint::
+    ConvexConfigurationSpaceWithThreadsafeConstraint() {
+  // Create the MathematicalProgram with the additional constraint.
+  auto q = prog_.NewContinuousVariables(2, "q");
+  Eigen::RowVectorXd a(2);
+  a << 1, 0;
+  double lb = -std::numeric_limits<double>::infinity();
+  double ub = -0.3;
+  prog_.AddLinearConstraint(a, lb, ub, q);
+
+  // Due to the configuration space margin, this point can never be in the
+  // region.
+  query_point_in_set_ = Vector2d(-0.31, 0.0);
+  query_point_not_in_set_ = Vector2d(-0.29, 0.0);
+}
+
+void ConvexConfigurationSpaceWithThreadsafeConstraint::CheckRegion(
+    const HPolyhedron& region) {
+  EXPECT_FALSE(region.PointInSet(query_point_not_in_set_));
+  EXPECT_TRUE(region.PointInSet(query_point_in_set_));
+}
+
+namespace {
+struct IdentityConstraint {
+  static size_t numInputs() { return 2; }
+  static size_t numOutputs() { return 2; }
+  template <typename ScalarType>
+  void eval(const Eigen::Ref<const VectorX<ScalarType>>& x,
+            VectorX<ScalarType>* y) const {
+    (*y) = x;
+  }
+};
+}  // namespace
+
+ConvexConfigurationSpaceWithNotThreadsafeConstraint::
+    ConvexConfigurationSpaceWithNotThreadsafeConstraint() {
+  // Create the MathematicalProgram with the additional constraint.
+  Eigen::VectorXd simple_constraint_lb = Eigen::Vector2d(-2.0, -0.5);
+  Eigen::VectorXd simple_constraint_ub = Eigen::Vector2d(0.0, 1.5);
+  std::shared_ptr<solvers::Constraint> simple_constraint =
+      std::make_shared<solvers::EvaluatorConstraint<
+          solvers::FunctionEvaluator<IdentityConstraint>>>(
+          std::make_shared<solvers::FunctionEvaluator<IdentityConstraint>>(
+              IdentityConstraint{}),
+          simple_constraint_lb, simple_constraint_ub);
+  prog_.AddConstraint(simple_constraint, prog_.decision_variables());
+
+  query_point_in_set_ = Vector2d(-1.0, -0.45);
+  query_point_not_in_set_ = Vector2d(-1.0, -0.55);
+}
+
+ConvexConfigurationSubspace::ConvexConfigurationSubspace() {
+  const Vector1d sample2{-0.5};
+  starting_ellipsoid_ = Hyperellipsoid::MakeHypersphere(1e-2, sample2);
+  // This domain matches the "x" dimension of C-space, so the region generated
+  // will respect the joint limits.
+  domain_ = HPolyhedron::MakeBox(Vector1d(-1.5), Vector1d(0));
+
+  region_query_point_1_ = Vector1d(-0.75);
+  region_query_point_2_ = Vector1d(-0.1);
+}
+
+void ConvexConfigurationSubspace::CheckRegion(const HPolyhedron& region) {
+  EXPECT_EQ(region.ambient_dimension(), 1);
+  EXPECT_TRUE(region.PointInSet(region_query_point_1_));
+  EXPECT_TRUE(region.PointInSet(region_query_point_2_));
+}
+
+void ConvexConfigurationSubspace::PlotEnvironmentAndRegionSubspace(
+    const HPolyhedron& region,
+    const std::function<VectorXd(const VectorXd&)>& parameterization) {
+  PlotEnvironment();
+
+  VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+  Eigen::Matrix3Xd points =
+      Eigen::Matrix3Xd::Zero(3, vregion.vertices().cols() + 1);
+  for (int i = 0; i < vregion.vertices().cols(); ++i) {
+    Vector2d point = parameterization(vregion.vertices().col(i));
+    points.col(i).head(2) = point;
+    if (i == 0) {
+      points.topRightCorner(2, 1) = point;
+    }
+  }
+  points.bottomRows<1>().setZero();
+  meshcat_->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+
+  meshcat_->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
+
+  Vector2d ambient_query_point = parameterization(region_query_point_1_);
+  meshcat_->SetTransform(
+      "Test point", math::RigidTransform(Eigen::Vector3d(
+                        ambient_query_point[0], ambient_query_point[1], 0)));
+
+  MaybePauseForUser();
+}
+
 }  // namespace planning
 }  // namespace drake

@@ -155,5 +155,82 @@ class BlockOnGround : public IrisTestFixture {
 )";
 };
 
+// A (somewhat contrived) example of a concave configuration-space obstacle
+// (resulting in a convex configuration-space, which we approximate with
+// polytopes):  A simple pendulum of length `l` with a sphere at the tip of
+// radius `r` on a vertical track, plus a ground plane at z=0.  The
+// configuration space is given by the joint limits and z + l*cos(theta) >= r.
+// The region is also visualized at
+// https://www.desmos.com/calculator/flshvay78b. In addition to testing the
+// convex space, this was originally a test for which Ibex found
+// counter-examples that Snopt missed; now Snopt succeeds due to having
+// options.num_collision_infeasible_samples > 1.
+class ConvexConfigurationSpace : public IrisTestFixture {
+ protected:
+  ConvexConfigurationSpace();
+
+  void CheckRegion(const geometry::optimization::HPolyhedron& region);
+  void PlotEnvironment();
+  void PlotRegion(const geometry::optimization::HPolyhedron& region);
+  void PlotEnvironmentAndRegion(
+      const geometry::optimization::HPolyhedron& region);
+
+  std::shared_ptr<geometry::Meshcat> meshcat_;
+
+  geometry::optimization::Hyperellipsoid starting_ellipsoid_;
+  geometry::optimization::HPolyhedron domain_;
+
+  // This point should be outside of the configuration space (in collision).
+  // The particular value was found by visual inspection using meshcat.
+  inline static const double z_test_ = 0.0;
+  inline static const double theta_test_ = -1.55;
+
+  inline static const double physical_param_l_ = 1.5;
+  inline static const double physical_param_r_ = 0.1;
+  std::string urdf_;
+};
+
+// Another version of the ConvexConfigurationSpace test, adding the additional
+// constraint that x <= -0.3.
+class ConvexConfigurationSpaceWithThreadsafeConstraint
+    : public ConvexConfigurationSpace {
+ protected:
+  ConvexConfigurationSpaceWithThreadsafeConstraint();
+
+  void CheckRegion(const geometry::optimization::HPolyhedron& region);
+
+  Eigen::Vector2d query_point_in_set_;
+  Eigen::Vector2d query_point_not_in_set_;
+
+  solvers::MathematicalProgram prog_;
+};
+
+// We also verify the code path when one of the additional constraints is not
+// threadsafe. We construct the constraint (-2, -0.5) <= (x, y) <= (0, 1.5) in
+// terms of the above struct IdentityConstraint, which is not tagged as
+// threadsafe.
+class ConvexConfigurationSpaceWithNotThreadsafeConstraint
+    : public ConvexConfigurationSpaceWithThreadsafeConstraint {
+ protected:
+  ConvexConfigurationSpaceWithNotThreadsafeConstraint();
+};
+
+class ConvexConfigurationSubspace : public ConvexConfigurationSpace {
+ protected:
+  ConvexConfigurationSubspace();
+
+  void CheckParameterization(
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization);
+  void CheckRegion(const geometry::optimization::HPolyhedron& region);
+  void PlotEnvironmentAndRegionSubspace(
+      const geometry::optimization::HPolyhedron& region,
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization);
+
+  Vector1d region_query_point_1_;
+  Vector1d region_query_point_2_;
+};
+
 }  // namespace planning
 }  // namespace drake
