@@ -1169,9 +1169,9 @@ void ParseDeformableLink(const SDFormatDiagnostic& diag,
     return;
   }
   if (!plant->geometry_source_is_registered()) {
-    diag.Error(link_element,
-               "Cannot add a deformable link to a plant without a registered "
-               "geometry source.");
+    diag.Warning(link_element,
+                 "Cannot add a deformable link to a plant without a registered "
+                 "geometry source. The deformable link is ignored.");
     return;
   }
 

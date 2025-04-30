@@ -4339,7 +4339,8 @@ TEST_F(SdfParserTest, MixingModelAndDeformableModel) {
   EXPECT_EQ(plant_.num_bodies(), 2);
 }
 
-// Parsing deformable model requires a SceneGraph.
+// Parsing deformable model requires a SceneGraph. Emits a warning if
+// SceneGraph is not added.
 TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
   const std::string sdf = R"(
   <model name='deformable'>
@@ -4353,8 +4354,9 @@ TEST_F(SdfParserTest, DeformableModelNoSceneGraph) {
     </link>
   </model>)";
   ParseTestString(sdf);
-  EXPECT_THAT(NumErrors(), 1);
-  EXPECT_THAT(TakeError(),
+  EXPECT_THAT(NumErrors(), 0);
+  EXPECT_THAT(NumWarnings(), 1);
+  EXPECT_THAT(TakeWarning(),
               MatchesRegex(".*deformable.*without.*geometry source.*"));
 }
 

@@ -474,8 +474,29 @@ directives:
 )""",
           fmt::arg("deformable_sdf", deformable_sdf)),
       {}, ModelDirectives());
-  // There's no "body frame" for a deformable body.
-  EXPECT_THROW(ParseModelDirectives(directives), std::exception);
+  /* There's no "body frame" for a deformable body. */
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseModelDirectives(directives),
+                              ".*no Frame named.*ball.*");
+}
+
+/* default_joint_positions should not be used to pose a deformable body. */
+TEST_F(DmdParserTest, DefaultJointPositions) {
+  AddSceneGraph();
+  const std::string deformable_sdf = "file://" + MakeDeformableSdf().string();
+  const ModelDirectives directives = LoadYamlString<ModelDirectives>(
+      fmt::format(
+          R"""(
+directives:
+- add_model:
+    name: deformable
+    file: {deformable_sdf}
+    default_joint_positions:
+      wrong: [0.0]
+)""",
+          fmt::arg("deformable_sdf", deformable_sdf)),
+      {}, ModelDirectives());
+  /* Deformables aren't associated with any joint */
+  DRAKE_EXPECT_THROWS_MESSAGE(ParseModelDirectives(directives), ".*no Joint.*");
 }
 
 }  // namespace
