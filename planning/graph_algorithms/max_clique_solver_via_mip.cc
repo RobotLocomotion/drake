@@ -90,10 +90,6 @@ VectorX<bool> MaxCliqueSolverViaMip::DoSolveMaxClique(
   });
 }
 
-std::unique_ptr<MaxCliqueSolverBase> MaxCliqueSolverViaMip::DoClone() const {
-  return std::make_unique<MaxCliqueSolverViaMip>(*this);
-}
-
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake

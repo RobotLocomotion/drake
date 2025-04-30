@@ -956,9 +956,6 @@ on deformable bodies.
      instead of dynamic geometry. This is an optimization and the API, and
      pre/post-finalize conditions should not change. -->
 
-@warning Subclassing MultibodyPlant is deprecated; it will be marked `final`
-or or after 2025-05-01.
-
 @anchor mbp_table_of_contents
 
 @anchor mbp_references
@@ -976,7 +973,7 @@ or or after 2025-05-01.
 @tparam_default_scalar
 @ingroup systems */
 template <typename T>
-class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
+class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MultibodyPlant);
 

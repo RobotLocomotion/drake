@@ -3,7 +3,6 @@
 #include <optional>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/render/render_camera.h"
@@ -150,24 +149,6 @@ class RgbdSensorAsync final : public LeafSystem<double> {
       std::optional<geometry::render::ColorRenderCamera> color_camera,
       std::optional<geometry::render::DepthRenderCamera> depth_camera = {},
       bool render_label_image = false);
-
-  DRAKE_DEPRECATED("2025-05-01", "Use default_parent_frame_id() instead.")
-  geometry::FrameId parent_id() const { return default_parent_frame_id(); }
-
-  DRAKE_DEPRECATED("2025-05-01", "Use default_X_PB() instead.")
-  const math::RigidTransformd& X_PB() const { return default_X_PB(); }
-
-  DRAKE_DEPRECATED("2025-05-01", "Use default_color_render_camera() instead.")
-  const std::optional<geometry::render::ColorRenderCamera>& color_camera()
-      const {
-    return default_color_render_camera();
-  }
-
-  DRAKE_DEPRECATED("2025-05-01", "Use default_depth_render_camera() instead.")
-  const std::optional<geometry::render::DepthRenderCamera>& depth_camera()
-      const {
-    return default_depth_render_camera();
-  }
 
   /** Returns the frame rate provided at construction. */
   double fps() const { return fps_; }
