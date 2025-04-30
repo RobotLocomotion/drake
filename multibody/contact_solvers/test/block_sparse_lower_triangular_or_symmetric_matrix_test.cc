@@ -15,6 +15,7 @@ using Eigen::Matrix2d;
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::MatrixXd;
+using Eigen::VectorXd;
 
 // clang-format off
 const Matrix2d A00 = (Eigen::Matrix2d() << 11, 12,
@@ -132,6 +133,27 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, Construction) {
   const BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
   EXPECT_EQ(A_triangular.MakeDenseMatrix(), MakeDenseMatrix(false));
   EXPECT_EQ(A_symmetric.MakeDenseMatrix(), MakeDenseMatrix(true));
+}
+
+GTEST_TEST(TriangularBlockSparseMatrixTest, Multiply) {
+  {
+    const BlockSparseLowerTriangularMatrix A = MakeLowerTriangularMatrix();
+    const MatrixXd A_dense = A.MakeDenseMatrix();
+    VectorXd x = VectorXd::LinSpaced(A.cols(), 0.0, 1.0);
+    VectorXd y(A.rows());
+    A.Multiply(x, &y);
+    const VectorXd y_dense = A_dense * x;
+    EXPECT_TRUE(CompareMatrices(y, y_dense));
+  }
+  {
+    const BlockSparseSymmetricMatrix A = MakeSymmetricMatrix();
+    const MatrixXd A_dense = A.MakeDenseMatrix();
+    VectorXd x = VectorXd::LinSpaced(A.cols(), 0.0, 1.0);
+    VectorXd y(A.rows());
+    A.Multiply(x, &y);
+    const VectorXd y_dense = A_dense * x;
+    EXPECT_TRUE(CompareMatrices(y, y_dense));
+  }
 }
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, SetZero) {

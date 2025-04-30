@@ -57,6 +57,40 @@ BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
 }
 
 template <typename MatrixType, bool is_symmetric>
+void BlockSparseLowerTriangularOrSymmetricMatrix<
+    MatrixType, is_symmetric>::Multiply(const VectorX<double>& x,
+                                        EigenPtr<VectorX<double>> y) const {
+  DRAKE_ASSERT(x.size() == cols());
+  DRAKE_ASSERT(y->size() == rows());
+  y->setZero();
+
+  for (int j = 0; j < block_cols_; ++j) {
+    const int col_start = starting_cols_[j];
+    const int col_size = sparsity_pattern_.block_sizes()[j];
+    // slice of x corresponding to block j
+    auto x_j = x.segment(col_start, col_size);
+
+    /* Loop over the stored lower-triangular blocks in column j. */
+    for (int flat = 0; flat < ssize(blocks_[j]); ++flat) {
+      int i = sparsity_pattern_.neighbors()[j][flat];  // block-row index
+      const auto& A_ij = blocks_[j][flat];
+      int row_start = starting_cols_[i];
+
+      /* y_i += A_ij * x_j */
+      y->segment(row_start, A_ij.rows()).noalias() += A_ij * x_j;
+
+      /* if symmetric and off-diagonal, also do y_j += A_ijᵀ * x_i */
+      if constexpr (is_symmetric) {
+        if (i != j) {
+          auto x_i = x.segment(row_start, A_ij.rows());
+          y->segment(col_start, col_size).noalias() += A_ij.transpose() * x_i;
+        }
+      }
+    }
+  }
+}
+
+template <typename MatrixType, bool is_symmetric>
 void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType,
                                                  is_symmetric>::SetZero() {
   for (int c = 0; c < block_cols_; ++c) {

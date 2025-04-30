@@ -123,6 +123,10 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   int block_rows() const { return block_cols_; }
   int block_cols() const { return block_cols_; }
 
+  /* Performs y = A*x where A is this matrix.
+   @pre x and y have sizes compatible with this matrix. */
+  void Multiply(const VectorX<double>& x, EigenPtr<VectorX<double>> y) const;
+
   /* Adds Aij to the ij-th block of this matrix. If `this` matrix is symmetric,
    Aijᵀ is also implicitly added to the ji-th block of `this` matrix to preserve
    symmetry.
