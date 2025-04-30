@@ -246,45 +246,7 @@ TEST_F(DoublePendulumRationalForwardKinematics, BadParameterization) {
       ".*wrong dimension.*");
 }
 
-const char block_urdf[] = R"(
-<robot name="block">
-  <link name="fixed">
-    <collision name="ground">
-      <origin rpy="0 0 0" xyz="0 0 -1"/>
-      <geometry><box size="10 10 2"/></geometry>
-    </collision>
-  </link>
-  <joint name="fixed_link_weld" type="fixed">
-    <parent link="world"/>
-    <child link="fixed"/>
-  </joint>
-  <link name="link1"/>
-  <joint name="joint1" type="prismatic">
-    <axis xyz="0 0 1"/>
-    <limit lower="0" upper="3.0"/>
-    <parent link="world"/>
-    <child link="link1"/>
-  </joint>
-  <link name="link2">
-    <collision name="block">
-      <geometry><box size="2 1 1"/></geometry>
-    </collision>
-  </link>
-  <joint name="joint2" type="revolute">
-    <axis xyz="0 1 0"/>
-    <limit lower="-3.14159" upper="3.14159"/>
-    <parent link="link1"/>
-    <child link="link2"/>
-  </joint>
-</robot>
-)";
-
 // Reproduced from the IrisInConfigurationSpace unit tests.
-// A block on a vertical track, free to rotate (in the plane) with width `w` of
-// 2 and height `h` of 1, plus a ground plane at z=0.  The true configuration
-// space is min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the
-// ±. This region is also visualized at
-// https://www.desmos.com/calculator/ok5ckpa1kp.
 TEST_F(BlockOnGround, IrisZoTest) {
   IrisZoOptions options;
   options.verbose = true;
