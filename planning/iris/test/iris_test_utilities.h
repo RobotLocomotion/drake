@@ -71,10 +71,10 @@ class DoublePendulum : public IrisTestFixture {
   geometry::optimization::Hyperellipsoid starting_ellipsoid_;
   geometry::optimization::HPolyhedron domain_;
 
-  inline static const double physical_param_l1_ = 2.0;
-  inline static const double physical_param_l2_ = 1.0;
-  inline static const double physical_param_r_ = .5;
-  inline static const double physical_param_w_ = 1.83;
+  inline static const double kPhysicalParamL1 = 2.0;
+  inline static const double kPhysicalParamL2 = 1.0;
+  inline static const double kPhysicalParamR = .5;
+  inline static const double kPhysicalParamW = 1.83;
   std::string urdf_;
 };
 
@@ -182,11 +182,11 @@ class ConvexConfigurationSpace : public IrisTestFixture {
 
   // This point should be outside of the configuration space (in collision).
   // The particular value was found by visual inspection using meshcat.
-  inline static const double z_test_ = 0.0;
-  inline static const double theta_test_ = -1.55;
+  inline static const double kZTest = 0.0;
+  inline static const double kThetaTest = -1.55;
 
-  inline static const double physical_param_l_ = 1.5;
-  inline static const double physical_param_r_ = 0.1;
+  inline static const double kPhysicalParamL = 1.5;
+  inline static const double kPhysicalParamR = 0.1;
   std::string urdf_;
 };
 

@@ -98,9 +98,9 @@ DoublePendulum::DoublePendulum() {
   </joint>
 </robot>
 )",
-      fmt::arg("w_plus_one_half", physical_param_w_ + .5),
-      fmt::arg("l1", physical_param_l1_), fmt::arg("l2", physical_param_l2_),
-      fmt::arg("r", physical_param_r_));
+      fmt::arg("w_plus_one_half", kPhysicalParamW + .5),
+      fmt::arg("l1", kPhysicalParamL1), fmt::arg("l2", kPhysicalParamL2),
+      fmt::arg("r", kPhysicalParamR));
 
   SetUpEnvironment(urdf_);
 
@@ -134,11 +134,10 @@ void DoublePendulum::PlotEnvironmentAndRegion(
   meshcat_->SetProperty("/Grid", "visible", true);
   Eigen::RowVectorXd theta2s = Eigen::RowVectorXd::LinSpaced(100, -1.57, 1.57);
   Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta2s.size() + 1);
-  const double c = -physical_param_w_ + physical_param_r_;
+  const double c = -kPhysicalParamW + kPhysicalParamR;
   for (int i = 0; i < theta2s.size(); ++i) {
-    const double a = physical_param_l1_ +
-                     physical_param_l2_ * std::cos(theta2s[i]),
-                 b = physical_param_l2_ * std::sin(theta2s[i]);
+    const double a = kPhysicalParamL1 + kPhysicalParamL2 * std::cos(theta2s[i]),
+                 b = kPhysicalParamL2 * std::sin(theta2s[i]);
     // wolfram solve a*sin(q) + b*cos(q) = c for q
     points(0, i) =
         2 * std::atan((std::sqrt(a * a + b * b - c * c) + a) / (b + c)) + M_PI;
@@ -325,7 +324,7 @@ ConvexConfigurationSpace::ConvexConfigurationSpace() {
   </joint>
 </robot>
 )",
-      fmt::arg("l", physical_param_l_), fmt::arg("r", physical_param_r_));
+      fmt::arg("l", kPhysicalParamL), fmt::arg("r", kPhysicalParamR));
 
   SetUpEnvironment(urdf_);
 
@@ -339,10 +338,9 @@ ConvexConfigurationSpace::ConvexConfigurationSpace() {
 
 void ConvexConfigurationSpace::CheckRegion(const HPolyhedron& region) {
   // Confirm that the pendulum is colliding with the wall with true kinematics:
-  EXPECT_LE(z_test_ + physical_param_l_ * std::cos(theta_test_),
-            physical_param_r_);
+  EXPECT_LE(kZTest + kPhysicalParamL * std::cos(kThetaTest), kPhysicalParamR);
 
-  EXPECT_FALSE(region.PointInSet(Vector2d{z_test_, theta_test_}));
+  EXPECT_FALSE(region.PointInSet(Vector2d{kZTest, kThetaTest}));
 
   EXPECT_EQ(region.ambient_dimension(), 2);
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 0.5);
@@ -355,7 +353,7 @@ void ConvexConfigurationSpace::PlotEnvironment() {
   Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.5, 1.5);
   Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
   for (int i = 0; i < theta1s.size(); ++i) {
-    points(0, i) = physical_param_r_ - physical_param_l_ * cos(theta1s[i]);
+    points(0, i) = kPhysicalParamR - kPhysicalParamL * cos(theta1s[i]);
     points(1, i) = theta1s[i];
     points(0, points.cols() - i - 1) = 0;
     points(1, points.cols() - i - 1) = theta1s[i];
@@ -374,7 +372,7 @@ void ConvexConfigurationSpace::PlotRegion(const HPolyhedron& region) {
 
   meshcat_->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
   meshcat_->SetTransform("Test point", math::RigidTransform(Eigen::Vector3d(
-                                           z_test_, theta_test_, 0)));
+                                           kZTest, kThetaTest, 0)));
 
   MaybePauseForUser();
 }
