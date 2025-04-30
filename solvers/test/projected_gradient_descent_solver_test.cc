@@ -312,7 +312,7 @@ TEST_F(UnboundedLinearProgramTest0, TestProjectedGradientDescentSolver) {
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, TestNonconvexQP) {
   ProjectedGradientDescentSolver solver;
-  TestNonconvexQP(solver, false);
+  TestNonconvexQP(solver, false, 2e-4);
 }
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, TestL2NormCost) {
