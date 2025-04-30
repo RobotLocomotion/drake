@@ -281,12 +281,54 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          EigenPtr<VectorX<T>> v) const override;
 
+  // Maps qddot to vdot, which for this mobilizer is complicated.
+  // @param[in] context contains the state for this mobilizers's multibody tree.
+  // @param[in] qddot = [r̈, p̈, ÿ]ᵀ, 2ⁿᵈ derivatives of roll, pitch, yaw angles.
+  // @param[out] vdot vector to store the results as v̇ = [ω̇x, ω̇y, ω̇z]ᵀ.
+  // @throws std::exception if cos(pitch) ≈ 0.
+  void MapQDDotToAcceleration(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& qddot,
+                              EigenPtr<VectorX<T>> vdot) const final;
+
+  // Maps vdot to qddot, which for this mobilizer is complicated.
+  // @param[in] context contains the state for this mobilizers's multibody tree.
+  // @param[out] vdot = [ω̇x, ω̇y, ω̇z]ᵀ, where w_FM_F = [ωx, ωy, ωz]ᵀ.
+  // @param[out] qddot vector to store the results as q̈ = [r̈, p̈, ÿ]ᵀ.
+  // @throws std::exception if cos(pitch) ≈ 0.
+  void MapAccelerationToQDDot(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& vdot,
+                              EigenPtr<VectorX<T>> qddot) const final;
+
  protected:
+  // Calculates the N(q) matrix that relates q̇ = N(q)⋅v.
+  // Due to a singularity in N(q) that is inherent with roll, pitch (p), yaw
+  // angles, an exception is thrown if cos(p) ≈ 0.
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
+  // Calculates the N(q) matrix that relates q̇ = N(q)⋅v.
+  // @pre Calling function is responsible for testing whether N(q) is singular
+  // due to cos(p) ≈ 0 (inherent to roll (r), pitch (p), yaw (y) angles).
+  // @param[in] cp = cos(p), sp = sin(p), sy = sin(y), cy = cos(y).
+  void DoCalcNMatrix(const T& cp, const T& sp, const T& sy, const T& cy,
+                     EigenPtr<MatrixX<T>> N) const;
+
+  // Calculates the N⁺(q) matrix that relates v = N⁺(q)⋅q̇. There is no
+  // singularity in N⁺(q) and calculating N⁺(q) is more efficient than N(q).
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
+
+  // Calculates the time derivative of the N(q) matrix that relates q̇ = N(q)⋅v.
+  // Due to a singularity in N(q) that is inherent with roll, pitch (p), yaw
+  // angles, an exception is thrown if cos(p) ≈ 0.
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  // Calculates the time derivative of the N⁺ matrix that relates v = N⁺(q)⋅q̇.
+  // There is no singularity in N⁺(q) or its time-derivative Ṅ⁺(q,q̇) and
+  // calculating Ṅ⁺ is more efficient than calculating Ṅ.
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
@@ -296,6 +338,9 @@ class RpyBallMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
+
+  // Throw an exception if cos(pitch) ≈ 0.
+  void ThrowIfCosPitchNearZero(const T& pitch, const T& cos_pitch) const;
 
  private:
   // Helper method to make a clone templated on ToScalar.
