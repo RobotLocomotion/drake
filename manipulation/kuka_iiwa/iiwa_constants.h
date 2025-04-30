@@ -36,6 +36,9 @@ constexpr inline bool torque_enabled(IiwaControlMode control_mode) {
 - "position_and_torque": kPositionAndTorque */
 IiwaControlMode ParseIiwaControlMode(const std::string& control_mode);
 
+/** Formats control mode to a string using the mappping shown above. */
+std::string FormatIiwaControlMode(IiwaControlMode mode);
+
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake

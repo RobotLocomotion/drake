@@ -16,6 +16,9 @@ namespace manipulation {
 namespace kuka_iiwa {
 namespace {
 
+// Developer-only configuration.
+constexpr bool kVerbose{false};
+
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using systems::InputPortIndex;
@@ -64,24 +67,32 @@ class SimIiwaDriverTest : public ::testing::Test {
         "actuation",          "position_commanded", "position_measured",
         "velocity_estimated", "state_estimated",    "torque_commanded",
         "torque_measured",    "torque_external"};
-    EXPECT_THAT(outputs, testing::ElementsAreArray(expected_outputs));
+
+    if (position_enabled(mode)) {
+      expected_outputs.push_back("velocity_commanded");
+    }
+    EXPECT_THAT(outputs, testing::UnorderedElementsAreArray(expected_outputs));
+    if constexpr (kVerbose) {
+      fmt::print("\n===BEGIN GRAPHVIZ===\n\n{}\n===END GRAPHVIZ===\n\n",
+                 dut.GetGraphvizString());
+    }
   }
 
   std::unique_ptr<MultibodyPlant<double>> sim_plant_;
   std::unique_ptr<MultibodyPlant<double>> controller_plant_;
   multibody::ModelInstanceIndex iiwa_instance_;
-  double ext_joint_filter_tau_{0.1};
   const Eigen::VectorXd desired_iiwa_kp_gains_ =
       (Eigen::VectorXd(7) << 100, 100, 100, 100, 100, 100, 100).finished();
+  IiwaDriver driver_config_{.desired_kp_gains = desired_iiwa_kp_gains_};
 };
 
 TEST_F(SimIiwaDriverTest, SanityCheck) {
   for (const auto& mode :
        {IiwaControlMode::kPositionOnly, IiwaControlMode::kTorqueOnly,
         IiwaControlMode::kPositionAndTorque}) {
-    SCOPED_TRACE(fmt::format("mode = {}", static_cast<int>(mode)));
-    const SimIiwaDriver<double> dut(mode, controller_plant_.get(),
-                                    ext_joint_filter_tau_, {});
+    driver_config_.control_mode = FormatIiwaControlMode(mode);
+    SCOPED_TRACE(fmt::format("mode = {}", driver_config_.control_mode));
+    const SimIiwaDriver<double> dut(driver_config_, controller_plant_.get());
 
     TestSimIiwaDriverPorts(mode, dut);
 
@@ -95,12 +106,13 @@ TEST_F(SimIiwaDriverTest, AddToBuilder) {
   for (const auto& mode :
        {IiwaControlMode::kPositionOnly, IiwaControlMode::kTorqueOnly,
         IiwaControlMode::kPositionAndTorque}) {
-    SCOPED_TRACE(fmt::format("mode = {}", static_cast<int>(mode)));
+    driver_config_.control_mode = FormatIiwaControlMode(mode);
+    SCOPED_TRACE(fmt::format("mode = {}", driver_config_.control_mode));
     systems::DiagramBuilder<double> builder;
     auto* sim_plant = builder.AddSystem(System<double>::Clone(*sim_plant_));
     const System<double>* const dut = &SimIiwaDriver<double>::AddToBuilder(
-        &builder, *sim_plant, iiwa_instance_, *controller_plant_,
-        ext_joint_filter_tau_, desired_iiwa_kp_gains_, mode);
+        &builder, *sim_plant, iiwa_instance_, driver_config_,
+        *controller_plant_);
 
     TestSimIiwaDriverPorts(mode, *dut);
   }

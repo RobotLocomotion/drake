@@ -40,6 +40,22 @@ IiwaControlMode ParseIiwaControlMode(const std::string& control_mode) {
   }
 }
 
+std::string FormatIiwaControlMode(IiwaControlMode mode) {
+  using enum IiwaControlMode;
+  switch (mode) {
+    case kPositionOnly: {
+      return "position_only";
+    }
+    case kTorqueOnly: {
+      return "torque_only";
+    }
+    case kPositionAndTorque: {
+      return "position_and_torque";
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
 }  // namespace kuka_iiwa
 }  // namespace manipulation
 }  // namespace drake

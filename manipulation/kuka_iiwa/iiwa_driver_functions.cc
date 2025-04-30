@@ -32,7 +32,11 @@ void ApplyDriverConfig(
         "IiwaDriver could not find arm model directive '{}' to actuate",
         arm_name));
   }
-  const ModelInstanceInfo& arm_model = models_from_directives.at(arm_name);
+  ModelInstanceInfo arm_model = models_from_directives.at(arm_name);
+  // Substitute frame names if they are provided in `driver_config`.
+  if (driver_config.arm_child_frame_name.has_value()) {
+    arm_model.child_frame_name = driver_config.arm_child_frame_name.value();
+  }
   std::optional<ModelInstanceInfo> hand_model;
   if (!hand_name.empty()) {
     if (!models_from_directives.contains(hand_name)) {
@@ -41,6 +45,10 @@ void ApplyDriverConfig(
           hand_name));
     }
     hand_model = models_from_directives.at(hand_name);
+    if (driver_config.gripper_parent_frame_name.has_value()) {
+      hand_model->parent_frame_name =
+          driver_config.gripper_parent_frame_name.value();
+    }
   }
   DrakeLcmInterface* lcm =
       lcms.Find("Driver for " + arm_name, driver_config.lcm_bus);
@@ -50,19 +58,13 @@ void ApplyDriverConfig(
                        sim_plant, arm_model, hand_model));
   builder->GetMutableSystems().back()->set_name(
       fmt::format("{}_controller_plant", arm_name));
-  // TODO(jwnimmer-tri) Make desired_iiwa_kp_gains configurable.
-  std::optional<Eigen::VectorXd> desired_iiwa_kp_gains;
-  const IiwaControlMode control_mode =
-      ParseIiwaControlMode(driver_config.control_mode);
   if (lcm->get_lcm_url() == LcmBuses::kLcmUrlMemqNull) {
-    SimIiwaDriver<double>::AddToBuilder(
-        builder, sim_plant, arm_model.model_instance, *controller_plant,
-        driver_config.ext_joint_filter_tau, desired_iiwa_kp_gains,
-        control_mode);
+    SimIiwaDriver<double>::AddToBuilder(builder, sim_plant,
+                                        arm_model.model_instance, driver_config,
+                                        *controller_plant);
   } else {
-    BuildIiwaControl(sim_plant, arm_model.model_instance, *controller_plant,
-                     lcm, builder, driver_config.ext_joint_filter_tau,
-                     desired_iiwa_kp_gains, control_mode);
+    BuildIiwaControl(builder, lcm, sim_plant, arm_model.model_instance,
+                     driver_config, *controller_plant);
   }
 }
 
