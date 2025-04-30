@@ -160,7 +160,7 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
 }
 
 // Reproduced from the IrisInConfigurationSpace unit tests.
-TEST_F(DoublePendulum, DoublePendulumBasic) {
+TEST_F(DoublePendulum, IrisZoTest) {
   IrisZoOptions options;
   options.verbose = true;
 
@@ -175,11 +175,11 @@ TEST_F(DoublePendulum, DoublePendulumBasic) {
 
 // Test growing a region for the double pendulum along a parameterization of the
 // configuration space built from RationalForwardKinematics.
-TEST_F(DoublePendulum, DoublePendulumRationalForwardKinematics) {
-  multibody::RationalForwardKinematics rational_kinematics(plant_ptr_);
+TEST_F(DoublePendulumRationalForwardKinematics,
+       ParameterizationFromStaticConstructor) {
   IrisZoOptions options =
       IrisZoOptions::CreateWithRationalKinematicParameterization(
-          &rational_kinematics,
+          &rational_kinematics_,
           /* q_star_val */ Vector2d::Zero());
   options.verbose = true;
 
@@ -190,25 +190,23 @@ TEST_F(DoublePendulum, DoublePendulumRationalForwardKinematics) {
   EXPECT_EQ(options.get_parameterization_is_threadsafe(), true);
   ASSERT_TRUE(options.get_parameterization_dimension().has_value());
   EXPECT_EQ(options.get_parameterization_dimension().value(), 2);
-  const Vector2d output = options.get_parameterization()(Vector2d(0.0, 0.0));
-  EXPECT_NEAR(output[0], 0.0, 1e-15);
-  EXPECT_NEAR(output[1], 0.0, 1e-15);
+
+  CheckParameterization(options.get_parameterization());
 
   HPolyhedron region =
       IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
              domain_rational_forward_kinematics_, options);
 
-  EXPECT_EQ(region.ambient_dimension(), 2);
-  Vector2d region_query_point_1(-0.1, 0.3);
-  Vector2d region_query_point_2(0.1, -0.3);
-  EXPECT_TRUE(region.PointInSet(region_query_point_1));
-  EXPECT_TRUE(region.PointInSet(region_query_point_2));
-
+  CheckRegionRationalForwardKinematics(region);
   PlotEnvironmentAndRegionRationalForwardKinematics(
-      region, options.get_parameterization(), region_query_point_1);
+      region, options.get_parameterization(), region_query_point_1_);
+}
 
-  // Verify that we can get the same behavior by using an Expression
-  // parameterization.
+// Verify that we can get the same behavior by using an Expression
+// parameterization.
+TEST_F(DoublePendulumRationalForwardKinematics,
+       ParameterizationFromExpression) {
+  IrisZoOptions options;
   Eigen::VectorX<symbolic::Variable> variables(2);
   variables[0] = symbolic::Variable("s1");
   variables[1] = symbolic::Variable("s2");
@@ -224,13 +222,18 @@ TEST_F(DoublePendulum, DoublePendulumRationalForwardKinematics) {
   EXPECT_TRUE(options.get_parameterization_is_threadsafe());
   EXPECT_EQ(options.get_parameterization_dimension(), 2);
 
-  region = IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
-                  domain_rational_forward_kinematics_, options);
-  EXPECT_TRUE(region.PointInSet(region_query_point_1));
-  EXPECT_TRUE(region.PointInSet(region_query_point_2));
+  CheckParameterization(options.get_parameterization());
 
+  HPolyhedron region =
+      IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
+             domain_rational_forward_kinematics_, options);
+  CheckRegionRationalForwardKinematics(region);
+}
+
+TEST_F(DoublePendulumRationalForwardKinematics, BadParameterization) {
   // Verify that we fail gracefully if the parameterization has the wrong output
   // dimension (even if we claim it outputs the correct dimension).
+  IrisZoOptions options;
   options.set_parameterization(
       [](const VectorXd& q) -> VectorXd {
         return Vector1d(0.0);

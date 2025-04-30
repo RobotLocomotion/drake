@@ -110,10 +110,6 @@ DoublePendulum::DoublePendulum() {
   starting_ellipsoid_ = Hyperellipsoid::MakeHypersphere(1e-2, sample);
   domain_ = HPolyhedron::MakeBox(plant_ptr_->GetPositionLowerLimits(),
                                  plant_ptr_->GetPositionUpperLimits());
-
-  starting_ellipsoid_rational_forward_kinematics_ = starting_ellipsoid_;
-  domain_rational_forward_kinematics_ =
-      HPolyhedron::MakeBox(Vector2d(-1.0, -1.0), Vector2d(1.0, 1.0));
 }
 
 void DoublePendulum::CheckRegion(const HPolyhedron& region) {
@@ -163,10 +159,37 @@ void DoublePendulum::PlotEnvironmentAndRegion(
   MaybePauseForUser();
 }
 
-void DoublePendulum::PlotEnvironmentAndRegionRationalForwardKinematics(
-    const geometry::optimization::HPolyhedron& region,
-    const std::function<VectorXd(const Eigen::VectorXd&)>& parameterization,
-    const Eigen::Vector2d& region_query_point) {
+DoublePendulumRationalForwardKinematics::
+    DoublePendulumRationalForwardKinematics()
+    : rational_kinematics_(plant_ptr_) {
+  starting_ellipsoid_rational_forward_kinematics_ =
+      Hyperellipsoid::MakeHypersphere(1e-2, Vector2d::Zero(2));
+  domain_rational_forward_kinematics_ =
+      HPolyhedron::MakeBox(Vector2d(-1.0, -1.0), Vector2d(1.0, 1.0));
+
+  region_query_point_1_ = Vector2d(-0.1, 0.3);
+  region_query_point_2_ = Vector2d(0.1, -0.3);
+}
+
+void DoublePendulumRationalForwardKinematics::CheckParameterization(
+    const std::function<VectorXd(const VectorXd&)>& parameterization) {
+  const Vector2d output = parameterization(Vector2d(0.0, 0.0));
+  EXPECT_NEAR(output[0], 0.0, 1e-15);
+  EXPECT_NEAR(output[1], 0.0, 1e-15);
+}
+
+void DoublePendulumRationalForwardKinematics::
+    CheckRegionRationalForwardKinematics(const HPolyhedron& region) {
+  EXPECT_EQ(region.ambient_dimension(), 2);
+  EXPECT_TRUE(region.PointInSet(region_query_point_1_));
+  EXPECT_TRUE(region.PointInSet(region_query_point_2_));
+}
+
+void DoublePendulumRationalForwardKinematics::
+    PlotEnvironmentAndRegionRationalForwardKinematics(
+        const HPolyhedron& region,
+        const std::function<VectorXd(const VectorXd&)>& parameterization,
+        const Vector2d& region_query_point) {
   VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
 
   // Region boundaries appear "curved" in the ambient space, so we use many

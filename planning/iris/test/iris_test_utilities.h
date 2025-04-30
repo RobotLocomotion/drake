@@ -9,6 +9,7 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 
@@ -64,11 +65,6 @@ class DoublePendulum : public IrisTestFixture {
   void CheckRegion(const geometry::optimization::HPolyhedron& region);
   void PlotEnvironmentAndRegion(
       const geometry::optimization::HPolyhedron& region);
-  void PlotEnvironmentAndRegionRationalForwardKinematics(
-      const geometry::optimization::HPolyhedron& region,
-      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
-          parameterization,
-      const Eigen::Vector2d& region_query_point);
 
   std::shared_ptr<geometry::Meshcat> meshcat_;
 
@@ -84,6 +80,31 @@ class DoublePendulum : public IrisTestFixture {
   inline static const double physical_param_r_ = .5;
   inline static const double physical_param_w_ = 1.83;
   std::string urdf_;
+};
+
+class DoublePendulumRationalForwardKinematics : public DoublePendulum {
+ protected:
+  DoublePendulumRationalForwardKinematics();
+
+  void CheckParameterization(
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization);
+  void CheckRegionRationalForwardKinematics(
+      const geometry::optimization::HPolyhedron& region);
+  void PlotEnvironmentAndRegionRationalForwardKinematics(
+      const geometry::optimization::HPolyhedron& region,
+      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+          parameterization,
+      const Eigen::Vector2d& region_query_point);
+
+  geometry::optimization::Hyperellipsoid
+      starting_ellipsoid_rational_forward_kinematics_;
+  geometry::optimization::HPolyhedron domain_rational_forward_kinematics_;
+
+  Eigen::Vector2d region_query_point_1_;
+  Eigen::Vector2d region_query_point_2_;
+
+  multibody::RationalForwardKinematics rational_kinematics_;
 };
 
 // A block on a vertical track, free to rotate (in the plane) with width `w` of
