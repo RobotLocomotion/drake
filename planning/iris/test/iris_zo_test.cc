@@ -282,53 +282,15 @@ const char block_urdf[] = R"(
 // space is min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the
 // ±. This region is also visualized at
 // https://www.desmos.com/calculator/ok5ckpa1kp.
-GTEST_TEST(IrisZoTest, BlockOnGround) {
-  const Vector2d sample{1.0, 0.0};
-  std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
-  meshcat->Delete("face_pt");
+TEST_F(BlockOnGround, IrisZoTest) {
   IrisZoOptions options;
   options.verbose = true;
-  options.meshcat = meshcat;
-  Hyperellipsoid starting_ellipsoid =
-      Hyperellipsoid::MakeHypersphere(1e-2, sample);
-  HPolyhedron region = IrisZoFromUrdf(block_urdf, starting_ellipsoid, options);
+  meshcat_->Delete();
+  options.meshcat = meshcat_;
 
-  EXPECT_EQ(region.ambient_dimension(), 2);
-  // Confirm that we've found a substantial region.
-  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
-
-  {
-    meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}), 0,
-                             3.25, -3.25, 3.25);
-    meshcat->SetProperty("/Grid", "visible", true);
-    Eigen::RowVectorXd thetas = Eigen::RowVectorXd::LinSpaced(100, -M_PI, M_PI);
-    const double w = 2, h = 1;
-    Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * thetas.size() + 1);
-    for (int i = 0; i < thetas.size(); ++i) {
-      const double a = 0.5 *
-                       (-w * std::sin(thetas[i]) - h * std::cos(thetas[i])),
-                   b = 0.5 *
-                       (-w * std::sin(thetas[i]) + h * std::cos(thetas[i])),
-                   c = 0.5 *
-                       (+w * std::sin(thetas[i]) - h * std::cos(thetas[i])),
-                   d = 0.5 *
-                       (+w * std::sin(thetas[i]) + h * std::cos(thetas[i]));
-      points(0, i) = std::max({a, b, c, d});
-      points(1, i) = thetas[i];
-      points(0, points.cols() - i - 2) = 3.0;
-      points(1, points.cols() - i - 2) = thetas[i];
-    }
-    points.col(points.cols() - 1) = points.col(0);
-    meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
-    VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-    points.resize(3, vregion.vertices().cols() + 1);
-    points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
-    points.topRightCorner(2, 1) = vregion.vertices().col(0);
-    points.bottomRows<1>().setZero();
-    meshcat->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
-
-    MaybePauseForUser();
-  }
+  HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+  PlotEnvironmentAndRegion(region);
 }
 
 struct IdentityConstraint {
