@@ -24,6 +24,7 @@ drake_pybind_library(
     name = "manipulation",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:ref_cycle_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -56,6 +57,7 @@ drake_py_unittest(
     ],
     deps = [
         ":manipulation",
+        "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
         "//bindings/pydrake/systems:test_util_py",

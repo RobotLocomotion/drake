@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
@@ -171,16 +172,14 @@ void DefineManipulationKukaIiwa(py::module m) {
     using Class = SimIiwaDriver<double>;
     constexpr auto& cls_doc = doc.SimIiwaDriver;
     py::class_<Class, Diagram<double>>(m, "SimIiwaDriver", cls_doc.doc)
-        .def(py::init<IiwaControlMode, const multibody::MultibodyPlant<double>*,
-                 double, const std::optional<Eigen::VectorXd>&>(),
-            py::arg("control_mode"), py::arg("controller_plant"),
-            py::arg("ext_joint_filter_tau"), py::arg("kp_gains"),
+        .def(py::init<const IiwaDriver&,
+                 const multibody::MultibodyPlant<double>*>(),
+            py::arg("driver_config"), py::arg("controller_plant"),
             // Keep alive, ownership: `self` keeps `controller_plant` alive.
             py::keep_alive<1, 3>(), cls_doc.ctor.doc)
         .def_static("AddToBuilder", &Class::AddToBuilder, py::arg("builder"),
             py::arg("plant"), py::arg("iiwa_instance"),
-            py::arg("controller_plant"), py::arg("ext_joint_filter_tau"),
-            py::arg("desired_iiwa_kp_gains"), py::arg("control_mode"),
+            py::arg("driver_config"), py::arg("controller_plant"),
             // Using builder_life_support_stash makes the
             // builder temporarily immortal (uncollectible self cycle). This
             // will be resolved by the Build() step. See BuilderLifeSupport
@@ -189,7 +188,7 @@ void DefineManipulationKukaIiwa(py::module m) {
             // `return` and `builder` join ref cycle.
             internal::ref_cycle<0, 1>(),
             // Keep alive, reference: `return` keeps `controller_plant` alive.
-            py::keep_alive<0, 4>(), py_rvp::reference,
+            py::keep_alive<0, 5>(), py_rvp::reference,
             cls_doc.AddToBuilder.doc);
   }
 
@@ -199,9 +198,40 @@ void DefineManipulationKukaIiwa(py::module m) {
         py::arg("models_from_directives"), py::arg("lcms"), py::arg("builder"),
         doc.ApplyDriverConfig.doc);
 
-    m.def("BuildIiwaControl", &BuildIiwaControl, py::arg("plant"),
-        py::arg("iiwa_instance"), py::arg("controller_plant"), py::arg("lcm"),
-        py::arg("builder"), py::arg("ext_joint_filter_tau") = 0.01,
+    m.def("BuildIiwaControl",
+        overload_cast_explicit<void, systems::DiagramBuilder<double>*,
+            lcm::DrakeLcmInterface*, const multibody::MultibodyPlant<double>&,
+            const multibody::ModelInstanceIndex, const IiwaDriver&,
+            const multibody::MultibodyPlant<double>&>(&BuildIiwaControl),
+        py::arg("builder"), py::arg("lcm"), py::arg("plant"),
+        py::arg("iiwa_instance"), py::arg("driver_config"),
+        py::arg("controller_plant"),
+        // Using builder_life_support_stash makes the
+        // builder temporarily immortal (uncollectible self cycle). This
+        // will be resolved by the Build() step. See BuilderLifeSupport
+        // for rationale.
+        internal::builder_life_support_stash<double, 1>(),
+        // Keep alive, reference: `builder` keeps `controller_plant` alive.  It
+        // would be preferable to attach the keep-alive to the SimIiwaDriver
+        // diagram/system, but it does not appear in the function signature.
+        // Use the builder as an adequate lifetime proxy, since it will be kept
+        // alive via lifetime management associated with Build() calls.
+        py::keep_alive<1, 6>(), doc.BuildIiwaControl.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    m.def("BuildIiwaControl",
+        WrapDeprecated(doc.BuildIiwaControl.doc_deprecated,
+            overload_cast_explicit<void,
+                const multibody::MultibodyPlant<double>&,
+                const multibody::ModelInstanceIndex,
+                const multibody::MultibodyPlant<double>&,
+                lcm::DrakeLcmInterface*, systems::DiagramBuilder<double>*,
+                double, const std::optional<Eigen::VectorXd>&, IiwaControlMode>(
+                &BuildIiwaControl)),
+        py::arg("plant"), py::arg("iiwa_instance"), py::arg("controller_plant"),
+        py::arg("lcm"), py::arg("builder"),
+        py::arg("ext_joint_filter_tau") = 0.01,
         py::arg("desired_iiwa_kp_gains") = std::nullopt,
         py::arg("control_mode") = IiwaControlMode::kPositionAndTorque,
         // Using builder_life_support_stash makes the
@@ -214,7 +244,8 @@ void DefineManipulationKukaIiwa(py::module m) {
         // diagram/system, but it does not appear in the function signature.
         // Use the builder as an adequate lifetime proxy, since it will be kept
         // alive via lifetime management associated with Build() calls.
-        py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc);
+        py::keep_alive<5, 3>(), doc.BuildIiwaControl.doc_deprecated);
+#pragma GCC diagnostic pop
   }
 }
 
