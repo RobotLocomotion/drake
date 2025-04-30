@@ -40,23 +40,6 @@ cc_library(
     linkopts = PYTHON_LINKOPTS,
 )
 
-cc_library(
-    name = "python",
-    deps = [
-        ":cc_headers",
-        ":cc_libs",
-    ],
-    visibility = ["//visibility:public"],
-    deprecation = "DRAKE DEPRECATED: This target is deprecated and will be removed from Drake on or after 2025-05-01. As a replacement, use both @drake//tools/workspace/python:cc_headers and @drake//tools/workspace/python:cc_libs.",  # noqa
-)
-
-cc_library(
-    name = "python_direct_link",
-    visibility = ["//visibility:public"],
-    deps = ["@drake//tools/workspace/python:cc_libpython"],
-    deprecation = "DRAKE DEPRECATED: This target is deprecated and will be removed from Drake on or after 2025-05-01. As a replacement, use @drake//tools/workspace/python:cc_libpython.",  # noqa
-)
-
 py_runtime(
     name = "runtime",
     interpreter_path = PYTHON_BIN_PATH,

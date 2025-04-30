@@ -69,9 +69,6 @@ drake_py_binary(
     name = "benchmark_tool",
     testonly = True,
     srcs = ["benchmark_tool.py"],
-    data = [
-        "//tools/workspace/cc:compiler.txt",
-    ],
 )
 
 add_lint_tests(

@@ -8,7 +8,7 @@ def _impl(repo_ctx):
     # later on, if and only if the library is actually used.
     setup_pkg_config_repository(repo_ctx)
 
-liblapack_repository = repository_rule(
+pkgconfig_lapack_internal_repository = repository_rule(
     attrs = {
         # Note that on Debian and Ubuntu in particular, the pkg-config lapack
         # is chosen by the Ubuntu alternatives system, which might be one of
@@ -17,7 +17,6 @@ liblapack_repository = repository_rule(
         "extra_deps": attr.string_list(default = [
             "@pkgconfig_blas_internal",
         ]),
-        "extra_deprecation": attr.string(default = "DRAKE DEPRECATED: The @liblapack repository is deprecated. Use the @lapack repository, instead. The deprecated code will be removed from Drake on or after 2025-05-01."),  # noqa
     },
     local = True,
     configure = True,
