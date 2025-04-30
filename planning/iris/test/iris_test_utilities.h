@@ -71,10 +71,6 @@ class DoublePendulum : public IrisTestFixture {
   geometry::optimization::Hyperellipsoid starting_ellipsoid_;
   geometry::optimization::HPolyhedron domain_;
 
-  geometry::optimization::Hyperellipsoid
-      starting_ellipsoid_rational_forward_kinematics_;
-  geometry::optimization::HPolyhedron domain_rational_forward_kinematics_;
-
   inline static const double physical_param_l1_ = 2.0;
   inline static const double physical_param_l2_ = 1.0;
   inline static const double physical_param_r_ = .5;
