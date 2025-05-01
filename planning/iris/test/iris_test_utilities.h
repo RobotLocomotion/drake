@@ -232,5 +232,78 @@ class ConvexConfigurationSubspace : public ConvexConfigurationSpace {
   Vector1d region_query_point_2_;
 };
 
+/* A movable sphere with fixed boxes in all corners.
+┌───────────────┐
+│┌────┐   ┌────┐│
+││    │   │    ││
+│└────┘   └────┘│
+│       o       │
+│┌────┐   ┌────┐│
+││    │   │    ││
+│└────┘   └────┘│
+└───────────────┘ */
+class FourCornersBoxes : public IrisTestFixture {
+ protected:
+  FourCornersBoxes();
+
+  void CheckRegion(const geometry::optimization::HPolyhedron&);
+  void CheckRegionContainsPoints(
+      const geometry::optimization::HPolyhedron& region,
+      const Eigen::Matrix2Xd& containment_points);
+  void PlotEnvironmentAndRegion(
+      const geometry::optimization::HPolyhedron& region);
+  void PlotContainmentPoints(const Eigen::Matrix2Xd& containment_points);
+
+  std::shared_ptr<geometry::Meshcat> meshcat_;
+
+  geometry::optimization::Hyperellipsoid starting_ellipsoid_;
+  geometry::optimization::HPolyhedron domain_;
+
+  const std::string urdf_ = R"(
+<robot name="boxes">
+  <link name="fixed">
+    <collision name="top_left">
+      <origin rpy="0 0 0" xyz="-1 1 0"/>
+      <geometry><box size="1.4 1.4 1.4"/></geometry>
+    </collision>
+    <collision name="top_right">
+      <origin rpy="0 0 0" xyz="1 1 0"/>
+      <geometry><box size="1.4 1.4 1.4"/></geometry>
+    </collision>
+    <collision name="bottom_left">
+      <origin rpy="0 0 0" xyz="-1 -1 0"/>
+      <geometry><box size="1.4 1.4 1.4"/></geometry>
+    </collision>
+    <collision name="bottom_right">
+      <origin rpy="0 0 0" xyz="1 -1 0"/>
+      <geometry><box size="1.4 1.4 1.4"/></geometry>
+    </collision>
+  </link>
+  <joint name="fixed_link_weld" type="fixed">
+    <parent link="world"/>
+    <child link="fixed"/>
+  </joint>
+  <link name="movable">
+    <collision name="sphere">
+      <geometry><sphere radius="0.01"/></geometry>
+    </collision>
+  </link>
+  <link name="for_joint"/>
+  <joint name="x" type="prismatic">
+    <axis xyz="1 0 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="world"/>
+    <child link="for_joint"/>
+  </joint>
+  <joint name="y" type="prismatic">
+    <axis xyz="0 1 0"/>
+    <limit lower="-2" upper="2"/>
+    <parent link="for_joint"/>
+    <child link="movable"/>
+  </joint>
+</robot>
+)";
+};
+
 }  // namespace planning
 }  // namespace drake
