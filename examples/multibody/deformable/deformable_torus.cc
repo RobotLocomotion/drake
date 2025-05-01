@@ -174,6 +174,8 @@ int do_main() {
   deformable_config.set_poissons_ratio(FLAGS_nu);
   deformable_config.set_mass_density(FLAGS_density);
   deformable_config.set_stiffness_damping_coefficient(FLAGS_beta);
+  deformable_config.set_material_model(
+      drake::multibody::fem::MaterialModel::kNeoHookean);
 
   /* Load the geometry and scale it down to 65% (to showcase the scaling
    capability and to make the torus suitable for grasping by the gripper). */
