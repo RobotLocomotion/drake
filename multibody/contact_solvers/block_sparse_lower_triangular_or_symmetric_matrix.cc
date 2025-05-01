@@ -1,7 +1,6 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 
 #include <algorithm>
-#include <unordered_set>
 
 #include <fmt/format.h>
 
@@ -115,7 +114,7 @@ MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
 
 template <typename MatrixType, bool is_symmetric>
 void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
-    ZeroRowsAndColumns(const std::vector<int>& indices) {
+    ZeroRowsAndColumns(const std::set<int>& indices) {
   DRAKE_THROW_UNLESS(is_symmetric);
   for (int j : indices) {
     if (!(0 <= j && j < block_cols())) {
@@ -124,11 +123,10 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
           block_cols(), j));
     }
   }
-  std::unordered_set<int> indices_set(indices.begin(), indices.end());
   for (int j = 0; j < block_cols(); ++j) {
     /* Zero all blocks in the column except the diagonal if j is among the
      row/column indices to be zeroed out. */
-    if (indices_set.contains(j)) {
+    if (indices.contains(j)) {
       /* We want to keep the conditioning of the matrix in the ballpark of the
        original matrix (e.g. setting diagonal blocks to identity when the
        original values are the on order of millions is a bad idea), so we keep

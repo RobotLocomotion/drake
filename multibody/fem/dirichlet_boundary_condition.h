@@ -1,7 +1,7 @@
 #pragma once
 
 #include <map>
-#include <vector>
+#include <set>
 
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
@@ -49,10 +49,16 @@ class DirichletBoundaryCondition {
   DirichletBoundaryCondition() {}
 
   /* Sets the node with the given `index` to be subject to the prescribed
-   `boundary_state`.
+   `boundary_state`. If multiple boundary conditions are specified for the same
+    node, the last one will be used.
    @pre index.is_valid() and values provided in `boundary_state` are finite. */
   void AddBoundaryCondition(FemNodeIndex index,
                             const NodeState<T>& boundary_state);
+
+  /* Merges the boundary conditions specified by `other` into this
+   boundary condition. If multiple boundary conditions are specified for the
+   same node, the last one from `other` will be used. */
+  void Merge(const DirichletBoundaryCondition<T>& other);
 
   /* Returns the boundary conditions as an `std::map` with node indices as keys
    and the prescribed boundary states as values. */
@@ -98,7 +104,7 @@ class DirichletBoundaryCondition {
   std::map<FemNodeIndex, NodeState<T>> node_to_boundary_state_{};
 
   /* FemNodeIndex of nodes under BC (represented as ints). */
-  std::vector<int> node_indices_{};
+  std::set<int> node_indices_{};
 };
 
 }  // namespace internal
