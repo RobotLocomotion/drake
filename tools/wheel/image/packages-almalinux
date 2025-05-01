@@ -17,6 +17,7 @@ diffutils
 file
 patch
 patchelf
+redhat-lsb-core
 wget
 which
 
