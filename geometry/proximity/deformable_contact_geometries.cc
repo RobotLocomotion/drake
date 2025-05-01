@@ -61,6 +61,7 @@ DeformableGeometry& DeformableGeometry::operator=(
   deformable_surface_ = std::make_unique<DeformableSurfaceMeshWithBvh<double>>(
       *other.deformable_surface_);
   surface_index_to_volume_index_ = other.surface_index_to_volume_index_;
+  surface_tri_to_volume_tet_ = other.surface_tri_to_volume_tet_;
   // We can't simply copy the field; the copy must contain a pointer to
   // the new mesh. So, we use CloneAndSetMesh() instead.
   signed_distance_field_ = other.signed_distance_field_->CloneAndSetMesh(
@@ -70,13 +71,15 @@ DeformableGeometry& DeformableGeometry::operator=(
 
 DeformableGeometry::DeformableGeometry(
     VolumeMesh<double> volume_mesh, TriangleSurfaceMesh<double> surface_mesh,
-    std::vector<int> surface_index_to_volume_index)
+    std::vector<int> surface_index_to_volume_index,
+    std::vector<int> surface_tri_to_volume_tet)
     : deformable_volume_(std::make_unique<DeformableVolumeMeshWithBvh<double>>(
           std::move(volume_mesh))),
       deformable_surface_(
           std::make_unique<DeformableSurfaceMeshWithBvh<double>>(
               std::move(surface_mesh))),
       surface_index_to_volume_index_(std::move(surface_index_to_volume_index)),
+      surface_tri_to_volume_tet_(std::move(surface_tri_to_volume_tet)),
       signed_distance_field_(
           ApproximateSignedDistanceField(&deformable_volume_->mesh())) {}
 

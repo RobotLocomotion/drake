@@ -122,11 +122,15 @@ class ProximityEngine {
    @param surface_index_to_volume_index
                   A mapping from the index of a vertex in the surface mesh to
                   the index of the corresponding vertex in the volume mesh.
+   @param surface_tri_to_volume_tet
+                  A mapping from the index of a triangle in the surface mesh to
+                  the index of the corresponding tetrahedron in the volume mesh.
    @param id      The id of the geometry in SceneGraph to which this mesh
                   belongs. */
   void AddDeformableGeometry(const VolumeMesh<double>& mesh_W,
                              TriangleSurfaceMesh<double> surface_mesh_W,
                              std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet,
                              GeometryId id);
 
   /* Reports if the engine requires a convex hull for the given geometry. */
