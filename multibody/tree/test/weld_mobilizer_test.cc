@@ -110,6 +110,8 @@ TEST_F(WeldMobilizerTest, KinematicMapping) {
   MatrixX<double> N(0, 0);
   weld_body_to_world_->CalcNMatrix(*context_, &N);
   weld_body_to_world_->CalcNplusMatrix(*context_, &N);
+  weld_body_to_world_->CalcNDotMatrix(*context_, &N);
+  weld_body_to_world_->CalcNplusDotMatrix(*context_, &N);
 }
 
 // Since the functions involved are no-ops, MapUsesN and MapUsesNPlus
