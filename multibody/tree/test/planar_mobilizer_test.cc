@@ -308,6 +308,16 @@ TEST_F(PlanarMobilizerTest, KinematicMapping) {
   MatrixX<double> Nplus(3, 3);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus, Matrix3d::Identity());
+
+  // Ensure Ṅ(q,q̇) = 3x3 zero matrix.
+  MatrixX<double> NDot(3, 3);
+  mobilizer_->CalcNDotMatrix(*context_, &NDot);
+  EXPECT_EQ(NDot, Matrix3d::Zero());
+
+  // Ensure Ṅ⁺(q,q̇) = 3x3 zero matrix.
+  MatrixX<double> NplusDot(3, 3);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_EQ(NplusDot, Matrix3d::Zero());
 }
 
 TEST_F(PlanarMobilizerTest, MapUsesN) {

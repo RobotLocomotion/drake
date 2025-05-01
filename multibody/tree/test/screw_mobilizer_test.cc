@@ -326,6 +326,16 @@ TEST_F(ScrewMobilizerTest, KinematicMapping) {
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus, Matrix1d::Identity().eval());
+
+  // Ensure Ṅ(q,q̇) = 1x1 zero matrix.
+  MatrixX<double> NDot(1, 1);
+  mobilizer_->CalcNDotMatrix(*context_, &NDot);
+  EXPECT_EQ(NDot(0, 0), 0.0);
+
+  // Ensure Ṅ⁺(q,q̇) = 1x1 zero matrix.
+  MatrixX<double> NplusDot(1, 1);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_EQ(NplusDot(0, 0), 0.0);
 }
 
 TEST_F(ScrewMobilizerTest, MapUsesN) {
