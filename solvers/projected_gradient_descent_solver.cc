@@ -98,7 +98,7 @@ void ProjectedGradientDescentSolver::DoSolve2(
     MathematicalProgramResult* result) const {
   const KnownOptions parsed_options = ParseOptions(options);
 
-  // Replace any nan values in the initial guess with zero.
+  // First, we replace any nan values in the initial guess with zero.
   VectorXd x_current = initial_guess;
   for (int i = 0; i < x_current.size(); ++i) {
     if (std::isnan(x_current[i])) {
@@ -106,36 +106,8 @@ void ProjectedGradientDescentSolver::DoSolve2(
     }
   }
 
-  // First, we have to build some machinery to quickly find which variables in
-  // prog.decision_variables() each Binding<Cost> and Binding<Constraint> need.
-  std::unordered_map<symbolic::Variable::Id, int> variable_to_index;
-  for (int i = 0; i < prog.decision_variables().size(); ++i) {
-    variable_to_index.emplace(prog.decision_variables()[i].get_id(), i);
-  }
-
   std::vector<Binding<Cost>> costs = prog.GetAllCosts();
-  std::vector<VectorXi> cost_variable_indices(costs.size());
-  for (int i = 0; i < ssize(costs); ++i) {
-    const auto& binding_variables = costs[i].variables();
-    cost_variable_indices[i] = VectorXi::Zero(binding_variables.size());
-    for (int j = 0; j < binding_variables.size(); ++j) {
-      auto iterator = variable_to_index.find(binding_variables[j].get_id());
-      DRAKE_DEMAND(iterator != variable_to_index.end());
-      cost_variable_indices[i][j] = iterator->second;
-    }
-  }
-
   std::vector<Binding<Constraint>> constraints = prog.GetAllConstraints();
-  std::vector<VectorXi> constraint_variable_indices(constraints.size());
-  for (int i = 0; i < ssize(constraints); ++i) {
-    const auto& binding_variables = constraints[i].variables();
-    constraint_variable_indices[i] = VectorXi::Zero(binding_variables.size());
-    for (int j = 0; j < binding_variables.size(); ++j) {
-      auto iterator = variable_to_index.find(binding_variables[j].get_id());
-      DRAKE_DEMAND(iterator != variable_to_index.end());
-      constraint_variable_indices[i][j] = iterator->second;
-    }
-  }
 
   // Next, we construct an auxiliary MathematicalProgram, for use in the
   // projection step. We clone prog, remove all costs, and add a quadratic
@@ -145,6 +117,8 @@ void ProjectedGradientDescentSolver::DoSolve2(
   for (const auto& cost : costs) {
     projection_prog_ptr->RemoveCost(cost);
   }
+  // We parse the quadratic error cost into a standard-form quadratic cost to
+  // match the use later in the program.
   MatrixXd projection_cost_Q = MatrixXd::Identity(
       projection_prog_ptr->num_vars(), projection_prog_ptr->num_vars());
   VectorXd projection_cost_b;
@@ -161,14 +135,9 @@ void ProjectedGradientDescentSolver::DoSolve2(
       [&](const VectorXd& x) {
         double cost = 0.0;
         for (int i = 0; i < ssize(costs); ++i) {
-          VectorXd x_relevant(cost_variable_indices[i].size());
-          for (int j = 0; j < cost_variable_indices[i].size(); ++j) {
-            x_relevant[j] = x[cost_variable_indices[i][j]];
-          }
-          VectorXd y_output;
-          costs[i].evaluator()->Eval(x_relevant, &y_output);
-          DRAKE_THROW_UNLESS(y_output.size() == 1);
-          cost += y_output[0];
+          VectorXd y = prog.EvalBinding(costs[i], x);
+          DRAKE_ASSERT(y.size() == 1);
+          cost += y[0];
         }
         return cost;
       };
@@ -179,17 +148,10 @@ void ProjectedGradientDescentSolver::DoSolve2(
         AutoDiffVecXd x_ad = math::InitializeAutoDiff(x);
         VectorXd gradient = VectorXd::Zero(x.size());
         for (int i = 0; i < ssize(costs); ++i) {
-          AutoDiffVecXd x_relevant(cost_variable_indices[i].size());
-          for (int j = 0; j < cost_variable_indices[i].size(); ++j) {
-            x_relevant[j] = x_ad[cost_variable_indices[i][j]];
-          }
-          AutoDiffVecXd y_relevant;
-          costs[i].evaluator()->Eval(x_relevant, &y_relevant);
-          VectorXd gradient_part =
-              math::ExtractGradient(y_relevant).row(0).transpose();
-          for (int j = 0; j < cost_variable_indices[i].size(); ++j) {
-            gradient[cost_variable_indices[i][j]] += gradient_part[j];
-          }
+          AutoDiffVecXd y_ad = prog.EvalBinding(costs[i], x_ad);
+          Eigen::RowVectorXd gradient_part = math::ExtractGradient(y_ad);
+          DRAKE_ASSERT(gradient_part.size() == gradient.size());
+          gradient += gradient_part.transpose();
         }
         return gradient;
       });
