@@ -1744,7 +1744,13 @@ PYBIND11_MODULE(plant, m) {
             [](const Class* self, geometry::GeometryId geometry_id) {
               return self->GetBodyId(geometry_id);
             },
-            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id);
+            py::arg("geometry_id"), cls_doc.GetBodyId.doc_1args_geometry_id)
+        /* The parallelism configuration is for internal-use only and thus the
+         naming choice. This will go away when we figure out a more principled
+         way of using threads in a single deformable sim. */
+        .def("_set_parallelism", &Class::SetParallelism, py::arg("parallelism"),
+            cls_doc.SetParallelism.doc)
+        .def("_parallelism", &Class::parallelism, cls_doc.parallelism.doc);
   }
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

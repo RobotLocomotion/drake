@@ -1,5 +1,6 @@
 #include "drake/multibody/fem/fem_model.h"
 
+#include <common_robotics_utilities/openmp_helpers.hpp>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -42,6 +43,7 @@ GTEST_TEST(FemModelTest, Constructor) {
 
 GTEST_TEST(FemModelTest, CalcResidual) {
   LinearDummyModel model;
+  model.set_parallelism(ENABLE_PARALLEL_OPS);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
@@ -64,6 +66,7 @@ GTEST_TEST(FemModelTest, CalcResidual) {
 
 GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
   LinearDummyModel model;
+  model.set_parallelism(ENABLE_PARALLEL_OPS);
   LinearDummyModel::DummyBuilder builder(&model);
   /* Add a few elements that don't share nodes. The non-overlapping elements
    simplifies the computation for easier testing. */
@@ -105,6 +108,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
  depends on the context. */
 GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
   LinearDummyModel model;
+  model.set_parallelism(ENABLE_PARALLEL_OPS);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddElementWithDistinctNodes();
   builder.Build();
@@ -171,6 +175,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
 
 GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   LinearDummyModel model;
+  model.set_parallelism(ENABLE_PARALLEL_OPS);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
@@ -298,6 +303,7 @@ GTEST_TEST(FemModelTest, MultipleBuilders) {
  correctly invoked on the state, residual, and tangent matrix. */
 GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
   LinearDummyModel model;
+  model.set_parallelism(ENABLE_PARALLEL_OPS);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddElementWithDistinctNodes();
   builder.Build();
@@ -449,6 +455,24 @@ GTEST_TEST(FemModelTest, Clone) {
   clone->CalcTangentMatrix(*clone_state, weights, clone_tangent_matrix.get());
   EXPECT_EQ(tangent_matrix->MakeDenseMatrix(),
             clone_tangent_matrix->MakeDenseMatrix());
+}
+
+GTEST_TEST(FemModelTest, TestExpectedNumThreads) {
+#if defined(_OPENMP)
+  constexpr bool has_openmp = true;
+#else
+  constexpr bool has_openmp = false;
+#endif
+
+  const int num_omp_threads =
+      common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
+
+  if (has_openmp && ENABLE_PARALLEL_OPS) {
+    // The build file specifies OMP_NUM_THREADS=2 for the parallel test.
+    EXPECT_EQ(num_omp_threads, 2);
+  } else {
+    EXPECT_EQ(num_omp_threads, 1);
+  }
 }
 
 }  // namespace

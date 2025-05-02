@@ -318,6 +318,14 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 }
 
 template <typename T>
+void DeformableModel<T>::SetParallelism(Parallelism parallelism) {
+  parallelism_ = parallelism;
+  for (auto& [_, fem_model] : fem_models_) {
+    fem_model->set_parallelism(parallelism);
+  }
+}
+
+template <typename T>
 std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     MultibodyPlant<double>* plant) const {
   auto result = std::make_unique<DeformableModel<double>>(plant);
@@ -357,6 +365,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     /* `configuration_output_port_index_` is set in `DeclareSceneGraphPorts()`;
      because callers to `PhysicalModel::CloneToScalar` are required to
      subsequently call `DeclareSceneGraphPorts`. */
+    result->parallelism_ = parallelism_;
   }
 
   return result;
@@ -445,6 +454,7 @@ DeformableModel<T>::BuildLinearVolumetricModelHelper(
   builder.AddLinearTetrahedralElements(mesh, constitutive_model,
                                        config.mass_density(), damping_model);
   builder.Build();
+  fem_model->set_parallelism(parallelism_);
 
   fem_models_.emplace(id, std::move(fem_model));
 }
