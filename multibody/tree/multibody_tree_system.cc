@@ -229,7 +229,8 @@ void MultibodyTreeSystem<T>::Finalize() {
   cache_indexes_.frame_body_poses =
       this->DeclareCacheEntry(
               std::string("frame pose in body frame"),
-              FrameBodyPoseCache<T>(num_frame_body_poses_needed),
+              FrameBodyPoseCache<T>(internal_tree().num_mobods(),
+                                    num_frame_body_poses_needed),
               &MultibodyTreeSystem<T>::CalcFrameBodyPoses,
               {this->all_parameters_ticket()})
           .cache_index();

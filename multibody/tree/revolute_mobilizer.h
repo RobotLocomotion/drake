@@ -248,6 +248,14 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
     return X_FB;
   }
 
+  // Returns v_F = aR_FM * v_M, exploiting the known structure of the axial
+  // rotation matrix aR_FM.
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>& aR_FM,
+                        const Vector3<T>& v_M) const {
+    return math::RotationMatrix<T>::template ApplyAxialRotation<axis>(aR_FM,
+                                                                      v_M);
+  }
+
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
   // frame M measured and expressed in frame F as a function of the input
   // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
