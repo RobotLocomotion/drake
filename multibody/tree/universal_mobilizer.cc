@@ -158,6 +158,18 @@ void UniversalMobilizer<T>::DoCalcNplusMatrix(
 }
 
 template <typename T>
+void UniversalMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>&,
+                                             EigenPtr<MatrixX<T>> Ndot) const {
+  *Ndot = Matrix2<T>::Zero();
+}
+
+template <typename T>
+void UniversalMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> NplusDot) const {
+  *NplusDot = Matrix2<T>::Zero();
+}
+
+template <typename T>
 void UniversalMobilizer<T>::MapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {

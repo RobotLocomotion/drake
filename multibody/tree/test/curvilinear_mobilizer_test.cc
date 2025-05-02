@@ -6,7 +6,6 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/piecewise_constant_curvature_trajectory.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/curvilinear_joint.h"
@@ -255,22 +254,13 @@ TEST_F(CurvilinearMobilizerTest, KinematicMapping) {
 
   // Ensure Ṅ(q,q̇) = 1x1 zero matrix.
   MatrixX<double> NDot(1, 1);
-  DRAKE_EXPECT_THROWS_MESSAGE(mobilizer_->CalcNDotMatrix(*context_, &NDot),
-                              ".*The function DoCalcNDotMatrix\\(\\) has not "
-                              "been implemented for this mobilizer.*");
-  // TODO(Mitiguy) Uncomment next 2 lines when DoCalcNDotMatrix() is done.
-  // mobilizer_->CalcNDotMatrix(*context_, &NDot);
-  // EXPECT_EQ(NDot(0, 0), 0.0);
+  mobilizer_->CalcNDotMatrix(*context_, &NDot);
+  EXPECT_EQ(NDot(0, 0), 0.0);
 
   // Ensure Ṅ⁺(q,q̇) = 1x1 zero matrix.
   MatrixX<double> NplusDot(1, 1);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot),
-      ".*The function DoCalcNplusDotMatrix\\(\\) has not "
-      "been implemented for this mobilizer.*");
-  // TODO(Mitiguy) Uncomment next 2 lines when DoCalcNplusDotMatrix() is done.
-  // mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
-  // EXPECT_EQ(NplusDot(0, 0), 0.0);
+  mobilizer_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_EQ(NplusDot(0, 0), 0.0);
 }
 
 }  // namespace
