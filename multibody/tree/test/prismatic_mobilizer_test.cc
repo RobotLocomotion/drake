@@ -163,6 +163,7 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
   slider_z->update_X_FM(&new_translation, &fast_X_FM);
   EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
 
+  TestApplyR_FM(X_FM, *slider_z);
   TestPrePostMultiplyByX_FM(X_FM, *slider_z);
 }
 

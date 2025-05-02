@@ -151,6 +151,7 @@ TEST_F(RpyFloatingMobilizerTest, CalcAcrossMobilizerTransform) {
   mobilizer_->update_X_FM(q, &fast_X_FM);
   EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
 
+  TestApplyR_FM(X_FM, *mobilizer_);
   TestPrePostMultiplyByX_FM(X_FM, *mobilizer_);
 }
 
