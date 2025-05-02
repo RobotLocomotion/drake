@@ -30,8 +30,8 @@ def bazelisk_repository(
         To fully test, a Linux uprovisioned job must be launched from the
         pull request.
         """,
-        commit = "v1.25.0",
-        sha256 = "8ff4c6b9ab6a00fbef351d52fde39afc2b9f047865f219a89ed0b23ad6f8cf06",  # noqa
+        commit = "v1.26.0",
+        sha256 = "d55ea90acb6da4cacdfad0eeecf55e58da9d3fd4b88d58502ddd34e48bb28f70",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
