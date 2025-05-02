@@ -9,8 +9,8 @@ def mypy_extensions_internal_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "python/mypy_extensions",
-        commit = "1.0.0",
-        sha256 = "c1f1fc0cc5f5be7d3a70b6dd4b85f9e2b02d788d66f3a168652a65df6571df07",  # noqa
+        commit = "1.1.0",
+        sha256 = "178030dd39335042c2c5becccc596c2f307f796868f9c627da3fe14d76de9d97",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
