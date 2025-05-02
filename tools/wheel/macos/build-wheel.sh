@@ -27,23 +27,12 @@ readonly python_prefix="$(brew --prefix python@$python_version)"
 readonly python_executable="$python_prefix/bin/$python"
 
 # -----------------------------------------------------------------------------
-# Clean up from old builds.
-# -----------------------------------------------------------------------------
-
-rm -rf "/opt/drake-wheel-build/$python"
-rm -rf "/opt/drake-dist/$python"
-
-if [ -e "/opt/drake" ]; then
-    echo "Unable to proceed: /opt/drake exists" \
-         "(left over from a failed build?)" >&2
-    exit 1
-fi
-
-# -----------------------------------------------------------------------------
 # Build and "install" Drake.
 # -----------------------------------------------------------------------------
 
-readonly build_root="/opt/drake-wheel-build/$python/drake-build"
+"$resource_root/image/provision-build.sh" "$python-"
+
+readonly build_root="/tmp/drake-wheel-build/drake-build"
 
 mkdir -p "$build_root"
 cd "$build_root"
@@ -51,8 +40,8 @@ cd "$build_root"
 # Add wheel-specific bazel options.
 # N.B. When you change anything here, also fix wheel/image/build-drake.sh.
 cat > "$build_root/drake.bazelrc" << EOF
-build --disk_cache=$HOME/.cache/drake-wheel-build/bazel/disk_cache
-build --repository_cache=$HOME/.cache/drake-wheel-build/bazel/repository_cache
+build --disk_cache=/tmp/drake-wheel-build/bazel/disk_cache
+build --repository_cache=/tmp/drake-wheel-build/bazel/repository_cache
 build --repo_env=DRAKE_WHEEL=1
 build --repo_env=SNOPT_PATH=${SNOPT_PATH}
 build --config=packaging
@@ -71,7 +60,7 @@ cmake "$git_root" \
     -DWITH_USER_LAPACK=OFF \
     -DWITH_USER_ZLIB=OFF \
     -DDRAKE_VERSION_OVERRIDE="${DRAKE_VERSION}" \
-    -DCMAKE_INSTALL_PREFIX="/opt/drake-dist/$python" \
+    -DCMAKE_INSTALL_PREFIX="/tmp/drake-wheel-build/drake-dist" \
     -DPython_EXECUTABLE="$python_executable"
 make install
 
@@ -91,9 +80,9 @@ find "$build_root" -type d -print0 | xargs -0 chmod u+w
 # "Install" additional tools to build the wheel.
 # -----------------------------------------------------------------------------
 
-ln -nsf "$git_root" "/opt/drake-wheel-build/drake"
+ln -nsf "$git_root" "/tmp/drake-wheel-build/drake-src"
 
-readonly venv_drake="/opt/drake-wheel-build/drake/venv"
+readonly venv_drake="/tmp/drake-wheel-build/drake-src/venv"
 
 ln -s \
     "$build_root/bazel-bin/external/drake+/tools/wheel/strip_rpath" \
@@ -107,17 +96,12 @@ ln -s \
 # Build the Drake wheel.
 # -----------------------------------------------------------------------------
 
-mkdir -p "/opt/drake-wheel-build/$python/wheel"
-
-ln -s "/opt/drake-dist/$python" \
-      "/opt/drake"
+mkdir -p "/tmp/drake-wheel-build/drake-wheel"
 
 cp \
     "$resource_root/image/setup.py" \
-    "/opt/drake-wheel-build/wheel/setup.py"
+    "/tmp/drake-wheel-build/drake-wheel/setup.py"
 
 export DRAKE_VERSION="$1"
 
 "$resource_root/image/build-wheel.sh"
-
-rm "/opt/drake"

@@ -14,9 +14,6 @@ from .common import test_root, find_tests
 
 from .macos_types import PythonTarget
 
-# Artifacts that need to be cleaned up. DO NOT MODIFY outside of this file.
-_files_to_remove = []
-
 # This is the complete set of defined targets (i.e. potential wheels). By
 # default, all targets are built, but the user may down-select from this set.
 # On macOS (unlike Linux), this is just the set of Python versions targeted.
@@ -28,17 +25,17 @@ python_targets = (
     PythonTarget(3, 13),
 )
 
+wheel_build_dir = os.path.join(
+    os.path.expanduser('~'), '.cache/drake-wheel-build')
+
 
 @atexit.register
 def _cleanup():
     """
     Removes temporary artifacts on exit.
     """
-    for f in _files_to_remove:
-        try:
-            os.unlink(f)
-        except FileNotFoundError:
-            gripe(f'Warning: failed to remove \'{f}\'?')
+    if os.path.isdir(wheel_build_dir):
+        shutil.rmtree(wheel_build_dir)
 
 
 def _find_wheel(path, version, python_target):
@@ -116,7 +113,7 @@ def build(options):
             'resulted in an empty set of wheels)')
 
     # Set up build environment.
-    os.makedirs(build_root, exist_ok=True)
+    os.system("image/provision-build.sh")
 
     # Sanitize the build/test environment.
     environment = os.environ.copy()
@@ -146,19 +143,22 @@ def build(options):
     environment['DRAKE_VERSION'] = options.version
 
     # Create the snopt source archive (and pass along as an environment var).
-    snopt_tgz = os.path.join(resource_root, 'image', 'snopt.tar.gz')
+    snopt_tgz = os.path.join(wheel_build_dir, 'snopt', 'snopt.tar.gz')
     environment['SNOPT_PATH'] = snopt_tgz
-    _files_to_remove.append(snopt_tgz)
+    os.makedirs(os.path.dirname(snopt_tgz), exist_ok=True)
     create_snopt_tgz(snopt_path=options.snopt_path, output=snopt_tgz)
 
     # Build the wheel(s).
     for python_target in targets_to_build:
+        if os.path.exists('/tmp/drake-wheel-build'):
+            if os.path.islink('/tmp/drake-wheel-build'):
+                os.unlink('/tmp/drake-wheel-build')
+            else:
+                # If it's not a symlink but a directory, that's a problem
+                shutil.rmtree('/tmp/drake-wheel-build')
+
         if os.path.islink(wheel_root):
             os.unlink(wheel_root)
-
-        wheel_versioned_root = os.path.join(
-            build_root, f'python{python_target.version}', 'wheel')
-        os.symlink(wheel_versioned_root, wheel_root)
 
         build_script = os.path.join(resource_root, 'macos', 'build-wheel.sh')
         build_command = ['bash', build_script]
@@ -177,11 +177,9 @@ def build(options):
         if options.extract:
             shutil.copy2(wheel, options.output_dir)
 
-        os.unlink(wheel_root)
-
     if not options.keep_build:
-        shutil.rmtree('/opt/drake-dist')
-        shutil.rmtree(build_root)
+        shutil.rmtree(os.path.realpath(build_root))
+        os.unlink(build_root)
         if options.test:
             shutil.rmtree(test_root)
 
