@@ -14,13 +14,13 @@ import sys
 import tarfile
 
 # Location where most of the build will take place.
-build_root = '/opt/drake-wheel-build'
+build_root = '/tmp/drake-wheel-build'
 
 # Location where testing of the wheel will take place.
-test_root = '/opt/drake-wheel-test'
+test_root = '/tmp/drake-wheel-test'
 
 # Location where the wheel will be produced.
-wheel_root = os.path.join(build_root, 'wheel')
+wheel_root = os.path.join(build_root, 'drake-wheel')
 wheelhouse = os.path.join(wheel_root, 'wheelhouse')
 
 # Location of various scripts and other artifacts used to complete the build.
@@ -84,6 +84,7 @@ def create_snopt_tgz(*, snopt_path, output):
         shutil.copy(src=snopt_path, dst=output)
         return
     print('[-] Creating SNOPT archive...', flush=True)
+
     tar_buffer = io.BytesIO()
     tar_writer = tarfile.open(mode='w', fileobj=tar_buffer)
 
