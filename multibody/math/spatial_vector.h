@@ -13,6 +13,16 @@
 #include "drake/common/fmt_ostream.h"
 #include "drake/math/rotation_matrix.h"
 
+/* Note: many of the operations in the various SpatialVector-derived classes
+are annotated with operation counts that look like "// 33 flops". These are
+counts of the _logical_ number of floating point operations required for
+the computation, e.g. 9 for a cross product, 45 for the product of two
+3x3 matrices. That is not necessarily the same as the number of instructions
+executed since SIMD instructions can perform multiple operations. These are
+intended as a hint as to where expensive work is being done when looking to
+speed up computation. Be sure to do real A/B performance measurements to
+determine whether a hypothetical improvement is really faster. */
+
 namespace drake {
 namespace multibody {
 

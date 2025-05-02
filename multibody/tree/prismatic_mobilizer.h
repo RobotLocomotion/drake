@@ -258,6 +258,12 @@ class PrismaticMobilizerAxial final : public PrismaticMobilizer<T> {
     return X_FB;
   }
 
+  // Since R_FM is identity, applying it to a vector does nothing.
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>&,
+                        const Vector3<T>& v_M) const {
+    return v_M;
+  }
+
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame M
   // measured and expressed in frame F as a function of the input translational
   // velocity v along this mobilizer's axis (see translation_axis()).
