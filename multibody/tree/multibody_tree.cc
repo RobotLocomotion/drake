@@ -1357,19 +1357,15 @@ void MultibodyTree<T>::CalcVelocityKinematicsCache(
   const T* positions = get_positions(context).data();
   const T* velocities = get_velocities(context).data();
 
-  // Performs a base-to-tip recursion computing body velocities.
-  // This skips the world, level = 0.
-  for (int level = 1; level < forest_height(); ++level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      const BodyNode<T>& node = *body_nodes_[mobod_index];
+  // Performs a base-to-tip recursion computing body velocities. Skip World.
+  for (MobodIndex mobod_index(1); mobod_index < ssize(body_nodes_);
+       ++mobod_index) {
+    const BodyNode<T>& node = *body_nodes_[mobod_index];
+    DRAKE_ASSERT(node.mobod_index() == mobod_index);
 
-      DRAKE_ASSERT(node.get_topology().level == level);
-      DRAKE_ASSERT(node.mobod_index() == mobod_index);
-
-      // Update per-mobod kinematics.
-      node.CalcVelocityKinematicsCache_BaseToTip(positions, pc, H_PB_W_cache,
-                                                 velocities, vc);
-    }
+    // Update per-mobod kinematics.
+    node.CalcVelocityKinematicsCache_BaseToTip(positions, pc, H_PB_W_cache,
+                                               velocities, vc);
   }
 }
 
@@ -1381,6 +1377,8 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
   DRAKE_THROW_UNLESS(M_B_W_all != nullptr);
   DRAKE_THROW_UNLESS(ssize(*M_B_W_all) == topology_.num_mobods());
 
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
   const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
 
   // Skip the world.
@@ -1394,8 +1392,8 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
     const RotationMatrix<T>& R_WB = X_WB.rotation();
 
     // Spatial inertia of body B about Bo and expressed in the body frame B.
-    // This call has zero cost for rigid bodies.
-    const SpatialInertia<T> M_B = body.CalcSpatialInertiaInBodyFrame(context);
+    const SpatialInertia<T>& M_B =
+        frame_body_pose_cache.get_M_BBo_B(body.mobod_index());
     // Re-express body B's spatial inertia in the world frame W.
     SpatialInertia<T>& M_B_W = (*M_B_W_all)[body.mobod_index()];
     M_B_W = M_B.ReExpress(R_WB);
@@ -1441,9 +1439,17 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
   DRAKE_ASSERT(frame_body_poses->get_X_BF(0).IsExactlyIdentity());
   DRAKE_ASSERT(frame_body_poses->get_X_FB(0).IsExactlyIdentity());
 
-  for (const Frame<T>* frame : frames_.elements()) {
-    const int body_pose_index_in_cache = frame->get_body_pose_index_in_cache();
-    if (frame->is_body_frame()) {
+  // N.B.: we are using "F" for arbitrary frames here; don't confuse it with
+  // a joint's parent frame F or mobilizer's inboard frame F. (Sure, some of
+  // these frames are the joint frames but most aren't and it doesn't matter
+  // here.)
+
+  // The first pass locates every frame F with respect to the body frame B
+  // of the body to which it is fixed.
+  for (const Frame<T>* frame_F : frames_.elements()) {
+    const int body_pose_index_in_cache =
+        frame_F->get_body_pose_index_in_cache();
+    if (frame_F->is_body_frame()) {
       DRAKE_DEMAND(body_pose_index_in_cache == 0);
       continue;
     }
@@ -1453,7 +1459,22 @@ void MultibodyTree<T>::CalcFrameBodyPoses(
     //  there is a performance issue, consider doing this in topological
     //  order (or memoizing) so we don't have to recalculate.
     frame_body_poses->SetX_BF(body_pose_index_in_cache,
-                              frame->CalcPoseInBodyFrame(context));
+                              frame_F->CalcPoseInBodyFrame(context));
+  }
+
+  // For every mobilized body, precalculate its body-frame spatial inertia
+  // M_BBo_B from the parameterization of that inertia.
+  for (const SpanningForest::Mobod& mobod : forest().mobods()) {
+    if (mobod.is_world()) continue;
+    // TODO(sherm1) Can't handle composites yet.
+    DRAKE_DEMAND(ssize(mobod.follower_link_ordinals()) == 1);
+    const Mobilizer<T>& mobilizer = get_mobilizer(mobod.index());
+
+    // Get the parameterized spatial inertia.
+    const RigidBody<T>& body = mobilizer.outboard_body();
+    const SpatialInertia<T> M_BBo_B =
+        body.CalcSpatialInertiaInBodyFrame(context);
+    frame_body_poses->SetM_BBo_B(mobod.index(), M_BBo_B);
   }
 }
 

@@ -64,6 +64,7 @@ TEST_F(WeldMobilizerTest, CalcAcrossMobilizerTransform) {
   weld_body_to_world_->update_X_FM(&q_dummy, &fast_X_FM);
   EXPECT_TRUE(fast_X_FM.IsExactlyIdentity());
 
+  TestApplyR_FM(X_FM, *weld_body_to_world_);
   TestPrePostMultiplyByX_FM(X_FM, *weld_body_to_world_);
 }
 
