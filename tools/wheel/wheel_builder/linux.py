@@ -2,7 +2,6 @@
 # //tools/wheel:builder for the user interface.
 
 import atexit
-import io
 import os
 import pathlib
 import subprocess
