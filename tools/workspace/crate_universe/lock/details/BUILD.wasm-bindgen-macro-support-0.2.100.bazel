@@ -103,9 +103,9 @@ rust_library(
     }),
     version = "0.2.100",
     deps = [
-        "@crate__proc-macro2-1.0.94//:proc_macro2",
+        "@crate__proc-macro2-1.0.95//:proc_macro2",
         "@crate__quote-1.0.40//:quote",
-        "@crate__syn-2.0.100//:syn",
+        "@crate__syn-2.0.101//:syn",
         "@crate__wasm-bindgen-backend-0.2.100//:wasm_bindgen_backend",
         "@crate__wasm-bindgen-shared-0.2.100//:wasm_bindgen_shared",
     ],
