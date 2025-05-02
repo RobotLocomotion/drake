@@ -10,6 +10,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/parallelism.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_plant_data.h"
@@ -220,6 +221,14 @@ class FemModel {
   void ThrowIfModelStateIncompatible(const char* func,
                                      const FemState<T>& fem_state) const;
 
+  /** Configures the parallelism that `this` %FemModel uses when oppotunities
+   for parallel computation arises. */
+  void set_parallelism(Parallelism parallelism) { parallelism_ = parallelism; }
+
+  /** Returns the parallelism that `this` %FemModel uses when oppotunities for
+   parallel computation arises. */
+  Parallelism parallelism() const { return parallelism_; }
+
  protected:
   /** Constructs an empty FEM model. */
   FemModel();
@@ -280,6 +289,7 @@ class FemModel {
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   /* The Dirichlet boundary condition that the model is subject to. */
   internal::DirichletBoundaryCondition<T> dirichlet_bc_;
+  Parallelism parallelism_{true};
 };
 
 }  // namespace fem

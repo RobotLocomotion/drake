@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/identifier.h"
+#include "drake/common/parallelism.h"
 #include "drake/multibody/fem/deformable_body_config.h"
 #include "drake/multibody/fem/fem_model.h"
 #include "drake/multibody/plant/constraint_specs.h"
@@ -346,6 +347,14 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   /** Returns true if and only if this %DeformableModel is empty. */
   bool is_cloneable_to_symbolic() const final { return is_empty(); }
 
+  /** Configures the parallelism that `this` %DeformableModel uses when
+   oppotunities for parallel computation arises. */
+  void SetParallelism(Parallelism parallelism);
+
+  /** Returns the parallelism that `this` %DeformableModel uses when
+   oppotunities for parallel computation arises. */
+  Parallelism parallelism() const { return parallelism_; }
+
  private:
   /* Allow different specializations to access each other's private data for
    scalar conversion. */
@@ -436,6 +445,7 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
   std::map<MultibodyConstraintId, internal::DeformableRigidFixedConstraintSpec>
       fixed_constraint_specs_;
   systems::OutputPortIndex configuration_output_port_index_;
+  Parallelism parallelism_{true};
 };
 
 }  // namespace multibody
