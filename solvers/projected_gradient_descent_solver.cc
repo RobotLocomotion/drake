@@ -15,7 +15,6 @@ using Eigen::VectorXi;
 
 namespace {
 constexpr const char kConvergenceTolOptionName[] = "ConvergenceTol";
-constexpr const char kFeasibilityTolOptionName[] = "FeasibilityTol";
 constexpr const char kMaxIterationsOptionName[] = "MaxIterations";
 constexpr const char kBacktrackingCOptionName[] = "BacktrackingC";
 constexpr const char kBacktrackingTauOptionName[] = "BacktrackingTau";
@@ -23,7 +22,6 @@ constexpr const char kBacktrackingAlpha0OptionName[] = "BacktrackingAlpha0";
 
 struct KnownOptions {
   double convergence_tol{1e-12};
-  double feasibility_tol{1e-6};
   int max_iterations{1000};
   double backtracking_c{0.5};
   double backtracking_tau{0.5};
@@ -35,8 +33,6 @@ void Serialize(internal::SpecificOptions* archive,
                KnownOptions& options) {
   archive->Visit(
       MakeNameValue(kConvergenceTolOptionName, &options.convergence_tol));
-  archive->Visit(
-      MakeNameValue(kFeasibilityTolOptionName, &options.feasibility_tol));
   archive->Visit(
       MakeNameValue(kMaxIterationsOptionName, &options.max_iterations));
   archive->Visit(
@@ -53,10 +49,6 @@ KnownOptions ParseOptions(internal::SpecificOptions* options) {
   if (result.convergence_tol <= 0) {
     throw std::invalid_argument(
         "ConvergenceTol should be a non-negative number.");
-  }
-  if (result.feasibility_tol <= 0) {
-    throw std::invalid_argument(
-        "FeasibilityTol should be a non-negative number.");
   }
   if (result.max_iterations < 1) {
     throw std::invalid_argument("MaxIterations must be at least one.");
@@ -143,8 +135,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
       };
   std::function<VectorXd(const VectorXd&)> gradient_function =
       custom_gradient_function_.value_or([&](const VectorXd& x) {
-        // TODO(cohnt): Switch to using
-        // MathematicalProgram::EvalBindingsAtInitialGuess?
         AutoDiffVecXd x_ad = math::InitializeAutoDiff(x);
         VectorXd gradient = VectorXd::Zero(x.size());
         for (int i = 0; i < ssize(costs); ++i) {
@@ -161,8 +151,8 @@ void ProjectedGradientDescentSolver::DoSolve2(
     const SolverId solver_id = ChooseBestSolver(prog);
     projection_solver_interface = MakeSolver(solver_id);
   }
-  std::function<VectorXd(const VectorXd&)> projection_function =
-      custom_projection_function_.value_or([&](const VectorXd& x) {
+  std::function<bool(const VectorXd&, VectorXd*)> projection_function =
+      custom_projection_function_.value_or([&](const VectorXd& x, VectorXd* y) {
         // Update the quadratic error cost.
         ConvertQuadraticErrorCost(x, projection_cost_Q, &projection_cost_b,
                                   &projection_cost_c);
@@ -182,7 +172,9 @@ void ProjectedGradientDescentSolver::DoSolve2(
               std::nullopt /* solver_options */, &projection_result);
         }
 
-        return projection_result.get_x_val();
+        DRAKE_DEMAND(y != nullptr);
+        *y = projection_result.get_x_val();
+        return projection_result.is_success();
       });
 
   const double convergence_tol_squared =
@@ -218,15 +210,14 @@ void ProjectedGradientDescentSolver::DoSolve2(
     }
 
     // Now project back to feasibility.
-    VectorXd projected_value =
-        projection_function(x_current + alpha * descent_direction);
+    VectorXd projected_value;
+    bool projection_succeeded = projection_function(
+        x_current + alpha * descent_direction, &projected_value);
     VectorXd step = projected_value - x_current;
     x_current = projected_value;
 
     // Check that the projection step succeeded.
-    if (!projection_prog_ptr->CheckSatisfied(
-            projection_prog_ptr->GetAllConstraints(), x_current,
-            parsed_options.feasibility_tol)) {
+    if (!projection_succeeded) {
       failed = true;
       break;
     }
@@ -251,10 +242,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
 
 std::string ProjectedGradientDescentSolver::ConvergenceTolOptionName() {
   return kConvergenceTolOptionName;
-}
-
-std::string ProjectedGradientDescentSolver::FeasibilityTolOptionName() {
-  return kFeasibilityTolOptionName;
 }
 
 std::string ProjectedGradientDescentSolver::MaxIterationsOptionName() {

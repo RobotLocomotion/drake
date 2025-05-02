@@ -41,9 +41,12 @@ class ProjectedGradientDescentSolver final : public SolverBase {
 
   /** Specify a custom projection function. Otherwise, this solver will attempt
    * to solve the L2 projection onto the feasible set of the MathematicalProgram
-   * it's used to solve. */
+   * it's used to solve. The projection function should return a boolean value
+   * indicating success or failure. It should take in two arguments: the point
+   * we are trying to stay close to, and an output argument where the projected
+   * value will be placed. */
   void SetCustomProjectionFunction(
-      const std::function<Eigen::VectorXd(const Eigen::VectorXd&)>&
+      const std::function<bool(const Eigen::VectorXd&, Eigen::VectorXd*)>&
           custom_projection_function) {
     custom_projection_function_ = custom_projection_function;
   }
@@ -109,7 +112,7 @@ class ProjectedGradientDescentSolver final : public SolverBase {
 
   std::optional<std::function<Eigen::VectorXd(const Eigen::VectorXd&)>>
       custom_gradient_function_;
-  std::optional<std::function<Eigen::VectorXd(const Eigen::VectorXd&)>>
+  std::optional<std::function<bool(const Eigen::VectorXd&, Eigen::VectorXd*)>>
       custom_projection_function_;
   const SolverInterface* projection_solver_interface_;
 };

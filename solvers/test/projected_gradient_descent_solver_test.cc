@@ -105,8 +105,9 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, CustomProjectionFunction) {
   // Note that we don't add any constraints to the program, to ensure the custom
   // projection function is being used. We restrict 1 <= x <= 3, and minimize
   // x^2.
-  auto custom_projection_function = [](const Vector1d& y) {
-    return Vector1d(std::max(1.0, std::min(y[0], 3.0)));
+  auto custom_projection_function = [](const Vector1d& y, VectorXd* z) {
+    *z = Vector1d(std::max(1.0, std::min(y[0], 3.0)));
+    return true;
   };
 
   ProjectedGradientDescentSolver solver;
@@ -159,40 +160,6 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, ProjectionSolverInterface) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       solver.Solve(prog, {}, {}),
       ".*EqualityConstrainedQPSolver is unable to solve.*");
-}
-
-TEST_F(SimpleUnconstrainedQP, FeasibilityTol) {
-  prog_.AddConstraint(x_(0) <= 0.0);
-
-  // Custom projection function that always returns 1e-3
-  auto custom_projection_function = [](const Vector1d& y) {
-    return Vector1d(1e-3);
-  };
-
-  solver_.SetCustomProjectionFunction(custom_projection_function);
-
-  SolverOptions options;
-  options.SetOption(ProjectedGradientDescentSolver::id(),
-                    ProjectedGradientDescentSolver::FeasibilityTolOptionName(),
-                    1e-2);
-
-  // The default feasibility tolerance of 1e-4 will fail. The custom tolerance
-  // of 1e-2 will succeed.
-  MathematicalProgramResult result =
-      solver_.Solve(prog_, Vector1d(1.0 + 1e-3), {});
-  EXPECT_FALSE(result.is_success());
-  EXPECT_EQ(result.get_solution_result(),
-            SolutionResult::kInfeasibleConstraints);
-  result = solver_.Solve(prog_, Vector1d(1.0 + 1e-3), options);
-  EXPECT_TRUE(result.is_success());
-
-  // Check the error message if an invalid value is used.
-  options.SetOption(ProjectedGradientDescentSolver::id(),
-                    ProjectedGradientDescentSolver::FeasibilityTolOptionName(),
-                    0.0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      solver_.Solve(prog_, {}, options),
-      ".*FeasibilityTol should be a non-negative number.*");
 }
 
 TEST_F(SimpleUnconstrainedQP, ConvergenceTol) {
