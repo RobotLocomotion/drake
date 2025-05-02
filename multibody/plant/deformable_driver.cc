@@ -442,6 +442,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
 
     const GeometryId id_A = surface.id_A();
     const GeometryId id_B = surface.id_B();
+    const std::string& name_A = inspector.GetName(id_A);
+    const std::string& name_B = inspector.GetName(id_B);
     /* Body A is guaranteed to be deformable. */
     const int body_index_A =
         deformable_model_->GetBodyIndex(deformable_model_->GetBodyId(id_A));
@@ -511,58 +513,69 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        We choose a large C = 1e8 Pa/m so that for ρ = 1000 kg/m³ and
        G = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
        density of water, a reasonably small penetration. */
+      const T C = 1e8;
+
       const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
       const T Ae = surface.contact_mesh_W().area(i);
-
-      /* One dimensional pressure gradient (in Pa/m), only used in deformable
-       vs. rigid contact, following the notation in [Masterjohn, 2022].
-       [Masterjohn, 2022] Velocity Level Approximation of Pressure Field
-       Contact Patches. */
-      std::optional<T> g;
+      std::optional<T> rigid_g;
       if (!is_deformable_vs_deformable) {
-        /* Filter out negative directional pressure derivatives (separating
+        /* One dimensional pressure gradient (in Pa/m), only used in deformable
+         vs. rigid contact, following the notation in [Masterjohn, 2022].
+         [Masterjohn, 2022] Velocity Level Approximation of Pressure Field
+         Contact Patches.
+         We Filter out negative directional pressure derivatives (separating
          contact) and tiny contact polygons (to avoid numerical issues).
          Unlike [Masterjohn, 2022], the pressure gradient is positive in the
          direction "into" the rigid body. Therefore, we need a negative sign. */
-        g = -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
-        if (g.value() < 1e-14 || Ae < 1e-14) {
+        rigid_g = -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
+
+        /* We found that geometry queries might repor tiny triangles (consider
+         for instance an initial condition that perfectly places an object at
+         zero distance from the ground.) While the area of zero sized triangles
+         is not a problem by itself, the badly computed normal on these
+         triangles leads to problems when computing the contact Jacobians (since
+         we need to obtain an orthonormal basis based on that normal). We
+         therefore ignore tiny triangles with areas below a certain arbitrary
+         threshold (1e-14 m²). We also ignore pressure gradients below a certain
+         threshold (1e-14 Pa/m) following the hydroelastic treatment. */
+        if (rigid_g.value() < 1e-14 || Ae < 1e-14) {
           continue;
         }
       }
 
-      const auto [k, phi0, fn0] = [&]() {
+      const T deformable_k = Ae * C;
+      const double default_dissipation =
+          manager_->default_contact_dissipation();
+      const auto [k, phi0, fn0, d] = [&]() {
         if (is_deformable_vs_deformable) {
-          const T deformable_k = Ae * 1e8;
           const T deformable_phi0 = surface.signed_distances()[i];
           const T deformable_fn0 = -deformable_k * deformable_phi0;
-          return std::make_tuple(deformable_k, deformable_phi0, deformable_fn0);
+          const T deformable_d = GetCombinedHuntCrossleyDissipation(
+              id_A, id_B, deformable_k, deformable_k, default_dissipation,
+              inspector);
+          return std::make_tuple(deformable_k, deformable_phi0, deformable_fn0,
+                                 deformable_d);
         } else {
-          DRAKE_ASSERT(g.has_value());
-          const T rigid_k = Ae * g.value();
-          const T rigid_phi0 = -surface.pressures()[i] / g.value();
+          DRAKE_ASSERT(rigid_g.has_value());
+          /* The one dimensional gradient for the deformable geometry based on
+           the "box-on-ground" estimate above. */
+          const T deformable_g = C;
+          /* Combined "effective" one dimensional gradient. */
+          const T g = 1.0 / (1.0 / deformable_g + 1.0 / rigid_g.value());
+          const T rigid_k = Ae * g;
+          const T rigid_phi0 = -surface.pressures()[i] / g;
           const T rigid_fn0 = Ae * surface.pressures()[i];
-          return std::make_tuple(rigid_k, rigid_phi0, rigid_fn0);
+          const T rigid_d = GetCombinedHuntCrossleyDissipation(
+              id_A, id_B, deformable_k, rigid_k, default_dissipation,
+              inspector);
+          return std::make_tuple(rigid_k, rigid_phi0, rigid_fn0, rigid_d);
         }
       }();
 
-      // TODO(xuchenhan-tri): Use the real H&C dissipation for rigid vs.
-      //  deformable.
-      /* While in Drake we provide constraints to model Hunt & Crossley or
-      linear Kelvin–Voigt dissipation, for deformable objects all we want is to
-      enforce the non-penetration constraint. We do this using the high
-      stiffness value specified above. Since compliant contact time scales
-      cannot be resolved at such high stiffness values, dissipation should be
-      irrelevant. Therefore we use zero Hunt & Crossley dissipation and the
-      "near rigid regime" time scale for the linear dissipation. */
-      const T d = 0.0;
-
-      /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
-       contact approximation. See multibody::DiscreteContactApproximation for
-       details about these contact models. We use dt as the default dissipation
-       constant so that the contact is in near-rigid regime and the compliance
-       is only used as stabilization. */
-      const T tau = manager_->plant().time_step();
-
+      const double default_dissipation_time_constant = 0.1;
+      const T tau = GetCombinedDissipationTimeConstant(
+          id_A, id_B, default_dissipation_time_constant, name_A, name_B,
+          inspector);
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 
