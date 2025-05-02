@@ -11,21 +11,21 @@ designed for end-user customization, and that's basically all we're doing here.
 @@ -205,8 +205,8 @@
  // be changed to a new, unique identifier name.  In particular "head" is not
  // allowed.
- 
+
 -#define ABSL_OPTION_USE_INLINE_NAMESPACE 0
 -#define ABSL_OPTION_INLINE_NAMESPACE_NAME head
 +#define ABSL_OPTION_USE_INLINE_NAMESPACE 1
 +#define ABSL_OPTION_INLINE_NAMESPACE_NAME drake_vendor
- 
+
  // ABSL_OPTION_HARDENED
  //
 
 --- absl/debugging/symbolize_elf.inc
 +++ absl/debugging/symbolize_elf.inc
-@@ -1653,9 +1653,11 @@
+@@ -1764,11 +1764,13 @@ bool Symbolize(const void *pc, char *out, int out_size) {
  ABSL_NAMESPACE_END
  }  // namespace absl
- 
+
 +#if 0  // This (dead) code disobeys the drake_vendor inline namespace.
  extern "C" bool AbslInternalGetFileMappingHint(const void **start,
                                                 const void **end, uint64_t *offset,
@@ -34,3 +34,5 @@ designed for end-user customization, and that's basically all we're doing here.
                                                        filename);
  }
 +#endif
+
+ #undef ABSL_INTERNAL_HAVE_PPC64_ELFV1_ABI
