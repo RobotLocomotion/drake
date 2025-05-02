@@ -701,6 +701,22 @@ TEST_F(DeformableModelTest, GetAndSetPositionsThrowConditions) {
       std::exception);
 }
 
+TEST_F(DeformableModelTest, Parallelism) {
+  EXPECT_EQ(deformable_model_ptr_->parallelism().num_threads(), 1);
+  DeformableBodyId body_id = RegisterSphere(1.0);
+  EXPECT_EQ(
+      deformable_model_ptr_->GetFemModel(body_id).parallelism().num_threads(),
+      1);
+
+  Parallelism parallelism(2);
+  EXPECT_EQ(parallelism.num_threads(), 2);
+  deformable_model_ptr_->SetParallelism(parallelism);
+  EXPECT_EQ(deformable_model_ptr_->parallelism().num_threads(), 2);
+  EXPECT_EQ(
+      deformable_model_ptr_->GetFemModel(body_id).parallelism().num_threads(),
+      2);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

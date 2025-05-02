@@ -42,6 +42,7 @@ GTEST_TEST(FemModelTest, Constructor) {
 
 GTEST_TEST(FemModelTest, CalcResidual) {
   LinearDummyModel model;
+  model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
@@ -64,6 +65,7 @@ GTEST_TEST(FemModelTest, CalcResidual) {
 
 GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
   LinearDummyModel model;
+  model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   /* Add a few elements that don't share nodes. The non-overlapping elements
    simplifies the computation for easier testing. */
@@ -105,6 +107,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
  depends on the context. */
 GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
   LinearDummyModel model;
+  model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddElementWithDistinctNodes();
   builder.Build();
@@ -171,6 +174,7 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
 
 GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   LinearDummyModel model;
+  model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
@@ -298,6 +302,7 @@ GTEST_TEST(FemModelTest, MultipleBuilders) {
  correctly invoked on the state, residual, and tangent matrix. */
 GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
   LinearDummyModel model;
+  model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddElementWithDistinctNodes();
   builder.Build();
@@ -449,6 +454,12 @@ GTEST_TEST(FemModelTest, Clone) {
   clone->CalcTangentMatrix(*clone_state, weights, clone_tangent_matrix.get());
   EXPECT_EQ(tangent_matrix->MakeDenseMatrix(),
             clone_tangent_matrix->MakeDenseMatrix());
+}
+
+/* Checks that Parallelism(true) resolves to 2 to make sure that the BUILD file
+ correctly sets the num_threads */
+GTEST_TEST(FemModelTest, TestExpectedNumThreads) {
+  EXPECT_EQ(Parallelism(true).num_threads(), 2);
 }
 
 }  // namespace

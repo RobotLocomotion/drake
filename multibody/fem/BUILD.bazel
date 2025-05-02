@@ -235,6 +235,7 @@ drake_cc_library(
         ":fem_plant_data",
         ":fem_state",
         "//common:essential",
+        "//common:parallelism",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )
@@ -633,6 +634,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "fem_model_test",
+    # Tests parallel computes when openmp is enabled.
+    num_threads = 2,
     deps = [
         ":dummy_model",
         ":linear_corotated_model",
