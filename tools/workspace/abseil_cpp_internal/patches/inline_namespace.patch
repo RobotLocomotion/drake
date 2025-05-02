@@ -22,7 +22,7 @@ designed for end-user customization, and that's basically all we're doing here.
 
 --- absl/debugging/symbolize_elf.inc
 +++ absl/debugging/symbolize_elf.inc
-@@ -1653,9 +1653,11 @@
+@@ -1764,11 +1764,13 @@ bool Symbolize(const void *pc, char *out, int out_size) {
  ABSL_NAMESPACE_END
  }  // namespace absl
  
@@ -34,3 +34,5 @@ designed for end-user customization, and that's basically all we're doing here.
                                                        filename);
  }
 +#endif
+
+ #undef ABSL_INTERNAL_HAVE_PPC64_ELFV1_ABI
