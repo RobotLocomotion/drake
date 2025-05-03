@@ -121,7 +121,7 @@ _SRCS = [
     "lib/strdup.c",
     "lib/strequal.c",
     "lib/strerror.c",
-    "lib/strtoofft.c",
+    "lib/strparse.c",
     "lib/timediff.c",
     "lib/timeval.c",
     "lib/transfer.c",
