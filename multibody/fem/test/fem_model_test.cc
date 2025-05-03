@@ -216,6 +216,32 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
                               MatrixCompareType::relative));
 }
 
+GTEST_TEST(FemModelTest, CalcDifferential) {
+  LinearDummyModel model;
+  model.set_parallelism(ENABLE_PARALLEL_OPS);
+  LinearDummyModel::DummyBuilder builder(&model);
+  builder.AddTwoElementsWithSharedNodes();
+  builder.Build();
+  unique_ptr<FemState<double>> fem_state = model.MakeFemState();
+  unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+      tangent_matrix = model.MakeTangentMatrix();
+  ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
+  ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
+  const Vector3d weights(0.1, 0.2, 0.3);
+  model.CalcTangentMatrix(*fem_state, weights, tangent_matrix.get());
+
+  VectorXd x = VectorXd::LinSpaced(model.num_dofs(), 0.0, 1.0);
+  VectorXd y(model.num_dofs());
+  model.CalcDifferential(*fem_state, weights, x, &y);
+  /* The differential is the same as the tangent matrix multiplied by the
+   vector x. */
+  VectorXd expected_y = VectorXd::Zero(model.num_dofs());
+  tangent_matrix->Multiply(x, &expected_y);
+  EXPECT_TRUE(CompareMatrices(y, expected_y,
+                              4.0 * std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
+}
+
 GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
   using T = AutoDiffXd;
   constexpr int kNaturalDimension = 3;

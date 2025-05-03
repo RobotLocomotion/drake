@@ -175,6 +175,25 @@ class FemModel {
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const;
 
+  /** Given a input vector `x`, computes y = A*x where A is the result of
+   CalcTangentMatrix().
+   @param[in] fem_state The FemState used to evaluate the tangent matrix.
+   @param[in] weights   The weights used to combine stiffness, damping, and mass
+                        matrices (in that order) into the tangent matrix.
+   @param[in] x         The vector to be multiplied by the tangent matrix.
+   @param[out] y        y = A*x where A is the tangent matrix.
+   @pre y != nullptr.
+   @pre The size of `x` and `y` are both `num_dofs()`.
+   @pre All entries in `weights` are non-negative.
+   @warning This function sometimes makes simplifying approximations to avoid
+   taking overly complicated derivatives. As such, the resulting tangent
+   matrix may be an approximation of the actual value depending on the
+   constitutive model used.
+   @throws std::exception if the FEM state is incompatible with this model.
+   @throws std::exception if T is not double. */
+  void CalcDifferential(const FemState<T>& fem_state, const Vector3<T>& weights,
+                        const VectorX<T>& x, EigenPtr<VectorX<T>> y) const;
+
   /** Creates a symmetric block sparse matrix that has the sparsity pattern
    of the tangent matrix of this FEM model. In particular, the size of the
    tangent matrix is `num_dofs()` by `num_dofs()`. All entries are initialized
@@ -256,6 +275,15 @@ class FemModel {
       const FemState<T>& fem_state, const Vector3<T>& weights,
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const = 0;
+
+  /** FemModelImpl must override this method to provide an implementation
+   for the NVI CalcDifferential(). The input `fem_state` is guaranteed to be
+   compatible with `this` FEM model, and the input `x` and `y` are guaranteed to
+   be properly sized. */
+  virtual void DoCalcDifferential(const FemState<T>& fem_state,
+                                  const Vector3<T>& weights,
+                                  const VectorX<T>& x,
+                                  EigenPtr<VectorX<T>> y) const = 0;
 
   /** FemModelImpl must override this method to provide an implementation for
    the NVI MakeTangentMatrix(). */

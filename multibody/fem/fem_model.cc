@@ -69,6 +69,25 @@ void FemModel<T>::CalcTangentMatrix(
 }
 
 template <typename T>
+void FemModel<T>::CalcDifferential(const FemState<T>& fem_state,
+                                   const Vector3<T>& weights,
+                                   const VectorX<T>& x,
+                                   EigenPtr<VectorX<T>> y) const {
+  if constexpr (std::is_same_v<T, double>) {
+    DRAKE_DEMAND(y != nullptr);
+    DRAKE_DEMAND(y->size() == num_dofs());
+    DRAKE_DEMAND(x.size() == num_dofs());
+    DRAKE_THROW_UNLESS(weights.minCoeff() >= 0.0);
+    ThrowIfModelStateIncompatible(__func__, fem_state);
+    DoCalcDifferential(fem_state, weights, x, y);
+    dirichlet_bc_.ApplyHomogeneousBoundaryCondition(y);
+  } else {
+    throw std::logic_error(
+        "FemModel::CalcDifferential() only supports double at the moment.");
+  }
+}
+
+template <typename T>
 std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
 FemModel<T>::MakeTangentMatrix() const {
   if constexpr (std::is_same_v<T, double>) {

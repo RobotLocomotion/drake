@@ -149,6 +149,35 @@ class FemModelImpl : public FemModel<typename Element::T> {
     }
   }
 
+  void DoCalcDifferential(const FemState<T>& fem_state,
+                          const Vector3<T>& weights, const VectorX<T>& x,
+                          EigenPtr<VectorX<T>> y) const final {
+    /* The values are accumulated in y, so it is important to clear the old
+     data. */
+    y->setZero();
+    constexpr int kDim = 3;
+    const std::vector<Data>& element_data =
+        fem_state.template EvalElementData<Data>(element_data_index_);
+    for (int e = 0; e < num_elements(); ++e) {
+      Vector<T, Element::num_dofs> element_y;
+      Vector<T, Element::num_dofs> element_x;
+      const std::array<FemNodeIndex, Element::num_nodes>& element_node_indices =
+          elements_[e].node_indices();
+      for (int a = 0; a < Element::num_nodes; ++a) {
+        const int global_node = element_node_indices[a];
+        element_x.template segment<kDim>(a * kDim) =
+            x.template segment<kDim>(global_node * kDim);
+      }
+      elements_[e].CalcDifferential(element_data[e], weights, element_x,
+                                    &element_y);
+      for (int a = 0; a < Element::num_nodes; ++a) {
+        const int global_node = element_node_indices[a];
+        y->template segment<kDim>(global_node * kDim) +=
+            element_y.template segment<kDim>(a * kDim);
+      }
+    }
+  }
+
   std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
   DoMakeTangentMatrix() const final {
     /* We already check for the scalar type in `MakeTangentMatrix()` but the `if

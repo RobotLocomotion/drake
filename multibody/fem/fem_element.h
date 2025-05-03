@@ -120,6 +120,15 @@ class FemElement {
     *tangent_matrix += mass_weight * data.mass_matrix;
   }
 
+  void CalcDifferential(const Data& data, const Vector3<T>& weights,
+                        const Vector<T, num_dofs>& x,
+                        EigenPtr<Vector<T, num_dofs>> y) const {
+    DRAKE_ASSERT(y != nullptr);
+    Eigen::Matrix<T, num_dofs, num_dofs> tangent_matrix;
+    this->CalcTangentMatrix(data, weights, &tangent_matrix);
+    y->noalias() = tangent_matrix * x;
+  }
+
   /* Calculates the force required to induce the acceleration `a` given the
    configuration `x` and velocities `v`, with `x`, `v`, and `a` stored in
    `data`. The required force equals is ID(a, x, v) = Ma-fₑ(x)-fᵥ(x, v), where M

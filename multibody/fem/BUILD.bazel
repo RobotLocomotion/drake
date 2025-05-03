@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":deformation_gradient_data",
         ":dirichlet_boundary_condition",
         ":discrete_time_integrator",
+        ":eigen_fem_model_matrix_free",
         ":fem_element",
         ":fem_indexes",
         ":fem_model",
@@ -192,6 +193,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "eigen_fem_model_matrix_free",
+    hdrs = [
+        "eigen_fem_model_matrix_free.h",
+    ],
+    deps = [
+        ":fem_model",
+    ],
+)
+
+drake_cc_library(
     name = "fem_indexes",
     hdrs = [
         "fem_indexes.h",
@@ -268,6 +279,7 @@ drake_cc_library(
     ],
     deps = [
         ":discrete_time_integrator",
+        ":eigen_fem_model_matrix_free",
         ":fem_model",
         ":fem_plant_data",
         "//common:essential",
