@@ -145,9 +145,7 @@ int FemSolver<T>::SolveNonlinearModel(
   Eigen::ConjugateGradient<EigenBlock3x3SparseSymmetricMatrix,
                            Eigen::Lower | Eigen::Upper>
       cg;
-  // TODO(xuchenhan-tri): set tolerance in a more principled way.
-  cg.setTolerance(1e-3);
-
+  cg.setTolerance(linear_solver_tolerance_);
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
   T residual_norm = b.norm();
@@ -164,7 +162,8 @@ int FemSolver<T>::SolveNonlinearModel(
          !solver_converged(residual_norm, initial_residual_norm)) {
     model_->CalcTangentMatrix(state, integrator_->GetWeights(),
                               &tangent_matrix);
-    EigenBlock3x3SparseSymmetricMatrix wrapper(&tangent_matrix);
+    const EigenBlock3x3SparseSymmetricMatrix wrapper(&tangent_matrix,
+                                                     model_->parallelism());
     cg.compute(wrapper);
     DRAKE_DEMAND(cg.info() == Eigen::Success);
     dz = cg.solve(-b);
