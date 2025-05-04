@@ -1,5 +1,6 @@
 #pragma once
 
+#include "drake/common/parallelism.h"
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 
 namespace drake {
@@ -44,9 +45,9 @@ class EigenBlock3x3SparseSymmetricMatrix
     IsRowMajor = false
   };
 
-  explicit EigenBlock3x3SparseSymmetricMatrix(
-      const Block3x3SparseSymmetricMatrix* A)
-      : A_(A) {}
+  EigenBlock3x3SparseSymmetricMatrix(const Block3x3SparseSymmetricMatrix* A,
+                                     Parallelism parallelism)
+      : A_(A), parallelism_(parallelism) {}
 
   /* Required by EigenBase */
   Eigen::Index rows() const { return A_->rows(); }
@@ -63,7 +64,7 @@ class EigenBlock3x3SparseSymmetricMatrix
 
   /* Wraps around the Multiply() function. */
   void Multiply(const VectorX<double>& x, VectorX<double>* y) const {
-    A_->Multiply(x, y);
+    A_->Multiply(x, y, parallelism_);
   }
 
   VectorX<double> diagonal() const {
@@ -107,13 +108,14 @@ class EigenBlock3x3SparseSymmetricMatrix
     }
 
    private:
-    const EigenBlock3x3SparseSymmetricMatrix* mat_;
-    int col_;
-    bool done_;
+    const EigenBlock3x3SparseSymmetricMatrix* mat_{};
+    int col_{};
+    bool done_{};
   };
 
  private:
   const Block3x3SparseSymmetricMatrix* A_{};
+  Parallelism parallelism_;
 };
 
 }  // namespace internal

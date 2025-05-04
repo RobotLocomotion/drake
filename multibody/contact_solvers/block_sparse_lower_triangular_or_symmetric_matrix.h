@@ -8,6 +8,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/parallelism.h"
 #include "drake/common/ssize.h"
 
 namespace drake {
@@ -125,7 +126,14 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
 
   /* Performs y = A*x where A is this matrix.
    @pre x and y have sizes compatible with this matrix. */
-  void Multiply(const VectorX<double>& x, EigenPtr<VectorX<double>> y) const;
+  void Multiply(const VectorX<double>& x, EigenPtr<VectorX<double>> y,
+                Parallelism parallelism = false) const {
+    if (parallelism.num_threads() > 1) {
+      MultiplyParallel(x, y, parallelism);
+    } else {
+      MultiplySerial(x, y);
+    }
+  }
 
   /* Adds Aij to the ij-th block of this matrix. If `this` matrix is symmetric,
    Aijᵀ is also implicitly added to the ji-th block of `this` matrix to preserve
@@ -271,6 +279,13 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   void AssertValid(int i, int j, const std::optional<MatrixType>& Aij,
                    const char* source) const;
 
+  /* Helpers for Multiply(). */
+  void MultiplySerial(const VectorX<double>& x,
+                      EigenPtr<VectorX<double>> y) const;
+  void MultiplyParallel(const VectorX<double>& x, EigenPtr<VectorX<double>> y,
+                        Parallelism parallelism) const;
+  void BuildRowNeighbors() const;
+
   BlockSparsityPattern sparsity_pattern_;
   /* The number of block columns. */
   int block_cols_{};
@@ -291,6 +306,7 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   // TODO(xuchenhan-tri): consider using
   // std::vector<unordered_map<int, int>> to accomodate large matrices.
   std::vector<std::vector<int>> block_row_to_flat_;
+  mutable std::vector<std::vector<int>> row_neighbors_{};
 };
 
 using BlockSparseLowerTriangularMatrix =

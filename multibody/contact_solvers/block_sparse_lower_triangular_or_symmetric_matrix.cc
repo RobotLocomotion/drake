@@ -57,9 +57,9 @@ BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
 }
 
 template <typename MatrixType, bool is_symmetric>
-void BlockSparseLowerTriangularOrSymmetricMatrix<
-    MatrixType, is_symmetric>::Multiply(const VectorX<double>& x,
-                                        EigenPtr<VectorX<double>> y) const {
+void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
+    MultiplySerial(const VectorX<double>& x,
+                   EigenPtr<VectorX<double>> y) const {
   DRAKE_ASSERT(x.size() == cols());
   DRAKE_ASSERT(y->size() == rows());
   y->setZero();
@@ -85,6 +85,73 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<
           auto x_i = x.segment(row_start, A_ij.rows());
           y->segment(col_start, col_size).noalias() += A_ij.transpose() * x_i;
         }
+      }
+    }
+  }
+}
+
+template <typename MatrixType, bool is_symmetric>
+void BlockSparseLowerTriangularOrSymmetricMatrix<
+    MatrixType, is_symmetric>::BuildRowNeighbors() const {
+  /* Precompute, for each block-row i, the list of block-cols j≤i
+   such that A(i,j) is stored in blocks_[j][…]. */
+  row_neighbors_.resize(block_cols_);
+  const auto& col_neighbors = sparsity_pattern_.neighbors();
+  for (int j = 0; j < block_cols_; ++j) {
+    for (int i : col_neighbors[j]) {
+      /* neighbor lists only carry i>=j, so this appends exactly those j≤i */
+      row_neighbors_[i].push_back(j);
+    }
+  }
+}
+
+template <typename MatrixType, bool is_symmetric>
+void BlockSparseLowerTriangularOrSymmetricMatrix<
+    MatrixType, is_symmetric>::MultiplyParallel(const VectorX<double>& x,
+                                                EigenPtr<VectorX<double>> y,
+                                                Parallelism parallelism) const {
+  DRAKE_ASSERT(x.size() == cols());
+  DRAKE_ASSERT(y->size() == rows());
+  y->setZero();
+
+  if (row_neighbors_.empty()) {
+    BuildRowNeighbors();
+  }
+
+  /* alias for readability. */
+  const auto& col_neighbors = sparsity_pattern_.neighbors();
+  const auto& row_neighbors = row_neighbors_;
+  const auto& sizes = sparsity_pattern_.block_sizes();
+  const auto& starts = starting_cols_;
+  const auto& book = block_row_to_flat_;
+  const auto& blocks = blocks_;
+
+  [[maybe_unused]] const int num_threads = parallelism.num_threads();
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(num_threads)
+#endif
+  for (int bi = 0; bi < block_cols_; ++bi) {
+    /* y_block = y.segment(starts[bi], sizes[bi]) */
+    const int r0 = starts[bi], rn = sizes[bi];
+    auto y_block = y->segment(r0, rn);
+
+    // Lower-triangular (j ≤ bi) and diagonal contributions:
+    for (int j : row_neighbors[bi]) {
+      int flat = book[j][bi];  // index into blocks_[j]
+      const auto& M = blocks[j][flat];
+      y_block.noalias() += M * x.segment(starts[j], sizes[j]);
+    }
+
+    if constexpr (is_symmetric) {
+      // Upper-triangular (j > bi) via transposes.
+      // col_neighbors[bi] lists all row-blocks i ≥ bi for column bi,
+      // so skip the first (the diagonal) and flip the stored block.
+      const auto& down_list = col_neighbors[bi];
+      for (int k = 1; k < ssize(down_list); ++k) {
+        int bj = down_list[k];    // bj > bi
+        int flat = book[bi][bj];  // block (bj,bi) is at blocks_[bi][flat]
+        const auto& M = blocks[bi][flat];
+        y_block.noalias() += M.transpose() * x.segment(starts[bj], sizes[bj]);
       }
     }
   }
