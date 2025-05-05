@@ -30,6 +30,11 @@ GTEST_TEST(LinearConstitutiveModelTest, dPdFIsDerivativeOfP) {
   TestdPdFIsDerivativeOfP<LinearConstitutiveModel<AutoDiffXd>>();
 }
 
+GTEST_TEST(LinearConstitutiveModelTest, FilteredHessian) {
+  TestSpdness<LinearConstitutiveModel<double>>();
+  TestSpdness<LinearConstitutiveModel<AutoDiffXd>>();
+}
+
 }  // namespace test
 }  // namespace internal
 }  // namespace fem

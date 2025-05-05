@@ -40,6 +40,12 @@ struct VolumetricElementData {
   /* The derivative of first Piola stress with respect to the deformation
    gradient evaluated at quadrature points. */
   std::array<math::internal::FourthOrderTensor<T>, num_quadrature_points> dPdF;
+  /* Mass matrix M. */
+  Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix;
+  /* The stiffness matrix K. */
+  Eigen::Matrix<T, num_dofs, num_dofs> stiffness_matrix;
+  /* The damping matrix D = aM + bK. */
+  Eigen::Matrix<T, num_dofs, num_dofs> damping_matrix;
 };
 
 /* Forward declaration needed for defining the traits below. */
@@ -248,15 +254,10 @@ class VolumetricElement
   void AddNegativeDampingForce(const Data& data,
                                EigenPtr<Vector<T, num_dofs>> neg_force) const {
     DRAKE_ASSERT(neg_force != nullptr);
-    Eigen::Matrix<T, num_dofs, num_dofs> damping_matrix =
-        Eigen::Matrix<T, num_dofs, num_dofs>::Zero();
-    // TODO(xuchenhan-tri): We should cache the dampign matrix to avoid
-    // repeatedly calculate the mass and the stiffness matrix.
-    this->AddScaledDampingMatrix(data, 1, &damping_matrix);
     /* Note that the damping force fᵥ = -D * v, where D is the damping matrix.
      As we are accumulating the negative damping force here, the `+=` sign
      should be used. */
-    *neg_force += damping_matrix * data.element_v;
+    *neg_force += data.damping_matrix * data.element_v;
   }
 
   /* The matrix calculated here is the same as the stiffness matrix
@@ -341,7 +342,8 @@ class VolumetricElement
   /* Implements FemElement::DoAddScaledStiffnessMatrix().
    @warning This method calculates a first-order approximation of the stiffness
    matrix. In other words, the contribution of the term ∂fᵥ(x, v)/∂x is ignored
-   as it involves complex second derivatives of the elastic force. */
+   as it involves complex second derivatives of the elastic force. It also
+   filters out any negative eigenvalues by clamping them to zero. */
   void DoAddScaledStiffnessMatrix(
       const Data& data, const T& scale,
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> K) const {
@@ -383,9 +385,18 @@ class VolumetricElement
           data.deformation_gradient_data[q], &(data.Psi[q]));
       this->constitutive_model().CalcFirstPiolaStress(
           data.deformation_gradient_data[q], &(data.P[q]));
-      this->constitutive_model().CalcFirstPiolaStressDerivative(
+      this->constitutive_model().CalcFilteredHessian(
           data.deformation_gradient_data[q], &(data.dPdF[q]));
     }
+    data.mass_matrix = mass_matrix_;
+    data.stiffness_matrix.setZero();
+    /* Warning: The computation of the stiffness matrix and the damping matrix
+     MUST COME AFTER the per-quadrature point data have all been computed
+     because the computation depends on them. */
+    this->AddScaledStiffnessMatrix(data, 1.0, &data.stiffness_matrix);
+    data.damping_matrix =
+        this->damping_model().stiffness_coeff_beta() * data.stiffness_matrix +
+        this->damping_model().mass_coeff_alpha() * data.mass_matrix;
     return data;
   }
 

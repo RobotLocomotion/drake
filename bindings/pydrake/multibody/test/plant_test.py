@@ -99,6 +99,7 @@ from pydrake.multibody.benchmarks.acrobot import (
     AcrobotParameters,
     MakeAcrobotPlant,
 )
+from pydrake.common import Parallelism
 from pydrake.common.cpp_param import List
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
@@ -3399,9 +3400,14 @@ class TestPlant(unittest.TestCase):
 
         deformable_model = plant.deformable_model()
         self.assertEqual(deformable_model.num_bodies(), 1)
-        # Turn on SAP and finalize.
-        plant.set_discrete_contact_approximation(
-            DiscreteContactApproximation.kSap)
+
+        mutable_deformable_model = plant.mutable_deformable_model()
+        mutable_deformable_model._set_parallelism(parallelism=Parallelism(2))
+        self.assertEqual(deformable_model._parallelism().num_threads(), 2)
+        mutable_deformable_model._set_parallelism(
+            parallelism=Parallelism(False))
+        self.assertEqual(deformable_model._parallelism().num_threads(), 1)
+
         plant.Finalize()
 
         self.assertIsInstance(

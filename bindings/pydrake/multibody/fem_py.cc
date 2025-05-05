@@ -22,6 +22,7 @@ void DoScalarIndependentDefinitions(py::module m) {
         .value("kLinearCorotated", Class::kLinearCorotated,
             cls_doc.kLinearCorotated.doc)
         .value("kCorotated", Class::kCorotated, cls_doc.kCorotated.doc)
+        .value("kNeoHookean", Class::kNeoHookean, cls_doc.kNeoHookean.doc)
         .value("kLinear", Class::kLinear, cls_doc.kLinear.doc);
   }
 }

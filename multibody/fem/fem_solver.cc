@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "drake/common/text_logging.h"
+#include "drake/multibody/contact_solvers/eigen_block_3x3_sparse_symmetric_matrix.h"
 
 namespace drake {
 namespace multibody {
@@ -10,6 +11,7 @@ namespace fem {
 namespace internal {
 
 using contact_solvers::internal::Block3x3SparseSymmetricMatrix;
+using contact_solvers::internal::EigenBlock3x3SparseSymmetricMatrix;
 using contact_solvers::internal::SchurComplement;
 using LinearSolver =
     contact_solvers::internal::BlockSparseCholeskySolver<Matrix3<double>>;
@@ -139,9 +141,11 @@ int FemSolver<T>::SolveNonlinearModel(
   VectorX<T>& b = scratch_.b;
   VectorX<T>& dz = scratch_.dz;
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
-  LinearSolver& linear_solver = scratch_.linear_solver;
   FemState<T>& state = *next_state_and_schur_complement_.state;
-
+  Eigen::ConjugateGradient<EigenBlock3x3SparseSymmetricMatrix,
+                           Eigen::Lower | Eigen::Upper>
+      cg;
+  cg.setTolerance(linear_solver_tolerance_);
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
   T residual_norm = b.norm();
@@ -158,16 +162,11 @@ int FemSolver<T>::SolveNonlinearModel(
          !solver_converged(residual_norm, initial_residual_norm)) {
     model_->CalcTangentMatrix(state, integrator_->GetWeights(),
                               &tangent_matrix);
-    linear_solver.UpdateMatrix(tangent_matrix);
-    const bool factored = linear_solver.Factor();
-    if (!factored) {
-      throw std::runtime_error(
-          "Tangent matrix factorization failed in FemSolver because the FEM "
-          "tangent matrix is not symmetric positive definite (SPD). This may "
-          "be triggered by a combination of a stiff nonlinear constitutive "
-          "model and a large time step.");
-    }
-    dz = linear_solver.Solve(-b);
+    const EigenBlock3x3SparseSymmetricMatrix wrapper(&tangent_matrix,
+                                                     model_->parallelism());
+    cg.compute(wrapper);
+    DRAKE_DEMAND(cg.info() == Eigen::Success);
+    dz = cg.solve(-b);
     integrator_->UpdateStateFromChangeInUnknowns(dz, &state);
     model_->CalcResidual(state, plant_data, &b);
     residual_norm = b.norm();

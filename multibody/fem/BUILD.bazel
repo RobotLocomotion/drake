@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":deformation_gradient_data",
         ":dirichlet_boundary_condition",
         ":discrete_time_integrator",
+        ":eigen_fem_model_matrix_free",
         ":fem_element",
         ":fem_indexes",
         ":fem_model",
@@ -39,6 +40,8 @@ drake_cc_package_library(
         ":linear_corotated_model_data",
         ":linear_simplex_element",
         ":matrix_utilities",
+        ":neohookean_model",
+        ":neohookean_model_data",
         ":quadrature",
         ":schur_complement",
         ":simplex_gaussian_quadrature",
@@ -190,6 +193,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "eigen_fem_model_matrix_free",
+    hdrs = [
+        "eigen_fem_model_matrix_free.h",
+    ],
+    deps = [
+        ":fem_model",
+    ],
+)
+
+drake_cc_library(
     name = "fem_indexes",
     hdrs = [
         "fem_indexes.h",
@@ -235,6 +248,7 @@ drake_cc_library(
         ":fem_plant_data",
         ":fem_state",
         "//common:essential",
+        "//common:parallelism",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
     ],
 )
@@ -265,10 +279,12 @@ drake_cc_library(
     ],
     deps = [
         ":discrete_time_integrator",
+        ":eigen_fem_model_matrix_free",
         ":fem_model",
         ":fem_plant_data",
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_cholesky_solver",
+        "//multibody/contact_solvers:eigen_block_3x3_sparse_symmetric_matrix",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
         "//multibody/contact_solvers:schur_complement",
     ],
@@ -413,6 +429,40 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "neohookean_model",
+    srcs = [
+        "neohookean_model.cc",
+    ],
+    hdrs = [
+        "neohookean_model.h",
+    ],
+    deps = [
+        ":calc_lame_parameters",
+        ":constitutive_model",
+        ":matrix_utilities",
+        ":neohookean_model_data",
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "neohookean_model_data",
+    srcs = [
+        "neohookean_model_data.cc",
+    ],
+    hdrs = [
+        "neohookean_model_data.h",
+    ],
+    deps = [
+        ":deformation_gradient_data",
+        ":matrix_utilities",
+        "//common:autodiff",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "quadrature",
     srcs = [
         "quadrature.cc",
@@ -533,6 +583,7 @@ drake_cc_library(
         ":linear_constitutive_model",
         ":linear_corotated_model",
         ":matrix_utilities",
+        ":neohookean_model",
         "//common:autodiff",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -632,7 +683,10 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "fem_model_test",
+    name = "fem_model_test_serial",
+    srcs = ["test/fem_model_test.cc"],
+    defines = ["ENABLE_PARALLEL_OPS=false"],
+    num_threads = 1,
     deps = [
         ":dummy_model",
         ":linear_corotated_model",
@@ -643,6 +697,26 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/plant",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fem_model_test_parallel",
+    srcs = ["test/fem_model_test.cc"],
+    defines = ["ENABLE_PARALLEL_OPS=true"],
+    num_threads = 2,
+    deps = [
+        ":dummy_model",
+        ":linear_corotated_model",
+        ":linear_simplex_element",
+        ":simplex_gaussian_quadrature",
+        ":volumetric_element",
+        ":volumetric_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/plant",
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
 
@@ -733,6 +807,23 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//math:geometric_transform",
         "//math:gradient",
+    ],
+)
+
+drake_cc_googletest(
+    name = "neohookean_model_test",
+    deps = [
+        ":constitutive_model_test_utilities",
+        ":neohookean_model",
+    ],
+)
+
+drake_cc_googletest(
+    name = "neohookean_model_data_test",
+    deps = [
+        ":neohookean_model",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:geometric_transform",
     ],
 )
 

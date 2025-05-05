@@ -58,6 +58,12 @@ void LinearConstitutiveModel<T>::CalcFirstPiolaStressDerivativeImpl(
   *dPdF = dPdF_;
 }
 
+template <typename T>
+void LinearConstitutiveModel<T>::CalcFilteredHessianImpl(
+    const Data&, math::internal::FourthOrderTensor<T>* hessian) const {
+  *hessian = dPdF_;
+}
+
 template class LinearConstitutiveModel<float>;
 template class LinearConstitutiveModel<double>;
 template class LinearConstitutiveModel<AutoDiffXd>;

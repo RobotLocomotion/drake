@@ -25,6 +25,9 @@ struct DummyData {
   Vector<T, num_dofs> element_q;
   Vector<T, num_dofs> element_v;
   Vector<T, num_dofs> element_a;
+  Eigen::Matrix<T, num_dofs, num_dofs> stiffness_matrix;
+  Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix;
+  Eigen::Matrix<T, num_dofs, num_dofs> damping_matrix;
 };
 
 /* The traits for the DummyElement. In this case, all of the traits are unique
@@ -113,6 +116,11 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
     data.element_q = this->ExtractElementDofs(q);
     data.element_v = this->ExtractElementDofs(v);
     data.element_a = this->ExtractElementDofs(a);
+    data.stiffness_matrix = stiffness_matrix();
+    data.mass_matrix = mass_matrix();
+    data.damping_matrix =
+        this->damping_model().stiffness_coeff_beta() * data.stiffness_matrix +
+        this->damping_model().mass_coeff_alpha() * data.mass_matrix;
     return data;
   }
 

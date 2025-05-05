@@ -30,6 +30,11 @@ GTEST_TEST(CorotatedModelTest, dPdFIsDerivativeOfP) {
   TestdPdFIsDerivativeOfP<CorotatedModel<AutoDiffXd>>();
 }
 
+GTEST_TEST(CorotatedModelTest, FilteredHessian) {
+  TestSpdness<CorotatedModel<double>>();
+  TestSpdness<CorotatedModel<AutoDiffXd>>();
+}
+
 }  // namespace test
 }  // namespace internal
 }  // namespace fem

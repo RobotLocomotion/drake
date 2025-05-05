@@ -29,6 +29,7 @@ std::unique_ptr<FemModel<T>> FemModel<T>::Clone() const {
   std::unique_ptr<FemModel<T>> result = this->DoClone();
   result->UpdateFemStateSystem();
   result->dirichlet_bc_ = this->dirichlet_bc_;
+  result->parallelism_ = this->parallelism_;
   return result;
 }
 
@@ -64,6 +65,25 @@ void FemModel<T>::CalcTangentMatrix(
   } else {
     throw std::logic_error(
         "FemModel::CalcTangentMatrix() only supports double at the moment.");
+  }
+}
+
+template <typename T>
+void FemModel<T>::CalcDifferential(const FemState<T>& fem_state,
+                                   const Vector3<T>& weights,
+                                   const VectorX<T>& x,
+                                   EigenPtr<VectorX<T>> y) const {
+  if constexpr (std::is_same_v<T, double>) {
+    DRAKE_DEMAND(y != nullptr);
+    DRAKE_DEMAND(y->size() == num_dofs());
+    DRAKE_DEMAND(x.size() == num_dofs());
+    DRAKE_THROW_UNLESS(weights.minCoeff() >= 0.0);
+    ThrowIfModelStateIncompatible(__func__, fem_state);
+    DoCalcDifferential(fem_state, weights, x, y);
+    dirichlet_bc_.ApplyHomogeneousBoundaryCondition(y);
+  } else {
+    throw std::logic_error(
+        "FemModel::CalcDifferential() only supports double at the moment.");
   }
 }
 

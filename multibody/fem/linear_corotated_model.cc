@@ -101,6 +101,12 @@ void LinearCorotatedModel<T>::CalcFirstPiolaStressDerivativeImpl(
   }
 }
 
+template <typename T>
+void LinearCorotatedModel<T>::CalcFilteredHessianImpl(
+    const Data& data, math::internal::FourthOrderTensor<T>* hessian) const {
+  CalcFirstPiolaStressDerivativeImpl(data, hessian);
+}
+
 template class LinearCorotatedModel<float>;
 template class LinearCorotatedModel<double>;
 template class LinearCorotatedModel<AutoDiffXd>;

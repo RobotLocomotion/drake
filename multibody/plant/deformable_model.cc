@@ -9,6 +9,7 @@
 #include "drake/multibody/fem/linear_constitutive_model.h"
 #include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/linear_simplex_element.h"
+#include "drake/multibody/fem/neohookean_model.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -317,6 +318,14 @@ DeformableBodyId DeformableModel<T>::GetBodyId(
 }
 
 template <typename T>
+void DeformableModel<T>::SetParallelism(Parallelism parallelism) {
+  parallelism_ = parallelism;
+  for (auto& [_, fem_model] : fem_models_) {
+    fem_model->set_parallelism(parallelism);
+  }
+}
+
+template <typename T>
 std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     MultibodyPlant<double>* plant) const {
   auto result = std::make_unique<DeformableModel<double>>(plant);
@@ -356,6 +365,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
     /* `configuration_output_port_index_` is set in `DeclareSceneGraphPorts()`;
      because callers to `PhysicalModel::CloneToScalar` are required to
      subsequently call `DeclareSceneGraphPorts`. */
+    result->parallelism_ = parallelism_;
   }
 
   return result;
@@ -392,6 +402,10 @@ DeformableModel<T>::BuildLinearVolumetricModel(
     case MaterialModel::kCorotated:
       BuildLinearVolumetricModelHelper<fem::internal::CorotatedModel>(id, mesh,
                                                                       config);
+      break;
+    case MaterialModel::kNeoHookean:
+      BuildLinearVolumetricModelHelper<fem::internal::NeoHookeanModel>(id, mesh,
+                                                                       config);
       break;
     case MaterialModel::kLinearCorotated:
       BuildLinearVolumetricModelHelper<fem::internal::LinearCorotatedModel>(
@@ -440,6 +454,7 @@ DeformableModel<T>::BuildLinearVolumetricModelHelper(
   builder.AddLinearTetrahedralElements(mesh, constitutive_model,
                                        config.mass_density(), damping_model);
   builder.Build();
+  fem_model->set_parallelism(parallelism_);
 
   fem_models_.emplace(id, std::move(fem_model));
 }

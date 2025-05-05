@@ -140,6 +140,7 @@ drake_cc_library(
         ":tamsi_solver",
         "//common:default_scalars",
         "//common:essential",
+        "//common:parallelism",
         "//common:unused",
         "//geometry:geometry_ids",
         "//geometry:geometry_roles",

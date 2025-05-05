@@ -442,6 +442,8 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
 
     const GeometryId id_A = surface.id_A();
     const GeometryId id_B = surface.id_B();
+    const std::string& name_A = inspector.GetName(id_A);
+    const std::string& name_B = inspector.GetName(id_B);
     /* Body A is guaranteed to be deformable. */
     const int body_index_A =
         deformable_model_->GetBodyIndex(deformable_model_->GetBodyId(id_A));
@@ -530,39 +532,34 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
         }
       }
 
-      const auto [k, phi0, fn0] = [&]() {
+      const T deformable_k = Ae * 1e8;
+      const double default_dissipation =
+          manager_->default_contact_dissipation();
+      const auto [k, phi0, fn0, d] = [&]() {
         if (is_deformable_vs_deformable) {
-          const T deformable_k = Ae * 1e8;
           const T deformable_phi0 = surface.signed_distances()[i];
           const T deformable_fn0 = -deformable_k * deformable_phi0;
-          return std::make_tuple(deformable_k, deformable_phi0, deformable_fn0);
+          const T deformable_d = GetCombinedHuntCrossleyDissipation(
+              id_A, id_B, deformable_k, deformable_k, default_dissipation,
+              inspector);
+          return std::make_tuple(deformable_k, deformable_phi0, deformable_fn0,
+                                 deformable_d);
         } else {
           DRAKE_ASSERT(g.has_value());
           const T rigid_k = Ae * g.value();
           const T rigid_phi0 = -surface.pressures()[i] / g.value();
           const T rigid_fn0 = Ae * surface.pressures()[i];
-          return std::make_tuple(rigid_k, rigid_phi0, rigid_fn0);
+          const T rigid_d = GetCombinedHuntCrossleyDissipation(
+              id_A, id_B, deformable_k, rigid_k, default_dissipation,
+              inspector);
+          return std::make_tuple(rigid_k, rigid_phi0, rigid_fn0, rigid_d);
         }
       }();
 
-      // TODO(xuchenhan-tri): Use the real H&C dissipation for rigid vs.
-      //  deformable.
-      /* While in Drake we provide constraints to model Hunt & Crossley or
-      linear Kelvin–Voigt dissipation, for deformable objects all we want is to
-      enforce the non-penetration constraint. We do this using the high
-      stiffness value specified above. Since compliant contact time scales
-      cannot be resolved at such high stiffness values, dissipation should be
-      irrelevant. Therefore we use zero Hunt & Crossley dissipation and the
-      "near rigid regime" time scale for the linear dissipation. */
-      const T d = 0.0;
-
-      /* Dissipation time scale. Ignored, for instance, by the Tamsi model of
-       contact approximation. See multibody::DiscreteContactApproximation for
-       details about these contact models. We use dt as the default dissipation
-       constant so that the contact is in near-rigid regime and the compliance
-       is only used as stabilization. */
-      const T tau = manager_->plant().time_step();
-
+      const double default_dissipation_time_constant = 0.1;
+      const T tau = GetCombinedDissipationTimeConstant(
+          id_A, id_B, default_dissipation_time_constant, name_A, name_B,
+          inspector);
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 

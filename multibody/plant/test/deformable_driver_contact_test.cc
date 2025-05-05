@@ -45,9 +45,8 @@ namespace internal {
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.001;
-  static constexpr double kDissipationTimeScale = 0.1;
-  static constexpr double kHcDampingRigid = 12.3;
-  static constexpr double kHcDampingDeformable = 45.6;
+  static constexpr double kDissipationTimeScale = 0.123;
+  static constexpr double kHcDamping = 12.3;
 
   void SetUp() override {
     systems::DiagramBuilder<double> builder;
@@ -68,6 +67,11 @@ class DeformableDriverContactTest : public ::testing::Test {
     geometry::ProximityProperties proximity_props;
     proximity_props.AddProperty(geometry::internal::kHydroGroup,
                                 geometry::internal::kRezHint, 0.5);
+    proximity_props.AddProperty(geometry::internal::kMaterialGroup,
+                                geometry::internal::kHcDissipation, kHcDamping);
+    proximity_props.AddProperty(geometry::internal::kMaterialGroup,
+                                geometry::internal::kRelaxationTime,
+                                kDissipationTimeScale);
     rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
         plant_->world_body(), RigidTransformd::Identity(), Sphere(1.0),
         "rigid_collision_geometry", proximity_props);
@@ -188,6 +192,11 @@ class DeformableDriverContactTest : public ::testing::Test {
     geometry::ProximityProperties props;
     geometry::AddContactMaterial({}, {}, CoulombFriction<double>(0.5, 0.5),
                                  &props);
+    props.AddProperty(geometry::internal::kMaterialGroup,
+                      geometry::internal::kHcDissipation, kHcDamping);
+    props.AddProperty(geometry::internal::kMaterialGroup,
+                      geometry::internal::kRelaxationTime,
+                      kDissipationTimeScale);
     box_instance->set_proximity_properties(std::move(props));
     fem::DeformableBodyConfig<double> body_config;
     constexpr double unused_resolution_hint = 1.0;
@@ -403,10 +412,9 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   }
   EXPECT_GT(num_contact_points, 0);
   EXPECT_EQ(contact_pairs.size(), num_contact_points);
-  /* tau for deformable contact is always dt, the "near-rigid" regime value. */
-  const double expected_tau = kDt;
-  /* The H&C damping is always zero for deformables contact. */
-  constexpr double expected_d = 0.0;
+
+  const double expected_tau = kDissipationTimeScale * 2.0;
+  constexpr double expected_d = kHcDamping;
 
   GeometryId id0 = model_->GetGeometryId(body_id0_);
   GeometryId id1 = model_->GetGeometryId(body_id1_);
@@ -434,12 +442,12 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
       EXPECT_DOUBLE_EQ(pair.p_WC(2), -0.5);
       EXPECT_TRUE(CompareMatrices(pair.nhat_BA_W, Eigen::Vector3d(0, 0, -1)));
     }
-    EXPECT_EQ(pair.damping, expected_d);
+    EXPECT_DOUBLE_EQ(pair.damping, expected_d);
     /* Verify that the stiffness and the normal contact force are compatible. */
     EXPECT_DOUBLE_EQ(pair.fn0, -pair.stiffness * pair.phi0);
     /* Verify the sign of the normal contact force. It should be repulsive. */
     EXPECT_GT(pair.fn0, 0.0);
-    EXPECT_EQ(pair.dissipation_time_scale, expected_tau);
+    EXPECT_DOUBLE_EQ(pair.dissipation_time_scale, expected_tau);
     EXPECT_EQ(pair.friction_coefficient, 0.5);
     ASSERT_TRUE(pair.surface_index.has_value());
     ASSERT_TRUE(pair.face_index.has_value());

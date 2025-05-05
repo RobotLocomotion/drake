@@ -112,12 +112,21 @@ class FemElement {
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> tangent_matrix) const {
     DRAKE_DEMAND(tangent_matrix != nullptr);
     tangent_matrix->setZero();
-    AddScaledStiffnessMatrix(
-        data, weights(0) + weights(1) * damping_model_.stiffness_coeff_beta(),
-        tangent_matrix);
-    AddScaledMassMatrix(
-        data, weights(2) + weights(1) * damping_model_.mass_coeff_alpha(),
-        tangent_matrix);
+    const T& stiffness_weight =
+        weights(0) + weights(1) * damping_model_.stiffness_coeff_beta();
+    const T& mass_weight =
+        weights(2) + weights(1) * damping_model_.mass_coeff_alpha();
+    *tangent_matrix += stiffness_weight * data.stiffness_matrix;
+    *tangent_matrix += mass_weight * data.mass_matrix;
+  }
+
+  void CalcDifferential(const Data& data, const Vector3<T>& weights,
+                        const Vector<T, num_dofs>& x,
+                        EigenPtr<Vector<T, num_dofs>> y) const {
+    DRAKE_ASSERT(y != nullptr);
+    Eigen::Matrix<T, num_dofs, num_dofs> tangent_matrix;
+    this->CalcTangentMatrix(data, weights, &tangent_matrix);
+    y->noalias() = tangent_matrix * x;
   }
 
   /* Calculates the force required to induce the acceleration `a` given the

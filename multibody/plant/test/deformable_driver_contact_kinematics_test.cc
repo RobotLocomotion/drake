@@ -39,6 +39,8 @@ namespace internal {
 
 constexpr double kTolerance = 1e-14;
 constexpr double kMu = 1.0;
+constexpr double kDissipationTimeScale = 0.123;
+constexpr double kHcDamping = 12.3;
 
 /* Register a deformable body with the given geometry instance and world pose
  into the given `model`. */
@@ -48,6 +50,10 @@ DeformableBodyId RegisterDeformableBody(
   geometry::ProximityProperties props;
   geometry::AddContactMaterial({}, {}, CoulombFriction<double>(kMu, kMu),
                                &props);
+  props.AddProperty(geometry::internal::kMaterialGroup,
+                    geometry::internal::kHcDissipation, kHcDamping);
+  props.AddProperty(geometry::internal::kMaterialGroup,
+                    geometry::internal::kRelaxationTime, kDissipationTimeScale);
   instance->set_proximity_properties(std::move(props));
   fem::DeformableBodyConfig<double> body_config;
   /* Make the resolution hint large enough so that we get an octahedron. */
@@ -353,8 +359,9 @@ class DeformableDriverContactKinematicsTest
        See implementation notes for why this is the expected stiffness. */
       const double expected_k = 1e8 * contact_surface.contact_mesh_W().area(i);
       EXPECT_DOUBLE_EQ(contact_pair.stiffness, expected_k);
-      EXPECT_EQ(contact_pair.damping, 0.0);
-      EXPECT_EQ(contact_pair.dissipation_time_scale, 0.01 /* dt*/);
+      EXPECT_EQ(contact_pair.damping, kHcDamping);
+      EXPECT_EQ(contact_pair.dissipation_time_scale,
+                2.0 * kDissipationTimeScale);
       EXPECT_EQ(contact_pair.friction_coefficient, kMu);
       /* Test normal force and velocity. */
       EXPECT_NEAR(contact_pair.vn0, expected_v_D1D2_C(2), kTolerance);
