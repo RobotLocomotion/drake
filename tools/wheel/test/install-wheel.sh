@@ -3,7 +3,7 @@
 # This shell script installs a Drake wheel. It must be run inside a container
 # (Ubuntu) or environment (macOS) which has been properly provisioned, e.g. by
 # the accompanying Dockerfile (Ubuntu) or by macos/provision-test-python.sh
-# (macOS). In particular, /opt/drake-wheel-test/python must contain a Python
+# (macOS). In particular, /tmp/drake-wheel-test/python must contain a Python
 # virtual environment which will be used to run the tests. The path to the
 # wheel to be installed must be given as an argument to the script. On Ubuntu,
 # the wheel must be accessible to the container, and the path must be the
@@ -19,6 +19,6 @@ if [[ -z "$1" ]]; then
     exit 1
 fi
 
-. /opt/drake-wheel-test/python/bin/activate
+. /tmp/drake-wheel-test/python/bin/activate
 
 pip install "$1"
