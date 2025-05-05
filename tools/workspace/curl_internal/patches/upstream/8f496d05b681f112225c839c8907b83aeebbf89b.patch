@@ -1,0 +1,26 @@
+From 8f496d05b681f112225c839c8907b83aeebbf89b Mon Sep 17 00:00:00 2001
+From: Daniel Stenberg <daniel@haxx.se>
+Date: Thu, 3 Apr 2025 11:35:06 +0200
+Subject: [PATCH] hostip: fix build without threaded-resolver and without DoH
+
+Closes #16938
+---
+ lib/hostip.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+index 26b20574790e..bef67c73bc85 100644
+--- lib/hostip.c
++++ lib/hostip.c
+@@ -932,7 +932,11 @@ enum resolve_t Curl_resolv_timeout(struct Curl_easy *data,
+   else
+     timeout = (timeoutms > LONG_MAX) ? LONG_MAX : (long)timeoutms;
+ 
+-  if(!timeout || data->set.doh)
++  if(!timeout
++#ifndef CURL_DISABLE_DOH
++     || data->set.doh
++#endif
++    )
+     /* USE_ALARM_TIMEOUT defined, but no timeout actually requested or resolve
+        done using DoH */
+     return Curl_resolv(data, hostname, port, TRUE, entry);
