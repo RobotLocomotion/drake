@@ -68,8 +68,63 @@ GTEST_TEST(IiwaDriverFunctionsTest, ApplyDriverConfig) {
                         models_from_directives_map, lcm_buses, &builder),
       "IiwaDriver could not find hand model.*");
 
+  // Supply incorrect frame names for combining hand and arm.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ApplyDriverConfig(IiwaDriver{.arm_child_frame_name = "nope"}, "iiwa7",
+                        plant, models_from_directives_map, lcm_buses, &builder),
+      ".*no Frame named 'nope'.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ApplyDriverConfig(IiwaDriver{.hand_model_name = "schunk_wsg",
+                                   .gripper_parent_frame_name = "haha"},
+                        "iiwa7", plant, models_from_directives_map, lcm_buses,
+                        &builder),
+      ".*no Frame named 'haha'.*");
+
   const ZeroForceDriver wsg_driver;
   const IiwaDriver iiwa_driver{.hand_model_name = "schunk_wsg"};
+  ApplyDriverConfig(wsg_driver, "schunk_wsg", plant, {}, {}, &builder);
+  ApplyDriverConfig(iiwa_driver, "iiwa7", plant, models_from_directives_map,
+                    lcm_buses, &builder);
+
+  // Prove that simulation does not crash.
+  Simulator<double> simulator(builder.Build());
+  simulator.AdvanceTo(0.1);
+}
+
+GTEST_TEST(IiwaDriverFunctionsTest, RenamedHandWeldFrames) {
+  DiagramBuilder<double> builder;
+  MultibodyPlant<double>& plant =
+      AddMultibodyPlant(MultibodyPlantConfig{}, &builder);
+  // Load a modified model with a different frame name for the gripper
+  // weld. The frame "hand_parent" is added via directives; the SDFormat file
+  // for the arm is a stock version.
+  const ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow("drake/manipulation/kuka_iiwa/test/"
+                          "iiwa7_wsg_renamed_weld_frames.dmd.yaml"));
+  Parser parser{&plant};
+  std::vector<ModelInstanceInfo> models_from_directives =
+      multibody::parsing::ProcessModelDirectives(directives, &parser);
+  plant.Finalize();
+
+  std::map<std::string, ModelInstanceInfo> models_from_directives_map;
+  for (const auto& info : models_from_directives) {
+    models_from_directives_map.emplace(info.model_name, info);
+  }
+
+  const std::map<std::string, DrakeLcmParams> lcm_bus_config = {
+      {"default", {}}};
+  const LcmBuses lcm_buses = ApplyLcmBusConfig(lcm_bus_config, &builder);
+
+  // Configure drivers with non-default frame names for the welds. The
+  // `arm_child_frame_name` is constrained by the implementation of
+  // MakeArmControllerModel to one that was defined in the underlying (SDFormat
+  // in this case) model file. The `gripper_parent_frame_name` can come from
+  // directives, since it gets looked up in the simulation plant, and
+  // more-or-less semantically reconstructed in the controller plant.
+  const ZeroForceDriver wsg_driver;
+  const IiwaDriver iiwa_driver{.hand_model_name = "schunk_wsg",
+                               .arm_child_frame_name = "__model__",
+                               .gripper_parent_frame_name = "hand_parent"};
   ApplyDriverConfig(wsg_driver, "schunk_wsg", plant, {}, {}, &builder);
   ApplyDriverConfig(iiwa_driver, "iiwa7", plant, models_from_directives_map,
                     lcm_buses, &builder);
@@ -117,7 +172,7 @@ GTEST_TEST(IiwaDriverFunctionsTest, ApplyDriverConfigNoLcm) {
       "plant",
       "scene_graph",
       // From ApplyDriverConfig.
-      "IiwaDriver(iiwa7)",
+      "iiwa7",
       // TODO(jwnimmer-tri) Ideally this SharedPtrSystem would live within the
       // SimIiwaDriver, but for the moment it's a sibling instead of a child.
       "iiwa7_controller_plant",
