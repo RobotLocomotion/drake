@@ -99,7 +99,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
   }
 
   std::vector<Binding<Cost>> costs = prog.GetAllCosts();
-  std::vector<Binding<Constraint>> constraints = prog.GetAllConstraints();
 
   // Next, we construct an auxiliary MathematicalProgram, for use in the
   // projection step. We clone prog, remove all costs, and add a quadratic
@@ -146,6 +145,9 @@ void ProjectedGradientDescentSolver::DoSolve2(
         return gradient;
       });
 
+  // TODO(cohnt): Allow user to specify an initial guess strategy, for cases
+  // where the feasible set is nonconvex. (For example, we may want to use the
+  // previous feasible iterate, or some other strategy.)
   std::unique_ptr<solvers::SolverInterface> projection_solver_interface;
   if (!projection_solver_interface_) {
     const SolverId solver_id = ChooseBestSolver(prog);
@@ -159,7 +161,7 @@ void ProjectedGradientDescentSolver::DoSolve2(
         projection_cost.evaluator()->UpdateCoefficients(
             projection_cost_Q, projection_cost_b, projection_cost_c);
 
-        // Solve the program.
+        // Solve the program. We use the target value x as the initial guess.
         MathematicalProgramResult projection_result;
         if (projection_solver_interface_) {
           projection_solver_interface_->Solve(
@@ -190,14 +192,22 @@ void ProjectedGradientDescentSolver::DoSolve2(
     // Gradient step.
     VectorXd descent_direction = -gradient_function(x_current);
 
-    // Line search (using the Armijo condition).
+    // Line search (using the Armijo condition). If the feasible set is convex
+    // and the objective function has a Lipschitz gradient, then a step
+    // satisfying the Armijo condition guarantees a decrease in the objective
+    // function, even after the projection step. This is true for any choice of
+    // C, alpha_0, and tau -- regardless of the Lipschitz constant.
     const double c = parsed_options.backtracking_c;
     const double tau = parsed_options.backtracking_tau;
     double alpha = parsed_options.backtracking_alpha_0;
+    // TODO(cohnt): To handle cases where the objective function isn't Lipschitz
+    // or the feasible set isn't convex, we should allow the user to impose more
+    // general convergence criteria and/or line search strategies.
 
     double m = descent_direction.dot(descent_direction);
     double t = c * m;
     double old_cost = cost_function(x_current);
+    // TODO(cohnt): Allow user to set the maximum number of line search steps.
     const int kMaxLineSearchSteps = 100;
     for (int line_search_steps = 0; line_search_steps < kMaxLineSearchSteps;
          ++line_search_steps) {
