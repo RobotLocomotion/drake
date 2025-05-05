@@ -77,6 +77,17 @@ cc_test(
 )
 
 cc_test(
+    name = "math_test",
+    srcs = ["test/math_test.cpp"],
+    tags = ["no_kcov"],
+    deps = [
+        ":common_robotics_utilities",
+        "@eigen",
+        "@gtest//:without_main",
+    ],
+)
+
+cc_test(
     name = "maybe_test",
     srcs = ["test/maybe_test.cpp"],
     tags = ["no_kcov"],
@@ -160,6 +171,7 @@ test_suite(
     name = "test_suite",
     tests = [
         "hausdorff_distance_test",
+        "math_test",
         "maybe_test",
         "parallelism_test",
         "planning_test",
