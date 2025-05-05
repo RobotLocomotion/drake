@@ -15,7 +15,6 @@ pkgconf-pkg-config
 # Other general tools.
 diffutils
 file
-lsb-release
 patch
 patchelf
 wget
