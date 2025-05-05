@@ -46,17 +46,6 @@ GTEST_TEST(SolverOptionsTest, CommonToString) {
   EXPECT_EQ(fmt::to_string(dut), "kPrintFileName");
 }
 
-// Deprecated 2025-05-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-GTEST_TEST(SolverOptionsTest, DeprecatedCommonStream) {
-  const CommonSolverOption dut = CommonSolverOption::kPrintFileName;
-  std::stringstream stream;
-  stream << dut;
-  EXPECT_EQ(stream.str(), "kPrintFileName");
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(SolverOptionsTest, Comparison) {
   SolverOptions foo;
   SolverOptions bar;

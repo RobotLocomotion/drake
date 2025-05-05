@@ -29,6 +29,7 @@ namespace drake {
 namespace geometry {
 
 using internal::convert_to_double;
+using internal::ConvertVolumeToSurfaceMeshWithBoundaryVertices;
 using internal::DrivenTriangleMesh;
 using internal::FrameNameSet;
 using internal::HydroelasticType;
@@ -48,6 +49,7 @@ using internal::kSlabThickness;
 using internal::MakeRenderMeshFromTriangleSurfaceMesh;
 using internal::ProximityEngine;
 using internal::RenderMesh;
+using internal::VertexSampler;
 using math::RigidTransform;
 using math::RigidTransformd;
 using render::ColorRenderCamera;
@@ -87,13 +89,9 @@ void DrivenMeshData::SetControlMeshPositions(
 }
 
 void DrivenMeshData::SetMeshes(GeometryId id,
-                               std::vector<DrivenTriangleMesh> driven_meshes,
-                               std::vector<RenderMesh> render_meshes) {
+                               std::vector<DrivenTriangleMesh> driven_meshes) {
   DRAKE_DEMAND(!driven_meshes.empty());
-  DRAKE_DEMAND(!render_meshes.empty());
-  DRAKE_DEMAND(driven_meshes.size() == render_meshes.size());
   driven_meshes_.emplace(id, std::move(driven_meshes));
-  render_meshes_.emplace(id, std::move(render_meshes));
 }
 
 }  // namespace internal
@@ -182,15 +180,17 @@ GeometryState<T>::GeometryState()
   frame_index_to_id_map_.push_back(world);
   kinematics_data_.X_WFs.push_back(RigidTransform<T>::Identity());
   kinematics_data_.X_PFs.push_back(RigidTransform<T>::Identity());
+  kinematics_data_.driven_mesh_data[Role::kPerception] = {};
+  kinematics_data_.driven_mesh_data[Role::kIllustration] = {};
+  kinematics_data_.driven_mesh_data[Role::kProximity] = {};
+  deformable_render_meshes_[Role::kPerception] = {};
+  deformable_render_meshes_[Role::kIllustration] = {};
+  deformable_render_meshes_[Role::kProximity] = {};
 
   source_frame_id_map_[self_source_] = {world};
   source_deformable_geometry_id_map_[self_source_] = {};
   source_frame_name_map_[self_source_] = {"world"};
   source_root_frame_map_[self_source_] = {world};
-
-  driven_mesh_data_[Role::kPerception] = {};
-  driven_mesh_data_[Role::kIllustration] = {};
-  driven_mesh_data_[Role::kProximity] = {};
 }
 
 namespace {
@@ -286,7 +286,7 @@ GeometryState<T>::GeometryState(const GeometryState<U>& source)
       frames_(source.frames_),
       geometries_(source.geometries_),
       frame_index_to_id_map_(source.frame_index_to_id_map_),
-      driven_mesh_data_(source.driven_mesh_data_),
+      deformable_render_meshes_(source.deformable_render_meshes_),
       geometry_engine_(
           std::move(source.geometry_engine_->template ToScalarType<T>())),
       render_engines_(source.render_engines_),
@@ -747,7 +747,7 @@ const std::vector<RenderMesh>& GeometryState<T>::GetDrivenRenderMeshes(
                     "geometry with specified role {}",
                     id, role));
   }
-  return driven_mesh_data_.at(role).render_meshes(id);
+  return deformable_render_meshes_.at(role).at(id);
 }
 
 template <typename T>
@@ -913,7 +913,7 @@ std::vector<VectorX<T>> GeometryState<T>::GetDrivenMeshConfigurationsInWorld(
     return result;
   };
 
-  return calc_configuration(driven_mesh_data_.at(role));
+  return calc_configuration(kinematics_data_.driven_mesh_data.at(role));
 }
 
 template <typename T>
@@ -1224,8 +1224,22 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
       geometry.SetRole(std::move(properties));
       if (geometry.is_deformable()) {
         DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
-        geometry_engine_->AddDeformableGeometry(*geometry.reference_mesh(),
-                                                geometry_id);
+        const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
+        std::vector<int> surface_vertices;
+        std::vector<int> surface_tri_to_volume_tet;
+        TriangleSurfaceMesh<double> surface_mesh =
+            ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+                reference_mesh, &surface_vertices, &surface_tri_to_volume_tet);
+
+        geometry_engine_->AddDeformableGeometry(
+            reference_mesh, surface_mesh, surface_vertices,
+            surface_tri_to_volume_tet, geometry_id);
+        VertexSampler vertex_sampler(std::move(surface_vertices),
+                                     reference_mesh);
+        std::vector<DrivenTriangleMesh> driven_meshes;
+        driven_meshes.emplace_back(vertex_sampler, surface_mesh);
+        kinematics_data_.driven_mesh_data[Role::kProximity].SetMeshes(
+            geometry_id, std::move(driven_meshes));
       } else if (geometry.is_dynamic()) {
         // Pass the geometry to the engine.
         const RigidTransformd& X_WG =
@@ -1483,7 +1497,7 @@ void GeometryState<T>::AddRenderer(
         const GeometryId id = id_geo_pair.first;
         if (geometry.is_deformable()) {
           accepted |= render_engine->RegisterDeformableVisual(
-              id, driven_mesh_data_.at(Role::kPerception).render_meshes(id),
+              id, deformable_render_meshes_.at(Role::kPerception).at(id),
               *properties);
         } else {
           accepted |= render_engine->RegisterVisual(
@@ -1740,11 +1754,15 @@ void GeometryState<T>::FinalizePoseUpdate(
 template <typename T>
 void GeometryState<T>::FinalizeConfigurationUpdate(
     const internal::KinematicsData<T>& kinematics_data,
-    const internal::DrivenMeshData& driven_meshes,
     internal::ProximityEngine<T>* proximity_engine,
     std::vector<render::RenderEngine*> render_engines) const {
-  proximity_engine->UpdateDeformableVertexPositions(kinematics_data.q_WGs);
-  for (const auto& [id, meshes] : driven_meshes.driven_meshes()) {
+  const internal::DrivenMeshData& proximity_driven_mesh_data =
+      kinematics_data.driven_mesh_data.at(Role::kProximity);
+  proximity_engine->UpdateDeformableVertexPositions(
+      kinematics_data.q_WGs, proximity_driven_mesh_data.driven_meshes());
+  const internal::DrivenMeshData& perception_driven_mesh_data =
+      kinematics_data.driven_mesh_data.at(Role::kPerception);
+  for (const auto& [id, meshes] : perception_driven_mesh_data.driven_meshes()) {
     // Vertex positions of driven meshes.
     std::vector<VectorX<double>> q_WDs(meshes.size());
     // Vertex normals of driven meshes.
@@ -1935,8 +1953,20 @@ void GeometryState<T>::AddToProximityEngineUnchecked(
   const GeometryId geometry_id = geometry.id();
   if (geometry.is_deformable()) {
     DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
-    geometry_engine_->AddDeformableGeometry(*geometry.reference_mesh(),
-                                            geometry_id);
+    const VolumeMesh<double>& reference_mesh = *geometry.reference_mesh();
+    std::vector<int> surface_vertices;
+    std::vector<int> surface_tri_to_volume_tet;
+    TriangleSurfaceMesh<double> surface_mesh =
+        ConvertVolumeToSurfaceMeshWithBoundaryVertices(
+            reference_mesh, &surface_vertices, &surface_tri_to_volume_tet);
+    geometry_engine_->AddDeformableGeometry(
+        reference_mesh, surface_mesh, surface_vertices,
+        surface_tri_to_volume_tet, geometry_id);
+    VertexSampler vertex_sampler(std::move(surface_vertices), reference_mesh);
+    std::vector<DrivenTriangleMesh> driven_meshes;
+    driven_meshes.emplace_back(vertex_sampler, surface_mesh);
+    kinematics_data_.driven_mesh_data[Role::kProximity].SetMeshes(
+        geometry_id, driven_meshes);
   } else if (geometry.is_dynamic()) {
     // Pass the geometry to the engine.
     const RigidTransformd& X_WG =
@@ -2032,7 +2062,7 @@ bool GeometryState<T>::AddDeformableToCompatibleRenderersUnchecked(
   for (auto& engine : *candidate_renderers) {
     added_to_renderer =
         engine->RegisterDeformableVisual(
-            id, driven_mesh_data_.at(Role::kPerception).render_meshes(id),
+            id, deformable_render_meshes_.at(Role::kPerception).at(id),
             properties) ||
         added_to_renderer;
   }
@@ -2067,18 +2097,20 @@ void GeometryState<T>::RegisterDrivenMesh(GeometryId geometry_id, Role role) {
         driven_meshes.emplace_back(MakeTriangleSurfaceMesh(render_mesh),
                                    control_mesh);
       }
-      driven_mesh_data_[Role::kPerception].SetMeshes(
-          geometry_id, std::move(driven_meshes), std::move(render_meshes));
+      kinematics_data_.driven_mesh_data[Role::kPerception].SetMeshes(
+          geometry_id, std::move(driven_meshes));
+      deformable_render_meshes_[Role::kPerception][geometry_id] =
+          std::move(render_meshes);
       return;
     }
   }
 
   // Simply go with the surface mesh of the control mesh.
   driven_meshes.emplace_back(internal::MakeDrivenSurfaceMesh(control_mesh));
+  kinematics_data_.driven_mesh_data[role].SetMeshes(geometry_id, driven_meshes);
   render_meshes.emplace_back(MakeRenderMeshFromTriangleSurfaceMesh(
       driven_meshes.back().triangle_surface_mesh(), properties));
-  driven_mesh_data_[role].SetMeshes(geometry_id, std::move(driven_meshes),
-                                    std::move(render_meshes));
+  deformable_render_meshes_[role][geometry_id] = std::move(render_meshes);
 }
 
 template <typename T>
@@ -2132,7 +2164,8 @@ bool GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
   // perception meshes.
   RemoveFromAllRenderersUnchecked(geometry_id);
   if (IsDeformableGeometry(geometry_id)) {
-    driven_mesh_data_[Role::kPerception].Remove(geometry_id);
+    kinematics_data_.driven_mesh_data[Role::kPerception].Remove(geometry_id);
+    deformable_render_meshes_[Role::kPerception].erase(geometry_id);
   }
   geometry->RemovePerceptionRole();
   return true;

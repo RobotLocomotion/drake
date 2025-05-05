@@ -281,6 +281,7 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
    blocks. */
   std::vector<typename Block3x3SparseMatrix<T>::Triplet> triplets;
   triplets.reserve(4);
+  bool is_deformable_rigid = !surface.is_B_deformable();
   for (int i = 0; i < surface.num_contact_points(); ++i) {
     /* The contact Jacobian (w.r.t. v) of the velocity of the point affixed to
      the geometry that coincides with the contact point C in the world frame,
@@ -290,14 +291,27 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
     Block3x3SparseMatrix<T> scaled_Jv_v_WGc_C(
         /* block rows */ 1,
         /* block columns */ participation.num_vertices_in_contact());
-    const Vector4<int>& participating_vertices =
-        is_A ? surface.contact_vertex_indexes_A()[i]
-             : surface.contact_vertex_indexes_B()[i];
-    const Vector4<T>& b = is_A ? surface.barycentric_coordinates_A()[i]
-                               : surface.barycentric_coordinates_B()[i];
+    Vector4<int> participating_vertices = Vector4<int>::Constant(-1);
+    Vector4<T> barycentric_weights = Vector4<T>::Zero();
+    if (is_deformable_rigid) {
+      DRAKE_DEMAND(is_A);
+      participating_vertices.head<3>() =
+          surface.tri_contact_vertex_indexes_A()[i];
+      barycentric_weights.template head<3>() =
+          surface.tri_barycentric_coordinates_A()[i];
+    } else {
+      participating_vertices = is_A ? surface.tet_contact_vertex_indexes_A()[i]
+                                    : surface.contact_vertex_indexes_B()[i];
+      barycentric_weights = is_A ? surface.tet_barycentric_coordinates_A()[i]
+                                 : surface.barycentric_coordinates_B()[i];
+    }
     Vector3<T> v_WGc = Vector3<T>::Zero();
     triplets.clear();
     for (int v = 0; v < 4; ++v) {
+      if (participating_vertices(v) < 0) {
+        DRAKE_DEMAND(barycentric_weights(v) == 0.0);
+        continue;
+      }
       const bool vertex_under_bc = num_bcs[participating_vertices(v)] > 0;
       /* Map indexes to the permuted domain. */
       const int permuted_vertex =
@@ -307,10 +321,10 @@ DeformableDriver<T>::ComputeContactDataForDeformable(
          v₃ are the velocities of the vertices forming the tetrahedron
          containing the contact point and the b's are their corresponding
          barycentric weights. */
-        triplets.emplace_back(
-            0, permuted_vertex,
-            scale * b(v) * surface.R_WCs()[i].matrix().transpose());
-        v_WGc += b(v) *
+        triplets.emplace_back(0, permuted_vertex,
+                              scale * barycentric_weights(v) *
+                                  surface.R_WCs()[i].matrix().transpose());
+        v_WGc += barycentric_weights(v) *
                  body_participating_v0.template segment<3>(3 * permuted_vertex);
       }
       /* If the vertex is under bc, the corresponding jacobian block is zero
@@ -398,6 +412,9 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        ++surface_index) {
     const DeformableContactSurface<T>& surface =
         contact_surfaces[surface_index];
+    /* Geometry A is always deformable, so this is deformable vs. deformable
+       contact iff geometry B is deformable. */
+    const bool is_deformable_vs_deformable = surface.is_B_deformable();
     /* Skip this surface if either body in contact is a disabled deformable
      body. */
     const DeformableBodyId body_id_A =
@@ -451,6 +468,17 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
     std::vector<typename DiscreteContactPair<T>::JacobianTreeBlock>
         jacobian_blocks;
     for (int i = 0; i < surface.num_contact_points(); ++i) {
+      if (!is_deformable_vs_deformable && surface.is_element_inverted()[i]) {
+        /* For deformable rigid contact, we don't register a contact point for
+        deformable surface elements that belong to an inverted tetrahdron.
+        Registering such contact points can cause persistent inversion artifacts
+        that are impossible to recover. By not registering a contact point, we
+        admit transient artifacts (objects suddenly break contact), but in
+        practice, we find that's better than persistent, irrecoverable
+        inversion. */
+        continue;
+      }
+
       jacobian_blocks.clear();
       const Vector3<T>& v_WAc = contact_data_A.v_WGc[i];
       jacobian_blocks.push_back(std::move(contact_data_A.jacobian[i]));
@@ -477,19 +505,48 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
        k * ϕ where ϕ is the penetration distance. The contact force balances
        gravity and we have
 
-         kϕ  = CL²ϕ = gρL³,
+         kϕ  = CL²ϕ = GρL³,
 
-       which gives ϕ = gρL / C.
+       which gives ϕ = GρL / C.
        We choose a large C = 1e8 Pa/m so that for ρ = 1000 kg/m³ and
-       g = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
+       G = 10 m/s², we get ϕ = 1e-4 * L, or 0.01 mm for a 10 cm cube with
        density of water, a reasonably small penetration. */
-      const T kA = surface.contact_mesh_W().area(i) * 1e8;
-      const T default_rigid_k = std::numeric_limits<T>::infinity();
-      const T kB = surface.is_B_deformable() ? kA : default_rigid_k;
-      /* Combine stiffnesses k₁ (of geometry A) and k₂ (of geometry B) to get k
-       according to the rule: 1/k = 1/k₁ + 1/k₂. */
-      const T k = GetCombinedPointContactStiffness(kA, kB);
+      const Vector3<T>& nhat_BA_W = surface.nhats_W()[i];
+      const T Ae = surface.contact_mesh_W().area(i);
 
+      /* One dimensional pressure gradient (in Pa/m), only used in deformable
+       vs. rigid contact, following the notation in [Masterjohn, 2022].
+       [Masterjohn, 2022] Velocity Level Approximation of Pressure Field
+       Contact Patches. */
+      std::optional<T> g;
+      if (!is_deformable_vs_deformable) {
+        /* Filter out negative directional pressure derivatives (separating
+         contact) and tiny contact polygons (to avoid numerical issues).
+         Unlike [Masterjohn, 2022], the pressure gradient is positive in the
+         direction "into" the rigid body. Therefore, we need a negative sign. */
+        g = -surface.pressure_gradients_W()[i].dot(nhat_BA_W);
+        if (g.value() < 1e-14 || Ae < 1e-14) {
+          continue;
+        }
+      }
+
+      const auto [k, phi0, fn0] = [&]() {
+        if (is_deformable_vs_deformable) {
+          const T deformable_k = Ae * 1e8;
+          const T deformable_phi0 = surface.signed_distances()[i];
+          const T deformable_fn0 = -deformable_k * deformable_phi0;
+          return std::make_tuple(deformable_k, deformable_phi0, deformable_fn0);
+        } else {
+          DRAKE_ASSERT(g.has_value());
+          const T rigid_k = Ae * g.value();
+          const T rigid_phi0 = -surface.pressures()[i] / g.value();
+          const T rigid_fn0 = Ae * surface.pressures()[i];
+          return std::make_tuple(rigid_k, rigid_phi0, rigid_fn0);
+        }
+      }();
+
+      // TODO(xuchenhan-tri): Use the real H&C dissipation for rigid vs.
+      //  deformable.
       /* While in Drake we provide constraints to model Hunt & Crossley or
       linear Kelvin–Voigt dissipation, for deformable objects all we want is to
       enforce the non-penetration constraint. We do this using the high
@@ -509,14 +566,12 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
       const double mu =
           GetCombinedDynamicCoulombFriction(id_A, id_B, inspector);
 
-      const T& phi0 = surface.signed_distances()[i];
-      const T fn0 = -k * phi0;
-      /* The normal (scalar) component of the contact velocity in the contact
-       frame. */
       /* Contact solver assumes the normal points from A to B whereas the
        surface's normal points from B to A. */
       const Vector3<T> nhat_AB_W = -surface.nhats_W()[i];
       const math::RotationMatrix<T>& R_WC = surface.R_WCs()[i];
+      /* The normal (scalar) component of the contact velocity in the contact
+       frame. */
       const T v_AcBc_Cz = nhat_AB_W.dot(v_WBc - v_WAc);
       DiscreteContactPair<T> contact_pair{
           .jacobian = std::move(jacobian_blocks),
@@ -528,7 +583,7 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
           .p_WC = p_WC,
           .p_ApC_W = p_AC_W,
           .p_BqC_W = p_BC_W,
-          .nhat_BA_W = -nhat_AB_W,
+          .nhat_BA_W = nhat_BA_W,
           .phi0 = phi0,
           .vn0 = v_AcBc_Cz,
           .fn0 = fn0,

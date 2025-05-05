@@ -43,6 +43,28 @@ void Mobilizer<T>::MapQDDotToAcceleration(const systems::Context<T>&,
   throw std::logic_error(error_message);
 }
 
+template <typename T>
+void Mobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>&,
+                                    EigenPtr<MatrixX<T>>) const {
+  // TODO(Mitiguy) remove this function when Mobilizer::CalcNDotMatrix()
+  //  is changed to a pure virtual function that requires override.
+  const std::string error_message = fmt::format(
+      "The function {}() has not been implemented for this mobilizer.",
+      __func__);
+  throw std::logic_error(error_message);
+}
+
+template <typename T>
+void Mobilizer<T>::DoCalcNplusDotMatrix(const systems::Context<T>&,
+                                        EigenPtr<MatrixX<T>>) const {
+  // TODO(Mitiguy) remove this function when Mobilizer::CalcNplusDotMatrix()
+  //  is changed to a pure virtual function that requires override.
+  const std::string error_message = fmt::format(
+      "The function {}() has not been implemented for this mobilizer.",
+      __func__);
+  throw std::logic_error(error_message);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

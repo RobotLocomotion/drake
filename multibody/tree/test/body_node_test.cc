@@ -205,9 +205,8 @@ GTEST_TEST(BodyNodeTest, FactorArticulatedBodyHingeInertiaMatrixErrorMessages) {
 
   {
     // Translation only.
-    const PrismaticMobilizer<double> mobilizer(dummy_mobod, parent.body_frame(),
-                                               child.body_frame(),
-                                               Vector3d{0, 0, 1});
+    const PrismaticMobilizerAxial<double, 2> mobilizer(
+        dummy_mobod, parent.body_frame(), child.body_frame());
     const DummyBodyNode body_node(&parent_node, &child, &mobilizer);
     DRAKE_EXPECT_THROWS_MESSAGE(
         BodyNodeTester::CallLltFactorization(body_node, one_by_one),

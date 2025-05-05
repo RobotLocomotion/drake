@@ -12,15 +12,17 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-PrismaticMobilizer<T>::~PrismaticMobilizer() = default;
+PrismaticMobilizer<T>::PrismaticMobilizer(const SpanningForest::Mobod& mobod,
+                                          const Frame<T>& inboard_frame_F,
+                                          const Frame<T>& outboard_frame_M,
+                                          int axis)
+    : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {
+  DRAKE_DEMAND(0 <= axis && axis <= 2);
+  axis_ = Eigen::Vector3d::Unit(axis);
+}
 
 template <typename T>
-std::unique_ptr<BodyNode<T>> PrismaticMobilizer<T>::CreateBodyNode(
-    const BodyNode<T>* parent_node, const RigidBody<T>* body,
-    const Mobilizer<T>* mobilizer) const {
-  return std::make_unique<BodyNodeImpl<T, PrismaticMobilizer>>(parent_node,
-                                                               body, mobilizer);
-}
+PrismaticMobilizer<T>::~PrismaticMobilizer() = default;
 
 template <typename T>
 std::string PrismaticMobilizer<T>::position_suffix(
@@ -61,7 +63,7 @@ template <typename T>
 const T& PrismaticMobilizer<T>::get_translation_rate(
     const systems::Context<T>& context) const {
   const auto& v = this->get_velocities(context);
-  DRAKE_ASSERT(v.size() == kNv);
+  DRAKE_ASSERT(v.size() == this->kNv);
   return v.coeffRef(0);
 }
 
@@ -69,40 +71,50 @@ template <typename T>
 const PrismaticMobilizer<T>& PrismaticMobilizer<T>::SetTranslationRate(
     systems::Context<T>* context, const T& translation_dot) const {
   auto v = this->GetMutableVelocities(context);
-  DRAKE_ASSERT(v.size() == kNv);
+  DRAKE_ASSERT(v.size() == this->kNv);
   v[0] = translation_dot;
   return *this;
 }
 
-template <typename T>
-math::RigidTransform<T> PrismaticMobilizer<T>::CalcAcrossMobilizerTransform(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+PrismaticMobilizerAxial<T, axis>::~PrismaticMobilizerAxial() = default;
+
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+math::RigidTransform<T>
+PrismaticMobilizerAxial<T, axis>::CalcAcrossMobilizerTransform(
     const systems::Context<T>& context) const {
   const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
+  DRAKE_ASSERT(q.size() == this->kNq);
   return calc_X_FM(q.data());
 }
 
-template <typename T>
-SpatialVelocity<T> PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+SpatialVelocity<T>
+PrismaticMobilizerAxial<T, axis>::CalcAcrossMobilizerSpatialVelocity(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v) const {
-  DRAKE_ASSERT(v.size() == kNv);
+  DRAKE_ASSERT(v.size() == this->kNv);
   return calc_V_FM(nullptr, v.data());
 }
 
-template <typename T>
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
 SpatialAcceleration<T>
-PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
+PrismaticMobilizerAxial<T, axis>::CalcAcrossMobilizerSpatialAcceleration(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& vdot) const {
-  DRAKE_ASSERT(vdot.size() == kNv);
+  DRAKE_ASSERT(vdot.size() == this->kNv);
   return calc_A_FM(nullptr, nullptr, vdot.data());
 }
 
-template <typename T>
-void PrismaticMobilizer<T>::ProjectSpatialForce(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+void PrismaticMobilizerAxial<T, axis>::ProjectSpatialForce(
     const systems::Context<T>&, const SpatialForce<T>& F_BMo_F,
     Eigen::Ref<VectorX<T>> tau) const {
-  DRAKE_ASSERT(tau.size() == kNv);
+  DRAKE_ASSERT(tau.size() == this->kNv);
   calc_tau(nullptr, F_BMo_F, tau.data());
 }
 
@@ -116,6 +128,18 @@ template <typename T>
 void PrismaticMobilizer<T>::DoCalcNplusMatrix(
     const systems::Context<T>&, EigenPtr<MatrixX<T>> Nplus) const {
   (*Nplus)(0, 0) = 1.0;
+}
+
+template <typename T>
+void PrismaticMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>&,
+                                             EigenPtr<MatrixX<T>> Ndot) const {
+  (*Ndot)(0, 0) = 0.0;
+}
+
+template <typename T>
+void PrismaticMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> NplusDot) const {
+  (*NplusDot)(0, 0) = 0.0;
 }
 
 template <typename T>
@@ -158,37 +182,52 @@ void PrismaticMobilizer<T>::MapQDDotToAcceleration(
   *vdot = qddot;
 }
 
-template <typename T>
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
 template <typename ToScalar>
 std::unique_ptr<Mobilizer<ToScalar>>
-PrismaticMobilizer<T>::TemplatedDoCloneToScalar(
+PrismaticMobilizerAxial<T, axis>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
       tree_clone.get_variant(this->inboard_frame());
   const Frame<ToScalar>& outboard_frame_clone =
       tree_clone.get_variant(this->outboard_frame());
-  return std::make_unique<PrismaticMobilizer<ToScalar>>(
+  return std::make_unique<PrismaticMobilizerAxial<ToScalar, axis>>(
       tree_clone.get_mobod(this->mobod().index()), inboard_frame_clone,
-      outboard_frame_clone, this->translation_axis());
+      outboard_frame_clone);
 }
 
-template <typename T>
-std::unique_ptr<Mobilizer<double>> PrismaticMobilizer<T>::DoCloneToScalar(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+std::unique_ptr<Mobilizer<double>>
+PrismaticMobilizerAxial<T, axis>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>> PrismaticMobilizer<T>::DoCloneToScalar(
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+std::unique_ptr<Mobilizer<AutoDiffXd>>
+PrismaticMobilizerAxial<T, axis>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-template <typename T>
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
 std::unique_ptr<Mobilizer<symbolic::Expression>>
-PrismaticMobilizer<T>::DoCloneToScalar(
+PrismaticMobilizerAxial<T, axis>::DoCloneToScalar(
     const MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
+}
+
+template <typename T, int axis>
+  requires(0 <= axis && axis <= 2)
+std::unique_ptr<BodyNode<T>> PrismaticMobilizerAxial<T, axis>::CreateBodyNode(
+    const BodyNode<T>* parent_node, const RigidBody<T>* body,
+    const Mobilizer<T>* mobilizer) const {
+  return std::make_unique<BodyNodeImpl<T, PrismaticMobilizerAxial>>(
+      parent_node, body, mobilizer);
 }
 
 }  // namespace internal
@@ -197,3 +236,17 @@ PrismaticMobilizer<T>::DoCloneToScalar(
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::PrismaticMobilizer);
+
+#define DRAKE_DEFINE_PRISMATIC_MOBILIZER(axis)                                 \
+  template class ::drake::multibody::internal::PrismaticMobilizerAxial<double, \
+                                                                       axis>;  \
+  template class ::drake::multibody::internal::PrismaticMobilizerAxial<        \
+      ::drake::AutoDiffXd, axis>;                                              \
+  template class ::drake::multibody::internal::PrismaticMobilizerAxial<        \
+      ::drake::symbolic::Expression, axis>
+
+DRAKE_DEFINE_PRISMATIC_MOBILIZER(0);
+DRAKE_DEFINE_PRISMATIC_MOBILIZER(1);
+DRAKE_DEFINE_PRISMATIC_MOBILIZER(2);
+
+#undef DRAKE_DEFINE_PRISMATIC_MOBILIZER

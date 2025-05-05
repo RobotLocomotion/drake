@@ -21,12 +21,12 @@ around an axis that is constant when measured in either of the frames, while the
 frame origins remain coincident. The axis must be one of the coordinate axes
 x, y, or z. To fully specify this mobilizer we need an inboard ("fixed") frame
 F, an outboard ("mobilized") frame M and the coordinate axis about which frame M
-rotates with respect to F (templatized as 0, 1, or 2). The axis vector can be
-considered axis_F (expressed in frame F) or axis_M (expressed in frame M) since
-the components are identical in either frame.
+rotates with respect to F (see RevoluteMobilizerAxial below). The axis vector
+can be considered axis_F (expressed in frame F) or axis_M (expressed in frame M)
+since the components are identical in either frame.
 
 The restriction to rotating about a coordinate axis means that the transform
-X_FM has special structure that can be exploited for speed(it is an "axial
+X_FM has special structure that can be exploited for speed (it is an "axial
 rotation transform" arX_FM; search for the Doxygen tag "special_xform_def" in
 drake/math/rigid_transform.h for a definition). Velocity and acceleration
 quantities are simplified also. In robotics, the revolute joint is very common
@@ -36,7 +36,7 @@ The single generalized coordinate q introduced by this mobilizer corresponds to
 the rotation angle in radians of frame M with respect to frame F about the
 rotation axis. When q = 0, frames F and M are coincident. The rotation angle is
 defined to be positive according to the right-hand-rule with the thumb aligned
-in the direction of the axis.
+in the direction of the rotation axis.
 
 Notice that the components of the rotation axis as expressed in either frame F
 or M are constant. That is, axis_F and axis_M remain identical and unchanged
@@ -48,11 +48,12 @@ H_FM_M₆ₓ₁=[axis_M 0₃]ᵀ     Hdot_FM_M₆ₓ₁ = 0₆
 
 @tparam_default_scalar */
 
-// This is the base class for the three available revolute mobilizers. It
-// provides high-level access to the common features of a revolute mobilizer,
+// RevoluteMobilizer base class.
+// This is an abstract base class to provide high-level access to the common
+// features of the axial revolute mobilizer concrete classes (defined below),
 // intended for use by the Joint and RevoluteJoint APIs. Internal algorithms,
-// however, should be templatized on the specific revolute mobilizer instance
-// to permit inline access to performance-critical functions.
+// however, should be templatized on the specific revolute mobilizer instance to
+// permit inline access to performance-critical functions.
 template <typename T>
 class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
  public:
@@ -75,11 +76,11 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   bool can_rotate() const final { return true; }
   bool can_translate() const final { return false; }
 
-  // @retval axis_FM The rotation axis as a unit vector expressed in the inboard
-  // frame F and the outboard frame M. This will be one of the coordinate axes,
+  // @retval axis The rotation axis as a unit vector expressed identically in
+  // both the F and M frames. This will be one of the coordinate axes,
   // which will have been constructed to be aligned with the user's specified
   // rotation axis for the RevoluteJoint this is implementing.
-  const Vector3<double>& revolute_axis() const { return axis_FM(); }
+  const Vector3<double>& revolute_axis() const { return axis_; }
 
   // Gets the rotation angle q of `this` mobilizer from `context`. See class
   // documentation for sign convention.
@@ -116,7 +117,7 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   // @returns a constant reference to `this` mobilizer.
   const RevoluteMobilizer<T>& SetAngularRate(systems::Context<T>* context,
                                              const T& theta_dot) const;
-  bool is_velocity_equal_to_qdot() const override { return true; }
+  bool is_velocity_equal_to_qdot() const final { return true; }
 
   // Maps v to qdot, which for this mobilizer is q̇ = v.
   void MapVelocityToQDot(const systems::Context<T>& context,
@@ -140,16 +141,11 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
 
  protected:
   // Constructor for a RevoluteMobilizer between the inboard frame F and the
-  // outboard frame M, granting a single rotational degree of freedom about some
-  // axis common to both frames.
+  // outboard frame M, granting a single rotational degree of freedom about a
+  // coordinate axis (axis=0, 1, or 2) common to both frames.
   RevoluteMobilizer(const SpanningForest::Mobod& mobod,
                     const Frame<T>& inboard_frame_F,
-                    const Frame<T>& outboard_frame_M);
-
-  // @pre axis_FM is a unit vector.
-  void set_axis_FM(const Vector3<double>& axis_FM) { axis_FM_ = axis_FM; }
-
-  const Vector3<double>& axis_FM() const { return axis_FM_; }
+                    const Frame<T>& outboard_frame_M, int axis);
 
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
@@ -157,10 +153,18 @@ class RevoluteMobilizer : public MobilizerImpl<T, 1, 1> {
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
+  // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ = zero matrix.
+  void DoCalcNDotMatrix(const systems::Context<T>& context,
+                        EigenPtr<MatrixX<T>> Ndot) const final;
+
+  // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ = zero matrix.
+  void DoCalcNplusDotMatrix(const systems::Context<T>& context,
+                            EigenPtr<MatrixX<T>> NplusDot) const final;
+
  private:
   // Joint axis expressed identically in frames F and M. This must be one of
   // the coordinate axes 100, 010, or 001.
-  Vector3<double> axis_FM_;
+  Vector3<double> axis_;
 };
 
 // Revolute mobilizer with rotation axis aligned with one of the F and M frame
@@ -171,16 +175,10 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizerAxial);
 
-  using RevoluteMobilizer<T>::axis_FM;
-
   RevoluteMobilizerAxial(const SpanningForest::Mobod& mobod,
                          const Frame<T>& inboard_frame_F,
                          const Frame<T>& outboard_frame_M)
-      : RevoluteMobilizer<T>(mobod, inboard_frame_F, outboard_frame_M) {
-    Vector3<double> rotation_axis = Vector3<double>::Zero();
-    rotation_axis[axis] = 1;
-    this->set_axis_FM(rotation_axis);
-  }
+      : RevoluteMobilizer<T>(mobod, inboard_frame_F, outboard_frame_M, axis) {}
 
   ~RevoluteMobilizerAxial() final;
 
@@ -229,7 +227,7 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
   // it by exploiting its known structure.
   void update_X_FM(const T* q, math::RigidTransform<T>* arX_FM) const {
     DRAKE_ASSERT(q != nullptr && arX_FM != nullptr);
-    math::RigidTransform<T>::template UpdateAxialRotation<axis>(q[0], &*arX_FM);
+    math::RigidTransform<T>::template UpdateAxialRotation<axis>(q[0], arX_FM);
   }
 
   // Returns X_AM = X_AF * arX_FM, exploiting known structure of arX_FM.
@@ -250,22 +248,27 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
     return X_FB;
   }
 
-  // TODO(sherm1) Velocity & acceleration APIs should be reworked to perform
-  //  only simplified updates.
-
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
   // frame M measured and expressed in frame F as a function of the input
   // angular velocity `v` about this mobilizer's axis (@see revolute_axis()).
   SpatialVelocity<T> calc_V_FM(const T*, const T* v) const {
-    return SpatialVelocity<T>(v[0] * axis_FM(),  // axis_F, 3 flops
-                              Vector3<T>::Zero());
+    DRAKE_ASSERT(v != nullptr);
+    Eigen::Vector3<T> w_FM;
+    w_FM[kX] = v[0];
+    w_FM[kY] = 0;
+    w_FM[kZ] = 0;
+    return SpatialVelocity<T>(w_FM, Vector3<T>::Zero());
   }
 
   // Here H_F₆ₓ₁=[axis_F, 0₃]ᵀ so Hdot_F = 0 and
   // A_FM_F = H_F⋅vdot + Hdot_F⋅v = [axis_F⋅vdot, 0₃]ᵀ
   SpatialAcceleration<T> calc_A_FM(const T*, const T*, const T* vdot) const {
-    return SpatialAcceleration<T>(vdot[0] * axis_FM(),  // axis_F, 3 flops
-                                  Vector3<T>::Zero());
+    DRAKE_ASSERT(vdot != nullptr);
+    Eigen::Vector3<T> alpha_FM;
+    alpha_FM[kX] = vdot[0];
+    alpha_FM[kY] = 0;
+    alpha_FM[kZ] = 0;
+    return SpatialAcceleration<T>(alpha_FM, Vector3<T>::Zero());
   }
 
   // Returns tau = H_FM_Fᵀ⋅F_F, where H_FM_Fᵀ = [axis_Fᵀ 0₃ᵀ].
@@ -289,6 +292,10 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
   template <typename ToScalar>
   std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
+
+  // Write algorithms as though the axes were x, y, and z; modular arithmetic
+  // here ensures they will work correctly for axis=0, 1, or 2.
+  static constexpr int kX = axis, kY = (axis + 1) % 3, kZ = (axis + 2) % 3;
 };
 
 }  // namespace internal

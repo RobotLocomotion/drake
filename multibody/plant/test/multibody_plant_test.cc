@@ -1981,8 +1981,7 @@ GTEST_TEST(MultibodyPlantTest, ReversedRevoluteJoint) {
   const RevoluteJoint<double>& revolute = plant.AddJoint<RevoluteJoint>(
       "revolute", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
 
-  // Add a body with parent=reverse_body, child=world. This is only allowed
-  // for Weld and Revolute joints currently.
+  // Add a body with parent=reverse_body, child=world.
   const RigidBody<double>& reverse_body =
       plant.AddRigidBody("reverse_body", default_model_instance(),
                          SpatialInertia<double>::MakeUnitary());
@@ -2023,11 +2022,64 @@ GTEST_TEST(MultibodyPlantTest, ReversedRevoluteJoint) {
                               kTolerance, MatrixCompareType::relative));
 }
 
+GTEST_TEST(MultibodyPlantTest, ReversedPrismaticJoint) {
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  MultibodyPlant<double> plant(0.0);
+
+  // Add a normal body which we'll use as the child of a prismatic joint.
+  const RigidBody<double>& body = plant.AddRigidBody(
+      "body", default_model_instance(), SpatialInertia<double>::MakeUnitary());
+  const PrismaticJoint<double>& prismatic = plant.AddJoint<PrismaticJoint>(
+      "prismatic", plant.world_body(), {}, body, {}, Vector3d(1, 1, 1));
+
+  // Add a body ("reverse_body") and a joint ("reverse_prismatic") with
+  // parent=reverse_body, child=world.
+  const RigidBody<double>& reverse_body =
+      plant.AddRigidBody("reverse_body", default_model_instance(),
+                         SpatialInertia<double>::MakeUnitary());
+  const PrismaticJoint<double>& reverse_prismatic =
+      plant.AddJoint<PrismaticJoint>("reverse_prismatic", reverse_body, {},
+                                     plant.world_body(), {}, Vector3d(1, 1, 1));
+  EXPECT_NO_THROW(plant.Finalize());
+  auto context = plant.CreateDefaultContext();
+
+  for (int i = 0; i < 3; ++i) {
+    const double third = std::numbers::inv_sqrt3_v<double>;
+    EXPECT_NEAR(prismatic.translation_axis()[i], third, kTolerance);
+    EXPECT_NEAR(reverse_prismatic.translation_axis()[i], third, kTolerance);
+  }
+
+  // The forward and reverse joints should produce the same motion, but the
+  // meaning of the generalized coordinate q (translation) is reversed.
+  prismatic.set_translation(&*context, 0.125);
+  EXPECT_EQ(prismatic.get_translation(*context), 0.125);
+  reverse_prismatic.set_translation(&*context, -0.125);
+  EXPECT_EQ(reverse_prismatic.get_translation(*context), -0.125);
+
+  const RigidTransformd pose = body.EvalPoseInWorld(*context);
+  const RigidTransformd rpose = reverse_body.EvalPoseInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rpose.GetAsMatrix34(), pose.GetAsMatrix34(),
+                              kTolerance, MatrixCompareType::relative));
+
+  // Now check the velocities.
+  prismatic.set_translation_rate(&*context, 1.5);
+  EXPECT_EQ(prismatic.get_translation_rate(*context), 1.5);
+  reverse_prismatic.set_translation_rate(&*context, -1.5);
+  EXPECT_EQ(reverse_prismatic.get_translation_rate(*context), -1.5);
+  const SpatialVelocity<double>& velocity =
+      body.EvalSpatialVelocityInWorld(*context);
+  const SpatialVelocity<double>& rvelocity =
+      reverse_body.EvalSpatialVelocityInWorld(*context);
+  EXPECT_TRUE(CompareMatrices(rvelocity.get_coeffs(), velocity.get_coeffs(),
+                              kTolerance, MatrixCompareType::relative));
+}
+
 GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
   MultibodyPlant<double> plant(0.0);
 
-  // Add a body with parent=reverse_body, child=world. This is only allowed
-  // for Weld and Revolute joints currently.
+  // Add a body ("reverse_body") and a joint ("reverse_universal") with
+  // parent=reverse_body, child=world. Reversal is allowed for a limited set of
+  // joints, and UniversalJoint is not currently among them.
   const RigidBody<double>& reverse_body =
       plant.AddRigidBody("reverse_body", default_model_instance(),
                          SpatialInertia<double>::MakeUnitary());
@@ -2042,7 +2094,74 @@ GTEST_TEST(MultibodyPlantTest, UnsupportedReversedJoint) {
       plant.Finalize(),
       ".*Finalize.*parent/child ordering.*universal joint reverse_universal"
       ".*reversed.*does not support.*universal.*can be reversed.*"
-      ".*revolute.*weld.*Reverse.*ordering.*");
+      ".*prismatic.*revolute.*weld.*Reverse.*ordering.*");
+}
+
+// This test verifies that these two issues are fixed:
+//  - #9939 (duplicate welds give a bad error message)
+//  - #17429 (can't weld anything but base link)
+//
+// Issue #17429 complained that welding a non-base body to World failed.
+// This is a model of the system shown in that issue:
+//     base -p-> waist -r-> waist1 -r-> waist2 -r-> torso -r-> arm
+//       legend: p=prismatic, r=revolute, parent -> child
+// When "base" is welded to World, the parent->child directions are preserved
+// as inboard->outboard directions in the tree. But if we weld "waist" or
+// "torso" to World then some of the tree's mobilizers have to be reversed from
+// the joints. That should work as of PR #22949 (2025-04-30).
+GTEST_TEST(MultibodyPlantTest, WeldOfNonBaseBody) {
+  auto fill_plant = [](MultibodyPlant<double>* plant) {
+    const auto& base = plant->AddRigidBody("base");
+    const auto& waist = plant->AddRigidBody("waist");
+    const auto& waist1 = plant->AddRigidBody("waist1");
+    const auto& waist2 = plant->AddRigidBody("waist2");
+    const auto& torso = plant->AddRigidBody("torso");
+    const auto& arm = plant->AddRigidBody("arm");
+
+    plant->AddJoint<PrismaticJoint>("prismatic_z", base, {}, waist, {},
+                                    Vector3d(0, 0, 1));
+    plant->AddJoint<RevoluteJoint>("torso_joint1", waist, {}, waist1, {},
+                                   Vector3d(1, 0, 0));
+    plant->AddJoint<RevoluteJoint>("torso_joint2", waist1, {}, waist2, {},
+                                   Vector3d(0, 1, 0));
+    plant->AddJoint<RevoluteJoint>("torso_joint3", waist2, {}, torso, {},
+                                   Vector3d(0, 1, 0));
+    plant->AddJoint<RevoluteJoint>("shoulder", torso, {}, arm, {},
+                                   Vector3d(1, 1, 1));
+  };
+
+  // Issue #17429, first with no welds so the robot is floating.
+  MultibodyPlant<double> floating(0.0);
+  fill_plant(&floating);
+  EXPECT_NO_THROW(floating.Finalize());
+
+  // Issue #17429, the three welded cases mentioned above.
+  for (auto body : {"base", "waist", "torso"}) {
+    MultibodyPlant<double> plant(0.0);
+    fill_plant(&plant);
+    plant.AddJoint<WeldJoint>("body_to_world", plant.world_body(), {},
+                              plant.GetRigidBodyByName(body), {},
+                              RigidTransformd());
+    EXPECT_NO_THROW(plant.Finalize());
+  }
+
+  // Issue #9939, verify that welding the same body twice now produces a
+  // reasonable error message.
+  MultibodyPlant<double> bad_double_weld(0.0);
+  fill_plant(&bad_double_weld);
+  bad_double_weld.AddJoint<WeldJoint>(
+      "base_to_world1", bad_double_weld.world_body(), {},
+      bad_double_weld.GetRigidBodyByName("base"), {}, RigidTransformd());
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bad_double_weld.AddJoint<WeldJoint>(
+          "base_to_world2", bad_double_weld.world_body(), {},
+          bad_double_weld.GetRigidBodyByName("base"), {}, RigidTransformd()),
+      "AddJoint.*already.*base_to_world1.*world.*base.*base_to_world2.*"
+      "not allowed.*");
+
+  // The attempt to add the redundant joint should have been ignored.
+  EXPECT_NO_THROW(bad_double_weld.Finalize());
 }
 
 // Currently we don't support automatic modeling of systems where the links

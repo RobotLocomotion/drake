@@ -29,7 +29,10 @@ Every concrete Mobilizer derived from MobilizerImpl must implement the
 following (ideally inline) methods (some have defaults; see below). Note that
 these are not virtual methods so we have to document them here in a comment
 rather than as declarations in the header file. The code won't compile if
-any mobilizer fails to implement the non-defaulted methods.
+any mobilizer fails to implement the non-defaulted methods. These are const
+member functions (rather than static members) so are permitted to depend on
+mobilizer-specific data members, though in many cases they don't require any
+such data.
 
 @note The coordinate pointers q and v are guaranteed to point to the kNq or kNv
 state variables for the particular mobilizer. They are only 8-byte aligned so be

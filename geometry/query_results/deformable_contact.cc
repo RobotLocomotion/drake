@@ -40,11 +40,46 @@ VertexPartialPermutation ContactParticipation::CalcPartialPermutation() const {
 template <typename T>
 DeformableContactSurface<T>::DeformableContactSurface(
     GeometryId id_A, GeometryId id_B, PolygonSurfaceMesh<T> contact_mesh_W,
+    std::vector<T> pressures, std::vector<Vector3<T>> pressure_gradients_W,
+    std::vector<bool> is_element_inverted,
+    std::vector<Vector3<int>> contact_vertex_indexes_A,
+    std::vector<Vector3<T>> barycentric_coordinates_A)
+    : id_A_(id_A),
+      id_B_(id_B),
+      contact_mesh_W_(std::move(contact_mesh_W)),
+      pressures_(std::move(pressures)),
+      pressure_gradients_W_(std::move(pressure_gradients_W)),
+      is_element_inverted_(std::move(is_element_inverted)),
+      contact_vertex_indexes_A_(std::move(contact_vertex_indexes_A)),
+      barycentric_coordinates_A_(std::move(barycentric_coordinates_A)) {
+  const int num_contact_points = contact_mesh_W_.num_faces();
+  DRAKE_DEMAND(num_contact_points == ssize(*pressures_));
+  DRAKE_DEMAND(num_contact_points == ssize(std::get<std::vector<Vector3<T>>>(
+                                         barycentric_coordinates_A_)));
+  DRAKE_DEMAND(num_contact_points == ssize(std::get<std::vector<Vector3<int>>>(
+                                         contact_vertex_indexes_A_)));
+  nhats_W_.reserve(num_contact_points);
+  contact_points_W_.reserve(num_contact_points);
+  R_WCs_.reserve(num_contact_points);
+  const int kZAxis = 2;
+  for (int i = 0; i < num_contact_points; ++i) {
+    /* Ensure that in rigid deformable contact, the normal is pointing from
+     rigid to deformable (i.e. from B into A). */
+    nhats_W_.emplace_back(-contact_mesh_W_.face_normal(i));
+    contact_points_W_.emplace_back(contact_mesh_W_.element_centroid(i));
+    R_WCs_.emplace_back(
+        math::RotationMatrix<T>::MakeFromOneUnitVector(-nhats_W_[i], kZAxis));
+  }
+}
+
+template <typename T>
+DeformableContactSurface<T>::DeformableContactSurface(
+    GeometryId id_A, GeometryId id_B, PolygonSurfaceMesh<T> contact_mesh_W,
     std::vector<T> signed_distances,
     std::vector<Vector4<int>> contact_vertex_indexes_A,
     std::vector<Vector4<T>> barycentric_coordinates_A,
-    std::optional<std::vector<Vector4<int>>> contact_vertex_indexes_B,
-    std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B)
+    std::vector<Vector4<int>> contact_vertex_indexes_B,
+    std::vector<Vector4<T>> barycentric_coordinates_B)
     : id_A_(id_A),
       id_B_(id_B),
       contact_mesh_W_(std::move(contact_mesh_W)),
@@ -54,21 +89,14 @@ DeformableContactSurface<T>::DeformableContactSurface(
       contact_vertex_indexes_B_(std::move(contact_vertex_indexes_B)),
       barycentric_coordinates_B_(std::move(barycentric_coordinates_B)) {
   const int num_contact_points = contact_mesh_W_.num_faces();
-  DRAKE_DEMAND(num_contact_points ==
-               static_cast<int>(signed_distances_.size()));
-  DRAKE_DEMAND(num_contact_points ==
-               static_cast<int>(barycentric_coordinates_A_.size()));
-  DRAKE_DEMAND(num_contact_points ==
-               static_cast<int>(contact_vertex_indexes_A_.size()));
-  DRAKE_DEMAND(contact_vertex_indexes_B_.has_value() ==
-               barycentric_coordinates_B_.has_value());
-  if (contact_vertex_indexes_B_.has_value()) {
-    DRAKE_DEMAND(num_contact_points ==
-                 static_cast<int>(barycentric_coordinates_B_->size()));
-    DRAKE_DEMAND(num_contact_points ==
-                 static_cast<int>(contact_vertex_indexes_B_->size()));
-    DRAKE_DEMAND(id_A < id_B);
-  }
+  DRAKE_DEMAND(num_contact_points == ssize(*signed_distances_));
+  DRAKE_DEMAND(num_contact_points == ssize(std::get<std::vector<Vector4<int>>>(
+                                         contact_vertex_indexes_A_)));
+  DRAKE_DEMAND(num_contact_points == ssize(std::get<std::vector<Vector4<T>>>(
+                                         barycentric_coordinates_A_)));
+  DRAKE_DEMAND(num_contact_points == ssize(*barycentric_coordinates_B_));
+  DRAKE_DEMAND(num_contact_points == ssize(*contact_vertex_indexes_B_));
+  DRAKE_DEMAND(id_A < id_B);
   nhats_W_.reserve(num_contact_points);
   contact_points_W_.reserve(num_contact_points);
   R_WCs_.reserve(num_contact_points);
@@ -91,12 +119,16 @@ template <typename T>
 void DeformableContact<T>::AddDeformableRigidContactSurface(
     GeometryId deformable_id, GeometryId rigid_id,
     const std::unordered_set<int>& participating_vertices,
-    PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> signed_distances,
-    std::vector<Vector4<int>> contact_vertex_indexes,
-    std::vector<Vector4<T>> barycentric_coordinates) {
+    PolygonSurfaceMesh<T> contact_mesh_W, std::vector<T> pressures,
+    std::vector<Vector3<T>> pressure_gradients_W,
+    std::vector<bool> is_element_inverted,
+    std::vector<Vector3<int>> contact_vertex_indexes,
+    std::vector<Vector3<T>> barycentric_coordinates) {
   const auto iter = contact_participations_.find(deformable_id);
   DRAKE_THROW_UNLESS(iter != contact_participations_.end());
-  DRAKE_DEMAND(static_cast<int>(signed_distances.size()) ==
+  DRAKE_DEMAND(static_cast<int>(pressures.size()) ==
+               contact_mesh_W.num_faces());
+  DRAKE_DEMAND(static_cast<int>(pressure_gradients_W.size()) ==
                contact_mesh_W.num_faces());
   DRAKE_DEMAND(static_cast<int>(contact_vertex_indexes.size()) ==
                contact_mesh_W.num_faces());
@@ -104,9 +136,9 @@ void DeformableContact<T>::AddDeformableRigidContactSurface(
                contact_mesh_W.num_faces());
   iter->second.Participate(participating_vertices);
   contact_surfaces_.emplace_back(
-      deformable_id, rigid_id, std::move(contact_mesh_W),
-      std::move(signed_distances), std::move(contact_vertex_indexes),
-      std::move(barycentric_coordinates), std::nullopt, std::nullopt);
+      deformable_id, rigid_id, std::move(contact_mesh_W), std::move(pressures),
+      std::move(pressure_gradients_W), std::move(is_element_inverted),
+      std::move(contact_vertex_indexes), std::move(barycentric_coordinates));
 }
 
 template <typename T>

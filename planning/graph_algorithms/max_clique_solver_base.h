@@ -3,7 +3,6 @@
 
 #include <Eigen/Sparse>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
 
 namespace drake {
@@ -39,9 +38,6 @@ class MaxCliqueSolverBase {
   [[nodiscard]] VectorX<bool> SolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const;
 
-  DRAKE_DEPRECATED("2025-05-01", "Clone is not useful and so is being removed")
-  [[nodiscard]] std::unique_ptr<MaxCliqueSolverBase> Clone() const;
-
  protected:
   // We put the copy/move/assignment constructors as protected to avoid copy
   // slicing. The inherited final subclasses should put them in public
@@ -52,11 +48,6 @@ class MaxCliqueSolverBase {
  private:
   virtual VectorX<bool> DoSolveMaxClique(
       const Eigen::SparseMatrix<bool>& adjacency_matrix) const = 0;
-
-  DRAKE_DEPRECATED("2025-05-01",
-                   "Clone and DoClone are not useful and so are being removed")
-  [[nodiscard]] virtual std::unique_ptr<MaxCliqueSolverBase> DoClone()
-      const = 0;
 };
 
 }  // namespace graph_algorithms

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -254,7 +255,7 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
    documentation).
    @pre All entries in `indices` are in [0, block_cols()).
    @throws if `this` matrix is block lower triangular. */
-  void ZeroRowsAndColumns(const std::vector<int>& indices);
+  void ZeroRowsAndColumns(const std::set<int>& indices);
 
  private:
   /* Checks if the input block row and column indices and optionally the

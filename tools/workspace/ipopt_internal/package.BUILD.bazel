@@ -6,7 +6,6 @@ load(
     "@drake//tools/workspace/coinutils_internal:defs.bzl",
     "coin_cc_library",
 )
-load("@mumps_internal//:defs.bzl", MUMPS_ENABLED = "ENABLED")
 
 licenses(["reciprocal"])  # EPL-2.0
 
@@ -214,9 +213,7 @@ _SRCS_INITIAL = [
 ]
 
 # In addition to _SRCS_INITIAL, we also add extra sources for certain solvers.
-_SRCS_SOLVER_MUMPS_SPRAL = ([
-    "src/Algorithm/LinearSolvers/IpMumpsSolverInterface.cpp",
-] if MUMPS_ENABLED else []) + [
+_SRCS_SOLVER_SPRAL = [
     "src/Algorithm/LinearSolvers/IpSpralSolverInterface.cpp",
 ]
 
@@ -236,7 +233,7 @@ _SRCS_SOLVER_INT32 = [
 ]
 
 # All of the sources together (baseline + extra).
-_SRCS = _SRCS_INITIAL + _SRCS_SOLVER_MUMPS_SPRAL + _SRCS_SOLVER_INT32
+_SRCS = _SRCS_INITIAL + _SRCS_SOLVER_SPRAL + _SRCS_SOLVER_INT32
 
 # When compiling the sources, we'll provide access to _HDRS_PRIVATE, which is
 # all of the headers that live in the same directories as the sources. These
@@ -286,7 +283,7 @@ _AUTOCONF_DEFINES = [
     "IPOPTLIB_EXPORT=__attribute__ ((visibility (\"hidden\")))",
     "SIPOPTAMPLINTERFACELIB_EXPORT=",
     "SIPOPTLIB_EXPORT=",
-] + (["IPOPT_HAS_MUMPS=1"] if MUMPS_ENABLED else [])
+]
 
 _AUTOCONF_UNDEFINES = [
     # Don't use these features of the standard library and/or host system.
@@ -315,6 +312,7 @@ _AUTOCONF_UNDEFINES = [
     "IPOPT_HAS_ASL",
     "IPOPT_HAS_HSL",
     "IPOPT_HAS_LINEARSOLVERLOADER",
+    "IPOPT_HAS_MUMPS",
     "IPOPT_HAS_PARDISO_MKL",
     "IPOPT_HAS_WSMP",
     "IPOPT_HSL_FUNC",
@@ -339,7 +337,7 @@ _AUTOCONF_UNDEFINES = [
     # This is actually used by the C++ code, but autoconf_configure_file can't
     # handle it. We'll use _CONFIG_PRIVATE_DEFINES for this instead, below.
     "IPOPT_LAPACK_FUNC",
-] + ([] if MUMPS_ENABLED else ["IPOPT_HAS_MUMPS"])
+]
 
 _CONFIG_PRIVATE_DEFINES = [
     "IPOPT_LAPACK_FUNC(name,NAME)=name##_",
@@ -364,9 +362,7 @@ coin_cc_library(
         "@blas",
         "@lapack",
         "@spral_internal//:spral",
-    ] + ([
-        "@mumps_internal//:dmumps_seq",
-    ] if MUMPS_ENABLED else []),
+    ],
     visibility = ["//visibility:public"],
 )
 

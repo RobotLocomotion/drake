@@ -21,9 +21,11 @@ namespace deformable {
 
 // TODO(xuchenhan-tri): Consider supporting AutoDiffXd.
 /* Definition of a deformable geometry for contact evaluations. To be
- considered as deformable, a geometry must be associated with both:
-   - a deformable volume mesh, and
-   - an approximate signed distance field in the interior of the mesh. */
+ considered as deformable, a geometry must be associated with:
+   - a deformable volume mesh,
+   - an approximate signed distance field in the interior of the volume mesh,
+     and
+   - the surface triangle mesh of the volume mesh. */
 class DeformableGeometry {
  public:
   DeformableGeometry(const DeformableGeometry& other);
@@ -31,27 +33,66 @@ class DeformableGeometry {
   DeformableGeometry(DeformableGeometry&&) = default;
   DeformableGeometry& operator=(DeformableGeometry&&) = default;
 
-  /* Constructs a deformable geometry from the given mesh. Also computes an
-   approximate signed distance field for the mesh. */
-  explicit DeformableGeometry(VolumeMesh<double> mesh);
+  /* Constructs a deformable geometry from the given meshes. Also computes an
+   approximate signed distance field for the mesh.
+   @param[in] volume_mesh   The volume mesh representation of the geometry.
+   @param[in] surface_mesh  The surface of `volume_mesh`.
+   @param[in] surface_index_to_volume_index
+                            Mapping from surface index to volume index. The iᵗʰ
+                            entry is the index of the volume mesh vertex that
+                            corresponds to the iᵗʰ surface vertex. */
+  DeformableGeometry(VolumeMesh<double> volume_mesh,
+                     TriangleSurfaceMesh<double> surface_mesh,
+                     std::vector<int> surface_index_to_volume_index,
+                     std::vector<int> surface_tri_to_volume_tet);
 
   // TODO(xuchenhan-tri): Consider adding another constructor that takes in both
   // a mesh and a precomputed (approximated) sign distance field.
 
   /* Returns the volume mesh representation of the deformable geometry at
    current configuration. */
-  const DeformableVolumeMeshWithBvh<double>& deformable_mesh() const {
-    return *deformable_mesh_;
+  const DeformableVolumeMeshWithBvh<double>& deformable_volume() const {
+    return *deformable_volume_;
   }
 
-  /* Updates the vertex positions of the underlying deformable mesh.
-  @param q  A vector of 3N values (where this mesh has N vertices). The iᵗʰ
-            vertex gets values <q(3i), q(3i + 1), q(3i + 2)>. Each vertex is
-            assumed to be measured and expressed in the mesh's frame M.
-  @pre q.size() == 3 * deformable_mesh().num_vertices(). */
-  void UpdateVertexPositions(const Eigen::Ref<const VectorX<double>>& q) {
-    DRAKE_DEMAND(q.size() == 3 * deformable_mesh().mesh().num_vertices());
-    deformable_mesh_->UpdateVertexPositions(q);
+  /* Returns the surface mesh representation of the deformable geometry at
+   current configuration. */
+  const DeformableSurfaceMeshWithBvh<double>& deformable_surface() const {
+    return *deformable_surface_;
+  }
+
+  /* Returns the mapping from surface index to volume index. The iᵗʰ entry is
+   the index of the volume mesh vertex that corresponds to the iᵗʰ surface
+   vertex. */
+  const std::vector<int>& surface_index_to_volume_index() const {
+    return surface_index_to_volume_index_;
+  }
+
+  /* Returns the mapping from surface triangle to volume tetrahehdron. The iᵗʰ
+   entry is the index of the volume mesh tetrahedron that corresponds to the iᵗʰ
+   surface triangle. */
+  const std::vector<int>& surface_tri_to_volume_tet() const {
+    return surface_tri_to_volume_tet_;
+  }
+
+  /* Updates the vertex positions of the deformable geometry.
+  @param q_volume  A vector of 3N values (where the volume mesh has N vertices).
+                   The iᵗʰ vertex in the volume mesh gets values
+                   <q(3i), q(3i + 1), q(3i + 2)>. Each vertex is assumed to be
+                   measured and expressed in the mesh's frame M.
+  @param q_surface Similar to `q_volume`, but provides the vertex positions of
+                   the surface mesh.
+  @pre q_volume.size() == 3 * deformable_volume().mesh().num_vertices().
+  @pre q_surface.size() == 3 * deformable_surface().mesh(). num_vertices(). */
+  void UpdateVertexPositions(
+      const Eigen::Ref<const VectorX<double>>& q_volume,
+      const Eigen::Ref<const VectorX<double>>& q_surface) {
+    DRAKE_DEMAND(q_volume.size() ==
+                 3 * deformable_volume().mesh().num_vertices());
+    DRAKE_DEMAND(q_surface.size() ==
+                 3 * deformable_surface().mesh().num_vertices());
+    deformable_volume_->UpdateVertexPositions(q_volume);
+    deformable_surface_->UpdateVertexPositions(q_surface);
   }
 
   /* Returns the approximate signed distance field (sdf) for the deformable
@@ -66,7 +107,10 @@ class DeformableGeometry {
   const VolumeMeshFieldLinear<double, double>& CalcSignedDistanceField() const;
 
  private:
-  std::unique_ptr<DeformableVolumeMeshWithBvh<double>> deformable_mesh_;
+  std::unique_ptr<DeformableVolumeMeshWithBvh<double>> deformable_volume_;
+  std::unique_ptr<DeformableSurfaceMeshWithBvh<double>> deformable_surface_;
+  std::vector<int> surface_index_to_volume_index_;
+  std::vector<int> surface_tri_to_volume_tet_;
   /* Note: we don't provide an accessor to `signed_distance_field_` as it may be
    invalidated by calls to `UpdateVertexPositions()`. Instead, we provide
    `CalcSignedDistanceField()` that guarantees to return the up-to-date mesh
@@ -74,21 +118,22 @@ class DeformableGeometry {
   std::unique_ptr<VolumeMeshFieldLinear<double, double>> signed_distance_field_;
 };
 
-/* Defines a rigid geometry -- a rigid hydroelastic mesh repurposed to compute
- deformable vs. rigid contact, along with local data to keep track of the pose
- of the mesh. We need to locally store the pose of the mesh because right now we
- aren't relying on FCL's broadphase. */
+// TODO(xuchenhan-tri): Rename this class to NonDeformableGeometry. The name
+//  "rigid" is too overloaded.
+/* Defines a non-deformable geometry -- a compliant hydroelastic mesh repurposed
+ to compute deformable vs. non-deformable contact, along with local data to keep
+ track of the pose of the mesh. We need to locally store the pose of the mesh
+ because right now we aren't relying on FCL's broadphase. */
 class RigidGeometry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RigidGeometry);
 
-  explicit RigidGeometry(
-      std::unique_ptr<internal::hydroelastic::RigidMesh> rigid_mesh)
-      : rigid_mesh_(std::move(rigid_mesh)) {}
+  explicit RigidGeometry(std::unique_ptr<internal::hydroelastic::SoftMesh> mesh)
+      : mesh_(std::move(mesh)) {}
 
-  const internal::hydroelastic::RigidMesh& rigid_mesh() const {
-    DRAKE_DEMAND(rigid_mesh_ != nullptr);
-    return *rigid_mesh_;
+  const internal::hydroelastic::SoftMesh& mesh() const {
+    DRAKE_DEMAND(mesh_ != nullptr);
+    return *mesh_;
   }
 
   /* Updates the pose of the geometry in the world frame to the given pose. */
@@ -100,26 +145,35 @@ class RigidGeometry {
   const math::RigidTransform<double>& pose_in_world() const { return X_WG_; }
 
  private:
-  copyable_unique_ptr<internal::hydroelastic::RigidMesh> rigid_mesh_;
+  copyable_unique_ptr<internal::hydroelastic::SoftMesh> mesh_;
   math::RigidTransform<double> X_WG_;
 };
 
 /* Generic interface for handling rigid Shapes. By default, we support all
- shapes that are supported by rigid hydroelastic. Unsupported shapes (e.g. half
- space) can choose to opt out. Geometries not supported by rigid hydroelastics
- will return a std::nullopt. The rigid mesh created upon a successful creation
- of RigidGeometry will be the same mesh as used for rigid hydroelastics. */
+ shapes that are supported by compliant hydroelastic. Unsupported shapes (e.g.
+ half space) can choose to opt out. Geometries not supported by compliant
+ hydroelastics will return a std::nullopt. The mesh created upon a successful
+ creation of RigidGeometry will be the same mesh as used for compliant
+ hydroelastics. */
 template <typename Shape>
-std::optional<RigidGeometry> MakeRigidRepresentation(
+std::optional<RigidGeometry> MakeMeshRepresentation(
     const Shape& shape, const ProximityProperties& props) {
-  std::optional<internal::hydroelastic::RigidGeometry> hydro_rigid_geometry =
-      internal::hydroelastic::MakeRigidRepresentation(shape, props);
-  if (!hydro_rigid_geometry || hydro_rigid_geometry->is_half_space()) {
+  std::optional<internal::hydroelastic::SoftGeometry> compliant_hydro_geometry =
+      internal::hydroelastic::MakeSoftRepresentation(shape, props);
+  // TODO(xuchenhan-tri): Support half space.
+  if (!compliant_hydro_geometry || compliant_hydro_geometry->is_half_space()) {
     return {};
   }
-  /* RigidGeometry is documented as having a mesh or having a half space. We've
-   excluded the latter, so we know we have a mesh. */
-  return RigidGeometry(hydro_rigid_geometry->release_mesh());
+  /* hydroelastic::SoftGeometry is documented as having a mesh or having a half
+   space. We've excluded the latter, so we know we have a mesh. */
+  // TODO(xuchenhan-tri): consider allowing SoftMesh to release its mesh to
+  // prevent copying here.
+  auto mesh =
+      std::make_unique<VolumeMesh<double>>(compliant_hydro_geometry->mesh());
+  std::unique_ptr<VolumeMeshFieldLinear<double, double>> field =
+      compliant_hydro_geometry->pressure_field().CloneAndSetMesh(mesh.get());
+  return RigidGeometry(std::make_unique<internal::hydroelastic::SoftMesh>(
+      std::move(mesh), std::move(field)));
 }
 
 }  // namespace deformable

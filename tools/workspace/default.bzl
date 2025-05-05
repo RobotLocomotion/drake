@@ -6,7 +6,6 @@ load("//tools/workspace/bazelisk:repository.bzl", "bazelisk_repository")
 load("//tools/workspace/blas:repository.bzl", "blas_repository")
 load("//tools/workspace/build_bazel_apple_support:repository.bzl", "build_bazel_apple_support_repository")  # noqa
 load("//tools/workspace/buildifier:repository.bzl", "buildifier_repository")
-load("//tools/workspace/cc:repository.bzl", "cc_repository")
 load("//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
 load("//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
 load("//tools/workspace/clarabel_cpp_internal:repository.bzl", "clarabel_cpp_internal_repository")  # noqa
@@ -29,7 +28,6 @@ load("//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
 load("//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
 load("//tools/workspace/gklib_internal:repository.bzl", "gklib_internal_repository")  # noqa
 load("//tools/workspace/glib:repository.bzl", "glib_repository")
-load("//tools/workspace/glx:repository.bzl", "glx_repository")
 load("//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
@@ -37,14 +35,11 @@ load("//tools/workspace/gymnasium_py:repository.bzl", "gymnasium_py_repository")
 load("//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
 load("//tools/workspace/highway_internal:repository.bzl", "highway_internal_repository")  # noqa
-load("//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("//tools/workspace/ipopt_internal:repository.bzl", "ipopt_internal_repository")  # noqa
 load("//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("//tools/workspace/lapack_internal:repository.bzl", "lapack_internal_repository")  # noqa
 load("//tools/workspace/lcm:repository.bzl", "lcm_repository")
-load("//tools/workspace/libblas:repository.bzl", "libblas_repository")
 load("//tools/workspace/libjpeg_turbo_internal:repository.bzl", "libjpeg_turbo_internal_repository")  # noqa
-load("//tools/workspace/liblapack:repository.bzl", "liblapack_repository")
 load("//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
 load("//tools/workspace/libpng_internal:repository.bzl", "libpng_internal_repository")  # noqa
 load("//tools/workspace/libtiff_internal:repository.bzl", "libtiff_internal_repository")  # noqa
@@ -54,7 +49,6 @@ load("//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("//tools/workspace/mpmath_py_internal:repository.bzl", "mpmath_py_internal_repository")  # noqa
 load("//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("//tools/workspace/mujoco_menagerie_internal:repository.bzl", "mujoco_menagerie_internal_repository")  # noqa
-load("//tools/workspace/mumps_internal:repository.bzl", "mumps_internal_repository")  # noqa
 load("//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
@@ -64,11 +58,12 @@ load("//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_re
 load("//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("//tools/workspace/onetbb_internal:repository.bzl", "onetbb_internal_repository")  # noqa
 load("//tools/workspace/opencl:repository.bzl", "opencl_repository")
-load("//tools/workspace/opengl:repository.bzl", "opengl_repository")
 load("//tools/workspace/openusd_internal:repository.bzl", "openusd_internal_repository")  # noqa
 load("//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("//tools/workspace/picosha2_internal:repository.bzl", "picosha2_internal_repository")  # noqa
+load("//tools/workspace/pkgconfig_blas_internal:repository.bzl", "pkgconfig_blas_internal_repository")  # noqa
+load("//tools/workspace/pkgconfig_lapack_internal:repository.bzl", "pkgconfig_lapack_internal_repository")  # noqa
 load("//tools/workspace/platforms:repository.bzl", "platforms_repository")
 load("//tools/workspace/poisson_disk_sampling_internal:repository.bzl", "poisson_disk_sampling_internal_repository")  # noqa
 load("//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
@@ -147,9 +142,6 @@ def add_default_repositories(
         build_bazel_apple_support_repository(name = "build_bazel_apple_support", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "buildifier" not in excludes:
         buildifier_repository(name = "buildifier", mirrors = mirrors)
-    if "cc" not in excludes:
-        # Deprecated 2025-05-01.
-        cc_repository(name = "cc")
     if "ccd_internal" not in excludes:
         ccd_internal_repository(name = "ccd_internal", mirrors = mirrors)
     if "clang_cindex_python3_internal" not in excludes:
@@ -194,9 +186,6 @@ def add_default_repositories(
         gklib_internal_repository(name = "gklib_internal", mirrors = mirrors)  # noqa
     if "glib" not in excludes:
         glib_repository(name = "glib")
-    if "glx" not in excludes:
-        # Deprecated 2025-05-01.
-        glx_repository(name = "glx")
     if "googlebenchmark" not in excludes:
         googlebenchmark_repository(name = "googlebenchmark", mirrors = mirrors)
     if "gtest" not in excludes:
@@ -211,9 +200,6 @@ def add_default_repositories(
         gymnasium_py_repository(name = "gymnasium_py", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "highway_internal" not in excludes:
         highway_internal_repository(name = "highway_internal", mirrors = mirrors)  # noqa
-    if "ipopt" not in excludes:
-        # Deprecated 2025-05-01.
-        ipopt_repository(name = "ipopt")
     if "ipopt_internal" not in excludes:
         ipopt_internal_repository(name = "ipopt_internal", mirrors = mirrors)  # noqa
     if "lapack" not in excludes:
@@ -226,14 +212,8 @@ def add_default_repositories(
         lapack_internal_repository(name = "lapack_internal", mirrors = mirrors)
     if "lcm" not in excludes:
         lcm_repository(name = "lcm", mirrors = mirrors)
-    if "libblas" not in excludes:
-        # Deprecated 2025-05-01.
-        libblas_repository(name = "libblas")
     if "libjpeg_turbo_internal" not in excludes:
         libjpeg_turbo_internal_repository(name = "libjpeg_turbo_internal", mirrors = mirrors)  # noqa
-    if "liblapack" not in excludes:
-        # Deprecated 2025-05-01.
-        liblapack_repository(name = "liblapack")
     if "libpfm" not in excludes:
         libpfm_repository(name = "libpfm", _is_drake_self_call = True)
     if "libpng_internal" not in excludes:
@@ -252,10 +232,6 @@ def add_default_repositories(
         msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)  # noqa
     if "mujoco_menagerie_internal" not in excludes:
         mujoco_menagerie_internal_repository(name = "mujoco_menagerie_internal", mirrors = mirrors)  # noqa
-    if "mumps_internal" not in excludes:
-        # Remove on 2025-05-01.
-        # Likewise remove mumps from setup/**.txt files.
-        mumps_internal_repository(name = "mumps_internal")
     if "mypy_extensions_internal" not in excludes:
         mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
     if "mypy_internal" not in excludes:
@@ -274,9 +250,6 @@ def add_default_repositories(
         onetbb_internal_repository(name = "onetbb_internal", mirrors = mirrors)
     if "opencl" not in excludes:
         opencl_repository(name = "opencl")
-    if "opengl" not in excludes:
-        # Deprecated 2025-05-01.
-        opengl_repository(name = "opengl")
     if "openusd_internal" not in excludes:
         openusd_internal_repository(name = "openusd_internal", mirrors = mirrors)  # noqa
     if "org_apache_xmlgraphics_commons" not in excludes:
@@ -286,13 +259,9 @@ def add_default_repositories(
     if "picosha2_internal" not in excludes:
         picosha2_internal_repository(name = "picosha2_internal", mirrors = mirrors)  # noqa
     if "pkgconfig_blas_internal" not in excludes:
-        # On 2025-05-01 rename libblas_repository to something more
-        # appropriate with "internal" in the name.
-        libblas_repository(name = "pkgconfig_blas_internal", extra_deprecation = "")  # noqa
+        pkgconfig_blas_internal_repository(name = "pkgconfig_blas_internal")
     if "pkgconfig_lapack_internal" not in excludes:
-        # On 2025-05-01 rename liblapack_repository to something more
-        # appropriate with "internal" in the name.
-        liblapack_repository(name = "pkgconfig_lapack_internal", extra_deprecation = "")  # noqa
+        pkgconfig_lapack_internal_repository(name = "pkgconfig_lapack_internal")  # noqa
     if "platforms" not in excludes:
         platforms_repository(name = "platforms", mirrors = mirrors, _is_drake_self_call = True)  # noqa
     if "poisson_disk_sampling_internal" not in excludes:

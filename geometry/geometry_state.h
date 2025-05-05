@@ -37,6 +37,42 @@ namespace internal {
 class GeometryVisualizationImpl;
 using FrameNameSet = std::unordered_set<std::string>;
 
+// Driven mesh data that depend on the configuration input values.
+class DrivenMeshData {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DrivenMeshData);
+
+  DrivenMeshData();
+
+  ~DrivenMeshData();
+
+  // Updates the control mesh vertex positions for all driven meshes.
+  // @param[in] q_WGs  q_WGs.at(id) contains control mesh vertex positions as a
+  //                   flat Eigen vector.
+  // @pre all driven meshes in `this` have their control mesh vertex positions
+  //      specified in `q_WGs`.
+  // @tparam_default_scalar
+  template <typename T>
+  void SetControlMeshPositions(
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs);
+
+  const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+  driven_meshes() const {
+    return driven_meshes_;
+  }
+
+  // Registers both driven meshes for the deformable geometry with the given id.
+  // @pre driven_meshes is not empty.
+  void SetMeshes(GeometryId id, std::vector<DrivenTriangleMesh> driven_meshes);
+
+  // Removes the driven mesh associated with the given GeometryId.
+  void Remove(GeometryId id) { driven_meshes_.erase(id); }
+
+ private:
+  std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>
+      driven_meshes_;
+};
+
 // TODO(xuchenhan-tri): These data should live in cache entries. Furthermore,
 //  they should be broken up by source so that inputs can be pulled
 //  independently. For now, they are big blobs of memory. Correct operation of
@@ -83,52 +119,10 @@ struct KinematicsData {
   // In other words, it is the full evaluation of the kinematic chain from
   // frame i to the world frame.
   std::vector<math::RigidTransform<T>> X_WFs;
-};
 
-// Driven mesh data that depend on the configuration input values.
-class DrivenMeshData {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DrivenMeshData);
-
-  DrivenMeshData();
-
-  ~DrivenMeshData();
-
-  // Updates the control mesh vertex positions for all driven meshes.
-  // @param[in] q_WGs  q_WGs.at(id) contains control mesh vertex positions as a
-  //                   flat Eigen vector.
-  // @pre all driven meshes in `this` have their control mesh vertex positions
-  // specified in `q_WGs`.
-  // @tparam_default_scalar
-  template <typename T>
-  void SetControlMeshPositions(
-      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs);
-
-  const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
-  driven_meshes() const {
-    return driven_meshes_;
-  }
-
-  const std::vector<RenderMesh>& render_meshes(GeometryId id) const {
-    return render_meshes_.at(id);
-  }
-
-  // Registers both driven meshes and render meshes for the deformable geometry
-  // with the given id.
-  // @pre driven_meshes and render_meshes are the same size and not empty.
-  void SetMeshes(GeometryId id, std::vector<DrivenTriangleMesh> driven_meshes,
-                 std::vector<RenderMesh> render_meshes);
-
-  // Removes all mesh representations associated with the given GeometryId.
-  void Remove(GeometryId id) {
-    driven_meshes_.erase(id);
-    render_meshes_.erase(id);
-  }
-
- private:
-  std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>
-      driven_meshes_;
-  std::unordered_map<GeometryId, std::vector<RenderMesh>> render_meshes_;
+  // Mesh representations for deformable geometries that move passively with the
+  // simulated control mesh, keyed by roles.
+  std::map<Role, internal::DrivenMeshData> driven_mesh_data;
 };
 
 // A wrapper around a shared_ptr<T> where copying calls T::Clone() instead of
@@ -814,11 +808,9 @@ class GeometryState {
       std::vector<render::RenderEngine*> render_engines) const;
 
   // Method that updates the proximity engine and the render engines with the
-  // up-to-date configuration data in `kinematics_data` and up-to-date
-  // `driven_mesh_data`.
+  // up-to-date configuration data in `kinematics_data`.
   void FinalizeConfigurationUpdate(
       const internal::KinematicsData<T>& kinematics_data,
-      const internal::DrivenMeshData& driven_mesh_data,
       internal::ProximityEngine<T>* proximity_engine,
       std::vector<render::RenderEngine*> render_engines) const;
 
@@ -977,6 +969,14 @@ class GeometryState {
   // regardless of T's actual type.
   math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
 
+  // Returns a reference to the driven meshes with the given role in this
+  // GeometryState.
+  // @pre role is not Role::kUnassigned.
+  const internal::DrivenMeshData& driven_mesh_data(Role role) const {
+    DRAKE_DEMAND(role != Role::kUnassigned);
+    return kinematics_data_.driven_mesh_data.at(role);
+  }
+
   /* TODO(xuchenhan-tri) Dangerous mutable getters using const_cast.
    These data live in GeometryState (which is a Parameter in the system
    framework sense), but they are (or depend on) time-dependent position data
@@ -994,15 +994,6 @@ class GeometryState {
   internal::KinematicsData<T>& mutable_kinematics_data() const {
     GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
     return mutable_state->kinematics_data_;
-  }
-
-  // Returns a mutable reference to the driven meshes with the given role in
-  // this GeometryState.
-  // @pre role is not Role::kUnassigned.
-  internal::DrivenMeshData& mutable_driven_mesh_data(Role role) const {
-    DRAKE_DEMAND(role != Role::kUnassigned);
-    GeometryState<T>* mutable_state = const_cast<GeometryState<T>*>(this);
-    return mutable_state->driven_mesh_data_[role];
   }
 
   // Returns a mutable reference to the proximity engine in this GeometryState.
@@ -1089,9 +1080,11 @@ class GeometryState {
   // are two invariants.
   internal::KinematicsData<T> kinematics_data_;
 
-  // Mesh representations for deformable geometries that move passively with the
-  // simulated control mesh, keyed by roles.
-  std::map<Role, internal::DrivenMeshData> driven_mesh_data_;
+  // deformable_render_meshes_[role][id] stores the render meshes for the
+  // deformable geometry with the given id and role. Valid only for illustration
+  // and perception roles.
+  std::map<Role, std::map<GeometryId, std::vector<internal::RenderMesh>>>
+      deformable_render_meshes_;
 
   // The underlying geometry engine. The topology of the engine does _not_
   // change with respect to time. But its values do. This straddles the two

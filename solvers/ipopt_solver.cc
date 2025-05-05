@@ -27,8 +27,7 @@ namespace {
 // we can mutate it for efficiency; the data may be invalid afterwards, so the
 // caller should not use it for anything after we return.
 // @param[in,out] app The application to copy the options into.
-void SetAppOptions(const std::string& default_linear_solver,
-                   internal::SpecificOptions* options,
+void SetAppOptions(internal::SpecificOptions* options,
                    Ipopt::IpoptApplication* app) {
   // Wrap our calls to IPOPT to check for errors (i.e., unknown options).
   const auto set_double_option = [&app](const std::string& name, double value) {
@@ -69,10 +68,6 @@ void SetAppOptions(const std::string& default_linear_solver,
 
   // Turn off the banner.
   set_string_option("sb", "yes");
-
-  if (!default_linear_solver.empty()) {
-    set_string_option("linear_solver", default_linear_solver);
-  }
 
   set_string_option("hessian_approximation", "limited-memory");
 
@@ -157,13 +152,7 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
 
 IpoptSolver::IpoptSolver()
     : SolverBase(id(), &is_available, &is_enabled,
-                 &ProgramAttributesSatisfied) {
-  const std::vector<std::string_view> linear_solvers =
-      internal::GetSupportedIpoptLinearSolvers();
-  if (!linear_solvers.empty()) {
-    default_linear_solver_ = linear_solvers.at(0);
-  }
-}
+                 &ProgramAttributesSatisfied) {}
 
 bool IpoptSolver::is_available() {
   return true;
@@ -181,7 +170,7 @@ void IpoptSolver::DoSolve2(const MathematicalProgram& prog,
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  SetAppOptions(default_linear_solver_, options, &(*app));
+  SetAppOptions(options, &(*app));
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {

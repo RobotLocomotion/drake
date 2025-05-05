@@ -26,12 +26,6 @@ void DefinePlanningGraphAlgorithms(py::module m) {
         PYBIND11_OVERRIDE_PURE(VectorX<bool>, MaxCliqueSolverBase,
             DoSolveMaxClique, adjacency_matrix);
       }
-
-      // Deprecated 2025-05-01.
-      std::unique_ptr<MaxCliqueSolverBase> DoClone() const override {
-        throw std::logic_error(
-            "Python subclasses of MaxCliqueSolverBase do not support Clone()");
-      };
     };
     const auto& cls_doc = doc.MaxCliqueSolverBase;
     py::class_<MaxCliqueSolverBase, PyMaxCliqueSolverBase>(

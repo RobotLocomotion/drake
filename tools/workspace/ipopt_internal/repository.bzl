@@ -9,5 +9,8 @@ def ipopt_internal_repository(
         commit = "releases/3.14.17",
         sha256 = "17ab8e9a6059ab11172c184e5947e7a7dda9fed0764764779c27e5b8e46f3d75",  # noqa
         build_file = ":package.BUILD.bazel",
+        patches = [
+            ":patches/upstream/atomic.patch",
+        ],
         mirrors = mirrors,
     )

@@ -226,13 +226,16 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   const int num_vertices = vertex_positions.size() / 3;
   /* The deformable mesh is an octahedron and the only stable configuration on a
    plane is with one face lying on the plane. In that configuration, all
-   vertices are participating in contact and thus we expect the number of
-   participating dofs to be equal to the total number of dofs in the deformable
-   model. In that case, the participating dofs (in contact solver results) and
-   the full model (i.e data in `vertex_positions`) share the same indexing. */
-  ASSERT_EQ(contact_solver_results.v_next.size(), 3 * num_vertices);
-  for (int i = 0; i < num_vertices; ++i) {
-    const Vector3d& p_WV = vertex_positions.segment<3>(3 * i);
+   vertices except the center vertex are participating in contact and thus we
+   expect the number of participating dofs to be equal to the total number of
+   dofs in the deformable model minus 3. We know that the internal vertex is
+   vertex zero. The the permutation is the mapping
+   (1, 2, 3, 4, 5, 6) -> (0, 1, 2, 3, 4, 5), i.e., we can get the position of
+   the i-th vertex *after* the permutation by looking at the i+1-th vertex
+   position *before* the permutation.  */
+  ASSERT_EQ(contact_solver_results.v_next.size(), 3 * (num_vertices - 1));
+  for (int i = 0; i < num_vertices - 1; ++i) {
+    const Vector3d& p_WV = vertex_positions.segment<3>(3 * (i + 1));
     const Vector3d p_VC_W = p_WC - p_WV;
     F_Ac_W_expected +=
         SpatialForce<double>(Vector3d::Zero(), f_C_W.segment<3>(3 * i))

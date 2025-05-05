@@ -70,6 +70,7 @@ drake_cc_library(
         ":geometry_ids",
         ":geometry_roles",
         ":internal_geometry",
+        ":mesh_deformation_interpolator",
         ":shape_specification",
         "//common:default_scalars",
         "//common:sorted_pair",
@@ -936,6 +937,7 @@ drake_cc_googletest(
         ":test_vtk_files",
     ],
     deps = [
+        ":geometry_state",
         ":proximity_engine",
         ":shape_specification",
         "//common/test_utilities:eigen_matrix_compare",

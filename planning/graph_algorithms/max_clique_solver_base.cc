@@ -15,14 +15,6 @@ VectorX<bool> MaxCliqueSolverBase::SolveMaxClique(
   return DoSolveMaxClique(adjacency_matrix);
 }
 
-// Deprecated 2025-05-01.
-std::unique_ptr<MaxCliqueSolverBase> MaxCliqueSolverBase::Clone() const {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  return DoClone();
-#pragma GCC diagnostic pop
-}
-
 }  // namespace graph_algorithms
 }  // namespace planning
 }  // namespace drake

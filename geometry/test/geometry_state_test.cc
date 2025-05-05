@@ -142,7 +142,7 @@ class GeometryStateTester {
   }
 
   const internal::DrivenMeshData& driven_mesh_data(Role role) const {
-    return state_->driven_mesh_data_.at(role);
+    return state_->kinematics_data_.driven_mesh_data.at(role);
   }
 
   void SetFramePoses(SourceId source_id, const FramePoseVector<T>& poses,
@@ -164,13 +164,13 @@ class GeometryStateTester {
 
   void FinalizeConfigurationUpdate() {
     for (const auto role : std::vector<Role>{
-             Role::kPerception, Role::kIllustration, Role::kProximity}) {
-      state_->driven_mesh_data_[role].SetControlMeshPositions(
+             Role::kIllustration, Role::kPerception, Role::kProximity}) {
+      state_->kinematics_data_.driven_mesh_data[role].SetControlMeshPositions(
           state_->kinematics_data_.q_WGs);
     }
-    state_->FinalizeConfigurationUpdate(
-        state_->kinematics_data_, state_->driven_mesh_data_[Role::kPerception],
-        &state_->mutable_proximity_engine(), state_->GetMutableRenderEngines());
+    state_->FinalizeConfigurationUpdate(state_->kinematics_data_,
+                                        &state_->mutable_proximity_engine(),
+                                        state_->GetMutableRenderEngines());
   }
 
   template <typename ValueType>
@@ -2079,10 +2079,11 @@ TEST_F(GeometryStateTest, SetGeometryConfiguration) {
   // Add a rigid geometry with a resolution hint (so that it can be in contact
   // with deformable geometries).
   auto rigid_instance = make_unique<GeometryInstance>(
-      RigidTransformd::Identity(), make_unique<Box>(1.5, 1.5, 1.5),
+      RigidTransformd(Vector3d(1, 0, 0)), make_unique<Box>(1.5, 1.5, 1.5),
       "rigid_box");
   ProximityProperties rigid_properties;
   rigid_properties.AddProperty(internal::kHydroGroup, internal::kRezHint, 1.0);
+  rigid_properties.AddProperty(internal::kHydroGroup, internal::kElastic, 1e6);
   rigid_instance->set_proximity_properties(std::move(rigid_properties));
   const FrameId f_id =
       geometry_state_.RegisterFrame(s_id, GeometryFrame("frame"));
@@ -2750,32 +2751,38 @@ TEST_F(GeometryStateTest, NonProximityRoleInCollisionFilter) {
 //      collision filters.
 //
 // This is tested by calling ComputeDeformableContact(). In its initial state,
-// we should report contact between a massive deformable geometry and *all*
-// rigid geometries. Then applying a collision filter between the deformable
-// geometry and one of the rigid geometries will reduce the number of contacts
-// by one.
+// we should report contact between a deformable geometry and *all* rigid
+// geometries. Then applying a collision filter between the deformable geometry
+// and one of the rigid geometries will reduce the number of contacts.
 TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
-  SourceId s_id = SetUpSingleSourceTree();
+  const SourceId s_id = NewSource("new source");
+  auto rigid_instance0 = make_unique<GeometryInstance>(
+      RigidTransformd(Vector3d(0.75, 0, 0)), make_unique<Box>(1.0, 1.0, 1.0),
+      "rigid_box0");
+  auto rigid_instance1 = make_unique<GeometryInstance>(
+      RigidTransformd(Vector3d(-0.75, 0, 0)), make_unique<Box>(1.0, 1.0, 1.0),
+      "rigid_box1");
 
-  // Give all rigid geometries resolution hint so that they can collide with
-  // deformable geometries.
+  // Give all rigid geometries resolution hint and a hydroelastic modulus so
+  // that they can collide with deformable geometries.
   ProximityProperties rigid_properties;
   rigid_properties.AddProperty(internal::kHydroGroup, internal::kRezHint, 10.0);
-  AssignRoleToSingleSourceTree(rigid_properties);
+  rigid_properties.AddProperty(internal::kHydroGroup, internal::kElastic, 1e6);
+  rigid_instance0->set_proximity_properties(rigid_properties);
+  rigid_instance1->set_proximity_properties(rigid_properties);
 
-  // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses;
-  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
-    poses.set_value(frames_[f], X_PFs_[f]);
-  }
-  gs_tester_.SetFramePoses(source_id_, poses,
-                           &gs_tester_.mutable_kinematics_data());
-  gs_tester_.FinalizePoseUpdate();
+  // Register two rigid geometries, one anchored and one dynamic.
+  const FrameId f_id =
+      geometry_state_.RegisterFrame(s_id, GeometryFrame("frame"));
+  GeometryId rigid_id0 =
+      geometry_state_.RegisterGeometry(s_id, f_id, std::move(rigid_instance0));
+  GeometryId rigid_id1 = geometry_state_.RegisterGeometry(
+      s_id, InternalFrame::world_frame_id(), std::move(rigid_instance1));
 
-  // Register a giant deformable geometry that's guaranteed to be in collision
-  // with every single rigid geometry.
-  const Sphere sphere(200.0);
-  constexpr double kRezHint = 100.0;
+  // Register a deformable geometry that's guaranteed to be in collision
+  // with both rigid geometries.
+  const Sphere sphere(1.0);
+  constexpr double kRezHint = 2.0;
   auto instance = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(sphere), "deformable");
   instance->set_proximity_properties(ProximityProperties());
@@ -2783,8 +2790,7 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
       s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
   internal::DeformableContact<double> contacts;
   geometry_state_.ComputeDeformableContact(&contacts);
-  EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_rigid_geometry_count());
+  EXPECT_EQ(contacts.contact_surfaces().size(), 2);
 
   // Attempting to filter collisions with scope omitting deformable geometries
   // should have no effect on the number of collisions.
@@ -2793,20 +2799,24 @@ TEST_F(GeometryStateTest, CollisionFilterRespectsScope) {
           .ExcludeBetween(GeometrySet{deformable_id},
                           GeometrySet(geometries_)));
   geometry_state_.ComputeDeformableContact(&contacts);
-  EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_rigid_geometry_count());
+  EXPECT_EQ(contacts.contact_surfaces().size(), 2);
 
   // Filter with the kAll flag as the scope should have an effect. The collision
-  // between the deformable geometry and one dynamic rigid geometry and one
-  // anchored rigid geometry are filtered, so the number of collisions should
-  // reduce by 2.
+  // between the deformable geometry and the dynamic rigid geometry is filtered,
+  // so the number of collisions should now be 1.
   geometry_state_.collision_filter_manager().Apply(
       CollisionFilterDeclaration(CollisionFilterScope::kAll)
-          .ExcludeBetween(GeometrySet{deformable_id},
-                          GeometrySet({geometries_[0], anchored_geometry_})));
+          .ExcludeBetween(GeometrySet{deformable_id}, GeometrySet{rigid_id0}));
   geometry_state_.ComputeDeformableContact(&contacts);
-  EXPECT_EQ(contacts.contact_surfaces().size(),
-            single_tree_rigid_geometry_count() - 2);
+  EXPECT_EQ(contacts.contact_surfaces().size(), 1);
+
+  // Now filter the collision between the deformable geometry and the anchored
+  // rigid geometry. The number of collisions should now be 0.
+  geometry_state_.collision_filter_manager().Apply(
+      CollisionFilterDeclaration(CollisionFilterScope::kAll)
+          .ExcludeBetween(GeometrySet{deformable_id}, GeometrySet{rigid_id1}));
+  geometry_state_.ComputeDeformableContact(&contacts);
+  EXPECT_EQ(contacts.contact_surfaces().size(), 0);
 }
 
 // Test that the appropriate error messages are dispatched.

@@ -324,35 +324,26 @@ install(
     visibility = ["//visibility:private"],
 )
 
+# Provide an opt-out that avoids installing Java LCM libraries (e.g., we don't
+# need to install Java typtes when we're building a Python wheel).
+config_setting(
+    name = "lcm_install_java_is_off",
+    values = {"define": "LCM_INSTALL_JAVA=OFF"},
+)
+
 install(
     name = "install",
-    install_tests = select({
-        "@lcm//:lcm_install_java_is_off": [],
-        "//conditions:default": [
-            ":test/drake-lcm-spy_install_test.py",
-        ],
-    }),
     targets = [
         ":lcmtypes_drake_py",
     ] + select({
-        "@lcm//:lcm_install_java_is_off": [],
+        ":lcm_install_java_is_off": [],
         "//conditions:default": [
-            ":drake-lcm-spy",
-            ":drake-lcm-spy-launcher",
             ":lcmtypes_drake_java",
         ],
     }),
     rename = {
         "share/java/liblcmtypes_drake_java.jar": "lcmtypes_drake.jar",
-        "bin/drake-lcm-spy-launcher.sh": "drake-lcm-spy",
     },
-    allowed_externals = [
-        "@com_jidesoft_jide_oss//jar",
-        "@commons_io//jar",
-        "@lcm//:lcm-java",
-        "@net_sf_jchart2d//jar",
-        "@org_apache_xmlgraphics_commons//jar",
-    ],
     deps = [
         ":install_drake_cc_headers",
         "@lcm//:install",
@@ -368,8 +359,4 @@ drake_py_test(
     ],
 )
 
-add_lint_tests(
-    python_lint_extra_srcs = [
-        ":test/drake-lcm-spy_install_test.py",
-    ],
-)
+add_lint_tests()

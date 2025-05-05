@@ -748,12 +748,12 @@ void SceneGraph<T>::CalcConfigurationUpdate(const Context<T>& context,
 
   for (const auto role : std::vector<Role>{
            Role::kIllustration, Role::kPerception, Role::kProximity}) {
-    state.mutable_driven_mesh_data(role).SetControlMeshPositions(
+    kinematics_data.driven_mesh_data[role].SetControlMeshPositions(
         kinematics_data.q_WGs);
   }
-  state.FinalizeConfigurationUpdate(
-      kinematics_data, state.mutable_driven_mesh_data(Role::kPerception),
-      &state.mutable_proximity_engine(), state.GetMutableRenderEngines());
+  state.FinalizeConfigurationUpdate(kinematics_data,
+                                    &state.mutable_proximity_engine(),
+                                    state.GetMutableRenderEngines());
 }
 
 template <typename T>

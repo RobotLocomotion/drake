@@ -553,16 +553,6 @@ class TestSensors(unittest.TestCase):
                                   depth_camera=depth_camera,
                                   render_label_image=True)
 
-        # Test deprecated methods.
-        with catch_drake_warnings(expected_count=1):
-            dut.parent_id()
-        with catch_drake_warnings(expected_count=1):
-            dut.X_PB()
-        with catch_drake_warnings(expected_count=1):
-            dut.color_camera()
-        with catch_drake_warnings(expected_count=1):
-            dut.depth_camera()
-
         # Check const configuration accessors.
         self.assertIsInstance(dut.fps(), float)
         self.assertIsInstance(dut.capture_offset(), float)

@@ -13,8 +13,12 @@ namespace internal {
 template <typename T>
 RevoluteMobilizer<T>::RevoluteMobilizer(const SpanningForest::Mobod& mobod,
                                         const Frame<T>& inboard_frame_F,
-                                        const Frame<T>& outboard_frame_M)
-    : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {}
+                                        const Frame<T>& outboard_frame_M,
+                                        int axis)
+    : MobilizerBase(mobod, inboard_frame_F, outboard_frame_M) {
+  DRAKE_DEMAND(0 <= axis && axis <= 2);
+  axis_ = Eigen::Vector3d::Unit(axis);
+}
 
 template <typename T>
 RevoluteMobilizer<T>::~RevoluteMobilizer() = default;
@@ -123,6 +127,18 @@ template <typename T>
 void RevoluteMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>&,
                                              EigenPtr<MatrixX<T>> Nplus) const {
   (*Nplus)(0, 0) = 1.0;
+}
+
+template <typename T>
+void RevoluteMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>&,
+                                            EigenPtr<MatrixX<T>> Ndot) const {
+  (*Ndot)(0, 0) = 0.0;
+}
+
+template <typename T>
+void RevoluteMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> NplusDot) const {
+  (*NplusDot)(0, 0) = 0.0;
 }
 
 template <typename T>

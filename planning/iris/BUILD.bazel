@@ -105,6 +105,7 @@ drake_cc_googletest(
         "no_lsan",
     ],
     deps = [
+        ":iris_test_utilities",
         ":iris_zo",
         "//common/symbolic:expression",
         "//common/test_utilities:expect_throws_message",
@@ -116,6 +117,23 @@ drake_cc_googletest(
         "//planning:robot_diagram_builder",
         "//planning:scene_graph_collision_checker",
         "//solvers",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_test_utilities",
+    testonly = 1,
+    srcs = ["test/iris_test_utilities.cc"],
+    hdrs = ["test/iris_test_utilities.h"],
+    deps = [
+        "//common/test_utilities:maybe_pause_for_user",
+        "//geometry/optimization:convex_set",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/plant",
+        "//multibody/rational:rational_forward_kinematics",
+        "//planning:collision_checker",
+        "//planning:robot_diagram_builder",
+        "//planning:scene_graph_collision_checker",
     ],
 )
 

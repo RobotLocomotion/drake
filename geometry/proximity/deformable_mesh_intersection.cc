@@ -16,20 +16,20 @@ namespace internal {
 //  file to test it directly and for future code re-use.
 
 class DeformableSurfaceVolumeIntersector
-    : public SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb> {
+    : public SurfaceVolumeIntersector<PolyMeshBuilder<double>, Obb, Aabb> {
  public:
   // N.B. If this class declaration moves to the header, don't inline this dtor.
   ~DeformableSurfaceVolumeIntersector() = default;
 
-  /* Returns the indices of tetrahedra containing the contact polygons.
+  /* Returns the indices of triangles containing the contact polygons.
    @pre Call it after SampleVolumeFieldOnSurface() finishes.  */
-  std::vector<int>& mutable_tetrahedron_index_of_polygons() {
-    return tetrahedron_index_of_polygons_;
+  std::vector<int>& mutable_triangle_index_of_polygons() {
+    return triangle_index_of_polygons_;
   }
 
   /* Returns barycentric coordinates of the centroids of the contact polygons.
    @pre Call it after SampleVolumeFieldOnSurface() finishes.  */
-  std::vector<VolumeMesh<double>::Barycentric<double>>&
+  std::vector<TriangleSurfaceMesh<double>::Barycentric<double>>&
   mutable_barycentric_centroids() {
     return barycentric_centroids_;
   }
@@ -38,108 +38,146 @@ class DeformableSurfaceVolumeIntersector
   /* Override the parent class's virtual function to store additional
    data for deformables. */
   void CalcContactPolygon(
-      const VolumeMeshFieldLinear<double, double>& volume_field_D,
-      const TriangleSurfaceMesh<double>& surface_R,
-      const math::RigidTransform<T>& X_DR,
-      const math::RigidTransform<double>& X_DR_d,
-      PolyMeshBuilder<double>* builder_D,
+      const VolumeMeshFieldLinear<double, double>& volume_field_R,
+      const TriangleSurfaceMesh<double>& surface_D,
+      const math::RigidTransform<T>& X_RD,
+      const math::RigidTransform<double>& X_RD_d,
+      PolyMeshBuilder<double>* builder_R,
       bool filter_face_normal_along_field_gradient, int tet_index,
       int tri_index) override {
-    const int num_vertices_before = builder_D->num_vertices();
+    const int num_vertices_before = builder_R->num_vertices();
     // N.B. we must invoke the base implementation before recording any new
     // data.
-    SurfaceVolumeIntersector<PolyMeshBuilder<double>, Aabb>::CalcContactPolygon(
-        volume_field_D, surface_R, X_DR, X_DR_d, builder_D,
-        filter_face_normal_along_field_gradient, tet_index, tri_index);
-    const int num_vertices_after = builder_D->num_vertices();
+    SurfaceVolumeIntersector<PolyMeshBuilder<double>, Obb, Aabb>::
+        CalcContactPolygon(volume_field_R, surface_D, X_RD, X_RD_d, builder_R,
+                           filter_face_normal_along_field_gradient, tet_index,
+                           tri_index);
+    const int num_vertices_after = builder_R->num_vertices();
     const int num_new_vertices = num_vertices_after - num_vertices_before;
     if (num_new_vertices == 0) {
       return;
     }
-    tetrahedron_index_of_polygons_.push_back(tet_index);
+    triangle_index_of_polygons_.push_back(tri_index);
 
     // TODO(xuchenhan-tri): Consider accessing the newly added polygon from
     //  the builder. Here we assume internal knowledge how the function
     //  SurfaceVolumeIntersector::CalcContactPolygon works, i.e., the list of
     //  new vertices form the new polygon in that order.
-    std::vector<int> polygon(num_vertices_after - num_vertices_before);
+    std::vector<int> polygon(num_new_vertices);
     std::iota(polygon.begin(), polygon.end(), num_vertices_before);
 
-    barycentric_centroids_.push_back(volume_field_D.mesh().CalcBarycentric(
-        CalcPolygonCentroid(
-            polygon, X_DR_d.rotation() * surface_R.face_normal(tri_index),
-            builder_D->vertices()),
-        tet_index));
+    const Vector3<double> n_R =
+        X_RD_d.rotation() * -surface_D.face_normal(tri_index);
+    const Vector3<double> p_RC =
+        CalcPolygonCentroid(polygon, n_R, builder_R->vertices());
+    const auto X_DR_d = X_RD_d.inverse();
+    // Our convention is that the deformable body quantities are always measured
+    // and expressed in the world frame.
+    const Vector3<double> p_WC_W = X_DR_d * p_RC;
+    const Vector3<double> barycentric_centroid =
+        surface_D.CalcBarycentric(p_WC_W, tri_index);
+    barycentric_centroids_.push_back(barycentric_centroid);
   }
 
  private:
-  std::vector<int> tetrahedron_index_of_polygons_{};
-  std::vector<VolumeMesh<double>::Barycentric<double>> barycentric_centroids_{};
+  std::vector<int> triangle_index_of_polygons_{};
+  std::vector<TriangleSurfaceMesh<double>::Barycentric<double>>
+      barycentric_centroids_{};
 };
 
 void AddDeformableRigidContactSurface(
-    const VolumeMeshFieldLinear<double, double>& deformable_sdf,
-    const DeformableVolumeMeshWithBvh<double>& deformable_mesh,
+    const DeformableSurfaceMeshWithBvh<double>& deformable_mesh_D,
+    const DeformableVolumeMeshWithBvh<double>& deformable_volume_mesh_D,
+    const std::vector<int>& surface_index_to_volume_index,
+    const std::vector<int>& surface_tri_to_volume_tet,
     const GeometryId deformable_id, const GeometryId rigid_id,
-    const TriangleSurfaceMesh<double>& rigid_mesh_R,
-    const Bvh<Obb, TriangleSurfaceMesh<double>>& rigid_bvh_R,
-    const math::RigidTransform<double>& X_DR,
+    const VolumeMeshFieldLinear<double, double>& pressure_field_R,
+    const Bvh<Obb, VolumeMesh<double>>& rigid_bvh_R,
+    const math::RigidTransform<double>& X_RD,
     DeformableContact<double>* deformable_contact) {
   DRAKE_DEMAND(deformable_contact != nullptr);
-
   DeformableSurfaceVolumeIntersector intersect;
   intersect.SampleVolumeFieldOnSurface(
-      deformable_sdf, deformable_mesh.bvh(), rigid_mesh_R, rigid_bvh_R, X_DR,
-      false /* don't filter face normal along field gradient */);
+      pressure_field_R, rigid_bvh_R, deformable_mesh_D.mesh(),
+      deformable_mesh_D.bvh(), X_RD,
+      true /* Filter face normal along field gradient */);
 
   if (intersect.has_intersection()) {
-    std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_W =
+    std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_R =
         intersect.release_mesh();
-    const PolygonSurfaceMeshFieldLinear<double, double>& signed_distance_field =
-        intersect.mutable_field();
-    const int num_faces = contact_mesh_W->num_faces();
-    /* Compute the penetration distance at the centroid of each contact polygon
-     using the signed distance field. */
-    std::vector<double> penetration_distances(num_faces);
+    const PolygonSurfaceMeshFieldLinear<double, double>&
+        surface_pressure_field_R = intersect.mutable_field();
+    const int num_faces = contact_mesh_R->num_faces();
+    /* Compute the pressure values at the centroid of each contact polygon. */
+    std::vector<double> pressures(num_faces);
     for (int i = 0; i < num_faces; ++i) {
-      const Vector3<double>& contact_points_W =
-          contact_mesh_W->element_centroid(i);
-      /* `signed_distance_field` has a gradient, therefore `EvaluateCartesian()`
-       should be cheap. */
-      penetration_distances[i] =
-          signed_distance_field.EvaluateCartesian(i, contact_points_W);
+      const Vector3<double>& contact_points_R =
+          contact_mesh_R->element_centroid(i);
+      /* `surface_pressure_field_R` has a gradient, therefore
+       `EvaluateCartesian()` should be cheap. */
+      pressures[i] =
+          surface_pressure_field_R.EvaluateCartesian(i, contact_points_R);
     }
 
-    const VolumeMesh<double>& mesh = deformable_mesh.mesh();
-    // Each contact polygon generates one "participating tetrahedron". Hence
-    // `participating_tetrahedra` contains duplicated entries when a tetrahedron
-    // covers multiple contact polygons.
-    const std::vector<int>& participating_tetrahedra =
-        intersect.mutable_tetrahedron_index_of_polygons();
-    DRAKE_DEMAND(static_cast<int>(participating_tetrahedra.size()) ==
-                 num_faces);
+    // Transform the contact mesh from the rigid frame R to the deformable frame
+    // (which is aligned with the world frame).
+    const math::RigidTransform<double> X_WR = X_RD.inverse();
+    contact_mesh_R->TransformVertices(X_WR);
+    std::unique_ptr<PolygonSurfaceMesh<double>> contact_mesh_W =
+        std::move(contact_mesh_R);
 
-    std::unordered_set<int> participating_vertices;
-    std::vector<Vector4<int>> contact_vertex_indexes;
-    // Each contact point generates 4 participating vertices. We overestimate by
-    // ignoring duplications caused by the possibility of one tet containing
-    // more than one contact point.
-    participating_vertices.reserve(4 * num_faces);
-    contact_vertex_indexes.reserve(num_faces);
-    for (int e : participating_tetrahedra) {
-      Vector4<int> tetrahedron_vertex_indexes;
-      for (int v = 0; v < VolumeMesh<double>::kVertexPerElement; ++v) {
-        const int index = mesh.element(e).vertex(v);
-        tetrahedron_vertex_indexes(v) = index;
-        participating_vertices.insert(index);
+    const TriangleSurfaceMesh<double>& mesh = deformable_mesh_D.mesh();
+    const VolumeMesh<double>& volume_mesh = deformable_volume_mesh_D.mesh();
+    // Each contact polygon generates one "participating triangle". Hence
+    // `participating_triangles` contains duplicated entries when a triangle
+    // covers multiple contact polygons.
+    const std::vector<int>& participating_triangles =
+        intersect.mutable_triangle_index_of_polygons();
+
+    std::vector<bool> is_element_inverted(num_faces, false);
+    for (int i = 0; i < num_faces; ++i) {
+      const int e = participating_triangles[i];
+      const int tet_index = surface_tri_to_volume_tet[e];
+      if (volume_mesh.CalcTetrahedronVolume(tet_index) < 0) {
+        is_element_inverted[i] = true;
       }
-      contact_vertex_indexes.push_back(tetrahedron_vertex_indexes);
+    }
+    DRAKE_DEMAND(static_cast<int>(participating_triangles.size()) == num_faces);
+
+    // The set of all indices of the tet vertices of the deformable body that
+    // are participating in contact.
+    std::unordered_set<int> participating_tri_vertices;
+    // contact_tet_vertex_indices[i] stores the _tet_ indices of the vertices
+    // incident to the i-th triangle in contact.
+    std::vector<Vector3<int>> contact_tet_vertex_indices;
+    // Each contact point generates 3 participating vertices. We overestimate by
+    // ignoring potential duplications.
+    participating_tri_vertices.reserve(3 * num_faces);
+    contact_tet_vertex_indices.reserve(num_faces);
+    const std::vector<Vector3<double>>& pressure_gradient_R =
+        intersect.mutable_grad_eM_M();
+    DRAKE_DEMAND(ssize(pressure_gradient_R) == num_faces);
+    std::vector<Vector3<double>> pressure_gradient_W(num_faces);
+    for (int e : participating_triangles) {
+      Vector3<int> triangle_vertex_tet_indices;
+      for (int v = 0; v < TriangleSurfaceMesh<double>::kVertexPerElement; ++v) {
+        // Map from the surface mesh's vertex index to the volume mesh's vertex
+        const int index =
+            surface_index_to_volume_index[mesh.element(e).vertex(v)];
+        triangle_vertex_tet_indices(v) = index;
+        participating_tri_vertices.insert(index);
+      }
+      contact_tet_vertex_indices.push_back(triangle_vertex_tet_indices);
+    }
+    for (int e = 0; e < num_faces; ++e) {
+      pressure_gradient_W[e] = X_WR * pressure_gradient_R[e];
     }
 
     deformable_contact->AddDeformableRigidContactSurface(
-        deformable_id, rigid_id, participating_vertices,
-        std::move(*contact_mesh_W), std::move(penetration_distances),
-        std::move(contact_vertex_indexes),
+        deformable_id, rigid_id, participating_tri_vertices,
+        std::move(*contact_mesh_W), std::move(pressures),
+        std::move(pressure_gradient_W), std::move(is_element_inverted),
+        std::move(contact_tet_vertex_indices),
         std::move(intersect.mutable_barycentric_centroids()));
   }
 }

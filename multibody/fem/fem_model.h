@@ -190,10 +190,13 @@ class FemModel {
 
   // TODO(xuchenhan-tri): Internal object in public signature in non-internal
   //  class.
-  /** Sets the Dirichlet boundary condition that this model is subject to. */
+  /** Sets the Dirichlet boundary condition that this model is subject to.
+   If dirichlet_bc specifies the boundary condition for a node for which a
+   boundary condition has already been specified, the lastest one will be used.
+  */
   void SetDirichletBoundaryCondition(
-      internal::DirichletBoundaryCondition<T> dirichlet_bc) {
-    dirichlet_bc_ = std::move(dirichlet_bc);
+      const internal::DirichletBoundaryCondition<T>& dirichlet_bc) {
+    dirichlet_bc_.Merge(dirichlet_bc);
   }
 
   /** Returns the Dirichlet boundary condition that this model is subject to. */

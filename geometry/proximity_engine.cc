@@ -352,8 +352,15 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
                 &anchored_objects_);
   }
 
-  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id) {
-    geometries_for_deformable_contact_.AddDeformableGeometry(id, mesh_W);
+  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W,
+                             TriangleSurfaceMesh<double> surface_mesh_W,
+                             std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet,
+                             GeometryId id) {
+    geometries_for_deformable_contact_.AddDeformableGeometry(
+        id, mesh_W, std::move(surface_mesh_W),
+        std::move(surface_index_to_volume_index),
+        std::move(surface_tri_to_volume_tet));
     // Currently, even though no collision filtering is done for deformable
     // geometries, the collision filter still needs to be aware of the existence
     // of deformable geometries. This is because collision filters implicitly
@@ -518,10 +525,19 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
   }
 
   void UpdateDeformableVertexPositions(
-      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs) {
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
+      const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+          driven_meshes) {
     for (const auto& [id, q_WG] : q_WGs) {
+      if (!driven_meshes.contains(id)) {
+        continue;  // No driven meshes for this id because there's no proximity
+                   // role for this geometry.
+      }
+      DRAKE_DEMAND(driven_meshes.at(id).size() == 1);
+      const DrivenTriangleMesh& driven_mesh = driven_meshes.at(id)[0];
       geometries_for_deformable_contact_.UpdateDeformableVertexPositions(
-          id, ExtractDoubleOrThrow(q_WG));
+          id, ExtractDoubleOrThrow(q_WG),
+          driven_mesh.GetDrivenVertexPositions());
     }
   }
 
@@ -1291,9 +1307,13 @@ void ProximityEngine<T>::AddAnchoredGeometry(const Shape& shape,
 }
 
 template <typename T>
-void ProximityEngine<T>::AddDeformableGeometry(const VolumeMesh<double>& mesh,
-                                               GeometryId id) {
-  impl_->AddDeformableGeometry(mesh, id);
+void ProximityEngine<T>::AddDeformableGeometry(
+    const VolumeMesh<double>& mesh, TriangleSurfaceMesh<double> surface_mesh,
+    std::vector<int> surface_index_to_volume_index,
+    std::vector<int> surface_tri_to_volume_tet, GeometryId id) {
+  impl_->AddDeformableGeometry(mesh, std::move(surface_mesh),
+                               std::move(surface_index_to_volume_index),
+                               std::move(surface_tri_to_volume_tet), id);
 }
 
 template <typename T>
@@ -1363,8 +1383,10 @@ void ProximityEngine<T>::UpdateWorldPoses(
 
 template <typename T>
 void ProximityEngine<T>::UpdateDeformableVertexPositions(
-    const std::unordered_map<GeometryId, VectorX<T>>& q_WGs) {
-  impl_->UpdateDeformableVertexPositions(q_WGs);
+    const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
+    const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+        driven_meshes) {
+  impl_->UpdateDeformableVertexPositions(q_WGs, driven_meshes);
 }
 
 template <typename T>

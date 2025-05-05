@@ -29,18 +29,19 @@ constexpr double kTolerance = 10 * std::numeric_limits<double>::epsilon();
 class PrismaticMobilizerTest : public MobilizerTester {
  public:
   void SetUp() override {
-    slider_ = &AddJointAndFinalize<PrismaticJoint, PrismaticMobilizer>(
-        std::make_unique<PrismaticJoint<double>>(
-            "joint0", tree().world_body().body_frame(), body_->body_frame(),
-            axis_F_));
+    // The axis is not one of the coordinate axes, so we'll expect to get
+    // new F & M frames that translate along their common z axis.
+    const PrismaticMobilizer<double>& const_slider =
+        AddJointAndFinalize<PrismaticJoint, PrismaticMobilizer>(
+            std::make_unique<PrismaticJoint<double>>(
+                "joint0", tree().world_body().body_frame(), body_->body_frame(),
+                axis_Jp_));
+    slider_ = const_cast<PrismaticMobilizer<double>*>(&const_slider);
   }
 
  protected:
-  const PrismaticMobilizer<double>* slider_{nullptr};
-  // Prismatic mobilizer axis, expressed in the inboard frame F.
-  // It's intentionally left non-normalized to verify the mobilizer properly
-  // normalizes it at construction.
-  const Vector3d axis_F_{1.0, 2.0, 3.0};
+  PrismaticMobilizer<double>* slider_{nullptr};
+  const Vector3d axis_Jp_{1.0, 2.0, 3.0};  // also axis_Jc
 };
 
 TEST_F(PrismaticMobilizerTest, CanRotateOrTranslate) {
@@ -48,10 +49,11 @@ TEST_F(PrismaticMobilizerTest, CanRotateOrTranslate) {
   EXPECT_TRUE(slider_->can_translate());
 }
 
-// Verify that PrismaticMobilizer normalizes its axis on construction.
+// Even though we started with a _joint_ axis vector with arbitrary components,
+// we expect that the mobilizer will have a unit vector axis, and in particular
+// that we chose the z axis. We expect exact integer components, no roundoff.
 TEST_F(PrismaticMobilizerTest, AxisIsNormalizedAtConstruction) {
-  EXPECT_TRUE(CompareMatrices(slider_->translation_axis(), axis_F_.normalized(),
-                              kTolerance, MatrixCompareType::relative));
+  EXPECT_EQ(slider_->translation_axis(), Vector3d(0, 0, 1));
 }
 
 // Verifies method to mutate and access the context.
@@ -88,14 +90,58 @@ TEST_F(PrismaticMobilizerTest, ZeroState) {
   EXPECT_EQ(slider_->get_translation_rate(*context_), 0);
 }
 
+TEST_F(PrismaticMobilizerTest, DefaultPosition) {
+  EXPECT_EQ(slider_->get_translation(*context_), 0);
+
+  slider_->set_default_position(Vector1d{.4});
+  slider_->set_default_state(*context_, &context_->get_mutable_state());
+
+  EXPECT_EQ(slider_->get_translation(*context_), .4);
+}
+
+TEST_F(PrismaticMobilizerTest, RandomState) {
+  RandomGenerator generator;
+  std::uniform_real_distribution<symbolic::Expression> uniform;
+
+  // Default behavior is to set to zero.
+  slider_->set_random_state(*context_, &context_->get_mutable_state(),
+                            &generator);
+  EXPECT_EQ(slider_->get_translation(*context_), 0);
+  EXPECT_EQ(slider_->get_translation_rate(*context_), 0);
+
+  // Set position to be random, but not velocity (yet).
+  slider_->set_random_position_distribution(
+      Vector1<symbolic::Expression>(uniform(generator) + 2.0));
+  slider_->set_random_state(*context_, &context_->get_mutable_state(),
+                            &generator);
+  EXPECT_GE(slider_->get_translation(*context_), 2.0);
+  EXPECT_EQ(slider_->get_translation_rate(*context_), 0);
+
+  // Set the velocity distribution.  Now both should be random.
+  slider_->set_random_velocity_distribution(
+      Vector1<symbolic::Expression>(uniform(generator) - 2.0));
+  slider_->set_random_state(*context_, &context_->get_mutable_state(),
+                            &generator);
+  EXPECT_GE(slider_->get_translation(*context_), 2.0);
+  EXPECT_LE(slider_->get_translation_rate(*context_), -1.0);
+
+  // Check that they change on a second draw from the distribution.
+  const double last_translation = slider_->get_translation(*context_);
+  const double last_translation_rate = slider_->get_translation_rate(*context_);
+  slider_->set_random_state(*context_, &context_->get_mutable_state(),
+                            &generator);
+  EXPECT_NE(slider_->get_translation(*context_), last_translation);
+  EXPECT_NE(slider_->get_translation_rate(*context_), last_translation_rate);
+}
+
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
   const double kTol = 4 * std::numeric_limits<double>::epsilon();
   const double translation = 1.5;
   slider_->SetTranslation(context_.get(), translation);
   math::RigidTransformd X_FM(slider_->CalcAcrossMobilizerTransform(*context_));
 
-  const math::RigidTransformd X_FM_expected(
-      Vector3d(axis_F_.normalized() * translation));
+  const math::RigidTransformd X_FM_expected(translation *
+                                            slider_->translation_axis());
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no rotations at all.
@@ -104,16 +150,20 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerTransform) {
                               X_FM_expected.GetAsMatrix34(), kTolerance,
                               MatrixCompareType::relative));
 
-  // Now check the fast inline methods.
-  RigidTransformd fast_X_FM = slider_->calc_X_FM(&translation);
+  // Now check the fast inline methods. Since we used a general axis above,
+  // this should have been modeled with a z-axial mobilizer.
+  auto slider_z =
+      dynamic_cast<const PrismaticMobilizerAxial<double, 2>*>(slider_);
+  ASSERT_NE(slider_z, nullptr);
+  RigidTransformd fast_X_FM = slider_z->calc_X_FM(&translation);
   EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
   const double new_translation = 3;
   slider_->SetTranslation(context_.get(), new_translation);
   X_FM = slider_->CalcAcrossMobilizerTransform(*context_);
-  slider_->update_X_FM(&new_translation, &fast_X_FM);
+  slider_z->update_X_FM(&new_translation, &fast_X_FM);
   EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
 
-  TestPrePostMultiplyByX_FM(X_FM, *slider_);
+  TestPrePostMultiplyByX_FM(X_FM, *slider_z);
 }
 
 TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
@@ -123,7 +173,7 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialVeloctiy) {
                                                   Vector1d(translation_rate));
 
   const SpatialVelocity<double> V_FM_expected(
-      Vector3d::Zero(), axis_F_.normalized() * translation_rate);
+      Vector3d::Zero(), translation_rate * slider_->translation_axis());
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no rotations at all.
@@ -138,7 +188,8 @@ TEST_F(PrismaticMobilizerTest, CalcAcrossMobilizerSpatialAcceleration) {
           *context_, Vector1d(translational_acceleration));
 
   const SpatialAcceleration<double> A_FM_expected(
-      Vector3d::Zero(), axis_F_.normalized() * translational_acceleration);
+      Vector3d::Zero(),
+      translational_acceleration * slider_->translation_axis());
 
   // Though checked below, we make it explicit here that this mobilizer should
   // introduce no rotations at all.
@@ -154,7 +205,7 @@ TEST_F(PrismaticMobilizerTest, ProjectSpatialForce) {
   slider_->ProjectSpatialForce(*context_, F_Mo_F, tau);
 
   // Only the force along axis_F does work.
-  const double tau_expected = force_Mo_F.dot(axis_F_.normalized());
+  const double tau_expected = force_Mo_F.dot(slider_->translation_axis());
   EXPECT_NEAR(tau(0), tau_expected, kTolerance);
 }
 
@@ -198,6 +249,16 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
   MatrixX<double> Nplus(1, 1);
   slider_->CalcNplusMatrix(*context_, &Nplus);
   EXPECT_EQ(Nplus(0, 0), 1.0);
+
+  // Ensure Ṅ(q,q̇) = [0].
+  MatrixX<double> NDot(1, 1);
+  slider_->CalcNDotMatrix(*context_, &NDot);
+  EXPECT_EQ(NDot(0, 0), 0.0);
+
+  // Ensure Ṅ⁺(q,q̇) = [0].
+  MatrixX<double> NplusDot(1, 1);
+  slider_->CalcNplusDotMatrix(*context_, &NplusDot);
+  EXPECT_EQ(NplusDot(0, 0), 0.0);
 }
 
 TEST_F(PrismaticMobilizerTest, MapUsesN) {

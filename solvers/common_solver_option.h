@@ -4,10 +4,6 @@
 #include <string>
 #include <string_view>
 
-// Remove this include on 2025-05-01 upon completion of deprecation.
-#include <ostream>
-
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 
 namespace drake {
@@ -56,9 +52,6 @@ enum class CommonSolverOption {
 
 /** Returns the short, unadorned name of the option, e.g., `kPrintFileName`. */
 std::string_view to_string(CommonSolverOption);
-
-DRAKE_DEPRECATED("2025-05-01", "Use to_string(), instead.")
-std::ostream& operator<<(std::ostream&, CommonSolverOption);
 
 namespace internal {
 

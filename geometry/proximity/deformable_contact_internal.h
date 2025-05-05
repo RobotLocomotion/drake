@@ -63,26 +63,33 @@ class Geometries final : public ShapeReifier {
   void RemoveGeometry(GeometryId id);
 
   // TODO(xuchenhan-tri): Currently we rely on the resolution_hint property to
-  // determine whether a rigid geometry participates in deformable contact. This
-  // is very much an ad-hoc measure to quickly enable deformable contact of some
-  // sort. In the future, we need to decouple the ability of a rigid geometry to
-  // participate in *deformable contact* from its *hydroelastic* properties.
+  // determine whether a non-deformable geometry participates in deformable
+  // contact. This is very much an ad-hoc measure to quickly enable deformable
+  // contact of some sort. In the future, we need to decouple the ability of a
+  // non-deformable geometry to participate in *deformable contact* from its
+  // *hydroelastic* properties.
+  // TODO(xuchenhan-tri): A resolution hint isn't really necessary for convex
+  // and mesh shapes to instantiate a non-deformable representation. We
+  // shouldn't unnecessarily require it.
 
-  /* Examines the given shape and properties, adding a rigid geometry
-   representation if
+  /* Examines the given shape that has been declared as non-deformable and add a
+   deformable::RigidGeometry if
    1. `props` specifies the resolution hint for the mesh representation of the
-      rigid geometry.
-   2. The `shape` type is supported for rigid representation for deformable
-      contact. The set of supported geometries is the set of all supported hydro
-      rigid geometries minus half space. We use the same implementation that the
-      hydro-rigid reifier is using for supported shapes.
-   This function is a no-op if the resolution_hint property is not specified and
-   logs a one-time warning if the shape is not supported for deformable contact.
+      geometry and a valid hydroelastic modulus.
+   2. The `shape` type is supported for non-deformable representation for
+      deformable contact. The set of supported geometries is the set of all
+      supported hydroelastic compliant geometries minus half space. We use the
+      same implementation that the compliant hydroelastic reifier is using for
+      supported shapes.
+
+   This function is a no-op if the resolution_hint or the hydroelastic modulus
+   property is not specified and logs a one-time warning if the shape is not
+   supported for deformable contact.
 
    @param shape         The shape to possibly represent.
    @param id            The unique identifier for the geometry.
    @param properties    The proximity properties that specifies the properties
-                        of the rigid representation.
+                        of the non-deformable representation.
    @param X_WG          The pose of the geometry in the world frame.
    @throws std::exception if resolution hint <= 0 for the following shapes: Box,
            Sphere, Cylinder, Capsule, and Ellipsoid. Note that Mesh and Convex
@@ -97,24 +104,34 @@ class Geometries final : public ShapeReifier {
   void UpdateRigidWorldPose(GeometryId id,
                             const math::RigidTransform<double>& X_WG);
 
-  /* Adds a deformable geometry whose contact mesh representation is given by
-   `mesh`.
+  /* Adds a deformable geometry whose contact mesh representations are given by
+   `mesh` and `surface_mesh`.
 
-   @param id     The unique identifier for the geometry.
-   @param mesh   The volume mesh representation of the deformable geometry.
+   @param id             The unique identifier for the geometry.
+   @param mesh           The volume mesh representation of the deformable
+                         geometry.
+   @param surface_mesh   The surface mesh of `mesh`.
+   @param surface_index_to_volume_index
+                         A mapping from the index of a vertex in the surface
+                         mesh to the index of the corresponding vertex in the
+                         volume mesh.
    @pre There is no previous representation associated with id. */
-  void AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh);
+  void AddDeformableGeometry(GeometryId id, VolumeMesh<double> mesh,
+                             TriangleSurfaceMesh<double> surface_mesh,
+                             std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet);
 
   /* If a deformable geometry with `id` exists, updates the vertex positions
-   of the geometry (in the world frame) to `q_WG`. */
+   of the volume mesh (in the world frame) to `q_WV` and the vertex positions
+   of the surface mesh (in the world frame) to `q_WS`. */
   void UpdateDeformableVertexPositions(
-      GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WG);
+      GeometryId id, const Eigen::Ref<const VectorX<double>>& q_WV,
+      const Eigen::Ref<const VectorX<double>>& q_WS);
 
   /* For each registered deformable geometry, computes the contact data of it
    with respect to all registered rigid geometries and all other deformable
    geometries. Assumes the vertex positions and poses of all registered
-   deformable and rigid geometries are up to date.
-  */
+   deformable and rigid geometries are up to date. */
   DeformableContact<double> ComputeDeformableContact(
       const CollisionFilter& collision_filter) const;
 
@@ -125,7 +142,7 @@ class Geometries final : public ShapeReifier {
    parameter in the ImplementGeometry API. */
   struct ReifyData {
     GeometryId id;
-    const ProximityProperties& properties;
+    ProximityProperties properties;
   };
 
   void ImplementGeometry(const Box& box, void* user_data) override;

@@ -13,6 +13,7 @@
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/internal_geometry.h"
+#include "drake/geometry/mesh_deformation_interpolator.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/proximity/deformable_contact_internal.h"
 #include "drake/geometry/proximity/hydroelastic_internal.h"
@@ -114,9 +115,23 @@ class ProximityEngine {
    @param mesh_W  The volume mesh representation of the deformable geometry
                   represented in the world frame, including initial positions of
                   the vertices.
+   @param surface_mesh_W
+                  The surface mesh representation of the deformable geometry
+                  represented in the world frame. This is the surface of the
+                  volume mesh `mesh_W`.
+   @param surface_index_to_volume_index
+                  A mapping from the index of a vertex in the surface mesh to
+                  the index of the corresponding vertex in the volume mesh.
+   @param surface_tri_to_volume_tet
+                  A mapping from the index of a triangle in the surface mesh to
+                  the index of the corresponding tetrahedron in the volume mesh.
    @param id      The id of the geometry in SceneGraph to which this mesh
                   belongs. */
-  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W, GeometryId id);
+  void AddDeformableGeometry(const VolumeMesh<double>& mesh_W,
+                             TriangleSurfaceMesh<double> surface_mesh_W,
+                             std::vector<int> surface_index_to_volume_index,
+                             std::vector<int> surface_tri_to_volume_tet,
+                             GeometryId id);
 
   /* Reports if the engine requires a convex hull for the given geometry. */
   bool NeedsConvexHull(const InternalGeometry& geometry) const;
@@ -195,10 +210,17 @@ class ProximityEngine {
                  world frame `W`. If a deformable geometry with the given `id`
                  is registered in the engine (and hasn't been removed), its
                  vertex position is updated to the value in the given map.
+   @param driven_meshes
+                 The mapping from GeometryId `id` to driven triangle meshes for
+                 proximity roles.
    @pre if a deformable geometry with the given `id` is registered, its number
-   of dofs matches the size of the value in the corresponding q_WG. */
+   of dofs matches the size of the value in the corresponding q_WG.
+   @pre if a deformable geometry with the given `id` is registered with a
+   proximity role, driven_mesh.at(id) has size 1. */
   void UpdateDeformableVertexPositions(
-      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs);
+      const std::unordered_map<GeometryId, VectorX<T>>& q_WGs,
+      const std::unordered_map<GeometryId, std::vector<DrivenTriangleMesh>>&
+          driven_meshes);
 
   // ----------------------------------------------------------------------
   /* @name              Signed Distance Queries
