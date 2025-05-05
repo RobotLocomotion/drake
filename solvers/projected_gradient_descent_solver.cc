@@ -99,7 +99,6 @@ void ProjectedGradientDescentSolver::DoSolve2(
   }
 
   std::vector<Binding<Cost>> costs = prog.GetAllCosts();
-  std::vector<Binding<Constraint>> constraints = prog.GetAllConstraints();
 
   // Next, we construct an auxiliary MathematicalProgram, for use in the
   // projection step. We clone prog, remove all costs, and add a quadratic
@@ -146,6 +145,9 @@ void ProjectedGradientDescentSolver::DoSolve2(
         return gradient;
       });
 
+  // TODO(cohnt): Allow user to specify an initial guess strategy, for cases
+  // where the feasible set is nonconvex. (For example, we may want to use the
+  // previous feasible iterate, or some other strategy.)
   std::unique_ptr<solvers::SolverInterface> projection_solver_interface;
   if (!projection_solver_interface_) {
     const SolverId solver_id = ChooseBestSolver(prog);
@@ -159,7 +161,7 @@ void ProjectedGradientDescentSolver::DoSolve2(
         projection_cost.evaluator()->UpdateCoefficients(
             projection_cost_Q, projection_cost_b, projection_cost_c);
 
-        // Solve the program.
+        // Solve the program. We use the target value x as the initial guess.
         MathematicalProgramResult projection_result;
         if (projection_solver_interface_) {
           projection_solver_interface_->Solve(
