@@ -137,6 +137,7 @@ drake_cc_library(
         "//systems/primitives:discrete_derivative",
         "//systems/primitives:first_order_low_pass_filter",
         "//systems/primitives:saturation",
+        "//systems/primitives:sparse_matrix_gain",
     ],
 )
 
@@ -252,6 +253,7 @@ drake_cc_googletest(
     deps = [
         ":iiwa_constants",
         ":sim_iiwa_driver",
+        "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
