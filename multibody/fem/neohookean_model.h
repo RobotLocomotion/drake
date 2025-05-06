@@ -18,9 +18,20 @@ struct NeoHookeanModelTraits {
   static constexpr int is_linear = false;
 };
 
-/* Implements the stable Neo-Hookean hyperelastic constitutive model as
+/* Implements the "stable Neo-Hookean" hyperelastic constitutive model as
  described in [Smith et al., 2019]. The implementation references Section 7.3 in
  the course note [Kim and Eberle, 2020].
+
+  ΨE(F) = (μ/2)(Ic−3)−μ(J−1)+(λ/2)(J−1)²         (eq.13 in [Smith et al., 2019])
+  P(F) = μF + λ(J−α)∂J/∂F               (modified eq.18 in [Smith et al., 2019])
+
+ where `α = μ/λ`, `Ic = tr(FᵀF)`, and `J = det(F)`.
+
+ Note that we choose the energy density function in eq.13 in
+ [Smith et al., 2019] instead of the one in eq.14 because the authors later
+ claim that the additional barrier term is not necessary (see footnote 9 in
+ Section 6 in [Kim and Eberle, 2020]).
+
  @tparam T The scalar type, can be a double, float, or AutoDiffXd.
 
  [Smith et al., 2019] Smith, Breannan, Fernando De Goes, and Theodore Kim.
@@ -51,12 +62,12 @@ class NeoHookeanModel final
   const T& poissons_ratio() const { return nu_; }
 
   /* Returns the shear modulus (Lamé's second parameter) which is given by
-   `E/(2*(1+nu))` where `E` is the Young's modulus and `nu` is the Poisson's
+   `λ=E/(2(1+ν))` where `E` is the Young's modulus and `ν` is the Poisson's
    ratio. See `fem::internal::CalcLameParameters()`. */
   const T& shear_modulus() const { return mu_; }
 
   /* Returns the Lamé's first parameter which is given by
-   `E*nu/((1+nu)*(1-2*nu))` where `E` is the Young's modulus and `nu` is the
+   `Eν/((1+ν)(1-2ν))` where `E` is the Young's modulus and ν is the
    Poisson's ratio. See `fem::internal::CalcLameParameters()`. */
   const T& lame_first_parameter() const { return lambda_; }
 
@@ -76,7 +87,7 @@ class NeoHookeanModel final
   void CalcFirstPiolaStressDerivativeImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* dPdF) const;
 
-  /* Shadows ConstitutiveModel::CalcFilteredHessian() in the base class to
+  /* Shadows ConstitutiveModel::CalcFilteredHessianImpl() in the base class to
    provide a more efficient implementation. */
   void CalcFilteredHessianImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* hessian) const;
@@ -89,7 +100,7 @@ class NeoHookeanModel final
 
   T E_;               // Young's modulus, N/m².
   T nu_;              // Poisson's ratio.
-  T mu_;              // Lamé's second parameter/Shear modulus, N/m².
+  T mu_;              // Lamé's second parameter, shear modulus, N/m².
   T lambda_;          // Lamé's first parameter, N/m².
   T mu_over_lambda_;  // mu/lambda, unitless.
 };

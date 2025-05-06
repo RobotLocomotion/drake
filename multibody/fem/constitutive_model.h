@@ -102,7 +102,8 @@ class ConstitutiveModel {
   /* Calculates the filtered Hessian of the first Piola stress with respect to
    the deformation gradient, given the deformation gradient related quantities
    contained in `data`. The filtered Hessian is the result of
-   `CalcFirstPiolaStressDerivative` with eigenvalues clamped at 0 from below. */
+   `CalcFirstPiolaStressDerivative` with negative eigenvalues replaced with tiny
+   positive ones.*/
   void CalcFilteredHessian(
       const Data& data, math::internal::FourthOrderTensor<T>* hessian) const {
     DRAKE_ASSERT(hessian != nullptr);
@@ -144,10 +145,10 @@ class ConstitutiveModel {
 
   /* Derived classes *may* shadow this method to provide a more efficient
    implementation of the filtered Hessian. The default implementation is
-   `CalcFirstPiolaStressDerivative` followed by an eigenvalue decomposition of
-   the 9-by-9 matrix. The eigenvalues are clamped at 0 from below and the
-   filtered Hessian is reconstructed from the eigenvalues and eigenvectors. The
-   output argument is guaranteed to be non-null. */
+   CalcFirstPiolaStressDerivative() followed by an eigenvalue decomposition of
+   the 9-by-9 matrix. The negative eigenvalues are replaced with tiny positive
+   ones and the filtered Hessian is reconstructed from the eigenvalues and
+   eigenvectors. The output argument is guaranteed to be non-null. */
   void CalcFilteredHessianImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* hessian) const {
     CalcFirstPiolaStressDerivative(data, hessian);

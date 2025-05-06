@@ -59,6 +59,8 @@ void RotationSvd(const Matrix3<T>& F, EigenPtr<Matrix3<T>> U,
   *U = svd.matrixU();
   *V = svd.matrixV();
   *sigma = svd.singularValues();
+  /* We flip an arbitrary singular vector if needed to ensure U and V are
+   rotation matrices. */
   if (U->determinant() < 0.0) {
     U->col(0) *= -1.0;
     (*sigma)(0) *= -1.0;

@@ -28,6 +28,9 @@ void NeoHookeanModel<T>::CalcElasticEnergyDensityImpl(const Data& data,
                                                       T* Psi) const {
   const T& Ic = data.Ic();
   const T& volume_correction = data.Jm1() - mu_over_lambda_;
+  /* Note that we drop the constant term from
+   ΨE = (μ/2)(IC − 3) − μ(J − 1) + (λ/2)(J − 1)² as done in (6.9) in
+   [Kim and Eberle, 2020]. */
   *Psi = 0.5 *
          (mu_ * (Ic - 3.0) + lambda_ * volume_correction * volume_correction);
 }
@@ -38,28 +41,36 @@ void NeoHookeanModel<T>::CalcFirstPiolaStressImpl(const Data& data,
   const Matrix3<T>& dJdF = data.dJdF();
   const T& volume_correction = data.Jm1() - mu_over_lambda_;
   const Matrix3<T>& F = data.deformation_gradient();
+  /* P(F) = μF + λ(J−α)∂J/∂F  */
   (*P) = mu_ * F + lambda_ * volume_correction * dJdF;
 }
 
 template <typename T>
 void NeoHookeanModel<T>::CalcFirstPiolaStressDerivativeImpl(
     const Data& data, math::internal::FourthOrderTensor<T>* dPdF) const {
+  /* We need to differentiate P(F) = μF + λ(J−α)∂J/∂F w.r.t. F. The
+   derivatives are going to hit F, J and ∂J/∂F = JF⁻ᵀ respectively. */
   const T& Jm1 = data.Jm1();
   const T& volume_correction = Jm1 - mu_over_lambda_;
   const Matrix3<T>& F = data.deformation_gradient();
   const Matrix3<T>& JFinvT = data.dJdF();
-  auto& local_dPdF = (*dPdF);
-  local_dPdF.SetAsOuterProduct(lambda_ * JFinvT, JFinvT);
+  auto& dPdF_output = (*dPdF);
+  /* The contribution from derivatives of J. */
+  dPdF_output.SetAsOuterProduct(lambda_ * JFinvT, JFinvT);
   /* The contribution from derivatives of F. */
-  local_dPdF.mutable_data().diagonal().array() += mu_;
-  /* The contribution from derivatives of JFinvT. */
+  dPdF_output.mutable_data().diagonal().array() += mu_;
+  /* The contribution from derivatives of JF⁻ᵀ. */
   internal::AddScaledCofactorMatrixDerivative<T>(F, lambda_ * volume_correction,
-                                                 &local_dPdF);
+                                                 &dPdF_output);
 }
 
 template <typename T>
 void NeoHookeanModel<T>::CalcFilteredHessianImpl(
     const Data& data, math::internal::FourthOrderTensor<T>* hessian) const {
+  /* The implementation follows the notes in section 7.3 and 7.4 in
+  [Kim and Eberle, 2020]. The eigenvectors are spelled out in equations
+  (7.10-7.13); the eigenvalues are spelled out in equations (7.34-7.39) and the
+  two equations above 7.34. */
   using Matrix9T = Eigen::Matrix<T, 9, 9>;
   using Vector9T = Eigen::Matrix<T, 9, 1>;
 
@@ -134,7 +145,8 @@ void NeoHookeanModel<T>::BuildTwistAndFlipEigenvectors(
     const Matrix3<T>& U, const Matrix3<T>& V, Eigen::Matrix<T, 9, 9>* Q) const {
   const T scale = 1.0 / std::numbers::sqrt2;
   const Matrix3<T> sV = scale * V;
-
+  /* The eigenvectors are spelled out in equations (7.10-7.13) in
+  [Kim and Eberle, 2020]. */
   Matrix3<T> A;
   A << sV(0, 2) * U(0, 1), sV(1, 2) * U(0, 1), sV(2, 2) * U(0, 1),
       sV(0, 2) * U(1, 1), sV(1, 2) * U(1, 1), sV(2, 2) * U(1, 1),

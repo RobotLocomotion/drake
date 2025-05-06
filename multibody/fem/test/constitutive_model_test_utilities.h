@@ -19,15 +19,15 @@ Matrix3<AutoDiffXd> MakeDeformationGradients();
 
 /* Tests the constructor and the accessors for St.Venant-Kirchhoff like
 constitutive models.
-@tparam Model    Must be instantiations of LinearConstitutiveModel or
-CorotatedModel. */
+@tparam Model    Must be instantiations of LinearConstitutiveModel,
+                 LinearCorotatedModel, CorotatedModel, or NeoHookeanModel. */
 template <class Model>
 void TestParameters();
 
 /* Tests that the energy density and the stress are zero at the undeformed
 state.
-@param  nonzero_rest_state The model is allowed to have none zero energy at the
-                           undeformed state, i.e. the energy minimun value is
+@param  nonzero_rest_state The model is allowed to have non-zero energy at the
+                           undeformed state, i.e. the energy minimum value is
                            not zero.
 @tparam Model    Must be instantiations of a concrete ConstitutiveModel. */
 template <class Model>
@@ -48,8 +48,8 @@ ConstitutiveModel. */
 template <class Model>
 void TestdPdFIsDerivativeOfP();
 
-/* Tests that the filtered Hessian is dPdF with eigenvalues clamped at 0 from
-below.
+/* Tests that the filtered Hessian is dPdF with its negative eigenvalues set to
+tiny positive numbers.
 @tparam Model    Must be AutoDiffXd instantiations of a concrete
 ConstitutiveModel. */
 template <class Model>

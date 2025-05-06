@@ -74,7 +74,8 @@ class LinearConstitutiveModel final
   void CalcFirstPiolaStressDerivativeImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* dPdF) const;
 
-  /* Shadows ConstitutiveModel::CalcFilteredHessian() in the CRTP base class. */
+  /* Shadows ConstitutiveModel::CalcFilteredHessianImpl() in the CRTP base
+   class. */
   void CalcFilteredHessianImpl(
       const Data& data, math::internal::FourthOrderTensor<T>* hessian) const;
 
