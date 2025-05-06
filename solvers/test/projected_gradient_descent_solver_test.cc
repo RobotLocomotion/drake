@@ -41,14 +41,16 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, QP) {
   auto x = prog.NewContinuousVariables<2>();
   prog.AddCost(pow(x(0) - 1, 2) + pow(x(1) - 1, 2));
 
+  const double kTol = 1e-4;
+
   ProjectedGradientDescentSolver solver;
   MathematicalProgramResult result = solver.Solve(prog, {}, {});
   EXPECT_TRUE(result.is_success());
   VectorXd expected_answer = Vector2d(1.0, 1.0);
   auto x_value = result.GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-4,
+  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, kTol,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(0.0, result.get_optimal_cost(), 1e-4);
+  EXPECT_NEAR(0.0, result.get_optimal_cost(), kTol);
 
   // Add a linear equality constraint.
   prog.AddConstraint(x(0) == 2.0);
@@ -56,9 +58,9 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, QP) {
   EXPECT_TRUE(result.is_success());
   expected_answer = Vector2d(2.0, 1.0);
   x_value = result.GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-4,
+  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, kTol,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(1.0, result.get_optimal_cost(), 1e-4);
+  EXPECT_NEAR(1.0, result.get_optimal_cost(), kTol);
 
   // Add a linear inequality constraint.
   prog.AddConstraint(x(1) <= 0.0);
@@ -66,9 +68,9 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, QP) {
   EXPECT_TRUE(result.is_success());
   expected_answer = Vector2d(2.0, 0.0);
   x_value = result.GetSolution(x);
-  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, 1e-4,
+  EXPECT_TRUE(CompareMatrices(expected_answer, x_value, kTol,
                               MatrixCompareType::absolute));
-  EXPECT_NEAR(2.0, result.get_optimal_cost(), 1e-4);
+  EXPECT_NEAR(2.0, result.get_optimal_cost(), kTol);
 }
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, DifferentInitialGuesses) {
@@ -84,17 +86,19 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, DifferentInitialGuesses) {
   MathematicalProgramResult result;
   VectorXd x_value;
 
+  const double kTol = 1e-4;
+
   result = solver.Solve(prog, Vector1d(-1.0), {});
   EXPECT_TRUE(result.is_success());
   x_value = result.GetSolution(x);
-  EXPECT_NEAR(x_value[0], -2.0, 1e-4);
-  EXPECT_NEAR(result.get_optimal_cost(), 9.0, 1e-4);
+  EXPECT_NEAR(x_value[0], -2.0, kTol);
+  EXPECT_NEAR(result.get_optimal_cost(), 9.0, kTol);
 
   result = solver.Solve(prog, Vector1d(1.0), {});
   EXPECT_TRUE(result.is_success());
   x_value = result.GetSolution(x);
-  EXPECT_NEAR(x_value[0], 2.0, 1e-4);
-  EXPECT_NEAR(result.get_optimal_cost(), 1.0, 1e-4);
+  EXPECT_NEAR(x_value[0], 2.0, kTol);
+  EXPECT_NEAR(result.get_optimal_cost(), 1.0, kTol);
 }
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, CustomProjectionFunction) {
@@ -113,13 +117,15 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, CustomProjectionFunction) {
   ProjectedGradientDescentSolver solver;
   solver.SetCustomProjectionFunction(custom_projection_function);
 
+  const double kTol = 1e-4;
+
   // We deliberately give it an infeasible initial guess to make sure the custom
   // projection function is being called properly.
   MathematicalProgramResult result = solver.Solve(prog, Vector1d(4.0), {});
   EXPECT_TRUE(result.is_success());
   auto x_value = result.GetSolution(x);
-  EXPECT_NEAR(x_value[0], 1.0, 1e-4);
-  EXPECT_NEAR(result.get_optimal_cost(), 1.0, 1e-4);
+  EXPECT_NEAR(x_value[0], 1.0, kTol);
+  EXPECT_NEAR(result.get_optimal_cost(), 1.0, kTol);
 }
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, CustomGradientFunction) {
@@ -136,13 +142,15 @@ GTEST_TEST(ProjectedGradientDescentSolverTest, CustomGradientFunction) {
   ProjectedGradientDescentSolver solver;
   solver.SetCustomGradientFunction(custom_gradient_function);
 
+  const double kTol = 1e-4;
+
   // We deliberately give it an infeasible initial guess to make sure the custom
   // projection function is being called properly.
   MathematicalProgramResult result = solver.Solve(prog, Vector1d(4.0), {});
   EXPECT_TRUE(result.is_success());
   auto x_value = result.GetSolution(x);
-  EXPECT_NEAR(x_value[0], 1.0, 1e-4);
-  EXPECT_NEAR(result.get_optimal_cost(), 1.0, 1e-4);
+  EXPECT_NEAR(x_value[0], 1.0, kTol);
+  EXPECT_NEAR(result.get_optimal_cost(), 1.0, kTol);
 }
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, ProjectionSolverInterface) {
@@ -168,16 +176,19 @@ TEST_F(SimpleUnconstrainedQP, ConvergenceTol) {
                     ProjectedGradientDescentSolver::ConvergenceTolOptionName(),
                     1e0);
 
+  const double kTolLoose = 1e-1;
+  const double kTolTight = 1e-11;
+
   MathematicalProgramResult result =
       solver_.Solve(prog_, Vector1d(1.0), options);
   EXPECT_TRUE(result.is_success());
   auto x_value = result.GetSolution(x_);
-  EXPECT_GT(x_value[0], 1e-1);
+  EXPECT_GT(x_value[0], kTolLoose);
 
   // Default convergence tolerance yields a more accurate solution.
   result = solver_.Solve(prog_, Vector1d(1.0), {});
   x_value = result.GetSolution(x_);
-  EXPECT_LE(x_value[0], 1e-11);
+  EXPECT_LE(x_value[0], kTolTight);
 
   // Check the error message if an invalid value is used.
   options.SetOption(ProjectedGradientDescentSolver::id(),
@@ -279,12 +290,14 @@ TEST_F(UnboundedLinearProgramTest0, TestProjectedGradientDescentSolver) {
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, TestNonconvexQP) {
   ProjectedGradientDescentSolver solver;
-  TestNonconvexQP(solver, false, 2e-4);
+  const double kTol = 2e-4;
+  TestNonconvexQP(solver, false, kTol);
 }
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, TestL2NormCost) {
   ProjectedGradientDescentSolver solver;
-  TestL2NormCost(solver, 1e-6);
+  const double kTol = 1e-6;
+  TestL2NormCost(solver, kTol);
 }
 
 }  // namespace test

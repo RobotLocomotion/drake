@@ -72,7 +72,7 @@ class ProjectedGradientDescentSolver final : public SolverBase {
 
   /**
    * @returns string key for SolverOptions to set the maximum number of
-   * iterations. It must be a postive integer.
+   * iterations. It must be a positive integer.
    */
   static std::string MaxIterationsOptionName();
 
@@ -104,6 +104,8 @@ class ProjectedGradientDescentSolver final : public SolverBase {
 
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;
+
+  static constexpr int kDefaultMaxLineSearchSteps = 100;
 
  private:
   void DoSolve2(const MathematicalProgram&, const Eigen::VectorXd&,

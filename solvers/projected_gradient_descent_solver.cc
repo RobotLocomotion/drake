@@ -208,9 +208,8 @@ void ProjectedGradientDescentSolver::DoSolve2(
     double t = c * m;
     double old_cost = cost_function(x_current);
     // TODO(cohnt): Allow user to set the maximum number of line search steps.
-    const int kMaxLineSearchSteps = 100;
-    for (int line_search_steps = 0; line_search_steps < kMaxLineSearchSteps;
-         ++line_search_steps) {
+    for (int line_search_steps = 0;
+         line_search_steps < kDefaultMaxLineSearchSteps; ++line_search_steps) {
       double new_cost = cost_function(x_current + alpha * descent_direction);
       if (old_cost - new_cost >= alpha * t) {
         break;
