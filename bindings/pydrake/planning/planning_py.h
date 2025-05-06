@@ -26,6 +26,9 @@ void DefinePlanningGraphAlgorithms(py::module m);
 /* Defines bindings per planning_py_iris_from_clique_cover.cc. */
 void DefinePlanningIrisFromCliqueCover(py::module m);
 
+/* Defines bindings per planning_py_iris_common.cc. */
+void DefinePlanningIrisCommon(py::module m);
+
 /* Defines bindings per planning_py_iris_zo.cc. */
 void DefinePlanningIrisZo(py::module m);
 
