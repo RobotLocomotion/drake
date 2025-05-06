@@ -11,6 +11,8 @@ namespace fem {
 
 // TODO(xuchenhang-tri): Move everything in this file outside of the FEM module
 // to be shared with MPM.
+// TODO(xuchenhan-tri): Provide some guidance on how to choose between the two
+// nonlinear models.
 /** Types of material models for the deformable body. */
 enum class MaterialModel {
   /** Linear corotational model as described in [Han et al., 2023]. It provides
@@ -21,10 +23,20 @@ enum class MaterialModel {
    Bodies." arXiv preprint arXiv:2303.08912 (2023). */
   kLinearCorotated,
   /** Corotational model. More computationally expensive. Recommended when
-   capturing large rotation velocity is important. */
+   capturing large rotation velocity is important. See [Stomakhin et al., 2012]
+   for details of this model.
+
+   [Stomakhin et al., 2012] Stomakhin, Alexey, et al. "Energetically consistent
+   invertible elasticity." Proceedings of the 11th ACM SIGGRAPH/Eurographics
+   conference on Computer Animation. 2012. */
   kCorotated,
   /** Neohookean model. More computationally expensive. Recommended when
-   capturing large rotation velocity is important. */
+   capturing large rotation velocity is important. See [Smith et al., 2019] for
+   details of this model.
+
+   [Smith et al., 2019] Smith, Breannan, Fernando De Goes, and Theodore Kim.
+   "Stable Neo-Hookean flesh simulation." ACM Transactions on Graphics
+   (TOG) 37.2 (2018): 1-15. */
   kNeoHookean,
   /** Linear elasticity model (rarely used).
    Less computationally expensive than other models but leads to artifacts

@@ -204,7 +204,7 @@ void TestSpdness() {
 
   using Matrix9T = Eigen::Matrix<T, 9, 9>;
   using Vector9d = Eigen::Matrix<double, 9, 1>;
-  // Check that the filtered Hessian is SPD.
+  /* Check that the filtered Hessian is SPD. */
   const Matrix9T filtered_matrix = filtered.data();
   const Eigen::SelfAdjointEigenSolver<Matrix9T> eigensolver(filtered_matrix);
   ASSERT_TRUE(eigensolver.info() == Eigen::Success);
@@ -213,8 +213,8 @@ void TestSpdness() {
   ASSERT_TRUE(eigensolver2.info() == Eigen::Success);
   const Vector9d unfiltered_eigenvalues =
       math::DiscardGradient(eigensolver2.eigenvalues());
-  // For the filtered Hessian, the eigenvalues should either be the same of the
-  // unfiltered hessian and positive or clamped at zero.
+  /* For the filtered Hessian, the eigenvalues should either be the same of the
+   unfiltered hessian and positive or clamped at zero. */
   const double kTol = 1e-12;
   for (int i = 0; i < 9; ++i) {
     const double eigenvalue = eigenvalues(i);
@@ -225,6 +225,11 @@ void TestSpdness() {
     } else {
       EXPECT_NEAR(eigenvalue, 0, kTol);
     }
+  }
+  /* Check that the filtering is actively doing something by checking that the
+   filtered Hessian is not equal to the unfiltered Hessian. */
+  if (!model.is_linear) {
+    EXPECT_FALSE(CompareMatrices(filtered_matrix, unfiltered.data(), 0.1));
   }
 }
 

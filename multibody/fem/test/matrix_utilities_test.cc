@@ -85,11 +85,6 @@ GTEST_TEST(MatrixUtilitiesTest, RotationSvd) {
     /* 3) Proper rotations: det > 0 */
     EXPECT_GT(U.determinant(), 0.0);
     EXPECT_GT(V.determinant(), 0.0);
-
-    /* 4) Singular values sorted and non-negative */
-    EXPECT_GE(sigma(0), sigma(1));
-    EXPECT_GE(sigma(1), sigma(2));
-    EXPECT_GE(sigma(2), 0.0);
   };
 
   {
@@ -99,7 +94,7 @@ GTEST_TEST(MatrixUtilitiesTest, RotationSvd) {
   /* Pure scaling */
   {
     Matrix3<double> F = Matrix3<double>::Zero();
-    F.diagonal() << 3.0, 2.0, 1.0;  // knows S = diag(3,2,1)
+    F.diagonal() << 3.0, 2.0, -1.0;
     check_svd(F);
   }
 
@@ -108,10 +103,18 @@ GTEST_TEST(MatrixUtilitiesTest, RotationSvd) {
     math::RotationMatrix<double> R1(math::RollPitchYaw<double>(1, 2, 3));
     math::RotationMatrix<double> R2(math::RollPitchYaw<double>(4, 5, 6));
     Matrix3<double> S = Matrix3<double>::Zero();
-    S.diagonal() << 5.0, 4.0, 2.0;
+    /* We choose F so that a standard SVD (with all non-negative singular
+     values) produce a non-rotation U and V. */
+    S.diagonal() << 5.0, -4.0, 2.0;
 
     Matrix3<double> F = R1.matrix() * S * R2.matrix().transpose();
     check_svd(F);
+
+    Eigen::JacobiSVD<Matrix3<double>> svd(
+        F, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    const Matrix3<double> U = svd.matrixU();
+    const Matrix3<double> V = svd.matrixV();
+    EXPECT_TRUE(U.determinant() < 0 || V.determinant() < 0);
   }
 }
 
