@@ -6,9 +6,7 @@
 #include <common_robotics_utilities/parallelism.hpp>
 
 #include "drake/common/fmt_eigen.h"
-#include "drake/common/symbolic/expression.h"
 #include "drake/common/text_logging.h"
-#include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/solvers/choose_best_solver.h"
@@ -25,7 +23,6 @@ using common_robotics_utilities::parallelism::DegreeOfParallelism;
 using common_robotics_utilities::parallelism::DynamicParallelForIndexLoop;
 using common_robotics_utilities::parallelism::ParallelForBackend;
 using common_robotics_utilities::parallelism::StaticParallelForIndexLoop;
-using geometry::Meshcat;
 using geometry::Sphere;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Hyperellipsoid;
@@ -325,6 +322,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   std::unique_ptr<SolverInterface> solver = solvers::MakeFirstAvailableSolver(
       {solvers::GurobiSolver::id(), solvers::ClarabelSolver::id(),
        solvers::MosekSolver::id(), solvers::OsqpSolver::id()});
+  // TODO(cohnt): Use solvers::ChooseBestSolver.
   while (true) {
     log()->info("IrisZo outer iteration {}", iteration);
 

@@ -1,20 +1,12 @@
 #pragma once
 
 #include <filesystem>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <utility>
-#include <vector>
 
-#include <Eigen/Dense>
-
-#include "drake/common/parallelism.h"
-#include "drake/common/symbolic/expression.h"
-#include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
-#include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/planning/collision_checker.h"
 #include "drake/planning/iris/iris_common.h"
 

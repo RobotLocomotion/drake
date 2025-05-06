@@ -57,12 +57,10 @@ drake_cc_library(
     hdrs = ["iris_zo.h"],
     deps = [
         ":iris_common",
-        "//common:parallelism",
-        "//common/symbolic:expression",
-        "//geometry:meshcat",
         "//geometry/optimization:convex_set",
-        "//multibody/rational:rational_forward_kinematics",
         "//planning:collision_checker",
+    ],
+    implementation_deps = [
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
         "//solvers:gurobi_solver",
@@ -70,8 +68,6 @@ drake_cc_library(
         "//solvers:mosek_solver",
         "//solvers:osqp_solver",
         "//solvers:solve",
-    ],
-    implementation_deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
