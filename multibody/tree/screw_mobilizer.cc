@@ -163,6 +163,18 @@ void ScrewMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>&,
 }
 
 template <typename T>
+void ScrewMobilizer<T>::DoCalcNDotMatrix(const systems::Context<T>&,
+                                         EigenPtr<MatrixX<T>> Ndot) const {
+  (*Ndot)(0, 0) = 0.0;
+}
+
+template <typename T>
+void ScrewMobilizer<T>::DoCalcNplusDotMatrix(
+    const systems::Context<T>&, EigenPtr<MatrixX<T>> NplusDot) const {
+  (*NplusDot)(0, 0) = 0.0;
+}
+
+template <typename T>
 void ScrewMobilizer<T>::MapVelocityToQDot(const systems::Context<T>&,
                                           const Eigen::Ref<const VectorX<T>>& v,
                                           EigenPtr<VectorX<T>> qdot) const {
