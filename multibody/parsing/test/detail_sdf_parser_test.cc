@@ -4229,6 +4229,18 @@ TEST_F(SdfParserTest, ParseMinimalDeformableModel) {
   EXPECT_THAT(NumErrors(), 0);
   plant_.Finalize();
   EXPECT_EQ(plant_.deformable_model().num_bodies(), 1);
+  // Without specifying any proximity properties, the default values are used.
+  GeometryId g_id = plant_.deformable_model().GetGeometryId(
+      plant_.deformable_model().GetBodyIdByName("body"));
+  const auto* proximity_props_ptr =
+      scene_graph_.model_inspector().GetProximityProperties(g_id);
+  ASSERT_NE(proximity_props_ptr, nullptr);
+  EXPECT_EQ(
+      proximity_props_ptr
+          ->GetProperty<CoulombFriction<double>>(
+              geometry::internal::kMaterialGroup, geometry::internal::kFriction)
+          .dynamic_friction(),
+      1.0);
 }
 
 // Happy‑path: a full-fledged deformable model containing a single link with a
@@ -4411,6 +4423,138 @@ TEST_F(SdfParserTest, IllegalDeformablePropertiesParsing) {
     EXPECT_EQ(NumErrors(), 1);
     EXPECT_THAT(TakeError(), MatchesRegex(c.regex));
   }
+}
+
+TEST_F(SdfParserTest, IllegalProximityPropertyParsingForDeformable) {
+  AddSceneGraph();
+
+  constexpr const char* sdf_template = R"""(
+<model name='deformable_with_illegal_{suffix}'>
+  <link name='body_{suffix}'>
+    <collision name='collision'>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/single_tet.vtk</uri>
+        </mesh>
+      </geometry>
+      <drake:proximity_properties>
+        {snippet}
+      </drake:proximity_properties>
+    </collision>
+    <drake:deformable_properties/>
+  </link>
+</model>)""";
+
+  struct TestCase {
+    std::string snippet;  // the single bad-property XML
+    std::string suffix;   // used in the model name
+    std::string regex;    // expected error regex
+  };
+
+  const std::vector<TestCase> cases = {
+      {"<drake:mu_dynamic>-1.0</drake:mu_dynamic>", "mu_dynamic",
+       ".*mu_dynamic.*"},
+      {"<drake:hunt_crossley_dissipation>-0.5</"
+       "drake:hunt_crossley_dissipation>",
+       "hunt_crossley_dissipation", ".*hunt_crossley_dissipation.*"},
+      {"<drake:relaxation_time>-1.0</drake:relaxation_time>", "relaxation_time",
+       ".*relaxation_time.*"},
+  };
+
+  for (auto const& c : cases) {
+    SCOPED_TRACE(c.suffix);
+    const std::string sdf =
+        fmt::format(sdf_template, fmt::arg("snippet", c.snippet),
+                    fmt::arg("suffix", c.suffix));
+
+    ParseTestString(sdf);
+    EXPECT_EQ(NumErrors(), 1);
+    EXPECT_THAT(TakeError(), MatchesRegex(c.regex));
+  }
+}
+
+TEST_F(SdfParserTest, DeformableMaterialModels) {
+  AddSceneGraph();
+
+  constexpr const char* sdf_template = R"""(
+<model name='deformable_with_{model}'>
+  <link name='body_{model}'>
+    <collision name='collision'>
+      <geometry>
+        <mesh>
+          <uri>package://drake/multibody/parsing/test/single_tet.vtk</uri>
+        </mesh>
+      </geometry>
+    </collision>
+    <drake:deformable_properties>
+      <drake:material_model>
+        {model}
+      </drake:material_model>
+    </drake:deformable_properties>
+  </link>
+</model>)""";
+
+  const std::vector<std::string> cases = {
+      "corotated",
+      "linear_corotated",
+      "linear",
+  };
+
+  for (auto const& c : cases) {
+    SCOPED_TRACE(c);
+    const std::string sdf = fmt::format(sdf_template, fmt::arg("model", c));
+    ParseTestString(sdf);
+    EXPECT_EQ(NumErrors(), 0);
+  }
+  plant_.Finalize();
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), 3);
+}
+
+TEST_F(SdfParserTest, DeformableWithMoreThanOneCollision) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision1'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <collision name='collision2'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*exactly one <collision>.*"));
+}
+
+TEST_F(SdfParserTest, DeformableWithMoreThanOneVisual) {
+  AddSceneGraph();
+  const std::string sdf = R"(
+  <model name='deformable'>
+    <link name='body'>
+      <collision name='collision'>
+        <geometry>
+          <mesh><uri>package://drake/multibody/parsing/test/single_tet.vtk</uri></mesh>
+        </geometry>
+      </collision>
+      <visual name='visual1'>
+      </visual>
+      <visual name='visual2'>
+      </visual>
+      <drake:deformable_properties/>
+    </link>
+  </model>)";
+
+  ParseTestString(sdf);
+  EXPECT_THAT(NumErrors(), 1);
+  EXPECT_THAT(TakeError(), MatchesRegex(".*at most one <visual>.*"));
 }
 
 TEST_F(SdfParserTest, ComposedPoseForDeformable) {

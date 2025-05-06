@@ -1069,16 +1069,20 @@ void DrakifyModel(const SDFormatDiagnostic& diagnostic,
   }
 }
 
+bool IsDeformableLink(const sdf::Link& link) {
+  return link.Element()->HasElement("drake:deformable_properties");
+}
+
 // Helper that loads `<drake:deformable_properties>` into a config.
-// param[in] link         The SDF link to load the property for.
-// param[in, out] config  On input, it's a default config. On output, it's the
-//                        config with the properties loaded from the given link.
+// @param[in] link         The SDF link to load the property for.
+// @param[in, out] config  On input, it's a default config. On output, it's the
+//                         config with the properties loaded from the given
+//                         link.
+// @pre link is a deformable link.
 void LoadDeformableConfig(const sdf::Link& link,
                           fem::DeformableBodyConfig<double>* config,
                           const SDFormatDiagnostic& diagnostic) {
-  if (!link.Element()->HasElement("drake:deformable_properties")) {
-    return;
-  }
+  DRAKE_DEMAND(IsDeformableLink(link));
   const sdf::ElementPtr property_element =
       link.Element()->GetElement("drake:deformable_properties");
   // clang-format off
@@ -1154,10 +1158,6 @@ void LoadDeformableConfig(const sdf::Link& link,
   }
 }
 
-bool IsDeformableLink(const sdf::Link& link) {
-  return link.Element()->HasElement("drake:deformable_properties");
-}
-
 // Parses one <link> into a deformable body. Returns true if the parser should
 // keep parsing the rest of the links, false if an error is encountered and the
 // parser should abort.
@@ -1169,11 +1169,7 @@ bool AddDeformableLinkFromSpecification(const SDFormatDiagnostic& diag,
                                         const PackageMap& package_map,
                                         const std::string& root_dir) {
   const sdf::ElementPtr link_element = link.Element();
-  if (plant->is_finalized()) {
-    diag.Error(link_element,
-               "Cannot add a deformable link to a finalized plant.");
-    return false;
-  }
+  DRAKE_DEMAND(!plant->is_finalized());
   if (!plant->geometry_source_is_registered()) {
     diag.Warning(link_element,
                  "Cannot add a deformable link to a plant without a registered "
