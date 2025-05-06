@@ -29,6 +29,7 @@ std::unique_ptr<FemModel<T>> FemModel<T>::Clone() const {
   std::unique_ptr<FemModel<T>> result = this->DoClone();
   result->UpdateFemStateSystem();
   result->dirichlet_bc_ = this->dirichlet_bc_;
+  result->parallelism_ = this->parallelism_;
   return result;
 }
 
