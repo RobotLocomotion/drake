@@ -134,16 +134,6 @@ class PrismaticMobilizer : public MobilizerImpl<T, 1, 1> {
                          const Eigen::Ref<const VectorX<T>>& qdot,
                          EigenPtr<VectorX<T>> v) const final;
 
-  // Maps vdot to qddot, which for this mobilizer is q̈ = v̇.
-  void MapAccelerationToQDDot(const systems::Context<T>& context,
-                              const Eigen::Ref<const VectorX<T>>& vdot,
-                              EigenPtr<VectorX<T>> qddot) const final;
-
-  // Maps qddot to vdot, which for this mobilizer is v̇ = q̈.
-  void MapQDDotToAcceleration(const systems::Context<T>& context,
-                              const Eigen::Ref<const VectorX<T>>& qddot,
-                              EigenPtr<VectorX<T>> vdot) const final;
-
  protected:
   // Constructor for a PrismaticMobilizer between the inboard frame F and the
   // outboard frame M, granting a single translational degree of freedom along
@@ -165,6 +155,16 @@ class PrismaticMobilizer : public MobilizerImpl<T, 1, 1> {
   // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ = zero matrix.
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
+
+  // Maps vdot to qddot, which for this mobilizer is q̈ = v̇.
+  void DoMapAccelerationToQDDot(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& vdot,
+                                EigenPtr<VectorX<T>> qddot) const final;
+
+  // Maps qddot to vdot, which for this mobilizer is v̇ = q̈.
+  void DoMapQDDotToAcceleration(const systems::Context<T>& context,
+                                const Eigen::Ref<const VectorX<T>>& qddot,
+                                EigenPtr<VectorX<T>> vdot) const final;
 
  private:
   // Joint axis expressed identically in frames F and M. This must be one of
