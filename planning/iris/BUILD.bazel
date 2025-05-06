@@ -13,6 +13,7 @@ drake_cc_package_library(
     name = "iris",
     visibility = ["//visibility:public"],
     deps = [
+        ":iris_common",
         ":iris_from_clique_cover",
         ":iris_zo",
     ],
@@ -39,10 +40,22 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "iris_common",
+    srcs = ["iris_common.cc"],
+    hdrs = ["iris_common.h"],
+    deps = [
+        "//common:name_value",
+        "//geometry:meshcat",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "iris_zo",
     srcs = ["iris_zo.cc"],
     hdrs = ["iris_zo.h"],
     deps = [
+        ":iris_common",
         "//common:parallelism",
         "//common/symbolic:expression",
         "//geometry:meshcat",
