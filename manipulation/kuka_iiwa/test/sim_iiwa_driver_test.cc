@@ -67,9 +67,9 @@ class SimIiwaDriverTest : public ::testing::Test {
       outputs.push_back(dut.get_output_port(i).get_name());
     }
     std::vector<std::string> expected_outputs{
-        "actuation",          "position_commanded", "position_measured",
-        "velocity_estimated", "state_estimated",    "torque_commanded",
-        "torque_measured",    "torque_external"};
+        "position_commanded", "position_measured", "velocity_estimated",
+        "state_estimated",    "torque_commanded",  "torque_measured",
+        "torque_external"};
 
     if (position_enabled(mode)) {
       expected_outputs.push_back("velocity_commanded");

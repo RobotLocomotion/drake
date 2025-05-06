@@ -152,11 +152,10 @@ SimIiwaDriver<T>::SimIiwaDriver(
     builder.ExportInput(actuation->get_input_port(1), "torque");
     actuation_output = &actuation->get_output_port();
   } else {
-    actuation_output = &inverse_dynamics->GetOutputPort("generalized_force");
+    actuation_output = &inverse_dynamics->GetOutputPort("actuation");
   }
 
   // Declare the various output ports.
-  builder.ExportOutput(*actuation_output, "actuation");
   if (position_enabled(control_mode)) {
     auto pass = builder.template AddNamedSystem<PassThrough>(
         "position_pass_through", num_positions);
@@ -201,7 +200,7 @@ const System<double>& SimIiwaDriver<T>::AddToBuilder(
   builder->Connect(
       plant.get_generalized_contact_forces_output_port(iiwa_instance),
       system->GetInputPort("generalized_contact_forces"));
-  builder->Connect(system->GetOutputPort("actuation"),
+  builder->Connect(system->GetOutputPort("torque_commanded"),
                    plant.get_actuation_input_port(iiwa_instance));
   return *system;
 }
