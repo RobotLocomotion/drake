@@ -38,18 +38,35 @@ const OutputPort<double>& NegatedPort(DiagramBuilder<double>* builder,
 
 }  // namespace
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 void BuildIiwaControl(
     const MultibodyPlant<double>& plant, const ModelInstanceIndex iiwa_instance,
     const MultibodyPlant<double>& controller_plant, DrakeLcmInterface* lcm,
     DiagramBuilder<double>* builder, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
     IiwaControlMode control_mode) {
+  IiwaDriver config;
+  config.ext_joint_filter_tau = ext_joint_filter_tau;
+  config.desired_kp_gains = desired_iiwa_kp_gains;
+  config.control_mode = FormatIiwaControlMode(control_mode);
+  BuildIiwaControl(builder, lcm, plant, iiwa_instance, config,
+                   controller_plant);
+}
+#pragma GCC diagnostic pop
+
+void BuildIiwaControl(DiagramBuilder<double>* builder, DrakeLcmInterface* lcm,
+                      const MultibodyPlant<double>& plant,
+                      const ModelInstanceIndex iiwa_instance,
+                      const IiwaDriver& driver_config,
+                      const MultibodyPlant<double>& controller_plant) {
   const IiwaControlPorts sim_ports = BuildSimplifiedIiwaControl(
-      plant, iiwa_instance, controller_plant, builder, ext_joint_filter_tau,
-      desired_iiwa_kp_gains, control_mode);
+      builder, plant, iiwa_instance, driver_config, controller_plant);
 
   const int num_iiwa_positions = controller_plant.num_positions();
   const std::string model_name = plant.GetModelInstanceName(iiwa_instance);
+  const IiwaControlMode control_mode =
+      ParseIiwaControlMode(driver_config.control_mode);
 
   // Create the Iiwa command receiver.
   auto command_sub = builder->AddNamedSystem(
@@ -111,19 +128,35 @@ void BuildIiwaControl(
                    status_encode->get_torque_external_input_port());
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 IiwaControlPorts BuildSimplifiedIiwaControl(
     const MultibodyPlant<double>& plant, const ModelInstanceIndex iiwa_instance,
     const MultibodyPlant<double>& controller_plant,
     DiagramBuilder<double>* builder, double ext_joint_filter_tau,
     const std::optional<Eigen::VectorXd>& desired_iiwa_kp_gains,
     IiwaControlMode control_mode) {
+  IiwaDriver config;
+  config.ext_joint_filter_tau = ext_joint_filter_tau;
+  config.desired_kp_gains = desired_iiwa_kp_gains;
+  config.control_mode = FormatIiwaControlMode(control_mode);
+  return BuildSimplifiedIiwaControl(builder, plant, iiwa_instance, config,
+                                    controller_plant);
+}
+#pragma GCC diagnostic pop
+
+IiwaControlPorts BuildSimplifiedIiwaControl(
+    DiagramBuilder<double>* builder, const MultibodyPlant<double>& plant,
+    const ModelInstanceIndex iiwa_instance, const IiwaDriver& driver_config,
+    const MultibodyPlant<double>& controller_plant) {
   const int num_positions = controller_plant.num_positions();
   DRAKE_THROW_UNLESS(num_positions == 7);
+  const IiwaControlMode control_mode =
+      ParseIiwaControlMode(driver_config.control_mode);
 
   // Add the sim driver to the builder.
   const System<double>* const system = &SimIiwaDriver<double>::AddToBuilder(
-      builder, plant, iiwa_instance, controller_plant, ext_joint_filter_tau,
-      desired_iiwa_kp_gains, control_mode);
+      builder, plant, iiwa_instance, driver_config, controller_plant);
 
   // Return the necessary port pointers.
   IiwaControlPorts result;

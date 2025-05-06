@@ -210,6 +210,13 @@ class FemModelImpl : public FemModel<typename Element::T> {
     DRAKE_DEMAND(data != nullptr);
     data->resize(num_elements());
     const FemState<T> fem_state(&(this->fem_state_system()), &context);
+
+    // TODO(xuchenhan-tri) We should switch to the CRU helper eventually, so
+    // that we gain std::async support.
+    [[maybe_unused]] const int num_threads = this->parallelism().num_threads();
+#if defined(_OPENMP)
+#pragma omp parallel for num_threads(num_threads)
+#endif
     for (int i = 0; i < num_elements(); ++i) {
       (*data)[i] = elements_[i].ComputeData(fem_state);
     }
