@@ -59,6 +59,14 @@ careful when interpreting them as Eigen vectors for computation purposes.
   RigidTransform<T> pre_multiply_by_X_FM(const RigidTransform<T>& X_FM,
                                          const RigidTransform<T>& X_MB) const;
 
+// Returns p_F = X_FM ⋅ p_M (shift position vector and re-express).
+  Vector3<T> apply_X_FM(const RigidTransform<T>& X_FM,
+                        const Vector3<T>& v_M) const;
+
+  // Returns v_F = R_FM ⋅ v_M (re-express vector).
+  Vector3<T> apply_R_FM(const RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const;
+
   // Returns V_FM_F = H_FM_F(q)⋅v.
   SpatialVelocity<T> calc_V_FM(const T* q,
                                const T* v) const;
@@ -195,6 +203,26 @@ class MobilizerImpl : public Mobilizer<T> {
       const math::RigidTransform<T>& X_MB) const {
     const math::RigidTransform<T> X_FB = X_FM * X_MB;
     return X_FB;
+  }
+
+  // N.B. no default implementations possible for calc_X_FM() and update_X_FM()
+  // here. However, a minimal implementation for update_X_FM() in a concrete
+  // mobilizer is just *X_FM = calc_X_FM(q).
+
+  // Returns p_F = X_FM ⋅ p_M (shift and re-express). The default implementation
+  // treats X_FM as fully general and performs this in 18 flops. Mobilizers
+  // that know more about the structure of their X_FM should override.
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>& X_FM,
+                        const Vector3<T>& p_M) const {
+    return X_FM * p_M;
+  }
+
+  // Returns v_F = R_FM ⋅ v_M (re-express). The default implementation
+  // treats R_FM as fully general and performs this in 15 flops. Mobilizers
+  // that know more about the structure of their R_FM should override.
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>& R_FM,
+                        const Vector3<T>& v_M) const {
+    return R_FM * v_M;
   }
 
  protected:

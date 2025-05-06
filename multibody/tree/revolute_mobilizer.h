@@ -247,6 +247,20 @@ class RevoluteMobilizerAxial final : public RevoluteMobilizer<T> {
     X_MB.template PreMultiplyByAxialRotation<axis>(arX_FM, &X_FB);
     return X_FB;
   }
+  // Returns p_F = arX_FM * p_M, exploiting the known structure of the axial
+  // rotation transform arX_FM.
+  Vector3<T> apply_X_FM(const math::RigidTransform<T>& arX_FM,
+                        const Vector3<T>& p_M) const {
+    return math::RigidTransform<T>::template ApplyAxialRotation<axis>(arX_FM,
+                                                                      p_M);
+  }
+  // Returns v_F = aR_FM * v_M, exploiting the known structure of the axial
+  // rotation matrix rR_FM.
+  Vector3<T> apply_R_FM(const math::RotationMatrix<T>& aR_FM,
+                        const Vector3<T>& v_M) const {
+    return math::RotationMatrix<T>::template ApplyAxialRotation<axis>(aR_FM,
+                                                                      v_M);
+  }
 
   // Computes the across-mobilizer spatial velocity V_FM(q, v) of the outboard
   // frame M measured and expressed in frame F as a function of the input
