@@ -18,9 +18,9 @@ GTEST_TEST(NeoHookeanModelTest, Parameters) {
 }
 
 GTEST_TEST(NeoHookeanModelTest, UndeformedState) {
-  TestUndeformedState<NeoHookeanModel<double>>(/*nonzero rest state =*/true);
+  TestUndeformedState<NeoHookeanModel<double>>(/* nonzero rest state */ true);
   TestUndeformedState<NeoHookeanModel<AutoDiffXd>>(
-      /*nonzero_rest_state =*/true);
+      /* nonzero_rest_state */ true);
 }
 
 GTEST_TEST(NeoHookeanModelTest, PIsDerivativeOfPsi) {

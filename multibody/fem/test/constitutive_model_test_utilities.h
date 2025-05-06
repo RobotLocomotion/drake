@@ -19,8 +19,8 @@ Matrix3<AutoDiffXd> MakeDeformationGradients();
 
 /* Tests the constructor and the accessors for St.Venant-Kirchhoff like
 constitutive models.
-@tparam Model    Must be instantiations of LinearConstitutiveModel or
-CorotatedModel. */
+@tparam Model    Must be instantiations of LinearConstitutiveModel,
+                 LinearCorotatedModel, CorotatedModel, or NeoHookeanModel. */
 template <class Model>
 void TestParameters();
 

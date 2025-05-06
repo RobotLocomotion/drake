@@ -144,7 +144,7 @@ class ConstitutiveModel {
 
   /* Derived classes *may* shadow this method to provide a more efficient
    implementation of the filtered Hessian. The default implementation is
-   `CalcFirstPiolaStressDerivative` followed by an eigenvalue decomposition of
+   CalcFirstPiolaStressDerivative() followed by an eigenvalue decomposition of
    the 9-by-9 matrix. The eigenvalues are clamped at 0 from below and the
    filtered Hessian is reconstructed from the eigenvalues and eigenvectors. The
    output argument is guaranteed to be non-null. */
