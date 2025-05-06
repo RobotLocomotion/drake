@@ -13,6 +13,8 @@ namespace drake {
 namespace planning {
 
 using common::MaybePauseForUser;
+using Eigen::Matrix2Xd;
+using Eigen::Matrix3Xd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -129,11 +131,11 @@ void DoublePendulum::CheckRegion(const HPolyhedron& region) {
 
 void DoublePendulum::PlotEnvironmentAndRegion(
     const geometry::optimization::HPolyhedron& region) {
-  meshcat_->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
-                            -3.25, 3.25, -3.25, 3.25);
+  meshcat_->Set2dRenderMode(math::RigidTransformd(Vector3d{0, 0, 1}), -3.25,
+                            3.25, -3.25, 3.25);
   meshcat_->SetProperty("/Grid", "visible", true);
   Eigen::RowVectorXd theta2s = Eigen::RowVectorXd::LinSpaced(100, -1.57, 1.57);
-  Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta2s.size() + 1);
+  Matrix3Xd points = Matrix3Xd::Zero(3, 2 * theta2s.size() + 1);
   const double c = -kPhysicalParamW + kPhysicalParamR;
   for (int i = 0; i < theta2s.size(); ++i) {
     const double a = kPhysicalParamL1 + kPhysicalParamL2 * std::cos(theta2s[i]),
@@ -194,13 +196,13 @@ void DoublePendulumRationalForwardKinematics::
   // Region boundaries appear "curved" in the ambient space, so we use many
   // points per boundary segment to make a more faithful visualization.
   int n_points_per_edge = 10;
-  Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(
-      3, n_points_per_edge * vregion.vertices().cols() + 1);
+  Matrix3Xd points =
+      Matrix3Xd::Zero(3, n_points_per_edge * vregion.vertices().cols() + 1);
   int next_point_index = 0;
 
   // Order vertices in counterclockwise order.
   Vector2d centroid = vregion.vertices().rowwise().mean();
-  Eigen::Matrix2Xd centered = vregion.vertices().colwise() - centroid;
+  Matrix2Xd centered = vregion.vertices().colwise() - centroid;
   VectorXd angles = centered.row(1).array().binaryExpr(
       centered.row(0).array(), [](double y, double x) {
         return std::atan2(y, x);
@@ -211,7 +213,7 @@ void DoublePendulumRationalForwardKinematics::
             [&angles](int i1, int i2) {
               return angles(i1) < angles(i2);
             });
-  Eigen::Matrix2Xd sorted_vertices = vregion.vertices()(Eigen::all, indices);
+  Matrix2Xd sorted_vertices = vregion.vertices()(Eigen::all, indices);
 
   for (int i1 = 0; i1 < sorted_vertices.cols(); ++i1) {
     int i2 = i1 + 1;
@@ -260,12 +262,12 @@ void BlockOnGround::CheckRegion(const HPolyhedron& region) {
 }
 
 void BlockOnGround::PlotEnvironmentAndRegion(const HPolyhedron& region) {
-  meshcat_->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}), 0,
-                            3.25, -3.25, 3.25);
+  meshcat_->Set2dRenderMode(math::RigidTransformd(Vector3d{0, 0, 1}), 0, 3.25,
+                            -3.25, 3.25);
   meshcat_->SetProperty("/Grid", "visible", true);
   Eigen::RowVectorXd thetas = Eigen::RowVectorXd::LinSpaced(100, -M_PI, M_PI);
   const double w = 2, h = 1;
-  Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * thetas.size() + 1);
+  Matrix3Xd points = Matrix3Xd::Zero(3, 2 * thetas.size() + 1);
   for (int i = 0; i < thetas.size(); ++i) {
     const double a = 0.5 * (-w * std::sin(thetas[i]) - h * std::cos(thetas[i])),
                  b = 0.5 * (-w * std::sin(thetas[i]) + h * std::cos(thetas[i])),
@@ -347,11 +349,11 @@ void ConvexConfigurationSpace::CheckRegion(const HPolyhedron& region) {
 }
 
 void ConvexConfigurationSpace::PlotEnvironment() {
-  meshcat_->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
-                            -3.25, 3.25, -3.25, 3.25);
+  meshcat_->Set2dRenderMode(math::RigidTransformd(Vector3d{0, 0, 1}), -3.25,
+                            3.25, -3.25, 3.25);
   meshcat_->SetProperty("/Grid", "visible", true);
   Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.5, 1.5);
-  Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
+  Matrix3Xd points = Matrix3Xd::Zero(3, 2 * theta1s.size());
   for (int i = 0; i < theta1s.size(); ++i) {
     points(0, i) = kPhysicalParamR - kPhysicalParamL * cos(theta1s[i]);
     points(1, i) = theta1s[i];
@@ -363,16 +365,15 @@ void ConvexConfigurationSpace::PlotEnvironment() {
 
 void ConvexConfigurationSpace::PlotRegion(const HPolyhedron& region) {
   VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-  Eigen::Matrix3Xd points =
-      Eigen::Matrix3Xd::Zero(3, vregion.vertices().cols() + 1);
+  Matrix3Xd points = Matrix3Xd::Zero(3, vregion.vertices().cols() + 1);
   points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
   points.topRightCorner(2, 1) = vregion.vertices().col(0);
   points.bottomRows<1>().setZero();
   meshcat_->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
 
   meshcat_->SetObject("Test point", Sphere(0.03), Rgba(1, 0, 0));
-  meshcat_->SetTransform("Test point", math::RigidTransform(Eigen::Vector3d(
-                                           kZTest, kThetaTest, 0)));
+  meshcat_->SetTransform("Test point",
+                         math::RigidTransform(Vector3d(kZTest, kThetaTest, 0)));
 
   MaybePauseForUser();
 }
@@ -420,8 +421,8 @@ struct IdentityConstraint {
 ConvexConfigurationSpaceWithNotThreadsafeConstraint::
     ConvexConfigurationSpaceWithNotThreadsafeConstraint() {
   // Create the MathematicalProgram with the additional constraint.
-  Eigen::VectorXd simple_constraint_lb = Eigen::Vector2d(-2.0, -0.5);
-  Eigen::VectorXd simple_constraint_ub = Eigen::Vector2d(0.0, 1.5);
+  VectorXd simple_constraint_lb = Vector2d(-2.0, -0.5);
+  VectorXd simple_constraint_ub = Vector2d(0.0, 1.5);
   std::shared_ptr<solvers::Constraint> simple_constraint =
       std::make_shared<solvers::EvaluatorConstraint<
           solvers::FunctionEvaluator<IdentityConstraint>>>(
@@ -457,8 +458,7 @@ void ConvexConfigurationSubspace::PlotEnvironmentAndRegionSubspace(
   PlotEnvironment();
 
   VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-  Eigen::Matrix3Xd points =
-      Eigen::Matrix3Xd::Zero(3, vregion.vertices().cols() + 1);
+  Matrix3Xd points = Matrix3Xd::Zero(3, vregion.vertices().cols() + 1);
   for (int i = 0; i < vregion.vertices().cols(); ++i) {
     Vector2d point = parameterization(vregion.vertices().col(i));
     points.col(i).head(2) = point;
@@ -473,10 +473,88 @@ void ConvexConfigurationSubspace::PlotEnvironmentAndRegionSubspace(
 
   Vector2d ambient_query_point = parameterization(region_query_point_1_);
   meshcat_->SetTransform(
-      "Test point", math::RigidTransform(Eigen::Vector3d(
-                        ambient_query_point[0], ambient_query_point[1], 0)));
+      "Test point", math::RigidTransform(Vector3d(ambient_query_point[0],
+                                                  ambient_query_point[1], 0)));
 
   MaybePauseForUser();
+}
+
+FourCornersBoxes::FourCornersBoxes() {
+  SetUpEnvironment(urdf_);
+
+  meshcat_ = geometry::GetTestEnvironmentMeshcat();
+
+  Vector2d sample{0.0, 0.0};
+  starting_ellipsoid_ = Hyperellipsoid::MakeHypersphere(1e-2, sample);
+  domain_ = HPolyhedron::MakeBox(plant_ptr_->GetPositionLowerLimits(),
+                                 plant_ptr_->GetPositionUpperLimits());
+}
+
+void FourCornersBoxes::CheckRegion(const HPolyhedron&) {}
+
+void FourCornersBoxes::CheckRegionContainsPoints(
+    const HPolyhedron& region, const Matrix2Xd& containment_points) {
+  EXPECT_EQ(region.ambient_dimension(), 2);
+  for (int i = 0; i < containment_points.cols(); ++i) {
+    EXPECT_TRUE(region.PointInSet(containment_points.col(i)));
+  }
+}
+
+void FourCornersBoxes::PlotEnvironmentAndRegion(const HPolyhedron& region) {
+  meshcat_->Set2dRenderMode(math::RigidTransformd(Vector3d{0, 0, 1}), -3.25,
+                            3.25, -3.25, 3.25);
+  meshcat_->SetProperty("/Grid", "visible", true);
+  // Draw the true cspace.
+
+  Matrix3Xd env_points(3, 5);
+  // clang-format off
+        env_points << -2, 2,  2, -2, -2,
+                        2, 2, -2, -2,  2,
+                        0, 0,  0,  0,  0;
+  // clang-format on
+  meshcat_->SetLine("Domain", env_points, 8.0, Rgba(0, 0, 0));
+  Matrix3Xd centers(3, 4);
+  double c = 1.0;
+  // clang-format off
+        centers << -c, c,  c, -c,
+                    c, c, -c, -c,
+                    0, 0,  0,  0;
+  // clang-format on
+  Matrix3Xd obs_points(3, 5);
+  // Adding 0.01 offset to obstacles to acommodate for the radius of the
+  // spherical robot.
+  double s = 0.7 + 0.01;
+  // clang-format off
+        obs_points << -s, s,  s, -s, -s,
+                        s, s, -s, -s, s,
+                        s, 0,  0,  0,  0;
+  // clang-format on
+  for (int obstacle_idx = 0; obstacle_idx < 4; ++obstacle_idx) {
+    Matrix3Xd obstacle = obs_points;
+    obstacle.colwise() += centers.col(obstacle_idx);
+    meshcat_->SetLine(fmt::format("/obstacles/obs_{}", obstacle_idx), obstacle,
+                      8.0, Rgba(0, 0, 0));
+  }
+
+  VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
+  Matrix3Xd points;
+  points.resize(3, vregion.vertices().cols() + 1);
+  points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
+  points.topRightCorner(2, 1) = vregion.vertices().col(0);
+  points.bottomRows<1>().setZero();
+  meshcat_->SetLine("IRIS Region", points, 2.0, Rgba(0, 1, 0));
+}
+
+void FourCornersBoxes::PlotContainmentPoints(
+    const Matrix2Xd& containment_points) {
+  Matrix3Xd point_to_draw = Vector3d::Zero();
+  for (int i = 0; i < containment_points.cols(); ++i) {
+    std::string path = fmt::format("cont_pt/{}", i);
+    meshcat_->SetObject(path, Sphere(0.04), geometry::Rgba(1, 0, 0.0, 1.0));
+    point_to_draw(0) = containment_points(0, i);
+    point_to_draw(1) = containment_points(1, i);
+    meshcat_->SetTransform(path, math::RigidTransform<double>(point_to_draw));
+  }
 }
 
 }  // namespace planning
