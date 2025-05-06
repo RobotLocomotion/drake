@@ -11,11 +11,10 @@ if [[ $# -lt 1 ]]; then
     exit 1
 fi
 
-# Clean up from old tests.
-rm -rf /tmp/drake-wheel-test
-
 # Prepare test environment.
-mkdir /tmp/drake-wheel-test
+mkdir -p ~/.drake-wheel-test
+readonly d="$(mktemp -d ~/.drake-wheel-test/python$1-XXXXXXXXXX)"
+ln -nsf "${d}" /tmp/drake-wheel-test
 
 # NOTE: Xcode ships python3, make sure to use the one from brew.
 $(brew --prefix python@$1)/bin/python$1 \

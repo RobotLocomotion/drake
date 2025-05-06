@@ -161,11 +161,9 @@ def build(options):
             shutil.rmtree(os.path.realpath(build_root))
             os.unlink(build_root)
 
-    # TODO(Aiden2244) move this statement in the for loop after the
-    # `_test_wheel` statement and refactor `provision-test-python.sh` as
-    # necessary once tests are moved to a unique directory.
-    if options.test and not options.keep_build:
-        shutil.rmtree(test_root)
+            if options.test:
+                shutil.rmtree(os.path.realpath(test_root))
+                os.unlink(test_root)
 
 
 def add_build_arguments(parser):
