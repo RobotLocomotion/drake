@@ -653,9 +653,9 @@ class Mobilizer : public MultibodyElement<T> {
   void MapAccelerationToQDDot(const systems::Context<T>& context,
                               const Eigen::Ref<const VectorX<T>>& vdot,
                               EigenPtr<VectorX<T>> qddot) const {
-    DRAKE_ASSERT(vdot.size() == num_velocities());
-    DRAKE_ASSERT(qddot != nullptr);
-    DRAKE_ASSERT(qddot->size() == num_positions());
+    DRAKE_DEMAND(vdot.size() == num_velocities());
+    DRAKE_DEMAND(qddot != nullptr);
+    DRAKE_DEMAND(qddot->size() == num_positions());
     DoMapAccelerationToQDDot(context, vdot, qddot);
   }
 
@@ -666,9 +666,9 @@ class Mobilizer : public MultibodyElement<T> {
   void MapQDDotToAcceleration(const systems::Context<T>& context,
                               const Eigen::Ref<const VectorX<T>>& qddot,
                               EigenPtr<VectorX<T>> vdot) const {
-    DRAKE_ASSERT(qddot.size() == num_positions());
-    DRAKE_ASSERT(vdot != nullptr);
-    DRAKE_ASSERT(vdot->size() == num_velocities());
+    DRAKE_DEMAND(qddot.size() == num_positions());
+    DRAKE_DEMAND(vdot != nullptr);
+    DRAKE_DEMAND(vdot->size() == num_velocities());
     DoMapQDDotToAcceleration(context, qddot, vdot);
   }
   // @}
