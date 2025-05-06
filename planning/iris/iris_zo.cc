@@ -35,66 +35,6 @@ using solvers::MathematicalProgram;
 using solvers::MathematicalProgramResult;
 using solvers::SolverInterface;
 
-IrisZoOptions IrisZoOptions::CreateWithRationalKinematicParameterization(
-    const multibody::RationalForwardKinematics* kin,
-    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
-  const int dimension = kin->plant().num_positions();
-  DRAKE_DEMAND(dimension > 0);
-  IrisZoOptions instance;
-
-  auto evaluate_s_to_q = [kin, q_star_captured = Eigen::VectorXd(q_star_val)](
-                             const Eigen::VectorXd& s_val) {
-    return kin->ComputeQValue(s_val, q_star_captured);
-  };
-
-  instance.set_parameterization(evaluate_s_to_q,
-                                /* parameterization_is_threadsafe */ true,
-                                /* parameterization_dimension */ dimension);
-  return instance;
-}
-
-void IrisZoOptions::SetParameterizationFromExpression(
-    const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
-    const Eigen::VectorX<symbolic::Variable>& variables) {
-  // First, we check that the variables in expression_parameterization match the
-  // user-supplied variables.
-  symbolic::Variables expression_variables;
-  for (const auto& expression : expression_parameterization) {
-    expression_variables.insert(expression.GetVariables());
-  }
-  symbolic::Variables user_supplied_variables(variables);
-  DRAKE_THROW_UNLESS(expression_variables == user_supplied_variables);
-
-  // Check for duplicates in variables.
-  DRAKE_THROW_UNLESS(variables.size() == ssize(user_supplied_variables));
-
-  int dimension = ssize(expression_variables);
-
-  // Note that in this lambda, we copy the shared_ptr variables, ensuring that
-  // variables is kept alive without making a copy of the individual Variable
-  // objects (which would break the substitution machinery).
-  auto evaluate_expression =
-      [expression_parameterization_captured =
-           Eigen::VectorX<symbolic::Expression>(expression_parameterization),
-       variables_captured = Eigen::VectorX<symbolic::Variable>(variables)](
-          const Eigen::VectorXd& q) {
-        DRAKE_ASSERT(q.size() == variables_captured.size());
-        symbolic::Environment env;
-        for (int i = 0; i < q.size(); ++i) {
-          env.insert(variables_captured[i], q[i]);
-        }
-        Eigen::VectorXd out = expression_parameterization_captured.unaryExpr(
-            [&env](const symbolic::Expression& expression) {
-              return expression.Evaluate(env);
-            });
-        return out;
-      };
-
-  set_parameterization(evaluate_expression,
-                       /* parameterization_is_threadsafe */ true,
-                       /* parameterization_dimension */ dimension);
-}
-
 namespace {
 
 using values_t = std::vector<double>;
@@ -205,7 +145,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           : true;
   const int num_threads_to_use =
       checker.SupportsParallelChecking() && additional_constraints_threadsafe &&
-              options.get_parameterization_is_threadsafe()
+              options.parameterization.get_parameterization_is_threadsafe()
           ? std::min(options.sampled_iris_options.parallelism.num_threads(),
                      checker.num_allocated_contexts())
           : 1;
@@ -223,7 +163,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
   const int ambient_dimension = checker.plant().num_positions();
   const int parameterized_dimension =
-      options.get_parameterization_dimension().value_or(ambient_dimension);
+      options.parameterization.get_parameterization_dimension().value_or(
+          ambient_dimension);
 
   DRAKE_THROW_UNLESS(num_threads_to_use > 0);
   DRAKE_THROW_UNLESS(starting_ellipsoid.ambient_dimension() ==
@@ -241,7 +182,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
   const double constraints_tol = 1e-6;
 
   const Eigen::VectorXd starting_ellipsoid_center_ambient =
-      options.get_parameterization()(starting_ellipsoid_center);
+      options.parameterization.get_parameterization()(
+          starting_ellipsoid_center);
   const int computed_ambient_dimension =
       starting_ellipsoid_center_ambient.size();
   if (computed_ambient_dimension != ambient_dimension) {
@@ -297,7 +239,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
          col < options.sampled_iris_options.containment_points->cols(); ++col) {
       Eigen::VectorXd conf =
           options.sampled_iris_options.containment_points->col(col);
-      cont_vec.emplace_back(options.get_parameterization()(conf));
+      cont_vec.emplace_back(
+          options.parameterization.get_parameterization()(conf));
       DRAKE_ASSERT(cont_vec.back().size() == ambient_dimension);
     }
 
@@ -329,7 +272,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
     options.sampled_iris_options.meshcat->SetObject(
         path, Sphere(0.06), geometry::Rgba(0.1, 1, 1, 1.0));
     Eigen::VectorXd conf_ambient =
-        options.get_parameterization()(current_ellipsoid_center);
+        options.parameterization.get_parameterization()(
+            current_ellipsoid_center);
     DRAKE_ASSERT(conf_ambient.size() == ambient_dimension);
     point_to_draw.head(ambient_dimension) = conf_ambient;
     options.sampled_iris_options.meshcat->SetTransform(
@@ -434,7 +378,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       // it's an expensive operation.
       std::vector<Eigen::VectorXd> ambient_particles(N_k);
       std::transform(particles.begin(), particles.begin() + N_k,
-                     ambient_particles.begin(), options.get_parameterization());
+                     ambient_particles.begin(),
+                     options.parameterization.get_parameterization());
 
       for (int i = 0; i < ssize(ambient_particles); ++i) {
         // Only run this check in debug mode, because it's expensive.
@@ -513,7 +458,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
         // Update current point using a fixed number of bisection steps.
         Eigen::VectorXd current_point_ambient =
-            options.get_parameterization()(curr_pt_lower);
+            options.parameterization.get_parameterization()(curr_pt_lower);
         DRAKE_ASSERT(current_point_ambient.size() ==
                      checker.plant().num_positions());
         if (!checker.CheckConfigCollisionFree(current_point_ambient,
@@ -527,7 +472,7 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
           for (int i = 0; i < options.bisection_steps; ++i) {
             Eigen::VectorXd query = 0.5 * (curr_pt_upper + curr_pt_lower);
             Eigen::VectorXd query_ambient =
-                options.get_parameterization()(query);
+                options.parameterization.get_parameterization()(query);
             DRAKE_ASSERT(query_ambient.size() ==
                          checker.plant().num_positions());
             if (checker.CheckConfigCollisionFree(query_ambient, thread_num) &&
@@ -627,7 +572,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
               options.sampled_iris_options.meshcat->SetObject(
                   path, Sphere(0.03), geometry::Rgba(1, 1, 0.1, 1.0));
               Eigen::VectorXd ambient_particle =
-                  options.get_parameterization()(nearest_particle);
+                  options.parameterization.get_parameterization()(
+                      nearest_particle);
               DRAKE_ASSERT(ambient_particle.size() == ambient_dimension);
               point_to_draw.head(ambient_dimension) = ambient_particle;
               options.sampled_iris_options.meshcat->SetTransform(
@@ -717,7 +663,8 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       break;
     }
     if (!checker.CheckConfigCollisionFree(
-            options.get_parameterization()(current_ellipsoid_center)) ||
+            options.parameterization.get_parameterization()(
+                current_ellipsoid_center)) ||
         !CheckProgConstraints(
             options.sampled_iris_options.prog_with_additional_constraints,
             current_ellipsoid_center, constraints_tol)) {
