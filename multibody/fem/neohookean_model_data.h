@@ -11,11 +11,14 @@ namespace fem {
 namespace internal {
 
 /* Data supporting calculations in NeoHookeanModel. The constitutive model is
- described in section 3.4 in [Smith, 2019]. In particular, this class stores
- the SVD of the deformation gradient F, along with J-1, the first Cauchy-Green
- invariant (Ic = tr(FᵀF)). and JF⁻ᵀ (J = det(F)) used in evaluating the energy
- density and its derivatives. See DeformationGradientData for more about
- constitutive model data.
+ described in section 3.4 in [Smith et al., 2019]. In particular, this class
+ stores the SVD of the deformation gradient F, along with J-1, the first
+ Cauchy-Green invariant (Ic = tr(FᵀF)). and JF⁻ᵀ (J = det(F)) used in evaluating
+ the energy density and its derivatives. See DeformationGradientData for more
+ about constitutive model data.
+ [Smith et al., 2019] Smith, Breannan, Fernando De Goes, and Theodore Kim.
+ "Stable Neo-Hookean flesh simulation." ACM Transactions on Graphics (TOG) 37.2
+ (2018): 1-15.
  @tparam T The scalar type, can be a double, float, or AutoDiffXd. */
 template <typename T>
 class NeoHookeanModelData
@@ -59,7 +62,8 @@ class NeoHookeanModelData
    */
   Matrix3<T> dJdF_;
   /* The SVD of F = USVᵀ where U and V are both rotation matrices and
-   S = diag(σ₁, σ₂, σ₃) is a diagonal matrix with the singular values of F. */
+   S = diag(σ₁, σ₂, σ₃) is a diagonal matrix with the singular values of F (that
+   may be negative) to force U and V to be rotation matrices. */
   Matrix3<T> U_;
   Matrix3<T> V_;
   Vector3<T> sigma_;
