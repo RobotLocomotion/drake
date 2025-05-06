@@ -1063,6 +1063,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "deformable_integration_test",
+    timeout = "moderate",
     deps = [
         ":multibody_plant_config_functions",
         ":multibody_plant_core",
