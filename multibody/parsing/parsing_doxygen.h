@@ -700,7 +700,7 @@ rather than drake::geometry::Mesh.
 - URDF path: n/a
 - Syntax: Nested elements; see below.
 
-@subsubsection tag_drake_deormable_properties Semantics
+@subsubsection tag_drake_deformable_properties Semantics
 
 If present, this element defines the link element as a deformable body in Drake.
 Such link elements are not treated as rigid bodies, and the standard tags such as

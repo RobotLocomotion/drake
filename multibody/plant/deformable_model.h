@@ -299,13 +299,13 @@ class DeformableModel final : public multibody::PhysicalModel<T> {
    been registered with this model. */
   bool HasBodyNamed(const std::string& name) const;
 
-  // TODO(xuchenhan-tri): Consider whether we should allow duplicateed names
+  // TODO(xuchenhan-tri): Consider whether we should allow duplicated names
   // across different model instances.
   /** Returns the DeformableBodyId of the body with the given name.
    @throws std::exception if there's no body with the given name. */
   DeformableBodyId GetBodyIdByName(const std::string& name) const;
 
-  /** Returns the DeforambleIds of the bodies that belong to the given model
+  /** Returns the DeformableIds of the bodies that belong to the given model
    instance. Returns the empty vector if no deformable bodies are registered
    with the given model instance. */
   std::vector<DeformableBodyId> GetBodyIds(

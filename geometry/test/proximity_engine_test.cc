@@ -4822,7 +4822,7 @@ TEST_F(ProximityEngineDeformableContactTest, AddSupportedRigidGeometries) {
 }
 
 // Tests that registration of geometries supported by ProximityEngine but not
-// supported by deforamble contact (aka HalfSpace) doesn't throw.
+// supported by deformable contact (aka HalfSpace) doesn't throw.
 TEST_F(ProximityEngineDeformableContactTest, AddUnsupportedRigidGeometries) {
   ProximityProperties valid_props = MakeProximityPropsForRigidGeometry(1.0);
   HalfSpace half_space;

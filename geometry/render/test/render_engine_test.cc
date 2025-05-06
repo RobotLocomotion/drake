@@ -182,7 +182,7 @@ GTEST_TEST(RenderEngine, DeformableGeometryRegistrationAndUpdate) {
   }
 
   // Now we test for throw conditions for the update.
-  // Non-existant geometry is fine. It's silently ignored.
+  // Non-existent geometry is fine. It's silently ignored.
   const GeometryId fake_id = GeometryId::get_new_id();
   EXPECT_NO_THROW(
       engine.UpdateDeformableConfigurations(fake_id, {new_q}, {new_normal}));
