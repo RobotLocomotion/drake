@@ -9,6 +9,7 @@
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
+#include "drake/systems/primitives/matrix_gain.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/saturation.h"
 
@@ -140,6 +141,11 @@ SimIiwaDriver<T>::SimIiwaDriver(
   auto torque_limiter = builder.template AddNamedSystem<systems::Saturation>(
       "torque_limiter", -torque_limits, torque_limits);
 
+  MatrixX<T> BinvT = controller_plant->MakeActuationMatrix().transpose();
+  Eigen::MatrixXd Binv = ExtractDoubleOrThrow(BinvT);
+  auto Binv_gain =
+      builder.template AddNamedSystem<systems::MatrixGain>("Binv_gain", Binv);
+
   // When torque control is enabled, declare the `torque` input port and add it
   // to the inverse dynamics output. Otherwise, use the inverse dynamics output
   // by itself.
@@ -156,7 +162,9 @@ SimIiwaDriver<T>::SimIiwaDriver(
   }
 
   // Declare the various output ports.
-  builder.ExportOutput(*actuation_output, "actuation");
+  builder.Connect(torque_limiter->get_output_port(),
+                  Binv_gain->get_input_port());
+  builder.ExportOutput(Binv_gain->get_output_port(), "actuation");
   if (position_enabled(control_mode)) {
     auto pass = builder.template AddNamedSystem<PassThrough>(
         "position_pass_through", num_positions);
