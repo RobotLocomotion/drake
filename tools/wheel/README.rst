@@ -19,8 +19,9 @@ environment as one would to build Drake normally).
 There are a small number of dependencies for the the builder scripts to work
 that Drake itself does not require. In order to install these additional
 packages, run the ``setup/install_prereqs`` script with the ``--developer``
-flag. The builder must also be able to write to ``/opt``, as this is where the
-build is performed.
+flag. The builder must also be able to write to ``${HOME}``, as this is where
+the build is performed, and to ``/tmp``, as a redirect is created here so that
+build artifacts can be referenced via a known path.
 
 The script takes a single, required positional argument, which is used to
 specify the version with which the wheels should be tagged. The version number
@@ -68,7 +69,8 @@ debugging purposes and should not be needed in ordinary use.
     system. (The Docker cache and tagged images may still be altered.)
 
     On macOS, if ``--keep-build`` is used, the wheel will still be accessible
-    via its build location in ``//opt/drake-wheel-build/wheel/wheelhouse``.
+    via its build location in
+    ``${HOME}/.drake-wheel-build/<unique>/drake-wheel/wheelhouse``.
 
     This option automatically implies ``--no-test``.
 
@@ -92,7 +94,8 @@ debugging purposes and should not be needed in ordinary use.
 
 ``-k``, ``--keep-containers`` (macOS only)
     Do not delete the various build trees and artifacts, which can be found in
-    various subdirectories under ``/opt``.
+    various subdirectories under ``${HOME}/.drake-wheel-build`` in a
+    unique, per-build subdirectory.
 
 Implementation Details
 ----------------------
@@ -126,19 +129,11 @@ was successfully installed.
 On macOS, wheels must be built on the host system. The following directories
 are used:
 
-- ``/opt/drake-wheel-build``:
-  Contains most intermediate artifacts.
+- ``/tmp/drake-wheel-build``:
+  Symlink to the per-build unique build root
 
-- ``/opt/drake-dist``:
-  Contains the Drake installation used to build the wheel.
-
-- ``/opt/drake-wheel-test``:
-  Contains a Python virtual environment used to test the wheel.
-
-In addition, the wheel creation script requires that the Drake installation is
-located at ``/opt/drake``. Since multiple builds may be present, a temporary
-symlink is created at this path to the actual, Python-version-specific
-installation while building the wheel. Therefore, this path must be available.
+- ``${HOME}/.drake-wheel-build
+  Contains the per-build unique build root
 
 Starting from a provisioned wheel building environment (installed via
 ``setup/install_prereqs --developer``), the builder invokes
