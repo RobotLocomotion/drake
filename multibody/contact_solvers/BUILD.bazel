@@ -271,6 +271,9 @@ drake_cc_library(
     hdrs = [
         "eigen_block_3x3_sparse_symmetric_matrix.h",
     ],
+    srcs = [
+        "eigen_block_3x3_sparse_symmetric_matrix.cc",
+    ],
     deps = [
         ":block_sparse_lower_triangular_or_symmetric_matrix",
     ],
@@ -278,6 +281,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "eigen_block_3x3_sparse_symmetric_matrix_test",
+    num_threads = 2,
     deps = [
         ":eigen_block_3x3_sparse_symmetric_matrix",
         "//common/test_utilities:eigen_matrix_compare",

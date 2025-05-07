@@ -26,10 +26,12 @@ struct traits<drake::multibody::contact_solvers::internal::
 }  // namespace Eigen
 
 #include <Eigen/Core>
+
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
 /* Wrapper class around EigenBlock3x3SparseSymmetricMatrix that's compatible
  with Eigen::ConjugateGradient. */
 class EigenBlock3x3SparseSymmetricMatrix
@@ -45,9 +47,10 @@ class EigenBlock3x3SparseSymmetricMatrix
     IsRowMajor = false
   };
 
+  /* Constructs a matrix wrapper for Block3x3SparseSymmetricMatrix.
+   @pre A is not null and outlives this object. */
   EigenBlock3x3SparseSymmetricMatrix(const Block3x3SparseSymmetricMatrix* A,
-                                     Parallelism parallelism)
-      : A_(A), parallelism_(parallelism) {}
+                                     Parallelism parallelism = false);
 
   /* Required by EigenBase */
   Eigen::Index rows() const { return A_->rows(); }
@@ -62,59 +65,61 @@ class EigenBlock3x3SparseSymmetricMatrix
                           Eigen::AliasFreeProduct>(*this, x.derived());
   }
 
-  /* Wraps around the Multiply() function. */
-  void Multiply(const VectorX<double>& x, VectorX<double>* y) const {
-    A_->Multiply(x, y, parallelism_);
-  }
+  /* Performs y = A*x where A is this matrix.
+   @pre x and y have sizes compatible with this matrix. */
+  void Multiply(const VectorX<double>& x, VectorX<double>* y) const;
 
-  VectorX<double> diagonal() const {
-    VectorX<double> result(rows());
-    for (int j = 0; j < A_->block_cols(); ++j) {
-      const Eigen::Matrix3d& block = A_->diagonal_block(j);
-      result.segment<3>(3 * j) = block.diagonal();
-    }
-    return result;
-  }
+  /* Eigen::ConjugateGradient required signature for diagonal preconditioner
+   that returns the diagonal of the matrix. */
+  const VectorX<double>& diagonal() const { return diagonal_; }
 
-  // 1) Tell Eigen how many "outers" exist (for column-major sparse: #cols)
+  /* Eigen::ConjugateGradient required signature for diagonal preconditioner
+   that returns the number of columns of the matrix. */
   Eigen::Index outerSize() const { return cols(); }
 
-  // 2) A minimal InnerIterator that returns exactly the diagonal entry, then
-  // ends.
+  /* Eigen::ConjugateGradient requires an `InnerIterator` struct that returns the
+   diagonal of the matrix. */
   struct InnerIterator {
     using Index = Eigen::Index;
     using ValueType = Scalar;
 
-    InnerIterator(const EigenBlock3x3SparseSymmetricMatrix& mat, int col)
-        : mat_(&mat), col_(col), done_(false) {}
+    InnerIterator(const EigenBlock3x3SparseSymmetricMatrix& mat_in, int col_in)
+        : mat(&mat_in), col(col_in), done(false) {}
 
-    // operator bool(): true for first element, false once incremented.
-    explicit operator bool() const { return !done_; }
+    /* Operator bool(): true for first element, false once incremented. */
+    explicit operator bool() const { return !done; }
 
-    // ++it moves to "end"
+    /* Advancing the iterator once moves it to the end. */
     InnerIterator& operator++() {
-      done_ = true;
+      done = true;
       return *this;
     }
 
-    // we pretend the only entry in this column is at row=col
-    Index index() const { return col_; }
+    /* The only entry in this column that we need to loop over for the
+     preconditioner is the diagonal entry. */
+    Index index() const { return col; }
 
-    // return the diagonal value
-    ValueType value() const {
-      // you already have diagonal(); each call is O(#blocks) but preconditioner
-      // is called only once, so it's OK.
-      return mat_->diagonal()[col_];
-    }
+    /* Returns the diagonal value. */
+    ValueType value() const { return mat->diagonal()(col); }
 
    private:
-    const EigenBlock3x3SparseSymmetricMatrix* mat_{};
-    int col_{};
-    bool done_{};
+    const EigenBlock3x3SparseSymmetricMatrix* mat{};
+    int col{};
+    bool done{};
   };
 
  private:
   const Block3x3SparseSymmetricMatrix* A_{};
+  VectorX<double> diagonal_;
+  /* The connectivity pattern of the blocks in A. More specifically,
+   `neighbors()[j][k]` gives the block column index of the k-th non-zero block
+   in the j-th block row. `neighbors()[j]` is sorted for each block row j and
+   each entry in `neighbors()[j]` is less than or equal to j. In other words,
+   only the lower triangular part of the sparsity pattern is specified. As a
+   result, we have `neighbors[j].back() = j` for each j because all diagonal
+   blocks of A are nonzero.
+   This is useful for the matrix-vector multiplication. */
+  std::vector<std::vector<int>> row_neighbors_{};
   Parallelism parallelism_;
 };
 
@@ -141,14 +146,14 @@ struct generic_product_impl<drake::multibody::contact_solvers::internal::
           generic_product_impl<drake::multibody::contact_solvers::internal::
                                    EigenBlock3x3SparseSymmetricMatrix,
                                Rhs>> {
-  using Mat = drake::multibody::contact_solvers::internal::
+  using MatrixType = drake::multibody::contact_solvers::internal::
       EigenBlock3x3SparseSymmetricMatrix;
-  using Scalar = typename Mat::Scalar;
+  using Scalar = double;
 
   template <typename Dest>
-  // NOLINTNEXTLINE(runtime/references)
-  static void scaleAndAddTo(Dest& dst, Mat const& A, Rhs const& x,
-                            const Scalar&) {
+  // NOLINTNEXTLINE(runtime/references): Eigen-dictated signature.
+  static void scaleAndAddTo(Dest& dst, const MatrixType& A, Rhs const& x,
+                            const double&) {
     A.Multiply(x, &dst);
   }
 };
