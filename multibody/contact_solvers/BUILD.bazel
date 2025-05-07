@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":contact_solver",
         ":contact_solver_results",
         ":contact_solver_utils",
+        ":eigen_block_3x3_sparse_symmetric_matrix",
         ":linear_operator",
         ":matrix_block",
         ":minimum_degree_ordering",
@@ -261,6 +262,33 @@ drake_cc_library(
     ],
     deps = [
         "//common:essential",
+        "//common:parallelism",
+    ],
+)
+
+drake_cc_library(
+    name = "eigen_block_3x3_sparse_symmetric_matrix",
+    srcs = [
+        "eigen_block_3x3_sparse_symmetric_matrix.cc",
+    ],
+    hdrs = [
+        "eigen_block_3x3_sparse_symmetric_matrix.h",
+    ],
+    deps = [
+        ":block_sparse_lower_triangular_or_symmetric_matrix",
+        "//common:unused",
+    ],
+    implementation_deps = [
+        "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "eigen_block_3x3_sparse_symmetric_matrix_test",
+    num_threads = 2,
+    deps = [
+        ":eigen_block_3x3_sparse_symmetric_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
