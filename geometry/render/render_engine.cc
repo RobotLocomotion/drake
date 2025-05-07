@@ -112,8 +112,7 @@ void RenderEngine::UpdateDeformableConfigurations(
     GeometryId id, const std::vector<VectorX<double>>& q_WGs,
     const std::vector<VectorX<double>>& nhats_W) {
   if (!deformable_mesh_dofs_.contains(id)) {
-    throw std::runtime_error(fmt::format(
-        "No deformable geometry with id {} has been registered.", id));
+    return;
   }
   const std::vector<int>& mesh_dofs = deformable_mesh_dofs_.at(id);
   if (mesh_dofs.size() != q_WGs.size() || mesh_dofs.size() != nhats_W.size()) {

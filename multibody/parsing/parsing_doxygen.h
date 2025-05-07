@@ -12,7 +12,8 @@ The result of the parse is an in-memory model realized within
 drake::multibody::MultibodyPlant and (optionally)
 drake::geometry::SceneGraph. Note that parses that do not use a `SceneGraph`
 will effectively ignore geometric model elements, especially `//visual` and
-`//collision` elements.
+`//collision` elements. Without a `SceneGraph`, deformable models will also
+be ignored.
 
 In the reference sections below, when discussing XML formats, the relevant
 usage paths for various tags are indicated using
@@ -37,7 +38,7 @@ for any unsupported MuJoCo XML elements or attributes at runtime.
 @subsection mjcf_camera MuJoCo camera support
 
 The MuJoCo camera element is supported (with any unsupported attributes
-emmitting the standard parser warnings). To parse cameras, you must register a
+emitting the standard parser warnings). To parse cameras, you must register a
 DiagramBuilder with the Parser, and the MultibodyPlant must have a registered
 SceneGraph. The parser will call ApplyCameraConfig() to produce a camera named
 "{model_instance_name}/{mjcf_camera_name}", where a default {mjcf_camera_name}
@@ -151,6 +152,39 @@ start with `::`; there is no way to denote any "outer" or "outermost" scope.
 For a detailed design discussion with examples, see the
 <a href='http://sdformat.org/tutorials?tut=composition_proposal#1-3-name-scoping-and-cross-referencing'>SDFormat documentation of name scoping.</a>
 
+@subsection tag_deformable_link_requirements Deformable link requirements
+
+Drake supports specifying deformable bodies through SDFormat via custom tags as
+an experimental feature. A `<link>` element is interpreted as a deformable body
+if it contains a `<drake:deformable_properties>` element
+(see @ref tag_drake_deformable_properties). In that case, there are several
+requirements that must be satisfied:
+
+- **Exactly one `<collision>` element**: The `<collision>` tag must be present,
+  but more than one `<collision>` tag is forbidden.
+- **Geometry restriction**: the `<collision>/<geometry>` must contain a single
+  `<mesh>` whose URI points to a `.vtk` file that specifies a tetrahedral mesh;
+  primitive shapes are not yet supported.  The geometry is used for both
+  collision and dynamics.
+- **Limited proximity properties**: inside `<collision>`, the only Drake
+  proximity tag recognized are `<drake:mu_dynamic>`,
+  `<drake:hunt_crossley_dissipation>`, and `drake:relaxation_time>`.
+  All other tags are not allowed.
+- **At most one `<visual>` element**: The default visual representation of the
+  deformable body is the surface of the simulated tetrahedral mesh. However,
+  a single `<visual>` element may be present to provide an alternative visual
+  representation of the deformable body. Currently, the visual geometry is
+  only used for rendering (and the surface of the simulated mesh is *always*
+  used for visualization). Therefore, it's only meaningful to specify a non-empty
+  `<geometry>` element if the `<drake:perception_properties>` element is not
+  disabled; otherwise, the geometry supplied will be ignored with a warning. The
+  `<geometry>` element, if non-empty, must contain a single `<mesh>` element, and
+  the URI of the mesh must point to a `.obj` file, and the (potentially textured)
+  surface described by the `.obj` file is used for rendering. More than one
+  `<visual>` is an error.
+
+Violating any of these rules results in a *parsing error*.
+
 @section multibody_parsing_urdf URDF Support
 Drake supports URDF files as described here: http://wiki.ros.org/urdf/XML.
 
@@ -237,6 +271,7 @@ Here is the full list of custom elements:
 - @ref tag_drake_curves
 - @ref tag_drake_damping
 - @ref tag_drake_declare_convex
+- @ref tag_drake_deformable_properties
 - @ref tag_drake_diffuse_map
 - @ref tag_drake_ellipsoid
 - @ref tag_drake_gear_ratio
@@ -251,6 +286,9 @@ Here is the full list of custom elements:
 - @ref tag_drake_length
 - @ref tag_drake_line_segment
 - @ref tag_drake_linear_bushing_rpy
+- @ref tag_drake_mass_damping
+- @ref tag_drake_mass_density
+- @ref tag_drake_material_model
 - @ref tag_drake_member
 - @ref tag_drake_member_group
 - @ref tag_drake_mesh_resolution_hint
@@ -261,13 +299,16 @@ Here is the full list of custom elements:
 - @ref tag_drake_perception_properties
 - @ref tag_drake_plane_normal
 - @ref tag_drake_point_contact_stiffness
+- @ref tag_drake_poissons_ratio
 - @ref tag_drake_proximity_properties
 - @ref tag_drake_radius
 - @ref tag_drake_relaxation_time
 - @ref tag_drake_rigid_hydroelastic
 - @ref tag_drake_rotor_inertia
 - @ref tag_drake_screw_thread_pitch
+- @ref tag_drake_stiffness_damping
 - @ref tag_drake_visual
+- @ref tag_drake_youngs_modulus
 
 @subsection tag_drake_acceleration drake:acceleration
 
@@ -612,7 +653,7 @@ A joint-type-specific tag for drake::multibody::CurvilinearJoint, corresponding 
 `drake:joint` of `curvilinear` type.
 
 Curvilinear joints allow the child frame to move relative to the parent along a
-planer curvilinear path, expressed in this tag as an ordered list of linear
+planar curvilinear path, expressed in this tag as an ordered list of linear
 and circular arc segments. Each segment is appended to the end of the previous
 segment, so that the entire path is continuously differentiable.
 
@@ -652,6 +693,40 @@ geometry. The resulting geometry in memory will be drake::geometry::Convex,
 rather than drake::geometry::Mesh.
 
 @see drake::geometry::Convex, drake::geometry::Mesh
+
+@subsection tag_drake_deformable_properties drake:deformable_properties
+
+- SDFormat path: `//model/link/drake:deformable_properties`
+- URDF path: n/a
+- Syntax: Nested elements; see below.
+
+@subsubsection tag_drake_deformable_properties Semantics
+
+If present, this element defines the link element as a deformable body in Drake.
+Such link elements are not treated as rigid bodies, and the standard tags such as
+inertia are illegal and provoke errors. The only other tags that
+are allowed are under such "deformable" links are `<pose>`, `<collision>`, and
+`<visual>`. Attaching frames, joints, and other elements to deformable links is
+not allowed. The `<pose>` tag is interpreted as the pose of the deformable geometry
+used for dynamics and collision in its reference configuration. The `<collision>`
+and `<visual>` tags are *not* interpreted exactly the same way as the standard
+`<collision>` and `<visual>` tags either. We explain the differences in the
+@ref tag_deformable_link_requirements section.
+
+The following nested elements may be present under `<drake:deformable_properties>`:
+- `drake:youngs_modulus`
+- `drake:poissons_ratio`
+- `drake:mass_damping`
+- `drake:stiffness_damping`
+- `drake:mass_density`
+- `drake:material_model`
+
+see @ref tag_drake_youngs_modulus
+@ref tag_drake_poissons_ratio
+@ref tag_drake_mass_damping
+@ref tag_drake_stiffness_damping
+@ref tag_drake_mass_density
+@ref tag_drake_material_model
 
 @subsection tag_drake_diffuse_map drake:diffuse_map
 
@@ -853,7 +928,7 @@ joint moves, specified as the following:
   expressed in parent frame.
 - `drake:curves`: A list of line segments and circular arcs defining the curve shape.
 - `drake:is_periodic`: A boolean value specifying whether the curve is periodic, allowing
-  the joint to traves multiple laps of the curve without hitting joint limits.
+  the joint to traverse multiple laps of the curve without hitting joint limits.
 
 @see @ref tag_drake_parent, @ref tag_drake_child, @ref tag_drake_damping,
 @ref tag_drake_screw_thread_pitch, @ref tag_drake_initial_tangent,
@@ -910,6 +985,38 @@ This element adds a drake::multibody::LinearBushingRollPitchYaw to the model.
 @ref tag_drake_bushing_force_damping, @ref tag_drake_bushing_force_stiffness,
 @ref tag_drake_bushing_frameA, @ref tag_drake_bushing_frameC,
 @ref tag_drake_bushing_torque_damping, @ref tag_drake_bushing_torque_stiffness
+
+@subsection tag_drake_mass_damping drake:mass_damping
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:mass_damping`
+- URDF path: n/a
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_mass_damping_semantics Semantics
+
+If present, this element provides a value (with unit `1/s`) for the mass damping
+coefficient in Rayleigh damping for the deformable body.
+
+@subsection tag_drake_mass_density drake:mass_density
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:mass_density`
+- URDF path: n/a
+- Syntax: Positive floating point value.
+
+@subsubsection tag_drake_mass_density_semantics Semantics
+
+If present, this element provides a value (with unit `kg/m³`) for the mass
+density of the deformable body.
+
+@subsection tag_drake_material_model drake:material_model
+- SDFormat path: `//model/link/drake:deformable_properties/drake:material_model`
+- URDF path: n/a
+- Syntax: String.
+
+@subsubsection tag_drake_material_model_semantics Semantics
+
+If present, this element provides the material model of the deformable body.
+The valid values are `linear_corotated`, `corotated`, and `linear`.
 
 @subsection tag_drake_member drake:member
 
@@ -1080,6 +1187,17 @@ ProximityProperties object under `(material, point_contact_stiffness)`.
 @ref point_forces_modeling "Point Contact Forces", and
 drake::geometry::ProximityProperties
 
+@subsection tag_drake_poissons_ratio drake:poissons_ratio
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:poissons_ratio`
+- URDF path: n/a
+- Syntax: Floating point value in (-1, 0.5), non-inclusive.
+
+@subsubsection tag_drake_poissons_ratio_semantics Semantics
+
+If present, this element provides a value (unitless) for the Poisson's ratio for
+for the deformable body.
+
 @subsection tag_drake_proximity_properties drake:proximity_properties
 
 - SDFormat path: `//model/link/collision/drake:proximity_properties`
@@ -1179,6 +1297,17 @@ corresponding to a right-handed thread.
 
 @see drake::multibody::ScrewJoint
 
+@subsection tag_drake_stiffness_damping drake:stiffness_damping
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:stiffness_damping`
+- URDF path: n/a
+- Syntax: Non-negative floating point value.
+
+@subsubsection tag_drake_stiffness_damping_semantics Semantics
+
+If present, this element provides a value (with unit `s`) for the stiffness
+damping coefficient in Rayleigh damping for the deformable body.
+
 @subsection tag_drake_visual drake:visual
 
 - SDFormat path: `//model/link`
@@ -1221,5 +1350,16 @@ emit a warning as it would for doing the same to a `<visual>` tag.
 
 @see @ref tag_drake_perception_properties
 @see @ref tag_drake_illustration_properties
+
+@subsection tag_drake_youngs_modulus drake:youngs_modulus
+
+- SDFormat path: `//model/link/drake:deformable_properties/drake:youngs_modulus`
+- URDF path: n/a
+- Syntax: Positive floating point value.
+
+@subsubsection tag_drake_youngs_modulus_semantics Semantics
+
+If present, this element provides a value (with unit `Pa(N/m²)`) for the Young's
+modulus for the deformable body.
 
 */
