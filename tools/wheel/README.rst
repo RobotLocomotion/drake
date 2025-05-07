@@ -94,8 +94,8 @@ debugging purposes and should not be needed in ordinary use.
 
 ``-k``, ``--keep-containers`` (macOS only)
     Do not delete the various build trees and artifacts, which can be found in
-    various subdirectories under ``${HOME}/.drake-wheel-build`` in a
-    unique, per-build subdirectory.
+    various subdirectories under ``${HOME}/.drake-wheel-build`` in a unique,
+    per-build subdirectory.
 
 Implementation Details
 ----------------------
@@ -132,8 +132,11 @@ are used:
 - ``/tmp/drake-wheel-build``:
   Symlink to the per-build unique build root
 
+- ``/tmp/drake-wheel-test``:
+  Symlink to the per-build unique build root
+
 - ``${HOME}/.drake-wheel-build
-  Contains the per-build unique build root
+  Contains the per-build unique build and test roots
 
 Starting from a provisioned wheel building environment (installed via
 ``setup/install_prereqs --developer``), the builder invokes
