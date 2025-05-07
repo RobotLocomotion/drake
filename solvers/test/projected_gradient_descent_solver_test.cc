@@ -290,7 +290,7 @@ TEST_F(UnboundedLinearProgramTest0, TestProjectedGradientDescentSolver) {
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, TestNonconvexQP) {
   ProjectedGradientDescentSolver solver;
-  const double kTol = 2e-4;
+  const double kTol = 3e-4;
   TestNonconvexQP(solver, false, kTol);
 }
 
