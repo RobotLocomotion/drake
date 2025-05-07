@@ -6,16 +6,18 @@
 
 set -eu -o pipefail
 
+readonly resource_root="$(
+    cd "$(dirname "${BASH_SOURCE}")" && \
+    realpath ..
+)"
+
 if [[ $# -lt 1 ]]; then
     echo "Usage: $0 <python-version>" >&2
     exit 1
 fi
 
-# Clean up from old tests.
-rm -rf /tmp/drake-wheel-test
-
 # Prepare test environment.
-mkdir /tmp/drake-wheel-test
+"$resource_root/image/provision-build.sh" "test-python$1" "test"
 
 # NOTE: Xcode ships python3, make sure to use the one from brew.
 $(brew --prefix python@$1)/bin/python$1 \

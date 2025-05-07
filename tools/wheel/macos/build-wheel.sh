@@ -33,7 +33,7 @@ readonly python_executable="$python_prefix/bin/$python"
 # Create a unique space for the build. Because there may be multiple such
 # spaces if the user needs to inspect them (i.e. using --keep-build), prefix
 # the space with the Python version to aid in identifying the spaces.
-"$resource_root/image/provision-build.sh" "$python-"
+"$resource_root/image/provision-build.sh" "build-$python"
 
 readonly build_root="/tmp/drake-wheel-build/drake-build"
 
