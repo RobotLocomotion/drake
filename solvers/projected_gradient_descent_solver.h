@@ -26,6 +26,8 @@ namespace solvers {
  * - a maximum number of iterations have been run (see \ref
  * ProjectedGradientDescentSolver::MaxIterationsOptionName
  * "MaxIterationsOptionName").
+ *
+ * @experimental
  */
 class ProjectedGradientDescentSolver final : public SolverBase {
  public:
