@@ -103,6 +103,12 @@ class ProjectedGradientDescentSolver final : public SolverBase {
   // A using-declaration adds these methods into our class's Doxygen.
   using SolverBase::Solve;
 
+  static constexpr double kDefaultConvergenceTol = 1e-12;
+  static constexpr int kDefaultMaxIterations = 1000;
+  static constexpr double kDefaultBacktrackingC = 0.5;
+  static constexpr double kDefaultBacktrackingTau = 0.5;
+  static constexpr double kDefaultBacktrackingAlpha0 = 0.1;
+
   static constexpr int kDefaultMaxLineSearchSteps = 100;
 
  private:

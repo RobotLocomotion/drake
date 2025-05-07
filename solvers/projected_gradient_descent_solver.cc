@@ -21,11 +21,14 @@ constexpr const char kBacktrackingTauOptionName[] = "BacktrackingTau";
 constexpr const char kBacktrackingAlpha0OptionName[] = "BacktrackingAlpha0";
 
 struct KnownOptions {
-  double convergence_tol{1e-12};
-  int max_iterations{1000};
-  double backtracking_c{0.5};
-  double backtracking_tau{0.5};
-  double backtracking_alpha_0{0.1};
+  double convergence_tol{
+      ProjectedGradientDescentSolver::kDefaultConvergenceTol};
+  int max_iterations{ProjectedGradientDescentSolver::kDefaultMaxIterations};
+  double backtracking_c{ProjectedGradientDescentSolver::kDefaultBacktrackingC};
+  double backtracking_tau{
+      ProjectedGradientDescentSolver::kDefaultBacktrackingTau};
+  double backtracking_alpha_0{
+      ProjectedGradientDescentSolver::kDefaultBacktrackingAlpha0};
 };
 
 void Serialize(internal::SpecificOptions* archive,
