@@ -12,19 +12,19 @@ namespace internal {
 namespace {
 
 GTEST_TEST(MinimumDegreeOrderingTest, Union) {
-  const std::vector<int> a = {1, 2, 5, 8, 9};
+  std::vector<int> a = {1, 2, 5, 8, 9};
   const std::vector<int> b = {1, 3, 5, 7, 9, 11};
-  const std::vector<int> result = Union(a, b);
+  InplaceSortedUnion(b, &a);
   const std::vector<int> expected = {1, 2, 3, 5, 7, 8, 9, 11};
-  EXPECT_EQ(result, expected);
+  EXPECT_EQ(a, expected);
 }
 
 GTEST_TEST(MinimumDegreeOrderingTest, SetDifference) {
-  const std::vector<int> a = {1, 2, 5, 8, 9};
+  std::vector<int> a = {1, 2, 5, 8, 9};
   const std::vector<int> b = {1, 3, 5, 7, 9, 11};
-  const std::vector<int> result = SetDifference(a, b);
+  InplaceSortedDifference(b, &a);
   const std::vector<int> expected = {2, 8};
-  EXPECT_EQ(result, expected);
+  EXPECT_EQ(a, expected);
 }
 
 GTEST_TEST(MinimumDegreeOrderingTest, RemoveValueFromSortedVector) {
@@ -87,11 +87,15 @@ GTEST_TEST(MinimumDegreeOrderingTest, UpdateExternalDegree) {
   nodes.push_back(n9);
   nodes.push_back(n10);
 
-  n6.UpdateExternalDegree(nodes);
-  n7.UpdateExternalDegree(nodes);
-  n8.UpdateExternalDegree(nodes);
-  n9.UpdateExternalDegree(nodes);
-  n10.UpdateExternalDegree(nodes);
+  std::vector<char> seen(nodes.size(), 0);
+  std::vector<int> marked;
+  marked.reserve(nodes.size());
+
+  n6.UpdateExternalDegree(nodes, &seen, &marked);
+  n7.UpdateExternalDegree(nodes, &seen, &marked);
+  n8.UpdateExternalDegree(nodes, &seen, &marked);
+  n9.UpdateExternalDegree(nodes, &seen, &marked);
+  n10.UpdateExternalDegree(nodes, &seen, &marked);
   /* Fill-ins are 7,8,9. */
   EXPECT_EQ(n6.degree, 240);
   /* Fill-ins are 6,8,9,10. */

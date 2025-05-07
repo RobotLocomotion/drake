@@ -14,14 +14,13 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-/* Returns the union of a and b (a ∪ b) as a sorted vector.
+/* Performs in-place sorted union by merging b into a (both sorted).
  @pre a and b are sorted in increasing order. */
-std::vector<int> Union(const std::vector<int>& a, const std::vector<int>& b);
+void InplaceSortedUnion(const std::vector<int>& b, std::vector<int>* a);
 
-/* Returns the set difference of a and b (a \ b) as a sorted vector.
+/* Performs in place set difference of a and b (a \ b).
  @pre a and b are sorted in increasing order. */
-std::vector<int> SetDifference(const std::vector<int>& a,
-                               const std::vector<int>& b);
+void InplaceSortedDifference(const std::vector<int>& b, std::vector<int>* a);
 
 /* Removes `value` from `sorted_vector` if it exists.
  @pre `sorted_vector` is sorted in increasing order. */
@@ -48,7 +47,8 @@ void InsertValueInSortedVector(int value, std::vector<int>* sorted_vector);
 struct Node {
   /* Computes and updates the external degree of `this` node given all nodes in
    the graph. */
-  void UpdateExternalDegree(const std::vector<Node>& nodes);
+  void UpdateExternalDegree(const std::vector<Node>& nodes,
+                            std::vector<char>* seen, std::vector<int>* marked);
 
   /* Approximates and updates the external degree of `this` node given all nodes
    in the graph. */
