@@ -6,6 +6,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/solvers/solver_base.h"
 
+namespace drake {
+namespace solvers {
+
 /**
  * Solves a nonlinear program via the projected gradient descent algorithm. The
  * gradient is determined by differentiation of the costs, or the user can
@@ -16,13 +19,14 @@
  *
  * The solver terminates if
  * - the projection step fails to find a feasible solution,
- * - the norm of the gradient step is less than a user-specified threshold
- * (default 1e-4), or
- * - a maximum number of iterations have been run (default 100).
+ * - the 2-norm distance between subsequent iterates is less than the
+ * user-specified tolerance (see \ref
+ * ProjectedGradientDescentSolver::ConvergenceTolOptionName
+ * "ConvergenceTolOptionName"), or
+ * - a maximum number of iterations have been run (see \ref
+ * ProjectedGradientDescentSolver::MaxIterationsOptionName
+ * "MaxIterationsOptionName").
  */
-namespace drake {
-namespace solvers {
-
 class ProjectedGradientDescentSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ProjectedGradientDescentSolver);
@@ -63,12 +67,6 @@ class ProjectedGradientDescentSolver final : public SolverBase {
    * determine convergence. It must be positive.
    */
   static std::string ConvergenceTolOptionName();
-
-  /**
-   * @returns string key for SolverOptions to set the threshold used to
-   * determine feasibility of the projection step. It must be positive.
-   */
-  static std::string FeasibilityTolOptionName();
 
   /**
    * @returns string key for SolverOptions to set the maximum number of
