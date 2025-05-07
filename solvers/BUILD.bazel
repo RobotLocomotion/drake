@@ -64,6 +64,7 @@ drake_cc_package_library(
         ":non_convex_optimization_util",
         ":osqp_solver",
         ":program_attribute",
+        ":projected_gradient_descent_solver",
         ":rotation_constraint",
         ":scs_clarabel_common",
         ":scs_solver",
@@ -1180,6 +1181,21 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "projected_gradient_descent_solver",
+    srcs = ["projected_gradient_descent_solver.cc"],
+    hdrs = ["projected_gradient_descent_solver.h"],
+    deps = [
+        ":solver_base",
+    ],
+    implementation_deps = [
+        ":choose_best_solver",
+        ":mathematical_program",
+        ":solve",
+        "//math:gradient",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -2128,6 +2144,23 @@ drake_cc_googletest(
     deps = [
         ":sparse_and_dense_matrix",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "projected_gradient_descent_solver_test",
+    deps = [
+        ":equality_constrained_qp_solver",
+        ":linear_program_examples",
+        ":mathematical_program",
+        ":mathematical_program_test_util",
+        ":optimization_examples",
+        ":projected_gradient_descent_solver",
+        ":quadratic_program_examples",
+        ":second_order_cone_program_examples",
+        ":solve",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
