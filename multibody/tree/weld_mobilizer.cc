@@ -80,22 +80,14 @@ void WeldMobilizer<T>::MapQDotToVelocity(
 }
 
 template <typename T>
-void WeldMobilizer<T>::MapAccelerationToQDDot(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& vdot,
-    EigenPtr<VectorX<T>> qddot) const {
-  DRAKE_ASSERT(vdot.size() == kNv);
-  DRAKE_ASSERT(qddot != nullptr);
-  DRAKE_ASSERT(qddot->size() == kNq);
-}
+void WeldMobilizer<T>::DoMapAccelerationToQDDot(
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>&,
+    EigenPtr<VectorX<T>>) const {}
 
 template <typename T>
-void WeldMobilizer<T>::MapQDDotToAcceleration(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qddot,
-    EigenPtr<VectorX<T>> vdot) const {
-  DRAKE_ASSERT(qddot.size() == kNq);
-  DRAKE_ASSERT(vdot != nullptr);
-  DRAKE_ASSERT(vdot->size() == kNv);
-}
+void WeldMobilizer<T>::DoMapQDDotToAcceleration(
+    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>&,
+    EigenPtr<VectorX<T>>) const {}
 
 template <typename T>
 template <typename ToScalar>

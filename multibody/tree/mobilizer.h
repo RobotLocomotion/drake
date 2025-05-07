@@ -650,21 +650,27 @@ class Mobilizer : public MultibodyElement<T> {
   // @param[in] context stores generalized positions q and velocities v.
   // @param[in] vdot (v̇) 1ˢᵗ time derivatives of generalized velocities.
   // @param[out] qddot (q̈) 2ⁿᵈ time derivatives of the generalized positions.
-  // TODO(Mitiguy) change this function to a pure virtual function when it has
-  //  been overridden in all subclasses.
-  virtual void MapAccelerationToQDDot(const systems::Context<T>& context,
-                                      const Eigen::Ref<const VectorX<T>>& vdot,
-                                      EigenPtr<VectorX<T>> qddot) const;
+  void MapAccelerationToQDDot(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& vdot,
+                              EigenPtr<VectorX<T>> qddot) const {
+    DRAKE_DEMAND(vdot.size() == num_velocities());
+    DRAKE_DEMAND(qddot != nullptr);
+    DRAKE_DEMAND(qddot->size() == num_positions());
+    DoMapAccelerationToQDDot(context, vdot, qddot);
+  }
 
   // Calculates v̇ from q̈, v, q using v̇ = N⁺(q)⋅q̈ + Ṅ⁺(q,v)⋅q̇ where q̇ = N(q)⋅v.
   // @param[in] context stores generalized positions q and velocities v.
   // @param[in] qddot (q̈) 2ⁿᵈ time derivatives of the generalized positions.
   // @param[out] vdot (v̇) 1ˢᵗ time derivatives of generalized velocities.
-  // TODO(Mitiguy) change this function to a pure virtual function when it has
-  //  been overridden in all subclasses.
-  virtual void MapQDDotToAcceleration(const systems::Context<T>& context,
-                                      const Eigen::Ref<const VectorX<T>>& qddot,
-                                      EigenPtr<VectorX<T>> vdot) const;
+  void MapQDDotToAcceleration(const systems::Context<T>& context,
+                              const Eigen::Ref<const VectorX<T>>& qddot,
+                              EigenPtr<VectorX<T>> vdot) const {
+    DRAKE_DEMAND(qddot.size() == num_positions());
+    DRAKE_DEMAND(vdot != nullptr);
+    DRAKE_DEMAND(vdot->size() == num_velocities());
+    DoMapQDDotToAcceleration(context, qddot, vdot);
+  }
   // @}
 
   // Returns a const Eigen expression of the vector of generalized positions
@@ -801,6 +807,24 @@ class Mobilizer : public MultibodyElement<T> {
   //  been overridden in all subclasses.
   virtual void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                                     EigenPtr<MatrixX<T>> NplusDot) const;
+
+  // NVI to MapAccelerationToQDDot(). Implementations can safely assume that
+  // qddot is not the nullptr, qddot has size kNq, and vdot has size kNv.
+  // TODO(Mitiguy) change this function to a pure virtual function when it has
+  //  been overridden in all subclasses.
+  virtual void DoMapAccelerationToQDDot(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& vdot,
+      EigenPtr<VectorX<T>> qddot) const;
+
+  // NVI to MapQDDotToAcceleration(). Implementations can safely assume that
+  // vdot is not the nullptr, vdot has size kNv, and qddot has size kNq.
+  // TODO(Mitiguy) change this function to a pure virtual function when it has
+  //  been overridden in all subclasses.
+  virtual void DoMapQDDotToAcceleration(
+      const systems::Context<T>& context,
+      const Eigen::Ref<const VectorX<T>>& qddot,
+      EigenPtr<VectorX<T>> vdot) const;
 
   // @name Methods to make a clone templated on different scalar types.
   //

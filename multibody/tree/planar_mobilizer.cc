@@ -198,22 +198,16 @@ void PlanarMobilizer<T>::MapQDotToVelocity(
 }
 
 template <typename T>
-void PlanarMobilizer<T>::MapAccelerationToQDDot(
+void PlanarMobilizer<T>::DoMapAccelerationToQDDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& vdot,
     EigenPtr<VectorX<T>> qddot) const {
-  DRAKE_ASSERT(vdot.size() == kNv);
-  DRAKE_ASSERT(qddot != nullptr);
-  DRAKE_ASSERT(qddot->size() == kNq);
   *qddot = vdot;
 }
 
 template <typename T>
-void PlanarMobilizer<T>::MapQDDotToAcceleration(
+void PlanarMobilizer<T>::DoMapQDDotToAcceleration(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qddot,
     EigenPtr<VectorX<T>> vdot) const {
-  DRAKE_ASSERT(qddot.size() == kNq);
-  DRAKE_ASSERT(vdot != nullptr);
-  DRAKE_ASSERT(vdot->size() == kNv);
   *vdot = qddot;
 }
 
