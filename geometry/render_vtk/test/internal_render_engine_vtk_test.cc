@@ -962,7 +962,7 @@ TEST_F(RenderEngineVtkTest, GltfTextureSupport) {
   ImageRgba8U expected_image;
   const std::string ref_filename = FindResourceOrThrow(
       "drake/geometry/render/test/fully_textured_pyramid_rendered.png");
-  systems::sensors::LoadImage(ref_filename, &expected_image);
+  ASSERT_TRUE(systems::sensors::LoadImage(ref_filename, &expected_image));
   // We're testing to see if the images are *coarsely* equal. This accounts for
   // the differences in CI's rendering technology from a local GPU. The images
   // are deemed equivalent if 80% of the channel values are within 20 of the

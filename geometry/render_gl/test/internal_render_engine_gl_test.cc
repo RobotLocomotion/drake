@@ -573,7 +573,7 @@ class RenderEngineGlTest : public ::testing::Test {
     ImageRgba8U expected_image;
     const std::string ref_filename = FindResourceOrThrow(
         "drake/geometry/render_gl/test/gl_fully_textured_pyramid_rendered.png");
-    systems::sensors::LoadImage(ref_filename, &expected_image);
+    ASSERT_TRUE(systems::sensors::LoadImage(ref_filename, &expected_image));
     // We're testing to see if the images are *mostly* equal. This accounts
     // for the differences in CI's rendering technology from a local GPU. The
     // images are deemed equivalent if 99% of the channel values are within 2

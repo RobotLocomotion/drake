@@ -717,7 +717,7 @@ TEST_P(SliceTest, QuadIntersections) {
         // Further consistency analysis.
         ASSERT_TRUE(HasNVertices(*mesh_W, *field_W, 4));
         const Vector3d nhat_W = X_WF_.rotation() * plane_F.normal();
-        FaceNormalMatches(*mesh_W, 0 /* poly index */, nhat_W);
+        ASSERT_TRUE(FaceNormalMatches(*mesh_W, 0 /* poly index */, nhat_W));
       }
     }
   }
