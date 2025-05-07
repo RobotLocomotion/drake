@@ -290,8 +290,15 @@ TEST_F(UnboundedLinearProgramTest0, TestProjectedGradientDescentSolver) {
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, TestNonconvexQP) {
   ProjectedGradientDescentSolver solver;
-  const double kTol = 2e-4;
-  TestNonconvexQP(solver, false, kTol);
+
+  const double kConvergenceTol = 1e-7;
+  SolverOptions options;
+  options.SetOption(ProjectedGradientDescentSolver::id(),
+                    ProjectedGradientDescentSolver::ConvergenceTolOptionName(),
+                    kConvergenceTol);
+
+  const double kTol = 3e-4;
+  TestNonconvexQP(solver, false, kTol, &options);
 }
 
 GTEST_TEST(ProjectedGradientDescentSolverTest, TestL2NormCost) {

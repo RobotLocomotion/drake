@@ -682,7 +682,7 @@ void TestEqualityConstrainedQPDualSolution2(const SolverInterface& solver) {
 }
 
 void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
-                     double tol) {
+                     double tol, SolverOptions* options) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   auto nonconvex_cost = prog.AddQuadraticCost(-x(0) * x(0) + x(1) * x(1) + 2);
@@ -700,7 +700,11 @@ void TestNonconvexQP(const SolverInterface& solver, bool convex_solver,
   } else {
     MathematicalProgramResult result;
     // Use a non-zero initial guess, since at x = [0, 0], the gradient is 0.
-    solver.Solve(prog, Eigen::Vector2d(0.1, 0.1), std::nullopt, &result);
+    if (options) {
+      solver.Solve(prog, Eigen::Vector2d(0.1, 0.1), *options, &result);
+    } else {
+      solver.Solve(prog, Eigen::Vector2d(0.1, 0.1), std::nullopt, &result);
+    }
     EXPECT_TRUE(result.is_success());
     EXPECT_TRUE(
         CompareMatrices(result.GetSolution(x), Eigen::Vector2d(1, 0), tol));
