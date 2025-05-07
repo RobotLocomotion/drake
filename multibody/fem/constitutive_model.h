@@ -99,6 +99,17 @@ class ConstitutiveModel {
     derived().CalcFirstPiolaStressDerivativeImpl(data, dPdF);
   }
 
+  /* Calculates the filtered Hessian of the first Piola stress with respect to
+   the deformation gradient, given the deformation gradient related quantities
+   contained in `data`. The filtered Hessian is the result of
+   `CalcFirstPiolaStressDerivative` with negative eigenvalues replaced with tiny
+   positive ones.*/
+  void CalcFilteredHessian(
+      const Data& data, math::internal::FourthOrderTensor<T>* hessian) const {
+    DRAKE_ASSERT(hessian != nullptr);
+    derived().CalcFilteredHessianImpl(data, hessian);
+  }
+
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConstitutiveModel);
 
@@ -130,6 +141,31 @@ class ConstitutiveModel {
         fmt::format("The derived class {} must provide a shadow definition of "
                     "CalcFirstPiolaStressDerivativeImpl() to be correct.",
                     NiceTypeName::Get(derived())));
+  }
+
+  /* Derived classes *may* shadow this method to provide a more efficient
+   implementation of the filtered Hessian. The default implementation is
+   CalcFirstPiolaStressDerivative() followed by an eigenvalue decomposition of
+   the 9-by-9 matrix. The negative eigenvalues are replaced with tiny positive
+   ones and the filtered Hessian is reconstructed from the eigenvalues and
+   eigenvectors. The output argument is guaranteed to be non-null. */
+  void CalcFilteredHessianImpl(
+      const Data& data, math::internal::FourthOrderTensor<T>* hessian) const {
+    CalcFirstPiolaStressDerivative(data, hessian);
+    const T kTol = 1e-14;
+    using Matrix9 = Eigen::Matrix<T, 9, 9>;
+    using Vector9 = Eigen::Matrix<T, 9, 1>;
+    const Matrix9& matrix = hessian->data();
+    Eigen::SelfAdjointEigenSolver<Matrix9> eigensolver(matrix);
+    DRAKE_THROW_UNLESS(eigensolver.info() == Eigen::Success);
+    Vector9 eigenvalues = eigensolver.eigenvalues();
+    for (int i = 0; i < 9; ++i) {
+      if (eigenvalues(i) < kTol) eigenvalues(i) = kTol;
+    }
+    const Matrix9& eigenvectors = eigensolver.eigenvectors();
+    Matrix9& filtered_hessian = hessian->mutable_data();
+    filtered_hessian =
+        eigenvectors * eigenvalues.asDiagonal() * eigenvectors.transpose();
   }
 
  private:

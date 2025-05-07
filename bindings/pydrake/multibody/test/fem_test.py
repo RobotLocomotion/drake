@@ -30,6 +30,7 @@ class TestMultibodyFem(unittest.TestCase):
         models = [
             MaterialModel.kLinearCorotated,
             MaterialModel.kCorotated,
+            MaterialModel.kNeoHookean,
             MaterialModel.kLinear,
         ]
         for model in models:

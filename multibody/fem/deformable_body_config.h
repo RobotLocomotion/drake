@@ -20,10 +20,24 @@ enum class MaterialModel {
    Convex Formulation of Frictional Contact between Rigid and Deformable
    Bodies." arXiv preprint arXiv:2303.08912 (2023). */
   kLinearCorotated,
-  /** Corotational model. More computationally expensive and less robust than
-   the linear corotational model. May require smaller time steps. Recommended
-   when capturing large rotation velocity is important. */
+  /** Corotational model. More computationally expensive. Recommended when
+   capturing large rotation velocity is important.
+
+   [Stomakhin et al., 2012] Stomakhin, Alexey, et al. "Energetically consistent
+   invertible elasticity." Proceedings of the 11th ACM SIGGRAPH/Eurographics
+   conference on Computer Animation. 2012. */
   kCorotated,
+  /** Neohookean model. More computationally expensive. Recommended when
+   capturing large rotation velocity is important. There are subtle differences
+   in physical behavior between the Corotated model and the Neo-Hookean model.
+   See [Smith et al., 2019; Stomakhin et al., 2012] for details. In practice, we
+   often choose the Neo-Hookean model over the Corotated model simply because
+   it's computationally more efficient.
+
+   [Smith et al., 2019] Smith, Breannan, Fernando De Goes, and Theodore Kim.
+   "Stable Neo-Hookean flesh simulation." ACM Transactions on Graphics
+   (TOG) 37.2 (2018): 1-15. */
+  kNeoHookean,
   /** Linear elasticity model (rarely used).
    Less computationally expensive than other models but leads to artifacts
    when large rotational deformations occur. */

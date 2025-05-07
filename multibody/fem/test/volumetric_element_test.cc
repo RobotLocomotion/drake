@@ -6,8 +6,8 @@
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
-#include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/fem_state.h"
+#include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -31,9 +31,9 @@ static constexpr int kNumQuads = QuadratureType::num_quadrature_points;
 using IsoparametricElementType =
     internal::LinearSimplexElement<AD, kNaturalDimension, kSpatialDimension,
                                    kNumQuads>;
-using ConstitutiveModelType = CorotatedModel<AD>;
+using ConstitutiveModelType = LinearCorotatedModel<AD>;
 using DeformationGradientDataType =
-    std::array<CorotatedModelData<AD>, kNumQuads>;
+    std::array<LinearCorotatedModelData<AD>, kNumQuads>;
 
 const AD kYoungsModulus{1};
 const AD kPoissonRatio{0.25};
@@ -88,6 +88,13 @@ class VolumetricElementTest : public ::testing::Test {
                                         const VectorX<AD>& a) {
     auto fem_state = make_unique<FemState<AD>>(fem_state_system_.get());
     fem_state->SetPositions(q);
+    /* Set q0 to be the same position as q, but drop the derivatives. */
+    const Eigen::VectorXd q0_double = math::ExtractValue(q);
+    VectorX<AD> q0(q0_double.size());
+    for (int i = 0; i < q0_double.size(); ++i) {
+      q0(i) = q0_double(i);
+    }
+    fem_state->SetTimeStepPositions(q0);
     fem_state->SetVelocities(v);
     fem_state->SetAccelerations(a);
     return fem_state;
@@ -235,7 +242,7 @@ TEST_F(VolumetricElementTest, Constructor) {
   ElementType move_constructed_element(std::move(elements_[0]));
   EXPECT_EQ(move_constructed_element.node_indices(), kNodeIndices);
   EXPECT_EQ(density(move_constructed_element), kDensity);
-  EXPECT_FALSE(element().is_linear);
+  EXPECT_TRUE(element().is_linear);
 }
 
 /* Any undeformed state gives zero energy and zero force. */
@@ -255,6 +262,7 @@ TEST_F(VolumetricElementTest, UndeformedState) {
   }
   fem_state->SetPositions(Eigen::Map<Vector<AD, kNumDofs>>(
       rigid_transformed_X.data(), rigid_transformed_X.size()));
+  fem_state->SetTimeStepPositions(fem_state->GetPositions());
   VerifyEnergyAndForceAreZero(*fem_state);
 }
 
