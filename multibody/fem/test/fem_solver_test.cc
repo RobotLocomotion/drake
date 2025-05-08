@@ -69,19 +69,18 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
   std::unique_ptr<FemState<double>> state0 = this->model_.MakeFemState();
+  state0->SetWeights(this->integrator_.GetWeights());
   const std::unordered_set<int> nonparticipating_vertices = {0, 1};
   const systems::LeafContext<double> dummy_context;
   const FemPlantData<double> dummy_data{dummy_context, {}};
   const int num_iterations = this->solver_.AdvanceOneTimeStep(
       *state0, dummy_data, nonparticipating_vertices);
   EXPECT_EQ(num_iterations, 1);
-
   /* Compute the expected result from AdvanceOneTimeStep(). */
   std::unique_ptr<FemState<double>> expected_state =
       this->model_.MakeFemState();
   auto tangent_matrix0 = this->model_.MakeTangentMatrix();
-  this->model_.CalcTangentMatrix(*state0, this->integrator_.GetWeights(),
-                                 tangent_matrix0.get());
+  this->model_.CalcTangentMatrix(*state0, tangent_matrix0.get());
   const MatrixXd A0 = tangent_matrix0->MakeDenseMatrix();
   VectorX<double> b0(this->model_.num_dofs());
   this->model_.CalcResidual(*state0, dummy_data, &b0);
@@ -101,8 +100,7 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
 
   /* Check the Schur complement is as expected. */
   auto tangent_matrix = this->model_.MakeTangentMatrix();
-  this->model_.CalcTangentMatrix(computed_state, this->integrator_.GetWeights(),
-                                 tangent_matrix.get());
+  this->model_.CalcTangentMatrix(computed_state, tangent_matrix.get());
   contact_solvers::internal::SchurComplement
       force_balance_tangent_matrix_schur_complement(*tangent_matrix,
                                                     nonparticipating_vertices);
@@ -116,7 +114,7 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
 }
 
 /* Tests that AdvanceOneTimeStep for nonlinear models throws an error message if
- * the Newton solver doesn't converge within the max number of iterations. */
+ the Newton solver doesn't converge within the max number of iterations. */
 TYPED_TEST_P(FemSolverTest, Nonconvergence) {
   constexpr bool is_linear = TypeParam::value;
   if (!is_linear) {

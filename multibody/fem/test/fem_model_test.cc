@@ -184,7 +184,8 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
   const Vector3d weights(0.1, 0.2, 0.3);
-  model.CalcTangentMatrix(*fem_state, weights, tangent_matrix.get());
+  fem_state->SetWeights(weights);
+  model.CalcTangentMatrix(*fem_state, tangent_matrix.get());
 
   MatrixXd expected_mass_matrix =
       MatrixXd::Zero(model.num_dofs(), model.num_dofs());
@@ -240,8 +241,7 @@ GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
   contact_solvers::internal::Block3x3SparseSymmetricMatrix tangent_matrix(
       empty_pattern);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      fem_model->CalcTangentMatrix(*fem_state, Vector3<T>(0.1, 0.2, 0.3),
-                                   &tangent_matrix),
+      fem_model->CalcTangentMatrix(*fem_state, &tangent_matrix),
       ".*only.*double.*");
 }
 
@@ -274,9 +274,8 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
       tangent_matrix = model.MakeTangentMatrix();
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
-  const Vector3d weights(0.1, 0.2, 0.3);
   DRAKE_EXPECT_THROWS_MESSAGE(
-      model.CalcTangentMatrix(*fem_state, weights, tangent_matrix.get()),
+      model.CalcTangentMatrix(*fem_state, tangent_matrix.get()),
       "CalcTangentMatrix.* model and state are not compatible.");
 }
 
@@ -377,15 +376,17 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
     const Vector3d weights(0.1, 0.2, 0.3);
 
     unique_ptr<FemState<T>> state0 = model.MakeFemState();
+    state0->SetWeights(weights);
     unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
         tangent_matrix0 = model.MakeTangentMatrix();
-    model.CalcTangentMatrix(*state0, weights, tangent_matrix0.get());
+    model.CalcTangentMatrix(*state0, tangent_matrix0.get());
     const MatrixX<T> dense_tangent_matrix0 = tangent_matrix0->MakeDenseMatrix();
 
     unique_ptr<FemState<T>> state1 = model_without_bc.MakeFemState();
+    state1->SetWeights(weights);
     unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
         tangent_matrix1 = model.MakeTangentMatrix();
-    model_without_bc.CalcTangentMatrix(*state1, weights, tangent_matrix1.get());
+    model_without_bc.CalcTangentMatrix(*state1, tangent_matrix1.get());
     MatrixX<T> dense_tangent_matrix1 = tangent_matrix1->MakeDenseMatrix();
     EXPECT_FALSE(CompareMatrices(dense_tangent_matrix0, dense_tangent_matrix1));
 
@@ -425,6 +426,7 @@ GTEST_TEST(FemModelTest, Clone) {
   EXPECT_EQ(state->GetAccelerations(), clone_state->GetAccelerations());
   EXPECT_EQ(state->num_dofs(), clone_state->num_dofs());
   EXPECT_EQ(state->num_nodes(), clone_state->num_nodes());
+  EXPECT_EQ(state->GetWeights(), clone_state->GetWeights());
 
   /* Verify that boundary conditions are the same. */
   model.ApplyBoundaryCondition(state.get());
@@ -450,8 +452,10 @@ GTEST_TEST(FemModelTest, Clone) {
   EXPECT_EQ(tangent_matrix->MakeDenseMatrix(),
             clone_tangent_matrix->MakeDenseMatrix());
   const Vector3<double> weights(0.1, 0.2, 0.3);
-  model.CalcTangentMatrix(*state, weights, tangent_matrix.get());
-  clone->CalcTangentMatrix(*clone_state, weights, clone_tangent_matrix.get());
+  state->SetWeights(weights);
+  clone_state->SetWeights(weights);
+  model.CalcTangentMatrix(*state, tangent_matrix.get());
+  clone->CalcTangentMatrix(*clone_state, clone_tangent_matrix.get());
   EXPECT_EQ(tangent_matrix->MakeDenseMatrix(),
             clone_tangent_matrix->MakeDenseMatrix());
 }

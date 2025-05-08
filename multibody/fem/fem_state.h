@@ -57,22 +57,25 @@ class FemState {
         .template Eval<std::vector<Data>>(context);
   }
 
-  /** @name    Getters and setters for the FEM states
+  /** @name    Getters and setters for the FEM states and parameters
    @anchor fem_state_setters_and_getters
    The FEM states include positions, time step positions (the positions at the
    previous time step t₀), velocities, and accelerations. Positions and
    velocities are actual state variables, while the accelerations are the saved
    result of previous calculations required by certain integrators such as
-   NewmarkScheme.
+   NewmarkScheme. The weight parameter is used to combine stiffness damping, and
+   mass matrices to form the tangent matrix.
    @{ */
   const VectorX<T>& GetPositions() const;
   const VectorX<T>& GetPreviousStepPositions() const;
   const VectorX<T>& GetVelocities() const;
   const VectorX<T>& GetAccelerations() const;
+  Vector3<T> GetWeights() const;
   void SetPositions(const Eigen::Ref<const VectorX<T>>& q);
   void SetTimeStepPositions(const Eigen::Ref<const VectorX<T>>& q0);
   void SetVelocities(const Eigen::Ref<const VectorX<T>>& v);
   void SetAccelerations(const Eigen::Ref<const VectorX<T>>& a);
+  void SetWeights(const Eigen::Ref<const Vector3<T>>& weights);
   /* @} */
 
   /** Makes `this` %FemState an exact copy of the given `other` %FemState.
