@@ -134,42 +134,56 @@ void BodyNodeImpl<T, ConcreteMobilizer>::
 
   // Nothing to do for a weld mobilizer.
   if constexpr (kNv > 0) {
-    // Inboard frame F of this node's mobilizer.
     const Frame<T>& frame_F = inboard_frame();
-    // Outboard frame M of this node's mobilizer.
     const Frame<T>& frame_M = outboard_frame();
 
-    const math::RigidTransform<T>& X_PF =
-        frame_F.get_X_BF(frame_body_pose_cache);  // B==P
-    const math::RotationMatrix<T>& R_PF = X_PF.rotation();
-    const math::RigidTransform<T>& X_MB =
-        frame_M.get_X_FB(frame_body_pose_cache);  // F==M
-
-    // Form the rotation matrix relating the world frame W and parent body P.
+    const math::RotationMatrix<T>& R_PF =
+        frame_F.get_X_BF(frame_body_pose_cache).rotation();
+    // Get the rotation matrix relating the world frame W and parent body P.
     const math::RotationMatrix<T>& R_WP = get_R_WP(pc);
-
     // Orientation (rotation) of frame F with respect to the world frame W.
     const math::RotationMatrix<T> R_WF = R_WP * R_PF;
 
-    // Vector from Mo to Bo expressed in frame F as needed below:
-    const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
-    const Vector3<T>& p_MB_M = X_MB.translation();
-    const Vector3<T> p_MB_F = R_FM * p_MB_M;
-
     const T* q = get_q(positions);  // just this mobilizer's q's
-    VVector<T> v = VVector<T>::Zero();
     auto H_PB_W = get_mutable_H(H_PB_W_cache);
     // We compute H_FM(q) one column at a time by calling the multiplication by
     // H_FM operation on a vector of generalized velocities which is zero except
-    // for its imob-th component, which is one.
-    for (int imob = 0; imob < kNv; ++imob) {
-      v(imob) = 1.0;
-      // Compute the imob-th column of H_FM:
-      const SpatialVelocity<T> Himob_FM = mobilizer_->calc_V_FM(q, v.data());
-      v(imob) = 0.0;
-      // V_PB_W = V_PFb_W + V_FMb_W + V_MB_W = V_FMb_W =
-      //         = R_WF * V_FM.Shift(p_MoBo_F)
-      H_PB_W.col(imob) = (R_WF * Himob_FM.Shift(p_MB_F)).get_coeffs();
+    // for its i-th component, which is one.
+
+    // Note: it is frequently the case that the mobilizer outboard frame M is
+    // coincident with the body frame B (and we cache that information for
+    // quick access). That allows us to avoid a shift operation in the small
+    // loop below. I (sherm1) timed velocity kinematics with and without this
+    // optimization, introduced in PR #22977. With gcc 11.4.0 it accounts for
+    // an almost 20% speedup in velocity kinematics, so is worth doing.
+    const bool is_X_MB_identity =
+        frame_M.is_X_BF_identity(frame_body_pose_cache);
+    if (is_X_MB_identity) {
+      VVector<T> v = VVector<T>::Zero();
+      for (int i = 0; i < kNv; ++i) {
+        v(i) = 1.0;  // Compute the i-th column of H_FM (== H_FB here).
+        const SpatialVelocity<T> Hi_FB_F = mobilizer_->calc_V_FM(q, v.data());
+        v(i) = 0.0;
+        // Frame F is fixed to rigid body P so V_PB = V_FB.
+        H_PB_W.col(i) = (R_WF * Hi_FB_F).get_coeffs();
+      }
+      return;
+    }
+
+    // X_MB is not identity.
+    const Vector3<T>& p_MB_M =
+        frame_M.get_X_FB(frame_body_pose_cache).translation();
+    // Vector from Mo to Bo expressed in frame F as needed below:
+    const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
+    const Vector3<T> p_MB_F = mobilizer_->apply_R_FM(R_FM, p_MB_M);
+
+    VVector<T> v = VVector<T>::Zero();
+    for (int i = 0; i < kNv; ++i) {
+      v(i) = 1.0;  // Compute the i-th column of H_FM.
+      const SpatialVelocity<T> Hi_FM = mobilizer_->calc_V_FM(q, v.data());
+      v(i) = 0.0;
+      // Frame F is fixed to rigid body P so V_PB = V_FB = V_FM.Shift(p_MB).
+      H_PB_W.col(i) = (R_WF * Hi_FM.Shift(p_MB_F)).get_coeffs();
     }
   }
 }
@@ -185,14 +199,10 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
 
   // Hinge matrix for this node. H_PB_W ∈ ℝ⁶ˣⁿᵐ with nm ∈ [0; 6] the
   // number of mobilities for this node. Therefore, the return is a
-  // MatrixUpTo6 since the number of columns generally changes with the
-  // node.  It is returned as an Eigen::Map to the memory allocated in the
+  // Matrix<6,kNv> since the number of columns depends on the mobilizer type.
+  // It is returned as an Eigen::Map to the memory allocated in the
   // std::vector H_PB_W_cache so that we can work with H_PB_W as with any
   // other Eigen matrix object.
-  //  Eigen::Map<const MatrixUpTo6<T>> H_PB_W =
-  //      this->GetJacobianFromArray(H_PB_W_cache);
-  //  DRAKE_ASSERT(H_PB_W.rows() == 6);
-  //  DRAKE_ASSERT(H_PB_W.cols() == mobilizer_->num_velocities();
 
   // As a guideline for developers, a summary of the computations performed in
   // this method is provided:
@@ -208,7 +218,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   //   V_WB = V_WPb + V_PB_W (Eq. 5.6 in Jain (2010), p. 77)              (1)
   // where Pb is a frame aligned with P but with its origin shifted from Po
   // to B's origin Bo. Then V_WPb is the spatial velocity of frame Pb,
-  // measured and expressed in the world frame W. Then since V_PB's
+  // measured and expressed in the world frame W. Since V_PB's
   // translational component is also for the point Bo, we can add these
   // spatial velocities. Therefore we need to develop expressions for the two
   // terms (V_WPb and V_PB_W) in Eq. (1).
@@ -220,12 +230,12 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcVelocityKinematicsCache_BaseToTip(
   // which can be computed from the spatial velocity measured in frame F (as
   // provided by mobilizer's methods)
   //   V_FMb_W = R_WF * V_FMb = R_WF * V_FM.Shift(p_MoBo_F)               (3)
-  // arriving to the desired result:
+  // arriving at the desired result:
   //   V_PB_W = R_WF * V_FM.Shift(p_MoBo_F)                               (4)
   //
-  // V_FM is immediately available from this node's mobilizer with the method
-  // CalcAcrossMobilizerSpatialVelocity() which computes M's spatial velocity
-  // in F by V_FM = H_FM * vm, where H_FM is the mobilizer's hinge matrix.
+  // V_FM = H_FM * vm is immediately available from this node's mobilizer where
+  // H_FM is the mobilizer's hinge matrix, and vm this mobilizer's generalized
+  // velocities.
   //
   // Computation of V_WPb:
   // This can be computed by a simple shift operation from V_WP:
@@ -365,7 +375,7 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAcceleration_BaseToTip(
   // TODO(amcastro-tri): consider caching p_MB_F, also used to compute H_PB_W.
   const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
   const Vector3<T>& p_MB_M = X_MB.translation();
-  const Vector3<T> p_MB_F = R_FM * p_MB_M;
+  const Vector3<T> p_MB_F = mobilizer_->apply_R_FM(R_FM, p_MB_M);
 
   // Shift vector between the parent body P and this node's body B,
   // expressed in the world frame W.
@@ -875,7 +885,9 @@ void BodyNodeImpl<T, ConcreteMobilizer>::CalcSpatialAccelerationBias(
   const math::RotationMatrix<T> R_WF = R_WP * R_PF;
 
   // Compute shift vector p_MoBo_F.
-  const Vector3<T> p_MoBo_F = get_X_FM(pc).rotation() * X_MB.translation();
+  const math::RotationMatrix<T>& R_FM = get_X_FM(pc).rotation();
+  const Vector3<T>& p_MoBo_M = X_MB.translation();
+  const Vector3<T> p_MoBo_F = mobilizer_->apply_R_FM(R_FM, p_MoBo_M);
 
   // The goal is to compute Ab_WB = Ac_WB + Ab_PB_W, see @ref
   // abi_computing_accelerations.

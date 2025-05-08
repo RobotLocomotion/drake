@@ -166,6 +166,7 @@ TEST_F(RevoluteMobilizerTest, CalcAcrossMobilizerTransform) {
   mobilizer_z->update_X_FM(&new_angle, &fast_X_FM);
   EXPECT_TRUE(fast_X_FM.IsNearlyEqualTo(X_FM, kTol));
 
+  TestApplyR_FM(X_FM, *mobilizer_z);
   TestPrePostMultiplyByX_FM(X_FM, *mobilizer_z);
 }
 

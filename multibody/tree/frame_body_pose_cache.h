@@ -35,10 +35,12 @@ class FrameBodyPoseCache {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FrameBodyPoseCache);
 
-  explicit FrameBodyPoseCache(int num_frame_body_pose_slots_needed)
+  explicit FrameBodyPoseCache(int num_mobods,
+                              int num_frame_body_pose_slots_needed)
       : X_BF_pool_(num_frame_body_pose_slots_needed),
         X_FB_pool_(num_frame_body_pose_slots_needed),
-        is_X_BF_identity_(num_frame_body_pose_slots_needed) {
+        is_X_BF_identity_(num_frame_body_pose_slots_needed),
+        M_BBo_B_pool_(num_mobods, SpatialInertia<T>::NaN()) {
     DRAKE_DEMAND(num_frame_body_pose_slots_needed > 0);
 
     // All RigidBodyFrames share this body pose.
@@ -69,6 +71,12 @@ class FrameBodyPoseCache {
     return static_cast<bool>(is_X_BF_identity_[body_pose_index]);
   }
 
+  const SpatialInertia<T>& get_M_BBo_B(MobodIndex index) const {
+    // This method must be very fast in Release.
+    DRAKE_ASSERT(0 <= index && index < ssize(M_BBo_B_pool_));
+    return M_BBo_B_pool_[index];
+  }
+
   void SetX_BF(int body_pose_index, const math::RigidTransform<T>& X_BF) {
     // This method is only called when parameters change.
     DRAKE_DEMAND(0 <= body_pose_index && body_pose_index < ssize(X_BF_pool_));
@@ -83,6 +91,12 @@ class FrameBodyPoseCache {
     }
   }
 
+  void SetM_BBo_B(MobodIndex index, const SpatialInertia<T>& M_BBo_B) {
+    // This method is only called when parameters change.
+    DRAKE_DEMAND(0 <= index && index < ssize(M_BBo_B_pool_));
+    M_BBo_B_pool_[index] = M_BBo_B;
+  }
+
  private:
   // Sizes are set on construction.
 
@@ -90,6 +104,10 @@ class FrameBodyPoseCache {
   std::vector<math::RigidTransform<T>> X_BF_pool_;
   std::vector<math::RigidTransform<T>> X_FB_pool_;
   std::vector<uint8_t> is_X_BF_identity_;  // fast vector<bool> equivalent
+
+  // Spatial inertia of mobilized body B, about its body origin Bo, expressed
+  // in B. These are indexed by MobodIndex.
+  std::vector<SpatialInertia<T>> M_BBo_B_pool_;
 };
 
 }  // namespace internal
