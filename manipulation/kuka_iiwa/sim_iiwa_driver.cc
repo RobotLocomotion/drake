@@ -11,6 +11,7 @@
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/primitives/saturation.h"
+#include "drake/systems/primitives/sparse_matrix_gain.h"
 
 namespace drake {
 namespace manipulation {
@@ -143,20 +144,27 @@ SimIiwaDriver<T>::SimIiwaDriver(
   // When torque control is enabled, declare the `torque` input port and add it
   // to the inverse dynamics output. Otherwise, use the inverse dynamics output
   // by itself.
-  const systems::OutputPort<T>* actuation_output = nullptr;
+  const systems::OutputPort<T>* raw_torque_commanded_output = nullptr;
   if (torque_enabled(control_mode)) {
-    auto actuation =
-        builder.template AddNamedSystem<Adder>("+", 2, num_positions);
+    auto adder = builder.template AddNamedSystem<Adder>("+", 2, num_positions);
     builder.Connect(inverse_dynamics->GetOutputPort("generalized_force"),
-                    actuation->get_input_port(0));
-    builder.ExportInput(actuation->get_input_port(1), "torque");
-    actuation_output = &actuation->get_output_port();
+                    adder->get_input_port(0));
+    builder.ExportInput(adder->get_input_port(1), "torque");
+    raw_torque_commanded_output = &adder->get_output_port();
   } else {
-    actuation_output = &inverse_dynamics->GetOutputPort("generalized_force");
+    raw_torque_commanded_output =
+        &inverse_dynamics->GetOutputPort("generalized_force");
   }
+  builder.Connect(*raw_torque_commanded_output,
+                  torque_limiter->get_input_port());
+
+  // Add B⁻¹ to the diagram.
+  auto Binv = builder.template AddNamedSystem<systems::SparseMatrixGain>(
+      "B⁻¹", controller_plant->MakeActuationMatrixPseudoinverse());
+  builder.Connect(torque_limiter->get_output_port(), Binv->get_input_port());
 
   // Declare the various output ports.
-  builder.ExportOutput(*actuation_output, "actuation");
+  builder.ExportOutput(Binv->get_output_port(), "actuation");
   if (position_enabled(control_mode)) {
     auto pass = builder.template AddNamedSystem<PassThrough>(
         "position_pass_through", num_positions);
@@ -173,7 +181,6 @@ SimIiwaDriver<T>::SimIiwaDriver(
     builder.ConnectInput("state", pass->get_input_port());
     builder.ExportOutput(pass->get_output_port(), "state_estimated");
   }
-  builder.Connect(*actuation_output, torque_limiter->get_input_port());
   builder.ExportOutput(torque_limiter->get_output_port(), "torque_commanded");
   // TODO(amcastro-tri): is this what we want to send as the "measured
   // torque"? why coming from the controllers instead of from the plant?
