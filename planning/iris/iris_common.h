@@ -80,7 +80,7 @@ class CommonSampledIrisOptions {
 
   /** Maximum number of faces to add per inner iteration. Setting the value to
    * -1 means there is no limit to the number of faces that can be added. */
-  int max_separating_planes_per_iteration{-1};
+  int max_separating_planes_per_iteration{10};
 
   /** Number of threads to use when updating the particles. If the user requests
    * more threads than the CollisionChecker supports, that number of threads
