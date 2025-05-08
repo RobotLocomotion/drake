@@ -155,15 +155,11 @@ class FemModel {
    the tangent matrix is set to zero with the exception of the diagonal entries
    which is set to a scalar multiple of identity.
    @param[in] fem_state        The FemState used to evaluate the tangent matrix.
-   @param[in] weights          The weights used to combine stiffness, damping,
-                               and mass matrices (in that order) into the
-                               tangent matrix.
    @param[out] tangent_matrix  The output tangent_matrix.
    @pre tangent_matrix != nullptr.
    @pre The size of `tangent_matrix` is `num_dofs()` * `num_dofs()`.
    @pre All nonzero entries in the resulting tangent matrix have been allocated.
    See MakeTangentMatrix().
-   @pre All entries in `weights` are non-negative.
    @warning This function sometimes makes simplifying approximations to avoid
    taking overly complicated derivatives. As such, the resulting tangent
    matrix may be an approximation of the actual value depending on the
@@ -171,7 +167,7 @@ class FemModel {
    @throws std::exception if the FEM state is incompatible with this model.
    @throws std::exception if T is not double. */
   void CalcTangentMatrix(
-      const FemState<T>& fem_state, const Vector3<T>& weights,
+      const FemState<T>& fem_state,
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const;
 
@@ -216,6 +212,12 @@ class FemModel {
     return state.is_created_from_system(*fem_state_system_);
   }
 
+  /* The weights used to combine stiffness, damping, and mass matrices (in that
+   order) to form the tangent matrix . */
+  const Vector3<T>& tangent_matrix_weights() const {
+    return tangent_matrix_weights_;
+  }
+
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
@@ -234,8 +236,9 @@ class FemModel {
   Parallelism parallelism() const { return parallelism_; }
 
  protected:
-  /** Constructs an empty FEM model. */
-  FemModel();
+  /** Constructs an empty FEM model.
+   @pre tangent_matrix_weights.minCoeff() >= 0.0. */
+  explicit FemModel(const Vector3<T>& tangent_matrix_weights);
 
   /** FemModelImpl must override this method to provide an implementation to
    make a deep copy of the concrete FemModel. */
@@ -257,7 +260,7 @@ class FemModel {
    compatible with `this` FEM model, and the input `tangent_matrix` is
    guaranteed to be non-null and properly sized. */
   virtual void DoCalcTangentMatrix(
-      const FemState<T>& fem_state, const Vector3<T>& weights,
+      const FemState<T>& fem_state,
       contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
       const = 0;
 
@@ -293,6 +296,9 @@ class FemModel {
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   /* The Dirichlet boundary condition that the model is subject to. */
   internal::DirichletBoundaryCondition<T> dirichlet_bc_;
+  /* The weights used to combine stiffness, damping, and mass matrices (in that
+   order) to form the tangent matrix. */
+  Vector3<T> tangent_matrix_weights_;
   Parallelism parallelism_{false};
 };
 
