@@ -92,7 +92,7 @@ class FemModelImpl : public FemModel<typename Element::T> {
     for (int e = 0; e < num_elements(); ++e) {
       /* residual = Ma-fₑ(x)-fᵥ(x, v)-fₑₓₜ. */
       /* The Ma-fₑ(x)-fᵥ(x, v) term. */
-      elements_[e].CalcInverseDynamics(element_data[e], &element_residual);
+      element_residual = element_data[e].inverse_dynamics;
       /* The -fₑₓₜ term. */
       elements_[e].AddScaledExternalForces(element_data[e], plant_data, -1.0,
                                            &element_residual);
@@ -118,13 +118,9 @@ class FemModelImpl : public FemModel<typename Element::T> {
 
       const std::vector<Data>& element_data =
           fem_state.template EvalElementData<Data>(element_data_index_);
-      /* Scratch space to store the contribution to the tangent matrix from each
-       element. */
-      Eigen::Matrix<T, Element::num_dofs, Element::num_dofs>
-          element_tangent_matrix;
       for (int e = 0; e < num_elements(); ++e) {
-        elements_[e].CalcTangentMatrix(element_data[e], weights,
-                                       &element_tangent_matrix);
+        const Eigen::Matrix<T, Element::num_dofs, Element::num_dofs>&
+            element_tangent_matrix = element_data[e].tangent_matrix;
         const std::array<FemNodeIndex, Element::num_nodes>&
             element_node_indices = elements_[e].node_indices();
         for (int a = 0; a < Element::num_nodes; ++a) {

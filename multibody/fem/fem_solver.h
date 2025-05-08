@@ -198,7 +198,7 @@ class FemSolver {
   /* The discrete time integrator the solver uses. */
   const DiscreteTimeIntegrator<T>* integrator_{nullptr};
   /* Tolerance for convergence. */
-  double relative_tolerance_{1e-2};  // unitless.
+  double relative_tolerance_{1e-1};  // unitless.
   // TODO(xuchenhan-tri): Consider using an absolute tolerance with velocity
   // unit so that how stiff the material is doesn't affect the convergence
   // criterion.
@@ -207,7 +207,7 @@ class FemSolver {
    up. */
   int max_iterations_{100};
   /* Linear solver tolerance (only used for nonlinear models). */
-  double linear_solver_tolerance_{1e-3};   // unitless.
+  double linear_solver_tolerance_{1e-2};   // unitless.
   FemStateAndSchurComplement next_state_and_schur_complement_;
   Scratch scratch_;
 };

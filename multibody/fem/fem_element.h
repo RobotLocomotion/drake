@@ -108,16 +108,10 @@ class FemElement {
    w₀⋅K + w₁⋅D + w₂⋅M, where K, D, and M are stiffness, damping, and mass matrix
    respectively. */
   void CalcTangentMatrix(
-      const Data& data, const Vector3<T>& weights,
+      const Data& data, const Vector3<T>&,
       EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> tangent_matrix) const {
     DRAKE_DEMAND(tangent_matrix != nullptr);
-    tangent_matrix->setZero();
-    const T& stiffness_weight =
-        weights(0) + weights(1) * damping_model_.stiffness_coeff_beta();
-    const T& mass_weight =
-        weights(2) + weights(1) * damping_model_.mass_coeff_alpha();
-    *tangent_matrix += stiffness_weight * data.stiffness_matrix;
-    *tangent_matrix += mass_weight * data.mass_matrix;
+    *tangent_matrix = data.tangent_matrix;
   }
 
   void CalcDifferential(const Data& data, const Vector3<T>& weights,

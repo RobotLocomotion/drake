@@ -142,10 +142,10 @@ int FemSolver<T>::SolveNonlinearModel(
   VectorX<T>& dz = scratch_.dz;
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
   FemState<T>& state = *next_state_and_schur_complement_.state;
+  state.SetWeights(integrator_->GetWeights());
   Eigen::ConjugateGradient<EigenBlock3x3SparseSymmetricMatrix,
                            Eigen::Lower | Eigen::Upper>
       cg;
-  cg.setTolerance(linear_solver_tolerance_);
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
   T residual_norm = b.norm();
@@ -164,6 +164,10 @@ int FemSolver<T>::SolveNonlinearModel(
                               &tangent_matrix);
     const EigenBlock3x3SparseSymmetricMatrix wrapper(&tangent_matrix,
                                                      model_->parallelism());
+    const double sigma = 0.1;
+    const double tol = std::min(
+        0.5, sigma * std::sqrt(std::max(residual_norm, absolute_tolerance_)));
+    cg.setTolerance(tol);
     cg.compute(wrapper);
     DRAKE_DEMAND(cg.info() == Eigen::Success);
     dz = cg.solve(-b);

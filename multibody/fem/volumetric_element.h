@@ -40,12 +40,16 @@ struct VolumetricElementData {
   /* The derivative of first Piola stress with respect to the deformation
    gradient evaluated at quadrature points. */
   std::array<math::internal::FourthOrderTensor<T>, num_quadrature_points> dPdF;
+  /* Inverse dynamics: Ma-fₑ(x)-fᵥ(x, v). */
+  Vector<T, num_dofs> inverse_dynamics;
   /* Mass matrix M. */
   Eigen::Matrix<T, num_dofs, num_dofs> mass_matrix;
   /* The stiffness matrix K. */
   Eigen::Matrix<T, num_dofs, num_dofs> stiffness_matrix;
   /* The damping matrix D = aM + bK. */
   Eigen::Matrix<T, num_dofs, num_dofs> damping_matrix;
+  /* The tangent matrix matrix = w0*M + w1*D + w2*K. */
+  Eigen::Matrix<T, num_dofs, num_dofs> tangent_matrix;
 };
 
 /* Forward declaration needed for defining the traits below. */
@@ -397,6 +401,16 @@ class VolumetricElement
     data.damping_matrix =
         this->damping_model().stiffness_coeff_beta() * data.stiffness_matrix +
         this->damping_model().mass_coeff_alpha() * data.mass_matrix;
+    data.inverse_dynamics.setZero();
+    this->CalcInverseDynamics(data, &data.inverse_dynamics);
+    /* Integrator weights. */
+    const Vector3<T>& weights = state.GetWeights();
+    const T stiffness_weight =
+        weights(0) + weights(1) * this->damping_model().stiffness_coeff_beta();
+    const T mass_weight =
+        weights(2) + weights(1) * this->damping_model().mass_coeff_alpha();
+    data.tangent_matrix = stiffness_weight * data.stiffness_matrix +
+                          mass_weight * data.mass_matrix;
     return data;
   }
 

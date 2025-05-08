@@ -17,6 +17,7 @@ FemStateSystem<T>::FemStateSystem(const VectorX<T>& model_q,
   q0_index_ = this->DeclareDiscreteState(model_q);
   v_index_ = this->DeclareDiscreteState(model_v);
   a_index_ = this->DeclareDiscreteState(model_a);
+  weight_index_ = this->DeclareDiscreteState(Vector3<T>::Zero());
 }
 
 }  // namespace internal
