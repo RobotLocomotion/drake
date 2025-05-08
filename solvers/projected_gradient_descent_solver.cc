@@ -153,7 +153,7 @@ void ProjectedGradientDescentSolver::DoSolve2(
   // previous feasible iterate, or some other strategy.)
   std::unique_ptr<solvers::SolverInterface> projection_solver_interface;
   if (!projection_solver_interface_) {
-    const SolverId solver_id = ChooseBestSolver(prog);
+    const SolverId solver_id = ChooseBestSolver(*projection_prog_ptr);
     projection_solver_interface = MakeSolver(solver_id);
   }
   std::function<bool(const VectorXd&, VectorXd*)> projection_function =
