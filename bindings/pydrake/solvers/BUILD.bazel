@@ -76,6 +76,7 @@ drake_pybind_library(
         "solvers_py_program_attribute.cc",
         "solvers_py_snopt.cc",
         "solvers_py_unrevised_lemke.cc",
+        "solvers_py_projected_gradient_descent.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -296,6 +297,14 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "program_attribute_test",
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "projected_gradient_descent_solver_test",
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities",
