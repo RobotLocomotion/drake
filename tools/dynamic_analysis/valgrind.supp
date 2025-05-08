@@ -169,21 +169,3 @@
    fun:start_thread
    fun:clone
 }
-
-{
-   libclp: invalid read of size 4 in startup via SimplexPrimal
-   Memcheck:Addr4
-   fun:_ZN10ClpSimplex7startupEii
-   fun:_ZN16ClpSimplexPrimal6primalEii
-   fun:_ZN10ClpSimplex6primalEii
-   fun:_ZN10ClpSimplex15reducedGradientEi
-   fun:_ZN10ClpSimplex6primalEii
-}
-
-{
-   libclp: invalid read of size 4 in startup via SimplexNonlinear
-   Memcheck:Addr4
-   fun:_ZN10ClpSimplex7startupEii
-   fun:_ZN19ClpSimplexNonlinear6primalEv
-   fun:_ZN10ClpSimplex6primalEii
-}
