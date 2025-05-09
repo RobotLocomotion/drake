@@ -104,60 +104,6 @@ TEST_F(FemElementTest, ExtractElementDofs) {
             expected_element_q);
 }
 
-/* The following tests confirm that CalcInverseDynamics(),
- AddScaledStiffnessMatrix, AddScaledDampingMatrix(), AddScaledMassMatrix(),
- correctly invoke their DoCalc and DoAdd counterparts. We confirm this with a
- custom subclass of FemElement whose implementation returns/adds a specific
- value. */
-TEST_F(FemElementTest, InverseDynamics) {
-  Vector<T, DummyElementTraits::num_dofs> external_force;
-  element_.CalcInverseDynamics(EvalElementData(), &external_force);
-  const Vector<T, kNumDofs> zero_vector = Vector<T, kNumDofs>::Zero();
-  EXPECT_EQ(external_force, zero_vector);
-
-  fem_state_->SetPositions(zero_vector);
-  fem_state_->SetVelocities(zero_vector);
-  fem_state_->SetAccelerations(zero_vector);
-  element_.CalcInverseDynamics(EvalElementData(), &external_force);
-  EXPECT_EQ(external_force, element_.inverse_dynamics_force());
-}
-
-TEST_F(FemElementTest, StiffnessMatrix) {
-  Eigen::Matrix<T, DummyElementTraits::num_dofs, DummyElementTraits::num_dofs>
-      K;
-  K.setZero();
-  const T scale = 3.14;
-  element_.AddScaledStiffnessMatrix(EvalElementData(), scale, &K);
-  EXPECT_EQ(K, scale * element_.stiffness_matrix());
-}
-
-TEST_F(FemElementTest, DampingMatrix) {
-  Eigen::Matrix<T, DummyElementTraits::num_dofs, DummyElementTraits::num_dofs>
-      D;
-  D.setZero();
-  const T scale = 3.14;
-  element_.AddScaledDampingMatrix(EvalElementData(), scale, &D);
-
-  Eigen::Matrix<T, DummyElementTraits::num_dofs, DummyElementTraits::num_dofs>
-      expected_D;
-  expected_D.setZero();
-  element_.AddScaledMassMatrix(
-      EvalElementData(), scale * kDampingModel.mass_coeff_alpha(), &expected_D);
-  element_.AddScaledStiffnessMatrix(
-      EvalElementData(), scale * kDampingModel.stiffness_coeff_beta(),
-      &expected_D);
-  EXPECT_EQ(D, expected_D);
-}
-
-TEST_F(FemElementTest, MassMatrix) {
-  Eigen::Matrix<T, DummyElementTraits::num_dofs, DummyElementTraits::num_dofs>
-      M;
-  M.setZero();
-  const T scale = 3.14;
-  element_.AddScaledMassMatrix(EvalElementData(), scale, &M);
-  EXPECT_EQ(M, scale * element_.mass_matrix());
-}
-
 TEST_F(FemElementTest, ExternalForce) {
   const T mass_density = 2.7;
   const Vector3<T> g(0, 0, -9.81);

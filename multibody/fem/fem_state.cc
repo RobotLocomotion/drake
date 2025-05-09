@@ -49,6 +49,13 @@ const VectorX<T>& FemState<T>::GetAccelerations() const {
 }
 
 template <typename T>
+Vector3<T> FemState<T>::GetWeights() const {
+  return get_context()
+      .get_numeric_parameter(system_->integration_weight_index())
+      .value();
+}
+
+template <typename T>
 void FemState<T>::SetPositions(const Eigen::Ref<const VectorX<T>>& q) {
   get_mutable_context().SetDiscreteState(system_->fem_position_index(), q);
 }
@@ -67,6 +74,13 @@ void FemState<T>::SetVelocities(const Eigen::Ref<const VectorX<T>>& v) {
 template <typename T>
 void FemState<T>::SetAccelerations(const Eigen::Ref<const VectorX<T>>& a) {
   get_mutable_context().SetDiscreteState(system_->fem_acceleration_index(), a);
+}
+
+template <typename T>
+void FemState<T>::SetWeights(const Eigen::Ref<const Vector3<T>>& weights) {
+  get_mutable_context()
+      .get_mutable_numeric_parameter(system_->integration_weight_index())
+      .get_mutable_value() = weights;
 }
 
 template <typename T>

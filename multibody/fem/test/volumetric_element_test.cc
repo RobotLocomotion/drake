@@ -165,7 +165,8 @@ class VolumetricElementTest : public ::testing::Test {
   Vector<AD, kNumDofs> CalcNegativeElasticForce(
       const FemState<AD>& fem_state) const {
     Vector<AD, kNumDofs> neg_force = Vector<AD, kNumDofs>::Zero();
-    element().AddNegativeElasticForce(EvalElementData(fem_state), &neg_force);
+    const Data& data = EvalElementData(fem_state);
+    element().AddNegativeElasticForce(data.P, &neg_force);
     return neg_force;
   }
 
@@ -175,7 +176,8 @@ class VolumetricElementTest : public ::testing::Test {
       const FemState<AD>& fem_state) const {
     Eigen::Matrix<AD, kNumDofs, kNumDofs> neg_force_derivative =
         Eigen::Matrix<AD, kNumDofs, kNumDofs>::Zero();
-    element().AddScaledElasticForceDerivative(EvalElementData(fem_state), -1,
+    const Data& data = EvalElementData(fem_state);
+    element().AddScaledElasticForceDerivative(data.dPdF, -1,
                                               &neg_force_derivative);
     return neg_force_derivative;
   }
@@ -198,7 +200,8 @@ class VolumetricElementTest : public ::testing::Test {
   /* Calculates and verifies the energy and elastic forces evaluated with the
    given `data` are zero. */
   void VerifyEnergyAndForceAreZero(const FemState<AD>& fem_state) const {
-    AD energy = element().CalcElasticEnergy(EvalElementData(fem_state));
+    const Data& data = EvalElementData(fem_state);
+    AD energy = element().CalcElasticEnergy(data.Psi);
     EXPECT_NEAR(energy.value(), 0, kEpsilon);
     Vector<AD, kNumDofs> neg_elastic_force =
         CalcNegativeElasticForce(fem_state);
@@ -223,10 +226,7 @@ class VolumetricElementTest : public ::testing::Test {
   /* Calculates the mass matrix of the only element. */
   Eigen::Matrix<AD, kNumDofs, kNumDofs> CalcMassMatrix(
       const FemState<AD>& fem_state) const {
-    Eigen::Matrix<AD, kNumDofs, kNumDofs> mass_matrix =
-        Eigen::Matrix<AD, kNumDofs, kNumDofs>::Zero();
-    element().AddScaledMassMatrix(EvalElementData(fem_state), 1, &mass_matrix);
-    return mass_matrix;
+    return element().mass_matrix_;
   }
 
   unique_ptr<FemStateSystem<AD>> fem_state_system_;
@@ -290,8 +290,9 @@ TEST_F(VolumetricElementTest, DeformedState) {
       1.0 / 6.0 * std::abs(matrix_for_volume_calculation.determinant());
   const double analytical_energy = energy_density * reference_volume;
   /* Verify calculated energy is close to energy calculated analytically. */
-  EXPECT_NEAR(element().CalcElasticEnergy(EvalElementData(*fem_state)).value(),
-              analytical_energy, kEpsilon);
+  EXPECT_NEAR(
+      element().CalcElasticEnergy(EvalElementData(*fem_state).Psi).value(),
+      analytical_energy, kEpsilon);
 
   const auto neg_elastic_force_autodiff = CalcNegativeElasticForce(*fem_state);
   Vector<double, kNumDofs> neg_elastic_force =
@@ -329,7 +330,7 @@ TEST_F(VolumetricElementTest, DeformedState) {
  elastic energy with respect to the generalized positions. */
 TEST_F(VolumetricElementTest, NegativeElasticForceIsEnergyDerivative) {
   unique_ptr<FemState<AD>> fem_state = MakeDeformedState();
-  AD energy = element().CalcElasticEnergy(EvalElementData(*fem_state));
+  AD energy = element().CalcElasticEnergy(EvalElementData(*fem_state).Psi);
   Vector<AD, kNumDofs> neg_elastic_force = CalcNegativeElasticForce(*fem_state);
   EXPECT_TRUE(
       CompareMatrices(energy.derivatives(), neg_elastic_force, kEpsilon));

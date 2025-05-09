@@ -180,7 +180,7 @@ class VolumetricModel : public FemModelImpl<Element> {
     DRAKE_DEMAND(static_cast<int>(element_data.size()) == this->num_elements());
     const auto& elements = this->elements();
     for (int e = 0; e < this->num_elements(); ++e) {
-      energy += elements[e].CalcElasticEnergy(element_data[e]);
+      energy += elements[e].CalcElasticEnergy(element_data[e].Psi);
     }
     return energy;
   }

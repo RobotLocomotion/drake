@@ -165,9 +165,9 @@ TEST_F(VolumetricModelTest, TangentMatrixIsResidualDerivative) {
   AddBoxToModel(&double_model);
   unique_ptr<FemState<double>> double_state =
       MakeDeformedFemState(double_model);
+  double_state->SetWeights(double_integrator_.GetWeights());
   auto tangent_matrix = double_model.MakeTangentMatrix();
-  double_model.CalcTangentMatrix(*double_state, double_integrator_.GetWeights(),
-                                 tangent_matrix.get());
+  double_model.CalcTangentMatrix(*double_state, tangent_matrix.get());
   const MatrixXd tangent_matrix_dense = tangent_matrix->MakeDenseMatrix();
   EXPECT_TRUE(CompareMatrices(math::ExtractGradient(residual),
                               tangent_matrix_dense,

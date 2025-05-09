@@ -77,6 +77,7 @@ int FemSolver<T>::AdvanceOneTimeStep(
   FemState<T>* next_state =
       next_state_and_schur_complement_.state.get_mutable();
   integrator_->AdvanceOneTimeStep(prev_state, unknown_variable, next_state);
+  next_state->SetWeights(integrator_->GetWeights());
   if (model_->is_linear()) {
     return SolveLinearModel(plant_data, nonparticipating_vertices);
   }
@@ -112,6 +113,7 @@ int FemSolver<T>::SolveLinearModel(
     const std::unordered_set<int>& nonparticipating_vertices) {
   DRAKE_DEMAND(model_->is_linear());
   FemState<T>& state = *next_state_and_schur_complement_.state;
+  state.SetWeights(integrator_->GetWeights());
   VectorX<T>& b = scratch_.b;
   VectorX<T>& dz = scratch_.dz;
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
@@ -119,7 +121,7 @@ int FemSolver<T>::SolveLinearModel(
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
   T residual_norm = b.norm();
-  model_->CalcTangentMatrix(state, integrator_->GetWeights(), &tangent_matrix);
+  model_->CalcTangentMatrix(state, &tangent_matrix);
   next_state_and_schur_complement_.schur_complement =
       contact_solvers::internal::SchurComplement(tangent_matrix,
                                                  nonparticipating_vertices);
@@ -141,7 +143,7 @@ int FemSolver<T>::SolveNonlinearModel(
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
   LinearSolver& linear_solver = scratch_.linear_solver;
   FemState<T>& state = *next_state_and_schur_complement_.state;
-
+  state.SetWeights(integrator_->GetWeights());
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
   T residual_norm = b.norm();
@@ -156,8 +158,7 @@ int FemSolver<T>::SolveNonlinearModel(
   while (iter < max_iterations_ &&
          /* On first iteration, this is equivalent to residual_norm < abs_tol */
          !solver_converged(residual_norm, initial_residual_norm)) {
-    model_->CalcTangentMatrix(state, integrator_->GetWeights(),
-                              &tangent_matrix);
+    model_->CalcTangentMatrix(state, &tangent_matrix);
     linear_solver.UpdateMatrix(tangent_matrix);
     const bool factored = linear_solver.Factor();
     if (!factored) {
@@ -178,7 +179,7 @@ int FemSolver<T>::SolveNonlinearModel(
     return -1;
   }
   /* Build the Schur complement after the Newton iterations have converged. */
-  model_->CalcTangentMatrix(state, integrator_->GetWeights(), &tangent_matrix);
+  model_->CalcTangentMatrix(state, &tangent_matrix);
   next_state_and_schur_complement_.schur_complement =
       contact_solvers::internal::SchurComplement(tangent_matrix,
                                                  nonparticipating_vertices);
