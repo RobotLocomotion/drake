@@ -304,13 +304,9 @@ void RpyFloatingMobilizer<T>::DoCalcNplusMatrix(
 }
 
 template <typename T>
-void RpyFloatingMobilizer<T>::MapVelocityToQDot(
+void RpyFloatingMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  DRAKE_ASSERT(qdot != nullptr);
-  DRAKE_ASSERT(qdot->size() == kNq);
-
   using std::abs;
   using std::cos;
   using std::sin;
@@ -398,12 +394,9 @@ void RpyFloatingMobilizer<T>::MapVelocityToQDot(
 }
 
 template <typename T>
-void RpyFloatingMobilizer<T>::MapQDotToVelocity(
+void RpyFloatingMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot, EigenPtr<VectorX<T>> v) const {
-  DRAKE_ASSERT(qdot.size() == kNq);
-  DRAKE_ASSERT(v != nullptr);
-  DRAKE_ASSERT(v->size() == kNv);
   using std::cos;
   using std::sin;
 

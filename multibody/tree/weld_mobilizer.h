@@ -117,18 +117,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 
-  // This override is a no-op since this mobilizer has no generalized
-  // velocities associated with it.
-  void MapVelocityToQDot(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& v,
-                         EigenPtr<VectorX<T>> qdot) const final;
-
-  // This override is a no-op since this mobilizer has no generalized
-  // velocities associated with it.
-  void MapQDotToVelocity(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& qdot,
-                         EigenPtr<VectorX<T>> v) const final;
-
   bool can_rotate() const final { return false; }
   bool can_translate() const final { return false; }
 
@@ -146,6 +134,18 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
   // Generally, v̇ = Ṅ⁺(q,q̇)⋅q̇ + N⁺(q)⋅q̈. For this mobilizer, Ṅ⁺ = 0x0 matrix.
   void DoCalcNplusDotMatrix(const systems::Context<T>& context,
                             EigenPtr<MatrixX<T>> NplusDot) const final;
+
+  // This override is a no-op since this mobilizer has no generalized
+  // velocities associated with it.
+  void DoMapVelocityToQDot(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& v,
+                           EigenPtr<VectorX<T>> qdot) const final;
+
+  // This override is a no-op since this mobilizer has no generalized
+  // velocities associated with it.
+  void DoMapQDotToVelocity(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           EigenPtr<VectorX<T>> v) const final;
 
   // This override is a no-op since this mobilizer has no generalized
   // velocities associated with it.
