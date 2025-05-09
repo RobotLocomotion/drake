@@ -212,13 +212,9 @@ void RpyBallMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>& context,
 }
 
 template <typename T>
-void RpyBallMobilizer<T>::MapVelocityToQDot(
+void RpyBallMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  DRAKE_ASSERT(qdot != nullptr);
-  DRAKE_ASSERT(qdot->size() == kNq);
-
   using std::abs;
   using std::cos;
   using std::sin;
@@ -306,12 +302,9 @@ void RpyBallMobilizer<T>::MapVelocityToQDot(
 }
 
 template <typename T>
-void RpyBallMobilizer<T>::MapQDotToVelocity(
+void RpyBallMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot, EigenPtr<VectorX<T>> v) const {
-  DRAKE_ASSERT(qdot.size() == kNq);
-  DRAKE_ASSERT(v != nullptr);
-  DRAKE_ASSERT(v->size() == kNv);
   using std::cos;
   using std::sin;
 

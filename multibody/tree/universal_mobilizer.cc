@@ -170,22 +170,16 @@ void UniversalMobilizer<T>::DoCalcNplusDotMatrix(
 }
 
 template <typename T>
-void UniversalMobilizer<T>::MapVelocityToQDot(
+void UniversalMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  DRAKE_ASSERT(qdot != nullptr);
-  DRAKE_ASSERT(qdot->size() == kNq);
   *qdot = v;
 }
 
 template <typename T>
-void UniversalMobilizer<T>::MapQDotToVelocity(
+void UniversalMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>& qdot,
     EigenPtr<VectorX<T>> v) const {
-  DRAKE_ASSERT(qdot.size() == kNq);
-  DRAKE_ASSERT(v != nullptr);
-  DRAKE_ASSERT(v->size() == kNv);
   *v = qdot;
 }
 
