@@ -64,7 +64,7 @@ readonly workspace="$(pwd)/tools/workspace/python"
 [ -z "${commit}" ] || check_working_tree
 
 # Ensure venv exists.
-bazel fetch @python --force
+bazel fetch @python//:all --force
 
 # Create a temporary project used to pin PDM itself.
 readonly project_pdm="$(mktemp -d)"
@@ -87,7 +87,7 @@ files_to_commit+=( "$(git diff --name-only HEAD -- "${requirements}")" )
 
 if [ ${#files_to_commit[@]} -gt 0 ]; then
     # PDM needs to be updated.
-    bazel fetch @python
+    bazel fetch @python//:all
 
     # Update the PDM lock files (again). This probably won't do anything, but
     # we do it just in case the newer PDM produces different pins.
