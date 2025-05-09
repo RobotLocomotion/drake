@@ -386,12 +386,9 @@ void QuaternionFloatingMobilizer<T>::DoCalcNplusMatrix(
 }
 
 template <typename T>
-void QuaternionFloatingMobilizer<T>::MapVelocityToQDot(
+void QuaternionFloatingMobilizer<T>::DoMapVelocityToQDot(
     const systems::Context<T>& context, const Eigen::Ref<const VectorX<T>>& v,
     EigenPtr<VectorX<T>> qdot) const {
-  DRAKE_ASSERT(v.size() == kNv);
-  DRAKE_ASSERT(qdot != nullptr);
-  DRAKE_ASSERT(qdot->size() == kNq);
   const Quaternion<T> q_FM = get_quaternion(context);
   // Angular component, q̇_WB = N(q)⋅w_WB:
   qdot->template head<4>() =
@@ -401,12 +398,9 @@ void QuaternionFloatingMobilizer<T>::MapVelocityToQDot(
 }
 
 template <typename T>
-void QuaternionFloatingMobilizer<T>::MapQDotToVelocity(
+void QuaternionFloatingMobilizer<T>::DoMapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot, EigenPtr<VectorX<T>> v) const {
-  DRAKE_ASSERT(qdot.size() == kNq);
-  DRAKE_ASSERT(v != nullptr);
-  DRAKE_ASSERT(v->size() == kNv);
   const Quaternion<T> q_FM = get_quaternion(context);
   // Angular component, w_WB = N⁺(q)⋅q̇_WB:
   v->template head<3>() =

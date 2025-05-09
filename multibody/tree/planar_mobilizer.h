@@ -216,22 +216,22 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
 
   bool is_velocity_equal_to_qdot() const override { return true; }
 
-  // Maps v to qdot, which for this mobilizer is q̇ = v.
-  void MapVelocityToQDot(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& v,
-                         EigenPtr<VectorX<T>> qdot) const final;
-
-  // Maps qdot to v, which for this mobilizer is v = q̇.
-  void MapQDotToVelocity(const systems::Context<T>& context,
-                         const Eigen::Ref<const VectorX<T>>& qdot,
-                         EigenPtr<VectorX<T>> v) const final;
-
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 
   void DoCalcNplusMatrix(const systems::Context<T>& context,
                          EigenPtr<MatrixX<T>> Nplus) const final;
+
+  // Maps v to qdot, which for this mobilizer is q̇ = v.
+  void DoMapVelocityToQDot(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& v,
+                           EigenPtr<VectorX<T>> qdot) const final;
+
+  // Maps qdot to v, which for this mobilizer is v = q̇.
+  void DoMapQDotToVelocity(const systems::Context<T>& context,
+                           const Eigen::Ref<const VectorX<T>>& qdot,
+                           EigenPtr<VectorX<T>> v) const final;
 
   // Generally, q̈ = Ṅ(q,q̇)⋅v + N(q)⋅v̇. For this mobilizer, Ṅ = zero matrix.
   void DoCalcNDotMatrix(const systems::Context<T>& context,
