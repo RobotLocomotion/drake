@@ -98,30 +98,39 @@ void DefinePlanningIrisParameterizationFunction(py::module m) {
 
   // IrisParameterizationFunction
   const auto& cls_doc = doc.IrisParameterizationFunction;
+
+  const std::string parameterization_function_docstring =
+      std::string(cls_doc.ctor
+              .doc_3args_parameterization_parameterization_is_threadsafe_parameterization_dimension) +
+      R"(
+
+
+.. note:: Due to the GIL, it is inefficient to call a Python function
+   concurrently across multiple C++ threads. Therefore, the
+   parameterization setter function automatically sets threadsafe to false.
+)";
+
   py::class_<IrisParameterizationFunction> iris_parameterization_function(
       m, "IrisParameterizationFunction", cls_doc.doc);
-  iris_parameterization_function.def(py::init<>())
-      .def(
-          "set_parameterization",
-          [](IrisParameterizationFunction& self,
-              const IrisParameterizationFunction::ParameterizationFunction&
-                  parameterization,
-              int parameterization_dimension) {
-            self.set_parameterization(parameterization,
-                /* parameterization_is_threadsafe */ false,
-                parameterization_dimension);
-          },
-          py::arg("parameterization"), py::arg("parameterization_dimension"),
-          (std::string(cls_doc.set_parameterization.doc) +
-              "@note Due to GIL, it is inefficient to call a python function "
-              "concurrently across multiple C++ threads. So the "
-              "parameterization setter function automatically sets threadsafe "
-              "to false")
-              .c_str())
-      .def("SetParameterizationFromExpression",
-          &IrisParameterizationFunction::SetParameterizationFromExpression,
+  iris_parameterization_function.def(py::init<>(), cls_doc.ctor.doc_0args)
+      .def(py::init(
+               [](const IrisParameterizationFunction::ParameterizationFunction&
+                       parameterization,
+                   int parameterization_dimension) {
+                 return IrisParameterizationFunction(parameterization,
+                     /* parameterization_is_threadsafe = */ false,
+                     parameterization_dimension);
+               }),
+          py::arg("parameterization"), py::arg("dimension"),
+          parameterization_function_docstring.c_str())
+      .def(py::init<const Eigen::VectorX<symbolic::Expression>&,
+               const Eigen::VectorX<symbolic::Variable>&>(),
           py::arg("expression_parameterization"), py::arg("variables"),
-          cls_doc.SetParameterizationFromExpression.doc)
+          cls_doc.ctor.doc_2args_expression_parameterization_variables)
+      .def(py::init<const multibody::RationalForwardKinematics*,
+               const Eigen::Ref<const Eigen::VectorXd>&>(),
+          py::arg("kin"), py::arg("q_star_val"),
+          cls_doc.ctor.doc_2args_kin_q_star_val)
       .def("get_parameterization_is_threadsafe",
           &IrisParameterizationFunction::get_parameterization_is_threadsafe,
           cls_doc.get_parameterization_is_threadsafe.doc)
@@ -130,12 +139,7 @@ void DefinePlanningIrisParameterizationFunction(py::module m) {
           cls_doc.get_parameterization_dimension.doc)
       .def("get_parameterization",
           &IrisParameterizationFunction::get_parameterization,
-          cls_doc.get_parameterization.doc)
-      .def_static("CreateWithRationalKinematicParameterization",
-          IrisParameterizationFunction::
-              CreateWithRationalKinematicParameterization,
-          py::arg("kin"), py::arg("q_star_val"),
-          cls_doc.CreateWithRationalKinematicParameterization.doc);
+          cls_doc.get_parameterization.doc);
 }
 
 }  // namespace

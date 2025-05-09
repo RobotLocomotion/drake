@@ -9,6 +9,7 @@ from pydrake.planning import (
     RobotDiagramBuilder,
     SceneGraphCollisionChecker,
     CollisionCheckerParams,
+    IrisParameterizationFunction,
 )
 from pydrake.symbolic import Variable
 
@@ -90,17 +91,10 @@ class TestIrisZo(unittest.TestCase):
         options.sampled_iris_options.random_seed = 1337
         options.sampled_iris_options.mixing_steps = 50
         starting_ellipsoid = Hyperellipsoid.MakeHypersphere(0.01, seed_point)
-        ik = InverseKinematics(plant)
         options.sampled_iris_options.\
-            prog_with_additional_constraints = ik.prog()
-        # TODO(cohnt): Debug why this segfaults or throws an Eigen error if we
-        # directly call
-        # options.sampled_iris_options.\
-        #     prog_with_additional_constraints = InverseKinematics(
-        #         plant
-        #     ).prog()
-        # Perhaps this is another instance like issue #20131 that wasn't caught
-        # in PR #22795?
+            prog_with_additional_constraints = InverseKinematics(
+                plant
+            ).prog()
         domain = HPolyhedron.MakeBox(plant.GetPositionLowerLimits(),
                                      plant.GetPositionUpperLimits())
         region = mut.IrisZo(checker=checker,
@@ -114,9 +108,9 @@ class TestIrisZo(unittest.TestCase):
 
         kin = RationalForwardKinematics(plant)
         q_star = np.zeros(2)
-        options.parameterization = mut.IrisParameterizationFunction.\
-            CreateWithRationalKinematicParameterization(kin=kin,
-                                                        q_star_val=q_star)
+        options.parameterization = mut.IrisParameterizationFunction(
+            kin=kin,
+            q_star_val=q_star)
         self.assertTrue(
             options.parameterization.get_parameterization_is_threadsafe())
         self.assertEqual(
@@ -129,7 +123,7 @@ class TestIrisZo(unittest.TestCase):
                                     kin.ComputeQValue(s, q_star), atol=0))
 
         options2 = mut.IrisZoOptions()
-        options2.parameterization.set_parameterization(
+        options2.parameterization = IrisParameterizationFunction(
             options.parameterization.get_parameterization(),
             options.parameterization.get_parameterization_dimension())
         self.assertFalse(
@@ -156,7 +150,7 @@ class TestIrisZo(unittest.TestCase):
 
         options4 = mut.IrisZoOptions()
         v = Variable("v")
-        options4.parameterization.SetParameterizationFromExpression(
+        options4.parameterization = IrisParameterizationFunction(
               expression_parameterization=[2 * v + 1], variables=[v])
         self.assertTrue(
             options4.parameterization.get_parameterization_is_threadsafe())

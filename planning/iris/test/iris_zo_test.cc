@@ -50,7 +50,7 @@ TEST_F(JointLimits1D, JointLimitsBasic) {
 TEST_F(JointLimits1D, JointLimitsWithParameterization) {
   std::vector<IrisZoOptions> vector_of_options;
   vector_of_options.emplace_back();
-  vector_of_options.back().parameterization.set_parameterization(
+  vector_of_options.back().parameterization = IrisParameterizationFunction(
       [](const VectorXd& q) -> VectorXd {
         return q;
       },
@@ -63,7 +63,7 @@ TEST_F(JointLimits1D, JointLimitsWithParameterization) {
   // Now set the parameterization with parameterization_is_threadsafe set to
   // true.
   vector_of_options.emplace_back();
-  vector_of_options.back().parameterization.set_parameterization(
+  vector_of_options.back().parameterization = IrisParameterizationFunction(
       [](const VectorXd& q) -> VectorXd {
         return q;
       },
@@ -79,8 +79,8 @@ TEST_F(JointLimits1D, JointLimitsWithParameterization) {
   Eigen::VectorX<symbolic::Expression> parameterization_expression(1);
   parameterization_expression[0] = symbolic::Expression(variables[0]);
   vector_of_options.emplace_back();
-  vector_of_options.back().parameterization.SetParameterizationFromExpression(
-      parameterization_expression, variables);
+  vector_of_options.back().parameterization =
+      IrisParameterizationFunction(parameterization_expression, variables);
   // Expression parameterizations are always threadsafe.
   EXPECT_EQ(vector_of_options.back()
                 .parameterization.get_parameterization_is_threadsafe(),
@@ -120,7 +120,7 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
       symbolic::Expression(variables[0]);
   parameterization_expression_wrong_dimension[1] =
       symbolic::Expression(variables[0]);
-  options.parameterization.SetParameterizationFromExpression(
+  options.parameterization = IrisParameterizationFunction(
       parameterization_expression_wrong_dimension, variables);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisZo(*checker_, starting_ellipsoid_, domain_, options),
@@ -132,13 +132,13 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
   Eigen::VectorX<symbolic::Expression>
       parameterization_expression_extra_variable(1);
   parameterization_expression_extra_variable[0] = variables[0] + extra_variable;
-  EXPECT_THROW(options.parameterization.SetParameterizationFromExpression(
+  EXPECT_THROW(options.parameterization = IrisParameterizationFunction(
                    parameterization_expression_extra_variable, variables),
                std::exception);
   Eigen::VectorX<symbolic::Expression>
       parameterization_expression_missing_variable(1);
   parameterization_expression_missing_variable[0] = symbolic::Expression(1);
-  EXPECT_THROW(options.parameterization.SetParameterizationFromExpression(
+  EXPECT_THROW(IrisParameterizationFunction(
                    parameterization_expression_missing_variable, variables),
                std::exception);
 }
@@ -163,9 +163,8 @@ TEST_F(DoublePendulumRationalForwardKinematics,
        ParameterizationFromStaticConstructor) {
   IrisZoOptions options;
   options.parameterization =
-      IrisParameterizationFunction::CreateWithRationalKinematicParameterization(
-          &rational_kinematics_,
-          /* q_star_val */ Vector2d::Zero());
+      IrisParameterizationFunction(&rational_kinematics_,
+                                   /* q_star_val */ Vector2d::Zero());
   options.sampled_iris_options.verbose = true;
 
   meshcat_->Delete();
@@ -206,8 +205,8 @@ TEST_F(DoublePendulumRationalForwardKinematics,
     parameterization_expression[i] =
         atan2(2 * variables[i], 1 - pow(variables[i], 2));
   }
-  options.parameterization.SetParameterizationFromExpression(
-      parameterization_expression, variables);
+  options.parameterization =
+      IrisParameterizationFunction(parameterization_expression, variables);
   EXPECT_TRUE(options.parameterization.get_parameterization_is_threadsafe());
   EXPECT_EQ(options.parameterization.get_parameterization_dimension(), 2);
 
@@ -223,7 +222,7 @@ TEST_F(DoublePendulumRationalForwardKinematics, BadParameterization) {
   // Verify that we fail gracefully if the parameterization has the wrong output
   // dimension (even if we claim it outputs the correct dimension).
   IrisZoOptions options;
-  options.parameterization.set_parameterization(
+  options.parameterization = IrisParameterizationFunction(
       [](const VectorXd& q) -> VectorXd {
         return Vector1d(0.0);
       },
@@ -332,7 +331,7 @@ TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadContainmentPoint) {
 TEST_F(ConvexConfigurationSubspace, AdditionalConstraintsDimensionMismatch) {
   IrisZoOptions options;
 
-  options.parameterization.set_parameterization(
+  options.parameterization = IrisParameterizationFunction(
       [](const Vector1d& config) -> Vector2d {
         return Vector2d{config[0], 2 * config[0] + 1};
       },
@@ -352,7 +351,7 @@ TEST_F(ConvexConfigurationSubspace, AdditionalConstraintsDimensionMismatch) {
 
 TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   IrisZoOptions options;
-  options.parameterization.set_parameterization(
+  options.parameterization = IrisParameterizationFunction(
       [](const Vector1d& config) -> Vector2d {
         return Vector2d{config[0], 2 * config[0] + 1};
       },
@@ -379,8 +378,8 @@ TEST_F(ConvexConfigurationSubspace, ExpressionParameterization) {
   parameterization_expression[1] = 2 * symbolic::Expression(variables[0]) + 1;
 
   IrisZoOptions options;
-  options.parameterization.SetParameterizationFromExpression(
-      parameterization_expression, variables);
+  options.parameterization =
+      IrisParameterizationFunction(parameterization_expression, variables);
   EXPECT_TRUE(options.parameterization.get_parameterization_is_threadsafe());
   EXPECT_EQ(options.parameterization.get_parameterization_dimension(), 1);
 

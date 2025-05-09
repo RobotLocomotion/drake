@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
+#include "drake/bindings/pydrake/common/ref_cycle_pybind.h"
 #include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -67,7 +68,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
   {
     using Class = InverseKinematics;
     constexpr auto& cls_doc = doc.InverseKinematics;
-    py::class_<Class> cls(m, "InverseKinematics", cls_doc.doc);
+    py::class_<Class> cls(
+        m, "InverseKinematics", py::dynamic_attr(), cls_doc.doc);
     cls.def(py::init<const MultibodyPlant<double>&, bool>(), py::arg("plant"),
            py::arg("with_joint_limits") = true,
            // Keep alive, reference: `self` keeps `plant` alive.
@@ -158,7 +160,8 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::arg("frameF"), py::arg("frameG"), py::arg("p_GP"), py::arg("A"),
             py::arg("b"), cls_doc.AddPolyhedronConstraint.doc)
         .def("q", &Class::q, cls_doc.q.doc)
-        .def("prog", &Class::prog, py_rvp::reference_internal, cls_doc.prog.doc)
+        .def("prog", &Class::prog, internal::ref_cycle<0, 1>(),
+            py_rvp::reference, cls_doc.prog.doc)
         .def("get_mutable_prog", &Class::get_mutable_prog,
             py_rvp::reference_internal, cls_doc.get_mutable_prog.doc)
         .def("context", &Class::context, py_rvp::reference_internal,

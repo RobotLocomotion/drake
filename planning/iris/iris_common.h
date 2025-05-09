@@ -47,11 +47,10 @@ class CommonSampledIrisOptions {
   int num_particles = 1e3;
 
   /** Decision threshold for the unadaptive test. Choosing a small value
-   * increases both the cost and the power statistical test. Increasing the
-   * value of `tau` makes running an individual test cheaper but decreases its
-   * power to accept a polytope. We find choosing a value of 0.5 a good
-   * trade-off.
-   */
+   * increases both the cost and the power of the statistical test. Increasing
+   * the value of `tau` makes running an individual test cheaper but decreases
+   * its power to accept a polytope. We find choosing a value of 0.5 a good
+   * trade-off. */
   double tau = 0.5;
 
   /** Upper bound on the probability the returned region has a
@@ -117,9 +116,8 @@ class CommonSampledIrisOptions {
   /** Number of mixing steps used for hit-and-run sampling. */
   int mixing_steps{50};
 
-  /** Passing a meshcat instance may enable debugging visualizations; this
-  currently and when the
-  configuration space is <= 3 dimensional.*/
+  /** Passing a meshcat instance may enable debugging visualizations when the
+   * configuration space is <= 3 dimensional.*/
   std::shared_ptr<geometry::Meshcat> meshcat{};
 
   /** By default, IRIS-ZO only considers collision avoidance constraints. This
@@ -154,21 +152,20 @@ class IrisParameterizationFunction {
    * via `checker.plant().num_positions()` and m is `parameterization_dimension`
    * if specified. The user must provide `parameterization`, which is the
    * function f, `parameterization_is_threadsafe`, which is whether or not
-   * `parametrization` can be called concurrently, and
+   * `parameterization` can be called concurrently, and
    * `parameterization_dimension`, the dimension of the input space Q. */
-  void set_parameterization(const ParameterizationFunction& parameterization,
-                            bool parameterization_is_threadsafe,
-                            int parameterization_dimension) {
-    parameterization_ = parameterization;
-    parameterization_is_threadsafe_ = parameterization_is_threadsafe;
-    parameterization_dimension_ = parameterization_dimension;
-  }
+  IrisParameterizationFunction(const ParameterizationFunction& parameterization,
+                               bool parameterization_is_threadsafe,
+                               int parameterization_dimension)
+      : parameterization_is_threadsafe_(parameterization_is_threadsafe),
+        parameterization_dimension_(parameterization_dimension),
+        parameterization_(parameterization) {}
 
   /** Default constructor -- returns the identity mapping, which is threadsafe
    * and compatible with any dimension configuration space. */
   IrisParameterizationFunction() = default;
 
-  /** Alternative to `set_parameterization` that allows the user to define the
+  /** Alternative constructor that allows the user to define the
    * parameterization using a `VectorX<Expression>`. The user must also provide
    * a vector containing the variables used in `expression_parameterization`, in
    * the order that they should be evaluated. Each `Variable` in `variables`
@@ -181,9 +178,20 @@ class IrisParameterizationFunction {
    * `variables`.
    * @throws if any variables in `variables` are not used anywhere in
    * `expression_parameterization`. */
-  void SetParameterizationFromExpression(
+  IrisParameterizationFunction(
       const Eigen::VectorX<symbolic::Expression>& expression_parameterization,
       const Eigen::VectorX<symbolic::Variable>& variables);
+
+  /** Constructs an instance of IrisParameterizationFunction that handles a
+   * rational kinematic parameterization. Regions are grown in the `s`
+   * variables, so as to minimize collisions in the `q` variables. See
+   * RationalForwardKinematics for details.
+   * @note The user is responsible for ensuring `kin` (and the underlying
+   * MultibodyPlant it is built on) is kept alive. If that object is deleted,
+   * then the parameterization can no longer be used. */
+  IrisParameterizationFunction(
+      const multibody::RationalForwardKinematics* kin,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val);
 
   /** Get the parameterization function.
    * @note If the user has not specified this with `set_parameterization()`,
@@ -210,18 +218,6 @@ class IrisParameterizationFunction {
   std::optional<int> get_parameterization_dimension() const {
     return parameterization_dimension_;
   }
-
-  /** Constructs an instance of IrisParameterizationFunction that handles a
-   * rational kinematic parameterization. Regions are grown in the `s`
-   * variables, so as to minimize collisions in the `q` variables. See
-   * RationalForwardKinematics for details.
-   * @note The user is responsible for ensuring `kin` (and the underlying
-   * MultibodyPlant it is built on) is kept alive. If that object is deleted,
-   * then the parametrization can no longer be used. */
-  static IrisParameterizationFunction
-  CreateWithRationalKinematicParameterization(
-      const multibody::RationalForwardKinematics* kin,
-      const Eigen::Ref<const Eigen::VectorXd>& q_star_val);
 
  private:
   bool parameterization_is_threadsafe_{true};
