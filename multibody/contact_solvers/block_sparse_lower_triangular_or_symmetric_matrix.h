@@ -228,6 +228,17 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
     return blocks_[j][flat];
   }
 
+  /* Returns all stored blocks of `this` matrix. */
+  const std::vector<std::vector<MatrixType>>& blocks() const { return blocks_; }
+
+  /* Returns the mapping from block row index to flat index for each column;
+   i.e., blocks_[j][block_row_to_flat_[j][i]] gives the (i,j) block.
+   block_row_to_flat_[j][i] == -1 if the implied block is empty or is the
+   reflection of the symmetric block. */
+  const std::vector<std::vector<int>>& block_row_to_flat() const {
+    return block_row_to_flat_;
+  }
+
   /* Returns the sorted block row indices in the lower triangular part of the
    j-th block column. This is essentially a map between flat indices to block
    row indices, i.e. `block_row_indices(j)[flat] == i`, where i and j are block
