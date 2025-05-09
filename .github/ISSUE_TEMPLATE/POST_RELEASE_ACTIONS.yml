@@ -34,7 +34,9 @@ body:
         "These two steps must be completed in order. Check each box after
         completion."
       options:
-        - label: "Run script to push Docker images and mirror the artifacts to S3"
+        - label: >
+            Run script to push Docker images, mirror the artifacts to S3, and
+            push the source archive to GitHub
           required: false
         - label: "Run script for Apt repository updates"
           required: false
