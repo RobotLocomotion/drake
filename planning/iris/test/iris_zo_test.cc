@@ -16,6 +16,7 @@
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/planning/iris/iris_common.h"
 #include "drake/planning/iris/test/iris_test_utilities.h"
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/scene_graph_collision_checker.h"
@@ -49,25 +50,28 @@ TEST_F(JointLimits1D, JointLimitsBasic) {
 TEST_F(JointLimits1D, JointLimitsWithParameterization) {
   std::vector<IrisZoOptions> vector_of_options;
   vector_of_options.emplace_back();
-  vector_of_options.back().set_parameterization(
+  vector_of_options.back().parameterization = IrisParameterizationFunction(
       [](const VectorXd& q) -> VectorXd {
         return q;
       },
       /* parameterization_is_threadsafe */ false,
       /* parameterization_dimension */ 1);
-  EXPECT_EQ(vector_of_options.back().get_parameterization_is_threadsafe(),
+  EXPECT_EQ(vector_of_options.back()
+                .parameterization.get_parameterization_is_threadsafe(),
             false);
 
   // Now set the parameterization with parameterization_is_threadsafe set to
   // true.
   vector_of_options.emplace_back();
-  vector_of_options.back().set_parameterization(
+  vector_of_options.back().parameterization = IrisParameterizationFunction(
       [](const VectorXd& q) -> VectorXd {
         return q;
       },
       /* parameterization_is_threadsafe */ true,
       /* parameterization_dimension */ 1);
-  EXPECT_EQ(vector_of_options[1].get_parameterization_is_threadsafe(), true);
+  EXPECT_EQ(vector_of_options[1]
+                .parameterization.get_parameterization_is_threadsafe(),
+            true);
 
   // Now use an Expression parameterization.
   Eigen::VectorX<symbolic::Variable> variables(1);
@@ -75,19 +79,23 @@ TEST_F(JointLimits1D, JointLimitsWithParameterization) {
   Eigen::VectorX<symbolic::Expression> parameterization_expression(1);
   parameterization_expression[0] = symbolic::Expression(variables[0]);
   vector_of_options.emplace_back();
-  vector_of_options.back().SetParameterizationFromExpression(
-      parameterization_expression, variables);
+  vector_of_options.back().parameterization =
+      IrisParameterizationFunction(parameterization_expression, variables);
   // Expression parameterizations are always threadsafe.
-  EXPECT_EQ(vector_of_options.back().get_parameterization_is_threadsafe(),
+  EXPECT_EQ(vector_of_options.back()
+                .parameterization.get_parameterization_is_threadsafe(),
             true);
 
   for (auto& options : vector_of_options) {
-    options.verbose = true;
+    options.sampled_iris_options.verbose = true;
 
     // Check that the parameterization was set correctly.
-    ASSERT_TRUE(options.get_parameterization_dimension().has_value());
-    EXPECT_EQ(options.get_parameterization_dimension().value(), 1);
-    const Vector1d output = options.get_parameterization()(Vector1d(3.0));
+    ASSERT_TRUE(
+        options.parameterization.get_parameterization_dimension().has_value());
+    EXPECT_EQ(options.parameterization.get_parameterization_dimension().value(),
+              1);
+    const Vector1d output =
+        options.parameterization.get_parameterization()(Vector1d(3.0));
     EXPECT_NEAR(output[0], 3.0, 1e-15);
 
     HPolyhedron region =
@@ -112,7 +120,7 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
       symbolic::Expression(variables[0]);
   parameterization_expression_wrong_dimension[1] =
       symbolic::Expression(variables[0]);
-  options.SetParameterizationFromExpression(
+  options.parameterization = IrisParameterizationFunction(
       parameterization_expression_wrong_dimension, variables);
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisZo(*checker_, starting_ellipsoid_, domain_, options),
@@ -124,13 +132,13 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
   Eigen::VectorX<symbolic::Expression>
       parameterization_expression_extra_variable(1);
   parameterization_expression_extra_variable[0] = variables[0] + extra_variable;
-  EXPECT_THROW(options.SetParameterizationFromExpression(
+  EXPECT_THROW(options.parameterization = IrisParameterizationFunction(
                    parameterization_expression_extra_variable, variables),
                std::exception);
   Eigen::VectorX<symbolic::Expression>
       parameterization_expression_missing_variable(1);
   parameterization_expression_missing_variable[0] = symbolic::Expression(1);
-  EXPECT_THROW(options.SetParameterizationFromExpression(
+  EXPECT_THROW(IrisParameterizationFunction(
                    parameterization_expression_missing_variable, variables),
                std::exception);
 }
@@ -138,10 +146,10 @@ TEST_F(JointLimits1D, ParameterizationExpressionErrorChecks) {
 // Reproduced from the IrisInConfigurationSpace unit tests.
 TEST_F(DoublePendulum, IrisZoTest) {
   IrisZoOptions options;
-  options.verbose = true;
+  options.sampled_iris_options.verbose = true;
 
   meshcat_->Delete();
-  options.meshcat = meshcat_;
+  options.sampled_iris_options.meshcat = meshcat_;
 
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
@@ -153,21 +161,24 @@ TEST_F(DoublePendulum, IrisZoTest) {
 // configuration space built from RationalForwardKinematics.
 TEST_F(DoublePendulumRationalForwardKinematics,
        ParameterizationFromStaticConstructor) {
-  IrisZoOptions options =
-      IrisZoOptions::CreateWithRationalKinematicParameterization(
-          &rational_kinematics_,
-          /* q_star_val */ Vector2d::Zero());
-  options.verbose = true;
+  IrisZoOptions options;
+  options.parameterization =
+      IrisParameterizationFunction(&rational_kinematics_,
+                                   /* q_star_val */ Vector2d::Zero());
+  options.sampled_iris_options.verbose = true;
 
   meshcat_->Delete();
-  options.meshcat = meshcat_;
+  options.sampled_iris_options.meshcat = meshcat_;
 
   // Check that the parameterization was set correctly.
-  EXPECT_EQ(options.get_parameterization_is_threadsafe(), true);
-  ASSERT_TRUE(options.get_parameterization_dimension().has_value());
-  EXPECT_EQ(options.get_parameterization_dimension().value(), 2);
+  EXPECT_EQ(options.parameterization.get_parameterization_is_threadsafe(),
+            true);
+  ASSERT_TRUE(
+      options.parameterization.get_parameterization_dimension().has_value());
+  EXPECT_EQ(options.parameterization.get_parameterization_dimension().value(),
+            2);
 
-  CheckParameterization(options.get_parameterization());
+  CheckParameterization(options.parameterization.get_parameterization());
 
   HPolyhedron region =
       IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
@@ -175,7 +186,8 @@ TEST_F(DoublePendulumRationalForwardKinematics,
 
   CheckRegionRationalForwardKinematics(region);
   PlotEnvironmentAndRegionRationalForwardKinematics(
-      region, options.get_parameterization(), region_query_point_1_);
+      region, options.parameterization.get_parameterization(),
+      region_query_point_1_);
 }
 
 // Verify that we can get the same behavior by using an Expression
@@ -193,12 +205,12 @@ TEST_F(DoublePendulumRationalForwardKinematics,
     parameterization_expression[i] =
         atan2(2 * variables[i], 1 - pow(variables[i], 2));
   }
-  options.SetParameterizationFromExpression(parameterization_expression,
-                                            variables);
-  EXPECT_TRUE(options.get_parameterization_is_threadsafe());
-  EXPECT_EQ(options.get_parameterization_dimension(), 2);
+  options.parameterization =
+      IrisParameterizationFunction(parameterization_expression, variables);
+  EXPECT_TRUE(options.parameterization.get_parameterization_is_threadsafe());
+  EXPECT_EQ(options.parameterization.get_parameterization_dimension(), 2);
 
-  CheckParameterization(options.get_parameterization());
+  CheckParameterization(options.parameterization.get_parameterization());
 
   HPolyhedron region =
       IrisZo(*checker_, starting_ellipsoid_rational_forward_kinematics_,
@@ -210,7 +222,7 @@ TEST_F(DoublePendulumRationalForwardKinematics, BadParameterization) {
   // Verify that we fail gracefully if the parameterization has the wrong output
   // dimension (even if we claim it outputs the correct dimension).
   IrisZoOptions options;
-  options.set_parameterization(
+  options.parameterization = IrisParameterizationFunction(
       [](const VectorXd& q) -> VectorXd {
         return Vector1d(0.0);
       },
@@ -225,9 +237,9 @@ TEST_F(DoublePendulumRationalForwardKinematics, BadParameterization) {
 // Reproduced from the IrisInConfigurationSpace unit tests.
 TEST_F(BlockOnGround, IrisZoTest) {
   IrisZoOptions options;
-  options.verbose = true;
+  options.sampled_iris_options.verbose = true;
   meshcat_->Delete();
-  options.meshcat = meshcat_;
+  options.sampled_iris_options.meshcat = meshcat_;
 
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
@@ -247,8 +259,8 @@ TEST_F(ConvexConfigurationSpace, IrisZoTest) {
   // away from that corner. Open the meshcat visualization to step through the
   // details!
   meshcat_->Delete();
-  options.meshcat = meshcat_;
-  options.verbose = true;
+  options.sampled_iris_options.meshcat = meshcat_;
+  options.sampled_iris_options.verbose = true;
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
   PlotEnvironmentAndRegion(region);
@@ -258,7 +270,7 @@ TEST_F(ConvexConfigurationSpace, IrisZoTest) {
 // collision, and when the initial point violates an additional constraint.
 TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadInitialEllipsoid) {
   IrisZoOptions options;
-  options.prog_with_additional_constraints = &prog_;
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
 
   Hyperellipsoid ellipsoid_in_collision =
       Hyperellipsoid::MakeHypersphere(1e-2, Eigen::Vector2d(-1.0, 1.0));
@@ -274,12 +286,12 @@ TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadInitialEllipsoid) {
 
 TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, IrisZoTest) {
   IrisZoOptions options;
-  options.prog_with_additional_constraints = &prog_;
-  options.max_iterations = 1;
-  options.max_iterations_separating_planes = 1;
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
+  options.sampled_iris_options.max_iterations = 1;
+  options.sampled_iris_options.max_iterations_separating_planes = 1;
 
   meshcat_->Delete();
-  options.meshcat = meshcat_;
+  options.sampled_iris_options.meshcat = meshcat_;
 
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
@@ -288,9 +300,9 @@ TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, IrisZoTest) {
 
 TEST_F(ConvexConfigurationSpaceWithNotThreadsafeConstraint, IrisZoTest) {
   IrisZoOptions options;
-  options.prog_with_additional_constraints = &prog_;
-  options.max_iterations = 3;
-  options.max_iterations_separating_planes = 20;
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
+  options.sampled_iris_options.max_iterations = 3;
+  options.sampled_iris_options.max_iterations_separating_planes = 20;
 
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
@@ -298,7 +310,7 @@ TEST_F(ConvexConfigurationSpaceWithNotThreadsafeConstraint, IrisZoTest) {
 
 TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadContainmentPoint) {
   IrisZoOptions options;
-  options.prog_with_additional_constraints = &prog_;
+  options.sampled_iris_options.prog_with_additional_constraints = &prog_;
 
   // If we have a containment point violating this constraint, IrisZo should
   // throw. Three points are needed to ensure the center of the starting
@@ -308,7 +320,7 @@ TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadContainmentPoint) {
   containment_points << -0.2, -0.6, -0.6,
                          0.0,  0.1, -0.1;
   // clang-format on
-  options.containment_points = containment_points;
+  options.sampled_iris_options.containment_points = containment_points;
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisZo(*checker_, starting_ellipsoid_, domain_, options),
       ".*containment points violates a constraint.*");
@@ -319,7 +331,7 @@ TEST_F(ConvexConfigurationSpaceWithThreadsafeConstraint, BadContainmentPoint) {
 TEST_F(ConvexConfigurationSubspace, AdditionalConstraintsDimensionMismatch) {
   IrisZoOptions options;
 
-  options.set_parameterization(
+  options.parameterization = IrisParameterizationFunction(
       [](const Vector1d& config) -> Vector2d {
         return Vector2d{config[0], 2 * config[0] + 1};
       },
@@ -328,7 +340,7 @@ TEST_F(ConvexConfigurationSubspace, AdditionalConstraintsDimensionMismatch) {
 
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  options.prog_with_additional_constraints = &prog;
+  options.sampled_iris_options.prog_with_additional_constraints = &prog;
 
   // Since we have a parameterization, the prog with additional constraints will
   // have the wrong dimension. We expect an error message.
@@ -339,7 +351,7 @@ TEST_F(ConvexConfigurationSubspace, AdditionalConstraintsDimensionMismatch) {
 
 TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   IrisZoOptions options;
-  options.set_parameterization(
+  options.parameterization = IrisParameterizationFunction(
       [](const Vector1d& config) -> Vector2d {
         return Vector2d{config[0], 2 * config[0] + 1};
       },
@@ -350,7 +362,8 @@ TEST_F(ConvexConfigurationSubspace, FunctionParameterization) {
   CheckRegion(region);
 
   meshcat_->Delete();
-  PlotEnvironmentAndRegionSubspace(region, options.get_parameterization());
+  PlotEnvironmentAndRegionSubspace(
+      region, options.parameterization.get_parameterization());
 }
 
 TEST_F(ConvexConfigurationSubspace, ExpressionParameterization) {
@@ -365,10 +378,10 @@ TEST_F(ConvexConfigurationSubspace, ExpressionParameterization) {
   parameterization_expression[1] = 2 * symbolic::Expression(variables[0]) + 1;
 
   IrisZoOptions options;
-  options.SetParameterizationFromExpression(parameterization_expression,
-                                            variables);
-  EXPECT_TRUE(options.get_parameterization_is_threadsafe());
-  EXPECT_EQ(options.get_parameterization_dimension(), 1);
+  options.parameterization =
+      IrisParameterizationFunction(parameterization_expression, variables);
+  EXPECT_TRUE(options.parameterization.get_parameterization_is_threadsafe());
+  EXPECT_EQ(options.parameterization.get_parameterization_dimension(), 1);
 
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
@@ -382,9 +395,9 @@ TEST_F(FourCornersBoxes, SingleContainmentPoint) {
   single_containment_point << 0, 1;
 
   IrisZoOptions options;
-  options.verbose = true;
-  options.configuration_space_margin = 0.04;
-  options.containment_points = single_containment_point;
+  options.sampled_iris_options.verbose = true;
+  options.sampled_iris_options.configuration_space_margin = 0.04;
+  options.sampled_iris_options.containment_points = single_containment_point;
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       IrisZo(*checker_, starting_ellipsoid_, domain_, options),
@@ -401,11 +414,11 @@ TEST_F(FourCornersBoxes, TwoContainmentPoints) {
                         1, starting_ellipsoid_.center().y();
   // clang-format on
   IrisZoOptions options;
-  options.verbose = true;
+  options.sampled_iris_options.verbose = true;
   meshcat_->Delete();
-  options.meshcat = meshcat_;
-  options.configuration_space_margin = 0.04;
-  options.containment_points = containment_points;
+  options.sampled_iris_options.meshcat = meshcat_;
+  options.sampled_iris_options.configuration_space_margin = 0.04;
+  options.sampled_iris_options.containment_points = containment_points;
 
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
   CheckRegionContainsPoints(region, containment_points);
@@ -424,12 +437,12 @@ TEST_F(FourCornersBoxes, FourContainmentPoints) {
                          yw, yw, -yw, -yw;
   // clang-format on
   IrisZoOptions options;
-  options.verbose = true;
+  options.sampled_iris_options.verbose = true;
   meshcat_->Delete();
-  options.meshcat = meshcat_;
-  options.containment_points = containment_points;
-  options.max_iterations_separating_planes = 100;
-  options.max_iterations = -1;
+  options.sampled_iris_options.meshcat = meshcat_;
+  options.sampled_iris_options.containment_points = containment_points;
+  options.sampled_iris_options.max_iterations_separating_planes = 100;
+  options.sampled_iris_options.max_iterations = -1;
   HPolyhedron region = IrisZo(*checker_, starting_ellipsoid_, domain_, options);
 
   CheckRegionContainsPoints(region, containment_points);

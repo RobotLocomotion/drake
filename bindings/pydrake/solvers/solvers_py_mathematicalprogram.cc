@@ -470,8 +470,8 @@ void BindMathematicalProgramResult(py::module m) {
 
 void BindMathematicalProgram(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.solvers;
-  py::class_<MathematicalProgram> prog_cls(
-      m, "MathematicalProgram", doc.MathematicalProgram.doc);
+  py::class_<MathematicalProgram> prog_cls(m, "MathematicalProgram",
+      py::dynamic_attr(), doc.MathematicalProgram.doc);
   prog_cls.def(py::init<>(), doc.MathematicalProgram.ctor.doc);
   DefClone(&prog_cls);
 
