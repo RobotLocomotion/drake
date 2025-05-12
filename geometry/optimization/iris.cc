@@ -36,6 +36,7 @@ using Eigen::MatrixXd;
 using Eigen::Ref;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using internal::IrisConvexSetMaker;
 using math::RigidTransform;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
@@ -154,86 +155,6 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
 
   return P;
 }
-
-namespace {
-// Constructs a ConvexSet for each supported Shape and adds it to the set.
-class IrisConvexSetMaker final : public ShapeReifier {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(IrisConvexSetMaker);
-
-  IrisConvexSetMaker(const QueryObject<double>& query,
-                     std::optional<FrameId> reference_frame)
-      : query_{query}, reference_frame_{reference_frame} {};
-
-  void set_reference_frame(const FrameId& reference_frame) {
-    DRAKE_DEMAND(reference_frame.is_valid());
-    *reference_frame_ = reference_frame;
-  }
-
-  void set_geometry_id(const GeometryId& geom_id) { geom_id_ = geom_id; }
-
-  using ShapeReifier::ImplementGeometry;
-
-  void ImplementGeometry(const Box&, void* data) {
-    DRAKE_DEMAND(geom_id_.is_valid());
-    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
-    // Note: We choose HPolyhedron over VPolytope here, but the IRIS paper
-    // discusses a significant performance improvement using a "least-distance
-    // programming" instance from CVXGEN that exploited the VPolytope
-    // representation.  So we may wish to revisit this.
-    set = std::make_unique<HPolyhedron>(query_, geom_id_, reference_frame_);
-  }
-
-  void ImplementGeometry(const Capsule&, void* data) {
-    DRAKE_DEMAND(geom_id_.is_valid());
-    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
-    set = std::make_unique<MinkowskiSum>(query_, geom_id_, reference_frame_);
-  }
-
-  void ImplementGeometry(const Cylinder&, void* data) {
-    DRAKE_DEMAND(geom_id_.is_valid());
-    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
-    set =
-        std::make_unique<CartesianProduct>(query_, geom_id_, reference_frame_);
-  }
-
-  void ImplementGeometry(const Ellipsoid&, void* data) {
-    DRAKE_DEMAND(geom_id_.is_valid());
-    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
-    set = std::make_unique<Hyperellipsoid>(query_, geom_id_, reference_frame_);
-  }
-
-  void ImplementGeometry(const HalfSpace&, void* data) {
-    DRAKE_DEMAND(geom_id_.is_valid());
-    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
-    set = std::make_unique<HPolyhedron>(query_, geom_id_, reference_frame_);
-  }
-
-  void ImplementGeometry(const Sphere&, void* data) {
-    DRAKE_DEMAND(geom_id_.is_valid());
-    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
-    set = std::make_unique<Hyperellipsoid>(query_, geom_id_, reference_frame_);
-  }
-
-  void ImplementGeometry(const Convex&, void* data) {
-    DRAKE_DEMAND(geom_id_.is_valid());
-    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
-    set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
-  }
-
-  void ImplementGeometry(const Mesh&, void* data) {
-    DRAKE_DEMAND(geom_id_.is_valid());
-    auto& set = *static_cast<copyable_unique_ptr<ConvexSet>*>(data);
-    set = std::make_unique<VPolytope>(query_, geom_id_, reference_frame_);
-  }
-
- private:
-  const QueryObject<double>& query_{};
-  std::optional<FrameId> reference_frame_{};
-  GeometryId geom_id_{};
-};
-
-}  // namespace
 
 ConvexSets MakeIrisObstacles(const QueryObject<double>& query_object,
                              std::optional<FrameId> reference_frame) {
