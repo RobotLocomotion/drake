@@ -230,5 +230,11 @@ class IrisParameterizationFunction {
       }};
 };
 
+namespace internal {
+
+// See Definition 1 in the paper.
+int unadaptive_test_samples(double epsilon, double delta, double tau);
+
+}  // namespace internal
 }  // namespace planning
 }  // namespace drake

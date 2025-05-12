@@ -59,5 +59,10 @@ IrisParameterizationFunction::IrisParameterizationFunction(
   parameterization_dimension_ = dimension;
 }
 
+namespace internal {
+int unadaptive_test_samples(double epsilon, double delta, double tau) {
+  return static_cast<int>(-2 * std::log(delta) / (tau * tau * epsilon) + 0.5);
+}
+}  // namespace internal
 }  // namespace planning
 }  // namespace drake

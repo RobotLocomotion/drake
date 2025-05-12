@@ -80,7 +80,9 @@ drake_cc_library(
     deps = [
         ":iris_common",
         "//geometry/optimization:convex_set",
+        "//geometry/optimization:iris_internal",
         "//planning:scene_graph_collision_checker",
+        "//solvers",
     ],
 )
 

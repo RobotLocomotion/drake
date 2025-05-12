@@ -2,6 +2,7 @@
 
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/iris/iris_common.h"
 #include "drake/planning/scene_graph_collision_checker.h"
 

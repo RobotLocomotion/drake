@@ -78,6 +78,62 @@ TEST_F(DoublePendulum, PaddingUnsupported) {
       ".*nonzero padding.*");
 }
 
+// Reproduced from the IrisInConfigurationSpace unit tests.
+TEST_F(DoublePendulum, IrisNp2Test) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  options.sampled_iris_options.verbose = true;
+
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+
+  PlotEnvironmentAndRegion(region);
+}
+
+// Reproduced from the IrisInConfigurationSpace unit tests.
+TEST_F(BlockOnGround, IrisNp2Test) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+  PlotEnvironmentAndRegion(region);
+}
+
+// Reproduced from the IrisInConfigurationSpace unit tests.
+TEST_F(ConvexConfigurationSpace, IrisNp2Test) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  // Turn on meshcat for addition debugging visualizations.
+  // This example is truly adversarial for IRIS. After one iteration, the
+  // maximum-volume inscribed ellipse is approximately centered in C-free. So
+  // finding a counter-example in the bottom corner (near the test point) is
+  // not only difficult because we need to sample in a corner of the polytope,
+  // but because the objective is actually pulling the counter-example search
+  // away from that corner. Open the meshcat visualization to step through the
+  // details!
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+  options.sampled_iris_options.verbose = true;
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+  CheckRegion(region);
+  PlotEnvironmentAndRegion(region);
+}
+
 }  // namespace
 }  // namespace planning
 }  // namespace drake

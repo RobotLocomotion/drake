@@ -73,11 +73,6 @@ Eigen::VectorXd ComputeFaceTangentToDistCvxh(
   }
 }
 
-// See Definition 1 in the paper.
-int unadaptive_test_samples(double epsilon, double delta, double tau) {
-  return static_cast<int>(-2 * std::log(delta) / (tau * tau * epsilon) + 0.5);
-}
-
 // Given a pointer to a MathematicalProgram and a single particle, check whether
 // the particle satisfies the constraints. If a nullptr is given for the
 // program, return true, since the constraints are trivially-satisfied.
@@ -289,9 +284,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
        options.sampled_iris_options.max_iterations_separating_planes *
        options.sampled_iris_options.max_iterations_separating_planes);
 
-  int N_max =
-      unadaptive_test_samples(options.sampled_iris_options.epsilon, delta_min,
-                              options.sampled_iris_options.tau);
+  int N_max = internal::unadaptive_test_samples(
+      options.sampled_iris_options.epsilon, delta_min,
+      options.sampled_iris_options.tau);
 
   if (options.sampled_iris_options.verbose) {
     log()->info(
@@ -354,9 +349,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       int k_squared = num_iterations_separating_planes + 1;
       k_squared *= k_squared;
       double delta_k = outer_delta * 6 / (M_PI * M_PI * k_squared);
-      int N_k =
-          unadaptive_test_samples(options.sampled_iris_options.epsilon, delta_k,
-                                  options.sampled_iris_options.tau);
+      int N_k = internal::unadaptive_test_samples(
+          options.sampled_iris_options.epsilon, delta_k,
+          options.sampled_iris_options.tau);
 
       particles.at(0) =
           P.UniformSample(&generator, current_ellipsoid_center,
