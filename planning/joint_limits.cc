@@ -8,13 +8,11 @@
 #include "drake/common/text_logging.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-using drake::fmt_eigen;
-using drake::log;
-using drake::multibody::MultibodyPlant;
 using Eigen::VectorXd;
+using multibody::MultibodyPlant;
 
 namespace {
 
@@ -23,33 +21,38 @@ void ValidateLimits(const VectorXd& lower, const VectorXd& upper,
   if (lower.size() != upper.size()) {
     throw std::runtime_error(
         fmt::format("{}: limits [size {}, size {}] must be the same size", name,
-                    std::ssize(lower), std::ssize(upper)));
+                    lower.size(), upper.size()));
   }
+  auto limits_as_matrix = [&]() {
+    Eigen::MatrixXd combined(lower.size(), 2);
+    combined.col(0) = lower;
+    combined.col(1) = upper;
+    return combined;
+  };
   if (!(lower.array() <= upper.array()).all()) {
     throw std::runtime_error(
-        fmt::format("{}: limits: no lower limit coefficient can "
-                    "exceed its matching upper limit.\nlower:\n{}\nupper:\n{}",
-                    name, fmt_eigen(lower), fmt_eigen(upper)));
+        fmt::format("{} limits invalid. Lower values must be <= upper "
+                    "values.\n[lower|upper]:\n{}",
+                    name, fmt_eigen(limits_as_matrix())));
   }
 
-  for (int index = 0; index < std::ssize(lower); ++index) {
-    if (!std::isfinite(lower(index)) || !std::isfinite(upper(index))) {
-      if (require_finite) {
-        throw std::runtime_error(
-            fmt::format("{}:{} limits [{}, {}] are not finite", name, index,
-                        lower(index), upper(index)));
-      } else {
-        log()->debug(
-            "{}:{} limits [{}, {}] are not finite, this may cause "
-            "problems with trajectory parametrization",
-            name, index, lower(index), upper(index));
-      }
+  if (!lower.array().isFinite().all() || !upper.array().isFinite().all()) {
+    if (require_finite) {
+      throw std::runtime_error(
+          fmt::format("{} limits are not finite.\n[lower|upper]:\n{}", name,
+                      fmt_eigen(limits_as_matrix())));
+    } else {
+      log()->debug(
+          "{} limits are not finite, this may cause "
+          "problems with trajectory parametrization.\n[lower|upper]:\n{}",
+          name, fmt_eigen(limits_as_matrix()));
     }
   }
 }
 
 bool CheckInLimits(const VectorXd& value, const VectorXd& lower,
                    const VectorXd& upper, const double tolerance) {
+  DRAKE_THROW_UNLESS(value.size() == lower.size());
   DRAKE_THROW_UNLESS(tolerance >= 0.0);
   DRAKE_THROW_UNLESS(!(value.array().isNaN().any()));
   return ((value.array() >= (lower.array() - tolerance)) &&
@@ -76,9 +79,9 @@ JointLimits::JointLimits(
     const VectorXd& acceleration_lower, const VectorXd& acceleration_upper,
     const bool require_finite_positions, const bool require_finite_velocities,
     const bool require_finite_accelerations)
-    : position_(position_lower, position_upper),
-      velocity_(velocity_lower, velocity_upper),
-      acceleration_(acceleration_lower, acceleration_upper) {
+    : position_{position_lower, position_upper},
+      velocity_{velocity_lower, velocity_upper},
+      acceleration_{acceleration_lower, acceleration_upper} {
   ValidateLimits(position_.lower, position_.upper, "Position",
                  require_finite_positions);
   ValidateLimits(velocity_.lower, velocity_.upper, "Velocity",
@@ -95,22 +98,19 @@ JointLimits::~JointLimits() = default;
 
 bool JointLimits::CheckInPositionLimits(const VectorXd& position,
                                         const double tolerance) const {
-  DRAKE_THROW_UNLESS(position.size() == position_lower().size());
   return CheckInLimits(position, position_.lower, position_.upper, tolerance);
 }
 
 bool JointLimits::CheckInVelocityLimits(const VectorXd& velocity,
                                         const double tolerance) const {
-  DRAKE_THROW_UNLESS(velocity.size() == velocity_lower().size());
   return CheckInLimits(velocity, velocity_.lower, velocity_.upper, tolerance);
 }
 
 bool JointLimits::CheckInAccelerationLimits(const VectorXd& acceleration,
                                             const double tolerance) const {
-  DRAKE_THROW_UNLESS(acceleration.size() == acceleration_lower().size());
   return CheckInLimits(acceleration, acceleration_.lower, acceleration_.upper,
                        tolerance);
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

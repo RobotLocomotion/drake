@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":collision_checker_context",
         ":collision_checker_params",
         ":distance_and_interpolation_provider",
+        ":joint_limits",
         ":linear_distance_and_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
@@ -102,6 +103,16 @@ drake_cc_library(
     hdrs = ["distance_and_interpolation_provider.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "joint_limits",
+    srcs = ["joint_limits.cc"],
+    hdrs = ["joint_limits.h"],
+    deps = [
+        "//common:essential",
+        "//multibody/plant",
     ],
 )
 
@@ -264,6 +275,15 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "joint_limits_test",
+    deps = [
+        ":joint_limits",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/benchmarks/acrobot:make_acrobot_plant",
     ],
 )
 
