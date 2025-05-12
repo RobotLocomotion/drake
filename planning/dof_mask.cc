@@ -1,15 +1,16 @@
-#include "robot_bridge/common/dof_mask.h"
+#include "drake/planning/dof_mask.h"
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <fmt/std.h>
 
-namespace anzu {
-namespace robot_bridge {
+namespace drake {
+namespace planning {
 
-using drake::multibody::Joint;
-using drake::multibody::JointIndex;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
+using multibody::Joint;
+using multibody::JointIndex;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
 
 DofMask::DofMask() = default;
 
@@ -63,7 +64,9 @@ void DofMask::ThrowIfNotCompatible(const MultibodyPlant<double>& plant) {
   // plant.num_actuated_dofs().
 }
 
-std::string DofMask::to_string() const { return fmt::to_string(data_); }
+std::string DofMask::to_string() const {
+  return fmt::to_string(data_);
+}
 
 DofMask DofMask::Complement() const {
   std::vector<bool> bits(data_);
@@ -129,6 +132,7 @@ void DofMask::GetColumnsFromMatrix(
   DRAKE_THROW_UNLESS(output != nullptr);
   DRAKE_THROW_UNLESS(output->cols() == count());
   DRAKE_THROW_UNLESS(full_mat.rows() == output->rows());
+  DRAKE_THROW_UNLESS(full_mat.cols() == size());
 
   int out_index = -1;
   for (int i = 0; i < size(); ++i) {
@@ -180,5 +184,5 @@ std::vector<JointIndex> DofMask::GetJoints(
   return result;
 }
 
-}  // namespace robot_bridge
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake
