@@ -168,13 +168,10 @@ int FindCollisionPairIndex(
   return pair_in_collision;
 }
 
-}  // namespace
-
-HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
-                    const Hyperellipsoid& starting_ellipsoid,
-                    const HPolyhedron& domain, const IrisNp2Options& options) {
-  auto start = std::chrono::high_resolution_clock::now();
-
+void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
+                            const Hyperellipsoid& starting_ellipsoid,
+                            const HPolyhedron& domain,
+                            const IrisNp2Options& options) {
   // Check for features which are currently unsupported.
   if (options.sampled_iris_options.containment_points != std::nullopt) {
     // TODO(cohnt): Support enforcing additional containment points.
@@ -211,11 +208,57 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
         "padding.");
   }
 
+  DRAKE_THROW_UNLESS(domain.IsBounded());
+}
+
+bool CheckTerminationConditions(int iteration_num, double delta_volume,
+                                double last_iteration_volume,
+                                const IrisNp2Options& options) {
+  bool terminate = false;
+  if (iteration_num >= options.sampled_iris_options.max_iterations) {
+    if (options.sampled_iris_options.verbose) {
+      log()->info(
+          "IrisNp2: Terminating because the iteration limit "
+          "{} has been reached.",
+          options.sampled_iris_options.max_iterations);
+    }
+    terminate = true;
+  }
+  if (delta_volume <= options.sampled_iris_options.termination_threshold) {
+    if (options.sampled_iris_options.verbose) {
+      log()->info(
+          "IrisNp2: Terminating because the hyperellipsoid "
+          "volume change {} is below the threshold {}.",
+          delta_volume, options.sampled_iris_options.termination_threshold);
+    }
+    terminate = true;
+  } else if (delta_volume / last_iteration_volume <=
+             options.sampled_iris_options.relative_termination_threshold) {
+    if (options.sampled_iris_options.verbose) {
+      log()->info(
+          "IrisNp2: Terminating because the hyperellipsoid "
+          "relative volume change {} is below the threshold {}.",
+          delta_volume / last_iteration_volume,
+          options.sampled_iris_options.relative_termination_threshold);
+    }
+    terminate = true;
+  }
+  return terminate;
+}
+
+}  // namespace
+
+HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
+                    const Hyperellipsoid& starting_ellipsoid,
+                    const HPolyhedron& domain, const IrisNp2Options& options) {
+  auto start = std::chrono::high_resolution_clock::now();
+
+  CheckInitialConditions(checker, starting_ellipsoid, domain, options);
+
   const auto& plant = checker.plant();
   const auto& context = checker.UpdatePositions(starting_ellipsoid.center());
-
-  // Check the inputs.
   plant.ValidateContext(context);
+
   const int nq = plant.num_positions();
   const Eigen::VectorXd seed = starting_ellipsoid.center();
 
@@ -223,8 +266,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   Eigen::VectorXd upper_limits = plant.GetPositionUpperLimits();
 
   HPolyhedron P(domain);
-  DRAKE_THROW_UNLESS(P.IsBounded());
-
   Hyperellipsoid E = starting_ellipsoid;
 
   // Make all of the convex sets and supporting quantities.
@@ -285,7 +326,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
   DRAKE_THROW_UNLESS(P.PointInSet(seed, 1e-12));
 
-  double best_volume = E.Volume();
+  double last_iteration_volume = E.Volume();
   int iteration = 0;
   VectorXd closest(nq);
   RandomGenerator generator(options.sampled_iris_options.random_seed);
@@ -336,7 +377,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     int num_constraints = num_initial_constraints;
     HPolyhedron P_candidate = HPolyhedron(A.topRows(num_initial_constraints),
                                           b.head(num_initial_constraints));
-    DRAKE_ASSERT(best_volume > 0);
+    DRAKE_ASSERT(last_iteration_volume > 0);
     // Find separating hyperplanes
 
     // Separating Planes Step
@@ -362,6 +403,8 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           options.sampled_iris_options.epsilon, delta_k,
           options.sampled_iris_options.tau);
 
+      // TODO(rhjiang): Implement the ray sampling strategy, and expose it as an
+      // option to the user.
       particles.resize(N_k);
       particles.at(0) = P_candidate.UniformSample(
           &generator, E.center(), options.sampled_iris_options.mixing_steps);
@@ -428,12 +471,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
           break;
         }
         if (!P_candidate.PointInSet(particle)) {
-          log()->info("Not in the polytope!");
           continue;
         }
 
         std::pair<Eigen::VectorXd, int> closest_collision_info;
-
         closest_collision_info = std::make_pair(
             particle,
             FindCollisionPairIndex(plant, checker.UpdatePositions(particle),
@@ -509,36 +550,18 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       ++num_iterations_separating_planes;
     }
 
-    P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
-
     iteration++;
-    if (iteration >= options.sampled_iris_options.max_iterations) {
-      log()->info(
-          "IrisNp2: Terminating because the iteration limit "
-          "{} has been reached.",
-          options.sampled_iris_options.max_iterations);
-      break;
-    }
-
+    P = HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
     E = P.MaximumVolumeInscribedEllipsoid();
     const double volume = E.Volume();
-    const double delta_volume = volume - best_volume;
-    if (delta_volume <= options.sampled_iris_options.termination_threshold) {
-      log()->info(
-          "IrisNp2: Terminating because the hyperellipsoid "
-          "volume change {} is below the threshold {}.",
-          delta_volume, options.sampled_iris_options.termination_threshold);
+    const double delta_volume = volume - last_iteration_volume;
+
+    if (CheckTerminationConditions(iteration, delta_volume,
+                                   last_iteration_volume, options)) {
       break;
-    } else if (delta_volume / best_volume <=
-               options.sampled_iris_options.relative_termination_threshold) {
-      log()->info(
-          "IrisNp2: Terminating because the hyperellipsoid "
-          "relative volume change {} is below the threshold {}.",
-          delta_volume / best_volume,
-          options.sampled_iris_options.relative_termination_threshold);
-      break;
+    } else {
+      last_iteration_volume = volume;
     }
-    best_volume = volume;
   }
   auto stop = std::chrono::high_resolution_clock::now();
   if (options.sampled_iris_options.verbose) {
