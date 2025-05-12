@@ -3,7 +3,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 /** Wrapper type for position, velocity, and acceleration limits. Many planning
 algorithms require that all position limits are finite. Unless the algorithm
@@ -20,7 +20,7 @@ class JointLimits final {
   contain non-finite values, and the corresponding constructor argument is
   true.
   */
-  JointLimits(const drake::multibody::MultibodyPlant<double>& plant,
+  JointLimits(const multibody::MultibodyPlant<double>& plant,
               bool require_finite_positions = false,
               bool require_finite_velocities = false,
               bool require_finite_accelerations = false);
@@ -104,4 +104,4 @@ class JointLimits final {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

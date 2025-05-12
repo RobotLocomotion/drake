@@ -4,12 +4,12 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
-using drake::multibody::MultibodyPlant;
 using Eigen::VectorXd;
+using multibody::MultibodyPlant;
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 constexpr double kNan = std::numeric_limits<double>::quiet_NaN();
@@ -140,4 +140,4 @@ TEST_F(JointLimitsTest, AccelerationVelocitySizeMismatch) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

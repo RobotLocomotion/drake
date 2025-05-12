@@ -8,13 +8,11 @@
 #include "drake/common/text_logging.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-using drake::fmt_eigen;
-using drake::log;
-using drake::multibody::MultibodyPlant;
 using Eigen::VectorXd;
+using multibody::MultibodyPlant;
 
 namespace {
 
@@ -76,9 +74,9 @@ JointLimits::JointLimits(
     const VectorXd& acceleration_lower, const VectorXd& acceleration_upper,
     const bool require_finite_positions, const bool require_finite_velocities,
     const bool require_finite_accelerations)
-    : position_(position_lower, position_upper),
-      velocity_(velocity_lower, velocity_upper),
-      acceleration_(acceleration_lower, acceleration_upper) {
+    : position_{position_lower, position_upper},
+      velocity_{velocity_lower, velocity_upper},
+      acceleration_{acceleration_lower, acceleration_upper} {
   ValidateLimits(position_.lower, position_.upper, "Position",
                  require_finite_positions);
   ValidateLimits(velocity_.lower, velocity_.upper, "Velocity",
@@ -113,4 +111,4 @@ bool JointLimits::CheckInAccelerationLimits(const VectorXd& acceleration,
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
