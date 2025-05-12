@@ -34,9 +34,6 @@ class FemStateSystem : public systems::LeafSystem<T> {
   systems::DiscreteStateIndex fem_acceleration_index() const {
     return a_index_;
   }
-  systems::NumericParameterIndex integration_weight_index() const {
-    return weight_index_;
-  }
 
   /* Returns the number of degrees of freedom in the system. */
   int num_dofs() const { return num_dofs_; }
@@ -46,7 +43,6 @@ class FemStateSystem : public systems::LeafSystem<T> {
   systems::DiscreteStateIndex q0_index_;
   systems::DiscreteStateIndex v_index_;
   systems::DiscreteStateIndex a_index_;
-  systems::NumericParameterIndex weight_index_;
   int num_dofs_{0};
 };
 

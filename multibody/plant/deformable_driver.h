@@ -12,7 +12,6 @@
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_fixed_constraint.h"
 #include "drake/multibody/contact_solvers/schur_complement.h"
-#include "drake/multibody/fem/discrete_time_integrator.h"
 #include "drake/multibody/fem/fem_solver.h"
 #include "drake/multibody/plant/deformable_contact_info.h"
 #include "drake/multibody/plant/deformable_model.h"
@@ -367,9 +366,6 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
   /* Modeling information about all deformable bodies. */
   const DeformableModel<T>* const deformable_model_;
   const DiscreteUpdateManager<T>* const manager_;
-  /* The integrator used to advance deformable body free motion states in
-   time. */
-  std::unique_ptr<fem::internal::DiscreteTimeIntegrator<T>> integrator_;
 };
 
 }  // namespace internal

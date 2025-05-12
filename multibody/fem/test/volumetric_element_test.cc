@@ -63,7 +63,9 @@ class VolumetricElementTest : public ::testing::Test {
           /* There's only one element in the system. */
           element_data->resize(1);
           const FemState<AD> fem_state(fem_state_system_.get(), &context);
-          (*element_data)[0] = (this->elements_)[0].ComputeData(fem_state);
+          const Vector3<AD> dummy_weights(1, 2, 3);
+          (*element_data)[0] =
+              (this->elements_)[0].ComputeData(fem_state, dummy_weights);
         };
 
     cache_index_ =

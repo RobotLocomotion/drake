@@ -27,7 +27,8 @@ using LinearDummyElement = DummyElement<true>;
 using LinearDummyModel = DummyModel<true>;
 
 GTEST_TEST(FemModelTest, Constructor) {
-  LinearDummyModel model;
+  const Vector3d dummy_weights(1, 2, 3);
+  LinearDummyModel model{dummy_weights};
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
@@ -41,7 +42,8 @@ GTEST_TEST(FemModelTest, Constructor) {
 }
 
 GTEST_TEST(FemModelTest, CalcResidual) {
-  LinearDummyModel model;
+  const Vector3d dummy_weights(1, 2, 3);
+  LinearDummyModel model(dummy_weights);
   model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
@@ -64,7 +66,8 @@ GTEST_TEST(FemModelTest, CalcResidual) {
 }
 
 GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
-  LinearDummyModel model;
+  const Vector3d dummy_weights(1, 2, 3);
+  LinearDummyModel model{dummy_weights};
   model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   /* Add a few elements that don't share nodes. The non-overlapping elements
@@ -106,7 +109,8 @@ GTEST_TEST(FemModelTest, CalcResidualWithExternalForce) {
  testing the data flow from context to residual when the force density field
  depends on the context. */
 GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
-  LinearDummyModel model;
+  const Vector3d dummy_weights(1, 2, 3);
+  LinearDummyModel model{dummy_weights};
   model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddElementWithDistinctNodes();
@@ -173,7 +177,8 @@ GTEST_TEST(FemModelTest, CalcResidualWithContextDependentExternalForce) {
 }
 
 GTEST_TEST(FemModelTest, CalcTangentMatrix) {
-  LinearDummyModel model;
+  const Vector3d weights(0.1, 0.2, 0.3);
+  LinearDummyModel model(weights);
   model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
@@ -183,8 +188,6 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
       tangent_matrix = model.MakeTangentMatrix();
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
-  const Vector3d weights(0.1, 0.2, 0.3);
-  fem_state->SetWeights(weights);
   model.CalcTangentMatrix(*fem_state, tangent_matrix.get());
 
   MatrixXd expected_mass_matrix =
@@ -233,7 +236,7 @@ GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
       fem::internal::VolumetricElement<IsoparametricElementType, QuadratureType,
                                        ConstitutiveModelType>;
   using FemModelType = fem::internal::VolumetricModel<FemElementType>;
-  auto fem_model = std::make_unique<FemModelType>();
+  auto fem_model = std::make_unique<FemModelType>(Vector3d(1, 2, 3));
   DRAKE_EXPECT_THROWS_MESSAGE(fem_model->MakeTangentMatrix(),
                               ".*only.*double.*");
   unique_ptr<FemState<T>> fem_state = fem_model->MakeFemState();
@@ -249,7 +252,8 @@ GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
  an exception. */
 GTEST_TEST(FemModelTest, IncompatibleModelState) {
   /* Build a model with two elements and make a compatible state. */
-  LinearDummyModel model;
+  const Vector3d dummy_weights(1, 2, 3);
+  LinearDummyModel model(dummy_weights);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
@@ -281,7 +285,8 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
 
 /* Verifies that multiple builders can build into the same FemModel. */
 GTEST_TEST(FemModelTest, MultipleBuilders) {
-  LinearDummyModel model;
+  const Vector3d dummy_weights(1, 2, 3);
+  LinearDummyModel model(dummy_weights);
   LinearDummyModel::DummyBuilder builder0(&model);
   builder0.AddElementWithDistinctNodes();
   builder0.Build();
@@ -300,7 +305,8 @@ GTEST_TEST(FemModelTest, MultipleBuilders) {
 /* Verifies we can add a Dirichlet boundary condition to FEM models, and it is
  correctly invoked on the state, residual, and tangent matrix. */
 GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
-  LinearDummyModel model;
+  const Vector3d dummy_weights(1, 2, 3);
+  LinearDummyModel model(dummy_weights);
   model.set_parallelism(true);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddElementWithDistinctNodes();
@@ -340,7 +346,7 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
     EXPECT_TRUE(are_same_states(*state1, *state2));
   }
 
-  LinearDummyModel model_without_bc;
+  LinearDummyModel model_without_bc(dummy_weights);
   LinearDummyModel::DummyBuilder builder1(&model_without_bc);
   builder1.AddElementWithDistinctNodes();
   builder1.Build();
@@ -376,14 +382,12 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
     const Vector3d weights(0.1, 0.2, 0.3);
 
     unique_ptr<FemState<T>> state0 = model.MakeFemState();
-    state0->SetWeights(weights);
     unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
         tangent_matrix0 = model.MakeTangentMatrix();
     model.CalcTangentMatrix(*state0, tangent_matrix0.get());
     const MatrixX<T> dense_tangent_matrix0 = tangent_matrix0->MakeDenseMatrix();
 
     unique_ptr<FemState<T>> state1 = model_without_bc.MakeFemState();
-    state1->SetWeights(weights);
     unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
         tangent_matrix1 = model.MakeTangentMatrix();
     model_without_bc.CalcTangentMatrix(*state1, tangent_matrix1.get());
@@ -398,7 +402,8 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
 
 GTEST_TEST(FemModelTest, Clone) {
   /* Build a model with two elements and make a compatible state. */
-  LinearDummyModel model;
+  const Vector3d dummy_weights(1, 2, 3);
+  LinearDummyModel model(dummy_weights);
   LinearDummyModel::DummyBuilder builder(&model);
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
@@ -415,6 +420,7 @@ GTEST_TEST(FemModelTest, Clone) {
   EXPECT_EQ(clone->num_nodes(), model.num_nodes());
   EXPECT_EQ(clone->num_dofs(), model.num_dofs());
   EXPECT_EQ(clone->is_linear(), model.is_linear());
+  EXPECT_EQ(clone->tangent_matrix_weights(), model.tangent_matrix_weights());
 
   /* Verify that the default states are the same. */
   auto state = model.MakeFemState();
@@ -426,7 +432,6 @@ GTEST_TEST(FemModelTest, Clone) {
   EXPECT_EQ(state->GetAccelerations(), clone_state->GetAccelerations());
   EXPECT_EQ(state->num_dofs(), clone_state->num_dofs());
   EXPECT_EQ(state->num_nodes(), clone_state->num_nodes());
-  EXPECT_EQ(state->GetWeights(), clone_state->GetWeights());
 
   /* Verify that boundary conditions are the same. */
   model.ApplyBoundaryCondition(state.get());
@@ -451,9 +456,6 @@ GTEST_TEST(FemModelTest, Clone) {
   auto clone_tangent_matrix = clone->MakeTangentMatrix();
   EXPECT_EQ(tangent_matrix->MakeDenseMatrix(),
             clone_tangent_matrix->MakeDenseMatrix());
-  const Vector3<double> weights(0.1, 0.2, 0.3);
-  state->SetWeights(weights);
-  clone_state->SetWeights(weights);
   model.CalcTangentMatrix(*state, tangent_matrix.get());
   clone->CalcTangentMatrix(*clone_state, clone_tangent_matrix.get());
   EXPECT_EQ(tangent_matrix->MakeDenseMatrix(),

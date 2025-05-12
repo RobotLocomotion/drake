@@ -74,7 +74,6 @@ class FemStateTest : public ::testing::Test {
     EXPECT_EQ(state.GetPositions(), clone.GetPositions());
     EXPECT_EQ(state.GetVelocities(), clone.GetVelocities());
     EXPECT_EQ(state.GetAccelerations(), clone.GetAccelerations());
-    EXPECT_EQ(state.GetWeights(), clone.GetWeights());
 
     const std::vector<Data<T>>& element_data =
         state.template EvalElementData<Data<T>>(cache_index_);
@@ -86,7 +85,6 @@ class FemStateTest : public ::testing::Test {
     }
   }
 
-  const Vector3<T> kWeights{Vector3<T>(1, 2, 3)};
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   systems::CacheIndex cache_index_;
 };
@@ -103,14 +101,11 @@ TYPED_TEST(FemStateTest, SharedFemState) {
   EXPECT_EQ(state.GetPositions(), q<T>());
   EXPECT_EQ(state.GetVelocities(), v<T>());
   EXPECT_EQ(state.GetAccelerations(), a<T>());
-  EXPECT_EQ(state.GetWeights(), Vector3<T>::Zero());
   DRAKE_EXPECT_THROWS_MESSAGE(state.SetPositions(-1.23 * q<T>()),
                               "Trying to mutate a shared FemState.");
   DRAKE_EXPECT_THROWS_MESSAGE(state.SetVelocities(3.14 * v<T>()),
                               "Trying to mutate a shared FemState.");
   DRAKE_EXPECT_THROWS_MESSAGE(state.SetAccelerations(-1.29 * a<T>()),
-                              "Trying to mutate a shared FemState.");
-  DRAKE_EXPECT_THROWS_MESSAGE(state.SetWeights(this->kWeights),
                               "Trying to mutate a shared FemState.");
 }
 
@@ -130,11 +125,9 @@ TYPED_TEST(FemStateTest, SetStatesAndParameters) {
   state.SetPositions(-1.23 * q<T>());
   state.SetVelocities(3.14 * v<T>());
   state.SetAccelerations(-1.29 * a<T>());
-  state.SetWeights(this->kWeights);
   EXPECT_EQ(state.GetPositions(), -1.23 * q<T>());
   EXPECT_EQ(state.GetVelocities(), 3.14 * v<T>());
   EXPECT_EQ(state.GetAccelerations(), -1.29 * a<T>());
-  EXPECT_EQ(state.GetWeights(), this->kWeights);
   /* Setting values with incompatible sizes should throw. */
   EXPECT_THROW(state.SetPositions(VectorX<T>::Constant(1, 1.0)),
                std::exception);
@@ -185,7 +178,6 @@ TYPED_TEST(FemStateTest, CopyFrom) {
   state.SetTimeStepPositions(-1.24 * q<T>());
   state.SetVelocities(3.14 * v<T>());
   state.SetAccelerations(-1.29 * a<T>());
-  state.SetWeights(this->kWeights);
 
   FemState<T> target(this->fem_state_system_.get());
   EXPECT_NE(state.GetPositions(), target.GetPositions());
@@ -193,7 +185,6 @@ TYPED_TEST(FemStateTest, CopyFrom) {
             target.GetPreviousStepPositions());
   EXPECT_NE(state.GetVelocities(), target.GetVelocities());
   EXPECT_NE(state.GetAccelerations(), target.GetAccelerations());
-  EXPECT_NE(state.GetWeights(), target.GetWeights());
 
   ASSERT_EQ(state.num_dofs(), target.num_dofs());
   ASSERT_EQ(state.num_nodes(), target.num_nodes());
@@ -204,7 +195,6 @@ TYPED_TEST(FemStateTest, CopyFrom) {
             target.GetPreviousStepPositions());
   EXPECT_EQ(state.GetVelocities(), target.GetVelocities());
   EXPECT_EQ(state.GetAccelerations(), target.GetAccelerations());
-  EXPECT_EQ(state.GetWeights(), target.GetWeights());
 }
 
 }  // namespace

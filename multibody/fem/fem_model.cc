@@ -86,9 +86,10 @@ void FemModel<T>::ApplyBoundaryCondition(FemState<T>* fem_state) const {
 }
 
 template <typename T>
-FemModel<T>::FemModel()
+FemModel<T>::FemModel(const Vector3<T>& tangent_matrix_weights)
     : fem_state_system_(std::make_unique<internal::FemStateSystem<T>>(
-          VectorX<T>(0), VectorX<T>(0), VectorX<T>(0))) {}
+          VectorX<T>(0), VectorX<T>(0), VectorX<T>(0))),
+      tangent_matrix_weights_(tangent_matrix_weights) {}
 
 template <typename T>
 void FemModel<T>::ThrowIfModelStateIncompatible(

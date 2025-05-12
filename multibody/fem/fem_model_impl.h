@@ -42,7 +42,8 @@ class FemModelImpl : public FemModel<typename Element::T> {
 
  protected:
   /* Creates an empty FemModelImpl with no elements. */
-  FemModelImpl() = default;
+  explicit FemModelImpl(const Vector3<T>& tangent_matrix_weights)
+      : FemModel<T>(tangent_matrix_weights) {}
 
   ~FemModelImpl() = default;
 
@@ -214,7 +215,8 @@ class FemModelImpl : public FemModel<typename Element::T> {
 #pragma omp parallel for num_threads(num_threads)
 #endif
     for (int i = 0; i < num_elements(); ++i) {
-      (*data)[i] = elements_[i].ComputeData(fem_state);
+      (*data)[i] =
+          elements_[i].ComputeData(fem_state, this->tangent_matrix_weights());
     }
   }
 

@@ -389,7 +389,8 @@ class VolumetricElement
   }
 
   /* Implements FemElement::ComputeData(). */
-  Data DoComputeData(const FemState<T>& state) const {
+  Data DoComputeData(const FemState<T>& state,
+                     const Vector3<T>& weights) const {
     Data data;
     data.element_q = this->ExtractElementDofs(state.GetPositions());
     data.element_q0 =
@@ -424,8 +425,7 @@ class VolumetricElement
         this->damping_model().mass_coeff_alpha() * mass_matrix_;
     CalcInverseDynamics(data.damping_matrix, data.P, data.element_v,
                         data.element_a, &data.inverse_dynamics);
-    CalcTangentMatrix(state.GetWeights(), data.stiffness_matrix,
-                      &data.tangent_matrix);
+    CalcTangentMatrix(weights, data.stiffness_matrix, &data.tangent_matrix);
     return data;
   }
 

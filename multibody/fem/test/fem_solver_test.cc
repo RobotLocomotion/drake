@@ -35,8 +35,8 @@ class FemSolverTest : public ::testing::Test {
   void set_max_newton_iterations(int max_iterations) {
     solver_.max_iterations_ = max_iterations;
   }
-  DummyModel<T::value> model_{};
   AccelerationNewmarkScheme<double> integrator_{kDt, kGamma, kBeta};
+  DummyModel<T::value> model_{integrator_.GetWeights()};
   FemSolver<double> solver_{&model_, &integrator_};
 };
 
@@ -69,7 +69,6 @@ TYPED_TEST_P(FemSolverTest, AdvanceOneTimeStep) {
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
   std::unique_ptr<FemState<double>> state0 = this->model_.MakeFemState();
-  state0->SetWeights(this->integrator_.GetWeights());
   const std::unordered_set<int> nonparticipating_vertices = {0, 1};
   const systems::LeafContext<double> dummy_context;
   const FemPlantData<double> dummy_data{dummy_context, {}};

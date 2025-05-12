@@ -53,7 +53,9 @@ class FemElementTest : public ::testing::Test {
           /* There's only one element in the system. */
           element_data->resize(1);
           const FemState<T> fem_state(fem_state_system_.get(), &context);
-          (*element_data)[0] = this->element_.ComputeData(fem_state);
+          const Vector3d dummy_weights(1, 2, 3);
+          (*element_data)[0] =
+              this->element_.ComputeData(fem_state, dummy_weights);
         };
 
     cache_index_ =

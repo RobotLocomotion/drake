@@ -105,7 +105,8 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
 
   /* Implements FemElement::ComputeData(). Returns the sum of the last entries
    in each state. */
-  typename Traits::Data DoComputeData(const FemState<T>& state) const {
+  typename Traits::Data DoComputeData(const FemState<T>& state,
+                                      const Vector3<T>& weights) const {
     const int state_dofs = state.num_dofs();
     const auto& q = state.GetPositions();
     const auto& v = state.GetVelocities();
@@ -122,7 +123,6 @@ class DummyElement final : public FemElement<DummyElement<is_linear>> {
     data.damping_matrix =
         this->damping_model().stiffness_coeff_beta() * stiffness_matrix() +
         this->damping_model().mass_coeff_alpha() * mass_matrix();
-    const Vector3<T>& weights = state.GetWeights();
     data.tangent_matrix = weights(0) * stiffness_matrix() +
                           weights(1) * data.damping_matrix +
                           weights(2) * mass_matrix();

@@ -70,12 +70,10 @@ class FemState {
   const VectorX<T>& GetPreviousStepPositions() const;
   const VectorX<T>& GetVelocities() const;
   const VectorX<T>& GetAccelerations() const;
-  Vector3<T> GetWeights() const;
   void SetPositions(const Eigen::Ref<const VectorX<T>>& q);
   void SetTimeStepPositions(const Eigen::Ref<const VectorX<T>>& q0);
   void SetVelocities(const Eigen::Ref<const VectorX<T>>& v);
   void SetAccelerations(const Eigen::Ref<const VectorX<T>>& a);
-  void SetWeights(const Eigen::Ref<const Vector3<T>>& weights);
   /* @} */
 
   /** Makes `this` %FemState an exact copy of the given `other` %FemState.

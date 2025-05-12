@@ -212,6 +212,19 @@ class FemModel {
     return state.is_created_from_system(*fem_state_system_);
   }
 
+  /** Sets the weights to combine stiffness, damping, and mass matrices to form
+   the tangent matrix.
+   @see tangent_matrix_weights(). */
+  void set_tangent_matrix_weights(const Vector3<T>& weights) {
+    tangent_matrix_weights_ = weights;
+  }
+
+  /* The weights used to combine stiffness, damping, and mass matrices (in that
+   order) to form the tangent matrix . */
+  const Vector3<T>& tangent_matrix_weights() const {
+    return tangent_matrix_weights_;
+  }
+
   /** (Internal use only) Throws std::exception to report a mismatch between
   the FEM model and state that were passed to API method `func`. */
   void ThrowIfModelStateIncompatible(const char* func,
@@ -231,7 +244,7 @@ class FemModel {
 
  protected:
   /** Constructs an empty FEM model. */
-  FemModel();
+  explicit FemModel(const Vector3<T>& tangent_matrix_weights);
 
   /** FemModelImpl must override this method to provide an implementation to
    make a deep copy of the concrete FemModel. */
@@ -289,6 +302,9 @@ class FemModel {
   std::unique_ptr<internal::FemStateSystem<T>> fem_state_system_;
   /* The Dirichlet boundary condition that the model is subject to. */
   internal::DirichletBoundaryCondition<T> dirichlet_bc_;
+  /* The weights used to combine stiffness, damping, and mass matrices (in that
+   order) to form the tangent matrix . */
+  Vector3<T> tangent_matrix_weights_;
   Parallelism parallelism_{false};
 };
 

@@ -77,7 +77,6 @@ int FemSolver<T>::AdvanceOneTimeStep(
   FemState<T>* next_state =
       next_state_and_schur_complement_.state.get_mutable();
   integrator_->AdvanceOneTimeStep(prev_state, unknown_variable, next_state);
-  next_state->SetWeights(integrator_->GetWeights());
   if (model_->is_linear()) {
     return SolveLinearModel(plant_data, nonparticipating_vertices);
   }
@@ -113,7 +112,6 @@ int FemSolver<T>::SolveLinearModel(
     const std::unordered_set<int>& nonparticipating_vertices) {
   DRAKE_DEMAND(model_->is_linear());
   FemState<T>& state = *next_state_and_schur_complement_.state;
-  state.SetWeights(integrator_->GetWeights());
   VectorX<T>& b = scratch_.b;
   VectorX<T>& dz = scratch_.dz;
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
@@ -143,7 +141,6 @@ int FemSolver<T>::SolveNonlinearModel(
   Block3x3SparseSymmetricMatrix& tangent_matrix = *scratch_.tangent_matrix;
   LinearSolver& linear_solver = scratch_.linear_solver;
   FemState<T>& state = *next_state_and_schur_complement_.state;
-  state.SetWeights(integrator_->GetWeights());
   model_->ApplyBoundaryCondition(&state);
   model_->CalcResidual(state, plant_data, &b);
   T residual_norm = b.norm();

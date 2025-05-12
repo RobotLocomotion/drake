@@ -97,9 +97,12 @@ class FemElement {
   }
 
   /* Computes the per-element, state-dependent data associated with this
-   `DerivedElement` given the `state`. */
-  Data ComputeData(const FemState<T>& state) const {
-    return static_cast<const DerivedElement*>(this)->DoComputeData(state);
+   `DerivedElement` given the `state` and the weights used to compute tangent
+   matrices. */
+  Data ComputeData(const FemState<T>& state,
+                   const Vector3<T>& tangent_matrix_weights) const {
+    return static_cast<const DerivedElement*>(this)->DoComputeData(
+        state, tangent_matrix_weights);
   }
 
   /* Accumulates external forces for this element given the `data` and the
