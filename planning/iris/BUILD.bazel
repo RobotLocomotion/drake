@@ -13,6 +13,7 @@ drake_cc_package_library(
     name = "iris",
     visibility = ["//visibility:public"],
     deps = [
+        ":iris_common",
         ":iris_from_clique_cover",
         ":iris_zo",
     ],
@@ -39,16 +40,27 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "iris_common",
+    srcs = ["iris_common.cc"],
+    hdrs = ["iris_common.h"],
+    deps = [
+        "//common:name_value",
+        "//geometry:meshcat",
+        "//multibody/rational:rational_forward_kinematics",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "iris_zo",
     srcs = ["iris_zo.cc"],
     hdrs = ["iris_zo.h"],
     deps = [
-        "//common:parallelism",
-        "//common/symbolic:expression",
-        "//geometry:meshcat",
+        ":iris_common",
         "//geometry/optimization:convex_set",
-        "//multibody/rational:rational_forward_kinematics",
         "//planning:collision_checker",
+    ],
+    implementation_deps = [
         "//solvers:choose_best_solver",
         "//solvers:clarabel_solver",
         "//solvers:gurobi_solver",
@@ -56,8 +68,6 @@ drake_cc_library(
         "//solvers:mosek_solver",
         "//solvers:osqp_solver",
         "//solvers:solve",
-    ],
-    implementation_deps = [
         "@common_robotics_utilities_internal//:common_robotics_utilities",
     ],
 )
