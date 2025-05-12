@@ -47,6 +47,7 @@ drake_cc_library(
     deps = [
         "//common:name_value",
         "//geometry:meshcat",
+        "//geometry/optimization:convex_set",
         "//multibody/rational:rational_forward_kinematics",
         "//solvers:mathematical_program",
     ],

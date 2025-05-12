@@ -168,35 +168,8 @@ int FindCollisionPairIndex(
   return pair_in_collision;
 }
 
-// Add the tangent to the (scaled) ellipsoid at @p point as a
-// constraint.
-void AddTangentToPolytope(
-    const Hyperellipsoid& E, const Eigen::Ref<const Eigen::VectorXd>& point,
-    double configuration_space_margin,
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
-    Eigen::VectorXd* b, int* num_constraints) {
-  while (*num_constraints >= A->rows()) {
-    // Increase pre-allocated polytope size.
-    A->conservativeResize(A->rows() * 2, A->cols());
-    b->conservativeResize(b->rows() * 2);
-  }
-
-  A->row(*num_constraints) =
-      (E.A().transpose() * E.A() * (point - E.center())).normalized();
-  (*b)[*num_constraints] =
-      A->row(*num_constraints) * point - configuration_space_margin;
-  if (A->row(*num_constraints) * E.center() > (*b)[*num_constraints]) {
-    throw std::logic_error(
-        "The current center of the IRIS region is within "
-        "options.sampled_iris_options.configuration_space_margin of being "
-        "infeasible.  Check your sample point and/or any additional "
-        "constraints you've passed in via the options. The configuration space "
-        "surrounding the sample point must have an interior.");
-  }
-  *num_constraints += 1;
-}
-
 }  // namespace
+
 HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                     const Hyperellipsoid& starting_ellipsoid,
                     const HPolyhedron& domain, const IrisNp2Options& options) {
@@ -502,7 +475,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               options.sampled_iris_options.meshcat->SetTransform(
                   path, RigidTransform<double>(point_to_draw));
             }
-            AddTangentToPolytope(
+            internal::AddTangentToPolytope(
                 E, closest,
                 options.sampled_iris_options.configuration_space_margin, &A, &b,
                 &num_constraints);
