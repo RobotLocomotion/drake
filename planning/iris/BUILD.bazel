@@ -15,6 +15,7 @@ drake_cc_package_library(
     deps = [
         ":iris_common",
         ":iris_from_clique_cover",
+        ":iris_np2",
         ":iris_zo",
     ],
 )
@@ -69,6 +70,17 @@ drake_cc_library(
         "//solvers:osqp_solver",
         "//solvers:solve",
         "@common_robotics_utilities_internal//:common_robotics_utilities",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_np2",
+    srcs = ["iris_np2.cc"],
+    hdrs = ["iris_np2.h"],
+    deps = [
+        ":iris_common",
+        "//geometry/optimization:convex_set",
+        "//planning:scene_graph_collision_checker",
     ],
 )
 
@@ -127,6 +139,22 @@ drake_cc_googletest(
         "//planning:robot_diagram_builder",
         "//planning:scene_graph_collision_checker",
         "//solvers",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_np2_test",
+    timeout = "moderate",
+    data = ["//multibody/parsing:test_models"],
+    num_threads = 2,
+    shard_count = 4,
+    tags = [
+        "no_asan",
+        "no_lsan",
+    ],
+    deps = [
+        ":iris_np2",
+        ":iris_test_utilities",
     ],
 )
 
