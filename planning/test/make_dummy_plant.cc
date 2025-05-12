@@ -1,17 +1,17 @@
-#include "robot_bridge/common/test/make_dummy_plant.h"
+#include "drake/planning/test/make_dummy_plant.h"
 
 #include "drake/multibody/tree/revolute_joint.h"
 
-namespace anzu {
-namespace robot_bridge {
+namespace drake {
+namespace planning {
 
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::Joint;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::default_model_instance;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::default_model_instance;
+using multibody::Joint;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::RevoluteJoint;
 
 // Creates plant with 7 DoFs:
 // - 1 DoFs belongs to default model instance
@@ -28,22 +28,19 @@ MakeDummyPlant() {
   const ModelInstanceIndex other_instance =
       plant->AddModelInstance("other_model");
 
-  auto add_joint_and_body = [&](
-      ModelInstanceIndex model,
-      std::string parent_body_name,
-      std::string joint_name,
-      std::string child_body_name) {
-    const Body<double>& parent = plant->GetBodyByName(parent_body_name);
-    const Body<double>& child = plant->AddRigidBody(child_body_name, model);
-    const Joint<double>& joint = plant->AddJoint<RevoluteJoint>(
-        joint_name, parent, {}, child, {}, dummy_axis);
-    DRAKE_DEMAND(joint.model_instance() == model);
-  };
+  auto add_joint_and_body =
+      [&](ModelInstanceIndex model, std::string parent_body_name,
+          std::string joint_name, std::string child_body_name) {
+        const Body<double>& parent = plant->GetBodyByName(parent_body_name);
+        const Body<double>& child = plant->AddRigidBody(child_body_name, model);
+        const Joint<double>& joint = plant->AddJoint<RevoluteJoint>(
+            joint_name, parent, {}, child, {}, dummy_axis);
+        DRAKE_DEMAND(joint.model_instance() == model);
+      };
 
   // Create joint_a and body_a which are part of the default model instance
   // (which we don't really care about).
-  add_joint_and_body(
-      default_model_instance(), "world", "joint_a", "body_a");
+  add_joint_and_body(default_model_instance(), "world", "joint_a", "body_a");
   // Create joint_b and body_b which are part of our custom model instance.
   add_joint_and_body(model_instance, "body_a", "joint_b", "body_b");
   // Create additional joints which are not part of our custom model instance,
@@ -64,8 +61,7 @@ MakeDummyPlant() {
   return std::make_pair(std::move(plant), model_instance);
 }
 
-std::unique_ptr<drake::multibody::MultibodyPlant<double>>
-MakeDummyFloatingBodyPlant() {
+std::unique_ptr<MultibodyPlant<double>> MakeDummyFloatingBodyPlant() {
   const double time_step = 0.0;
   auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
   plant->AddRigidBody("floating_body", default_model_instance());
@@ -75,5 +71,5 @@ MakeDummyFloatingBodyPlant() {
   return plant;
 }
 
-}  // namespace robot_bridge
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake
