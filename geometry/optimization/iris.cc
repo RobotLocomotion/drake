@@ -370,19 +370,6 @@ void MakeGuessFeasible(const HPolyhedron& P, Eigen::VectorXd* guess) {
   }
 }
 
-struct GeometryPairWithDistance {
-  GeometryId geomA;
-  GeometryId geomB;
-  double distance;
-
-  GeometryPairWithDistance(GeometryId gA, GeometryId gB, double dist)
-      : geomA(gA), geomB(gB), distance(dist) {}
-
-  bool operator<(const GeometryPairWithDistance& other) const {
-    return distance < other.distance;
-  }
-};
-
 bool CheckTerminate(const IrisOptions& options, const HPolyhedron& P,
                     const std::string& error_msg, const std::string& info_msg,
                     const bool is_initial_region) {
@@ -571,7 +558,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   // distance between each collision pair from the seed point configuration.
   // This could improve computation times and produce regions with fewer
   // faces.
-  std::vector<GeometryPairWithDistance> sorted_pairs;
+  std::vector<internal::GeometryPairWithDistance> sorted_pairs;
   for (const auto& [geomA, geomB] : pairs) {
     const double distance =
         query_object.ComputeSignedDistancePairClosestPoints(geomA, geomB)

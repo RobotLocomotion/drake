@@ -137,6 +137,19 @@ class IrisConvexSetMaker final : public ShapeReifier {
   GeometryId geom_id_{};
 };
 
+struct GeometryPairWithDistance {
+  GeometryId geomA;
+  GeometryId geomB;
+  double distance;
+
+  GeometryPairWithDistance(GeometryId gA, GeometryId gB, double dist)
+      : geomA(gA), geomB(gB), distance(dist) {}
+
+  bool operator<(const GeometryPairWithDistance& other) const {
+    return distance < other.distance;
+  }
+};
+
 }  // namespace internal
 }  // namespace optimization
 }  // namespace geometry

@@ -20,10 +20,17 @@ namespace planning {
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::FrameId;
+using geometry::GeometryId;
+using geometry::QueryObject;
 using geometry::Role;
 using geometry::SceneGraphInspector;
+using geometry::Sphere;
 using geometry::optimization::ConvexSet;
+using geometry::optimization::HPolyhedron;
+using geometry::optimization::Hyperellipsoid;
 using geometry::optimization::internal::ClosestCollisionProgram;
+using geometry::optimization::internal::GeometryPairWithDistance;
 using geometry::optimization::internal::IrisConvexSetMaker;
 using geometry::optimization::internal::SamePointConstraint;
 using math::RigidTransform;
@@ -31,42 +38,6 @@ using multibody::MultibodyPlant;
 using systems::Context;
 
 namespace {
-// Copied from iris.cc
-
-using geometry::Box;
-using geometry::Capsule;
-using geometry::Convex;
-using geometry::Cylinder;
-using geometry::Ellipsoid;
-using geometry::HalfSpace;
-using geometry::Mesh;
-using geometry::Sphere;
-
-using geometry::FrameId;
-using geometry::GeometryId;
-using geometry::QueryObject;
-using geometry::ShapeReifier;
-
-using geometry::optimization::CartesianProduct;
-using geometry::optimization::ConvexSet;
-using geometry::optimization::HPolyhedron;
-using geometry::optimization::Hyperellipsoid;
-using geometry::optimization::MinkowskiSum;
-using geometry::optimization::VPolytope;
-
-struct GeometryPairWithDistance {
-  GeometryId geomA;
-  GeometryId geomB;
-  double distance;
-
-  GeometryPairWithDistance(GeometryId gA, GeometryId gB, double dist)
-      : geomA(gA), geomB(gB), distance(dist) {}
-
-  bool operator<(const GeometryPairWithDistance& other) const {
-    return distance < other.distance;
-  }
-};
-
 int FindCollisionPairIndex(
     const MultibodyPlant<double>& plant, const Context<double>& context,
     const std::vector<GeometryPairWithDistance>& sorted_pairs) {
@@ -169,7 +140,6 @@ bool CheckTerminationConditions(int iteration_num, double delta_volume,
   }
   return terminate;
 }
-
 }  // namespace
 
 HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
