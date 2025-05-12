@@ -84,6 +84,14 @@ of the user-specified constraints in `options.prog_with_additional_constraints`.
 @note This can be a long running function that needs to solve many QPs. If you
 have a solver which requires a license, consider acquiring the license before
 solving this function. See AcquireLicense for more details.
+
+This feature is still in development, so certain features are not yet supported.
+
+@throws if you set `options.sampled_iris_options.containment_points`,
+`options.sampled_iris_options.prog_with_additional_constraints`, or
+`options.parameterization`.
+@throws if any collision pairs in `checker` have nonzero padding.
+@throws if any collision geometries have been been added in `checker`.
 */
 
 geometry::optimization::HPolyhedron IrisNp2(
