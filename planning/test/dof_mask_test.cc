@@ -1,4 +1,4 @@
-#include "robot_bridge/common/dof_mask.h"
+#include "drake/planning/dof_mask.h"
 
 #include <algorithm>
 #include <string>
@@ -10,20 +10,18 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "robot_bridge/common/test/make_dummy_plant.h"
+#include "drake/planning/test/make_dummy_plant.h"
 
-namespace anzu {
-namespace robot_bridge {
+namespace drake {
+namespace planning {
 namespace {
 
-using drake::CompareMatrices;
-using drake::Vector1d;
-using drake::multibody::BodyIndex;
-using drake::multibody::default_model_instance;
-using drake::multibody::JointIndex;
-using drake::multibody::ModelInstanceIndex;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using multibody::BodyIndex;
+using multibody::default_model_instance;
+using multibody::JointIndex;
+using multibody::ModelInstanceIndex;
 
 /* Exercise all of the constructors and evaluate the size-like APIs. */
 GTEST_TEST(DofMaskTest, ConstructorsAndSize) {
@@ -123,7 +121,7 @@ GTEST_TEST(DofMaskTest, Factories) {
         ".*ith velocity must be the time derivative of the ith position.*");
     DRAKE_EXPECT_THROWS_MESSAGE(
         DofMask::MakeFromModel(*bad_plant,
-                              bad_plant->GetModelInstanceName(model)),
+                               bad_plant->GetModelInstanceName(model)),
         ".*ith velocity must be the time derivative of the ith position.*");
   }
 }
@@ -214,13 +212,19 @@ GTEST_TEST(DofMaskTest, GetFromArrayWithReturn) {
   EXPECT_EQ(result(1), 3);
   EXPECT_EQ(result(2), 5);
 
+  // To satisfy the [[nodiscard]] on GetFromArray(), we'll evaluate it in a
+  // lambda function; we don't care about the return value because we expect
+  // the invocation to throw.
+  auto eval_get_from_array = [](const DofMask& mask, const auto& vector) {
+    return mask.GetFromArray(vector);
+  };
   // Using too few dofs throws.
   const DofMask too_few_dofs{true, true};
-  EXPECT_THROW(too_few_dofs.GetFromArray(full), std::exception);
+  EXPECT_THROW(eval_get_from_array(too_few_dofs, full), std::exception);
 
   // Using too many dofs throws.
   const DofMask too_many_dofs{true, true, false, false, true, true};
-  EXPECT_THROW(too_many_dofs.GetFromArray(full), std::exception);
+  EXPECT_THROW(eval_get_from_array(too_many_dofs, full), std::exception);
 
   // Matrix column selection.
   Eigen::Matrix3d mat;
@@ -279,5 +283,5 @@ GTEST_TEST(DofMaskTest, SetInArray) {
 }
 
 }  // namespace
-}  // namespace robot_bridge
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake

@@ -10,8 +10,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
-namespace anzu {
-namespace robot_bridge {
+namespace drake {
+namespace planning {
 
 /** A mask on the degrees of freedom (dofs) of a MultibodyPlant instance,
 partitioning the plant's dofs into "selected" and "unselected" dofs.
@@ -43,23 +43,27 @@ class DofMask {
   //@{
 
   /** Default constructor; creates a mask with no dofs (size() = count() = 0 ).
-   */
+  @pydrake_mkdoc_identifier{default}
+  */
   DofMask();
 
   /** Full/empty constructor.
 
   This allows for construction of a mask with the given `size` where all
-  dofs are either selected (`value = true`) or unselected. */
+  dofs are either selected (`value = true`) or unselected.
+  @pydrake_mkdoc_identifier{by_size} */
   DofMask(int size, bool value);
 
   // Note: The following constructors allow implicit conversion for general
   // compatibility with vector<bool>.
 
-  /** Constructs a %DofMask from an initializer list of bool. */
+  /** Constructs a %DofMask from an initializer list of bool.
+  @pydrake_mkdoc_identifier{init_list} */
   // NOLINTNEXTLINE(runtime/explicit)
   DofMask(std::initializer_list<bool> values);
 
-  /** Constructs a %DofMask from a vector of bool. */
+  /** Constructs a %DofMask from a vector of bool.
+  @pydrake_mkdoc_identifier{vector_bool} */
   // NOLINTNEXTLINE(runtime/explicit)
   DofMask(std::vector<bool> values) : data_(std::move(values)) {}
 
@@ -77,18 +81,16 @@ class DofMask {
 
   @throws std::exception if `plant` doesn't satisfy the compatibility
   requirements for %DofMask. */
-  static DofMask MakeFromModel(
-      const drake::multibody::MultibodyPlant<double>& plant,
-      drake::multibody::ModelInstanceIndex model_index);
+  static DofMask MakeFromModel(const multibody::MultibodyPlant<double>& plant,
+                               multibody::ModelInstanceIndex model_index);
 
   /** Creates the %DofMask associated with the model instance (named by
   `model_name`) in `plant`.
 
   @throws std::exception if `plant` doesn't satisfy the compatibility
   requirements for %DofMask. */
-  static DofMask MakeFromModel(
-      const drake::multibody::MultibodyPlant<double>& plant,
-      const std::string& model_name);
+  static DofMask MakeFromModel(const multibody::MultibodyPlant<double>& plant,
+                               const std::string& model_name);
   //@}
 
   /** @group Introspection */
@@ -104,8 +106,8 @@ class DofMask {
   `this`. The returned joint indices are reported in increasing order.
   @pre `plant` is compatible with %DofMask.
   @pre `plant.num_positions() == size()`. */
-  std::vector<drake::multibody::JointIndex> GetJoints(
-      const drake::multibody::MultibodyPlant<double>& plant) const;
+  std::vector<multibody::JointIndex> GetJoints(
+      const multibody::MultibodyPlant<double>& plant) const;
 
   /** Note: `o.size()` may be different from `this->size()`. They will, by
   definition report as not equal. */
@@ -231,10 +233,10 @@ class DofMask {
   Specifically, the iᵗʰ velocity corresponds to the iᵗʰ position for all
   `i`; `vᵢ = q̇ᵢ`. */
   static void ThrowIfNotCompatible(
-      const drake::multibody::MultibodyPlant<double>& plant);
+      const multibody::MultibodyPlant<double>& plant);
 
   std::vector<bool> data_;
 };
 
-}  // namespace robot_bridge
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake
