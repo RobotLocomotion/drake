@@ -515,40 +515,43 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
       for (auto i : indices_sorted) {
         auto nearest_particle = particles_in_collision_updated[i];
         if (!particle_is_redundant[i]) {
-          Eigen::VectorXd a_face;
           if (options.sampled_iris_options.containment_points.has_value()) {
+            Eigen::VectorXd a_face;
             a_face = ComputeFaceTangentToDistCvxh(
                 current_ellipsoid, nearest_particle, cvxh_vpoly, *solver);
-          } else {
-            a_face = ATA * (nearest_particle - current_ellipsoid_center);
-          }
 
-          a_face.normalize();
-          double b_face =
-              a_face.transpose() * nearest_particle -
-              options.sampled_iris_options.configuration_space_margin;
+            a_face.normalize();
+            double b_face =
+                a_face.transpose() * nearest_particle -
+                options.sampled_iris_options.configuration_space_margin;
 
-          // Relax cspace margin to contain points.
-          if (options.sampled_iris_options.containment_points.has_value()) {
-            Eigen::VectorXd result =
-                a_face.transpose() *
-                options.sampled_iris_options.containment_points.value();
-            double relaxation = result.maxCoeff() - b_face;
-            if (relaxation > 0) {
-              b_face += relaxation;
-              if (max_relaxation < relaxation) max_relaxation = relaxation;
+            // Relax cspace margin to contain points.
+            if (options.sampled_iris_options.containment_points.has_value()) {
+              Eigen::VectorXd result =
+                  a_face.transpose() *
+                  options.sampled_iris_options.containment_points.value();
+              double relaxation = result.maxCoeff() - b_face;
+              if (relaxation > 0) {
+                b_face += relaxation;
+                if (max_relaxation < relaxation) max_relaxation = relaxation;
+              }
             }
-          }
-          A.row(current_num_faces) = a_face.transpose();
-          b(current_num_faces) = b_face;
-          ++current_num_faces;
-          ++hyperplanes_added;
+            A.row(current_num_faces) = a_face.transpose();
+            b(current_num_faces) = b_face;
+            ++current_num_faces;
 
-          // Resize A matrix if we need more faces.
-          if (A.rows() <= current_num_faces) {
-            A.conservativeResize(A.rows() * 2, A.cols());
-            b.conservativeResize(b.rows() * 2);
+            // Resize A matrix if we need more faces.
+            if (A.rows() <= current_num_faces) {
+              A.conservativeResize(A.rows() * 2, A.cols());
+              b.conservativeResize(b.rows() * 2);
+            }
+          } else {
+            internal::AddTangentToPolytope(
+                current_ellipsoid, nearest_particle,
+                options.sampled_iris_options.configuration_space_margin, &A, &b,
+                &current_num_faces);
           }
+          ++hyperplanes_added;
 
           // Fill in meshcat if added for debugging.
           if (options.sampled_iris_options.meshcat && ambient_dimension <= 3) {
@@ -584,9 +587,9 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
                particle_index < number_particles_in_collision;
                ++particle_index) {
             if (!particle_is_redundant[particle_index]) {
-              if (a_face.transpose() *
+              if (A.row(current_num_faces - 1) *
                           particles_in_collision_updated[particle_index] -
-                      b_face >=
+                      b(current_num_faces - 1) >=
                   0) {
                 particle_is_redundant[particle_index] = 1;
               }
