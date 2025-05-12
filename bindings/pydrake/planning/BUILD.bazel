@@ -38,6 +38,7 @@ drake_pybind_library(
         "planning_py.cc",
         "planning_py_collision_checker.cc",
         "planning_py_collision_checker_interface_types.cc",
+        "planning_py_dof_mask.cc",
         "planning_py_graph_algorithms.cc",
         "planning_py_iris_common.cc",
         "planning_py_iris_from_clique_cover.cc",
@@ -90,6 +91,13 @@ drake_py_unittest(
         "//planning/test_utilities:collision_ground_plane.sdf",
     ],
     num_threads = 2,
+    deps = [
+        ":planning",
+    ],
+)
+
+drake_py_unittest(
+    name = "dof_mask_test",
     deps = [
         ":planning",
     ],

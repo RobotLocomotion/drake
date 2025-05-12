@@ -1,15 +1,15 @@
-#include "robot_bridge/common/dof_mask.h"
+#include "drake/planning/dof_mask.h"
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
-namespace anzu {
-namespace robot_bridge {
+namespace drake {
+namespace planning {
 
-using drake::multibody::Joint;
-using drake::multibody::JointIndex;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
+using multibody::Joint;
+using multibody::JointIndex;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
 
 DofMask::DofMask() = default;
 
@@ -63,7 +63,11 @@ void DofMask::ThrowIfNotCompatible(const MultibodyPlant<double>& plant) {
   // plant.num_actuated_dofs().
 }
 
-std::string DofMask::to_string() const { return fmt::to_string(data_); }
+std::string DofMask::to_string() const {
+  // In future versions (>9), fmt::to_string(data_) will work, but will require
+  // including fmt/std.h.
+  return fmt::to_string(std::vector<int>(data_.begin(), data_.end()));
+}
 
 DofMask DofMask::Complement() const {
   std::vector<bool> bits(data_);
@@ -107,13 +111,13 @@ void DofMask::GetFromArray(const Eigen::Ref<const Eigen::VectorXd>& full_vec,
   DRAKE_THROW_UNLESS(output->size() == count());
   DRAKE_THROW_UNLESS(full_vec.size() == size());
   int out_index = -1;
-  for (int i = 0; i < size(); i++) {
+  for (int i = 0; i < size(); ++i) {
     if (data_[i]) {
       (*output)[++out_index] = full_vec[i];
       if (out_index >= output->size()) break;
     }
   }
-  DRAKE_THROW_UNLESS(out_index + 1 == output->size());
+  DRAKE_DEMAND(out_index + 1 == output->size());
 }
 
 Eigen::VectorXd DofMask::GetFromArray(
@@ -129,6 +133,7 @@ void DofMask::GetColumnsFromMatrix(
   DRAKE_THROW_UNLESS(output != nullptr);
   DRAKE_THROW_UNLESS(output->cols() == count());
   DRAKE_THROW_UNLESS(full_mat.rows() == output->rows());
+  DRAKE_THROW_UNLESS(full_mat.cols() == size());
 
   int out_index = -1;
   for (int i = 0; i < size(); ++i) {
@@ -154,7 +159,7 @@ void DofMask::SetInArray(const Eigen::Ref<const Eigen::VectorXd>& vec,
   DRAKE_THROW_UNLESS(output != nullptr);
   DRAKE_THROW_UNLESS(output->size() == size());
   int input_index = -1;
-  for (int i = 0; i < size(); i++) {
+  for (int i = 0; i < size(); ++i) {
     if (data_[i]) {
       (*output)[i] = vec[++input_index];
     }
@@ -180,5 +185,5 @@ std::vector<JointIndex> DofMask::GetJoints(
   return result;
 }
 
-}  // namespace robot_bridge
-}  // namespace anzu
+}  // namespace planning
+}  // namespace drake
