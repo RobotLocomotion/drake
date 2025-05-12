@@ -274,16 +274,11 @@ HPolyhedron IrisZo(const planning::CollisionChecker& checker,
 
   // Upper bound on number of particles required if we hit max iterations.
   double outer_delta_min =
-      options.sampled_iris_options.delta * 6 /
-      (M_PI * M_PI * options.sampled_iris_options.max_iterations *
-       options.sampled_iris_options.max_iterations);
-
-  double delta_min =
-      outer_delta_min * 6 /
-      (M_PI * M_PI *
-       options.sampled_iris_options.max_iterations_separating_planes *
-       options.sampled_iris_options.max_iterations_separating_planes);
-
+      internal::calc_delta_min(options.sampled_iris_options.delta,
+                               options.sampled_iris_options.max_iterations);
+  double delta_min = internal::calc_delta_min(
+      outer_delta_min,
+      options.sampled_iris_options.max_iterations_separating_planes);
   int N_max = internal::unadaptive_test_samples(
       options.sampled_iris_options.epsilon, delta_min,
       options.sampled_iris_options.tau);

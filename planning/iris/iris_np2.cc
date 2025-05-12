@@ -189,10 +189,9 @@ void AddTangentToPolytope(
     throw std::logic_error(
         "The current center of the IRIS region is within "
         "options.sampled_iris_options.configuration_space_margin of being "
-        "infeasible.  Check your "
-        "sample point and/or any additional constraints you've passed in via "
-        "the options. The configuration space surrounding the sample point "
-        "must have an interior.");
+        "infeasible.  Check your sample point and/or any additional "
+        "constraints you've passed in via the options. The configuration space "
+        "surrounding the sample point must have an interior.");
   }
   *num_constraints += 1;
 }
@@ -328,33 +327,18 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   bool do_debugging_visualization =
       options.sampled_iris_options.meshcat && nq <= 3;
 
-  const std::string seed_point_error_msg =
-      "IRIS-NP2: require_sample_point_is_contained is true but "
-      "the seed point exited the initial region. Does the provided "
-      "options.starting_ellipse not contain the seed point?";
   const std::string seed_point_msg =
-      "IRIS-NP2: terminating iterations because the seed point "
-      "is no longer in the region.";
-  const std::string termination_error_msg =
-      "IRIS-NP2: the termination function returned false on "
-      "the computation of the initial region. Are the provided "
-      "options.starting_ellipse and "
-      "options.sampled_iris_options.termination_func compatible?";
-  const std::string termination_msg =
-      "IRIS-NP2: terminating iterations because "
-      "options.sampled_iris_options.termination_func returned false.";
+      "IrisNp2: terminating iterations because the seed point is no longer in "
+      "the region.";
 
   // Set up constants for statistical tests.
   double outer_delta_min =
-      options.sampled_iris_options.delta * 6 /
-      (M_PI * M_PI * options.sampled_iris_options.max_iterations *
-       options.sampled_iris_options.max_iterations);
+      internal::calc_delta_min(options.sampled_iris_options.delta,
+                               options.sampled_iris_options.max_iterations);
 
-  double delta_min =
-      outer_delta_min * 6 /
-      (M_PI * M_PI *
-       options.sampled_iris_options.max_iterations_separating_planes *
-       options.sampled_iris_options.max_iterations_separating_planes);
+  double delta_min = internal::calc_delta_min(
+      outer_delta_min,
+      options.sampled_iris_options.max_iterations_separating_planes);
 
   int N_max = internal::unadaptive_test_samples(
       options.sampled_iris_options.epsilon, delta_min,
@@ -362,10 +346,10 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
 
   if (options.sampled_iris_options.verbose) {
     log()->info(
-        "IRIS-NP2 finding region that is {} collision free with {} certainty ",
+        "IrisNp2 finding region that is {} collision free with {} certainty ",
         options.sampled_iris_options.epsilon,
         1 - options.sampled_iris_options.delta);
-    log()->info("IRIS-NP2 worst case test requires {} samples.", N_max);
+    log()->info("IrisNp2 worst case test requires {} samples.", N_max);
   }
 
   // TODO(cohnt): Do an argsort so we don't have to have two separate copies
@@ -375,7 +359,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   particles_in_collision.reserve(N_max);
 
   while (true) {
-    log()->info("IRIS-NP2 iteration {}", iteration);
+    log()->info("IrisNp2 iteration {}", iteration);
     int num_constraints = num_initial_constraints;
     HPolyhedron P_candidate = HPolyhedron(A.topRows(num_initial_constraints),
                                           b.head(num_initial_constraints));
@@ -442,7 +426,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
                     E));
 
       if (options.sampled_iris_options.verbose) {
-        log()->info("IRIS-NP2 N_k {}, N_col {}, thresh {}", N_k,
+        log()->info("IrisNp2 N_k {}, N_col {}, thresh {}", N_k,
                     number_particles_in_collision,
                     (1 - options.sampled_iris_options.tau) *
                         options.sampled_iris_options.epsilon * N_k);
@@ -458,7 +442,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
       if (num_iterations_separating_planes ==
           options.sampled_iris_options.max_iterations_separating_planes - 1) {
         log()->warn(
-            "IRIS-NP2 WARNING, separating planes hit max iterations without "
+            "IrisNp2 WARNING, separating planes hit max iterations without "
             "passing the bernoulli test, this voids the probabilistic "
             "guarantees!");
       }
@@ -529,9 +513,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
               const bool seed_point_requirement =
                   A.row(num_constraints - 1) * seed <= b(num_constraints - 1);
               if (!seed_point_requirement) {
-                if (iteration == 0) {
-                  throw std::runtime_error(seed_point_error_msg);
-                }
                 log()->info(seed_point_msg);
                 return P;
               }
@@ -560,7 +541,7 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     iteration++;
     if (iteration >= options.sampled_iris_options.max_iterations) {
       log()->info(
-          "IRIS-NP2: Terminating because the iteration limit "
+          "IrisNp2: Terminating because the iteration limit "
           "{} has been reached.",
           options.sampled_iris_options.max_iterations);
       break;
@@ -571,14 +552,14 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     const double delta_volume = volume - best_volume;
     if (delta_volume <= options.sampled_iris_options.termination_threshold) {
       log()->info(
-          "IRIS-NP2: Terminating because the hyperellipsoid "
+          "IrisNp2: Terminating because the hyperellipsoid "
           "volume change {} is below the threshold {}.",
           delta_volume, options.sampled_iris_options.termination_threshold);
       break;
     } else if (delta_volume / best_volume <=
                options.sampled_iris_options.relative_termination_threshold) {
       log()->info(
-          "IRIS-NP2: Terminating because the hyperellipsoid "
+          "IrisNp2: Terminating because the hyperellipsoid "
           "relative volume change {} is below the threshold {}.",
           delta_volume / best_volume,
           options.sampled_iris_options.relative_termination_threshold);

@@ -235,6 +235,8 @@ namespace internal {
 // See Definition 1 in the paper.
 int unadaptive_test_samples(double epsilon, double delta, double tau);
 
+float calc_delta_min(double delta, int max_iterations);
+
 }  // namespace internal
 }  // namespace planning
 }  // namespace drake

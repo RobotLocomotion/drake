@@ -63,6 +63,9 @@ namespace internal {
 int unadaptive_test_samples(double epsilon, double delta, double tau) {
   return static_cast<int>(-2 * std::log(delta) / (tau * tau * epsilon) + 0.5);
 }
+float calc_delta_min(double delta, int max_iterations) {
+  return delta * 6 / (M_PI * M_PI * max_iterations * max_iterations);
+}
 }  // namespace internal
 }  // namespace planning
 }  // namespace drake
