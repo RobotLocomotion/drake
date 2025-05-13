@@ -222,10 +222,21 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
    indices instead of block row indices.
    @pre 0 <= j < block_cols().
    @pre The j-th block column has at least `flat+1` nonzero entries. */
-  const MatrixType& block_flat(int flat, int j) {
+  const MatrixType& block_flat(int flat, int j) const {
     DRAKE_ASSERT(0 <= j && j < block_cols_);
     DRAKE_ASSERT(flat >= 0 && flat < ssize(blocks_[j]));
     return blocks_[j][flat];
+  }
+
+  /* Returns all stored blocks of `this` matrix. */
+  const std::vector<std::vector<MatrixType>>& blocks() const { return blocks_; }
+
+  /* Returns the mapping from block row index to flat index for each column;
+   i.e., blocks()[j][block_row_to_flat()[j][i]] gives the (i,j) block.
+   block_row_to_flat()[j][i] == -1 if the implied block is empty or is the
+   reflection of the symmetric block. */
+  const std::vector<std::vector<int>>& block_row_to_flat() const {
+    return block_row_to_flat_;
   }
 
   /* Returns the sorted block row indices in the lower triangular part of the

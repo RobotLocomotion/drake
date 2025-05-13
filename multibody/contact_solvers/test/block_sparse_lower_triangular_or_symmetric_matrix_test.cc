@@ -160,16 +160,45 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, Getter) {
   ASSERT_FALSE(A_symmetric.HasBlock(100, 200));
   ASSERT_FALSE(A_triangular.HasBlock(100, 200));
 
+  /* block() */
   EXPECT_EQ(A_triangular.block(2, 1), A21);
   EXPECT_EQ(A_symmetric.block(2, 1), A21);
+  /* diagonal_block() */
   EXPECT_EQ(A_triangular.diagonal_block(0), A00);
   EXPECT_EQ(A_symmetric.diagonal_block(0), A00);
+  /* block_flat() */
   EXPECT_EQ(A_triangular.block_flat(1, 1), A21);
   EXPECT_EQ(A_symmetric.block_flat(1, 1), A21);
-
+  /* blocks() */
+  ASSERT_EQ(A_triangular.blocks().size(), 3);
+  EXPECT_EQ(A_triangular.blocks()[0].size(), 1);
+  EXPECT_EQ(A_triangular.blocks()[1].size(), 2);
+  EXPECT_EQ(A_triangular.blocks()[2].size(), 1);
+  ASSERT_EQ(A_symmetric.blocks().size(), 3);
+  EXPECT_EQ(A_symmetric.blocks()[0].size(), 1);
+  EXPECT_EQ(A_symmetric.blocks()[1].size(), 2);
+  EXPECT_EQ(A_symmetric.blocks()[2].size(),
+            1);  // Only the lower-triangular part is stored.
+  /* block_row_to_flat(). */
+  auto test_block_row_to_flat = [&](const auto& A) {
+    ASSERT_EQ(A.block_row_to_flat().size(), 3);
+    for (int j = 0; j < 3; ++j) {
+      for (int i = j + 1; i < 3; ++i) {
+        if (!A.HasBlock(i, j)) {
+          EXPECT_EQ(A.block_row_to_flat()[j][i], -1);
+        } else {
+          const int flat = A.block_row_to_flat()[j][i];
+          EXPECT_EQ(A.block(i, j), A.block_flat(flat, j));
+        }
+      }
+    }
+  };
+  test_block_row_to_flat(A_triangular);
+  test_block_row_to_flat(A_symmetric);
+  /* block_row_indices() */
   EXPECT_EQ(A_triangular.block_row_indices(1), std::vector<int>({1, 2}));
   EXPECT_EQ(A_symmetric.block_row_indices(1), std::vector<int>({1, 2}));
-
+  /* starting_cols() */
   EXPECT_EQ(A_triangular.starting_cols(), std::vector<int>({0, 2, 5}));
   EXPECT_EQ(A_symmetric.starting_cols(), std::vector<int>({0, 2, 5}));
 }
