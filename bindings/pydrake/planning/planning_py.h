@@ -32,6 +32,9 @@ void DefinePlanningIrisCommon(py::module m);
 /* Defines bindings per planning_py_iris_zo.cc. */
 void DefinePlanningIrisZo(py::module m);
 
+/* Defines bindings per planning_py_joint_limits.cc. */
+void DefinePlanningJointLimits(py::module m);
+
 /* Defines bindings per planning_py_robot_diagram.cc. */
 void DefinePlanningRobotDiagram(py::module m);
 
