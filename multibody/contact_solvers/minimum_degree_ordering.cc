@@ -18,30 +18,44 @@ void InplaceSortedUnion(const std::vector<int>& b, std::vector<int>* a) {
   const int n = ssize(vec);
   const int m = ssize(b);
   vec.resize(n + m);
-  /* Shifts the elements of a to the right by m positions so we don't overwrite
-   them. */
-  for (int i = n; i-- > 0;) {
-    vec[i + m] = vec[i];
-  }
-  int i = m, j = 0, k = 0;  // indices for input a, input b, and output a
-  while (i < n + m && j < m) {
-    int va = vec[i];
-    int vb = b[j];
-    if (va < vb) {
-      vec[k++] = va;
-      ++i;
-    } else if (vb < va) {
-      vec[k++] = vb;
-      ++j;
+
+  /* indices for input a, input b, and output a */
+  int i = n - 1;
+  int j = m - 1;
+  int k = n + m - 1;
+
+  /* Pull the larger tail into a[k]. */
+  while (i >= 0 && j >= 0) {
+    const int va = vec[i];
+    const int vb = b[j];
+    if (va > vb) {
+      vec[k] = va;
+      --i;
+    } else if (va < vb) {
+      vec[k] = vb;
+      --j;
     } else {
-      vec[k++] = va;
-      ++i;
-      ++j;
+      vec[k] = va;
+      --i;
+      --j;
     }
+    --k;
   }
-  while (i < n + m) vec[k++] = vec[i++];
-  while (j < m) vec[k++] = b[j++];
-  vec.resize(k);
+  /* Copy any remaining b. */
+  while (j >= 0) {
+    vec[k] = b[j];
+    --j;
+    --k;
+  }
+  /* Copy any remaining a. */
+  while (i >= 0) {
+    vec[k] = vec[i];
+    --i;
+    --k;
+  }
+  /* Now a[k+1..end) is already in ascending order, so we just drop the unused
+   prefix [0..k]. */
+  vec.erase(vec.begin(), vec.begin() + (k + 1));
 }
 
 void InplaceSortedDifference(const std::vector<int>& b, std::vector<int>* a) {
@@ -83,8 +97,6 @@ void InsertValueInSortedVector(int value, std::vector<int>* sorted_vector) {
   }
 }
 
-/* Updates the weights of all nodes according to Algorithm 2 in [Amestoy 1996].
- */
 void UpdateWeights(const std::vector<int>& Lp, std::vector<Node>* nodes) {
   DRAKE_DEMAND(nodes != nullptr);
   for (Node& n : *nodes) {
@@ -105,11 +117,8 @@ void UpdateWeights(const std::vector<int>& Lp, std::vector<Node>* nodes) {
 }
 
 void Node::UpdateExternalDegree(const std::vector<Node>& nodes,
-                                std::vector<uint8_t>* seen,
-                                std::vector<int>* marked) {
+                                std::vector<uint8_t>* seen) {
   DRAKE_ASSERT(seen != nullptr);
-  DRAKE_ASSERT(marked != nullptr);
-  DRAKE_ASSERT(marked->empty());
   DRAKE_ASSERT(ssize(*seen) == ssize(nodes));
 
   degree = 0;
@@ -119,20 +128,16 @@ void Node::UpdateExternalDegree(const std::vector<Node>& nodes,
   }
 
   /* Add in |L \ i| term where L = ∪ₑLₑ and e ∈ Eᵢ. */
+  (*seen)[index] = 1;
   for (int e : E) {
     for (int l : nodes[e].L) {
-      if (l != index && !(*seen)[l]) {
+      if (!(*seen)[l]) {
         (*seen)[l] = 1;
-        marked->push_back(l);
         degree += nodes[l].size;
       }
     }
   }
-
-  for (int l : *marked) {
-    (*seen)[l] = 0;
-  }
-  marked->clear();
+  seen->assign(seen->size(), 0);
 }
 
 void Node::ApproximateExternalDegree(int p, int Lp_size,
@@ -193,8 +198,6 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     std::sort(A.begin(), A.end());
   }
   std::vector<uint8_t> seen(num_nodes, 0);
-  std::vector<int> marked;
-  marked.reserve(num_nodes);
 
   std::vector<int> priority(num_nodes);
   for (int i = 0; i < num_nodes; ++i)
@@ -226,14 +229,15 @@ std::vector<int> ComputeMinimumDegreeOrdering(
 
   while (ssize(result) < num_nodes) {
     int p;  // index of the next node to eliminate
-    /* Pop until we get a fresh entry. */
+    /* Pop until we get a fresh entry. Note that this in the worst case can be
+     O(n^2), but in practice, with up to thousands of dofs, this out performs
+     std::set. */
     while (true) {
       const auto [p_priority, p_degree, p_index] = pq.top();
       pq.pop();
       /* Skip nodes that are already eliminated. */
       if (eliminated[p_index]) continue;
-      if (p_degree == nodes[p_index].degree &&
-          p_priority == priority[p_index]) {
+      if (p_degree == nodes[p_index].degree) {
         /* We have a fresh entry. Mark it as eliminated. */
         p = p_index;
         eliminated[p] = 1;
@@ -280,7 +284,7 @@ std::vector<int> ComputeMinimumDegreeOrdering(
         }
         node_i.ApproximateExternalDegree(p, Lp_size, nodes);
       } else {
-        node_i.UpdateExternalDegree(nodes, &seen, &marked);
+        node_i.UpdateExternalDegree(nodes, &seen);
       }
       /* Push updated entry i */
       pq.emplace(priority[i], node_i.degree, i);

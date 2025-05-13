@@ -12,11 +12,20 @@ namespace internal {
 namespace {
 
 GTEST_TEST(MinimumDegreeOrderingTest, Union) {
-  std::vector<int> a = {1, 2, 5, 8, 9};
-  const std::vector<int> b = {1, 3, 5, 7, 9, 11};
-  InplaceSortedUnion(b, &a);
-  const std::vector<int> expected = {1, 2, 3, 5, 7, 8, 9, 11};
-  EXPECT_EQ(a, expected);
+  {
+    std::vector<int> a = {1, 2, 5, 8, 9};
+    const std::vector<int> b = {1, 3, 5, 7, 9, 11};
+    InplaceSortedUnion(b, &a);
+    const std::vector<int> expected = {1, 2, 3, 5, 7, 8, 9, 11};
+    EXPECT_EQ(a, expected);
+  }
+  {
+    std::vector<int> a = {1, 3};
+    const std::vector<int> b = {2};
+    InplaceSortedUnion(b, &a);
+    const std::vector<int> expected = {1, 2, 3};
+    EXPECT_EQ(a, expected);
+  }
 }
 
 GTEST_TEST(MinimumDegreeOrderingTest, SetDifference) {
@@ -88,14 +97,11 @@ GTEST_TEST(MinimumDegreeOrderingTest, UpdateExternalDegree) {
   nodes.push_back(n10);
 
   std::vector<uint8_t> seen(nodes.size(), 0);
-  std::vector<int> marked;
-  marked.reserve(nodes.size());
-
-  n6.UpdateExternalDegree(nodes, &seen, &marked);
-  n7.UpdateExternalDegree(nodes, &seen, &marked);
-  n8.UpdateExternalDegree(nodes, &seen, &marked);
-  n9.UpdateExternalDegree(nodes, &seen, &marked);
-  n10.UpdateExternalDegree(nodes, &seen, &marked);
+  n6.UpdateExternalDegree(nodes, &seen);
+  n7.UpdateExternalDegree(nodes, &seen);
+  n8.UpdateExternalDegree(nodes, &seen);
+  n9.UpdateExternalDegree(nodes, &seen);
+  n10.UpdateExternalDegree(nodes, &seen);
   /* Fill-ins are 7,8,9. */
   EXPECT_EQ(n6.degree, 240);
   /* Fill-ins are 6,8,9,10. */
@@ -168,6 +174,30 @@ GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering2) {
 
   result = ComputeMinimumDegreeOrdering(block_pattern, true);
   EXPECT_EQ(result, std::vector<int>({0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+}
+
+/* An example where MD and AMD produce different results. */
+GTEST_TEST(MinimumDegreeOrderingTest, ComputeMinimumDegreeOrdering3) {
+  std::vector<std::vector<int>> sparsity;
+  sparsity.emplace_back(std::vector<int>{0, 3, 5});
+  sparsity.emplace_back(std::vector<int>{1, 2, 4, 5});
+  sparsity.emplace_back(std::vector<int>{2, 3});
+  sparsity.emplace_back(std::vector<int>{3, 4, 5});
+  sparsity.emplace_back(std::vector<int>{4});
+  sparsity.emplace_back(std::vector<int>{5});
+  std::vector<int> block_sizes{1, 1, 1, 2, 1, 2};
+  BlockSparsityPattern block_pattern(block_sizes, sparsity);
+  /* After eliminating 2 and 4 first (they have the smallest external-degrees),
+   both variants next eliminate node 0. At that point, the remaining candidates
+   that are tied are {3,5}. Exact MD sees identical true external-degrees for 3
+   and 5 and breaks the tie by choosing the lower index → picks 3. AMD, however,
+   has given node 5 a lower “approximate” score (because of its larger
+   block-size) and so eliminates 5 before 3. */
+  std::vector<int> result = ComputeMinimumDegreeOrdering(block_pattern, false);
+  EXPECT_EQ(result, std::vector<int>({2, 4, 0, 3, 5, 1}));
+
+  result = ComputeMinimumDegreeOrdering(block_pattern, true);
+  EXPECT_EQ(result, std::vector<int>({2, 4, 0, 5, 3, 1}));
 }
 
 /* Here we use the same initial sparsity pattern as the example from Figure 1 in

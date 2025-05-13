@@ -14,11 +14,11 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-/* Performs in-place sorted union by merging b into a (both sorted).
+/* Performs an in-place sorted union by merging b into a.
  @pre a and b are sorted in increasing order. */
 void InplaceSortedUnion(const std::vector<int>& b, std::vector<int>* a);
 
-/* Performs in place set difference of a and b (a \ b).
+/* Performs an in-place set difference of a and b, (a/b), into a.
  @pre a and b are sorted in increasing order. */
 void InplaceSortedDifference(const std::vector<int>& b, std::vector<int>* a);
 
@@ -48,17 +48,19 @@ struct Node {
   /* Computes and updates the external degree of `this` node given all nodes in
    the graph.
    @param[in] nodes  All nodes in the graph.
-   @param[in] seen   A vector used as a scratch buffer.
-   @param[in] marked A vector used only for its pre-allocated memory.
+   @param[in] seen   pre-allocated scratch buffer, used to mark nodes
+                     encountered during update.
    @pre `seen` has all zero values and is of the same size as `nodes`.
-   @pre `marked` is empty.
    @post `seen` is reset to all zeros. */
   void UpdateExternalDegree(const std::vector<Node>& nodes,
-                            std::vector<uint8_t>* seen,
-                            std::vector<int>* marked);
+                            std::vector<uint8_t>* seen);
 
   /* Approximates and updates the external degree of `this` node given all nodes
-   in the graph. */
+   in the graph.
+   @param[in] p        The index of node being eliminated (which is adjacent to
+                       this node).
+   @param[in] Lp_size  |Lp \ i| the second term in equation 4. [Amestoy 1996].
+   @param[in] nodes    All nodes in the graph. */
   void ApproximateExternalDegree(int p, int Lp_size,
                                  const std::vector<Node>& nodes);
 
@@ -86,7 +88,8 @@ struct Node {
 };
 
 /* Updates the weights of all nodes according to Algorithm 2 in [Amestoy 1996].
- */
+ @param[in] Lp     The adjacent supervariables of the node being eliminated.
+ @param[in] nodes  All nodes in the graph. */
 void UpdateWeights(const std::vector<int>& Lp, std::vector<Node>* nodes);
 
 /* Computes the preferred elimination ordering of the matrix with the given
