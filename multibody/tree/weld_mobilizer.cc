@@ -62,14 +62,14 @@ void WeldMobilizer<T>::DoCalcNplusDotMatrix(const systems::Context<T>&,
                                             EigenPtr<MatrixX<T>>) const {}
 
 template <typename T>
-void WeldMobilizer<T>::DoMapVelocityToQDot(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>&,
-    EigenPtr<VectorX<T>>) const {}
+void WeldMobilizer<T>::DoMapVelocityToQDot(const systems::Context<T>&,
+                                           const Eigen::Ref<const VectorX<T>>&,
+                                           EigenPtr<VectorX<T>>) const {}
 
 template <typename T>
-void WeldMobilizer<T>::DoMapQDotToVelocity(
-    const systems::Context<T>&, const Eigen::Ref<const VectorX<T>>&,
-    EigenPtr<VectorX<T>>) const {}
+void WeldMobilizer<T>::DoMapQDotToVelocity(const systems::Context<T>&,
+                                           const Eigen::Ref<const VectorX<T>>&,
+                                           EigenPtr<VectorX<T>>) const {}
 
 template <typename T>
 void WeldMobilizer<T>::DoMapAccelerationToQDDot(
