@@ -4496,6 +4496,7 @@ TEST_F(SdfParserTest, DeformableMaterialModels) {
 
   const std::vector<std::string> cases = {
       "corotated",
+      "neohookean",
       "linear_corotated",
       "linear",
   };
@@ -4507,7 +4508,7 @@ TEST_F(SdfParserTest, DeformableMaterialModels) {
     EXPECT_EQ(NumErrors(), 0);
   }
   plant_.Finalize();
-  EXPECT_EQ(plant_.deformable_model().num_bodies(), 3);
+  EXPECT_EQ(plant_.deformable_model().num_bodies(), cases.size());
 }
 
 TEST_F(SdfParserTest, DeformableWithMoreThanOneCollision) {

@@ -1146,14 +1146,17 @@ void LoadDeformableConfig(const sdf::Link& link,
       config->set_material_model(fem::MaterialModel::kLinearCorotated);
     } else if (mm == "corotated") {
       config->set_material_model(fem::MaterialModel::kCorotated);
+    } else if (mm == "neohookean") {
+      config->set_material_model(fem::MaterialModel::kNeoHookean);
     } else if (mm == "linear") {
       config->set_material_model(fem::MaterialModel::kLinear);
     } else {
       diagnostic.Error(
           property_element,
-          fmt::format("Invalid <drake:material_model> value {}. Must be "
-                      "'linear', 'linear_corotated', or 'corotated'.",
-                      mm));
+          fmt::format(
+              "Invalid <drake:material_model> value {}. Must be 'linear', "
+              "'linear_corotated', `neohookean`, or 'corotated'.",
+              mm));
     }
   }
 }
