@@ -14,14 +14,13 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-/* Returns the union of a and b (a ∪ b) as a sorted vector.
+/* Performs an in-place sorted union by merging b into a.
  @pre a and b are sorted in increasing order. */
-std::vector<int> Union(const std::vector<int>& a, const std::vector<int>& b);
+void InplaceSortedUnion(const std::vector<int>& b, std::vector<int>* a);
 
-/* Returns the set difference of a and b (a \ b) as a sorted vector.
+/* Performs an in-place set difference of a and b, (a \ b), into a.
  @pre a and b are sorted in increasing order. */
-std::vector<int> SetDifference(const std::vector<int>& a,
-                               const std::vector<int>& b);
+void InplaceSortedDifference(const std::vector<int>& b, std::vector<int>* a);
 
 /* Removes `value` from `sorted_vector` if it exists.
  @pre `sorted_vector` is sorted in increasing order. */
@@ -47,8 +46,23 @@ void InsertValueInSortedVector(int value, std::vector<int>* sorted_vector);
  Society for Industrial and Applied Mathematics, 2006. */
 struct Node {
   /* Computes and updates the external degree of `this` node given all nodes in
-   the graph. */
-  void UpdateExternalDegree(const std::vector<Node>& nodes);
+   the graph.
+   @param[in] nodes  All nodes in the graph.
+   @param[in] seen   pre-allocated scratch buffer, used to mark nodes
+                     encountered during update.
+   @pre `seen` has all zero values and is of the same size as `nodes`.
+   @post `seen` is reset to all zeros. */
+  void UpdateExternalDegree(const std::vector<Node>& nodes,
+                            std::vector<uint8_t>* seen);
+
+  /* Given all nodes in the graph, approximates and updates the external degree
+   of `this` node when its neighboring node p is eliminated.
+   @param[in] p        The index of node being eliminated (which is neighboring
+                       this node).
+   @param[in] Lp_size  |Lp \ i| the second term in equation 4. [Amestoy 1996].
+   @param[in] nodes    All nodes in the graph. */
+  void ApproximateExternalDegree(int p, int Lp_size,
+                                 const std::vector<Node>& nodes);
 
   /* See [Amestoy 1996] and [Davis 2006] for definitions of "supervariable",
    "element", "external degree", etc. */
@@ -69,24 +83,14 @@ struct Node {
   // non-empty at a given time.
   std::vector<int> L;  // Adjacent supervariables when `this` node is an
                        // element, empty otherwise.
+  int weight;  // Weight of this node (`w` in Algorithm 2 in [Amestoy 1996])
+               // when this node is an element, -1 otherwise.
 };
 
-/* A simplified version of Node used in a minimum priority queue of that only
- contains the node's index, degree, and priority (see the 2-arg
- ComputeMinimumDegreeOrdering). */
-struct SimplifiedNode {
-  int degree{};
-  int index{};
-  int priority{};  // smaller number means higher priority
-};
-
-inline bool operator<(const SimplifiedNode& a, const SimplifiedNode& b) {
-  /* Sort by priority first, then by degree, then by index. When all else are
-   equal we sort by index so that consecutive nodes with the same degree are not
-   permuted. */
-  return std::make_tuple(a.priority, a.degree, a.index) <
-         std::make_tuple(b.priority, b.degree, b.index);
-}
+/* Updates the weights of all nodes according to Algorithm 2 in [Amestoy 1996].
+ @param[in] Lp     The adjacent supervariables of the node being eliminated.
+ @param[in] nodes  All nodes in the graph. */
+void UpdateWeights(const std::vector<int>& Lp, std::vector<Node>* nodes);
 
 /* Computes the preferred elimination ordering of the matrix with the given
  `block_sparsity_pattern` according to the Minimum Degree algorithm. For
@@ -94,7 +98,7 @@ inline bool operator<(const SimplifiedNode& a, const SimplifiedNode& b) {
  0, and 2. In other words, this is a permutation mapping from new block indices
  to original block indices. */
 std::vector<int> ComputeMinimumDegreeOrdering(
-    const BlockSparsityPattern& block_sparsity_pattern);
+    const BlockSparsityPattern& block_sparsity_pattern, bool use_amd = true);
 
 /* Similar to the one argument overload but eliminates elements in
 `priority_elements` first.
@@ -105,7 +109,7 @@ std::vector<int> ComputeMinimumDegreeOrdering(
  @pre all entries in `priority_elements` are in {0, 1, ..., n-1}. */
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern,
-    const std::unordered_set<int>& priority_elements);
+    const std::unordered_set<int>& priority_elements, bool use_amd = true);
 
 /* Given the block sparsity pattern of a symmetric block sparse matrix, computes
  the block sparsity pattern of the lower triangular matrix resulting from a

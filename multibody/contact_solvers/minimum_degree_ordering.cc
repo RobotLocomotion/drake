@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <queue>
 #include <set>
 #include <utility>
 
@@ -12,21 +13,69 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-std::vector<int> Union(const std::vector<int>& a, const std::vector<int>& b) {
-  std::vector<int> result;
-  result.reserve(a.size() + b.size());
-  std::set_union(a.begin(), a.end(), b.begin(), b.end(),
-                 std::back_inserter(result));
-  return result;
+void InplaceSortedUnion(const std::vector<int>& b, std::vector<int>* a) {
+  auto& vec = *a;
+  const int n = ssize(vec);
+  const int m = ssize(b);
+  vec.resize(n + m);
+
+  int a_index = n - 1;
+  int b_index = m - 1;
+  int out_index = n + m - 1;
+
+  /* Pull the larger tail into a[out_index]. */
+  while (a_index >= 0 && b_index >= 0) {
+    const int va = vec[a_index];
+    const int vb = b[b_index];
+    if (va > vb) {
+      vec[out_index] = va;
+      --a_index;
+    } else if (va < vb) {
+      vec[out_index] = vb;
+      --b_index;
+    } else {
+      vec[out_index] = va;
+      --a_index;
+      --b_index;
+    }
+    --out_index;
+  }
+  /* Copy any remaining b. */
+  while (b_index >= 0) {
+    vec[out_index] = b[b_index];
+    --b_index;
+    --out_index;
+  }
+  /* Copy any remaining a. */
+  while (a_index >= 0) {
+    vec[out_index] = vec[a_index];
+    --a_index;
+    --out_index;
+  }
+  /* Now a[out_index+1..end) is already in ascending order, so we just drop the
+   unused prefix [0..out_index]. */
+  vec.erase(vec.begin(), vec.begin() + (out_index + 1));
 }
 
-std::vector<int> SetDifference(const std::vector<int>& a,
-                               const std::vector<int>& b) {
-  std::vector<int> result;
-  result.reserve(a.size());
-  std::set_difference(a.begin(), a.end(), b.begin(), b.end(),
-                      std::back_inserter(result));
-  return result;
+void InplaceSortedDifference(const std::vector<int>& b, std::vector<int>* a) {
+  int a_index = 0, b_index = 0, out_index = 0;
+  auto& vec = *a;
+  const int n = ssize(vec);
+  const int m = ssize(b);
+  while (a_index < n && b_index < m) {
+    if (vec[a_index] < b[b_index]) {
+      vec[out_index++] = vec[a_index++];
+    } else if (vec[a_index] == b[b_index]) {
+      ++a_index;
+      ++b_index;
+    } else {
+      ++b_index;
+    }
+  }
+  while (a_index < n) {
+    vec[out_index++] = vec[a_index++];
+  }
+  vec.resize(out_index);
 }
 
 void RemoveValueFromSortedVector(int value, std::vector<int>* sorted_vector) {
@@ -47,7 +96,51 @@ void InsertValueInSortedVector(int value, std::vector<int>* sorted_vector) {
   }
 }
 
-void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
+void UpdateWeights(const std::vector<int>& Lp, std::vector<Node>* nodes) {
+  DRAKE_DEMAND(nodes != nullptr);
+  for (Node& n : *nodes) {
+    n.weight = -1;
+  }
+  for (int i : Lp) {
+    for (int e : nodes->at(i).E) {
+      Node& node_e = (*nodes)[e];
+      if (node_e.weight < 0) {
+        node_e.weight = 0;
+        for (int l : node_e.L) {
+          node_e.weight += nodes->at(l).size;
+        }
+      }
+      node_e.weight -= nodes->at(i).size;
+    }
+  }
+}
+
+void Node::UpdateExternalDegree(const std::vector<Node>& nodes,
+                                std::vector<uint8_t>* seen) {
+  DRAKE_ASSERT(seen != nullptr);
+  DRAKE_ASSERT(ssize(*seen) == ssize(nodes));
+
+  degree = 0;
+  /* Add in |Aᵢ \ i| term. */
+  for (int a : A) {
+    degree += nodes[a].size;
+  }
+
+  /* Add in |L \ i| term where L = ∪ₑLₑ and e ∈ Eᵢ. */
+  (*seen)[index] = 1;
+  for (int e : E) {
+    for (int l : nodes[e].L) {
+      if (!(*seen)[l]) {
+        (*seen)[l] = 1;
+        degree += nodes[l].size;
+      }
+    }
+  }
+  seen->assign(seen->size(), 0);
+}
+
+void Node::ApproximateExternalDegree(int p, int Lp_size,
+                                     const std::vector<Node>& nodes) {
   degree = 0;
 
   /* Add in |Aᵢ \ i| term. */
@@ -55,27 +148,24 @@ void Node::UpdateExternalDegree(const std::vector<Node>& nodes) {
     degree += nodes[a].size;
   }
 
-  /* Add in |L \ i| term where L = ∪ₑLₑ and e ∈ Eᵢ. */
-  std::vector<int> L_union;
-  // TODO(xuchenhan-tri): This can be quadratic in the worst case and can be
-  // made more efficient by doing a K-way union if needed.
+  /* Add in |Lp \ i| term. */
+  degree += Lp_size;
+
   for (int e : E) {
-    L_union = Union(L_union, nodes[e].L);
-  }
-  RemoveValueFromSortedVector(index, &L_union);
-  for (int l : L_union) {
-    degree += nodes[l].size;
+    if (e != p) {
+      degree += nodes[e].weight >= 0 ? nodes[e].weight : nodes[e].L.size();
+    }
   }
 }
 
 std::vector<int> ComputeMinimumDegreeOrdering(
-    const BlockSparsityPattern& block_sparsity_pattern) {
-  return ComputeMinimumDegreeOrdering(block_sparsity_pattern, {});
+    const BlockSparsityPattern& block_sparsity_pattern, bool use_amd) {
+  return ComputeMinimumDegreeOrdering(block_sparsity_pattern, {}, use_amd);
 }
 
 std::vector<int> ComputeMinimumDegreeOrdering(
     const BlockSparsityPattern& block_sparsity_pattern,
-    const std::unordered_set<int>& priority_elements) {
+    const std::unordered_set<int>& priority_elements, bool use_amd) {
   /* Initialize for Minimum Degree: Populate index, size, and A, the list of
    adjacent variables. E, L are empty initially. */
   const std::vector<int>& block_sizes = block_sparsity_pattern.block_sizes();
@@ -106,68 +196,97 @@ std::vector<int> ComputeMinimumDegreeOrdering(
     /* Only A is non-empty at this point. */
     std::sort(A.begin(), A.end());
   }
+  std::vector<uint8_t> seen(num_nodes, 0);
 
-  /* The ideal data structure to use here is a priority queue implemeneted by a
-   heap. However, the Minimum Degree algorithm requires updating neighboring
-   nodes when a node is eliminated and std::priority_queue doesn't support
-   modifying existing elements. There are ways to get around it by duplicating
-   nodes and ignoring out-of-date nodes, but for simplicity and readability, we
-   use an std::set here instead. */
-  std::set<SimplifiedNode> sorted_nodes;
-  /* Keep the nodes sorted by degrees and break ties with indices. We use a
-   striped down version of the node to keep only the necessary information
-   (degree and index). */
-  for (int n = 0; n < num_nodes; ++n) {
-    SimplifiedNode node = {
-        .degree = nodes[n].degree,
-        .index = nodes[n].index,
-        .priority = priority_elements.contains(nodes[n].index) ? 0 : 1};
-    sorted_nodes.insert(node);
+  std::vector<int> priority(num_nodes);
+  for (int i = 0; i < num_nodes; ++i)
+    priority[i] = priority_elements.count(i) ? 0 : 1;
+
+  /* A simplified version of Node used in a minimum priority queue of that only
+   contains the node's index, degree, and priority. */
+  using SimplifiedNode =
+      std::tuple<int /*priority*/, int /*degree*/, int /*index*/>;
+  /* The priority queue is a min-heap. */
+  std::priority_queue<SimplifiedNode, std::vector<SimplifiedNode>,
+                      std::greater<SimplifiedNode>>
+      pq;
+
+  for (int i = 0; i < num_nodes; ++i) {
+    pq.emplace(priority[i], nodes[i].degree, i);
   }
 
   /* The resulting elimination ordering. */
-  std::vector<int> result(num_nodes);
-  /* Begin elimination. */
-  for (int k = 0; k < num_nodes; ++k) {
-    DRAKE_DEMAND(ssize(sorted_nodes) == num_nodes - k);
-    const SimplifiedNode min_node =
-        sorted_nodes.extract(sorted_nodes.begin()).value();
-    /* p is the variable to be eliminated next. */
-    const int p = min_node.index;
-    result[k] = p;
+  std::vector<int> result;
+  result.reserve(num_nodes);
+  /* Elimination tracking */
+  std::vector<uint8_t> eliminated(num_nodes, 0);
+  /* Scratch buffers for union operations */
+  std::vector<int> union_scratch;
+  union_scratch.reserve(num_nodes);
+  std::vector<int> union_result;
+  union_result.reserve(num_nodes);
+
+  while (ssize(result) < num_nodes) {
+    int p;  // index of the next node to eliminate
+    /* Pop until we get a fresh entry. Note that this in the worst case can be
+     O(n^2), but in practice, with up to thousands of dofs, this out performs
+     std::set. */
+    while (true) {
+      const auto [p_priority, p_degree, p_index] = pq.top();
+      pq.pop();
+      /* Skip nodes that are already eliminated. */
+      if (eliminated[p_index]) continue;
+      if (p_degree == nodes[p_index].degree) {
+        /* We have a fresh entry. Mark it as eliminated. */
+        p = p_index;
+        eliminated[p] = 1;
+        break;
+      }
+    }
+    result.push_back(p);
     Node& node_p = nodes[p];
 
-    /* Turn node p from a variable to an element. */
-    node_p.L = node_p.A;
     /* Absorb into Lp all variables adjacent to element e where e is adjacent to
      p. Make sure to exclude p itself since p is turning from a variable into an
      element. */
+    union_scratch = node_p.A;
     for (int e : node_p.E) {
-      node_p.L = Union(node_p.L, nodes[e].L);
+      union_result.clear();
+      std::set_union(union_scratch.begin(), union_scratch.end(),
+                     nodes[e].L.begin(), nodes[e].L.end(),
+                     std::back_inserter(union_result));
+      union_scratch.swap(union_result);
     }
-    RemoveValueFromSortedVector(p, &(node_p.L));
-    /* Update all neighboring variables of p. */
+    RemoveValueFromSortedVector(p, &union_scratch);
+    node_p.L.swap(union_scratch);
+    if (use_amd) UpdateWeights(node_p.L, &nodes);
+
+    /* Update each neighbor i in L */
     for (int i : node_p.L) {
       Node& node_i = nodes[i];
-      const SimplifiedNode old_node = {
-          .degree = node_i.degree,
-          .index = node_i.index,
-          .priority = priority_elements.contains(node_i.index) ? 0 : 1};
       /* Pruning. */
-      node_i.A = SetDifference(node_i.A, node_p.L);
+      InplaceSortedDifference(node_p.L, &node_i.A);
       /* Convert p from a variable to an element in node i. Note that Lp was
        already updated prior to the loop, and therefore we can now safely
        remove the absorbed elements in node i */
-      node_i.E = SetDifference(node_i.E, node_p.E);
-      RemoveValueFromSortedVector(p, &(node_i.A));
-      InsertValueInSortedVector(p, &(node_i.E));
-      /* Compute external degree. */
-      node_i.UpdateExternalDegree(nodes);
-      SimplifiedNode new_node = {.degree = node_i.degree,
-                                 .index = node_i.index,
-                                 .priority = old_node.priority};
-      sorted_nodes.erase(old_node);
-      sorted_nodes.insert(new_node);
+      InplaceSortedDifference(node_p.E, &node_i.E);
+      RemoveValueFromSortedVector(p, &node_i.A);
+      InsertValueInSortedVector(p, &node_i.E);
+      if (use_amd) {
+        /* Compute |Lp \ i|, or Lp_size. */
+        const std::vector<int>& Lp = node_p.L;
+        int Lp_size = 0;
+        for (int n : Lp) {
+          if (n != i) {
+            Lp_size += nodes[n].size;
+          }
+        }
+        node_i.ApproximateExternalDegree(p, Lp_size, nodes);
+      } else {
+        node_i.UpdateExternalDegree(nodes, &seen);
+      }
+      /* Push updated entry i */
+      pq.emplace(priority[i], node_i.degree, i);
     }
     /* Convert node p from a supervariable to an element. */
     node_p.A.clear();
@@ -205,9 +324,7 @@ BlockSparsityPattern SymbolicCholeskyFactor(
      where the union over s is over all children of j. */
     L_sparsity[j] = A_sparsity[j];
     for (int c : children[j]) {
-      // TODO(xuchenhan-tri): Consider doing a k-way union instead of a loop
-      // for efficiency.
-      L_sparsity[j] = Union(L_sparsity[j], L_sparsity[c]);
+      InplaceSortedUnion(L_sparsity[c], &L_sparsity[j]);
     }
     /* Instead of union over Lₛ \ {s}, we union over Lₛ and remove all entries
      smaller than j here in a single pass. */
