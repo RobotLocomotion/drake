@@ -519,6 +519,37 @@ void DefineFramePoseVector(py::module m, T) {
 }
 
 template <typename T>
+void DefineGeometryConfigurationVector(py::module m, T) {
+  py::tuple param = GetPyParam<T>();
+  {
+    using Class = GeometryConfigurationVector<T>;
+    auto cls = DefineTemplateClassWithDefault<Class>(
+        m, "GeometryConfigurationVector", param, doc.KinematicsVector.doc);
+    cls  // BR
+        .def(py::init<>(), doc.KinematicsVector.ctor.doc_0args)
+        .def("clear", &GeometryConfigurationVector<T>::clear,
+            doc.KinematicsVector.clear.doc)
+        .def(
+            "set_value",
+            [](Class* self, GeometryId id, const Eigen::VectorX<T>& value) {
+              self->set_value(id, value);
+            },
+            py::arg("id"), py::arg("value"), doc.KinematicsVector.set_value.doc)
+        .def("size", &GeometryConfigurationVector<T>::size,
+            doc.KinematicsVector.size.doc)
+        // This intentionally copies the value to avoid segfaults from accessing
+        // the result after clear() is called. (see #11583)
+        .def("value", &GeometryConfigurationVector<T>::value, py::arg("id"),
+            doc.KinematicsVector.value.doc)
+        .def("has_id", &GeometryConfigurationVector<T>::has_id, py::arg("id"),
+            doc.KinematicsVector.has_id.doc)
+        .def("ids", &GeometryConfigurationVector<T>::ids,
+            doc.KinematicsVector.ids.doc);
+    AddValueInstantiation<GeometryConfigurationVector<T>>(m);
+  }
+}
+
+template <typename T>
 void DefineQueryObject(py::module m, T) {
   py::tuple param = GetPyParam<T>();
   {
@@ -754,6 +785,7 @@ void DefineGeometrySceneGraph(py::module m) {
       [m](auto dummy) {
         // This list must remain in topological dependency order.
         DefineFramePoseVector(m, dummy);
+        DefineGeometryConfigurationVector(m, dummy);
         DefineContactSurface(m, dummy);
         DefinePenetrationAsPointPair(m, dummy);
         DefineSignedDistancePair(m, dummy);

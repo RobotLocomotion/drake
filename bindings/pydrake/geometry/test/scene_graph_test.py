@@ -3,6 +3,8 @@ import pydrake.geometry as mut
 import unittest
 from math import pi
 
+import numpy as np
+
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
 from pydrake.math import RigidTransform_
@@ -554,6 +556,21 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertTrue(obj.has_id(id=frame_id))
         self.assertIsInstance(obj.ids(), list)
         self.assertIsInstance(obj.ids()[0], mut.FrameId)
+        obj.clear()
+        self.assertEqual(obj.size(), 0)
+
+    @numpy_compare.check_all_types
+    def test_geometry_configuration_vector_api(self, T):
+        GeometryConfigurationVector = mut.GeometryConfigurationVector_[T]
+        obj = GeometryConfigurationVector()
+        geometry_id = mut.GeometryId.get_new_id()
+
+        obj.set_value(id=geometry_id, value=np.ones((10)))
+        self.assertEqual(obj.size(), 1)
+        self.assertIsInstance(obj.value(id=geometry_id), np.ndarray)
+        self.assertTrue(obj.has_id(id=geometry_id))
+        self.assertIsInstance(obj.ids(), list)
+        self.assertIsInstance(obj.ids()[0], mut.GeometryId)
         obj.clear()
         self.assertEqual(obj.size(), 0)
 
