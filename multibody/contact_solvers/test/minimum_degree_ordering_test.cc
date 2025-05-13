@@ -88,14 +88,11 @@ GTEST_TEST(MinimumDegreeOrderingTest, UpdateExternalDegree) {
   nodes.push_back(n10);
 
   std::vector<uint8_t> seen(nodes.size(), 0);
-  std::vector<int> marked;
-  marked.reserve(nodes.size());
-
-  n6.UpdateExternalDegree(nodes, &seen, &marked);
-  n7.UpdateExternalDegree(nodes, &seen, &marked);
-  n8.UpdateExternalDegree(nodes, &seen, &marked);
-  n9.UpdateExternalDegree(nodes, &seen, &marked);
-  n10.UpdateExternalDegree(nodes, &seen, &marked);
+  n6.UpdateExternalDegree(nodes, &seen);
+  n7.UpdateExternalDegree(nodes, &seen);
+  n8.UpdateExternalDegree(nodes, &seen);
+  n9.UpdateExternalDegree(nodes, &seen);
+  n10.UpdateExternalDegree(nodes, &seen);
   /* Fill-ins are 7,8,9. */
   EXPECT_EQ(n6.degree, 240);
   /* Fill-ins are 6,8,9,10. */
