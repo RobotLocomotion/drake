@@ -1208,10 +1208,6 @@ std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesKinematicallyAffectedBy(
                       "has been removed.",
                       __func__, joint));
     }
-    if (get_joint(joint).num_velocities() == 0) {
-      throw std::logic_error(
-          fmt::format("{}: joint with index {} is welded.", __func__, joint));
-    }
   }
   const std::set<BodyIndex> links =
       internal_tree().GetBodiesKinematicallyAffectedBy(joint_indexes);
