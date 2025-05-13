@@ -38,12 +38,12 @@ using multibody::MultibodyPlant;
 using systems::Context;
 
 namespace {
+/* Given a context whose position represents a configuration known to be in
+ * collision, find a pair of collision geometries which are in collision and
+ * return the corresponding index in sorted_pairs. */
 int FindCollisionPairIndex(
     const MultibodyPlant<double>& plant, const Context<double>& context,
     const std::vector<GeometryPairWithDistance>& sorted_pairs) {
-  // Call ComputeSignedDistancePairClosestPoints for each pair of collision
-  // geometries until finding a pair that is in collision and returning the
-  // corresponding index
   int pair_in_collision = -1;
   int i_pair = 0;
   for (const auto& pair : sorted_pairs) {
@@ -63,6 +63,8 @@ int FindCollisionPairIndex(
   return pair_in_collision;
 }
 
+/* Check if any unsuppoorted features have been used, as well as any other
+ * initial conditions that must be satisfied by the user inputs. */
 void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
                             const Hyperellipsoid& starting_ellipsoid,
                             const HPolyhedron& domain,
@@ -103,13 +105,17 @@ void CheckInitialConditions(const SceneGraphCollisionChecker& checker,
         "padding.");
   }
 
+  // The input domain must be bounded.
   DRAKE_THROW_UNLESS(domain.IsBounded());
 }
 
+/* Check for certain conditions at the end of the separating hyperplanes step,
+ * which, if satisfied, indicate that the algorithm should terminate. */
 bool CheckTerminationConditions(int iteration_num, double delta_volume,
                                 double last_iteration_volume,
                                 const IrisNp2Options& options) {
   bool terminate = false;
+  // Maximum iteration count.
   if (iteration_num >= options.sampled_iris_options.max_iterations) {
     if (options.sampled_iris_options.verbose) {
       log()->info(
@@ -119,6 +125,7 @@ bool CheckTerminationConditions(int iteration_num, double delta_volume,
     }
     terminate = true;
   }
+  // Absolute volume change threshold.
   if (delta_volume <= options.sampled_iris_options.termination_threshold) {
     if (options.sampled_iris_options.verbose) {
       log()->info(
@@ -127,8 +134,10 @@ bool CheckTerminationConditions(int iteration_num, double delta_volume,
           delta_volume, options.sampled_iris_options.termination_threshold);
     }
     terminate = true;
-  } else if (delta_volume / last_iteration_volume <=
-             options.sampled_iris_options.relative_termination_threshold) {
+  }
+  // Relative volume change threshold.
+  if (delta_volume / last_iteration_volume <=
+      options.sampled_iris_options.relative_termination_threshold) {
     if (options.sampled_iris_options.verbose) {
       log()->info(
           "IrisNp2: Terminating because the hyperellipsoid "
@@ -156,9 +165,6 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
   const int nq = plant.num_positions();
   const Eigen::VectorXd seed = starting_ellipsoid.center();
 
-  Eigen::VectorXd lower_limits = plant.GetPositionLowerLimits();
-  Eigen::VectorXd upper_limits = plant.GetPositionUpperLimits();
-
   HPolyhedron P(domain);
   Hyperellipsoid E = starting_ellipsoid;
 
@@ -182,7 +188,24 @@ HPolyhedron IrisNp2(const SceneGraphCollisionChecker& checker,
     frames.emplace(geom_id, &plant.GetBodyFromFrameId(frame_id)->body_frame());
   }
 
-  auto pairs = inspector.GetCollisionCandidates();
+  std::set<std::pair<GeometryId, GeometryId>> pairs;
+  std::set<std::pair<GeometryId, GeometryId>> possible_pairs =
+      inspector.GetCollisionCandidates();
+  for (const auto& [geom_A, geom_B] : possible_pairs) {
+    const geometry::FrameId frame_A = inspector.GetFrameId(geom_A);
+    const multibody::Body<double>* body_A_ptr =
+        plant.GetBodyFromFrameId(frame_A);
+    DRAKE_DEMAND(body_A_ptr != nullptr);
+
+    const geometry::FrameId frame_B = inspector.GetFrameId(geom_B);
+    const multibody::Body<double>* body_B_ptr =
+        plant.GetBodyFromFrameId(frame_B);
+    DRAKE_DEMAND(body_B_ptr != nullptr);
+
+    if (!checker.IsCollisionFilteredBetween(*body_A_ptr, *body_B_ptr)) {
+      pairs.insert(std::make_pair(geom_A, geom_B));
+    }
+  }
   const int n = static_cast<int>(pairs.size());
   auto same_point_constraint =
       std::make_shared<SamePointConstraint>(&plant, context);
