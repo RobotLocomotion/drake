@@ -11,7 +11,9 @@ namespace drake {
 namespace planning {
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::VectorX;
+using Eigen::VectorXd;
 using geometry::Sphere;
 using geometry::optimization::HPolyhedron;
 using symbolic::Expression;
@@ -92,6 +94,36 @@ TEST_F(DoublePendulum, IrisNp2Test) {
   HPolyhedron region =
       IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
   CheckRegion(region);
+
+  PlotEnvironmentAndRegion(region);
+}
+
+// Check that we can filter out certain collisions.
+TEST_F(DoublePendulum, FilterCollisions) {
+  IrisNp2Options options;
+  auto sgcc_ptr = dynamic_cast<SceneGraphCollisionChecker*>(checker_.get());
+  ASSERT_TRUE(sgcc_ptr != nullptr);
+
+  options.sampled_iris_options.verbose = true;
+  const auto& body_A = sgcc_ptr->plant().GetBodyByName("fixed");
+  const auto& body_B = sgcc_ptr->plant().GetBodyByName("link2");
+  sgcc_ptr->SetCollisionFilteredBetween(body_A, body_B, true);
+
+  meshcat_->Delete();
+  options.sampled_iris_options.meshcat = meshcat_;
+
+  HPolyhedron region =
+      IrisNp2(*sgcc_ptr, starting_ellipsoid_, domain_, options);
+
+  // Check the four corners for the joint limits.
+  VectorXd upper_limits = sgcc_ptr->plant().GetPositionUpperLimits();
+  VectorXd lower_limits = sgcc_ptr->plant().GetPositionLowerLimits();
+  EXPECT_EQ(upper_limits.size(), 2);
+  EXPECT_EQ(lower_limits.size(), 2);
+  EXPECT_TRUE(region.PointInSet(upper_limits));
+  EXPECT_TRUE(region.PointInSet(lower_limits));
+  EXPECT_TRUE(region.PointInSet(Vector2d(upper_limits[0], lower_limits[1])));
+  EXPECT_TRUE(region.PointInSet(Vector2d(lower_limits[0], upper_limits[1])));
 
   PlotEnvironmentAndRegion(region);
 }
