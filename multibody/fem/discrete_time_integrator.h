@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "drake/common/default_scalars.h"
 #include "drake/multibody/fem/fem_state.h"
 
@@ -40,13 +42,16 @@ namespace internal {
 
  DiscreteTimeIntegrator provides the interface to query the relationship between
  the states (`q`, `v`, and `a`) and the unknown variable `z`.
- @tparam_nonsymbolic_scalar */
+ @tparam_default_scalar */
 template <typename T>
 class DiscreteTimeIntegrator {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteTimeIntegrator);
 
   virtual ~DiscreteTimeIntegrator() = default;
+
+  /* Returns an identical copy of `this` DiscreteTimeIntegrator. */
+  std::unique_ptr<DiscreteTimeIntegrator<T>> Clone() const { return DoClone(); }
 
   /* Returns (αₚ, αᵥ, αₐ), the derivative of (q, v, a) with respect to the
    unknown variable z (See class documentation). These weights can be used to
@@ -88,6 +93,10 @@ class DiscreteTimeIntegrator {
   }
 
   /* Derived classes must override this method to implement the NVI
+   DoClone(). */
+  virtual std::unique_ptr<DiscreteTimeIntegrator<T>> DoClone() const = 0;
+
+  /* Derived classes must override this method to implement the NVI
    GetWeights(). */
   virtual Vector3<T> DoGetWeights() const = 0;
 
@@ -114,5 +123,5 @@ class DiscreteTimeIntegrator {
 }  // namespace multibody
 }  // namespace drake
 
-DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::fem::internal::DiscreteTimeIntegrator);

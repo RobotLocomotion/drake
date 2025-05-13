@@ -165,7 +165,8 @@ class VolumetricModel : public FemModelImpl<Element> {
   };
 
   /* Creates a new empty VolumetricModel. */
-  VolumetricModel() = default;
+  explicit VolumetricModel(const Vector3<T>& tangent_matrix_weights)
+      : FemModelImpl<Element>(tangent_matrix_weights) {}
 
   ~VolumetricModel() = default;
 
@@ -180,14 +181,15 @@ class VolumetricModel : public FemModelImpl<Element> {
     DRAKE_DEMAND(static_cast<int>(element_data.size()) == this->num_elements());
     const auto& elements = this->elements();
     for (int e = 0; e < this->num_elements(); ++e) {
-      energy += elements[e].CalcElasticEnergy(element_data[e]);
+      energy += elements[e].CalcElasticEnergy(element_data[e].Psi);
     }
     return energy;
   }
 
  private:
   std::unique_ptr<FemModel<T>> DoClone() const final {
-    auto clone = std::make_unique<VolumetricModel<Element>>();
+    auto clone = std::make_unique<VolumetricModel<Element>>(
+        this->tangent_matrix_weights());
     clone->reference_positions_ = reference_positions_;
     clone->SetFrom(*this);
     return clone;

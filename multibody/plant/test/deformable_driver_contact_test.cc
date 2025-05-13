@@ -134,8 +134,7 @@ class DeformableDriverContactTest : public ::testing::Test {
         fem_tangent_matrix = fem_model.MakeTangentMatrix();
     const FemState<double>& free_motion_state =
         EvalFreeMotionFemState(context, index);
-    fem_model.CalcTangentMatrix(free_motion_state, GetIntegratorWeights(),
-                                fem_tangent_matrix.get());
+    fem_model.CalcTangentMatrix(free_motion_state, fem_tangent_matrix.get());
     return fem_tangent_matrix->MakeDenseMatrix();
   }
 
@@ -164,7 +163,7 @@ class DeformableDriverContactTest : public ::testing::Test {
   }
 
   Vector3<double> GetIntegratorWeights() const {
-    return driver_->integrator_->GetWeights();
+    return model_->integrator().GetWeights();
   }
 
   MultibodyPlant<double>* plant_{nullptr};

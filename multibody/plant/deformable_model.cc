@@ -11,6 +11,7 @@
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/neohookean_model.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
+#include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/fem/volumetric_model.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -29,7 +30,17 @@ using fem::MaterialModel;
 
 template <typename T>
 DeformableModel<T>::DeformableModel(MultibodyPlant<T>* plant)
-    : PhysicalModel<T>(plant) {}
+    : PhysicalModel<T>(plant) {
+  /* Set the time integrator for advancing deformable states in time to be the
+   midpoint rule, i.e., q = q₀ + δt/2 *(v₀ + v).
+   We only set the integrator when the plant is discrete. For continuous plants,
+   we may create a deformable model for various reasons, but the deformable
+   model will always be empty. */
+  if (plant->time_step() > 0) {
+    integrator_ = std::make_unique<fem::internal::VelocityNewmarkScheme<T>>(
+        plant->time_step(), 1.0, 0.5);
+  }
+}
 
 template <typename T>
 DeformableModel<T>::~DeformableModel() = default;
@@ -416,6 +427,7 @@ std::unique_ptr<PhysicalModel<double>> DeformableModel<T>::CloneToDouble(
      because callers to `PhysicalModel::CloneToScalar` are required to
      subsequently call `DeclareSceneGraphPorts`. */
     result->parallelism_ = parallelism_;
+    result->integrator_ = integrator_->Clone();
   }
 
   return result;
@@ -497,7 +509,7 @@ DeformableModel<T>::BuildLinearVolumetricModelHelper(
       config.mass_damping_coefficient(),
       config.stiffness_damping_coefficient());
 
-  auto fem_model = std::make_unique<FemModelType>();
+  auto fem_model = std::make_unique<FemModelType>(integrator_->GetWeights());
   ConstitutiveModelType constitutive_model(config.youngs_modulus(),
                                            config.poissons_ratio());
   typename FemModelType::VolumetricBuilder builder(fem_model.get());

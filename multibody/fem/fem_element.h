@@ -97,97 +97,12 @@ class FemElement {
   }
 
   /* Computes the per-element, state-dependent data associated with this
-   `DerivedElement` given the `state`. */
-  Data ComputeData(const FemState<T>& state) const {
-    return static_cast<const DerivedElement*>(this)->DoComputeData(state);
-  }
-
-  /* Calculates the tangent matrix for the element by combining the stiffness
-   matrix, damping matrix, and the mass matrix according to the given `weights`.
-   In particular, given a weight of (w₀, w₁, w₂), the tangent matrix is equal to
-   w₀⋅K + w₁⋅D + w₂⋅M, where K, D, and M are stiffness, damping, and mass matrix
-   respectively. */
-  void CalcTangentMatrix(
-      const Data& data, const Vector3<T>& weights,
-      EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> tangent_matrix) const {
-    DRAKE_DEMAND(tangent_matrix != nullptr);
-    tangent_matrix->setZero();
-    AddScaledStiffnessMatrix(
-        data, weights(0) + weights(1) * damping_model_.stiffness_coeff_beta(),
-        tangent_matrix);
-    AddScaledMassMatrix(
-        data, weights(2) + weights(1) * damping_model_.mass_coeff_alpha(),
-        tangent_matrix);
-  }
-
-  /* Calculates the force required to induce the acceleration `a` given the
-   configuration `x` and velocities `v`, with `x`, `v`, and `a` stored in
-   `data`. The required force equals is ID(a, x, v) = Ma-fₑ(x)-fᵥ(x, v), where M
-   is the mass matrix, fₑ(x) is the elastic force, fᵥ(x, v) is the damping
-   force. The residual is then given by ID(a, x, v) - fₑₓₜ. Notice that the
-   result is "discrete" in space and "continuous" in time.
-   @param[in]  data            The per-element FEM data to evaluate the external
-                               force.
-   @param[out] external_force  The resulting external force. All values in
-                               `external_force` will be overwritten.
-   @pre external_force != nullptr */
-  void CalcInverseDynamics(const Data& data,
-                           EigenPtr<Vector<T, num_dofs>> external_force) const {
-    DRAKE_ASSERT(external_force != nullptr);
-    external_force->setZero();
-    static_cast<const DerivedElement*>(this)->DoCalcInverseDynamics(
-        data, external_force);
-  }
-
-  /* Accumulates the stiffness matrix (the derivative, or an approximation
-   thereof, of the residual with respect to the generalized positions) of this
-   element given the `state`.
-   @param[in] data    The per-element FEM data to evaluate the stiffness matrix.
-   @param[in] scale   The scaling factor applied to the stiffness matrix.
-   @param[in, out] K  The matrix to which the scaled stiffness matrix will be
-                      added.
-   @pre K != nullptr */
-  void AddScaledStiffnessMatrix(
-      const Data& data, const T& scale,
-      EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> K) const {
-    DRAKE_ASSERT(K != nullptr);
-    static_cast<const DerivedElement*>(this)->DoAddScaledStiffnessMatrix(
-        data, scale, K);
-  }
-
-  /* Accumulates the damping matrix (the derivative of the residual with
-   respect to the time derivative of generalized positions) of this element
-   given the `data`.
-   @param[in] data    The per-element FEM data to evaluate the damping matrix.
-   @param[in] scale   The scaling factor applied to the damping matrix.
-   @param[in, out] D  The matrix to which the scaled damping matrix will be
-                      added.
-   @pre D != nullptr
-   @note This function recomputes both the mass and the stiffness matrix and may
-   be expensive. */
-  void AddScaledDampingMatrix(
-      const Data& data, const T& scale,
-      EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> D) const {
-    DRAKE_ASSERT(D != nullptr);
-    const T& alpha = damping_model_.mass_coeff_alpha();
-    const T& beta = damping_model_.stiffness_coeff_beta();
-    this->AddScaledMassMatrix(data, scale * alpha, D);
-    this->AddScaledStiffnessMatrix(data, scale * beta, D);
-  }
-
-  /* Accumulates the mass matrix (the derivative of the residual with respect
-   to the time second derivative of generalized positions) of this element
-   given the `data`.
-   @param[in] data  The FEM data to evaluate the mass matrix.
-   @param[in] scale  The scaling factor applied to the mass matrix.
-   @param[in, out] M  The matrix to which the scaled mass matrix will be added.
-   @pre M != nullptr */
-  void AddScaledMassMatrix(
-      const Data& data, const T& scale,
-      EigenPtr<Eigen::Matrix<T, num_dofs, num_dofs>> M) const {
-    DRAKE_ASSERT(M != nullptr);
-    static_cast<const DerivedElement*>(this)->DoAddScaledMassMatrix(data, scale,
-                                                                    M);
+   `DerivedElement` given the `state` and the weights used to compute tangent
+   matrices. */
+  Data ComputeData(const FemState<T>& state,
+                   const Vector3<T>& tangent_matrix_weights) const {
+    return static_cast<const DerivedElement*>(this)->DoComputeData(
+        state, tangent_matrix_weights);
   }
 
   /* Accumulates external forces for this element given the `data` and the

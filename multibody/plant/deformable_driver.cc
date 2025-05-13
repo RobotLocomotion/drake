@@ -15,7 +15,6 @@
 #include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/fem/dirichlet_boundary_condition.h"
 #include "drake/multibody/fem/fem_model.h"
-#include "drake/multibody/fem/velocity_newmark_scheme.h"
 #include "drake/multibody/plant/contact_properties.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/force_density_field.h"
@@ -54,11 +53,6 @@ DeformableDriver<T>::DeformableDriver(
     : deformable_model_(deformable_model), manager_(manager) {
   DRAKE_DEMAND(deformable_model != nullptr);
   DRAKE_DEMAND(manager != nullptr);
-  // TODO(xuchenhan-tri): Expose the integrator as a config.
-  /* Set the time integrator for advancing deformable states in time to be the
-   midpoint rule, i.e., q = q₀ + δt/2 *(v₀ + v). */
-  integrator_ = std::make_unique<fem::internal::VelocityNewmarkScheme<T>>(
-      manager_->plant().time_step(), 1.0, 0.5);
 }
 
 template <typename T>
@@ -132,7 +126,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
     cache_indexes_.vertex_permutations.emplace(
         g_id, vertex_permutation_cache_entry.cache_index());
 
-    FemSolver<T> model_fem_solver(&fem_model, integrator_.get());
+    FemSolver<T> model_fem_solver(&fem_model, &deformable_model_->integrator());
     /* Cache entry for free motion FEM state and data. */
     const auto& fem_solver_cache_entry = manager->DeclareCacheEntry(
         fmt::format("FEM solver and data for body with index {}", i),
@@ -1040,7 +1034,8 @@ void DeformableDriver<T>::CalcNextFemState(const systems::Context<T>& context,
     VectorX<T>& v_next = dv;
     v_next += EvalFreeMotionFemState(context, index).GetVelocities();
     const FemState<T>& fem_state = EvalFemState(context, index);
-    integrator_->AdvanceOneTimeStep(fem_state, v_next, next_fem_state);
+    deformable_model_->integrator().AdvanceOneTimeStep(fem_state, v_next,
+                                                       next_fem_state);
   }
 }
 
