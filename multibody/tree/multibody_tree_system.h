@@ -185,11 +185,20 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
   }
 
   /* Returns a reference to the up-to-date cache of composite-body inertias
-  in the given Context, recalculating it first if necessary. */
+  I_BBo_W in the given Context, recalculating it first if necessary. */
   const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInWorldCache(
       const systems::Context<T>& context) const {
     this->ValidateContext(context);
     return this->get_cache_entry(cache_indexes_.composite_body_inertia_in_world)
+        .template Eval<std::vector<SpatialInertia<T>>>(context);
+  }
+
+  /* Returns a reference to the up-to-date cache of composite-body inertias
+  I_BMo_M in the given Context, recalculating it first if necessary. */
+  const std::vector<SpatialInertia<T>>& EvalCompositeBodyInertiaInMCache(
+      const systems::Context<T>& context) const {
+    this->ValidateContext(context);
+    return this->get_cache_entry(cache_indexes_.composite_body_inertia_in_m)
         .template Eval<std::vector<SpatialInertia<T>>>(context);
   }
 
@@ -456,16 +465,14 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
 
   void CalcCompositeBodyInertiasInWorld(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* composite_body_inertias) const {
-    internal_tree().CalcCompositeBodyInertiasInWorld(context,
-                                                     composite_body_inertias);
+      std::vector<SpatialInertia<T>>* I_BBo_W_all) const {
+    internal_tree().CalcCompositeBodyInertiasInWorld(context, I_BBo_W_all);
   }
 
   void CalcCompositeBodyInertiasInM(
       const systems::Context<T>& context,
-      std::vector<SpatialInertia<T>>* composite_body_inertias_in_m) const {
-    internal_tree().CalcCompositeBodyInertiasInM(context,
-                                                 composite_body_inertias_in_m);
+      std::vector<SpatialInertia<T>>* I_BMo_M_all) const {
+    internal_tree().CalcCompositeBodyInertiasInM(context, I_BMo_M_all);
   }
 
   void CalcAcrossNodeJacobianWrtVExpressedInWorld(
@@ -591,6 +598,7 @@ class MultibodyTreeSystem : public systems::LeafSystem<T> {
     systems::CacheIndex position_kinematics;
     systems::CacheIndex position_kinematics_in_m;
     systems::CacheIndex spatial_inertia_in_world;
+    systems::CacheIndex composite_body_inertia_in_m;
     systems::CacheIndex composite_body_inertia_in_world;
     systems::CacheIndex spatial_acceleration_bias;
     systems::CacheIndex velocity_kinematics;

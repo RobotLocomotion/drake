@@ -328,7 +328,7 @@ class RotationalInertia {
   /// @see operator+().
   // TODO(Mitiguy) Issue #6145, add direct unit test for this method.
   RotationalInertia<T>& operator+=(const RotationalInertia<T>& I_BP_E) {
-    this->get_mutable_triangular_view() += I_BP_E.get_matrix();
+    this->get_mutable_triangular_view() += I_BP_E.get_matrix();  // 6 flops
     return *this;
   }
 
@@ -341,7 +341,7 @@ class RotationalInertia {
   /// @return The sum of `this` rotational inertia and `I_BP_E`.
   /// @see operator+=().
   RotationalInertia<T> operator+(const RotationalInertia<T>& I_BP_E) const {
-    return RotationalInertia(*this) += I_BP_E;
+    return RotationalInertia(*this) += I_BP_E;  // 6 flops
   }
 
   /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
@@ -453,7 +453,8 @@ class RotationalInertia {
   /// @see operator/().
   RotationalInertia<T>& operator/=(const T& positive_scalar) {
     DRAKE_ASSERT_VOID(ThrowIfDivideByZeroOrNegativeScalar(positive_scalar));
-    this->get_mutable_triangular_view() /= positive_scalar;
+    const T oo_positive_scalar = 1 / positive_scalar;
+    this->get_mutable_triangular_view() *= oo_positive_scalar;
     return *this;
   }
 
@@ -638,7 +639,7 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpress().
-  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE);
+  void ReExpressInPlace(const math::RotationMatrix<T>& R_AE);  // 57 flops
 
   /// Re-expresses `this` rotational inertia `I_BP_E` to `I_BP_A`
   /// i.e., re-expresses body B's rotational inertia from frame E to frame A.
@@ -650,7 +651,7 @@ class RotationalInertia {
   [[nodiscard]] RotationalInertia<T> ReExpress(
       const math::RotationMatrix<T>& R_AE) const {
     RotationalInertia result(*this);
-    result.ReExpressInPlace(R_AE);
+    result.ReExpressInPlace(R_AE);  // 57 flops
     return result;
   }
 
@@ -795,7 +796,7 @@ class RotationalInertia {
   /// @see operator-=().
   RotationalInertia<T>& MinusEqualsUnchecked(
       const RotationalInertia<T>& I_BP_E) {
-    this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
+    this->get_mutable_triangular_view() -= I_BP_E.get_matrix();  // 6 flops
     return *this;
   }
 

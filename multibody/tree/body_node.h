@@ -635,18 +635,18 @@ class BodyNode : public MultibodyElement<T> {
   //   It must contain already up-to-date composite body inertias for all the
   //   children of `this` node.
   //
-  // @pre CalcCompositeBodyInertia_TipToBase() must have already been called
-  // for the children nodes (and, by recursive precondition, all outboard nodes
-  // in the tree.)
+  // @pre CalcCompositeBodyInertiaWorld_TipToBase() must have already been
+  // called for the children nodes (and, by recursive precondition, all outboard
+  // nodes in the tree.)
   virtual void CalcCompositeBodyInertiaInWorld_TipToBase(
       const PositionKinematicsCache<T>& pc,
       const std::vector<SpatialInertia<T>>& M_BBo_W_all,
       std::vector<SpatialInertia<T>>* Mc_BBo_W_all) const;
 
   virtual void CalcCompositeBodyInertiaInM_TipToBase(
-    const FrameBodyPoseCache<T>& frame_body_pose_cache,  // for M_BMo_M
-    const PositionKinematicsCacheInM<T>& pcm,  // for X_MpM(q)
-    std::vector<SpatialInertia<T>>* Mc_BMo_M_all) const;
+      const FrameBodyPoseCache<T>& frame_body_pose_cache,  // for M_BMo_M
+      const PositionKinematicsCacheInM<T>& pcm,            // for X_MpM(q)
+      std::vector<SpatialInertia<T>>* Mc_BMo_M_all) const;
 
   // Forms LLT factorization of articulated rigid body's hinge inertia matrix.
   // @param[in] D_B Articulated rigid body hinge matrix.
