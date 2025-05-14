@@ -1,0 +1,101 @@
+#!/usr/bin/env groovy
+
+properties([
+  parameters([
+    string(name: 'drakeSha', defaultValue: 'master',
+      description: 'Commit SHA or branch name. ' +
+        'For pull requests, enter branch name <code>pr/1234/head</code> ' +
+        'or <code>pr/1234/merge</code> for pull request #1234. ' +
+        'Defaults to <code>master</code>.')
+    string(name: 'ciSha', defaultValue: 'main',
+      description: 'Commit SHA or branch name. ' +
+        'For pull requests, enter branch name <code>pr/1234/head</code> ' +
+        'or <code>pr/1234/merge</code> for pull request #1234. ' +
+        'Defaults to <code>main</code>.'),
+    string(name: 'release_version', defaultValue: 'unset',
+      description: 'Version to apply to the resulting release candidate ' +
+        'artifact(s). If the RC artifact(s) include wheel(s), the ' +
+        'version must follow <a href=' +
+        '"https://www.python.org/dev/peps/pep-0440/">PEP 440</a>.' +
+        'To test staging <tt>1.13.0</tt>, for example, a ' +
+        'version number such as <tt>1.13.0rc1</tt> could be used. ' +
+        'The version number must start with a number (<tt>v1.13.0</tt> ' +
+        'will be rejected). If in doubt, run <tt>bazel run ' +
+        '//tools/wheel:builder -- --pep440 [desired version number]' +
+        '</tt> to confirm whether your desired version number is ' +
+        'PEP 440 compliant.')
+    ])
+  buildDiscarder(
+    logRotator(
+      daysToKeepStr: '90',
+      artifactDaysToKeepStr: '90'
+    )
+  )
+])
+
+node(getNodeLabel()) {
+  // Use a custom checkout step below, since there are
+  // multiple repositories with a particular directory layout.
+  skipDefaultCheckout()
+
+  fetchUtils()
+  def utils = load 'jenkins-utils/.jenkins/utils/utils.groovy'
+
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            // Use the drake and ci branch parameters for checkout (defaults
+            // to master & main).
+            def scmVars = utils.checkout(params.ciSha, params.drakeSha)
+            utils.doMainBuild(scmVars, params.release_version)
+          } finally {
+            try {
+              utils.addCDashBadge()
+            } finally {
+              utils.cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Returns the node label from the job name.
+def getNodeLabel() {
+  def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
+  def match = "${env.JOB_NAME}" =~ pattern
+
+  if (match.find()) {
+    return match.group(1)
+  }
+  else {
+    return null
+  }
+}
+
+// Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
+def fetchUtils() {
+  def thisBranch = null
+  if (!env.CHANGE_ID?.trim()) {
+    thisBranch = scm.branches[0].name
+  }
+  else {
+    thisBranch = "pr/${env.CHANGE_ID}/head"
+  }
+  checkout([$class: 'GitSCM',
+    branches: [[name: thisBranch]],
+    extensions: [
+      [$class: 'RelativeTargetDirectory', relativeTargetDir: 'jenkins-utils'],
+      [$class: 'CloneOption', honorRefspec: true, noTags: true],
+      [$class: 'SparseCheckoutPaths',
+        sparseCheckoutPaths: [[path: '.jenkins/utils/utils.groovy']]]],
+    userRemoteConfigs: [[
+      credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
+      name: 'origin',
+      refspec: '+refs/heads/*:refs/remotes/origin/* ' +
+        '+refs/pull/*:refs/remotes/origin/pr/*',
+      url: 'git@github.com:RobotLocomotion/drake.git']]])
+}
