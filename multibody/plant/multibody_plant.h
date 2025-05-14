@@ -5097,11 +5097,22 @@ class MultibodyPlant final : public internal::MultibodyTreeSystem<T> {
       const RigidBody<T>& body) const;
 
   /// Returns all bodies whose kinematics are transitively affected by the given
-  /// vector of Joints. The affected bodies are returned in increasing order of
-  /// body indexes. Note that this is a kinematic relationship rather than a
-  /// dynamic one. For example, if one of the inboard joints is a free (6dof)
-  /// joint, the kinematic influence is still felt even though dynamically
-  /// there would be no influence on the outboard body.
+  /// vector of Joints. This is a _kinematic_ relationship rather than a
+  /// dynamic one. It is is inherently a query on the topology of the plant's
+  /// modeled tree. Constraints are likewise not considered.
+  ///
+  /// The affected bodies are returned in increasing order of body indices. A
+  /// body is included in the output if that body's spatial velocity is
+  /// affected by the generalized velocities v of one of the indicated joints.
+  ///
+  /// As such, there are some notable implications:
+  ///
+  ///   1. If a body has an inboard free (6 dof) joint, it will be
+  ///      _kinematically_ affected by joints further inboard, even though there
+  ///      might not be any dynamic influence on that body.
+  ///   2. If the set of joints have no velocities (i.e., they are all weld (0
+  ///      dof) joints), then, by definition, no bodies will be affected.
+  ///
   /// This function can be only be called post-finalize, see Finalize().
   /// @throws std::exception if any of the given joint has an invalid index,
   /// doesn't correspond to a mobilizer, or is welded.

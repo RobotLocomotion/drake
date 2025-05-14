@@ -1819,10 +1819,13 @@ GTEST_TEST(MultibodyPlantTest, GetBodiesKinematicallyAffectedBy) {
   plant.Finalize();
   EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints1), expected_bodies1);
 
-  // Test throw condition: weld joint.
+  // Adding a weld joint doesn't change the result; still the same bodies
+  // based on the non-weld joints.
   const std::vector<JointIndex> joints2{shoulder, elbow};
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetBodiesKinematicallyAffectedBy(joints2),
-                              ".*joint with index.*welded.");
+  EXPECT_EQ(plant.GetBodiesKinematicallyAffectedBy(joints2), expected_bodies1);
+
+  // Passing only a weld joint produces no bodies.
+  EXPECT_TRUE(plant.GetBodiesKinematicallyAffectedBy({elbow}).empty());
 
   // Test throw condition: unregistered joint.
   std::vector<JointIndex> joint100{JointIndex(100)};
