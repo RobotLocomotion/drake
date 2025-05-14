@@ -138,7 +138,7 @@ void RpyBallMobilizer<T>::DoCalcNMatrix(const systems::Context<T>& context,
   // v = w_FM_F = [ω0, ω1, ω2]ᵀ is the mobilizer M frame's angular velocity in
   // the mobilizer F frame, expressed in the F frame.
   //
-  // ⌈ ṙ̇ ⌉   ⌈          cos(y) / cos(p),           sin(y) / cos(p),  0 ⌉ ⌈ ω0 ⌉
+  // ⌈ ṙ ⌉   ⌈          cos(y) / cos(p),           sin(y) / cos(p),  0 ⌉ ⌈ ω0 ⌉
   // | ṗ | = |                  -sin(y),                    cos(y),  0 | | ω1 |
   // ⌊ ẏ ⌋   ⌊ sin(p) * cos(y) / cos(p),  sin(p) * sin(y) / cos(p),  1 ⌋ ⌊ ω2 ⌋
   //
@@ -186,7 +186,7 @@ void RpyBallMobilizer<T>::DoCalcNplusMatrix(const systems::Context<T>& context,
   // v = w_FM_F = [ω0, ω1, ω2]ᵀ is the mobilizer M frame's angular velocity in
   // the mobilizer F frame, expressed in the F frame (thus w_FM_F = N⁺(q) * q̇).
   //
-  // ⌈ ω0 ⌉   ⌈ cos(y) * cos(p),  -sin(y),  0 ⌉ ⌈ ṙ̇ ⌉
+  // ⌈ ω0 ⌉   ⌈ cos(y) * cos(p),  -sin(y),  0 ⌉ ⌈ ṙ ⌉
   // | ω1 | = | sin(y) * cos(p),   cos(y),  0 | | ṗ |
   // ⌊ ω2 ⌋   ⌊         -sin(p),        0,  1 ⌋ ⌊ ẏ ⌋
   //
@@ -208,7 +208,7 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   // v = w_FM_F = [ω0, ω1, ω2]ᵀ is the mobilizer M frame's angular velocity in
   // the mobilizer F frame, expressed in the F frame.
   //
-  // ⌈ ṙ̇ ⌉   ⌈          cos(y) / cos(p),           sin(y) / cos(p),  0 ⌉ ⌈ ω0 ⌉
+  // ⌈ ṙ ⌉   ⌈          cos(y) / cos(p),           sin(y) / cos(p),  0 ⌉ ⌈ ω0 ⌉
   // | ṗ | = |                  -sin(y),                    cos(y),  0 | | ω1 |
   // ⌊ ẏ ⌋   ⌊ sin(p) * cos(y) / cos(p),  sin(p) * sin(y) / cos(p),  1 ⌋ ⌊ ω2 ⌋
   //
@@ -256,7 +256,7 @@ void RpyBallMobilizer<T>::DoMapVelocityToQDot(
   // Although we can calculate q̇ = N(q) * v, it is more efficient to implicitly
   // invert the simpler equation v = N⁺(q) * q̇, whose matrix form is
   //
-  // ⌈ ω0 ⌉   ⌈ cos(y) * cos(p),  -sin(y),  0 ⌉ ⌈ ṙ̇ ⌉
+  // ⌈ ω0 ⌉   ⌈ cos(y) * cos(p),  -sin(y),  0 ⌉ ⌈ ṙ ⌉
   // | ω1 | = | sin(y) * cos(p),   cos(y),  0 | | ṗ |
   // ⌊ ω2 ⌋   ⌊         -sin(p),        0,  1 ⌋ ⌊ ẏ ⌋
   //
@@ -277,7 +277,7 @@ void RpyBallMobilizer<T>::DoMapQDotToVelocity(
   // v = w_FM_F = [ω0, ω1, ω2]ᵀ is the mobilizer M frame's angular velocity in
   // the mobilizer F frame, expressed in the F frame (thus w_FM_F = N⁺(q) * q̇).
   //
-  // ⌈ ω0 ⌉   ⌈ cos(y) * cos(p),  -sin(y),  0 ⌉ ⌈ ṙ̇ ⌉
+  // ⌈ ω0 ⌉   ⌈ cos(y) * cos(p),  -sin(y),  0 ⌉ ⌈ ṙ ⌉
   // | ω1 | = | sin(y) * cos(p),   cos(y),  0 | | ṗ |
   // ⌊ ω2 ⌋   ⌊         -sin(p),        0,  1 ⌋ ⌊ ẏ ⌋
   //
