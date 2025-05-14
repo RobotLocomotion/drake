@@ -1,5 +1,6 @@
 import pydrake.geometry as mut
 
+import numpy as np
 import unittest
 from math import pi
 
@@ -615,6 +616,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         QueryObject = mut.QueryObject_[T]
         SceneGraphInspector = mut.SceneGraphInspector_[T]
         FramePoseVector = mut.FramePoseVector_[T]
+        GeometryConfigurationVector = mut.GeometryConfigurationVector_[T]
 
         # First, ensure we can default-construct it.
         model = QueryObject()
@@ -628,6 +630,11 @@ class TestGeometrySceneGraph(unittest.TestCase):
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
                                           shape=mut.Sphere(1.), name="sphere"))
+        deformable_geometry_id = scene_graph.RegisterDeformableGeometry(
+            source_id=source_id, frame_id=scene_graph.world_frame_id(),
+            geometry=mut.GeometryInstance(X_PG=RigidTransform_[float](),
+                                          shape=mut.Sphere(0.1),
+                                          name="sphere4"), resolution_hint=1)
         render_params = mut.RenderEngineVtkParams()
         renderer_name = "test_renderer"
         scene_graph.AddRenderer(renderer_name,
@@ -638,11 +645,21 @@ class TestGeometrySceneGraph(unittest.TestCase):
         pose_vector.set_value(frame_id, RigidTransform_[T]())
         scene_graph.get_source_pose_port(source_id).FixValue(
             context, pose_vector)
+        geometry_configuration_vector = GeometryConfigurationVector()
+        # Not sure if the deformable sphere configuration should set to this
+        # specific value.
+        geometry_configuration_vector.set_value(
+            deformable_geometry_id, np.array([0, 1, 2.]))
+        scene_graph.get_source_configuration_port(source_id).FixValue(
+            context, geometry_configuration_vector)
         query_object = scene_graph.get_query_output_port().Eval(context)
 
         self.assertIsInstance(query_object.inspector(), SceneGraphInspector)
         self.assertIsInstance(
             query_object.GetPoseInWorld(frame_id=frame_id), RigidTransform_[T])
+        self.assertIsInstance(
+            query_object.GetConfigurationsInWorld(
+                deformable_geometry_id=deformable_geometry_id), np.ndarray)
         self.assertIsInstance(
             query_object.GetPoseInParent(frame_id=frame_id),
             RigidTransform_[T])
