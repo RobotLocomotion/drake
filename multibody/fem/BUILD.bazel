@@ -273,6 +273,7 @@ drake_cc_library(
         "//common:essential",
         "//multibody/contact_solvers:block_sparse_cholesky_solver",
         "//multibody/contact_solvers:block_sparse_lower_triangular_or_symmetric_matrix",  # noqa
+        "//multibody/contact_solvers:eigen_block_3x3_sparse_symmetric_matrix",
         "//multibody/contact_solvers:schur_complement",
     ],
 )

@@ -20,6 +20,7 @@
         <drake:poissons_ratio>0.4</drake:poissons_ratio>
         <drake:stiffness_damping>0.01</drake:stiffness_damping>
         <drake:mass_density>1000.0</drake:mass_density>
+        <drake:material_model>neohookean</drake:material_model>
       </drake:deformable_properties>
     </link>
   </model>
