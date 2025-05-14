@@ -1,0 +1,91 @@
+#!/usr/bin/env groovy
+
+properties([
+  parameters([
+    string(name: 'ciSha', defaultValue: 'main',
+      description: 'Commit SHA or branch name. ' +
+        'Enter branch name <code>pr/1234/head</code> ' +
+        'or <code>pr/1234/merge</code> for pull request #1234. ' +
+        'Defaults to <code>main</code>.'),
+  ]),
+  buildDiscarder(
+    logRotator(
+      daysToKeepStr: '90',
+      artifactDaysToKeepStr: '90'
+    )
+  )
+])
+
+// Define the main pipeline.
+node(getNodeLabel()) {
+  // Use a custom checkout step below, since there are
+  // multiple repositories with a particular directory layout.
+  skipDefaultCheckout()
+
+  fetchUtils()
+  def utils = load 'jenkins-utils/.jenkins/utils/utils.groovy'
+
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            // Use the CI branch parameter for checkout (defaults to main).
+            utils.checkout(params.ciSha)
+            echo "Checking linux cache server:"
+            try {
+              sh "\"${{env.WORKSPACE}}/ci/cache_server/health_check.bash\" \"linux\""
+            } catch(Exception e) {
+              currentBuild.result = 'FAILURE'
+            }
+          } finally {
+            try {
+              // Only send failure emails for production builds.
+              if (!"${env.JOB_NAME}".contains("experimental")) {
+                utils.emailFailureResults()
+              }
+            } finally {
+              utils.cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Returns the node label from the job name.
+def getNodeLabel() {
+  def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
+  def match = "${env.JOB_NAME}" =~ pattern
+
+  if (match.find()) {
+    return match.group(1)
+  }
+  else {
+    return null
+  }
+}
+
+// Loads utils by performing a sparse checkout to WORKSPACE/jenkins-utils.
+def fetchUtils() {
+  def thisBranch = null
+  if (!"${env.CHANGE_ID}"?.trim()) {
+    thisBranch = scm.branches[0].name
+  }
+  else {
+    thisBranch = "pr/${env.CHANGE_ID}/head"
+  }
+  checkout([$class: 'GitSCM',
+    branches: [[name: thisBranch]],
+    extensions: [
+      [$class: 'RelativeTargetDirectory', relativeTargetDir: 'jenkins-utils'],
+      [$class: 'CloneOption', honorRefspec: true, noTags: true],
+      [$class: 'SparseCheckoutPaths',
+        sparseCheckoutPaths: [[path: '.jenkins/utils/utils.groovy']]]],
+    userRemoteConfigs: [[
+      credentialsId: 'ad794d10-9bc8-4a7a-a2f3-998af802cab0',
+      name: 'origin',
+      refspec: '+refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/origin/pr/*',
+      url: 'git@github.com:RobotLocomotion/drake.git']]])
+}
