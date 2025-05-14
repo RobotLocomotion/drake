@@ -111,6 +111,41 @@ class FemSolver {
   bool solver_converged(const T& residual_norm,
                         const T& initial_residual_norm) const;
 
+  /* Sets the maximum linear solver tolerance for iterative linear solvers. The
+   current solver of choice is Eigen::ConjugateGradient. */
+  void set_max_linear_solver_tolerance(double tolerance) {
+    max_linear_solver_tolerance_ = tolerance;
+  }
+
+  /* Returns the maximum linear solver tolerance for iterative linear solvers.
+   The default value is 0.1. */
+  double max_linear_solver_tolerance() const {
+    return max_linear_solver_tolerance_;
+  }
+
+  /* Computes the inexact Newton linear solver tolerance according to eq(2.6)
+   from [Eisenstat and Walker, 1996]. We choose γ = 1 and α = 2.
+
+   The linear solver tolerance is the relative tolerance for the reconstruction
+   error when solving the linear system Ax = b, defined as |Ax-b|/|b|.
+
+   [Eisenstat and Walker, 1996] Eisenstat, Stanley C., and Homer F. Walker.
+   "Choosing the forcing terms in an inexact Newton method." SIAM Journal on
+   Scientific Computing 17.1 (1996): 16-32.
+
+   @param[in] current_residual   The residual norm from the current Newton
+                                 iteration.
+   @param[in] previous_residual  The residual norm from the previous Newton
+                                 iteration if this is not the first iteration,
+                                 otherwise, the value is ignored.
+   @param[in] previous_tolerance The linear solver tolerance from the previous
+                                 Newton iteration if this is not the first
+                                 iteration. Otherwise, a non-positive value to
+                                 indicate this is the first iteration. */
+  double ComputeLinearSolverTolerance(double current_residual,
+                                      double previous_residual,
+                                      double previous_tolerance) const;
+
  private:
   template <typename U>
   friend class FemSolverTest;
@@ -152,8 +187,6 @@ class FemSolver {
     copyable_unique_ptr<
         contact_solvers::internal::Block3x3SparseSymmetricMatrix>
         tangent_matrix;
-    contact_solvers::internal::BlockSparseCholeskySolver<Matrix3<T>>
-        linear_solver;
     VectorX<T> b;
     VectorX<T> dz;
   };
@@ -198,11 +231,16 @@ class FemSolver {
   /* The discrete time integrator the solver uses. */
   const DiscreteTimeIntegrator<T>* integrator_{nullptr};
   /* Tolerance for convergence. */
-  double relative_tolerance_{1e-4};  // unitless.
+  double relative_tolerance_{1e-2};  // unitless.
   // TODO(xuchenhan-tri): Consider using an absolute tolerance with velocity
   // unit so that how stiff the material is doesn't affect the convergence
   // criterion.
   double absolute_tolerance_{1e-6};  // unit N.
+  /* Maximum allowed solver tolerance for iterative linear solver, used on the
+   first Newton iteration and as a safe-guard to prevent the tolerance from
+   being too large (>1). Unitless and default to a loose value to avoid solving
+   linear systems to unnecessary accuracy in early stages of Newton solve. */
+  double max_linear_solver_tolerance_{0.1};
   /* Max number of Newton-Raphson iterations the solver takes before it gives
    up. */
   int max_iterations_{100};
