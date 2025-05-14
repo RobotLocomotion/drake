@@ -1,0 +1,79 @@
+// Define the job parameters.
+properties([
+    parameters([
+        string(name: 'ciSha', defaultValue: 'main',
+          description: 'Commit SHA or branch name. ' +
+            'For pull requests, enter branch name <code>pr/1234/head</code> ' +
+            'or <code>pr/1234/merge</code> for pull request #1234. ' +
+            'Defaults to <code>main</code>.'),
+    ])
+])
+
+// Define the main pipeline.
+node(getNodeLabel()) {
+  // Use a custom checkout step below, since there are
+  // multiple repositories with a particular directory layout.
+  skipDefaultCheckout()
+
+  // Import utilities.
+  library('utils')
+
+  // Categorize this build.
+  def isProd = utils.isProduction()
+
+  stage('test') {
+    timeout(600) {
+      ansiColor('xterm') {
+        timestamps {
+          try {
+            if (isProd) {
+              // Ignore the ci branch parameter for production builds,
+              // always use main.
+              utils.checkout()
+            }
+            else {
+              // Use the ci branch parameter (defaults to main).
+              utils.checkout("${params.ciSha}")
+            }
+            try {
+              doBuild()
+            } catch(Exception e) {
+              currentBuild.result = 'FAILURE'
+            }
+          } finally {
+            try {
+              // Only send failure emails for production builds.
+              if (isProd) {
+                utils.emailFailureResults()
+              }
+            } finally {
+              utils.cleanWorkspace()
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Returns the node label from the job name.
+def getNodeLabel() {
+  def pattern = ~/^((linux|mac-arm)-[a-z]+(?:-unprovisioned)?)/
+  def match = "${env.JOB_NAME}" =~ pattern
+
+  if (match.find()) {
+    return match.group(1)
+  }
+  else {
+    return null
+  }
+}
+
+// Performs the main build step by calling into the drake-ci driver script.
+def doBuild() {
+  echo "Checking linux cache server:"
+  // TODO(tyler-yankee): For now this is hard-coding "linux" as the
+  // server name, since we only have a Linux cache server and transitioning
+  // this logic to allow dynamic names is non-trivial.
+  sh "\"${{env.WORKSPACE}}/ci/cache_server/health_check.bash\" \"linux\""
+}
