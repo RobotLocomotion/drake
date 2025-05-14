@@ -1442,7 +1442,8 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
         frame_body_pose_cache.get_M_BBo_B(body.mobod_index());
     // Re-express body B's spatial inertia in the world frame W.
     SpatialInertia<T>& M_BBo_W = (*M_B_W_all)[body.mobod_index()];
-    M_BBo_W = M_BBo_B.ReExpress(R_WB);
+    M_BBo_W = M_BBo_B;               // Wrong frame.
+    M_BBo_W.ReExpressInPlace(R_WB);  // Fixed.
   }
 }
 
@@ -1566,15 +1567,34 @@ void MultibodyTree<T>::CalcCompositeBodyInertiasInWorld(
       EvalSpatialInertiaInWorldCache(context);
 
   // Perform tip-to-base recursion for each composite body, skipping the world.
-  for (int level = forest_height() - 1; level > 0; --level) {
-    for (MobodIndex mobod_index : body_node_levels_[level]) {
-      // Node corresponding to the base of composite body C. We'll add in
-      // everything outboard of this node.
-      const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the base of composite body C. We'll add in
+    // everything outboard of this node.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
 
-      composite_node.CalcCompositeBodyInertiaInWorld_TipToBase(pc, M_BBo_W_all,
-                                                               &*Mc_BBo_W_all);
-    }
+    composite_node.CalcCompositeBodyInertiaInWorld_TipToBase(pc, M_BBo_W_all,
+                                                             &*Mc_BBo_W_all);
+  }
+}
+
+template <typename T>
+void MultibodyTree<T>::CalcCompositeBodyInertiasInM(
+    const systems::Context<T>& context,
+    std::vector<SpatialInertia<T>>* I_BMo_M_all) const {
+  const FrameBodyPoseCache<T>& frame_body_pose_cache =
+      EvalFrameBodyPoses(context);
+  const PositionKinematicsCacheInM<T>& pcm = EvalPositionKinematicsInM(context);
+
+  // Perform tip-to-base recursion for each composite body, skipping the world.
+  for (MobodIndex mobod_index(num_mobods() - 1); mobod_index > 0;
+       --mobod_index) {
+    // Node corresponding to the base of the composite body. We'll add in
+    // everything outboard of this node.
+    const BodyNode<T>& composite_node = *body_nodes_[mobod_index];
+
+    composite_node.CalcCompositeBodyInertiaInM_TipToBase(frame_body_pose_cache,
+                                                         pcm, &*I_BMo_M_all);
   }
 }
 
