@@ -140,8 +140,14 @@ class BodyNodeWorld final : public BodyNode<T> {
     DRAKE_UNREACHABLE();
   }
 
-  void CalcCompositeBodyInertia_TipToBase(
+  void CalcCompositeBodyInertiaInWorld_TipToBase(
       const PositionKinematicsCache<T>&, const std::vector<SpatialInertia<T>>&,
+      std::vector<SpatialInertia<T>>*) const final {
+    DRAKE_UNREACHABLE();
+  }
+
+  void CalcCompositeBodyInertiaInM_TipToBase(
+      const FrameBodyPoseCache<T>&, const PositionKinematicsCacheInM<T>&,
       std::vector<SpatialInertia<T>>*) const final {
     DRAKE_UNREACHABLE();
   }
